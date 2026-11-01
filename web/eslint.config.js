@@ -8,7 +8,6 @@ export default tseslint.config(
     ignores: [
       "dist",
       "src/generated",
-      "src/features/desktop-pet/whale-vendor/**",
     ],
   },
   js.configs.recommended,

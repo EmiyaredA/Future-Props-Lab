@@ -42,6 +42,18 @@ export function DesktopSetupGate({ children }: { children: ReactNode }) {
     });
   }, [desktop]);
 
+  useEffect(
+    () =>
+      window.futurePropsDesktop?.onWebAccessPrepare?.((approve) => {
+        const event = new CustomEvent("future-props:before-navigation", {
+          cancelable: true,
+          detail: approve,
+        });
+        if (window.dispatchEvent(event)) approve();
+      }),
+    [],
+  );
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (busy) return;

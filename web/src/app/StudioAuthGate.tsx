@@ -13,6 +13,7 @@ import {
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AUTH_REQUIRED_EVENT } from "@platform/api/studioAuth";
+import { ApiError } from "@platform/api/client";
 import { BrandMark } from "@shared/ui/BrandMark";
 import {
   type AuthMe,
@@ -29,7 +30,8 @@ import { clearRetainedRealtimeVoiceState } from "@features/models/realtime/realt
 import { useResourceBroadcastSync } from "@app/useResourceBroadcastSync";
 
 type Status = "checking" | "signed-out" | "signed-in";
-const registrationAllowed = import.meta.env.MODE !== "studio";
+const registrationAllowed =
+  Boolean(window.futurePropsDesktop) || import.meta.env.MODE !== "studio";
 
 export function StudioAuthGate({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
@@ -37,11 +39,12 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
   const identityRequest = useRef(0);
   const [status, setStatus] = useState<Status>("checking");
   const [me, setMe] = useState<AuthMe | null>(null);
-  useEffect(() => {
-    if (status === "signed-out")
-      void window.futurePropsDesktop?.publishPetContext?.(null);
-  }, [status]);
   useResourceBroadcastSync(queryClient, status === "signed-in");
+  const userId = me?.user.id;
+  useEffect(() => {
+    if (userId)
+      localStorage.removeItem(`amadeus-appearance:${userId}:${userId}`);
+  }, [userId]);
   identityRef.current = me;
   const [registration, setRegistration] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
@@ -73,9 +76,13 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
       identityRef.current = current;
       setMe(current);
       setStatus("signed-in");
-    } catch {
+    } catch (cause) {
       if (request !== identityRequest.current) return;
       if (!identityRef.current) {
+        if (cause instanceof ApiError && cause.status !== 401)
+          setError(
+            "本地服务未开启或暂时离线。请在 Mac 应用的“本地与公网访问”中检查连接，再重试。",
+          );
         setMe(null);
         setStatus("signed-out");
       }
@@ -93,7 +100,7 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
       setStatus("signed-out");
     };
     const permissionsChanged = () => {
-      if (identityRef.current) void refresh();
+      if (!document.hidden && identityRef.current) void refresh();
     };
     const timer = window.setInterval(permissionsChanged, 30000);
     window.addEventListener("focus", permissionsChanged);

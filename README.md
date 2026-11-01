@@ -29,6 +29,9 @@ macOS Apple Silicon 桌面版可通过 `npm run build:desktop` 构建 `.app`，
 首次启动在应用内创建管理员，数据独立于仓库。构建机要求与验证方法见
 [macOS 桌面构建](docs/operations/desktop-macos.md)。首期仅本地 ad-hoc 签名，未公证，不作为公开发行版。
 
+桌面管理员可从头像菜单「本地与公网访问」启动共用 App 数据的本机 Web 与 SSH 公网入口，
+每次启动默认关闭。网关准备、凭据导入、发布命令和恢复边界见[访问指南](docs/reference/web-access.md)。
+
 桌面日常开发无需重新打包：`npm run dev:desktop` 使用已安装 App 的正式账号、配置与作品；需要隔离时运行
 `npm run dev:desktop:isolated`，`npm run dev:desktop:live` 保留为正式数据入口的兼容别名。CSS/兼容 React 修改即时生效，
 后端和 Electron 修改检查通过后通过菜单栏「开发 → 应用更新」或 `Cmd/Ctrl+Shift+U` 应用。正式数据首次启用前自动停机备份，
@@ -96,11 +99,6 @@ Mermaid；AI 写作经 Agent/SDK 接入（应用内无入口）。提供回收�
 
 真实准备默认关闭，在本机 `backend/config.toml` 的 `[interview_codex]` 启用并绑定 FPL 账号；需要已登录的 Codex CLI 0.163 或更新版本，首版支持 macOS。不会改写 Codex 全局配置。画面、语音输入与评分仍为模拟，练习回答及规则复盘仅保存在本页，刷新会清空；资料继续保留。配置、任务边界和接口见[面试资料准备](docs/operations/interview-preparation.md)。
 
-### Live2D 工坊
-
-在「应用 → Live2D 工坊」创建角色，导入透明 PNG 或 RGB 8 位分层 PSD，编辑网格、变形器与参数关键形，再制作表情和动作。保存格式为 `.fpllive2d`，可往返导入；PNG 序列按表情与动作组合分别输出。Cubism/CMO3/MOC3 和视频编译尚未支持。
-
-实现、格式限制与验证见 [Live2D 工坊说明](docs/architecture/live2d-workshop.md)。`npm run test:desktop:live2d` 使用临时数据目录验证 Electron 入口、编辑器及保存恢复，不访问正式数据。
 
 ### 演示工坊
 

@@ -204,8 +204,11 @@
   transition: width 160ms ease;
 }
 
-.galgame-script-workbench .galgame-localization-progress-card label,
-.galgame-script-workbench .galgame-localization-language-bar label {
+.galgame-script-workbench
+  :is(
+    .galgame-localization-progress-card label,
+    .galgame-localization-language-bar label
+  ) {
   color: var(--gal-muted);
   font-size: 11px;
   display: flex;
@@ -308,8 +311,8 @@
   font-size: 11px;
 }
 
-.galgame-script-workbench .galgame-localization-table-head,
-.galgame-script-workbench .galgame-localization-row {
+.galgame-script-workbench
+  :is(.galgame-localization-table-head, .galgame-localization-row) {
   margin-inline: 26px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -355,8 +358,8 @@
   box-shadow: inset 3px 0 var(--gal-accent);
 }
 
-.galgame-script-workbench .galgame-localization-source,
-.galgame-script-workbench .galgame-localization-target {
+.galgame-script-workbench
+  :is(.galgame-localization-source, .galgame-localization-target) {
   position: relative;
   min-width: 0;
   padding: 18px;
@@ -450,32 +453,22 @@
   font-size: 12px;
 }
 
-.galgame-script-workbench .galgame-block-card.is-particle .galgame-block-kind,
 .galgame-script-workbench
-  .galgame-block-card.is-particle
-  .galgame-block-copy
-  strong,
-.galgame-script-workbench
-  .galgame-block-card.is-stageAnimation
+  .galgame-block-card:is(.is-particle, .is-stageAnimation)
   .galgame-block-kind,
 .galgame-script-workbench
-  .galgame-block-card.is-stageAnimation
+  .galgame-block-card:is(.is-particle, .is-stageAnimation)
   .galgame-block-copy
   strong {
   background: color-mix(in srgb, #8b5cf6 85%, var(--gal-surface));
   color: #fff;
 }
 
-.galgame-script-workbench .galgame-block-card.is-camera .galgame-block-kind,
 .galgame-script-workbench
-  .galgame-block-card.is-camera
-  .galgame-block-copy
-  strong,
-.galgame-script-workbench
-  .galgame-block-card.is-resetCamera
+  .galgame-block-card:is(.is-camera, .is-resetCamera)
   .galgame-block-kind,
 .galgame-script-workbench
-  .galgame-block-card.is-resetCamera
+  .galgame-block-card:is(.is-camera, .is-resetCamera)
   .galgame-block-copy
   strong {
   background: color-mix(in srgb, #6366f1 88%, var(--gal-surface));

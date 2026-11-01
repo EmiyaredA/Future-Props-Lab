@@ -223,7 +223,7 @@ test("saved preparation is restored without a dirty guard; unsaved edits trigger
     "https://www.w3.org/WAI/test-1",
   );
   fireEvent.click(screen.getByRole("button", { name: "修改材料" }));
-  fireEvent.change(screen.getByRole("textbox", { name: "岗位名称" }), {
+  fireEvent.change(await screen.findByRole("textbox", { name: "岗位名称" }), {
     target: { value: "changed" },
   });
   const next = vi.fn();

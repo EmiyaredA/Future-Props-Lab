@@ -14,13 +14,21 @@ cors_origins = ["http://127.0.0.1:3000", "http://localhost:3000"]
 # HTTPS 部署必须为 true；桌面版固定使用本机同源 HTTP。
 auth_cookie_secure = false
 
-# 桌面版同进程的公网 Web 入口；仅监听 127.0.0.1，经受信反向隧道接入。
+# 桌面连接资料；运行开关仅在内存，每次启动均关闭，由管理员头像菜单开启。
 [remote_web]
+# 兼容旧配置字段，不再控制自动启动。
 enabled = false
 origin = ""
 port = 28081
 # 留空使用正式打包资源；开发模式须指向正式构建，不能指向 Vite。
 web_root = ""
+ssh_host = ""
+ssh_port = 22
+ssh_user = ""
+remote_port = 28080
+# 经原生选择器导入的文件标识；不填写私钥正文或管理员密码。
+identity_id = ""
+known_hosts_id = ""
 
 [limits]
 visual_asset_max_bytes = 209715200

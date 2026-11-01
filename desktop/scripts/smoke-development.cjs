@@ -173,7 +173,7 @@ if (!document.getElementById("fpl-probe-container")) { const div=document.create
     await page.evaluate(() => {
       window.__cancelReload = (event) => event.preventDefault();
       window.addEventListener(
-        "future-props:before-workspace-switch",
+        "future-props:before-navigation",
         window.__cancelReload,
       );
     });
@@ -186,7 +186,7 @@ if (!document.getElementById("fpl-probe-container")) { const div=document.create
     );
     await page.evaluate(() =>
       window.removeEventListener(
-        "future-props:before-workspace-switch",
+        "future-props:before-navigation",
         window.__cancelReload,
       ),
     );
@@ -231,7 +231,7 @@ if (!document.getElementById("fpl-probe-container")) { const div=document.create
     await page.evaluate(() => {
       window.__cancelUpdate = (event) => event.preventDefault();
       window.addEventListener(
-        "future-props:before-workspace-switch",
+        "future-props:before-navigation",
         window.__cancelUpdate,
       );
     });
@@ -248,7 +248,7 @@ if (!document.getElementById("fpl-probe-container")) { const div=document.create
     assert((await state()).pending.includes("desktop"));
     await page.evaluate(() =>
       window.removeEventListener(
-        "future-props:before-workspace-switch",
+        "future-props:before-navigation",
         window.__cancelUpdate,
       ),
     );
@@ -270,7 +270,7 @@ if (!document.getElementById("fpl-probe-container")) { const div=document.create
     await page.evaluate(() => {
       window.__cancelQuit = (event) => event.preventDefault();
       window.addEventListener(
-        "future-props:before-workspace-switch",
+        "future-props:before-navigation",
         window.__cancelQuit,
       );
     });
@@ -283,7 +283,7 @@ if (!document.getElementById("fpl-probe-container")) { const div=document.create
     );
     await page.evaluate(() =>
       window.removeEventListener(
-        "future-props:before-workspace-switch",
+        "future-props:before-navigation",
         window.__cancelQuit,
       ),
     );

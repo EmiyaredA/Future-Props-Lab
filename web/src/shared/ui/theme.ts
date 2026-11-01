@@ -21,7 +21,22 @@ export function loadTheme(): ThemeMode {
 }
 
 export function applyTheme(theme: ThemeMode, persist = true): void {
-  document.documentElement.dataset.theme = theme;
+  const root = document.documentElement;
+  if (root.dataset.theme !== theme) {
+    // Palette changes must commit together. A background-only hover transition
+    // otherwise leaves light surfaces behind immediately switched light text.
+    root.setAttribute("data-theme-changing", "");
+    root.dataset.theme = theme;
+    void root.offsetHeight;
+    if (window.requestAnimationFrame) {
+      window.requestAnimationFrame(() =>
+        window.requestAnimationFrame(() => {
+          if (root.dataset.theme === theme)
+            root.removeAttribute("data-theme-changing");
+        }),
+      );
+    } else root.removeAttribute("data-theme-changing");
+  }
   if (persist) {
     try {
       localStorage.setItem(THEME_KEY, theme);

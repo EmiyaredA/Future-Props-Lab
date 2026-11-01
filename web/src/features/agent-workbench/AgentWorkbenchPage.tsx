@@ -351,6 +351,11 @@ export function AgentWorkbenchPage({
           <p>原生记录缺少 APP / CLI 标记，暂不推断来源。</p>
         )}
       </section>
+      {(selected.source_errors ?? []).map((message) => (
+        <p className="aw-note" role="status" key={message}>
+          {message}
+        </p>
+      ))}
       <section className="aw-info-actions">
         <h3>相关操作</h3>
         <button className="aw-button" onClick={data.togglePaused}>
@@ -569,7 +574,8 @@ export function AgentWorkbenchPage({
         confirmLabel="清除副本"
         onCancel={() => setClear(false)}
         onConfirm={async () => {
-          if (selected) await data.mutate(() => clearCopy(selected));
+          if (selected && !(await data.mutate(() => clearCopy(selected))))
+            return;
           setClear(false);
           onOpenSession();
         }}

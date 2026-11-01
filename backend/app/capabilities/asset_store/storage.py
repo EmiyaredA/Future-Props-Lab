@@ -46,8 +46,6 @@ class AssetStorage:
             "galgame-workshop",
             "video-editor",
             "motion-compositor",
-            "live2d-workshop",
-            "desktop-pet",
             "director-desk",
         }
         if application_id not in allowed:

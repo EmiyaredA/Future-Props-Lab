@@ -122,9 +122,7 @@ describe("Agent 工作台", () => {
     expect(
       screen.getByRole("button", { name: "发送（待接入）" }),
     ).toBeDisabled();
-    fireEvent.click(
-      screen.getByRole("button", { name: "Claude", exact: true }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Claude" }));
     await waitFor(() =>
       expect(api.getSessions).toHaveBeenLastCalledWith(
         expect.objectContaining({ agent_id: "claude-code" }),

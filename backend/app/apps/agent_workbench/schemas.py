@@ -69,6 +69,7 @@ class WorkbenchSessionOut(BaseModel):
     updated_at: str
     last_synced_at: datetime
     source_ids: list[str] = Field(default_factory=list)
+    source_errors: list[str] = Field(default_factory=list)
     can_send: Literal[False] = False
     continuation_reason: str = "当前支持查看与同步，继续对话待接入"
 

@@ -1,3 +1,4 @@
+import { AmadeusWindowPreferences } from "./amadeus-window-preferences";
 import {
   installPresentationWindows,
   studioPathForNewWindow,
@@ -11,7 +12,7 @@ import {
   session,
   shell,
 } from "electron";
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { Backend } from "./backend";
 import { AgentGateway } from "./agent";
@@ -22,9 +23,9 @@ import {
   collapsedAmadeusBounds,
   initialAmadeusBounds,
 } from "./amadeus-window-geometry";
-import { PetWindowController } from "./pet-window";
 import { installStorageDirectoryPicker } from "./storage-directory-picker";
 import { installExportFiles } from "./export-files";
+import { installWebAccess } from "./web-access";
 const isDevelopment =
   !app.isPackaged &&
   process.env.FPL_DEV_SESSION === "1" &&
@@ -73,83 +74,13 @@ const development = isDevelopment
 const pageOrigin = () => gateway?.origin || backend?.origin || "";
 const recovery = path.join(__dirname, "../ui/startup.html");
 const preload = path.join(__dirname, "preload.js");
-const petController = new PetWindowController({
-  preload,
-  pageOrigin,
-  trusted,
-  isStudioSender: isTrustedStudioSender,
-  showStudio,
-  canOpen: () => !quitting && state.phase === "ready",
-});
-const amadeusBoundsPath = path.join(dataDir, "amadeus-window.json");
-
-type AmadeusWindowPrefs = Partial<Electron.Rectangle> & {
-  alwaysOnTop?: boolean;
-};
-
-function readAmadeusPrefs(): AmadeusWindowPrefs {
-  try {
-    const value = JSON.parse(
-      readFileSync(amadeusBoundsPath, "utf8"),
-    ) as AmadeusWindowPrefs;
-    return value && typeof value === "object" ? value : {};
-  } catch {
-    return {};
-  }
-}
-
-function writeAmadeusPrefs(patch: AmadeusWindowPrefs): void {
-  try {
-    mkdirSync(dataDir, { recursive: true, mode: 0o700 });
-    const temporary = `${amadeusBoundsPath}.tmp`;
-    writeFileSync(
-      temporary,
-      JSON.stringify({ ...readAmadeusPrefs(), ...patch }),
-      { mode: 0o600 },
-    );
-    renameSync(temporary, amadeusBoundsPath);
-  } catch {
-    /* Window prefs are optional. */
-  }
-}
-
-function savedAmadeusBounds(): Electron.Rectangle | undefined {
-  const value = readAmadeusPrefs();
-  if (
-    ![value.x, value.y, value.width, value.height].every(
-      (number) => typeof number === "number" && Number.isFinite(number),
-    ) ||
-    (value.width ?? 0) < 400 ||
-    (value.height ?? 0) < 500
-  )
-    return undefined;
-  const bounds = {
-    x: value.x!,
-    y: value.y!,
-    width: value.width!,
-    height: value.height!,
-  };
-  const visible = screen
-    .getAllDisplays()
-    .some(
-      ({ workArea }) =>
-        bounds.x < workArea.x + workArea.width - 80 &&
-        bounds.x + bounds.width > workArea.x + 80 &&
-        bounds.y < workArea.y + workArea.height - 80 &&
-        bounds.y + bounds.height > workArea.y + 80,
-    );
-  return visible ? bounds : undefined;
-}
-
-function savedAmadeusAlwaysOnTop(): boolean {
-  return readAmadeusPrefs().alwaysOnTop !== false;
-}
-
-let amadeusAlwaysOnTopPreference = savedAmadeusAlwaysOnTop();
+const amadeusPreferences = new AmadeusWindowPreferences(dataDir);
+let amadeusAlwaysOnTopPreference =
+  amadeusPreferences.read().alwaysOnTop !== false;
 
 function saveAmadeusBounds(win: BrowserWindow): void {
   if (win.isDestroyed() || win.isMinimized() || win.isMaximized()) return;
-  writeAmadeusPrefs({
+  amadeusPreferences.write({
     ...collapsedAmadeusBounds(
       win.getBounds(),
       amadeusStageOpen,
@@ -172,7 +103,7 @@ function syncAmadeusAlwaysOnTopSurface(): void {
 
 function applyAmadeusAlwaysOnTop(enabled: boolean): boolean {
   amadeusAlwaysOnTopPreference = enabled;
-  writeAmadeusPrefs({ alwaysOnTop: enabled });
+  amadeusPreferences.write({ alwaysOnTop: enabled });
   if (amadeusWindow && !amadeusWindow.isDestroyed()) {
     if (!enabled) amadeusWindow.setAlwaysOnTop(false);
     else syncAmadeusAlwaysOnTopSurface();
@@ -217,7 +148,6 @@ function showStudio(win = activeStudio()): void {
 }
 
 function trackStudio(win: BrowserWindow): void {
-  const contentsId = win.webContents.id;
   studioWindows.add(win);
   focusedStudio = win;
   win.on("focus", () => {
@@ -229,9 +159,7 @@ function trackStudio(win: BrowserWindow): void {
     );
   });
   win.on("blur", queueAmadeusAlwaysOnTopSync);
-  win.on("closed", () => {
-    petController.detachStudio(contentsId);
-  });
+  win.on("closed", () => {});
 }
 
 function availableContexts() {
@@ -289,7 +217,7 @@ async function showAmadeus(): Promise<void> {
   const workArea = screen.getDisplayNearestPoint(
     screen.getCursorScreenPoint(),
   ).workArea;
-  const bounds = savedAmadeusBounds();
+  const bounds = amadeusPreferences.bounds();
   const initialBounds = initialAmadeusBounds(bounds, workArea);
   const win = new BrowserWindow({
     ...initialBounds,
@@ -564,7 +492,7 @@ function requestQuitApprovals(): void {
   }
 }
 
-async function start(navigate = true): Promise<boolean> {
+async function start(navigate = true, webConfig?: unknown): Promise<boolean> {
   if (starting || quitting) return false;
   starting = true;
   state = { phase: "starting", message: "正在启动本地研究所…" };
@@ -593,7 +521,7 @@ async function start(navigate = true): Promise<boolean> {
       },
       development ? 4 : undefined,
     );
-    await backend.start();
+    await backend.start(webConfig);
     await agent?.start();
     state = { phase: "ready", message: "本地服务已就绪" };
     if (navigate) {
@@ -623,7 +551,6 @@ async function start(navigate = true): Promise<boolean> {
 }
 
 async function shutdown(): Promise<void> {
-  petController.close();
   await agent?.stop();
   await backend?.stop();
   await gateway?.stop();
@@ -700,7 +627,6 @@ else {
             }
             quitting = true;
             quitPending = null;
-            petController.close();
             amadeusWindow?.destroy();
             for (const win of liveStudioWindows()) win.close();
             if (liveStudioWindows().length === 0) void shutdown();
@@ -790,8 +716,21 @@ else {
         if (!win) throw new Error("拒绝非应用页面请求");
         return action(win);
       });
-    petController.installIpc();
     installStorageDirectoryPicker(isTrustedStudioSender);
+    installWebAccess({
+      trusted: isTrustedStudioSender,
+      backend: () => backend,
+      windows: liveStudioWindows,
+      apply: async (profile) => {
+        state = { phase: "starting", message: "正在备份数据并应用连接配置…" };
+        const success = await start(true, profile);
+        development?.send("ready", {
+          success,
+          configDigest: backend?.configDigest,
+        });
+        return success;
+      },
+    });
     installExportFiles(isTrustedStudioSender, studio);
     installPresentationWindows({
       trusted: isTrustedStudioSender,

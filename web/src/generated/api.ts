@@ -1588,199 +1588,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/desktop-pet/projects": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Projects */
-        get: operations["list_projects_v1_desktop_pet_projects_get"];
-        put?: never;
-        /** Create Project */
-        post: operations["create_project_v1_desktop_pet_projects_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/desktop-pet/projects/import-whale": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Import Whale */
-        post: operations["import_whale_v1_desktop_pet_projects_import_whale_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/desktop-pet/projects/{project_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Project */
-        get: operations["get_project_v1_desktop_pet_projects__project_id__get"];
-        put?: never;
-        post?: never;
-        /** Delete Project */
-        delete: operations["delete_project_v1_desktop_pet_projects__project_id__delete"];
-        options?: never;
-        head?: never;
-        /** Patch Project */
-        patch: operations["patch_project_v1_desktop_pet_projects__project_id__patch"];
-        trace?: never;
-    };
-    "/v1/desktop-pet/projects/{project_id}/assets/{asset_id}/file": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Asset File */
-        get: operations["asset_file_v1_desktop_pet_projects__project_id__assets__asset_id__file_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/desktop-pet/projects/{project_id}/chat": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Chat */
-        get: operations["get_chat_v1_desktop_pet_projects__project_id__chat_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update Chat */
-        patch: operations["update_chat_v1_desktop_pet_projects__project_id__chat_patch"];
-        trace?: never;
-    };
-    "/v1/desktop-pet/projects/{project_id}/chat/messages": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Chat Messages */
-        get: operations["chat_messages_v1_desktop_pet_projects__project_id__chat_messages_get"];
-        put?: never;
-        post?: never;
-        /** Clear Chat */
-        delete: operations["clear_chat_v1_desktop_pet_projects__project_id__chat_messages_delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/desktop-pet/projects/{project_id}/chat/messages/stream": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Send Chat Message */
-        post: operations["send_chat_message_v1_desktop_pet_projects__project_id__chat_messages_stream_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/desktop-pet/projects/{project_id}/document": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Document */
-        get: operations["get_document_v1_desktop_pet_projects__project_id__document_get"];
-        /** Save Document */
-        put: operations["save_document_v1_desktop_pet_projects__project_id__document_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/desktop-pet/projects/{project_id}/replace-package": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Replace Package */
-        post: operations["replace_package_v1_desktop_pet_projects__project_id__replace_package_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/desktop-pet/projects/{project_id}/skins/{skin_id}/replacements/{source_asset_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Upload Skin Replacement */
-        put: operations["upload_skin_replacement_v1_desktop_pet_projects__project_id__skins__skin_id__replacements__source_asset_id__put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/desktop-pet/projects/{project_id}/sync-source": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Sync Source */
-        post: operations["sync_source_v1_desktop_pet_projects__project_id__sync_source_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/desktop/agent/capabilities": {
         parameters: {
             query?: never;
@@ -1930,6 +1737,126 @@ export interface paths {
         put?: never;
         /** Acknowledge */
         post: operations["acknowledge_v1_desktop_ui_requests__request_id__ack_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/desktop/web-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Status */
+        get: operations["status_v1_desktop_web_access_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/desktop/web-access/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Action */
+        post: operations["action_v1_desktop_web_access_actions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/desktop/web-access/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Config */
+        get: operations["config_v1_desktop_web_access_config_get"];
+        /** Prepare Config */
+        put: operations["prepare_config_v1_desktop_web_access_config_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/desktop/web-access/config/adopt-legacy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Adopt */
+        post: operations["adopt_v1_desktop_web_access_config_adopt_legacy_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/desktop/web-access/config/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Claim Config */
+        post: operations["claim_config_v1_desktop_web_access_config_claim_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/desktop/web-access/credentials/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Credential */
+        post: operations["import_credential_v1_desktop_web_access_credentials_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/desktop/web-access/credentials/tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Credential Ticket */
+        post: operations["credential_ticket_v1_desktop_web_access_credentials_tickets_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2431,6 +2358,23 @@ export interface paths {
         };
         /** Video Media Info */
         get: operations["video_media_info_v1_files__asset_id__media_info_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/files/{asset_id}/thumbnail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Preview Thumbnail */
+        get: operations["preview_thumbnail_v1_files__asset_id__thumbnail_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3645,354 +3589,6 @@ export interface paths {
         };
         /** Export Interview Bundle */
         get: operations["export_interview_bundle_v1_interview_assistant_rooms__room_id__preparations__task_id__export_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/live2d-workshop/projects": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Projects */
-        get: operations["list_projects_v1_live2d_workshop_projects_get"];
-        put?: never;
-        /** Create Project */
-        post: operations["create_project_v1_live2d_workshop_projects_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/live2d-workshop/projects/import": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Import Project */
-        post: operations["import_project_v1_live2d_workshop_projects_import_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/live2d-workshop/projects/{project_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Project */
-        get: operations["get_project_v1_live2d_workshop_projects__project_id__get"];
-        put?: never;
-        post?: never;
-        /** Delete Project */
-        delete: operations["delete_project_v1_live2d_workshop_projects__project_id__delete"];
-        options?: never;
-        head?: never;
-        /** Patch Project */
-        patch: operations["patch_project_v1_live2d_workshop_projects__project_id__patch"];
-        trace?: never;
-    };
-    "/v1/live2d-workshop/projects/{project_id}/assets": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Assets */
-        get: operations["list_assets_v1_live2d_workshop_projects__project_id__assets_get"];
-        put?: never;
-        /** Upload Asset */
-        post: operations["upload_asset_v1_live2d_workshop_projects__project_id__assets_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/live2d-workshop/projects/{project_id}/assets/{asset_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Retire Asset */
-        delete: operations["retire_asset_v1_live2d_workshop_projects__project_id__assets__asset_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/live2d-workshop/projects/{project_id}/assets/{asset_id}/file": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Asset File */
-        get: operations["asset_file_v1_live2d_workshop_projects__project_id__assets__asset_id__file_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/live2d-workshop/projects/{project_id}/cubism": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Cubism */
-        get: operations["get_cubism_v1_live2d_workshop_projects__project_id__cubism_get"];
-        /** Attach Cubism */
-        put: operations["attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put"];
-        post?: never;
-        /** Remove Cubism */
-        delete: operations["remove_cubism_v1_live2d_workshop_projects__project_id__cubism_delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/live2d-workshop/projects/{project_id}/cubism/bindings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Save Cubism Bindings */
-        put: operations["save_cubism_bindings_v1_live2d_workshop_projects__project_id__cubism_bindings_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/live2d-workshop/projects/{project_id}/cubism/convert": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Convert Cubism */
-        post: operations["convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/live2d-workshop/projects/{project_id}/cubism/package": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Download Cubism */
-        get: operations["download_cubism_v1_live2d_workshop_projects__project_id__cubism_package_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/live2d-workshop/projects/{project_id}/cubism/preflight": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Preflight Cubism */
-        post: operations["preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/live2d-workshop/projects/{project_id}/document": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Document */
-        get: operations["get_document_v1_live2d_workshop_projects__project_id__document_get"];
-        /** Save Document */
-        put: operations["save_document_v1_live2d_workshop_projects__project_id__document_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/live2d-workshop/projects/{project_id}/exports": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Exports */
-        get: operations["list_exports_v1_live2d_workshop_projects__project_id__exports_get"];
-        put?: never;
-        /** Create Export */
-        post: operations["create_export_v1_live2d_workshop_projects__project_id__exports_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/live2d-workshop/projects/{project_id}/exports/preflight": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Preflight */
-        post: operations["preflight_v1_live2d_workshop_projects__project_id__exports_preflight_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/live2d-workshop/projects/{project_id}/exports/{task_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Export */
-        get: operations["get_export_v1_live2d_workshop_projects__project_id__exports__task_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/live2d-workshop/projects/{project_id}/exports/{task_id}/cancel": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Cancel Export */
-        post: operations["cancel_export_v1_live2d_workshop_projects__project_id__exports__task_id__cancel_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/live2d-workshop/projects/{project_id}/exports/{task_id}/download": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Download Export */
-        get: operations["download_export_v1_live2d_workshop_projects__project_id__exports__task_id__download_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/live2d-workshop/projects/{project_id}/package": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Export Package */
-        get: operations["export_package_v1_live2d_workshop_projects__project_id__package_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/live2d-workshop/projects/{project_id}/preview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Preview */
-        get: operations["preview_v1_live2d_workshop_projects__project_id__preview_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/live2d-workshop/projects/{project_id}/thumbnail": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Thumbnail */
-        get: operations["thumbnail_v1_live2d_workshop_projects__project_id__thumbnail_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -9117,6 +8713,66 @@ export interface components {
             /** Expected Revision */
             expected_revision: number;
         };
+        /** AccessAction */
+        AccessAction: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "local_start" | "local_stop" | "public_start" | "public_stop" | "check";
+        };
+        /** AccessConfigIn */
+        AccessConfigIn: {
+            /** Expected Revision */
+            expected_revision: string;
+            profile: components["schemas"]["GatewayProfile"];
+        };
+        /** AccessConfigOut */
+        AccessConfigOut: {
+            /**
+             * Identity Fingerprint
+             * @default
+             */
+            identity_fingerprint: string;
+            /**
+             * Known Hosts Fingerprint
+             * @default
+             */
+            known_hosts_fingerprint: string;
+            /**
+             * Legacy Available
+             * @default false
+             */
+            legacy_available: boolean;
+            profile: components["schemas"]["GatewayProfile"];
+            /** Revision */
+            revision: string;
+        };
+        /** AccessStatus */
+        AccessStatus: {
+            /**
+             * Build Id
+             * @default
+             */
+            build_id: string;
+            /**
+             * Bytes Received
+             * @default 0
+             */
+            bytes_received: number;
+            /**
+             * Bytes Sent
+             * @default 0
+             */
+            bytes_sent: number;
+            local: components["schemas"]["EndpointStatus"];
+            public: components["schemas"]["EndpointStatus"];
+            /**
+             * Requests
+             * @default 0
+             */
+            requests: number;
+        };
         /** AccountAvatarDeleteIn */
         AccountAvatarDeleteIn: {
             /** Expected Revision */
@@ -10175,13 +9831,6 @@ export interface components {
             /** File */
             file: string;
         };
-        /** Body_attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put */
-        Body_attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put: {
-            /** Expectedrevision */
-            expectedRevision: number;
-            /** File */
-            file: string;
-        };
         /** Body_attachments_v1_thought_workshop_attachments_post */
         Body_attachments_v1_thought_workshop_attachments_post: {
             /** Upload */
@@ -10196,20 +9845,6 @@ export interface components {
             category: "character" | "scene" | "cg" | "bgm" | "ambient" | "sfx" | "voice" | "video" | "font" | "other";
             /** Uploads */
             uploads: string[];
-        };
-        /** Body_convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post */
-        Body_convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post: {
-            /** Expectedrevision */
-            expectedRevision: number;
-            /** File */
-            file: string;
-            /** Source */
-            source: string;
-            /**
-             * Statebindings
-             * @default {}
-             */
-            stateBindings: string;
         };
         /** Body_create_import_v1_presentation_workshop_imports_post */
         Body_create_import_v1_presentation_workshop_imports_post: {
@@ -10276,18 +9911,8 @@ export interface components {
             /** File */
             file: string;
         };
-        /** Body_import_project_v1_live2d_workshop_projects_import_post */
-        Body_import_project_v1_live2d_workshop_projects_import_post: {
-            /** File */
-            file: string;
-        };
         /** Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post */
         Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post: {
-            /** File */
-            file: string;
-        };
-        /** Body_import_whale_v1_desktop_pet_projects_import_whale_post */
-        Body_import_whale_v1_desktop_pet_projects_import_whale_post: {
             /** File */
             file: string;
         };
@@ -10295,11 +9920,6 @@ export interface components {
         Body_imports_v1_thought_workshop_imports_post: {
             /** Upload */
             upload: string;
-        };
-        /** Body_preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post */
-        Body_preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post: {
-            /** File */
-            file: string;
         };
         /** Body_preview_import_v1_presentation_workshop_imports_preview_post */
         Body_preview_import_v1_presentation_workshop_imports_preview_post: {
@@ -10310,13 +9930,6 @@ export interface components {
         Body_put_avatar_v1_account_profile_avatar_put: {
             /** Expected Revision */
             expected_revision: number;
-            /** File */
-            file: string;
-        };
-        /** Body_replace_package_v1_desktop_pet_projects__project_id__replace_package_post */
-        Body_replace_package_v1_desktop_pet_projects__project_id__replace_package_post: {
-            /** Expectedrevision */
-            expectedRevision: number;
             /** File */
             file: string;
         };
@@ -10336,11 +9949,6 @@ export interface components {
             target_language_tag?: string | null;
             /** Upload */
             upload: string;
-        };
-        /** Body_upload_asset_v1_live2d_workshop_projects__project_id__assets_post */
-        Body_upload_asset_v1_live2d_workshop_projects__project_id__assets_post: {
-            /** File */
-            file: string;
         };
         /** Body_upload_asset_v1_model_inference_assets_post */
         Body_upload_asset_v1_model_inference_assets_post: {
@@ -10447,13 +10055,6 @@ export interface components {
             /** File */
             file: string;
         };
-        /** Body_upload_skin_replacement_v1_desktop_pet_projects__project_id__skins__skin_id__replacements__source_asset_id__put */
-        Body_upload_skin_replacement_v1_desktop_pet_projects__project_id__skins__skin_id__replacements__source_asset_id__put: {
-            /** Expectedrevision */
-            expectedRevision: number;
-            /** File */
-            file: string;
-        };
         /** Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post */
         Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post: {
             /** Abbreviations */
@@ -10483,13 +10084,6 @@ export interface components {
         Body_upload_v1_thought_workshop_community_publications__publication_id__notes__note_id__uploads_post: {
             /** Upload */
             upload: string;
-        };
-        /** BoneWeight */
-        BoneWeight: {
-            /** Boneid */
-            boneId: string;
-            /** Weight */
-            weight: number;
         };
         /** CallLogListItem */
         CallLogListItem: {
@@ -10630,330 +10224,6 @@ export interface components {
             id: string;
             /** Revision */
             revision: number;
-        };
-        /** CharacterBone */
-        CharacterBone: {
-            /**
-             * Damping
-             * @default 0.5
-             */
-            damping: number;
-            /** Id */
-            id: string;
-            /** Name */
-            name: string;
-            /**
-             * Offsetx
-             * @default 0
-             */
-            offsetX: number;
-            /**
-             * Offsety
-             * @default 0
-             */
-            offsetY: number;
-            /** Parentid */
-            parentId?: string | null;
-            /**
-             * Rotation
-             * @default 0
-             */
-            rotation: number;
-            /**
-             * Scale
-             * @default 1
-             */
-            scale: number;
-            /**
-             * Spring
-             * @default 0
-             */
-            spring: number;
-            /**
-             * X
-             * @default 0
-             */
-            x: number;
-            /**
-             * Y
-             * @default 0
-             */
-            y: number;
-        };
-        /** CharacterCamera */
-        CharacterCamera: {
-            /** Height */
-            height: number;
-            /** Width */
-            width: number;
-            /** X */
-            x: number;
-            /** Y */
-            y: number;
-        };
-        /** CharacterDeformer */
-        CharacterDeformer: {
-            /**
-             * Columns
-             * @default 2
-             */
-            columns: number;
-            /**
-             * Height
-             * @default 500
-             */
-            height: number;
-            /** Id */
-            id: string;
-            /**
-             * Kind
-             * @enum {string}
-             */
-            kind: "rotation" | "warp";
-            /** Name */
-            name: string;
-            /** Parentid */
-            parentId?: string | null;
-            /** Points */
-            points?: components["schemas"]["Point"][];
-            /**
-             * Rotation
-             * @default 0
-             */
-            rotation: number;
-            /**
-             * Rows
-             * @default 2
-             */
-            rows: number;
-            /**
-             * Scale
-             * @default 1
-             */
-            scale: number;
-            /**
-             * Width
-             * @default 500
-             */
-            width: number;
-            /**
-             * X
-             * @default 0
-             */
-            x: number;
-            /**
-             * Y
-             * @default 0
-             */
-            y: number;
-        };
-        /** CharacterDocument */
-        CharacterDocument: {
-            /** Bones */
-            bones?: components["schemas"]["CharacterBone"][];
-            /** Cameras */
-            cameras?: {
-                [key: string]: components["schemas"]["CharacterCamera"];
-            };
-            /** Cubismparameterids */
-            cubismParameterIds?: {
-                [key: string]: string;
-            };
-            /** Deformers */
-            deformers?: components["schemas"]["CharacterDeformer"][];
-            /** Expressions */
-            expressions?: components["schemas"]["CharacterExpression"][];
-            /**
-             * Height
-             * @default 1600
-             */
-            height: number;
-            idleBehavior?: components["schemas"]["CharacterIdleBehavior"];
-            /** Motions */
-            motions?: components["schemas"]["CharacterMotion"][];
-            /** Parameters */
-            parameters?: components["schemas"]["CharacterParameter"][];
-            /** Parts */
-            parts?: components["schemas"]["CharacterPart"][];
-            /**
-             * Schemaversion
-             * @default 3
-             * @constant
-             */
-            schemaVersion: 3;
-            /** Statebindings */
-            stateBindings?: {
-                [key: string]: components["schemas"]["CharacterStateBinding"];
-            };
-            /**
-             * Width
-             * @default 1200
-             */
-            width: number;
-        };
-        /** CharacterExpression */
-        CharacterExpression: {
-            /** Id */
-            id: string;
-            /** Name */
-            name: string;
-            /** Values */
-            values?: {
-                [key: string]: number;
-            };
-        };
-        /** CharacterIdleBehavior */
-        CharacterIdleBehavior: {
-            /** Blinkparameter */
-            blinkParameter?: string | null;
-            /** Breathparameter */
-            breathParameter?: string | null;
-            /** Gazexparameter */
-            gazeXParameter?: string | null;
-            /** Gazeyparameter */
-            gazeYParameter?: string | null;
-            /**
-             * Intensity
-             * @default 0.5
-             */
-            intensity: number;
-            /** Springbones */
-            springBones?: string[];
-            /** Swayparameter */
-            swayParameter?: string | null;
-        };
-        /** CharacterMotion */
-        CharacterMotion: {
-            /**
-             * Duration
-             * @default 60
-             */
-            duration: number;
-            /**
-             * Fps
-             * @default 30
-             */
-            fps: number;
-            /** Id */
-            id: string;
-            /**
-             * Loopend
-             * @default 60
-             */
-            loopEnd: number;
-            /**
-             * Loopstart
-             * @default 0
-             */
-            loopStart: number;
-            /** Name */
-            name: string;
-            /** Tracks */
-            tracks?: components["schemas"]["CharacterTrack"][];
-        };
-        /** CharacterParameter */
-        CharacterParameter: {
-            /** Bindings */
-            bindings?: components["schemas"]["ParameterBinding"][];
-            /**
-             * Default
-             * @default 0
-             */
-            default: number;
-            /** Id */
-            id: string;
-            /**
-             * Maximum
-             * @default 30
-             */
-            maximum: number;
-            /**
-             * Minimum
-             * @default -30
-             */
-            minimum: number;
-            /** Name */
-            name: string;
-        };
-        /** CharacterPart */
-        CharacterPart: {
-            /** Assetid */
-            assetId: string;
-            /**
-             * Group
-             * @default
-             */
-            group: string;
-            /** Height */
-            height: number;
-            /** Id */
-            id: string;
-            /**
-             * Locked
-             * @default false
-             */
-            locked: boolean;
-            /** Maskid */
-            maskId?: string | null;
-            /** Name */
-            name: string;
-            /**
-             * Opacity
-             * @default 1
-             */
-            opacity: number;
-            /**
-             * Order
-             * @default 0
-             */
-            order: number;
-            /** Parentid */
-            parentId?: string | null;
-            /** Skinweights */
-            skinWeights?: components["schemas"]["BoneWeight"][][] | null;
-            /** Triangles */
-            triangles: number[];
-            /** Uvs */
-            uvs: components["schemas"]["Point"][];
-            /** Vertices */
-            vertices: components["schemas"]["Point"][];
-            /**
-             * Visible
-             * @default true
-             */
-            visible: boolean;
-            /** Width */
-            width: number;
-            /**
-             * X
-             * @default 0
-             */
-            x: number;
-            /**
-             * Y
-             * @default 0
-             */
-            y: number;
-        };
-        /** CharacterStateBinding */
-        CharacterStateBinding: {
-            /** Expressionid */
-            expressionId?: string | null;
-            /** Motionid */
-            motionId?: string | null;
-            /**
-             * Playback
-             * @default loop
-             * @enum {string}
-             */
-            playback: "loop" | "onceHold";
-        };
-        /** CharacterTrack */
-        CharacterTrack: {
-            /** Keys */
-            keys?: components["schemas"]["TimeKeyframe"][];
-            /** Parameterid */
-            parameterId: string;
         };
         /** CheckpointIn */
         CheckpointIn: {
@@ -11218,6 +10488,16 @@ export interface components {
             /** Documents */
             documents: components["schemas"]["ThoughtNoteOut"][];
             knowledge_base: components["schemas"]["PublicationOut"];
+        };
+        /** ConfigPrepared */
+        ConfigPrepared: {
+            /** Apply Receipt */
+            apply_receipt: string;
+            /**
+             * Restart Required
+             * @default true
+             */
+            restart_required: boolean;
         };
         /** ConversationDetailOut */
         ConversationDetailOut: {
@@ -11583,6 +10863,33 @@ export interface components {
             };
             /** Release Id */
             release_id: string;
+        };
+        /** CredentialImportIn */
+        CredentialImportIn: {
+            /** Path */
+            path: string;
+            /** Ticket */
+            ticket: string;
+        };
+        /** CredentialOut */
+        CredentialOut: {
+            /** Fingerprint */
+            fingerprint: string;
+            /** Id */
+            id: string;
+        };
+        /** CredentialTicketIn */
+        CredentialTicketIn: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "identity" | "known_hosts";
+        };
+        /** CredentialTicketOut */
+        CredentialTicketOut: {
+            /** Ticket */
+            ticket: string;
         };
         /** CsvIn */
         CsvIn: {
@@ -12047,6 +11354,30 @@ export interface components {
             revisions: {
                 [key: string]: number;
             };
+        };
+        /** EndpointStatus */
+        EndpointStatus: {
+            /**
+             * Error
+             * @default
+             */
+            error: string;
+            /**
+             * Last Checked At
+             * @default
+             */
+            last_checked_at: string;
+            /**
+             * Phase
+             * @default off
+             * @enum {string}
+             */
+            phase: "off" | "starting" | "ready" | "connecting" | "reconnecting" | "failed";
+            /**
+             * Url
+             * @default
+             */
+            url: string;
         };
         /** Experience */
         Experience: {
@@ -15664,6 +14995,49 @@ export interface components {
             /** Title */
             title?: string | null;
         };
+        /** GatewayProfile */
+        GatewayProfile: {
+            /**
+             * Host
+             * @default
+             */
+            host: string;
+            /**
+             * Identity Id
+             * @default
+             */
+            identity_id: string;
+            /**
+             * Known Hosts Id
+             * @default
+             */
+            known_hosts_id: string;
+            /**
+             * Local Port
+             * @default 28081
+             */
+            local_port: number;
+            /**
+             * Origin
+             * @default
+             */
+            origin: string;
+            /**
+             * Remote Port
+             * @default 28080
+             */
+            remote_port: number;
+            /**
+             * Ssh Port
+             * @default 22
+             */
+            ssh_port: number;
+            /**
+             * User
+             * @default
+             */
+            user: string;
+        };
         /** GenerationBatchListOut */
         GenerationBatchListOut: {
             /** Items */
@@ -16640,189 +16014,6 @@ export interface components {
              * @enum {string}
              */
             type: "linkClips";
-        };
-        /** Live2DAssetOut */
-        Live2DAssetOut: {
-            /** Height */
-            height: number;
-            /** Id */
-            id: string;
-            /** Name */
-            name: string;
-            /** Url */
-            url: string;
-            /** Width */
-            width: number;
-        };
-        /** Live2DAssets */
-        Live2DAssets: {
-            /** Items */
-            items: components["schemas"]["Live2DAssetOut"][];
-        };
-        /** Live2DCombination */
-        Live2DCombination: {
-            /** Expressionid */
-            expressionId?: string | null;
-            /** Motionid */
-            motionId?: string | null;
-        };
-        /** Live2DCreate */
-        Live2DCreate: {
-            /**
-             * Height
-             * @default 1600
-             */
-            height: number;
-            /**
-             * Title
-             * @default 未命名角色
-             */
-            title: string;
-            /**
-             * Width
-             * @default 1200
-             */
-            width: number;
-        };
-        /** Live2DCrop */
-        Live2DCrop: {
-            /** Height */
-            height: number;
-            /** Width */
-            width: number;
-            /** X */
-            x: number;
-            /** Y */
-            y: number;
-        };
-        /** Live2DCubismBindings */
-        Live2DCubismBindings: {
-            /** Expectedrevision */
-            expectedRevision: number;
-            /** Statebindings */
-            stateBindings: {
-                [key: string]: unknown;
-            };
-        };
-        /** Live2DCubismOut */
-        Live2DCubismOut: {
-            /** Metadata */
-            metadata: {
-                [key: string]: unknown;
-            };
-            /** Revision */
-            revision: number;
-            /** Sha256 */
-            sha256: string;
-            /** Statebindings */
-            stateBindings: {
-                [key: string]: unknown;
-            };
-        };
-        /** Live2DDocumentOut */
-        Live2DDocumentOut: {
-            document: components["schemas"]["CharacterDocument"];
-            /** Revision */
-            revision: number;
-        };
-        /** Live2DExportIn */
-        Live2DExportIn: {
-            /** Combinations */
-            combinations: components["schemas"]["Live2DCombination"][];
-            crop?: components["schemas"]["Live2DCrop"] | null;
-            /**
-             * Endframe
-             * @default 60
-             */
-            endFrame: number;
-            /** Expectedrevision */
-            expectedRevision: number;
-            /**
-             * Fps
-             * @default 30
-             */
-            fps: number;
-            /**
-             * Height
-             * @default 512
-             */
-            height: number;
-            /** Requestid */
-            requestId: string;
-            /**
-             * Startframe
-             * @default 0
-             */
-            startFrame: number;
-            /**
-             * Width
-             * @default 512
-             */
-            width: number;
-        };
-        /** Live2DExportOut */
-        Live2DExportOut: {
-            /** Download */
-            download?: string | null;
-            /** Error */
-            error?: string | null;
-            /** Id */
-            id: string;
-            /** Progress */
-            progress: number;
-            settings: components["schemas"]["Live2DExportIn"];
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "queued" | "running" | "completed" | "failed" | "cancelled";
-        };
-        /** Live2DExports */
-        Live2DExports: {
-            /** Items */
-            items: components["schemas"]["Live2DExportOut"][];
-        };
-        /** Live2DPatch */
-        Live2DPatch: {
-            /** Expectedrevision */
-            expectedRevision: number;
-            /** Title */
-            title: string;
-        };
-        /** Live2DPreflight */
-        Live2DPreflight: {
-            /** Framecount */
-            frameCount: number;
-            /** Messages */
-            messages: string[];
-            /** Ready */
-            ready: boolean;
-        };
-        /** Live2DProjectOut */
-        Live2DProjectOut: {
-            /** Createdat */
-            createdAt: string;
-            /** Id */
-            id: string;
-            /** Revision */
-            revision: number;
-            /** Thumbnail */
-            thumbnail?: string | null;
-            /** Title */
-            title: string;
-            /** Updatedat */
-            updatedAt: string;
-        };
-        /** Live2DProjects */
-        Live2DProjects: {
-            /** Items */
-            items: components["schemas"]["Live2DProjectOut"][];
-        };
-        /** Live2DSave */
-        Live2DSave: {
-            document: components["schemas"]["CharacterDocument"];
-            /** Expectedrevision */
-            expectedRevision: number;
         };
         /** LocalModelActionIn */
         LocalModelActionIn: {
@@ -18629,314 +17820,10 @@ export interface components {
             /** Requestid */
             requestId: string;
         };
-        /** ParameterBinding */
-        ParameterBinding: {
-            /** Keys */
-            keys: components["schemas"]["ParameterKeyform"][];
-            /** Targetid */
-            targetId: string;
-        };
-        /** ParameterKeyform */
-        ParameterKeyform: {
-            /** Offsetx */
-            offsetX?: number | null;
-            /** Offsety */
-            offsetY?: number | null;
-            /** Opacity */
-            opacity?: number | null;
-            /** Points */
-            points?: components["schemas"]["Point"][] | null;
-            /** Rotation */
-            rotation?: number | null;
-            /** Scale */
-            scale?: number | null;
-            /** Value */
-            value: number;
-        };
         /** PermissionInput */
         PermissionInput: {
             /** Articles */
             articles: components["schemas"]["ArticleSetting"][];
-        };
-        /** PetChatClearIn */
-        PetChatClearIn: {
-            /** Expectedrevision */
-            expectedRevision: number;
-        };
-        /** PetChatMessageOut */
-        PetChatMessageOut: {
-            /** Content */
-            content: string;
-            /** Createdat */
-            createdAt: string;
-            /** Id */
-            id: string;
-            /** Position */
-            position: number;
-            /**
-             * Role
-             * @enum {string}
-             */
-            role: "user" | "assistant";
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "completed" | "pending" | "interrupted";
-        };
-        /** PetChatMessagesOut */
-        PetChatMessagesOut: {
-            /** Items */
-            items: components["schemas"]["PetChatMessageOut"][];
-            /** Nextbefore */
-            nextBefore: number | null;
-        };
-        /** PetChatOut */
-        PetChatOut: {
-            /** Active */
-            active: boolean;
-            /** Messages */
-            messages: components["schemas"]["PetChatMessageOut"][];
-            /** Modelid */
-            modelId: string | null;
-            /** Nextbefore */
-            nextBefore: number | null;
-            /**
-             * Presentationmode
-             * @enum {string}
-             */
-            presentationMode: "bubble" | "dialogue";
-            /** Proactivelinesenabled */
-            proactiveLinesEnabled: boolean;
-            /** Revision */
-            revision: number;
-        };
-        /** PetChatSendIn */
-        PetChatSendIn: {
-            /** Content */
-            content: string;
-            /** Expectedrevision */
-            expectedRevision: number;
-            /** Requestid */
-            requestId: string;
-        };
-        /** PetChatSettingsIn */
-        PetChatSettingsIn: {
-            /** Expectedrevision */
-            expectedRevision: number;
-            /** Modelid */
-            modelId: string | null;
-            /** Presentationmode */
-            presentationMode?: ("bubble" | "dialogue") | null;
-            /** Proactivelinesenabled */
-            proactiveLinesEnabled: boolean;
-        };
-        /** PetConfig */
-        PetConfig: {
-            /** Activeskinid */
-            activeSkinId?: string | null;
-            /** Events */
-            events?: {
-                [key: string]: components["schemas"]["PetReaction"];
-            };
-            habits?: components["schemas"]["PetHabits"];
-            persona?: components["schemas"]["PetPersona"];
-            /**
-             * Schemaversion
-             * @default 2
-             * @constant
-             */
-            schemaVersion: 2;
-            /** Schemeid */
-            schemeId?: string | null;
-            /** Skins */
-            skins?: components["schemas"]["PetSkin"][];
-        };
-        /** PetCreate */
-        PetCreate: {
-            /** Sourceprojectid */
-            sourceProjectId: string;
-            /** Sourcerevision */
-            sourceRevision: number;
-            /**
-             * Title
-             * @default
-             */
-            title: string;
-        };
-        /** PetDocumentOut */
-        PetDocumentOut: {
-            /** Asseturls */
-            assetUrls: {
-                [key: string]: string;
-            };
-            character: components["schemas"]["CharacterDocument"] | null;
-            config: components["schemas"]["PetConfig"];
-            /** Revision */
-            revision: number;
-            /** Sourcerevision */
-            sourceRevision: number | null;
-            /**
-             * Sourcetype
-             * @enum {string}
-             */
-            sourceType: "live2d" | "coopanion-whale";
-            /** Whaleassets */
-            whaleAssets: {
-                [key: string]: string;
-            } | null;
-            /** Whalemodel */
-            whaleModel: {
-                [key: string]: unknown;
-            } | null;
-        };
-        /** PetHabits */
-        PetHabits: {
-            /**
-             * Bubbles
-             * @default true
-             */
-            bubbles: boolean;
-            /**
-             * Draggable
-             * @default true
-             */
-            draggable: boolean;
-            /**
-             * Edgeclimbing
-             * @default true
-             */
-            edgeClimbing: boolean;
-            /**
-             * Highgliding
-             * @default true
-             */
-            highGliding: boolean;
-            /** Hoveractions */
-            hoverActions?: ("dress" | "roam" | "hide" | "settings" | "chat")[];
-            /**
-             * Roam
-             * @default calm
-             * @enum {string}
-             */
-            roam: "free" | "calm" | "off";
-            /**
-             * Size
-             * @default 220
-             */
-            size: number;
-            /**
-             * Sound
-             * @default true
-             */
-            sound: boolean;
-        };
-        /** PetPatch */
-        PetPatch: {
-            /** Expectedrevision */
-            expectedRevision: number;
-            /** Title */
-            title: string;
-        };
-        /** PetPersona */
-        PetPersona: {
-            /**
-             * Description
-             * @default
-             */
-            description: string;
-            /**
-             * Greeting
-             * @default
-             */
-            greeting: string;
-            /**
-             * Personality
-             * @default
-             */
-            personality: string;
-            /**
-             * Speakingstyle
-             * @default
-             */
-            speakingStyle: string;
-        };
-        /** PetProjectOut */
-        PetProjectOut: {
-            /** Createdat */
-            createdAt: string;
-            /** Id */
-            id: string;
-            /** Revision */
-            revision: number;
-            /** Sourceprojectid */
-            sourceProjectId: string | null;
-            /** Sourcerevision */
-            sourceRevision: number | null;
-            /** Sourcetitle */
-            sourceTitle: string;
-            /**
-             * Sourcetype
-             * @enum {string}
-             */
-            sourceType: "live2d" | "coopanion-whale";
-            /** Thumbnailurl */
-            thumbnailUrl?: string | null;
-            /** Title */
-            title: string;
-            /** Updatedat */
-            updatedAt: string;
-        };
-        /** PetProjectsOut */
-        PetProjectsOut: {
-            /** Items */
-            items: components["schemas"]["PetProjectOut"][];
-        };
-        /** PetReaction */
-        PetReaction: {
-            /** Expressionid */
-            expressionId?: string | null;
-            /** Lines */
-            lines?: string[];
-            /** Motionid */
-            motionId?: string | null;
-            /**
-             * Sound
-             * @default none
-             * @enum {string}
-             */
-            sound: "none" | "tap" | "chime";
-        };
-        /** PetSave */
-        PetSave: {
-            config: components["schemas"]["PetConfig"];
-            /** Expectedrevision */
-            expectedRevision: number;
-        };
-        /** PetSkin */
-        PetSkin: {
-            /** Id */
-            id: string;
-            /** Name */
-            name: string;
-            /** Replacements */
-            replacements?: {
-                [key: string]: string;
-            };
-        };
-        /** PetSync */
-        PetSync: {
-            /** Expectedrevision */
-            expectedRevision: number;
-            /** Sourcerevision */
-            sourceRevision: number;
-        };
-        /** Point */
-        Point: {
-            /** X */
-            x: number;
-            /** Y */
-            y: number;
         };
         /** PreparationBundle */
         PreparationBundle: {
@@ -20509,6 +19396,11 @@ export interface components {
         ReauthIn: {
             /** Password */
             password: string;
+        };
+        /** ReceiptIn */
+        ReceiptIn: {
+            /** Receipt */
+            receipt: string;
         };
         /** RecordPage */
         RecordPage: {
@@ -22858,19 +21750,6 @@ export interface components {
         ThoughtRevisionIn: {
             /** Expected Revision */
             expected_revision: number;
-        };
-        /** TimeKeyframe */
-        TimeKeyframe: {
-            /** Frame */
-            frame: number;
-            /**
-             * Interpolation
-             * @default linear
-             * @enum {string}
-             */
-            interpolation: "hold" | "linear" | "smooth";
-            /** Value */
-            value: number;
         };
         /** ToolApiCatalogOut */
         ToolApiCatalogOut: {
@@ -25250,6 +24129,8 @@ export interface components {
             parent_native_id: string | null;
             /** Revision */
             revision: number;
+            /** Source Errors */
+            source_errors?: string[];
             /** Source Ids */
             source_ids?: string[];
             /** Title */
@@ -28921,608 +27802,6 @@ export interface operations {
             };
         };
     };
-    list_projects_v1_desktop_pet_projects_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PetProjectsOut"];
-                };
-            };
-        };
-    };
-    create_project_v1_desktop_pet_projects_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PetCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PetProjectOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    import_whale_v1_desktop_pet_projects_import_whale_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_import_whale_v1_desktop_pet_projects_import_whale_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PetProjectOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_project_v1_desktop_pet_projects__project_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PetProjectOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_project_v1_desktop_pet_projects__project_id__delete: {
-        parameters: {
-            query: {
-                expectedRevision: number;
-            };
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: boolean;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    patch_project_v1_desktop_pet_projects__project_id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PetPatch"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PetProjectOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    asset_file_v1_desktop_pet_projects__project_id__assets__asset_id__file_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-                asset_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_chat_v1_desktop_pet_projects__project_id__chat_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PetChatOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_chat_v1_desktop_pet_projects__project_id__chat_patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PetChatSettingsIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PetChatOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    chat_messages_v1_desktop_pet_projects__project_id__chat_messages_get: {
-        parameters: {
-            query?: {
-                before?: number | null;
-                limit?: number;
-            };
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PetChatMessagesOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    clear_chat_v1_desktop_pet_projects__project_id__chat_messages_delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PetChatClearIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PetChatOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    send_chat_message_v1_desktop_pet_projects__project_id__chat_messages_stream_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PetChatSendIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                    "text/event-stream": {
-                        /** Detail */
-                        detail?: string | null;
-                        message?: components["schemas"]["PetChatMessageOut"] | null;
-                        /** Revision */
-                        revision?: number | null;
-                        /**
-                         * Text
-                         * @default
-                         */
-                        text: string;
-                        /**
-                         * Type
-                         * @enum {string}
-                         */
-                        type: "start" | "delta" | "done" | "error";
-                        $defs: {
-                            /** PetChatMessageOut */
-                            PetChatMessageOut: {
-                                /** Content */
-                                content: string;
-                                /** Createdat */
-                                createdAt: string;
-                                /** Id */
-                                id: string;
-                                /** Position */
-                                position: number;
-                                /**
-                                 * Role
-                                 * @enum {string}
-                                 */
-                                role: "user" | "assistant";
-                                /**
-                                 * Status
-                                 * @enum {string}
-                                 */
-                                status: "completed" | "pending" | "interrupted";
-                            };
-                        };
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_document_v1_desktop_pet_projects__project_id__document_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PetDocumentOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    save_document_v1_desktop_pet_projects__project_id__document_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PetSave"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PetDocumentOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    replace_package_v1_desktop_pet_projects__project_id__replace_package_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_replace_package_v1_desktop_pet_projects__project_id__replace_package_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PetDocumentOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    upload_skin_replacement_v1_desktop_pet_projects__project_id__skins__skin_id__replacements__source_asset_id__put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-                skin_id: string;
-                source_asset_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_upload_skin_replacement_v1_desktop_pet_projects__project_id__skins__skin_id__replacements__source_asset_id__put"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PetDocumentOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    sync_source_v1_desktop_pet_projects__project_id__sync_source_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PetSync"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PetDocumentOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     capabilities_v1_desktop_agent_capabilities_get: {
         parameters: {
             query?: never;
@@ -29825,6 +28104,231 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DesktopOpenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    status_v1_desktop_web_access_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessStatus"];
+                };
+            };
+        };
+    };
+    action_v1_desktop_web_access_actions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessAction"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    config_v1_desktop_web_access_config_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessConfigOut"];
+                };
+            };
+        };
+    };
+    prepare_config_v1_desktop_web_access_config_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessConfigIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfigPrepared"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    adopt_v1_desktop_web_access_config_adopt_legacy_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfigPrepared"];
+                };
+            };
+        };
+    };
+    claim_config_v1_desktop_web_access_config_claim_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReceiptIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_credential_v1_desktop_web_access_credentials_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CredentialImportIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CredentialOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    credential_ticket_v1_desktop_web_access_credentials_tickets_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CredentialTicketIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CredentialTicketOut"];
                 };
             };
             /** @description Validation Error */
@@ -31097,6 +29601,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VideoMediaInfoOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_thumbnail_v1_files__asset_id__thumbnail_get: {
+        parameters: {
+            query?: {
+                size?: 320 | 640;
+            };
+            header?: never;
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/webp": string;
                 };
             };
             /** @description Validation Error */
@@ -34123,931 +32660,6 @@ export interface operations {
                 };
                 content: {
                     "application/octet-stream": string;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_projects_v1_live2d_workshop_projects_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Live2DProjects"];
-                };
-            };
-        };
-    };
-    create_project_v1_live2d_workshop_projects_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Live2DCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Live2DProjectOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    import_project_v1_live2d_workshop_projects_import_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_import_project_v1_live2d_workshop_projects_import_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Live2DProjectOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_project_v1_live2d_workshop_projects__project_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Live2DProjectOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_project_v1_live2d_workshop_projects__project_id__delete: {
-        parameters: {
-            query: {
-                expectedRevision: number;
-            };
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: boolean;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    patch_project_v1_live2d_workshop_projects__project_id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Live2DPatch"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Live2DProjectOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_assets_v1_live2d_workshop_projects__project_id__assets_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Live2DAssets"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    upload_asset_v1_live2d_workshop_projects__project_id__assets_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_upload_asset_v1_live2d_workshop_projects__project_id__assets_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Live2DAssetOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    retire_asset_v1_live2d_workshop_projects__project_id__assets__asset_id__delete: {
-        parameters: {
-            query: {
-                expectedRevision: number;
-            };
-            header?: never;
-            path: {
-                project_id: string;
-                asset_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Live2DProjectOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    asset_file_v1_live2d_workshop_projects__project_id__assets__asset_id__file_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-                asset_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "image/png": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_cubism_v1_live2d_workshop_projects__project_id__cubism_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Live2DCubismOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Live2DCubismOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    remove_cubism_v1_live2d_workshop_projects__project_id__cubism_delete: {
-        parameters: {
-            query: {
-                expectedRevision: number;
-            };
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: boolean;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    save_cubism_bindings_v1_live2d_workshop_projects__project_id__cubism_bindings_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Live2DCubismBindings"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Live2DCubismOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Live2DProjectOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    download_cubism_v1_live2d_workshop_projects__project_id__cubism_package_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/zip": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_document_v1_live2d_workshop_projects__project_id__document_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Live2DDocumentOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    save_document_v1_live2d_workshop_projects__project_id__document_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Live2DSave"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Live2DDocumentOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_exports_v1_live2d_workshop_projects__project_id__exports_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Live2DExports"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_export_v1_live2d_workshop_projects__project_id__exports_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Live2DExportIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Live2DExportOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    preflight_v1_live2d_workshop_projects__project_id__exports_preflight_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Live2DExportIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Live2DPreflight"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_export_v1_live2d_workshop_projects__project_id__exports__task_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-                task_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Live2DExportOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    cancel_export_v1_live2d_workshop_projects__project_id__exports__task_id__cancel_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-                task_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Live2DExportOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    download_export_v1_live2d_workshop_projects__project_id__exports__task_id__download_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-                task_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/zip": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    export_package_v1_live2d_workshop_projects__project_id__package_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/zip": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    preview_v1_live2d_workshop_projects__project_id__preview_get: {
-        parameters: {
-            query?: {
-                frame?: number;
-                motionId?: string | null;
-                expressionId?: string | null;
-                expectedRevision?: number | null;
-                width?: number;
-                height?: number | null;
-                cropX?: number | null;
-                cropY?: number | null;
-                cropWidth?: number | null;
-                cropHeight?: number | null;
-            };
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "image/png": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    thumbnail_v1_live2d_workshop_projects__project_id__thumbnail_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "image/png": unknown;
                 };
             };
             /** @description Validation Error */

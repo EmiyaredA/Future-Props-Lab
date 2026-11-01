@@ -19,7 +19,7 @@ export class Backend {
     private developmentLease?: number,
   ) {}
 
-  async start(): Promise<void> {
+  async start(webConfig?: unknown): Promise<void> {
     const root = path.resolve(__dirname, "../..");
     const logs = path.join(this.dataDir, "logs");
     mkdirSync(logs, { recursive: true, mode: 0o700 });
@@ -39,6 +39,7 @@ export class Backend {
     );
     if (!this.packaged && this.developmentLease !== undefined)
       args.push("--development-lock-fd", "3");
+    if (webConfig) args.push("--apply-web-config");
     const env = { ...process.env };
     for (const key of Object.keys(env)) {
       if (
@@ -67,7 +68,7 @@ export class Backend {
       let received = "";
       const timeout = setTimeout(
         () => reject(new Error("本地服务启动超时，请查看日志后重试")),
-        90_000,
+        webConfig ? 900_000 : 90_000,
       );
       const finish = () => clearTimeout(timeout);
       child.once("error", () => {
@@ -112,10 +113,18 @@ export class Backend {
         }
       });
       child.stdin.write(`${this.token}\n`);
+      if (webConfig) child.stdin.write(`${JSON.stringify(webConfig)}\n`);
     });
     this.origin = `http://127.0.0.1:${port}`;
     child.once("exit", () => {
-      if (!this.stopping) this.onCrash();
+      if (!this.stopping) {
+        try {
+          process.kill(-child.pid!, "SIGTERM");
+        } catch {
+          /* Group already exited. */
+        }
+        this.onCrash();
+      }
     });
     const deadline = Date.now() + 90_000;
     while (Date.now() < deadline) {

@@ -43,7 +43,9 @@ def test_legacy_configuration_upgrades_in_backend_process(tmp_path):
 
 
 class DesktopServer:
-    def __init__(self, directory: Path):
+    def __init__(
+        self, directory: Path, *, launcher: Path | None = None, web_config: dict | None = None
+    ):
         self.directory = directory
         web = directory / "web"
         web.mkdir(exist_ok=True)
@@ -51,7 +53,13 @@ class DesktopServer:
         (web / "docs.html").write_text("<html>docs test</html>")
         self.log = (directory / "test-backend.log").open("ab")
         binary = os.environ.get("FPL_TEST_DESKTOP_BINARY")
-        command = [binary] if binary else [sys.executable, str(ROOT / "desktop/backend/entry.py")]
+        command = (
+            [binary]
+            if binary
+            else [sys.executable, str(launcher or ROOT / "desktop/backend/entry.py")]
+        )
+        if web_config is not None:
+            command.append("--apply-web-config")
         self.process = subprocess.Popen(
             [*command, "--data-dir", str(directory / "data"), "--web-dir", str(web)],
             stdin=subprocess.PIPE,
@@ -61,6 +69,8 @@ class DesktopServer:
             env={**os.environ, "PATH": "/usr/bin:/bin"},
         )
         self.process.stdin.write((TOKEN + "\n").encode())
+        if web_config is not None:
+            self.process.stdin.write((json.dumps(web_config) + "\n").encode())
         self.process.stdin.flush()
         with selectors.DefaultSelector() as selector:
             selector.register(self.process.stdout, selectors.EVENT_READ)
@@ -77,6 +87,7 @@ class DesktopServer:
             base_url=self.origin,
             headers={DESKTOP_HEADER: TOKEN, "Origin": self.origin},
             timeout=20,
+            trust_env=False,
         )
         for _ in range(300):
             try:

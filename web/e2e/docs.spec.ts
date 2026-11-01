@@ -125,8 +125,6 @@ test("uses a documentation navigation drawer on mobile", async ({ page }) => {
 });
 
 for (const [id, title] of [
-  ["live2d-quickstart", "Live2D 工坊快速开始"],
-  ["pet-quickstart", "从角色快照创建桌宠"],
   ["director-quickstart", "导演台快速开始"],
   ["motion-quickstart", "特效制作工坊快速开始"],
 ]) {

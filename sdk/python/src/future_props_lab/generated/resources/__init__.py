@@ -2,7 +2,6 @@
 
 from .accounts import Accounts, AsyncAccounts
 from .admin import Admin, AsyncAdmin
-from .agent_workbench import AgentWorkbench, AsyncAgentWorkbench
 from .amadeus import Amadeus, AsyncAmadeus
 from .annotation import Annotation, AsyncAnnotation
 from .code_agents import CodeAgents, AsyncCodeAgents
@@ -10,7 +9,6 @@ from .creative_workshop import CreativeWorkshop, AsyncCreativeWorkshop
 from .demo import Demo, AsyncDemo
 from .demo_calls import DemoCalls, AsyncDemoCalls
 from .desktop import Desktop, AsyncDesktop
-from .desktop_pet import DesktopPet, AsyncDesktopPet
 from .director import Director, AsyncDirector
 from .files import Files, AsyncFiles
 from .galgame import Galgame, AsyncGalgame
@@ -19,7 +17,6 @@ from .governance import Governance, AsyncGovernance
 from .inference import Inference, AsyncInference
 from .integrations import Integrations, AsyncIntegrations
 from .interview import Interview, AsyncInterview
-from .live2d_workshop import Live2DWorkshop, AsyncLive2DWorkshop
 from .logs import Logs, AsyncLogs
 from .models import Models, AsyncModels
 from .motion_compositor import MotionCompositor, AsyncMotionCompositor
@@ -34,13 +31,12 @@ from .video import Video, AsyncVideo
 from .visual import Visual, AsyncVisual
 from .visual_assistant import VisualAssistant, AsyncVisualAssistant
 
-RESOURCES = {'accounts': Accounts, 'admin': Admin, 'agent_workbench': AgentWorkbench, 'amadeus': Amadeus, 'annotation': Annotation, 'code_agents': CodeAgents, 'creative_workshop': CreativeWorkshop, 'demo': Demo, 'demo_calls': DemoCalls, 'desktop': Desktop, 'desktop_pet': DesktopPet, 'director': Director, 'files': Files, 'galgame': Galgame, 'generation': Generation, 'governance': Governance, 'inference': Inference, 'integrations': Integrations, 'interview': Interview, 'live2d_workshop': Live2DWorkshop, 'logs': Logs, 'models': Models, 'motion_compositor': MotionCompositor, 'presentation': Presentation, 'system': System, 'templates': Templates, 'test_tools': TestTools, 'testing': Testing, 'thought': Thought, 'tools': Tools, 'video': Video, 'visual': Visual, 'visual_assistant': VisualAssistant}
-ASYNC_RESOURCES = {'accounts': AsyncAccounts, 'admin': AsyncAdmin, 'agent_workbench': AsyncAgentWorkbench, 'amadeus': AsyncAmadeus, 'annotation': AsyncAnnotation, 'code_agents': AsyncCodeAgents, 'creative_workshop': AsyncCreativeWorkshop, 'demo': AsyncDemo, 'demo_calls': AsyncDemoCalls, 'desktop': AsyncDesktop, 'desktop_pet': AsyncDesktopPet, 'director': AsyncDirector, 'files': AsyncFiles, 'galgame': AsyncGalgame, 'generation': AsyncGeneration, 'governance': AsyncGovernance, 'inference': AsyncInference, 'integrations': AsyncIntegrations, 'interview': AsyncInterview, 'live2d_workshop': AsyncLive2DWorkshop, 'logs': AsyncLogs, 'models': AsyncModels, 'motion_compositor': AsyncMotionCompositor, 'presentation': AsyncPresentation, 'system': AsyncSystem, 'templates': AsyncTemplates, 'test_tools': AsyncTestTools, 'testing': AsyncTesting, 'thought': AsyncThought, 'tools': AsyncTools, 'video': AsyncVideo, 'visual': AsyncVisual, 'visual_assistant': AsyncVisualAssistant}
+RESOURCES = {'accounts': Accounts, 'admin': Admin, 'amadeus': Amadeus, 'annotation': Annotation, 'code_agents': CodeAgents, 'creative_workshop': CreativeWorkshop, 'demo': Demo, 'demo_calls': DemoCalls, 'desktop': Desktop, 'director': Director, 'files': Files, 'galgame': Galgame, 'generation': Generation, 'governance': Governance, 'inference': Inference, 'integrations': Integrations, 'interview': Interview, 'logs': Logs, 'models': Models, 'motion_compositor': MotionCompositor, 'presentation': Presentation, 'system': System, 'templates': Templates, 'test_tools': TestTools, 'testing': Testing, 'thought': Thought, 'tools': Tools, 'video': Video, 'visual': Visual, 'visual_assistant': VisualAssistant}
+ASYNC_RESOURCES = {'accounts': AsyncAccounts, 'admin': AsyncAdmin, 'amadeus': AsyncAmadeus, 'annotation': AsyncAnnotation, 'code_agents': AsyncCodeAgents, 'creative_workshop': AsyncCreativeWorkshop, 'demo': AsyncDemo, 'demo_calls': AsyncDemoCalls, 'desktop': AsyncDesktop, 'director': AsyncDirector, 'files': AsyncFiles, 'galgame': AsyncGalgame, 'generation': AsyncGeneration, 'governance': AsyncGovernance, 'inference': AsyncInference, 'integrations': AsyncIntegrations, 'interview': AsyncInterview, 'logs': AsyncLogs, 'models': AsyncModels, 'motion_compositor': AsyncMotionCompositor, 'presentation': AsyncPresentation, 'system': AsyncSystem, 'templates': AsyncTemplates, 'test_tools': AsyncTestTools, 'testing': AsyncTesting, 'thought': AsyncThought, 'tools': AsyncTools, 'video': AsyncVideo, 'visual': AsyncVisual, 'visual_assistant': AsyncVisualAssistant}
 
 class SyncResources:
     accounts: Accounts
     admin: Admin
-    agent_workbench: AgentWorkbench
     amadeus: Amadeus
     annotation: Annotation
     code_agents: CodeAgents
@@ -48,7 +44,6 @@ class SyncResources:
     demo: Demo
     demo_calls: DemoCalls
     desktop: Desktop
-    desktop_pet: DesktopPet
     director: Director
     files: Files
     galgame: Galgame
@@ -57,7 +52,6 @@ class SyncResources:
     inference: Inference
     integrations: Integrations
     interview: Interview
-    live2d_workshop: Live2DWorkshop
     logs: Logs
     models: Models
     motion_compositor: MotionCompositor
@@ -75,7 +69,6 @@ class SyncResources:
 class AsyncResources:
     accounts: AsyncAccounts
     admin: AsyncAdmin
-    agent_workbench: AsyncAgentWorkbench
     amadeus: AsyncAmadeus
     annotation: AsyncAnnotation
     code_agents: AsyncCodeAgents
@@ -83,7 +76,6 @@ class AsyncResources:
     demo: AsyncDemo
     demo_calls: AsyncDemoCalls
     desktop: AsyncDesktop
-    desktop_pet: AsyncDesktopPet
     director: AsyncDirector
     files: AsyncFiles
     galgame: AsyncGalgame
@@ -92,7 +84,6 @@ class AsyncResources:
     inference: AsyncInference
     integrations: AsyncIntegrations
     interview: AsyncInterview
-    live2d_workshop: AsyncLive2DWorkshop
     logs: AsyncLogs
     models: AsyncModels
     motion_compositor: AsyncMotionCompositor

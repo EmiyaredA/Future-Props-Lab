@@ -65,7 +65,7 @@
 .home-header-copy {
   position: relative;
   z-index: 1;
-  max-width: 650px;
+  max-width: calc(100% - 260px);
 }
 
 .home-kicker-row {
@@ -107,118 +107,32 @@
   line-height: 1.7;
 }
 
-.home-orbit,
 .home-hero-pet {
   position: absolute;
   top: 50%;
-  right: 11%;
+  right: 42px;
   z-index: 1;
   width: 228px;
   height: 228px;
   transform: translateY(-50%);
 }
 
-.home-orbit {
-  filter: drop-shadow(
-    0 22px 34px color-mix(in srgb, var(--accent) 28%, transparent)
-  );
-}
-
 .home-hero-pet {
   pointer-events: none;
 }
 
-.home-hero-pet .dp-pet-renderer,
-.home-hero-pet .dp-pet-canvas {
-  width: 100%;
-  height: 100%;
-}
-
-.home-hero-pet svg,
-.home-hero-pet canvas {
+.home-hero-pet img,
+.home-hero-pet video {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
+  object-fit: cover;
 }
 
-.home-orbit-ring,
-.home-orbit-core,
-.home-orbit-glow {
-  position: absolute;
-  display: block;
-  border-radius: 50%;
-}
-
-.home-orbit-glow {
-  inset: 54px;
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--accent-glow) 90%, transparent),
-    transparent 72%
-  );
-  filter: blur(8px);
-}
-
-.home-orbit-ring {
-  inset: 4px;
-  border: 1.5px solid color-mix(in srgb, var(--accent-line) 82%, transparent);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--surface-raised) 55%, transparent),
-    0 0 18px color-mix(in srgb, var(--accent) 12%, transparent);
-  transform: rotate(-26deg) scaleY(0.34);
-}
-
-.home-orbit-ring--one {
-  animation: home-orbit-spin 18s linear infinite;
-}
-
-.home-orbit-ring--two {
-  inset: 24px;
-  border-color: color-mix(in srgb, var(--blue) 58%, transparent);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--blue-soft) 45%, transparent),
-    0 0 16px color-mix(in srgb, var(--blue) 14%, transparent);
-  transform: rotate(54deg) scaleY(0.42);
-  animation: home-orbit-spin-reverse 24s linear infinite;
-}
-
-.home-orbit-ring--three {
-  inset: 46px;
-  border-color: color-mix(in srgb, var(--accent) 42%, transparent);
-  opacity: 0.72;
-  transform: rotate(12deg) scaleY(0.5);
-  animation: home-orbit-spin-three 28s linear infinite;
-}
-
-.home-orbit-core {
-  inset: 78px;
-  background:
-    radial-gradient(circle at 32% 26%, #fff7ef 0 18%, transparent 42%),
-    radial-gradient(
-      circle at 34% 28%,
-      #fff3e7,
-      var(--accent) 52%,
-      var(--accent-hover)
-    );
-  box-shadow:
-    inset 0 -10px 18px color-mix(in srgb, var(--accent-hover) 42%, transparent),
-    inset 0 8px 14px color-mix(in srgb, #fff 38%, transparent),
-    0 0 0 10px color-mix(in srgb, var(--accent-soft) 72%, transparent),
-    0 18px 36px color-mix(in srgb, var(--accent) 28%, transparent),
-    0 0 48px var(--accent-glow);
-}
-
-.home-orbit-core::after {
-  position: absolute;
-  top: 18%;
-  left: 22%;
-  width: 28%;
-  height: 18%;
-  border-radius: 999px;
-  background: color-mix(in srgb, #fff 55%, transparent);
-  filter: blur(1px);
-  content: "";
-  transform: rotate(-28deg);
+.home-hero-pet[data-playing="true"] > img {
+  visibility: hidden;
 }
 
 .home-destinations {
@@ -467,48 +381,9 @@
   font-size: 10px;
 }
 
-@keyframes home-orbit-spin {
-  from {
-    transform: rotate(-26deg) scaleY(0.34);
-  }
-  to {
-    transform: rotate(334deg) scaleY(0.34);
-  }
-}
-
-@keyframes home-orbit-spin-reverse {
-  from {
-    transform: rotate(54deg) scaleY(0.42);
-  }
-  to {
-    transform: rotate(-306deg) scaleY(0.42);
-  }
-}
-
-@keyframes home-orbit-spin-three {
-  from {
-    transform: rotate(12deg) scaleY(0.5);
-  }
-  to {
-    transform: rotate(372deg) scaleY(0.5);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .home-orbit-ring--one,
-  .home-orbit-ring--two,
-  .home-orbit-ring--three {
-    animation: none;
-  }
-}
-
 @media (max-width: 980px) {
-  .home-orbit,
   .home-hero-pet {
     right: 4%;
-  }
-  .home-orbit {
-    opacity: 0.62;
   }
   .home-destinations,
   .home-quick-grid {
@@ -521,18 +396,18 @@
 
 @media (max-width: 620px) {
   .home-header {
-    min-height: 300px;
-    padding: 30px 22px;
+    min-height: 420px;
+    padding: 30px 22px 230px;
   }
-  .home-orbit,
   .home-hero-pet {
-    right: -38px;
-    bottom: -36px;
+    right: auto;
+    left: 50%;
+    bottom: -8px;
     top: auto;
-    transform: none;
+    transform: translateX(-50%);
   }
-  .home-orbit {
-    filter: none;
+  .home-header-copy {
+    max-width: none;
   }
   .home-header h1 {
     max-width: 300px;

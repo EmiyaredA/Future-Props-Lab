@@ -210,6 +210,8 @@ def main() -> None:
         "--collect-all",
         "zstandard",
         "--collect-all",
+        "watchfiles",
+        "--collect-all",
         "aiosqlite",
         "--hidden-import",
         "sqlalchemy.dialects.sqlite.aiosqlite",

@@ -7,6 +7,106 @@ import {
   workbenchSource,
 } from "./fixtures/agent-workbench";
 
+async function expectPalette(page: import("@playwright/test").Page) {
+  const colors = await page.evaluate(() => {
+    const root = getComputedStyle(document.documentElement);
+    const expected = (token: string) => {
+      const probe = document.createElement("span");
+      probe.style.backgroundColor = root.getPropertyValue(token);
+      document.body.append(probe);
+      const value = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return value;
+    };
+    const controls = [
+      ...document.querySelectorAll<HTMLElement>(
+        ".aw-sidebar .custom-select-trigger",
+      ),
+    ].map((node) => ({
+      label: node.getAttribute("aria-label"),
+      actual: getComputedStyle(node).backgroundColor,
+      expected: expected("--surface-raised"),
+      foreground: getComputedStyle(node).color,
+      expectedForeground: (() => {
+        const probe = document.createElement("span");
+        probe.style.color = root.getPropertyValue("--text");
+        document.body.append(probe);
+        const value = getComputedStyle(probe).color;
+        probe.remove();
+        return value;
+      })(),
+    }));
+    const rail = document.querySelector<HTMLElement>(
+      ".studio-rail-button.is-active",
+    );
+    const probe = document.createElement("span");
+    probe.style.backgroundColor =
+      "color-mix(in srgb, var(--accent-soft) 88%, transparent)";
+    document.body.append(probe);
+    const expectedRail = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return {
+      controls,
+      rail: rail ? getComputedStyle(rail).backgroundColor : null,
+      expectedRail,
+    };
+  });
+  if (colors.rail)
+    expect(colors.rail, "侧栏应用选中态").toBe(colors.expectedRail);
+  for (const color of colors.controls) {
+    expect(color.actual, color.label ?? "筛选控件底色").toBe(color.expected);
+    expect(color.foreground, color.label ?? "筛选控件文字").toBe(
+      color.expectedForeground,
+    );
+    const luminance = (value: string) => {
+      const channels = (value.match(/[\d.]+/g) ?? [])
+        .slice(0, 3)
+        .map((v) => Number(v) / 255)
+        .map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+      return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+    };
+    const a = luminance(color.actual),
+      b = luminance(color.foreground);
+    expect(
+      (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05),
+    ).toBeGreaterThanOrEqual(4.5);
+  }
+}
+
+async function expectMenuPalette(
+  page: import("@playwright/test").Page,
+  screenshotPath?: string,
+) {
+  await page.getByRole("combobox", { name: "会话来源", exact: true }).click();
+  const menu = page.getByRole("listbox", { name: "会话来源", exact: true });
+  await expect(menu).toBeVisible();
+  const palette = await menu.evaluate((node) => {
+    const token = (name: string) => {
+      const probe = document.createElement("span");
+      probe.style.color = getComputedStyle(
+        document.documentElement,
+      ).getPropertyValue(name);
+      document.body.append(probe);
+      const value = getComputedStyle(probe).color;
+      probe.remove();
+      return value;
+    };
+    const selected = node.querySelector<HTMLElement>('[aria-selected="true"]')!;
+    return {
+      background: getComputedStyle(node).backgroundColor,
+      expectedBackground: token("--surface"),
+      selectedColor: getComputedStyle(selected).color,
+      expectedColor: token("--accent-text"),
+    };
+  });
+  expect(palette.background).toBe(palette.expectedBackground);
+  expect(palette.selectedColor).toBe(palette.expectedColor);
+  if (screenshotPath) await page.screenshot({ path: screenshotPath });
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Escape");
+  await expect(menu).toHaveCount(0);
+}
+
 test("Agent workbench APP/CLI reading, filters, source consent and responsive themes", async ({
   page,
 }) => {
@@ -82,11 +182,18 @@ test("Agent workbench APP/CLI reading, filters, source consent and responsive th
   mkdirSync(qa, { recursive: true });
   await page.setViewportSize({ width: 1616, height: 973 });
   await page.addInitScript(() =>
-    localStorage.setItem("future-props-theme", "dark"),
+    localStorage.setItem("future_props_theme", "light"),
   );
+  await page.goto("/apps");
+  await page.getByRole("button", { name: "开发辅助", exact: true }).click();
+  await page
+    .getByRole("button", { name: "打开Agent 工作台", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/apps\/agent-workbench$/);
   await page.goto("/apps/agent-workbench/sessions/fixture-0");
   await page.getByRole("button", { name: "深色", exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expectPalette(page);
   await expect(
     page.getByRole("heading", { name: "修复文件上传后的预览状态" }),
   ).toBeVisible();
@@ -101,6 +208,13 @@ test("Agent workbench APP/CLI reading, filters, source consent and responsive th
     node.scrollTop = 0;
   });
   await page.screenshot({ path: resolve(qa, "workbench-desktop-dark.png") });
+  await page.getByRole("button", { name: "浅色", exact: true }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await expectPalette(page);
+  await page.screenshot({ path: resolve(qa, "workbench-desktop-light.png") });
+  await page.getByRole("button", { name: "深色", exact: true }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expectPalette(page);
   await page.locator(".aw-messages").evaluate((node) => {
     node.scrollTop = node.scrollHeight;
     node.dispatchEvent(new Event("scroll"));
@@ -164,6 +278,7 @@ test("Agent workbench APP/CLI reading, filters, source consent and responsive th
         })
         .click();
       await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+      await expectPalette(page);
       const box = await page.locator(".aw-conversation").boundingBox();
       expect(box?.width).toBeGreaterThan(180);
       expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(width);
@@ -176,7 +291,15 @@ test("Agent workbench APP/CLI reading, filters, source consent and responsive th
         await expect(
           page.getByRole("dialog", { name: "已有会话" }),
         ).toBeVisible();
+        await expectMenuPalette(page);
         await page.keyboard.press("Escape");
+      } else {
+        await expectMenuPalette(
+          page,
+          width === 1616
+            ? resolve(qa, `workbench-menu-${theme}.png`)
+            : undefined,
+        );
       }
       if (width === 390 && theme === "dark")
         await page.screenshot({
@@ -184,7 +307,7 @@ test("Agent workbench APP/CLI reading, filters, source consent and responsive th
         });
       if (width === 1616 && theme === "light")
         await page.screenshot({
-          path: resolve(qa, "workbench-desktop-light.png"),
+          path: resolve(qa, "workbench-desktop-light-history.png"),
         });
     }
   }

@@ -2,6 +2,7 @@
 // 思绪工坊多维表格的数据表侧栏、视图标签、详情抽屉、三种视图、局部滚动、明暗主题与手机操作由 thought-multitable.spec.ts 覆盖。
 // 文档导航、SDK 示例切换、受控渲染块、公式/图表、桌面三栏和手机抽屉由 docs-sdk.spec.ts 补充验证。
 // 账号设置与运行额度由 account-governance.spec.ts 验证。
+// 桌面头像菜单的本地与公网访问面板由 web-access.spec.ts 覆盖 390/820/1440px、明暗主题、键盘与局部滚动。
 // 已移除空间治理与公开空间入口。
 // 模型目录、协议类型连接树与编辑弹窗由 model-catalog.spec.ts 补充明暗主题及手机检查。
 // 模型与智能体统一入口、键盘切换、授权矩阵由 code-agents.spec.ts 覆盖 390/768/1280/1600px 与明暗主题。
@@ -13,11 +14,8 @@ export const desktopSurfaces = {
   "desktop/ui/startup.html": "desktop/scripts/smoke.cjs",
   "desktop-setup": "desktop/scripts/smoke.cjs",
   "web/amadeus.html": "desktop/scripts/smoke-amadeus.cjs",
-  "web/pet.html": "desktop/scripts/smoke-pet.cjs",
-  "web/pet-chat.html": "desktop/scripts/smoke-pet.cjs",
 } as const;
 
-// 桌宠项目页与编辑器的明暗主题、六个步骤、紧凑面板和弹层由 desktop-pet-ui.spec.ts 覆盖。
 // Every application route must name its responsive scenario owner.
 export const responsiveOwners = {
   "agent-workbench-session": "shell",
@@ -73,10 +71,6 @@ export const responsiveOwners = {
   "video-editor-projects": "shell",
   "video-editor-editor": "editors",
   "video-editor-tasks": "shell",
-  "live2d-workshop-projects": "shell",
-  "live2d-workshop-editor": "editors",
-  "desktop-pet-projects": "shell",
-  "desktop-pet-editor": "editors",
   "motion-compositor-projects": "shell",
   "motion-compositor-editor": "editors",
   "audio-annotation-projects": "shell",
@@ -128,8 +122,6 @@ export const staticPaths = [
   "/apps/video-editor",
   "/apps/video-editor/tasks",
   "/apps/motion-compositor",
-  "/apps/live2d-workshop",
-  "/apps/desktop-pet",
   "/apps/audio-annotation",
   "/apps/director-desk",
   "/docs.html",

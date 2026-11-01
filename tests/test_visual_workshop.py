@@ -667,6 +667,7 @@ async def test_canvas_generation_drafts_round_trip_validate_and_tolerate_stale_a
             **nodes[1]["generation_draft"],
             "prompt_versions": [{"id": "v1", "name": "v1", "prompt": "镜头缓慢推进"}],
             "active_prompt_version_id": "v1",
+            "workflow_parameters": None,
         }
 
         structured_nodes = saved.json()["nodes"]
@@ -705,7 +706,7 @@ async def test_canvas_generation_drafts_round_trip_validate_and_tolerate_stale_a
             **invalid_range[1],
             "generation_draft": {
                 **invalid_range[1]["generation_draft"],
-                "duration": 16,
+                "duration": 31,
             },
         }
         assert (

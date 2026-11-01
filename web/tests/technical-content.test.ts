@@ -32,12 +32,17 @@ describe("technical documentation library", () => {
       APPLICATION_DEFINITIONS.map((app) => app.id).sort(),
     );
     expect(TECHNICAL_LIBRARY.documents.length - applications.length).toBe(21);
-    expect(TECHNICAL_LIBRARY.documents).toHaveLength(31);
+    expect(TECHNICAL_LIBRARY.documents).toHaveLength(
+      APPLICATION_DEFINITIONS.length + 21,
+    );
     expect(new Set(TECHNICAL_LIBRARY.documents.map((doc) => doc.id)).size).toBe(
       TECHNICAL_LIBRARY.documents.length,
     );
     expect(TECHNICAL_LIBRARY.documents.map((doc) => doc.order)).toEqual(
-      Array.from({ length: 31 }, (_, index) => index),
+      Array.from(
+        { length: APPLICATION_DEFINITIONS.length + 21 },
+        (_, index) => index,
+      ),
     );
     expect(TECHNICAL_LIBRARY.title).toBe("Future Props Lab 技术文档");
     expect([
@@ -74,9 +79,9 @@ describe("technical documentation library", () => {
       "galgame-workshop",
       "video-editor",
       "motion-compositor",
-      "live2d-workshop",
-      "desktop-pet",
       "audio-annotation",
+      "agent-workbench",
+      "interview-assistant",
       "director-desk",
       "desktop",
       "contracts",

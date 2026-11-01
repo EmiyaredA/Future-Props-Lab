@@ -21,7 +21,7 @@ SHA-256，也可在跳过 LFS 下载的检出中使用指针 OID，避免把指�
 | `docs/assets/kurisu-lab-music/` | 18 | 视觉探索、动作帧和生成参考 | 项目角色/场景、B 站参考视频帧、Unsplash 参考照片及生成结果；详见同目录 README | 混合第三方参考；发布前需逐项复核来源条款 | `2c544c9f922e11a8e2512e01e91544c6914f0a7fdc06370bfe98d9169a1ad992` | 否 |
 | `docs/assets/runaway-pilot-rev33/` | 12 | 历史预演验收截图 | 本项目播放器对演示数据的截图 | 未单独授权；仅作项目内回归证据 | `2df129d81a52a5e0eca0a680e3497002362c03fc3ac274ba60a135d25e5790f0` | 否 |
 | `docs/*.png` | 9 | 功能界面和交付文档截图 | 本项目 Web UI 截图 | 未单独授权；仅作项目文档 | `4fda1e4b613ee9e2016b914858ee987b829cf885361140832ffa2d913028ec02` | 否 |
-| `web/public/docs/` | 42 | 文档中心真实操作截图，逐图场景见同目录 sources.json | 隔离数据库、正式 API、真实 Chrome/Electron；合成媒体与自写 Skill，模型响应为确定性示例 | 本项目 UI 截图，沿用仅限内部开发交接声明 | `2d0bd24e325b0a7ff5b3cfdc467e6089455b888a854fe85c2a16091b5293a683` | Web 文档中心 |
+| `web/public/docs/` | 39 | 文档中心真实操作截图，逐图场景见同目录 sources.json | 隔离数据库、正式 API、真实 Chrome/Electron；合成媒体与自写 Skill，模型响应为确定性示例 | 本项目 UI 截图，沿用仅限内部开发交接声明 | `b5fb621dd1788dc6d7dd918240a666e4136e1d31a8c37708d1dd3167fab47196` | Web 文档中心 |
 
 | `docs/assets/video-editor-text-*.png` | 4 | 视频剪辑文字功能的四张交互设计图 | ImageGen，参考用户提供的现有界面截图；参见 [设计说明](video-editor-text.md) | 含原项目素材缩略图，仅限内部设计参考 | `25f488a9f3be63629f37b4d3e9c9c74820a7f351a3a689ef207205cc2f8b90d9` | 否 |
 
@@ -41,7 +41,6 @@ SHA-256，也可在跳过 LFS 下载的检出中使用指针 OID，避免把指�
 | `web/public/brand/presentation-workshop-mark.png` | 演示工坊应用卡片、侧栏及最近访问头像 | 内置 ImageGen 生成，琉华子角色与既有工坊徽章为参考；[来源与提示词](presentation-workshop-avatar.md) | 原作角色无独立再分发授权，沿用内部开发交接范围 | `34895e659c9406789e9cadfe7aab0ea42f86ea3d55e868718d9714bec06357ec` | Web 需要 |
 | `web/public/brand/audio-annotation-mark.png` | 录音标注工坊应用卡片、侧栏及最近访问头像 | 内置 ImageGen 生成，萌郁角色与既有工坊徽章为参考；[来源与提示词](audio-annotation-avatar.md) | 原作角色无独立再分发授权，沿用内部开发交接范围 | `a3539f2db85bdc42fdfab5dea9215b3ef1ce4e1c560bc9834d5c30feae015349` | Web 需要 |
 | `web/public/brand/director-desk-mark.png` | 导演台应用卡片、侧栏及最近访问头像 | 内置 ImageGen 生成，冈部伦太郎角色与既有工坊徽章为参考；[来源与提示词](director-desk-avatar.md) | 原作角色无独立再分发授权，沿用内部开发交接范围 | `fec866de8e555d43d4faa4ae818bae1725b2cfc106e79affa6be2646c4235ee0` | Web 需要 |
-| `web/public/brand/desktop-pet-mark.png` | 桌宠工坊应用卡片、侧栏及最近访问头像 | 内置 ImageGen 生成，参考视觉创作工坊，女仆装红莉栖配桌面窗口、爪印与爱心；[来源与提示词](desktop-pet-avatar.md) | 原作角色无独立再分发授权，沿用内部开发交接范围 | `09ba7ae71ca38a5ee2f56b68aa44b8d330b386501d621929b2ad2d1faa8306b4` | Web 需要 |
 | `web/public/voice-vad/silero_vad_v5.onnx` | 浏览器实时语音 VAD | `@ricky0123/vad-web@0.0.30` 随包模型 | npm 包声明 ISC；对外再分发前仍应核对模型上游条款 | `2623a2953f6ff3d2c1e61740c6cdb7168133479b267dfef114a4a3cc5bdd788f` | Web 需要 |
 | `web/public/voice-vad/ort-wasm-simd-threaded.wasm` | 浏览器 ONNX Runtime | `onnxruntime-web@1.27.0` | MIT | `d1ab1b94b16a65b29d710d0b587b29e7bed336827577623913479b8afe8113e6` | Web 需要 |
 
@@ -59,7 +58,7 @@ Amadeus 的选定原画和去表情底画保存在 `web/src/features/amadeus/art
 
 ## Live2D 工坊头像
 
-- `web/public/brand/live2d-workshop-mark.png`：Live2D 工坊卡片、侧栏与项目入口共用；内置 ImageGen，参考现有徽章与用户指定 Amadeus 形象。[来源与提示词](live2d-workshop-avatar.md)。沿用内部开发交接范围。SHA256：`e8b8839472bdfc9923aba39987568392d0619ad834e41b7c96cd039352d6eecd`。
+- `web/public/brand/agent-workbench-mark.png`：Agent 工作台卡片、侧栏与最近访问共用（迁自原 Live2D 工坊）；内置 ImageGen，参考现有徽章与用户指定 Amadeus 形象。[来源与提示词](agent-workbench-avatar.md)。沿用内部开发交接范围。SHA256：`e8b8839472bdfc9923aba39987568392d0619ad834e41b7c96cd039352d6eecd`。
 
 ## 演示模板内置插画
 
@@ -71,3 +70,11 @@ Amadeus 的选定原画和去表情底画保存在 `web/src/features/amadeus/art
 | `web/public/presentation-templates/report-background.png` | `8764dfd16e900a269513238f8b0a9091afe759c3fa8f5373a0459aeff8bbf097` |
 | `web/public/presentation-templates/structured-template.png` | `79a17d73ce31893e308d8c19b5c0c20642b665bae11db890949865f0b99dbd39` |
 | `web/public/presentation-templates/visual-generation.png` | `63ee9a0da25572e40b4cf55834935b1cbc6e207281ff73ca7ee2cdeda5c33671` |
+
+
+## 首页红莉栖
+
+采用用户指定的本机 `dsh-pet` 项目角色包，保持原动画内容与透明度。仅沿用内部开发交接范围，未获得原作角色的独立再分发授权。
+
+- `web/public/brand/home/kurisu-idle.webm`：来自 `pet-packs/kurisu/pet/kurisu-animation/待机呼吸.webm`；640×360，24 fps，10 秒，无音轨、透明 VP9。SHA256：`10717cdea36065ed9e6a0360a7174ff1a79b7dea9523939376980b5f74219132`。Web 需要。
+- `web/public/brand/home/kurisu-idle.png`：从上述动画通过 libvpx-vp9 解码提取的透明首帧，用于回退及减少动态效果。SHA256：`32ee8bfef51fb8c0122f9bd9bdc030113310731a590b3dea672a7515fc0b8e0f`。Web 需要。

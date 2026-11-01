@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { nodeLabel } from "./geometry";
 import { visualAssetDownloadPath, type VisualCanvasNode } from "../api";
-import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
+import { useVisibleApiBlobUrl } from "@platform/api/useVisibleApiBlobUrl";
 
 type MediaNode = Exclude<VisualCanvasNode, { kind: "text" }>;
 
@@ -59,8 +59,10 @@ export function CanvasMediaPreview({
   const preview = previewSourceForNode(node);
   const readyChangeRef = useRef(onVideoReadyChange);
   readyChangeRef.current = onVideoReadyChange;
-  const { url, error } = useApiBlobUrl(
-    preview.assetId ? `/v1/files/${preview.assetId}/content` : null,
+  const { ref, url, error } = useVisibleApiBlobUrl(
+    preview.assetId && (preview.kind === "image" || interactive)
+      ? `/v1/files/${preview.assetId}/${preview.kind === "image" && !interactive ? "thumbnail?size=640" : "content"}`
+      : null,
   );
   const missing = Boolean(error);
   useEffect(
@@ -70,16 +72,17 @@ export function CanvasMediaPreview({
     [url],
   );
 
+  let content;
   if (url && preview.kind === "image")
-    return (
+    content = (
       <img
         src={url}
         alt={preview.fallback ? "生成参考素材预览" : ""}
         draggable={false}
       />
     );
-  if (url && preview.kind === "video")
-    return (
+  else if (url && preview.kind === "video")
+    content = (
       <video
         src={url}
         controls={interactive}
@@ -93,15 +96,35 @@ export function CanvasMediaPreview({
         onError={() => readyChangeRef.current?.(null)}
       />
     );
-  if (url && preview.kind === "audio") return <audio src={url} controls />;
+  else if (url && preview.kind === "audio")
+    content = <audio src={url} controls />;
   const Icon =
     node.kind === "image" ? Image : node.kind === "video" ? Video : Music;
   return (
-    <div className={`canvas-media-placeholder${missing ? " is-missing" : ""}`}>
-      <Icon aria-hidden />
-      <span>
-        {missing ? "素材已删除" : `选择或上传${nodeLabel(node.kind)}`}
-      </span>
+    <div
+      className="canvas-visible-preview"
+      ref={ref}
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "grid",
+        placeItems: "center",
+      }}
+    >
+      {content || (
+        <div
+          className={`canvas-media-placeholder${missing ? " is-missing" : ""}`}
+        >
+          <Icon aria-hidden />
+          <span>
+            {missing
+              ? "预览不可用"
+              : preview.assetId && node.kind === "video"
+                ? "点击播放视频"
+                : `选择或上传${nodeLabel(node.kind)}`}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -125,16 +148,14 @@ export function CanvasMediaNodeActions({
   canExportFrame?: boolean;
   onExportFrame?: () => void;
 }) {
-  const { url } = useApiBlobUrl(
-    node.asset_id ? `/v1/files/${node.asset_id}/content` : null,
-  );
+  const url = node.asset_id ? `/v1/files/${node.asset_id}/content` : undefined;
   const stopPointer = (event: ReactPointerEvent) => event.stopPropagation();
   return (
     <span className="canvas-node-actions canvas-media-node-actions">
-      {node.kind === "video" && onPreview ? (
+      {onPreview ? (
         <button
-          aria-label="播放视频"
-          title="播放视频"
+          aria-label={node.kind === "video" ? "播放视频" : "预览素材"}
+          title={node.kind === "video" ? "播放视频" : "预览素材"}
           disabled={!url}
           onPointerDown={stopPointer}
           onClick={(event) => {

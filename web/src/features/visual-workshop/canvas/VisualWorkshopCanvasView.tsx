@@ -519,7 +519,7 @@ export function VisualWorkshopCanvasView({
                       onPreview={
                         node.kind === "video"
                           ? () => setInteractiveVideoId(node.id)
-                          : undefined
+                          : () => setPreviewNodeId(node.id)
                       }
                       onCopy={() => {
                         copyNodes([node.id]);

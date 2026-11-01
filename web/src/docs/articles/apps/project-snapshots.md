@@ -17,6 +17,6 @@
 
 ## 不同工坊的交付格式
 
-思绪工坊使用知识库完整备份，演示工坊可导出可编辑 PPTX；Live2D 使用 `.fpllive2d`，导演台使用 `.director`，特效制作工坊有自己的工程包。导入时使用对应工坊入口，不把这些文件当作通用项目快照。
+思绪工坊使用知识库完整备份，演示工坊可导出可编辑 PPTX；导演台使用 `.director`，特效制作工坊有自己的工程包。导入时使用对应工坊入口，不把这些文件当作通用项目快照。
 
-特效工坊仅将已完成的 MP4/MOV [交给视频剪辑](/docs.html?page=motion-export-handoff)；桌宠从 Live2D 复制[固定角色快照](/docs.html?page=pet-quickstart)。交接或复制后的工程不会自动随来源修改。
+特效工坊仅将已完成的 MP4/MOV [交给视频剪辑](/docs.html?page=motion-export-handoff)。交接或复制后的工程不会自动随来源修改。

@@ -115,7 +115,7 @@ async def test_import_replays_concurrent_requests_and_resolves_only_visible_publ
     )
     assert a.status_code == b.status_code == 200, (a.text, b.text)
     imported = a.json()
-    assert a.json() == b.json() and len(imported["note_ids"]) == 93
+    assert a.json() == b.json() and len(imported["note_ids"]) == preview["article_count"]
     assert len(imported["knowledge_base_ids"]) == 12
     assert (await c.get(COMM + "/official-import/" + request["request_id"])).json() == imported
     assert (

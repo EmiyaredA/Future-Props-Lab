@@ -61,7 +61,7 @@
   routes/schemas）；Studio
   治理与库级文件用例归属 `console/`（含自有 models/routes/schemas）；已垂直切片的产品 App 归属 `apps/`（目前
   `presentation_workshop`、`audio_annotation`、`thought_workshop`、`video_editor`、`visual_workshop`、
-  `galgame_workshop`、`director_desk`、`motion_compositor`、`live2d_workshop`、`desktop_pet` 已迁入）；`llm/` 拥有目录/供应商/测试台/推理与自身 models/schemas/routes；
+  `galgame_workshop`、`director_desk`、`motion_compositor` 已迁入）；`llm/` 拥有目录/供应商/测试台/推理与自身 models/schemas/routes；
   `integrations/`、`tool_navigation/`、`demo_runtime/` 各自拥有 models/schemas/routes（demo 无独立 ORM）。
   顶层不再保留 `models/`、`schemas/`、`routes/` 横向包。
 - 路由模块不得直接导入 SQLAlchemy、ORM 模型或 `db.migrations`，不得自行持有查询、写入和
@@ -75,6 +75,7 @@
   `runtime/` 保存数据库与素材，`backend/config.toml` 保存配置与加密密钥，禁止复制仓库运行数据。
   桌面配置必须在数据库模块导入前初始化。仅桌面入口托管 Web 静态页，HTML 回退仅用于页面导航，
   未知 `/v1` API 与缺失资源仍为 404；首次账号接口仅在桌面私有凭据边界内启用。
+- 桌面 Web 入口由 `capabilities/web_access/` 复用同一 ASGI 应用并关闭附加监听器 lifespan；本地与公网开关只在内存，每次启动默认关闭。网关配置经私有管理员 Session、近期验证、原生宿主交接和持锁停机备份后发布；公网与 Agent 不得调用控制接口。云端只托管带校验清单的程序资源，私人 API/素材不得进入共享缓存。
 - 默认桌面开发使用正式数据是受控流程，不复制或合并仓库数据；隔离开发仍通过
   `dev:desktop:isolated` 使用独立目录。启动器持有数据锁，覆盖
   后端/Electron 更新交接；首次正式数据入口运行停机备份完整 `runtime/` 与配置并核验 SHA256 和 SQLite
@@ -188,7 +189,7 @@
   `-foundation`、`-components`、`-interactions`、`-part\d*`、`-base`、`-extra`、`-misc` 后缀，
   也不得出现只做转发的空壳 `@import` 样式。不得新增编号式 CSS 分片；构建预算脚本只读产物，
   不得在构建后拆分或改写 CSS。
-- App 之间默认零互相依赖。例外仅限视频剪辑向视觉创作工坊的片段交接、特效制作向视频剪辑工坊的成片交接、桌宠工坊经 Live2D 工坊公开只读快照入口取得固定角色快照，登记在
+- App 之间默认零互相依赖。例外仅限视频剪辑向视觉创作工坊的片段交接、特效制作向视频剪辑工坊的成片交接，登记在
   `tests/test_architecture.py` 的 `ALLOWED_APP_HANDOFFS`，且必须经目标 App 的公共入口。
 - 新增 Web 路由或独立 HTML 入口时，同步更新 `web/e2e/responsive-inventory.ts` 与相应适配用例；
   页面不得依靠根级隐藏横向溢出来通过检查，复杂区域使用明确的局部滚动和可点击操作入口。

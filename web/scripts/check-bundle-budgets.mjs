@@ -17,6 +17,27 @@ const galgameCssPrefixes = [
 ];
 
 const violations = [];
+const manifestPath = path.join(path.dirname(dist), ".vite/manifest.json");
+if (fs.existsSync(manifestPath)) {
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  const visited = new Set();
+  const active = [];
+  function visit(key) {
+    const index = active.indexOf(key);
+    if (index !== -1) {
+      violations.push(
+        `Circular static chunks: ${active.slice(index).concat(key).join(" -> ")}`,
+      );
+      return;
+    }
+    if (visited.has(key)) return;
+    active.push(key);
+    for (const imported of manifest[key]?.imports || []) visit(imported);
+    active.pop();
+    visited.add(key);
+  }
+  for (const key of Object.keys(manifest)) visit(key);
+}
 let galgameCssBytes = 0;
 for (const entry of fs.readdirSync(dist)) {
   const file = path.join(dist, entry);

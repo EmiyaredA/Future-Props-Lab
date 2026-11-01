@@ -3,7 +3,7 @@ test("shows recovery UI if the application module cannot load", async ({
   page,
 }) => {
   await page.route("**/src/app/main.tsx*", (route) => route.abort());
-  await page.goto("/apps/live2d-workshop");
+  await page.goto("/apps/agent-workbench");
   await expect(
     page.getByRole("heading", { name: "页面资源加载失败" }),
   ).toBeVisible();

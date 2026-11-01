@@ -294,20 +294,6 @@
     "sha256": "cf4815cfe569797ab18bb49caee1907af21e9c2b7fcd8854947fe8e0ea4c00d2"
   },
   {
-    "file": "live2d-editor.jpg",
-    "scene": "合成分层角色的人形骨架与参数绑定",
-    "source": "隔离数据库；正式 /v1 API 与账号用例；真实 Chrome UI",
-    "capturedAt": "2026-10-02",
-    "viewport": {
-      "width": 1600,
-      "height": 1000
-    },
-    "theme": "dark",
-    "data": "合成角色 PSD、图形、音频、纯色片段与自写 Skill；无真实付费模型调用",
-    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
-    "sha256": "8e1f4ae147425c8f58ccf6722966d76d974a42c804cbf26bb61096d538ec69a1"
-  },
-  {
     "file": "logs-detail.jpg",
     "scene": "调用详情；响应来自本机确定性服务",
     "source": "隔离数据库；正式 API；自建演示数据",
@@ -362,34 +348,6 @@
     "data": "合成角色 PSD、图形、音频、纯色片段与自写 Skill；无真实付费模型调用",
     "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
     "sha256": "4843811af817d24a521ba1214826063612cbb79f63acc270e14deb7d47d485d9"
-  },
-  {
-    "file": "pet-editor.jpg",
-    "scene": "固定角色快照与桌宠形象设置",
-    "source": "隔离数据库；正式 /v1 API 与账号用例；真实 Chrome UI",
-    "capturedAt": "2026-10-02",
-    "viewport": {
-      "width": 1600,
-      "height": 1000
-    },
-    "theme": "dark",
-    "data": "合成角色 PSD、图形、音频、纯色片段与自写 Skill；无真实付费模型调用",
-    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
-    "sha256": "c3d332d847aaeb3e92d0999ca46353bf6fb0c6bc7fddb120e4f5bee2e22e3a59"
-  },
-  {
-    "file": "pet-events.jpg",
-    "scene": "桌宠事件台词编辑与预览",
-    "source": "隔离数据库；正式 /v1 API 与账号用例；真实 Chrome UI",
-    "capturedAt": "2026-10-02",
-    "viewport": {
-      "width": 1600,
-      "height": 1000
-    },
-    "theme": "dark",
-    "data": "合成角色 PSD、图形、音频、纯色片段与自写 Skill；无真实付费模型调用",
-    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
-    "sha256": "64a9be5159aa5768a60d89dc83fe5f27508f123c7e4f14ae3596bbaf40122c91"
   },
   {
     "file": "provider-form.jpg",

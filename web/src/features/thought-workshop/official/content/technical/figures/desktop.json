@@ -61,6 +61,42 @@
       "fill": "#fff1dd",
       "stroke": "#365f62",
       "icon": "database"
+    },
+    {
+      "id": "browser",
+      "kind": "icon",
+      "x": 40,
+      "y": 560,
+      "width": 220,
+      "height": 110,
+      "text": "本机 / 公网浏览器\n相同账号与数据",
+      "fill": "#eef5f3",
+      "stroke": "#365f62",
+      "icon": "user"
+    },
+    {
+      "id": "access",
+      "kind": "icon",
+      "x": 380,
+      "y": 560,
+      "width": 220,
+      "height": 110,
+      "text": "可选回环 Web 与 SSH\n复用 ASGI · lifespan 关闭",
+      "fill": "#edf2fb",
+      "stroke": "#365f62",
+      "icon": "server"
+    },
+    {
+      "id": "cloud",
+      "kind": "icon",
+      "x": 740,
+      "y": 560,
+      "width": 220,
+      "height": 110,
+      "text": "云网关程序资源\n版本校验 · 预压缩缓存",
+      "fill": "#f2edf8",
+      "stroke": "#365f62",
+      "icon": "file"
     }
   ],
   "edges": [
@@ -93,6 +129,30 @@
       "source": "backend",
       "target": "data",
       "label": "受控读写",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "browser_access",
+      "source": "browser",
+      "target": "access",
+      "label": "Session 与 CSRF",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "access_backend",
+      "source": "access",
+      "target": "backend",
+      "label": "同一业务运行时",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "cloud_access",
+      "source": "cloud",
+      "target": "access",
+      "label": "仅 API 回 Mac",
       "arrow": true,
       "style": "step"
     }

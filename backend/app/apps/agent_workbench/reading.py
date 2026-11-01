@@ -52,6 +52,15 @@ async def session_out(session, row):
             )
         ).all()
     )
+    result.source_errors = list(
+        (
+            await session.scalars(
+                select(WorkbenchCheckpoint.error)
+                .where(WorkbenchCheckpoint.session_id == row.id, WorkbenchCheckpoint.error != "")
+                .distinct()
+            )
+        ).all()
+    )
     return result
 
 
@@ -68,6 +77,8 @@ async def list_conversations(
     cursor=None,
     limit=50,
 ):
+    if "\x00" in q:
+        raise HTTPException(422, "搜索内容包含无效字符")
     query = select(WorkbenchSession).where(WorkbenchSession.owner_user_id == owner)
     if agent_id:
         query = query.where(WorkbenchSession.agent_id == agent_id)
@@ -132,7 +143,11 @@ async def list_conversations(
     # Resolve links in one query; avoid one query per list item.
     links = (
         await session.execute(
-            select(WorkbenchCheckpoint.session_id, WorkbenchCheckpoint.source_id)
+            select(
+                WorkbenchCheckpoint.session_id,
+                WorkbenchCheckpoint.source_id,
+                WorkbenchCheckpoint.error,
+            )
             .join(WorkbenchSource, WorkbenchSource.id == WorkbenchCheckpoint.source_id)
             .where(
                 WorkbenchCheckpoint.session_id.in_([r.id for r in rows]),
@@ -145,7 +160,10 @@ async def list_conversations(
     items = []
     for row in rows:
         item = WorkbenchSessionOut.model_validate(row)
-        item.source_ids = [source for key, source in links if key == row.id]
+        item.source_ids = [source for key, source, _ in links if key == row.id]
+        item.source_errors = list(
+            dict.fromkeys(error for key, _, error in links if key == row.id and error)
+        )
         items.append(item)
     return WorkbenchSessionPage(
         items=items, next_cursor=next_cursor, change_cursor=await change_cursor(session, owner)

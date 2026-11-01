@@ -35,8 +35,6 @@ WEB_APP_UNITS = (
     "thought-workshop",
     "video-editor",
     "motion-compositor",
-    "live2d-workshop",
-    "desktop-pet",
     "visual-workshop",
     "director-desk",
 )
@@ -44,7 +42,6 @@ WEB_APP_UNITS = (
 ALLOWED_APP_HANDOFFS = {
     ("video-editor", "visual-workshop"),
     ("motion-compositor", "video-editor"),
-    ("desktop-pet", "live2d-workshop"),
 }
 
 FORBIDDEN_BACKEND_DIRECTORIES = {"domain", "platform", "product", "services"}
@@ -1083,20 +1080,6 @@ def test_apps_only_cross_each_other_through_declared_handoffs() -> None:
     assert not violations, "App 之间只能通过已登记的交接用例并经公共入口互相依赖：\n" + "\n".join(
         violations
     )
-
-
-def test_desktop_pet_only_reads_live2d_public_snapshot() -> None:
-    assert ("desktop-pet", "live2d-workshop") in ALLOWED_APP_HANDOFFS
-    pet_root = BACKEND_APP / "apps" / "desktop_pet"
-    imports = {
-        node.module
-        for path in pet_root.rglob("*.py")
-        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8")))
-        if isinstance(node, ast.ImportFrom)
-        and node.module
-        and node.module.startswith("app.apps.live2d_workshop")
-    }
-    assert imports == {"app.apps.live2d_workshop.public"}
 
 
 def test_css_uses_semantic_source_files_and_read_only_bundle_budgets() -> None:

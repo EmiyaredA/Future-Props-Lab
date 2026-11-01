@@ -23,6 +23,12 @@
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
+.agent-workbench input::placeholder,
+.agent-workbench textarea::placeholder,
+.aw-drawer input::placeholder {
+  color: color-mix(in srgb, var(--muted) 90%, var(--text));
+  opacity: 1;
+}
 .aw-toolbar {
   display: flex;
   align-items: center;
@@ -60,7 +66,7 @@
   border-radius: 7px;
 }
 .aw-nav-button.is-active {
-  color: var(--accent);
+  color: var(--accent-text);
   background: var(--accent-soft);
 }
 .aw-layout {
@@ -143,7 +149,7 @@
 }
 .aw-agent-tabs button.is-active {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-text);
   background: var(--accent-soft);
 }
 .aw-filter-row {
@@ -155,8 +161,8 @@
   flex: 1;
   min-width: 0;
 }
-.aw-filter-row .select-trigger,
-.aw-project-filter .select-trigger {
+.aw-filter-row .custom-select-trigger,
+.aw-project-filter .custom-select-trigger {
   font-size: 11px;
 }
 .aw-project-filter {
@@ -164,6 +170,10 @@
 }
 .aw-project-filter > * {
   width: 100%;
+}
+.agent-workbench .custom-select-menu button.selected,
+.aw-drawer .custom-select-menu button.selected {
+  color: var(--accent-text);
 }
 .aw-session-list {
   flex: 1;
@@ -454,7 +464,7 @@
   background: var(--surface-hover);
 }
 .aw-button.is-primary {
-  background: var(--accent);
+  background: var(--accent-hover);
   border-color: var(--accent);
   color: var(--bg);
   font-weight: 600;
@@ -466,7 +476,7 @@
   border: 0;
   padding: 5px 0;
   background: transparent;
-  color: var(--accent);
+  color: var(--accent-text);
   font: inherit;
   font-size: 11px;
 }

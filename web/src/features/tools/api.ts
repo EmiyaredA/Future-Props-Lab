@@ -28,12 +28,7 @@ export type VideoDownloadDeps = {
 
 export type VideoDownloadQuality = "best" | "1080" | "720" | "480";
 export type VideoDownloadBrowser =
-  | "chrome"
-  | "chromium"
-  | "edge"
-  | "safari"
-  | "brave"
-  | "firefox";
+  "chrome" | "chromium" | "edge" | "safari" | "brave" | "firefox";
 
 export type VideoDownloadJobCreate = {
   url: string;

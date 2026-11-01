@@ -15,6 +15,8 @@ import { NoteEditorPane } from "@features/thought-workshop/NoteEditorPane";
 import { canvasTemplate } from "@features/thought-workshop/diagrams/templates";
 import * as api from "@features/thought-workshop/api";
 import * as storage from "@features/thought-workshop/drafts/storage";
+import * as readingApi from "@features/thought-workshop/knowledge-tools/api";
+import * as diagramApi from "@features/thought-workshop/diagram";
 
 vi.mock("@features/thought-workshop/drafts/storage", async (original) => ({
   ...(await original<
@@ -108,6 +110,18 @@ async function expectCompleteEditor() {
 }
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(diagramApi.renderDiagram).mockResolvedValue(
+    '<svg xmlns="http://www.w3.org/2000/svg"><text>预览</text></svg>',
+  );
+  vi.mocked(readingApi.getReading).mockResolvedValue(null);
+  vi.mocked(readingApi.recordReading).mockImplementation(
+    async (resource_id, title, position) => ({
+      resource_id,
+      title,
+      position,
+      visited_at: "2026-11-01T00:00:00Z",
+    }),
+  );
   vi.mocked(storage.listLocalDrafts).mockResolvedValue([]);
   vi.stubGlobal(
     "ResizeObserver",

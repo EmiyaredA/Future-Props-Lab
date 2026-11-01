@@ -14,9 +14,11 @@ afterEach(() => vi.restoreAllMocks());
 
 describe("bundled official knowledge", () => {
   it("covers every application with substantive, uniquely addressed chapters and valid links", async () => {
-    expect(OFFICIAL_KNOWLEDGE_BASES).toHaveLength(12);
+    expect(OFFICIAL_KNOWLEDGE_BASES).toHaveLength(
+      APPLICATION_DEFINITIONS.length + 2,
+    );
     expect(new Set(OFFICIAL_KNOWLEDGE_BASES.map((item) => item.id)).size).toBe(
-      12,
+      APPLICATION_DEFINITIONS.length + 2,
     );
     expect(
       OFFICIAL_KNOWLEDGE_BASES.flatMap((item) =>
@@ -29,7 +31,11 @@ describe("bundled official knowledge", () => {
         library.documents.length,
       );
       expect(library.documents.length).toBe(
-        library.applicationId ? 5 : library.id === "technical" ? 31 : 12,
+        library.applicationId
+          ? 5
+          : library.id === "technical"
+            ? APPLICATION_DEFINITIONS.length + 21
+            : 12,
       );
       for (const doc of library.documents) {
         sourcePaths.push(doc.source);
@@ -83,11 +89,15 @@ describe("bundled official knowledge", () => {
         check(tree);
       }
     }
-    expect(new Set(sourcePaths).size).toBe(93);
+    expect(new Set(sourcePaths).size).toBe(
+      APPLICATION_DEFINITIONS.length * 6 + 33,
+    );
     const files = import.meta.glob(
       "../src/features/thought-workshop/official/content/**/*.md",
     );
-    expect(Object.keys(files)).toHaveLength(93);
+    expect(Object.keys(files)).toHaveLength(
+      APPLICATION_DEFINITIONS.length * 6 + 33,
+    );
   });
 
   it("preserves legacy URLs for permission-checked publication resolution", () => {

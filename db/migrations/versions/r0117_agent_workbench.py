@@ -115,4 +115,4 @@ CREATE INDEX ix_agent_workbench_changes_session_id ON agent_workbench_changes (s
 CREATE INDEX ix_workbench_history ON agent_workbench_entries(session_id, ordinal);
 
 CREATE VIRTUAL TABLE agent_workbench_search USING fts5(owner_user_id UNINDEXED, session_id UNINDEXED, entry_id UNINDEXED, text, tokenize="unicode61");
-"""
+"""  # noqa: E501 — preserve registered SQL text

@@ -21,8 +21,6 @@
 | 组装多轨成片       | 视频剪辑工坊                                             | 时间线、代理预览与 MP4           |
 | 切分录音并整理字幕 | 录音标注工坊                                             | 说话人、片段文本与 SRT           |
 | 制作二维合成镜头   | [特效制作工坊](/docs.html?page=motion-quickstart)        | 关键帧、路径遮罩与透明镜头       |
-| 制作分层动态角色   | [Live2D 工坊](/docs.html?page=live2d-quickstart)         | 原生工程、绑定、动作与 PNG 序列  |
-| 制作桌面伙伴       | [桌宠工坊](/docs.html?page=pet-quickstart)               | 角色快照、事件与私人文字聊天     |
 | 搭场景与排运镜     | [导演台](/docs.html?page=director-quickstart)            | 三维工程与预演参考               |
 | 阅读本机编程会话   | [Agent 工作台](/docs.html?page=agent-workbench-overview) | 原生会话的账号阅读副本与同步状态 |
 | 准备面试与文字练习 | [面试助手](/docs.html?page=interview-assistant-overview) | 可追溯资料、题目与练习报告       |

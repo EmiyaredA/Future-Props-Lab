@@ -17,6 +17,16 @@ export type OfficialKnowledgeBase = {
 
 const applicationLibraries = [
   [
+    "agent-workbench",
+    "Agent 工作台",
+    "阅读、绑定与持续同步本机编程会话，核对来源与附件权限。",
+  ],
+  [
+    "interview-assistant",
+    "面试助手",
+    "由本机 Codex 准备岗位资料，并完成文字练习与报告交付。",
+  ],
+  [
     "presentation-workshop",
     "演示工坊",
     "制作幻灯片，排版文字与矢量素材，放映并交付 PPTX。",
@@ -45,16 +55,6 @@ const applicationLibraries = [
     "motion-compositor",
     "特效制作工坊",
     "制作二维动画、路径遮罩和透明镜头，交接剪辑工程。",
-  ],
-  [
-    "live2d-workshop",
-    "Live2D 工坊",
-    "从分层素材制作角色绑定和动画，对照 Cubism 并交付工程。",
-  ],
-  [
-    "desktop-pet",
-    "桌宠工坊",
-    "配置角色快照、皮肤与事件台词，运行桌宠和私人文字聊天。",
   ],
   [
     "audio-annotation",

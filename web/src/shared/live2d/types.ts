@@ -1,6 +1,4 @@
-import type { components } from "@generated/api";
-
-type Schemas = components["schemas"];
+import type { Schemas } from "./modelSchema";
 export type Point = Schemas["Point"];
 export type Part = Omit<Required<Schemas["CharacterPart"]>, "skinWeights"> & {
   skinWeights?: Schemas["BoneWeight"][][] | null;
@@ -17,8 +15,15 @@ export type Motion = Omit<Required<Schemas["CharacterMotion"]>, "tracks"> & {
 export type Expression = Required<Schemas["CharacterExpression"]>;
 export type CharacterDocument = Omit<
   Required<Schemas["CharacterDocument"]>,
-  "parts" | "deformers" | "bones" | "parameters" | "motions" | "expressions"
+  | "parts"
+  | "deformers"
+  | "bones"
+  | "parameters"
+  | "motions"
+  | "expressions"
+  | "idleBehavior"
 > & {
+  idleBehavior: Required<Schemas["CharacterIdleBehavior"]> | null;
   parts: Part[];
   deformers: Deformer[];
   bones: Bone[];

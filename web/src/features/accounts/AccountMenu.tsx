@@ -1,9 +1,24 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, LogOut, Settings, ShieldCheck } from "lucide-react";
+import {
+  ChevronDown,
+  Globe,
+  LogOut,
+  Settings,
+  ShieldCheck,
+} from "lucide-react";
 import type { AccountSessionContext } from "./api";
 import { avatarSrc } from "./avatarSrc";
 import "./account-navigation.css";
+const WebAccessDialog = lazy(() => import("./WebAccessDialog"));
 
 export function AccountActionMenu({
   label,
@@ -151,6 +166,7 @@ export function AccountMenu({ session }: { session: AccountSessionContext }) {
   const { me } = session;
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [webAccessOpen, setWebAccessOpen] = useState(false);
   const avatar = (
     <span className="account-identity-avatar">
       {me.user.avatar_url ? (
@@ -181,6 +197,15 @@ export function AccountMenu({ session }: { session: AccountSessionContext }) {
           </>
         }
         items={[
+          ...(window.futurePropsDesktop && me.user.is_platform_admin
+            ? [
+                {
+                  label: "本地与公网访问",
+                  icon: <Globe size={18} />,
+                  action: () => setWebAccessOpen(true),
+                },
+              ]
+            : []),
           {
             label: "账号设置",
             icon: <Settings size={18} />,
@@ -217,6 +242,11 @@ export function AccountMenu({ session }: { session: AccountSessionContext }) {
           },
         ]}
       />
+      {webAccessOpen && (
+        <Suspense fallback={<p role="status">正在加载访问面板…</p>}>
+          <WebAccessDialog onClose={() => setWebAccessOpen(false)} />
+        </Suspense>
+      )}
       {error ? (
         <p className="account-menu-error" role="alert">
           {error}

@@ -2,11 +2,9 @@ from fastapi import APIRouter, Depends
 
 from app.apps.agent_workbench.routes import router as agent_workbench_router
 from app.apps.audio_annotation.routes import router as audio_annotation_router
-from app.apps.desktop_pet.routes import router as desktop_pet_router
 from app.apps.director_desk.routes import router as director_desk_router
 from app.apps.galgame_workshop.routes import router as galgame_workshop_router
 from app.apps.interview_assistant.routes import router as interview_assistant_router
-from app.apps.live2d_workshop.routes import router as live2d_router
 from app.apps.motion_compositor.routes import router as motion_compositor_router
 from app.apps.presentation_workshop.routes import router as presentation_workshop_router
 from app.apps.thought_workshop.routes import conversion as thought_conversion
@@ -34,6 +32,7 @@ from app.console.routes.desktop import router as desktop_router
 from app.console.routes.desktop_agent import router as desktop_agent_router
 from app.console.routes.file_management import router as file_management_router
 from app.console.routes.platform_governance import router as platform_governance_router
+from app.console.routes.web_access import router as web_access_router
 from app.demo_runtime.routes import call_router as demo_call_router
 from app.demo_runtime.routes import router as demo_runtime_router
 from app.deps import require_studio_auth
@@ -71,6 +70,7 @@ api_router.include_router(
 )
 api_router.include_router(desktop_router)
 api_router.include_router(desktop_agent_router)
+api_router.include_router(web_access_router)
 api_router.include_router(accounts_router)
 api_router.include_router(demo_runtime_router)
 api_router.include_router(demo_call_router)
@@ -165,8 +165,6 @@ api_router.include_router(
     image_crop.router, dependencies=[Depends(require_studio_auth), ModelCapacity]
 )
 
-api_router.include_router(live2d_router, dependencies=[Depends(require_studio_auth)])
-api_router.include_router(desktop_pet_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(creative_workshop_router, dependencies=[Depends(require_studio_auth)])
 
 # Community endpoints authenticate browser sessions and apply publication roles.

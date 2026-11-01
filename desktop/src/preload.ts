@@ -10,6 +10,22 @@ contextBridge.exposeInMainWorld(
     minimize: () => ipcRenderer.invoke("desktop:minimize"),
     close: () => ipcRenderer.invoke("desktop:close"),
     openNewWindow: () => ipcRenderer.invoke("desktop:open-new-window"),
+    pickWebCredential: (ticket: string, kind: string) =>
+      ipcRenderer.invoke("desktop:web-access-pick", ticket, kind),
+    applyWebAccessConfig: (receipt: string) =>
+      ipcRenderer.invoke("desktop:web-access-apply", receipt),
+    onWebAccessPrepare: (
+      callback: (approve: () => void, cancel: () => void) => void,
+    ) => {
+      const listener = (_event: unknown, id: string) =>
+        callback(
+          () => ipcRenderer.send("desktop:web-access-approved", id, true),
+          () => ipcRenderer.send("desktop:web-access-approved", id, false),
+        );
+      ipcRenderer.on("desktop:web-access-prepare", listener);
+      return () =>
+        ipcRenderer.removeListener("desktop:web-access-prepare", listener);
+    },
     saveExportFile: (filename: string, bytes: Uint8Array) =>
       ipcRenderer.invoke("desktop:export-save", filename, bytes),
     revealExportFile: (receiptId: string) =>
@@ -20,93 +36,6 @@ contextBridge.exposeInMainWorld(
         : undefined,
     openPresentationAudience: (projectId: string, sessionId: string) =>
       ipcRenderer.invoke("desktop:presentation-audience", projectId, sessionId),
-    openPet: (projectId: string) =>
-      ipcRenderer.invoke("desktop:pet-open", projectId),
-    closePet: () => ipcRenderer.invoke("desktop:pet-close"),
-    petStatus: () => ipcRenderer.invoke("desktop:pet-status"),
-    notifyPetResourcesChanged: (projectId: string) =>
-      ipcRenderer.invoke("desktop:pet-resources-changed", projectId),
-    onPetResourcesChanged: (callback: () => void) => {
-      const listener = () => callback();
-      ipcRenderer.on("desktop:pet-resources-changed", listener);
-      return () =>
-        ipcRenderer.removeListener("desktop:pet-resources-changed", listener);
-    },
-    beginPetPreview: (value: unknown) =>
-      ipcRenderer.invoke("desktop:pet-preview-begin", value),
-    updatePetPreview: (value: unknown) =>
-      ipcRenderer.invoke("desktop:pet-preview-update", value),
-    endPetPreview: (sessionId: string) =>
-      ipcRenderer.invoke("desktop:pet-preview-end", sessionId),
-    currentPetPreview: () => ipcRenderer.invoke("desktop:pet-preview-current"),
-    reportPetPreview: (value: unknown) =>
-      ipcRenderer.invoke("desktop:pet-preview-report", value),
-    onPetPreview: (callback: (value: unknown) => void) => {
-      const listener = (_event: unknown, value: unknown) => callback(value);
-      ipcRenderer.on("desktop:pet-preview", listener);
-      return () => ipcRenderer.removeListener("desktop:pet-preview", listener);
-    },
-    onPetPreviewStatus: (callback: (value: unknown) => void) => {
-      const listener = (_event: unknown, value: unknown) => callback(value);
-      ipcRenderer.on("desktop:pet-preview-status", listener);
-      return () =>
-        ipcRenderer.removeListener("desktop:pet-preview-status", listener);
-    },
-    publishPetContext: (value: { userId: string; accountId: string } | null) =>
-      ipcRenderer.invoke("desktop:pet-context", value),
-    setPetInteractive: (interactive: boolean) =>
-      ipcRenderer.invoke("desktop:pet-hit", interactive),
-    movePet: (x: number, y: number) =>
-      ipcRenderer.invoke("desktop:pet-move", x, y),
-    petEnvironment: () => ipcRenderer.invoke("desktop:pet-environment"),
-    movePetFrame: (value: unknown) =>
-      ipcRenderer.invoke("desktop:pet-motion", value),
-    cancelPetMotion: (generation: number) =>
-      ipcRenderer.invoke("desktop:pet-motion-cancel", generation),
-    onPetEnvironment: (callback: (value: unknown) => void) => {
-      const listener = (_event: unknown, value: unknown) => callback(value);
-      ipcRenderer.on("desktop:pet-environment", listener);
-      return () =>
-        ipcRenderer.removeListener("desktop:pet-environment", listener);
-    },
-    onPetMotionConfirmed: (callback: (value: unknown) => void) => {
-      const listener = (_event: unknown, value: unknown) => callback(value);
-      ipcRenderer.on("desktop:pet-motion-confirmed", listener);
-      return () =>
-        ipcRenderer.removeListener("desktop:pet-motion-confirmed", listener);
-    },
-    hidePet: () => ipcRenderer.invoke("desktop:pet-hide"),
-    showStudioFromPet: () => ipcRenderer.invoke("desktop:pet-show-studio"),
-    openPetChat: () => ipcRenderer.invoke("desktop:pet-chat-open"),
-    openPetChatFromStudio: (projectId: string) =>
-      ipcRenderer.invoke("desktop:pet-chat-open-studio", projectId),
-    closePetChat: () => ipcRenderer.invoke("desktop:pet-chat-close"),
-    setPetChatLayout: (layout: "compact" | "expanded") =>
-      ipcRenderer.invoke("desktop:pet-chat-layout", layout),
-    setPetChatInteractive: (interactive: boolean) =>
-      ipcRenderer.invoke("desktop:pet-chat-hit", interactive),
-    onPetChatLayout: (
-      callback: (value: { side: "left" | "right" }) => void,
-    ) => {
-      const listener = (_event: unknown, value: { side: "left" | "right" }) =>
-        callback(value);
-      ipcRenderer.on("desktop:pet-chat-layout", listener);
-      return () =>
-        ipcRenderer.removeListener("desktop:pet-chat-layout", listener);
-    },
-    sendPetChatState: (value: { phase: string; text: string }) =>
-      ipcRenderer.invoke("desktop:pet-chat-state", value),
-    onPetChatState: (
-      callback: (value: { phase: string; text?: string }) => void,
-    ) => {
-      const listener = (
-        _event: unknown,
-        value: { phase: string; text?: string },
-      ) => callback(value);
-      ipcRenderer.on("desktop:pet-chat-state", listener);
-      return () =>
-        ipcRenderer.removeListener("desktop:pet-chat-state", listener);
-    },
     openAmadeus: () => ipcRenderer.invoke("desktop:amadeus-open"),
     hideAmadeus: () => ipcRenderer.invoke("desktop:amadeus-hide"),
     setAmadeusStageOpen: (enabled: boolean) =>

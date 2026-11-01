@@ -12,8 +12,6 @@ LABELS = {
     "interview": "面试资料准备",
     "desktop": "桌面初始化与本地 Agent 接入",
     "amadeus": "Amadeus 桌面助手",
-    "desktop_pet": "桌宠工坊",
-    "live2d_workshop": "Live2D 工坊",
     "motion_compositor": "特效制作工坊",
     "accounts": "登录与个人账号",
     "workspaces": "工作区与邀请",

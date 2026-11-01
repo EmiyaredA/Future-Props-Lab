@@ -1,0 +1,76 @@
+{
+  "sceneVersion": 1,
+  "title": "面试助手：材料、准备任务与文字练习",
+  "elements": [
+    {
+      "id": "n0",
+      "kind": "rounded",
+      "x": 40,
+      "y": 120,
+      "width": 240,
+      "height": 120,
+      "text": "账号房间与材料\nrevision 与输入哈希",
+      "fill": "#eef5f3",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "n1",
+      "kind": "rounded",
+      "x": 340,
+      "y": 120,
+      "width": 240,
+      "height": 120,
+      "text": "本机 Codex 准备\n专用用途授权",
+      "fill": "#edf2fb",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "n2",
+      "kind": "rounded",
+      "x": 640,
+      "y": 120,
+      "width": 240,
+      "height": 120,
+      "text": "校验后的资料包\n来源与问题引用",
+      "fill": "#f2edf8",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "n3",
+      "kind": "rounded",
+      "x": 940,
+      "y": 120,
+      "width": 240,
+      "height": 120,
+      "text": "页面练习与导出\n临时回答明确保留",
+      "fill": "#fff1dd",
+      "stroke": "#365f62"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "source": "n0",
+      "target": "n1",
+      "label": "受控读取",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "e1",
+      "source": "n1",
+      "target": "n2",
+      "label": "校验并提交",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "e2",
+      "source": "n2",
+      "target": "n3",
+      "label": "读取与反馈",
+      "arrow": true,
+      "style": "step"
+    }
+  ]
+}

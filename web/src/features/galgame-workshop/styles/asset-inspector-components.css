@@ -66,13 +66,16 @@
   }
 }
 
-:root[data-theme="dark"] .galgame-workshop-shell,
-:root[data-theme="dark"] .galgame-fast-preview,
-:root[data-theme="dark"] .galgame-editor-page,
-:root[data-theme="dark"] .galgame-route-report-backdrop,
-:root[data-theme="dark"] .galgame-block-command-backdrop,
-:root[data-theme="dark"] .galgame-playhead-add-popover,
-:root[data-theme="dark"] .galgame-dialogue-presentation-popover {
+:root[data-theme="dark"]
+  :is(
+    .galgame-workshop-shell,
+    .galgame-fast-preview,
+    .galgame-editor-page,
+    .galgame-route-report-backdrop,
+    .galgame-block-command-backdrop,
+    .galgame-playhead-add-popover,
+    .galgame-dialogue-presentation-popover
+  ) {
   --gal-bg: #0c131e;
   --gal-panel: #111a27;
   --gal-surface: #172231;
@@ -126,8 +129,7 @@
   color: var(--gal-text);
 }
 
-.galgame-workshop-shell .workshop-brand small,
-.galgame-workshop-shell .workshop-back-copy small {
+.galgame-workshop-shell :is(.workshop-brand small, .workshop-back-copy small) {
   color: var(--gal-muted);
 }
 
@@ -155,19 +157,9 @@
   color: var(--gal-text);
 }
 
-.galgame-workshop-shell .workshop-page-header > div > span,
 .galgame-overview-hero > div > span {
   color: var(--gal-accent);
   letter-spacing: 0.13em;
-}
-
-.galgame-workshop-shell .workshop-page-header h1,
-.galgame-workshop-shell .workshop-page-header p {
-  color: var(--gal-text);
-}
-
-.galgame-workshop-shell .workshop-page-header p {
-  color: var(--gal-muted);
 }
 
 .galgame-workshop-shell .workshop-primary,
@@ -270,8 +262,8 @@
   color: var(--gal-text);
 }
 
-.galgame-library-page .workshop-project-meta small,
-.galgame-library-page .workshop-project-copy small {
+.galgame-library-page
+  :is(.workshop-project-meta small, .workshop-project-copy small) {
   color: var(--gal-muted);
 }
 
@@ -304,9 +296,8 @@
   color: var(--gal-accent);
 }
 
-.galgame-workshop-shell .workshop-notice,
-.galgame-workshop-shell .workshop-state,
-.galgame-workshop-shell .workshop-dialog {
+.galgame-workshop-shell
+  :is(.workshop-notice, .workshop-state, .workshop-dialog) {
   border-color: var(--gal-line);
   background: var(--gal-surface);
   color: var(--gal-text);

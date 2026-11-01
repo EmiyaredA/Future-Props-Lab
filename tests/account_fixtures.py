@@ -58,10 +58,7 @@ async def clear_private_projects(owner="test-user"):
         "presentation_projects",
         "presentation_templates",
         "presentation_examples",
-        "desktop_pet_projects",
         "director_desk_projects",
-        "live2d_projects",
-        "live2d_workshop_projects",
         "motion_compositor_projects",
     }
     async with SessionLocal() as session:

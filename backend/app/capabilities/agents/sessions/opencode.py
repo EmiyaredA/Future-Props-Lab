@@ -161,11 +161,14 @@ class OpenCodeServerAdapter:
         with httpx.Client(
             base_url=self.endpoint, timeout=10, trust_env=False, follow_redirects=False
         ) as client:
-            response = client.get(path)
-            response.raise_for_status()
-            if len(response.content) > 32 * 1024 * 1024:
-                raise ValueError("原生响应超过读取上限")
-            return response.json()
+            with client.stream("GET", path) as response:
+                response.raise_for_status()
+                chunks = bytearray()
+                for chunk in response.iter_bytes():
+                    chunks.extend(chunk)
+                    if len(chunks) > 32 * 1024 * 1024:
+                        raise ValueError("原生响应超过读取上限")
+                return json.loads(chunks)
 
     def discover(self, _root):
         if self.get("/global/health").get("healthy") is not True:

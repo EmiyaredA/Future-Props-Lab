@@ -80,18 +80,6 @@
   padding: 0 0 24px;
 }
 
-.galgame-script-workbench .galgame-block-list {
-  width: min(100%, 700px);
-  max-width: 700px;
-  margin: 0 auto;
-  padding: 0 4px 0 42px;
-  gap: 2px;
-}
-
-.galgame-script-workbench .galgame-block-list::before {
-  left: 20px;
-}
-
 .galgame-script-workbench .galgame-block-row + .galgame-block-row {
   margin-top: 0;
 }

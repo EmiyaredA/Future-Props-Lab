@@ -26,7 +26,7 @@ def fake_cli(root: Path, name="fake"):
     path.write_text(
         f"#!{sys.executable}\n"
         + """
-import sys, json, os, subprocess
+import sys, json, os, subprocess, re
 
 if "--version" in sys.argv:
     print("fake 2.163.300")
@@ -61,19 +61,24 @@ if "app-server" in sys.argv:
         elif method == "turn/start":
             send({"id": x["id"], "result": {"turn": {"id": "fake-turn"}}})
             prompt = x["params"]["input"][0]["text"]
-            if "BIG_FAKE" in prompt:
+            try:
+                history = json.loads(prompt.splitlines()[1])["messages"]
+                marker = next(m["content"] for m in reversed(history) if m["role"] == "user")
+            except (ValueError, KeyError, StopIteration):
+                marker = prompt
+            if "BIG_FAKE" in marker:
                 send({"method": "item/agentMessage/delta", "params": {"delta": "x" * 100001}})
                 send({"method": "turn/completed", "params": {"turn": {"status": "completed"}}})
                 break
-            if "SLOW_FAKE" in prompt:
+            if "SLOW_FAKE" in marker:
                 import time
                 send({"method": "item/agentMessage/delta", "params": {"delta": "正在运行"}})
                 time.sleep(60)
             tool = (
                 "ask_user"
-                if "ASK_FAKE" in prompt
+                if "ASK_FAKE" in marker
                 else "write_file"
-                if "WRITE_FAKE" in prompt
+                if "WRITE_FAKE" in marker
                 else "operations"
             )
             args = (
@@ -83,6 +88,18 @@ if "app-server" in sys.argv:
                 if tool == "write_file"
                 else {}
             )
+            draft = re.search(r"DRAFT_FAKE:([a-f0-9-]+):(OLD|NEW)", marker)
+            if draft:
+                tool = "call"
+                project_id, version = draft.groups()
+                args = {"operation": "visual.apply_canvas_operations", "arguments": {
+                    "path_params": {"project_id": project_id},
+                    "body": {"expected_revision": 0, "request_id": "draft-" + version,
+                        "operations": [{"entity": "node", "action": "insert", "id": "video-draft",
+                            "value": {"id": "video-draft", "kind": "video",
+                                "title": "旧标题" if version == "OLD" else "新标题",
+                                "position": {"x": 80, "y": 120},
+                                "generation_draft": {"prompt": "日落城市镜头"}}}]}}}
             send(
                 {
                     "id": "tool-1",

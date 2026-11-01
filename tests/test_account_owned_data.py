@@ -124,7 +124,9 @@ async def test_disabled_account_and_old_session_cannot_access_data():
 
 def legacy_database():
     connection = sqlite3.connect(":memory:")
-    for migration in MIGRATIONS[:-1]:
+    for migration in MIGRATIONS[
+        : next(i for i, m in enumerate(MIGRATIONS) if m.migration_id == "0116_account_ownership")
+    ]:
         connection.execute("PRAGMA foreign_keys=" + ("OFF" if migration.foreign_keys_off else "ON"))
         connection.executescript(migration.sql)
     connection.execute("PRAGMA foreign_keys=OFF")
@@ -167,7 +169,7 @@ def test_legacy_upgrade_maps_owners_keeps_resource_ids_and_revokes_credentials()
         "'[\"studio:write\"]','2099-01-01')"
     )
     c.commit()
-    c.executescript(MIGRATIONS[-1].sql)
+    c.executescript(next(m.sql for m in MIGRATIONS if m.migration_id == "0116_account_ownership"))
     assert c.execute(
         "SELECT owner_user_id,title FROM thought_knowledge_bases WHERE id='book'"
     ).fetchone() == ("alice", "Title")
@@ -197,7 +199,9 @@ def test_legacy_upgrade_rejects_unowned_or_ambiguous_spaces():
     old_account(c, "alice")
     # Existing accounts cannot silently claim an unowned default scope.
     with pytest.raises(sqlite3.IntegrityError):
-        c.executescript(MIGRATIONS[-1].sql)
+        c.executescript(
+            next(m.sql for m in MIGRATIONS if m.migration_id == "0116_account_ownership")
+        )
     c.close()
 
 
@@ -280,7 +284,9 @@ def test_registered_runner_preserves_history_templates_and_agent_allocations(tmp
     assert apply_migrations(path) == (MIGRATIONS[-1].migration_id, True)
     with connect_database(path) as c:
         assert (
-            c.execute("SELECT migration_id,checksum FROM schema_migrations").fetchall()[:-1]
+            c.execute("SELECT migration_id,checksum FROM schema_migrations").fetchall()[
+                : len(before)
+            ]
             == before
         )
         assert c.execute(
@@ -315,7 +321,9 @@ def test_unclaimed_legacy_content_is_never_silently_discarded():
     )
     c.commit()
     with pytest.raises(sqlite3.IntegrityError):
-        c.executescript(MIGRATIONS[-1].sql)
+        c.executescript(
+            next(m.sql for m in MIGRATIONS if m.migration_id == "0116_account_ownership")
+        )
     assert c.execute("SELECT title FROM thought_knowledge_bases WHERE id='legacy'").fetchone() == (
         "Unclaimed",
     )

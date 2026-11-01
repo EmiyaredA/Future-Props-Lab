@@ -3,6 +3,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
 import {
   ArrowDown,
   ChevronDown,
@@ -76,6 +77,9 @@ function Message({
           <div className="aw-prose">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
+              rehypePlugins={[
+                [rehypeHighlight, { detect: false, ignoreMissing: true }],
+              ]}
               skipHtml
               components={{
                 img: () => <span className="aw-subtle">[图片引用]</span>,

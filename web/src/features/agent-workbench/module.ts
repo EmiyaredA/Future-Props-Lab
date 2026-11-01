@@ -10,6 +10,7 @@ const definition = {
     capabilities: ["会话", "编程", "实时同步"],
     path: "/apps/agent-workbench",
     icon: MessagesSquare,
+    brandImage: "/brand/agent-workbench-mark.png",
   },
   supportsProjects: false,
   shell: "agent-workbench",

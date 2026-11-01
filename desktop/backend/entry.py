@@ -8,6 +8,7 @@ import fcntl
 import hashlib
 import json
 import os
+import signal
 import socket
 import sys
 import threading
@@ -71,6 +72,7 @@ def launch() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", type=Path, required=True)
     parser.add_argument("--web-dir", type=Path, required=True)
+    parser.add_argument("--apply-web-config", action="store_true")
     if not getattr(sys, "frozen", False):
         parser.add_argument("--development-lock-fd", type=int)
     args = parser.parse_args()
@@ -95,38 +97,36 @@ def launch() -> None:
             os.environ.pop(name)
     from app.runtime.config import configure_desktop
 
+    if args.apply_web_config:
+        from web_config import apply_profile
+
+        payload = json.loads(sys.stdin.buffer.readline(16384))
+        apply_profile(args.data_dir.resolve(), payload)
+
     loaded = {} if inherited is not None else None
     settings = prepare_configuration(args.data_dir, loaded)
     configure_desktop(settings)
     import uvicorn
 
+    from app.capabilities.web_access.runtime import WebAccess
     from app.console.routes.desktop_agent import configure_agent
+    from app.console.routes.web_access import configure_errors
     from app.main import app
-    from app.runtime.desktop import DesktopStaticFiles, attach_desktop
+    from app.runtime.desktop import attach_desktop
 
-    remote_web = None
-    remote_sock = None
-    if settings.fpl_remote_web_enabled:
-        from app.runtime.remote_web import RemoteWeb
-
-        remote_root = Path(settings.fpl_remote_web_root or args.web_dir).resolve()
-        if not (remote_root / "index.html").is_file():
-            raise ValueError("远程 Web 正式构建缺失；不会公开开发服务器")
-        remote_sock = socket.socket()
-        remote_sock.bind(("127.0.0.1", settings.fpl_remote_web_port))
-        remote_web = RemoteWeb(
-            origin=settings.fpl_remote_web_origin,
-            port=remote_sock.getsockname()[1],
-            static=DesktopStaticFiles(directory=remote_root, html=True),
-            authenticate=authenticate_remote_browser,
-        )
-
+    static_root = Path(settings.fpl_remote_web_root or args.web_dir).resolve()
+    web_access = WebAccess(
+        app, settings, args.data_dir.resolve(), static_root, authenticate_remote_browser
+    )
+    app.state.web_access = web_access
+    web_access.native_token = hashlib.sha256(("web-access:" + token).encode()).hexdigest()
+    configure_errors(app)
     attach_desktop(
         app,
         token=token,
         web_root=None if inherited is not None else args.web_dir.resolve(),
         agent_policy=configure_agent(app),
-        remote_web=remote_web,
+        remote_web=web_access,
     )
     if getattr(sys, "frozen", False):
         binaries = Path(sys._MEIPASS) / "bin"
@@ -145,13 +145,18 @@ def launch() -> None:
             log_level="warning",
         )
     )
+    runtime_loop = None
 
     def watch_parent():
         sys.stdin.buffer.read()
+        if runtime_loop is not None:
+            asyncio.run_coroutine_threadsafe(web_access.close(), runtime_loop)
         server.should_exit = True
 
         # Bound orphan lifetime even when startup or an extension is stuck.
         def force_exit():
+            if os.getpgrp() == os.getpid():
+                os.killpg(os.getpgrp(), signal.SIGKILL)
             os._exit(1)
 
         timer = threading.Timer(15, force_exit)
@@ -160,9 +165,16 @@ def launch() -> None:
 
     threading.Thread(target=watch_parent, daemon=True).start()
     print(json.dumps({"port": sock.getsockname()[1], **(loaded or {})}), flush=True)
-    asyncio.run(server.serve(sockets=[sock, remote_sock] if remote_sock else [sock]))
-    if remote_sock:
-        remote_sock.close()
+
+    async def serve():
+        nonlocal runtime_loop
+        runtime_loop = asyncio.get_running_loop()
+        try:
+            await server.serve(sockets=[sock])
+        finally:
+            await web_access.close()
+
+    asyncio.run(serve())
     sock.close()
     lock.close()
 

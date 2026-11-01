@@ -5,7 +5,7 @@ import logging
 import time
 
 import httpx
-from sqlalchemy import select, update
+from sqlalchemy import delete, func, select, update
 from watchfiles import awatch
 
 from app.capabilities.agents.sessions import get_adapter
@@ -176,6 +176,52 @@ class WorkbenchSyncRunner(PollingTaskRunner):
     async def scan(self, source):
         adapter = get_adapter(source.agent_id, source.endpoint)
         locators = await asyncio.to_thread(adapter.discover, source.root)
+        missing_message = "原生记录已消失，保留最后同步的阅读副本"
+        async with self.sessions() as db:
+            bind_owner(db, source.owner_user_id)
+            current = await db.get(WorkbenchSource, source.id)
+            if not current or not current.enabled or current.revision != source.revision:
+                return
+            known = (
+                await db.execute(
+                    select(
+                        WorkbenchCheckpoint.id,
+                        WorkbenchCheckpoint.locator,
+                        WorkbenchCheckpoint.error,
+                        WorkbenchCheckpoint.session_id,
+                    ).where(WorkbenchCheckpoint.source_id == source.id)
+                )
+            ).all()
+            present = set(locators)
+            repaired = 0
+            for key, locator, error, session_id in known:
+                if locator not in present and session_id is None:
+                    await db.execute(
+                        delete(WorkbenchCheckpoint).where(WorkbenchCheckpoint.id == key)
+                    )
+                    continue
+                message = (
+                    missing_message
+                    if locator not in present
+                    else ("" if error == missing_message else error)
+                )
+                if message != error:
+                    if repaired >= 200:
+                        break
+                    repaired += 1
+                    await db.execute(
+                        update(WorkbenchCheckpoint)
+                        .where(WorkbenchCheckpoint.id == key)
+                        .values(error=message)
+                    )
+                    db.add(
+                        WorkbenchChange(
+                            owner_user_id=source.owner_user_id,
+                            session_id=session_id,
+                            kind="session",
+                        )
+                    )
+            await db.commit()
         budget = get_settings().fpl_agent_workbench_files_per_pass
         position = self.positions.get(source.id, 0)
         # Follow recent activity every pass while advancing through cold histories.
@@ -201,7 +247,7 @@ class WorkbenchSyncRunner(PollingTaskRunner):
                 ).all()
             }
         failures = 0
-        incomplete = len(locators) > budget
+        incomplete = False
         for locator in selected:
             previous = checkpoints.get(locator, {})
             try:
@@ -225,12 +271,37 @@ class WorkbenchSyncRunner(PollingTaskRunner):
             if source.id in self.native_connected
             else ("原生 API 校准" if source.endpoint else "日志跟随")
         )
+        async with self.sessions() as db:
+            bind_owner(db, source.owner_user_id)
+            indexed = (
+                await db.scalar(
+                    select(func.count(WorkbenchCheckpoint.id)).where(
+                        WorkbenchCheckpoint.source_id == source.id,
+                        WorkbenchCheckpoint.session_id.is_not(None),
+                        WorkbenchCheckpoint.state["complete"].as_boolean().is_not(False),
+                    )
+                )
+                or 0
+            )
+            missing = sum(1 for _, locator, _, _ in known if locator not in present)
+            total_errors = (
+                await db.scalar(
+                    select(func.count(WorkbenchCheckpoint.id)).where(
+                        WorkbenchCheckpoint.source_id == source.id, WorkbenchCheckpoint.error != ""
+                    )
+                )
+                or 0
+            )
+        failures = max(failures, total_errors)
+        incomplete = incomplete or indexed < len(locators)
         status = "partial" if failures else "following"
         message = f"{mode} · 已发现 {len(locators)} 个记录" + (
             f" · {failures} 个记录暂不可读" if failures else ""
         )
         if incomplete:
             message += " · 历史分批索引中"
+        if missing:
+            message += f" · {missing} 个原生记录已消失，保留阅读副本"
         await self.finish(source, status, message)
 
     async def record_error(self, source, locator, error_type):

@@ -34,7 +34,7 @@ export function SourceManager({
 }: {
   owner: string;
   sources: Source[];
-  mutate: (action: () => Promise<unknown>) => Promise<void>;
+  mutate: (action: () => Promise<unknown>) => Promise<boolean>;
 }) {
   const [agent, setAgent] = useState<AgentId>("codex");
   const [root, setRoot] = useState("");
@@ -53,7 +53,7 @@ export function SourceManager({
   const run = async (action: () => Promise<unknown>) => {
     setBusy(true);
     try {
-      await mutate(action);
+      return await mutate(action);
     } finally {
       setBusy(false);
     }
@@ -248,8 +248,18 @@ export function SourceManager({
             <div className="aw-source-heading">
               <AgentLogo id={source.agent_id} size={24} />
               <strong>{source.label}</strong>
-              <span className={`aw-status ${source.enabled ? "is-live" : ""}`}>
-                {source.enabled ? syncName(source.sync_mode) : "已暂停"}
+              <span
+                className={`aw-status ${source.enabled && source.status === "following" ? "is-live" : ""}`}
+              >
+                {!source.enabled
+                  ? "已暂停"
+                  : source.status === "unavailable"
+                    ? "来源不可用"
+                    : source.status === "partial"
+                      ? "部分记录不可读"
+                      : source.status === "pending"
+                        ? "等待同步"
+                        : syncName(source.sync_mode)}
               </span>
             </div>
             <p className="aw-source-path">{source.endpoint || source.root}</p>
@@ -293,7 +303,7 @@ export function SourceManager({
         pending={busy}
         onCancel={() => setRemoving(null)}
         onConfirm={async () => {
-          if (removing) await run(() => removeSource(removing));
+          if (removing && !(await run(() => removeSource(removing)))) return;
           setRemoving(null);
         }}
       />

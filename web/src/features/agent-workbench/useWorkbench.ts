@@ -97,10 +97,12 @@ export function useWorkbench(
     setUpdateError("");
     try {
       await action();
+      return true;
     } catch (error) {
       setUpdateError(
         error instanceof Error ? error.message : "操作失败，请刷新后重试",
       );
+      return false;
     } finally {
       await queryClient.invalidateQueries({ queryKey: keys.root(owner) });
     }

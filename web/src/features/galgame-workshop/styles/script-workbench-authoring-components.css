@@ -8,30 +8,18 @@
 }
 
 .galgame-script-workbench
-  .galgame-block-card.is-destroyScene
+  .galgame-block-card:is(.is-destroyScene, .is-hideCg, .is-removeCharacter)
   .galgame-block-kind,
 .galgame-script-workbench
-  .galgame-block-card.is-destroyScene
-  .galgame-block-copy
-  strong,
-.galgame-script-workbench .galgame-block-card.is-hideCg .galgame-block-kind,
-.galgame-script-workbench
-  .galgame-block-card.is-hideCg
-  .galgame-block-copy
-  strong,
-.galgame-script-workbench
-  .galgame-block-card.is-removeCharacter
-  .galgame-block-kind,
-.galgame-script-workbench
-  .galgame-block-card.is-removeCharacter
+  .galgame-block-card:is(.is-destroyScene, .is-hideCg, .is-removeCharacter)
   .galgame-block-copy
   strong {
   background: var(--gal-danger);
   color: #fff;
 }
 
-.galgame-script-workbench .galgame-dialogue-card-body,
-.galgame-script-workbench .galgame-narration-card {
+.galgame-script-workbench
+  :is(.galgame-dialogue-card-body, .galgame-narration-card) {
   min-height: var(--galgame-script-row);
   border-radius: 0;
   box-shadow: none;
@@ -117,8 +105,8 @@
   padding: 6px 7px;
 }
 
-.galgame-script-workbench .galgame-dialogue-card-body > header,
-.galgame-script-workbench .galgame-narration-card > header {
+.galgame-script-workbench
+  :is(.galgame-dialogue-card-body > header, .galgame-narration-card > header) {
   min-height: 27px;
   padding: 1px 7px 1px 0;
   border-bottom: 0;
@@ -133,8 +121,8 @@
   font-weight: 650;
 }
 
-.galgame-script-workbench .galgame-dialogue-expression,
-.galgame-script-workbench .galgame-dialogue-position {
+.galgame-script-workbench
+  :is(.galgame-dialogue-expression, .galgame-dialogue-position) {
   flex: 0 0 auto;
   color: color-mix(in srgb, var(--dialogue-theme) 65%, var(--gal-muted));
   font-size: 8px;
@@ -186,14 +174,17 @@
   min-height: 52px;
 }
 
-.galgame-script-workbench .galgame-dialogue-card.is-editing header,
-.galgame-script-workbench .galgame-narration-card.is-editing > header {
+.galgame-script-workbench
+  :is(
+    .galgame-dialogue-card.is-editing header,
+    .galgame-narration-card.is-editing > header
+  ) {
   min-height: 27px;
   border-bottom: 0;
 }
 
-.galgame-script-workbench .galgame-dialogue-card textarea,
-.galgame-script-workbench .galgame-narration-card textarea {
+.galgame-script-workbench
+  :is(.galgame-dialogue-card textarea, .galgame-narration-card textarea) {
   min-height: 25px;
   padding: 1px 0 4px;
   font-size: 11px;
@@ -205,11 +196,10 @@
 }
 
 .galgame-script-workbench
-  .galgame-dialogue-card.selected
-  .galgame-dialogue-card-body,
-.galgame-script-workbench
-  .galgame-block-card.selected
-  .galgame-dialogue-card-body {
+  :is(
+    .galgame-dialogue-card.selected .galgame-dialogue-card-body,
+    .galgame-block-card.selected .galgame-dialogue-card-body
+  ) {
   border-color: transparent;
   box-shadow: none;
 }

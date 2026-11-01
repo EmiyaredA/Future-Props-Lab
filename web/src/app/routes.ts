@@ -54,10 +54,6 @@ export type WorkshopPage =
   | "video-editor-projects"
   | "video-editor-editor"
   | "video-editor-tasks"
-  | "live2d-workshop-projects"
-  | "live2d-workshop-editor"
-  | "desktop-pet-projects"
-  | "desktop-pet-editor"
   | "motion-compositor-projects"
   | "motion-compositor-editor"
   | "audio-annotation-projects"
@@ -98,8 +94,6 @@ export function isWorkshopPage(page: AppPage): page is WorkshopPage {
     page.startsWith("galgame-workshop-") ||
     page.startsWith("video-editor-") ||
     page.startsWith("motion-compositor-") ||
-    page.startsWith("live2d-workshop-") ||
-    page.startsWith("desktop-pet-") ||
     page.startsWith("audio-annotation-") ||
     page.startsWith("director-desk-")
   );
@@ -296,10 +290,6 @@ export function pathFor(
     "video-editor-projects": "/apps/video-editor",
     "video-editor-editor": "/apps/video-editor",
     "video-editor-tasks": "/apps/video-editor/tasks",
-    "live2d-workshop-projects": "/apps/live2d-workshop",
-    "live2d-workshop-editor": "/apps/live2d-workshop",
-    "desktop-pet-projects": "/apps/desktop-pet",
-    "desktop-pet-editor": "/apps/desktop-pet",
     "motion-compositor-projects": "/apps/motion-compositor",
     "motion-compositor-editor": "/apps/motion-compositor",
     "audio-annotation-projects": "/apps/audio-annotation",
@@ -324,7 +314,7 @@ export function hasReadOnlyRoute(page: AppPage) {
   return (
     page === "files" ||
     page === "model-test" ||
-    /^(visual-workshop|thought-workshop|galgame-workshop|video-editor|motion-compositor|live2d-workshop|audio-annotation)-/.test(
+    /^(visual-workshop|thought-workshop|galgame-workshop|video-editor|motion-compositor|audio-annotation)-/.test(
       page,
     )
   );

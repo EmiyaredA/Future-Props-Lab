@@ -153,9 +153,11 @@ def inventory(schema, existing):
     result = {}
     names = set()
     for path, item in schema["paths"].items():
-        # Community v1 is a browser Session gateway, not an SDK or Agent resource.
-        # Its HTTP schemas remain generated for typed Web consumers.
-        if path.startswith("/v1/thought-workshop/community/"):
+        # Browser Session gateways are not SDK or Agent resources. Their HTTP
+        # schemas remain generated for typed Web consumers.
+        if path.startswith(
+            ("/v1/thought-workshop/community/", "/v1/agent-workbench/", "/v1/desktop/web-access")
+        ):
             continue
         for method, operation in item.items():
             if method not in {"get", "post", "put", "patch", "delete", "head", "options"}:

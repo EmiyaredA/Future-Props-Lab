@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
+import { useVisibleApiBlobUrl } from "@platform/api/useVisibleApiBlobUrl";
 import type { SelectOption } from "@shared/ui/CustomSelect";
 import type {
   ManagedFile,
@@ -131,15 +132,29 @@ export function FileKindIcon({ kind }: { kind: MediaKind }) {
 }
 
 export function AssetPreview({ file }: { file: ManagedFile }) {
-  const { url } = useApiBlobUrl(
-    file.media_kind === "image" ? `/v1/files/${file.id}/content` : null,
+  const { url, ref } = useVisibleApiBlobUrl(
+    file.media_kind === "image"
+      ? `/v1/files/${file.id}/thumbnail?size=320`
+      : null,
   );
-  return url ? (
-    <img src={url} alt="" />
-  ) : (
-    <span>
-      <FileKindIcon kind={file.media_kind} />
-    </span>
+  return (
+    <div
+      ref={ref}
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "grid",
+        placeItems: "center",
+      }}
+    >
+      {url ? (
+        <img src={url} alt="" decoding="async" />
+      ) : (
+        <span>
+          <FileKindIcon kind={file.media_kind} />
+        </span>
+      )}
+    </div>
   );
 }
 

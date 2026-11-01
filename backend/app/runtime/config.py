@@ -82,6 +82,12 @@ class Settings(BaseSettings):
     fpl_remote_web_origin: str = ""
     fpl_remote_web_port: int = 28081
     fpl_remote_web_root: str = ""
+    fpl_remote_web_ssh_host: str = ""
+    fpl_remote_web_ssh_user: str = ""
+    fpl_remote_web_ssh_port: int = Field(default=22, ge=1, le=65535)
+    fpl_remote_web_remote_port: int = Field(default=28080, ge=1024, le=65535)
+    fpl_remote_web_identity_id: str = ""
+    fpl_remote_web_known_hosts_id: str = ""
     fpl_visual_asset_max_bytes: int = 200 * 1024 * 1024
     fpl_galgame_export_max_bytes: int = 8 * 1024 * 1024 * 1024
     fpl_temp_media_upload_url: str = ""

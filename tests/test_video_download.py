@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from pathlib import Path
 
 import httpx
@@ -33,9 +34,7 @@ def test_extract_video_url_from_share_text_and_modal() -> None:
     )
     assert vd.extract_video_url(share) == "https://v.douyin.com/u32i-u6Sa3U/"
     assert (
-        vd.extract_video_url(
-            "https://www.douyin.com/jingxuan?modal_id=7686880989229927732"
-        )
+        vd.extract_video_url("https://www.douyin.com/jingxuan?modal_id=7686880989229927732")
         == "https://www.douyin.com/video/7686880989229927732"
     )
 
@@ -111,16 +110,24 @@ def test_job_create_requires_destination() -> None:
 
 @pytest.mark.asyncio
 async def test_deps_and_job_lifecycle(monkeypatch, tmp_path: Path) -> None:
-    monkeypatch.setattr(vd, "_jobs_root", lambda settings=None: tmp_path)
+    def jobs_root(settings=None):
+        del settings
+        return tmp_path
+
+    monkeypatch.setattr(vd, "_jobs_root", jobs_root)
 
     def fake_probe() -> vd.VideoDownloadDepsOut:
         return vd.VideoDownloadDepsOut(
             ready=True,
-            yt_dlp=vd.BinaryStatus(name="yt-dlp", ok=True, path="/bin/yt-dlp", version="2026.01.01"),
+            yt_dlp=vd.BinaryStatus(
+                name="yt-dlp", ok=True, path="/bin/yt-dlp", version="2026.01.01"
+            ),
             ffmpeg=vd.BinaryStatus(name="ffmpeg", ok=True, path="/bin/ffmpeg", version="ffmpeg 7"),
         )
 
-    def fake_run(*, url: str, quality: str, work_dir: Path, cookies_from_browser: str | None) -> None:
+    def fake_run(
+        *, url: str, quality: str, work_dir: Path, cookies_from_browser: str | None
+    ) -> None:
         assert "bilibili.com" in url
         assert quality == "720"
         assert cookies_from_browser == "chrome"
@@ -128,11 +135,12 @@ async def test_deps_and_job_lifecycle(monkeypatch, tmp_path: Path) -> None:
         # Minimal ISO BMFF so looks_like accepts .mp4 when library path is used.
         media.write_bytes(b"\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom" + b"\x00" * 64)
         (work_dir / "clip.info.json").write_text(
-            '{"title": "测试视频", "webpage_url": "%s"}' % url,
+            json.dumps({"title": "测试视频", "webpage_url": url}, ensure_ascii=False),
             encoding="utf-8",
         )
 
     async def fake_ingest(job: vd.VideoDownloadJob, media: Path) -> vd.VideoDownloadAssetOut:
+        assert job.quality == "720"
         assert media.is_file()
         return vd.VideoDownloadAssetOut(
             id="asset-1",

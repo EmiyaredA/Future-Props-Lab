@@ -53,6 +53,12 @@ FIELDS = {
         "origin": ("fpl_remote_web_origin", str),
         "port": ("fpl_remote_web_port", int),
         "web_root": ("fpl_remote_web_root", str),
+        "ssh_host": ("fpl_remote_web_ssh_host", str),
+        "ssh_user": ("fpl_remote_web_ssh_user", str),
+        "ssh_port": ("fpl_remote_web_ssh_port", int),
+        "remote_port": ("fpl_remote_web_remote_port", int),
+        "identity_id": ("fpl_remote_web_identity_id", str),
+        "known_hosts_id": ("fpl_remote_web_known_hosts_id", str),
     },
     "limits": {
         name: (f"fpl_{name}", int)

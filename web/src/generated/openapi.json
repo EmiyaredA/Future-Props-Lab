@@ -1227,6 +1227,113 @@
         "title": "AcceptanceTemplateWriteIn",
         "type": "object"
       },
+      "AccessAction": {
+        "properties": {
+          "action": {
+            "enum": [
+              "local_start",
+              "local_stop",
+              "public_start",
+              "public_stop",
+              "check"
+            ],
+            "title": "Action",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "title": "AccessAction",
+        "type": "object"
+      },
+      "AccessConfigIn": {
+        "properties": {
+          "expected_revision": {
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Expected Revision",
+            "type": "string"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/GatewayProfile"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "profile"
+        ],
+        "title": "AccessConfigIn",
+        "type": "object"
+      },
+      "AccessConfigOut": {
+        "properties": {
+          "identity_fingerprint": {
+            "default": "",
+            "title": "Identity Fingerprint",
+            "type": "string"
+          },
+          "known_hosts_fingerprint": {
+            "default": "",
+            "title": "Known Hosts Fingerprint",
+            "type": "string"
+          },
+          "legacy_available": {
+            "default": false,
+            "title": "Legacy Available",
+            "type": "boolean"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/GatewayProfile"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "revision",
+          "profile"
+        ],
+        "title": "AccessConfigOut",
+        "type": "object"
+      },
+      "AccessStatus": {
+        "properties": {
+          "build_id": {
+            "default": "",
+            "title": "Build Id",
+            "type": "string"
+          },
+          "bytes_received": {
+            "default": 0,
+            "title": "Bytes Received",
+            "type": "integer"
+          },
+          "bytes_sent": {
+            "default": 0,
+            "title": "Bytes Sent",
+            "type": "integer"
+          },
+          "local": {
+            "$ref": "#/components/schemas/EndpointStatus"
+          },
+          "public": {
+            "$ref": "#/components/schemas/EndpointStatus"
+          },
+          "requests": {
+            "default": 0,
+            "title": "Requests",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "local",
+          "public"
+        ],
+        "title": "AccessStatus",
+        "type": "object"
+      },
       "AccountAvatarDeleteIn": {
         "properties": {
           "expected_revision": {
@@ -4151,26 +4258,6 @@
         "title": "Body_add_skill_version_v1_integrations_skills__skill_id__versions_post",
         "type": "object"
       },
-      "Body_attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put": {
-        "properties": {
-          "expectedRevision": {
-            "minimum": 0.0,
-            "title": "Expectedrevision",
-            "type": "integer"
-          },
-          "file": {
-            "contentMediaType": "application/octet-stream",
-            "title": "File",
-            "type": "string"
-          }
-        },
-        "required": [
-          "file",
-          "expectedRevision"
-        ],
-        "title": "Body_attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put",
-        "type": "object"
-      },
       "Body_attachments_v1_thought_workshop_attachments_post": {
         "properties": {
           "upload": {
@@ -4217,37 +4304,6 @@
           "category"
         ],
         "title": "Body_batch_upload_project_assets_v1_galgame_workshop_projects__project_id__assets_batch_post",
-        "type": "object"
-      },
-      "Body_convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post": {
-        "properties": {
-          "expectedRevision": {
-            "minimum": 0.0,
-            "title": "Expectedrevision",
-            "type": "integer"
-          },
-          "file": {
-            "contentMediaType": "application/octet-stream",
-            "title": "File",
-            "type": "string"
-          },
-          "source": {
-            "contentMediaType": "application/octet-stream",
-            "title": "Source",
-            "type": "string"
-          },
-          "stateBindings": {
-            "default": "{}",
-            "title": "Statebindings",
-            "type": "string"
-          }
-        },
-        "required": [
-          "file",
-          "source",
-          "expectedRevision"
-        ],
-        "title": "Body_convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post",
         "type": "object"
       },
       "Body_create_import_v1_presentation_workshop_imports_post": {
@@ -4440,20 +4496,6 @@
         "title": "Body_import_project_snapshot_v1_visual_workshop_projects_snapshot_imports_post",
         "type": "object"
       },
-      "Body_import_project_v1_live2d_workshop_projects_import_post": {
-        "properties": {
-          "file": {
-            "contentMediaType": "application/octet-stream",
-            "title": "File",
-            "type": "string"
-          }
-        },
-        "required": [
-          "file"
-        ],
-        "title": "Body_import_project_v1_live2d_workshop_projects_import_post",
-        "type": "object"
-      },
       "Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post": {
         "properties": {
           "file": {
@@ -4468,20 +4510,6 @@
         "title": "Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post",
         "type": "object"
       },
-      "Body_import_whale_v1_desktop_pet_projects_import_whale_post": {
-        "properties": {
-          "file": {
-            "contentMediaType": "application/octet-stream",
-            "title": "File",
-            "type": "string"
-          }
-        },
-        "required": [
-          "file"
-        ],
-        "title": "Body_import_whale_v1_desktop_pet_projects_import_whale_post",
-        "type": "object"
-      },
       "Body_imports_v1_thought_workshop_imports_post": {
         "properties": {
           "upload": {
@@ -4494,20 +4522,6 @@
           "upload"
         ],
         "title": "Body_imports_v1_thought_workshop_imports_post",
-        "type": "object"
-      },
-      "Body_preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post": {
-        "properties": {
-          "file": {
-            "contentMediaType": "application/octet-stream",
-            "title": "File",
-            "type": "string"
-          }
-        },
-        "required": [
-          "file"
-        ],
-        "title": "Body_preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post",
         "type": "object"
       },
       "Body_preview_import_v1_presentation_workshop_imports_preview_post": {
@@ -4542,26 +4556,6 @@
           "expected_revision"
         ],
         "title": "Body_put_avatar_v1_account_profile_avatar_put",
-        "type": "object"
-      },
-      "Body_replace_package_v1_desktop_pet_projects__project_id__replace_package_post": {
-        "properties": {
-          "expectedRevision": {
-            "minimum": 0.0,
-            "title": "Expectedrevision",
-            "type": "integer"
-          },
-          "file": {
-            "contentMediaType": "application/octet-stream",
-            "title": "File",
-            "type": "string"
-          }
-        },
-        "required": [
-          "file",
-          "expectedRevision"
-        ],
-        "title": "Body_replace_package_v1_desktop_pet_projects__project_id__replace_package_post",
         "type": "object"
       },
       "Body_transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post": {
@@ -4625,20 +4619,6 @@
           "end_ms"
         ],
         "title": "Body_transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post",
-        "type": "object"
-      },
-      "Body_upload_asset_v1_live2d_workshop_projects__project_id__assets_post": {
-        "properties": {
-          "file": {
-            "contentMediaType": "application/octet-stream",
-            "title": "File",
-            "type": "string"
-          }
-        },
-        "required": [
-          "file"
-        ],
-        "title": "Body_upload_asset_v1_live2d_workshop_projects__project_id__assets_post",
         "type": "object"
       },
       "Body_upload_asset_v1_model_inference_assets_post": {
@@ -4971,26 +4951,6 @@
         "title": "Body_upload_skill_v1_creative_workshop_items__item_id__skill_archive_post",
         "type": "object"
       },
-      "Body_upload_skin_replacement_v1_desktop_pet_projects__project_id__skins__skin_id__replacements__source_asset_id__put": {
-        "properties": {
-          "expectedRevision": {
-            "minimum": 0.0,
-            "title": "Expectedrevision",
-            "type": "integer"
-          },
-          "file": {
-            "contentMediaType": "application/octet-stream",
-            "title": "File",
-            "type": "string"
-          }
-        },
-        "required": [
-          "file",
-          "expectedRevision"
-        ],
-        "title": "Body_upload_skin_replacement_v1_desktop_pet_projects__project_id__skins__skin_id__replacements__source_asset_id__put",
-        "type": "object"
-      },
       "Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post": {
         "properties": {
           "abbreviations": {
@@ -5123,28 +5083,6 @@
           "upload"
         ],
         "title": "Body_upload_v1_thought_workshop_community_publications__publication_id__notes__note_id__uploads_post",
-        "type": "object"
-      },
-      "BoneWeight": {
-        "additionalProperties": false,
-        "properties": {
-          "boneId": {
-            "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-            "title": "Boneid",
-            "type": "string"
-          },
-          "weight": {
-            "exclusiveMinimum": 0.0,
-            "maximum": 1.0,
-            "title": "Weight",
-            "type": "number"
-          }
-        },
-        "required": [
-          "boneId",
-          "weight"
-        ],
-        "title": "BoneWeight",
         "type": "object"
       },
       "CallLogListItem": {
@@ -5583,798 +5521,6 @@
           "created_at"
         ],
         "title": "ChangeSummary",
-        "type": "object"
-      },
-      "CharacterBone": {
-        "additionalProperties": false,
-        "properties": {
-          "damping": {
-            "default": 0.5,
-            "maximum": 1.0,
-            "minimum": 0.0,
-            "title": "Damping",
-            "type": "number"
-          },
-          "id": {
-            "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-            "title": "Id",
-            "type": "string"
-          },
-          "name": {
-            "maxLength": 120,
-            "minLength": 1,
-            "title": "Name",
-            "type": "string"
-          },
-          "offsetX": {
-            "default": 0,
-            "maximum": 100000.0,
-            "minimum": -100000.0,
-            "title": "Offsetx",
-            "type": "number"
-          },
-          "offsetY": {
-            "default": 0,
-            "maximum": 100000.0,
-            "minimum": -100000.0,
-            "title": "Offsety",
-            "type": "number"
-          },
-          "parentId": {
-            "anyOf": [
-              {
-                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Parentid"
-          },
-          "rotation": {
-            "default": 0,
-            "maximum": 100000.0,
-            "minimum": -100000.0,
-            "title": "Rotation",
-            "type": "number"
-          },
-          "scale": {
-            "default": 1,
-            "exclusiveMinimum": 0.0,
-            "maximum": 100.0,
-            "title": "Scale",
-            "type": "number"
-          },
-          "spring": {
-            "default": 0,
-            "maximum": 1.0,
-            "minimum": 0.0,
-            "title": "Spring",
-            "type": "number"
-          },
-          "x": {
-            "default": 0,
-            "maximum": 100000.0,
-            "minimum": -100000.0,
-            "title": "X",
-            "type": "number"
-          },
-          "y": {
-            "default": 0,
-            "maximum": 100000.0,
-            "minimum": -100000.0,
-            "title": "Y",
-            "type": "number"
-          }
-        },
-        "required": [
-          "id",
-          "name"
-        ],
-        "title": "CharacterBone",
-        "type": "object"
-      },
-      "CharacterCamera": {
-        "additionalProperties": false,
-        "properties": {
-          "height": {
-            "exclusiveMinimum": 0.0,
-            "maximum": 4096.0,
-            "title": "Height",
-            "type": "number"
-          },
-          "width": {
-            "exclusiveMinimum": 0.0,
-            "maximum": 4096.0,
-            "title": "Width",
-            "type": "number"
-          },
-          "x": {
-            "minimum": 0.0,
-            "title": "X",
-            "type": "number"
-          },
-          "y": {
-            "minimum": 0.0,
-            "title": "Y",
-            "type": "number"
-          }
-        },
-        "required": [
-          "x",
-          "y",
-          "width",
-          "height"
-        ],
-        "title": "CharacterCamera",
-        "type": "object"
-      },
-      "CharacterDeformer": {
-        "additionalProperties": false,
-        "properties": {
-          "columns": {
-            "default": 2,
-            "maximum": 16.0,
-            "minimum": 1.0,
-            "title": "Columns",
-            "type": "integer"
-          },
-          "height": {
-            "default": 500,
-            "exclusiveMinimum": 0.0,
-            "maximum": 8192.0,
-            "title": "Height",
-            "type": "number"
-          },
-          "id": {
-            "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-            "title": "Id",
-            "type": "string"
-          },
-          "kind": {
-            "enum": [
-              "rotation",
-              "warp"
-            ],
-            "title": "Kind",
-            "type": "string"
-          },
-          "name": {
-            "maxLength": 120,
-            "minLength": 1,
-            "title": "Name",
-            "type": "string"
-          },
-          "parentId": {
-            "anyOf": [
-              {
-                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Parentid"
-          },
-          "points": {
-            "items": {
-              "$ref": "#/components/schemas/Point"
-            },
-            "maxItems": 289,
-            "title": "Points",
-            "type": "array"
-          },
-          "rotation": {
-            "default": 0,
-            "maximum": 100000.0,
-            "minimum": -100000.0,
-            "title": "Rotation",
-            "type": "number"
-          },
-          "rows": {
-            "default": 2,
-            "maximum": 16.0,
-            "minimum": 1.0,
-            "title": "Rows",
-            "type": "integer"
-          },
-          "scale": {
-            "default": 1,
-            "exclusiveMinimum": 0.0,
-            "maximum": 100.0,
-            "title": "Scale",
-            "type": "number"
-          },
-          "width": {
-            "default": 500,
-            "exclusiveMinimum": 0.0,
-            "maximum": 8192.0,
-            "title": "Width",
-            "type": "number"
-          },
-          "x": {
-            "default": 0,
-            "maximum": 100000.0,
-            "minimum": -100000.0,
-            "title": "X",
-            "type": "number"
-          },
-          "y": {
-            "default": 0,
-            "maximum": 100000.0,
-            "minimum": -100000.0,
-            "title": "Y",
-            "type": "number"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "kind"
-        ],
-        "title": "CharacterDeformer",
-        "type": "object"
-      },
-      "CharacterDocument": {
-        "additionalProperties": false,
-        "properties": {
-          "bones": {
-            "items": {
-              "$ref": "#/components/schemas/CharacterBone"
-            },
-            "maxItems": 128,
-            "title": "Bones",
-            "type": "array"
-          },
-          "cameras": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/CharacterCamera"
-            },
-            "propertyNames": {
-              "enum": [
-                "avatar",
-                "stage"
-              ]
-            },
-            "title": "Cameras",
-            "type": "object"
-          },
-          "cubismParameterIds": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "maxProperties": 128,
-            "title": "Cubismparameterids",
-            "type": "object"
-          },
-          "deformers": {
-            "items": {
-              "$ref": "#/components/schemas/CharacterDeformer"
-            },
-            "maxItems": 128,
-            "title": "Deformers",
-            "type": "array"
-          },
-          "expressions": {
-            "items": {
-              "$ref": "#/components/schemas/CharacterExpression"
-            },
-            "maxItems": 128,
-            "title": "Expressions",
-            "type": "array"
-          },
-          "height": {
-            "default": 1600,
-            "maximum": 4096.0,
-            "minimum": 32.0,
-            "title": "Height",
-            "type": "integer"
-          },
-          "idleBehavior": {
-            "$ref": "#/components/schemas/CharacterIdleBehavior"
-          },
-          "motions": {
-            "items": {
-              "$ref": "#/components/schemas/CharacterMotion"
-            },
-            "maxItems": 128,
-            "title": "Motions",
-            "type": "array"
-          },
-          "parameters": {
-            "items": {
-              "$ref": "#/components/schemas/CharacterParameter"
-            },
-            "maxItems": 128,
-            "title": "Parameters",
-            "type": "array"
-          },
-          "parts": {
-            "items": {
-              "$ref": "#/components/schemas/CharacterPart"
-            },
-            "maxItems": 128,
-            "title": "Parts",
-            "type": "array"
-          },
-          "schemaVersion": {
-            "const": 3,
-            "default": 3,
-            "title": "Schemaversion",
-            "type": "integer"
-          },
-          "stateBindings": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/CharacterStateBinding"
-            },
-            "maxProperties": 7,
-            "propertyNames": {
-              "enum": [
-                "idle",
-                "listening",
-                "thinking",
-                "tool",
-                "success",
-                "error",
-                "paused"
-              ]
-            },
-            "title": "Statebindings",
-            "type": "object"
-          },
-          "width": {
-            "default": 1200,
-            "maximum": 4096.0,
-            "minimum": 32.0,
-            "title": "Width",
-            "type": "integer"
-          }
-        },
-        "title": "CharacterDocument",
-        "type": "object"
-      },
-      "CharacterExpression": {
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-            "title": "Id",
-            "type": "string"
-          },
-          "name": {
-            "maxLength": 120,
-            "minLength": 1,
-            "title": "Name",
-            "type": "string"
-          },
-          "values": {
-            "additionalProperties": {
-              "maximum": 100000.0,
-              "minimum": -100000.0,
-              "type": "number"
-            },
-            "maxProperties": 128,
-            "title": "Values",
-            "type": "object"
-          }
-        },
-        "required": [
-          "id",
-          "name"
-        ],
-        "title": "CharacterExpression",
-        "type": "object"
-      },
-      "CharacterIdleBehavior": {
-        "additionalProperties": false,
-        "properties": {
-          "blinkParameter": {
-            "anyOf": [
-              {
-                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Blinkparameter"
-          },
-          "breathParameter": {
-            "anyOf": [
-              {
-                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Breathparameter"
-          },
-          "gazeXParameter": {
-            "anyOf": [
-              {
-                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Gazexparameter"
-          },
-          "gazeYParameter": {
-            "anyOf": [
-              {
-                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Gazeyparameter"
-          },
-          "intensity": {
-            "default": 0.5,
-            "maximum": 1.0,
-            "minimum": 0.0,
-            "title": "Intensity",
-            "type": "number"
-          },
-          "springBones": {
-            "items": {
-              "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-              "type": "string"
-            },
-            "maxItems": 32,
-            "title": "Springbones",
-            "type": "array"
-          },
-          "swayParameter": {
-            "anyOf": [
-              {
-                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Swayparameter"
-          }
-        },
-        "title": "CharacterIdleBehavior",
-        "type": "object"
-      },
-      "CharacterMotion": {
-        "additionalProperties": false,
-        "properties": {
-          "duration": {
-            "default": 60,
-            "maximum": 36000.0,
-            "minimum": 1.0,
-            "title": "Duration",
-            "type": "integer"
-          },
-          "fps": {
-            "default": 30,
-            "maximum": 60.0,
-            "minimum": 1.0,
-            "title": "Fps",
-            "type": "integer"
-          },
-          "id": {
-            "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-            "title": "Id",
-            "type": "string"
-          },
-          "loopEnd": {
-            "default": 60,
-            "minimum": 1.0,
-            "title": "Loopend",
-            "type": "integer"
-          },
-          "loopStart": {
-            "default": 0,
-            "minimum": 0.0,
-            "title": "Loopstart",
-            "type": "integer"
-          },
-          "name": {
-            "maxLength": 120,
-            "minLength": 1,
-            "title": "Name",
-            "type": "string"
-          },
-          "tracks": {
-            "items": {
-              "$ref": "#/components/schemas/CharacterTrack"
-            },
-            "maxItems": 128,
-            "title": "Tracks",
-            "type": "array"
-          }
-        },
-        "required": [
-          "id",
-          "name"
-        ],
-        "title": "CharacterMotion",
-        "type": "object"
-      },
-      "CharacterParameter": {
-        "additionalProperties": false,
-        "properties": {
-          "bindings": {
-            "items": {
-              "$ref": "#/components/schemas/ParameterBinding"
-            },
-            "maxItems": 256,
-            "title": "Bindings",
-            "type": "array"
-          },
-          "default": {
-            "default": 0,
-            "maximum": 100000.0,
-            "minimum": -100000.0,
-            "title": "Default",
-            "type": "number"
-          },
-          "id": {
-            "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-            "title": "Id",
-            "type": "string"
-          },
-          "maximum": {
-            "default": 30,
-            "maximum": 100000.0,
-            "minimum": -100000.0,
-            "title": "Maximum",
-            "type": "number"
-          },
-          "minimum": {
-            "default": -30,
-            "maximum": 100000.0,
-            "minimum": -100000.0,
-            "title": "Minimum",
-            "type": "number"
-          },
-          "name": {
-            "maxLength": 120,
-            "minLength": 1,
-            "title": "Name",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "name"
-        ],
-        "title": "CharacterParameter",
-        "type": "object"
-      },
-      "CharacterPart": {
-        "additionalProperties": false,
-        "properties": {
-          "assetId": {
-            "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-            "title": "Assetid",
-            "type": "string"
-          },
-          "group": {
-            "default": "",
-            "maxLength": 512,
-            "title": "Group",
-            "type": "string"
-          },
-          "height": {
-            "exclusiveMinimum": 0.0,
-            "maximum": 8192.0,
-            "title": "Height",
-            "type": "number"
-          },
-          "id": {
-            "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-            "title": "Id",
-            "type": "string"
-          },
-          "locked": {
-            "default": false,
-            "title": "Locked",
-            "type": "boolean"
-          },
-          "maskId": {
-            "anyOf": [
-              {
-                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Maskid"
-          },
-          "name": {
-            "maxLength": 120,
-            "minLength": 1,
-            "title": "Name",
-            "type": "string"
-          },
-          "opacity": {
-            "default": 1,
-            "maximum": 1.0,
-            "minimum": 0.0,
-            "title": "Opacity",
-            "type": "number"
-          },
-          "order": {
-            "default": 0,
-            "maximum": 10000.0,
-            "minimum": -10000.0,
-            "title": "Order",
-            "type": "integer"
-          },
-          "parentId": {
-            "anyOf": [
-              {
-                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Parentid"
-          },
-          "skinWeights": {
-            "anyOf": [
-              {
-                "items": {
-                  "items": {
-                    "$ref": "#/components/schemas/BoneWeight"
-                  },
-                  "type": "array"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Skinweights"
-          },
-          "triangles": {
-            "items": {
-              "type": "integer"
-            },
-            "maxItems": 24576,
-            "minItems": 3,
-            "title": "Triangles",
-            "type": "array"
-          },
-          "uvs": {
-            "items": {
-              "$ref": "#/components/schemas/Point"
-            },
-            "maxItems": 4096,
-            "minItems": 3,
-            "title": "Uvs",
-            "type": "array"
-          },
-          "vertices": {
-            "items": {
-              "$ref": "#/components/schemas/Point"
-            },
-            "maxItems": 4096,
-            "minItems": 3,
-            "title": "Vertices",
-            "type": "array"
-          },
-          "visible": {
-            "default": true,
-            "title": "Visible",
-            "type": "boolean"
-          },
-          "width": {
-            "exclusiveMinimum": 0.0,
-            "maximum": 8192.0,
-            "title": "Width",
-            "type": "number"
-          },
-          "x": {
-            "default": 0,
-            "maximum": 100000.0,
-            "minimum": -100000.0,
-            "title": "X",
-            "type": "number"
-          },
-          "y": {
-            "default": 0,
-            "maximum": 100000.0,
-            "minimum": -100000.0,
-            "title": "Y",
-            "type": "number"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "assetId",
-          "width",
-          "height",
-          "vertices",
-          "uvs",
-          "triangles"
-        ],
-        "title": "CharacterPart",
-        "type": "object"
-      },
-      "CharacterStateBinding": {
-        "additionalProperties": false,
-        "properties": {
-          "expressionId": {
-            "anyOf": [
-              {
-                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Expressionid"
-          },
-          "motionId": {
-            "anyOf": [
-              {
-                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Motionid"
-          },
-          "playback": {
-            "default": "loop",
-            "enum": [
-              "loop",
-              "onceHold"
-            ],
-            "title": "Playback",
-            "type": "string"
-          }
-        },
-        "title": "CharacterStateBinding",
-        "type": "object"
-      },
-      "CharacterTrack": {
-        "additionalProperties": false,
-        "properties": {
-          "keys": {
-            "items": {
-              "$ref": "#/components/schemas/TimeKeyframe"
-            },
-            "maxItems": 1000,
-            "title": "Keys",
-            "type": "array"
-          },
-          "parameterId": {
-            "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-            "title": "Parameterid",
-            "type": "string"
-          }
-        },
-        "required": [
-          "parameterId"
-        ],
-        "title": "CharacterTrack",
         "type": "object"
       },
       "CheckpointIn": {
@@ -7032,6 +6178,24 @@
           "asset_ids"
         ],
         "title": "CommunitySnapshot",
+        "type": "object"
+      },
+      "ConfigPrepared": {
+        "properties": {
+          "apply_receipt": {
+            "title": "Apply Receipt",
+            "type": "string"
+          },
+          "restart_required": {
+            "default": true,
+            "title": "Restart Required",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "apply_receipt"
+        ],
+        "title": "ConfigPrepared",
         "type": "object"
       },
       "ConversationDetailOut": {
@@ -7948,6 +7112,76 @@
           "command"
         ],
         "title": "CreativeStdioSetupIn",
+        "type": "object"
+      },
+      "CredentialImportIn": {
+        "properties": {
+          "path": {
+            "maxLength": 4096,
+            "minLength": 1,
+            "title": "Path",
+            "type": "string"
+          },
+          "ticket": {
+            "maxLength": 128,
+            "minLength": 32,
+            "title": "Ticket",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticket",
+          "path"
+        ],
+        "title": "CredentialImportIn",
+        "type": "object"
+      },
+      "CredentialOut": {
+        "properties": {
+          "fingerprint": {
+            "title": "Fingerprint",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "fingerprint"
+        ],
+        "title": "CredentialOut",
+        "type": "object"
+      },
+      "CredentialTicketIn": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "identity",
+              "known_hosts"
+            ],
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "CredentialTicketIn",
+        "type": "object"
+      },
+      "CredentialTicketOut": {
+        "properties": {
+          "ticket": {
+            "title": "Ticket",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticket"
+        ],
+        "title": "CredentialTicketOut",
         "type": "object"
       },
       "CsvIn": {
@@ -9188,6 +8422,40 @@
           "revisions"
         ],
         "title": "DuplicateSnapshot",
+        "type": "object"
+      },
+      "EndpointStatus": {
+        "properties": {
+          "error": {
+            "default": "",
+            "title": "Error",
+            "type": "string"
+          },
+          "last_checked_at": {
+            "default": "",
+            "title": "Last Checked At",
+            "type": "string"
+          },
+          "phase": {
+            "default": "off",
+            "enum": [
+              "off",
+              "starting",
+              "ready",
+              "connecting",
+              "reconnecting",
+              "failed"
+            ],
+            "title": "Phase",
+            "type": "string"
+          },
+          "url": {
+            "default": "",
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "title": "EndpointStatus",
         "type": "object"
       },
       "Experience": {
@@ -18688,6 +17956,63 @@
         "title": "GalgameWorkshopProjectPatchIn",
         "type": "object"
       },
+      "GatewayProfile": {
+        "additionalProperties": false,
+        "properties": {
+          "host": {
+            "default": "",
+            "maxLength": 253,
+            "title": "Host",
+            "type": "string"
+          },
+          "identity_id": {
+            "default": "",
+            "pattern": "^(?:[a-f0-9]{32})?$",
+            "title": "Identity Id",
+            "type": "string"
+          },
+          "known_hosts_id": {
+            "default": "",
+            "pattern": "^(?:[a-f0-9]{32})?$",
+            "title": "Known Hosts Id",
+            "type": "string"
+          },
+          "local_port": {
+            "default": 28081,
+            "maximum": 65535.0,
+            "minimum": 1024.0,
+            "title": "Local Port",
+            "type": "integer"
+          },
+          "origin": {
+            "default": "",
+            "title": "Origin",
+            "type": "string"
+          },
+          "remote_port": {
+            "default": 28080,
+            "maximum": 65535.0,
+            "minimum": 1024.0,
+            "title": "Remote Port",
+            "type": "integer"
+          },
+          "ssh_port": {
+            "default": 22,
+            "maximum": 65535.0,
+            "minimum": 1.0,
+            "title": "Ssh Port",
+            "type": "integer"
+          },
+          "user": {
+            "default": "",
+            "maxLength": 64,
+            "title": "User",
+            "type": "string"
+          }
+        },
+        "title": "GatewayProfile",
+        "type": "object"
+      },
       "GenerationBatchListOut": {
         "properties": {
           "items": {
@@ -21424,501 +20749,6 @@
           "linkGroupId"
         ],
         "title": "LinkClipsOperation",
-        "type": "object"
-      },
-      "Live2DAssetOut": {
-        "additionalProperties": false,
-        "properties": {
-          "height": {
-            "title": "Height",
-            "type": "integer"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "url": {
-            "title": "Url",
-            "type": "string"
-          },
-          "width": {
-            "title": "Width",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "width",
-          "height",
-          "url"
-        ],
-        "title": "Live2DAssetOut",
-        "type": "object"
-      },
-      "Live2DAssets": {
-        "additionalProperties": false,
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/Live2DAssetOut"
-            },
-            "title": "Items",
-            "type": "array"
-          }
-        },
-        "required": [
-          "items"
-        ],
-        "title": "Live2DAssets",
-        "type": "object"
-      },
-      "Live2DCombination": {
-        "additionalProperties": false,
-        "properties": {
-          "expressionId": {
-            "anyOf": [
-              {
-                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Expressionid"
-          },
-          "motionId": {
-            "anyOf": [
-              {
-                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Motionid"
-          }
-        },
-        "title": "Live2DCombination",
-        "type": "object"
-      },
-      "Live2DCreate": {
-        "additionalProperties": false,
-        "properties": {
-          "height": {
-            "default": 1600,
-            "maximum": 4096.0,
-            "minimum": 32.0,
-            "title": "Height",
-            "type": "integer"
-          },
-          "title": {
-            "default": "未命名角色",
-            "maxLength": 120,
-            "minLength": 1,
-            "title": "Title",
-            "type": "string"
-          },
-          "width": {
-            "default": 1200,
-            "maximum": 4096.0,
-            "minimum": 32.0,
-            "title": "Width",
-            "type": "integer"
-          }
-        },
-        "title": "Live2DCreate",
-        "type": "object"
-      },
-      "Live2DCrop": {
-        "additionalProperties": false,
-        "properties": {
-          "height": {
-            "exclusiveMinimum": 0.0,
-            "maximum": 4096.0,
-            "title": "Height",
-            "type": "number"
-          },
-          "width": {
-            "exclusiveMinimum": 0.0,
-            "maximum": 4096.0,
-            "title": "Width",
-            "type": "number"
-          },
-          "x": {
-            "minimum": 0.0,
-            "title": "X",
-            "type": "number"
-          },
-          "y": {
-            "minimum": 0.0,
-            "title": "Y",
-            "type": "number"
-          }
-        },
-        "required": [
-          "x",
-          "y",
-          "width",
-          "height"
-        ],
-        "title": "Live2DCrop",
-        "type": "object"
-      },
-      "Live2DCubismBindings": {
-        "additionalProperties": false,
-        "properties": {
-          "expectedRevision": {
-            "minimum": 0.0,
-            "title": "Expectedrevision",
-            "type": "integer"
-          },
-          "stateBindings": {
-            "additionalProperties": true,
-            "title": "Statebindings",
-            "type": "object"
-          }
-        },
-        "required": [
-          "expectedRevision",
-          "stateBindings"
-        ],
-        "title": "Live2DCubismBindings",
-        "type": "object"
-      },
-      "Live2DCubismOut": {
-        "additionalProperties": false,
-        "properties": {
-          "metadata": {
-            "additionalProperties": true,
-            "title": "Metadata",
-            "type": "object"
-          },
-          "revision": {
-            "title": "Revision",
-            "type": "integer"
-          },
-          "sha256": {
-            "title": "Sha256",
-            "type": "string"
-          },
-          "stateBindings": {
-            "additionalProperties": true,
-            "title": "Statebindings",
-            "type": "object"
-          }
-        },
-        "required": [
-          "revision",
-          "sha256",
-          "metadata",
-          "stateBindings"
-        ],
-        "title": "Live2DCubismOut",
-        "type": "object"
-      },
-      "Live2DDocumentOut": {
-        "additionalProperties": false,
-        "properties": {
-          "document": {
-            "$ref": "#/components/schemas/CharacterDocument"
-          },
-          "revision": {
-            "title": "Revision",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "revision",
-          "document"
-        ],
-        "title": "Live2DDocumentOut",
-        "type": "object"
-      },
-      "Live2DExportIn": {
-        "additionalProperties": false,
-        "properties": {
-          "combinations": {
-            "items": {
-              "$ref": "#/components/schemas/Live2DCombination"
-            },
-            "maxItems": 16,
-            "minItems": 1,
-            "title": "Combinations",
-            "type": "array"
-          },
-          "crop": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Live2DCrop"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "endFrame": {
-            "default": 60,
-            "maximum": 3600.0,
-            "minimum": 1.0,
-            "title": "Endframe",
-            "type": "integer"
-          },
-          "expectedRevision": {
-            "minimum": 0.0,
-            "title": "Expectedrevision",
-            "type": "integer"
-          },
-          "fps": {
-            "default": 30,
-            "maximum": 60.0,
-            "minimum": 1.0,
-            "title": "Fps",
-            "type": "integer"
-          },
-          "height": {
-            "default": 512,
-            "maximum": 2048.0,
-            "minimum": 32.0,
-            "title": "Height",
-            "type": "integer"
-          },
-          "requestId": {
-            "maxLength": 64,
-            "minLength": 8,
-            "title": "Requestid",
-            "type": "string"
-          },
-          "startFrame": {
-            "default": 0,
-            "minimum": 0.0,
-            "title": "Startframe",
-            "type": "integer"
-          },
-          "width": {
-            "default": 512,
-            "maximum": 2048.0,
-            "minimum": 32.0,
-            "title": "Width",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "expectedRevision",
-          "requestId",
-          "combinations"
-        ],
-        "title": "Live2DExportIn",
-        "type": "object"
-      },
-      "Live2DExportOut": {
-        "additionalProperties": false,
-        "properties": {
-          "download": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Download"
-          },
-          "error": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Error"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "progress": {
-            "title": "Progress",
-            "type": "integer"
-          },
-          "settings": {
-            "$ref": "#/components/schemas/Live2DExportIn"
-          },
-          "status": {
-            "enum": [
-              "queued",
-              "running",
-              "completed",
-              "failed",
-              "cancelled"
-            ],
-            "title": "Status",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "status",
-          "progress",
-          "settings"
-        ],
-        "title": "Live2DExportOut",
-        "type": "object"
-      },
-      "Live2DExports": {
-        "additionalProperties": false,
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/Live2DExportOut"
-            },
-            "title": "Items",
-            "type": "array"
-          }
-        },
-        "required": [
-          "items"
-        ],
-        "title": "Live2DExports",
-        "type": "object"
-      },
-      "Live2DPatch": {
-        "additionalProperties": false,
-        "properties": {
-          "expectedRevision": {
-            "minimum": 0.0,
-            "title": "Expectedrevision",
-            "type": "integer"
-          },
-          "title": {
-            "maxLength": 120,
-            "minLength": 1,
-            "title": "Title",
-            "type": "string"
-          }
-        },
-        "required": [
-          "expectedRevision",
-          "title"
-        ],
-        "title": "Live2DPatch",
-        "type": "object"
-      },
-      "Live2DPreflight": {
-        "additionalProperties": false,
-        "properties": {
-          "frameCount": {
-            "title": "Framecount",
-            "type": "integer"
-          },
-          "messages": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Messages",
-            "type": "array"
-          },
-          "ready": {
-            "title": "Ready",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "ready",
-          "messages",
-          "frameCount"
-        ],
-        "title": "Live2DPreflight",
-        "type": "object"
-      },
-      "Live2DProjectOut": {
-        "additionalProperties": false,
-        "properties": {
-          "createdAt": {
-            "title": "Createdat",
-            "type": "string"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "revision": {
-            "title": "Revision",
-            "type": "integer"
-          },
-          "thumbnail": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Thumbnail"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "updatedAt": {
-            "title": "Updatedat",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "title",
-          "revision",
-          "createdAt",
-          "updatedAt"
-        ],
-        "title": "Live2DProjectOut",
-        "type": "object"
-      },
-      "Live2DProjects": {
-        "additionalProperties": false,
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/Live2DProjectOut"
-            },
-            "title": "Items",
-            "type": "array"
-          }
-        },
-        "required": [
-          "items"
-        ],
-        "title": "Live2DProjects",
-        "type": "object"
-      },
-      "Live2DSave": {
-        "additionalProperties": false,
-        "properties": {
-          "document": {
-            "$ref": "#/components/schemas/CharacterDocument"
-          },
-          "expectedRevision": {
-            "minimum": 0.0,
-            "title": "Expectedrevision",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "expectedRevision",
-          "document"
-        ],
-        "title": "Live2DSave",
         "type": "object"
       },
       "LocalModelActionIn": {
@@ -26608,127 +25438,6 @@
         "title": "OperationBatchIn",
         "type": "object"
       },
-      "ParameterBinding": {
-        "additionalProperties": false,
-        "properties": {
-          "keys": {
-            "items": {
-              "$ref": "#/components/schemas/ParameterKeyform"
-            },
-            "maxItems": 32,
-            "minItems": 1,
-            "title": "Keys",
-            "type": "array"
-          },
-          "targetId": {
-            "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-            "title": "Targetid",
-            "type": "string"
-          }
-        },
-        "required": [
-          "targetId",
-          "keys"
-        ],
-        "title": "ParameterBinding",
-        "type": "object"
-      },
-      "ParameterKeyform": {
-        "additionalProperties": false,
-        "properties": {
-          "offsetX": {
-            "anyOf": [
-              {
-                "maximum": 100000.0,
-                "minimum": -100000.0,
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Offsetx"
-          },
-          "offsetY": {
-            "anyOf": [
-              {
-                "maximum": 100000.0,
-                "minimum": -100000.0,
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Offsety"
-          },
-          "opacity": {
-            "anyOf": [
-              {
-                "maximum": 1.0,
-                "minimum": 0.0,
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Opacity"
-          },
-          "points": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/Point"
-                },
-                "maxItems": 4096,
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Points"
-          },
-          "rotation": {
-            "anyOf": [
-              {
-                "maximum": 100000.0,
-                "minimum": -100000.0,
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Rotation"
-          },
-          "scale": {
-            "anyOf": [
-              {
-                "exclusiveMinimum": 0.0,
-                "maximum": 100.0,
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Scale"
-          },
-          "value": {
-            "maximum": 100000.0,
-            "minimum": -100000.0,
-            "title": "Value",
-            "type": "number"
-          }
-        },
-        "required": [
-          "value"
-        ],
-        "title": "ParameterKeyform",
-        "type": "object"
-      },
       "PermissionInput": {
         "additionalProperties": false,
         "properties": {
@@ -26746,784 +25455,6 @@
           "articles"
         ],
         "title": "PermissionInput",
-        "type": "object"
-      },
-      "PetChatClearIn": {
-        "additionalProperties": false,
-        "properties": {
-          "expectedRevision": {
-            "minimum": 0.0,
-            "title": "Expectedrevision",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "expectedRevision"
-        ],
-        "title": "PetChatClearIn",
-        "type": "object"
-      },
-      "PetChatMessageOut": {
-        "additionalProperties": false,
-        "properties": {
-          "content": {
-            "title": "Content",
-            "type": "string"
-          },
-          "createdAt": {
-            "title": "Createdat",
-            "type": "string"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "position": {
-            "title": "Position",
-            "type": "integer"
-          },
-          "role": {
-            "enum": [
-              "user",
-              "assistant"
-            ],
-            "title": "Role",
-            "type": "string"
-          },
-          "status": {
-            "enum": [
-              "completed",
-              "pending",
-              "interrupted"
-            ],
-            "title": "Status",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "position",
-          "role",
-          "content",
-          "status",
-          "createdAt"
-        ],
-        "title": "PetChatMessageOut",
-        "type": "object"
-      },
-      "PetChatMessagesOut": {
-        "additionalProperties": false,
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/PetChatMessageOut"
-            },
-            "title": "Items",
-            "type": "array"
-          },
-          "nextBefore": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Nextbefore"
-          }
-        },
-        "required": [
-          "items",
-          "nextBefore"
-        ],
-        "title": "PetChatMessagesOut",
-        "type": "object"
-      },
-      "PetChatOut": {
-        "additionalProperties": false,
-        "properties": {
-          "active": {
-            "title": "Active",
-            "type": "boolean"
-          },
-          "messages": {
-            "items": {
-              "$ref": "#/components/schemas/PetChatMessageOut"
-            },
-            "title": "Messages",
-            "type": "array"
-          },
-          "modelId": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modelid"
-          },
-          "nextBefore": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Nextbefore"
-          },
-          "presentationMode": {
-            "enum": [
-              "bubble",
-              "dialogue"
-            ],
-            "title": "Presentationmode",
-            "type": "string"
-          },
-          "proactiveLinesEnabled": {
-            "title": "Proactivelinesenabled",
-            "type": "boolean"
-          },
-          "revision": {
-            "title": "Revision",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "revision",
-          "modelId",
-          "proactiveLinesEnabled",
-          "presentationMode",
-          "active",
-          "messages",
-          "nextBefore"
-        ],
-        "title": "PetChatOut",
-        "type": "object"
-      },
-      "PetChatSendIn": {
-        "additionalProperties": false,
-        "properties": {
-          "content": {
-            "maxLength": 2000,
-            "minLength": 1,
-            "title": "Content",
-            "type": "string"
-          },
-          "expectedRevision": {
-            "minimum": 0.0,
-            "title": "Expectedrevision",
-            "type": "integer"
-          },
-          "requestId": {
-            "maxLength": 64,
-            "minLength": 1,
-            "title": "Requestid",
-            "type": "string"
-          }
-        },
-        "required": [
-          "expectedRevision",
-          "requestId",
-          "content"
-        ],
-        "title": "PetChatSendIn",
-        "type": "object"
-      },
-      "PetChatSettingsIn": {
-        "additionalProperties": false,
-        "properties": {
-          "expectedRevision": {
-            "minimum": 0.0,
-            "title": "Expectedrevision",
-            "type": "integer"
-          },
-          "modelId": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modelid"
-          },
-          "presentationMode": {
-            "anyOf": [
-              {
-                "enum": [
-                  "bubble",
-                  "dialogue"
-                ],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Presentationmode"
-          },
-          "proactiveLinesEnabled": {
-            "title": "Proactivelinesenabled",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "expectedRevision",
-          "modelId",
-          "proactiveLinesEnabled"
-        ],
-        "title": "PetChatSettingsIn",
-        "type": "object"
-      },
-      "PetConfig": {
-        "additionalProperties": false,
-        "properties": {
-          "activeSkinId": {
-            "anyOf": [
-              {
-                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Activeskinid"
-          },
-          "events": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/PetReaction"
-            },
-            "maxProperties": 6,
-            "propertyNames": {
-              "enum": [
-                "idle",
-                "click",
-                "pet",
-                "grab",
-                "drop",
-                "roam"
-              ]
-            },
-            "title": "Events",
-            "type": "object"
-          },
-          "habits": {
-            "$ref": "#/components/schemas/PetHabits"
-          },
-          "persona": {
-            "$ref": "#/components/schemas/PetPersona"
-          },
-          "schemaVersion": {
-            "const": 2,
-            "default": 2,
-            "title": "Schemaversion",
-            "type": "integer"
-          },
-          "schemeId": {
-            "anyOf": [
-              {
-                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Schemeid"
-          },
-          "skins": {
-            "items": {
-              "$ref": "#/components/schemas/PetSkin"
-            },
-            "maxItems": 20,
-            "title": "Skins",
-            "type": "array"
-          }
-        },
-        "title": "PetConfig",
-        "type": "object"
-      },
-      "PetCreate": {
-        "additionalProperties": false,
-        "properties": {
-          "sourceProjectId": {
-            "maxLength": 36,
-            "minLength": 1,
-            "title": "Sourceprojectid",
-            "type": "string"
-          },
-          "sourceRevision": {
-            "minimum": 0.0,
-            "title": "Sourcerevision",
-            "type": "integer"
-          },
-          "title": {
-            "default": "",
-            "maxLength": 120,
-            "title": "Title",
-            "type": "string"
-          }
-        },
-        "required": [
-          "sourceProjectId",
-          "sourceRevision"
-        ],
-        "title": "PetCreate",
-        "type": "object"
-      },
-      "PetDocumentOut": {
-        "additionalProperties": false,
-        "properties": {
-          "assetUrls": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "title": "Asseturls",
-            "type": "object"
-          },
-          "character": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CharacterDocument"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "config": {
-            "$ref": "#/components/schemas/PetConfig"
-          },
-          "revision": {
-            "title": "Revision",
-            "type": "integer"
-          },
-          "sourceRevision": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Sourcerevision"
-          },
-          "sourceType": {
-            "enum": [
-              "live2d",
-              "coopanion-whale"
-            ],
-            "title": "Sourcetype",
-            "type": "string"
-          },
-          "whaleAssets": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "type": "string"
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Whaleassets"
-          },
-          "whaleModel": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Whalemodel"
-          }
-        },
-        "required": [
-          "revision",
-          "sourceType",
-          "sourceRevision",
-          "character",
-          "whaleModel",
-          "whaleAssets",
-          "config",
-          "assetUrls"
-        ],
-        "title": "PetDocumentOut",
-        "type": "object"
-      },
-      "PetHabits": {
-        "additionalProperties": false,
-        "properties": {
-          "bubbles": {
-            "default": true,
-            "title": "Bubbles",
-            "type": "boolean"
-          },
-          "draggable": {
-            "default": true,
-            "title": "Draggable",
-            "type": "boolean"
-          },
-          "edgeClimbing": {
-            "default": true,
-            "title": "Edgeclimbing",
-            "type": "boolean"
-          },
-          "highGliding": {
-            "default": true,
-            "title": "Highgliding",
-            "type": "boolean"
-          },
-          "hoverActions": {
-            "items": {
-              "enum": [
-                "dress",
-                "roam",
-                "hide",
-                "settings",
-                "chat"
-              ],
-              "type": "string"
-            },
-            "maxItems": 4,
-            "title": "Hoveractions",
-            "type": "array"
-          },
-          "roam": {
-            "default": "calm",
-            "enum": [
-              "free",
-              "calm",
-              "off"
-            ],
-            "title": "Roam",
-            "type": "string"
-          },
-          "size": {
-            "default": 220,
-            "maximum": 300.0,
-            "minimum": 160.0,
-            "title": "Size",
-            "type": "integer"
-          },
-          "sound": {
-            "default": true,
-            "title": "Sound",
-            "type": "boolean"
-          }
-        },
-        "title": "PetHabits",
-        "type": "object"
-      },
-      "PetPatch": {
-        "additionalProperties": false,
-        "properties": {
-          "expectedRevision": {
-            "minimum": 0.0,
-            "title": "Expectedrevision",
-            "type": "integer"
-          },
-          "title": {
-            "maxLength": 120,
-            "minLength": 1,
-            "title": "Title",
-            "type": "string"
-          }
-        },
-        "required": [
-          "expectedRevision",
-          "title"
-        ],
-        "title": "PetPatch",
-        "type": "object"
-      },
-      "PetPersona": {
-        "additionalProperties": false,
-        "properties": {
-          "description": {
-            "default": "",
-            "maxLength": 500,
-            "title": "Description",
-            "type": "string"
-          },
-          "greeting": {
-            "default": "",
-            "maxLength": 140,
-            "title": "Greeting",
-            "type": "string"
-          },
-          "personality": {
-            "default": "",
-            "maxLength": 500,
-            "title": "Personality",
-            "type": "string"
-          },
-          "speakingStyle": {
-            "default": "",
-            "maxLength": 500,
-            "title": "Speakingstyle",
-            "type": "string"
-          }
-        },
-        "title": "PetPersona",
-        "type": "object"
-      },
-      "PetProjectOut": {
-        "additionalProperties": false,
-        "properties": {
-          "createdAt": {
-            "title": "Createdat",
-            "type": "string"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "revision": {
-            "title": "Revision",
-            "type": "integer"
-          },
-          "sourceProjectId": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Sourceprojectid"
-          },
-          "sourceRevision": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Sourcerevision"
-          },
-          "sourceTitle": {
-            "title": "Sourcetitle",
-            "type": "string"
-          },
-          "sourceType": {
-            "enum": [
-              "live2d",
-              "coopanion-whale"
-            ],
-            "title": "Sourcetype",
-            "type": "string"
-          },
-          "thumbnailUrl": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Thumbnailurl"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "updatedAt": {
-            "title": "Updatedat",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "title",
-          "revision",
-          "sourceType",
-          "sourceProjectId",
-          "sourceRevision",
-          "sourceTitle",
-          "createdAt",
-          "updatedAt"
-        ],
-        "title": "PetProjectOut",
-        "type": "object"
-      },
-      "PetProjectsOut": {
-        "additionalProperties": false,
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/PetProjectOut"
-            },
-            "title": "Items",
-            "type": "array"
-          }
-        },
-        "required": [
-          "items"
-        ],
-        "title": "PetProjectsOut",
-        "type": "object"
-      },
-      "PetReaction": {
-        "additionalProperties": false,
-        "properties": {
-          "expressionId": {
-            "anyOf": [
-              {
-                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Expressionid"
-          },
-          "lines": {
-            "items": {
-              "type": "string"
-            },
-            "maxItems": 8,
-            "title": "Lines",
-            "type": "array"
-          },
-          "motionId": {
-            "anyOf": [
-              {
-                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Motionid"
-          },
-          "sound": {
-            "default": "none",
-            "enum": [
-              "none",
-              "tap",
-              "chime"
-            ],
-            "title": "Sound",
-            "type": "string"
-          }
-        },
-        "title": "PetReaction",
-        "type": "object"
-      },
-      "PetSave": {
-        "additionalProperties": false,
-        "properties": {
-          "config": {
-            "$ref": "#/components/schemas/PetConfig"
-          },
-          "expectedRevision": {
-            "minimum": 0.0,
-            "title": "Expectedrevision",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "expectedRevision",
-          "config"
-        ],
-        "title": "PetSave",
-        "type": "object"
-      },
-      "PetSkin": {
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-            "title": "Id",
-            "type": "string"
-          },
-          "name": {
-            "maxLength": 60,
-            "minLength": 1,
-            "title": "Name",
-            "type": "string"
-          },
-          "replacements": {
-            "maxProperties": 128,
-            "patternProperties": {
-              "^[a-zA-Z0-9_-]{1,80}$": {
-                "pattern": "^[a-zA-Z0-9_-]{1,80}$",
-                "type": "string"
-              }
-            },
-            "title": "Replacements",
-            "type": "object"
-          }
-        },
-        "required": [
-          "id",
-          "name"
-        ],
-        "title": "PetSkin",
-        "type": "object"
-      },
-      "PetSync": {
-        "additionalProperties": false,
-        "properties": {
-          "expectedRevision": {
-            "minimum": 0.0,
-            "title": "Expectedrevision",
-            "type": "integer"
-          },
-          "sourceRevision": {
-            "minimum": 0.0,
-            "title": "Sourcerevision",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "expectedRevision",
-          "sourceRevision"
-        ],
-        "title": "PetSync",
-        "type": "object"
-      },
-      "Point": {
-        "additionalProperties": false,
-        "properties": {
-          "x": {
-            "maximum": 100000.0,
-            "minimum": -100000.0,
-            "title": "X",
-            "type": "number"
-          },
-          "y": {
-            "maximum": 100000.0,
-            "minimum": -100000.0,
-            "title": "Y",
-            "type": "number"
-          }
-        },
-        "required": [
-          "x",
-          "y"
-        ],
-        "title": "Point",
         "type": "object"
       },
       "PreparationBundle": {
@@ -31507,6 +29438,21 @@
           "password"
         ],
         "title": "ReauthIn",
+        "type": "object"
+      },
+      "ReceiptIn": {
+        "properties": {
+          "receipt": {
+            "maxLength": 128,
+            "minLength": 32,
+            "title": "Receipt",
+            "type": "string"
+          }
+        },
+        "required": [
+          "receipt"
+        ],
+        "title": "ReceiptIn",
         "type": "object"
       },
       "RecordPage": {
@@ -37557,39 +35503,6 @@
           "expected_revision"
         ],
         "title": "ThoughtRevisionIn",
-        "type": "object"
-      },
-      "TimeKeyframe": {
-        "additionalProperties": false,
-        "properties": {
-          "frame": {
-            "maximum": 36000.0,
-            "minimum": 0.0,
-            "title": "Frame",
-            "type": "integer"
-          },
-          "interpolation": {
-            "default": "linear",
-            "enum": [
-              "hold",
-              "linear",
-              "smooth"
-            ],
-            "title": "Interpolation",
-            "type": "string"
-          },
-          "value": {
-            "maximum": 100000.0,
-            "minimum": -100000.0,
-            "title": "Value",
-            "type": "number"
-          }
-        },
-        "required": [
-          "frame",
-          "value"
-        ],
-        "title": "TimeKeyframe",
         "type": "object"
       },
       "ToolApiCatalogOut": {
@@ -44192,6 +42105,13 @@
             "title": "Revision",
             "type": "integer"
           },
+          "source_errors": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Source Errors",
+            "type": "array"
+          },
           "source_ids": {
             "items": {
               "type": "string"
@@ -49874,940 +47794,6 @@
         ]
       }
     },
-    "/v1/desktop-pet/projects": {
-      "get": {
-        "operationId": "list_projects_v1_desktop_pet_projects_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PetProjectsOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "List Projects",
-        "tags": [
-          "desktop-pet"
-        ]
-      },
-      "post": {
-        "operationId": "create_project_v1_desktop_pet_projects_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PetCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PetProjectOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Create Project",
-        "tags": [
-          "desktop-pet"
-        ]
-      }
-    },
-    "/v1/desktop-pet/projects/import-whale": {
-      "post": {
-        "operationId": "import_whale_v1_desktop_pet_projects_import_whale_post",
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_import_whale_v1_desktop_pet_projects_import_whale_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PetProjectOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Import Whale",
-        "tags": [
-          "desktop-pet"
-        ]
-      }
-    },
-    "/v1/desktop-pet/projects/{project_id}": {
-      "delete": {
-        "operationId": "delete_project_v1_desktop_pet_projects__project_id__delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "expectedRevision",
-            "required": true,
-            "schema": {
-              "minimum": 0,
-              "title": "Expectedrevision",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": {
-                    "type": "boolean"
-                  },
-                  "title": "Response Delete Project V1 Desktop Pet Projects  Project Id  Delete",
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Delete Project",
-        "tags": [
-          "desktop-pet"
-        ]
-      },
-      "get": {
-        "operationId": "get_project_v1_desktop_pet_projects__project_id__get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PetProjectOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Get Project",
-        "tags": [
-          "desktop-pet"
-        ]
-      },
-      "patch": {
-        "operationId": "patch_project_v1_desktop_pet_projects__project_id__patch",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PetPatch"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PetProjectOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Patch Project",
-        "tags": [
-          "desktop-pet"
-        ]
-      }
-    },
-    "/v1/desktop-pet/projects/{project_id}/assets/{asset_id}/file": {
-      "get": {
-        "operationId": "asset_file_v1_desktop_pet_projects__project_id__assets__asset_id__file_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "asset_id",
-            "required": true,
-            "schema": {
-              "title": "Asset Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Asset File",
-        "tags": [
-          "desktop-pet"
-        ]
-      }
-    },
-    "/v1/desktop-pet/projects/{project_id}/chat": {
-      "get": {
-        "operationId": "get_chat_v1_desktop_pet_projects__project_id__chat_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PetChatOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Get Chat",
-        "tags": [
-          "desktop-pet"
-        ]
-      },
-      "patch": {
-        "operationId": "update_chat_v1_desktop_pet_projects__project_id__chat_patch",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PetChatSettingsIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PetChatOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Update Chat",
-        "tags": [
-          "desktop-pet"
-        ]
-      }
-    },
-    "/v1/desktop-pet/projects/{project_id}/chat/messages": {
-      "delete": {
-        "operationId": "clear_chat_v1_desktop_pet_projects__project_id__chat_messages_delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PetChatClearIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PetChatOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Clear Chat",
-        "tags": [
-          "desktop-pet"
-        ]
-      },
-      "get": {
-        "operationId": "chat_messages_v1_desktop_pet_projects__project_id__chat_messages_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "before",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "minimum": 1,
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Before"
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 50,
-              "maximum": 100,
-              "minimum": 1,
-              "title": "Limit",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PetChatMessagesOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Chat Messages",
-        "tags": [
-          "desktop-pet"
-        ]
-      }
-    },
-    "/v1/desktop-pet/projects/{project_id}/chat/messages/stream": {
-      "post": {
-        "operationId": "send_chat_message_v1_desktop_pet_projects__project_id__chat_messages_stream_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PetChatSendIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              },
-              "text/event-stream": {
-                "schema": {
-                  "$defs": {
-                    "PetChatMessageOut": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "content": {
-                          "title": "Content",
-                          "type": "string"
-                        },
-                        "createdAt": {
-                          "title": "Createdat",
-                          "type": "string"
-                        },
-                        "id": {
-                          "title": "Id",
-                          "type": "string"
-                        },
-                        "position": {
-                          "title": "Position",
-                          "type": "integer"
-                        },
-                        "role": {
-                          "enum": [
-                            "user",
-                            "assistant"
-                          ],
-                          "title": "Role",
-                          "type": "string"
-                        },
-                        "status": {
-                          "enum": [
-                            "completed",
-                            "pending",
-                            "interrupted"
-                          ],
-                          "title": "Status",
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "id",
-                        "position",
-                        "role",
-                        "content",
-                        "status",
-                        "createdAt"
-                      ],
-                      "title": "PetChatMessageOut",
-                      "type": "object"
-                    }
-                  },
-                  "additionalProperties": false,
-                  "properties": {
-                    "detail": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "title": "Detail"
-                    },
-                    "message": {
-                      "anyOf": [
-                        {
-                          "$ref": "#/components/schemas/PetChatMessageOut"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "revision": {
-                      "anyOf": [
-                        {
-                          "type": "integer"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "title": "Revision"
-                    },
-                    "text": {
-                      "default": "",
-                      "title": "Text",
-                      "type": "string"
-                    },
-                    "type": {
-                      "enum": [
-                        "start",
-                        "delta",
-                        "done",
-                        "error"
-                      ],
-                      "title": "Type",
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "type"
-                  ],
-                  "title": "PetChatStreamEvent",
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Send Chat Message",
-        "tags": [
-          "desktop-pet"
-        ]
-      }
-    },
-    "/v1/desktop-pet/projects/{project_id}/document": {
-      "get": {
-        "operationId": "get_document_v1_desktop_pet_projects__project_id__document_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PetDocumentOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Get Document",
-        "tags": [
-          "desktop-pet"
-        ]
-      },
-      "put": {
-        "operationId": "save_document_v1_desktop_pet_projects__project_id__document_put",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PetSave"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PetDocumentOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Save Document",
-        "tags": [
-          "desktop-pet"
-        ]
-      }
-    },
-    "/v1/desktop-pet/projects/{project_id}/replace-package": {
-      "post": {
-        "operationId": "replace_package_v1_desktop_pet_projects__project_id__replace_package_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_replace_package_v1_desktop_pet_projects__project_id__replace_package_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PetDocumentOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Replace Package",
-        "tags": [
-          "desktop-pet"
-        ]
-      }
-    },
-    "/v1/desktop-pet/projects/{project_id}/skins/{skin_id}/replacements/{source_asset_id}": {
-      "put": {
-        "operationId": "upload_skin_replacement_v1_desktop_pet_projects__project_id__skins__skin_id__replacements__source_asset_id__put",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "skin_id",
-            "required": true,
-            "schema": {
-              "title": "Skin Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "source_asset_id",
-            "required": true,
-            "schema": {
-              "title": "Source Asset Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_upload_skin_replacement_v1_desktop_pet_projects__project_id__skins__skin_id__replacements__source_asset_id__put"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PetDocumentOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Upload Skin Replacement",
-        "tags": [
-          "desktop-pet"
-        ]
-      }
-    },
-    "/v1/desktop-pet/projects/{project_id}/sync-source": {
-      "post": {
-        "operationId": "sync_source_v1_desktop_pet_projects__project_id__sync_source_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PetSync"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PetDocumentOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Sync Source",
-        "tags": [
-          "desktop-pet"
-        ]
-      }
-    },
     "/v1/desktop/agent/capabilities": {
       "get": {
         "operationId": "capabilities_v1_desktop_agent_capabilities_get",
@@ -51208,6 +48194,270 @@
           }
         },
         "summary": "Acknowledge",
+        "tags": [
+          "desktop"
+        ]
+      }
+    },
+    "/v1/desktop/web-access": {
+      "get": {
+        "operationId": "status_v1_desktop_web_access_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Status",
+        "tags": [
+          "desktop"
+        ]
+      }
+    },
+    "/v1/desktop/web-access/actions": {
+      "post": {
+        "operationId": "action_v1_desktop_web_access_actions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccessAction"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Action",
+        "tags": [
+          "desktop"
+        ]
+      }
+    },
+    "/v1/desktop/web-access/config": {
+      "get": {
+        "operationId": "config_v1_desktop_web_access_config_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessConfigOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Config",
+        "tags": [
+          "desktop"
+        ]
+      },
+      "put": {
+        "operationId": "prepare_config_v1_desktop_web_access_config_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccessConfigIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigPrepared"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Prepare Config",
+        "tags": [
+          "desktop"
+        ]
+      }
+    },
+    "/v1/desktop/web-access/config/adopt-legacy": {
+      "post": {
+        "operationId": "adopt_v1_desktop_web_access_config_adopt_legacy_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigPrepared"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Adopt",
+        "tags": [
+          "desktop"
+        ]
+      }
+    },
+    "/v1/desktop/web-access/config/claim": {
+      "post": {
+        "operationId": "claim_config_v1_desktop_web_access_config_claim_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReceiptIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Claim Config",
+        "tags": [
+          "desktop"
+        ]
+      }
+    },
+    "/v1/desktop/web-access/credentials/import": {
+      "post": {
+        "operationId": "import_credential_v1_desktop_web_access_credentials_import_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CredentialImportIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CredentialOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Credential",
+        "tags": [
+          "desktop"
+        ]
+      }
+    },
+    "/v1/desktop/web-access/credentials/tickets": {
+      "post": {
+        "operationId": "credential_ticket_v1_desktop_web_access_credentials_tickets_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CredentialTicketIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CredentialTicketOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Credential Ticket",
         "tags": [
           "desktop"
         ]
@@ -53111,6 +50361,63 @@
           }
         },
         "summary": "Video Media Info",
+        "tags": [
+          "file-management"
+        ]
+      }
+    },
+    "/v1/files/{asset_id}/thumbnail": {
+      "get": {
+        "operationId": "preview_thumbnail_v1_files__asset_id__thumbnail_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 320,
+              "enum": [
+                320,
+                640
+              ],
+              "title": "Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Thumbnail",
         "tags": [
           "file-management"
         ]
@@ -57485,1455 +54792,6 @@
         "summary": "Export Interview Bundle",
         "tags": [
           "interview-assistant"
-        ]
-      }
-    },
-    "/v1/live2d-workshop/projects": {
-      "get": {
-        "operationId": "list_projects_v1_live2d_workshop_projects_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Live2DProjects"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "List Projects",
-        "tags": [
-          "live2d-workshop"
-        ]
-      },
-      "post": {
-        "operationId": "create_project_v1_live2d_workshop_projects_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Live2DCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Live2DProjectOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Create Project",
-        "tags": [
-          "live2d-workshop"
-        ]
-      }
-    },
-    "/v1/live2d-workshop/projects/import": {
-      "post": {
-        "operationId": "import_project_v1_live2d_workshop_projects_import_post",
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_import_project_v1_live2d_workshop_projects_import_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Live2DProjectOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Import Project",
-        "tags": [
-          "live2d-workshop"
-        ]
-      }
-    },
-    "/v1/live2d-workshop/projects/{project_id}": {
-      "delete": {
-        "operationId": "delete_project_v1_live2d_workshop_projects__project_id__delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "expectedRevision",
-            "required": true,
-            "schema": {
-              "minimum": 0,
-              "title": "Expectedrevision",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": {
-                    "type": "boolean"
-                  },
-                  "title": "Response Delete Project V1 Live2D Workshop Projects  Project Id  Delete",
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Delete Project",
-        "tags": [
-          "live2d-workshop"
-        ]
-      },
-      "get": {
-        "operationId": "get_project_v1_live2d_workshop_projects__project_id__get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Live2DProjectOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Get Project",
-        "tags": [
-          "live2d-workshop"
-        ]
-      },
-      "patch": {
-        "operationId": "patch_project_v1_live2d_workshop_projects__project_id__patch",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Live2DPatch"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Live2DProjectOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Patch Project",
-        "tags": [
-          "live2d-workshop"
-        ]
-      }
-    },
-    "/v1/live2d-workshop/projects/{project_id}/assets": {
-      "get": {
-        "operationId": "list_assets_v1_live2d_workshop_projects__project_id__assets_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Live2DAssets"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "List Assets",
-        "tags": [
-          "live2d-workshop"
-        ]
-      },
-      "post": {
-        "operationId": "upload_asset_v1_live2d_workshop_projects__project_id__assets_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_upload_asset_v1_live2d_workshop_projects__project_id__assets_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Live2DAssetOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Upload Asset",
-        "tags": [
-          "live2d-workshop"
-        ]
-      }
-    },
-    "/v1/live2d-workshop/projects/{project_id}/assets/{asset_id}": {
-      "delete": {
-        "operationId": "retire_asset_v1_live2d_workshop_projects__project_id__assets__asset_id__delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "asset_id",
-            "required": true,
-            "schema": {
-              "title": "Asset Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "expectedRevision",
-            "required": true,
-            "schema": {
-              "minimum": 0,
-              "title": "Expectedrevision",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Live2DProjectOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Retire Asset",
-        "tags": [
-          "live2d-workshop"
-        ]
-      }
-    },
-    "/v1/live2d-workshop/projects/{project_id}/assets/{asset_id}/file": {
-      "get": {
-        "operationId": "asset_file_v1_live2d_workshop_projects__project_id__assets__asset_id__file_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "asset_id",
-            "required": true,
-            "schema": {
-              "title": "Asset Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "image/png": {}
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Asset File",
-        "tags": [
-          "live2d-workshop"
-        ]
-      }
-    },
-    "/v1/live2d-workshop/projects/{project_id}/cubism": {
-      "delete": {
-        "operationId": "remove_cubism_v1_live2d_workshop_projects__project_id__cubism_delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "expectedRevision",
-            "required": true,
-            "schema": {
-              "minimum": 0,
-              "title": "Expectedrevision",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": {
-                    "type": "boolean"
-                  },
-                  "title": "Response Remove Cubism V1 Live2D Workshop Projects  Project Id  Cubism Delete",
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Remove Cubism",
-        "tags": [
-          "live2d-workshop"
-        ]
-      },
-      "get": {
-        "operationId": "get_cubism_v1_live2d_workshop_projects__project_id__cubism_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Live2DCubismOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Get Cubism",
-        "tags": [
-          "live2d-workshop"
-        ]
-      },
-      "put": {
-        "operationId": "attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Live2DCubismOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Attach Cubism",
-        "tags": [
-          "live2d-workshop"
-        ]
-      }
-    },
-    "/v1/live2d-workshop/projects/{project_id}/cubism/bindings": {
-      "put": {
-        "operationId": "save_cubism_bindings_v1_live2d_workshop_projects__project_id__cubism_bindings_put",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Live2DCubismBindings"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Live2DCubismOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Save Cubism Bindings",
-        "tags": [
-          "live2d-workshop"
-        ]
-      }
-    },
-    "/v1/live2d-workshop/projects/{project_id}/cubism/convert": {
-      "post": {
-        "operationId": "convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Live2DProjectOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Convert Cubism",
-        "tags": [
-          "live2d-workshop"
-        ]
-      }
-    },
-    "/v1/live2d-workshop/projects/{project_id}/cubism/package": {
-      "get": {
-        "operationId": "download_cubism_v1_live2d_workshop_projects__project_id__cubism_package_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/zip": {}
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Download Cubism",
-        "tags": [
-          "live2d-workshop"
-        ]
-      }
-    },
-    "/v1/live2d-workshop/projects/{project_id}/cubism/preflight": {
-      "post": {
-        "operationId": "preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Preflight Cubism V1 Live2D Workshop Projects  Project Id  Cubism Preflight Post",
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Preflight Cubism",
-        "tags": [
-          "live2d-workshop"
-        ]
-      }
-    },
-    "/v1/live2d-workshop/projects/{project_id}/document": {
-      "get": {
-        "operationId": "get_document_v1_live2d_workshop_projects__project_id__document_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Live2DDocumentOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Get Document",
-        "tags": [
-          "live2d-workshop"
-        ]
-      },
-      "put": {
-        "operationId": "save_document_v1_live2d_workshop_projects__project_id__document_put",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Live2DSave"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Live2DDocumentOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Save Document",
-        "tags": [
-          "live2d-workshop"
-        ]
-      }
-    },
-    "/v1/live2d-workshop/projects/{project_id}/exports": {
-      "get": {
-        "operationId": "list_exports_v1_live2d_workshop_projects__project_id__exports_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Live2DExports"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "List Exports",
-        "tags": [
-          "live2d-workshop"
-        ]
-      },
-      "post": {
-        "operationId": "create_export_v1_live2d_workshop_projects__project_id__exports_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Live2DExportIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Live2DExportOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Create Export",
-        "tags": [
-          "live2d-workshop"
-        ]
-      }
-    },
-    "/v1/live2d-workshop/projects/{project_id}/exports/preflight": {
-      "post": {
-        "operationId": "preflight_v1_live2d_workshop_projects__project_id__exports_preflight_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Live2DExportIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Live2DPreflight"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Preflight",
-        "tags": [
-          "live2d-workshop"
-        ]
-      }
-    },
-    "/v1/live2d-workshop/projects/{project_id}/exports/{task_id}": {
-      "get": {
-        "operationId": "get_export_v1_live2d_workshop_projects__project_id__exports__task_id__get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "task_id",
-            "required": true,
-            "schema": {
-              "title": "Task Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Live2DExportOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Get Export",
-        "tags": [
-          "live2d-workshop"
-        ]
-      }
-    },
-    "/v1/live2d-workshop/projects/{project_id}/exports/{task_id}/cancel": {
-      "post": {
-        "operationId": "cancel_export_v1_live2d_workshop_projects__project_id__exports__task_id__cancel_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "task_id",
-            "required": true,
-            "schema": {
-              "title": "Task Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Live2DExportOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Cancel Export",
-        "tags": [
-          "live2d-workshop"
-        ]
-      }
-    },
-    "/v1/live2d-workshop/projects/{project_id}/exports/{task_id}/download": {
-      "get": {
-        "operationId": "download_export_v1_live2d_workshop_projects__project_id__exports__task_id__download_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "task_id",
-            "required": true,
-            "schema": {
-              "title": "Task Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/zip": {}
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Download Export",
-        "tags": [
-          "live2d-workshop"
-        ]
-      }
-    },
-    "/v1/live2d-workshop/projects/{project_id}/package": {
-      "get": {
-        "operationId": "export_package_v1_live2d_workshop_projects__project_id__package_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/zip": {}
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Export Package",
-        "tags": [
-          "live2d-workshop"
-        ]
-      }
-    },
-    "/v1/live2d-workshop/projects/{project_id}/preview": {
-      "get": {
-        "operationId": "preview_v1_live2d_workshop_projects__project_id__preview_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "frame",
-            "required": false,
-            "schema": {
-              "default": 0,
-              "maximum": 36000,
-              "minimum": 0,
-              "title": "Frame",
-              "type": "number"
-            }
-          },
-          {
-            "in": "query",
-            "name": "motionId",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Motionid"
-            }
-          },
-          {
-            "in": "query",
-            "name": "expressionId",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Expressionid"
-            }
-          },
-          {
-            "in": "query",
-            "name": "expectedRevision",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "minimum": 0,
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Expectedrevision"
-            }
-          },
-          {
-            "in": "query",
-            "name": "width",
-            "required": false,
-            "schema": {
-              "default": 480,
-              "maximum": 2048,
-              "minimum": 32,
-              "title": "Width",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "height",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "maximum": 2048,
-                  "minimum": 32,
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Height"
-            }
-          },
-          {
-            "in": "query",
-            "name": "cropX",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "minimum": 0,
-                  "type": "number"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Cropx"
-            }
-          },
-          {
-            "in": "query",
-            "name": "cropY",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "minimum": 0,
-                  "type": "number"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Cropy"
-            }
-          },
-          {
-            "in": "query",
-            "name": "cropWidth",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "exclusiveMinimum": 0,
-                  "maximum": 4096,
-                  "type": "number"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Cropwidth"
-            }
-          },
-          {
-            "in": "query",
-            "name": "cropHeight",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "exclusiveMinimum": 0,
-                  "maximum": 4096,
-                  "type": "number"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Cropheight"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "image/png": {}
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Preview",
-        "tags": [
-          "live2d-workshop"
-        ]
-      }
-    },
-    "/v1/live2d-workshop/projects/{project_id}/thumbnail": {
-      "get": {
-        "operationId": "thumbnail_v1_live2d_workshop_projects__project_id__thumbnail_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "image/png": {}
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Thumbnail",
-        "tags": [
-          "live2d-workshop"
         ]
       }
     },

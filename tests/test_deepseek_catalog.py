@@ -134,7 +134,8 @@ async def test_catalog_crud_cas_credentials_isolation_and_availability(monkeypat
                 ],
             },
         )
-        assert rejected.status_code == 422, rejected.text
+        assert rejected.status_code == 410, rejected.text
+        assert rejected.json()["code"] == "external_agent_required"
         deleted = await first.delete(
             f"/v1/model-entries/{model['id']}",
             params={"expected_catalog_revision": edited.json()["revision"]},
@@ -148,7 +149,7 @@ async def test_catalog_crud_cas_credentials_isolation_and_availability(monkeypat
         ).status_code == 200
 
 
-async def test_diagnostic_playground_inference_amadeus_and_log_filter(monkeypatch):
+async def test_diagnostic_playground_inference_and_retired_amadeus_bridge(monkeypatch):
     requests = []
 
     def handler(request):
@@ -219,13 +220,13 @@ async def test_diagnostic_playground_inference_amadeus_and_log_filter(monkeypatc
                 "messages": [{"role": "user", "text": "你好"}],
             },
         )
-        assert response.status_code == 200, response.text
-        assert json.loads(response.text.splitlines()[-1])["type"] == "end"
+        assert response.status_code == 410, response.text
+        assert response.json()["code"] == "external_agent_required"
         logs = await client.get("/v1/llm-call-logs", params={"provider_kind": "deepseek"})
         assert logs.status_code == 200, logs.text
-        assert logs.json()["total"] == 4
+        assert logs.json()["total"] == 3
         assert all(item["provider_kind"] == "deepseek" for item in logs.json()["items"])
-        assert len(requests) == 4
+        assert len(requests) == 3
 
 
 @pytest.mark.parametrize("failure", ["error", "cancelled"])

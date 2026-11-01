@@ -1,0 +1,173 @@
+.web-access-overlay {
+  position: fixed;
+  inset: 0;
+  background: #0008;
+  z-index: 1200;
+}
+.web-access-panel {
+  position: fixed;
+  z-index: 1201;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(840px, calc(100vw - 40px));
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 28px;
+  box-shadow: 0 24px 90px #0004;
+}
+.web-access-panel header,
+.web-access-heading,
+.web-access-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.web-access-panel header {
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+.web-access-panel h2 {
+  margin: 0 0 10px;
+  font-size: 25px;
+}
+.web-access-panel h3 {
+  margin: 0;
+  font-size: 17px;
+}
+.web-access-panel p {
+  line-height: 1.6;
+}
+.web-access-panel header p,
+.web-access-help,
+.web-access-panel small {
+  color: var(--muted);
+  font-size: 13px;
+}
+.web-access-endpoints {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.web-access-endpoint {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  min-width: 0;
+}
+.web-access-heading span {
+  font-size: 12px;
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+}
+.web-access-heading [data-phase="ready"] {
+  color: #24975e;
+}
+.web-access-address,
+.web-access-credential code,
+.web-access-credential small {
+  overflow-wrap: anywhere;
+}
+.web-access-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+.web-access-actions .btn,
+.web-access-summary .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.web-access-summary {
+  font-size: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+.web-access-settings {
+  border-top: 1px solid var(--border);
+  margin-top: 24px;
+  padding-top: 20px;
+}
+.web-access-settings summary {
+  cursor: pointer;
+  font-weight: 650;
+  padding: 6px 0;
+}
+.web-access-settings fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.web-access-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+.web-access-fields label,
+.web-access-verify {
+  display: grid;
+  gap: 9px;
+  font-size: 13px;
+  min-width: 0;
+}
+.web-access-panel input {
+  min-width: 0;
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+}
+.web-access-panel :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.web-access-panel input[type="number"] {
+  appearance: textfield;
+}
+.web-access-panel input[type="number"]::-webkit-inner-spin-button,
+.web-access-panel input[type="number"]::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+.web-access-credential {
+  display: grid;
+  gap: 8px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+}
+.web-access-credential .btn {
+  justify-self: start;
+}
+.web-access-verify {
+  margin-top: 24px;
+}
+.web-access-error {
+  color: #d65a46;
+}
+@media (max-width: 640px) {
+  .web-access-panel {
+    inset: 0;
+    transform: none;
+    width: 100%;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+    padding: 20px;
+  }
+  .web-access-endpoints,
+  .web-access-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

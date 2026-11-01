@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from urllib.parse import urlsplit
 
 from fastapi import HTTPException
@@ -11,12 +12,13 @@ from starlette.responses import JSONResponse, PlainTextResponse
 
 
 class RemoteWeb:
-    def __init__(self, *, origin: str, port: int, static, authenticate):
+    def __init__(self, *, origin: str, port: int, static, authenticate, secure_cookies=True):
         self.origin = origin
         self.host = urlsplit(origin).netloc
         self.port = port
         self.static = static
         self.authenticate = authenticate
+        self.secure_cookies = secure_cookies
 
     def accepts(self, scope) -> bool:
         # This is the bound socket identity, never a client-controlled header.
@@ -55,7 +57,11 @@ class RemoteWeb:
             return
 
         scope = dict(scope)
-        scope["scheme"] = "wss" if websocket else "https"
+        scope["scheme"] = (
+            ("wss" if self.secure_cookies else "ws")
+            if websocket
+            else ("https" if self.secure_cookies else "http")
+        )
         scope["headers"] = [
             (name, value)
             for name, value in scope["headers"]
@@ -70,14 +76,33 @@ class RemoteWeb:
                 for name, value in message.get("headers", []):
                     if name.lower() == b"cache-control":
                         continue
-                    if name.lower() == b"set-cookie" and value.split(b"=", 1)[0] in {
-                        b"fpl_session",
-                        b"fpl_csrf",
-                    }:
+                    if (
+                        self.secure_cookies
+                        and name.lower() == b"set-cookie"
+                        and value.split(b"=", 1)[0]
+                        in {
+                            b"fpl_session",
+                            b"fpl_csrf",
+                        }
+                    ):
                         if b"secure" not in [p.strip().lower() for p in value.split(b";")[1:]]:
                             value += b"; Secure"
                     response_headers.append((name, value))
-                response_headers.append((b"cache-control", b"no-store"))
+                policy = "no-store"
+                if not path.startswith(("/v1/", "/health", "/ready")) and message["status"] in {
+                    200,
+                    304,
+                }:
+                    policy = (
+                        "public, max-age=31536000, immutable"
+                        if re.search(r"/assets/[^/]+-[\w-]{8,}\.", path)
+                        else "public, max-age=3600, must-revalidate"
+                    )
+                    if not path.rsplit("/", 1)[-1].count(".") or path.endswith(
+                        (".html", "/build.json")
+                    ):
+                        policy = "no-cache"
+                response_headers.append((b"cache-control", policy.encode()))
                 message["headers"] = response_headers
             await send(message)
 

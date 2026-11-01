@@ -337,8 +337,8 @@
   cursor: grabbing;
 }
 
-.canvas-node-media > video,
-.canvas-node-media > audio {
+.canvas-visible-preview > video,
+.canvas-visible-preview > audio {
   cursor: default;
 }
 
@@ -437,14 +437,14 @@
   display: block;
 }
 
-.canvas-node-media > img,
-.canvas-node-media > video {
+.canvas-visible-preview > img,
+.canvas-visible-preview > video {
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
 
-.canvas-node-media > audio {
+.canvas-visible-preview > audio {
   width: calc(100% - 24px);
 }
 

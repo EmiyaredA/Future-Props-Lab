@@ -18,7 +18,6 @@ from app.apps.galgame_workshop.assets.asr import GalgameAsrRunner
 from app.apps.galgame_workshop.video.video_export_runner import GalgameVideoExportRunner
 from app.apps.galgame_workshop.video.video_handoff_runner import GalgameVideoEditorHandoffRunner
 from app.apps.interview_assistant.runner import InterviewPreparationRunner
-from app.apps.live2d_workshop.runner import Live2DExportRunner
 from app.apps.motion_compositor.runner import MotionExportRunner
 from app.apps.thought_workshop.external_sync.runner import ArticleSyncRunner
 from app.apps.video_editor.runner import VideoEditorRunner
@@ -116,7 +115,6 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
             VideoEditorRunner(),
             VideoEditorRunner(lane="media"),
             MotionExportRunner(),
-            Live2DExportRunner(),
         )
     )
     lifespan_app.state.runner_supervisor = supervisor

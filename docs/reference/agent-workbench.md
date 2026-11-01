@@ -15,7 +15,7 @@ Agent 工作台位于「应用 → 开发辅助」，路径为 `/apps/agent-work
 
 | Agent | 读取与同步实现 | 来源识别 |
 | --- | --- | --- |
-| Codex | `sessions`、`archived_sessions` 下 JSONL，含 Zstandard 压缩记录；增量跟随 | `session_meta.originator` 与原生 `source`；桌面端与 CLI 共享身份时去重 |
+| Codex | `sessions`、`archived_sessions` 下 JSONL，按文件头识别保留 `.jsonl` 扩展名的 Zstandard 压缩记录；名称索引只作元信息，增量跟随 | `session_meta.originator` 与原生 `source`；桌面端与 CLI 共享身份时去重 |
 | Claude Code | 项目目录 JSONL；Desktop Code 可以使用同一项目目录，也可指定独立来源 | `entrypoint=claude-desktop-3p` 为 APP；已识别的 CLI 标记为 CLI |
 | OpenCode | SQLite 只读快照，包含 WAL 更新；可连接用户明确提供的已运行本机 HTTP 实例，以 SSE 触发补读 | 没有可靠原生来源标记时显示待确认，不凭数据库位置推断 APP 或 CLI |
 | DeepSeek Harness | v4 JSONL／压缩帧，完整事件增量跟随；旧格式不自动迁移 | 缺少宿主证据时显示待确认 |
@@ -35,6 +35,12 @@ OpenCode 原实例填写 `http://127.0.0.1:端口` 或 IPv6 回环地址，不�
 - 「清除 FPL 阅读副本」仅在关联来源均已停用后开放。重新启用来源时可再次读取。
 
 来源不可达、格式不支持或会话文件消失时保留已有副本。格式升级在原 Agent 中完成后重新扫描；不要直接修改原生日志、数据库或 FPL 的检查点。
+
+Codex 会话名称优先读取授权根内的 `session_index.jsonl`，原端改名也会同步；名称索引与 CLI 提示词历史不会成为对话正文。带内嵌图片的单条 JSON 记录最多读取 64 MiB，图片数据不复制为正文。普通日志按检查点分批读取，不受压缩展开累计上限限制；压缩来源仍有 256 MiB 展开上限，超出时显示来源异常。
+
+应用列表没有工作台时，先确认运行窗口使用当前源码，而非旧的冻结快照。正式数据必须先通过停机备份与登记迁移完成 `0117_agent_workbench`，再从当前仓库启动；刷新旧快照不会加载新应用，开发热加载也不会执行正式迁移。
+
+OpenCode 原实例返回 401 时，当前无凭据的 HTTP 接入不能读取该实例；改为显式绑定同一实例实际使用的本机存储。不要把实例凭据填进 URL，也不要为了读取历史关闭原实例的认证。
 
 ## 配置和数据
 

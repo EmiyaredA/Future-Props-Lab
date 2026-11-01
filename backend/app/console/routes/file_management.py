@@ -40,6 +40,7 @@ from app.capabilities.asset_store.schemas.files import (
     VisualAssetPatchIn,
 )
 from app.capabilities.asset_store.schemas.project_snapshots import ProjectFolderOpenOut
+from app.capabilities.asset_store.thumbnails import thumbnail
 from app.console.file_library import (
     LibraryFolderArchive,
     LibraryFolderArchiveError,
@@ -358,6 +359,32 @@ async def preview_file(session: SessionDep, owner_user_id: OwnerDep, asset_id: s
                 else {}
             ),
         },
+    )
+
+
+@router.get(
+    "/files/{asset_id}/thumbnail",
+    response_class=FileResponse,
+    responses={
+        200: {"content": {"image/webp": {"schema": {"type": "string", "format": "binary"}}}}
+    },
+)
+async def preview_thumbnail(
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    asset_id: str,
+    size: int = Query(default=320, json_schema_extra={"enum": [320, 640]}),
+) -> FileResponse:
+    try:
+        if size not in (320, 640):
+            raise HTTPException(422, detail="缩略图尺寸仅支持 320 或 640")
+        path = await thumbnail(session, get_settings(), owner_user_id, asset_id, size)
+    except AssetError as exc:
+        raise asset_http_error(exc) from None
+    return FileResponse(
+        path,
+        media_type="image/webp",
+        headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"},
     )
 
 

@@ -354,22 +354,31 @@
     margin-left: 0;
   }
 
-  .galgame-script-workbench .galgame-localization-heading,
-  .galgame-script-workbench .galgame-localization-source,
-  .galgame-script-workbench .galgame-localization-target {
+  .galgame-script-workbench
+    :is(
+      .galgame-localization-heading,
+      .galgame-localization-source,
+      .galgame-localization-target
+    ) {
     padding: 16px;
   }
 
-  .galgame-script-workbench .galgame-localization-progress-card,
-  .galgame-script-workbench .galgame-localization-language-bar,
-  .galgame-script-workbench .galgame-localization-table-head,
-  .galgame-script-workbench .galgame-localization-row,
-  .galgame-script-workbench .galgame-localization-empty {
+  .galgame-script-workbench
+    :is(
+      .galgame-localization-progress-card,
+      .galgame-localization-language-bar,
+      .galgame-localization-table-head,
+      .galgame-localization-row,
+      .galgame-localization-empty
+    ) {
     margin-inline: 14px;
   }
 
-  .galgame-script-workbench .galgame-localization-progress-card,
-  .galgame-script-workbench .galgame-localization-language-bar {
+  .galgame-script-workbench
+    :is(
+      .galgame-localization-progress-card,
+      .galgame-localization-language-bar
+    ) {
     align-items: stretch;
     flex-wrap: wrap;
   }
@@ -398,10 +407,6 @@
   .galgame-script-workbench .galgame-localization-target {
     border-top: 1px solid var(--gal-line);
     border-left: 0;
-  }
-
-  .galgame-script-workbench .galgame-block-list {
-    padding-left: 35px;
   }
 
   .galgame-script-workbench .galgame-block-index {

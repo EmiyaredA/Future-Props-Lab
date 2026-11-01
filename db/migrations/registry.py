@@ -119,6 +119,7 @@ from db.migrations.versions import (
     r0115_visual_output_inspection,
     r0116_account_ownership,
     r0117_agent_workbench,
+    r0118_retire_character_workshops,
 )
 
 
@@ -553,5 +554,9 @@ MIGRATIONS += (
 )
 
 MIGRATIONS += (Migration(r0117_agent_workbench.MIGRATION_ID, r0117_agent_workbench.SQL),)
+
+MIGRATIONS += (
+    Migration(r0118_retire_character_workshops.MIGRATION_ID, r0118_retire_character_workshops.SQL),
+)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

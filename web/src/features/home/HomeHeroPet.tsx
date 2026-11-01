@@ -1,74 +1,74 @@
-import { useEffect, useState } from "react";
-import {
-  getDocument,
-  listProjects,
-  type PetDocument,
-  type PetProject,
-} from "@features/desktop-pet/api";
+import { useEffect, useRef, useState } from "react";
 
-type HeroFigure =
-  (typeof import("@features/desktop-pet/DesktopPetFigure"))["DesktopPetFigure"];
-
-function mentionsKurisu(project: PetProject) {
-  return (
-    project.title.includes("红莉栖") || project.sourceTitle.includes("红莉栖")
-  );
-}
-
-function selectKurisuProject(projects: PetProject[]) {
-  return projects
-    .filter(mentionsKurisu)
-    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0];
-}
-
-function HomeOrbit() {
-  return (
-    <div className="home-orbit" aria-hidden="true">
-      <span className="home-orbit-glow" />
-      <span className="home-orbit-ring home-orbit-ring--one" />
-      <span className="home-orbit-ring home-orbit-ring--two" />
-      <span className="home-orbit-ring home-orbit-ring--three" />
-      <span className="home-orbit-core" />
-    </div>
-  );
-}
+const POSTER = "/brand/home/kurisu-idle.png";
+const ANIMATION = "/brand/home/kurisu-idle.webm";
 
 export function HomeHeroPet() {
-  const [pet, setPet] = useState<PetDocument | null>(null);
-  const [Figure, setFigure] = useState<HeroFigure | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [reduced, setReduced] = useState(
+    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+  const [failed, setFailed] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const projects = await listProjects();
-        const match = selectKurisuProject(projects.items);
-        if (!match || cancelled) return;
-        const [loaded, module] = await Promise.all([
-          getDocument(match.id),
-          import("@features/desktop-pet/DesktopPetFigure"),
-        ]);
-        if (cancelled) return;
-        setPet(loaded);
-        setFigure(() => module.DesktopPetFigure);
-      } catch {
-        // 没有可读的红莉栖项目时保留轨道装饰。
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const changed = () => setReduced(preference.matches);
+    preference.addEventListener("change", changed);
+    return () => preference.removeEventListener("change", changed);
   }, []);
 
-  if (!pet || !Figure) return <HomeOrbit />;
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    let active = true;
+    const sync = () => {
+      if (document.hidden) video.pause();
+      else
+        void video.play().then(
+          () => {
+            if (active) setReady(true);
+          },
+          (error: unknown) => {
+            const interrupted =
+              error instanceof DOMException && error.name === "AbortError";
+            if (active && !document.hidden && !interrupted) setFailed(true);
+          },
+        );
+    };
+    sync();
+    document.addEventListener("visibilitychange", sync);
+    return () => {
+      active = false;
+      document.removeEventListener("visibilitychange", sync);
+      video.pause();
+    };
+  }, [reduced, failed]);
+
   return (
-    <div className="home-hero-pet" aria-hidden="true">
-      <Figure
-        document={pet}
-        view="center"
-        eventName="idle"
-        playbackMode="runtime"
-      />
+    <div
+      className="home-hero-pet"
+      aria-hidden="true"
+      data-playing={ready && !reduced && !failed}
+    >
+      <img src={POSTER} alt="" width="640" height="360" />
+      {!reduced && !failed && (
+        <video
+          ref={videoRef}
+          src={ANIMATION}
+          poster={POSTER}
+          autoPlay={!document.hidden}
+          muted
+          loop
+          playsInline
+          preload="auto"
+          width="640"
+          height="360"
+          data-ready={ready}
+          onLoadedData={() => setReady(true)}
+          onError={() => setFailed(true)}
+        />
+      )}
     </div>
   );
 }

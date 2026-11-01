@@ -49,30 +49,6 @@
       "fill": "#f2edf8",
       "stroke": "#365f62",
       "icon": "cpu"
-    },
-    {
-      "id": "pet",
-      "kind": "icon",
-      "x": 380,
-      "y": 290,
-      "width": 230,
-      "height": 130,
-      "text": "桌宠工坊\n自己的配置与素材",
-      "fill": "#eef5f3",
-      "stroke": "#365f62",
-      "icon": "user"
-    },
-    {
-      "id": "live",
-      "kind": "icon",
-      "x": 720,
-      "y": 290,
-      "width": 230,
-      "height": 130,
-      "text": "Live2D 公开快照\n只读文档与版本",
-      "fill": "#edf2fb",
-      "stroke": "#365f62",
-      "icon": "code"
     }
   ],
   "edges": [
@@ -115,16 +91,6 @@
       "style": "step",
       "sourceAnchor": "bottom",
       "targetAnchor": "top"
-    },
-    {
-      "id": "e4",
-      "source": "pet",
-      "target": "live",
-      "label": "只读来源请求",
-      "arrow": true,
-      "style": "step",
-      "sourceAnchor": "right",
-      "targetAnchor": "left"
     }
   ]
 }

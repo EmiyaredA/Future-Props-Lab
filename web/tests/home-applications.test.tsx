@@ -1,66 +1,19 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, vi } from "vitest";
+import { afterEach, beforeEach, vi } from "vitest";
 import { APPLICATION_DEFINITIONS } from "@app/applicationRegistry";
 import { ApplicationCenterPage } from "@features/applications/ApplicationCenterPage";
 import { HomePage } from "@features/home/HomePage";
 
-const petApi = vi.hoisted(() => ({
-  listProjects: vi.fn(),
-  getDocument: vi.fn(),
-}));
-
-vi.mock("@features/desktop-pet/api", () => ({
-  listProjects: petApi.listProjects,
-  getDocument: petApi.getDocument,
-}));
-
-vi.mock("@features/desktop-pet/DesktopPetFigure", () => ({
-  DesktopPetFigure: ({
-    view,
-    eventName,
-    playbackMode,
-    document,
-  }: {
-    view?: string;
-    eventName?: string;
-    playbackMode?: string;
-    document: { id: string };
-  }) => (
-    <div
-      data-testid="home-kurisu-figure"
-      data-view={view}
-      data-event={eventName}
-      data-mode={playbackMode}
-      data-document={document.id}
-    />
-  ),
-}));
-
-beforeEach(() => {
-  petApi.listProjects.mockReset();
-  petApi.getDocument.mockReset();
-  petApi.listProjects.mockResolvedValue({ items: [] });
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
 });
 
-function petProject(
-  id: string,
-  title: string,
-  updatedAt: string,
-  sourceTitle = "",
-) {
-  return {
-    id,
-    title,
-    updatedAt,
-    createdAt: updatedAt,
-    revision: 1,
-    sourceProjectId: null,
-    sourceRevision: null,
-    sourceTitle,
-    sourceType: "coopanion-whale" as const,
-  };
-}
+beforeEach(() => {
+  vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
+  vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
+});
 
 test("home keeps the three destinations equal and links model shortcuts", async () => {
   const user = userEvent.setup();
@@ -79,50 +32,72 @@ test("home keeps the three destinations equal and links model shortcuts", async 
   expect(navigate).toHaveBeenCalledWith("/model-test");
 });
 
-test("home shows the newest desktop-pet Kurisu and keeps the orbit otherwise", async () => {
-  petApi.getDocument.mockImplementation(async (id: string) => ({ id }));
-  petApi.listProjects.mockResolvedValue({
-    items: [
-      petProject("old", "牧濑红莉栖", "2024-01-01T00:00:00Z"),
-      petProject("new", "实验角色", "2026-10-01T00:00:00Z", "红莉栖立绘"),
-      petProject("whale", "鲸鱼", "2026-10-02T00:00:00Z", "whale"),
-    ],
-  });
-  const matched = render(<HomePage onNavigate={vi.fn()} />);
-  const figure = await screen.findByTestId("home-kurisu-figure");
-  expect(figure).toHaveAttribute("data-view", "center");
-  expect(figure).toHaveAttribute("data-event", "idle");
-  expect(figure).toHaveAttribute("data-mode", "runtime");
-  expect(figure).toHaveAttribute("data-document", "new");
-  expect(petApi.getDocument).toHaveBeenCalledTimes(1);
-  expect(petApi.getDocument).toHaveBeenCalledWith("new");
-  expect(matched.container.querySelector(".home-orbit")).toBeNull();
-  expect(matched.container.querySelector(".home-hero-pet")).not.toBeNull();
-  matched.unmount();
+test("home plays bundled Kurisu and pauses while the page is hidden", () => {
+  let hidden = false;
+  vi.spyOn(document, "hidden", "get").mockImplementation(() => hidden);
+  const { container, unmount } = render(<HomePage onNavigate={vi.fn()} />);
+  const video = container.querySelector("video")!;
+  expect(video).toHaveAttribute("src", "/brand/home/kurisu-idle.webm");
+  expect(video.loop && video.muted && video.playsInline).toBe(true);
+  expect(HTMLMediaElement.prototype.play).toHaveBeenCalled();
+  hidden = true;
+  act(() => document.dispatchEvent(new Event("visibilitychange")));
+  expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
+  hidden = false;
+  vi.mocked(HTMLMediaElement.prototype.play).mockClear();
+  act(() => document.dispatchEvent(new Event("visibilitychange")));
+  expect(HTMLMediaElement.prototype.play).toHaveBeenCalledOnce();
+  unmount();
+});
 
-  const missing = Promise.resolve({
-    items: [petProject("whale", "鲸鱼", "2026-10-02T00:00:00Z", "whale")],
-  });
-  petApi.listProjects.mockReturnValue(missing);
-  petApi.getDocument.mockClear();
-  const unmatched = render(<HomePage onNavigate={vi.fn()} />);
-  await act(async () => {
-    await missing;
-  });
-  expect(screen.queryByTestId("home-kurisu-figure")).not.toBeInTheDocument();
-  expect(unmatched.container.querySelector(".home-orbit")).not.toBeNull();
-  expect(petApi.getDocument).not.toHaveBeenCalled();
-  unmatched.unmount();
+test("home keeps its static poster when media fails", () => {
+  const { container } = render(<HomePage onNavigate={vi.fn()} />);
+  act(() =>
+    container.querySelector("video")!.dispatchEvent(new Event("error")),
+  );
+  expect(container.querySelector("video")).toBeNull();
+  expect(container.querySelector(".home-hero-pet img")).toHaveAttribute(
+    "src",
+    "/brand/home/kurisu-idle.png",
+  );
+});
 
-  const denied = Promise.reject(new Error("无权限"));
-  denied.catch(() => {});
-  petApi.listProjects.mockReturnValue(denied);
-  const unavailable = render(<HomePage onNavigate={vi.fn()} />);
+test("home uses a static image under reduced motion and follows preference changes", () => {
+  let listener = () => {};
+  const preference = {
+    matches: true,
+    addEventListener: (_: string, callback: () => void) => {
+      listener = callback;
+    },
+    removeEventListener: vi.fn(),
+  };
+  vi.spyOn(window, "matchMedia").mockReturnValue(
+    preference as unknown as MediaQueryList,
+  );
+  const { container } = render(<HomePage onNavigate={vi.fn()} />);
+  expect(container.querySelector("video")).toBeNull();
+  preference.matches = false;
+  act(() => listener());
+  expect(container.querySelector("video")).not.toBeNull();
+});
+
+test("home treats an interrupted play request as a pause rather than a media failure", async () => {
+  vi.mocked(HTMLMediaElement.prototype.play).mockRejectedValueOnce(
+    new DOMException("Paused", "AbortError"),
+  );
+  const { container } = render(<HomePage onNavigate={vi.fn()} />);
   await act(async () => {
-    await denied.catch(() => {});
+    await Promise.resolve();
   });
-  expect(screen.queryByTestId("home-kurisu-figure")).not.toBeInTheDocument();
-  expect(unavailable.container.querySelector(".home-orbit")).not.toBeNull();
+  expect(container.querySelector("video")).not.toBeNull();
+  act(() => document.dispatchEvent(new Event("visibilitychange")));
+  await act(async () => {
+    await Promise.resolve();
+  });
+  expect(container.querySelector(".home-hero-pet")).toHaveAttribute(
+    "data-playing",
+    "true",
+  );
 });
 
 test("application center filters and records recent application access", async () => {
@@ -135,7 +110,14 @@ test("application center filters and records recent application access", async (
     />,
   );
   expect(screen.getByText("还没有访问记录")).toBeInTheDocument();
+  expect(APPLICATION_DEFINITIONS.map((item) => item.id)).not.toContain(
+    "live2d-workshop",
+  );
+  expect(APPLICATION_DEFINITIONS.map((item) => item.id)).not.toContain(
+    "desktop-pet",
+  );
   for (const [name, asset] of [
+    ["Agent 工作台", "agent-workbench"],
     ["思绪工坊", "thought-workshop"],
     ["视觉创作工坊", "visual-workshop"],
     ["Galgame 工坊", "galgame-workshop"],

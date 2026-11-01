@@ -127,12 +127,10 @@ it("formats only selected paragraphs, preserves run styles and continues/exits a
   function Harness() {
     const [element, setElement] = useState(() =>
       newElement("text", {
-        paragraphs: paragraphs
-          .slice(0, 2)
-          .map((p, index) => ({
-            ...p,
-            runs: [{ ...defaultRun("内容"), bold: index === 0 }],
-          })),
+        paragraphs: paragraphs.slice(0, 2).map((p, index) => ({
+          ...p,
+          runs: [{ ...defaultRun("内容"), bold: index === 0 }],
+        })),
       }),
     );
     const [activeEditor, setEditor] = useState<Editor | null>(null);

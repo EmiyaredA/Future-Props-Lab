@@ -4,19 +4,17 @@
 
 ## 按结果选择应用
 
-| 你要得到的结果                    | 应用                                                                                                 | 建议先完成的小任务       |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------ |
-| 本机 APP / CLI 编程会话记录与同步 | Agent 工作台 | 绑定一个来源并查看已有会话 |
-| 幻灯片、放映、可编辑 PPTX         | [演示工坊](/apps/thought-workshop/official-knowledge-bases/presentation-workshop/documents/overview) | 三页产品介绍             |
-| 文档、附件、历史、UML 与信息图    | [思绪工坊](/apps/thought-workshop/official-knowledge-bases/thought-workshop/documents/overview)      | 一篇带标题和画板的说明   |
-| 图片或视频生成、素材节点关系      | [视觉创作工坊](/apps/thought-workshop/official-knowledge-bases/visual-workshop/documents/overview)   | 一张参考图的一次生成     |
-| 角色演出、分支剧情、路线视频      | [Galgame 工坊](/apps/thought-workshop/official-knowledge-bases/galgame-workshop/documents/overview)  | 能从头试玩到结束的短片段 |
-| 多轨画面、字幕、声音与成片        | [视频剪辑工坊](/apps/thought-workshop/official-knowledge-bases/video-editor/documents/overview)      | 带声音的短视频           |
-| 二维动画、路径遮罩、透明镜头      | [特效制作工坊](/apps/thought-workshop/official-knowledge-bases/motion-compositor/documents/overview) | 一段短动画               |
-| 分层角色、绑定、动作、Cubism 对照 | [Live2D 工坊](/apps/thought-workshop/official-knowledge-bases/live2d-workshop/documents/overview)    | 一个可预览的参数动作     |
-| 桌宠皮肤、事件台词、桌面运行      | [桌宠工坊](/apps/thought-workshop/official-knowledge-bases/desktop-pet/documents/overview)           | 一组可模拟的事件反应     |
-| 录音分段、说话人、情绪与字幕      | [录音标注工坊](/apps/thought-workshop/official-knowledge-bases/audio-annotation/documents/overview)  | 一段已校对的短录音       |
-| 三维布景、走位、摄影机预演        | [导演台](/apps/thought-workshop/official-knowledge-bases/director-desk/documents/overview)           | 一个镜头的可复核预演     |
+| 你要得到的结果                    | 应用                                                                                                 | 建议先完成的小任务         |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------- | -------------------------- |
+| 本机 APP / CLI 编程会话记录与同步 | Agent 工作台                                                                                         | 绑定一个来源并查看已有会话 |
+| 幻灯片、放映、可编辑 PPTX         | [演示工坊](/apps/thought-workshop/official-knowledge-bases/presentation-workshop/documents/overview) | 三页产品介绍               |
+| 文档、附件、历史、UML 与信息图    | [思绪工坊](/apps/thought-workshop/official-knowledge-bases/thought-workshop/documents/overview)      | 一篇带标题和画板的说明     |
+| 图片或视频生成、素材节点关系      | [视觉创作工坊](/apps/thought-workshop/official-knowledge-bases/visual-workshop/documents/overview)   | 一张参考图的一次生成       |
+| 角色演出、分支剧情、路线视频      | [Galgame 工坊](/apps/thought-workshop/official-knowledge-bases/galgame-workshop/documents/overview)  | 能从头试玩到结束的短片段   |
+| 多轨画面、字幕、声音与成片        | [视频剪辑工坊](/apps/thought-workshop/official-knowledge-bases/video-editor/documents/overview)      | 带声音的短视频             |
+| 二维动画、路径遮罩、透明镜头      | [特效制作工坊](/apps/thought-workshop/official-knowledge-bases/motion-compositor/documents/overview) | 一段短动画                 |
+| 录音分段、说话人、情绪与字幕      | [录音标注工坊](/apps/thought-workshop/official-knowledge-bases/audio-annotation/documents/overview)  | 一段已校对的短录音         |
+| 三维布景、走位、摄影机预演        | [导演台](/apps/thought-workshop/official-knowledge-bases/director-desk/documents/overview)           | 一个镜头的可复核预演       |
 
 ## 查看已有编程会话
 

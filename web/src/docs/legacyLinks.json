@@ -14,6 +14,5 @@
   "video-editor-delivery#segment-export": "video-segments#segment-export",
   "video-editor-delivery#failure-recovery": "video-recovery#failure-recovery",
   "sdk-reference-amadeus#amadeus方法参考": "sdk-reference-amadeus#amadeus-桌面助手方法参考",
-  "sdk-reference-live2d-workshop#live2d_workshop方法参考": "sdk-reference-live2d-workshop#live2d-工坊方法参考",
   "sdk-reference-motion-compositor#motion_compositor方法参考": "sdk-reference-motion-compositor#特效制作工坊方法参考"
 }

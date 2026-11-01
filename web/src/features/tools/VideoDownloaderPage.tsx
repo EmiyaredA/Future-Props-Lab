@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { CustomSelect } from "@shared/ui/CustomSelect";
-import { download } from "@features/thought-workshop/download";
+import { download } from "@features/thought-workshop";
 import {
   createVideoDownloadJob,
   downloadVideoDownloadFile,

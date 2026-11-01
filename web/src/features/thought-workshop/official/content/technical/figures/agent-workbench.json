@@ -1,0 +1,76 @@
+{
+  "sceneVersion": 1,
+  "title": "Agent 工作台：原生会话、检查点与账号投影",
+  "elements": [
+    {
+      "id": "n0",
+      "kind": "rounded",
+      "x": 40,
+      "y": 120,
+      "width": 240,
+      "height": 120,
+      "text": "原生来源\n当前账号显式绑定",
+      "fill": "#eef5f3",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "n1",
+      "kind": "rounded",
+      "x": 340,
+      "y": 120,
+      "width": 240,
+      "height": 120,
+      "text": "只读适配器\n事务外读取",
+      "fill": "#edf2fb",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "n2",
+      "kind": "rounded",
+      "x": 640,
+      "y": 120,
+      "width": 240,
+      "height": 120,
+      "text": "账号投影与检查点\n同事务提交",
+      "fill": "#f2edf8",
+      "stroke": "#365f62"
+    },
+    {
+      "id": "n3",
+      "kind": "rounded",
+      "x": 940,
+      "y": 120,
+      "width": 240,
+      "height": 120,
+      "text": "阅读页面与附件\nSession 与归属检查",
+      "fill": "#fff1dd",
+      "stroke": "#365f62"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "source": "n0",
+      "target": "n1",
+      "label": "受控读取",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "e1",
+      "source": "n1",
+      "target": "n2",
+      "label": "校验并提交",
+      "arrow": true,
+      "style": "step"
+    },
+    {
+      "id": "e2",
+      "source": "n2",
+      "target": "n3",
+      "label": "读取与反馈",
+      "arrow": true,
+      "style": "step"
+    }
+  ]
+}

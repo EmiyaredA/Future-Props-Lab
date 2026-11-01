@@ -194,7 +194,7 @@ test("renders video node draft references as the canvas preview", async () => {
   expect(await screen.findByText("咖啡馆桌面小世界")).toBeInTheDocument();
   expect(await screen.findByAltText("生成参考素材预览")).toBeInTheDocument();
   expect(fetchApiBlob).toHaveBeenCalledWith(
-    "/v1/files/reference-image-1/content",
+    "/v1/files/reference-image-1/thumbnail?size=640",
     expect.objectContaining({ signal: expect.any(AbortSignal) }),
   );
   expect(
@@ -502,11 +502,15 @@ test("exports a paused video frame and creates an unconnected image node", async
     return current!;
   });
   await user.click(node.querySelector<HTMLElement>(".canvas-node-media")!);
-  const video = node.querySelector("video")!;
-  expect(video).not.toHaveAttribute("controls");
+  expect(node.querySelector("video")).toBeNull();
   const playButton = await screen.findByRole("button", { name: "播放视频" });
   await waitFor(() => expect(playButton).toBeEnabled());
   await user.click(playButton);
+  const video = await waitFor(() => {
+    const element = node.querySelector("video");
+    expect(element).not.toBeNull();
+    return element!;
+  });
   expect(video).toHaveAttribute("controls");
   Object.defineProperties(video, {
     currentTime: { configurable: true, writable: true, value: 3.25 },

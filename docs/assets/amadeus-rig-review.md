@@ -6,4 +6,4 @@
 - `kurisu-hands.png`：内置 ImageGen 参考同一原画生成的一对透明手部。提示词要求匹配原画浅肤色与赛璐璐上色，左右手独立、自然放松、无袖子背景。原画止于腰部且未显示手；草案中的手部作为默认隐藏的备用可编辑图层。
 - `scripts/build_amadeus_rig_draft.py` 将选定原画的可见像素按语义部件分配给独立透明图层，隐藏底画只填关节及遮挡下的空面；不从旧动态图集裁切。`scripts/write_live2d_review_psd.mjs` 从这些 PNG 对应的 RGBA 像素写入 RGB 分层 PSD，并重新解析校验层数。模型和 PSD 保留图层顺序、位置与透明度。
 
-构建与检查：`uv run python scripts/build_amadeus_rig_draft.py`、`uv run python scripts/check_amadeus_rig_draft.py`。正式动作、状态绑定和运行头像切换留待用户验收后制作。
+此处保留历史素材来源记录；草案构建与审阅脚本已随角色工坊退役移除，正式 Amadeus 继续使用内置模型。

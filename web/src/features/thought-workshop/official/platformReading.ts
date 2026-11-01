@@ -149,7 +149,7 @@ export const PLATFORM_READING: Record<
   },
   "general/desktop": {
     summary:
-      "核对 Amadeus 上下文和能力范围，完成桌面配对并区分会话文件与项目素材。",
+      "核对 Amadeus 上下文、桌面配对与项目素材，并从头像菜单启停本地及公网访问。",
     related: [
       {
         libraryId: "general",
@@ -662,6 +662,86 @@ export const PLATFORM_READING: Record<
         libraryId: "video-editor",
         documentId: "delivery",
       },
+    ],
+  },
+  "agent-workbench/overview": {
+    summary:
+      "在桌面打开「应用 → 开发辅助 → Agent 工作台」。先查看来源，再阅读会话；这里展示已有 Codex、Claude Code、OpenCode、DeepSeek H",
+    related: [
+      { libraryId: "agent-workbench", documentId: "workflow" },
+      { libraryId: "agent-workbench", documentId: "storage" },
+    ],
+  },
+  "agent-workbench/workflow": {
+    summary:
+      "打开「来源」，选择已检测目录或通过原生目录选择器指定位置。核对工具和路径，确认当前账号保存阅读副本，点击绑定并开始同步。返回会话并在原工具产生一条完整新记录，应看到最后同",
+    related: [
+      { libraryId: "agent-workbench", documentId: "storage" },
+      { libraryId: "agent-workbench", documentId: "delivery" },
+    ],
+  },
+  "agent-workbench/storage": {
+    summary:
+      "原生日志是上下文真源，FPL 将条目、索引、检查点和来源绑定保存到当前账号。同一来源不能被不同账号重叠绑定；管理员也不能读取其他账号的会话副本。",
+    related: [
+      { libraryId: "agent-workbench", documentId: "delivery" },
+      { libraryId: "agent-workbench", documentId: "help" },
+    ],
+  },
+  "agent-workbench/delivery": {
+    summary:
+      "选中会话后先核对 Agent、项目路径和来源依据，再浏览分页历史。全文搜索只检索已经同步的正文；尚未落盘的半条记录要等原端完成写入。",
+    related: [
+      { libraryId: "agent-workbench", documentId: "help" },
+      { libraryId: "agent-workbench", documentId: "overview" },
+    ],
+  },
+  "agent-workbench/help": {
+    summary:
+      "来源状态异常时先检查原工具路径和格式，再重新扫描。缺少默认 Pi 目录时使用实际宿主目录。OpenCode 可连接已运行的本机回环 HTTP 实例，SSE 只触发补读，不",
+    related: [
+      { libraryId: "agent-workbench", documentId: "overview" },
+      { libraryId: "agent-workbench", documentId: "workflow" },
+    ],
+  },
+  "interview-assistant/overview": {
+    summary:
+      "在应用中心打开面试助手，填写岗位名称与 JD，粘贴简历或上传原件。确认页面的本机 Codex 连接已安装、登录且被管理员授权用于面试资料准备，再开始准备。",
+    related: [
+      { libraryId: "interview-assistant", documentId: "workflow" },
+      { libraryId: "interview-assistant", documentId: "storage" },
+    ],
+  },
+  "interview-assistant/workflow": {
+    summary:
+      "提交材料后查看实际任务状态。Codex 读取本场 JD 与简历，检索来源并交付需求、经历、主题、题目与评分要点。离开页面不会取消后台准备；回来后重新读取任务状态，确认成功",
+    related: [
+      { libraryId: "interview-assistant", documentId: "storage" },
+      { libraryId: "interview-assistant", documentId: "delivery" },
+    ],
+  },
+  "interview-assistant/storage": {
+    summary:
+      "房间、只读上传材料、准备任务及结构化资料由后端按当前账号持久化；内容更新使用版本校验，不覆盖其他窗口保存的新版本。查看历史时先确认当前房间和任务标识。",
+    related: [
+      { libraryId: "interview-assistant", documentId: "delivery" },
+      { libraryId: "interview-assistant", documentId: "help" },
+    ],
+  },
+  "interview-assistant/delivery": {
+    summary:
+      "准备完成后可下载 Markdown 或 JSON 资料，核对岗位、来源与题目内容。Markdown 便于阅读，JSON 保留结构化字段；下载文件不改变本场准备任务，也不代",
+    related: [
+      { libraryId: "interview-assistant", documentId: "help" },
+      { libraryId: "interview-assistant", documentId: "overview" },
+    ],
+  },
+  "interview-assistant/help": {
+    summary:
+      "连接不可用时在「模型与智能体 → 编程智能体」核对本机 Codex 路径、登录和面试用途授权，再点击重新检查。来源检索失败或材料不完整时应查看任务说明，补全材料后手动重新",
+    related: [
+      { libraryId: "interview-assistant", documentId: "overview" },
+      { libraryId: "interview-assistant", documentId: "workflow" },
     ],
   },
 };

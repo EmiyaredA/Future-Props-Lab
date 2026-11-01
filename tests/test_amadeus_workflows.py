@@ -1,193 +1,46 @@
-"""Deterministic Amadeus workflow tests with isolated application data."""
+"""Exercise current backend-owned CLI workflows through authenticated APIs."""
 
-from __future__ import annotations
-
+from contextlib import aclosing
 from pathlib import Path
-from types import SimpleNamespace
 
-import httpx
 import pytest
 
 from app.console.amadeus.runs import recover_interrupted_amadeus_runs
-from app.console.amadeus.schemas import ModelTurnIn
-from app.console.models.accounts import User
-from app.console.routes.amadeus import validate_model_turn
 from app.main import app
-from app.orm import bind_owner
-from app.runtime.db import SessionLocal
 from db.migrations.registry import LATEST_MIGRATION_ID
 from db.migrations.runner import apply_migrations, check_migrations, connect_database
+from test_code_agents import authorize, configured, wait_run  # noqa: F401
+from test_workspace_governance import client_account
+
+pytestmark = pytest.mark.real_auth
 
 
-@pytest.fixture(autouse=True)
-def desktop_amadeus(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(app.state, "desktop_enabled", True, raising=False)
+async def message(client, root, content):
+    detail = (await client.get(root)).json()
+    response = await client.post(
+        root + "/messages",
+        json={
+            "expected_revision": detail["conversation"]["revision"],
+            "role": "user",
+            "content": content,
+        },
+    )
+    assert response.status_code == 200, response.text
 
 
-async def _test_user() -> None:
-    async with SessionLocal() as session:
-        bind_owner(session, "test-user")
-        if await session.get(User, "test-user") is None:
-            session.add(
-                User(
-                    id="test-user",
-                    username="amadeus-test",
-                    username_normalized="amadeus-test",
-                    password_hash="not-a-login",
-                )
-            )
-            await session.commit()
+async def conversation(client):
+    response = await client.post("/v1/amadeus/conversations")
+    assert response.status_code == 200, response.text
+    return f"/v1/amadeus/conversations/{response.json()['id']}"
 
 
-@pytest.mark.asyncio
-async def test_completed_plan_and_agent_runs_accept_one_same_mode_revision() -> None:
-    await _test_user()
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        conversation = (await client.post("/v1/amadeus/conversations")).json()
-        root = f"/v1/amadeus/conversations/{conversation['id']}"
-        for mode in ("plan", "agent"):
-            original = await client.post(root + "/runs", json={"model_id": "mock", "mode": mode})
-            assert original.status_code == 200, original.text
-            original_id = original.json()["run"]["id"]
-            assert (
-                await client.post(
-                    root + f"/runs/{original_id}/finish", json={"status": "completed"}
-                )
-            ).status_code == 200
-            revised = await client.post(
-                root + "/runs",
-                json={"model_id": "mock", "mode": mode, "source_run_id": original_id},
-            )
-            assert revised.status_code == 200, revised.text
-            assert revised.json()["run"]["source_run_id"] == original_id
-            assert (
-                await client.post(
-                    root + f"/runs/{revised.json()['run']['id']}/finish",
-                    json={"status": "completed"},
-                )
-            ).status_code == 200
-            duplicate = await client.post(
-                root + "/runs",
-                json={"model_id": "mock", "mode": mode, "source_run_id": original_id},
-            )
-            assert duplicate.status_code == 409
+async def start(client, root, **kwargs):
+    response = await client.post(root + "/runs", json={"agent_id": "codex", **kwargs})
+    assert response.status_code == 200, response.text
+    return await wait_run(client, root, response.json()["run"]["id"])
 
 
-@pytest.mark.asyncio
-async def test_revising_write_parameters_invalidates_old_approval() -> None:
-    await _test_user()
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        project = (
-            await client.post(
-                "/v1/visual-workshop/projects", json={"title": "审批修订", "kind": "video"}
-            )
-        ).json()
-        canvas_url = f"/v1/visual-workshop/projects/{project['id']}/canvas"
-        conversation = (await client.post("/v1/amadeus/conversations")).json()
-        root = f"/v1/amadeus/conversations/{conversation['id']}"
-        original_run = (
-            await client.post(root + "/runs", json={"model_id": "mock", "mode": "agent"})
-        ).json()["run"]
-
-        def parameters(title: str, request_id: str) -> dict:
-            return {
-                "path_params": {"project_id": project["id"]},
-                "body": {
-                    "expected_revision": 0,
-                    "request_id": request_id,
-                    "operations": [
-                        {
-                            "entity": "node",
-                            "action": "insert",
-                            "id": "revised-node",
-                            "value": {
-                                "id": "revised-node",
-                                "kind": "video",
-                                "title": title,
-                                "position": {"x": 0, "y": 0},
-                            },
-                        }
-                    ],
-                },
-            }
-
-        old = (
-            await client.post(
-                root + "/actions",
-                json={
-                    "run_id": original_run["id"],
-                    "tool_name": "fpl_operation:visual.apply_canvas_operations",
-                    "arguments": parameters("旧标题", "old-proposal"),
-                },
-            )
-        ).json()
-        await client.post(root + f"/runs/{original_run['id']}/pause-approval")
-        withdrawn = await client.post(
-            root + f"/actions/{old['id']}/decision",
-            json={"arguments_sha256": old["arguments_sha256"], "approve": False},
-        )
-        assert withdrawn.status_code == 200
-        assert withdrawn.json()["status"] == "rejected"
-        feedback = await client.post(
-            root + "/messages",
-            json={
-                "expected_revision": conversation["revision"],
-                "role": "user",
-                "content": "请重新读取画布，并把标题改成新标题后重新拟案。",
-            },
-        )
-        assert feedback.status_code == 200
-        assert (await client.get(canvas_url)).json()["revision"] == 0
-        assert (
-            await client.post(
-                root + f"/actions/{old['id']}/decision",
-                json={"arguments_sha256": old["arguments_sha256"], "approve": True},
-            )
-        ).status_code == 409
-        assert (await client.post(root + f"/actions/{old['id']}/execute")).status_code == 409
-
-        revised_run = await client.post(
-            root + "/runs",
-            json={
-                "model_id": "mock",
-                "mode": "agent",
-                "source_run_id": original_run["id"],
-            },
-        )
-        assert revised_run.status_code == 200, revised_run.text
-        new = (
-            await client.post(
-                root + "/actions",
-                json={
-                    "run_id": revised_run.json()["run"]["id"],
-                    "tool_name": "fpl_operation:visual.apply_canvas_operations",
-                    "arguments": parameters("新标题", "new-proposal"),
-                },
-            )
-        ).json()
-        assert new["arguments_sha256"] != old["arguments_sha256"]
-        await client.post(root + f"/runs/{revised_run.json()['run']['id']}/pause-approval")
-        restored = (await client.get(root)).json()
-        assert [item["status"] for item in restored["actions"]] == ["rejected", "pending"]
-        assert restored["messages"][-1]["content"].startswith("请重新读取画布")
-        approved = await client.post(
-            root + f"/actions/{new['id']}/decision",
-            json={"arguments_sha256": new["arguments_sha256"], "approve": True},
-        )
-        assert approved.status_code == 200
-        executed = await client.post(root + f"/actions/{new['id']}/execute")
-        assert executed.status_code == 200, executed.text
-        assert executed.json()["status"] == "completed"
-        saved = (await client.get(canvas_url)).json()
-        assert saved["revision"] == 1
-        assert [node["title"] for node in saved["nodes"]] == ["新标题"]
-
-
-def test_amadeus_workflow_migration_on_temporary_database(tmp_path: Path) -> None:
+def test_amadeus_workflow_migration_on_temporary_database(tmp_path: Path):
     database = tmp_path / "workflow.db"
     assert apply_migrations(database)[0] == LATEST_MIGRATION_ID
     assert check_migrations(database) == LATEST_MIGRATION_ID
@@ -196,292 +49,193 @@ def test_amadeus_workflow_migration_on_temporary_database(tmp_path: Path) -> Non
         question_columns = {
             row[1] for row in connection.execute("PRAGMA table_info(amadeus_questions)")
         }
-    assert {"mode", "source_run_id"} <= run_columns
+    assert {"mode", "source_run_id", "agent_id", "execution_config"} <= run_columns
     assert {"prompt", "status", "answer_json"} <= question_columns
 
 
 @pytest.mark.asyncio
-async def test_amadeus_plan_to_agent_adds_video_draft_after_restored_approval() -> None:
-    """Deterministic model events; all mutations use isolated application APIs."""
-    await _test_user()
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
+@pytest.mark.usefixtures("configured")
+async def test_completed_plan_and_agent_runs_accept_one_same_mode_revision():
+    client, _, user_id, _ = await client_account(admin=True)
+    async with aclosing(client):
+        await authorize(client, user_id)
+        root = await conversation(client)
+        await message(client, root, "读取项目目录")
+        for mode in ("plan", "agent"):
+            original = await start(client, root, mode=mode)
+            assert original["run"]["status"] == "completed"
+            identity = original["run"]["id"]
+            assert (
+                await client.post(root + f"/runs/{identity}/finish", json={"status": "completed"})
+            ).status_code == 410
+            revised = await start(client, root, mode=mode, source_run_id=identity)
+            assert revised["run"]["status"] == "completed"
+            assert revised["run"]["source_run_id"] == identity
+            duplicate = await client.post(
+                root + "/runs", json={"agent_id": "codex", "mode": mode, "source_run_id": identity}
+            )
+            assert duplicate.status_code == 409
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("configured")
+async def test_revising_write_parameters_invalidates_old_approval():
+    client, _, user_id, _ = await client_account(admin=True)
+    async with aclosing(client):
+        await authorize(client, user_id)
         project = (
             await client.post(
-                "/v1/visual-workshop/projects", json={"title": "视频创作流程烟测", "kind": "video"}
+                "/v1/visual-workshop/projects", json={"title": "审批修订", "kind": "video"}
             )
         ).json()
-        canvas_url = f"/v1/visual-workshop/projects/{project['id']}/canvas"
-        initial = (await client.get(canvas_url)).json()
-        assert initial["revision"] == 0
-        assert initial["nodes"] == []
-        conversation = (await client.post("/v1/amadeus/conversations")).json()
-        root = f"/v1/amadeus/conversations/{conversation['id']}"
-        prompt = "在当前视频项目画布新增一个日落城市镜头的视频生成草稿，先给出计划。"
-        posted = await client.post(
-            root + "/messages",
-            json={"expected_revision": 0, "role": "user", "content": prompt},
+        canvas = f"/v1/visual-workshop/projects/{project['id']}/canvas"
+        root = await conversation(client)
+        await message(client, root, f"DRAFT_FAKE:{project['id']}:OLD")
+        original = await start(client, root)
+        assert original["run"]["status"] == "waiting_approval"
+        old = (await client.get(root)).json()["actions"][0]
+        rejected = await client.post(
+            root + f"/actions/{old['id']}/decision",
+            json={"arguments_sha256": old["arguments_sha256"], "approve": False},
         )
-        assert posted.status_code == 200
-        plan = (
-            await client.post(root + "/runs", json={"model_id": "mock", "mode": "plan"})
-        ).json()["run"]
-        assert plan["mode"] == "plan"
-        async with SessionLocal() as session:
-            await validate_model_turn(
-                session,
-                SimpleNamespace(owner_user_id="test-user", user_id="test-user"),
-                ModelTurnIn(
-                    model_id="mock",
-                    run_id=plan["id"],
-                    system="Plan",
-                    messages=[{"role": "user", "text": prompt}],
-                    tools=[{"name": "present_artifact", "parameters_schema": {}}],
-                ),
-            )
-        forbidden = await client.post(
-            root + "/actions",
-            json={
-                "run_id": plan["id"],
-                "tool_name": "fpl_operation:visual.apply_canvas_operations",
-                "arguments": {"project_id": project["id"]},
-            },
+        assert rejected.status_code == 200 and rejected.json()["status"] == "rejected"
+        assert (await client.get(canvas)).json()["revision"] == 0
+        await message(client, root, f"DRAFT_FAKE:{project['id']}:NEW")
+        revised = await start(client, root, source_run_id=original["run"]["id"])
+        assert revised["run"]["status"] == "waiting_approval"
+        current = next(
+            a for a in (await client.get(root)).json()["actions"] if a["status"] == "pending"
         )
-        assert forbidden.status_code == 409
-        forbidden_model_tool = await client.post(
-            "/v1/amadeus/model-turn",
-            json={
-                "model_id": "mock",
-                "run_id": plan["id"],
-                "system": "Plan",
-                "messages": [{"role": "user", "text": prompt}],
-                "tools": [
-                    {
-                        "name": "fpl_operation:visual.apply_canvas_operations",
-                        "parameters_schema": {},
-                    }
-                ],
-            },
-        )
-        assert forbidden_model_tool.status_code == 422
-        assert (await client.get(canvas_url)).json()["revision"] == 0
+        assert current["arguments_sha256"] != old["arguments_sha256"]
+        for action, digest in [(old, old["arguments_sha256"]), (current, old["arguments_sha256"])]:
+            assert (
+                await client.post(
+                    root + f"/actions/{action['id']}/decision",
+                    json={"arguments_sha256": digest, "approve": True},
+                )
+            ).status_code == 409
         await client.post(
-            root + f"/runs/{plan['id']}/events",
+            root + f"/actions/{current['id']}/decision",
+            json={"arguments_sha256": current["arguments_sha256"], "approve": True},
+        )
+        result = await client.post(root + f"/actions/{current['id']}/execute")
+        assert result.status_code == 200, result.text
+        assert result.json()["status"] == "completed"
+        assert (await client.post(root + f"/actions/{current['id']}/execute")).status_code == 409
+        saved = (await client.get(canvas)).json()
+        assert saved["revision"] == 1 and [node["title"] for node in saved["nodes"]] == ["新标题"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("configured")
+async def test_plan_to_agent_adds_draft_only_after_restored_approval():
+    client, _, user_id, _ = await client_account(admin=True)
+    async with aclosing(client):
+        await authorize(client, user_id)
+        project = (
+            await client.post(
+                "/v1/visual-workshop/projects", json={"title": "计划与执行", "kind": "video"}
+            )
+        ).json()
+        canvas = f"/v1/visual-workshop/projects/{project['id']}/canvas"
+        root = await conversation(client)
+        await message(client, root, f"DRAFT_FAKE:{project['id']}:NEW")
+        plan = await start(client, root, mode="plan")
+        assert plan["run"]["status"] == "completed"
+        assert any(
+            e["kind"] == "tool_result" and e["payload"]["status"] == "failed"
+            for e in plan["events"]
+        )
+        assert (await client.get(canvas)).json()["nodes"] == []
+        forged = await client.post(
+            root + f"/runs/{plan['run']['id']}/events",
             json={
                 "kind": "assistant_delta",
-                "payload": {"text": "先读取视频项目画布，再申请新增一张视频生成草稿卡。"},
-                "idempotency_key": "plan-text",
+                "payload": {"text": "forged"},
+                "idempotency_key": "forged",
             },
         )
-        assert (
-            await client.post(root + f"/runs/{plan['id']}/finish", json={"status": "completed"})
-        ).status_code == 200
-        agent = (
-            await client.post(
-                root + "/runs",
-                json={"model_id": "mock", "mode": "agent", "source_run_id": plan["id"]},
-            )
-        ).json()["run"]
-        assert agent["source_run_id"] == plan["id"]
-        assert (
-            await client.post(
-                root + "/runs",
-                json={"model_id": "mock", "mode": "agent", "source_run_id": plan["id"]},
-            )
-        ).status_code == 409
-        await client.post(
-            root + f"/runs/{agent['id']}/events",
-            json={
-                "kind": "tool_call",
-                "payload": {
-                    "tool_call_id": "read-canvas",
-                    "tool_name": "fpl_read",
-                    "arguments": {"path": canvas_url},
-                },
-                "idempotency_key": "read-call",
-            },
-        )
-        await client.post(
-            root + f"/runs/{agent['id']}/events",
-            json={
-                "kind": "tool_result",
-                "payload": {
-                    "tool_call_id": "read-canvas",
-                    "name": "fpl_read",
-                    "result": {"revision": 0, "nodes": []},
-                },
-                "idempotency_key": "read-result",
-            },
-        )
-        node = {
-            "id": "video-draft-1",
-            "kind": "video",
-            "title": "日落城市镜头",
-            "position": {"x": 80, "y": 120},
-            "generation_draft": {"prompt": "日落时分的城市街景，缓慢推进镜头"},
-        }
-        arguments = {
-            "path_params": {"project_id": project["id"]},
-            "body": {
-                "expected_revision": 0,
-                "request_id": "amadeus-video-draft-1",
-                "operations": [
-                    {"entity": "node", "action": "insert", "id": node["id"], "value": node}
-                ],
-            },
-        }
-        await client.post(
-            root + f"/runs/{agent['id']}/events",
-            json={
-                "kind": "tool_call",
-                "payload": {
-                    "tool_call_id": "add-video-draft",
-                    "tool_name": "fpl_operation:visual.apply_canvas_operations",
-                    "arguments": arguments,
-                },
-                "idempotency_key": "write-call",
-            },
-        )
-        proposed = (
-            await client.post(
-                root + "/actions",
-                json={
-                    "run_id": agent["id"],
-                    "tool_name": "fpl_operation:visual.apply_canvas_operations",
-                    "arguments": arguments,
-                },
-            )
-        ).json()
-        assert (await client.post(root + f"/runs/{agent['id']}/pause-approval")).json()["run"][
-            "status"
-        ] == "waiting_approval"
+        assert forged.status_code == 410
+        agent = await start(client, root, mode="agent", source_run_id=plan["run"]["id"])
+        assert agent["run"]["status"] == "waiting_approval"
+        action = (await client.get(root)).json()["actions"][0]
+        await app.state.code_agent_runs.close()
         await recover_interrupted_amadeus_runs()
-        restored = (await client.get(root)).json()
-        assert [item["status"] for item in restored["actions"]] == ["pending"]
-        assert (await client.get(canvas_url)).json()["revision"] == 0
+        restored = (await client.get(root)).json()["actions"][0]
         assert (
-            await client.post(
-                root + f"/actions/{proposed['id']}/decision",
-                json={"arguments_sha256": proposed["arguments_sha256"], "approve": True},
-            )
-        ).status_code == 200
-        executed = await client.post(root + f"/actions/{proposed['id']}/execute")
-        assert executed.status_code == 200, executed.text
-        assert executed.json()["status"] == "completed"
-        assert (await client.post(root + f"/actions/{proposed['id']}/execute")).status_code == 409
-        saved = (await client.get(canvas_url)).json()
-        assert saved["revision"] == 1
-        assert len(saved["nodes"]) == 1
-        assert saved["nodes"][0]["id"] == node["id"]
-        assert saved["nodes"][0]["kind"] == "video"
-        assert saved["nodes"][0]["generation_draft"]["prompt"] == node["generation_draft"]["prompt"]
+            restored["status"] == "pending"
+            and restored["arguments_sha256"] == action["arguments_sha256"]
+        )
+        assert (await client.get(canvas)).json()["revision"] == 0
+        decision = await client.post(
+            root + f"/actions/{action['id']}/decision",
+            json={"approve": True, "arguments_sha256": action["arguments_sha256"]},
+        )
+        assert decision.status_code == 200, decision.text
+        executed = await client.post(root + f"/actions/{action['id']}/execute")
+        assert executed.status_code == 200 and executed.json()["status"] == "completed"
+        assert (await client.post(root + f"/actions/{action['id']}/execute")).status_code == 409
+        saved = (await client.get(canvas)).json()
+        assert saved["revision"] == 1 and len(saved["nodes"]) == 1
+        assert saved["nodes"][0]["generation_draft"]["prompt"] == "日落城市镜头"
         assert saved["nodes"][0]["asset_id"] is None
-        stale = await client.post(
-            canvas_url + "/operations",
-            json={
-                "expected_revision": 0,
-                "request_id": "amadeus-stale-video-draft",
-                "operations": [
-                    {
-                        "entity": "node",
-                        "action": "insert",
-                        "id": "stale-draft",
-                        "value": {**node, "id": "stale-draft"},
-                    }
-                ],
-            },
-        )
-        assert stale.status_code == 409
-        assert (await client.get(canvas_url)).json()["nodes"] == saved["nodes"]
-        resumed = await client.post(
-            root + "/runs",
-            json={"model_id": "mock", "mode": "agent", "source_run_id": agent["id"]},
-        )
-        assert resumed.status_code == 200
-        assert resumed.json()["run"]["source_run_id"] == agent["id"]
-        assert (
-            await client.post(
-                root + "/runs",
-                json={"model_id": "mock", "mode": "agent", "source_run_id": agent["id"]},
-            )
-        ).status_code == 409
-        await client.post(
-            root + f"/runs/{resumed.json()['run']['id']}/finish", json={"status": "completed"}
-        )
 
 
 @pytest.mark.asyncio
-async def test_amadeus_question_survives_recovery_and_answer_is_single_use() -> None:
-    await _test_user()
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        conversation = (await client.post("/v1/amadeus/conversations")).json()
-        root = f"/v1/amadeus/conversations/{conversation['id']}"
-        run = (await client.post(root + "/runs", json={"model_id": "mock", "mode": "plan"})).json()[
-            "run"
-        ]
-        question = await client.post(
-            root + f"/runs/{run['id']}/question",
-            json={
-                "tool_call_id": "ask-video-ratio",
-                "prompt": "视频草稿采用哪种画幅？",
-                "options": ["16:9", "9:16"],
-                "allow_text": True,
-            },
-        )
-        assert question.status_code == 200, question.text
+@pytest.mark.usefixtures("configured")
+async def test_question_survives_recovery_and_answer_is_single_use():
+    client, _, user_id, _ = await client_account(admin=True)
+    async with aclosing(client):
+        await authorize(client, user_id)
+        root = await conversation(client)
+        await message(client, root, "ASK_FAKE")
+        original = await start(client, root, mode="plan")
+        assert original["run"]["status"] == "waiting_question"
+        await app.state.code_agent_runs.close()
         await recover_interrupted_amadeus_runs()
-        pending = (await client.get(root)).json()["questions"]
-        assert pending[0]["status"] == "pending"
-        answered = await client.post(
-            root + f"/questions/{question.json()['id']}/answer",
-            json={"answer": "16:9", "note": "先保存草稿"},
+        question = (await client.get(root)).json()["questions"][0]
+        assert question["status"] == "pending"
+        answer = await client.post(
+            root + f"/questions/{question['id']}/answer", json={"answer": "A", "note": "继续读取"}
         )
-        assert answered.json()["answer"] == {"answer": "16:9", "note": "先保存草稿"}
+        assert answer.status_code == 200 and answer.json()["answer"] == {
+            "answer": "A",
+            "note": "继续读取",
+        }
         assert (
-            await client.post(
-                root + f"/questions/{question.json()['id']}/answer",
-                json={"answer": "9:16"},
-            )
+            await client.post(root + f"/questions/{question['id']}/answer", json={"answer": "B"})
         ).status_code == 409
-        continuation = await client.post(
-            root + "/runs",
-            json={"model_id": "mock", "mode": "plan", "source_run_id": run["id"]},
-        )
-        assert continuation.status_code == 200, continuation.text
-        await client.post(
-            root + f"/runs/{continuation.json()['run']['id']}/finish",
-            json={"status": "completed"},
-        )
+        await message(client, root, "继续读取项目目录")
+        result = await start(client, root, mode="plan", source_run_id=original["run"]["id"])
+        assert result["run"]["status"] == "completed"
 
 
 @pytest.mark.asyncio
-async def test_amadeus_subagent_model_turn_rejects_write_tools() -> None:
-    await _test_user()
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        conversation = (await client.post("/v1/amadeus/conversations")).json()
-        root = f"/v1/amadeus/conversations/{conversation['id']}"
-        run = (await client.post(root + "/runs", json={"model_id": "mock"})).json()["run"]
-        forbidden = await client.post(
-            "/v1/amadeus/model-turn",
-            json={
-                "model_id": "mock",
-                "run_id": run["id"],
-                "subagent_id": "read-child-1",
-                "system": "只读调查",
-                "messages": [{"role": "user", "text": "查看项目"}],
-                "tools": [
-                    {
-                        "name": "fpl_operation:visual.apply_canvas_operations",
-                        "parameters_schema": {},
-                    }
-                ],
-            },
-        )
-        assert forbidden.status_code == 422
-        assert "write_tool_forbidden" in forbidden.text
-        await client.post(root + f"/runs/{run['id']}/finish", json={"status": "completed"})
+@pytest.mark.usefixtures("configured")
+async def test_legacy_model_bridge_cannot_run_subagent_or_write_tools():
+    client, _, user_id, _ = await client_account(admin=True)
+    async with aclosing(client):
+        await authorize(client, user_id)
+        root = await conversation(client)
+        await message(client, root, "读取项目目录")
+        run = await start(client, root)
+        for suffix in ("", "/stream"):
+            response = await client.post(
+                "/v1/amadeus/model-turn" + suffix,
+                json={
+                    "model_id": "retired",
+                    "run_id": run["run"]["id"],
+                    "subagent_id": "child",
+                    "system": "只读调查",
+                    "messages": [{"role": "user", "text": "查看项目"}],
+                    "tools": [
+                        {
+                            "name": "fpl_operation:visual.apply_canvas_operations",
+                            "parameters_schema": {},
+                        }
+                    ],
+                },
+            )
+            assert (
+                response.status_code == 410 and response.json()["code"] == "external_agent_required"
+            )

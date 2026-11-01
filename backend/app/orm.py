@@ -16,10 +16,6 @@ from app.apps.audio_annotation.models import (
     AudioAnnotationProject,
     AudioAnnotationWaveform,
 )
-from app.apps.desktop_pet.models import (
-    DesktopPetChat,
-    DesktopPetProject,
-)
 from app.apps.director_desk.models import DirectorDeskProject, DirectorDeskUserMotion
 from app.apps.galgame_workshop.models import (
     GalgameAnnotationImportTask,
@@ -34,12 +30,6 @@ from app.apps.galgame_workshop.models import (
     GalgameWorkshopProject,
 )
 from app.apps.interview_assistant.models import InterviewPreparation, InterviewRoom
-from app.apps.live2d_workshop.models import (
-    Live2DAsset,
-    Live2DCubismAttachment,
-    Live2DExport,
-    Live2DProject,
-)
 from app.apps.motion_compositor.models import (
     MotionDocument,
     MotionOperationBatch,
@@ -190,7 +180,6 @@ CATALOG_MODELS: dict[str, type] = {
 DESKTOP_UI_ROOTS: dict[str, type] = {
     "annotation": AudioAnnotationProject,
     "director": DirectorDeskProject,
-    "pet": DesktopPetProject,
     "galgame": GalgameWorkshopProject,
     "knowledge": ThoughtKnowledgeBase,
     "mcp": McpIntegration,
@@ -224,8 +213,6 @@ LAYOUT_PROJECT_MODELS: dict[str, type] = {
     "visual-workshop": VisualWorkshopProject,
     "video-editor": VideoEditorProject,
     "motion-compositor": MotionProject,
-    "live2d-workshop": Live2DProject,
-    "desktop-pet": DesktopPetProject,
 }
 
 # Ensure reference mappers are registered on Base.metadata for capability queries.
@@ -286,12 +273,6 @@ TENANT_MODELS = (
     Publication,
     OfficialSource,
     OfficialImportReceipt,
-    DesktopPetChat,
-    DesktopPetProject,
-    Live2DProject,
-    Live2DAsset,
-    Live2DCubismAttachment,
-    Live2DExport,
     AmadeusConversation,
     AmadeusMessage,
     AmadeusAction,

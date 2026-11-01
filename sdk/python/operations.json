@@ -11,14 +11,6 @@
     "method": "delete_session",
     "resource": "accounts"
   },
-  "DELETE /v1/agent-workbench/sessions/{session_id}/copy": {
-    "method": "clear_copy",
-    "resource": "agent_workbench"
-  },
-  "DELETE /v1/agent-workbench/sources/{source_id}": {
-    "method": "unbind_source",
-    "resource": "agent_workbench"
-  },
   "DELETE /v1/amadeus/conversations/{conversation_id}": {
     "method": "delete_conversation",
     "resource": "amadeus"
@@ -26,14 +18,6 @@
   "DELETE /v1/audio-annotation/projects/{project_id}": {
     "method": "delete_project",
     "resource": "annotation"
-  },
-  "DELETE /v1/desktop-pet/projects/{project_id}": {
-    "method": "delete_project",
-    "resource": "desktop_pet"
-  },
-  "DELETE /v1/desktop-pet/projects/{project_id}/chat/messages": {
-    "method": "clear_chat",
-    "resource": "desktop_pet"
   },
   "DELETE /v1/director-desk/motions/{motion_key}": {
     "method": "delete_motion",
@@ -78,18 +62,6 @@
   "DELETE /v1/interview-assistant/rooms/{room_id}": {
     "method": "delete_interview_room",
     "resource": "interview"
-  },
-  "DELETE /v1/live2d-workshop/projects/{project_id}": {
-    "method": "delete_project",
-    "resource": "live2d_workshop"
-  },
-  "DELETE /v1/live2d-workshop/projects/{project_id}/assets/{asset_id}": {
-    "method": "retire_asset",
-    "resource": "live2d_workshop"
-  },
-  "DELETE /v1/live2d-workshop/projects/{project_id}/cubism": {
-    "method": "remove_cubism",
-    "resource": "live2d_workshop"
   },
   "DELETE /v1/llm-call-logs/{log_id}": {
     "method": "delete_one",
@@ -247,42 +219,6 @@
     "method": "sessions",
     "resource": "accounts"
   },
-  "GET /v1/agent-workbench/candidates": {
-    "method": "list_candidates",
-    "resource": "agent_workbench"
-  },
-  "GET /v1/agent-workbench/events": {
-    "method": "events",
-    "resource": "agent_workbench"
-  },
-  "GET /v1/agent-workbench/operations/{operation_id}": {
-    "method": "get_operation",
-    "resource": "agent_workbench"
-  },
-  "GET /v1/agent-workbench/sessions": {
-    "method": "list_sessions",
-    "resource": "agent_workbench"
-  },
-  "GET /v1/agent-workbench/sessions/{session_id}": {
-    "method": "get_session",
-    "resource": "agent_workbench"
-  },
-  "GET /v1/agent-workbench/sessions/{session_id}/attachments/{attachment_id}": {
-    "method": "get_attachment",
-    "resource": "agent_workbench"
-  },
-  "GET /v1/agent-workbench/sessions/{session_id}/events": {
-    "method": "session_events",
-    "resource": "agent_workbench"
-  },
-  "GET /v1/agent-workbench/sessions/{session_id}/history": {
-    "method": "history",
-    "resource": "agent_workbench"
-  },
-  "GET /v1/agent-workbench/sources": {
-    "method": "list_sources",
-    "resource": "agent_workbench"
-  },
   "GET /v1/amadeus/conversations": {
     "method": "list_conversations",
     "resource": "amadeus"
@@ -383,30 +319,6 @@
     "method": "example_tool",
     "resource": "demo_calls"
   },
-  "GET /v1/desktop-pet/projects": {
-    "method": "list_projects",
-    "resource": "desktop_pet"
-  },
-  "GET /v1/desktop-pet/projects/{project_id}": {
-    "method": "get_project",
-    "resource": "desktop_pet"
-  },
-  "GET /v1/desktop-pet/projects/{project_id}/assets/{asset_id}/file": {
-    "method": "asset_file",
-    "resource": "desktop_pet"
-  },
-  "GET /v1/desktop-pet/projects/{project_id}/chat": {
-    "method": "get_chat",
-    "resource": "desktop_pet"
-  },
-  "GET /v1/desktop-pet/projects/{project_id}/chat/messages": {
-    "method": "chat_messages",
-    "resource": "desktop_pet"
-  },
-  "GET /v1/desktop-pet/projects/{project_id}/document": {
-    "method": "get_document",
-    "resource": "desktop_pet"
-  },
   "GET /v1/desktop/agent/capabilities": {
     "method": "capabilities",
     "resource": "desktop"
@@ -481,6 +393,10 @@
   },
   "GET /v1/files/{asset_id}/media-info": {
     "method": "video_media_info",
+    "resource": "files"
+  },
+  "GET /v1/files/{asset_id}/thumbnail": {
+    "method": "preview_thumbnail",
     "resource": "files"
   },
   "GET /v1/galgame-workshop/projects": {
@@ -642,58 +558,6 @@
   "GET /v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/export": {
     "method": "export_interview_bundle",
     "resource": "interview"
-  },
-  "GET /v1/live2d-workshop/projects": {
-    "method": "list_projects",
-    "resource": "live2d_workshop"
-  },
-  "GET /v1/live2d-workshop/projects/{project_id}": {
-    "method": "get_project",
-    "resource": "live2d_workshop"
-  },
-  "GET /v1/live2d-workshop/projects/{project_id}/assets": {
-    "method": "list_assets",
-    "resource": "live2d_workshop"
-  },
-  "GET /v1/live2d-workshop/projects/{project_id}/assets/{asset_id}/file": {
-    "method": "asset_file",
-    "resource": "live2d_workshop"
-  },
-  "GET /v1/live2d-workshop/projects/{project_id}/cubism": {
-    "method": "get_cubism",
-    "resource": "live2d_workshop"
-  },
-  "GET /v1/live2d-workshop/projects/{project_id}/cubism/package": {
-    "method": "download_cubism",
-    "resource": "live2d_workshop"
-  },
-  "GET /v1/live2d-workshop/projects/{project_id}/document": {
-    "method": "get_document",
-    "resource": "live2d_workshop"
-  },
-  "GET /v1/live2d-workshop/projects/{project_id}/exports": {
-    "method": "list_exports",
-    "resource": "live2d_workshop"
-  },
-  "GET /v1/live2d-workshop/projects/{project_id}/exports/{task_id}": {
-    "method": "get_export",
-    "resource": "live2d_workshop"
-  },
-  "GET /v1/live2d-workshop/projects/{project_id}/exports/{task_id}/download": {
-    "method": "download_export",
-    "resource": "live2d_workshop"
-  },
-  "GET /v1/live2d-workshop/projects/{project_id}/package": {
-    "method": "export_package",
-    "resource": "live2d_workshop"
-  },
-  "GET /v1/live2d-workshop/projects/{project_id}/preview": {
-    "method": "preview",
-    "resource": "live2d_workshop"
-  },
-  "GET /v1/live2d-workshop/projects/{project_id}/thumbnail": {
-    "method": "thumbnail",
-    "resource": "live2d_workshop"
   },
   "GET /v1/llm-call-logs": {
     "method": "list_logs",
@@ -1195,14 +1059,6 @@
     "method": "certification",
     "resource": "governance"
   },
-  "PATCH /v1/agent-workbench/sessions/{session_id}/preferences": {
-    "method": "patch_preferences",
-    "resource": "agent_workbench"
-  },
-  "PATCH /v1/agent-workbench/sources/{source_id}": {
-    "method": "patch_source",
-    "resource": "agent_workbench"
-  },
   "PATCH /v1/amadeus/conversations/{conversation_id}": {
     "method": "patch_conversation",
     "resource": "amadeus"
@@ -1214,14 +1070,6 @@
   "PATCH /v1/creative-workshop/items/{item_id}": {
     "method": "update_item",
     "resource": "creative_workshop"
-  },
-  "PATCH /v1/desktop-pet/projects/{project_id}": {
-    "method": "patch_project",
-    "resource": "desktop_pet"
-  },
-  "PATCH /v1/desktop-pet/projects/{project_id}/chat": {
-    "method": "update_chat",
-    "resource": "desktop_pet"
   },
   "PATCH /v1/director-desk/projects/{project_id}": {
     "method": "patch_project",
@@ -1278,10 +1126,6 @@
   "PATCH /v1/integrations/tool-apis/{integration_id}": {
     "method": "update_tool_api",
     "resource": "integrations"
-  },
-  "PATCH /v1/live2d-workshop/projects/{project_id}": {
-    "method": "patch_project",
-    "resource": "live2d_workshop"
   },
   "PATCH /v1/model-entries/{model_id}": {
     "method": "update_model",
@@ -1362,14 +1206,6 @@
   "POST /v1/account/sessions/revoke-others": {
     "method": "delete_other_sessions",
     "resource": "accounts"
-  },
-  "POST /v1/agent-workbench/sources": {
-    "method": "create_source",
-    "resource": "agent_workbench"
-  },
-  "POST /v1/agent-workbench/sources/{source_id}/scan": {
-    "method": "scan_source",
-    "resource": "agent_workbench"
   },
   "POST /v1/amadeus/conversations": {
     "method": "create_conversation",
@@ -1542,26 +1378,6 @@
   "POST /v1/demo-services/model/chat/completions": {
     "method": "mock_completion",
     "resource": "demo_calls"
-  },
-  "POST /v1/desktop-pet/projects": {
-    "method": "create_project",
-    "resource": "desktop_pet"
-  },
-  "POST /v1/desktop-pet/projects/import-whale": {
-    "method": "import_whale",
-    "resource": "desktop_pet"
-  },
-  "POST /v1/desktop-pet/projects/{project_id}/chat/messages/stream": {
-    "method": "send_chat_message",
-    "resource": "desktop_pet"
-  },
-  "POST /v1/desktop-pet/projects/{project_id}/replace-package": {
-    "method": "replace_package",
-    "resource": "desktop_pet"
-  },
-  "POST /v1/desktop-pet/projects/{project_id}/sync-source": {
-    "method": "sync_source",
-    "resource": "desktop_pet"
   },
   "POST /v1/desktop/agent/pairings": {
     "method": "begin_pairing",
@@ -1794,38 +1610,6 @@
   "POST /v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/cancel": {
     "method": "cancel_interview_preparation",
     "resource": "interview"
-  },
-  "POST /v1/live2d-workshop/projects": {
-    "method": "create_project",
-    "resource": "live2d_workshop"
-  },
-  "POST /v1/live2d-workshop/projects/import": {
-    "method": "import_project",
-    "resource": "live2d_workshop"
-  },
-  "POST /v1/live2d-workshop/projects/{project_id}/assets": {
-    "method": "upload_asset",
-    "resource": "live2d_workshop"
-  },
-  "POST /v1/live2d-workshop/projects/{project_id}/cubism/convert": {
-    "method": "convert_cubism",
-    "resource": "live2d_workshop"
-  },
-  "POST /v1/live2d-workshop/projects/{project_id}/cubism/preflight": {
-    "method": "preflight_cubism",
-    "resource": "live2d_workshop"
-  },
-  "POST /v1/live2d-workshop/projects/{project_id}/exports": {
-    "method": "create_export",
-    "resource": "live2d_workshop"
-  },
-  "POST /v1/live2d-workshop/projects/{project_id}/exports/preflight": {
-    "method": "preflight",
-    "resource": "live2d_workshop"
-  },
-  "POST /v1/live2d-workshop/projects/{project_id}/exports/{task_id}/cancel": {
-    "method": "cancel_export",
-    "resource": "live2d_workshop"
   },
   "POST /v1/llm-call-logs/batch-delete": {
     "method": "batch_delete",
@@ -2383,14 +2167,6 @@
     "method": "put_code_agent_grants",
     "resource": "code_agents"
   },
-  "PUT /v1/desktop-pet/projects/{project_id}/document": {
-    "method": "save_document",
-    "resource": "desktop_pet"
-  },
-  "PUT /v1/desktop-pet/projects/{project_id}/skins/{skin_id}/replacements/{source_asset_id}": {
-    "method": "upload_skin_replacement",
-    "resource": "desktop_pet"
-  },
   "PUT /v1/director-desk/motions/{motion_key}": {
     "method": "save_motion",
     "resource": "director"
@@ -2398,18 +2174,6 @@
   "PUT /v1/galgame-workshop/projects/{project_id}/story": {
     "method": "put_story",
     "resource": "galgame"
-  },
-  "PUT /v1/live2d-workshop/projects/{project_id}/cubism": {
-    "method": "attach_cubism",
-    "resource": "live2d_workshop"
-  },
-  "PUT /v1/live2d-workshop/projects/{project_id}/cubism/bindings": {
-    "method": "save_cubism_bindings",
-    "resource": "live2d_workshop"
-  },
-  "PUT /v1/live2d-workshop/projects/{project_id}/document": {
-    "method": "save_document",
-    "resource": "live2d_workshop"
   },
   "PUT /v1/model-catalog/defaults": {
     "method": "defaults",

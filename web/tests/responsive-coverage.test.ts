@@ -30,11 +30,9 @@ test("every route and independent HTML entry has a responsive scenario", () => {
       "creative-workshop-detail",
       "creative-workshop-editor",
       "director-desk-editor",
-      "desktop-pet-editor",
       "galgame-workshop-editor",
       "galgame-workshop-overview",
       "galgame-workshop-preview",
-      "live2d-workshop-editor",
       "motion-compositor-editor",
       "presentation-workshop-editor",
       "presentation-workshop-template-editor",
@@ -50,12 +48,6 @@ test("every route and independent HTML entry has a responsive scenario", () => {
   const html = [
     ...build.matchAll(/resolve\(__dirname, "([^"]+\.html)"\)/g),
   ].map((match) => match[1]);
-  expect(html.sort()).toEqual([
-    "amadeus.html",
-    "docs.html",
-    "index.html",
-    "pet-chat.html",
-    "pet.html",
-  ]);
+  expect(html.sort()).toEqual(["amadeus.html", "docs.html", "index.html"]);
   expect(publicSurfaces).toEqual(["login", "account-settings", "docs"]);
 });

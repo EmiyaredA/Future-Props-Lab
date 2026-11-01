@@ -230,7 +230,7 @@ export function InterviewAssistantPage({
         />
       ) : null}
       <footer className="workspace-footnote">
-        材料、准备任务与资料版本保存到当前账号／账号。文字练习、音视频与复盘评分仍为模拟；练习回答刷新后清空。
+        材料、准备任务与资料版本归当前账号保存。文字练习、音视频与复盘评分仍为模拟；练习回答刷新后清空。
       </footer>
       {pendingSession && (
         <DeviceCheck

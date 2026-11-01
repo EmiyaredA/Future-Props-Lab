@@ -219,7 +219,7 @@ export const TECHNICAL_READING: Record<
     ],
   },
   desktop: {
-    summary: "区分桌面壳、本机后端、静态指南和用户数据，并说明受控更新的边界。",
+    summary: "解释桌面启动、共享运行时的按需访问、程序发布与持锁备份更新边界。",
     related: [
       {
         libraryId: "technical",
@@ -388,50 +388,6 @@ export const TECHNICAL_READING: Record<
       },
     ],
   },
-  "live2d-workshop": {
-    summary:
-      "跟踪头部转向参数，说明动作、关键形插值、默认姿态与多参数组合的关系。",
-    related: [
-      {
-        libraryId: "technical",
-        documentId: "desktop-pet",
-      },
-      {
-        libraryId: "technical",
-        documentId: "rendering",
-      },
-      {
-        libraryId: "live2d-workshop",
-        documentId: "delivery",
-      },
-      {
-        libraryId: "technical",
-        documentId: "component-contracts",
-      },
-    ],
-  },
-  "desktop-pet": {
-    summary:
-      "解释桌宠素材与固定 Live2D 快照、预览租约、动作运行和独立聊天请求怎样协作。",
-    related: [
-      {
-        libraryId: "technical",
-        documentId: "live2d-workshop",
-      },
-      {
-        libraryId: "technical",
-        documentId: "desktop",
-      },
-      {
-        libraryId: "desktop-pet",
-        documentId: "workflow",
-      },
-      {
-        libraryId: "technical",
-        documentId: "app-handoffs",
-      },
-    ],
-  },
   "audio-annotation": {
     summary:
       "以交接说话人与重叠语音为例，理解毫秒区间、多说话人标签和转写校对。",
@@ -548,16 +504,11 @@ export const TECHNICAL_READING: Record<
     ],
   },
   "app-handoffs": {
-    summary:
-      "区分公共媒体能力与应用交接，追踪片段、成片和固定角色快照怎样形成目标数据。",
+    summary: "区分公共媒体能力与应用交接，追踪片段和成片怎样形成目标数据。",
     related: [
       {
         libraryId: "technical",
         documentId: "rendering",
-      },
-      {
-        libraryId: "technical",
-        documentId: "desktop-pet",
       },
       {
         libraryId: "technical",
@@ -635,6 +586,20 @@ export const TECHNICAL_READING: Record<
         libraryId: "technical",
         documentId: "tasks",
       },
+    ],
+  },
+  "agent-workbench": {
+    summary: "解释原生记录、只读适配、账号阅读投影与检查点的提交和恢复边界。",
+    related: [
+      { libraryId: "agent-workbench", documentId: "workflow" },
+      { libraryId: "technical", documentId: "assets" },
+    ],
+  },
+  "interview-assistant": {
+    summary: "追踪材料、受控 Codex 准备、资料包校验和页面练习的独立生命周期。",
+    related: [
+      { libraryId: "interview-assistant", documentId: "workflow" },
+      { libraryId: "technical", documentId: "tasks" },
     ],
   },
 };

@@ -198,6 +198,28 @@ class AcceptanceTemplateWriteIn(WireModel):
     document: AcceptanceDocument = Field(default=..., alias='document')
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
 
+class AccessAction(WireModel):
+    action: Literal['local_start', 'local_stop', 'public_start', 'public_stop', 'check'] = Field(default=..., alias='action')
+
+class AccessConfigIn(WireModel):
+    expected_revision: str = Field(default=..., alias='expected_revision', min_length=64, max_length=64)
+    profile: GatewayProfile = Field(default=..., alias='profile')
+
+class AccessConfigOut(WireModel):
+    identity_fingerprint: str = Field(default='', alias='identity_fingerprint')
+    known_hosts_fingerprint: str = Field(default='', alias='known_hosts_fingerprint')
+    legacy_available: bool = Field(default=False, alias='legacy_available')
+    profile: GatewayProfile = Field(default=..., alias='profile')
+    revision: str = Field(default=..., alias='revision')
+
+class AccessStatus(WireModel):
+    build_id: str = Field(default='', alias='build_id')
+    bytes_received: int = Field(default=0, alias='bytes_received')
+    bytes_sent: int = Field(default=0, alias='bytes_sent')
+    local: EndpointStatus = Field(default=..., alias='local')
+    public: EndpointStatus = Field(default=..., alias='public')
+    requests: int = Field(default=0, alias='requests')
+
 class AccountAvatarDeleteIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
 
@@ -680,22 +702,12 @@ class Body_add_skill_version_v1_integrations_skills__skill_id__versions_post(Wir
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     file: str = Field(default=..., alias='file')
 
-class Body_attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put(WireModel):
-    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
-    file: str = Field(default=..., alias='file')
-
 class Body_attachments_v1_thought_workshop_attachments_post(WireModel):
     upload: str = Field(default=..., alias='upload')
 
 class Body_batch_upload_project_assets_v1_galgame_workshop_projects__project_id__assets_batch_post(WireModel):
     category: Literal['character', 'scene', 'cg', 'bgm', 'ambient', 'sfx', 'voice', 'video', 'font', 'other'] = Field(default=..., alias='category')
     uploads: list[str] = Field(default=..., alias='uploads')
-
-class Body_convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post(WireModel):
-    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
-    file: str = Field(default=..., alias='file')
-    source: str = Field(default=..., alias='source')
-    state_bindings: str = Field(default='{}', alias='stateBindings')
 
 class Body_create_import_v1_presentation_workshop_imports_post(WireModel):
     allow_lossy: bool = Field(default=False, alias='allow_lossy')
@@ -731,30 +743,17 @@ class Body_import_project_snapshot_v1_video_editor_projects_snapshot_imports_pos
 class Body_import_project_snapshot_v1_visual_workshop_projects_snapshot_imports_post(WireModel):
     file: str = Field(default=..., alias='file')
 
-class Body_import_project_v1_live2d_workshop_projects_import_post(WireModel):
-    file: str = Field(default=..., alias='file')
-
 class Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post(WireModel):
-    file: str = Field(default=..., alias='file')
-
-class Body_import_whale_v1_desktop_pet_projects_import_whale_post(WireModel):
     file: str = Field(default=..., alias='file')
 
 class Body_imports_v1_thought_workshop_imports_post(WireModel):
     upload: str = Field(default=..., alias='upload')
-
-class Body_preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post(WireModel):
-    file: str = Field(default=..., alias='file')
 
 class Body_preview_import_v1_presentation_workshop_imports_preview_post(WireModel):
     upload: str = Field(default=..., alias='upload')
 
 class Body_put_avatar_v1_account_profile_avatar_put(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
-    file: str = Field(default=..., alias='file')
-
-class Body_replace_package_v1_desktop_pet_projects__project_id__replace_package_post(WireModel):
-    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
     file: str = Field(default=..., alias='file')
 
 class Body_transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post(WireModel):
@@ -765,9 +764,6 @@ class Body_transcribe_segment_v1_audio_annotation_projects__project_id__segment_
     start_ms: int = Field(default=..., alias='start_ms', ge=0.0)
     target_language_tag: str | None = Field(default=None, alias='target_language_tag')
     upload: str = Field(default=..., alias='upload')
-
-class Body_upload_asset_v1_live2d_workshop_projects__project_id__assets_post(WireModel):
-    file: str = Field(default=..., alias='file')
 
 class Body_upload_asset_v1_model_inference_assets_post(WireModel):
     upload: str = Field(default=..., alias='upload')
@@ -826,10 +822,6 @@ class Body_upload_skill_v1_creative_workshop_items__item_id__skill_archive_post(
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     file: str = Field(default=..., alias='file')
 
-class Body_upload_skin_replacement_v1_desktop_pet_projects__project_id__skins__skin_id__replacements__source_asset_id__put(WireModel):
-    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
-    file: str = Field(default=..., alias='file')
-
 class Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post(WireModel):
     abbreviations: bool | None = Field(default=None, alias='abbreviations')
     enable_punctuation: bool | None = Field(default=None, alias='enable_punctuation')
@@ -845,10 +837,6 @@ class Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_po
 
 class Body_upload_v1_thought_workshop_community_publications__publication_id__notes__note_id__uploads_post(WireModel):
     upload: str = Field(default=..., alias='upload')
-
-class BoneWeight(WireModel):
-    bone_id: str = Field(default=..., alias='boneId')
-    weight: float = Field(default=..., alias='weight', le=1.0, gt=0.0)
 
 class CallLogListItem(WireModel):
     api_key_id: str | None = Field(default=None, alias='api_key_id', repr=False)
@@ -920,115 +908,6 @@ class ChangeSummary(WireModel):
     created_at: datetime = Field(default=..., alias='created_at')
     id: str = Field(default=..., alias='id')
     revision: int = Field(default=..., alias='revision')
-
-class CharacterBone(WireModel):
-    damping: float = Field(default=0.5, alias='damping', ge=0.0, le=1.0)
-    id: str = Field(default=..., alias='id')
-    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
-    offset_x: float = Field(default=0, alias='offsetX', ge=-100000.0, le=100000.0)
-    offset_y: float = Field(default=0, alias='offsetY', ge=-100000.0, le=100000.0)
-    parent_id: str | None = Field(default=None, alias='parentId')
-    rotation: float = Field(default=0, alias='rotation', ge=-100000.0, le=100000.0)
-    scale: float = Field(default=1, alias='scale', le=100.0, gt=0.0)
-    spring: float = Field(default=0, alias='spring', ge=0.0, le=1.0)
-    x: float = Field(default=0, alias='x', ge=-100000.0, le=100000.0)
-    y: float = Field(default=0, alias='y', ge=-100000.0, le=100000.0)
-
-class CharacterCamera(WireModel):
-    height: float = Field(default=..., alias='height', le=4096.0, gt=0.0)
-    width: float = Field(default=..., alias='width', le=4096.0, gt=0.0)
-    x: float = Field(default=..., alias='x', ge=0.0)
-    y: float = Field(default=..., alias='y', ge=0.0)
-
-class CharacterDeformer(WireModel):
-    columns: int = Field(default=2, alias='columns', ge=1.0, le=16.0)
-    height: float = Field(default=500, alias='height', le=8192.0, gt=0.0)
-    id: str = Field(default=..., alias='id')
-    kind: Literal['rotation', 'warp'] = Field(default=..., alias='kind')
-    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
-    parent_id: str | None = Field(default=None, alias='parentId')
-    points: list[Point] | None = Field(default=None, alias='points', max_length=289)
-    rotation: float = Field(default=0, alias='rotation', ge=-100000.0, le=100000.0)
-    rows: int = Field(default=2, alias='rows', ge=1.0, le=16.0)
-    scale: float = Field(default=1, alias='scale', le=100.0, gt=0.0)
-    width: float = Field(default=500, alias='width', le=8192.0, gt=0.0)
-    x: float = Field(default=0, alias='x', ge=-100000.0, le=100000.0)
-    y: float = Field(default=0, alias='y', ge=-100000.0, le=100000.0)
-
-class CharacterDocument(WireModel):
-    bones: list[CharacterBone] | None = Field(default=None, alias='bones', max_length=128)
-    cameras: dict[str, CharacterCamera] | None = Field(default=None, alias='cameras')
-    cubism_parameter_ids: dict[str, str] | None = Field(default=None, alias='cubismParameterIds')
-    deformers: list[CharacterDeformer] | None = Field(default=None, alias='deformers', max_length=128)
-    expressions: list[CharacterExpression] | None = Field(default=None, alias='expressions', max_length=128)
-    height: int = Field(default=1600, alias='height', ge=32.0, le=4096.0)
-    idle_behavior: CharacterIdleBehavior | None = Field(default=None, alias='idleBehavior')
-    motions: list[CharacterMotion] | None = Field(default=None, alias='motions', max_length=128)
-    parameters: list[CharacterParameter] | None = Field(default=None, alias='parameters', max_length=128)
-    parts: list[CharacterPart] | None = Field(default=None, alias='parts', max_length=128)
-    schema_version: Literal[3] = Field(default=3, alias='schemaVersion')
-    state_bindings: dict[str, CharacterStateBinding] | None = Field(default=None, alias='stateBindings')
-    width: int = Field(default=1200, alias='width', ge=32.0, le=4096.0)
-
-class CharacterExpression(WireModel):
-    id: str = Field(default=..., alias='id')
-    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
-    values: dict[str, float] | None = Field(default=None, alias='values')
-
-class CharacterIdleBehavior(WireModel):
-    blink_parameter: str | None = Field(default=None, alias='blinkParameter')
-    breath_parameter: str | None = Field(default=None, alias='breathParameter')
-    gaze_xparameter: str | None = Field(default=None, alias='gazeXParameter')
-    gaze_yparameter: str | None = Field(default=None, alias='gazeYParameter')
-    intensity: float = Field(default=0.5, alias='intensity', ge=0.0, le=1.0)
-    spring_bones: list[str] | None = Field(default=None, alias='springBones', max_length=32)
-    sway_parameter: str | None = Field(default=None, alias='swayParameter')
-
-class CharacterMotion(WireModel):
-    duration: int = Field(default=60, alias='duration', ge=1.0, le=36000.0)
-    fps: int = Field(default=30, alias='fps', ge=1.0, le=60.0)
-    id: str = Field(default=..., alias='id')
-    loop_end: int = Field(default=60, alias='loopEnd', ge=1.0)
-    loop_start: int = Field(default=0, alias='loopStart', ge=0.0)
-    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
-    tracks: list[CharacterTrack] | None = Field(default=None, alias='tracks', max_length=128)
-
-class CharacterParameter(WireModel):
-    bindings: list[ParameterBinding] | None = Field(default=None, alias='bindings', max_length=256)
-    default: float = Field(default=0, alias='default', ge=-100000.0, le=100000.0)
-    id: str = Field(default=..., alias='id')
-    maximum: float = Field(default=30, alias='maximum', ge=-100000.0, le=100000.0)
-    minimum: float = Field(default=-30, alias='minimum', ge=-100000.0, le=100000.0)
-    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
-
-class CharacterPart(WireModel):
-    asset_id: str = Field(default=..., alias='assetId')
-    group: str = Field(default='', alias='group', max_length=512)
-    height: float = Field(default=..., alias='height', le=8192.0, gt=0.0)
-    id: str = Field(default=..., alias='id')
-    locked: bool = Field(default=False, alias='locked')
-    mask_id: str | None = Field(default=None, alias='maskId')
-    name: str = Field(default=..., alias='name', min_length=1, max_length=120)
-    opacity: float = Field(default=1, alias='opacity', ge=0.0, le=1.0)
-    order: int = Field(default=0, alias='order', ge=-10000.0, le=10000.0)
-    parent_id: str | None = Field(default=None, alias='parentId')
-    skin_weights: list[list[BoneWeight]] | None = Field(default=None, alias='skinWeights')
-    triangles: list[int] = Field(default=..., alias='triangles', min_length=3, max_length=24576)
-    uvs: list[Point] = Field(default=..., alias='uvs', min_length=3, max_length=4096)
-    vertices: list[Point] = Field(default=..., alias='vertices', min_length=3, max_length=4096)
-    visible: bool = Field(default=True, alias='visible')
-    width: float = Field(default=..., alias='width', le=8192.0, gt=0.0)
-    x: float = Field(default=0, alias='x', ge=-100000.0, le=100000.0)
-    y: float = Field(default=0, alias='y', ge=-100000.0, le=100000.0)
-
-class CharacterStateBinding(WireModel):
-    expression_id: str | None = Field(default=None, alias='expressionId')
-    motion_id: str | None = Field(default=None, alias='motionId')
-    playback: Literal['loop', 'onceHold'] = Field(default='loop', alias='playback')
-
-class CharacterTrack(WireModel):
-    keys: list[TimeKeyframe] | None = Field(default=None, alias='keys', max_length=1000)
-    parameter_id: str = Field(default=..., alias='parameterId')
 
 class CheckpointIn(WireModel):
     expected_note_revision: int = Field(default=..., alias='expected_note_revision', ge=0.0)
@@ -1140,6 +1019,10 @@ class CommunitySnapshot(WireModel):
     asset_ids: list[str] = Field(default=..., alias='asset_ids')
     documents: list[ThoughtNoteOut] = Field(default=..., alias='documents')
     knowledge_base: PublicationOut = Field(default=..., alias='knowledge_base')
+
+class ConfigPrepared(WireModel):
+    apply_receipt: str = Field(default=..., alias='apply_receipt')
+    restart_required: bool = Field(default=True, alias='restart_required')
 
 class ConversationDetailOut(WireModel):
     actions: list[ActionOut] | None = Field(default=None, alias='actions')
@@ -1291,6 +1174,20 @@ class CreativeStdioSetupIn(WireModel):
     command: str = Field(default=..., alias='command', min_length=1, max_length=1024)
     environment: dict[str, str] | None = Field(default=None, alias='environment')
     release_id: str = Field(default=..., alias='release_id')
+
+class CredentialImportIn(WireModel):
+    path: str = Field(default=..., alias='path', min_length=1, max_length=4096)
+    ticket: str = Field(default=..., alias='ticket', min_length=32, max_length=128)
+
+class CredentialOut(WireModel):
+    fingerprint: str = Field(default=..., alias='fingerprint')
+    id: str = Field(default=..., alias='id')
+
+class CredentialTicketIn(WireModel):
+    kind: Literal['identity', 'known_hosts'] = Field(default=..., alias='kind')
+
+class CredentialTicketOut(WireModel):
+    ticket: str = Field(default=..., alias='ticket')
 
 class CsvIn(WireModel):
     csv: str = Field(default=..., alias='csv', max_length=8388608)
@@ -1498,6 +1395,12 @@ class DuplicateOut(WireModel):
 class DuplicateSnapshot(WireModel):
     knowledge_revision: int = Field(default=..., alias='knowledge_revision')
     revisions: dict[str, int] = Field(default=..., alias='revisions')
+
+class EndpointStatus(WireModel):
+    error: str = Field(default='', alias='error')
+    last_checked_at: str = Field(default='', alias='last_checked_at')
+    phase: Literal['off', 'starting', 'ready', 'connecting', 'reconnecting', 'failed'] = Field(default='off', alias='phase')
+    url: str = Field(default='', alias='url')
 
 class Experience(WireModel):
     evidence: list[InputReference] = Field(default=..., alias='evidence')
@@ -2896,6 +2799,16 @@ class GalgameWorkshopProjectPatchIn(WireModel):
     status: Literal['draft', 'completed'] | None = Field(default=None, alias='status')
     title: str | None = Field(default=None, alias='title')
 
+class GatewayProfile(WireModel):
+    host: str = Field(default='', alias='host', max_length=253)
+    identity_id: str = Field(default='', alias='identity_id')
+    known_hosts_id: str = Field(default='', alias='known_hosts_id')
+    local_port: int = Field(default=28081, alias='local_port', ge=1024.0, le=65535.0)
+    origin: str = Field(default='', alias='origin')
+    remote_port: int = Field(default=28080, alias='remote_port', ge=1024.0, le=65535.0)
+    ssh_port: int = Field(default=22, alias='ssh_port', ge=1.0, le=65535.0)
+    user: str = Field(default='', alias='user', max_length=64)
+
 class GenerationBatchListOut(WireModel):
     items: list[GenerationBatchOut] = Field(default=..., alias='items')
     total: int = Field(default=..., alias='total')
@@ -3321,91 +3234,6 @@ class LinkClipsOperation(WireModel):
     clip_ids: list[str] = Field(default=..., alias='clipIds', min_length=2)
     link_group_id: str = Field(default=..., alias='linkGroupId')
     type: Literal['linkClips'] = Field(default=..., alias='type')
-
-class Live2DAssetOut(WireModel):
-    height: int = Field(default=..., alias='height')
-    id: str = Field(default=..., alias='id')
-    name: str = Field(default=..., alias='name')
-    url: str = Field(default=..., alias='url')
-    width: int = Field(default=..., alias='width')
-
-class Live2DAssets(WireModel):
-    items: list[Live2DAssetOut] = Field(default=..., alias='items')
-
-class Live2DCombination(WireModel):
-    expression_id: str | None = Field(default=None, alias='expressionId')
-    motion_id: str | None = Field(default=None, alias='motionId')
-
-class Live2DCreate(WireModel):
-    height: int = Field(default=1600, alias='height', ge=32.0, le=4096.0)
-    title: str = Field(default='未命名角色', alias='title', min_length=1, max_length=120)
-    width: int = Field(default=1200, alias='width', ge=32.0, le=4096.0)
-
-class Live2DCrop(WireModel):
-    height: float = Field(default=..., alias='height', le=4096.0, gt=0.0)
-    width: float = Field(default=..., alias='width', le=4096.0, gt=0.0)
-    x: float = Field(default=..., alias='x', ge=0.0)
-    y: float = Field(default=..., alias='y', ge=0.0)
-
-class Live2DCubismBindings(WireModel):
-    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
-    state_bindings: dict[str, Any] = Field(default=..., alias='stateBindings')
-
-class Live2DCubismOut(WireModel):
-    metadata: dict[str, Any] = Field(default=..., alias='metadata')
-    revision: int = Field(default=..., alias='revision')
-    sha256: str = Field(default=..., alias='sha256')
-    state_bindings: dict[str, Any] = Field(default=..., alias='stateBindings')
-
-class Live2DDocumentOut(WireModel):
-    document: CharacterDocument = Field(default=..., alias='document')
-    revision: int = Field(default=..., alias='revision')
-
-class Live2DExportIn(WireModel):
-    combinations: list[Live2DCombination] = Field(default=..., alias='combinations', min_length=1, max_length=16)
-    crop: Live2DCrop | None = Field(default=None, alias='crop')
-    end_frame: int = Field(default=60, alias='endFrame', ge=1.0, le=3600.0)
-    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
-    fps: int = Field(default=30, alias='fps', ge=1.0, le=60.0)
-    height: int = Field(default=512, alias='height', ge=32.0, le=2048.0)
-    request_id: str = Field(default=..., alias='requestId', min_length=8, max_length=64)
-    start_frame: int = Field(default=0, alias='startFrame', ge=0.0)
-    width: int = Field(default=512, alias='width', ge=32.0, le=2048.0)
-
-class Live2DExportOut(WireModel):
-    download: str | None = Field(default=None, alias='download')
-    error: str | None = Field(default=None, alias='error')
-    id: str = Field(default=..., alias='id')
-    progress: int = Field(default=..., alias='progress')
-    settings: Live2DExportIn = Field(default=..., alias='settings')
-    status: Literal['queued', 'running', 'completed', 'failed', 'cancelled'] = Field(default=..., alias='status')
-
-class Live2DExports(WireModel):
-    items: list[Live2DExportOut] = Field(default=..., alias='items')
-
-class Live2DPatch(WireModel):
-    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
-    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
-
-class Live2DPreflight(WireModel):
-    frame_count: int = Field(default=..., alias='frameCount')
-    messages: list[str] = Field(default=..., alias='messages')
-    ready: bool = Field(default=..., alias='ready')
-
-class Live2DProjectOut(WireModel):
-    created_at: str = Field(default=..., alias='createdAt')
-    id: str = Field(default=..., alias='id')
-    revision: int = Field(default=..., alias='revision')
-    thumbnail: str | None = Field(default=None, alias='thumbnail')
-    title: str = Field(default=..., alias='title')
-    updated_at: str = Field(default=..., alias='updatedAt')
-
-class Live2DProjects(WireModel):
-    items: list[Live2DProjectOut] = Field(default=..., alias='items')
-
-class Live2DSave(WireModel):
-    document: CharacterDocument = Field(default=..., alias='document')
-    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
 
 class LocalModelActionIn(WireModel):
     action: Literal['install', 'cancel', 'enable', 'stop', 'uninstall'] = Field(default=..., alias='action')
@@ -4144,138 +3972,8 @@ class OperationBatchIn(WireModel):
     operations: list[MotionOperation] = Field(default=..., alias='operations', min_length=1, max_length=100)
     request_id: str = Field(default=..., alias='requestId', min_length=8, max_length=64)
 
-class ParameterBinding(WireModel):
-    keys: list[ParameterKeyform] = Field(default=..., alias='keys', min_length=1, max_length=32)
-    target_id: str = Field(default=..., alias='targetId')
-
-class ParameterKeyform(WireModel):
-    offset_x: float | None = Field(default=None, alias='offsetX')
-    offset_y: float | None = Field(default=None, alias='offsetY')
-    opacity: float | None = Field(default=None, alias='opacity')
-    points: list[Point] | None = Field(default=None, alias='points')
-    rotation: float | None = Field(default=None, alias='rotation')
-    scale: float | None = Field(default=None, alias='scale')
-    value: float = Field(default=..., alias='value', ge=-100000.0, le=100000.0)
-
 class PermissionInput(WireModel):
     articles: list[ArticleSetting] = Field(default=..., alias='articles', min_length=1, max_length=2000)
-
-class PetChatClearIn(WireModel):
-    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
-
-class PetChatMessageOut(WireModel):
-    content: str = Field(default=..., alias='content')
-    created_at: str = Field(default=..., alias='createdAt')
-    id: str = Field(default=..., alias='id')
-    position: int = Field(default=..., alias='position')
-    role: Literal['user', 'assistant'] = Field(default=..., alias='role')
-    status: Literal['completed', 'pending', 'interrupted'] = Field(default=..., alias='status')
-
-class PetChatMessagesOut(WireModel):
-    items: list[PetChatMessageOut] = Field(default=..., alias='items')
-    next_before: int | None = Field(default=..., alias='nextBefore')
-
-class PetChatOut(WireModel):
-    active: bool = Field(default=..., alias='active')
-    messages: list[PetChatMessageOut] = Field(default=..., alias='messages')
-    model_id: str | None = Field(default=..., alias='modelId')
-    next_before: int | None = Field(default=..., alias='nextBefore')
-    presentation_mode: Literal['bubble', 'dialogue'] = Field(default=..., alias='presentationMode')
-    proactive_lines_enabled: bool = Field(default=..., alias='proactiveLinesEnabled')
-    revision: int = Field(default=..., alias='revision')
-
-class PetChatSendIn(WireModel):
-    content: str = Field(default=..., alias='content', min_length=1, max_length=2000)
-    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
-    request_id: str = Field(default=..., alias='requestId', min_length=1, max_length=64)
-
-class PetChatSettingsIn(WireModel):
-    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
-    model_id: str | None = Field(default=..., alias='modelId')
-    presentation_mode: Literal['bubble', 'dialogue'] | None = Field(default=None, alias='presentationMode')
-    proactive_lines_enabled: bool = Field(default=..., alias='proactiveLinesEnabled')
-
-class PetConfig(WireModel):
-    active_skin_id: str | None = Field(default=None, alias='activeSkinId')
-    events: dict[str, PetReaction] | None = Field(default=None, alias='events')
-    habits: PetHabits | None = Field(default=None, alias='habits')
-    persona: PetPersona | None = Field(default=None, alias='persona')
-    schema_version: Literal[2] = Field(default=2, alias='schemaVersion')
-    scheme_id: str | None = Field(default=None, alias='schemeId')
-    skins: list[PetSkin] | None = Field(default=None, alias='skins', max_length=20)
-
-class PetCreate(WireModel):
-    source_project_id: str = Field(default=..., alias='sourceProjectId', min_length=1, max_length=36)
-    source_revision: int = Field(default=..., alias='sourceRevision', ge=0.0)
-    title: str = Field(default='', alias='title', max_length=120)
-
-class PetDocumentOut(WireModel):
-    asset_urls: dict[str, str] = Field(default=..., alias='assetUrls')
-    character: CharacterDocument | None = Field(default=..., alias='character')
-    config: PetConfig = Field(default=..., alias='config')
-    revision: int = Field(default=..., alias='revision')
-    source_revision: int | None = Field(default=..., alias='sourceRevision')
-    source_type: Literal['live2d', 'coopanion-whale'] = Field(default=..., alias='sourceType')
-    whale_assets: dict[str, str] | None = Field(default=..., alias='whaleAssets')
-    whale_model: dict[str, Any] | None = Field(default=..., alias='whaleModel')
-
-class PetHabits(WireModel):
-    bubbles: bool = Field(default=True, alias='bubbles')
-    draggable: bool = Field(default=True, alias='draggable')
-    edge_climbing: bool = Field(default=True, alias='edgeClimbing')
-    high_gliding: bool = Field(default=True, alias='highGliding')
-    hover_actions: list[Literal['dress', 'roam', 'hide', 'settings', 'chat']] | None = Field(default=None, alias='hoverActions', max_length=4)
-    roam: Literal['free', 'calm', 'off'] = Field(default='calm', alias='roam')
-    size: int = Field(default=220, alias='size', ge=160.0, le=300.0)
-    sound: bool = Field(default=True, alias='sound')
-
-class PetPatch(WireModel):
-    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
-    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
-
-class PetPersona(WireModel):
-    description: str = Field(default='', alias='description', max_length=500)
-    greeting: str = Field(default='', alias='greeting', max_length=140)
-    personality: str = Field(default='', alias='personality', max_length=500)
-    speaking_style: str = Field(default='', alias='speakingStyle', max_length=500)
-
-class PetProjectOut(WireModel):
-    created_at: str = Field(default=..., alias='createdAt')
-    id: str = Field(default=..., alias='id')
-    revision: int = Field(default=..., alias='revision')
-    source_project_id: str | None = Field(default=..., alias='sourceProjectId')
-    source_revision: int | None = Field(default=..., alias='sourceRevision')
-    source_title: str = Field(default=..., alias='sourceTitle')
-    source_type: Literal['live2d', 'coopanion-whale'] = Field(default=..., alias='sourceType')
-    thumbnail_url: str | None = Field(default=None, alias='thumbnailUrl')
-    title: str = Field(default=..., alias='title')
-    updated_at: str = Field(default=..., alias='updatedAt')
-
-class PetProjectsOut(WireModel):
-    items: list[PetProjectOut] = Field(default=..., alias='items')
-
-class PetReaction(WireModel):
-    expression_id: str | None = Field(default=None, alias='expressionId')
-    lines: list[str] | None = Field(default=None, alias='lines', max_length=8)
-    motion_id: str | None = Field(default=None, alias='motionId')
-    sound: Literal['none', 'tap', 'chime'] = Field(default='none', alias='sound')
-
-class PetSave(WireModel):
-    config: PetConfig = Field(default=..., alias='config')
-    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
-
-class PetSkin(WireModel):
-    id: str = Field(default=..., alias='id')
-    name: str = Field(default=..., alias='name', min_length=1, max_length=60)
-    replacements: dict[str, Any] | None = Field(default=None, alias='replacements')
-
-class PetSync(WireModel):
-    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
-    source_revision: int = Field(default=..., alias='sourceRevision', ge=0.0)
-
-class Point(WireModel):
-    x: float = Field(default=..., alias='x', ge=-100000.0, le=100000.0)
-    y: float = Field(default=..., alias='y', ge=-100000.0, le=100000.0)
 
 class PreparationBundle(WireModel):
     experiences: list[Experience] = Field(default=..., alias='experiences')
@@ -4887,6 +4585,9 @@ class RealtimeVoiceVadOut(WireModel):
 
 class ReauthIn(WireModel):
     password: str = Field(default=..., alias='password', repr=False)
+
+class ReceiptIn(WireModel):
+    receipt: str = Field(default=..., alias='receipt', min_length=32, max_length=128)
 
 class RecordPage(WireModel):
     groups: dict[str, int] | None = Field(default=None, alias='groups')
@@ -5848,11 +5549,6 @@ class ThoughtOperationsIn(WireModel):
 class ThoughtRevisionIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
 
-class TimeKeyframe(WireModel):
-    frame: int = Field(default=..., alias='frame', ge=0.0, le=36000.0)
-    interpolation: Literal['hold', 'linear', 'smooth'] = Field(default='linear', alias='interpolation')
-    value: float = Field(default=..., alias='value', ge=-100000.0, le=100000.0)
-
 class ToolApiCatalogOut(WireModel):
     items: list[ToolApiOut] = Field(default=..., alias='items')
     overview: IntegrationOverviewOut = Field(default=..., alias='overview')
@@ -6803,6 +6499,7 @@ class WorkbenchSessionOut(WireModel):
     origins: list[str] = Field(default=..., alias='origins')
     parent_native_id: str | None = Field(default=..., alias='parent_native_id')
     revision: int = Field(default=..., alias='revision')
+    source_errors: list[str] | None = Field(default=None, alias='source_errors')
     source_ids: list[str] | None = Field(default=None, alias='source_ids')
     title: str = Field(default=..., alias='title')
     updated_at: str = Field(default=..., alias='updated_at')
@@ -6881,6 +6578,10 @@ AcceptanceSummaryOut.model_rebuild()
 AcceptanceTemplateListOut.model_rebuild()
 AcceptanceTemplateOut.model_rebuild()
 AcceptanceTemplateWriteIn.model_rebuild()
+AccessAction.model_rebuild()
+AccessConfigIn.model_rebuild()
+AccessConfigOut.model_rebuild()
+AccessStatus.model_rebuild()
 AccountAvatarDeleteIn.model_rebuild()
 AccountCreateIn.model_rebuild()
 AccountCreatedOut.model_rebuild()
@@ -6958,10 +6659,8 @@ BatchOut.model_rebuild()
 BinaryStatus.model_rebuild()
 BlueprintQuestion.model_rebuild()
 Body_add_skill_version_v1_integrations_skills__skill_id__versions_post.model_rebuild()
-Body_attach_cubism_v1_live2d_workshop_projects__project_id__cubism_put.model_rebuild()
 Body_attachments_v1_thought_workshop_attachments_post.model_rebuild()
 Body_batch_upload_project_assets_v1_galgame_workshop_projects__project_id__assets_batch_post.model_rebuild()
-Body_convert_cubism_v1_live2d_workshop_projects__project_id__cubism_convert_post.model_rebuild()
 Body_create_import_v1_presentation_workshop_imports_post.model_rebuild()
 Body_create_skill_v1_integrations_skills_post.model_rebuild()
 Body_import_file_v1_amadeus_conversations__conversation_id__imports_post.model_rebuild()
@@ -6971,16 +6670,11 @@ Body_import_library_folder_entries_v1_file_library_folder_entry_imports_post.mod
 Body_import_project_snapshot_v1_galgame_workshop_projects_snapshot_imports_post.model_rebuild()
 Body_import_project_snapshot_v1_video_editor_projects_snapshot_imports_post.model_rebuild()
 Body_import_project_snapshot_v1_visual_workshop_projects_snapshot_imports_post.model_rebuild()
-Body_import_project_v1_live2d_workshop_projects_import_post.model_rebuild()
 Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post.model_rebuild()
-Body_import_whale_v1_desktop_pet_projects_import_whale_post.model_rebuild()
 Body_imports_v1_thought_workshop_imports_post.model_rebuild()
-Body_preflight_cubism_v1_live2d_workshop_projects__project_id__cubism_preflight_post.model_rebuild()
 Body_preview_import_v1_presentation_workshop_imports_preview_post.model_rebuild()
 Body_put_avatar_v1_account_profile_avatar_put.model_rebuild()
-Body_replace_package_v1_desktop_pet_projects__project_id__replace_package_post.model_rebuild()
 Body_transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post.model_rebuild()
-Body_upload_asset_v1_live2d_workshop_projects__project_id__assets_post.model_rebuild()
 Body_upload_asset_v1_model_inference_assets_post.model_rebuild()
 Body_upload_asset_v1_motion_compositor_projects__project_id__assets_post.model_rebuild()
 Body_upload_asset_v1_video_editor_projects__project_id__assets_post.model_rebuild()
@@ -6996,10 +6690,8 @@ Body_upload_node_output_v1_visual_workshop_projects__project_id__nodes__node_id_
 Body_upload_project_asset_v1_galgame_workshop_projects__project_id__assets_post.model_rebuild()
 Body_upload_project_file_v1_director_desk_projects__project_id__files_post.model_rebuild()
 Body_upload_skill_v1_creative_workshop_items__item_id__skill_archive_post.model_rebuild()
-Body_upload_skin_replacement_v1_desktop_pet_projects__project_id__skins__skin_id__replacements__source_asset_id__put.model_rebuild()
 Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post.model_rebuild()
 Body_upload_v1_thought_workshop_community_publications__publication_id__notes__note_id__uploads_post.model_rebuild()
-BoneWeight.model_rebuild()
 CallLogListItem.model_rebuild()
 CallLogListOut.model_rebuild()
 CallLogOut.model_rebuild()
@@ -7009,17 +6701,6 @@ CertificationIn.model_rebuild()
 CertificationOut.model_rebuild()
 ChangePasswordIn.model_rebuild()
 ChangeSummary.model_rebuild()
-CharacterBone.model_rebuild()
-CharacterCamera.model_rebuild()
-CharacterDeformer.model_rebuild()
-CharacterDocument.model_rebuild()
-CharacterExpression.model_rebuild()
-CharacterIdleBehavior.model_rebuild()
-CharacterMotion.model_rebuild()
-CharacterParameter.model_rebuild()
-CharacterPart.model_rebuild()
-CharacterStateBinding.model_rebuild()
-CharacterTrack.model_rebuild()
 CheckpointIn.model_rebuild()
 CheckpointOut.model_rebuild()
 CheckpointPut.model_rebuild()
@@ -7036,6 +6717,7 @@ CommunityNote.model_rebuild()
 CommunityNotePut.model_rebuild()
 CommunityReferenceTarget.model_rebuild()
 CommunitySnapshot.model_rebuild()
+ConfigPrepared.model_rebuild()
 ConversationDetailOut.model_rebuild()
 ConversationListOut.model_rebuild()
 ConversationOut.model_rebuild()
@@ -7056,6 +6738,10 @@ CreativePageOut.model_rebuild()
 CreativeReleaseOut.model_rebuild()
 CreativeRevisionIn.model_rebuild()
 CreativeStdioSetupIn.model_rebuild()
+CredentialImportIn.model_rebuild()
+CredentialOut.model_rebuild()
+CredentialTicketIn.model_rebuild()
+CredentialTicketOut.model_rebuild()
 CsvIn.model_rebuild()
 CsvPreview.model_rebuild()
 CsvSource.model_rebuild()
@@ -7098,6 +6784,7 @@ DocumentOut.model_rebuild()
 DuplicateIn.model_rebuild()
 DuplicateOut.model_rebuild()
 DuplicateSnapshot.model_rebuild()
+EndpointStatus.model_rebuild()
 Experience.model_rebuild()
 ExportCreateIn.model_rebuild()
 ExportListOut.model_rebuild()
@@ -7290,6 +6977,7 @@ GalgameWorkshopProjectCreateIn.model_rebuild()
 GalgameWorkshopProjectListOut.model_rebuild()
 GalgameWorkshopProjectOut.model_rebuild()
 GalgameWorkshopProjectPatchIn.model_rebuild()
+GatewayProfile.model_rebuild()
 GenerationBatchListOut.model_rebuild()
 GenerationBatchOut.model_rebuild()
 GenerationCancelIn.model_rebuild()
@@ -7351,22 +7039,6 @@ LibraryExportSnapshot.model_rebuild()
 LibraryFolderImportOut.model_rebuild()
 LibraryFolderImportSkippedOut.model_rebuild()
 LinkClipsOperation.model_rebuild()
-Live2DAssetOut.model_rebuild()
-Live2DAssets.model_rebuild()
-Live2DCombination.model_rebuild()
-Live2DCreate.model_rebuild()
-Live2DCrop.model_rebuild()
-Live2DCubismBindings.model_rebuild()
-Live2DCubismOut.model_rebuild()
-Live2DDocumentOut.model_rebuild()
-Live2DExportIn.model_rebuild()
-Live2DExportOut.model_rebuild()
-Live2DExports.model_rebuild()
-Live2DPatch.model_rebuild()
-Live2DPreflight.model_rebuild()
-Live2DProjectOut.model_rebuild()
-Live2DProjects.model_rebuild()
-Live2DSave.model_rebuild()
 LocalModelActionIn.model_rebuild()
 LocalModelAttachIn.model_rebuild()
 LocalModelOut.model_rebuild()
@@ -7458,28 +7130,7 @@ NodeAcceptanceSelectIn.model_rebuild()
 NodeAcceptanceStartIn.model_rebuild()
 NodeAcceptanceTemplateOut.model_rebuild()
 OperationBatchIn.model_rebuild()
-ParameterBinding.model_rebuild()
-ParameterKeyform.model_rebuild()
 PermissionInput.model_rebuild()
-PetChatClearIn.model_rebuild()
-PetChatMessageOut.model_rebuild()
-PetChatMessagesOut.model_rebuild()
-PetChatOut.model_rebuild()
-PetChatSendIn.model_rebuild()
-PetChatSettingsIn.model_rebuild()
-PetConfig.model_rebuild()
-PetCreate.model_rebuild()
-PetDocumentOut.model_rebuild()
-PetHabits.model_rebuild()
-PetPatch.model_rebuild()
-PetPersona.model_rebuild()
-PetProjectOut.model_rebuild()
-PetProjectsOut.model_rebuild()
-PetReaction.model_rebuild()
-PetSave.model_rebuild()
-PetSkin.model_rebuild()
-PetSync.model_rebuild()
-Point.model_rebuild()
 PreparationBundle.model_rebuild()
 PreparationEvent.model_rebuild()
 PreparationSource.model_rebuild()
@@ -7559,6 +7210,7 @@ RealtimeVoiceOptionsOut.model_rebuild()
 RealtimeVoicePlaybackOut.model_rebuild()
 RealtimeVoiceVadOut.model_rebuild()
 ReauthIn.model_rebuild()
+ReceiptIn.model_rebuild()
 RecordPage.model_rebuild()
 RecordSpec.model_rebuild()
 RecordsDelete.model_rebuild()
@@ -7699,7 +7351,6 @@ ThoughtNoteSummary.model_rebuild()
 ThoughtNoteTransitionIn.model_rebuild()
 ThoughtOperationsIn.model_rebuild()
 ThoughtRevisionIn.model_rebuild()
-TimeKeyframe.model_rebuild()
 ToolApiCatalogOut.model_rebuild()
 ToolApiCreateIn.model_rebuild()
 ToolApiOut.model_rebuild()

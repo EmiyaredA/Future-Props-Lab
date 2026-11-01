@@ -3,16 +3,17 @@
 import asyncio
 import json
 import sqlite3
+from pathlib import Path
 
 import httpx
 import pytest
 import zstandard
 from fastapi import FastAPI, Request
-from sqlalchemy import event, select
+from sqlalchemy import event, insert, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.apps.agent_workbench.events import event_page
-from app.apps.agent_workbench.models import WorkbenchCheckpoint
+from app.apps.agent_workbench.models import WorkbenchCheckpoint, WorkbenchSession
 from app.apps.agent_workbench.routes import router
 from app.apps.agent_workbench.sync.projection import apply_batch
 from app.apps.agent_workbench.sync.runner import WorkbenchSyncRunner
@@ -26,6 +27,38 @@ from db.migrations import apply_migrations
 
 def encode(*records):
     return b"".join(json.dumps(record, ensure_ascii=False).encode() + b"\n" for record in records)
+
+
+def test_upgrade_from_account_schema_preserves_data_and_migration_history(tmp_path, monkeypatch):
+    from db.migrations import runner
+
+    database = tmp_path / "upgrade.db"
+    index = next(
+        i for i, m in enumerate(runner.MIGRATIONS) if m.migration_id == "0117_agent_workbench"
+    )
+    through_workbench = runner.MIGRATIONS[: index + 1]
+    monkeypatch.setattr(runner, "MIGRATIONS", through_workbench)
+    monkeypatch.setattr(runner, "LATEST_MIGRATION_ID", "0117_agent_workbench")
+    prefix = through_workbench[:-1]
+    with monkeypatch.context() as patch:
+        patch.setattr(runner, "MIGRATIONS", prefix)
+        patch.setattr(runner, "LATEST_MIGRATION_ID", prefix[-1].migration_id)
+        apply_migrations(database)
+    with sqlite3.connect(database) as db:
+        db.execute(
+            "INSERT INTO users(id,username,username_normalized,password_hash,platform_role) "
+            "VALUES ('existing','existing','existing','fixture','user')"
+        )
+        before = db.execute("SELECT * FROM schema_migrations ORDER BY rowid").fetchall()
+    assert apply_migrations(database) == ("0117_agent_workbench", True)
+    assert apply_migrations(database) == ("0117_agent_workbench", False)
+    with sqlite3.connect(database) as db:
+        assert db.execute("SELECT id FROM users").fetchall() == [("existing",)]
+        history = db.execute("SELECT * FROM schema_migrations ORDER BY rowid").fetchall()
+        assert history[:-1] == before
+        assert db.execute("SELECT count(*) FROM agent_workbench_sources").fetchone() == (0,)
+        assert db.execute("PRAGMA integrity_check").fetchall() == [("ok",)]
+        assert db.execute("PRAGMA foreign_key_check").fetchall() == []
 
 
 def codex_records(native_id="native", surface="app"):
@@ -279,6 +312,83 @@ async def test_pi_branches_include_metadata_ancestors(store, tmp_path):
     assert (await client.get(url + "?branch=missing")).status_code == 422
 
 
+async def test_codex_native_title_index_updates_without_becoming_message_history(store, tmp_path):
+    sessions, client = store
+    (tmp_path / "record.jsonl").write_bytes(encode(*codex_records()))
+    index = tmp_path / "session_index.jsonl"
+    index.write_bytes(encode({"id": "native", "thread_name": "原生名称"}))
+    (tmp_path / "history.jsonl").write_bytes(encode({"display": "CLI prompt history"}))
+    assert get_adapter("codex").discover(str(tmp_path)) == ["record.jsonl"]
+    await bind(client, tmp_path)
+    await scan(WorkbenchSyncRunner(sessions))
+    first = (await client.get("/v1/agent-workbench/sessions")).json()["items"][0]
+    assert first["title"] == "原生名称"
+    with index.open("ab") as fd:
+        fd.write(encode({"id": "native", "thread_name": "原端改名"}))
+        fd.write(b'{"id":"native","thread_name":"unfinished')
+    await scan(WorkbenchSyncRunner(sessions))
+    updated = (await client.get(f"/v1/agent-workbench/sessions/{first['id']}")).json()
+    assert updated["title"] == "原端改名"
+    history = (await client.get(f"/v1/agent-workbench/sessions/{first['id']}/history")).json()
+    assert len(history["items"]) == 2
+
+
+def test_plain_history_uses_bounded_batches_without_compressed_expansion_limit(
+    tmp_path, monkeypatch
+):
+    from app.capabilities.agents.sessions import files
+
+    monkeypatch.setattr(files, "MAX_CHUNK", 128)
+    monkeypatch.setattr(files, "MAX_EXPANDED", 128)
+    data = encode(*codex_records())
+    (tmp_path / "plain.jsonl").write_bytes(data)
+    (tmp_path / "compressed.jsonl").write_bytes(zstandard.ZstdCompressor().compress(data))
+    adapter = get_adapter("codex")
+    batch = adapter.read_history(str(tmp_path), "plain.jsonl", {})
+    entries = list(batch.entries)
+    while not batch.complete:
+        batch = adapter.watch(str(tmp_path), "plain.jsonl", batch.checkpoint)
+        entries.extend(batch.entries)
+    assert len(entries) == 2
+    compressed = adapter.read_history(str(tmp_path), "compressed.jsonl", {})
+    with pytest.raises(ValueError, match="展开体积超过限制"):
+        adapter.watch(str(tmp_path), "compressed.jsonl", compressed.checkpoint)
+
+
+def test_codex_large_image_record_keeps_text_without_copying_embedded_image(tmp_path):
+    records = codex_records()
+    records[1]["payload"]["content"].append(
+        {"type": "input_image", "image_url": "data:image/png;base64," + "A" * (9 * 1024 * 1024)}
+    )
+    path = tmp_path / "record.jsonl"
+    path.write_bytes(encode(*records))
+    adapter = get_adapter("codex")
+    first = adapter.read_history(str(tmp_path), path.name, {})
+    assert any(entry.text == "检查预览状态" for entry in first.entries)
+    assert all(len(entry.text) < 100 for entry in first.entries)
+    second = adapter.watch(str(tmp_path), path.name, first.checkpoint)
+    assert second.complete and len(second.entries) == 1
+
+
+def test_codex_compressed_jsonl_archive_and_incremental_follow(tmp_path):
+    root = tmp_path / "archived_sessions"
+    root.mkdir()
+    path = root / "rollout.jsonl"
+    compressor = zstandard.ZstdCompressor()
+    path.write_bytes(compressor.compress(encode(*codex_records("compressed", "cli"))))
+    adapter = get_adapter("codex")
+    first = adapter.read_history(str(root), path.name, {})
+    assert first.info.native_id == "compressed" and first.info.archived
+    assert first.info.origins == ["cli"]
+    assert len(first.entries) == 2 and first.complete
+    new_message = codex_records("compressed", "cli")[-1]
+    new_message["payload"]["id"] = "next-message"
+    with path.open("ab") as fd:
+        fd.write(compressor.compress(encode(new_message)))
+    second = adapter.watch(str(root), path.name, first.checkpoint)
+    assert len(second.entries) == 1 and not second.reset and second.complete
+
+
 def test_dsh_compressed_frames_and_incremental_follow(tmp_path):
     path = tmp_path / "session.v4.jsonl.zstd"
     compressor = zstandard.ZstdCompressor()
@@ -455,11 +565,15 @@ async def test_archive_duplicates_and_same_inode_rewrite(store, tmp_path):
     archive.mkdir()
     path = active / "current.jsonl"
     records = codex_records()
+    (root / "session_index.jsonl").write_bytes(
+        encode({"id": "native", "thread_name": "index only", "updated_at": "2026-11-01"})
+    )
     path.write_bytes(encode(*records))
     (archive / "copy.jsonl").write_bytes(encode(*records))
     await bind(client, root)
     runner = WorkbenchSyncRunner(sessions)
     await scan(runner)
+    assert (await client.get("/v1/agent-workbench/sources")).json()[0]["status"] == "following"
     items = (await client.get("/v1/agent-workbench/sessions")).json()["items"]
     assert len(items) == 1 and not items[0]["archived"]
     url = f"/v1/agent-workbench/sessions/{items[0]['id']}/history"
@@ -557,3 +671,65 @@ def test_opencode_server_is_readonly_and_preserves_native_message_ids(monkeypatc
     assert first.entries[0].native_id == second.entries[0].native_id == "p"
     assert second.entries[0].text == "updated"
     assert all(method == "GET" for method, _ in calls)
+
+
+async def test_missing_native_file_retains_copy_and_recovers(store, tmp_path):
+    sessions, client = store
+    root = tmp_path / "missing-source"
+    root.mkdir()
+    path = root / "record.jsonl"
+    data = encode(*codex_records())
+    path.write_bytes(data)
+    await bind(client, root)
+    runner = WorkbenchSyncRunner(sessions)
+    await scan(runner)
+    item = (await client.get("/v1/agent-workbench/sessions")).json()["items"][0]
+    url = f"/v1/agent-workbench/sessions/{item['id']}"
+    path.unlink()
+    await scan(runner)
+    missing = (await client.get(url)).json()
+    assert "已消失" in missing["source_errors"][0]
+    assert len((await client.get(url + "/history")).json()["items"]) == 2
+    path.write_bytes(data)
+    await scan(runner)
+    assert (await client.get(url)).json()["source_errors"] == []
+
+
+def test_workbench_does_not_expand_agent_or_sdk_operation_surface():
+    root = Path(__file__).resolve().parents[1]
+    mapping = json.loads((root / "sdk/python/operations.json").read_text())
+    operations = json.loads(
+        (root / "backend/app/console/governance/desktop_agent_operations.json").read_text()
+    )["operations"]
+    assert not any("/agent-workbench/" in key for key in mapping)
+    assert not any("/agent-workbench/" in key for key in operations)
+
+
+async def test_ten_thousand_metadata_records_paginate_before_history_index(store):
+    sessions, client = store
+    async with sessions() as db:
+        await db.execute(
+            insert(WorkbenchSession),
+            [
+                {
+                    "id": f"volume-{index:05}",
+                    "owner_user_id": "alpha",
+                    "agent_id": "codex",
+                    "native_id": f"volume-{index:05}",
+                    "title": f"Volume session {index}",
+                    "updated_at": "2026-11-01T00:00:00.000Z",
+                }
+                for index in range(10000)
+            ],
+        )
+        await db.commit()
+    first = (await client.get("/v1/agent-workbench/sessions")).json()
+    assert len(first["items"]) == 50 and first["next_cursor"]
+    second = (
+        await client.get("/v1/agent-workbench/sessions", params={"cursor": first["next_cursor"]})
+    ).json()
+    assert len(second["items"]) == 50
+    assert not {item["id"] for item in first["items"]} & {item["id"] for item in second["items"]}
+    assert (await client.get("/v1/agent-workbench/sessions?q=Volume%20session%209999")).json()[
+        "items"
+    ][0]["id"] == "volume-09999"

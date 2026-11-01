@@ -60,20 +60,6 @@ export const GROUPS: DocsGroup[] = [
     parent: "apps-overview",
   },
   {
-    id: "live2d",
-    title: "Live2D 工坊",
-    section: "应用",
-    context: "live2d",
-    parent: "apps-overview",
-  },
-  {
-    id: "pet",
-    title: "桌宠工坊",
-    section: "应用",
-    context: "pet",
-    parent: "apps-overview",
-  },
-  {
     id: "director",
     title: "导演台",
     section: "应用",

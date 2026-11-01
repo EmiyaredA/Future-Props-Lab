@@ -1,3 +1,9 @@
+:root[data-theme-changing] *,
+:root[data-theme-changing] *::before,
+:root[data-theme-changing] *::after {
+  transition: none !important;
+}
+
 :root {
   color-scheme: light;
   --ui-font-size: 13px;
@@ -17,6 +23,7 @@
   --border: #e6ddd2;
   --border-strong: #d6c8b8;
   --accent: #d96342;
+  --accent-text: #9c3b24;
   --accent-hover: #b84b2f;
   --accent-soft: #fde9df;
   --accent-line: #efc1af;
@@ -63,6 +70,7 @@
   --border: #343b35;
   --border-strong: #485049;
   --accent: #ee805a;
+  --accent-text: #ee805a;
   --accent-hover: #ff9870;
   --accent-soft: #42271f;
   --accent-line: #744535;

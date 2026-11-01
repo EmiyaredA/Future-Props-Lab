@@ -41,7 +41,9 @@ export const workbenchSessions: Conversation[] = [
   updated_at: `2026-11-01T06:${String(21 - index).padStart(2, "0")}:00Z`,
   last_synced_at: "2026-11-01T06:21:00Z",
   source_ids: [workbenchSource.id],
+  source_errors: [],
   can_send: false,
+  continuation_reason: "当前支持查看与同步，继续对话待接入",
 }));
 
 export function workbenchEntries(count = 4): Entry[] {

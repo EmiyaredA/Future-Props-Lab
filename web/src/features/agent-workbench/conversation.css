@@ -82,6 +82,25 @@
   font-family: "SFMono-Regular", Consolas, monospace;
   font-size: 0.9em;
 }
+.aw-prose pre code {
+  font-size: 12px;
+}
+.aw-prose .hljs-keyword,
+.aw-prose .hljs-selector-tag,
+.aw-prose .hljs-literal {
+  color: var(--accent);
+}
+.aw-prose .hljs-string,
+.aw-prose .hljs-addition {
+  color: var(--ok);
+}
+.aw-prose .hljs-comment {
+  color: var(--faint);
+}
+.aw-prose .hljs-title,
+.aw-prose .hljs-built_in {
+  color: var(--blue);
+}
 .aw-prose :not(pre) > code {
   background: var(--surface-soft);
   border-radius: 4px;

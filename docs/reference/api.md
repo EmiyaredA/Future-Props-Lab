@@ -83,7 +83,6 @@
 - `GET /projects/{project_id}/cubism/package`：下载原样保存的运行包。
 - `POST /projects/{project_id}/cubism/convert`：上传转换出的 `.fpllive2d` 文件、源运行包和 `expectedRevision`，原子创建新的可编辑 FPL 项目；源项目仍保留。转换损失在客户端创建前展示。
 
-附件变更使用项目 revision CAS；缺失 revision 返回 422，冲突返回 409 与当前快照。带附件的工程包导出为 v4，不带附件的工程仍为 v3。预览使用本地官方 Cubism Web SDK R5；`.moc3` 只作为运行资料，不作为 FPL 可编辑源工程。转换后的蒙皮骨骼需要在 FPL 手动建立。详细流程见 [Live2D 工坊设计](../architecture/live2d-workshop.md)。
 
 ## 桌面 Agent 接入
 
@@ -1133,31 +1132,6 @@ ID 集合使用 `insert/update/remove/move/duplicate`，`value` 字段采用对�
 - `GET /v1/audio-annotation/projects/{project_id}/export`：携带文档 revision，导出项目 JSON 或 SRT；不完整标注不能导出 SRT。
 - `GET /v1/audio-annotation/projects/{project_id}/segments/{segment_id}/audio`：提取已保存片段的 PCM WAV；`POST` 到同层 `transcribe-saved` 使用已有识别能力，返回识别结果，后续通过版本化编辑保存。
 - `POST /v1/files/{asset_id}/frames`：从已上传视频按毫秒位置提取最多 25 帧，返回 PNG 文件 ZIP；4 或 9 帧可输出宫格图。仅使用当前身份可读的文件。
-
-## 桌宠工坊
-
-桌宠 API 按服务端身份隔离 Workspace，读取需要 `content.read`，变更需要 `content.write`。`POST /v1/desktop-pet/projects` 传 `sourceProjectId`、`sourceRevision` 和名称，从同空间已保存的 Live2D 工程复制角色文档及用到的 PNG 素材。来源被修改或删除后，桌宠仍读取自己的固定快照。
-
-- `GET/POST /v1/desktop-pet/projects`：列表与创建。
-- `POST /v1/desktop-pet/projects/import-whale`：上传本地分层角色数据包（`manifest.json`、`model.json`、1–8 套贴图与缩略图），兼容 Coopanion 鲸鱼娘与人物骨架；在当前 Workspace 形成固定快照，只接受图片和模型数据，不接受脚本。压缩包最多 32 MiB，解压最多 64 MiB。
-- `GET/PATCH/DELETE /v1/desktop-pet/projects/{project_id}`：元数据读取、重命名和删除；变更提供 `expectedRevision`。
-- `GET/PUT /v1/desktop-pet/projects/{project_id}/document`：读取角色快照、配置和鉴权素材 URL；保存整体配置需要 `expectedRevision`。
-- `PUT /v1/desktop-pet/projects/{project_id}/skins/{skin_id}/replacements/{source_asset_id}`：multipart PNG 上传，附 `expectedRevision`；替换图必须与来源部件素材尺寸相同，单张最多 16 MiB。
-- `POST /v1/desktop-pet/projects/{project_id}/sync-source`：显式更新来源，提交桌宠及来源 revision；动作、表情、部件与换肤尺寸不兼容时保留旧快照。
-- `POST /v1/desktop-pet/projects/{project_id}/replace-package`：本地分层角色的完整资源更新，multipart ZIP `file` 与 `expectedRevision`，返回 `PetDocumentOut`。要求相同骨架且保留当前默认服饰 ID；新素材全部准备后 CAS 切换，失败／冲突清理新素材，项目 ID、标题、配置及私人聊天不变。Live2D 来源不接受此入口。
-- `GET /v1/desktop-pet/projects/{project_id}/assets/{asset_id}/file`：仅读取该桌宠当前快照或皮肤引用的 PNG。
-
-整体配置限制为最多 20 套 Live2D 皮肤、六种事件、每事件最多 8 句、每句 1–140 字，以及最多四个悬停按钮。旧版事件 `bubble` 在读取时升级为 `lines` 的第一句；新版保存使用 `schemaVersion=2`。`persona` 包含角色简介、性格、说话方式和开场白。分层角色项目沿用 `sourceType=coopanion-whale`，文档返回 `whaleModel`、`whaleAssets` 和鉴权素材 URL；`schemeId` 选择包内配色，不支持逐部件上传或更新来源。事件的动作与表情按对应来源校验。缺少 revision 返回 422，CAS 冲突返回 409 和当前快照；跨空间 ID 返回 404。桌宠窗口仅由 macOS 主应用手动启动，不提供公开发布或桌宠包导出接口。
-
-资源包清单仍为 `{"format":"fpl-coopanion-whale","version":1}`。`model.json` 缺省 `rigProfile` 为 `whale`，旧包保持兼容。人物包使用 `rigProfile=human-chibi`，必须提供 `character.name`（1–120 字，可选 `character.persona`，结构同配置人设），导入时作为项目名称与默认人设。人物聊天首次读取默认关闭主动台词，用户保存过的偏好优先。人物骨架与分件、五官和坐姿约束详见[分层桌宠资源包](desktop-pet-sprites.md)；这些字段保存在既有 JSON 快照中，不改变 HTTP 响应形状或数据库 schema。
-
-`PetHabits` 增加布尔字段 `edgeClimbing`、`highGliding`，均默认 `true`。旧 JSON 读取时补默认值，不自动持久化；保存仍通过 document 的 CAS，`roam=off` 暂停所有自主运动。Live2D 暂不支持新增姿态。窗口运动和试玩帧只在内存，私有 Electron 桥传递工作区、显示器、可见边界与递增运动序号，不新增公共 REST 路由或数据库 schema。
-
-桌宠聊天需要 `models.use`。配置中的人设参与每次模型提示词；模型选择、主动台词开关和记录按账号、Workspace、桌宠另存，不进入角色配置。
-
-- `GET/PATCH /v1/desktop-pet/projects/{project_id}/chat`：读取会话最近 50 条消息，或以 `expectedRevision` 保存文字模型 ID、主动台词开关与 `presentationMode`（`bubble` / `dialogue`）；首次读取返回 revision 0 和气泡模式，首次设置以 0 创建会话。PATCH 省略 `presentationMode` 时保留已有值，新建会话缺省为 `bubble`；迁移前已有会话保留 `dialogue`。字段只属于当前账号、Workspace 和桌宠，设置期间有活动请求或 revision 冲突返回 409 与当前快照。
-- `GET/DELETE /v1/desktop-pet/projects/{project_id}/chat/messages`：按 `before` 位置和 `limit` 倒序分页读取，或带 `expectedRevision` 清空该会话记录。清空保留请求 ID 防重放记录。
-- `POST /v1/desktop-pet/projects/{project_id}/chat/messages/stream`：提交 `expectedRevision`、唯一 `requestId` 和最多 2000 字的 `content`，返回 `start/delta/done/error` SSE。相同请求 ID 不再次调用模型；同一会话一次只生成一轮。模型不可用返回明确错误，失败或取消的回复标记为中断；完整历史仍可分页读取。
 
 ## 独立模型调用
 

@@ -3,15 +3,12 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
-import httpx
-import pytest
 from PIL import Image
 
-from app.apps.live2d_workshop.packages import read_package
+from app.capabilities.media_rendering.live2d.bundle import read_package
 from app.capabilities.media_rendering.live2d.evaluate import parameter_values
 from app.capabilities.media_rendering.live2d.idle import idle_pose
 from app.capabilities.media_rendering.live2d.render import render_frame
-from app.main import app
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "web/public/brand/amadeus/amadeus.fpllive2d"
@@ -79,42 +76,3 @@ def test_idle_pose_respects_active_tracks_and_bone_weights() -> None:
     assert idle["ParamAngleX"] == values["ParamAngleX"]
     assert idle["ParamBreath"] != values["ParamBreath"]
     assert set(rotations) == set(document.idle_behavior.spring_bones)
-
-
-@pytest.mark.asyncio
-async def test_bundled_amadeus_round_trips_through_workshop_api() -> None:
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        imported = await client.post(
-            "/v1/live2d-workshop/projects/import",
-            files={"file": ("Amadeus.fpllive2d", PACKAGE.read_bytes(), "application/zip")},
-        )
-        assert imported.status_code == 200, imported.text
-        project_id = imported.json()["id"]
-        base = f"/v1/live2d-workshop/projects/{project_id}"
-        snapshot = (await client.get(f"{base}/document")).json()
-        document = snapshot["document"]
-        assert set(document["stateBindings"]) == set(STATES)
-        assert len(document["parts"]) >= 12
-        document["parameters"][0]["name"] = "头部侧倾（已编辑）"
-        saved = await client.put(
-            f"{base}/document",
-            json={"expectedRevision": snapshot["revision"], "document": document},
-        )
-        assert saved.status_code == 200, saved.text
-        exported = await client.get(f"{base}/package")
-        assert exported.status_code == 200, exported.text
-        _, again, assets = read_package(exported.content)
-        assert set(again.state_bindings) == set(STATES)
-        assert len(assets) >= 12
-        reimported = await client.post(
-            "/v1/live2d-workshop/projects/import",
-            files={"file": ("Amadeus-edited.fpllive2d", exported.content, "application/zip")},
-        )
-        assert reimported.status_code == 200, reimported.text
-        reopened = (
-            await client.get(f"/v1/live2d-workshop/projects/{reimported.json()['id']}/document")
-        ).json()["document"]
-        assert reopened["parameters"][0]["name"] == "头部侧倾（已编辑）"
-        assert set(reopened["stateBindings"]) == set(STATES)

@@ -3,8 +3,6 @@ import { CodeAgentsRoute } from "@app/layout/CodeAgentsRoute";
 import { ModelServiceRoute } from "@app/layout/ModelServiceRoute";
 import type { KnowledgeSection } from "@features/thought-workshop/KnowledgeSections";
 import { PageErrorBoundary } from "./PageErrorBoundary";
-import { LIVE2D_WORKSHOP_MODULE } from "@features/live2d-workshop/module";
-import { DESKTOP_PET_MODULE } from "@features/desktop-pet/module";
 import { isWorkshopPage, hasReadOnlyRoute } from "./routes";
 import { ReadOnlyRoutes } from "./ReadOnlyRoutes";
 import { accountAllows } from "@features/accounts/permissions";
@@ -139,27 +137,6 @@ const GalgameFastPreviewPage = lazy(GALGAME_WORKSHOP_MODULE.pages.preview);
 const VideoEditorProjectsPage = lazy(VIDEO_EDITOR_MODULE.pages.projects);
 const VideoEditorPage = lazy(VIDEO_EDITOR_MODULE.pages.editor);
 const VideoEditorTasksPage = lazy(VIDEO_EDITOR_MODULE.pages.tasks);
-const Live2DProjectsPage = lazy(() =>
-  import("@features/live2d-workshop/ProjectsPage").then((m) => ({
-    default: m.ProjectsPage,
-  })),
-);
-const Live2DEditorPage = lazy(() =>
-  import("@features/live2d-workshop/EditorPage").then((m) => ({
-    default: m.EditorPage,
-  })),
-);
-const DesktopPetProjectsPage = lazy(() =>
-  import("@features/desktop-pet/ProjectsPage").then((m) => ({
-    default: m.ProjectsPage,
-  })),
-);
-const DesktopPetEditorPage = lazy(() =>
-  import("@features/desktop-pet/EditorPage").then((m) => ({
-    default: m.EditorPage,
-  })),
-);
-
 const MotionCompositorProjectsPage = lazy(() =>
   import("@features/motion-compositor/ProjectsPage").then((m) => ({
     default: m.ProjectsPage,
@@ -206,12 +183,6 @@ export default function App() {
   routeRef.current = route;
   const page = route.page;
   useEffect(() => {
-    void window.futurePropsDesktop?.publishPetContext?.({
-      userId: me.user.id,
-      accountId: me.user.id,
-    });
-  }, [me.user.id]);
-  useEffect(() => {
     const key = String(page);
     const applications: Record<string, string> = {
       "presentation-workshop": "演示工坊",
@@ -224,8 +195,6 @@ export default function App() {
       "motion-compositor": "特效制作工坊",
       "audio-annotation": "音频标注工坊",
       "director-desk": "导演台",
-      "live2d-workshop": "Live2D 工坊",
-      "desktop-pet": "桌宠工坊",
       "creative-workshop": "创意工坊",
     };
     const application =
@@ -470,72 +439,6 @@ export default function App() {
           registerNavigationGuard={registerNavigationGuard}
         />
       </PageBoundary>
-    );
-
-  if (page === "live2d-workshop-editor" && route.projectId)
-    return (
-      <PageBoundary>
-        <Live2DEditorPage
-          key={route.projectId}
-          projectId={route.projectId}
-          onBack={() => navigate("live2d-workshop-projects")}
-          registerNavigationGuard={registerNavigationGuard}
-          readOnly={!accountAllows(me, "content.write")}
-        />
-      </PageBoundary>
-    );
-
-  if (page === "live2d-workshop-projects")
-    return (
-      <WorkshopShell
-        module={LIVE2D_WORKSHOP_MODULE}
-        page={page}
-        navigate={(next) => navigate(next as WorkshopPage)}
-        onBack={() => navigate("apps")}
-      >
-        <PageBoundary>
-          <Live2DProjectsPage
-            readOnly={!accountAllows(me, "content.write")}
-            appearanceScope={{
-              userId: me.user.id,
-              accountId: me.user.id,
-            }}
-            onOpen={(projectId) =>
-              navigate("live2d-workshop-editor", projectId)
-            }
-          />
-        </PageBoundary>
-      </WorkshopShell>
-    );
-
-  if (page === "desktop-pet-editor" && route.projectId)
-    return (
-      <PageBoundary>
-        <DesktopPetEditorPage
-          key={route.projectId}
-          projectId={route.projectId}
-          onBack={() => navigate("desktop-pet-projects")}
-          readOnly={!accountAllows(me, "content.write")}
-          registerNavigationGuard={registerNavigationGuard}
-        />
-      </PageBoundary>
-    );
-
-  if (page === "desktop-pet-projects")
-    return (
-      <WorkshopShell
-        module={DESKTOP_PET_MODULE}
-        page={page}
-        navigate={(next) => navigate(next as WorkshopPage)}
-        onBack={() => navigate("apps")}
-      >
-        <PageBoundary>
-          <DesktopPetProjectsPage
-            readOnly={!accountAllows(me, "content.write")}
-            onOpen={(id) => navigate("desktop-pet-editor", id)}
-          />
-        </PageBoundary>
-      </WorkshopShell>
     );
 
   if (page === "motion-compositor-editor" && route.projectId)

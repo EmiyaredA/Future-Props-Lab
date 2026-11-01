@@ -17,6 +17,8 @@ BACKEND_ASSETS = (
     Path("backend/app/capabilities/media_rendering/assets/NotoSansSC-Medium.ttf"),
 )
 WEB_ASSETS = (
+    Path("web/public/brand/home/kurisu-idle.webm"),
+    Path("web/public/brand/home/kurisu-idle.png"),
     Path("web/public/presentation-templates/html-template.png"),
     Path("web/public/presentation-templates/report-background.png"),
     Path("web/public/presentation-templates/structured-template.png"),
@@ -24,8 +26,7 @@ WEB_ASSETS = (
     Path("web/public/brand/amadeus/amadeus.fpllive2d"),
     Path("web/public/brand/amadeus/amadeus-poster.png"),
     Path("web/public/brand/amadeus/amadeus-stage-poster.png"),
-    Path("web/public/brand/live2d-workshop-mark.png"),
-    Path("web/public/brand/desktop-pet-mark.png"),
+    Path("web/public/brand/agent-workbench-mark.png"),
     Path("web/public/brand/audio-annotation-mark.png"),
     Path("web/public/brand/director-desk-mark.png"),
     Path("web/public/brand/presentation-workshop-mark.png"),
@@ -35,6 +36,12 @@ WEB_ASSETS = (
     Path("web/public/voice-vad/ort-wasm-simd-threaded.wasm"),
 )
 EXPECTED_SHA256 = {
+    Path(
+        "web/public/brand/home/kurisu-idle.webm"
+    ): "10717cdea36065ed9e6a0360a7174ff1a79b7dea9523939376980b5f74219132",
+    Path(
+        "web/public/brand/home/kurisu-idle.png"
+    ): "32ee8bfef51fb8c0122f9bd9bdc030113310731a590b3dea672a7515fc0b8e0f",
     Path(
         "web/public/presentation-templates/html-template.png"
     ): "a7e045177e4a2a929242eb3d19f9f75f65ba7d0605b5cf7b366ee7495de31064",
@@ -60,11 +67,8 @@ EXPECTED_SHA256 = {
         "59baef48c4953e79f32fcbc9c86e9306fecb65ae554e50349048c41c3ab17465"
     ),
     Path(
-        "web/public/brand/live2d-workshop-mark.png"
+        "web/public/brand/agent-workbench-mark.png"
     ): "e8b8839472bdfc9923aba39987568392d0619ad834e41b7c96cd039352d6eecd",
-    Path("web/public/brand/desktop-pet-mark.png"): (
-        "09ba7ae71ca38a5ee2f56b68aa44b8d330b386501d621929b2ad2d1faa8306b4"
-    ),
     Path(
         "web/public/brand/audio-annotation-mark.png"
     ): "a3539f2db85bdc42fdfab5dea9215b3ef1ce4e1c560bc9834d5c30feae015349",
@@ -260,11 +264,10 @@ def main() -> None:
     if args.web or args.all:
         require_materialized(
             WEB_ASSETS,
-            "web/public/presentation-templates/*,web/public/voice-vad/*,web/public/brand/thought-workshop-mark.png,"
+            "web/public/presentation-templates/*,web/public/voice-vad/*,web/public/brand/home/*,web/public/brand/thought-workshop-mark.png,"
             "web/public/brand/presentation-workshop-mark.png,"
             "web/public/brand/audio-annotation-mark.png,"
-            "web/public/brand/director-desk-mark.png,web/public/brand/live2d-workshop-mark.png,"
-            "web/public/brand/desktop-pet-mark.png,"
+            "web/public/brand/director-desk-mark.png,web/public/brand/agent-workbench-mark.png,"
             "web/public/brand/amadeus/amadeus.fpllive2d,web/public/brand/amadeus/amadeus-poster.png,web/public/brand/amadeus/amadeus-stage-poster.png",
         )
 

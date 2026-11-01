@@ -462,23 +462,3 @@
 .galgame-timeline-editor.is-readonly .galgame-timeline-calibration {
   opacity: 0.62;
 }
-
-.galgame-block-list {
-  position: relative;
-  max-width: 760px;
-  margin: 0 auto 13px;
-  padding-left: 27px;
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.galgame-block-list::before {
-  content: "";
-  position: absolute;
-  top: 14px;
-  bottom: 14px;
-  left: 10px;
-  width: 1px;
-  background: var(--gal-line-strong);
-}
