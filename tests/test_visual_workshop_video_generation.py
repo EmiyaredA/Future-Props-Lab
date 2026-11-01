@@ -20,6 +20,7 @@ from app.runtime.db import SessionLocal
 @pytest.mark.asyncio
 async def test_visual_video_generation_uses_scoped_media_asset_ids() -> None:
     provider = ModelProvider(
+        owner_user_id="test-user",
         id=str(uuid4()),
         name="SenseAudio 视频素材测试通道",
         kind="senseaudio_video",
@@ -29,6 +30,7 @@ async def test_visual_video_generation_uses_scoped_media_asset_ids() -> None:
         sort_order=91,
     )
     model = ModelEntry(
+        owner_user_id="test-user",
         id=str(uuid4()),
         provider_id=provider.id,
         slug="doubao-seedance-2-0-260128",
@@ -322,6 +324,6 @@ async def test_visual_video_generation_uses_scoped_media_asset_ids() -> None:
                 str(asset["storage_key"]),
                 visual_project_id=str(asset["project_id"]),
                 galgame_project_id=None,
-                workspace_id=str(asset["workspace_id"]),
+                owner_user_id=str(asset["owner_user_id"]),
             )
             path.unlink(missing_ok=True)

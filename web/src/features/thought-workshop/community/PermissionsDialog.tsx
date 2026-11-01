@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAccountId } from "@platform/auth/WorkspacePermissions";
+import { useAccountId } from "@platform/auth/AccountAccess";
 import { useQuery } from "@tanstack/react-query";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { thoughtKeys } from "../queryKeys";
@@ -101,8 +101,7 @@ export function PermissionsDialog({
                 在社区中发布
               </label>
               <p className="community-meta">
-                权限仅作用于所选文章，不授予源 Workspace
-                的访问权。取消发布会立即关闭社区访问。
+                权限仅作用于所选文章，不授予源账号的访问权。取消发布会立即关闭社区访问。
               </p>
             </>
           )}

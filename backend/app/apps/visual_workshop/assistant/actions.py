@@ -9,7 +9,7 @@ from app.apps.visual_workshop.models import (
 )
 from app.apps.visual_workshop.schemas.workshop import VisualAssistantActionOut
 from app.capabilities.agents.harness import AgentEvent
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.db import SessionLocal
 from app.runtime.time import iso_utc, utc_now
 
@@ -52,10 +52,10 @@ def _safe_result(payload: dict) -> tuple[dict, int | None, str | None]:
 
 
 async def persist_agent_event(
-    workspace_id: str, message_id: str, event: AgentEvent
+    owner_user_id: str, message_id: str, event: AgentEvent
 ) -> list[VisualAssistantActionOut]:
     async with SessionLocal() as session:
-        bind_workspace(session.sync_session, workspace_id)
+        bind_owner(session.sync_session, owner_user_id)
         payload = event.payload
         action_id = str(payload.get("action_id") or "")
         row = None
@@ -157,9 +157,9 @@ async def persist_agent_event(
         return [action_out(item) for item in rows]
 
 
-async def cancel_active_actions(workspace_id: str, message_id: str, reason: str) -> None:
+async def cancel_active_actions(owner_user_id: str, message_id: str, reason: str) -> None:
     async with SessionLocal() as session:
-        bind_workspace(session.sync_session, workspace_id)
+        bind_owner(session.sync_session, owner_user_id)
         await session.execute(
             update(VisualAssistantAction)
             .where(

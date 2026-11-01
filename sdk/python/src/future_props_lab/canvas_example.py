@@ -5,7 +5,7 @@ async def thought_canvas_example(client, knowledge_base_id, output, *, image_ass
     """Create an editable infographic in an explicitly selected personal library.
 
     image_asset_id, when supplied, must identify an uploaded image in the client's
-    Workspace public file library. output is caller-selected Markdown/ZIP output.
+    Account public file library. output is caller-selected Markdown/ZIP output.
     A revision conflict is returned to the caller without retrying note creation.
     """
     library = await client.thought.knowledge_base(project_id=knowledge_base_id)
@@ -29,7 +29,7 @@ async def thought_canvas_example(client, knowledge_base_id, output, *, image_ass
             "y": 0,
             "width": 160,
             "height": 80,
-            "text": "Workspace 数据",
+            "text": "Account 数据",
             "fill": "#effaf8",
             "stroke": "#365f62",
         },

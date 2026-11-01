@@ -175,7 +175,7 @@ function ProjectDialog({
                 ? "导入识别 JSON"
                 : imported
                   ? "导入项目 JSON"
-                  : "Workspace 任务"}
+                  : "账号任务"}
             </span>
             <h2>{imported ? "选择对应录音" : "新建录音标注"}</h2>
           </div>
@@ -361,7 +361,7 @@ export function AudioAnnotationProjectsPage({
       <WorkshopAppChrome
         showThemeToggle={false}
         title="我的标注任务"
-        description="管理 Workspace 中的录音切分、说话人和逐段文本。"
+        description="管理账号中的录音切分、说话人和逐段文本。"
         actions={
           <div className="annotation-project-actions">
             <input

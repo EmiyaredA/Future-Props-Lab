@@ -16,7 +16,7 @@ def paragraph(text):
     return {"type": "paragraph", "content": [{"type": "text", "text": text}] if text else []}
 
 
-async def table_nodes(session, workspace_id, table, rows, *, view=None, readable=None):
+async def table_nodes(session, owner_user_id, table, rows, *, view=None, readable=None):
     hidden = set(view.config.hidden_fields) if view else set()
     order = view.config.column_order if view else []
     fields = sorted(
@@ -34,7 +34,7 @@ async def table_nodes(session, workspace_id, table, rows, *, view=None, readable
                     ThoughtKnowledgeBase, ThoughtKnowledgeBase.id == ThoughtNote.knowledge_base_id
                 )
                 .where(
-                    ThoughtNote.workspace_id == workspace_id,
+                    ThoughtNote.owner_user_id == owner_user_id,
                     ThoughtNote.id.in_(targets),
                     ThoughtNote.deleted_at.is_(None),
                     ThoughtKnowledgeBase.deleted_at.is_(None),
@@ -99,13 +99,13 @@ async def table_nodes(session, workspace_id, table, rows, *, view=None, readable
     ]
 
 
-async def project(session, workspace_id, note, *, readable=None):
+async def project(session, owner_user_id, note, *, readable=None):
     if note.kind == "multitable":
         state = await snapshot(session, note.id)
         nodes = []
         for t in state.tables:
             nodes.extend(
-                await table_nodes(session, workspace_id, t, state.records[t.id], readable=readable)
+                await table_nodes(session, owner_user_id, t, state.records[t.id], readable=readable)
             )
         return {"type": "doc", "content": nodes}
     document = deepcopy(note.document)
@@ -125,7 +125,7 @@ async def project(session, workspace_id, note, *, readable=None):
                 )
                 .where(
                     ThoughtNote.id == attrs.get("noteId"),
-                    ThoughtNote.workspace_id == workspace_id,
+                    ThoughtNote.owner_user_id == owner_user_id,
                     ThoughtNote.deleted_at.is_(None),
                     ThoughtKnowledgeBase.deleted_at.is_(None),
                     ThoughtNote.kind == "multitable",
@@ -149,7 +149,7 @@ async def project(session, workspace_id, note, *, readable=None):
                 if len(rows) >= page.total:
                     break
             children.extend(
-                await table_nodes(session, workspace_id, t, rows, view=v, readable=readable)
+                await table_nodes(session, owner_user_id, t, rows, view=v, readable=readable)
             )
         if "content" in node:
             node["content"] = children

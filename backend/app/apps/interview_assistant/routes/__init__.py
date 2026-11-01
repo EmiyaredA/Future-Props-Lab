@@ -35,7 +35,7 @@ def errors():
 
 @router.get("/executor", response_model=InterviewExecutorOut)
 async def get_interview_executor(principal: StudioAuth, session: SessionDep):
-    return await executor_status(principal.user_id, principal.workspace_id, session)
+    return await executor_status(principal.user_id, principal.owner_user_id, session)
 
 
 @router.get("/rooms", response_model=InterviewRoomList)
@@ -103,7 +103,7 @@ async def prepare_interview(
     room_id: str, body: InterviewPrepareIn, session: SessionDep, principal: StudioAuth
 ):
     with errors():
-        status = await executor_status(principal.user_id, principal.workspace_id, session)
+        status = await executor_status(principal.user_id, principal.owner_user_id, session)
         if not status.available:
             raise OperationError(status.message, status.code, 409)
         return await Rooms(session, principal).prepare(room_id, body)

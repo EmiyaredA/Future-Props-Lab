@@ -19,19 +19,19 @@ class Templates:
         'Start. POST /v1/platform/model-service-templates/sync-jobs/{job_id}/start'
         return self._client._call('POST', '/v1/platform/model-service-templates/sync-jobs/{job_id}/start', parameters=[('job_id', 'path', job_id)], body=body, media_type='application/json', response_type=models.TemplateSyncJobOut)
 
-    def template(self, *, role: Literal['super_admin', 'admin', 'member']) -> models.RoleModelTemplateOut:
+    def template(self, *, role: Literal['admin', 'user']) -> models.RoleModelTemplateOut:
         'Template. GET /v1/platform/model-service-templates/{role}'
         return self._client._call('GET', '/v1/platform/model-service-templates/{role}', parameters=[('role', 'path', role)], response_type=models.RoleModelTemplateOut)
 
-    def put_template(self, *, role: Literal['super_admin', 'admin', 'member'], body: models.RoleModelTemplateIn | dict) -> models.RoleModelTemplateOut:
+    def put_template(self, *, role: Literal['admin', 'user'], body: models.RoleModelTemplateIn | dict) -> models.RoleModelTemplateOut:
         'Put Template. PUT /v1/platform/model-service-templates/{role}'
         return self._client._call('PUT', '/v1/platform/model-service-templates/{role}', parameters=[('role', 'path', role)], body=body, media_type='application/json', response_type=models.RoleModelTemplateOut)
 
-    def preview(self, *, role: Literal['super_admin', 'admin', 'member'], body: models.TemplatePreviewIn | dict) -> models.TemplateSyncJobOut:
+    def preview(self, *, role: Literal['admin', 'user'], body: models.TemplatePreviewIn | dict) -> models.TemplateSyncJobOut:
         'Preview. POST /v1/platform/model-service-templates/{role}/preview'
         return self._client._call('POST', '/v1/platform/model-service-templates/{role}/preview', parameters=[('role', 'path', role)], body=body, media_type='application/json', response_type=models.TemplateSyncJobOut)
 
-    def history(self, *, role: Literal['super_admin', 'admin', 'member']) -> list[models.TemplateSyncJobOut]:
+    def history(self, *, role: Literal['admin', 'user']) -> list[models.TemplateSyncJobOut]:
         'History. GET /v1/platform/model-service-templates/{role}/sync-jobs'
         return self._client._call('GET', '/v1/platform/model-service-templates/{role}/sync-jobs', parameters=[('role', 'path', role)], response_type=list[models.TemplateSyncJobOut])
 
@@ -47,18 +47,18 @@ class AsyncTemplates:
         'Start. POST /v1/platform/model-service-templates/sync-jobs/{job_id}/start'
         return await self._client._call('POST', '/v1/platform/model-service-templates/sync-jobs/{job_id}/start', parameters=[('job_id', 'path', job_id)], body=body, media_type='application/json', response_type=models.TemplateSyncJobOut)
 
-    async def template(self, *, role: Literal['super_admin', 'admin', 'member']) -> models.RoleModelTemplateOut:
+    async def template(self, *, role: Literal['admin', 'user']) -> models.RoleModelTemplateOut:
         'Template. GET /v1/platform/model-service-templates/{role}'
         return await self._client._call('GET', '/v1/platform/model-service-templates/{role}', parameters=[('role', 'path', role)], response_type=models.RoleModelTemplateOut)
 
-    async def put_template(self, *, role: Literal['super_admin', 'admin', 'member'], body: models.RoleModelTemplateIn | dict) -> models.RoleModelTemplateOut:
+    async def put_template(self, *, role: Literal['admin', 'user'], body: models.RoleModelTemplateIn | dict) -> models.RoleModelTemplateOut:
         'Put Template. PUT /v1/platform/model-service-templates/{role}'
         return await self._client._call('PUT', '/v1/platform/model-service-templates/{role}', parameters=[('role', 'path', role)], body=body, media_type='application/json', response_type=models.RoleModelTemplateOut)
 
-    async def preview(self, *, role: Literal['super_admin', 'admin', 'member'], body: models.TemplatePreviewIn | dict) -> models.TemplateSyncJobOut:
+    async def preview(self, *, role: Literal['admin', 'user'], body: models.TemplatePreviewIn | dict) -> models.TemplateSyncJobOut:
         'Preview. POST /v1/platform/model-service-templates/{role}/preview'
         return await self._client._call('POST', '/v1/platform/model-service-templates/{role}/preview', parameters=[('role', 'path', role)], body=body, media_type='application/json', response_type=models.TemplateSyncJobOut)
 
-    async def history(self, *, role: Literal['super_admin', 'admin', 'member']) -> list[models.TemplateSyncJobOut]:
+    async def history(self, *, role: Literal['admin', 'user']) -> list[models.TemplateSyncJobOut]:
         'History. GET /v1/platform/model-service-templates/{role}/sync-jobs'
         return await self._client._call('GET', '/v1/platform/model-service-templates/{role}/sync-jobs', parameters=[('role', 'path', role)], response_type=list[models.TemplateSyncJobOut])

@@ -24,7 +24,7 @@ async def main() -> None:
     password = os.environ.get("FPL_E2E_PASSWORD", "E2E-Password-2026!")
     apply_migrations(get_settings().database_path)
     async with SessionLocal() as session:
-        user, workspace, temporary = await create_account(
+        user, temporary = await create_account(
             session,
             username="e2e-admin",
             display_name="E2E 管理员",
@@ -39,14 +39,10 @@ async def main() -> None:
         )
         if result is None:
             raise RuntimeError("failed to bootstrap E2E account")
-        _user, _workspace, auth_session, _token, _csrf = result
+        _user, auth_session, _token, _csrf = result
         principal = StudioPrincipal(
             user_id=user.id,
-            workspace_id=workspace.id,
-            membership_id=None,
-            workspace_access="owner",
-            member_role="owner",
-            is_platform_admin=True,
+            platform_role="admin",
             must_change_password=True,
             auth_kind="session",
             scopes=frozenset({"studio:read", "studio:private_read", "studio:write"}),

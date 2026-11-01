@@ -52,15 +52,17 @@ def storage_for(tmp_path: Path) -> AssetStorage:
 def test_project_paths_reject_missing_workspace(tmp_path: Path) -> None:
     storage = storage_for(tmp_path)
     with pytest.raises(ValueError, match="invalid storage path segment"):
-        storage.project_root("visual-workshop", "project-1", workspace_id="")
+        storage.project_root("visual-workshop", "project-1", owner_user_id="")
 
 
 def test_project_paths_isolate_default_and_nondefault_workspaces(tmp_path: Path) -> None:
     storage = storage_for(tmp_path)
-    default_root = storage.project_root("visual-workshop", "project-1", workspace_id="default")
-    isolated_root = storage.project_root("visual-workshop", "project-1", workspace_id="workspace-2")
+    default_root = storage.project_root("visual-workshop", "project-1", owner_user_id="test-user")
+    isolated_root = storage.project_root(
+        "visual-workshop", "project-1", owner_user_id="workspace-2"
+    )
     assert default_root != isolated_root
-    assert isolated_root.is_relative_to(storage.settings.workspace_path("workspace-2"))
+    assert isolated_root.is_relative_to(storage.settings.account_path("workspace-2"))
 
 
 @pytest.mark.asyncio
@@ -72,24 +74,26 @@ async def test_create_compensates_only_a_new_project_root_on_commit_failure(
 
     with pytest.raises(RuntimeError, match="commit failed"):
         async with creating_project_layout(
-            session, storage, "visual-workshop", "new-project", workspace_id="default"
+            session, storage, "visual-workshop", "new-project", owner_user_id="test-user"
         ):
             assert storage.project_root(
-                "visual-workshop", "new-project", workspace_id="default"
+                "visual-workshop", "new-project", owner_user_id="test-user"
             ).is_dir()
 
     assert session.rollbacks == 1
     assert not storage.project_root(
-        "visual-workshop", "new-project", workspace_id="default"
+        "visual-workshop", "new-project", owner_user_id="test-user"
     ).exists()
 
-    existing = storage.project_root("visual-workshop", "existing-project", workspace_id="default")
+    existing = storage.project_root(
+        "visual-workshop", "existing-project", owner_user_id="test-user"
+    )
     existing.mkdir(parents=True)
     marker = existing / "keep.txt"
     marker.write_text("keep", encoding="utf-8")
     with pytest.raises(RuntimeError, match="commit failed"):
         async with creating_project_layout(
-            session, storage, "visual-workshop", "existing-project", workspace_id="default"
+            session, storage, "visual-workshop", "existing-project", owner_user_id="test-user"
         ):
             pass
     assert marker.read_text(encoding="utf-8") == "keep"
@@ -98,7 +102,7 @@ async def test_create_compensates_only_a_new_project_root_on_commit_failure(
 @pytest.mark.asyncio
 async def test_delete_restores_staged_root_when_commit_fails(tmp_path: Path) -> None:
     storage = storage_for(tmp_path)
-    root = storage.project_root("galgame-workshop", "project-1", workspace_id="default")
+    root = storage.project_root("galgame-workshop", "project-1", owner_user_id="test-user")
     root.mkdir(parents=True)
     marker = root / "story.json"
     marker.write_text("story", encoding="utf-8")
@@ -106,7 +110,7 @@ async def test_delete_restores_staged_root_when_commit_fails(tmp_path: Path) -> 
 
     with pytest.raises(RuntimeError, match="commit failed"):
         async with deleting_project_layout(
-            session, storage, "galgame-workshop", "project-1", workspace_id="default"
+            session, storage, "galgame-workshop", "project-1", owner_user_id="test-user"
         ):
             assert not root.exists()
 
@@ -119,7 +123,7 @@ async def test_delete_restores_after_cas_conflict_and_reports_snapshot(
     tmp_path: Path,
 ) -> None:
     storage = storage_for(tmp_path)
-    root = storage.project_root("video-editor", "project-2", workspace_id="default")
+    root = storage.project_root("video-editor", "project-2", owner_user_id="test-user")
     root.mkdir(parents=True)
     session = FakeSession()
 
@@ -128,7 +132,7 @@ async def test_delete_restores_after_cas_conflict_and_reports_snapshot(
 
     with pytest.raises(RevisionConflictError) as caught:
         async with deleting_project_layout(
-            session, storage, "video-editor", "project-2", workspace_id="default"
+            session, storage, "video-editor", "project-2", owner_user_id="test-user"
         ):
             await require_revision_write(
                 session,
@@ -160,7 +164,7 @@ async def test_delete_accepts_missing_directory_and_cleans_legacy_asset(
         storage,
         "visual-workshop",
         "missing-project",
-        workspace_id="default",
+        owner_user_id="test-user",
         legacy_paths=[legacy],
     ):
         pass
@@ -175,7 +179,7 @@ async def test_delete_retries_a_transient_restore_failure(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     storage = storage_for(tmp_path)
-    root = storage.project_root("visual-workshop", "retry-project", workspace_id="default")
+    root = storage.project_root("visual-workshop", "retry-project", owner_user_id="test-user")
     root.mkdir(parents=True)
     original_restore = storage.restore_staged_root
     attempts = 0
@@ -191,7 +195,7 @@ async def test_delete_retries_a_transient_restore_failure(
     session = FakeSession(commit_error=RuntimeError("commit failed"))
     with pytest.raises(RuntimeError, match="commit failed"):
         async with deleting_project_layout(
-            session, storage, "visual-workshop", "retry-project", workspace_id="default"
+            session, storage, "visual-workshop", "retry-project", owner_user_id="test-user"
         ):
             pass
 

@@ -2,9 +2,8 @@ import { useDocumentAccess } from "../DocumentAccess";
 import { useEffect, useRef } from "react";
 import {
   useAccountId,
-  useWorkspaceId,
-  useWorkspacePermission,
-} from "@platform/auth/WorkspacePermissions";
+  useAccountPermission,
+} from "@platform/auth/AccountAccess";
 import { getReading, recordReading } from "./api";
 
 export function useReadingPosition(
@@ -16,11 +15,11 @@ export function useReadingPosition(
   const access = useDocumentAccess();
   const root = useRef<HTMLElement | null>(null),
     user = useAccountId(),
-    workspace = useWorkspaceId();
-  const canReadWorkspace = useWorkspacePermission("content.read");
+    workspace = useAccountId();
+  const canReadAccount = useAccountPermission("content.read");
   const local =
     access.community ||
-    (!!resourceId?.startsWith("official/") && !canReadWorkspace);
+    (!!resourceId?.startsWith("official/") && !canReadAccount);
   const latest = useRef({ title, revision });
   latest.current = { title, revision };
   const owner = useRef({ user, workspace, resourceId });

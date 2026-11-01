@@ -8,7 +8,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
 
-from app.deps import SessionDep, StudioAuth, WorkspaceDep
+from app.deps import OwnerDep, SessionDep, StudioAuth
 from app.integrations.common import (
     DuplicateIntegrationError,
     IntegrationNotFoundError,
@@ -53,7 +53,7 @@ def _owner(principal: StudioAuth) -> None:
     except IntegrationPermissionError as exc:
         raise HTTPException(
             403,
-            detail={"code": "workspace_owner_required", "message": str(exc)},
+            detail={"code": "account_access_required", "message": str(exc)},
         ) from None
 
 
@@ -68,27 +68,25 @@ def _raise_integration(exc: Exception) -> None:
 
 
 @router.get("/tool-apis", response_model=ToolApiCatalogOut)
-async def tool_apis(session: SessionDep, workspace_id: WorkspaceDep) -> ToolApiCatalogOut:
-    return safe_validation_catalog(await ToolApiCatalog(session, workspace_id).catalog())
+async def tool_apis(session: SessionDep, owner_user_id: OwnerDep) -> ToolApiCatalogOut:
+    return safe_validation_catalog(await ToolApiCatalog(session, owner_user_id).catalog())
 
 
 @router.post("/tool-apis", response_model=ToolApiOut, status_code=201)
 async def create_tool_api(
-    principal: StudioAuth, session: SessionDep, workspace_id: WorkspaceDep, body: ToolApiCreateIn
+    principal: StudioAuth, session: SessionDep, owner_user_id: OwnerDep, body: ToolApiCreateIn
 ) -> ToolApiOut:
     _owner(principal)
     try:
-        return await ToolApiCatalog(session, workspace_id).create(body)
+        return await ToolApiCatalog(session, owner_user_id).create(body)
     except DuplicateIntegrationError as exc:
         _raise_integration(exc)
 
 
 @router.get("/tool-apis/{integration_id}", response_model=ToolApiOut)
-async def tool_api(
-    session: SessionDep, workspace_id: WorkspaceDep, integration_id: str
-) -> ToolApiOut:
+async def tool_api(session: SessionDep, owner_user_id: OwnerDep, integration_id: str) -> ToolApiOut:
     try:
-        return await ToolApiCatalog(session, workspace_id).get(integration_id)
+        return await ToolApiCatalog(session, owner_user_id).get(integration_id)
     except IntegrationNotFoundError as exc:
         _raise_integration(exc)
 
@@ -97,20 +95,20 @@ async def tool_api(
 async def update_tool_api(
     principal: StudioAuth,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     integration_id: str,
     body: ToolApiUpdateIn,
 ) -> ToolApiOut:
     _owner(principal)
     try:
-        existing = await ToolApiCatalog(session, workspace_id).get(integration_id)
+        existing = await ToolApiCatalog(session, owner_user_id).get(integration_id)
         if (
             existing.sensitive_result
             and not body.sensitive_result
             and not principal.allows("tools.sensitive")
         ):
             raise HTTPException(403, {"code": "sensitive_tool_permission_required"})
-        return await ToolApiCatalog(session, workspace_id).update(integration_id, body)
+        return await ToolApiCatalog(session, owner_user_id).update(integration_id, body)
     except (IntegrationNotFoundError, DuplicateIntegrationError) as exc:
         _raise_integration(exc)
 
@@ -119,13 +117,13 @@ async def update_tool_api(
 async def delete_tool_api(
     principal: StudioAuth,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     integration_id: str,
     expected_revision: int = Query(ge=0),
 ) -> DeleteOut:
     _owner(principal)
     try:
-        await ToolApiCatalog(session, workspace_id).delete(integration_id, expected_revision)
+        await ToolApiCatalog(session, owner_user_id).delete(integration_id, expected_revision)
     except IntegrationNotFoundError as exc:
         _raise_integration(exc)
     return DeleteOut()
@@ -135,13 +133,13 @@ async def delete_tool_api(
 async def validate_tool_api(
     principal: StudioAuth,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     integration_id: str,
     body: ToolApiValidateIn,
 ) -> ToolApiValidationOut:
     _owner(principal)
     try:
-        catalog = ToolApiCatalog(session, workspace_id)
+        catalog = ToolApiCatalog(session, owner_user_id)
         resource = await catalog.get(integration_id)
         result = await catalog.validate(integration_id, body.input)
         if resource.sensitive_result and not principal.allows("tools.sensitive"):
@@ -152,27 +150,25 @@ async def validate_tool_api(
 
 
 @router.get("/mcp", response_model=McpCatalogOut)
-async def mcp_servers(session: SessionDep, workspace_id: WorkspaceDep) -> McpCatalogOut:
-    return safe_validation_catalog(await McpCatalog(session, workspace_id).catalog())
+async def mcp_servers(session: SessionDep, owner_user_id: OwnerDep) -> McpCatalogOut:
+    return safe_validation_catalog(await McpCatalog(session, owner_user_id).catalog())
 
 
 @router.post("/mcp", response_model=McpOut, status_code=201)
 async def create_mcp(
-    principal: StudioAuth, session: SessionDep, workspace_id: WorkspaceDep, body: McpCreateIn
+    principal: StudioAuth, session: SessionDep, owner_user_id: OwnerDep, body: McpCreateIn
 ) -> McpOut:
     _owner(principal)
     try:
-        return await McpCatalog(session, workspace_id).create(body)
+        return await McpCatalog(session, owner_user_id).create(body)
     except DuplicateIntegrationError as exc:
         _raise_integration(exc)
 
 
 @router.get("/mcp/{integration_id}", response_model=McpOut)
-async def mcp_server(
-    session: SessionDep, workspace_id: WorkspaceDep, integration_id: str
-) -> McpOut:
+async def mcp_server(session: SessionDep, owner_user_id: OwnerDep, integration_id: str) -> McpOut:
     try:
-        return await McpCatalog(session, workspace_id).get(integration_id)
+        return await McpCatalog(session, owner_user_id).get(integration_id)
     except IntegrationNotFoundError as exc:
         _raise_integration(exc)
 
@@ -181,20 +177,20 @@ async def mcp_server(
 async def update_mcp(
     principal: StudioAuth,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     integration_id: str,
     body: McpUpdateIn,
 ) -> McpOut:
     _owner(principal)
     try:
-        existing = await McpCatalog(session, workspace_id).get(integration_id)
+        existing = await McpCatalog(session, owner_user_id).get(integration_id)
         if (
             existing.sensitive_result
             and not body.sensitive_result
             and not principal.allows("tools.sensitive")
         ):
             raise HTTPException(403, {"code": "sensitive_tool_permission_required"})
-        return await McpCatalog(session, workspace_id).update(integration_id, body)
+        return await McpCatalog(session, owner_user_id).update(integration_id, body)
     except (IntegrationNotFoundError, DuplicateIntegrationError) as exc:
         _raise_integration(exc)
 
@@ -203,13 +199,13 @@ async def update_mcp(
 async def delete_mcp(
     principal: StudioAuth,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     integration_id: str,
     expected_revision: int = Query(ge=0),
 ) -> DeleteOut:
     _owner(principal)
     try:
-        await McpCatalog(session, workspace_id).delete(integration_id, expected_revision)
+        await McpCatalog(session, owner_user_id).delete(integration_id, expected_revision)
     except IntegrationNotFoundError as exc:
         _raise_integration(exc)
     return DeleteOut()
@@ -217,42 +213,42 @@ async def delete_mcp(
 
 @router.get("/mcp/{integration_id}/tools", response_model=list[McpToolOut])
 async def mcp_tools(
-    session: SessionDep, workspace_id: WorkspaceDep, integration_id: str
+    session: SessionDep, owner_user_id: OwnerDep, integration_id: str
 ) -> list[McpToolOut]:
     try:
-        return await McpCatalog(session, workspace_id).tools(integration_id)
+        return await McpCatalog(session, owner_user_id).tools(integration_id)
     except IntegrationNotFoundError as exc:
         _raise_integration(exc)
 
 
 @router.post("/mcp/{integration_id}/validate", response_model=McpValidationOut)
 async def validate_mcp(
-    principal: StudioAuth, session: SessionDep, workspace_id: WorkspaceDep, integration_id: str
+    principal: StudioAuth, session: SessionDep, owner_user_id: OwnerDep, integration_id: str
 ) -> McpValidationOut:
     _owner(principal)
     try:
-        return await McpCatalog(session, workspace_id).validate(integration_id)
+        return await McpCatalog(session, owner_user_id).validate(integration_id)
     except IntegrationNotFoundError as exc:
         _raise_integration(exc)
 
 
 @router.get("/skills", response_model=SkillCatalogOut)
-async def skills(session: SessionDep, workspace_id: WorkspaceDep) -> SkillCatalogOut:
-    return await SkillCatalog(session, workspace_id).catalog()
+async def skills(session: SessionDep, owner_user_id: OwnerDep) -> SkillCatalogOut:
+    return await SkillCatalog(session, owner_user_id).catalog()
 
 
 @router.post("/skills", response_model=SkillOut, status_code=201)
 async def create_skill(
     principal: StudioAuth,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     file: Annotated[UploadFile, File()],
     enabled: Annotated[bool, Form()] = False,
     tags: Annotated[list[str] | None, Form(max_length=12)] = None,
 ) -> SkillOut:
     _owner(principal)
     try:
-        return await SkillCatalog(session, workspace_id).create(
+        return await SkillCatalog(session, owner_user_id).create(
             file, enabled=enabled, tags=SkillTagsIn(tags=tags or []).tags
         )
     except (DuplicateIntegrationError, IntegrationValidationError) as exc:
@@ -260,9 +256,9 @@ async def create_skill(
 
 
 @router.get("/skills/{skill_id}", response_model=SkillOut)
-async def skill(session: SessionDep, workspace_id: WorkspaceDep, skill_id: str) -> SkillOut:
+async def skill(session: SessionDep, owner_user_id: OwnerDep, skill_id: str) -> SkillOut:
     try:
-        return await SkillCatalog(session, workspace_id).get(skill_id)
+        return await SkillCatalog(session, owner_user_id).get(skill_id)
     except IntegrationNotFoundError as exc:
         _raise_integration(exc)
 
@@ -271,13 +267,13 @@ async def skill(session: SessionDep, workspace_id: WorkspaceDep, skill_id: str) 
 async def update_skill(
     principal: StudioAuth,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     skill_id: str,
     body: SkillUpdateIn,
 ) -> SkillOut:
     _owner(principal)
     try:
-        return await SkillCatalog(session, workspace_id).update(skill_id, body)
+        return await SkillCatalog(session, owner_user_id).update(skill_id, body)
     except IntegrationNotFoundError as exc:
         _raise_integration(exc)
 
@@ -286,13 +282,13 @@ async def update_skill(
 async def delete_skill(
     principal: StudioAuth,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     skill_id: str,
     expected_revision: int = Query(ge=0),
 ) -> DeleteOut:
     _owner(principal)
     try:
-        await SkillCatalog(session, workspace_id).delete(skill_id, expected_revision)
+        await SkillCatalog(session, owner_user_id).delete(skill_id, expected_revision)
     except IntegrationNotFoundError as exc:
         _raise_integration(exc)
     return DeleteOut()
@@ -300,10 +296,10 @@ async def delete_skill(
 
 @router.get("/skills/{skill_id}/versions", response_model=list[SkillVersionOut])
 async def skill_versions(
-    session: SessionDep, workspace_id: WorkspaceDep, skill_id: str
+    session: SessionDep, owner_user_id: OwnerDep, skill_id: str
 ) -> list[SkillVersionOut]:
     try:
-        return await SkillCatalog(session, workspace_id).versions(skill_id)
+        return await SkillCatalog(session, owner_user_id).versions(skill_id)
     except IntegrationNotFoundError as exc:
         _raise_integration(exc)
 
@@ -312,14 +308,14 @@ async def skill_versions(
 async def add_skill_version(
     principal: StudioAuth,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     skill_id: str,
     file: Annotated[UploadFile, File()],
     expected_revision: Annotated[int, Form(ge=0)],
 ) -> SkillOut:
     _owner(principal)
     try:
-        return await SkillCatalog(session, workspace_id).add_version(
+        return await SkillCatalog(session, owner_user_id).add_version(
             skill_id, file, expected_revision=expected_revision
         )
     except (
@@ -332,10 +328,12 @@ async def add_skill_version(
 
 @router.get("/skills/{skill_id}/versions/{version}/content")
 async def skill_version_content(
-    session: SessionDep, workspace_id: WorkspaceDep, skill_id: str, version: str
+    session: SessionDep, owner_user_id: OwnerDep, skill_id: str, version: str
 ):
     try:
-        filename, content = await SkillCatalog(session, workspace_id).version_zip(skill_id, version)
+        filename, content = await SkillCatalog(session, owner_user_id).version_zip(
+            skill_id, version
+        )
     except IntegrationNotFoundError as exc:
         _raise_integration(exc)
     return StreamingResponse(
@@ -347,10 +345,10 @@ async def skill_version_content(
 
 @router.get("/skills/{skill_id}/versions/{version}/files", response_model=SkillFileListOut)
 async def skill_version_files(
-    session: SessionDep, workspace_id: WorkspaceDep, skill_id: str, version: str
+    session: SessionDep, owner_user_id: OwnerDep, skill_id: str, version: str
 ) -> SkillFileListOut:
     try:
-        return await SkillCatalog(session, workspace_id).version_files(skill_id, version)
+        return await SkillCatalog(session, owner_user_id).version_files(skill_id, version)
     except IntegrationNotFoundError as exc:
         _raise_integration(exc)
 
@@ -361,13 +359,13 @@ async def skill_version_files(
 )
 async def skill_version_file_content(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     skill_id: str,
     version: str,
     path: Annotated[str, Query(min_length=1, max_length=1024)],
 ) -> SkillFileTextOut:
     try:
-        return await SkillCatalog(session, workspace_id).version_file_text(skill_id, version, path)
+        return await SkillCatalog(session, owner_user_id).version_file_text(skill_id, version, path)
     except (IntegrationNotFoundError, IntegrationValidationError) as exc:
         _raise_integration(exc)
 
@@ -375,13 +373,13 @@ async def skill_version_file_content(
 @router.get("/skills/{skill_id}/versions/{version}/files/media")
 async def skill_version_file_media(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     skill_id: str,
     version: str,
     path: Annotated[str, Query(min_length=1, max_length=1024)],
 ):
     try:
-        catalog = SkillCatalog(session, workspace_id)
+        catalog = SkillCatalog(session, owner_user_id)
         filename, content, media_type = await catalog.version_file_image(skill_id, version, path)
     except (IntegrationNotFoundError, IntegrationValidationError) as exc:
         _raise_integration(exc)
@@ -395,9 +393,9 @@ async def skill_version_file_media(
 
 @router.get("/skills/{skill_id}/versions/{version}/skill-md", response_model=SkillMarkdownOut)
 async def skill_version_markdown(
-    session: SessionDep, workspace_id: WorkspaceDep, skill_id: str, version: str
+    session: SessionDep, owner_user_id: OwnerDep, skill_id: str, version: str
 ) -> SkillMarkdownOut:
     try:
-        return await SkillCatalog(session, workspace_id).version_markdown(skill_id, version)
+        return await SkillCatalog(session, owner_user_id).version_markdown(skill_id, version)
     except (IntegrationNotFoundError, IntegrationValidationError) as exc:
         _raise_integration(exc)

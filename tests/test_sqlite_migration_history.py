@@ -1,8 +1,9 @@
 import json
 from pathlib import Path
 
-from db.migrations import apply_migrations, runner
-from db.migrations.registry import LATEST_MIGRATION_ID, MIGRATIONS
+from tests.migration_fixtures import LATEST_MIGRATION_ID, MIGRATIONS, apply_migrations
+
+from db.migrations import runner
 from db.migrations.runner import connect_database, ensure_registry, migration_checksum
 
 
@@ -175,6 +176,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("r0112_presentation_native_templates",),
             ("0113_autodl_video",),
             ("0114_visual_generation_queue",),
+            ("0115_visual_output_inspection",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,

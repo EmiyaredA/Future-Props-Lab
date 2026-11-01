@@ -4,7 +4,6 @@ import {
   Menu,
   X,
   Users,
-  Layers,
   ScrollText,
   Ticket,
   SlidersHorizontal,
@@ -13,14 +12,13 @@ import {
 } from "lucide-react";
 import { BrandMark } from "@shared/ui/BrandMark";
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
-import { AccountWorkspacePanel } from "./AccountWorkspacePanel";
+import { AccountPanel } from "./AccountPanel";
 import { AccountMenu } from "./AccountMenu";
 import type { AccountSessionContext } from "./api";
 import { ManagedAccountsPage } from "./ManagedAccountsPage";
-import { ManagedWorkspacesPage } from "./ManagedWorkspacesPage";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { RegistrationInvitesPage } from "./RegistrationInvitesPage";
-import { PermissionPolicyPage } from "./PermissionPolicyPage";
+import { RuntimeQuotasPage } from "./RuntimeQuotasPage";
 import { DemoServicesPage } from "./DemoServicesPage";
 import { ModelTemplatesPage } from "./ModelTemplatesPage";
 import "./governance-pages.css";
@@ -29,12 +27,11 @@ import { ThemeToggle } from "@shared/ui/ThemeToggle";
 import "./management.css";
 export type ManagementPage =
   | "management-accounts"
-  | "management-workspaces"
   | "management-audit"
   | "management-invites"
   | "management-settings"
   | "management-services"
-  | "management-permissions";
+  | "management-quotas";
 export function ManagementConsole({
   page,
   session,
@@ -77,17 +74,14 @@ export function ManagementConsole({
       "future-props:development-query-refresh",
       deferRefresh,
     );
-    window.addEventListener("future-props:before-workspace-switch", switching);
+    window.addEventListener("future-props:before-navigation", switching);
     return () => {
       window.removeEventListener("future-props:management-draft", changed);
       window.removeEventListener(
         "future-props:development-query-refresh",
         deferRefresh,
       );
-      window.removeEventListener(
-        "future-props:before-workspace-switch",
-        switching,
-      );
+      window.removeEventListener("future-props:before-navigation", switching);
     };
   }, []);
   const focus = useDrawerFocus<HTMLElement>(
@@ -100,15 +94,14 @@ export function ManagementConsole({
     ["management-invites", "邀请码管理", "注册名额与有效期", Ticket],
     ["management-settings", "全局设置", "角色默认模型模板", SlidersHorizontal],
     ["management-services", "服务管理", "本地工具与模型测试", Server],
-    ["management-permissions", "权限策略", "敏感能力与并发额度", ShieldCheck],
-    ["management-workspaces", "工作区管理", "空间与协作成员", Layers],
+    ["management-quotas", "运行额度", "账号与实例并发额度", ShieldCheck],
     ["management-audit", "安全审计", "管理操作与安全记录", ScrollText],
   ] as const;
   if (!session.me.user.is_platform_admin)
     return (
       <main className="management-page">
         <h1>需要平台管理员权限</h1>
-        <p>此页面用于管理平台账号、工作区和安全审计。</p>
+        <p>此页面用于管理平台账号、共享资源和安全审计。</p>
         <button className="btn" onClick={() => guarded(onBack)}>
           返回工作台
         </button>
@@ -190,21 +183,19 @@ export function ManagementConsole({
         </div>
         {page === "management-accounts" ? (
           <ManagedAccountsPage userId={session.me.user.id} />
-        ) : page === "management-workspaces" ? (
-          <ManagedWorkspacesPage session={session} />
         ) : page === "management-invites" ? (
           <RegistrationInvitesPage />
         ) : page === "management-settings" ? (
           <ModelTemplatesPage />
         ) : page === "management-services" ? (
           <DemoServicesPage />
-        ) : page === "management-permissions" ? (
-          <PermissionPolicyPage />
+        ) : page === "management-quotas" ? (
+          <RuntimeQuotasPage />
         ) : (
           <AuditPage />
         )}
       </main>
-      <AccountWorkspacePanel session={session} hiddenEntries />
+      <AccountPanel session={session} hiddenEntries />
       <ConfirmDialog
         open={!!pendingNavigation}
         title="放弃尚未保存的更改？"

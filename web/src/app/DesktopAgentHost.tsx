@@ -191,7 +191,7 @@ export function DesktopAgentHost() {
       active = false;
       clearTimeout(timer);
     };
-  }, [me.user.id, me.workspace.id, queryClient]);
+  }, [me.user.id, queryClient]);
 
   if (!pairs.length && !opening && !changed && !error) return null;
   const pair = pairs[0];
@@ -206,12 +206,12 @@ export function DesktopAgentHost() {
           <h3>允许「{pair.name}」接入？</h3>
           <p>
             核对码 <strong className="desktop-agent-code">{pair.code}</strong> ·
-            当前工作区：{me.workspace.name}
+            当前账号：{me.user.display_name}
           </p>
           <p>
             {pair.scope === "studio:write"
               ? "此授权允许修改和删除作品、管理集成，并可调用模型产生费用。集成校验可能发出真实请求或启动白名单服务。不会逐次询问。"
-              : "此授权只能读取当前工作区的作品和素材。"}{" "}
+              : "此授权只能读取当前账号的作品和素材。"}{" "}
             有效期 90 天，可在 API 密钥页撤销。
           </p>
           <div className="desktop-agent-actions">
@@ -230,7 +230,7 @@ export function DesktopAgentHost() {
                       body: {
                         approve,
                         code: pair.code,
-                        expected_workspace_id: me.workspace.id,
+                        expected_owner_user_id: me.user.id,
                       },
                     })
                     .then(unwrap)
@@ -276,15 +276,15 @@ export function DesktopAgentHost() {
       )}
       {changed && (
         <section>
-          <p>Agent 已更新工作区内容。刷新前会检查尚未保存的编辑。</p>
+          <p>Agent 已更新账号内容。刷新前会检查尚未保存的编辑。</p>
           <button
             className="btn"
             onClick={() => {
               const refresh = () => window.location.reload();
-              const event = new CustomEvent(
-                "future-props:before-workspace-switch",
-                { cancelable: true, detail: refresh },
-              );
+              const event = new CustomEvent("future-props:before-navigation", {
+                cancelable: true,
+                detail: refresh,
+              });
               if (window.dispatchEvent(event)) refresh();
             }}
           >

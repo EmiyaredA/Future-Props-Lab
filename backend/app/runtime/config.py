@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     fpl_interview_codex_enabled: bool = False
     fpl_interview_codex_executable: str = ""
     fpl_interview_codex_user_id: str = ""
-    fpl_acceptance_model_workspace_id: str = ""
+    fpl_acceptance_model_owner_user_id: str = ""
     fpl_acceptance_model_id: str = ""
     fpl_acceptance_codex_executable: str = ""
     fpl_acceptance_codex_user_ids: str = ""
@@ -165,11 +165,6 @@ class Settings(BaseSettings):
         return f"sqlite+aiosqlite:///{self.database_path.as_posix()}"
 
     @property
-    def visual_asset_path(self) -> Path:
-        """Legacy v1 asset root retained until explicit layout migration completes."""
-        return (self.database_path.parent / "visual-workshop" / "assets").resolve()
-
-    @property
     def runtime_path(self) -> Path:
         return self.database_path.parent.resolve()
 
@@ -177,20 +172,22 @@ class Settings(BaseSettings):
     def auth_cookie_secure(self) -> bool:
         return self.fpl_auth_cookie_secure
 
-    def workspace_path(self, workspace_id: str) -> Path:
-        if not workspace_id or Path(workspace_id).name != workspace_id:
-            raise ValueError("invalid workspace id")
-        return (self.runtime_path / "workspaces" / workspace_id).resolve()
+    def account_path(self, owner_user_id: str) -> Path:
+        if (
+            not owner_user_id
+            or owner_user_id in {".", ".."}
+            or Path(owner_user_id).name != owner_user_id
+        ):
+            raise ValueError("invalid account id")
+        return (self.runtime_path / "accounts" / owner_user_id).resolve()
 
-    def workspace_model_test_path(self, workspace_id: str, kind: str) -> Path:
+    def account_model_test_path(self, owner_user_id: str, kind: str) -> Path:
         if kind not in {"attachments", "generated", "references"}:
             raise ValueError("invalid model-test storage kind")
-        if workspace_id == "default":
-            return (self.runtime_path / "model-test" / kind).resolve()
-        return (self.workspace_path(workspace_id) / "model-test" / kind).resolve()
+        return (self.account_path(owner_user_id) / "model-test" / kind).resolve()
 
-    def workspace_skill_path(self, workspace_id: str) -> Path:
-        return (self.workspace_path(workspace_id) / "integrations" / "skills").resolve()
+    def account_skill_path(self, owner_user_id: str) -> Path:
+        return (self.account_path(owner_user_id) / "integrations" / "skills").resolve()
 
     @property
     def mcp_stdio_allowed_commands(self) -> tuple[Path, ...]:
@@ -205,34 +202,8 @@ class Settings(BaseSettings):
         return (self.runtime_path / "profiles").resolve()
 
     @property
-    def library_asset_path(self) -> Path:
-        return (self.runtime_path / "library" / "assets").resolve()
-
-    @property
-    def applications_path(self) -> Path:
-        return (self.runtime_path / "applications").resolve()
-
-    @property
     def storage_trash_path(self) -> Path:
         return (self.runtime_path / ".trash").resolve()
-
-    def visual_project_path(self, project_id: str) -> Path:
-        return (self.applications_path / "visual-workshop" / "projects" / project_id).resolve()
-
-    def galgame_project_path(self, project_id: str) -> Path:
-        return (self.applications_path / "galgame-workshop" / "projects" / project_id).resolve()
-
-    @property
-    def model_test_attachment_path(self) -> Path:
-        return (self.database_path.parent / "model-test" / "attachments").resolve()
-
-    @property
-    def model_test_generated_path(self) -> Path:
-        return (self.database_path.parent / "model-test" / "generated").resolve()
-
-    @property
-    def model_test_reference_path(self) -> Path:
-        return (self.database_path.parent / "model-test" / "references").resolve()
 
 
 @lru_cache

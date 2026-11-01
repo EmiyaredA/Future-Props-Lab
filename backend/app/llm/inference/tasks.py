@@ -33,15 +33,15 @@ def task_out(row):
 
 
 class InferenceTasks:
-    def __init__(self, session, workspace_id):
-        self.session, self.workspace_id = session, workspace_id
+    def __init__(self, session, owner_user_id):
+        self.session, self.owner_user_id = session, owner_user_id
 
     async def row(self, task_id):
         row = await self.session.scalar(
             select(ModelInferenceTask)
             .where(
                 ModelInferenceTask.id == task_id,
-                ModelInferenceTask.workspace_id == self.workspace_id,
+                ModelInferenceTask.owner_user_id == self.owner_user_id,
             )
             .execution_options(populate_existing=True)
         )
@@ -53,7 +53,7 @@ class InferenceTasks:
         return task_out(await self.row(task_id))
 
     async def list(self, offset=0, limit=30):
-        condition = ModelInferenceTask.workspace_id == self.workspace_id
+        condition = ModelInferenceTask.owner_user_id == self.owner_user_id
         rows = await self.session.scalars(
             select(ModelInferenceTask)
             .where(condition)
@@ -69,7 +69,7 @@ class InferenceTasks:
     async def replay(self, body):
         row = await self.session.scalar(
             select(ModelInferenceTask).where(
-                ModelInferenceTask.workspace_id == self.workspace_id,
+                ModelInferenceTask.owner_user_id == self.owner_user_id,
                 ModelInferenceTask.request_id == body.request_id,
             )
         )
@@ -81,9 +81,11 @@ class InferenceTasks:
         prior = await self.replay(body)
         if prior:
             return prior
-        model, provider = await get_model(self.session, self.workspace_id, body.model_id, body.kind)
+        model, provider = await get_model(
+            self.session, self.owner_user_id, body.model_id, body.kind
+        )
         assets = [
-            await InferenceAssets(self.session, self.workspace_id).get(identity)
+            await InferenceAssets(self.session, self.owner_user_id).get(identity)
             for identity in body.asset_ids
         ]
         if len(set(body.asset_ids)) != len(body.asset_ids) or any(
@@ -107,7 +109,7 @@ class InferenceTasks:
                         SeedanceReference(
                             a.media_kind,
                             a.mime_type,
-                            root(self.workspace_id) / "inputs" / a.storage_key,
+                            root(self.owner_user_id) / "inputs" / a.storage_key,
                         )
                         for a in assets
                     ],
@@ -121,11 +123,11 @@ class InferenceTasks:
                 reference.filename
             ).suffix.lower() not in {".wav", ".mp3", ".m4a", ".ogg"}:
                 raise OperationError("参考录音仅支持 20MB 以内的 WAV、MP3、M4A、OGG")
-            await inspect_reference(root(self.workspace_id) / "inputs" / reference.storage_key)
+            await inspect_reference(root(self.owner_user_id) / "inputs" / reference.storage_key)
         payload["asset_ids"] = body.asset_ids
         snap = credential or CredentialSnapshot()
         row = ModelInferenceTask(
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             request_id=body.request_id,
             fingerprint=fingerprint(body),
             provider_id=provider.id,
@@ -145,7 +147,7 @@ class InferenceTasks:
                     update(ModelInferenceAsset)
                     .where(
                         ModelInferenceAsset.id == asset.id,
-                        ModelInferenceAsset.workspace_id == self.workspace_id,
+                        ModelInferenceAsset.owner_user_id == self.owner_user_id,
                         ModelInferenceAsset.task_id.is_(None),
                     )
                     .values(task_id=row.id)
@@ -168,7 +170,7 @@ class InferenceTasks:
 
     async def content(self, task_id):
         row = await self.row(task_id)
-        path = root(self.workspace_id) / "outputs" / row.result_storage_key
+        path = root(self.owner_user_id) / "outputs" / row.result_storage_key
         if not row.result_storage_key or not path.is_file():
             raise OperationError("调用结果尚不可用", "result_unavailable", 409)
         return path, row.result_filename, row.result_mime_type
@@ -185,7 +187,7 @@ class InferenceTasks:
             update(ModelInferenceTask)
             .where(
                 ModelInferenceTask.id == task_id,
-                ModelInferenceTask.workspace_id == self.workspace_id,
+                ModelInferenceTask.owner_user_id == self.owner_user_id,
                 ModelInferenceTask.revision == expected,
             )
             .values(
@@ -206,18 +208,18 @@ class InferenceTasks:
         if row.status in ACTIVE:
             raise OperationError("进行中的任务不能删除", "task_busy", 409)
         paths = (
-            [root(self.workspace_id) / "outputs" / row.result_storage_key]
+            [root(self.owner_user_id) / "outputs" / row.result_storage_key]
             if row.result_storage_key
             else []
         )
         assets = await self.session.scalars(
             select(ModelInferenceAsset).where(ModelInferenceAsset.task_id == task_id)
         )
-        paths += [root(self.workspace_id) / "inputs" / asset.storage_key for asset in assets]
+        paths += [root(self.owner_user_id) / "inputs" / asset.storage_key for asset in assets]
         result = await self.session.execute(
             delete(ModelInferenceTask).where(
                 ModelInferenceTask.id == task_id,
-                ModelInferenceTask.workspace_id == self.workspace_id,
+                ModelInferenceTask.owner_user_id == self.owner_user_id,
                 ModelInferenceTask.revision == expected,
             )
         )
@@ -235,7 +237,7 @@ class InferenceTasks:
         await self.session.rollback()
         try:
             return await VisualAssets(
-                self.session, get_settings(), workspace_id=self.workspace_id
+                self.session, get_settings(), owner_user_id=self.owner_user_id
             ).upload(source, project_id=None, folder_id=None)
         finally:
             await source.close()

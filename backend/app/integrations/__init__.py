@@ -1,1 +1,1 @@
-"""Workspace-scoped integration catalog and validation use cases."""
+"""account-scoped integration catalog and validation use cases."""

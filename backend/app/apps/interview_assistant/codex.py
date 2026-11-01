@@ -11,7 +11,7 @@ from pathlib import Path
 from app.capabilities.agents.cli.catalog import connection, inspect_connection
 from app.capabilities.agents.cli.model_connection import connection_overrides, toml_value
 from app.console.governance.code_agents import resolve
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.config import REPO_ROOT, get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.operation_receipts import OperationError
@@ -49,16 +49,18 @@ def cli_environment() -> dict[str, str]:
 
 
 async def executor_status(
-    user_id: str, workspace_id: str = "", session=None
+    user_id: str, owner_user_id: str = "", session=None
 ) -> InterviewExecutorOut:
 
     try:
         if session is None:
             async with SessionLocal() as owned:
-                if workspace_id:
-                    bind_workspace(owned, workspace_id)
-                return await executor_status(user_id, workspace_id, owned)
-        await resolve(session, workspace_id, user_id, "codex", "interview_preparation", probe=False)
+                if owner_user_id:
+                    bind_owner(owned, owner_user_id)
+                return await executor_status(user_id, owner_user_id, owned)
+        await resolve(
+            session, owner_user_id, user_id, "codex", "interview_preparation", probe=False
+        )
         status = await inspect_connection(get_settings(), "codex", discover_models=False)
         return InterviewExecutorOut(
             available=status["available"],
@@ -71,7 +73,7 @@ async def executor_status(
 
 
 def task_context(task) -> Path:
-    root = room_root(task.workspace_id, task.room_id) / "attempts" / task.id
+    root = room_root(task.owner_user_id, task.room_id) / "attempts" / task.id
     root.mkdir(parents=True, mode=0o700)
     for name in ("input", "work", "delivery"):
         (root / name).mkdir(mode=0o700)
@@ -85,7 +87,7 @@ def task_context(task) -> Path:
     add("jd", "jd.md", snapshot["jd"].encode())
     material = snapshot["material"]
     if material:
-        path = material_path(task.workspace_id, task.room_id, material["id"], material["filename"])
+        path = material_path(task.owner_user_id, task.room_id, material["id"], material["filename"])
         data = path.read_bytes()
         if hashlib.sha256(data).hexdigest() != material["sha256"]:
             raise OperationError("简历原件与快照不符", "material_changed", 409)

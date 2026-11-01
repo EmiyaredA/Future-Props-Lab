@@ -10,7 +10,7 @@ from fastapi import Request
 from app.apps.video_editor.runner import VideoEditorRunner
 from app.deps import SessionDep, require_studio_auth
 from app.main import app
-from app.orm import bind_workspace
+from app.orm import bind_owner
 
 
 @pytest.fixture(scope="module")
@@ -192,19 +192,15 @@ async def test_rename_validation_and_access_boundaries(video_bytes: bytes, monke
 
         async def other_workspace(session: SessionDep):
             principal = await original_principal(session)
-            bind_workspace(session, "rename-other-workspace")
-            return replace(principal, workspace_id="rename-other-workspace")
+            bind_owner(session, "rename-other-account")
+            return replace(principal, user_id="rename-other-account")
 
         async def authenticate_viewer(_request, session, **_kwargs):
             principal = await original_principal(session)
             return replace(
                 principal,
-                workspace_access="member",
-                member_role="viewer",
-                scopes=frozenset({"studio:read"}),
-                is_platform_admin=False,
-                platform_role="",
-                platform_permissions=frozenset(),
+                scopes=frozenset({"studio:read", "studio:private_read"}),
+                platform_role="user",
             )
 
         async def viewer(request: Request, session: SessionDep):

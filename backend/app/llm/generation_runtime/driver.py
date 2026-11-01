@@ -13,7 +13,7 @@ from app.llm.generation_runtime.poll_recovery import POLL_RETRY_PREFIX, is_trans
 from app.llm.local_models.catalog import credential_ready
 from app.llm.models import ModelProvider
 from app.llm.task_execution import TaskExecutionInfo
-from app.orm import bind_workspace, require_workspace_id
+from app.orm import bind_owner, require_owner_id
 from app.runtime.credentials import decrypt_secret
 from app.runtime.time import utc_now
 
@@ -31,7 +31,7 @@ class GenerationTaskContext:
     payload: dict[str, Any]
     provider_task_id: str
     result_url: str
-    workspace_id: str
+    owner_user_id: str
 
 
 class ProviderTaskStatus(Protocol):
@@ -78,9 +78,9 @@ class GenerationTaskStore:
     async def load(self, session: AsyncSession, task_id: str) -> Any | None:
         task = await session.get(self.task_type, task_id)
         if task is not None:
-            bind_workspace(
+            bind_owner(
                 session,
-                require_workspace_id(task.workspace_id, subject=self.task_subject),
+                require_owner_id(task.owner_user_id, subject=self.task_subject),
             )
         return task
 
@@ -96,7 +96,7 @@ class GenerationTaskStore:
                 .all()
             )
             for row in rows:
-                require_workspace_id(row.workspace_id, subject=self.task_subject)
+                require_owner_id(row.owner_user_id, subject=self.task_subject)
                 row.status = "failed"
                 row.error_message = SUBMISSION_INTERRUPTED_MESSAGE
                 row.revision += 1
@@ -132,11 +132,11 @@ class GenerationTaskStore:
             task = await self.load(session, task_id)
             if task is None or task.status not in self.active_statuses:
                 return None
-            workspace_id = require_workspace_id(task.workspace_id, subject=self.task_subject)
+            owner_user_id = require_owner_id(task.owner_user_id, subject=self.task_subject)
             status = task.status
             result_url = task.result_url or ""
             if status == "submitting" or (status == "processing" and result_url):
-                context = self._context(task, workspace_id=workspace_id)
+                context = self._context(task, owner_user_id=owner_user_id)
                 await session.rollback()
                 return context
 
@@ -148,7 +148,7 @@ class GenerationTaskStore:
                 raise ValueError("供应商已停用、删除或缺少 API Key")
             context = self._context(
                 task,
-                workspace_id=workspace_id,
+                owner_user_id=owner_user_id,
                 base_url=provider.base_url,
                 api_key=decrypt_secret(provider.api_key_ciphertext)
                 if provider.api_key_ciphertext
@@ -273,7 +273,7 @@ class GenerationTaskStore:
         self,
         task: Any,
         *,
-        workspace_id: str,
+        owner_user_id: str,
         base_url: str = "",
         api_key: str = "",
     ) -> GenerationTaskContext:
@@ -287,7 +287,7 @@ class GenerationTaskStore:
             payload=dict(task.request_payload or {}),
             provider_task_id=task.provider_task_id or "",
             result_url=task.result_url or "",
-            workspace_id=workspace_id,
+            owner_user_id=owner_user_id,
         )
 
     def _on_terminal(self, session: AsyncSession, task: Any) -> None:

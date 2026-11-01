@@ -14,7 +14,7 @@ async def certify_project(
         raise AccountError("project_certification_required")
     model = CERTIFIABLE_PROJECT_ROOTS[kind]
     row = await session.get(model, project_id)
-    if row is None or row.workspace_id != principal.workspace_id:
+    if row is None or row.owner_user_id != principal.owner_user_id:
         raise AccountError("project_not_found")
     row = await cas(
         session, model, project_id, body.expected_revision, is_official=body.is_official
@@ -23,7 +23,7 @@ async def certify_project(
         session,
         "project.certification.updated",
         actor_user_id=principal.user_id,
-        workspace_id=principal.workspace_id,
+        owner_user_id=principal.owner_user_id,
         client_ip=client_ip,
         metadata={"status_to": "official" if body.is_official else "ordinary"},
     )

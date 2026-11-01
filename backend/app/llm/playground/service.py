@@ -53,7 +53,7 @@ class RegenerateUnavailableError(Exception):
 
 @dataclass(frozen=True)
 class PreparedGeneration:
-    workspace_id: str
+    owner_user_id: str
     conversation_id: str
     assistant_message_id: str
     turn_id: str
@@ -96,11 +96,12 @@ def message_out(
 
 class ModelTestService:
     def __init__(
-        self, session: AsyncSession, workspace_id: str, settings: Settings | None = None
+        self, session: AsyncSession, owner_user_id: str, settings: Settings | None = None
     ) -> None:
         self.session = session
+        self.owner_user_id = owner_user_id
         self.settings = settings or get_settings()
-        self.attachments = ModelTestAttachments(session, self.settings, workspace_id)
+        self.attachments = ModelTestAttachments(session, self.settings, owner_user_id)
 
     async def _model_slug(self, model_id: str | None) -> str:
         if not model_id:
@@ -123,7 +124,9 @@ class ModelTestService:
         rows = (
             (
                 await self.session.execute(
-                    select(ModelTestConversation).order_by(
+                    select(ModelTestConversation)
+                    .where(ModelTestConversation.owner_user_id == self.owner_user_id)
+                    .order_by(
                         ModelTestConversation.updated_at.desc(),
                         ModelTestConversation.created_at.desc(),
                     )
@@ -136,7 +139,7 @@ class ModelTestService:
 
     async def _row(self, conversation_id: str) -> ModelTestConversation:
         row = await self.session.get(ModelTestConversation, conversation_id)
-        if row is None:
+        if row is None or row.owner_user_id != self.owner_user_id:
             raise ResourceNotFoundError("对话不存在")
         return row
 
@@ -236,7 +239,7 @@ class ModelTestService:
     async def create(self, body: ModelTestConversationCreateIn) -> ModelTestConversationOut:
         if body.model_id:
             await self._available_model(body.model_id)
-        row = ModelTestConversation(model_id=body.model_id)
+        row = ModelTestConversation(owner_user_id=self.owner_user_id, model_id=body.model_id)
         self.session.add(row)
         await self.session.commit()
         return await self.get(row.id)
@@ -293,7 +296,7 @@ class ModelTestService:
             for tool_id in body.tool_ids:
                 tool = await self.session.get(ModelTestTool, tool_id)
                 if tool is None or not tool.enabled:
-                    raise ModelUnavailableError("只能选择当前 Workspace 已启用的测试工具")
+                    raise ModelUnavailableError("只能选择当前账号已启用的测试工具")
                 selected_tools.append(tool)
             target_model_id = body.model_id if body.model_id is not None else row.model_id
             if selected_tools:
@@ -350,12 +353,13 @@ class ModelTestService:
         if not model_id:
             raise ModelUnavailableError("请先选择可用的文本模型")
         model = await self.session.get(ModelEntry, model_id)
-        if model is None:
+        if model is None or model.owner_user_id != self.owner_user_id:
             raise ModelUnavailableError("当前模型已被删除，请重新选择")
         provider = await self.session.get(ModelProvider, model.provider_id)
         capabilities = list(model.capabilities or [])
         if (
             provider is None
+            or provider.owner_user_id != self.owner_user_id
             or not provider.enabled
             or not model.enabled
             or provider.kind not in TEXT_PROVIDER_KINDS
@@ -559,7 +563,7 @@ class ModelTestService:
         user_log = self._log_message(user, drafts)
         await self.session.commit()
         return PreparedGeneration(
-            workspace_id=row.workspace_id,
+            owner_user_id=row.owner_user_id,
             conversation_id=conversation_id,
             assistant_message_id=assistant.id,
             turn_id=turn_id,
@@ -658,7 +662,7 @@ class ModelTestService:
         request_messages = [*context, user_input]
         await self.session.commit()
         return PreparedGeneration(
-            workspace_id=row.workspace_id,
+            owner_user_id=row.owner_user_id,
             conversation_id=conversation_id,
             assistant_message_id=assistant.id,
             turn_id=old.turn_id,

@@ -14,16 +14,16 @@ MAX_SKILL_FILE_BYTES = 1024 * 1024
 
 
 async def load_skill(
-    session, workspace_id: str, conversation_id: str, skill_id: str
+    session, owner_user_id: str, conversation_id: str, skill_id: str
 ) -> dict[str, str]:
-    catalog = SkillCatalog(session, workspace_id)
+    catalog = SkillCatalog(session, owner_user_id)
     try:
         skill = await catalog.get(skill_id)
     except Exception as exc:
         raise OperationError("Skill 不存在", "not_found", 404) from exc
     if not skill.enabled:
         raise OperationError("Skill 尚未启用", "skill_unavailable", 409)
-    skill_root = work_root(workspace_id, conversation_id) / "skills" / skill_id
+    skill_root = work_root(owner_user_id, conversation_id) / "skills" / skill_id
     if skill_root.is_symlink():
         raise OperationError("会话目录不安全", "skill_unavailable", 409)
     pinned = [path for path in skill_root.iterdir() if path.is_dir()] if skill_root.is_dir() else []
@@ -64,7 +64,7 @@ async def load_skill(
 
 
 def read_skill_file(
-    workspace_id: str,
+    owner_user_id: str,
     conversation_id: str,
     skill_id: str,
     version: str,
@@ -81,7 +81,7 @@ def read_skill_file(
         or any(part in {"", ".", ".."} for part in path.parts)
     ):
         raise OperationError("Skill 文件路径无效", "invalid_path", 422)
-    root = work_root(workspace_id, conversation_id) / "skills" / skill_id / version
+    root = work_root(owner_user_id, conversation_id) / "skills" / skill_id / version
     target = root / path
     if any(item.is_symlink() for item in (root, *target.parents, target) if item.exists()):
         raise OperationError("Skill 文件路径不安全", "invalid_path", 422)

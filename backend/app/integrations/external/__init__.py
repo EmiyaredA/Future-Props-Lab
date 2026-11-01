@@ -1,1 +1,1 @@
-"""Workspace external connections and provider-independent document contracts."""
+"""account external connections and provider-independent document contracts."""

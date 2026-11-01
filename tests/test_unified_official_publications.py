@@ -27,7 +27,7 @@ async def test_official_flag_is_not_a_user_tag_and_requires_platform_admin(commu
     )
     response = await owner.put(COMM + f"/libraries/{project['id']}/publication", json=payload)
     assert response.status_code == 403
-    payload.update(is_official=False, editable_platform_roles=["member"])
+    payload.update(is_official=False, editable_platform_roles=["user"])
     assert (
         await owner.put(COMM + f"/libraries/{project['id']}/publication", json=payload)
     ).status_code == 403
@@ -38,18 +38,7 @@ async def test_official_flag_is_not_a_user_tag_and_requires_platform_admin(commu
 
 async def test_read_only_stops_implicit_source_edit_but_keeps_explicit_grants(community):
     (owner, reader, other), names, project, notes, config = community
-    inv = (
-        await owner.post(
-            "/v1/account/workspaces/current/invitations",
-            json={"username": names[2], "role": "member"},
-        )
-    ).json()
-    assert (
-        await other.post(
-            f"/v1/account/workspace-invitations/{inv['id']}/accept",
-            json={"expected_revision": inv["revision"]},
-        )
-    ).status_code == 204
+
     payload = dict(
         expected_revision=config["publication"]["revision"],
         title="只读默认",
@@ -83,9 +72,12 @@ async def test_read_only_stops_implicit_source_edit_but_keeps_explicit_grants(co
 
 async def test_role_grants_never_open_hidden_articles_or_grant_management():
     p = SimpleNamespace(
-        read_only=True, editable_platform_roles=["admin", "member"], publisher_id="owner"
+        read_only=True,
+        editable_platform_roles=["admin", "user"],
+        publisher_id="owner",
+        owner_user_id="owner",
     )
-    u = SimpleNamespace(user_id="other", platform_role="member")
+    u = SimpleNamespace(user_id="other", platform_role="user")
     assert effective_role(p, u, None, None, "members") is None
     assert effective_role(p, u, None, None, "public") == "edit"
     p.editable_platform_roles = []
@@ -149,7 +141,7 @@ async def test_import_replays_concurrent_requests_and_resolves_only_visible_publ
         title="管理员官方指南",
         is_official=True,
         read_only=True,
-        editable_platform_roles=["super_admin", "admin"],
+        editable_platform_roles=["admin", "admin"],
         articles=[dict(note_id=n["id"], expected_revision=0) for n in docs]
         + [dict(note_id=technical["knowledge_base"]["home_note_id"], expected_revision=0)],
     )
@@ -275,7 +267,7 @@ async def test_role_editing_is_separate_from_management_and_revocation_blocks_wr
             "/v1/platform/accounts/" + account["id"],
             json={
                 "expected_revision": (await editor.get("/v1/auth/me")).json()["user"]["revision"],
-                "platform_role": "member",
+                "platform_role": "user",
             },
         )
         assert changed.status_code == 200, changed.text
@@ -327,21 +319,7 @@ async def test_cross_library_references_hide_unpublished_and_unauthorized_target
 
 async def test_read_only_table_and_uploads_share_effective_article_permissions(community):
     (owner, reader, other), names, project, notes, config = community
-    invitation = (
-        await owner.post(
-            "/v1/account/workspaces/current/invitations",
-            json={
-                "username": names[2],
-                "role": "member",
-            },
-        )
-    ).json()
-    assert (
-        await other.post(
-            f"/v1/account/workspace-invitations/{invitation['id']}/accept",
-            json={"expected_revision": invitation["revision"]},
-        )
-    ).status_code == 204
+
     current = (await owner.get(ROOT + f"/knowledge-bases/{project['id']}")).json()
     table_note = (
         await owner.post(

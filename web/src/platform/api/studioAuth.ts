@@ -1,5 +1,4 @@
 export const AUTH_REQUIRED_EVENT = "future-props:auth-required";
-export const WORKSPACE_CHANGED_EVENT = "future-props:workspace-changed";
 
 export function getCsrfToken(): string {
   const item = document.cookie
@@ -19,8 +18,4 @@ export function applySessionHeaders(request: Request): Request {
 
 export function notifyAuthRequired(): void {
   window.dispatchEvent(new Event(AUTH_REQUIRED_EVENT));
-}
-
-export function notifyWorkspaceChanged(): void {
-  window.dispatchEvent(new Event(WORKSPACE_CHANGED_EVENT));
 }

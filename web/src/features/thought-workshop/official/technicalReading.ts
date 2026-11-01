@@ -477,8 +477,7 @@ export const TECHNICAL_READING: Record<
     ],
   },
   scope: {
-    summary:
-      "明确单机、多账号和逻辑 Workspace 的边界，找到适合当前问题的阅读路径。",
+    summary: "明确单机、多账号和逻辑账号的边界，找到适合当前问题的阅读路径。",
     related: [
       {
         libraryId: "technical",

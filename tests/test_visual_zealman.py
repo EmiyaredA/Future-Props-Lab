@@ -64,6 +64,7 @@ async def test_workshop_keyless_workflow_references_completion_and_recovery(monk
     monkeypatch.setattr("app.apps.visual_workshop.generation_runner.get_task", poll)
     monkeypatch.setattr("app.llm.generation_runtime.media.assert_public_https", allow)
     provider = ModelProvider(
+        owner_user_id="test-user",
         id=str(uuid4()),
         name="ZEALMAN Workshop",
         kind="zealman_video",
@@ -72,6 +73,7 @@ async def test_workshop_keyless_workflow_references_completion_and_recovery(monk
         enabled=True,
     )
     model = ModelEntry(
+        owner_user_id="test-user",
         id=str(uuid4()),
         provider_id=provider.id,
         slug=slug,

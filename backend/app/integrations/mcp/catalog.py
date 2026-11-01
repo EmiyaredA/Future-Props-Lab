@@ -31,7 +31,7 @@ from app.integrations.schemas import (
     McpUpdateIn,
     McpValidationOut,
 )
-from app.orm import require_workspace_id
+from app.orm import require_owner_id
 from app.runtime.config import get_settings
 from app.runtime.credentials import decrypt_secret, encrypt_secret
 from app.runtime.revisions import RevisionConflictError
@@ -50,15 +50,15 @@ def _tool_out(row: McpDiscoveredTool) -> McpToolOut:
 
 class McpCatalog:
     def __init__(
-        self, session: AsyncSession, workspace_id: str, *, client: McpDiscoveryClient | None = None
+        self, session: AsyncSession, owner_user_id: str, *, client: McpDiscoveryClient | None = None
     ) -> None:
         self.session = session
-        self.workspace_id = require_workspace_id(workspace_id, subject="integration catalog")
+        self.owner_user_id = require_owner_id(owner_user_id, subject="integration catalog")
         self.client = client or OfficialMcpDiscoveryClient(get_settings())
 
     async def _get(self, integration_id: str) -> McpIntegration:
         row = await self.session.get(McpIntegration, integration_id)
-        if row is None or row.workspace_id != self.workspace_id:
+        if row is None or row.owner_user_id != self.owner_user_id:
             raise IntegrationNotFoundError("MCP 服务不存在")
         return row
 
@@ -171,7 +171,7 @@ class McpCatalog:
             (
                 await self.session.execute(
                     select(McpIntegration)
-                    .where(McpIntegration.workspace_id == self.workspace_id)
+                    .where(McpIntegration.owner_user_id == self.owner_user_id)
                     .order_by(McpIntegration.updated_at.desc(), McpIntegration.name)
                 )
             )
@@ -198,7 +198,7 @@ class McpCatalog:
                 primary_count=sum(row.status == "healthy" for row in rows),
                 failed_count=sum(row.status == "failed" for row in rows),
                 tertiary_count=total_tools,
-                recent=await list_recent_checks(self.session, self.workspace_id, "mcp"),
+                recent=await list_recent_checks(self.session, self.owner_user_id, "mcp"),
             ),
         )
 
@@ -208,7 +208,7 @@ class McpCatalog:
 
     async def create(self, body: McpCreateIn) -> McpOut:
         row = McpIntegration(
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             name=body.name,
             description=body.description,
             transport=body.transport,
@@ -254,7 +254,7 @@ class McpCatalog:
         result = await self.session.execute(
             update(McpIntegration)
             .where(
-                McpIntegration.workspace_id == self.workspace_id,
+                McpIntegration.owner_user_id == self.owner_user_id,
                 McpIntegration.id == integration_id,
                 McpIntegration.revision == body.expected_revision,
             )
@@ -307,14 +307,14 @@ class McpCatalog:
             )
         await self.session.execute(
             delete(IntegrationCheck).where(
-                IntegrationCheck.workspace_id == self.workspace_id,
+                IntegrationCheck.owner_user_id == self.owner_user_id,
                 IntegrationCheck.resource_kind == "mcp",
                 IntegrationCheck.resource_id == integration_id,
             )
         )
         result = await self.session.execute(
             delete(McpIntegration).where(
-                McpIntegration.workspace_id == self.workspace_id,
+                McpIntegration.owner_user_id == self.owner_user_id,
                 McpIntegration.id == integration_id,
                 McpIntegration.revision == expected_revision,
             )
@@ -387,7 +387,7 @@ class McpCatalog:
         result = await self.session.execute(
             update(McpIntegration)
             .where(
-                McpIntegration.workspace_id == self.workspace_id,
+                McpIntegration.owner_user_id == self.owner_user_id,
                 McpIntegration.id == integration_id,
                 McpIntegration.revision == snapshot.revision,
             )
@@ -416,7 +416,7 @@ class McpCatalog:
             )
         check = await record_check(
             self.session,
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             kind="mcp",
             resource_id=integration_id,
             resource_name=latest.name,

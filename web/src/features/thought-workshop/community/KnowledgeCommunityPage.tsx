@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAccountId } from "@platform/auth/WorkspacePermissions";
+import { useAccountId } from "@platform/auth/AccountAccess";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CommunityPage } from "./CommunityPage";
 import { CommunityReader } from "./CommunityReader";

@@ -29,7 +29,7 @@ from app.llm.models import (
 from app.llm.playground.service import PreparedGeneration, message_out
 from app.llm.playground.test_tools import call_out, execute_test_tool, model_result_text
 from app.llm.providers.agent import HttpAgentAdapter
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal
 from app.runtime.time import utc_now
@@ -106,7 +106,7 @@ def _bindings(snapshots: tuple[dict, ...]) -> tuple[ToolBinding, ...]:
 async def _persist_event(prepared: PreparedGeneration, event: AgentEvent) -> list[dict]:
     snapshots = {item["name"]: item for item in prepared.tool_snapshots}
     async with SessionLocal() as session:
-        bind_workspace(session.sync_session, prepared.workspace_id)
+        bind_owner(session.sync_session, prepared.owner_user_id)
         payload = event.payload
         action_id = str(payload.get("action_id") or "")
         row = None
@@ -121,7 +121,7 @@ async def _persist_event(prepared: PreparedGeneration, event: AgentEvent) -> lis
             name = str(payload.get("tool_name") or "")
             snapshot = snapshots.get(name, {"name": name, "revision": 0, "delay_ms": 0})
             row = ModelTestToolCall(
-                workspace_id=prepared.workspace_id,
+                owner_user_id=prepared.owner_user_id,
                 tool_id=snapshot.get("id"),
                 conversation_id=prepared.conversation_id,
                 message_id=prepared.assistant_message_id,
@@ -192,7 +192,7 @@ async def _settle(
 ) -> tuple[ModelTestMessage, LlmCallLog, int]:
     latency_ms = max(0, round((time.monotonic() - started) * 1000))
     async with SessionLocal() as session:
-        bind_workspace(session.sync_session, prepared.workspace_id)
+        bind_owner(session.sync_session, prepared.owner_user_id)
         message = await session.get(ModelTestMessage, prepared.assistant_message_id)
         conversation = await session.get(ModelTestConversation, prepared.conversation_id)
         if message is None or conversation is None:
@@ -232,7 +232,7 @@ async def _settle(
             for item in calls
         ]
         log = LlmCallLog(
-            workspace_id=prepared.workspace_id,
+            owner_user_id=prepared.owner_user_id,
             call_source="model_playground",
             provider_kind=prepared.provider_kind,
             model=prepared.model_slug,
@@ -289,7 +289,10 @@ async def tool_generation_events(prepared: PreparedGeneration) -> AsyncIterator[
             temperature=prepared.temperature,
             max_tokens=prepared.max_tokens,
         ),
-        scope={"workspace_id": prepared.workspace_id, "conversation_id": prepared.conversation_id},
+        scope={
+            "owner_user_id": prepared.owner_user_id,
+            "conversation_id": prepared.conversation_id,
+        },
     )
     yield _event(
         "start",

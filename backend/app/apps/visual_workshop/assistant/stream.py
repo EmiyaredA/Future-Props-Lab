@@ -30,7 +30,7 @@ from app.llm.models import (
     LlmCallLog,
 )
 from app.llm.providers.agent import HttpAgentAdapter
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal
 from app.runtime.time import utc_now
@@ -73,7 +73,7 @@ async def _settle(
 ) -> tuple[VisualAssistantMessage, list, LlmCallLog, int]:
     latency_ms = max(0, round((time.monotonic() - started) * 1000))
     async with SessionLocal() as session:
-        bind_workspace(session.sync_session, prepared.workspace_id)
+        bind_owner(session.sync_session, prepared.owner_user_id)
         message = await session.get(VisualAssistantMessage, prepared.assistant_message_id)
         conversation = await session.get(VisualAssistantConversation, prepared.conversation_id)
         if message is None or conversation is None:
@@ -128,7 +128,7 @@ async def _settle(
             "actions": action_log,
         }
         log = LlmCallLog(
-            workspace_id=prepared.workspace_id,
+            owner_user_id=prepared.owner_user_id,
             call_source="visual_workshop_assistant",
             provider_kind=prepared.provider_kind,
             model=prepared.model_slug,
@@ -170,7 +170,7 @@ async def assistant_events(
     started = time.monotonic()
     key = decrypt_secret(prepared.api_key_ciphertext) if prepared.api_key_ciphertext else ""
     definition = build_visual_agent_definition(
-        workspace_id=prepared.workspace_id,
+        owner_user_id=prepared.owner_user_id,
         project_id=prepared.project_id,
         model=prepared.model_slug,
         tools_enabled=prepared.tools_enabled,
@@ -185,7 +185,7 @@ async def assistant_events(
         adapter=adapter,
         definition=definition,
         scope={
-            "workspace_id": prepared.workspace_id,
+            "owner_user_id": prepared.owner_user_id,
             "project_id": prepared.project_id,
             "conversation_id": prepared.conversation_id,
             "canvas_revision": prepared.canvas_revision,
@@ -260,7 +260,7 @@ async def assistant_events(
                     "run_cancelled",
                 }:
                     actions = await persist_agent_event(
-                        prepared.workspace_id, prepared.assistant_message_id, event
+                        prepared.owner_user_id, prepared.assistant_message_id, event
                     )
                     yield _event(
                         "step",
@@ -354,7 +354,7 @@ async def assistant_events(
                 return
             error_message = result.reason or "Agent 未完成本轮任务"
             await cancel_active_actions(
-                prepared.workspace_id, prepared.assistant_message_id, error_message
+                prepared.owner_user_id, prepared.assistant_message_id, error_message
             )
             message, actions, log, revision = await _settle(
                 prepared,
@@ -390,7 +390,7 @@ async def assistant_events(
         await harness.abort()
         task.cancel()
         await cancel_active_actions(
-            prepared.workspace_id, prepared.assistant_message_id, "用户停止生成"
+            prepared.owner_user_id, prepared.assistant_message_id, "用户停止生成"
         )
         await asyncio.shield(
             _settle(
@@ -420,7 +420,7 @@ async def assistant_events(
         )
         message_text = "模型调用超时" if timeout else "Agent 运行失败"
         await cancel_active_actions(
-            prepared.workspace_id, prepared.assistant_message_id, message_text
+            prepared.owner_user_id, prepared.assistant_message_id, message_text
         )
         message, actions, log, revision = await _settle(
             prepared,

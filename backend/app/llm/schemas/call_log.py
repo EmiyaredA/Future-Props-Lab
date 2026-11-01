@@ -116,7 +116,3 @@ class CallLogQuery(BaseModel):
             page=self.page,
             page_size=self.page_size,
         )
-
-
-class CrossWorkspaceLogQuery(CallLogQuery):
-    workspace_ids: list[str] = Field(default_factory=list)

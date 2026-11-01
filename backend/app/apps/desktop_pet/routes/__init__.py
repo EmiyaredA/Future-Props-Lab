@@ -27,7 +27,7 @@ from app.apps.desktop_pet.schemas import (
     PetSync,
 )
 from app.apps.live2d_workshop.public import CharacterSourceMissing
-from app.deps import SessionDep, StudioAuth, WorkspaceDep
+from app.deps import OwnerDep, SessionDep, StudioAuth
 from app.llm.call_logs.credentials import snapshot_from_principal
 from app.runtime.operation_receipts import OperationError
 
@@ -53,77 +53,75 @@ router = APIRouter(prefix="/desktop-pet", tags=["desktop-pet"], route_class=PetR
 
 
 @router.get("/projects", response_model=PetProjectsOut)
-async def list_projects(session: SessionDep, workspace_id: WorkspaceDep):
-    return await DesktopPetProjects(session, workspace_id).list()
+async def list_projects(session: SessionDep, owner_user_id: OwnerDep):
+    return await DesktopPetProjects(session, owner_user_id).list()
 
 
 @router.post("/projects", response_model=PetProjectOut)
-async def create_project(session: SessionDep, workspace_id: WorkspaceDep, body: PetCreate):
-    return await DesktopPetProjects(session, workspace_id).create(body)
+async def create_project(session: SessionDep, owner_user_id: OwnerDep, body: PetCreate):
+    return await DesktopPetProjects(session, owner_user_id).create(body)
 
 
 @router.post("/projects/import-whale", response_model=PetProjectOut)
 async def import_whale(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     file: Annotated[UploadFile, File()],
 ):
-    return await DesktopPetProjects(session, workspace_id).import_whale(file)
+    return await DesktopPetProjects(session, owner_user_id).import_whale(file)
 
 
 @router.get("/projects/{project_id}", response_model=PetProjectOut)
-async def get_project(session: SessionDep, workspace_id: WorkspaceDep, project_id: str):
-    return await DesktopPetProjects(session, workspace_id).get(project_id)
+async def get_project(session: SessionDep, owner_user_id: OwnerDep, project_id: str):
+    return await DesktopPetProjects(session, owner_user_id).get(project_id)
 
 
 @router.post("/projects/{project_id}/replace-package", response_model=PetDocumentOut)
 async def replace_package(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     project_id: str,
     file: Annotated[UploadFile, File()],
     expected_revision: Annotated[int, Form(alias="expectedRevision", ge=0)],
 ):
-    return await DesktopPetProjects(session, workspace_id).replace_package(
+    return await DesktopPetProjects(session, owner_user_id).replace_package(
         project_id, expected_revision, file
     )
 
 
 @router.patch("/projects/{project_id}", response_model=PetProjectOut)
 async def patch_project(
-    session: SessionDep, workspace_id: WorkspaceDep, project_id: str, body: PetPatch
+    session: SessionDep, owner_user_id: OwnerDep, project_id: str, body: PetPatch
 ):
-    return await DesktopPetProjects(session, workspace_id).patch(project_id, body)
+    return await DesktopPetProjects(session, owner_user_id).patch(project_id, body)
 
 
 @router.delete("/projects/{project_id}")
 async def delete_project(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     project_id: str,
     expected_revision: int = Query(alias="expectedRevision", ge=0),
 ) -> dict[str, bool]:
-    await DesktopPetProjects(session, workspace_id).delete(project_id, expected_revision)
+    await DesktopPetProjects(session, owner_user_id).delete(project_id, expected_revision)
     return {"deleted": True}
 
 
 @router.get("/projects/{project_id}/document", response_model=PetDocumentOut)
-async def get_document(session: SessionDep, workspace_id: WorkspaceDep, project_id: str):
-    return await DesktopPetProjects(session, workspace_id).document(project_id)
+async def get_document(session: SessionDep, owner_user_id: OwnerDep, project_id: str):
+    return await DesktopPetProjects(session, owner_user_id).document(project_id)
 
 
 @router.put("/projects/{project_id}/document", response_model=PetDocumentOut)
 async def save_document(
-    session: SessionDep, workspace_id: WorkspaceDep, project_id: str, body: PetSave
+    session: SessionDep, owner_user_id: OwnerDep, project_id: str, body: PetSave
 ):
-    return await DesktopPetProjects(session, workspace_id).save(project_id, body)
+    return await DesktopPetProjects(session, owner_user_id).save(project_id, body)
 
 
 @router.post("/projects/{project_id}/sync-source", response_model=PetDocumentOut)
-async def sync_source(
-    session: SessionDep, workspace_id: WorkspaceDep, project_id: str, body: PetSync
-):
-    return await DesktopPetProjects(session, workspace_id).sync_source(project_id, body)
+async def sync_source(session: SessionDep, owner_user_id: OwnerDep, project_id: str, body: PetSync):
+    return await DesktopPetProjects(session, owner_user_id).sync_source(project_id, body)
 
 
 @router.put(
@@ -132,42 +130,40 @@ async def sync_source(
 )
 async def upload_skin_replacement(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     project_id: str,
     skin_id: str,
     source_asset_id: str,
     file: Annotated[UploadFile, File()],
     expected_revision: Annotated[int, Form(alias="expectedRevision", ge=0)],
 ):
-    return await DesktopPetProjects(session, workspace_id).upload_skin(
+    return await DesktopPetProjects(session, owner_user_id).upload_skin(
         project_id, skin_id, source_asset_id, expected_revision, file
     )
 
 
 @router.get("/projects/{project_id}/assets/{asset_id}/file")
-async def asset_file(
-    session: SessionDep, workspace_id: WorkspaceDep, project_id: str, asset_id: str
-):
-    path = await DesktopPetProjects(session, workspace_id).asset_path(project_id, asset_id)
+async def asset_file(session: SessionDep, owner_user_id: OwnerDep, project_id: str, asset_id: str):
+    path = await DesktopPetProjects(session, owner_user_id).asset_path(project_id, asset_id)
     return FileResponse(path, media_type="image/png")
 
 
 @router.get("/projects/{project_id}/chat", response_model=PetChatOut)
 async def get_chat(
-    session: SessionDep, workspace_id: WorkspaceDep, principal: StudioAuth, project_id: str
+    session: SessionDep, owner_user_id: OwnerDep, principal: StudioAuth, project_id: str
 ):
-    return await DesktopPetChats(session, workspace_id, principal.user_id).get(project_id)
+    return await DesktopPetChats(session, owner_user_id, principal.user_id).get(project_id)
 
 
 @router.patch("/projects/{project_id}/chat", response_model=PetChatOut)
 async def update_chat(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     principal: StudioAuth,
     project_id: str,
     body: PetChatSettingsIn,
 ):
-    return await DesktopPetChats(session, workspace_id, principal.user_id).settings(
+    return await DesktopPetChats(session, owner_user_id, principal.user_id).settings(
         project_id, body
     )
 
@@ -175,13 +171,13 @@ async def update_chat(
 @router.get("/projects/{project_id}/chat/messages", response_model=PetChatMessagesOut)
 async def chat_messages(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     principal: StudioAuth,
     project_id: str,
     before: int | None = Query(None, ge=1),
     limit: int = Query(50, ge=1, le=100),
 ):
-    return await DesktopPetChats(session, workspace_id, principal.user_id).messages(
+    return await DesktopPetChats(session, owner_user_id, principal.user_id).messages(
         project_id, before, limit
     )
 
@@ -189,12 +185,12 @@ async def chat_messages(
 @router.delete("/projects/{project_id}/chat/messages", response_model=PetChatOut)
 async def clear_chat(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     principal: StudioAuth,
     project_id: str,
     body: PetChatClearIn,
 ):
-    return await DesktopPetChats(session, workspace_id, principal.user_id).clear(project_id, body)
+    return await DesktopPetChats(session, owner_user_id, principal.user_id).clear(project_id, body)
 
 
 @router.post(
@@ -213,13 +209,13 @@ async def clear_chat(
 )
 async def send_chat_message(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     principal: StudioAuth,
     project_id: str,
     body: PetChatSendIn,
 ):
     credential = await snapshot_from_principal(session, principal)
-    prepared = await DesktopPetChats(session, workspace_id, principal.user_id).prepare_send(
+    prepared = await DesktopPetChats(session, owner_user_id, principal.user_id).prepare_send(
         project_id, body, credential
     )
     return StreamingResponse(

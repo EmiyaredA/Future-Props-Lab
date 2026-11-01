@@ -24,45 +24,15 @@ test("icon rail keeps base-model flyout reachable on narrow screens", async ({
   const account = page.getByRole("dialog", { name: "账号设置", exact: true });
   await expect(account).toBeVisible();
   for (const label of ["个人资料", "密码与会话", "API 密钥"]) {
-    await account.getByRole("tab", { name: label, exact: true }).click();
+    await account.getByRole("button", { name: label, exact: true }).click();
     await capture(page, info, `account-${label}`);
   }
   await page.keyboard.press("Escape");
   await expect(account).toBeHidden();
-  await page
-    .getByRole("button", { name: /切换工作空间/ })
-    .first()
-    .click();
-  const workspace = page.getByRole("dialog", { name: "工作空间", exact: true });
-  await expect(workspace).toBeVisible();
-  await capture(page, info, "workspace-overview");
 });
 
-test("login and public showcase tolerate long content", async ({
-  page,
-}, info) => {
+test("login tolerates long content", async ({ page }, info) => {
   test.setTimeout(180000);
-  await page.route("**/v1/auth/me", async (route) => {
-    const response = await route.fetch();
-    const me = await response.json();
-    me.workspace.access_kind = "public_viewer";
-    me.workspace.name =
-      "一个用于检查中文与 LongUnbrokenWorkspaceTitleWithoutSpaces 的公开作品空间";
-    await route.fulfill({ response, json: me });
-  });
-  await page.route("**/v1/public-workspace", (route) =>
-    route.fulfill({
-      json: {
-        workspace_name: "作品展示 · 持续创作的长标题空间",
-        visual_projects: [],
-        galgame_projects: [],
-      },
-    }),
-  );
-  await page.goto("/home");
-  await expect(page.locator(".public-showcase-shell")).toBeVisible();
-  await capture(page, info, "public-showcase");
-  await page.unrouteAll({ behavior: "wait" });
   await page.context().clearCookies();
   await page.goto("/home");
   await expect(
@@ -121,7 +91,7 @@ test("model capabilities keep controls reachable at compact sizes", async ({
     "语音识别",
     "实时语音",
   ]) {
-    const tab = page.getByRole("tab", { name: label, exact: true });
+    const tab = page.getByRole("button", { name: label, exact: true });
     await expect(tab).toBeEnabled();
     await tab.click();
     await capture(page, info, `model-${label}`);

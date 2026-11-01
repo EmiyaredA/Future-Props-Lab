@@ -20,7 +20,7 @@ from app.console.amadeus.runs import Runs
 from app.console.amadeus.schemas import ActionIn, QuestionIn
 from app.console.amadeus.skills import read_skill_file
 from app.console.governance.code_agents import resolve
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.config import REPO_ROOT
 from app.runtime.operation_receipts import OperationError
 
@@ -153,10 +153,10 @@ class ToolBridge:
         # All reads also reauthenticate through the official session boundary.
         await self.api(f"/v1/amadeus/conversations/{self.run.conversation_id}")
         async with self.sessions() as session:
-            bind_workspace(session, self.principal.workspace_id)
+            bind_owner(session, self.principal.owner_user_id)
             await resolve(
                 session,
-                self.run.workspace_id,
+                self.run.owner_user_id,
                 self.run.user_id,
                 self.run.agent_id,
                 "amadeus",
@@ -180,12 +180,12 @@ class ToolBridge:
                     ]
                 }
             if name == "files":
-                return list_files(row.workspace_id, row.conversation_id)
+                return list_files(row.owner_user_id, row.conversation_id)
             if name == "read_file":
                 import base64
 
                 data = read_file_bytes(
-                    row.workspace_id, row.conversation_id, args["kind"], args["name"]
+                    row.owner_user_id, row.conversation_id, args["kind"], args["name"]
                 )
                 if len(data) > 1024 * 1024:
                     raise OperationError("文件过大，请使用文件下载接口")
@@ -212,7 +212,7 @@ class ToolBridge:
                     raise OperationError("Skill 版本与运行快照不符", "unsupported_tool", 403)
                 if args.get("path"):
                     return read_skill_file(
-                        row.workspace_id,
+                        row.owner_user_id,
                         row.conversation_id,
                         identity,
                         args["version"],

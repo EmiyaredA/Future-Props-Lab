@@ -114,7 +114,7 @@ class DesktopAgent:
                 secret=secret,
                 key_id=key.id,
                 user_id=principal.user_id,
-                workspace_id=principal.workspace_id,
+                owner_user_id=principal.owner_user_id,
             )
             return row
 
@@ -133,7 +133,7 @@ class DesktopAgent:
                     api_key=row.pop("secret"),
                     key_id=row["key_id"],
                     user_id=row["user_id"],
-                    workspace_id=row["workspace_id"],
+                    owner_user_id=row["owner_user_id"],
                 )
                 row["status"] = "claimed"
             return result

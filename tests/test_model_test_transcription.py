@@ -6,13 +6,14 @@ from uuid import uuid4
 import httpx
 import pytest
 from sqlalchemy import select
+from tests.account_fixtures import account_record
 
 from app.capabilities.transcription.parameters import (
     TranscriptionParameterError,
     parameter_capabilities,
     resolve_parameters,
 )
-from app.console.models import Workspace
+from app.console.models import User
 from app.llm.models import ModelTestTranscriptionTask
 from app.llm.playground.transcription import (
     ModelTestTranscription,
@@ -26,7 +27,7 @@ from app.llm.providers.transcription import (
 )
 from app.llm.schemas.model_test import ModelTestTranscriptionParametersIn
 from app.main import app
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.db import SessionLocal
 
 
@@ -262,14 +263,14 @@ async def test_transcription_upload_formats_runner_segments_logs_and_cas_cleanup
             assert task["source"]["available"] is True
             task_ids.append(task["id"])
 
-        other_workspace_id = str(uuid4())
+        other_owner_user_id = str(uuid4())
         async with SessionLocal() as session:
-            session.add(Workspace(id=other_workspace_id, name="隔离测试空间"))
+            session.add(account_record(id=other_owner_user_id, name="隔离测试空间"))
             await session.commit()
         async with SessionLocal() as session:
-            bind_workspace(session, other_workspace_id)
+            bind_owner(session, other_owner_user_id)
             with pytest.raises(ModelTestTranscriptionError, match="不存在"):
-                await ModelTestTranscription(session, "default").get(task_ids[0])
+                await ModelTestTranscription(session, "test-user").get(task_ids[0])
 
         mismatch = await client.post(
             "/v1/model-test/transcription-tasks/upload",
@@ -354,7 +355,7 @@ async def test_transcription_upload_formats_runner_segments_logs_and_cas_cleanup
             await client.delete(f"/v1/llm-call-logs/{completed['log_id']}")
         await _delete_provider(client, provider["id"])
         async with SessionLocal() as session:
-            workspace = await session.get(Workspace, other_workspace_id)
+            workspace = await session.get(User, other_owner_user_id)
             assert workspace is not None
             await session.delete(workspace)
             await session.commit()

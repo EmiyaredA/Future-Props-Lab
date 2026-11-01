@@ -45,19 +45,28 @@ async def reconcile_project_trash(session: AsyncSession, storage: AssetStorage) 
     project_models = {
         **LAYOUT_PROJECT_MODELS,
     }
+    account_root = storage.settings.runtime_path / "accounts"
+    accounts = (
+        {
+            entry.name
+            for entry in account_root.iterdir()
+            if entry.is_dir() and not entry.is_symlink()
+        }
+        if account_root.is_dir()
+        else set()
+    )
     trash_scopes: list[tuple[str, str, Path]] = []
     for child in root.iterdir():
         if not child.is_dir():
             continue
-        if child.name in project_models:
-            trash_scopes.append(("default", child.name, child))
+        if child.name not in accounts:
             continue
         for application_id in project_models:
             application_trash = child / application_id
             if application_trash.is_dir():
                 trash_scopes.append((child.name, application_id, application_trash))
 
-    for workspace_id, application_id, application_trash in trash_scopes:
+    for owner_user_id, application_id, application_trash in trash_scopes:
         model = project_models[application_id]
         if not application_trash.is_dir():
             continue
@@ -67,9 +76,9 @@ async def reconcile_project_trash(session: AsyncSession, storage: AssetStorage) 
             project_id, _separator, nonce = staged_path.name.rpartition("--trash--")
             if not project_id or len(nonce) != 32:
                 continue
-            original = storage.project_root(application_id, project_id, workspace_id=workspace_id)
+            original = storage.project_root(application_id, project_id, owner_user_id=owner_user_id)
             row = await session.get(model, project_id)
-            exists = row is not None and row.workspace_id == workspace_id
+            exists = row is not None and row.owner_user_id == owner_user_id
             if exists and not original.exists():
                 original.parent.mkdir(parents=True, exist_ok=True)
                 os.replace(staged_path, original)
@@ -82,24 +91,20 @@ async def reconcile_snapshot_imports(session: AsyncSession, storage: AssetStorag
     project_models = {
         **LAYOUT_PROJECT_MODELS,
     }
-    markers = list(storage.settings.applications_path.glob("*/projects/*/.snapshot-importing"))
-    workspaces_root = storage.settings.runtime_path / "workspaces"
-    if workspaces_root.is_dir():
-        markers.extend(workspaces_root.glob("*/applications/*/projects/*/.snapshot-importing"))
+    markers = list(
+        (storage.settings.runtime_path / "accounts").glob(
+            "*/applications/*/projects/*/.snapshot-importing"
+        )
+    )
     for marker in markers:
         project_root = marker.parent
         application_id = project_root.parent.parent.name
         model = project_models.get(application_id)
         if model is None:
             continue
-        workspace_id = (
-            project_root.parents[3].name
-            if project_root.parents[2].name == "applications"
-            and project_root.parents[3].parent.name == "workspaces"
-            else "default"
-        )
+        owner_user_id = project_root.parents[3].name
         row = await session.get(model, project_root.name)
-        if row is not None and row.workspace_id == workspace_id:
+        if row is not None and row.owner_user_id == owner_user_id:
             marker.unlink(missing_ok=True)
         else:
             shutil.rmtree(project_root, ignore_errors=True)
@@ -122,9 +127,9 @@ def _same_content(source: Path, target: Path) -> bool:
 
 
 class StorageLayoutMigration:
-    def __init__(self, session: AsyncSession, settings: Settings, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, settings: Settings, owner_user_id: str) -> None:
         self.session = session
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
         self.storage = AssetStorage(settings)
 
     async def _projects(self) -> tuple[list[str], list[str], list[str]]:
@@ -164,7 +169,7 @@ class StorageLayoutMigration:
         visual_ids, galgame_ids, video_editor_ids = await self._projects()
         pending_projects = sum(
             not self.storage.project_root(
-                application_id, project_id, workspace_id=self.workspace_id
+                application_id, project_id, owner_user_id=self.owner_user_id
             ).is_dir()
             for application_id, project_ids in (
                 ("visual-workshop", visual_ids),
@@ -184,13 +189,13 @@ class StorageLayoutMigration:
         )
         missing = conflicts = 0
         for asset in pending:
-            source = self.storage.legacy_path(asset.storage_key)
+            source = self.storage.legacy_path(asset.storage_key, owner_user_id=self.owner_user_id)
             target = self.storage.target_path(
                 asset.storage_key,
                 visual_project_id=asset.project_id,
                 galgame_project_id=asset.galgame_project_id,
                 video_editor_project_id=asset.video_editor_project_id,
-                workspace_id=self.workspace_id,
+                owner_user_id=self.owner_user_id,
             )
             if not source.is_file():
                 missing += 1
@@ -219,7 +224,7 @@ class StorageLayoutMigration:
             ):
                 for project_id in project_ids:
                     if self.storage.ensure_project_layout(
-                        application_id, project_id, workspace_id=self.workspace_id
+                        application_id, project_id, owner_user_id=self.owner_user_id
                     ):
                         migrated_projects += 1
 
@@ -228,13 +233,15 @@ class StorageLayoutMigration:
             migrated_assets = already_materialized = missing = conflicts = 0
             issues: list[StorageLayoutIssueOut] = []
             for asset in pending:
-                source = self.storage.legacy_path(asset.storage_key)
+                source = self.storage.legacy_path(
+                    asset.storage_key, owner_user_id=self.owner_user_id
+                )
                 target = self.storage.target_path(
                     asset.storage_key,
                     visual_project_id=asset.project_id,
                     galgame_project_id=asset.galgame_project_id,
                     video_editor_project_id=asset.video_editor_project_id,
-                    workspace_id=self.workspace_id,
+                    owner_user_id=self.owner_user_id,
                 )
                 temp_path: Path | None = None
                 created_target = False
@@ -268,7 +275,7 @@ class StorageLayoutMigration:
                             visual_project_id=asset.project_id,
                             galgame_project_id=asset.galgame_project_id,
                             video_editor_project_id=asset.video_editor_project_id,
-                            workspace_id=self.workspace_id,
+                            owner_user_id=self.owner_user_id,
                         )
                         await asyncio.to_thread(_copy_verified, source, temp_path, asset.byte_size)
                         os.replace(temp_path, target)

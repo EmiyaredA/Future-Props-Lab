@@ -23,13 +23,13 @@ MOTION_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".mp4", ".mov", ".webm", 
 
 
 class MotionAssets:
-    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
         self.session = session
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
         self.settings = get_settings()
         self.storage = AssetStorage(self.settings)
         self.library = AssetLibrary(session, self.settings)
-        self.projects = MotionProjects(session, workspace_id)
+        self.projects = MotionProjects(session, owner_user_id)
 
     @staticmethod
     def _out(project_id: str, row: VisualAsset) -> AssetOut:
@@ -47,7 +47,7 @@ class MotionAssets:
                 await self.session.execute(
                     select(VisualAsset)
                     .where(
-                        VisualAsset.workspace_id == self.workspace_id,
+                        VisualAsset.owner_user_id == self.owner_user_id,
                         VisualAsset.media_kind.in_(("image", "video")),
                     )
                     .order_by(VisualAsset.updated_at.desc())
@@ -86,7 +86,7 @@ class MotionAssets:
                     select(VisualAsset)
                     .where(
                         VisualAsset.motion_compositor_project_id == project_id,
-                        VisualAsset.workspace_id == self.workspace_id,
+                        VisualAsset.owner_user_id == self.owner_user_id,
                     )
                     .order_by(VisualAsset.created_at.desc())
                 )
@@ -98,7 +98,7 @@ class MotionAssets:
         await self.projects.row(project_id)
         row = await self.library.store_upload(
             upload,
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             motion_compositor_project_id=project_id,
             allowed_extensions=MOTION_EXTENSIONS,
         )
@@ -111,7 +111,7 @@ class MotionAssets:
                 await self.session.execute(
                     select(VisualAsset).where(
                         VisualAsset.id.in_(body.asset_ids),
-                        VisualAsset.workspace_id == self.workspace_id,
+                        VisualAsset.owner_user_id == self.owner_user_id,
                     )
                 )
             ).scalars()
@@ -124,7 +124,7 @@ class MotionAssets:
             for source in sources:
                 row, path = await self.library.stage_local_copy(
                     self.storage.path_for(source),
-                    workspace_id=self.workspace_id,
+                    owner_user_id=self.owner_user_id,
                     filename=source.original_filename,
                     content_type=source.mime_type,
                     motion_compositor_project_id=project_id,
@@ -147,7 +147,7 @@ class MotionAssets:
                 select(VisualAsset).where(
                     VisualAsset.id == asset_id,
                     VisualAsset.motion_compositor_project_id == project_id,
-                    VisualAsset.workspace_id == self.workspace_id,
+                    VisualAsset.owner_user_id == self.owner_user_id,
                 )
             )
         ).scalar_one_or_none()
@@ -162,7 +162,7 @@ class MotionAssets:
                 await self.session.execute(
                     select(VisualAsset).where(
                         VisualAsset.motion_compositor_project_id == project_id,
-                        VisualAsset.workspace_id == self.workspace_id,
+                        VisualAsset.owner_user_id == self.owner_user_id,
                     )
                 )
             ).scalars()

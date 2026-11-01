@@ -4,6 +4,7 @@ from uuid import uuid4
 
 import httpx
 import pytest
+from tests.account_fixtures import account_record
 
 from app.apps.video_editor.models import (
     VideoEditorAssetMetadata,
@@ -14,25 +15,25 @@ from app.apps.video_editor.models import (
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.console.models import (
-    Workspace,
+    User,
 )
 from app.main import app
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 
 
-async def seed(*, status="completed", kind="render", workspace="default", reference=None):
+async def seed(*, status="completed", kind="render", workspace="test-user", reference=None):
     project_id, asset_id, task_id = (str(uuid4()) for _ in range(3))
     storage = AssetStorage(get_settings())
     async with SessionLocal() as session:
-        if await session.get(Workspace, workspace) is None:
-            session.add(Workspace(id=workspace, name="隔离空间"))
+        if await session.get(User, workspace) is None:
+            session.add(account_record(id=workspace, name="隔离空间"))
             await session.flush()
-        session.add(VideoEditorProject(id=project_id, title="删除测试", workspace_id=workspace))
+        session.add(VideoEditorProject(id=project_id, title="删除测试", owner_user_id=workspace))
         await session.flush()
         asset = VisualAsset(
             id=asset_id,
-            workspace_id=workspace,
+            owner_user_id=workspace,
             video_editor_project_id=project_id,
             original_filename="export.mp4",
             display_name="export.mp4",
@@ -61,7 +62,7 @@ async def seed(*, status="completed", kind="render", workspace="default", refere
         session.add(
             VideoEditorTask(
                 id=task_id,
-                workspace_id=workspace,
+                owner_user_id=workspace,
                 project_id=project_id,
                 request_id=uuid4().hex,
                 kind=kind,
@@ -73,7 +74,7 @@ async def seed(*, status="completed", kind="render", workspace="default", refere
         if reference == "task":
             session.add(
                 VideoEditorTask(
-                    workspace_id=workspace,
+                    owner_user_id=workspace,
                     project_id=project_id,
                     request_id=uuid4().hex,
                     kind="render",
@@ -86,7 +87,7 @@ async def seed(*, status="completed", kind="render", workspace="default", refere
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_bytes(b"output")
         derived = (
-            storage.project_root("video-editor", project_id, workspace_id=workspace) / "derived"
+            storage.project_root("video-editor", project_id, owner_user_id=workspace) / "derived"
         )
         derived.mkdir(parents=True, exist_ok=True)
         (derived / "proxy.mp4").write_bytes(b"proxy")
@@ -150,11 +151,11 @@ async def test_referenced_output_rolls_back_task_and_file_deletion(reference: st
 @pytest.mark.parametrize(
     "status,kind,workspace,revision,expected",
     [
-        ("running", "render", "default", 3, 409),
-        ("queued", "render", "default", 3, 409),
-        ("completed", "render", "default", 2, 409),
-        ("completed", "render", "default", None, 422),
-        ("completed", "segment_export", "default", 3, 404),
+        ("running", "render", "test-user", 3, 409),
+        ("queued", "render", "test-user", 3, 409),
+        ("completed", "render", "test-user", 2, 409),
+        ("completed", "render", "test-user", None, 422),
+        ("completed", "segment_export", "test-user", 3, 404),
         ("completed", "render", "another-workspace", 3, 404),
     ],
 )

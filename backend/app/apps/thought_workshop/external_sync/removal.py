@@ -7,10 +7,10 @@ from app.apps.thought_workshop.errors import ThoughtError
 from .models import ArticleSyncTask
 
 
-async def ensure_can_purge(session, workspace_id: str, note_id: str) -> None:
+async def ensure_can_purge(session, owner_user_id: str, note_id: str) -> None:
     active = await session.scalar(
         select(ArticleSyncTask.id).where(
-            ArticleSyncTask.workspace_id == workspace_id,
+            ArticleSyncTask.owner_user_id == owner_user_id,
             ArticleSyncTask.note_id == note_id,
             ArticleSyncTask.status.in_({"running", "needs_review"}),
         )

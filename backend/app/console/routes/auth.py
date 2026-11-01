@@ -6,6 +6,8 @@ from datetime import timedelta
 
 from fastapi import HTTPException, Request, Response
 
+from app.capabilities.asset_store.account_upgrade import upgrade_pending
+from app.capabilities.identity.permissions import role_permissions
 from app.capabilities.identity.security import CSRF_COOKIE, SESSION_ABSOLUTE_DAYS, SESSION_COOKIE
 from app.console.governance.profile import avatar_url
 from app.console.governance.service import audit_page
@@ -16,7 +18,6 @@ from app.console.schemas.accounts import (
     CurrentUserOut,
     SecurityAuditEventOut,
     SecurityAuditListOut,
-    WorkspaceOut,
 )
 from app.deps import SessionDep, authenticate_studio_request
 
@@ -28,7 +29,7 @@ def _user_out(user) -> CurrentUserOut:
         display_name=user.display_name,
         email=user.email,
         avatar_url=avatar_url(user),
-        is_platform_admin=user.platform_role == "super_admin",
+        is_platform_admin=user.platform_role == "admin",
         platform_role=user.platform_role,
         revision=user.revision,
     )
@@ -41,24 +42,12 @@ def _account_out(user) -> AccountOut:
         display_name=user.display_name,
         status=user.status,
         email=user.email,
-        is_platform_admin=user.platform_role == "super_admin",
+        is_platform_admin=user.platform_role == "admin",
         platform_role=user.platform_role,
         must_change_password=user.must_change_password,
         revision=user.revision,
         last_login_at=user.last_login_at,
         created_at=user.created_at,
-    )
-
-
-def _workspace_out(workspace, principal) -> WorkspaceOut:
-    return WorkspaceOut(
-        id=workspace.id,
-        name=workspace.name,
-        visibility=workspace.visibility,
-        revision=workspace.revision,
-        access_kind=principal.workspace_access,
-        role=principal.member_role,
-        permission_keys=sorted(principal.permission_keys),
     )
 
 
@@ -128,29 +117,12 @@ async def _platform_auth(request: Request, session: SessionDep):
     return principal
 
 
-async def _login_out(session, user, workspace, auth_session):
-    from app.capabilities.identity.principal import StudioPrincipal
-    from app.console.governance.platform_policy import apply_policy
+async def _login_out(session, user, auth_session, *, maintenance=False):
 
-    principal = await apply_policy(
-        session,
-        StudioPrincipal(
-            user_id=user.id,
-            workspace_id=workspace.id,
-            workspace_access="owner",
-            member_role="owner",
-            is_platform_admin=user.platform_role == "super_admin",
-            platform_role=user.platform_role,
-            must_change_password=user.must_change_password,
-            auth_kind="session",
-            scopes=frozenset({"studio:read", "studio:private_read", "studio:write"}),
-            session_id=auth_session.id,
-        ),
-    )
     return AuthMeOut(
+        storage_upgrade_required=maintenance or await upgrade_pending(session),
         user=_user_out(user),
-        workspace=_workspace_out(workspace, principal),
-        policy_revision=principal.policy_revision,
+        permission_keys=sorted(role_permissions(user.platform_role)),
         must_change_password=user.must_change_password,
         session_expires_at=auth_session.absolute_expires_at,
     )
@@ -163,7 +135,7 @@ def _audit_out(row, actor_username, target_username):
         outcome=row.outcome,
         actor_username=actor_username,
         target_username=target_username,
-        workspace_id=row.workspace_id,
+        owner_user_id=row.owner_user_id,
         client_ip=row.client_ip,
         user_agent=row.user_agent,
         metadata={

@@ -53,7 +53,7 @@ class PresentationSlide(SlideModel):
     reference: PresentationReference | None = None
     image_asset_id: Identifier | None = Field(
         default=None,
-        description="Archived Workspace image; excluded from slide rendering and PPTX.",
+        description="Archived account image; excluded from slide rendering and PPTX.",
     )
     animations: list[PresentationAnimation] = Field(default_factory=list, max_length=600)
     transition: PresentationTransition | None = None

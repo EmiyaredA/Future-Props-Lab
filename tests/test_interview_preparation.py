@@ -274,11 +274,8 @@ async def test_material_upload_cas_private_access_and_delete(client):
         from app.capabilities.identity.principal import StudioPrincipal
 
         return StudioPrincipal(
+            platform_role="admin",
             user_id="other",
-            workspace_id="default",
-            workspace_access="owner",
-            member_role="owner",
-            is_platform_admin=True,
             must_change_password=False,
             auth_kind="session",
             scopes=frozenset({"studio:read", "studio:private_read", "studio:write"}),

@@ -44,7 +44,7 @@ async def content(session, principal, pub_id, asset_id, note_id=None, cover=Fals
     bind_source(session, pub)
     row = await session.scalar(
         select(VisualAsset).where(
-            VisualAsset.id == asset_id, VisualAsset.workspace_id == pub.workspace_id
+            VisualAsset.id == asset_id, VisualAsset.owner_user_id == pub.owner_user_id
         )
     )
     if row is None:
@@ -59,12 +59,12 @@ async def upload(session, principal, pub_id, note_id, incoming: IncomingFile):
     pub = await publication(session, pub_id)
     await article(session, principal, pub, note_id, level="edit")
     bind_source(session, pub)
-    workspace_id = pub.workspace_id
+    owner_user_id = pub.owner_user_id
     # No write transaction is held during file validation and storage.
     await session.rollback()
     row = await AssetLibrary(session, get_settings()).store_upload(
         incoming,
-        workspace_id=workspace_id,
+        owner_user_id=owner_user_id,
         allowed_extensions=ATTACHMENT_EXTENSIONS | {".png", ".jpg", ".jpeg", ".webp", ".gif"},
     )
     result = ThoughtAttachmentOut(

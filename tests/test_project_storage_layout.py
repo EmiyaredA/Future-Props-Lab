@@ -19,14 +19,25 @@ from app.runtime.db import SessionLocal
 
 
 async def _reset() -> None:
+    from tests.account_fixtures import clear_private_projects
+
+    await clear_private_projects()
     async with SessionLocal() as session:
-        await session.execute(delete(GalgameWorkshopProject))
-        await session.execute(delete(VisualWorkshopProject))
+        await session.execute(
+            delete(GalgameWorkshopProject).where(
+                GalgameWorkshopProject.owner_user_id == "test-user"
+            )
+        )
+        await session.execute(
+            delete(VisualWorkshopProject).where(VisualWorkshopProject.owner_user_id == "test-user")
+        )
         # Remove the owning roots (including their home pointers and histories)
         # before assets, so later backup tests cannot inherit incomplete projects.
-        await session.execute(delete(ThoughtKnowledgeBase))
+        await session.execute(
+            delete(ThoughtKnowledgeBase).where(ThoughtKnowledgeBase.owner_user_id == "test-user")
+        )
         await session.execute(delete(VisualNodeOutput))
-        await session.execute(delete(VisualAsset))
+        await session.execute(delete(VisualAsset).where(VisualAsset.owner_user_id == "test-user"))
         await session.commit()
 
 
@@ -37,7 +48,7 @@ async def _make_legacy(asset_id: str, *, keep_target: bytes | None = None) -> Vi
         asset = await session.get(VisualAsset, asset_id)
         assert asset is not None
         target = storage.path_for(asset)
-        legacy = storage.legacy_path(asset.storage_key)
+        legacy = storage.legacy_path(asset.storage_key, owner_user_id=asset.owner_user_id)
         legacy.parent.mkdir(parents=True, exist_ok=True)
         os.replace(target, legacy)
         asset.storage_version = 1
@@ -88,8 +99,8 @@ async def test_storage_layout_migrates_library_and_project_assets_in_batches() -
             await _make_legacy(galgame_asset["id"]),
         ]
         storage = AssetStorage(get_settings())
-        storage.remove_project_root("visual-workshop", visual["id"], workspace_id="default")
-        storage.remove_project_root("galgame-workshop", galgame["id"], workspace_id="default")
+        storage.remove_project_root("visual-workshop", visual["id"], owner_user_id="test-user")
+        storage.remove_project_root("galgame-workshop", galgame["id"], owner_user_id="test-user")
 
         status = (await client.get("/v1/file-storage/layout")).json()
         assert status["pending_projects"] == 2
@@ -124,7 +135,12 @@ async def test_storage_layout_migrates_library_and_project_assets_in_batches() -
             )
             assert all(asset.storage_version == 2 for asset in rows)
             assert all(storage.path_for(asset).is_file() for asset in rows)
-            assert all(not storage.legacy_path(asset.storage_key).exists() for asset in rows)
+            assert all(
+                not storage.legacy_path(
+                    asset.storage_key, owner_user_id=asset.owner_user_id
+                ).exists()
+                for asset in rows
+            )
 
 
 @pytest.mark.asyncio
@@ -147,7 +163,9 @@ async def test_storage_layout_reports_missing_and_conflicting_files_without_data
         missing_row = await _make_legacy(missing["id"])
         conflict_row = await _make_legacy(conflict["id"], keep_target=b"different-target")
         storage = AssetStorage(get_settings())
-        storage.legacy_path(missing_row.storage_key).unlink()
+        storage.legacy_path(
+            missing_row.storage_key, owner_user_id=missing_row.owner_user_id
+        ).unlink()
 
         result = (await client.post("/v1/file-storage/layout/migrate", params={"limit": 10})).json()
         assert result["missing_files"] == 1
@@ -156,13 +174,15 @@ async def test_storage_layout_reports_missing_and_conflicting_files_without_data
             "source_missing",
             "target_conflict",
         }
-        assert storage.legacy_path(conflict_row.storage_key).is_file()
+        assert storage.legacy_path(
+            conflict_row.storage_key, owner_user_id=conflict_row.owner_user_id
+        ).is_file()
         assert (
             storage.target_path(
                 conflict_row.storage_key,
                 visual_project_id=None,
                 galgame_project_id=None,
-                workspace_id="default",
+                owner_user_id="test-user",
             ).read_bytes()
             == b"different-target"
         )
@@ -198,10 +218,10 @@ async def test_startup_reconciles_interrupted_project_deletes() -> None:
 
     storage = AssetStorage(get_settings())
     visual_staged = storage.stage_project_root(
-        "visual-workshop", visual["id"], workspace_id="default"
+        "visual-workshop", visual["id"], owner_user_id="test-user"
     )
     galgame_staged = storage.stage_project_root(
-        "galgame-workshop", galgame["id"], workspace_id="default"
+        "galgame-workshop", galgame["id"], owner_user_id="test-user"
     )
     assert visual_staged is not None and galgame_staged is not None
 
@@ -212,9 +232,9 @@ async def test_startup_reconciles_interrupted_project_deletes() -> None:
         await session.commit()
         await reconcile_project_trash(session, storage)
 
-    assert storage.project_root("visual-workshop", visual["id"], workspace_id="default").is_dir()
+    assert storage.project_root("visual-workshop", visual["id"], owner_user_id="test-user").is_dir()
     assert not visual_staged.staged.exists()
     assert not storage.project_root(
-        "galgame-workshop", galgame["id"], workspace_id="default"
+        "galgame-workshop", galgame["id"], owner_user_id="test-user"
     ).exists()
     assert not galgame_staged.staged.exists()

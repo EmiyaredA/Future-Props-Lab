@@ -1,4 +1,4 @@
-"""Deployment-wide installation metadata; never stores Workspace speech data."""
+"""Deployment-wide installation metadata; never stores account speech data."""
 
 from datetime import datetime
 

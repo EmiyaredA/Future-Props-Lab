@@ -5,12 +5,10 @@ import {
   StudioCollapsedRail,
   type StudioRailEntry,
 } from "@shared/ui/StudioCollapsedRail";
-import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
+import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { BrandMark } from "@shared/ui/BrandMark";
 import { IntegrationIcon } from "@shared/ui/IntegrationIcon";
 import type { StudioPage } from "@app/routes";
-import { useOptionalStudioSession } from "@app/StudioSession";
-import { WorkspaceTrigger } from "@features/accounts/WorkspaceTrigger";
 import { StudioGlobalHeader } from "@app/layout/StudioGlobalHeader";
 
 const SECONDARY_STORAGE_KEY = "future-props-sidebar-studio-secondary-collapsed";
@@ -183,8 +181,7 @@ function StudioChrome({
   navigate: (page: StudioPage) => void;
   children?: ReactNode;
 }) {
-  const canReadLogs = useWorkspacePermission("logs.read");
-  const session = useOptionalStudioSession();
+  const canReadLogs = useAccountPermission("logs.read");
   const narrow = useNarrowViewport();
   const [secondaryCollapsed, setSecondaryCollapsed] = useState(
     loadSecondaryCollapsed,
@@ -393,7 +390,7 @@ function StudioChrome({
                 }
               : undefined
           }
-          footer={session ? <WorkspaceTrigger session={session} /> : null}
+          footer={null}
         />
       </div>
       {showSecondary ? (

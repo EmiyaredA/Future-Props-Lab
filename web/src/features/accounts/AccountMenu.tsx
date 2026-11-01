@@ -176,7 +176,7 @@ export function AccountMenu({ session }: { session: AccountSessionContext }) {
             {avatar}
             <span>
               <strong>{me.user.display_name}</strong>
-              <small>{me.workspace.name}</small>
+              <small>{me.user.display_name}</small>
             </span>
           </>
         }

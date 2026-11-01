@@ -10,7 +10,7 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { WorkspacePermissionsProvider } from "@platform/auth/WorkspacePermissions";
+import { AccountAccessProvider } from "@platform/auth/AccountAccess";
 import { ApiError } from "@platform/api/client";
 import * as api from "@features/thought-workshop/multitable/api";
 import * as storage from "@features/thought-workshop/multitable/drafts";
@@ -55,11 +55,7 @@ const operation = (name: string): api.Operation => ({
 });
 function wrapper({ children }: { children: ReactNode }) {
   return (
-    <WorkspacePermissionsProvider
-      userId="owner"
-      workspaceId="workspace"
-      permissions={["content.write"]}
-    >
+    <AccountAccessProvider userId="owner" permissions={["content.write"]}>
       <QueryClientProvider
         client={
           new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -67,7 +63,7 @@ function wrapper({ children }: { children: ReactNode }) {
       >
         {children}
       </QueryClientProvider>
-    </WorkspacePermissionsProvider>
+    </AccountAccessProvider>
   );
 }
 beforeEach(() => {
@@ -163,7 +159,7 @@ describe("多维表格编辑与恢复", () => {
     expect(api.tableOperations).toHaveBeenCalledTimes(1);
     expect(storage.putDraft).toHaveBeenCalledWith(
       expect.objectContaining({
-        document: "owner/workspace/note",
+        document: "owner/owner/note",
         revision: 3,
         operations: [operation("保留")],
       }),
@@ -173,7 +169,7 @@ describe("多维表格编辑与恢复", () => {
   it("keeps the recoverable original if copying it into this tab fails", async () => {
     const draft: storage.TableDraft = {
       key: "original",
-      document: "owner/workspace/note",
+      document: "owner/owner/note",
       tab: "old",
       revision: 2,
       time: 1,

@@ -17,7 +17,7 @@ from app.runtime.config import get_settings
 
 async def import_motion_export(
     session: AsyncSession,
-    workspace_id: str,
+    owner_user_id: str,
     source: Path,
     *,
     filename: str,
@@ -26,7 +26,7 @@ async def import_motion_export(
     new_project_title: str | None,
 ) -> tuple[str, str]:
     """Copy a validated video and append it on a new top visual track."""
-    projects = VideoEditorProjects(session, workspace_id)
+    projects = VideoEditorProjects(session, owner_user_id)
     created = None
     if target_project_id:
         await projects.row(target_project_id)
@@ -41,7 +41,7 @@ async def import_motion_export(
         library = AssetLibrary(session, get_settings())
         asset, staged = await library.stage_local_copy(
             source,
-            workspace_id=workspace_id,
+            owner_user_id=owner_user_id,
             filename=filename,
             content_type="video/quicktime" if filename.endswith(".mov") else "video/mp4",
             video_editor_project_id=project_id,
@@ -51,7 +51,7 @@ async def import_motion_export(
         session.add(VideoEditorAssetMetadata(asset_id=asset.id, project_id=project_id))
         session.add(
             VideoEditorTask(
-                workspace_id=workspace_id,
+                owner_user_id=owner_user_id,
                 project_id=project_id,
                 request_id=f"media-{asset.id}",
                 kind="media",
@@ -59,7 +59,7 @@ async def import_motion_export(
             )
         )
         await session.flush()
-        timeline = await VideoEditorTimelines(session, workspace_id).get(project_id)
+        timeline = await VideoEditorTimelines(session, owner_user_id).get(project_id)
         tracks = timeline.document.model_dump(mode="json", by_alias=True)["tracks"]
         track_id = f"motion-{uuid4().hex[:12]}"
         operations = [
@@ -102,7 +102,7 @@ async def import_motion_export(
                 },
             ]
         )
-        await VideoEditorTimelines(session, workspace_id).apply(
+        await VideoEditorTimelines(session, owner_user_id).apply(
             project_id,
             VideoEditorTimelineBatchIn.model_validate(
                 {

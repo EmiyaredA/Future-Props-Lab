@@ -20,6 +20,7 @@ from app.runtime.time import utc_now
 
 def _task(*, status: str = "failed", payload: dict | None = None) -> ModelTestGenerationTask:
     return ModelTestGenerationTask(
+        owner_user_id="test-user",
         provider_kind="senseaudio_video",
         generation_kind="video",
         provider_name="test",
@@ -32,7 +33,11 @@ def _task(*, status: str = "failed", payload: dict | None = None) -> ModelTestGe
 @pytest.mark.asyncio
 async def test_private_asset_upload_is_atomic_and_claimed_assets_are_immutable() -> None:
     settings = get_settings()
-    before = {path.name for path in settings.model_test_reference_path.glob("*") if path.is_file()}
+    before = {
+        path.name
+        for path in settings.account_model_test_path("test-user", "references").glob("*")
+        if path.is_file()
+    }
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         invalid = await client.post(
@@ -44,7 +49,9 @@ async def test_private_asset_upload_is_atomic_and_claimed_assets_are_immutable()
         )
         assert invalid.status_code == 422
         after = {
-            path.name for path in settings.model_test_reference_path.glob("*") if path.is_file()
+            path.name
+            for path in settings.account_model_test_path("test-user", "references").glob("*")
+            if path.is_file()
         }
         assert after == before
 
@@ -61,12 +68,12 @@ async def test_private_asset_upload_is_atomic_and_claimed_assets_are_immutable()
             session.add_all((first, second))
             await session.flush()
             first_id, second_id = first.id, second.id
-            await ModelTestGenerationAssets(session, "default").claim_for_task(
+            await ModelTestGenerationAssets(session, "test-user").claim_for_task(
                 first.id, (([asset_id], "reference_video", "video"),)
             )
             await session.commit()
             with pytest.raises(GenerationAssetError, match="已被其他任务使用"):
-                await ModelTestGenerationAssets(session, "default").claim_for_task(
+                await ModelTestGenerationAssets(session, "test-user").claim_for_task(
                     second.id, (([asset_id], "reference_video", "video"),)
                 )
             await session.rollback()
@@ -77,7 +84,9 @@ async def test_private_asset_upload_is_atomic_and_claimed_assets_are_immutable()
         async with SessionLocal() as session:
             claimed = await session.get(ModelTestGenerationAsset, asset_id)
             assert claimed is not None
-            claimed_path = settings.model_test_reference_path / claimed.storage_key
+            claimed_path = (
+                settings.account_model_test_path("test-user", "references") / claimed.storage_key
+            )
         deleted_task = await client.delete(
             f"/v1/model-test/generation-tasks/{first_id}",
             params={"expected_revision": 0},
@@ -96,7 +105,7 @@ async def test_private_asset_upload_is_atomic_and_claimed_assets_are_immutable()
 @pytest.mark.asyncio
 async def test_cleanup_removes_expired_drafts_temp_files_and_orphans() -> None:
     settings = get_settings()
-    root = settings.model_test_reference_path
+    root = settings.account_model_test_path("test-user", "references")
     temp_dir = root / ".tmp"
     temp_dir.mkdir(parents=True, exist_ok=True)
     storage_key = uuid4().hex
@@ -114,6 +123,7 @@ async def test_cleanup_removes_expired_drafts_temp_files_and_orphans() -> None:
 
     async with SessionLocal() as session:
         draft = ModelTestGenerationAsset(
+            owner_user_id="test-user",
             original_filename="draft.mp3",
             storage_key=storage_key,
             media_kind="audio",
@@ -143,11 +153,12 @@ async def test_cleanup_removes_expired_drafts_temp_files_and_orphans() -> None:
 async def test_legacy_backfill_is_idempotent_skips_active_tasks_and_keeps_public_files() -> None:
     settings = get_settings()
     public_key = uuid4().hex
-    public_path = settings.visual_asset_path / public_key
+    public_path = (settings.account_path("test-user") / "legacy-assets") / public_key
     public_path.parent.mkdir(parents=True, exist_ok=True)
     public_path.write_bytes(b"\x00\x00\x00\x18ftypisom")
     async with SessionLocal() as session:
         public = VisualAsset(
+            owner_user_id="test-user",
             original_filename="legacy.mp4",
             display_name="legacy.mp4",
             storage_key=public_key,
@@ -188,7 +199,9 @@ async def test_legacy_backfill_is_idempotent_skips_active_tasks_and_keeps_public
         private = await session.get(ModelTestGenerationAsset, private_id)
         assert private is not None and private.task_id == terminal_id
         assert active is not None and active.request_payload["video_asset_ids"] == [original_id]
-        private_path = settings.model_test_reference_path / private.storage_key
+        private_path = (
+            settings.account_model_test_path("test-user", "references") / private.storage_key
+        )
         assert public_path.is_file()
         assert private_path.read_bytes() == public_path.read_bytes()
         await session.execute(

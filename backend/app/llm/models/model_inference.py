@@ -11,11 +11,11 @@ from app.runtime.time import utc_now
 class ModelInferenceTask(Base):
     __tablename__ = "model_inference_tasks"
     __table_args__ = (
-        UniqueConstraint("workspace_id", "request_id"),
-        Index("ix_model_inference_tasks_workspace_status", "workspace_id", "status"),
+        UniqueConstraint("owner_user_id", "request_id"),
+        Index("ix_model_inference_tasks_account_status", "owner_user_id", "status"),
     )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     request_id: Mapped[str] = mapped_column(String(64))
     fingerprint: Mapped[str] = mapped_column(String(64))
     provider_id: Mapped[str | None] = mapped_column(
@@ -53,8 +53,8 @@ class ModelInferenceTask(Base):
 class ModelInferenceAsset(Base):
     __tablename__ = "model_inference_assets"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(
-        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    owner_user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     task_id: Mapped[str | None] = mapped_column(
         ForeignKey("model_inference_tasks.id", ondelete="CASCADE"), nullable=True, index=True

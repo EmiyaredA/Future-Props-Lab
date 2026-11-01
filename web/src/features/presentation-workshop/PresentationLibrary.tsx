@@ -212,7 +212,7 @@ export function PresentationLibrary({
               {search
                 ? "试试其他关键词，或清空搜索查看全部文稿。"
                 : readOnly
-                  ? "当前工作空间还没有可浏览的演示文稿。"
+                  ? "当前账号还没有可浏览的演示文稿。"
                   : "选择一个基础版式，开始你的第一份演示。"}
             </p>
           </div>

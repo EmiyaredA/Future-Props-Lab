@@ -120,10 +120,10 @@ def _optional_revision(value: object) -> int | None:
 class VideoEditorProjectSnapshots:
     application_id = "video-editor"
 
-    def __init__(self, session: AsyncSession, settings: Settings, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, settings: Settings, owner_user_id: str) -> None:
         self.session = session
         self.settings = settings
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
         self.storage = AssetStorage(settings)
 
     async def export(self, project_id: str) -> ExportedProjectSnapshot:
@@ -131,7 +131,7 @@ class VideoEditorProjectSnapshots:
             await self.session.execute(
                 select(VideoEditorProject).where(
                     VideoEditorProject.id == project_id,
-                    VideoEditorProject.workspace_id == self.workspace_id,
+                    VideoEditorProject.owner_user_id == self.owner_user_id,
                 )
             )
         ).scalar_one_or_none()
@@ -154,7 +154,7 @@ class VideoEditorProjectSnapshots:
         segment_details = await self.session.scalars(
             select(VideoEditorTask.result_detail).where(
                 VideoEditorTask.project_id == project_id,
-                VideoEditorTask.workspace_id == self.workspace_id,
+                VideoEditorTask.owner_user_id == self.owner_user_id,
                 VideoEditorTask.kind == "segment_export",
                 VideoEditorTask.status == "completed",
             )
@@ -170,7 +170,7 @@ class VideoEditorProjectSnapshots:
                 await self.session.execute(
                     select(VisualAsset).where(
                         VisualAsset.video_editor_project_id == project_id,
-                        VisualAsset.workspace_id == self.workspace_id,
+                        VisualAsset.owner_user_id == self.owner_user_id,
                     )
                 )
             ).scalars()
@@ -247,7 +247,7 @@ class VideoEditorProjectSnapshots:
                     folder["assetIds"][index] = asset_ids[asset_id]
             project = VideoEditorProject(
                 id=new_id(),
-                workspace_id=self.workspace_id,
+                owner_user_id=self.owner_user_id,
                 title=_copy_title(create.title),
                 status=status,
                 source_application=_optional_string(
@@ -268,7 +268,7 @@ class VideoEditorProjectSnapshots:
                 self.storage,
                 self.application_id,
                 project.id,
-                workspace_id=self.workspace_id,
+                owner_user_id=self.owner_user_id,
             ):
                 for item in assets:
                     storage_key = uuid4().hex
@@ -276,7 +276,7 @@ class VideoEditorProjectSnapshots:
                     self.session.add(
                         VisualAsset(
                             id=new_asset_id,
-                            workspace_id=self.workspace_id,
+                            owner_user_id=self.owner_user_id,
                             video_editor_project_id=project.id,
                             original_filename=item["original_filename"],
                             display_name=item["display_name"],
@@ -293,7 +293,7 @@ class VideoEditorProjectSnapshots:
                     )
                     self.session.add(
                         VideoEditorTask(
-                            workspace_id=self.workspace_id,
+                            owner_user_id=self.owner_user_id,
                             project_id=project.id,
                             request_id=f"media-{new_asset_id}",
                             kind="media",
@@ -308,7 +308,7 @@ class VideoEditorProjectSnapshots:
                             visual_project_id=None,
                             galgame_project_id=None,
                             video_editor_project_id=project.id,
-                            workspace_id=self.workspace_id,
+                            owner_user_id=self.owner_user_id,
                         ),
                         expected_size=item["byte_size"],
                     )

@@ -3,7 +3,7 @@ from sqlalchemy.orm import load_only
 
 from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
 from app.apps.thought_workshop.schemas.workshop import ThoughtNoteSummary
-from app.console.models import User, WorkspaceMembership
+from app.console.models import User
 
 from .access import (
     can_certify,
@@ -20,9 +20,9 @@ from .schemas import CommunityArticle, CommunityDirectory, PublicationOut
 
 async def visible(session, principal, pub, query="", include_content=False):
     manager = principal.user_id == pub.publisher_id or await manages_source(
-        session, principal, pub.workspace_id
+        session, principal, pub.owner_user_id
     )
-    original_role = await source_role(session, principal, pub.workspace_id)
+    original_role = await source_role(session, principal, pub.owner_user_id)
     statement = (
         select(ThoughtNote, PublishedArticle, ArticleMember.role)
         .join(
@@ -41,7 +41,7 @@ async def visible(session, principal, pub, query="", include_content=False):
             ),
         )
         .where(
-            ThoughtNote.workspace_id == pub.workspace_id,
+            ThoughtNote.owner_user_id == pub.owner_user_id,
             ThoughtNote.knowledge_base_id == pub.knowledge_base_id,
             ThoughtNote.deleted_at.is_(None),
             PublishedArticle.active.is_(True),
@@ -61,7 +61,7 @@ async def visible(session, principal, pub, query="", include_content=False):
                     if key != "excerpt"
                 ),
                 ThoughtNote.search_text,
-                ThoughtNote.workspace_id,
+                ThoughtNote.owner_user_id,
             )
         )
     if query.strip():
@@ -95,7 +95,7 @@ async def output(session, principal, pub, rows=None, manager=None):
                 .where(
                     CommunityFavorite.user_id == principal.user_id,
                     ThoughtNote.knowledge_base_id == pub.knowledge_base_id,
-                    OfficialSource.workspace_id == pub.workspace_id,
+                    OfficialSource.owner_user_id == pub.owner_user_id,
                 )
                 .limit(1)
             )
@@ -149,26 +149,8 @@ async def directory(session, principal, id):
 
 
 async def listing(session, principal, query, mine, favorites, offset, limit, official=None):
-    source_manager = (
-        select(WorkspaceMembership.id)
-        .where(
-            WorkspaceMembership.workspace_id == Publication.workspace_id,
-            WorkspaceMembership.user_id == principal.user_id,
-            WorkspaceMembership.status == "active",
-            WorkspaceMembership.role.in_(["owner", "admin"]),
-        )
-        .exists()
-    )
-    manager = or_(principal.can_manage_all_workspaces, source_manager)
-    source_member = (
-        select(WorkspaceMembership.id)
-        .where(
-            WorkspaceMembership.workspace_id == Publication.workspace_id,
-            WorkspaceMembership.user_id == principal.user_id,
-            WorkspaceMembership.status == "active",
-        )
-        .exists()
-    )
+    manager = Publication.owner_user_id == principal.user_id
+    source_member = manager
     granted = (
         select(ArticleMember.user_id)
         .where(
@@ -186,7 +168,7 @@ async def listing(session, principal, query, mine, favorites, offset, limit, off
             PublishedArticle.publication_id == Publication.id,
             PublishedArticle.active.is_(True),
             ThoughtNote.knowledge_base_id == Publication.knowledge_base_id,
-            ThoughtNote.workspace_id == Publication.workspace_id,
+            ThoughtNote.owner_user_id == Publication.owner_user_id,
             ThoughtNote.deleted_at.is_(None),
             or_(PublishedArticle.visibility == "public", granted, manager, source_member),
         )
@@ -197,7 +179,7 @@ async def listing(session, principal, query, mine, favorites, offset, limit, off
             ThoughtKnowledgeBase,
             and_(
                 ThoughtKnowledgeBase.id == Publication.knowledge_base_id,
-                ThoughtKnowledgeBase.workspace_id == Publication.workspace_id,
+                ThoughtKnowledgeBase.owner_user_id == Publication.owner_user_id,
             ),
         )
         .where(ThoughtKnowledgeBase.deleted_at.is_(None), or_(visible_article.exists(), manager))
@@ -231,7 +213,7 @@ async def listing(session, principal, query, mine, favorites, offset, limit, off
             .where(
                 CommunityFavorite.user_id == principal.user_id,
                 ThoughtNote.knowledge_base_id == Publication.knowledge_base_id,
-                OfficialSource.workspace_id == Publication.workspace_id,
+                OfficialSource.owner_user_id == Publication.owner_user_id,
                 Publication.is_official.is_(True),
             )
             .exists()
@@ -260,7 +242,7 @@ async def listing(session, principal, query, mine, favorites, offset, limit, off
     result = []
     for pub in pubs:
         manager = principal.user_id == pub.publisher_id or await manages_source(
-            session, principal, pub.workspace_id
+            session, principal, pub.owner_user_id
         )
         if mine and not (manager or pub.publisher_id == principal.user_id):
             continue

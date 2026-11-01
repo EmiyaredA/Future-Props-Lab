@@ -13,7 +13,7 @@ from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.media_rendering.render_engine import RenderCancelled, render_document
 from app.capabilities.media_rendering.timeline_document import parse_timeline_document
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.ids import new_id
 from app.runtime.time import utc_now
 
@@ -44,13 +44,13 @@ async def process_clip_merge(
             select(VisualAsset).where(
                 VisualAsset.id.in_(ids),
                 VisualAsset.video_editor_project_id == task.project_id,
-                VisualAsset.workspace_id == task.workspace_id,
+                VisualAsset.owner_user_id == task.owner_user_id,
             )
         )
         paths = {asset.id: storage.path_for(asset) for asset in assets}
         if paths.keys() != ids:
             raise RuntimeError("合并源素材不存在")
-        project_id, workspace_id = task.project_id, task.workspace_id
+        project_id, owner_user_id = task.project_id, task.owner_user_id
     cancel = threading.Event()
     watch = asyncio.create_task(cancel_watch(task_id, cancel))
     loop = asyncio.get_running_loop()
@@ -99,7 +99,7 @@ async def process_clip_merge(
             ):
                 raise RuntimeError("合并视频的画幅、帧数、透明通道、时长或音轨校验失败")
             # Prepare proxies before publishing metadata.
-            preview_asset = VisualAsset(id=task_id, media_kind="video")
+            preview_asset = VisualAsset(owner_user_id=owner_user_id, id=task_id, media_kind="video")
             probe, proxy, thumbnail, waveform, fingerprint = await asyncio.to_thread(
                 prepare_media,
                 output,
@@ -109,10 +109,10 @@ async def process_clip_merge(
             )
             await raise_if_cancelled(task_id)
             async with session_factory() as session:
-                bind_workspace(session, workspace_id)
+                bind_owner(session, owner_user_id)
                 asset, staged = await AssetLibrary(session, settings).stage_local_copy(
                     output,
-                    workspace_id=workspace_id,
+                    owner_user_id=owner_user_id,
                     filename=f"{detail['name'][:200]}-{task_id[:8]}.mov",
                     content_type="video/quicktime",
                     video_editor_project_id=project_id,
@@ -123,7 +123,7 @@ async def process_clip_merge(
                 # Finish large file I/O before starting the publishing transaction.
                 asset.id = new_id()
                 derived = (
-                    storage.project_root("video-editor", project_id, workspace_id=workspace_id)
+                    storage.project_root("video-editor", project_id, owner_user_id=owner_user_id)
                     / "derived"
                 )
                 derived.mkdir(parents=True, exist_ok=True)

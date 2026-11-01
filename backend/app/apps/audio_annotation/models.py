@@ -14,8 +14,8 @@ class AudioAnnotationProject(Base):
     __tablename__ = "audio_annotation_projects"
     __table_args__ = (
         Index(
-            "ix_audio_annotation_projects_workspace_updated",
-            "workspace_id",
+            "ix_audio_annotation_projects_account_updated",
+            "owner_user_id",
             "updated_at",
             "created_at",
         ),
@@ -23,7 +23,7 @@ class AudioAnnotationProject(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     asset_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("visual_assets.id", ondelete="RESTRICT")
     )

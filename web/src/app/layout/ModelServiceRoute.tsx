@@ -1,6 +1,6 @@
 import { lazy } from "react";
-import type { Workspace } from "@features/accounts";
-import { workspaceAllows } from "@features/accounts/permissions";
+import type { AuthMe } from "@features/accounts";
+import { accountAllows } from "@features/accounts/permissions";
 import type { StudioPage } from "@app/routes";
 import { ModelInfrastructureHeader } from "./ModelInfrastructureHeader";
 
@@ -11,13 +11,13 @@ const ModelServicePage = lazy(() =>
 );
 
 export function ModelServiceRoute({
-  workspace,
+  account,
   navigate,
   onTestModel,
   canWrite,
   focusSelected,
 }: {
-  workspace: Workspace;
+  account: AuthMe;
   navigate: (page: StudioPage, keyboard?: boolean) => void;
   onTestModel: (model: { id: string }) => void;
   canWrite?: boolean;
@@ -25,11 +25,11 @@ export function ModelServiceRoute({
 }) {
   return (
     <ModelServicePage
-      key={workspace.id}
-      canWrite={canWrite ?? workspaceAllows(workspace, "configuration.manage")}
+      key={account.user.id}
+      canWrite={canWrite ?? accountAllows(account, "configuration.manage")}
       canTest={
-        workspaceAllows(workspace, "content.write") &&
-        workspaceAllows(workspace, "models.use")
+        accountAllows(account, "content.write") &&
+        accountAllows(account, "models.use")
       }
       onTestModel={onTestModel}
       renderHeader={(actions) => (

@@ -79,7 +79,7 @@ class VisualAssets(VisualAssetContext):
         if parent and await self._depth(parent) >= MAX_FOLDER_DEPTH:
             raise AssetError("文件夹最多支持五层", code="folder_depth_exceeded")
         row = VisualAssetFolder(
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             project_id=project_id,
             parent_id=body.parent_id,
             name=body.name,
@@ -376,7 +376,7 @@ class VisualAssets(VisualAssetContext):
         await self._validate_folder_scope(folder_id, project_id)
         row = await self.library.store_upload(
             upload,
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             visual_project_id=project_id,
             folder_id=folder_id,
             display_name=display_name,
@@ -501,6 +501,7 @@ class VisualAssets(VisualAssetContext):
         if existing:
             return asset_out(asset, reference=existing)
         row = VisualProjectAssetReference(
+            owner_user_id=asset.owner_user_id,
             project_id=project_id,
             asset_id=body.asset_id,
             folder_id=body.folder_id,
@@ -559,6 +560,7 @@ class VisualAssets(VisualAssetContext):
                 if asset.id in references:
                     continue
                 reference = VisualProjectAssetReference(
+                    owner_user_id=asset.owner_user_id,
                     project_id=project_id,
                     asset_id=asset.id,
                     folder_id=None,
@@ -594,7 +596,7 @@ class VisualAssets(VisualAssetContext):
                     visual_project_id=project_id,
                     galgame_project_id=None,
                     video_editor_project_id=None,
-                    workspace_id=self.workspace_id,
+                    owner_user_id=self.owner_user_id,
                 )
                 try:
                     shutil.copyfile(source_path, temp_path)
@@ -603,7 +605,7 @@ class VisualAssets(VisualAssetContext):
                     temp_path.unlink(missing_ok=True)
                 copied_paths.append(final_path)
                 imported = VisualAsset(
-                    workspace_id=self.workspace_id,
+                    owner_user_id=self.owner_user_id,
                     project_id=project_id,
                     galgame_project_id=None,
                     folder_id=None,
@@ -673,7 +675,7 @@ class VisualAssets(VisualAssetContext):
                     visual_project_id=None,
                     galgame_project_id=None,
                     video_editor_project_id=None,
-                    workspace_id=self.workspace_id,
+                    owner_user_id=self.owner_user_id,
                 )
                 try:
                     shutil.copyfile(source_path, temp_path)
@@ -683,7 +685,7 @@ class VisualAssets(VisualAssetContext):
                 copied_paths.append(final_path)
                 override = body.display_names.get(source.id)
                 imported = VisualAsset(
-                    workspace_id=self.workspace_id,
+                    owner_user_id=self.owner_user_id,
                     project_id=None,
                     galgame_project_id=None,
                     folder_id=body.folder_id,

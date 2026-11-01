@@ -86,13 +86,13 @@ function AmadeusAudioContext({
 
 export function AudioAnnotationEditorPage({
   projectId,
-  workspaceId,
+  accountId,
   onBack,
   registerNavigationGuard,
   speakerImportSource,
 }: {
   projectId: string;
-  workspaceId: string;
+  accountId: string;
   onBack: () => void;
   registerNavigationGuard: (
     guard: ((continueNavigation: () => void) => boolean) | null,
@@ -103,7 +103,7 @@ export function AudioAnnotationEditorPage({
   const [regionFlashToken, setRegionFlashToken] = useState(0);
   const controller = useAudioAnnotationEditorController({
     projectId,
-    workspaceId,
+    accountId,
     onBack,
     registerNavigationGuard,
   });

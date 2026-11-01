@@ -38,9 +38,18 @@ async def test_upgrade_preserves_tasks_and_execution_info_survives_store_reload(
             row[1] for row in db.execute("PRAGMA table_info(visual_generation_tasks)")
         )
         old = db.execute(f"SELECT {columns} FROM visual_generation_tasks").fetchone()
+        db.execute(
+            "INSERT INTO users(id,username,username_normalized,password_hash) "
+            "VALUES ('default','owner','owner','unused')"
+        )
+        db.execute(
+            "INSERT INTO workspace_memberships(id,user_id,workspace_id,role,status) "
+            "VALUES ('owner','default','default','owner','active')"
+        )
         db.commit()
     apply_migrations(path)
     with connect_database(path) as db:
+        columns = columns.replace("workspace_id", "owner_user_id")
         row = db.execute(f"SELECT {columns} FROM visual_generation_tasks").fetchone()
         assert row == old
         assert db.execute("SELECT execution_info FROM visual_generation_tasks").fetchone() == (

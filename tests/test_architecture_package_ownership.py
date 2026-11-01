@@ -155,11 +155,9 @@ def test_console_owns_routes_and_schemas() -> None:
         "auth.py",
         "accounts.py",
         "account_management.py",
-        "workspaces.py",
         "platform_governance.py",
         "desktop.py",
         "desktop_agent.py",
-        "public_workspace.py",
         "file_management.py",
     )
     console_schemas = (
@@ -167,7 +165,6 @@ def test_console_owns_routes_and_schemas() -> None:
         "desktop.py",
         "desktop_agent.py",
         "platform_governance.py",
-        "public_workspace.py",
     )
     for name in console_routes:
         assert (BACKEND_APP / "console" / "routes" / name).is_file()
@@ -192,7 +189,6 @@ def test_asset_store_owns_media_routes_and_schemas() -> None:
 def test_console_owns_models() -> None:
     for name in (
         "accounts.py",
-        "workspace.py",
         "platform_governance.py",
         "model_templates.py",
         "runtime_admission.py",

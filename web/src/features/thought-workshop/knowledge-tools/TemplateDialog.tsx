@@ -80,7 +80,7 @@ export function TemplateDialog({
   return (
     <ConfirmDialog
       open
-      title="Workspace 文档模板"
+      title="账号文档模板"
       pending={busy}
       confirmLabel="从模板创建文档"
       onCancel={close}

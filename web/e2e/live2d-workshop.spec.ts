@@ -62,7 +62,7 @@ test("authors a character keyform, animates it, saves and exports separate seque
   expect(
     await page.evaluate(() =>
       window.dispatchEvent(
-        new CustomEvent("future-props:before-workspace-switch", {
+        new CustomEvent("future-props:before-navigation", {
           cancelable: true,
           detail: () => {},
         }),

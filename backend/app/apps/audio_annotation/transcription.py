@@ -95,7 +95,7 @@ class AudioAnnotationTranscription:
     async def _log(
         self,
         *,
-        workspace_id: str,
+        owner_user_id: str,
         provider_kind: str,
         model_slug: str,
         project_id: str,
@@ -118,7 +118,7 @@ class AudioAnnotationTranscription:
         self.session.add(
             LlmCallLog(
                 id=log_id,
-                workspace_id=workspace_id,
+                owner_user_id=owner_user_id,
                 call_source="audio_annotation",
                 provider_kind=provider_kind,
                 model=model_slug,
@@ -201,7 +201,7 @@ class AudioAnnotationTranscription:
             )
             byte_size = len(payload)
             filename = f"segment-{segment_id}.wav"
-            workspace_id = project.workspace_id
+            owner_user_id = project.owner_user_id
             provider_kind = provider.kind
             model_slug = model.slug
             base_url = provider.base_url
@@ -229,7 +229,7 @@ class AudioAnnotationTranscription:
             except Exception as exc:
                 message = safe_transcription_error(exc)
                 await self._log(
-                    workspace_id=workspace_id,
+                    owner_user_id=owner_user_id,
                     provider_kind=provider_kind,
                     model_slug=model_slug,
                     project_id=project_id,
@@ -252,7 +252,7 @@ class AudioAnnotationTranscription:
                 ) from exc
 
             log_id = await self._log(
-                workspace_id=workspace_id,
+                owner_user_id=owner_user_id,
                 provider_kind=provider_kind,
                 model_slug=model_slug,
                 project_id=project_id,

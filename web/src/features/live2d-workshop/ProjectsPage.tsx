@@ -47,7 +47,7 @@ export function ProjectsPage({
 }: {
   onOpen: (id: string) => void;
   readOnly?: boolean;
-  appearanceScope?: { userId: string; workspaceId: string };
+  appearanceScope?: { userId: string; accountId: string };
 }) {
   const [projects, setProjects] = useState<Project[]>([]),
     [query, setQuery] = useState("");
@@ -57,7 +57,7 @@ export function ProjectsPage({
   const [chosenAppearance, setChosenAppearance] = useState(() =>
     appearanceScope
       ? localStorage.getItem(
-          appearanceKey(appearanceScope.userId, appearanceScope.workspaceId),
+          appearanceKey(appearanceScope.userId, appearanceScope.accountId),
         )
       : null,
   );
@@ -147,7 +147,7 @@ export function ProjectsPage({
       }
       const key = appearanceKey(
         appearanceScope.userId,
-        appearanceScope.workspaceId,
+        appearanceScope.accountId,
       );
       if (projectId) localStorage.setItem(key, projectId);
       else localStorage.removeItem(key);

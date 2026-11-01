@@ -35,7 +35,7 @@ export type DocumentAccess = {
   ) => Promise<DirectoryEntry[]>;
 };
 const ordinary: DocumentAccess = {
-  namespace: "workspace",
+  namespace: "account",
   directory: async (library, signal) =>
     (await getDirectory(library, signal)).documents,
   community: false,

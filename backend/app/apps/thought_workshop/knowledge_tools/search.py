@@ -1,4 +1,4 @@
-"""Workspace-wide Chinese-friendly substring search without another service."""
+"""account-wide Chinese-friendly substring search without another service."""
 
 from sqlalchemy import case, func, or_, select
 
@@ -8,9 +8,9 @@ from app.apps.thought_workshop.notes import note_out
 from .schemas import SearchHit, SearchResult
 
 
-async def search(session, workspace_id, criteria, offset, limit):
+async def search(session, owner_user_id, criteria, offset, limit):
     filters = [
-        ThoughtNote.workspace_id == workspace_id,
+        ThoughtNote.owner_user_id == owner_user_id,
         ThoughtNote.deleted_at.is_(None),
         ThoughtKnowledgeBase.deleted_at.is_(None),
     ]
@@ -63,7 +63,7 @@ async def search(session, workspace_id, criteria, offset, limit):
     ancestors = (
         await session.execute(
             select(ThoughtNote.id, ThoughtNote.parent_id, ThoughtNote.title).where(
-                ThoughtNote.workspace_id == workspace_id,
+                ThoughtNote.owner_user_id == owner_user_id,
                 ThoughtNote.knowledge_base_id.in_(project_ids),
                 ThoughtNote.deleted_at.is_(None),
             )

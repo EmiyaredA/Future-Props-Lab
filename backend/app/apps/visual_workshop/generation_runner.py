@@ -38,7 +38,7 @@ from app.llm.generation_runtime import (
 from app.llm.providers.temporary_media import TemporaryMediaError
 from app.llm.providers.zealman_live import ZealmanLiveMonitor
 from app.llm.providers.zealman_video import create_task, get_task, upload_reference
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.config import Settings, get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.polling_runner import PollingTaskRunner
@@ -216,7 +216,7 @@ class VisualGenerationRunner(PollingTaskRunner):
             if any(asset is None for asset in assets):
                 return
             paths = [self.storage.path_for(asset) for asset in assets if asset is not None]
-            workspace_id = batch.workspace_id
+            owner_user_id = batch.owner_user_id
             project_id = batch.project_id
             grid_size = batch.grid_size
             generation_node_id = batch.generation_node_id
@@ -227,7 +227,7 @@ class VisualGenerationRunner(PollingTaskRunner):
                 select(VisualAsset).where(
                     VisualAsset.storage_key == storage_key,
                     VisualAsset.project_id == project_id,
-                    VisualAsset.workspace_id == workspace_id,
+                    VisualAsset.owner_user_id == owner_user_id,
                 )
             )
             if existing is not None:
@@ -256,7 +256,7 @@ class VisualGenerationRunner(PollingTaskRunner):
             storage_key,
             visual_project_id=project_id,
             galgame_project_id=None,
-            workspace_id=workspace_id,
+            owner_user_id=owner_user_id,
         )
         try:
             render_image_grid(paths, captions, temp_path, grid_size)
@@ -274,7 +274,7 @@ class VisualGenerationRunner(PollingTaskRunner):
                 )
                 if asset is None:
                     asset = VisualAsset(
-                        workspace_id=batch.workspace_id,
+                        owner_user_id=batch.owner_user_id,
                         project_id=batch.project_id,
                         folder_id=None,
                         original_filename=filename,
@@ -324,7 +324,7 @@ class VisualGenerationRunner(PollingTaskRunner):
             api_key=task.api_key,
             model_slug=task.model_slug,
             payload=task.payload,
-            workspace_id=task.workspace_id,
+            owner_user_id=task.owner_user_id,
         )
 
     async def _poll_context(self, task: GenerationTaskContext):
@@ -349,10 +349,10 @@ class VisualGenerationRunner(PollingTaskRunner):
         )
 
     async def _asset_data_uri(
-        self, asset_id: str, workspace_id: str, *, expected_kind: str | None = None
+        self, asset_id: str, owner_user_id: str, *, expected_kind: str | None = None
     ) -> str:
         async with self.session_factory() as session:
-            bind_workspace(session, workspace_id)
+            bind_owner(session, owner_user_id)
             asset = await session.get(VisualAsset, asset_id)
             allowed = {expected_kind} if expected_kind else {"image", "audio"}
             if asset is None or asset.media_kind not in allowed:
@@ -369,11 +369,11 @@ class VisualGenerationRunner(PollingTaskRunner):
         self,
         asset_id: str,
         expected_kind: str,
-        workspace_id: str,
+        owner_user_id: str,
         filename: str | None = None,
     ) -> str:
         async with self.session_factory() as session:
-            bind_workspace(session, workspace_id)
+            bind_owner(session, owner_user_id)
             asset = await session.get(VisualAsset, asset_id)
             if asset is None or asset.media_kind != expected_kind:
                 raise TemporaryMediaError("参考素材已不存在或类型不匹配")
@@ -397,7 +397,7 @@ class VisualGenerationRunner(PollingTaskRunner):
         api_key: str,
         model_slug: str,
         payload: dict,
-        workspace_id: str,
+        owner_user_id: str,
     ) -> str | ImmediateGenerationResult:
         if provider_kind == "zealman_video":
             references: dict[str, list[str]] = {"image": [], "audio": [], "video": []}
@@ -408,7 +408,7 @@ class VisualGenerationRunner(PollingTaskRunner):
             ):
                 for asset_id in payload.get(field, []):
                     async with self.session_factory() as session:
-                        bind_workspace(session, workspace_id)
+                        bind_owner(session, owner_user_id)
                         asset = await session.get(VisualAsset, asset_id)
                         if asset is None or asset.media_kind != kind:
                             raise ValueError("参考素材已不存在或类型不匹配")
@@ -439,7 +439,7 @@ class VisualGenerationRunner(PollingTaskRunner):
                 await self._temporary_asset_url(
                     str(asset_id),
                     "audio",
-                    workspace_id,
+                    owner_user_id,
                     reference_filename(asset_id),
                 )
                 for asset_id in payload.get("reference_asset_ids", [])
@@ -455,7 +455,7 @@ class VisualGenerationRunner(PollingTaskRunner):
         if provider_kind in {"senseaudio_image", "volcengine_image"}:
             reference_id = payload.get("reference_asset_id")
             reference = (
-                await self._asset_data_uri(str(reference_id), workspace_id)
+                await self._asset_data_uri(str(reference_id), owner_user_id)
                 if reference_id
                 else None
             )
@@ -467,7 +467,7 @@ class VisualGenerationRunner(PollingTaskRunner):
                 payload=payload,
                 image_reference=reference,
                 image_references=[
-                    await self._asset_data_uri(str(asset_id), workspace_id)
+                    await self._asset_data_uri(str(asset_id), owner_user_id)
                     for asset_id in payload.get("reference_asset_ids", [])
                 ],
             )
@@ -481,7 +481,7 @@ class VisualGenerationRunner(PollingTaskRunner):
                 {
                     "type": "image",
                     "url": await self._asset_data_uri(
-                        payload["first_frame_asset_id"], workspace_id
+                        payload["first_frame_asset_id"], owner_user_id
                     ),
                     "role": "first_frame",
                 }
@@ -491,7 +491,7 @@ class VisualGenerationRunner(PollingTaskRunner):
                     {
                         "type": "image",
                         "url": await self._asset_data_uri(
-                            payload["last_frame_asset_id"], workspace_id
+                            payload["last_frame_asset_id"], owner_user_id
                         ),
                         "role": "last_frame",
                     }
@@ -501,7 +501,7 @@ class VisualGenerationRunner(PollingTaskRunner):
                 content.append(
                     {
                         "type": "image",
-                        "url": await self._asset_data_uri(asset_id, workspace_id),
+                        "url": await self._asset_data_uri(asset_id, owner_user_id),
                         "role": "reference",
                     }
                 )
@@ -509,12 +509,12 @@ class VisualGenerationRunner(PollingTaskRunner):
                 content.append(
                     {
                         "type": "audio",
-                        "audio_url": await self._asset_data_uri(str(asset_id), workspace_id)
+                        "audio_url": await self._asset_data_uri(str(asset_id), owner_user_id)
                         if provider_kind in {"volcengine_video", "autodl_video"}
                         else await self._temporary_asset_url(
                             str(asset_id),
                             "audio",
-                            workspace_id,
+                            owner_user_id,
                             reference_filename(asset_id),
                         ),
                     }
@@ -524,13 +524,13 @@ class VisualGenerationRunner(PollingTaskRunner):
                     {
                         "type": "video",
                         "video_url": await self._asset_data_uri(
-                            str(asset_id), workspace_id, expected_kind="video"
+                            str(asset_id), owner_user_id, expected_kind="video"
                         )
                         if provider_kind == "autodl_video"
                         else await self._temporary_asset_url(
                             str(asset_id),
                             "video",
-                            workspace_id,
+                            owner_user_id,
                             reference_filename(asset_id),
                         ),
                     }
@@ -566,12 +566,12 @@ class VisualGenerationRunner(PollingTaskRunner):
             if task is None or task.result_asset_id:
                 return
             project_id = task.project_id
-            workspace_id = task.workspace_id
+            owner_user_id = task.owner_user_id
         temp_path, final_path = self.storage.prepare_write(
             storage_key,
             visual_project_id=project_id,
             galgame_project_id=None,
-            workspace_id=workspace_id,
+            owner_user_id=owner_user_id,
         )
         try:
             size, media_kind, mime_type, extension = await self._download(result_url, temp_path)
@@ -590,7 +590,7 @@ class VisualGenerationRunner(PollingTaskRunner):
                     raise MaterializationError("生成结果类型与任务类型不一致")
                 filename = f"{task.model_slug}-{task.id[:8]}{extension}"
                 asset = VisualAsset(
-                    workspace_id=task.workspace_id,
+                    owner_user_id=task.owner_user_id,
                     project_id=task.project_id,
                     folder_id=None,
                     original_filename=filename,

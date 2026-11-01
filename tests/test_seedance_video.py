@@ -26,7 +26,7 @@ from app.llm.schemas.generation_tasks import VideoGenerationTaskCreateIn
 from app.llm.schemas.model_inference import InferenceTaskIn
 from app.llm.schemas.model_service import ProviderIn
 from app.llm.schemas.model_test import ModelTestVideoGenerationIn
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.config import get_settings
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
@@ -307,18 +307,22 @@ async def test_ark_driver_recovers_without_resubmitting_and_retries_materializat
 @pytest.mark.asyncio
 async def test_workshop_and_model_test_options_and_admission_use_version_capabilities():
     async with SessionLocal() as session:
-        bind_workspace(session, "default")
+        bind_owner(session, "test-user")
         provider = ModelProvider(
+            owner_user_id="test-user",
             id=str(uuid4()),
             name="Ark fixture",
             kind="volcengine_video",
             base_url="https://ark.example/api/v3",
             api_key_ciphertext=encrypt_secret("fake"),
         )
-        project = VisualWorkshopProject(id=str(uuid4()), title="Ark test", kind="video")
+        project = VisualWorkshopProject(
+            owner_user_id="test-user", id=str(uuid4()), title="Ark test", kind="video"
+        )
         session.add_all([provider, project])
         await session.flush()
         model = ModelEntry(
+            owner_user_id="test-user",
             id=str(uuid4()),
             provider_id=provider.id,
             slug=V25,
@@ -331,7 +335,7 @@ async def test_workshop_and_model_test_options_and_admission_use_version_capabil
         generation = VisualGeneration(session)
         options = await generation.options()
         assert next(m for m in options.models if m.id == mid).video_capabilities.duration_max == 30
-        test = ModelTestGeneration(session, "default")
+        test = ModelTestGeneration(session, "test-user")
         assert next(
             m for m in (await test.options()).items if m.id == mid
         ).video_capabilities.audio_only
@@ -352,6 +356,7 @@ async def test_workshop_and_model_test_options_and_admission_use_version_capabil
             )
         # Test assets must be scoped to this project before any provider request.
         asset = VisualAsset(
+            owner_user_id="test-user",
             id=str(uuid4()),
             project_id=None,
             media_kind="image",
@@ -385,6 +390,7 @@ async def test_workshop_and_model_test_options_and_admission_use_version_capabil
         pictures = []
         for name in ("first.png", "last.png"):
             private = ModelTestGenerationAsset(
+                owner_user_id="test-user",
                 id=str(uuid4()),
                 original_filename=name,
                 storage_key=str(uuid4()),
@@ -395,7 +401,7 @@ async def test_workshop_and_model_test_options_and_admission_use_version_capabil
             session.add(private)
             pictures.append(private)
         await session.flush()
-        root = get_settings().workspace_model_test_path("default", "references")
+        root = get_settings().account_model_test_path("test-user", "references")
         root.mkdir(parents=True, exist_ok=True)
         for private in pictures:
             Image.new("RGB", (512, 512)).save(root / private.storage_key, format="PNG")

@@ -576,7 +576,7 @@ export function EditorPage({
                   )}
                   <div className="dp-hint">
                     {whale
-                      ? "资源已保存为当前 Workspace 的固定快照，不再依赖原始目录。"
+                      ? "资源已保存为当前账号的固定快照，不再依赖原始目录。"
                       : "更新来源前会检查动作、表情和换肤贴图的兼容性；不兼容时保留当前快照。"}
                   </div>
                 </>

@@ -11,11 +11,11 @@ from .schemas import CheckpointOut
 
 
 class Checkpoints:
-    def __init__(self, session, workspace_id):
-        self.session, self.workspace_id = session, workspace_id
+    def __init__(self, session, owner_user_id):
+        self.session, self.owner_user_id = session, owner_user_id
 
     async def list(self, note_id):
-        await Notes(self.session, self.workspace_id).get(note_id)
+        await Notes(self.session, self.owner_user_id).get(note_id)
         return [
             CheckpointOut.model_validate(row)
             for row in await self.session.scalars(
@@ -26,7 +26,7 @@ class Checkpoints:
         ]
 
     async def get(self, note_id, id):
-        await Notes(self.session, self.workspace_id).get(note_id)
+        await Notes(self.session, self.owner_user_id).get(note_id)
         row = await self.session.scalar(
             select(ThoughtCheckpoint)
             .where(ThoughtCheckpoint.id == id, ThoughtCheckpoint.note_id == note_id)
@@ -37,14 +37,14 @@ class Checkpoints:
         return row
 
     async def create(self, note_id, body):
-        notes = Notes(self.session, self.workspace_id)
+        notes = Notes(self.session, self.owner_user_id)
         await notes.get(note_id)
         await History(self.session).get(note_id, body.history_id)
         guarded = await self.session.execute(
             update(ThoughtNote)
             .where(
                 ThoughtNote.id == note_id,
-                ThoughtNote.workspace_id == self.workspace_id,
+                ThoughtNote.owner_user_id == self.owner_user_id,
                 ThoughtNote.deleted_at.is_(None),
                 ThoughtNote.revision == body.expected_note_revision,
             )

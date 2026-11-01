@@ -302,7 +302,7 @@ function NewItem({
     }
   };
   if (!canWrite)
-    return <p className="creative-empty">当前工作区没有内容编辑权限。</p>;
+    return <p className="creative-empty">当前账号没有内容编辑权限。</p>;
   return (
     <>
       <div className="creative-section-heading">
@@ -351,7 +351,7 @@ function NewItem({
       {canInstall && (
         <div className="creative-import">
           <div>
-            <h3>从当前工作区的集成导入</h3>
+            <h3>从当前账号的集成导入</h3>
             <p>只带入公开字段。凭据、密钥与本机环境配置不会发布。</p>
           </div>
           <div className="creative-import-form">

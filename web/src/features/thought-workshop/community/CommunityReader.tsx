@@ -8,7 +8,7 @@ import {
   Shield,
   Sparkles,
 } from "lucide-react";
-import { useAccountId } from "@platform/auth/WorkspacePermissions";
+import { useAccountId } from "@platform/auth/AccountAccess";
 import { ApiError } from "@platform/api/client";
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
 import { DocumentAccessProvider, type DocumentAccess } from "../DocumentAccess";

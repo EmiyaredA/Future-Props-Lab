@@ -56,7 +56,7 @@ export type DesktopBridge = {
     callback: (value: PetPreviewStatus) => void,
   ) => () => void;
   publishPetContext?: (
-    value: { userId: string; workspaceId: string } | null,
+    value: { userId: string; accountId: string } | null,
   ) => Promise<void>;
   setPetInteractive?: (interactive: boolean) => Promise<void>;
   petEnvironment?: () => Promise<PetEnvironment>;

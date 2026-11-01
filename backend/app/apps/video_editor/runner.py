@@ -28,7 +28,7 @@ from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.chroma_key import apply_chroma_key
 from app.capabilities.media_rendering.render_engine import RenderCancelled, render_document
 from app.capabilities.media_rendering.timeline_document import VideoEditorChromaKey
-from app.orm import bind_workspace, require_workspace_id
+from app.orm import bind_owner, require_owner_id
 from app.runtime.config import Settings, get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.polling_runner import PollingTaskRunner
@@ -259,9 +259,9 @@ class VideoEditorRunner(PollingTaskRunner):
     async def _get(self, session: AsyncSession, task_id: str) -> VideoEditorTask | None:
         task = await session.get(VideoEditorTask, task_id)
         if task:
-            bind_workspace(
+            bind_owner(
                 session,
-                require_workspace_id(task.workspace_id, subject="video editor task"),
+                require_owner_id(task.owner_user_id, subject="video editor task"),
             )
         return task
 
@@ -375,7 +375,7 @@ class VideoEditorRunner(PollingTaskRunner):
             await session.commit()
             derived = (
                 self.storage.project_root(
-                    "video-editor", task.project_id, workspace_id=task.workspace_id
+                    "video-editor", task.project_id, owner_user_id=task.owner_user_id
                 )
                 / "derived"
             )
@@ -451,7 +451,7 @@ class VideoEditorRunner(PollingTaskRunner):
             )
             paths = {asset.id: self.storage.path_for(asset) for asset in assets}
             project_id = task.project_id
-            workspace_id = task.workspace_id
+            owner_user_id = task.owner_user_id
             detail = dict(task.result_detail)
         cancel = threading.Event()
         watch = asyncio.create_task(self._cancel_watch(task_id, cancel))
@@ -520,12 +520,12 @@ class VideoEditorRunner(PollingTaskRunner):
             ):
                 raise RuntimeError("成片帧数、帧率或时长校验失败")
             async with self.session_factory() as session:
-                bind_workspace(session, workspace_id)
+                bind_owner(session, owner_user_id)
                 project = await session.get(VideoEditorProject, project_id)
                 title = project.title if project else "video-editor"
                 asset, staged = await AssetLibrary(session, self.settings).stage_local_copy(
                     output,
-                    workspace_id=workspace_id,
+                    owner_user_id=owner_user_id,
                     filename=f"{title}-{task_id[:8]}.mp4",
                     content_type="video/mp4",
                     video_editor_project_id=project_id,
@@ -583,7 +583,7 @@ class VideoEditorRunner(PollingTaskRunner):
                 raise RuntimeError("待烘焙素材不存在")
             source = self.storage.path_for(asset)
             project_id = task.project_id
-            workspace_id = task.workspace_id
+            owner_user_id = task.owner_user_id
             media_kind = asset.media_kind
             display_name = asset.display_name
             duration_us = int((metadata.probe or {}).get("durationUs") or 5_000_000)
@@ -693,10 +693,10 @@ class VideoEditorRunner(PollingTaskRunner):
                 watch.cancel()
 
             async with self.session_factory() as session:
-                bind_workspace(session, workspace_id)
+                bind_owner(session, owner_user_id)
                 asset_out, staged = await AssetLibrary(session, self.settings).stage_local_copy(
                     output,
-                    workspace_id=workspace_id,
+                    owner_user_id=owner_user_id,
                     filename=filename,
                     content_type=content_type,
                     video_editor_project_id=project_id,

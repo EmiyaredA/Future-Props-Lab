@@ -139,7 +139,7 @@ class Reviews(Runs):
             )
         draft = AcceptanceRepairDraft(
             id=new_id(),
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             project_id=project_id,
             run_id=run_id,
             text="\n".join(text).strip()[:6000],
@@ -153,7 +153,7 @@ class Reviews(Runs):
             select(AcceptanceRepairDraft).where(
                 AcceptanceRepairDraft.id == identity,
                 AcceptanceRepairDraft.project_id == project_id,
-                AcceptanceRepairDraft.workspace_id == self.workspace_id,
+                AcceptanceRepairDraft.owner_user_id == self.owner_user_id,
             )
         )
         if row is None:

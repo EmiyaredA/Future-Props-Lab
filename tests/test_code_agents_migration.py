@@ -1,8 +1,9 @@
 """Code agent schema upgrades preserve existing Pi conversations and runs."""
 
+from tests.migration_fixtures import MIGRATIONS, apply_migrations, check_migrations
+
 from db.migrations import runner
-from db.migrations.registry import MIGRATIONS
-from db.migrations.runner import apply_migrations, check_migrations, connect_database
+from db.migrations.runner import connect_database
 
 
 def test_upgrade_preserves_legacy_conversations_and_runs(tmp_path, monkeypatch):

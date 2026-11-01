@@ -35,7 +35,7 @@ class Questions:
             select(AmadeusRun).where(
                 AmadeusRun.id == run_id,
                 AmadeusRun.conversation_id == conversation_id,
-                AmadeusRun.workspace_id == self.principal.workspace_id,
+                AmadeusRun.owner_user_id == self.principal.owner_user_id,
                 AmadeusRun.user_id == self.principal.user_id,
                 AmadeusRun.status == "running",
             )
@@ -52,7 +52,7 @@ class Questions:
         row = AmadeusQuestion(
             conversation_id=conversation_id,
             run_id=run_id,
-            workspace_id=self.principal.workspace_id,
+            owner_user_id=self.principal.owner_user_id,
             user_id=self.principal.user_id,
             tool_call_id=body.tool_call_id,
             prompt=body.prompt.strip(),
@@ -76,7 +76,7 @@ class Questions:
             select(AmadeusQuestion).where(
                 AmadeusQuestion.id == question_id,
                 AmadeusQuestion.conversation_id == conversation_id,
-                AmadeusQuestion.workspace_id == self.principal.workspace_id,
+                AmadeusQuestion.owner_user_id == self.principal.owner_user_id,
                 AmadeusQuestion.user_id == self.principal.user_id,
             )
         )

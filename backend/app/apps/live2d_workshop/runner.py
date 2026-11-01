@@ -56,7 +56,7 @@ class Live2DExportRunner(PollingTaskRunner):
             )
             if task is None:
                 return
-            task_id, project_id, workspace_id = task.id, task.project_id, task.workspace_id
+            task_id, project_id, owner_user_id = task.id, task.project_id, task.owner_user_id
             claimed = await session.execute(
                 update(Live2DExport)
                 .where(
@@ -75,7 +75,7 @@ class Live2DExportRunner(PollingTaskRunner):
             doc = CharacterDocument.model_validate(snapshot)
             body = Live2DExportIn.model_validate(payload)
             async with self.sessions() as session:
-                store = Live2DProjectsStore(session, workspace_id)
+                store = Live2DProjectsStore(session, owner_user_id)
                 paths = await store.paths(project_id)
                 root = store.root(project_id)
             with TemporaryDirectory(prefix="fpl-character-export-") as temp:

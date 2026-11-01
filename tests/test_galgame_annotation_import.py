@@ -18,7 +18,7 @@ from app.apps.galgame_workshop.models import (
 from app.apps.galgame_workshop.readiness import GalgameReadiness
 from app.apps.galgame_workshop.schemas import GalgameStoryReportIssue
 from app.main import app
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.db import SessionLocal
 
 
@@ -86,7 +86,7 @@ async def _request(client: httpx.AsyncClient) -> tuple[dict, dict, dict, dict]:
     story = (await client.get(f"/v1/galgame-workshop/projects/{target['id']}/story")).json()
 
     async with SessionLocal() as session:
-        bind_workspace(session, "default")
+        bind_owner(session, "test-user")
         session.add(
             GalgameAssetMetadata(
                 asset_id=source_asset["id"],
@@ -273,7 +273,7 @@ async def test_annotation_import_preview_task_idempotency_and_runner() -> None:
         assert len({asset["fileId"] for asset in voice_assets}) == 2
         assert {asset["fileId"] for asset in voice_assets}.isdisjoint({"segment-1", "segment-2"})
         async with SessionLocal() as session:
-            bind_workspace(session, "default")
+            bind_owner(session, "test-user")
             metadata = await session.get(GalgameAssetMetadata, source_asset["id"])
             assert metadata is not None
             assert metadata.packaging_policy == "include"
@@ -281,11 +281,11 @@ async def test_annotation_import_preview_task_idempotency_and_runner() -> None:
 
 
 @pytest.mark.asyncio
-async def test_annotation_import_runner_quarantines_workspace_mismatch() -> None:
+async def test_annotation_import_runner_quarantines_account_mismatch() -> None:
     task = SimpleNamespace(
         id="task",
         project_id="project",
-        workspace_id="wrong-workspace",
+        owner_user_id="wrong-workspace",
         status="queued",
         progress=0,
         result_detail={},
@@ -294,7 +294,7 @@ async def test_annotation_import_runner_quarantines_workspace_mismatch() -> None
         updated_at=None,
         finished_at=None,
     )
-    project = SimpleNamespace(id="project", workspace_id="correct-workspace")
+    project = SimpleNamespace(id="project", owner_user_id="correct-workspace")
 
     class Session:
         def __init__(self) -> None:
@@ -317,7 +317,7 @@ async def test_annotation_import_runner_quarantines_workspace_mismatch() -> None
     assert loaded is None
     assert session.committed is True
     assert task.status == "failed"
-    assert task.result_detail["code"] == "workspace_mismatch"
+    assert task.result_detail["code"] == "account_mismatch"
 
 
 @pytest.mark.asyncio
@@ -325,9 +325,9 @@ async def test_annotation_import_runner_restores_non_default_workspace() -> None
     task = SimpleNamespace(
         id="task",
         project_id="project",
-        workspace_id="other-workspace",
+        owner_user_id="other-workspace",
     )
-    project = SimpleNamespace(id="project", workspace_id="other-workspace")
+    project = SimpleNamespace(id="project", owner_user_id="other-workspace")
 
     class Session:
         def __init__(self) -> None:
@@ -344,7 +344,7 @@ async def test_annotation_import_runner_restores_non_default_workspace() -> None
     loaded = await GalgameAnnotationImportRunner()._load(session, "task")
 
     assert loaded is task
-    assert session.info["workspace_id"] == "other-workspace"
+    assert session.info["owner_user_id"] == "other-workspace"
 
 
 @pytest.mark.asyncio
@@ -395,7 +395,7 @@ async def test_annotation_import_rolls_back_when_post_save_acceptance_fails(
         assert task["result"]["voiceAssetCount"] == 2
         assert len(task["result"]["segments"]) == 2
         async with SessionLocal() as session:
-            bind_workspace(session, "default")
+            bind_owner(session, "test-user")
             metadata = await session.get(GalgameAssetMetadata, source_asset["id"])
             assert metadata is not None
             assert metadata.packaging_policy == "exclude"

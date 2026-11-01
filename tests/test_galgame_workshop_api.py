@@ -154,9 +154,16 @@ def localized_story() -> dict:
 
 @pytest.mark.asyncio
 async def test_galgame_workshop_story_edit_report_completion_and_conflicts() -> None:
+    from tests.account_fixtures import clear_private_projects
+
+    await clear_private_projects()
     async with SessionLocal() as session:
         await session.execute(delete(GalgameStoryDocument))
-        await session.execute(delete(GalgameWorkshopProject))
+        await session.execute(
+            delete(GalgameWorkshopProject).where(
+                GalgameWorkshopProject.owner_user_id == "test-user"
+            )
+        )
         await session.commit()
 
     transport = httpx.ASGITransport(app=app)

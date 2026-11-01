@@ -36,13 +36,13 @@ from .schemas import DuplicateOut, DuplicateSnapshot, TemplateOut
 
 
 class ReusableContent:
-    def __init__(self, session, workspace_id, author_id=None):
-        self.session, self.workspace_id, self.author_id = session, workspace_id, author_id
+    def __init__(self, session, owner_user_id, author_id=None):
+        self.session, self.owner_user_id, self.author_id = session, owner_user_id, author_id
 
     async def template(self, id):
         row = await self.session.scalar(
             select(ThoughtTemplate)
-            .where(ThoughtTemplate.id == id, ThoughtTemplate.workspace_id == self.workspace_id)
+            .where(ThoughtTemplate.id == id, ThoughtTemplate.owner_user_id == self.owner_user_id)
             .execution_options(populate_existing=True)
         )
         if row is None:
@@ -54,13 +54,13 @@ class ReusableContent:
             TemplateOut.model_validate(row)
             for row in await self.session.scalars(
                 select(ThoughtTemplate)
-                .where(ThoughtTemplate.workspace_id == self.workspace_id)
+                .where(ThoughtTemplate.owner_user_id == self.owner_user_id)
                 .order_by(ThoughtTemplate.updated_at.desc(), ThoughtTemplate.id)
             )
         ]
 
     async def validate_template(self, body, existing=None):
-        await validate_targets(self.session, self.workspace_id, body.document, existing)
+        await validate_targets(self.session, self.owner_user_id, body.document, existing)
         ids = file_ids(body.document)
         if body.multitable:
             ids |= asset_ids(body.multitable)
@@ -74,7 +74,7 @@ class ReusableContent:
             }
             await validate_targets(
                 self.session,
-                self.workspace_id,
+                self.owner_user_id,
                 {
                     "type": "doc",
                     "content": [
@@ -82,7 +82,7 @@ class ReusableContent:
                     ],
                 },
             )
-        assets = await resolve_assets(self.session, self.workspace_id, ids)
+        assets = await resolve_assets(self.session, self.owner_user_id, ids)
         if any(assets[id].media_kind != "image" for id in image_ids(body.document)):
             raise ThoughtError("画板与图片必须引用图片素材")
         for node in attachment_nodes(body.document):
@@ -106,7 +106,7 @@ class ReusableContent:
 
     async def create_template(self, body):
         ids = await self.validate_template(body)
-        row = ThoughtTemplate(workspace_id=self.workspace_id, **body.model_dump())
+        row = ThoughtTemplate(owner_user_id=self.owner_user_id, **body.model_dump())
         self.session.add(row)
         await self.session.flush()
         await self.template_refs(row.id, ids)
@@ -125,7 +125,7 @@ class ReusableContent:
             update(ThoughtTemplate)
             .where(
                 ThoughtTemplate.id == id,
-                ThoughtTemplate.workspace_id == self.workspace_id,
+                ThoughtTemplate.owner_user_id == self.owner_user_id,
                 ThoughtTemplate.revision == body.expected_revision,
             )
             .values(
@@ -145,7 +145,7 @@ class ReusableContent:
         result = await self.session.execute(
             delete(ThoughtTemplate).where(
                 ThoughtTemplate.id == id,
-                ThoughtTemplate.workspace_id == self.workspace_id,
+                ThoughtTemplate.owner_user_id == self.owner_user_id,
                 ThoughtTemplate.revision == expected,
             )
         )
@@ -159,17 +159,17 @@ class ReusableContent:
             update(ThoughtTemplate)
             .where(
                 ThoughtTemplate.id == id,
-                ThoughtTemplate.workspace_id == self.workspace_id,
+                ThoughtTemplate.owner_user_id == self.owner_user_id,
                 ThoughtTemplate.revision == body.expected_revision,
             )
             .values(revision=ThoughtTemplate.revision)
         )
         if guarded.rowcount != 1:
             await self.template_conflict(id, body.expected_revision)
-        directory = Directory(self.session, self.workspace_id, self.author_id)
+        directory = Directory(self.session, self.owner_user_id, self.author_id)
         await directory.reserve(body.knowledge_base_id, body.expected_knowledge_revision)
         await directory.parent(body.knowledge_base_id, body.parent_id)
-        row = await Notes(self.session, self.workspace_id, self.author_id).create(
+        row = await Notes(self.session, self.owner_user_id, self.author_id).create(
             ThoughtNoteIn(
                 knowledge_base_id=body.knowledge_base_id,
                 parent_id=body.parent_id,
@@ -216,7 +216,7 @@ class ReusableContent:
         return note_out(row)
 
     async def copy_source(self, id, subtree):
-        notes = Notes(self.session, self.workspace_id, self.author_id)
+        notes = Notes(self.session, self.owner_user_id, self.author_id)
         root = await notes.get(id)
         if root.deleted_at or root.is_home:
             raise ThoughtError("首页或回收站文档不能复制")
@@ -224,7 +224,7 @@ class ReusableContent:
             await self.session.scalars(
                 select(ThoughtNote)
                 .where(
-                    ThoughtNote.workspace_id == self.workspace_id,
+                    ThoughtNote.owner_user_id == self.owner_user_id,
                     ThoughtNote.knowledge_base_id == root.knowledge_base_id,
                     ThoughtNote.deleted_at.is_(None),
                     ThoughtNote.is_home.is_(False),
@@ -238,7 +238,7 @@ class ReusableContent:
                 children = [n for n in all_rows if n.parent_id == parent.id and n.id not in found]
                 found.update(n.id for n in children)
                 rows.extend(children)
-        project = await KnowledgeBases(self.session, self.workspace_id).get(root.knowledge_base_id)
+        project = await KnowledgeBases(self.session, self.owner_user_id).get(root.knowledge_base_id)
         return project, rows
 
     async def copy_snapshot(self, id, subtree):
@@ -262,7 +262,7 @@ class ReusableContent:
             update(ThoughtKnowledgeBase)
             .where(
                 ThoughtKnowledgeBase.id == project.id,
-                ThoughtKnowledgeBase.workspace_id == self.workspace_id,
+                ThoughtKnowledgeBase.owner_user_id == self.owner_user_id,
                 ThoughtKnowledgeBase.revision == body.source_knowledge_revision,
             )
             .values(revision=ThoughtKnowledgeBase.revision)
@@ -278,14 +278,14 @@ class ReusableContent:
                 update(ThoughtNote)
                 .where(
                     ThoughtNote.id == row.id,
-                    ThoughtNote.workspace_id == self.workspace_id,
+                    ThoughtNote.owner_user_id == self.owner_user_id,
                     ThoughtNote.revision == current[row.id],
                 )
                 .values(revision=ThoughtNote.revision)
             )
             if guarded.rowcount != 1:
-                await Notes(self.session, self.workspace_id).conflict(row.id, current[row.id])
-        directory = Directory(self.session, self.workspace_id, self.author_id)
+                await Notes(self.session, self.owner_user_id).conflict(row.id, current[row.id])
+        directory = Directory(self.session, self.owner_user_id, self.author_id)
         await directory.reserve(body.knowledge_base_id, body.expected_knowledge_revision)
         await directory.parent(body.knowledge_base_id, body.parent_id)
         mapping = {row.id: new_id() for row in source}
@@ -297,7 +297,7 @@ class ReusableContent:
         for row in source:
             document = remap_references(row.document, mapping)
             remap_embeds(document, table_mapping)
-            new = await Notes(self.session, self.workspace_id, self.author_id).create(
+            new = await Notes(self.session, self.owner_user_id, self.author_id).create(
                 ThoughtNoteIn(
                     knowledge_base_id=body.knowledge_base_id,
                     parent_id=body.parent_id if row.id == id else mapping[row.parent_id],
@@ -315,7 +315,7 @@ class ReusableContent:
             await History(self.session).append(new, self.author_id, "create")
             created.append(new.id)
         asset_mapping = {id: id for id in archive_assets(table_data)}
-        # Retain references to documents outside the copied subtree in this Workspace.
+        # Retain references to documents outside the copied subtree in this account.
         refs = dict(mapping)
         for value in table_data.values():
             for t in value["state"]["tables"]:

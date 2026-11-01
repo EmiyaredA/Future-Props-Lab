@@ -3,7 +3,7 @@ import { BookOpen } from "lucide-react";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
 import { useOptionalStudioSession } from "@app/StudioSession";
 import { AccountMenu } from "@features/accounts/AccountMenu";
-import { AccountWorkspacePanel } from "@features/accounts";
+import { AccountPanel } from "@features/accounts";
 import { DesktopAppChrome } from "@app/layout/DesktopAppChrome";
 
 export function StudioGlobalHeader() {
@@ -30,7 +30,7 @@ export function StudioGlobalHeader() {
         {session ? (
           <>
             <AccountMenu session={session} />
-            <AccountWorkspacePanel session={session} hiddenEntries />
+            <AccountPanel session={session} hiddenEntries />
           </>
         ) : null}
       </div>

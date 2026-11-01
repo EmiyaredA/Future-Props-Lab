@@ -12,7 +12,7 @@ from app.runtime.time import utc_now
 class ToolNavigationItem(Base):
     __tablename__ = "tool_navigation_items"
 
-    workspace_id: Mapped[str] = mapped_column(String(36), primary_key=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), primary_key=True)
     tool_id: Mapped[str] = mapped_column(String(64), primary_key=True)
     is_favorite: Mapped[bool] = mapped_column(Boolean, default=False)
     favorite_updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

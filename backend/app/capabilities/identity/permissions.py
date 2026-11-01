@@ -1,43 +1,31 @@
-"""Fixed roles shared by HTTP, realtime and workspace projections."""
+"""Fixed account capabilities; resource ownership is checked independently."""
 
-READ_PERMISSIONS = frozenset({"content.read"})
-MEMBER_PERMISSIONS = READ_PERMISSIONS | {"content.write", "models.use"}
-ADMIN_PERMISSIONS = MEMBER_PERMISSIONS | {
+READ_PERMISSIONS = frozenset({"content.read", "logs.read", "audit.read", "docs.developer"})
+USER_PERMISSIONS = READ_PERMISSIONS | {
+    "content.write",
+    "models.use",
     "configuration.manage",
-    "logs.read",
-    "workspace.manage",
-    "members.manage",
-    "audit.read",
+    "diagnostics.model",
+    "diagnostics.realtime",
+    "tools.sensitive",
 }
-OWNER_PERMISSIONS = ADMIN_PERMISSIONS | {"members.assign_admin"}
+ADMIN_PERMISSIONS = USER_PERMISSIONS | {"projects.certify"}
 
 
-def role_permissions(access: str, role: str | None) -> frozenset[str]:
-    if access in {"owner", "platform_admin"}:
-        return OWNER_PERMISSIONS
-    if access == "public_viewer":
-        return frozenset()
-    return {
-        "admin": ADMIN_PERMISSIONS,
-        "member": MEMBER_PERMISSIONS,
-        "viewer": READ_PERMISSIONS,
-    }.get(role, frozenset())
+def role_permissions(role: str) -> frozenset[str]:
+    return {"admin": ADMIN_PERMISSIONS, "user": USER_PERMISSIONS}.get(role, frozenset())
 
 
-def effective_permissions(access: str, role: str | None, scopes: frozenset[str]) -> frozenset[str]:
-    permissions = role_permissions(access, role)
+def effective_permissions(role: str, scopes: frozenset[str]) -> frozenset[str]:
     if "studio:private_read" not in scopes:
         return frozenset()
+    permissions = role_permissions(role)
     if "studio:write" not in scopes:
-        permissions = permissions & {"content.read", "logs.read", "audit.read"}
+        permissions &= READ_PERMISSIONS
     return frozenset(permissions)
 
 
-def role_scopes(access: str, role: str | None) -> frozenset[str]:
-    scopes = {"studio:read"}
-    permissions = role_permissions(access, role)
-    if "content.read" in permissions:
-        scopes.add("studio:private_read")
-    if "content.write" in permissions:
-        scopes.add("studio:write")
-    return frozenset(scopes)
+def role_scopes(role: str) -> frozenset[str]:
+    if not role_permissions(role):
+        return frozenset()
+    return frozenset({"studio:read", "studio:private_read", "studio:write"})

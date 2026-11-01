@@ -27,7 +27,7 @@ vi.mock("@features/models/api", async () => ({
 }));
 
 const initial = {
-  role: "member",
+  role: "user",
   revision: 3,
   value: {
     suppliers: [{ template_key: "supplier-stable", name: "平台供应商" }],
@@ -98,12 +98,12 @@ test("the management adapter edits a template draft with the shared catalog and 
   expect(mocks.getCatalog).not.toHaveBeenCalled();
   expect(mocks.saveTemplate).not.toHaveBeenCalled();
   expect(
-    screen.getByRole("button", { name: "预览同步已有空间" }),
+    screen.getByRole("button", { name: "预览同步已有账号" }),
   ).toBeDisabled();
   await user.click(screen.getByRole("button", { name: "保存角色模板" }));
   await waitFor(() => expect(mocks.saveTemplate).toHaveBeenCalledOnce());
   expect(mocks.saveTemplate).toHaveBeenCalledWith(
-    "member",
+    "user",
     expect.objectContaining({
       expected_revision: 3,
       value: expect.objectContaining({
@@ -126,7 +126,7 @@ test("the management adapter edits a template draft with the shared catalog and 
   );
   expect(mocks.startSyncJob).not.toHaveBeenCalled();
   expect(mocks.previewTemplate).not.toHaveBeenCalled();
-  await user.click(screen.getByRole("button", { name: "预览同步已有空间" }));
-  expect(mocks.previewTemplate).toHaveBeenCalledWith("member", 4);
+  await user.click(screen.getByRole("button", { name: "预览同步已有账号" }));
+  expect(mocks.previewTemplate).toHaveBeenCalledWith("user", 4, undefined);
   expect(mocks.startSyncJob).not.toHaveBeenCalled();
 });

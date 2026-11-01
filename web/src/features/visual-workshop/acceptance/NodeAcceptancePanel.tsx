@@ -12,7 +12,7 @@ import {
   FileImage,
 } from "lucide-react";
 import { AcceptanceSchemePicker, SchemeIcon } from "./AcceptanceSchemePicker";
-import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
+import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { fetchApiJson } from "@platform/api/client";
 import { visualWorkshopQueryKeys as keys } from "../queryKeys";
 import { base, type Run } from "./api";
@@ -50,9 +50,9 @@ export function NodeAcceptancePanel({
   readOnly?: boolean;
 }) {
   const client = useQueryClient();
-  const permissionWrite = useWorkspacePermission("content.write");
+  const permissionWrite = useAccountPermission("content.write");
   const canWrite = permissionWrite && !readOnly;
-  const canUseModels = useWorkspacePermission("models.use");
+  const canUseModels = useAccountPermission("models.use");
   const canRun = canWrite && canUseModels;
   const [error, setError] = useState("");
   const [runId, setRunId] = useState<string>();

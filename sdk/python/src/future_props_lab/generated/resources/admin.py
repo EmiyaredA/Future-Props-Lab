@@ -11,10 +11,6 @@ class Admin:
     def __init__(self, client):
         self._client = client
 
-    def audit(self, *, page: int | Unset = UNSET, page_size: int | Unset = UNSET, event_type: str | Unset = UNSET, outcome: str | Unset = UNSET, actor_query: str | Unset = UNSET, target_query: str | Unset = UNSET, from_date: datetime | None | Unset = UNSET, to_date: datetime | None | Unset = UNSET) -> models.SecurityAuditListOut:
-        'Audit. GET /v1/account/workspaces/current/audit-events'
-        return self._client._call('GET', '/v1/account/workspaces/current/audit-events', parameters=[('page', 'query', page), ('page_size', 'query', page_size), ('event_type', 'query', event_type), ('outcome', 'query', outcome), ('actor_query', 'query', actor_query), ('target_query', 'query', target_query), ('from_date', 'query', from_date), ('to_date', 'query', to_date)], response_type=models.SecurityAuditListOut)
-
     def accounts(self, *, q: str | Unset = UNSET, status: str | Unset = UNSET, is_platform_admin: bool | None | Unset = UNSET, platform_role: str | Unset = UNSET, page: int | Unset = UNSET, page_size: int | Unset = UNSET) -> models.AccountListOut:
         'Accounts. GET /v1/platform/accounts'
         return self._client._call('GET', '/v1/platform/accounts', parameters=[('q', 'query', q), ('status', 'query', status), ('is_platform_admin', 'query', is_platform_admin), ('platform_role', 'query', platform_role), ('page', 'query', page), ('page_size', 'query', page_size)], response_type=models.AccountListOut)
@@ -35,21 +31,9 @@ class Admin:
         'Audit. GET /v1/platform/security-events'
         return self._client._call('GET', '/v1/platform/security-events', parameters=[('page', 'query', page), ('page_size', 'query', page_size), ('event_type', 'query', event_type), ('outcome', 'query', outcome), ('actor_query', 'query', actor_query), ('target_query', 'query', target_query), ('from_date', 'query', from_date), ('to_date', 'query', to_date)], response_type=models.SecurityAuditListOut)
 
-    def workspaces(self, *, q: str | Unset = UNSET, visibility: str | Unset = UNSET, page: int | Unset = UNSET, page_size: int | Unset = UNSET) -> models.WorkspaceListOut:
-        'Workspaces. GET /v1/platform/workspaces'
-        return self._client._call('GET', '/v1/platform/workspaces', parameters=[('q', 'query', q), ('visibility', 'query', visibility), ('page', 'query', page), ('page_size', 'query', page_size)], response_type=models.WorkspaceListOut)
-
-    def add_workspace(self, *, body: models.WorkspaceCreateIn | dict) -> models.WorkspaceOut:
-        'Add Workspace. POST /v1/platform/workspaces'
-        return self._client._call('POST', '/v1/platform/workspaces', parameters=[], body=body, media_type='application/json', response_type=models.WorkspaceOut)
-
 class AsyncAdmin:
     def __init__(self, client):
         self._client = client
-
-    async def audit(self, *, page: int | Unset = UNSET, page_size: int | Unset = UNSET, event_type: str | Unset = UNSET, outcome: str | Unset = UNSET, actor_query: str | Unset = UNSET, target_query: str | Unset = UNSET, from_date: datetime | None | Unset = UNSET, to_date: datetime | None | Unset = UNSET) -> models.SecurityAuditListOut:
-        'Audit. GET /v1/account/workspaces/current/audit-events'
-        return await self._client._call('GET', '/v1/account/workspaces/current/audit-events', parameters=[('page', 'query', page), ('page_size', 'query', page_size), ('event_type', 'query', event_type), ('outcome', 'query', outcome), ('actor_query', 'query', actor_query), ('target_query', 'query', target_query), ('from_date', 'query', from_date), ('to_date', 'query', to_date)], response_type=models.SecurityAuditListOut)
 
     async def accounts(self, *, q: str | Unset = UNSET, status: str | Unset = UNSET, is_platform_admin: bool | None | Unset = UNSET, platform_role: str | Unset = UNSET, page: int | Unset = UNSET, page_size: int | Unset = UNSET) -> models.AccountListOut:
         'Accounts. GET /v1/platform/accounts'
@@ -70,11 +54,3 @@ class AsyncAdmin:
     async def audit_v1_platform_security_events(self, *, page: int | Unset = UNSET, page_size: int | Unset = UNSET, event_type: str | Unset = UNSET, outcome: str | Unset = UNSET, actor_query: str | Unset = UNSET, target_query: str | Unset = UNSET, from_date: datetime | None | Unset = UNSET, to_date: datetime | None | Unset = UNSET) -> models.SecurityAuditListOut:
         'Audit. GET /v1/platform/security-events'
         return await self._client._call('GET', '/v1/platform/security-events', parameters=[('page', 'query', page), ('page_size', 'query', page_size), ('event_type', 'query', event_type), ('outcome', 'query', outcome), ('actor_query', 'query', actor_query), ('target_query', 'query', target_query), ('from_date', 'query', from_date), ('to_date', 'query', to_date)], response_type=models.SecurityAuditListOut)
-
-    async def workspaces(self, *, q: str | Unset = UNSET, visibility: str | Unset = UNSET, page: int | Unset = UNSET, page_size: int | Unset = UNSET) -> models.WorkspaceListOut:
-        'Workspaces. GET /v1/platform/workspaces'
-        return await self._client._call('GET', '/v1/platform/workspaces', parameters=[('q', 'query', q), ('visibility', 'query', visibility), ('page', 'query', page), ('page_size', 'query', page_size)], response_type=models.WorkspaceListOut)
-
-    async def add_workspace(self, *, body: models.WorkspaceCreateIn | dict) -> models.WorkspaceOut:
-        'Add Workspace. POST /v1/platform/workspaces'
-        return await self._client._call('POST', '/v1/platform/workspaces', parameters=[], body=body, media_type='application/json', response_type=models.WorkspaceOut)

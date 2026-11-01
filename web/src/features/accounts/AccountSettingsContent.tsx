@@ -1,7 +1,7 @@
 import { deleteAccountSession, deleteAvatar, revokeOtherSessions } from "./api";
 import { formatAccountDate as shortDate } from "./formatAccountDate";
 import { avatarSrc } from "./avatarSrc";
-import type { useAccountWorkspacePanel } from "./useAccountWorkspacePanel";
+import type { useAccountPanel } from "./useAccountPanel";
 import { auditLabels } from "./auditLabels";
 import { useRef } from "react";
 import { Upload } from "lucide-react";
@@ -11,7 +11,7 @@ import "./account-profile.css";
 export function AccountSettingsContent({
   state,
 }: {
-  state: ReturnType<typeof useAccountWorkspacePanel>;
+  state: ReturnType<typeof useAccountPanel>;
 }) {
   const avatarInput = useRef<HTMLInputElement>(null);
   const {

@@ -13,7 +13,7 @@ from sqlalchemy import update
 from app.capabilities.agents.cli.catalog import connection, inspect_connection
 from app.console.amadeus.models import AmadeusConversation
 from app.main import app
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 from test_workspace_governance import client_account
@@ -213,7 +213,7 @@ async def test_backend_owned_native_run_and_event_tombstones(configured, agent):
 @pytest.mark.asyncio
 async def test_grants_cas_purpose_scope_and_legacy_takeover(configured, monkeypatch):
     assert configured
-    client, _, user_id, workspace_id = await client_account(admin=True)
+    client, _, user_id, owner_user_id = await client_account(admin=True)
     other, _, other_id, other_workspace = await client_account()
     async with aclosing(client), aclosing(other):
         state = await authorize(client, user_id)
@@ -233,14 +233,15 @@ async def test_grants_cas_purpose_scope_and_legacy_takeover(configured, monkeypa
                 "grants": [{"user_id": other_id, "agent_id": "codex", "purpose": "amadeus"}],
             },
         )
-        assert bad.status_code == 422
+        assert bad.status_code == 200
         from app.console.governance.code_agents import authorized
 
         async with SessionLocal() as session:
-            assert await authorized(session, workspace_id, user_id, "codex", "amadeus")
+            assert not await authorized(session, owner_user_id, user_id, "codex", "amadeus")
+            assert await authorized(session, other_id, other_id, "codex", "amadeus")
             assert not await authorized(session, other_workspace, user_id, "codex", "amadeus")
             assert not await authorized(
-                session, workspace_id, user_id, "codex", "interview_preparation"
+                session, owner_user_id, user_id, "codex", "interview_preparation"
             )
         monkeypatch.setattr(get_settings(), "fpl_acceptance_codex_user_ids", user_id)
         state = await authorize(client, user_id, purpose="visual_acceptance")
@@ -255,7 +256,7 @@ async def test_grants_cas_purpose_scope_and_legacy_takeover(configured, monkeypa
         assert revoked.status_code == 200
         async with SessionLocal() as session:
             assert not await authorized(
-                session, workspace_id, user_id, "codex", "visual_acceptance"
+                session, owner_user_id, user_id, "codex", "visual_acceptance"
             )
 
 
@@ -299,12 +300,12 @@ async def test_tools_pause_for_owner_and_reject_plan_writes(configured, marker, 
 @pytest.mark.asyncio
 async def test_old_history_stays_readonly(configured):
     assert configured
-    client, _, user_id, workspace_id = await client_account(admin=True)
+    client, _, user_id, owner_user_id = await client_account(admin=True)
     async with aclosing(client):
         await authorize(client, user_id)
         conversation = (await client.post("/v1/amadeus/conversations")).json()
         async with SessionLocal() as session:
-            bind_workspace(session, workspace_id)
+            bind_owner(session, owner_user_id)
             await session.execute(
                 update(AmadeusConversation)
                 .where(AmadeusConversation.id == conversation["id"])

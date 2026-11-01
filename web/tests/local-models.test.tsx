@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, expect, test, vi } from "vitest";
 import { SpeechSynthesisTestPanel } from "@features/models/generation/SpeechSynthesisTestPanel";
 import * as localApi from "@features/models/localModelApi";
-import { WorkspacePermissionsProvider } from "@platform/auth/WorkspacePermissions";
+import { AccountAccessProvider } from "@platform/auth/AccountAccess";
 
 vi.mock("@features/models/localModelApi", () => ({
   getLocalModels: vi.fn(),
@@ -143,7 +143,10 @@ test("speech reference writes require content permission", async () => {
     total: 0,
   });
   wrap(
-    <WorkspacePermissionsProvider permissions={["content.read", "models.use"]}>
+    <AccountAccessProvider
+      userId="test-user"
+      permissions={["content.read", "models.use"]}
+    >
       <SpeechSynthesisTestPanel
         models={[
           {
@@ -158,7 +161,7 @@ test("speech reference writes require content permission", async () => {
         onSelectMode={vi.fn()}
         onSelectModel={vi.fn()}
       />
-    </WorkspacePermissionsProvider>,
+    </AccountAccessProvider>,
   );
   await waitFor(() =>
     expect(screen.queryByRole("alert")).not.toBeInTheDocument(),

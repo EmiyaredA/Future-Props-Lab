@@ -14,11 +14,11 @@ from app.capabilities.media_rendering.video_frames import extract_frame
 from app.runtime.config import get_settings
 
 
-async def export_frames(session, workspace_id, asset_id, body):
+async def export_frames(session, owner_user_id, asset_id, body):
     asset = await session.scalar(
         select(VisualAsset).where(
             VisualAsset.id == asset_id,
-            VisualAsset.workspace_id == workspace_id,
+            VisualAsset.owner_user_id == owner_user_id,
         )
     )
     if asset is None:

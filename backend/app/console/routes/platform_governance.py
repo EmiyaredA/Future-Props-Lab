@@ -1,17 +1,11 @@
 """Protocol boundary for platform policy and registration governance."""
 
-from typing import Annotated, Literal
+from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 
 from app.capabilities.identity.rate_limit import allow_attempt
-from app.console.governance.cross_workspace_logs import (
-    cross_workspace_logs,
-    cross_workspace_stats,
-    log_workspaces,
-)
 from app.console.governance.developer_docs import developer_documents
-from app.console.governance.platform_policy import CAPABILITIES, default_policy, read_setting
 from app.console.governance.platform_settings import write_setting
 from app.console.governance.project_certification import certify_project
 from app.console.governance.registration import (
@@ -22,17 +16,13 @@ from app.console.governance.registration import (
     register,
     reveal_invite,
 )
+from app.console.governance.settings_records import read_setting
 from app.console.routes.auth import _browser_auth, _login_out, _platform_auth, _set_cookies
 from app.console.schemas.accounts import AuthMeOut
 from app.console.schemas.platform_governance import (
     CertificationIn,
     CertificationOut,
-    CrossWorkspaceLogPage,
     DeveloperDocumentsOut,
-    LogWorkspaceOut,
-    PermissionPolicy,
-    PermissionPolicyIn,
-    PermissionPolicyOut,
     RedemptionPage,
     RegistrationIn,
     RegistrationInviteAction,
@@ -47,45 +37,8 @@ from app.console.schemas.platform_governance import (
     SecretOut,
 )
 from app.deps import SessionDep, client_ip, require_recent_reauthentication
-from app.llm.schemas.call_log import CallLogStatsOut, CrossWorkspaceLogQuery
 
 router = APIRouter(tags=["platform-governance"])
-POLICY_FIELDS = tuple(PermissionPolicy.model_fields["admin"].annotation.model_fields)
-
-
-def policy_output(state):
-    return {
-        "revision": state["revision"],
-        "value": {
-            role: {
-                field: state["value"].get(role, {}).get(key, False)
-                for field, key in zip(POLICY_FIELDS, CAPABILITIES, strict=True)
-            }
-            for role in ("admin", "member")
-        },
-    }
-
-
-@router.get("/platform/permission-policy", response_model=PermissionPolicyOut)
-async def get_policy(request: Request, session: SessionDep):
-    await _platform_auth(request, session)
-    return policy_output(await read_setting(session, "permission_policy", default_policy()))
-
-
-@router.patch("/platform/permission-policy", response_model=PermissionPolicyOut)
-async def patch_policy(request: Request, session: SessionDep, body: PermissionPolicyIn):
-    principal = await _platform_auth(request, session)
-    value = {
-        role: {
-            key: getattr(getattr(body.value, role), field)
-            for field, key in zip(POLICY_FIELDS, CAPABILITIES, strict=True)
-        }
-        for role in ("admin", "member")
-    }
-    result = await write_setting(
-        session, principal, "permission_policy", value, body.expected_revision, client_ip(request)
-    )
-    return policy_output(result)
 
 
 @router.get("/platform/runtime-quotas", response_model=RuntimeQuotasOut)
@@ -181,9 +134,14 @@ async def registration(
         result = await register(session, body, ip, request.headers.get("User-Agent", ""))
     except ValueError as exc:
         raise HTTPException(422, {"code": "registration_invalid", "message": str(exc)}) from exc
-    user, workspace, auth, token, csrf = result
+    user, auth, token, csrf = result
     _set_cookies(response, token, csrf)
-    return await _login_out(session, user, workspace, auth)
+    return await _login_out(
+        session,
+        user,
+        auth,
+        maintenance=getattr(request.app.state, "storage_upgrade_required", False),
+    )
 
 
 @router.get("/account/developer-documents", response_model=DeveloperDocumentsOut)
@@ -203,29 +161,3 @@ async def certification(
 ):
     principal = await _browser_auth(request, session)
     return await certify_project(session, principal, kind, project_id, body, client_ip(request))
-
-
-@router.get("/account/log-workspaces", response_model=list[LogWorkspaceOut])
-async def log_spaces(request: Request, session: SessionDep):
-    principal = await _browser_auth(request, session)
-    return await log_workspaces(session, principal)
-
-
-@router.get("/account/cross-workspace-call-logs/stats", response_model=CallLogStatsOut)
-async def cross_log_stats(
-    request: Request,
-    session: SessionDep,
-    workspace_ids: list[str] = Query(default=[]),
-):
-    principal = await _browser_auth(request, session)
-    return await cross_workspace_stats(principal, workspace_ids)
-
-
-@router.get("/account/cross-workspace-call-logs", response_model=CrossWorkspaceLogPage)
-async def cross_logs(
-    request: Request,
-    session: SessionDep,
-    filters: Annotated[CrossWorkspaceLogQuery, Query()],
-):
-    principal = await _browser_auth(request, session)
-    return await cross_workspace_logs(principal, filters)

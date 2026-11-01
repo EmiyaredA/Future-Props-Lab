@@ -1,6 +1,6 @@
 import type { NoteInput } from "../api";
 
-export type DraftIdentity = { userId: string; workspaceId: string };
+export type DraftIdentity = { userId: string; accountId: string };
 export type LocalDraft = DraftIdentity & {
   key: string;
   noteId: string;
@@ -17,13 +17,46 @@ function open(): Promise<IDBDatabase> {
       reject(new Error("当前环境无法保存本机草稿"));
       return;
     }
-    const request = indexedDB.open(DB, 2);
+    const request = indexedDB.open(DB, 3);
     request.onupgradeneeded = () => {
       const store = request.result.objectStoreNames.contains("drafts")
         ? request.transaction!.objectStore("drafts")
         : request.result.createObjectStore("drafts", { keyPath: "key" });
-      if (!store.indexNames.contains("by-document"))
-        store.createIndex("by-document", ["userId", "workspaceId", "noteId"]);
+      if (store.indexNames.contains("by-document"))
+        store.deleteIndex("by-document");
+      store.createIndex("by-document", ["userId", "accountId", "noteId"]);
+      const cursor = store.openCursor();
+      cursor.onsuccess = () => {
+        const entry = cursor.result;
+        if (!entry) return;
+        const row = entry.value as LocalDraft & { workspaceId?: string };
+        if (
+          !row.accountId &&
+          row.workspaceId &&
+          row.userId &&
+          row.noteId &&
+          row.tabId
+        ) {
+          const accountId = row.workspaceId.startsWith("community/")
+            ? row.workspaceId
+            : row.userId;
+          const migrated = {
+            ...row,
+            accountId,
+            key: JSON.stringify([
+              row.userId,
+              accountId,
+              row.noteId,
+              row.tabId,
+              row.key,
+            ]),
+          };
+          delete migrated.workspaceId;
+          store.put(migrated);
+          entry.delete();
+        }
+        entry.continue();
+      };
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(new Error("本机草稿存储不可用"));
@@ -53,7 +86,7 @@ export const draftKey = (
   identity: DraftIdentity,
   noteId: string,
   tabId: string,
-) => JSON.stringify([identity.userId, identity.workspaceId, noteId, tabId]);
+) => JSON.stringify([identity.userId, identity.accountId, noteId, tabId]);
 export const putLocalDraft = (draft: LocalDraft) =>
   transaction("readwrite", (store) => store.put(draft));
 export async function removeLocalDraft(key: string, acknowledgedAt = Infinity) {
@@ -80,15 +113,13 @@ export async function listLocalDrafts(identity: DraftIdentity, noteId: string) {
   const records = await transaction<LocalDraft[]>("readonly", (store) =>
     store
       .index("by-document")
-      .getAll(
-        IDBKeyRange.only([identity.userId, identity.workspaceId, noteId]),
-      ),
+      .getAll(IDBKeyRange.only([identity.userId, identity.accountId, noteId])),
   );
   return records
     .filter(
       (row) =>
         row.userId === identity.userId &&
-        row.workspaceId === identity.workspaceId &&
+        row.accountId === identity.accountId &&
         row.noteId === noteId,
     )
     .sort((a, b) => b.updatedAt - a.updatedAt);

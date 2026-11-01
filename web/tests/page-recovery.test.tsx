@@ -24,8 +24,8 @@ it("contains a rendering failure and asks before leaving the failed editor", () 
 });
 it("lets the active navigation guard veto recovery without replaying a write", () => {
   const guard = vi.fn((e: Event) => e.preventDefault());
-  window.addEventListener("future-props:before-workspace-switch", guard);
+  window.addEventListener("future-props:before-navigation", guard);
   recoverPage();
   expect(guard).toHaveBeenCalledOnce();
-  window.removeEventListener("future-props:before-workspace-switch", guard);
+  window.removeEventListener("future-props:before-navigation", guard);
 });

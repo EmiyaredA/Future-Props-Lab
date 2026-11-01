@@ -52,7 +52,7 @@ async def save_note(session, principal, pub_id, note_id, body):
         if any(not target.available for target in targets):
             raise missing()
     bind_source(session, pub)
-    value = await Notes(session, pub.workspace_id, principal.user_id).put(
+    value = await Notes(session, pub.owner_user_id, principal.user_id).put(
         note_id,
         ThoughtNotePut(**validated.model_dump(), expected_revision=body.expected_revision),
         commit=False,
@@ -95,7 +95,7 @@ async def snapshot(session, principal, pub_id):
             update={
                 "parent_id": n.parent_id if n.parent_id in ids else None,
                 "kind": "note",
-                "document": await project_content(session, pub.workspace_id, n, readable=readable),
+                "document": await project_content(session, pub.owner_user_id, n, readable=readable),
             }
         )
         .model_dump(mode="json")

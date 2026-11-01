@@ -8,7 +8,7 @@ import {
 import { Plugin } from "@tiptap/pm/state";
 import { useId, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useWorkspaceId } from "@platform/auth/WorkspacePermissions";
+import { useAccountId } from "@platform/auth/AccountAccess";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { thoughtKeys } from "../queryKeys";
 import { useLegacyReference } from "../community/legacyReference";
@@ -102,7 +102,7 @@ function ReferenceView({ node }: NodeViewProps) {
   const [preview, setPreview] = useState(false);
   const previewId = useId();
   const attrs = node.attrs as DocumentReference,
-    workspace = useWorkspaceId();
+    workspace = useAccountId();
   const target = useQuery({
     queryKey: thoughtKeys.references(
       access.community ? access.namespace : (workspace ?? ""),

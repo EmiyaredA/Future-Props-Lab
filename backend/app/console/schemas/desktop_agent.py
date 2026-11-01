@@ -31,19 +31,19 @@ class AgentClaimOut(BaseModel):
     api_key: str | None = None
     key_id: str | None = None
     user_id: str | None = None
-    workspace_id: str | None = None
+    owner_user_id: str | None = None
 
 
 class AgentDecisionIn(BaseModel):
     approve: bool
     code: str = Field(min_length=6, max_length=6)
-    expected_workspace_id: str = Field(min_length=1, max_length=128)
+    expected_owner_user_id: str = Field(min_length=1, max_length=128)
 
 
 class AgentCapabilities(BaseModel):
     version: int = 1
     user_id: str
-    workspace_id: str
+    owner_user_id: str
     scopes: list[str]
     operations: dict[str, Any]
     schemas: dict[str, Any]

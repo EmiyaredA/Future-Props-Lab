@@ -20,7 +20,7 @@ from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetSt
 from app.runtime.config import get_settings
 from app.runtime.project_records import (
     delete_revisioned_project,
-    load_workspace_project,
+    load_owned_project,
     patch_revisioned_project,
 )
 from app.runtime.time import iso_utc, utc_now
@@ -89,17 +89,17 @@ def default_timeline() -> dict:
 
 
 class VideoEditorProjects:
-    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
         self.session = session
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
         self.storage = AssetStorage(get_settings())
 
     async def row(self, project_id: str) -> VideoEditorProject:
-        return await load_workspace_project(
+        return await load_owned_project(
             self.session,
             VideoEditorProject,
             project_id,
-            self.workspace_id,
+            self.owner_user_id,
             not_found=lambda: VideoEditorNotFoundError("剪辑项目不存在"),
         )
 
@@ -108,7 +108,7 @@ class VideoEditorProjects:
             (
                 await self.session.execute(
                     select(VideoEditorProject)
-                    .where(VideoEditorProject.workspace_id == self.workspace_id)
+                    .where(VideoEditorProject.owner_user_id == self.owner_user_id)
                     .order_by(VideoEditorProject.updated_at.desc())
                 )
             )
@@ -121,7 +121,7 @@ class VideoEditorProjects:
         return project_out(await self.row(project_id))
 
     async def create(self, body: VideoEditorProjectCreateIn) -> VideoEditorProjectOut:
-        row = VideoEditorProject(workspace_id=self.workspace_id, title=body.title, status="draft")
+        row = VideoEditorProject(owner_user_id=self.owner_user_id, title=body.title, status="draft")
         self.session.add(row)
         await self.session.flush()
         async with creating_project_layout(
@@ -129,7 +129,7 @@ class VideoEditorProjects:
             self.storage,
             "video-editor",
             row.id,
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
         ):
             self.session.add(VideoEditorTimeline(project_id=row.id, document=default_timeline()))
         await self.session.refresh(row)
@@ -151,7 +151,7 @@ class VideoEditorProjects:
             self.session,
             VideoEditorProject,
             project_id,
-            self.workspace_id,
+            self.owner_user_id,
             expected_revision=body.expected_revision,
             values=values,
             load_current=lambda: self.get(project_id),
@@ -180,14 +180,14 @@ class VideoEditorProjects:
             self.storage,
             "video-editor",
             project_id,
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             legacy_paths=legacy,
         ):
             await delete_revisioned_project(
                 self.session,
                 VideoEditorProject,
                 project_id,
-                self.workspace_id,
+                self.owner_user_id,
                 expected_revision=expected_revision,
                 load_current=lambda: self.get(project_id),
             )

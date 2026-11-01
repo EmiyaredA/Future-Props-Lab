@@ -24,7 +24,7 @@ from app.apps.presentation_workshop.templates.native_scene import default_page
 from app.apps.presentation_workshop.templates.schema import TemplateBinding
 from app.runtime.project_records import (
     delete_revisioned_project,
-    load_workspace_project,
+    load_owned_project,
     patch_revisioned_project,
 )
 from app.runtime.revisions import RevisionConflictError
@@ -46,9 +46,9 @@ def template_document(definition, name="模板预览"):
 
 
 class TemplateLibrary:
-    def __init__(self, session, workspace_id):
-        self.session, self.workspace_id = session, workspace_id
-        self.projects = Presentations(session, workspace_id)
+    def __init__(self, session, owner_user_id):
+        self.session, self.owner_user_id = session, owner_user_id
+        self.projects = Presentations(session, owner_user_id)
 
     def kinds(self, kind):
         if kind == "templates":
@@ -69,11 +69,11 @@ class TemplateLibrary:
 
     async def row(self, kind, identity):
         model, *_ = self.kinds(kind)
-        return await load_workspace_project(
+        return await load_owned_project(
             self.session,
             model,
             identity,
-            self.workspace_id,
+            self.owner_user_id,
             not_found=lambda: PresentationError("模板或示例不存在", 404, "not_found"),
         )
 
@@ -85,7 +85,7 @@ class TemplateLibrary:
 
     async def list(self, kind, query="", offset=0, limit=24):
         model, out, listing, *_ = self.kinds(kind)
-        filters = [model.workspace_id == self.workspace_id]
+        filters = [model.owner_user_id == self.owner_user_id]
         if query.strip():
             filters.append(model.title.contains(query.strip(), autoescape=True))
         total = await self.session.scalar(select(func.count()).select_from(model).where(*filters))
@@ -114,7 +114,7 @@ class TemplateLibrary:
         model = self.kinds(kind)[0]
         if kind == "examples":
             await self.projects.normalize_template_source(body.document)
-        row = model(workspace_id=self.workspace_id, **body.model_dump())
+        row = model(owner_user_id=self.owner_user_id, **body.model_dump())
         self.session.add(row)
         try:
             await self.session.flush()
@@ -160,7 +160,7 @@ class TemplateLibrary:
                 self.session,
                 model,
                 identity,
-                self.workspace_id,
+                self.owner_user_id,
                 expected_revision=body.expected_revision,
                 values={
                     **body.model_dump(exclude={"expected_revision"}),
@@ -182,7 +182,7 @@ class TemplateLibrary:
             self.session,
             self.kinds(kind)[0],
             identity,
-            self.workspace_id,
+            self.owner_user_id,
             expected_revision=revision,
             load_current=lambda: self.get(kind, identity),
         )

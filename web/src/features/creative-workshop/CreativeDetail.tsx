@@ -128,7 +128,7 @@ export function Detail({
           )}
         </div>
         <aside className="creative-detail-aside">
-          <h3>复制到当前 Workspace</h3>
+          <h3>复制到当前账号</h3>
           <p>安装的是固定版本的独立副本，发布者以后更新不会改变现有配置。</p>
           {!item.installable && (
             <p className="creative-error">
@@ -239,7 +239,7 @@ export function Detail({
                           {part.conflict
                             ? "名称冲突，请修改"
                             : part.already_installed
-                              ? "当前工作区已安装此版本"
+                              ? "当前账号已安装此版本"
                               : part.pending_setup
                                 ? "安装后需配置本机命令"
                                 : "将以禁用状态导入"}

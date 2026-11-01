@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from db.migrations import apply_migrations
-from db.migrations.registry import LATEST_MIGRATION_ID, MIGRATIONS
+from tests.migration_fixtures import LATEST_MIGRATION_ID, MIGRATIONS, apply_migrations
+
 from db.migrations.runner import connect_database, ensure_registry, migration_checksum
 
 

@@ -97,7 +97,7 @@ test("pairing discloses write risk and binds the displayed code, never receives 
       "/v1/desktop/agent/pairings/{pair_id}/decision",
       {
         params: { path: { pair_id: "pair1" } },
-        body: { approve: true, code: "123456", expected_workspace_id: "w1" },
+        body: { approve: true, code: "123456", expected_owner_user_id: "u1" },
       },
     ),
   );

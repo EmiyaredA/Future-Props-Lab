@@ -65,7 +65,7 @@ test("development host never injects App chrome", async () => {
 
 test("backend update does not navigate or discard drafts", async () => {
   const guard = vi.fn((event: Event) => event.preventDefault());
-  window.addEventListener("future-props:before-workspace-switch", guard);
+  window.addEventListener("future-props:before-navigation", guard);
   try {
     show();
     await waitFor(() =>
@@ -79,7 +79,7 @@ test("backend update does not navigate or discard drafts", async () => {
     ).toHaveBeenCalledOnce();
     expect(guard).not.toHaveBeenCalled();
   } finally {
-    window.removeEventListener("future-props:before-workspace-switch", guard);
+    window.removeEventListener("future-props:before-navigation", guard);
   }
 });
 
@@ -94,12 +94,12 @@ test.each(["desktop", "page"])(
     );
     act(() => publish({ ...state, pending: [kind] }));
     const guard = (event: Event) => event.preventDefault();
-    window.addEventListener("future-props:before-workspace-switch", guard);
+    window.addEventListener("future-props:before-navigation", guard);
     act(() => menuAction("apply"));
     expect(
       window.futurePropsDesktop!.applyDevelopmentUpdate,
     ).not.toHaveBeenCalled();
-    window.removeEventListener("future-props:before-workspace-switch", guard);
+    window.removeEventListener("future-props:before-navigation", guard);
     act(() => menuAction("apply"));
     expect(
       window.futurePropsDesktop!.applyDevelopmentUpdate,
@@ -159,7 +159,7 @@ test("window apply event uses the same unsaved guard path", async () => {
   );
   act(() => publish({ ...state, pending: ["page"] }));
   const guard = vi.fn((event: Event) => event.preventDefault());
-  window.addEventListener("future-props:before-workspace-switch", guard);
+  window.addEventListener("future-props:before-navigation", guard);
   try {
     act(() =>
       window.dispatchEvent(new Event("future-props:development-apply")),
@@ -169,6 +169,6 @@ test("window apply event uses the same unsaved guard path", async () => {
       window.futurePropsDesktop!.applyDevelopmentUpdate,
     ).not.toHaveBeenCalled();
   } finally {
-    window.removeEventListener("future-props:before-workspace-switch", guard);
+    window.removeEventListener("future-props:before-navigation", guard);
   }
 });

@@ -17,7 +17,7 @@ from app.capabilities.asset_store.storage import AssetStorage
 from app.runtime.config import get_settings
 from app.runtime.project_records import (
     delete_revisioned_project,
-    load_workspace_project,
+    load_owned_project,
     patch_revisioned_project,
 )
 from app.runtime.time import utc_now
@@ -34,15 +34,15 @@ def project_out(row: DirectorDeskProject) -> DirectorProjectOut:
 
 
 class DirectorDeskProjects:
-    def __init__(self, session: AsyncSession, workspace_id: str):
-        self.session, self.workspace_id = session, workspace_id
+    def __init__(self, session: AsyncSession, owner_user_id: str):
+        self.session, self.owner_user_id = session, owner_user_id
 
     async def row(self, project_id: str) -> DirectorDeskProject:
-        return await load_workspace_project(
+        return await load_owned_project(
             self.session,
             DirectorDeskProject,
             project_id,
-            self.workspace_id,
+            self.owner_user_id,
             not_found=lambda: DirectorDeskError("预演工程不存在"),
         )
 
@@ -52,7 +52,7 @@ class DirectorDeskProjects:
         return project_out(row)
 
     async def list(self, query: str, offset: int, limit: int) -> DirectorProjectList:
-        filters = [DirectorDeskProject.workspace_id == self.workspace_id]
+        filters = [DirectorDeskProject.owner_user_id == self.owner_user_id]
         if query.strip():
             filters.append(DirectorDeskProject.title.contains(query.strip(), autoescape=True))
         total = await self.session.scalar(
@@ -77,7 +77,7 @@ class DirectorDeskProjects:
 
     async def create(self, body: DirectorProjectCreate) -> DirectorProjectOut:
         row = DirectorDeskProject(
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             title=body.title,
             document=DirectorDocument(name=body.title).model_dump(),
         )
@@ -98,7 +98,7 @@ class DirectorDeskProjects:
             self.session,
             DirectorDeskProject,
             project_id,
-            self.workspace_id,
+            self.owner_user_id,
             expected_revision=body.expected_revision,
             values={
                 "title": body.title,
@@ -118,13 +118,13 @@ class DirectorDeskProjects:
             AssetStorage(get_settings()),
             "director-desk",
             project_id,
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
         ):
             await delete_revisioned_project(
                 self.session,
                 DirectorDeskProject,
                 project_id,
-                self.workspace_id,
+                self.owner_user_id,
                 expected_revision=revision,
                 load_current=lambda: self.get(project_id),
             )

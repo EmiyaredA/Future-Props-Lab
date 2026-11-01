@@ -24,7 +24,7 @@ class ModelProvider(Base):
     __tablename__ = "model_providers"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     origin: Mapped[str] = mapped_column(String(20), default="user")
     template_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
     name: Mapped[str] = mapped_column(String(120))
@@ -48,7 +48,7 @@ class ModelEntry(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     provider_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("model_providers.id", ondelete="CASCADE"), index=True
     )
@@ -68,6 +68,6 @@ class ModelEntry(Base):
 class ModelCatalogState(Base):
     __tablename__ = "model_catalog_state"
 
-    workspace_id: Mapped[str] = mapped_column("id", String(36), primary_key=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column("id", String(36), primary_key=True)
     revision: Mapped[int] = mapped_column(Integer, default=0)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)

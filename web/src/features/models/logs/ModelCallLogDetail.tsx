@@ -1,4 +1,4 @@
-import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
+import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Braces, ChevronDown, Copy, X } from "lucide-react";
@@ -300,13 +300,13 @@ export function LogDetail({
   onClose: () => void;
   onDelete: (id: string) => void;
 }) {
-  const canDelete = useWorkspacePermission("configuration.manage");
+  const canDelete = useAccountPermission("configuration.manage");
   const query = useQuery({
     queryKey: modelQueryKeys.log(id),
     queryFn: () => getLog(id),
   });
   const log = query.data;
-  const diagnostics = useWorkspacePermission("diagnostics.model");
+  const diagnostics = useAccountPermission("diagnostics.model");
   const [displayMode, setDisplayMode] = useState<DisplayMode>("readable");
   const [textMode, setTextMode] = useState<TextMode>("markdown");
   const messages = useMemo(

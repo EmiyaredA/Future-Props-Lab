@@ -15,14 +15,14 @@ from app.console.amadeus.schemas import RunEventIn, RunOut
 from app.console.amadeus.skills import load_skill
 from app.console.amadeus.tool_bridge import TOOLS, ToolBridge
 from app.console.governance.code_agents import resolve
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.config import REPO_ROOT
 from app.runtime.db import SessionLocal
 from app.runtime.ids import new_id
 
 
 class OwnedRun(RunOut):
-    workspace_id: str
+    owner_user_id: str
     user_id: str
 
 
@@ -32,7 +32,7 @@ class CodeAgentRuns:
 
     def start(self, app, headers, principal, run):
         run = OwnedRun(
-            **run.model_dump(), workspace_id=principal.workspace_id, user_id=principal.user_id
+            **run.model_dump(), owner_user_id=principal.owner_user_id, user_id=principal.user_id
         )
         task = asyncio.create_task(
             self.execute(app, dict(headers), principal, run), name=f"amadeus:{run.id}"
@@ -61,10 +61,15 @@ class CodeAgentRuns:
 
         async def persist(kind, payload, *, check_authority=True):
             async with self.sessions() as session:
-                bind_workspace(session, run.workspace_id)
+                bind_owner(session, run.owner_user_id)
                 if check_authority:
                     await resolve(
-                        session, run.workspace_id, run.user_id, run.agent_id, "amadeus", probe=False
+                        session,
+                        run.owner_user_id,
+                        run.user_id,
+                        run.agent_id,
+                        "amadeus",
+                        probe=False,
                     )
                 current = await Runs(session, principal).get(run.conversation_id, run.id)
                 if current.status not in {"running", "cancelling"}:
@@ -98,9 +103,9 @@ class CodeAgentRuns:
         status, error = "completed", None
         try:
             async with self.sessions() as session:
-                bind_workspace(session, run.workspace_id)
+                bind_owner(session, run.owner_user_id)
                 path = await resolve(
-                    session, run.workspace_id, run.user_id, run.agent_id, "amadeus"
+                    session, run.owner_user_id, run.user_id, run.agent_id, "amadeus"
                 )
                 if path != run.execution_config.get("executable"):
                     raise ValueError("Agent 连接已变更，请手动新建运行")
@@ -111,14 +116,14 @@ class CodeAgentRuns:
             for selected in run.capabilities:
                 if selected.startswith("skill:"):
                     async with self.sessions() as session:
-                        bind_workspace(session, run.workspace_id)
+                        bind_owner(session, run.owner_user_id)
                         identity = selected.removeprefix("skill:")
                         skill_snapshots[identity] = await load_skill(
-                            session, run.workspace_id, run.conversation_id, identity
+                            session, run.owner_user_id, run.conversation_id, identity
                         )
             if skill_snapshots:
                 async with self.sessions() as session:
-                    bind_workspace(session, run.workspace_id)
+                    bind_owner(session, run.owner_user_id)
                     current = await Runs(session, principal).get(run.conversation_id, run.id)
                     if current.status != "running":
                         return
@@ -127,7 +132,7 @@ class CodeAgentRuns:
                         "skills": skill_snapshots,
                     }
                     await session.commit()
-            root = work_root(run.workspace_id, run.conversation_id)
+            root = work_root(run.owner_user_id, run.conversation_id)
             if root.is_symlink():
                 raise ValueError("会话目录不安全")
             root.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -203,7 +208,7 @@ class CodeAgentRuns:
         except asyncio.CancelledError:
             status, error = "interrupted", "运行已停止；未知结果不会自动重试"
             async with self.sessions() as session:
-                bind_workspace(session, run.workspace_id)
+                bind_owner(session, run.owner_user_id)
                 current = await Runs(session, principal).get(run.conversation_id, run.id)
                 if current.status == "cancelling":
                     status = "cancelled"
@@ -233,7 +238,7 @@ class CodeAgentRuns:
                     except Exception:
                         status, error = "failed", "未能保存回复尾部；请核对已保存的结果后手动继续"
                 async with self.sessions() as session:
-                    bind_workspace(session, run.workspace_id)
+                    bind_owner(session, run.owner_user_id)
                     await Runs(session, principal).finish(
                         run.conversation_id, run.id, status, error
                     )

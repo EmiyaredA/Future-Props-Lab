@@ -1,4 +1,4 @@
-"""Owned children of a Workspace-scoped ThoughtNote; no dynamic database tables."""
+"""Owned children of a account-scoped ThoughtNote; no dynamic database tables."""
 
 from datetime import datetime
 

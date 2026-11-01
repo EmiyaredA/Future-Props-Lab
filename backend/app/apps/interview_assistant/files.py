@@ -13,13 +13,13 @@ MAX_FILE_BYTES = 10 * 1024 * 1024
 IDENTIFIER = re.compile(r"^[A-Za-z0-9_-]{1,100}$")
 
 
-def room_root(workspace_id: str, room_id: str) -> Path:
-    if not all(IDENTIFIER.fullmatch(value) for value in (workspace_id, room_id)):
+def room_root(owner_user_id: str, room_id: str) -> Path:
+    if not all(IDENTIFIER.fullmatch(value) for value in (owner_user_id, room_id)):
         raise OperationError("文件标识无效")
     root = (
         get_settings().database_path.parent
-        / "workspaces"
-        / workspace_id
+        / "accounts"
+        / owner_user_id
         / "interview-assistant"
         / room_id
     )
@@ -31,13 +31,13 @@ def room_root(workspace_id: str, room_id: str) -> Path:
     return root
 
 
-def material_path(workspace_id: str, room_id: str, material_id: str, filename: str) -> Path:
+def material_path(owner_user_id: str, room_id: str, material_id: str, filename: str) -> Path:
     if not IDENTIFIER.fullmatch(material_id):
         raise OperationError("文件标识无效")
     suffix = Path(filename).suffix.lower()
     if suffix not in {".txt", ".md", ".pdf", ".docx"}:
         raise OperationError("支持 TXT、Markdown、PDF、DOCX 文件")
-    path = room_root(workspace_id, room_id) / "materials" / f"{material_id}{suffix}"
+    path = room_root(owner_user_id, room_id) / "materials" / f"{material_id}{suffix}"
     if path.is_symlink() or path.parent.is_symlink():
         raise OperationError("资料文件不能是符号链接")
     return path

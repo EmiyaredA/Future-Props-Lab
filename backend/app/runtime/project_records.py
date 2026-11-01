@@ -11,11 +11,11 @@ from app.runtime.revisions import RevisionSnapshot, require_revision_write
 ProjectRow = TypeVar("ProjectRow")
 
 
-async def load_workspace_project(
+async def load_owned_project(
     session: AsyncSession,
     model: type[ProjectRow],
     project_id: str,
-    workspace_id: str,
+    owner_user_id: str,
     *,
     not_found: Callable[[], Exception],
 ) -> ProjectRow:
@@ -25,7 +25,7 @@ async def load_workspace_project(
         await session.execute(
             select(model).where(
                 model.id == project_id,
-                model.workspace_id == workspace_id,
+                model.owner_user_id == owner_user_id,
             )
         )
     ).scalar_one_or_none()
@@ -38,7 +38,7 @@ async def patch_revisioned_project(
     session: AsyncSession,
     model: type[Any],
     project_id: str,
-    workspace_id: str,
+    owner_user_id: str,
     *,
     expected_revision: int,
     values: dict[str, object],
@@ -50,7 +50,7 @@ async def patch_revisioned_project(
         update(model)
         .where(
             model.id == project_id,
-            model.workspace_id == workspace_id,
+            model.owner_user_id == owner_user_id,
             model.revision == expected_revision,
         )
         .values(**values)
@@ -67,7 +67,7 @@ async def delete_revisioned_project(
     session: AsyncSession,
     model: type[Any],
     project_id: str,
-    workspace_id: str,
+    owner_user_id: str,
     *,
     expected_revision: int,
     load_current: Callable[[], Awaitable[RevisionSnapshot]],
@@ -77,7 +77,7 @@ async def delete_revisioned_project(
     result = await session.execute(
         delete(model).where(
             model.id == project_id,
-            model.workspace_id == workspace_id,
+            model.owner_user_id == owner_user_id,
             model.revision == expected_revision,
         )
     )

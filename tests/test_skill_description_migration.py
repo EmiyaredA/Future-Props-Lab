@@ -4,9 +4,9 @@ import sqlite3
 from pathlib import Path
 
 import pytest
+from tests.migration_fixtures import LATEST_MIGRATION_ID, MIGRATIONS, apply_migrations
 
-from db.migrations import apply_migrations, runner
-from db.migrations.registry import LATEST_MIGRATION_ID, MIGRATIONS
+from db.migrations import runner
 from db.migrations.runner import connect_database
 
 

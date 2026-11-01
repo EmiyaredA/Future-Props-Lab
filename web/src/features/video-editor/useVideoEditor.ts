@@ -1,5 +1,5 @@
 import type { TransformDraft } from "./transformModel";
-import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
+import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { DEFAULT_EDITOR_LAYOUT } from "./editorLayout";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -37,7 +37,7 @@ import {
 } from "./workspacePreferences";
 
 export function useVideoEditor(projectId: string) {
-  const canWrite = useWorkspacePermission("content.write");
+  const canWrite = useAccountPermission("content.write");
   const [initialWorkspacePreferences] = useState(() =>
     loadVideoEditorWorkspacePreferences(projectId),
   );

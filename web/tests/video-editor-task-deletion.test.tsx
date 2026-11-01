@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { VideoEditorTasksPage } from "@features/video-editor/VideoEditorTasksPage";
-import { WorkspacePermissionsProvider } from "@platform/auth/WorkspacePermissions";
+import { AccountAccessProvider } from "@platform/auth/AccountAccess";
 import * as api from "@features/video-editor/api";
 import type { VideoEditorTask } from "@features/video-editor/types";
 
@@ -55,9 +55,9 @@ function show(permissions = ["content.write"]) {
   });
   render(
     <QueryClientProvider client={client}>
-      <WorkspacePermissionsProvider permissions={permissions}>
+      <AccountAccessProvider userId="test-user" permissions={permissions}>
         <VideoEditorTasksPage onOpenProject={vi.fn()} />
-      </WorkspacePermissionsProvider>
+      </AccountAccessProvider>
     </QueryClientProvider>,
   );
 }

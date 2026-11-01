@@ -34,7 +34,7 @@ from app.llm.providers.realtime.contracts import RealtimeProviderUnavailableErro
 from app.llm.providers.realtime.senseaudio import SenseAudioRealtimeBridge
 from app.llm.realtime.catalog import RealtimeModelUnavailableError, resolve_realtime_model
 from app.llm.realtime.tool_calls import RealtimeToolExecutor, provider_tool_definitions
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.db import SessionLocal
 from app.runtime.ids import new_id
 
@@ -57,7 +57,7 @@ class TurnMetrics:
 
 async def _write_log(
     *,
-    workspace_id: str,
+    owner_user_id: str,
     trace_id: str,
     model: Any,
     voice: str,
@@ -85,7 +85,7 @@ async def _write_log(
     )
     snap = credential or CredentialSnapshot()
     async with SessionLocal() as session:
-        bind_workspace(session, workspace_id)
+        bind_owner(session, owner_user_id)
         session.add(
             LlmCallLog(
                 call_source="model_playground",
@@ -243,7 +243,7 @@ def _client_configuration(payload: dict[str, Any]) -> dict[str, Any]:
 async def run_realtime_model_test(
     websocket: WebSocket,
     *,
-    workspace_id: str,
+    owner_user_id: str,
     check_access=None,
     credential: CredentialSnapshot | None = None,
 ) -> None:
@@ -301,9 +301,9 @@ async def run_realtime_model_test(
         tool_ids = [tool_id.strip() for tool_id in raw_tool_ids]
         try:
             async with SessionLocal() as session:
-                bind_workspace(session.sync_session, workspace_id)
+                bind_owner(session.sync_session, owner_user_id)
                 model = await resolve_realtime_model(
-                    session, workspace_id=workspace_id, model_id=model_id
+                    session, owner_user_id=owner_user_id, model_id=model_id
                 )
                 tool_snapshots = await load_selected_tool_snapshots(session, tool_ids)
         except TestToolSelectionError as exc:
@@ -333,7 +333,7 @@ async def run_realtime_model_test(
             bridge.outbound.put_nowait(event)
 
         tool_executor = RealtimeToolExecutor(
-            workspace_id=workspace_id,
+            owner_user_id=owner_user_id,
             trace_id=trace_id,
             snapshots=tool_snapshots,
             emit=emit_tool_update,
@@ -447,7 +447,7 @@ async def run_realtime_model_test(
                     turn.usage = dict(event.get("usage") or {})
                     turn.timings = dict(event.get("timings") or {})
                     await _write_log(
-                        workspace_id=workspace_id,
+                        owner_user_id=owner_user_id,
                         trace_id=trace_id,
                         model=model,
                         voice=voice,
@@ -464,7 +464,7 @@ async def run_realtime_model_test(
                     await tool_executor.shutdown()
                     turn = turns.get(active_turn_id or "")
                     await _write_log(
-                        workspace_id=workspace_id,
+                        owner_user_id=owner_user_id,
                         trace_id=trace_id,
                         model=model,
                         voice=voice,
@@ -509,7 +509,7 @@ async def run_realtime_model_test(
         if active_turn_id:
             await tool_executor.shutdown()
             await _write_log(
-                workspace_id=workspace_id,
+                owner_user_id=owner_user_id,
                 trace_id=trace_id,
                 model=model,
                 voice=voice,
@@ -528,7 +528,7 @@ async def run_realtime_model_test(
             await tool_executor.shutdown()
         if model is not None and active_turn_id:
             await _write_log(
-                workspace_id=workspace_id,
+                owner_user_id=owner_user_id,
                 trace_id=trace_id,
                 model=model,
                 voice=voice,
@@ -547,7 +547,7 @@ async def run_realtime_model_test(
             model = getattr(exc, "model", None)
         if model is not None and logged_turns == 0:
             await _write_log(
-                workspace_id=workspace_id,
+                owner_user_id=owner_user_id,
                 trace_id=trace_id,
                 model=model,
                 voice=voice,
@@ -572,7 +572,7 @@ async def run_realtime_model_test(
             await tool_executor.shutdown()
         if model is not None and logged_turns == 0:
             await _write_log(
-                workspace_id=workspace_id,
+                owner_user_id=owner_user_id,
                 trace_id=trace_id,
                 model=model,
                 voice=voice,

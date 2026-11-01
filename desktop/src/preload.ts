@@ -52,9 +52,8 @@ contextBridge.exposeInMainWorld(
       return () =>
         ipcRenderer.removeListener("desktop:pet-preview-status", listener);
     },
-    publishPetContext: (
-      value: { userId: string; workspaceId: string } | null,
-    ) => ipcRenderer.invoke("desktop:pet-context", value),
+    publishPetContext: (value: { userId: string; accountId: string } | null) =>
+      ipcRenderer.invoke("desktop:pet-context", value),
     setPetInteractive: (interactive: boolean) =>
       ipcRenderer.invoke("desktop:pet-hit", interactive),
     movePet: (x: number, y: number) =>

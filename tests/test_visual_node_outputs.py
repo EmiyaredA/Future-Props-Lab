@@ -359,6 +359,7 @@ async def test_generated_grid_placeholders_avoid_existing_cards_and_preserve_tas
         async with SessionLocal() as session:
             tasks = [
                 VisualGenerationTask(
+                    owner_user_id="test-user",
                     id=str(uuid4()),
                     project_id=project,
                     provider_kind="senseaudio_image",
@@ -440,7 +441,7 @@ async def test_outputs_workspace_scope_and_wrong_node_fixed_reference():
             with pytest.raises(OutputError) as error:
                 await NodeOutputs(session, str(uuid4())).list(project, "one", 1, 20)
             assert error.value.status == 404
-            assert (await session.get(VisualWorkshopProject, project)).workspace_id == "default"
+            assert (await session.get(VisualWorkshopProject, project)).owner_user_id == "test-user"
 
 
 @pytest.mark.asyncio

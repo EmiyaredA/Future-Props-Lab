@@ -50,7 +50,7 @@ def modalities(model, provider):
     return result
 
 
-async def get_model(session, workspace_id, model_id, kind):
+async def get_model(session, owner_user_id, model_id, kind):
     row = (
         await session.execute(
             select(ModelEntry, ModelProvider)
@@ -60,8 +60,8 @@ async def get_model(session, workspace_id, model_id, kind):
             )
             .where(
                 ModelEntry.id == model_id,
-                ModelProvider.workspace_id == workspace_id,
-                ModelEntry.workspace_id == workspace_id,
+                ModelProvider.owner_user_id == owner_user_id,
+                ModelEntry.owner_user_id == owner_user_id,
             )
         )
     ).first()
@@ -79,7 +79,7 @@ async def get_model(session, workspace_id, model_id, kind):
     return model, provider
 
 
-async def options(session, workspace_id):
+async def options(session, owner_user_id):
     rows = (
         await session.execute(
             select(ModelEntry, ModelProvider)
@@ -88,8 +88,8 @@ async def options(session, workspace_id):
                 ModelProvider.id == ModelEntry.provider_id,
             )
             .where(
-                ModelEntry.workspace_id == workspace_id,
-                ModelProvider.workspace_id == workspace_id,
+                ModelEntry.owner_user_id == owner_user_id,
+                ModelProvider.owner_user_id == owner_user_id,
                 ModelEntry.enabled.is_(True),
                 ModelProvider.enabled.is_(True),
             )

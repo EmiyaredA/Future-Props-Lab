@@ -12,10 +12,10 @@ from app.runtime.orm_base import Base
 
 
 class VisualAssetContext:
-    def __init__(self, session: AsyncSession, settings: Settings, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, settings: Settings, owner_user_id: str) -> None:
         self.session = session
         self.settings = settings
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
         self.storage = AssetStorage(settings)
         self.library = AssetLibrary(session, settings)
 

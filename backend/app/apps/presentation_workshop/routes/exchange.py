@@ -17,7 +17,7 @@ from app.apps.presentation_workshop.schemas.document import (
     PresentationProjectOut,
 )
 from app.capabilities.asset_store.library import AssetError
-from app.deps import SessionDep, WorkspaceDep
+from app.deps import OwnerDep, SessionDep
 
 router = APIRouter()
 
@@ -30,34 +30,32 @@ async def mapped(work):
 
 
 @router.post("/imports/preview", response_model=ImportPreview)
-async def preview_import(
-    session: SessionDep, workspace_id: WorkspaceDep, upload: UploadFile = File()
-):
+async def preview_import(session: SessionDep, owner_user_id: OwnerDep, upload: UploadFile = File()):
     parsed = await mapped(parse_upload(upload))
     if not parsed.assets:
-        await mapped(Presentations(session, workspace_id).assets(parsed.document))
+        await mapped(Presentations(session, owner_user_id).assets(parsed.document))
     return preview(parsed)
 
 
 @router.post("/imports", response_model=PresentationProjectOut)
 async def create_import(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     upload: UploadFile = File(),
     allow_lossy: bool = Form(False),
 ):
     parsed = await mapped(parse_upload(upload))
     return await mapped(
-        import_presentation(Presentations(session, workspace_id), parsed, allow_lossy)
+        import_presentation(Presentations(session, owner_user_id), parsed, allow_lossy)
     )
 
 
 @router.post("/projects/{project_id}/export/preview", response_model=ExportPreview)
 async def preview_export(
-    project_id: str, body: PresentationExportIn, session: SessionDep, workspace_id: WorkspaceDep
+    project_id: str, body: PresentationExportIn, session: SessionDep, owner_user_id: OwnerDep
 ):
     return await mapped(
-        export_preview(Presentations(session, workspace_id), project_id, body.expected_revision)
+        export_preview(Presentations(session, owner_user_id), project_id, body.expected_revision)
     )
 
 
@@ -78,11 +76,11 @@ async def export_file(
     format: Literal["json", "fplppt"],
     body: PresentationExportIn,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
 ):
     content = await mapped(
         export_document(
-            Presentations(session, workspace_id), project_id, body.expected_revision, format
+            Presentations(session, owner_user_id), project_id, body.expected_revision, format
         )
     )
     return Response(

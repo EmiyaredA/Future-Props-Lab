@@ -40,11 +40,11 @@ def _archive(entries: list[tuple[Path, str]]) -> Path:
 async def download_segments(
     session: AsyncSession,
     settings: Settings,
-    workspace_id: str,
+    owner_user_id: str,
     project_id: str,
     task_id: str,
 ) -> Path:
-    task = await VideoEditorSegmentExports(session, workspace_id).get(project_id, task_id)
+    task = await VideoEditorSegmentExports(session, owner_user_id).get(project_id, task_id)
     if task.status != "completed":
         raise AssetError("分段导出尚未完成", code="export_not_ready", status=409)
     segments = task.result_detail.get("segments", [])
@@ -55,7 +55,7 @@ async def download_segments(
         (
             await session.scalars(
                 select(VisualAsset).where(
-                    VisualAsset.id.in_(ids), VisualAsset.workspace_id == workspace_id
+                    VisualAsset.id.in_(ids), VisualAsset.owner_user_id == owner_user_id
                 )
             )
         ).all()

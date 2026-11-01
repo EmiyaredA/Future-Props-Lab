@@ -19,7 +19,7 @@ def _task(status: str, **changes) -> GenerationTaskContext:
         payload={"prompt": "test", "size": "1024x1024"},
         provider_task_id="provider-1" if status != "queued" else "",
         result_url="",
-        workspace_id="workspace-1",
+        owner_user_id="workspace-1",
     )
     return replace(task, **changes)
 

@@ -78,11 +78,11 @@ def _audit_messages(messages: list[dict]) -> list[dict]:
 
 async def stream_model_turn(
     session,
-    workspace_id: str,
+    owner_user_id: str,
     body: ModelTurnIn,
     credential: CredentialSnapshot | None = None,
 ) -> AsyncIterator[str]:
-    model, provider = await get_model(session, workspace_id, body.model_id, "text")
+    model, provider = await get_model(session, owner_user_id, body.model_id, "text")
     if any(item.get("images") for item in body.messages) and "vision" not in model.capabilities:
         raise OperationError("模型不支持图像输入", "unsupported_modality", 422)
     # Snapshot ORM scalars before releasing the request session; rollback expires
@@ -180,7 +180,7 @@ async def stream_model_turn(
                 log_session.add(
                     LlmCallLog(
                         id=log_id,
-                        workspace_id=workspace_id,
+                        owner_user_id=owner_user_id,
                         call_source="amadeus",
                         provider_kind=provider_kind,
                         model=slug,

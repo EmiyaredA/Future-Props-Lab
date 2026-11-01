@@ -27,7 +27,7 @@ class Directory(KnowledgeBases):
             select(ThoughtNote).where(
                 ThoughtNote.id == parent_id,
                 ThoughtNote.knowledge_base_id == project_id,
-                ThoughtNote.workspace_id == self.workspace_id,
+                ThoughtNote.owner_user_id == self.owner_user_id,
                 ThoughtNote.deleted_at.is_(None),
                 ThoughtNote.is_home.is_(False),
             )
@@ -72,7 +72,7 @@ class Directory(KnowledgeBases):
         await self.reserve(project_id, body.expected_revision)
         await self.parent(project_id, body.parent_id)
         siblings = await self.siblings(project_id, body.parent_id)
-        row = await Notes(self.session, self.workspace_id, self.author_id).create(
+        row = await Notes(self.session, self.owner_user_id, self.author_id).create(
             ThoughtNoteIn(
                 knowledge_base_id=project_id,
                 parent_id=body.parent_id,
@@ -87,7 +87,7 @@ class Directory(KnowledgeBases):
 
     async def create_content(self, body: ThoughtNoteCreate):
         await self.reserve(body.knowledge_base_id, body.expected_knowledge_revision)
-        row = await Notes(self.session, self.workspace_id, self.author_id).create(
+        row = await Notes(self.session, self.owner_user_id, self.author_id).create(
             ThoughtNoteIn(**body.model_dump(exclude={"expected_knowledge_revision"})), commit=False
         )
         siblings = await self.siblings(body.knowledge_base_id, body.parent_id)
@@ -98,7 +98,7 @@ class Directory(KnowledgeBases):
     async def move(self, project_id: str, body: ThoughtMoveIn) -> ThoughtDirectoryOut:
         await self.reserve(project_id, body.expected_revision)
         await self.parent(project_id, body.parent_id)
-        row = await Notes(self.session, self.workspace_id).get(body.item_id)
+        row = await Notes(self.session, self.owner_user_id).get(body.item_id)
         if row.knowledge_base_id != project_id or row.is_home or row.deleted_at:
             raise ThoughtError("文档不能移动到该位置")
         if body.parent_id == row.id:
@@ -109,7 +109,7 @@ class Directory(KnowledgeBases):
             if parent_id in visited:
                 raise ThoughtError("不能将文档移入自身或子文档")
             visited.add(parent_id)
-            ancestor = await Notes(self.session, self.workspace_id).get(parent_id)
+            ancestor = await Notes(self.session, self.owner_user_id).get(parent_id)
             if ancestor.knowledge_base_id != project_id or ancestor.is_home or ancestor.deleted_at:
                 raise ThoughtError("父文档不存在", 404, "not_found")
             parent_id = ancestor.parent_id

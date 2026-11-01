@@ -1,7 +1,8 @@
 """Upgrade only an isolated database and preserve existing task/lease snapshots."""
 
-from db.migrations import apply_migrations, runner
-from db.migrations.registry import MIGRATIONS
+from tests.migration_fixtures import MIGRATIONS, apply_migrations
+
+from db.migrations import runner
 from db.migrations.runner import connect_database
 
 INDEX_QUERY = (
@@ -12,7 +13,10 @@ INDEX_QUERY = (
 
 def test_queue_upgrade_preserves_tasks_batches_ownership_and_constraints(tmp_path, monkeypatch):
     database = tmp_path / "queue-upgrade.db"
-    previous = MIGRATIONS[:-1]
+    index = next(
+        i for i, m in enumerate(MIGRATIONS) if m.migration_id == "0114_visual_generation_queue"
+    )
+    previous = MIGRATIONS[:index]
     with monkeypatch.context() as patch:
         patch.setattr(runner, "MIGRATIONS", previous)
         patch.setattr(runner, "LATEST_MIGRATION_ID", previous[-1].migration_id)

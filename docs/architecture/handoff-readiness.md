@@ -300,3 +300,7 @@ MLX、Python 或模型权重。管理员通过模型服务主动选择安装 Qwe
 ## 视频透明检查
 
 迁移 `0115_visual_output_inspection` 为输出历史追加可空的检查视频素材引用，旧版本与 MP4 使用方式保持兼容。GIF 上传生成 MP4 和透明 WebM，先完成转换及文件校验，再在短事务中保存双素材与画布 CAS；正式数据升级前在隔离数据库验证并停机备份。视频信息通过 Workspace 校验后的只读 `/v1/files/{asset_id}/media-info` 探测，预览背景不持久化。
+
+## 账号直接归属
+
+迁移 `0116_account_ownership` 移除 Workspace，根资源与任务使用 `owner_user_id`。固定管理员与普通用户两种角色，管理员不跨账号访问私人内容。旧数据归唯一原 Owner，旧 Session 和 API Key 撤销；正式布局 API 负责文件核验及可恢复迁移，完成并重启前业务 API 和后台执行器暂停。历史 migration 不改写，开发验收不使用正式数据库。

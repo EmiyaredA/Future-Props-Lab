@@ -41,7 +41,7 @@ from app.apps.thought_workshop.schemas.workshop import (
 )
 from app.capabilities.asset_store.library import AssetError, AssetLibrary
 from app.capabilities.asset_store.project_snapshots import ProjectSnapshotError
-from app.deps import SessionDep, StudioAuth, WorkspaceDep
+from app.deps import OwnerDep, SessionDep, StudioAuth
 from app.llm.call_logs.credentials import snapshot_from_principal
 from app.runtime.config import get_settings
 from app.runtime.operation_receipts import OperationError
@@ -52,9 +52,7 @@ router = APIRouter(prefix="/thought-workshop", tags=["thought-workshop"])
 
 
 @router.get("/link-preview", response_model=ThoughtLinkPreview)
-async def link_preview(
-    _workspace_id: WorkspaceDep, url: str = Query(min_length=1, max_length=8192)
-):
+async def link_preview(_owner_user_id: OwnerDep, url: str = Query(min_length=1, max_length=8192)):
     return await preview_link(url)
 
 
@@ -72,7 +70,7 @@ async def call(operation):
 @router.get("/notes", response_model=ThoughtNoteList)
 async def list_notes(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     knowledge_base_id: str,
     query: str = Query(default="", max_length=240),
     parent_id: str = "",
@@ -83,7 +81,7 @@ async def list_notes(
     limit: int = Query(default=40, ge=1, le=100),
 ):
     return await call(
-        Notes(session, workspace_id).list(
+        Notes(session, owner_user_id).list(
             knowledge_base_id=knowledge_base_id,
             query=query,
             parent_id=parent_id,
@@ -99,18 +97,18 @@ async def list_notes(
 @router.post("/notes", response_model=ThoughtNoteOut)
 async def create_note(body: ThoughtNoteCreate, session: SessionDep, principal: StudioAuth):
     return await call(
-        Directory(session, principal.workspace_id, principal.user_id).create_content(body)
+        Directory(session, principal.owner_user_id, principal.user_id).create_content(body)
     )
 
 
 @router.get("/notes/{note_id}", response_model=ThoughtNoteOut)
-async def get_note(note_id: str, session: SessionDep, workspace_id: WorkspaceDep):
-    return note_out(await call(Notes(session, workspace_id).get(note_id)))
+async def get_note(note_id: str, session: SessionDep, owner_user_id: OwnerDep):
+    return note_out(await call(Notes(session, owner_user_id).get(note_id)))
 
 
 @router.put("/notes/{note_id}", response_model=ThoughtNoteOut)
 async def put_note(note_id: str, body: ThoughtNotePut, session: SessionDep, principal: StudioAuth):
-    return await call(Notes(session, principal.workspace_id, principal.user_id).put(note_id, body))
+    return await call(Notes(session, principal.owner_user_id, principal.user_id).put(note_id, body))
 
 
 @router.post("/notes/{note_id}/operations", response_model=ThoughtNoteOut)
@@ -118,7 +116,7 @@ async def apply_note_operations(
     note_id: str, body: ThoughtOperationsIn, session: SessionDep, principal: StudioAuth
 ):
     return await call(
-        thought_operations(session, principal.workspace_id, note_id, body, principal.user_id)
+        thought_operations(session, principal.owner_user_id, note_id, body, principal.user_id)
     )
 
 
@@ -126,18 +124,18 @@ async def apply_note_operations(
 async def note_history(
     note_id: str,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     cursor: str | None = Query(default=None, max_length=36),
     limit: int = Query(default=30, ge=1, le=100),
 ):
-    return await call(Notes(session, workspace_id).history_list(note_id, cursor, limit))
+    return await call(Notes(session, owner_user_id).history_list(note_id, cursor, limit))
 
 
 @router.get("/notes/{note_id}/history/{history_id}", response_model=ThoughtHistoryDetail)
 async def note_history_detail(
-    note_id: str, history_id: str, session: SessionDep, workspace_id: WorkspaceDep
+    note_id: str, history_id: str, session: SessionDep, owner_user_id: OwnerDep
 ):
-    return await call(Notes(session, workspace_id).history_detail(note_id, history_id))
+    return await call(Notes(session, owner_user_id).history_detail(note_id, history_id))
 
 
 @router.post("/notes/{note_id}/history/{history_id}/restore", response_model=ThoughtNoteOut)
@@ -149,7 +147,7 @@ async def restore_note_history(
     principal: StudioAuth,
 ):
     return await call(
-        Notes(session, principal.workspace_id, principal.user_id).restore_history(
+        Notes(session, principal.owner_user_id, principal.user_id).restore_history(
             note_id, history_id, body.expected_revision
         )
     )
@@ -159,14 +157,14 @@ async def restore_note_history(
 async def delete_note(
     note_id: str,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     expected_revision: int = Query(ge=0),
     permanent: bool = False,
     expected_knowledge_revision: int = Query(ge=0),
     cascade_children: bool = False,
 ):
     return await call(
-        Notes(session, workspace_id).transition(
+        Notes(session, owner_user_id).transition(
             note_id,
             expected_revision,
             "purge" if permanent else "trash",
@@ -178,23 +176,21 @@ async def delete_note(
 
 @router.post("/notes/{note_id}/restore", response_model=ThoughtNoteOut)
 async def restore_note(
-    note_id: str, body: ThoughtNoteTransitionIn, session: SessionDep, workspace_id: WorkspaceDep
+    note_id: str, body: ThoughtNoteTransitionIn, session: SessionDep, owner_user_id: OwnerDep
 ):
     return await call(
-        Notes(session, workspace_id).transition(
+        Notes(session, owner_user_id).transition(
             note_id, body.expected_revision, "restore", body.expected_knowledge_revision
         )
     )
 
 
 @router.post("/images", response_model=ThoughtImageOut)
-async def upload_image(
-    session: SessionDep, workspace_id: WorkspaceDep, upload: UploadFile = File()
-):
+async def upload_image(session: SessionDep, owner_user_id: OwnerDep, upload: UploadFile = File()):
     row = await call(
         AssetLibrary(session, get_settings()).store_upload(
             upload,
-            workspace_id=workspace_id,
+            owner_user_id=owner_user_id,
             allowed_extensions={".png", ".jpg", ".jpeg", ".gif", ".webp"},
         )
     )
@@ -202,8 +198,8 @@ async def upload_image(
 
 
 @router.get("/models", response_model=list[ThoughtModelOut])
-async def writing_models(session: SessionDep, workspace_id: WorkspaceDep):
-    return await models(Notes(session, workspace_id))
+async def writing_models(session: SessionDep, owner_user_id: OwnerDep):
+    return await models(Notes(session, owner_user_id))
 
 
 @router.post(
@@ -218,12 +214,12 @@ async def assistant(
     note_id: str,
     body: ThoughtAssistantIn,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     principal: StudioAuth,
 ):
     credential = await snapshot_from_principal(session, principal)
     prepared = await call(
-        prepare(Notes(session, workspace_id), note_id, body, credential=credential)
+        prepare(Notes(session, owner_user_id), note_id, body, credential=credential)
     )
     return StreamingResponse(
         writing_events(prepared),
@@ -234,12 +230,12 @@ async def assistant(
 
 @router.get("/backup", response_class=FileResponse)
 async def backup(
-    session: SessionDep, workspace_id: WorkspaceDep, knowledge_base_id: str | None = None
+    session: SessionDep, owner_user_id: OwnerDep, knowledge_base_id: str | None = None
 ):
     import shutil
 
     path = await call(
-        export_backup(Notes(session, workspace_id), get_settings(), knowledge_base_id)
+        export_backup(Notes(session, owner_user_id), get_settings(), knowledge_base_id)
     )
     return FileResponse(
         path,
@@ -259,7 +255,7 @@ async def imports(
 ):
     return await call(
         import_backup(
-            Notes(session, principal.workspace_id, principal.user_id),
+            Notes(session, principal.owner_user_id, principal.user_id),
             get_settings(),
             upload,
             knowledge_base_id,
@@ -269,66 +265,64 @@ async def imports(
 
 
 @router.post("/attachments", response_model=ThoughtAttachmentOut)
-async def attachments(
-    session: SessionDep, workspace_id: WorkspaceDep, upload: UploadFile = File(...)
-):
-    return await call(upload_attachment(session, get_settings(), workspace_id, upload))
+async def attachments(session: SessionDep, owner_user_id: OwnerDep, upload: UploadFile = File(...)):
+    return await call(upload_attachment(session, get_settings(), owner_user_id, upload))
 
 
 @router.get("/knowledge-bases", response_model=list[KnowledgeBaseOut])
 async def knowledge_bases(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     query: str = Query(default="", max_length=240),
     trash: bool = False,
 ):
-    return await call(KnowledgeBases(session, workspace_id).list(query, trash))
+    return await call(KnowledgeBases(session, owner_user_id).list(query, trash))
 
 
 @router.post("/knowledge-bases", response_model=KnowledgeBaseOut)
 async def create_knowledge_base(body: KnowledgeBaseIn, session: SessionDep, principal: StudioAuth):
     return await call(
-        KnowledgeBases(session, principal.workspace_id, principal.user_id).create(body)
+        KnowledgeBases(session, principal.owner_user_id, principal.user_id).create(body)
     )
 
 
 @router.get("/knowledge-bases/{project_id}", response_model=KnowledgeBaseOut)
-async def knowledge_base(project_id: str, session: SessionDep, workspace_id: WorkspaceDep):
-    usecase = KnowledgeBases(session, workspace_id)
+async def knowledge_base(project_id: str, session: SessionDep, owner_user_id: OwnerDep):
+    usecase = KnowledgeBases(session, owner_user_id)
     return await call(usecase.output(await call(usecase.get(project_id))))
 
 
 @router.put("/knowledge-bases/{project_id}", response_model=KnowledgeBaseOut)
 async def update_knowledge_base(
-    project_id: str, body: KnowledgeBasePut, session: SessionDep, workspace_id: WorkspaceDep
+    project_id: str, body: KnowledgeBasePut, session: SessionDep, owner_user_id: OwnerDep
 ):
-    return await call(KnowledgeBases(session, workspace_id).put(project_id, body))
+    return await call(KnowledgeBases(session, owner_user_id).put(project_id, body))
 
 
 @router.delete("/knowledge-bases/{project_id}", response_model=KnowledgeBaseOut)
 async def trash_knowledge_base(
     project_id: str,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     expected_revision: int = Query(ge=0),
 ):
     return await call(
-        KnowledgeBases(session, workspace_id).transition(project_id, expected_revision, False)
+        KnowledgeBases(session, owner_user_id).transition(project_id, expected_revision, False)
     )
 
 
 @router.post("/knowledge-bases/{project_id}/restore", response_model=KnowledgeBaseOut)
 async def restore_knowledge_base(
-    project_id: str, body: ThoughtRevisionIn, session: SessionDep, workspace_id: WorkspaceDep
+    project_id: str, body: ThoughtRevisionIn, session: SessionDep, owner_user_id: OwnerDep
 ):
     return await call(
-        KnowledgeBases(session, workspace_id).transition(project_id, body.expected_revision, True)
+        KnowledgeBases(session, owner_user_id).transition(project_id, body.expected_revision, True)
     )
 
 
 @router.get("/knowledge-bases/{project_id}/directory", response_model=ThoughtDirectoryOut)
-async def directory(project_id: str, session: SessionDep, workspace_id: WorkspaceDep):
-    return await call(Directory(session, workspace_id).tree(project_id))
+async def directory(project_id: str, session: SessionDep, owner_user_id: OwnerDep):
+    return await call(Directory(session, owner_user_id).tree(project_id))
 
 
 @router.post("/knowledge-bases/{project_id}/documents", response_model=ThoughtNoteOut)
@@ -336,15 +330,15 @@ async def create_document(
     project_id: str, body: KnowledgeNoteCreate, session: SessionDep, principal: StudioAuth
 ):
     return await call(
-        Directory(session, principal.workspace_id, principal.user_id).create_note(project_id, body)
+        Directory(session, principal.owner_user_id, principal.user_id).create_note(project_id, body)
     )
 
 
 @router.post("/knowledge-bases/{project_id}/move", response_model=ThoughtDirectoryOut)
 async def move_entry(
-    project_id: str, body: ThoughtMoveIn, session: SessionDep, workspace_id: WorkspaceDep
+    project_id: str, body: ThoughtMoveIn, session: SessionDep, owner_user_id: OwnerDep
 ):
-    return await call(Directory(session, workspace_id).move(project_id, body))
+    return await call(Directory(session, owner_user_id).move(project_id, body))
 
 
 router.include_router(knowledge_tools_router)

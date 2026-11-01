@@ -50,8 +50,8 @@ def specifications(data):
     return result
 
 
-async def resolve_context(session, workspace_id, project_id, node_id, scheme_id, output_id=None):
-    await project(session, workspace_id, project_id)
+async def resolve_context(session, owner_user_id, project_id, node_id, scheme_id, output_id=None):
+    await project(session, owner_user_id, project_id)
     canvas = await session.get(VisualCanvasDocument, project_id)
     node = next((item for item in canvas.nodes if item["id"] == node_id), None) if canvas else None
     if not node:
@@ -77,7 +77,7 @@ async def resolve_context(session, workspace_id, project_id, node_id, scheme_id,
             select(VisualGenerationTask).where(
                 VisualGenerationTask.id == output.generation_task_id,
                 VisualGenerationTask.project_id == project_id,
-                VisualGenerationTask.workspace_id == workspace_id,
+                VisualGenerationTask.owner_user_id == owner_user_id,
             )
         )
         if task:
@@ -141,7 +141,7 @@ async def resolve_context(session, workspace_id, project_id, node_id, scheme_id,
             issues.append("当前输出不能同时作为自身的验收参考")
             continue
         try:
-            row = await asset(session, workspace_id, project_id, identity)
+            row = await asset(session, owner_user_id, project_id, identity)
         except AcceptanceError as exc:
             if exc.status != 404:
                 raise
@@ -166,7 +166,7 @@ async def resolve_context(session, workspace_id, project_id, node_id, scheme_id,
     if not motion:
         issues.append("缺少原动作视频，请在生成设置中添加参考视频")
     if output and output.asset_id:
-        row = await asset(session, workspace_id, project_id, output.asset_id)
+        row = await asset(session, owner_user_id, project_id, output.asset_id)
         if row.media_kind == "video":
             inputs.append(
                 AcceptanceInputOut(

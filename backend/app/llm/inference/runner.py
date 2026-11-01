@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from sqlalchemy import select
 
-from app.console.models import Workspace
+from app.console.models import User
 from app.llm.call_logs.credentials import snapshot_from_row
 from app.llm.generation_runtime import (
     GenerationTaskDriver,
@@ -38,7 +38,7 @@ def add_log(session, row):
     session.add(
         LlmCallLog(
             id=row.log_id,
-            workspace_id=row.workspace_id,
+            owner_user_id=row.owner_user_id,
             call_source="model_inference",
             provider_kind=row.provider_kind,
             model=row.model_slug,
@@ -79,12 +79,12 @@ class InferenceRunner(PollingTaskRunner):
         await self.driver.recover()
         # Startup recovery runs before workers; remove files never committed to an output record.
         async with self.session_factory() as session:
-            workspaces = list(await session.scalars(select(Workspace.id)))
+            accounts = list(await session.scalars(select(User.id)))
             outputs = set(
                 (
                     await session.execute(
                         select(
-                            ModelInferenceTask.workspace_id, ModelInferenceTask.result_storage_key
+                            ModelInferenceTask.owner_user_id, ModelInferenceTask.result_storage_key
                         )
                     )
                 ).all()
@@ -93,18 +93,18 @@ class InferenceRunner(PollingTaskRunner):
             inputs = set(
                 (
                     await session.execute(
-                        select(ModelInferenceAsset.workspace_id, ModelInferenceAsset.storage_key)
+                        select(ModelInferenceAsset.owner_user_id, ModelInferenceAsset.storage_key)
                     )
                 ).all()
             )
 
         def cleanup():
-            for workspace_id in workspaces:
+            for owner_user_id in accounts:
                 for kind, references in (("outputs", outputs), ("inputs", inputs)):
-                    directory = root(workspace_id) / kind
+                    directory = root(owner_user_id) / kind
                     if directory.is_dir():
                         for path in directory.iterdir():
-                            if path.is_file() and (workspace_id, path.name) not in references:
+                            if path.is_file() and (owner_user_id, path.name) not in references:
                                 path.unlink(missing_ok=True)
 
         await asyncio.to_thread(cleanup)
@@ -129,13 +129,13 @@ class InferenceRunner(PollingTaskRunner):
                 await session.scalars(
                     select(ModelInferenceAsset).where(
                         ModelInferenceAsset.task_id == task.task_id,
-                        ModelInferenceAsset.workspace_id == task.workspace_id,
+                        ModelInferenceAsset.owner_user_id == task.owner_user_id,
                     )
                 )
             )
             return {
                 row.id: (
-                    root(task.workspace_id) / "inputs" / row.storage_key,
+                    root(task.owner_user_id) / "inputs" / row.storage_key,
                     row.mime_type,
                     row.filename,
                     row.byte_size,
@@ -228,8 +228,8 @@ class InferenceRunner(PollingTaskRunner):
             row = await self.store.load(session, task_id)
             if not row or row.status != "processing":
                 return
-            workspace_id, expected_kind = row.workspace_id, row.kind
-        output = root(workspace_id) / "outputs"
+            owner_user_id, expected_kind = row.owner_user_id, row.kind
+        output = root(owner_user_id) / "outputs"
         output.mkdir(parents=True, exist_ok=True)
         key = uuid4().hex
         temporary, final = output / (key + ".tmp"), output / key
@@ -301,7 +301,7 @@ class InferenceRunner(PollingTaskRunner):
             payload = asdict(result)
             content = json.dumps(payload, ensure_ascii=False).encode()
             key = uuid4().hex
-            path = root(task.workspace_id) / "outputs" / key
+            path = root(task.owner_user_id) / "outputs" / key
             path.parent.mkdir(parents=True, exist_ok=True)
             await asyncio.to_thread(path.write_bytes, content)
             await self.finish(
@@ -323,7 +323,7 @@ class InferenceRunner(PollingTaskRunner):
             inputs = await self.inputs(task)
             source = inputs[task.payload["reference_asset_id"]][0]
             key = uuid4().hex
-            output = root(task.workspace_id) / "outputs" / key
+            output = root(task.owner_user_id) / "outputs" / key
             output.parent.mkdir(parents=True, exist_ok=True)
             result = await synthesize(
                 self.local_runtime, self.session_factory, task, source, output

@@ -65,7 +65,7 @@ class AssistantModelUnavailableError(Exception):
 
 @dataclass(frozen=True)
 class PreparedAssistantGeneration:
-    workspace_id: str
+    owner_user_id: str
     project_id: str
     conversation_id: str
     assistant_message_id: str
@@ -284,6 +284,7 @@ class VisualAssistantConversations(VisualAssistantAttachmentMixin):
         await self._project(project_id)
         models = await self._available_models(require_vision=False)
         row = VisualAssistantConversation(
+            owner_user_id=(await self._project(project_id)).owner_user_id,
             project_id=project_id,
             model_id=models[0][0].id if models else None,
         )
@@ -646,7 +647,7 @@ class VisualAssistantConversations(VisualAssistantAttachmentMixin):
         ]
         await self.session.commit()
         return PreparedAssistantGeneration(
-            workspace_id=project.workspace_id,
+            owner_user_id=project.owner_user_id,
             project_id=project_id,
             conversation_id=conversation_id,
             assistant_message_id=assistant.id,

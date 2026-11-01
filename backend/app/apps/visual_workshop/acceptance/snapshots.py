@@ -91,7 +91,7 @@ async def export_acceptance(session, project_id):
 
 
 async def import_acceptance(
-    session, value, project_id, workspace_id, node_ids, output_ids, asset_ids
+    session, value, project_id, owner_user_id, node_ids, output_ids, asset_ids
 ):
     if value is None:
         return
@@ -111,7 +111,7 @@ async def import_acceptance(
             session.add(
                 NodeAcceptanceBinding(
                     id=new_id(),
-                    workspace_id=workspace_id,
+                    owner_user_id=owner_user_id,
                     project_id=project_id,
                     node_id=node_id,
                     scheme_id=binding["scheme_id"],
@@ -144,7 +144,7 @@ async def import_acceptance(
             )
             row = AcceptanceStandardVersion(
                 id=version_ids[item["id"]],
-                workspace_id=workspace_id,
+                owner_user_id=owner_user_id,
                 project_id=project_id,
                 version=item["version"],
                 document=data,
@@ -158,7 +158,7 @@ async def import_acceptance(
         session.add(
             AcceptanceStandard(
                 project_id=project_id,
-                workspace_id=workspace_id,
+                owner_user_id=owner_user_id,
                 draft=document(draft),
                 required=bool(value["required"]),
                 published_version=value["published_version"],
@@ -229,7 +229,7 @@ async def import_acceptance(
                 ]
             row = AcceptanceRun(
                 id=run_ids[item["id"]],
-                workspace_id=workspace_id,
+                owner_user_id=owner_user_id,
                 project_id=project_id,
                 node_id=mapped(node_ids, item["node_id"]),
                 output_id=mapped(output_ids, item["output_id"]),
@@ -266,7 +266,7 @@ async def import_acceptance(
                 raise ValueError("返修草稿无效")
             session.add(
                 AcceptanceRepairDraft(
-                    workspace_id=workspace_id,
+                    owner_user_id=owner_user_id,
                     project_id=project_id,
                     run_id=mapped(run_ids, item["run_id"]),
                     text=item["text"],

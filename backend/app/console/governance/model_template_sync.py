@@ -1,4 +1,4 @@
-"""Previewed, durable template reconciliation; one short transaction per workspace."""
+"""Previewed, durable template reconciliation; one short transaction per account."""
 
 from sqlalchemy import select, text
 
@@ -13,9 +13,9 @@ from app.console.governance.model_templates import (
     catalog_rows,
     reconciliation_preview,
 )
-from app.console.governance.platform_policy import read_setting
 from app.console.governance.service import add_audit_event
-from app.console.models import User, Workspace, WorkspaceMembership
+from app.console.governance.settings_records import read_setting
+from app.console.models import User
 from app.console.models.model_templates import ModelTemplateSyncItem as Item
 from app.console.models.model_templates import ModelTemplateSyncJob as Job
 from app.llm.models import ModelSupplier
@@ -43,8 +43,8 @@ async def job_view(session, job_id):
                 key: getattr(item, key)
                 for key in (
                     "id",
-                    "workspace_id",
-                    "workspace_name",
+                    "owner_user_id",
+                    "account_name",
                     "catalog_revision",
                     "status",
                     "summary",
@@ -56,7 +56,9 @@ async def job_view(session, job_id):
     }
 
 
-async def preview_sync(session, principal, role, expected_template_revision, client_ip):
+async def preview_sync(
+    session, principal, role, expected_template_revision, client_ip, *, account_ids=None
+):
     principal = await begin_governance(session, principal)
     require_platform_admin(principal)
     state = await read_setting(session, f"role_template:{role}", {})
@@ -64,32 +66,24 @@ async def preview_sync(session, principal, role, expected_template_revision, cli
         raise AccountError("revision_conflict", current={"revision": state["revision"]})
     if not state["value"].get("providers") and not state["value"].get("suppliers"):
         raise AccountError("template_not_configured")
-    targets = (
-        await session.scalars(
-            select(Workspace)
-            .join(WorkspaceMembership, WorkspaceMembership.workspace_id == Workspace.id)
-            .join(User, User.id == WorkspaceMembership.user_id)
-            .where(
-                WorkspaceMembership.role == "owner",
-                WorkspaceMembership.status == "active",
-                User.platform_role == role,
-                User.status == "active",
-            )
-            .order_by(Workspace.id)
-        )
-    ).all()
-    # Read snapshots without a cross-workspace ambient tenant. Each reader is short-lived.
+    query = select(User).where(User.platform_role == role, User.status == "active")
+    if account_ids is not None:
+        query = query.where(User.id.in_(set(account_ids)))
+    targets = (await session.scalars(query.order_by(User.id))).all()
+    if account_ids is not None and {account.id for account in targets} != set(account_ids):
+        raise AccountError("invalid_template_target")
+    # Read snapshots with explicit account catalog filters. Each reader is short-lived.
     snapshots = []
-    for workspace in targets:
+    for account in targets:
         async with SessionLocal() as reader:
-            providers, models, revision = await catalog_rows(reader, workspace.id)
+            providers, models, revision = await catalog_rows(reader, account.id)
             suppliers = list(
                 await reader.scalars(
-                    select(ModelSupplier).where(ModelSupplier.workspace_id == workspace.id)
+                    select(ModelSupplier).where(ModelSupplier.owner_user_id == account.id)
                 )
             )
             summary = reconciliation_preview(state["value"], providers, models, suppliers)
-            snapshots.append((workspace.id, workspace.name, revision, summary))
+            snapshots.append((account.id, account.display_name, revision, summary))
     job = Job(
         role=role,
         template_revision=state["revision"],
@@ -98,12 +92,12 @@ async def preview_sync(session, principal, role, expected_template_revision, cli
     )
     session.add(job)
     await session.flush()
-    for workspace_id, name, revision, summary in snapshots:
+    for owner_user_id, name, revision, summary in snapshots:
         session.add(
             Item(
                 job_id=job.id,
-                workspace_id=workspace_id,
-                workspace_name=name,
+                owner_user_id=owner_user_id,
+                account_name=name,
                 catalog_revision=revision,
                 summary=summary,
             )
@@ -183,16 +177,8 @@ class ModelTemplateSyncRunner(PollingTaskRunner):
                     await session.commit()
                     continue
                 actor = await session.get(User, job.actor_user_id)
-                owner = await session.scalar(
-                    select(User)
-                    .join(WorkspaceMembership, WorkspaceMembership.user_id == User.id)
-                    .where(
-                        WorkspaceMembership.workspace_id == item.workspace_id,
-                        WorkspaceMembership.role == "owner",
-                        WorkspaceMembership.status == "active",
-                    )
-                )
-                if not actor or actor.status != "active" or actor.platform_role != "super_admin":
+                owner = await session.get(User, item.owner_user_id)
+                if not actor or actor.status != "active" or actor.platform_role != "admin":
                     item.status, item.error_message = "skipped", "发起者已失去平台管理权限"
                 elif not owner or owner.status != "active" or owner.platform_role != job.role:
                     item.status, item.error_message = "skipped", "拥有者的身份或状态已变化"
@@ -201,7 +187,7 @@ class ModelTemplateSyncRunner(PollingTaskRunner):
                         async with session.begin_nested():
                             item.summary = await apply_template(
                                 session,
-                                item.workspace_id,
+                                item.owner_user_id,
                                 job.template_snapshot,
                                 item.catalog_revision,
                             )
@@ -223,7 +209,7 @@ class ModelTemplateSyncRunner(PollingTaskRunner):
                     session,
                     "platform.model_template.sync_item",
                     actor_user_id=job.actor_user_id,
-                    workspace_id=item.workspace_id,
+                    owner_user_id=item.owner_user_id,
                     outcome="success" if item.status == "succeeded" else "failure",
                     metadata={"status_to": item.status},
                 )

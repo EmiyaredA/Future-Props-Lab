@@ -98,7 +98,7 @@ def create_diagram_note(client: Client, knowledge_base_id: str):
 
 ## 相关阅读
 
-- [Workspace 与权限](/apps/thought-workshop/official-knowledge-bases/technical/documents/identity)
+- [账号与权限](/apps/thought-workshop/official-knowledge-bases/technical/documents/identity)
 - [编辑、保存、历史与并发](/apps/thought-workshop/official-knowledge-bases/technical/documents/revision)
 - [SDK/API 使用指南](/apps/thought-workshop/official-knowledge-bases/general/documents/automation)
 - [OpenAPI、Web 与 SDK 契约](/apps/thought-workshop/official-knowledge-bases/technical/documents/contracts)

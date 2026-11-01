@@ -245,7 +245,7 @@ async function main() {
     );
     await chatPage.getByRole("button", { name: "聊天设置" }).click();
     await expect(
-      chatPage.getByText("当前 Workspace 没有可用的文字模型"),
+      chatPage.getByText("当前 account 没有可用的文字模型"),
     ).toBeVisible();
     await chatPage.screenshot({
       path: path.join(screenshotDir, "chat-window.png"),

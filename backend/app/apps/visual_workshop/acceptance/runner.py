@@ -22,7 +22,7 @@ from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.inspection import inspect_media, verify_video
 from app.llm.models import LlmCallLog
 from app.llm.providers.streaming import ChatMessageInput, stream_text_completion
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.config import get_settings
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal
@@ -50,7 +50,7 @@ async def evaluate_ai(session, settings, run, transport=None):
     pair = next(
         (
             (model, provider)
-            for model, provider in await review_models(session, run.workspace_id)
+            for model, provider in await review_models(session, run.owner_user_id)
             if model.id == run.model_id
         ),
         None,
@@ -88,7 +88,7 @@ async def evaluate_ai(session, settings, run, transport=None):
     )
     started = monotonic()
     text, usage = "", {}
-    identity, workspace_id = run.id, run.workspace_id
+    identity, owner_user_id = run.id, run.owner_user_id
     error = None
     parsed = None
     try:
@@ -129,7 +129,7 @@ async def evaluate_ai(session, settings, run, transport=None):
     finally:
         session.add(
             LlmCallLog(
-                workspace_id=workspace_id,
+                owner_user_id=owner_user_id,
                 call_source="visual_acceptance",
                 trace_id=identity,
                 model=args["model"],
@@ -184,10 +184,10 @@ class AcceptanceRunner(PollingTaskRunner):
             row = await session.get(AcceptanceRun, identity)
             if not row or row.status != "processing":
                 return False
-            bind_workspace(session, row.workspace_id)
+            bind_owner(session, row.owner_user_id)
             actor = row.snapshot.get("executor", {}).get("user_id")
             if self.actor_allowed and actor:
-                return await self.actor_allowed(session, row.workspace_id, actor)
+                return await self.actor_allowed(session, row.owner_user_id, actor)
             return row.scheme_id == "legacy" or not self.actor_allowed
 
     async def fenced(self, identity, action):
@@ -232,7 +232,7 @@ class AcceptanceRunner(PollingTaskRunner):
         written = []
         additional_files = []
         committed = False
-        workspace_id = None
+        owner_user_id = None
         try:
             async with self.session_factory() as session:
                 claimed = await session.execute(
@@ -244,14 +244,14 @@ class AcceptanceRunner(PollingTaskRunner):
                     return
                 await session.commit()
                 run = await session.get(AcceptanceRun, identity)
-                workspace_id = run.workspace_id
-                bind_workspace(session, workspace_id)
+                owner_user_id = run.owner_user_id
+                bind_owner(session, owner_user_id)
                 session.autoflush = False
                 snapshot = deepcopy(run.snapshot)
                 if not await self.active(identity):
                     raise AcceptanceError("执行账号已无验收权限")
                 if run.scheme_id == "motion-transfer:api":
-                    pair = await fixed_model(session, workspace_id, self.settings)
+                    pair = await fixed_model(session, owner_user_id, self.settings)
                     if (
                         pair is None
                         or pair[0].id != run.model_id

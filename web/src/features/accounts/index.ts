@@ -1,12 +1,7 @@
-export { AccountWorkspacePanel } from "./AccountWorkspacePanel";
+export { AccountPanel } from "./AccountPanel";
 export * from "./api";
 
 export { ProjectCertification } from "./ProjectCertification";
-
-export {
-  useLogWorkspaceScope,
-  useCrossWorkspaceLogQueries,
-} from "./useLogWorkspaceScope";
 
 export { accountQueryKeys } from "./queryKeys";
 

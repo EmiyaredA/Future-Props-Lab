@@ -19,10 +19,8 @@ from app.capabilities.identity.security import (
     SESSION_IDLE_HOURS,
     hash_secret,
 )
-from app.console.governance.platform_policy import apply_policy
-from app.console.governance.workspaces import active_membership, owner_membership, resolve_access
-from app.console.models import AuthSession, ManagementApiKey, User, Workspace
-from app.orm import bind_workspace
+from app.console.models import AuthSession, ManagementApiKey, User
+from app.orm import bind_owner
 from app.runtime.config import get_settings
 from app.runtime.db import get_session
 from app.runtime.time import utc_now
@@ -72,6 +70,28 @@ def _validate_session_request(request: Request, auth_session: AuthSession) -> No
         raise _forbidden("origin_not_allowed", "请求来源不受信任")
 
 
+def _principal(user, *, auth=None, key=None, scopes=None):
+    return StudioPrincipal(
+        user_id=user.id,
+        platform_role=user.platform_role,
+        must_change_password=bool(user.must_change_password),
+        auth_kind="session" if auth else "management_api_key",
+        scopes=role_scopes(user.platform_role) if scopes is None else frozenset(scopes),
+        session_id=auth.id if auth else None,
+        api_key_id=key.id if key else None,
+        reauthenticated_at=auth.reauthenticated_at if auth else None,
+    )
+
+
+def _valid_session(auth, user, now):
+    return (
+        user.status == "active"
+        and auth.revoked_at is None
+        and auth.idle_expires_at > now
+        and auth.absolute_expires_at > now
+    )
+
+
 async def authenticate_studio_request(
     request: Request,
     session: AsyncSession,
@@ -80,216 +100,128 @@ async def authenticate_studio_request(
     allow_forced_password_change: bool = False,
 ) -> StudioPrincipal:
     now = utc_now()
-    raw_session = request.cookies.get(SESSION_COOKIE, "")
-    if raw_session:
+    raw = request.cookies.get(SESSION_COOKIE, "")
+    if raw:
         row = (
             await session.execute(
                 select(AuthSession, User)
                 .join(User, User.id == AuthSession.user_id)
-                .where(AuthSession.token_hash == hash_secret(raw_session))
+                .where(AuthSession.token_hash == hash_secret(raw))
             )
         ).first()
-        if row is None:
+        if row is None or not _valid_session(*row, now):
             raise _unauthorized()
-        auth_session, user = row
-        if (
-            user.status != "active"
-            or auth_session.revoked_at is not None
-            or auth_session.idle_expires_at <= now
-            or auth_session.absolute_expires_at <= now
-        ):
-            raise _unauthorized()
-        _validate_session_request(request, auth_session)
+        auth, user = row
+        _validate_session_request(request, auth)
         if user.must_change_password and not allow_forced_password_change:
             raise _forbidden("password_change_required", "必须先修改临时密码")
-        workspace = await session.get(Workspace, auth_session.active_workspace_id)
-        if workspace is None:
-            raise _unauthorized()
-        try:
-            access, membership = await resolve_access(session, user=user, workspace=workspace)
-        except Exception as exc:
-            if request.url.path.rstrip("/") != "/v1/auth/me":
-                raise HTTPException(
-                    409,
-                    detail={
-                        "code": "workspace_access_changed",
-                        "message": "当前 Workspace 的访问权限已变化",
-                    },
-                ) from exc
-            owner = await owner_membership(session, user_id=user.id)
-            if owner is None:
-                raise _unauthorized() from exc
-            workspace = await session.get(Workspace, owner.workspace_id)
-            if workspace is None:
-                raise _unauthorized() from exc
-            auth_session.active_workspace_id = workspace.id
-            access, membership = "owner", owner
-            await session.commit()
-        scopes = role_scopes(access, membership.role if membership else None)
-        if (now - auth_session.last_seen_at).total_seconds() >= SESSION_ACTIVITY_WRITE_SECONDS:
-            auth_session.last_seen_at = now
-            auth_session.idle_expires_at = min(
-                now + timedelta(hours=SESSION_IDLE_HOURS), auth_session.absolute_expires_at
+        if (now - auth.last_seen_at).total_seconds() >= SESSION_ACTIVITY_WRITE_SECONDS:
+            auth.last_seen_at = now
+            auth.idle_expires_at = min(
+                now + timedelta(hours=SESSION_IDLE_HOURS), auth.absolute_expires_at
             )
             await session.commit()
-        principal = StudioPrincipal(
-            user_id=user.id,
-            workspace_id=workspace.id,
-            membership_id=membership.id if membership else None,
-            workspace_access=access,
-            member_role=membership.role if membership else None,
-            is_platform_admin=user.platform_role == "super_admin",
-            platform_role=user.platform_role,
-            must_change_password=bool(user.must_change_password),
-            auth_kind="session",
-            scopes=scopes,
-            session_id=auth_session.id,
-            reauthenticated_at=auth_session.reauthenticated_at,
-        )
+        principal = _principal(user, auth=auth)
     else:
         authorization = request.headers.get("Authorization", "")
         if not authorization.lower().startswith("bearer "):
             raise _unauthorized()
-        raw_key = authorization[7:].strip()
-        if not raw_key.startswith("fpm_"):
+        raw = authorization[7:].strip()
+        if not raw.startswith("fpm_"):
             raise _unauthorized()
         row = (
             await session.execute(
                 select(ManagementApiKey, User)
                 .join(User, User.id == ManagementApiKey.user_id)
-                .where(ManagementApiKey.key_hash == hash_secret(raw_key))
+                .where(ManagementApiKey.key_hash == hash_secret(raw))
             )
         ).first()
         if row is None:
             raise _unauthorized()
-        api_key, user = row
-        membership = await active_membership(
-            session, user_id=user.id, workspace_id=api_key.workspace_id
-        )
+        key, user = row
         if (
             user.status != "active"
             or user.must_change_password
-            or api_key.revoked_at is not None
-            or api_key.expires_at <= now
-            or (membership is None and user.platform_role not in {"admin", "super_admin"})
+            or key.revoked_at is not None
+            or key.expires_at <= now
         ):
             raise _unauthorized()
-        raw_scopes = {str(value) for value in api_key.scopes}
-        scopes = set(raw_scopes)
+        scopes = set(key.scopes)
+        if "studio:write" in scopes:
+            scopes.add("studio:read")
         if "studio:read" in scopes:
             scopes.add("studio:private_read")
-        if "studio:write" in scopes:
-            scopes.update({"studio:read", "studio:private_read"})
-        access = (
-            "owner"
-            if membership and membership.role == "owner"
-            else "platform_admin"
-            if user.platform_role in {"admin", "super_admin"}
-            else "member"
-        )
-        principal = StudioPrincipal(
-            user_id=user.id,
-            workspace_id=api_key.workspace_id,
-            membership_id=membership.id if membership else None,
-            workspace_access=access,
-            member_role=membership.role if membership else None,
-            is_platform_admin=user.platform_role == "super_admin",
-            platform_role=user.platform_role,
-            must_change_password=False,
-            auth_kind="management_api_key",
-            scopes=frozenset(scopes) & role_scopes(access, membership.role if membership else None),
-            api_key_id=api_key.id,
-        )
-        if api_key.last_used_at is None or (now - api_key.last_used_at).total_seconds() >= 300:
-            api_key.last_used_at = now
+        principal = _principal(user, key=key, scopes=scopes & role_scopes(user.platform_role))
+        if key.last_used_at is None or (now - key.last_used_at).total_seconds() >= 300:
+            key.last_used_at = now
             await session.commit()
-    principal = await apply_policy(session, principal)
     if not principal.permits(required_scope):
         raise _forbidden("insufficient_scope", f"缺少 {required_scope} 权限")
+    if getattr(request.app.state, "storage_upgrade_required", False) and not (
+        request.url.path.startswith("/v1/auth/")
+        or request.url.path in {"/v1/file-storage/layout", "/v1/file-storage/layout/migrate"}
+    ):
+        raise HTTPException(
+            503,
+            detail={
+                "code": "account_storage_upgrade_required",
+                "message": "请先完成账号文件迁移并重启应用",
+            },
+        )
     request.state.studio_principal = principal
-    bind_workspace(session, principal.workspace_id)
+    bind_owner(session, principal.user_id)
     return principal
 
 
 async def require_studio_auth(request: Request, session: SessionDep) -> StudioPrincipal:
     permission = route_permission(request.method, request.url.path)
     if permission is None:
-        raise _forbidden("unmapped_workspace_operation", "此操作尚未登记权限")
-    required = (
+        raise _forbidden("unmapped_account_operation", "此操作尚未登记权限")
+    scope = (
         "studio:private_read"
         if permission in {"content.read", "logs.read", "diagnostics.model", "docs.developer"}
         else "studio:write"
     )
-    principal = await authenticate_studio_request(request, session, required_scope=required)
+    principal = await authenticate_studio_request(request, session, required_scope=scope)
     if not principal.allows(permission):
-        raise _forbidden("insufficient_permission", "当前工作区角色不允许此操作")
+        raise _forbidden("insufficient_permission", "当前账号不允许此操作")
     return principal
 
 
 async def require_public_studio_auth(request: Request, session: SessionDep) -> StudioPrincipal:
     principal = await authenticate_studio_request(request, session, required_scope="studio:read")
     if principal.auth_kind != "session":
-        raise _forbidden("browser_session_required", "公开展台必须使用浏览器 Session")
+        raise _forbidden("browser_session_required", "社区必须使用浏览器 Session")
     return principal
 
 
 async def authenticate_studio_websocket(
     websocket: WebSocket, session: AsyncSession
 ) -> StudioPrincipal:
-    """Authenticate the browser-only realtime channel without extending cookie lifetime."""
-    now = utc_now()
-    raw_session = websocket.cookies.get(SESSION_COOKIE, "")
-    if not raw_session:
+    if getattr(
+        getattr(websocket.scope.get("app"), "state", None), "storage_upgrade_required", False
+    ):
+        raise _forbidden("account_storage_upgrade_required", "账号文件迁移未完成")
+    raw = websocket.cookies.get(SESSION_COOKIE, "")
+    if not raw:
         raise _unauthorized()
     row = (
         await session.execute(
             select(AuthSession, User)
             .join(User, User.id == AuthSession.user_id)
-            .where(AuthSession.token_hash == hash_secret(raw_session))
+            .where(AuthSession.token_hash == hash_secret(raw))
         )
     ).first()
-    if row is None:
+    if row is None or not _valid_session(*row, utc_now()) or row[1].must_change_password:
         raise _unauthorized()
-    auth_session, user = row
-    if (
-        user.status != "active"
-        or user.must_change_password
-        or auth_session.revoked_at is not None
-        or auth_session.idle_expires_at <= now
-        or auth_session.absolute_expires_at <= now
-    ):
-        raise _unauthorized()
-    workspace = await session.get(Workspace, auth_session.active_workspace_id)
-    if workspace is None:
-        raise _unauthorized()
-    try:
-        access, membership = await resolve_access(session, user=user, workspace=workspace)
-    except Exception as exc:
-        raise _forbidden("workspace_access_changed", "当前 Workspace 的访问权限已变化") from exc
-    scopes = role_scopes(access, membership.role if membership else None)
-    if "studio:write" not in scopes:
-        raise _forbidden("insufficient_permission", "当前角色不能发起实时模型调用")
-    principal = StudioPrincipal(
-        user_id=user.id,
-        workspace_id=workspace.id,
-        membership_id=membership.id if membership else None,
-        workspace_access=access,
-        member_role=membership.role if membership else None,
-        is_platform_admin=user.platform_role == "super_admin",
-        platform_role=user.platform_role,
-        must_change_password=False,
-        auth_kind="session",
-        scopes=scopes,
-        session_id=auth_session.id,
-        reauthenticated_at=auth_session.reauthenticated_at,
-    )
-    principal = await apply_policy(session, principal)
-    bind_workspace(session, principal.workspace_id)
+    principal = _principal(row[1], auth=row[0])
+    if not principal.allows("models.use"):
+        raise _forbidden("insufficient_permission", "当前账号不能调用模型")
+    bind_owner(session, principal.user_id)
     return principal
 
 
 async def resolve_studio_websocket_principal(websocket: WebSocket) -> StudioPrincipal:
-    """Own the short authentication session outside the protocol route."""
     async for session in get_session():
         return await authenticate_studio_websocket(websocket, session)
     raise RuntimeError("database session dependency did not yield a session")
@@ -299,12 +231,11 @@ StudioAuth = Annotated[StudioPrincipal, Depends(require_studio_auth)]
 PublicStudioAuth = Annotated[StudioPrincipal, Depends(require_public_studio_auth)]
 
 
-def workspace_from_principal(principal: StudioAuth) -> str:
-    """Expose the authenticated workspace without another source of tenant truth."""
-    return principal.workspace_id
+def owner_from_principal(principal: StudioAuth) -> str:
+    return principal.user_id
 
 
-WorkspaceDep = Annotated[str, Depends(workspace_from_principal)]
+OwnerDep = Annotated[str, Depends(owner_from_principal)]
 
 
 def require_recent_reauthentication(principal: StudioPrincipal) -> None:

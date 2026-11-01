@@ -3,10 +3,9 @@ from copy import deepcopy
 
 import httpx
 import pytest
+from tests.migration_fixtures import MIGRATIONS, apply_migrations
 
 from app.main import app
-from db.migrations import apply_migrations
-from db.migrations.registry import MIGRATIONS
 from db.migrations.runner import connect_database, ensure_registry, migration_checksum
 
 

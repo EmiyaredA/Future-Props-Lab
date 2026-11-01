@@ -13,14 +13,13 @@ from app.apps.desktop_pet.projects import PetNotFound
 from app.apps.desktop_pet.schemas import PetConfig
 from app.capabilities.identity.principal import StudioPrincipal
 from app.capabilities.identity.route_permissions import route_permission
-from app.console.governance.platform_policy import CAPABILITIES
 from app.console.models.accounts import User
 from app.deps import SessionDep, require_studio_auth
 from app.llm.call_logs.credentials import CredentialSnapshot
 from app.llm.models.model_service import ModelEntry, ModelProvider
 from app.llm.providers.streaming import TextDelta
 from app.main import app
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
 
@@ -46,7 +45,7 @@ async def test_desktop_pet_chat_is_scoped_revisioned_and_streams(monkeypatch):
             )
         )
         pet = DesktopPetProject(
-            workspace_id="default",
+            owner_user_id="test-user",
             source_type="live2d",
             source_revision=0,
             source_title="test",
@@ -54,7 +53,7 @@ async def test_desktop_pet_chat_is_scoped_revisioned_and_streams(monkeypatch):
             config=PetConfig().model_dump(mode="json", by_alias=True),
         )
         provider = ModelProvider(
-            workspace_id="default",
+            owner_user_id="test-user",
             name="fake",
             kind="openai",
             base_url="https://example.invalid/v1",
@@ -63,7 +62,10 @@ async def test_desktop_pet_chat_is_scoped_revisioned_and_streams(monkeypatch):
         session.add_all([pet, provider])
         await session.flush()
         model = ModelEntry(
-            workspace_id="default", provider_id=provider.id, slug="fake-text", capabilities=["chat"]
+            owner_user_id="test-user",
+            provider_id=provider.id,
+            slug="fake-text",
+            capabilities=["chat"],
         )
         session.add(model)
         await session.commit()
@@ -164,16 +166,10 @@ async def test_desktop_pet_chat_is_scoped_revisioned_and_streams(monkeypatch):
         original = app.dependency_overrides[require_studio_auth]
 
         async def other_user(session: SessionDep) -> StudioPrincipal:
-            bind_workspace(session, "default")
+            bind_owner(session, "pet-other-user")
             return StudioPrincipal(
                 user_id="pet-other-user",
-                workspace_id="default",
-                membership_id="other",
-                workspace_access="owner",
-                member_role="owner",
-                is_platform_admin=True,
-                platform_role="super_admin",
-                platform_permissions=frozenset(CAPABILITIES),
+                platform_role="admin",
                 must_change_password=False,
                 auth_kind="session",
                 scopes=frozenset({"studio:read", "studio:private_read", "studio:write"}),
@@ -183,20 +179,17 @@ async def test_desktop_pet_chat_is_scoped_revisioned_and_streams(monkeypatch):
         app.dependency_overrides[require_studio_auth] = other_user
         try:
             separate = await client.get(base)
-            assert separate.status_code == 200
-            assert separate.json()["messages"] == [] and separate.json()["modelId"] is None
-            assert separate.json()["presentationMode"] == "bubble"
-            own = await client.patch(
+            assert separate.status_code == 404
+            denied = await client.patch(
                 base,
                 json={
-                    "expectedRevision": 0,
+                    "expectedRevision": revision,
+                    "presentationMode": "dialogue",
                     "modelId": None,
-                    "proactiveLinesEnabled": False,
-                    "presentationMode": "bubble",
+                    "proactiveLinesEnabled": True,
                 },
             )
-            assert own.status_code == 200
-
+            assert denied.status_code == 404
         finally:
             app.dependency_overrides[require_studio_auth] = original
         assert (await client.get(base)).json()["presentationMode"] == "dialogue"
@@ -239,8 +232,8 @@ async def test_desktop_pet_chat_is_scoped_revisioned_and_streams(monkeypatch):
         assert interrupted["messages"][-1]["status"] == "interrupted"
 
     async with SessionLocal() as session:
-        bind_workspace(session.sync_session, "default")
-        prepared = await DesktopPetChats(session, "default", "test-user").prepare_send(
+        bind_owner(session.sync_session, "test-user")
+        prepared = await DesktopPetChats(session, "test-user", "test-user").prepare_send(
             pet_id,
             PetChatSendIn(
                 expectedRevision=interrupted["revision"],
@@ -253,8 +246,8 @@ async def test_desktop_pet_chat_is_scoped_revisioned_and_streams(monkeypatch):
     assert '"type":"start"' in await anext(events)
     await events.aclose()
     async with SessionLocal() as session:
-        bind_workspace(session.sync_session, "default")
-        cancelled = await DesktopPetChats(session, "default", "test-user").get(pet_id)
+        bind_owner(session.sync_session, "test-user")
+        cancelled = await DesktopPetChats(session, "test-user", "test-user").get(pet_id)
         assert cancelled.active is False
         assert cancelled.messages[-1].status == "interrupted"
         entry = await session.get(ModelEntry, model_id)

@@ -8,22 +8,22 @@ from app.apps.galgame_workshop.schemas import (
     GalgameStoryMigrationStatusOut,
 )
 from app.apps.galgame_workshop.story.story_migrations import GalgameStoryMigrations
-from app.deps import SessionDep, WorkspaceDep
+from app.deps import OwnerDep, SessionDep
 
 router = APIRouter()
 
 
 @router.get("/status", response_model=GalgameStoryMigrationStatusOut)
 async def get_story_migration_status(
-    session: SessionDep, workspace_id: WorkspaceDep
+    session: SessionDep, owner_user_id: OwnerDep
 ) -> GalgameStoryMigrationStatusOut:
-    return await GalgameStoryMigrations(session, workspace_id).status()
+    return await GalgameStoryMigrations(session, owner_user_id).status()
 
 
 @router.post("/run", response_model=GalgameStoryMigrationRunOut)
 async def run_story_migrations(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     body: GalgameStoryMigrationRunIn,
 ) -> GalgameStoryMigrationRunOut:
-    return await GalgameStoryMigrations(session, workspace_id).run(body.limit)
+    return await GalgameStoryMigrations(session, owner_user_id).run(body.limit)

@@ -1,9 +1,6 @@
 import type { AudienceOverlay } from "./useAudience";
 import { useEffect, useState } from "react";
-import {
-  AUTH_REQUIRED_EVENT,
-  WORKSPACE_CHANGED_EVENT,
-} from "@platform/api/studioAuth";
+import { AUTH_REQUIRED_EVENT } from "@platform/api/studioAuth";
 import { getProject } from "../api";
 import { PresentationShow } from "../PresentationShow";
 import type { Deck } from "../types";
@@ -111,14 +108,12 @@ export function Audience({
       if (Date.now() - last > 8000) close();
     }, 2000);
     window.addEventListener(AUTH_REQUIRED_EVENT, close);
-    window.addEventListener(WORKSPACE_CHANGED_EVENT, close);
     return () => {
       alive = false;
       controller.abort();
       clearInterval(timer);
       channel.close();
       window.removeEventListener(AUTH_REQUIRED_EVENT, close);
-      window.removeEventListener(WORKSPACE_CHANGED_EVENT, close);
     };
   }, [sessionId, projectId]);
   return snapshot ? (

@@ -221,12 +221,7 @@ def main(argv=None):
         with desktop_client(**options) as client:
             capabilities = capability(client)
             if args.command == "status":
-                emit(
-                    {
-                        key: capabilities[key]
-                        for key in ("version", "user_id", "workspace_id", "scopes")
-                    }
-                )
+                emit({key: capabilities[key] for key in ("version", "user_id", "scopes")})
             elif args.command == "operations":
                 if args.operation:
                     function = operation(client, args.operation, capabilities)

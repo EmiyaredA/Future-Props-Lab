@@ -1,4 +1,4 @@
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { SlidersHorizontal, X } from "lucide-react";
 import { useDebouncedValue } from "./useDebouncedValue";
 import { formatAccountDate } from "./formatAccountDate";
 import { useState } from "react";
@@ -9,14 +9,8 @@ import { accountQueryKeys } from "./queryKeys";
 import { fetchAudit } from "./managementApi";
 import { ManagementError, ManagementPagination } from "./ManagementUi";
 import { auditLabels, metadataLabels } from "./auditLabels";
-import { WorkspaceAuditRecords } from "./WorkspaceAuditRecords";
 import "./management.css";
-import "./workspace-audit.css";
-export function AuditPage({
-  workspaceId = null,
-}: {
-  workspaceId?: string | null;
-}) {
+export function AuditPage() {
   const [advanced, setAdvanced] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [event, setEvent] = useState("");
@@ -43,8 +37,8 @@ export function AuditPage({
     page_size: 25,
   };
   const query = useQuery({
-    queryKey: accountQueryKeys.audit(workspaceId, filters),
-    queryFn: () => fetchAudit(workspaceId, filters),
+    queryKey: accountQueryKeys.audit(filters),
+    queryFn: () => fetchAudit(filters),
     enabled: valid,
   });
   const detail = query.data?.items.find((item) => item.id === detailId);
@@ -53,31 +47,14 @@ export function AuditPage({
     setPage(1);
   }
   return (
-    <section
-      className={`management-page${workspaceId ? " workspace-audit-page" : ""}`}
-    >
+    <section className="management-page">
       <header className="management-page-head">
         <div>
-          <h1>{workspaceId ? "工作区审计" : "安全审计"}</h1>
-          <p>
-            {workspaceId
-              ? "仅展示当前空间内的管理事件。"
-              : "查询平台账号与工作区治理记录。"}
-          </p>
+          <h1>安全审计</h1>
+          <p>查询平台账号与安全治理记录。</p>
         </div>
       </header>
       <div className="management-list-panel">
-        {workspaceId ? (
-          <header className="workspace-audit-filter-heading">
-            <span aria-hidden="true">
-              <Search size={18} />
-            </span>
-            <div>
-              <h3>查找操作记录</h3>
-              <p>按事件、账号或时间追溯空间变更</p>
-            </div>
-          </header>
-        ) : null}
         <div className="management-toolbar">
           <CustomSelect
             ariaLabel="事件类型"
@@ -137,52 +114,44 @@ export function AuditPage({
             重试
           </button>
         ) : null}
-        {workspaceId ? (
-          <WorkspaceAuditRecords
-            items={query.data?.items ?? []}
-            detailId={detailId}
-            setDetailId={setDetailId}
-          />
-        ) : (
-          <div className="management-table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>事件</th>
-                  <th>操作者</th>
-                  <th>目标账号</th>
-                  <th>时间</th>
-                  <th>详情</th>
+        <div className="management-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>事件</th>
+                <th>操作者</th>
+                <th>目标账号</th>
+                <th>时间</th>
+                <th>详情</th>
+              </tr>
+            </thead>
+            <tbody>
+              {query.data?.items.map((e) => (
+                <tr key={e.id}>
+                  <td>
+                    {auditLabels[e.event_type] || "安全事件"}
+                    <small>{e.outcome === "success" ? "成功" : "失败"}</small>
+                  </td>
+                  <td>{e.actor_username || "系统"}</td>
+                  <td>{e.target_username || "—"}</td>
+                  <td>{formatAccountDate(e.created_at)}</td>
+                  <td>
+                    <button
+                      className="btn small"
+                      aria-expanded={detailId === e.id}
+                      onClick={() =>
+                        setDetailId(detailId === e.id ? null : e.id)
+                      }
+                    >
+                      查看详情
+                    </button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {query.data?.items.map((e) => (
-                  <tr key={e.id}>
-                    <td>
-                      {auditLabels[e.event_type] || "安全事件"}
-                      <small>{e.outcome === "success" ? "成功" : "失败"}</small>
-                    </td>
-                    <td>{e.actor_username || "系统"}</td>
-                    <td>{e.target_username || "—"}</td>
-                    <td>{formatAccountDate(e.created_at)}</td>
-                    <td>
-                      <button
-                        className="btn small"
-                        aria-expanded={detailId === e.id}
-                        onClick={() =>
-                          setDetailId(detailId === e.id ? null : e.id)
-                        }
-                      >
-                        查看详情
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        {detail && !workspaceId ? (
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {detail ? (
           <section className="management-audit-detail" aria-label="审计详情">
             <header>
               <h3>{auditLabels[detail.event_type] || "安全事件"}</h3>
@@ -197,8 +166,8 @@ export function AuditPage({
             <dl>
               <dt>事件标识</dt>
               <dd>{detail.event_type}</dd>
-              <dt>工作区</dt>
-              <dd>{detail.workspace_id || "平台"}</dd>
+              <dt>归属账号</dt>
+              <dd>{detail.owner_user_id || "平台"}</dd>
               {Object.entries(detail.metadata).map(([key, value]) => (
                 <div key={key}>
                   <dt>{metadataLabels[key] || key}</dt>

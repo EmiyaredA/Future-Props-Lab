@@ -70,7 +70,7 @@ export function ReferencePicker({
           {selected && <p>已选择：{selected.label}</p>}
           <div className="thought-tools-list">
             <strong>
-              {access.community ? "可访问的社区文章" : "Workspace 文档"}
+              {access.community ? "可访问的社区文章" : "账号文档"}
             </strong>
             {search.data?.pages
               .flatMap((page) => page.items)

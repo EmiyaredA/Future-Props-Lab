@@ -9,7 +9,7 @@
       "y": 50,
       "width": 230,
       "height": 130,
-      "text": "账号与 Workspace\n用户选择工作空间",
+      "text": "账号\n用户登录并选择应用",
       "fill": "#eef5f3",
       "stroke": "#365f62",
       "icon": "user"

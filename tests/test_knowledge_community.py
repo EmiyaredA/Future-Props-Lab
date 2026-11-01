@@ -404,7 +404,7 @@ async def test_browser_only_schema_and_permission_revocation(community):
     ]
 
 
-async def test_source_membership_and_filtered_backlinks(community):
+async def test_explicit_article_grant_and_filtered_backlinks(community):
     (owner, reader, other), names, p, notes, config = community
     pub = config["publication"]["id"]
     base = COMM + f"/publications/{pub}"
@@ -428,18 +428,20 @@ async def test_source_membership_and_filtered_backlinks(community):
     )
     assert r.status_code == 200, r.text
     assert (await other.get(base + f"/notes/{notes[1]['id']}/backlinks")).json() == []
-    # Original source membership remains effective without switching the active Workspace.
-    inv = (
-        await owner.post(
-            "/v1/account/workspaces/current/invitations",
-            json={"username": names[2], "role": "member"},
-        )
-    ).json()
-    r = await other.post(
-        f"/v1/account/workspace-invitations/{inv['id']}/accept",
-        json={"expected_revision": inv["revision"]},
+    r = await owner.put(
+        base + "/permissions",
+        json={
+            "articles": [
+                {
+                    "note_id": notes[2]["id"],
+                    "expected_revision": 1,
+                    "visibility": "members",
+                    "members": [{"username": names[2], "role": "edit"}],
+                }
+            ]
+        },
     )
-    assert r.status_code == 204, r.text
+    assert r.status_code == 200, r.text
     role = (await other.get(base + f"/notes/{notes[2]['id']}")).json()
     assert role["role"] == "edit" and role["can_edit"]
     assert (await other.get(base + "/management")).status_code == 404

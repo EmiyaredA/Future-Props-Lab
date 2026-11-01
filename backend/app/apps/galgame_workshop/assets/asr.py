@@ -40,7 +40,7 @@ from app.llm.providers.senseaudio_asr import (
     SenseAudioAsrFileTooLarge,
 )
 from app.llm.providers.transcription import transcribe_model_audio
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.config import Settings, get_settings
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal
@@ -196,6 +196,7 @@ class GalgameAsrService:
             if not body.force and metadata.transcript_status == "ready":
                 continue
             task = GalgameAssetTranscriptionTask(
+                owner_user_id=asset.owner_user_id,
                 project_id=project_id,
                 asset_id=asset.id,
                 provider_id=provider.id,
@@ -395,7 +396,7 @@ class GalgameAsrRunner(PollingTaskRunner):
     ) -> GalgameAssetTranscriptionTask | None:
         task = await session.get(GalgameAssetTranscriptionTask, task_id)
         if task is not None:
-            bind_workspace(session, task.workspace_id)
+            bind_owner(session, task.owner_user_id)
         return task
 
     async def recover(self) -> None:

@@ -1,7 +1,7 @@
 import { LocalModelsPanel } from "./LocalModelsPanel";
 import type { ReactNode } from "react";
 import "./local-models.css";
-import { WorkspaceDefaults } from "./WorkspaceDefaults";
+import { AccountDefaults } from "./AccountDefaults";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { QueryFeedback } from "@shared/ui/QueryFeedback";
 import { ApiError } from "@platform/api/client";
@@ -125,7 +125,7 @@ export function ModelServicePage({
       {renderHeader ? (
         renderHeader(
           catalog.data && (
-            <WorkspaceDefaults catalog={catalog.data} canWrite={canWrite} />
+            <AccountDefaults catalog={catalog.data} canWrite={canWrite} />
           ),
         )
       ) : (
@@ -135,7 +135,7 @@ export function ModelServicePage({
             <p>按用途发现模型，按协议类型浏览接入连接。</p>
           </div>
           {catalog.data && (
-            <WorkspaceDefaults catalog={catalog.data} canWrite={canWrite} />
+            <AccountDefaults catalog={catalog.data} canWrite={canWrite} />
           )}
         </header>
       )}

@@ -21,12 +21,12 @@ from app.apps.visual_workshop.acceptance.templates import builtin_templates
 
 
 class Standards:
-    def __init__(self, session, workspace_id):
-        self.session, self.workspace_id = session, workspace_id
+    def __init__(self, session, owner_user_id):
+        self.session, self.owner_user_id = session, owner_user_id
 
     async def templates(self):
         rows = await self.session.scalars(
-            select(AcceptanceTemplate).where(AcceptanceTemplate.workspace_id == self.workspace_id)
+            select(AcceptanceTemplate).where(AcceptanceTemplate.owner_user_id == self.owner_user_id)
         )
         return AcceptanceTemplateListOut(
             items=[
@@ -41,7 +41,7 @@ class Standards:
         )
 
     async def get(self, project_id):
-        await project(self.session, self.workspace_id, project_id)
+        await project(self.session, self.owner_user_id, project_id)
         row = await self.session.get(AcceptanceStandard, project_id)
         if row is None:
             return AcceptanceStandardOut(project_id=project_id)

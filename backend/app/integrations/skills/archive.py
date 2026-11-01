@@ -30,9 +30,9 @@ class StagedSkillArchive:
 
 
 class SkillArchiveStorage:
-    def __init__(self, settings: Settings, workspace_id: str) -> None:
+    def __init__(self, settings: Settings, owner_user_id: str) -> None:
         self.settings = settings
-        self.root = settings.workspace_skill_path(workspace_id)
+        self.root = settings.account_skill_path(owner_user_id)
 
     async def stage(self, upload: IncomingFile) -> StagedSkillArchive:
         self.root.mkdir(parents=True, exist_ok=True)

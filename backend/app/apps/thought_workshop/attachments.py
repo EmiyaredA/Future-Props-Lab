@@ -10,10 +10,10 @@ from app.runtime.config import Settings
 
 
 async def upload_attachment(
-    session: AsyncSession, settings: Settings, workspace_id: str, upload: IncomingFile
+    session: AsyncSession, settings: Settings, owner_user_id: str, upload: IncomingFile
 ) -> ThoughtAttachmentOut:
     row = await AssetLibrary(session, settings).store_upload(
-        upload, workspace_id=workspace_id, allowed_extensions=ATTACHMENT_EXTENSIONS
+        upload, owner_user_id=owner_user_id, allowed_extensions=ATTACHMENT_EXTENSIONS
     )
     return ThoughtAttachmentOut(
         asset_id=row.id,

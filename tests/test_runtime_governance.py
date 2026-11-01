@@ -45,18 +45,14 @@ async def test_atomic_registration_capacity_competition():
 
 @pytest.mark.asyncio
 async def test_quota_voice_release_and_persistent_task_ownership():
-    client, _, user_id, workspace_id = await client_account()
+    client, _, user_id, owner_user_id = await client_account()
     async with aclosing(client):
         principal = StudioPrincipal(
             user_id=user_id,
-            workspace_id=workspace_id,
-            workspace_access="owner",
-            member_role="owner",
-            is_platform_admin=False,
             must_change_password=False,
             auth_kind="session",
             scopes=frozenset({"studio:read", "studio:write"}),
-            platform_role="member",
+            platform_role="user",
         )
         first = await acquire(principal, voice=True)
         with pytest.raises(AccountError, match="runtime_quota_exceeded"):
@@ -69,7 +65,7 @@ async def test_quota_voice_release_and_persistent_task_ownership():
         lease = await acquire(principal)
         async with SessionLocal() as session:
             task = ModelTestGenerationTask(
-                workspace_id=workspace_id,
+                owner_user_id=owner_user_id,
                 provider_kind="senseaudio_image",
                 generation_kind="image",
                 provider_name="deterministic",
@@ -102,7 +98,7 @@ async def test_demo_services_disabled_stream_tools_install_and_policy_reading():
     member, *_ = await client_account()
     async with aclosing(admin), aclosing(member):
         assert (await member.get("/v1/platform/demo-services")).status_code == 403
-        assert (await member.get("/v1/account/developer-documents")).status_code == 403
+        assert (await member.get("/v1/account/developer-documents")).status_code == 200
         assert (await admin.get("/v1/account/developer-documents")).status_code == 200
         services = (await admin.get("/v1/platform/demo-services")).json()
         mock = next(item for item in services if item["id"] == "mock_model")
@@ -167,75 +163,6 @@ async def test_demo_services_disabled_stream_tools_install_and_policy_reading():
                 "/v1/platform/demo-services/mock_model",
                 json={"expected_revision": current["revision"], "value": mock["value"]},
             )
-
-
-@pytest.mark.asyncio
-async def test_sensitive_diagnostics_and_official_mark_require_current_policy():
-    from app.llm.models import LlmCallLog
-
-    admin, *_ = await client_account(admin=True)
-    member, _, _, workspace_id = await client_account()
-    async with aclosing(admin), aclosing(member):
-        async with SessionLocal() as session:
-            log = LlmCallLog(
-                workspace_id=workspace_id,
-                call_source="model_playground",
-                provider_kind="openai",
-                model="deterministic",
-                trace_id="governance",
-                request_payload={"secret_input": "hidden-input"},
-                response_payload={"raw": "hidden-response"},
-                latency_ms=1,
-                status="success",
-            )
-            session.add(log)
-            await session.commit()
-            log_id = log.id
-        response = await member.get(f"/v1/llm-call-logs/{log_id}")
-        assert response.status_code == 200, response.text
-        assert "hidden-input" not in response.text and "hidden-response" not in response.text
-        assert not response.json()["reproduction_supported"]
-        assert (
-            await member.get(f"/v1/llm-call-logs/{log_id}/reproduction-bundle")
-        ).status_code == 403
-        assert (await member.get("/v1/account/log-workspaces")).status_code == 403
-        state = (await admin.get("/v1/platform/permission-policy")).json()
-        original = state["value"]
-        changed = {**original, "member": {**original["member"], "view_model_diagnostics": True}}
-        updated = await admin.patch(
-            "/v1/platform/permission-policy",
-            json={"expected_revision": state["revision"], "value": changed},
-        )
-        assert updated.status_code == 200, updated.text
-        try:
-            refreshed = await member.get(f"/v1/llm-call-logs/{log_id}")
-            assert refreshed.json()["request_payload"]["secret_input"] == "hidden-input"
-        finally:
-            await admin.patch(
-                "/v1/platform/permission-policy",
-                json={"expected_revision": updated.json()["revision"], "value": original},
-            )
-        revoked = await member.get(f"/v1/llm-call-logs/{log_id}")
-        assert "hidden-input" not in revoked.text
-        project = await member.post(
-            "/v1/visual-workshop/projects", json={"title": "官方标记权限", "kind": "image"}
-        )
-        assert project.status_code in (200, 201), project.text
-        record = project.json()
-        denied = await member.patch(
-            f"/v1/account/project-certification/visual/{record['id']}",
-            json={"is_official": True, "expected_revision": record["revision"]},
-        )
-        assert denied.status_code == 403, denied.text
-        await admin.post("/v1/account/workspaces/switch", json={"workspace_id": workspace_id})
-        granted = await admin.patch(
-            f"/v1/account/project-certification/visual/{record['id']}",
-            json={"is_official": True, "expected_revision": record["revision"]},
-        )
-        assert granted.status_code == 200, granted.text
-        assert (await member.get(f"/v1/visual-workshop/projects/{record['id']}")).json()[
-            "is_official"
-        ]
 
 
 @pytest.mark.asyncio

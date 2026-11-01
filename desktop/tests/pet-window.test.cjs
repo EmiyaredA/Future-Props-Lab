@@ -102,7 +102,7 @@ test("companion IPC is private, bounded, transparent and keeps its window when c
   };
   handlers.get("desktop:pet-context")(studio, {
     userId: "u",
-    workspaceId: "w",
+    accountId: "w",
   });
   await handlers.get("desktop:pet-open")(
     studio,
@@ -154,13 +154,13 @@ test("companion IPC is private, bounded, transparent and keeps its window when c
   assert.equal(chat.isDestroyed(), false);
   handlers.get("desktop:pet-context")(studio, {
     userId: "u",
-    workspaceId: "other",
+    accountId: "other",
   });
   assert.equal(chat.isDestroyed(), true);
   assert.equal(pet.isDestroyed(), true);
 });
 
-test("preview IPC enforces trusted main frame, account, Workspace, project and a single editor owner", async () => {
+test("preview IPC enforces trusted main frame, account, account, project and a single editor owner", async () => {
   const projectId = "11111111-1111-1111-1111-111111111111";
   const controller = new PetWindowController({
     preload: "fixture",
@@ -185,14 +185,14 @@ test("preview IPC enforces trusted main frame, account, Workspace, project and a
   const first = editor(1),
     second = editor(2),
     foreign = editor(3);
-  handlers.get("desktop:pet-context")(first, { userId: "u", workspaceId: "w" });
+  handlers.get("desktop:pet-context")(first, { userId: "u", accountId: "w" });
   handlers.get("desktop:pet-context")(second, {
     userId: "u",
-    workspaceId: "w",
+    accountId: "w",
   });
   handlers.get("desktop:pet-context")(foreign, {
     userId: "other",
-    workspaceId: "other",
+    accountId: "other",
   });
   await handlers.get("desktop:pet-open")(first, projectId);
   const pet = windows.at(-1);
@@ -302,7 +302,7 @@ test("motion IPC rejects stale, foreign and paused updates and follows display c
   };
   handlers.get("desktop:pet-context")(studio, {
     userId: "u",
-    workspaceId: "w",
+    accountId: "w",
   });
   await handlers.get("desktop:pet-open")(studio, projectId);
   const pet = windows.at(-1),
@@ -388,7 +388,7 @@ test("continuous motion confirmation is pet-only, reports actual host bounds and
   };
   handlers.get("desktop:pet-context")(studio, {
     userId: "u",
-    workspaceId: "w",
+    accountId: "w",
   });
   await handlers.get("desktop:pet-open")(
     studio,
@@ -514,7 +514,7 @@ test("a window closed during host placement emits no motion confirmation", async
   };
   handlers.get("desktop:pet-context")(studio, {
     userId: "u",
-    workspaceId: "w",
+    accountId: "w",
   });
   await handlers.get("desktop:pet-open")(
     studio,

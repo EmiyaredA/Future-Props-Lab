@@ -2,7 +2,7 @@ import { useState } from "react";
 import { QueryFeedback } from "@shared/ui/QueryFeedback";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
-import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
+import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowUpRight,
@@ -80,7 +80,7 @@ export function VideoEditorTasksPage({
   const [deleteTarget, setDeleteTarget] = useState<VideoEditorTask | null>(
     null,
   );
-  const canWrite = useWorkspacePermission("content.write");
+  const canWrite = useAccountPermission("content.write");
   const queryClient = useQueryClient();
   const remove = useMutation({
     mutationFn: deleteVideoEditorRender,

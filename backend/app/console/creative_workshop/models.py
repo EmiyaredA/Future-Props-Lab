@@ -15,8 +15,8 @@ class CreativeItem(Base):
     __tablename__ = "creative_items"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    origin_workspace_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    origin_owner_user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     author_user_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
@@ -61,11 +61,11 @@ class CreativeRelease(Base):
 
 class CreativeInstallation(Base):
     __tablename__ = "creative_installations"
-    __table_args__ = (UniqueConstraint("workspace_id", "release_id"),)
+    __table_args__ = (UniqueConstraint("owner_user_id", "release_id"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    owner_user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     release_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("creative_releases.id", ondelete="RESTRICT"), index=True

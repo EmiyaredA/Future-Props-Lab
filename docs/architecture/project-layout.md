@@ -11,9 +11,9 @@
 
 `web/src/features/thought-workshop/official/` 保留现有指南的导入来源：稳定清单、Markdown、简介、相关阅读和 CanvasScene。它不参与运行期社区列表、搜索或阅读。`scripts/official_seed_source.ts` 提取受控来源，`scripts/build_official_seed.py` 转换为普通 version 7 备份包，生成 `backend/app/apps/thought_workshop/publication/seed.json`；`knowledge:seed:check` 验证来源与包一致，桌面后端打包携带该 JSON。
 
-`publication/imports.py` 复用普通备份导入用例，平台管理员在当前 Workspace 明确确认数量后创建 12 个私人库、93 篇文章及 12 篇首页。导入正文、目录和跨库 ID 引用与来源映射、请求回执在同一事务提交；回执按 Workspace、操作者、请求 ID 隔离。再次主动导入创建独立副本，不自动发布或覆盖。`OfficialSource` 只定位旧来源，`OfficialImportReceipt` 只记录成功结果。
+`publication/imports.py` 复用普通备份导入用例，平台管理员在当前账号明确确认数量后创建 12 个私人库、93 篇文章及 12 篇首页。导入正文、目录和跨库 ID 引用与来源映射、请求回执在同一事务提交；回执按账号、操作者、请求 ID 隔离。再次主动导入创建独立副本，不自动发布或覆盖。`OfficialSource` 只定位旧来源，`OfficialImportReceipt` 只记录成功结果。
 
-官方内容与普通发布共用 Notes、编辑器、历史、搜索、收藏、导出和素材权限。Publication 保存 `is_official`、`read_only`、`editable_platform_roles`；只有平台超级管理员／管理员能改官方标记和角色授权。新发布默认只读；源普通成员不继承社区编辑权，逐篇账号授权仍生效，角色编辑授权不扩大可见范围或管理能力。能力字段独立返回，所有写入重新校验当前角色与发布权限。
+官方内容与普通发布共用 Notes、编辑器、历史、搜索、收藏、导出和素材权限。Publication 保存 `is_official`、`read_only`、`editable_platform_roles`；只有平台管理员能改官方标记和角色授权。新发布默认只读；源普通成员不继承社区编辑权，逐篇账号授权仍生效，角色编辑授权不扩大可见范围或管理能力。能力字段独立返回，所有写入重新校验当前角色与发布权限。
 
 `community/LegacyOfficialPage.tsx` 保留 `official-knowledge-bases` URL 兼容入口，依据来源映射解析当前可访问的官方发布。唯一匹配跳转，多匹配由用户选择，无匹配显示提示，不回退静态阅读。旧官方引用与收藏使用同一授权边界。`publication/references.py` 解析同一源空间的已发布跨库笔记引用，过滤不可见目标。
 
@@ -40,19 +40,19 @@ Future-Props-Lab/
 ├── backend/config.example.toml # 无真实密钥的配置示例；私有 config.toml 不提交、不打包
 ├── backend/app/
 │   ├── main.py        # FastAPI 装配、生命周期与健康探针
-│   ├── deps.py        # HTTP/WebSocket 会话、Studio 鉴权与 WorkspaceDep
+│   ├── deps.py        # HTTP/WebSocket 会话、Studio 鉴权与 OwnerDep
 │   ├── problem_details.py # 统一协议错误映射
 │   ├── api.py         # `/v1` router 装配入口
-│   ├── orm.py         # mapper 聚合与 Workspace 租户登记
+│   ├── orm.py         # mapper 聚合与账号租户登记
 │   ├── runtime/       # 配置、数据库、CAS/轮询、操作批回执、ID/时间工厂与 ORM Base（无业务语义）
 │   ├── capabilities/  # 有契约的共享能力：identity、asset_store（VisualAsset ORM + files/媒体 schemas/routes）、agents、media_rendering、transcription
 │   ├── console/       # Studio 治理、库级文件用例；自有 models/routes/schemas
 │   │   ├── amadeus/   # 助手会话、引用快照、审批执行、沙箱脚本与模型桥接
-│   │   └── creative_workshop/ # 跨 Workspace 公开创作版本、草稿、安装事务与文件校验
+│   │   └── creative_workshop/ # 跨账号公开创作版本、草稿、安装事务与文件校验
 │   ├── apps/          # 已垂直切片的产品 App（含 live2d_workshop / desktop_pet）
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台、调用日志及自有 models/schemas/routes
 │   ├── tool_navigation/ # 工具目录状态、桌面 Codex 模型源与抖音/B站视频下载；自有 models/schemas/routes
-│   ├── integrations/ # Workspace 工具 API、MCP、Skill、外部连接；自有 models/schemas/routes
+│   ├── integrations/ # 账号工具 API、MCP、Skill、外部连接；自有 models/schemas/routes
 │   └── demo_runtime/  # 固定演示 Mock 运行时；自有 schemas/routes
 ├── db/migrations/
 │   ├── versions/      # 只追加、不可改写的 SQLite migration
@@ -125,21 +125,21 @@ Future-Props-Lab/
 - `console/amadeus/` 拥有 `/v1/amadeus` 的会话、消息引用快照、Agent/Plan 运行、持久提问、参数摘要审批与执行记录；
   视频时间线执行由 `apps/video_editor/assistant_operations.py` 提供公共入口，在 `app/api.py` 装配，
   避免 Console 反向依赖工坊实现。`fpl_operations.py` 只允许调用桌面 Agent 明确登记的业务 HTTP 操作，
-  由原路由重新校验 Workspace、权限和资源版本。
+  由原路由重新校验账号、权限和资源版本。
   `console/routes/amadeus.py` 只暴露协议。会话文件存于
-  `workspaces/<workspace-id>/amadeus/<conversation-id>/{imports,scripts,outputs,tmp}/`，按账号与 Workspace
+  `accounts/<user-id>/amadeus/<conversation-id>/{imports,scripts,outputs,tmp}/`，按账号
   读取隔离，文件访问拒绝符号链接和目录穿越。新运行通过 `execution.py` 持有官方 CLI，`tool_bridge.py` 以短期任务工具授权连接正式 API；旧模型轮次与浏览器事件写接口返回 410。
   `web/src/features/amadeus/` 拥有独立 `amadeus.html` 界面、Code Agent 选择、运行状态重连、对话时间线与控件选取；
-  `useAmadeusData.ts` 管理账号、Workspace 和会话范围内的读取与订阅，`revisionConflict.ts` 解释会话 CAS 冲突；
+  `useAmadeusData.ts` 管理账号和会话范围内的读取与订阅，`revisionConflict.ts` 解释会话 CAS 冲突；
   `vendor/pi/` 仅保留历史来源快照，不参与 Amadeus 构建。进程监督由桌面独立工具入口提供，
   不复用携带后端凭据的服务进程。
 
-- `llm/catalog/` 拥有供应商分组、接入连接与模型目录。`supplier_records.py` 提供工作区限定的
+- `llm/catalog/` 拥有供应商分组、接入连接与模型目录。`supplier_records.py` 提供账号限定的
   分组读取及安全输出，`suppliers.py` 通过目录统一 CAS 执行分组写入；协议边界位于
   `llm/routes/models/suppliers.py`。供应商不持有密钥或启停状态，连接通过 `supplier_id` 显式归组。
 - `web/src/features/models/catalog/` 拥有受控 `ModelCatalogEditor`、目录分类、供应商树和三层表单；
-  `ModelServicePage` 适配工作区 API、缓存和冲突恢复，`WorkspaceDefaults` 负责默认用途选择与保存。
-  工作区页面通过可选内容插槽提供「本地模型」标签；`LocalModelsPanel` 与 `LocalModelDetails`
+  `ModelServicePage` 适配账号 API、缓存和冲突恢复，`AccountDefaults` 负责默认用途选择与保存。
+  模型服务页面通过可选内容插槽提供「本地模型」标签；`LocalModelsPanel` 与 `LocalModelDetails`
   拥有模型选择、状态步骤和空间接入操作，`useLocalModels` 统一轮询、写入及缓存刷新，
   `localModelPresentation` 根据本机状态和当前空间目录派生摘要与接入状态；共用编辑器仍不发起 API 请求。
   管理中台通过数据、动作和字段权限复用编辑器，
@@ -149,19 +149,14 @@ Future-Props-Lab/
 - 后端采用功能模块优先结构。`main.py` 负责装配；各包 `routes/` 只负责认证、请求校验、调用功能
   边界和响应映射，不直接导入 SQLAlchemy、ORM 模型或 migration。查询、写入和事务由
   `llm/catalog/`、`llm/playground/`、`llm/call_logs/` 等所属能力负责。
-- `console/governance/provisioning.py` 是 HTTP 管理接口和离线账号命令共用的账号开通用例；账号、Workspace、
-  Owner 成员关系、审计事件与新 Workspace 模型目录在同一事务内提交或回滚。`console/governance/service.py`
+- `console/governance/provisioning.py` 是 HTTP 管理接口和离线账号命令共用的账号开通用例；账号、审计事件与账号模型目录在同一事务内提交或回滚。`console/governance/service.py`
   不依赖模型目录实现。
 - `capabilities/identity/permissions.py` 拥有固定角色与密钥范围交集，`capabilities/identity/route_permissions.py` 显式登记业务操作。
-  `governance_transactions.py` 在短写事务中重验操作者并执行 CAS；`management.py`、`member_roles.py`
-  分别拥有平台身份与成员授权，`errors.py` 和 `error_views.py` 定义领域错误与安全快照。
+  `governance_transactions.py` 在短写事务中重验操作者并执行 CAS；`management.py` 拥有平台身份与账号状态授权，`errors.py` 和 `error_views.py` 定义领域错误与安全快照。
   `console/routes/account_management.py` 只适配管理查询、创建和审计协议。
-- `web/src/features/accounts/` 拥有管理中台三个页面、账号中心和空间面板；空间概览与独立成员/角色/审计管理、收到的邀请弹窗由该模块协调，视图状态与账号设置标签分离；查询键由 `queryKeys.ts`
-  统一维护。`AccountMenu` 与 `WorkspaceTrigger` 分别提供账号和空间入口，`AccountWorkspacePanel`
-  只装配弹窗；资料、安全表单与空间设置、成员授权分开维护。工作台顶栏及布局样式归属
-  `app/layout/StudioGlobalHeader`，中台外壳、统计与列表样式留在账号功能内。
-  `platform/auth/` 提供有效权限 Context，`app/ReadOnlyRoutes.tsx` 只装配各业务模块自有
-  的只读浏览入口，不挂载编辑控制器。共享预览和下载展示归属 `shared/ui/ReadOnlyMedia.tsx`。
+- `web/src/features/accounts/` 拥有管理中台、个人资料、安全与密钥。`AccountMenu` 提供账号入口，
+  `AccountPanel` 与 `useAccountPanel` 装配设置弹窗，`RuntimeQuotasPage` 管理账号和实例额度，`TemplateSyncTarget` 选择共享模型的目标账号。
+  `platform/auth/AccountAccess.tsx` 提供账号 ID 与有效权限；`AccountStorageUpgrade` 显示维护升级状态。
 - `capabilities/agents/harness/` 提供业务无关的 Agent Definition、消息/工具调用/Usage/适配器契约、上下文预算、
   Reactive 工具循环、Policy、Verifier、事件订阅、取消和内存审批；`phases.py` 原子化上下文编译、
   模型回合、工具提案、执行与审批阶段并保持事件顺序；不拥有项目数据，也不提供通用
@@ -169,27 +164,27 @@ Future-Props-Lab/
   `llm/providers/` 是供应商协议差异的唯一实现边界，并反向实现 Harness
   定义的适配器契约。模型测试、诊断、REST/SSE 与 Web 消费端
   只依赖统一结果或事件，不根据供应商原始载荷控制运行行为；供应商管理界面展示配置属于例外。
-- `llm/playground/` 拥有模型测试会话、测试工具、调用快照与流式结算。测试工具只执行 Workspace 内的
+- `llm/playground/` 拥有模型测试会话、测试工具、调用快照与流式结算。测试工具只执行账号内的
   确定性 Mock，不接入网络或外部系统；选择工具的文本会话复用 `capabilities/agents/harness/`，未选择工具的会话
   继续使用原单轮流式路径。Web 的工具管理页面和对话工具控件归属 `features/models/tools/` 与
   `features/models/conversation/`，不把工具逻辑堆入应用壳或通用 UI。
 - `llm/providers/realtime/` 只拥有供应商无关实时桥接契约与 SenseAudio 协议适配，
-  `llm/realtime/` 负责 Workspace 模型解析、短会话日志结算和浏览器 WebSocket 编排；
+  `llm/realtime/` 负责账号模型解析、短会话日志结算和浏览器 WebSocket 编排；
   `web/src/platform/voice/` 负责 16 kHz 采集、Silero VAD、回声参考打断和 24 kHz 缓冲播放。
   这些模块不拥有 Bot、工具调用、知识库、电话或持久化实时会话。
 - 后端不增加通用 `services/`、`domain/`、`platform/` 或 `product/` 分层。需要拆分大型模块
   时，按具体业务能力在所属功能包内命名，避免同一职责出现多个事实源。
 - 工具目录由 Web 静态注册表维护；后端 `tool_navigation/` 持久化稳定工具 ID 对应的收藏与
   最近使用状态，不复制工具名称、分类或外部网址。其 Codex 模型源用例仅在桌面私有传输内
-  读取和修改当前用户的 `CODEX_HOME/config.toml`，不进入 Workspace 数据库。视频下载用例调用本机
+  读取和修改当前用户的 `CODEX_HOME/config.toml`，不进入账号数据库。视频下载用例调用本机
   `yt-dlp`/`ffmpeg`，仅允许抖音与哔哩哔哩链接，任务与临时文件保存在运行时目录，可选写入文件库。
-  空间占用用例仅向 macOS 桌面端平台超级管理员 Session 提供本机容量读取、GrandPerspective
+  空间占用用例仅向 macOS 桌面端平台管理员 Session 提供本机容量读取、GrandPerspective
   目录分析与 Finder 打开；不递归扫描、不保存目录或扫描结果，不开放 Agent 通道。
   Electron 仅负责可信主窗口的目录选择，Web 工具页通过正式 API 调用本机用例。
-- `integrations/` 拥有独立于工具导航的 Workspace 集成目录：`tool_apis/` 管理受限 HTTP 调用配置，
+- `integrations/` 拥有独立于工具导航的账号集成目录：`tool_apis/` 管理受限 HTTP 调用配置，
   `mcp/` 管理 Streamable HTTP/stdio 连接与工具快照，`skills/` 管理安全 ZIP 导入和不可变版本，
   `checks/` 只保存脱敏验证元数据。v1 只负责管理、发现和按需验证，不接入 Agent Harness 执行。
-- `integrations/external/` 管理 Workspace 外部连接、加密应用凭据与飞书鉴权；`contracts.py` 和
+- `integrations/external/` 管理账号外部连接、加密应用凭据与飞书鉴权；`contracts.py` 和
   `blocks.py` 接收明确的文档内容与图片素材，`feishu_verification.py` 核验远端块结果，
   不读取思绪工坊 ORM。`/docx/` 链接直接作为文档标识；知识库 `/wiki/` 链接只提取节点标识，经飞书开放接口解析为 docx 后再读写。服务器不请求用户粘贴的主机。
   `apps/thought_workshop/external_sync/` 拥有文章绑定、内容导出快照、持久任务和步骤核验；
@@ -198,11 +193,11 @@ Future-Props-Lab/
   提供文章同步侧栏和移动弹层；共享 `shared/ui/FeishuMark.tsx` 从 `web/public/providers/` 读取本地品牌标识。
   迁移 `r0088_external_article_sync` 追加五张表；全局唯一目标绑定和
   活跃任务索引确保单目标串行。恢复仅将运行任务标记待核对，不自动重放外部写入。
-- `console/creative_workshop/` 拥有同一部署内共享的创作目录。草稿按作者和当前 Workspace 隔离；
-  公开版本和方案包引用跨 Workspace 只读，不能经集成中心直接读取其他 Workspace 的配置。
-  安装记录属于目标 Workspace，安装事务只复制已公开的允许字段和 Skill 文件；凭据留空，
-  stdio MCP 待目标 Workspace 管理员填写本机命令。
-- `apps/audio_annotation/` 管理 Workspace 级录音标注任务，根项目直接保存 `workspace_id` 并引用
+- `console/creative_workshop/` 拥有同一部署内共享的创作目录。草稿按作者和当前账号隔离；
+  公开版本和方案包引用跨账号只读，不能经集成中心直接读取其他账号的配置。
+  安装记录属于目标账号，安装事务只复制已公开的允许字段和 Skill 文件；凭据留空，
+  stdio MCP 待目标账号管理员填写本机命令。
+- `apps/audio_annotation/` 管理账号级录音标注任务，根项目直接保存 `owner_user_id` 并引用
   公共文件库中的音频；说话人/片段文档与最多双声道的预计算波形分别使用独立 revision CAS，
   选中片段可通过统一语音识别适配器执行一次性转写。识别参数、语言能力、文件上限和安全错误
   映射归属 `capabilities/transcription/`，录音标注、模型测试和 Galgame 只依赖该能力边界。
@@ -210,12 +205,12 @@ Future-Props-Lab/
 - 应用目录同样由 Web 静态注册表维护， 应用最近访问记录只保存在浏览器本地。视觉创作工坊、
   Galgame 工坊、视频剪辑工坊、演示工坊、思绪工坊与录音标注工坊通过应用模块配置品牌、导航和 active 规则，共用 `app/layout/WorkshopShell`；侧栏展示由 `shared/ui/WorkshopSidebar.tsx` 统一拥有，
   包括品牌、返回卡片、图标导航和主题切换。思绪工坊复用该展示组件，知识库状态与目录仍由功能模块管理；录音标注工坊与演示工坊同样 `supportsProjects: true`，但只引用公共文件库、不拥有独立项目存储根。
-  `web/src/features/interview-assistant/` 拥有面试助手，入口为 `/apps/interview-assistant`，复用应用壳。`api.ts` 与 `queryKeys.ts` 消费生成契约并按账号／Workspace 区分缓存；`usePreparation.ts` 管理场次恢复、原件提交和真实进度；`PreparationPanel.tsx` 与 `BundleView.tsx` 展示资料版本、来源和问题依据。`Practice.tsx`、`session.ts`、`useInterviewSession.ts` 管理仅本页内存中的文字练习与规则复盘，固定使用已验收资料的首轮问题；不采集音视频。`assets/` 中的候选人为生成的虚构示意图，使用 Git LFS。
+  `web/src/features/interview-assistant/` 拥有面试助手，入口为 `/apps/interview-assistant`，复用应用壳。`api.ts` 与 `queryKeys.ts` 消费生成契约并按账号／账号区分缓存；`usePreparation.ts` 管理场次恢复、原件提交和真实进度；`PreparationPanel.tsx` 与 `BundleView.tsx` 展示资料版本、来源和问题依据。`Practice.tsx`、`session.ts`、`useInterviewSession.ts` 管理仅本页内存中的文字练习与规则复盘，固定使用已验收资料的首轮问题；不采集音视频。`assets/` 中的候选人为生成的虚构示意图，使用 Git LFS。
   `backend/app/apps/interview_assistant/` 拥有私有场次、材料、输入快照、Codex 准备任务和交付契约；`routes/` 只适配 HTTP，`rooms.py` 执行权限、回执和 CAS，`runner.py` 通过现有 Runner 生命周期串行执行准备、处理中断并拒绝过期结果。`codex.py` 白名单读取模型连接、冻结上下文并消费 JSONL；`task_tools.py` 是不依赖运行时配置、ORM 或 HTTP 的文档／草稿 MCP，`process_watchdog.py` 负责父进程退出和超时终止。二者经 `desktop/backend/interview_tools_entry.py` 独立打包为 `fpl-interview-tools`，不复用服务进程凭据。`console/governance/interview_executor_access.py` 提供后台账号／成员权限重验，在主入口注入执行器。
   后端 `capabilities/asset_store/` 负责公共文件元数据、文件夹、存储校验、项目引用，以及三个工坊创建/删除时数据库与
   文件目录的一致性补偿，
   `apps/visual_workshop/` 负责真实项目、revisioned 节点画布、项目对话与图片/视频异步生成任务，
-  `apps/galgame_workshop/` 负责 Galgame 工程元数据、Story 1.4 故事文档 CAS、Workspace 级旧 Story
+  `apps/galgame_workshop/` 负责 Galgame 工程元数据、Story 1.4 故事文档 CAS、账号级旧 Story
   批量迁移与旧文件导入用例、剧情对话富文本、多人角色舞台演出、
   角色/多层场景/音视频素材生命周期、虚拟打包路径、语音识别任务、立绘尺寸快照恢复、Fragment 线路分析与
   只读 Story 快照驱动的视频导出与分层剪辑交接任务，
@@ -273,7 +268,7 @@ Future-Props-Lab/
 - 版本化项目快照的 ZIP64 流式校验、临时文件清理和跨平台目录打开命令由
   `capabilities/asset_store/project_snapshots.py` 与 `capabilities/asset_store/project_folders.py` 拥有；画布、Story 和时间线的
   类型化投影、ID 重映射与模型语义匹配仍位于三个所属工坊。
-- `runtime/project_records.py` 只提供显式 Workspace 谓词下的项目加载、revision CAS 更新和删除
+- `runtime/project_records.py` 只提供显式账号谓词下的项目加载、revision CAS 更新和删除
   原语，不自动提交事务也不承载默认文档、就绪状态、快照投影或领域错误规则；三套工坊继续拥有各自
   用例。Web 的 `shared/ui/project-library/useProjectLibraryController.ts` 通过功能适配器统一项目列表、
   创建、改名、删除、快照导入导出、缓存和错误恢复，不依赖任何业务 feature。
@@ -286,9 +281,9 @@ Future-Props-Lab/
   重试预加载或多音轨调度的媒体运行时继续由所属 feature 管理。`shared/ui/project-library/` 只拥有
   项目卡片、快照导入/导出/目录按钮、重命名/删除对话框和无业务 API 依赖的集合更新规则；
   `shared/media/` 只拥有浏览器侧通用帧捕获、图片编码与安全文件命名，不持有项目 API。
-- `features/accounts/` 拥有 Workspace 治理、个人资料与安全、平台账号页面和账号 API/Mutation；
+- `features/accounts/` 拥有账号治理、个人资料与安全、平台账号页面和账号 API/Mutation；
   `app/StudioSession.ts` 只提供 Session Context，认证与业务请求统一经过 `platform/api` 客户端。
-- Character Workspace 的 ViewModel 由独立 `characterWorkspaceViewModel.ts` 拥有，展示子面板不再
+- Character 账号的 ViewModel 由独立 `character账号ViewModel.ts` 拥有，展示子面板不再
   反向导入总视图。Galgame 样式由 `galgameStyles.ts` 懒加载编辑器壳、Story 编排、角色舞台和
   素材/播放器四个语义包；源码在各语义所有者下继续按 foundation/components/interactions 拆分，
   不使用编号分片。构建预算只读产物，单 CSS 不超过 150 KiB、单懒加载 JS 不超过 500 KiB，
@@ -325,38 +320,35 @@ Future-Props-Lab/
   `web/src/docs/` 拥有，文档中心配图仍由 `web/public/docs/` 拥有，SDK/API 文档生成入口为
   `scripts/generate_sdk_docs.py`，这些内容不能通过 Note 整理迁移或改写。
 - 根 `/health`、`/ready` 是无版本探针，其他业务路由由统一的 `/v1` router 注册。
-- `console/governance/` 负责账号与 Workspace 用例；请求通过 Cookie Session 或绑定单一 Workspace 的
-  Management API Key 生成 `StudioPrincipal`，`deps.WorkspaceDep` 只从该 Principal 派生租户 ID。
-  业务模块不使用 ContextVar 或 `default` 回退；后台任务从持久任务记录恢复 Workspace，缺失归属
+- `console/governance/` 负责账号用例；请求通过 Cookie Session 或绑定单一账号的
+  Management API Key 生成 `StudioPrincipal`，`deps.OwnerDep` 只从该 Principal 派生租户 ID。
+  业务模块不使用 ContextVar 或 `default` 回退；后台任务从持久任务记录恢复账号，缺失归属
   立即失败。HTTP 上传在路由层适配为 `files.IncomingFile`，业务模块不依赖 FastAPI `UploadFile`；
-  `AssetStorage` 项目路径与写入方法要求显式 `workspace_id`，`path_for(asset)` 只读取已验证资产归属。
-  平台管理员切换到其他空间时也不会自动创建成员关系。
+  `AssetStorage` 项目路径与写入方法要求显式 `owner_user_id`，`path_for(asset)` 只读取已验证资产归属。
+  管理员不具有他人私人资源访问权。
 
 ## 数据与运行边界
 
 数据库是仓库根目录 `.runtime/future-props.db` 下的单机 SQLite 文件，也是项目状态唯一真源。
-部署仍是单进程、单 SQLite，但账号之间按 `workspace_id` 做逻辑隔离。历史 `default` Workspace
-继续读取原有目录；其他 Workspace 的新文件保存在
-`workspaces/<workspace-id>/` 下，个人头像位于 `profiles/<user-id>/`。历史公共文件保存在
-`library/assets/`；视觉项目使用
-`applications/visual-workshop/projects/<project-id>/{assets,generated}/`；Galgame 项目使用
-`applications/galgame-workshop/projects/<project-id>/{assets,derived,exports}/`；视频剪辑项目使用
-`applications/video-editor/projects/<project-id>/{assets,derived,exports}/`；特效制作项目使用
-`applications/motion-compositor/projects/<project-id>/{assets,derived,exports}/`。项目目录只保存素材、
-派生文件和正式导出结果，不保存快照历史；标题变化不改变目录。模型测试对话图片保存在 `model-test/attachments/`，生成参考
-素材及语音识别输入的任务私有副本保存在 `model-test/references/`，生成结果保存在 `model-test/generated/`。
+部署仍是单进程、单 SQLite，私人数据按 `owner_user_id` 隔离，管理员也不能跨账号读取。
+文件统一保存在 `accounts/<user-id>/`，头像位于 `profiles/<user-id>/`；账号目录下包含 `applications/`、
+`library/assets/`、`model-test/`、`model-inference/`、`integrations/` 等对应业务路径。
+`db/migrations/versions/account_ownership/` 保存 `0116_account_ownership` 的静态分组 SQL；
+`capabilities/asset_store/upgrade_records.py` 保存升级清单，`account_upgrade.py` 执行可恢复文件复制与校验。
+迁移未完成时后台执行器暂停，管理员通过正式布局 API 完成核验并重启。旧根目录只作恢复副本，正常路径无回退。
+`runtime/ownership.py` 拥有显式账号 ID 校验与 session 绑定原语，`orm.py` 负责行级过滤和写入归属校验。
 Skill 的可编辑标签保存在 `integration_skills.tags`，与目录配置共用 revision/CAS，
-不属于内容版本；文件存储显式使用已鉴权 Workspace。
+不属于内容版本；文件存储显式使用已鉴权账号。
 集成中心前端的 `features/integrations/queryKeys.ts` 统一管理目录、详情、版本与工具列表缓存；
 `IntegrationInteractions.tsx` 和 `interaction.ts` 拥有草稿保护、外部更新与页面定位回执。
 桌面操作登记表逐项开放现有集成 API；目标校验归属 `console/governance/desktop_ui.py`，不开放任意 URL
-或系统命令。工具 API、MCP 和校验记录用例显式接收已鉴权 Workspace。
+或系统命令。工具 API、MCP 和校验记录用例显式接收已鉴权账号。
 
-Skill 不可变版本保存在 `workspaces/<workspace-id>/integrations/skills/<skill-id>/<version>/`。
+Skill 不可变版本保存在 `accounts/<user-id>/integrations/skills/<skill-id>/<version>/`。
 创意工坊封面、Skill 草稿与公开版本分别保存在
-`workspaces/<workspace-id>/creative-workshop/{covers,skill-drafts,skill-releases}/`；
-目标 Workspace 安装后的 Skill 副本回到其 `integrations/skills/`。备份数据库时必须同时保留
-整个 `workspaces/` 树，才能恢复创作封面、公开 Skill 版本和安装副本。
+`accounts/<user-id>/creative-workshop/{covers,skill-drafts,skill-releases}/`；
+目标账号安装后的 Skill 副本回到其 `integrations/skills/`。备份数据库时必须同时保留
+整个 `accounts/` 树，才能恢复创作封面、公开 Skill 版本和安装副本。
 `.local/interview-room-prototype/` 保存面试室的独立前端交互原型、模拟任务与对话状态、生成的示意图和浏览器验收证据；不注册生产路由，不接入后端、外部 Agent、真实检索或音视频采集，刷新即清空本次记录。
 本地临时分镜、场景图、导出结果、下载与研究草稿统一放在仓库根目录 `.local/`
 （`scratch/`、`output/`、`tmp/`、`downloads/`、`research/`），与 `.runtime/`
@@ -372,7 +364,7 @@ schema migration 不执行文件 I/O。
 时间轴、流程与表现层交叉校验由 `apps/galgame_workshop/schemas/story_validation.py` 的纯函数拥有；
 旧 Story 1.0–1.3 的格式转换只由
 `apps/galgame_workshop/schemas/story_legacy.py` 适配器拥有；`apps/galgame_workshop/story/story_migrations.py`
-通过正式 `/v1` API 执行状态预检、受 Workspace 约束的批量 CAS 固化和单工程旧文件导入，不以
+通过正式 `/v1` API 执行状态预检、受账号约束的批量 CAS 固化和单工程旧文件导入，不以
 schema migration 或直接数据库修改替代运行期迁移。工具单项状态通过幂等更新和原子 upsert 写入。图片/视频/音频生成任务持久化
 供应商/模型快照和规范化参数，FastAPI 生命周期中的单机执行器负责恢复、轮询与安全下载；视觉工坊
 和模型测试复用 `runtime/polling_runner.py` 的生命周期与并发控制，并由
@@ -390,12 +382,12 @@ Agent 是通用 Harness 的首个消费者：读取画布、素材和生成任�
 写工具复用视觉工坊校验与短事务，批量节点/连线变更只执行一次画布 CAS，生成任务与占位节点原子创建，
 且不与 `model_test_*` 数据混用。
 
-模型测试对话、测试工具、工具调用快照、图片附件及生成结果是独立的 Workspace 调试数据，不进入视觉
+模型测试对话、测试工具、工具调用快照、图片附件及生成结果是独立的账号调试数据，不进入视觉
 工坊文件管理，也不参与 Bot 或业务编排。测试工具均按无副作用 read 类型自动执行；启动恢复会把遗留
 的 pending 模型回复和工具调用标记为 cancelled。`llm/call_logs/` 根据日志中已有的脱敏请求快照
 按需生成不含凭证的临时复现 ZIP，不新增持久化副本；只有具备完整纯文本输入的供应商协议可导出。
 实时语音通话不建立持久化会话，转写和音频只在浏览器与连接内存中存在，调用日志
-仅保存时长、字符数、延迟、usage 与状态。当前工程包含单机账号和逻辑多 Workspace，但仍刻意不包含
+仅保存时长、字符数、延迟、usage 与状态。当前工程包含单机账号和逻辑多账号，但仍刻意不包含
 Bot 会话、知识库、电话接入、浏览器扩展或多实例租户部署。
 
 ## 按需扩展
@@ -406,11 +398,11 @@ Sayflow 的 PostgreSQL、多实例 worker、扩展、共享 runtime 包、知识
 
 ## 思绪工坊
 
-后端 `multitable/` 拥有多维表格的独立 ORM、类型化契约、字段转换、受控 SQLite 查询、原子批次、CSV、差量历史及 version 9 备份重映射；人员、填色条件和字段编组写在现有表、字段与视图 JSON 中。`content.py` 投影当前数据用于静态导出。`routes/multitable.py` 适配 Workspace API；`publication/tables.py` 在独立会话分别校验父文章与目标表格授权，`routes/community_tables.py` 与社区路由一起装配，避免继承普通 Workspace 权限。文档根 `ThoughtNote.kind` 默认 note，子实体通过已验证根继承 Workspace 与生命周期。
+后端 `multitable/` 拥有多维表格的独立 ORM、类型化契约、字段转换、受控 SQLite 查询、原子批次、CSV、差量历史及 version 9 备份重映射；人员、填色条件和字段编组写在现有表、字段与视图 JSON 中。`content.py` 投影当前数据用于静态导出。`routes/multitable.py` 适配账号 API；`publication/tables.py` 在独立会话分别校验父文章与目标表格授权，`routes/community_tables.py` 与社区路由一起装配，避免继承普通账号权限。文档根 `ThoughtNote.kind` 默认 note，子实体通过已验证根继承账号与生命周期。
 
 Web `features/thought-workshop/multitable/` 拥有 TanStack Table/Virtual 网格、看板、月历、字段/视图配置、记录编辑、CSV、历史、嵌入节点和静态内容导出；所有缓存键继续由现有 `queryKeys.ts` 维护。`useTableDocument.ts` 合并连续编辑、串行提交并保存按账号/访问上下文/文档/标签页隔离的 IndexedDB 待保存操作；`saveLane.ts` 协调当前页面的提交顺序，服务器 CAS 判定跨标签页冲突。当前表、视图、滚动位置与侧栏折叠是个人阅读状态，视图配置是共享文档数据。`Navigation.tsx` 拥有容器响应式数据表导航和视图标签，`Toolbar.tsx` 通过回调提供配置与记录操作；`ColumnResize.tsx` 只在拖动结束提交列宽，嵌入网格在目标可编辑时用同一提交写回源视图，未保存过的列宽按嵌入宽度分配。`FieldValue.tsx` 显示主题安全标签。`PersonField.tsx` 选择当前空间成员，`ColorRuleEditor.tsx` 与 `colorRules.ts` 编辑并套用填色条件，`FieldCatalog.tsx` 管理字段列表和编组，`columnBands.ts` 计算表头编组跨度。`ViewSettings.tsx` 保存一份跨页签草稿；`FieldForm.tsx`／`FieldEditor.tsx` 共用类型配置并拥有表头浮层，`field-settings.css` 拥有对应布局；`formatting.ts`／`fieldChanges.ts` 分别拥有展示投影与草稿合并；`grid.css` 拥有网格和单元格呈现，`embed.css` 拥有笔记内嵌入块的排版，`multitable.css` 拥有导航、其他视图与弹层样式。
 
-`publication/` 拥有同部署知识社区的发布、目录过滤、逐篇授权、收藏和素材访问；`routes/community.py` 仅做浏览器 Session 协议适配。发布记录直接保存源 Workspace，成员授权仅作用于已发布文章。`Community` 为每次操作创建独立会话，授权后显式绑定源空间调用 `Notes`；写入采用短事务串行化权限检查、撤回与正文 CAS。`lifecycle.py` 在源回收站事务内关闭文章或整库，恢复不自动重新发布。迁移 `0082_thought_publications` 只建发布表，不复制正文、不自动公开现有内容。
+`publication/` 拥有同部署知识社区的发布、目录过滤、逐篇授权、收藏和素材访问；`routes/community.py` 仅做浏览器 Session 协议适配。发布记录直接保存源账号，成员授权仅作用于已发布文章。`Community` 为每次操作创建独立会话，授权后显式绑定源空间调用 `Notes`；写入采用短事务串行化权限检查、撤回与正文 CAS。`lifecycle.py` 在源回收站事务内关闭文章或整库，恢复不自动重新发布。迁移 `0082_thought_publications` 只建发布表，不复制正文、不自动公开现有内容。
 
 Web `community/` 拥有精选书架、发布与权限弹窗及社区阅读入口；`DocumentAccess.tsx` 是普通与社区保存、引用、上传、素材读取和导出的显式适配接口。`KnowledgeSidebar`、`KnowledgeTopbar`、`NoteReaderPane` 统一目录、顶栏和富文本阅读布局；官方与普通发布使用同一富文本阅读器，旧地址由授权后的发布映射解析。社区缓存、草稿和阅读位置按账号及发布资源隔离，权限失效停止保存并保留本机草稿。搜索、计数、反向链接与导出只返回可访问的当前文章，隐藏父文档的子文章提升到可见目录顶层；未发布首页使用社区简介。
 
@@ -420,7 +412,7 @@ Web `community/` 拥有精选书架、发布与权限弹窗及社区阅读入口
 
 `apps/thought_workshop/link_preview.py` 拥有匿名公网网页元数据读取及连接地址校验；
 `LinkPreviewCard`、`useLinkPreview` 与 `useLinkPreviewPosition` 在编辑和只读正文共用悬浮交互，
-样式归 `link-preview.css`。预览不进入正文或数据库，缓存键由 `queryKeys.ts` 按 Workspace 和 URL 管理。
+样式归 `link-preview.css`。预览不进入正文或数据库，缓存键由 `queryKeys.ts` 按账号和 URL 管理。
 
 文档历史由 `apps/thought_workshop/history.py` 拥有快照与分页，`history_archive.py` 拥有备份历史校验和重映射；`notes.py` 在正文 CAS 事务中记录与还原内容。迁移 `0049_thought_history` 为现有文档建立作者未知的历史起点，历史附件独立引用并参与公共文件删除保护。历史全部保留，文档永久删除时级联释放。
 
@@ -428,9 +420,9 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 
 `apps/thought_workshop/knowledge_tools/` 拥有引用索引和解析、SQLite 检索、独立模板与原子子树复制、历史命名标记、账号偏好及一致导出快照；`archive.py` 拥有 version 6 模板与标记的校验和重映射。`routes/knowledge_tools.py` 只做协议适配。新增表由 `0080_thought_knowledge_tools` 登记，不改变旧迁移。
 
-Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发现、模板与复制对话框、关联文档、阅读位置和整库 HTML 打包；`drafts/storage.ts` 以账号、Workspace、文档、标签页隔离 IndexedDB 草稿。`useNoteResults.ts` 统一编辑和只读入口的 40 条分页。个人状态经 Principal 访问，官方正文也是已发布笔记；阅读偏好不修改正文。画板 version 2 的确定性锚点、文字和连线路径归 `diagrams/model.ts`，React Flow 只承载交互。
+Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发现、模板与复制对话框、关联文档、阅读位置和整库 HTML 打包；`drafts/storage.ts` 以账号、文档、标签页隔离 IndexedDB 草稿。`useNoteResults.ts` 统一编辑和只读入口的 40 条分页。个人状态经 Principal 访问，官方正文也是已发布笔记；阅读偏好不修改正文。画板 version 2 的确定性锚点、文字和连线路径归 `diagrams/model.ts`，React Flow 只承载交互。
 
-`backend/app/apps/thought_workshop/` 拥有文档项目、目录、正文、回收站与文件备份。这里的「知识库」是文档项目容器的名称，不提供模型检索或文件内容解析。普通目录沿用 Workspace 权限，社区发布有明确的逐篇授权边界。
+`backend/app/apps/thought_workshop/` 拥有文档项目、目录、正文、回收站与文件备份。这里的「知识库」是文档项目容器的名称，不提供模型检索或文件内容解析。普通目录沿用账号权限，社区发布有明确的逐篇授权边界。
 
 - `knowledge.py`：知识库元数据、封面归属、首页创建、库级 revision/CAS、整库删除与恢复。
 - `directory.py`：库内嵌套文档树、移动排序、循环校验；移动正文归属时推进文档 revision。
@@ -444,9 +436,9 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 
 样式按职责分为 `knowledge.css`（项目列表与知识库布局）、`knowledge-results.css`（全部文档 / 最近编辑等筛选列表）、`thought-workshop.css`（保存冲突等）、`writing-layout.css`（编辑布局与标签）、`editor.css`（正文与工具栏）、`attachments.css`（文件卡片），所有覆盖限定在思绪工坊。共享侧栏样式位于 `shared/ui/workshop-sidebar.css`；`CustomSelect` 默认使用自绘顶层菜单避开目录滚动裁切，并根据可见视口向上或向下展开，保留原 DOM 焦点范围。
 
-根知识库与文档显式保存 Workspace；子目录继承已验证的知识库归属。所有请求通过 `WorkspaceDep` 获取租户，模型注册中的租户过滤仅作额外防护。正文使用文档 revision，目录与库元数据使用库 revision，跨层修改在同一短事务中完成。
+根知识库与文档显式保存账号；子目录继承已验证的知识库归属。所有请求通过 `OwnerDep` 获取租户，模型注册中的租户过滤仅作额外防护。正文使用文档 revision，目录与库元数据使用库 revision，跨层修改在同一短事务中完成。
 
-`thought_note_assets` 保护正文图片和附件，知识库封面通过外键与文件库用例保护，包括回收站。迁移 `0046_thought_knowledge_bases` 将每个有旧数据的 Workspace 转为「我的知识库」，旧笔记本成为顶层文件夹，移除旧表与字段，保留文档 ID 和所有内容。空空间不创建默认项目。迁移无运行时 app 依赖，并已在隔离数据库验证后登记。
+`thought_note_assets` 保护正文图片和附件，知识库封面通过外键与文件库用例保护，包括回收站。迁移 `0046_thought_knowledge_bases` 将每个有旧数据的账号转为「我的知识库」，旧笔记本成为顶层文件夹，移除旧表与字段，保留文档 ID 和所有内容。空空间不创建默认项目。迁移无运行时 app 依赖，并已在隔离数据库验证后登记。
 
 ## 前端屏幕适配
 
@@ -454,30 +446,26 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 
 视频、Galgame、录音标注与模型测试的布局状态和适配 CSS 留在各自功能目录。Galgame 的独立预演也保留舞台、台词队列和检查器，布局规则由 `editor/fast-preview-compact.css` 拥有。紧凑面板通过 CSS 控制可见性，切换屏幕尺寸不重建业务控制器。思绪工坊侧栏背景随整页延伸，内部导航固定在可用视口。全站不使用根级横向溢出隐藏代替宽度修正。
 
-`web/e2e/responsive-inventory.ts` 维护全部应用路由与独立入口的适配归属；`responsive-site`、`responsive-editors`、`responsive-panels`、`responsive-states` 分别负责入口、编辑工作区、账号/公开页/模型子面板及请求状态矩阵，`responsive-forms` 检查表单及嵌套菜单。`responsive-capture.ts` 检查页面宽度和可见弹层边界并保存实页截图。`web/tests/responsive-coverage.test.ts` 对路由联合类型与 HTML 构建入口执行遗漏检查；`viewport-bounds.test.tsx` 验证模拟可见视口收缩时的菜单定位及监听清理。验收记录见 `docs/reference/responsive-verification.md`。
+`web/e2e/responsive-inventory.ts` 维护全部应用路由与独立入口的适配归属；`responsive-site`、`responsive-editors`、`responsive-panels`、`responsive-states` 分别负责入口、编辑工作区、账号/登录/模型子面板及请求状态矩阵，`responsive-forms` 检查表单及嵌套菜单。`responsive-capture.ts` 检查页面宽度和可见弹层边界并保存实页截图。`web/tests/responsive-coverage.test.ts` 对路由联合类型与 HTML 构建入口执行遗漏检查；`viewport-bounds.test.tsx` 验证模拟可见视口收缩时的菜单定位及监听清理。验收记录见 `docs/reference/responsive-verification.md`。
 
 ## 平台治理补充职责
 
-- `backend/app/console/governance/platform_policy.py` 解析即时敏感策略；`platform_settings.py` 拥有平台配置 CAS；`registration.py` 拥有邀请码名额与注册事务。
-- `console/governance/model_templates.py`、`model_template_sync.py` 拥有角色目录模板、预览与逐空间持久同步；`demo_services.py` 拥有固定测试服务治理与工作区接入。
-- `console/governance/runtime_quotas.py` 拥有并发额度领取与恢复，`generation_queue.py` 拥有视觉工坊图片／视频的账号等待容量、逐任务额度领取和调度候选；等待不占并发，领取与驱动器提交状态同事务更新；`runtime/task_admission.py` 只定义任务创建事务的归属回调类型；各功能用例在提交任务前调用它。
-- `console/governance/developer_docs.py`、`cross_workspace_logs.py`、`project_certification.py` 分别拥有受保护文档、显式跨空间概况、官方认证。`ModelTemplateSyncItem` 和 `RuntimeAdmission` 属于平台治理记录，跨空间访问由这些正式用例显式校验，不使用业务自动租户过滤。
-- `backend/app/demo_runtime/runtime.py` 只实现应用进程内的固定 Mock 文本与演示工具运行时，不启动子进程；模型适配器和工具集成将明确的本地测试连接交给它。
-- `llm/catalog/defaults.py` 校验并保存当前工作区默认模型，与目录共用 CAS 版本。
-- `web/src/features/accounts/` 拥有七个管理页面、平台查询键、跨空间查询、邀请/模板/权限/服务表单与官方认证交互；应用壳仅负责路由装配。`features/models/catalog/WorkspaceDefaults.tsx` 拥有工作区默认用途弹窗。
-- `db/migrations/versions/r0051_platform_governance.py` 至 `r0055_model_suppliers.py` 按已登记顺序追加治理数据结构，迁移测试使用临时数据库。
-
-调用日志页面的工具栏、筛选抽屉和表格由 `web/src/features/models/logs/` 拥有；
-`features/accounts/useLogWorkspaceScope.ts` 对外提供授权工作区范围与只读概况查询，查询键归账号模块。
-`backend/app/console/governance/cross_workspace_logs.py` 显式校验跨工作区范围；
-`llm/call_logs/query.py` 仅复用列表筛选谓词及 UTC 今日统计，不承担授权或跨空间事务。
+- `console/governance/settings_records.py` 读取持久设置，`platform_settings.py` 拥有配置 CAS，`registration.py` 拥有邀请码名额和注册事务。
+- `model_templates.py`、`model_template_sync.py` 拥有角色模板、预览和逐账号持久同步；保留自建资源，管理员预览不暴露私人目录名称。
+- `code_agents.py` 按账号、Agent 与用途维护授权，连接定义和认证白名单属于部署 TOML。
+- `runtime_quotas.py` 拥有账号与实例额度，`generation_queue.py` 维护图片／视频等待容量及任务调度；等待不占并发，额度领取与提交状态在同一短事务更新。
+- `developer_docs.py`、`project_certification.py` 拥有开发者文档与官方标记；私人数据没有管理员跨账号读取入口。
+- `demo_services.py` 维护固定演示服务，`demo_runtime/` 只实现进程内 Mock；`llm/catalog/defaults.py` 保存账号默认模型，并与目录共用 CAS。
+- `web/src/features/accounts/` 拥有账号设置、中台六个页面、注册邀请码、模型模板、Agent 分配与运行额度。
+  调用日志的工具栏、筛选、列表与缓存由 `features/models/logs/` 拥有，只查询当前账号。
+- 旧空间治理、成员授权、公开展台、跨空间日志及动态权限策略模块已删除。迁移 SQL 仅保留历史兼容名称。
 
 ## 演示工坊
 
 `backend/app/apps/presentation_workshop/` 拥有文稿项目、图片归属校验、引用同步和请求内导出。
-`templates/` 拥有 Workspace 模板／完整示例、素材引用、v4 页面语义与模板快照、纯解析器以及显式绑定预览事务。`schema.py` 不依赖文稿或数据库；`schemas/elements.py` 拥有模板与文稿共用的原生元素契约，`templates/scenes.py` 保存 v2 原生场景、动态语义和 v5 页面版式关联；`native_scene.py` 统一重映射分组与连线，`layout_application.py` 只按明确映射向指定页面转移几何／可选文字样式；`legacy.py` 保留旧槽位覆盖。`resolver.py` 生成临时模板层，`binding.py` 按文稿与目标模板 revision 校验后应用，保留正文与文稿覆盖。`library.py` 管理模板／示例 CAS 与入门包原子导入。迁移 `r0111_presentation_templates` 仅追加模板、示例及各自素材引用表，不回写旧文稿；`r0112_presentation_native_templates` 只增加模板 v2 与文稿／示例 v5 的降级保护，不自动重排内容。
+`templates/` 拥有账号模板／完整示例、素材引用、v4 页面语义与模板快照、纯解析器以及显式绑定预览事务。`schema.py` 不依赖文稿或数据库；`schemas/elements.py` 拥有模板与文稿共用的原生元素契约，`templates/scenes.py` 保存 v2 原生场景、动态语义和 v5 页面版式关联；`native_scene.py` 统一重映射分组与连线，`layout_application.py` 只按明确映射向指定页面转移几何／可选文字样式；`legacy.py` 保留旧槽位覆盖。`resolver.py` 生成临时模板层，`binding.py` 按文稿与目标模板 revision 校验后应用，保留正文与文稿覆盖。`library.py` 管理模板／示例 CAS 与入门包原子导入。迁移 `r0111_presentation_templates` 仅追加模板、示例及各自素材引用表，不回写旧文稿；`r0112_presentation_native_templates` 只增加模板 v2 与文稿／示例 v5 的降级保护，不自动重排内容。
 
-`projects.py` 处理 Workspace 限定加载与整体 CAS；`exports.py` 负责只读版本快照、
+`projects.py` 处理账号限定加载与整体 CAS；`exports.py` 负责只读版本快照、
 两路导出并发、私有临时文件和取消清理；`pptx_export.py` 组装 python-pptx 导出，`pptx_styles.py` 映射 DrawingML 样式，
 `pptx_media.py` 拥有 SVG 扩展嵌入、PNG 兼容图与图片外观，`native_shapes.py` 构造可编辑自由形状。
 文稿持久化于 `presentation_projects`，图片引用位于 `presentation_asset_references`。
@@ -485,11 +473,11 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 `pptx_styles.py` 与 Web `PresentationShape.tsx` 分别拥有 DrawingML 和 SVG 样式映射。
 格式控件拆分到 `PresentationShapeSettings.tsx` 与 `PresentationNumberField.tsx`。
 迁移 `0056_presentation_workshop` 仅追加这两张表；图片沿用公共文件库并参与删除保护，
-不增加独立项目素材目录或持久导出任务。API 不接收 Workspace ID。
+不增加独立项目素材目录或持久导出任务。API 不接收账号 ID。
 
 `web/src/features/presentation-workshop/` 拥有文稿列表、模板与示例库、单页版式、DOM/SVG 页面渲染、
 当前文本框 Tiptap 编辑、统一撤销、自动保存队列、元素变换、属性面板与放映。
-`master/` 拥有独立路由的聚焦模板设计器、文稿绑定与覆盖面板、共享配置控件及 Web 纯解析器；`canvas/` 拥有原生模板图层适配、对象属性、手势历史与紧凑画布样式，设计器复用 `SlideCanvas` 的几何与吸附；`nativeScenes.ts` 明确转换旧槽位、解析固定场景并为新页克隆默认正文，`studioPreview.ts` 保存五种真实布局，预览和创建共用这些数据。`LayoutApplicationPanel.tsx` 负责选页、显式映射及双版本预览／应用；普通文稿固定层仍受保护。`web/public/presentation-templates/` 保存内置生成插画，`bundledAssets.ts` 仅在显式保存／导入时上传被引用素材并重映射为当前 Workspace 的托管 ID；`SlideSurface` 接收文稿上下文并解析模板，画布正文选择与修改仍使用源页面。全局模板变更进入原历史队列，预览应用通过正式 API 后保留撤销历史；新增模板页登记响应式验收。
+`master/` 拥有独立路由的聚焦模板设计器、文稿绑定与覆盖面板、共享配置控件及 Web 纯解析器；`canvas/` 拥有原生模板图层适配、对象属性、手势历史与紧凑画布样式，设计器复用 `SlideCanvas` 的几何与吸附；`nativeScenes.ts` 明确转换旧槽位、解析固定场景并为新页克隆默认正文，`studioPreview.ts` 保存五种真实布局，预览和创建共用这些数据。`LayoutApplicationPanel.tsx` 负责选页、显式映射及双版本预览／应用；普通文稿固定层仍受保护。`web/public/presentation-templates/` 保存内置生成插画，`bundledAssets.ts` 仅在显式保存／导入时上传被引用素材并重映射为当前账号的托管 ID；`SlideSurface` 接收文稿上下文并解析模板，画布正文选择与修改仍使用源页面。全局模板变更进入原历史队列，预览应用通过正式 API 后保留撤销历史；新增模板页登记响应式验收。
 `queryKeys.ts` 维护该功能缓存键；`SlideSurface` 被画布、可见缩略图和放映复用。
 `exchange/ExportDialog.tsx` 统一 PPTX 主按钮与菜单入口，显示保存、预检、生成和文件保存阶段；
 `exchange/export.css` 拥有不定量进度与可复制路径样式。生成文件仅在弹窗内存中暂存，取消或写入失败可以重新保存；
@@ -508,8 +496,8 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 后端 `schemas/scene.py` 校验文稿 v3 的引用关系，`scene_edits.py` 拥有片段替换和身份重映射，
 `slideTheme.ts` 拥有新建色板、可修改颜色收集与单页换肤纯函数，`SlideThemeDialog` 只维护预览替换表；用户应用才进入原草稿历史与 CAS 保存，不追加持久化字段。`useSceneTools` 返回动作描述与独立弹窗，`PresentationToolbar` 统一展示信息图与“更多”菜单，不再增加整排场景工具。`slide-theme.css` 仅维护换肤弹窗布局。
 `pptx_scene.py` 拥有原生分组与端点绑定导出。迁移 `0096_presentation_scene` 为旧文稿追加空场景字段，
-不改变原内容或 revision；参考图纳入 Workspace 素材保护但不参与放映与 PPTX。
-页面 `image_asset_id` 单独保存一张归档图的公共素材引用，沿用同一 CAS、Workspace 校验与删除保护。
+不改变原内容或 revision；参考图纳入账号素材保护但不参与放映与 PPTX。
+页面 `image_asset_id` 单独保存一张归档图的公共素材引用，沿用同一 CAS、账号校验与删除保护。
 迁移 `0097_presentation_image_version` 只为缺失字段补 null，不改变已有图像 ID、revision 或更新时间。
 `SlideImageVersion.tsx` 拥有页面面板内的归档选择、上传、预览与下载，`slide-image-version.css` 维护其样式；
 图像版本独立于参考图，不参与画布、缩略图、放映或 PPTX，不建立第二套保存状态。
@@ -537,7 +525,7 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 
 ## 导演台
 
-`backend/app/apps/director_desk/` 拥有 Workspace 项目记录和用户动作库。
+`backend/app/apps/director_desk/` 拥有账号项目记录和用户动作库。
 `director_desk_projects.document` 是编辑器写出的瘦 JSON：戏段、实体和资源引用。
 模型、贴图和视频按内容 SHA-256 放在 `applications/director-desk/projects/{id}/files/`，
 不进入 SQLite，也不给共享 `VisualAsset` 增加外键。
@@ -591,7 +579,7 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 - `web/src/docs/articles/sdk/`：公开 SDK 教程及生成方法参考；开发文档仍经已授权接口加载。
 - `backend/app/apps/thought_workshop/markdown_conversion.py` 与 `content_exports.py`：受控 Markdown 转换、静态 HTML 和含素材导出；`schemas/conversion.py` 描述正式契约。
 - `backend/app/apps/audio_annotation/exports.py`：项目 JSON、SRT、已保存片段裁切与识别用例。
-- `backend/app/capabilities/asset_store/video_frames.py`：工作区文件的逐帧提取；确定性音频裁切与视频取帧实现归属 `media_rendering/audio_clip.py`、`video_frames.py`；HTTP 适配在 `capabilities/asset_store/routes/video_frames.py`。
+- `backend/app/capabilities/asset_store/video_frames.py`：账号文件的逐帧提取；确定性音频裁切与视频取帧实现归属 `media_rendering/audio_clip.py`、`video_frames.py`；HTTP 适配在 `capabilities/asset_store/routes/video_frames.py`。
 - `web/src/docs/DocsExamples.tsx`、`DocsReadingProgress.tsx`：受控代码切换与阅读进度；目标阅读入口使用 `rendering/` 的 CardGroup；模块参考按业务模块分包，保留完整搜索内容。
 - `sdk/python/src/future_props_lab/workshop_examples.py` 与 `sdk/python/workflows.json`：六个工坊可执行流程及业务证据，公开文档从样例源码生成；验收边界见 `docs/architecture/sdk-automation-coverage.md`。
 - `sdk/python/src/future_props_lab/canvas_example.py`：独立的笔记信息图 SDK 示例，通过正式 API 创建与导出可编辑画板；不参与既有六工坊文档生成，契约回归由 `tests/test_thought_canvas.py` 覆盖。
@@ -603,11 +591,11 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 
 ### Live2D 工坊
 
-`web/src/features/live2d-workshop/` 拥有角色项目管理、PSD Worker、PixiJS 网格编辑、参数关键形、动画 UI、Cubism 对照预览和尽力转换。`web/vendor/cubism-sdk-5-r5/` 保存用户提供的官方 SDK Core、Framework 源码与本地构建；`web/public/cubism-shaders/` 保存对应 WebGL 着色器。`backend/app/apps/live2d_workshop/` 拥有 Workspace 项目 CAS、素材、Cubism 附件、工程包与导出任务；`backend/app/capabilities/media_rendering/live2d/` 拥有版本化角色文档、确定性参数/变形器求值和 Pillow 三角纹理渲染。素材与输出位于对应 Workspace 的 `applications/live2d-workshop/projects/<id>/{assets,exports,cubism}/`。迁移 `r0071_live2d_workshop` 登记角色工程、素材与任务；`r0073_live2d_cubism_attachment` 登记附件。Cubism 编译、原生物理、视频和外部输入驱动未启用。
+`web/src/features/live2d-workshop/` 拥有角色项目管理、PSD Worker、PixiJS 网格编辑、参数关键形、动画 UI、Cubism 对照预览和尽力转换。`web/vendor/cubism-sdk-5-r5/` 保存用户提供的官方 SDK Core、Framework 源码与本地构建；`web/public/cubism-shaders/` 保存对应 WebGL 着色器。`backend/app/apps/live2d_workshop/` 拥有账号项目 CAS、素材、Cubism 附件、工程包与导出任务；`backend/app/capabilities/media_rendering/live2d/` 拥有版本化角色文档、确定性参数/变形器求值和 Pillow 三角纹理渲染。素材与输出位于对应账号的 `applications/live2d-workshop/projects/<id>/{assets,exports,cubism}/`。迁移 `r0071_live2d_workshop` 登记角色工程、素材与任务；`r0073_live2d_cubism_attachment` 登记附件。Cubism 编译、原生物理、视频和外部输入驱动未启用。
 
-`web/src/shared/live2d/` 提供工坊与 Amadeus 头像共用的纯姿态计算、类型和 PixiJS 网格装配。内置 Amadeus 的原画由 `scripts/build_amadeus_model.py` 打包成 `web/public/brand/amadeus/amadeus.fpllive2d`，用户可通过现有工坊导入 API 主动创建可编辑副本；助手窗口直接读取随应用提供的工程包，不依赖用户 Workspace 项目。
+`web/src/shared/live2d/` 提供工坊与 Amadeus 头像共用的纯姿态计算、类型和 PixiJS 网格装配。内置 Amadeus 的原画由 `scripts/build_amadeus_model.py` 打包成 `web/public/brand/amadeus/amadeus.fpllive2d`，用户可通过现有工坊导入 API 主动创建可编辑副本；助手窗口直接读取随应用提供的工程包，不依赖用户账号项目。
 
-`backend/app/apps/desktop_pet/` 拥有桌宠项目、固定 Live2D 角色快照、分层角色本地导入包校验、皮肤 PNG、台词与配置 CAS；`whale_package.py` 按缺省鲸鱼娘或可选 `human-chibi` 骨架验证必要部件与角色资料，沿用原数据 ZIP 与素材路径。`chat.py` 拥有按账号和 Workspace 隔离的聊天会话、请求防重放与消息记录，迁移 `r0079_desktop_pet_chat` 登记三张聊天表，`r0081_desktop_pet_presentation` 追加个人展示偏好，旧会话保留对话模式、新会话默认气泡。文字模型调用通过 `backend/app/llm/text_client.py` 的公共入口完成，保留调用日志，不使用模型测试会话。Live2D 来源只通过 `apps/live2d_workshop/public.py` 的 Workspace 只读入口取得。素材位于当前 Workspace 的 `applications/desktop-pet/projects/<id>/assets/{source,skins,whale}/`，迁移 `r0077_desktop_pet` 登记根项目，`r0078_desktop_pet_whale` 扩展来源类型。`scripts/pack_whale_demo.py` 将显式指定的本地角色目录打包为数据 ZIP，不把角色贴图提交或随应用打包。`web/src/features/desktop-pet/` 拥有项目页、台词与人设编辑器、PixiJS 预览、鲸鱼娘原版动态适配、`humanFigure.ts` 人物骨架与服饰适配、`humanFace.ts` 五官绘制与刘海遮挡、独立 `web/pet.html` 运行页与 `web/pet-chat.html` 聊天小窗；`whale-vendor/` 只保存 MIT 动画代码与许可，运行贴图从 Workspace API 读取。`EditorHeader.tsx` 拥有步骤导航、保存与桌宠重启的无状态控件，`EditorPage.tsx` 分别编排 CAS 保存和独立窗口关闭／重开，窗口启动不隐式保存草稿；`EditorStage.tsx` 拥有中央舞台、真实播放状态和舞台外能力反馈及联动入口，`useEditorPreview.ts` 管理选择、草稿变化、重播与计时，`playback.ts` 统一运行／调整／完整事件语义及实际渲染动作／表情能力；`useDesktopPreviewLink.ts` 与 `usePetPreview.ts` 分别拥有编辑器租约和桌宠授权快照校验，展示草稿仅在内存覆盖。`desktop/src/pet-preview-protocol.ts` 校验有界展示数据与素材 ID，`pet-preview-relay.ts` 管理单一所有者、递增序号、租约过期与聊天暂停，私有 IPC 由 `pet-window.ts` 校验主窗口、账号、Workspace 和项目。`humanFigure.ts` 兼容旧人物包，并为版本化关节分件装配固定父子树及侧向头部；`humanFace.ts` 集中绘制原有表情、视线与眨眼，已映射的侧眼素材保持自身宽高比，可按原图像素 sourceRects 取样，再按真实露出面部范围遮挡；完整姿态自带头部时五官跟随该姿态，避免独立旧颈部位移；`human_motion.py` 校验骨段、锚点、UV 与素材引用。`chatPresentation.ts` 拥有原文气泡摘要，`useChatWindowLayout.ts` 管理同窗布局及透明命中，聊天文本不通过角色动作 IPC 重复展示；接触阴影由 `whale-vendor/shadow.js` 统一计算。`desktop/src/pet-window-geometry.ts` 与 `desktop/src/pet-window.ts` 约束单只透明窗口、聊天小窗跟随、点击穿透和多屏可用区；主应用负责手动启动及关闭。`desktop/scripts/inspect-companion-chat.cjs` 验证两种聊天呈现与保存，通过实际腰部投影执行拎起／松手并严格检查阴影消失／恢复，记录手势、截图与聊天暂停位置；`desktop/scripts/inspect-human-pet.cjs` 在隔离烟测中渲染人物动作、表情和真实步周期的明暗背景验收图；`inspect-pet-preview.cjs` 验证草稿联动、保存、退出恢复及聊天暂停；本地角色原画、图层和资源包只保存在被忽略的 `.local/desktop-pet/<character>/`。
+`backend/app/apps/desktop_pet/` 拥有桌宠项目、固定 Live2D 角色快照、分层角色本地导入包校验、皮肤 PNG、台词与配置 CAS；`whale_package.py` 按缺省鲸鱼娘或可选 `human-chibi` 骨架验证必要部件与角色资料，沿用原数据 ZIP 与素材路径。`chat.py` 拥有按账号隔离的聊天会话、请求防重放与消息记录，迁移 `r0079_desktop_pet_chat` 登记三张聊天表，`r0081_desktop_pet_presentation` 追加个人展示偏好，旧会话保留对话模式、新会话默认气泡。文字模型调用通过 `backend/app/llm/text_client.py` 的公共入口完成，保留调用日志，不使用模型测试会话。Live2D 来源只通过 `apps/live2d_workshop/public.py` 的账号只读入口取得。素材位于当前账号的 `applications/desktop-pet/projects/<id>/assets/{source,skins,whale}/`，迁移 `r0077_desktop_pet` 登记根项目，`r0078_desktop_pet_whale` 扩展来源类型。`scripts/pack_whale_demo.py` 将显式指定的本地角色目录打包为数据 ZIP，不把角色贴图提交或随应用打包。`web/src/features/desktop-pet/` 拥有项目页、台词与人设编辑器、PixiJS 预览、鲸鱼娘原版动态适配、`humanFigure.ts` 人物骨架与服饰适配、`humanFace.ts` 五官绘制与刘海遮挡、独立 `web/pet.html` 运行页与 `web/pet-chat.html` 聊天小窗；`whale-vendor/` 只保存 MIT 动画代码与许可，运行贴图从账号 API 读取。`EditorHeader.tsx` 拥有步骤导航、保存与桌宠重启的无状态控件，`EditorPage.tsx` 分别编排 CAS 保存和独立窗口关闭／重开，窗口启动不隐式保存草稿；`EditorStage.tsx` 拥有中央舞台、真实播放状态和舞台外能力反馈及联动入口，`useEditorPreview.ts` 管理选择、草稿变化、重播与计时，`playback.ts` 统一运行／调整／完整事件语义及实际渲染动作／表情能力；`useDesktopPreviewLink.ts` 与 `usePetPreview.ts` 分别拥有编辑器租约和桌宠授权快照校验，展示草稿仅在内存覆盖。`desktop/src/pet-preview-protocol.ts` 校验有界展示数据与素材 ID，`pet-preview-relay.ts` 管理单一所有者、递增序号、租约过期与聊天暂停，私有 IPC 由 `pet-window.ts` 校验主窗口、账号和项目。`humanFigure.ts` 兼容旧人物包，并为版本化关节分件装配固定父子树及侧向头部；`humanFace.ts` 集中绘制原有表情、视线与眨眼，已映射的侧眼素材保持自身宽高比，可按原图像素 sourceRects 取样，再按真实露出面部范围遮挡；完整姿态自带头部时五官跟随该姿态，避免独立旧颈部位移；`human_motion.py` 校验骨段、锚点、UV 与素材引用。`chatPresentation.ts` 拥有原文气泡摘要，`useChatWindowLayout.ts` 管理同窗布局及透明命中，聊天文本不通过角色动作 IPC 重复展示；接触阴影由 `whale-vendor/shadow.js` 统一计算。`desktop/src/pet-window-geometry.ts` 与 `desktop/src/pet-window.ts` 约束单只透明窗口、聊天小窗跟随、点击穿透和多屏可用区；主应用负责手动启动及关闭。`desktop/scripts/inspect-companion-chat.cjs` 验证两种聊天呈现与保存，通过实际腰部投影执行拎起／松手并严格检查阴影消失／恢复，记录手势、截图与聊天暂停位置；`desktop/scripts/inspect-human-pet.cjs` 在隔离烟测中渲染人物动作、表情和真实步周期的明暗背景验收图；`inspect-pet-preview.cjs` 验证草稿联动、保存、退出恢复及聊天暂停；本地角色原画、图层和资源包只保存在被忽略的 `.local/desktop-pet/<character>/`。
 分层绑定审阅草案由 `scripts/build_amadeus_rig_draft.py` 和 `scripts/write_live2d_review_psd.mjs` 生成到 `.local/output/live2d-rig-review/`，`scripts/check_amadeus_rig_draft.py` 校验包与像素；草案在用户验收前不替换内置运行工程。
 
 人物服饰贴图缓存由 `humanFigure.ts` 按素材键去重加载与上传，独立部件保留各自裁切和几何；失败缓存仅在仍属本请求时释放，用户重新选择才重试。`WhaleRenderer.tsx` 消费换装结果并显示当前实例的失败反馈，旧选择、旧资源和卸载后的回调不覆盖当前提示；缓存和提示均不写入项目配置。
@@ -648,7 +636,7 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 
 `backend/app/apps/desktop_pet/part_registration.py` 与 `web/src/features/desktop-pet/partRegistration.ts` 拥有静态素材登记与包／内部网格边界：可选 `restTransform` 仅绑定经过完整版本 2 校验的运行或中间姿势刚性骨段，角度和锚点有限，不用于头部、躯干或蒙皮。`whale-vendor/rig/rig.js` 在 GPU 装配时一次旋转已登记素材的静态顶点，原 UV、物理骨段及后续动画角不变；未知 JSON `mesh` 和未支持的 `restAngle` 不能进入包。该兼容能力不替代完整序列的新动作制作；未声明时旧包保留原行为。
 
-桌宠资源更新由 `desktop_pet/projects.py` 拥有：完整 ZIP 验证、新 ID 素材准备和数据库 CAS 切换，失败补偿只清理本次文件，不修改原项目配置或私人聊天；`PackageUpdate.tsx` 提供编辑器正式上传入口。人物 `schemes.outfit` 登记可选站姿／坐姿衣物，`humanFigure.ts` 按姿态切换透明度，旧包继续沿用原行为。可信角色编辑器通过 `pet-window.ts` 的资源变更 IPC 刷新同账号、Workspace 和项目的桌宠素材，保留聊天窗口及消息流；SDK 通过 `desktop_pet.replace_package` 调用正式 API。
+桌宠资源更新由 `desktop_pet/projects.py` 拥有：完整 ZIP 验证、新 ID 素材准备和数据库 CAS 切换，失败补偿只清理本次文件，不修改原项目配置或私人聊天；`PackageUpdate.tsx` 提供编辑器正式上传入口。人物 `schemes.outfit` 登记可选站姿／坐姿衣物，`humanFigure.ts` 按姿态切换透明度，旧包继续沿用原行为。可信角色编辑器通过 `pet-window.ts` 的资源变更 IPC 刷新同账号和项目的桌宠素材，保留聊天窗口及消息流；SDK 通过 `desktop_pet.replace_package` 调用正式 API。
 
 桌宠编辑器的 `editor-layout.css` 拥有三栏、1200px 以下的列表／预览／属性切换与舞台布局；`editor-controls.css` 拥有字段、自绘滑块、按钮及基于主题变量的 Radix 单选菜单；`workshop.css` 拥有项目列表状态与项目弹窗。紧凑面板只改变 CSS 可见性，不重建舞台或保存 UI 状态。`SkinUpload.tsx` 提供有名称、可键盘触发的 PNG 上传适配，文件继续走原业务用例。`useChatHistoryScroll.ts` 管理阅读位置、历史前插补偿和距底部 48px 内的新回复跟随，聊天请求与分页状态仍归 `ChatWindow.tsx`。`web/e2e/desktop-pet-ui.spec.ts` 覆盖六个编辑步骤、项目弹窗、明暗主题与菜单边界，默认使用合成数据包，可通过环境变量显式提供本地角色包作目视验收。
 `desktop/scripts/inspect-pet-ui.cjs` 随隔离桌宠烟测检查菜单、主题、悬停操作、聊天阅读位置及临时读取失败后的恢复，截图输出沿用烟测的显式目标目录。
@@ -715,10 +703,10 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 `SpeechSynthesisResult.tsx` 通过鉴权 Blob URL 播放、定位、下载与保存结果，
 `speechSynthesisPresentation.ts` 统一语言、任务状态和音频时间文案，`speech-synthesis.css` 限定语音工作区布局。
 
-`0103_local_models` 新增部署级安装元数据和操作回执，不保存 Workspace 数据。
+`0103_local_models` 新增部署级安装元数据和操作回执，不保存账号数据。
 模型权重与环境属于可再下载缓存，桌面保存于数据根 `local-models/`，源码部署保存于运行目录下
 `local-models/`；数据库备份恢复后可主动重新安装。语音输入与输出保存在对应空间的
-`model-inference/inputs/`、`model-inference/outputs/`，沿用 Workspace 备份和访问边界。
+`model-inference/inputs/`、`model-inference/outputs/`，沿用账号备份和访问边界。
 
 ## 视觉工坊节点验收
 
@@ -728,8 +716,8 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 
 `web/src/features/visual-workshop/acceptance/` 的项目入口只提供只读模板与节点汇总；画布和看板共用 `NodeAcceptancePanel`，节点负责方案选择、启动、报告、人工确认及返修复验。验收状态、生成状态和最终输出分别展示。查询键由 `queryKeys.ts` 维护；[配置与执行边界](../operations/node-acceptance.md) 说明固定连接与历史 API 兼容。
 
-- `console/governance/code_agents.py` 拥有按 Workspace、账号和用途的授权 CAS 及旧授权接管，配置路径由 `fpl_config` 解析。`console/routes/code_agents.py` 只做协议适配。`capabilities/agents/cli/` 统一 CLI 发现、模型连接白名单、官方对话与固定任务传输；`web/src/features/code-agents/` 拥有管理页和查询键。独立 SDK 的 `mcp.py` 拥有外部 stdio MCP 与内部短期 Socket 中继，不导入后端。
+- `console/governance/code_agents.py` 拥有按账号和用途的授权 CAS 及旧授权接管，配置路径由 `fpl_config` 解析。`console/routes/code_agents.py` 只做协议适配。`capabilities/agents/cli/` 统一 CLI 发现、模型连接白名单、官方对话与固定任务传输；`web/src/features/code-agents/` 拥有管理页和查询键。独立 SDK 的 `mcp.py` 拥有外部 stdio MCP 与内部短期 Socket 中继，不导入后端。
 
 ### 视频透明检查与格式信息
 
-`capabilities/media_rendering/media_info.py` 拥有有界只读媒体探测，`animated_image.py` 拥有 GIF 的黑底 MP4 与透明 WebM 转换。`capabilities/asset_store/media_info.py` 及对应 routes/schemas 拥有 Workspace 校验与格式接口；`visual_workshop/outputs/` 拥有检查素材关联、原子上传与快照。Web `visual-workshop/board/VideoOutputPreview.tsx` 拥有视频格式、纯色衬底及全屏检查，`output-preview.css` 保存共用输出画面样式；预览状态不进入画布。迁移 `0115_visual_output_inspection` 仅追加检查素材引用。
+`capabilities/media_rendering/media_info.py` 拥有有界只读媒体探测，`animated_image.py` 拥有 GIF 的黑底 MP4 与透明 WebM 转换。`capabilities/asset_store/media_info.py` 及对应 routes/schemas 拥有账号校验与格式接口；`visual_workshop/outputs/` 拥有检查素材关联、原子上传与快照。Web `visual-workshop/board/VideoOutputPreview.tsx` 拥有视频格式、纯色衬底及全屏检查，`output-preview.css` 保存共用输出画面样式；预览状态不进入画布。迁移 `0115_visual_output_inspection` 仅追加检查素材引用。

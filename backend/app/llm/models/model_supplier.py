@@ -12,10 +12,10 @@ from app.runtime.time import utc_now
 
 class ModelSupplier(Base):
     __tablename__ = "model_suppliers"
-    __table_args__ = (UniqueConstraint("workspace_id", "template_key"),)
+    __table_args__ = (UniqueConstraint("owner_user_id", "template_key"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True)
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     name: Mapped[str] = mapped_column(String(120))
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     origin: Mapped[str] = mapped_column(String(24), default="user")

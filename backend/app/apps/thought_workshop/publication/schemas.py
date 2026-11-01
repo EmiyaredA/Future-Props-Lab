@@ -13,7 +13,7 @@ from app.apps.thought_workshop.schemas.workshop import (
 
 Role = Literal["read", "edit", "manage"]
 Visibility = Literal["public", "members"]
-PlatformRole = Literal["super_admin", "admin", "member"]
+PlatformRole = Literal["admin", "admin", "user"]
 
 
 class MemberInput(BaseModel):

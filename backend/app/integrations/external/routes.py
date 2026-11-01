@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
-from app.deps import SessionDep, StudioAuth, WorkspaceDep
+from app.deps import OwnerDep, SessionDep, StudioAuth
 
 from .catalog import ExternalConnections
 from .contracts import ExternalError
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/integrations/external-connections", tags=["integrati
 async def call(principal, operation):
     if not principal.allows("configuration.manage"):
         operation.close()
-        raise HTTPException(403, "需要工作区管理员或拥有者权限")
+        raise HTTPException(403, "需要账号管理员或拥有者权限")
     try:
         return await operation
     except ExternalError as exc:
@@ -27,8 +27,8 @@ async def call(principal, operation):
 
 
 @router.get("", response_model=ExternalConnectionList)
-async def list_connections(principal: StudioAuth, session: SessionDep, workspace_id: WorkspaceDep):
-    return await call(principal, ExternalConnections(session, workspace_id).list())
+async def list_connections(principal: StudioAuth, session: SessionDep, owner_user_id: OwnerDep):
+    return await call(principal, ExternalConnections(session, owner_user_id).list())
 
 
 @router.post("", response_model=ExternalConnectionOut, status_code=201)
@@ -36,9 +36,9 @@ async def create_connection(
     body: ExternalConnectionInput,
     principal: StudioAuth,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
 ):
-    return await call(principal, ExternalConnections(session, workspace_id).save(body))
+    return await call(principal, ExternalConnections(session, owner_user_id).save(body))
 
 
 @router.patch("/{connection_id}", response_model=ExternalConnectionOut)
@@ -47,18 +47,18 @@ async def update_connection(
     body: ExternalConnectionUpdate,
     principal: StudioAuth,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
 ):
     return await call(
-        principal, ExternalConnections(session, workspace_id).save(body, connection_id)
+        principal, ExternalConnections(session, owner_user_id).save(body, connection_id)
     )
 
 
 @router.post("/{connection_id}/check", response_model=ExternalConnectionOut)
 async def check_connection(
-    connection_id: str, principal: StudioAuth, session: SessionDep, workspace_id: WorkspaceDep
+    connection_id: str, principal: StudioAuth, session: SessionDep, owner_user_id: OwnerDep
 ):
-    return await call(principal, ExternalConnections(session, workspace_id).check(connection_id))
+    return await call(principal, ExternalConnections(session, owner_user_id).check(connection_id))
 
 
 @router.post("/{connection_id}/target-check", response_model=ExternalTargetOut)
@@ -67,8 +67,8 @@ async def check_target(
     body: ExternalTargetInput,
     principal: StudioAuth,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
 ):
     return await call(
-        principal, ExternalConnections(session, workspace_id).target(connection_id, body.url)
+        principal, ExternalConnections(session, owner_user_id).target(connection_id, body.url)
     )

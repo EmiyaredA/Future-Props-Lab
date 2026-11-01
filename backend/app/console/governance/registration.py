@@ -1,4 +1,4 @@
-"""Registration codes redeem atomically with account, workspace and catalog creation."""
+"""Registration codes redeem atomically with account and private catalog creation."""
 
 import secrets
 from datetime import timedelta
@@ -206,7 +206,7 @@ async def register(session: AsyncSession, body, client_ip, user_agent):
         )
         if row is None or invite_status(row) != "active":
             raise AccountError("registration_invite_unavailable")
-        user, workspace, _ = await create_account(
+        user, _ = await create_account(
             session,
             username=body.username,
             display_name=body.display_name,
@@ -224,7 +224,7 @@ async def register(session: AsyncSession, body, client_ip, user_agent):
             session,
             "registration_invite.redeemed",
             actor_user_id=user.id,
-            workspace_id=workspace.id,
+            owner_user_id=user.id,
             client_ip=client_ip,
             metadata={"invite_id": row.id},
         )

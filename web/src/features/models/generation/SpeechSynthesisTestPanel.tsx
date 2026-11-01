@@ -15,9 +15,8 @@ import {
 import { LibraryPicker } from "./ModelTranscriptionTaskViews";
 import {
   useAccountId,
-  useWorkspaceId,
-  useWorkspacePermission,
-} from "@platform/auth/WorkspacePermissions";
+  useAccountPermission,
+} from "@platform/auth/AccountAccess";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { formatFileSize } from "@shared/lib/fileSize";
 import {
@@ -46,7 +45,7 @@ type SpeechPanelProps = {
 };
 export function SpeechSynthesisTestPanel(props: SpeechPanelProps) {
   const account = useAccountId();
-  const workspace = useWorkspaceId();
+  const workspace = useAccountId();
   return <SpeechWorkspace key={`${account}:${workspace}`} {...props} />;
 }
 
@@ -56,8 +55,8 @@ function SpeechWorkspace({
   onSelectMode,
   onSelectModel,
 }: SpeechPanelProps) {
-  const canUse = useWorkspacePermission("models.use");
-  const canWrite = useWorkspacePermission("content.write");
+  const canUse = useAccountPermission("models.use");
+  const canWrite = useAccountPermission("content.write");
   const fileInput = useRef<HTMLInputElement>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);

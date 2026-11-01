@@ -11,7 +11,7 @@ from tests.thought_helpers import create_note
 
 from app.apps.thought_workshop.multitable.schemas import Snapshot
 from app.apps.thought_workshop.multitable.validation import validate_snapshot
-from app.console.models import User, WorkspaceMembership
+from app.console.models import User
 from app.main import app
 from app.runtime.db import SessionLocal
 
@@ -31,24 +31,14 @@ async def seed_member(user_id: str, name: str):
                 )
             )
             await session.flush()
-        if await session.get(WorkspaceMembership, user_id) is None:
-            session.add(
-                WorkspaceMembership(
-                    id=user_id,
-                    user_id=user_id,
-                    workspace_id="default",
-                    role="member",
-                    status="active",
-                )
-            )
         await session.commit()
 
 
 async def drop_member(user_id: str):
     async with SessionLocal() as session:
-        member = await session.get(WorkspaceMembership, user_id)
+        member = await session.get(User, user_id)
         if member is not None:
-            await session.delete(member)
+            member.status = "disabled"
             await session.commit()
 
 

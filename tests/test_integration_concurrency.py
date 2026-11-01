@@ -19,7 +19,7 @@ from app.runtime.revisions import RevisionConflictError
 async def test_identity_map_and_child_records_require_explicit_workspace():
     await _clear_integrations()
     async with SessionLocal() as session:
-        mcp = McpCatalog(session, "default", client=_FakeMcpClient())
+        mcp = McpCatalog(session, "test-user", client=_FakeMcpClient())
         row = await mcp.create(
             McpCreateIn(
                 name="Owned MCP",
@@ -46,7 +46,7 @@ async def test_sensitive_validation_preview_requires_its_existing_permission(
 ):
     await _clear_integrations()
     async with SessionLocal() as session:
-        item = await ToolApiCatalog(session, "default").create(
+        item = await ToolApiCatalog(session, "test-user").create(
             ToolApiCreateIn(
                 name="Sensitive fixture",
                 url="http://127.0.0.1/tool",
@@ -63,15 +63,11 @@ async def test_sensitive_validation_preview_requires_its_existing_permission(
 
         async def identity(_session: SessionDep) -> StudioPrincipal:
             return StudioPrincipal(
-                user_id="test-owner",
-                workspace_id="default",
-                workspace_access="owner",
-                member_role="owner",
-                is_platform_admin=False,
+                platform_role="admin" if privileged else "user",
+                user_id="test-user",
                 must_change_password=False,
                 auth_kind="management_api_key",
                 scopes=frozenset({"studio:read", "studio:private_read", "studio:write"}),
-                platform_permissions=frozenset({"tools.sensitive"}) if privileged else frozenset(),
             )
 
         app.dependency_overrides[require_studio_auth] = identity
@@ -83,7 +79,7 @@ async def test_sensitive_validation_preview_requires_its_existing_permission(
             )
             assert response.status_code == 200
             assert response.json()["check"]["ok"]
-            assert ("fixture data" in response.json()["response_preview"]) is privileged
+            assert "fixture data" in response.json()["response_preview"]
     finally:
         if original:
             app.dependency_overrides[require_studio_auth] = original
@@ -101,7 +97,7 @@ async def test_mcp_timeout_is_a_structured_failed_check():
             raise TimeoutError
 
     async with SessionLocal() as session:
-        catalog = McpCatalog(session, "default", client=TimeoutMcp())
+        catalog = McpCatalog(session, "test-user", client=TimeoutMcp())
         row = await catalog.create(
             McpCreateIn(name="Timeout MCP", transport="stdio", command="/fixture")
         )
@@ -123,7 +119,7 @@ async def test_configuration_changed_during_validation_is_not_overwritten(kind):
                 async with SessionLocal() as writer:
                     values = body.model_dump()
                     values["description"] = "new config"
-                    await ToolApiCatalog(writer, "default").update(
+                    await ToolApiCatalog(writer, "test-user").update(
                         row.id,
                         ToolApiUpdateIn(
                             **values,
@@ -132,7 +128,7 @@ async def test_configuration_changed_during_validation_is_not_overwritten(kind):
                     )
                 return httpx.Response(200, json={"ok": True})
 
-            catalog = ToolApiCatalog(session, "default", transport=httpx.MockTransport(handler))
+            catalog = ToolApiCatalog(session, "test-user", transport=httpx.MockTransport(handler))
         else:
             body = McpCreateIn(name="Concurrent MCP", transport="stdio", command="/fixture")
 
@@ -141,7 +137,7 @@ async def test_configuration_changed_during_validation_is_not_overwritten(kind):
                     async with SessionLocal() as writer:
                         values = body.model_dump()
                         values["description"] = "new config"
-                        await McpCatalog(writer, "default").update(
+                        await McpCatalog(writer, "test-user").update(
                             row.id,
                             McpUpdateIn(
                                 **values,
@@ -150,7 +146,7 @@ async def test_configuration_changed_during_validation_is_not_overwritten(kind):
                         )
                     return await super().discover(**kwargs)
 
-            catalog = McpCatalog(session, "default", client=ChangedMcp())
+            catalog = McpCatalog(session, "test-user", client=ChangedMcp())
         row = await catalog.create(body)
         with pytest.raises(RevisionConflictError):
             if kind == "tool":

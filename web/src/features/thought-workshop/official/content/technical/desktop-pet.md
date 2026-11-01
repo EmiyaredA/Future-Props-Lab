@@ -98,7 +98,7 @@ sequenceDiagram
 
 ## 私人聊天有独立数据与结束语义
 
-聊天按账号、Workspace 和桌宠项目隔离，设置与消息流不复用模型测试会话。prepare_send 用 request_id 防重放并保存待回答消息，公共文字模型调用在准备事务之后执行，结算在独立事务记录 completed 或 interrupted。气泡和对话呈现消费同一消息，不经动作 IPC 重复发送聊天文字。
+聊天按账号、账号和桌宠项目隔离，设置与消息流不复用模型测试会话。prepare_send 用 request_id 防重放并保存待回答消息，公共文字模型调用在准备事务之后执行，结算在独立事务记录 completed 或 interrupted。气泡和对话呈现消费同一消息，不经动作 IPC 重复发送聊天文字。
 
 ## 运行与恢复的验证入口
 

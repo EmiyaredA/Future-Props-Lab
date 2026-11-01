@@ -30,7 +30,7 @@ from app.apps.director_desk.schemas import (
     DirectorToolCall,
     DirectorToolOut,
 )
-from app.deps import SessionDep, StudioAuth, WorkspaceDep
+from app.deps import OwnerDep, SessionDep, StudioAuth
 
 router = APIRouter(prefix="/director-desk", tags=["director-desk"])
 
@@ -42,25 +42,23 @@ def mapped(exc: DirectorDeskError) -> HTTPException:
 @router.get("/projects", response_model=DirectorProjectList)
 async def list_projects(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     query: str = Query("", max_length=120),
     offset: int = Query(0, ge=0),
     limit: int = Query(30, ge=1, le=100),
 ):
-    return await DirectorDeskProjects(session, workspace_id).list(query, offset, limit)
+    return await DirectorDeskProjects(session, owner_user_id).list(query, offset, limit)
 
 
 @router.post("/projects", response_model=DirectorProjectOut, status_code=201)
-async def create_project(
-    session: SessionDep, workspace_id: WorkspaceDep, body: DirectorProjectCreate
-):
-    return await DirectorDeskProjects(session, workspace_id).create(body)
+async def create_project(session: SessionDep, owner_user_id: OwnerDep, body: DirectorProjectCreate):
+    return await DirectorDeskProjects(session, owner_user_id).create(body)
 
 
 @router.get("/projects/{project_id}", response_model=DirectorProjectOut)
-async def get_project(session: SessionDep, workspace_id: WorkspaceDep, project_id: str):
+async def get_project(session: SessionDep, owner_user_id: OwnerDep, project_id: str):
     try:
-        return await DirectorDeskProjects(session, workspace_id).get(project_id)
+        return await DirectorDeskProjects(session, owner_user_id).get(project_id)
     except DirectorDeskError as exc:
         raise mapped(exc) from None
 
@@ -68,12 +66,12 @@ async def get_project(session: SessionDep, workspace_id: WorkspaceDep, project_i
 @router.patch("/projects/{project_id}", response_model=DirectorProjectOut)
 async def patch_project(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     project_id: str,
     body: DirectorProjectPatch,
 ):
     try:
-        return await DirectorDeskProjects(session, workspace_id).patch(project_id, body)
+        return await DirectorDeskProjects(session, owner_user_id).patch(project_id, body)
     except DirectorDeskError as exc:
         raise mapped(exc) from None
 
@@ -81,12 +79,12 @@ async def patch_project(
 @router.delete("/projects/{project_id}")
 async def delete_project(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     project_id: str,
     expected_revision: int = Query(ge=0),
 ) -> dict[str, bool]:
     try:
-        await DirectorDeskProjects(session, workspace_id).delete(project_id, expected_revision)
+        await DirectorDeskProjects(session, owner_user_id).delete(project_id, expected_revision)
     except DirectorDeskError as exc:
         raise mapped(exc) from None
     return {"deleted": True}
@@ -95,22 +93,24 @@ async def delete_project(
 @router.post("/projects/{project_id}/files", response_model=DirectorFileOut)
 async def upload_project_file(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     project_id: str,
     upload: Annotated[UploadFile, File()],
 ) -> DirectorFileOut:
     try:
-        return await DirectorDeskFiles(session, workspace_id).store_project_file(project_id, upload)
+        return await DirectorDeskFiles(session, owner_user_id).store_project_file(
+            project_id, upload
+        )
     except DirectorDeskError as exc:
         raise mapped(exc) from None
 
 
 @router.get("/projects/{project_id}/files/{key}")
 async def download_project_file(
-    session: SessionDep, workspace_id: WorkspaceDep, project_id: str, key: str
+    session: SessionDep, owner_user_id: OwnerDep, project_id: str, key: str
 ) -> FileResponse:
     try:
-        path = await DirectorDeskFiles(session, workspace_id).project_file(project_id, key)
+        path = await DirectorDeskFiles(session, owner_user_id).project_file(project_id, key)
     except DirectorDeskError as exc:
         raise mapped(exc) from None
     return FileResponse(path, media_type="application/octet-stream")
@@ -119,21 +119,21 @@ async def download_project_file(
 @router.post("/library/files", response_model=DirectorFileOut)
 async def upload_library_file(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     upload: Annotated[UploadFile, File()],
 ) -> DirectorFileOut:
     try:
-        return await DirectorDeskFiles(session, workspace_id).store_library_file(upload)
+        return await DirectorDeskFiles(session, owner_user_id).store_library_file(upload)
     except DirectorDeskError as exc:
         raise mapped(exc) from None
 
 
 @router.get("/library/files/{key}")
 async def download_library_file(
-    session: SessionDep, workspace_id: WorkspaceDep, key: str
+    session: SessionDep, owner_user_id: OwnerDep, key: str
 ) -> FileResponse:
     try:
-        path = DirectorDeskFiles(session, workspace_id).library_file(key)
+        path = DirectorDeskFiles(session, owner_user_id).library_file(key)
     except DirectorDeskError as exc:
         raise mapped(exc) from None
     return FileResponse(path, media_type="application/octet-stream")
@@ -142,18 +142,18 @@ async def download_library_file(
 @router.get("/motions", response_model=DirectorMotionList)
 async def list_motions(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     query: str = Query("", max_length=100),
 ) -> DirectorMotionList:
-    return await DirectorDeskMotions(session, workspace_id).list(query)
+    return await DirectorDeskMotions(session, owner_user_id).list(query)
 
 
 @router.get("/motions/{motion_key}", response_model=DirectorMotionOut)
 async def get_motion(
-    session: SessionDep, workspace_id: WorkspaceDep, motion_key: str
+    session: SessionDep, owner_user_id: OwnerDep, motion_key: str
 ) -> DirectorMotionOut:
     try:
-        return await DirectorDeskMotions(session, workspace_id).get(motion_key)
+        return await DirectorDeskMotions(session, owner_user_id).get(motion_key)
     except DirectorDeskError as exc:
         raise mapped(exc) from None
 
@@ -161,22 +161,22 @@ async def get_motion(
 @router.put("/motions/{motion_key}", response_model=DirectorMotionOut)
 async def save_motion(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     motion_key: str,
     body: DirectorMotionWrite,
 ) -> DirectorMotionOut:
     try:
-        return await DirectorDeskMotions(session, workspace_id).save(motion_key, body)
+        return await DirectorDeskMotions(session, owner_user_id).save(motion_key, body)
     except DirectorDeskError as exc:
         raise mapped(exc) from None
 
 
 @router.delete("/motions/{motion_key}")
 async def delete_motion(
-    session: SessionDep, workspace_id: WorkspaceDep, motion_key: str
+    session: SessionDep, owner_user_id: OwnerDep, motion_key: str
 ) -> dict[str, bool]:
     try:
-        await DirectorDeskMotions(session, workspace_id).delete(motion_key)
+        await DirectorDeskMotions(session, owner_user_id).delete(motion_key)
     except DirectorDeskError as exc:
         raise mapped(exc) from None
     return {"deleted": True}
@@ -192,7 +192,7 @@ async def claim_agent_session(
 ) -> DirectorAgentSessionOut:
     await _release_read(session)
     try:
-        return DirectorAgentSessionOut(session_id=await claim(principal.workspace_id, project_id))
+        return DirectorAgentSessionOut(session_id=await claim(principal.owner_user_id, project_id))
     except DirectorDeskError as exc:
         raise mapped(exc) from None
 
@@ -206,7 +206,7 @@ async def release_agent_session(
 ) -> dict[str, bool]:
     await _release_read(session)
     try:
-        await release(principal.workspace_id, project_id, session_id)
+        await release(principal.owner_user_id, project_id, session_id)
     except DirectorDeskError as exc:
         raise mapped(exc) from None
     return {"released": True}
@@ -225,7 +225,7 @@ async def poll_agent_session(
 ) -> DirectorAgentPollOut:
     await _release_read(session)
     try:
-        call = await poll(principal.workspace_id, project_id, session_id, wait)
+        call = await poll(principal.owner_user_id, project_id, session_id, wait)
     except DirectorDeskError as exc:
         raise mapped(exc) from None
     if call is None:
@@ -251,7 +251,7 @@ async def complete_agent_call(
     await _release_read(session)
     try:
         await complete(
-            principal.workspace_id,
+            principal.owner_user_id,
             project_id,
             body.session_id,
             call_id,
@@ -271,13 +271,11 @@ async def call_tool(
     body: DirectorToolCall,
 ) -> DirectorToolOut:
     if needs_write(body.name, body.arguments) and not principal.allows("content.write"):
-        raise mapped(
-            DirectorDeskError("当前工作区角色不允许此操作", 403, "insufficient_permission")
-        )
+        raise mapped(DirectorDeskError("当前账号角色不允许此操作", 403, "insufficient_permission"))
     await _release_read(session)
     try:
         result = await invoke(
-            principal.workspace_id, project_id, body.name, body.arguments, body.request_id
+            principal.owner_user_id, project_id, body.name, body.arguments, body.request_id
         )
     except DirectorDeskError as exc:
         raise mapped(exc) from None

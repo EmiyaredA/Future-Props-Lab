@@ -54,9 +54,9 @@ def _detail(row: LlmCallLog) -> CallLogOut:
 
 
 class CallLogService:
-    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
         self.session = session
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
 
     async def list(
         self,
@@ -149,7 +149,7 @@ class CallLogService:
         result = await self.session.execute(
             delete(LlmCallLog).where(
                 LlmCallLog.id == log_id,
-                LlmCallLog.workspace_id == self.workspace_id,
+                LlmCallLog.owner_user_id == self.owner_user_id,
             )
         )
         await self.session.commit()
@@ -161,7 +161,7 @@ class CallLogService:
         result = await self.session.execute(
             delete(LlmCallLog).where(
                 LlmCallLog.id.in_(ids),
-                LlmCallLog.workspace_id == self.workspace_id,
+                LlmCallLog.owner_user_id == self.owner_user_id,
             )
         )
         await self.session.commit()

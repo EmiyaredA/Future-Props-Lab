@@ -64,7 +64,7 @@ class CreativeItemOut(BaseModel):
     revision: int
     author_user_id: str
     author_name: str
-    origin_workspace_id: str
+    origin_owner_user_id: str
     current_release_id: str | None
     version: int | None
     installable: bool

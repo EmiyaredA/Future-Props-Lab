@@ -24,6 +24,7 @@ from app.apps.video_editor.runner import VideoEditorRunner
 from app.apps.visual_workshop.acceptance.runner import AcceptanceRunner
 from app.apps.visual_workshop.assistant import recover_interrupted_visual_assistant_runs
 from app.apps.visual_workshop.generation_runner import VisualGenerationRunner
+from app.capabilities.asset_store.account_upgrade import upgrade_pending
 from app.capabilities.asset_store.layout_migration import (
     reconcile_project_trash,
     reconcile_snapshot_imports,
@@ -41,7 +42,6 @@ from app.console.governance.profile import reconcile_profile_avatars
 from app.console.governance.runtime_quotas import recover_admissions
 from app.console.governance.service import AccountError
 from app.console.governance.visual_acceptance_access import acceptance_actor_allowed
-from app.llm.catalog.seed import seed_sayflow_text_catalog
 from app.llm.inference.runner import InferenceRunner
 from app.llm.local_models.catalog import local_root
 from app.llm.local_models.installer import Installer
@@ -69,14 +69,22 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
+    apply_migrations(settings.database_path)
+    async with SessionLocal() as session:
+        storage_pending = await upgrade_pending(session)
+    lifespan_app.state.storage_upgrade_required = storage_pending
+    if storage_pending:
+        try:
+            yield
+        finally:
+            await engine.dispose()
+        return
     cleanup_snapshot_staging(settings)
     cleanup_library_folder_archive_staging(settings)
-    apply_migrations(settings.database_path)
     await reconcile_profile_avatars()
     async with SessionLocal() as session:
         await reconcile_project_trash(session, AssetStorage(settings))
         await reconcile_snapshot_imports(session, AssetStorage(settings))
-        await seed_sayflow_text_catalog(session)
     await recover_admissions()
     await recover_interrupted_visual_assistant_runs()
     await recover_interrupted_model_test_runs()
@@ -152,9 +160,13 @@ async def health() -> dict[str, str]:
 
 @app.get("/ready")
 async def ready() -> dict[str, str]:
+    if getattr(app.state, "storage_upgrade_required", False):
+        raise StarletteHTTPException(
+            status_code=503, detail="account storage upgrade requires restart"
+        )
     async with SessionLocal() as session:
         await session.execute(text("SELECT 1 FROM schema_migrations LIMIT 1"))
-        await session.execute(text("SELECT 1 FROM workspaces WHERE id = 'default'"))
+        await session.execute(text("SELECT 1 FROM users LIMIT 1"))
     supervisor = getattr(app.state, "runner_supervisor", None)
     if supervisor is not None and not supervisor.is_healthy:
         raise StarletteHTTPException(status_code=503, detail="background runners are not ready")

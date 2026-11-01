@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.runtime.ids import new_id
@@ -14,10 +14,18 @@ class VisualAssetFolder(Base):
     __tablename__ = "visual_asset_folders"
     __table_args__ = (
         Index("ix_visual_asset_folders_project_parent", "project_id", "parent_id", "created_at"),
+        Index(
+            "ux_visual_asset_folders_scope_parent_name",
+            "owner_user_id",
+            text("ifnull(project_id, '')"),
+            text("ifnull(parent_id, '')"),
+            text("lower(name)"),
+            unique=True,
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     project_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("visual_workshop_projects.id", ondelete="CASCADE")
     )
@@ -45,7 +53,7 @@ class VisualAsset(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     project_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("visual_workshop_projects.id", ondelete="CASCADE")
     )
@@ -85,7 +93,7 @@ class VisualProjectAssetReference(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     project_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("visual_workshop_projects.id", ondelete="CASCADE")
     )

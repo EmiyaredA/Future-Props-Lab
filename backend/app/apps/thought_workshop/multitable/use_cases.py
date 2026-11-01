@@ -21,11 +21,11 @@ from .validation import convert_records, validate_snapshot, validate_table
 
 
 class Multitable:
-    def __init__(self, session, workspace_id, author_id=None):
-        self.session, self.workspace_id, self.author_id = session, workspace_id, author_id
+    def __init__(self, session, owner_user_id, author_id=None):
+        self.session, self.owner_user_id, self.author_id = session, owner_user_id, author_id
 
     async def note(self, note_id):
-        n = await Notes(self.session, self.workspace_id).get(note_id)
+        n = await Notes(self.session, self.owner_user_id).get(note_id)
         if n.kind != "multitable" or n.deleted_at:
             raise ThoughtError("多维表格不存在", 404, "not_found")
         return n
@@ -51,7 +51,7 @@ class Multitable:
 
     async def records(self, note_id, table_id, query):
         table, revision = await self.table(note_id, table_id)
-        return await queries.records(self.session, table, query, revision, self.workspace_id)
+        return await queries.records(self.session, table, query, revision, self.owner_user_id)
 
     async def conversion(self, note_id, body):
         before = await snapshot(self.session, (await self.note(note_id)).id)
@@ -88,7 +88,7 @@ class Multitable:
             update(ThoughtNote)
             .where(
                 ThoughtNote.id == n.id,
-                ThoughtNote.workspace_id == self.workspace_id,
+                ThoughtNote.owner_user_id == self.owner_user_id,
                 ThoughtNote.deleted_at.is_(None),
                 ThoughtNote.revision == expected,
             )
@@ -115,7 +115,7 @@ class Multitable:
                 await self.session.scalars(
                     select(VisualAsset.id).where(
                         VisualAsset.id.in_(ids),
-                        VisualAsset.workspace_id == self.workspace_id,
+                        VisualAsset.owner_user_id == self.owner_user_id,
                         VisualAsset.project_id.is_(None),
                         VisualAsset.galgame_project_id.is_(None),
                         VisualAsset.video_editor_project_id.is_(None),
@@ -141,7 +141,7 @@ class Multitable:
                 await self.session.scalars(
                     select(ThoughtNote.id).where(
                         ThoughtNote.id.in_(refs),
-                        ThoughtNote.workspace_id == self.workspace_id,
+                        ThoughtNote.owner_user_id == self.owner_user_id,
                         ThoughtNote.deleted_at.is_(None),
                     )
                 )
@@ -203,9 +203,9 @@ class Multitable:
         introduced = collect(after) - collect(before)
         if not introduced:
             return
-        members = await active_members(self.session, self.workspace_id, introduced)
+        members = await active_members(self.session, introduced)
         if introduced - members.keys():
-            raise ThoughtError("只能选择当前空间的成员", 422, "invalid_member")
+            raise ThoughtError("只能选择当前账号的成员", 422, "invalid_member")
 
     async def commit(self, n, expected, before, after, *, checkpoint=False):
         validate_snapshot(after)

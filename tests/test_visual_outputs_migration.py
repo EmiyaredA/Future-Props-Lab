@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 
-from db.migrations import apply_migrations
-from db.migrations.registry import MIGRATIONS
+from tests.migration_fixtures import MIGRATIONS, apply_migrations
+
 from db.migrations.runner import connect_database, ensure_registry, migration_checksum
 
 

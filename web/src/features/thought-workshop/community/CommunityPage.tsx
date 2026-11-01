@@ -7,8 +7,8 @@ import {
 import { BookOpen, Compass, FileCode2, Star, Sparkles } from "lucide-react";
 import {
   useAccountId,
-  useWorkspacePermission,
-} from "@platform/auth/WorkspacePermissions";
+  useAccountPermission,
+} from "@platform/auth/AccountAccess";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
 import { KnowledgeSidebar } from "../KnowledgeSidebar";
@@ -16,7 +16,6 @@ import { KnowledgeSections, type KnowledgeSection } from "../KnowledgeSections";
 import { KnowledgeActionMenu } from "../KnowledgeActionMenu";
 import { OfficialImportDialog } from "./OfficialImportDialog";
 import { getOfficialImportPreview } from "./api";
-import { useWorkspaceId } from "@platform/auth/WorkspacePermissions";
 import { thoughtKeys } from "../queryKeys";
 import {
   listPublications,
@@ -59,16 +58,16 @@ export function CommunityPage({
 }) {
   const user = useAccountId() ?? "",
     client = useQueryClient();
-  const workspace = useWorkspaceId() ?? "";
-  const canWriteWorkspace = useWorkspacePermission("content.write");
+  const workspace = useAccountId() ?? "";
+  const canWriteAccount = useAccountPermission("content.write");
   const seed = useQuery({
     queryKey: thoughtKeys.officialImport(user, workspace),
     queryFn: getOfficialImportPreview,
-    enabled: canWriteWorkspace,
+    enabled: canWriteAccount,
     retry: false,
   });
   const [importing, setImporting] = useState(false);
-  const canReadWorkspace = useWorkspacePermission("content.read");
+  const canReadAccount = useAccountPermission("content.read");
   const [query, setQuery] = useState(""),
     [filter, setFilter] = useState("all"),
     [drawer, setDrawer] = useState(false),
@@ -168,7 +167,7 @@ export function CommunityPage({
                 导入现有官方文档
               </button>
             )}
-            {canReadWorkspace && (
+            {canReadAccount && (
               <button className="btn" onClick={() => navigate("private")}>
                 管理我的知识库
               </button>

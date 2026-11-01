@@ -18,17 +18,17 @@ from app.runtime.time import utc_now
 
 
 class VideoEditorClipMerges:
-    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
         self.session = session
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
 
     async def row(self, project_id: str, task_id: str) -> VideoEditorTask:
-        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
+        await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
         row = await self.session.scalar(
             select(VideoEditorTask).where(
                 VideoEditorTask.id == task_id,
                 VideoEditorTask.project_id == project_id,
-                VideoEditorTask.workspace_id == self.workspace_id,
+                VideoEditorTask.owner_user_id == self.owner_user_id,
                 VideoEditorTask.kind == "clip_merge",
             )
         )
@@ -39,12 +39,12 @@ class VideoEditorClipMerges:
     async def create(
         self, project_id: str, body: VideoEditorClipMergeCreateIn
     ) -> VideoEditorTaskOut:
-        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
+        await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
         payload = body.model_dump(mode="json", by_alias=True)
         existing = await self.session.scalar(
             select(VideoEditorTask).where(
                 VideoEditorTask.project_id == project_id,
-                VideoEditorTask.workspace_id == self.workspace_id,
+                VideoEditorTask.owner_user_id == self.owner_user_id,
                 VideoEditorTask.request_id == body.request_id,
             )
         )
@@ -69,7 +69,7 @@ class VideoEditorClipMerges:
         source = selection(timeline.document, body.clip_ids)
         fingerprints = await self.asset_fingerprints(project_id, source)
         task = VideoEditorTask(
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             project_id=project_id,
             request_id=body.request_id,
             kind="clip_merge",
@@ -94,7 +94,7 @@ class VideoEditorClipMerges:
                 .where(
                     VisualAsset.id.in_(ids),
                     VisualAsset.video_editor_project_id == project_id,
-                    VisualAsset.workspace_id == self.workspace_id,
+                    VisualAsset.owner_user_id == self.owner_user_id,
                     VideoEditorAssetMetadata.project_id == project_id,
                 )
             )
@@ -112,12 +112,12 @@ class VideoEditorClipMerges:
         return task_out(await self.row(project_id, task_id))
 
     async def list(self, project_id: str) -> VideoEditorTaskListOut:
-        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
+        await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
         rows = await self.session.scalars(
             select(VideoEditorTask)
             .where(
                 VideoEditorTask.project_id == project_id,
-                VideoEditorTask.workspace_id == self.workspace_id,
+                VideoEditorTask.owner_user_id == self.owner_user_id,
                 VideoEditorTask.kind == "clip_merge",
             )
             .order_by(VideoEditorTask.created_at.desc())

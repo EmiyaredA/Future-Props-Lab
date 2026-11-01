@@ -17,7 +17,7 @@ export type CreativeItem = {
   revision: number;
   author_user_id: string;
   author_name: string;
-  origin_workspace_id: string;
+  origin_owner_user_id: string;
   current_release_id: string | null;
   version: number | null;
   installable: boolean;
@@ -29,7 +29,7 @@ export type CreativeRelease = Omit<
   | "status"
   | "revision"
   | "author_user_id"
-  | "origin_workspace_id"
+  | "origin_owner_user_id"
   | "current_release_id"
   | "updated_at"
 > & {

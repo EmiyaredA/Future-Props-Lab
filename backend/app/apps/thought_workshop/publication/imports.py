@@ -77,7 +77,7 @@ def preview(principal):
 async def receipt(session, principal, request_id):
     require_admin(principal)
     row = await session.get(
-        OfficialImportReceipt, (principal.workspace_id, principal.user_id, request_id)
+        OfficialImportReceipt, (principal.owner_user_id, principal.user_id, request_id)
     )
     if not row:
         raise missing()
@@ -102,7 +102,7 @@ async def import_source(session, principal, body):
     principal = await current_actor(session, principal)
     require_admin(principal)
     # Completed requests replay even after an application upgrade changes the seed.
-    key = (principal.workspace_id, principal.user_id, body.request_id)
+    key = (principal.owner_user_id, principal.user_id, body.request_id)
     prior = await session.get(OfficialImportReceipt, key)
     if prior:
         if prior.package_version != body.package_version:
@@ -131,7 +131,7 @@ async def import_source(session, principal, body):
         s.add_all(
             OfficialSource(
                 note_id=notes[o["note_id"]],
-                workspace_id=principal.workspace_id,
+                owner_user_id=principal.owner_user_id,
                 library_key=o["library_key"],
                 document_key=o["document_key"],
             )
@@ -139,7 +139,7 @@ async def import_source(session, principal, body):
         )
         s.add(
             OfficialImportReceipt(
-                workspace_id=principal.workspace_id,
+                owner_user_id=principal.owner_user_id,
                 user_id=principal.user_id,
                 request_id=body.request_id,
                 package_version=version,
@@ -148,7 +148,7 @@ async def import_source(session, principal, body):
         )
 
     return await import_backup(
-        Notes(session, principal.workspace_id, principal.user_id),
+        Notes(session, principal.owner_user_id, principal.user_id),
         get_settings(),
         PackageFile(buffer.getvalue()),
         before_write=before_write,
@@ -169,8 +169,8 @@ async def resolve_legacy(session, principal, library_key, document_key=""):
                 Publication.is_official.is_(True),
                 OfficialSource.library_key == library_key,
                 OfficialSource.document_key == document_key,
-                OfficialSource.workspace_id == Publication.workspace_id,
-                ThoughtNote.workspace_id == Publication.workspace_id,
+                OfficialSource.owner_user_id == Publication.owner_user_id,
+                ThoughtNote.owner_user_id == Publication.owner_user_id,
             )
         )
     ).all()

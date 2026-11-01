@@ -19,30 +19,28 @@ MAX_FILE_BYTES = 512 * 1024 * 1024
 CHUNK = 1024 * 1024
 
 
-def application_dir(workspace_id: str) -> Path:
+def application_dir(owner_user_id: str) -> Path:
     settings = get_settings()
-    if workspace_id == "default":
-        return (settings.runtime_path / "applications" / "director-desk").resolve()
-    if not workspace_id or Path(workspace_id).name != workspace_id:
-        raise DirectorDeskError("工作区无效", 422, "invalid_workspace")
-    return (settings.workspace_path(workspace_id) / "applications" / "director-desk").resolve()
+    if not owner_user_id or Path(owner_user_id).name != owner_user_id:
+        raise DirectorDeskError("账号无效", 422, "invalid_account")
+    return (settings.account_path(owner_user_id) / "applications" / "director-desk").resolve()
 
 
 class DirectorDeskFiles:
-    def __init__(self, session: AsyncSession, workspace_id: str):
+    def __init__(self, session: AsyncSession, owner_user_id: str):
         self.session = session
-        self.workspace_id = workspace_id
-        self.projects = DirectorDeskProjects(session, workspace_id)
+        self.owner_user_id = owner_user_id
+        self.projects = DirectorDeskProjects(session, owner_user_id)
         self.storage = AssetStorage(get_settings())
 
     def project_dir(self, project_id: str) -> Path:
         return (
-            self.storage.project_root("director-desk", project_id, workspace_id=self.workspace_id)
+            self.storage.project_root("director-desk", project_id, owner_user_id=self.owner_user_id)
             / "files"
         )
 
     def library_dir(self) -> Path:
-        return application_dir(self.workspace_id) / "library"
+        return application_dir(self.owner_user_id) / "library"
 
     async def store_project_file(self, project_id: str, upload: IncomingFile) -> DirectorFileOut:
         await self.projects.row(project_id)

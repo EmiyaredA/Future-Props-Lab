@@ -68,12 +68,12 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
 
     try:
         async with sessions() as session:
-            assert await seed_sayflow_text_catalog(session) is True
+            assert await seed_sayflow_text_catalog(session, "test-user") is True
         async with sessions() as session:
-            assert await seed_sayflow_text_catalog(session) is False
+            assert await seed_sayflow_text_catalog(session, "test-user") is False
             providers = (await session.execute(select(ModelProvider))).scalars().all()
             models = (await session.execute(select(ModelEntry))).scalars().all()
-            state = await session.get(ModelCatalogState, "default")
+            state = await session.get(ModelCatalogState, "test-user")
 
         assert {(item.name, item.kind) for item in providers} == {
             ("OpenAI 兼容网关", "openai"),
@@ -98,8 +98,9 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
             "SenseAudio 音乐生成": False,
             "SenseAudio 音效生成": False,
         }
+        provider_ids = {p.kind: p.id for p in providers}
         openai_models = sorted(
-            (item for item in models if item.provider_id == "f0000000-0000-4000-8000-000000000001"),
+            (item for item in models if item.provider_id == provider_ids["openai"]),
             key=lambda item: item.sort_order,
         )
         assert [(item.slug, item.capabilities, item.description) for item in openai_models] == list(
@@ -110,17 +111,17 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
         assert {
             (item.slug, tuple(item.capabilities))
             for item in models
-            if item.provider_id == "f0000000-0000-4000-8000-000000000002"
+            if item.provider_id == provider_ids["anthropic"]
         } == {("claude-haiku-4-5-20251001", ("chat", "vision", "tools"))}
         assert {
             tuple(item.categories)
             for item in models
-            if item.provider_id == "f0000000-0000-4000-8000-000000000002"
+            if item.provider_id == provider_ids["anthropic"]
         } == {("text_generation",)}
         assert {
             (item.slug, tuple(item.capabilities))
             for item in models
-            if item.provider_id == "f0000000-0000-4000-8000-000000000003"
+            if item.provider_id == provider_ids["senseaudio_image"]
         } == {
             ("senseaudio-image-2.0-260319", ("image_generation",)),
             ("doubao-seedream-5-0-260128", ("image_generation",)),
@@ -129,22 +130,22 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
         assert {
             tuple(item.categories)
             for item in models
-            if item.provider_id == "f0000000-0000-4000-8000-000000000003"
+            if item.provider_id == provider_ids["senseaudio_image"]
         } == {("image_generation",)}
         assert {
             (item.slug, tuple(item.capabilities))
             for item in models
-            if item.provider_id == "f0000000-0000-4000-8000-000000000004"
+            if item.provider_id == provider_ids["senseaudio_video"]
         } == {("doubao-seedance-2-0-260128", ("video_generation",))}
         assert {
             tuple(item.categories)
             for item in models
-            if item.provider_id == "f0000000-0000-4000-8000-000000000004"
+            if item.provider_id == provider_ids["senseaudio_video"]
         } == {("video_generation",)}
         assert {
             (item.slug, tuple(item.capabilities), tuple(item.categories))
             for item in models
-            if item.provider_id == "f0000000-0000-4000-8000-000000000005"
+            if item.provider_id == provider_ids["senseaudio_asr"]
         } == {
             (
                 "senseaudio-asr-pro-1.5-260319",
@@ -155,7 +156,7 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
         assert {
             (item.slug, tuple(item.capabilities), tuple(item.categories))
             for item in models
-            if item.provider_id == "f0000000-0000-4000-8000-000000000006"
+            if item.provider_id == provider_ids["senseaudio_asr_pro"]
         } == {
             (
                 "pro-asr",
@@ -166,7 +167,7 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
         assert {
             (item.slug, tuple(item.capabilities), tuple(item.categories))
             for item in models
-            if item.provider_id == "f0000000-0000-4000-8000-000000000007"
+            if item.provider_id == provider_ids["senseaudio_realtime"]
         } == {
             (
                 "senseaudio-realtime-1.0",
@@ -177,7 +178,7 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
         assert {
             (item.slug, tuple(item.capabilities), tuple(item.categories))
             for item in models
-            if item.provider_id == "f0000000-0000-4000-8000-000000000008"
+            if item.provider_id == provider_ids["senseaudio_music"]
         } == {
             (
                 "senseaudio-music-1.0-260319",
@@ -193,7 +194,7 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
         assert {
             (item.slug, tuple(item.capabilities), tuple(item.categories))
             for item in models
-            if item.provider_id == "f0000000-0000-4000-8000-000000000009"
+            if item.provider_id == provider_ids["senseaudio_sfx"]
         } == {
             (
                 "senseaudio-sfx-1.0-260626",

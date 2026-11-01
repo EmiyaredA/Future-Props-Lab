@@ -8,7 +8,7 @@ from starlette.background import BackgroundTask
 from app.apps.thought_workshop.content_exports import convert, export_note
 from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.schemas.conversion import ThoughtMarkdownIn, ThoughtMarkdownOut
-from app.deps import SessionDep, WorkspaceDep
+from app.deps import OwnerDep, SessionDep
 
 router = APIRouter(prefix="/thought-workshop", tags=["thought-workshop"])
 
@@ -21,10 +21,8 @@ async def call(operation):
 
 
 @router.post("/markdown/convert", response_model=ThoughtMarkdownOut)
-async def convert_markdown(
-    body: ThoughtMarkdownIn, session: SessionDep, workspace_id: WorkspaceDep
-):
-    return await call(convert(session, workspace_id, body))
+async def convert_markdown(body: ThoughtMarkdownIn, session: SessionDep, owner_user_id: OwnerDep):
+    return await call(convert(session, owner_user_id, body))
 
 
 @router.get(
@@ -40,12 +38,12 @@ async def convert_markdown(
 )
 async def export_note_content(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     note_id: str,
     expected_revision: int = Query(ge=0),
     format: Literal["md", "html"] = "md",
 ):
-    path = await call(export_note(session, workspace_id, note_id, expected_revision, format))
+    path = await call(export_note(session, owner_user_id, note_id, expected_revision, format))
     return FileResponse(
         path,
         filename=path.name,

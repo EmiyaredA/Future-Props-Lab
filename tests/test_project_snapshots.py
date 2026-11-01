@@ -27,16 +27,25 @@ from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.identity.principal import StudioPrincipal
 from app.deps import SessionDep, require_studio_auth
 from app.main import app
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 
 
 async def _reset_projects() -> None:
+    from tests.account_fixtures import clear_private_projects
+
+    await clear_private_projects()
     async with SessionLocal() as session:
         await session.execute(delete(VideoEditorProject))
-        await session.execute(delete(GalgameWorkshopProject))
-        await session.execute(delete(VisualWorkshopProject))
+        await session.execute(
+            delete(GalgameWorkshopProject).where(
+                GalgameWorkshopProject.owner_user_id == "test-user"
+            )
+        )
+        await session.execute(
+            delete(VisualWorkshopProject).where(VisualWorkshopProject.owner_user_id == "test-user")
+        )
         await session.commit()
 
 
@@ -105,7 +114,7 @@ async def test_visual_snapshot_round_trip_turns_shared_assets_into_private_copie
             "project.json",
             manifest["assets"][0]["path"],
         }
-        assert "workspace_id" not in json.dumps(bundle)
+        assert "owner_user_id" not in json.dumps(bundle)
 
         imported = await _import(
             client, "/v1/visual-workshop/projects/snapshot-imports", exported.content
@@ -350,7 +359,7 @@ async def test_snapshot_import_rejects_wrong_app_tampering_and_unsafe_members() 
             {
                 "code": "model_binding_unavailable",
                 "field": "canvas.nodes[0].generation_draft.model_id",
-                "message": "原生成模型在当前 Workspace 中不可用，请重新选择。",
+                "message": "原生成模型在当前账号中不可用，请重新选择。",
             }
         ]
         copied_canvas = (
@@ -464,18 +473,14 @@ async def test_open_folder_uses_server_derived_paths_and_requires_browser_sessio
             assert response.status_code == 200, response.text
             assert calls[-1] == [
                 "open",
-                str(storage.project_root(application_id, project_id, workspace_id="default")),
+                str(storage.project_root(application_id, project_id, owner_user_id="test-user")),
             ]
 
         async def api_key_principal(session: SessionDep) -> StudioPrincipal:
-            bind_workspace(session, "default")
+            bind_owner(session, "test-user")
             return StudioPrincipal(
+                platform_role="admin",
                 user_id="api-key",
-                workspace_id="default",
-                membership_id=None,
-                workspace_access="owner",
-                member_role="owner",
-                is_platform_admin=True,
                 must_change_password=False,
                 auth_kind="management_api_key",
                 scopes=frozenset({"studio:read", "studio:write"}),
@@ -507,7 +512,9 @@ async def test_open_folder_platform_command_mapping(monkeypatch: pytest.MonkeyPa
     )
     for system, executable in (("Darwin", "open"), ("Windows", "explorer"), ("Linux", "xdg-open")):
         monkeypatch.setattr(folder_module.platform, "system", lambda value=system: value)
-        await open_project_folder(StorageStub(), "video-editor", "project", workspace_id="default")
+        await open_project_folder(
+            StorageStub(), "video-editor", "project", owner_user_id="test-user"
+        )
         assert calls[-1] == [executable, str(root)]
 
 
@@ -527,7 +534,7 @@ async def test_open_library_folder_uses_library_root_and_requires_browser_sessio
         visual_project_id=None,
         galgame_project_id=None,
         video_editor_project_id=None,
-        workspace_id="default",
+        owner_user_id="test-user",
     )
     library_root.mkdir(parents=True, exist_ok=True)
     missing = Path(get_settings().runtime_path) / "missing-library-assets"
@@ -549,14 +556,10 @@ async def test_open_library_folder_uses_library_root_and_requires_browser_sessio
         assert absent.json()["code"] == "library_folder_missing"
 
         async def api_key_principal(session: SessionDep) -> StudioPrincipal:
-            bind_workspace(session, "default")
+            bind_owner(session, "test-user")
             return StudioPrincipal(
+                platform_role="admin",
                 user_id="api-key",
-                workspace_id="default",
-                membership_id=None,
-                workspace_access="owner",
-                member_role="owner",
-                is_platform_admin=True,
                 must_change_password=False,
                 auth_kind="management_api_key",
                 scopes=frozenset({"studio:read", "studio:write"}),
@@ -586,14 +589,10 @@ async def test_snapshot_endpoints_treat_other_workspace_projects_as_missing() ->
         video = (await client.post("/v1/video-editor/projects", json={"title": "E"})).json()
 
         async def other_workspace(session: SessionDep) -> StudioPrincipal:
-            bind_workspace(session, "other-workspace")
+            bind_owner(session, "other-workspace")
             return StudioPrincipal(
+                platform_role="admin",
                 user_id="other-user",
-                workspace_id="other-workspace",
-                membership_id="other-membership",
-                workspace_access="owner",
-                member_role="owner",
-                is_platform_admin=False,
                 must_change_password=False,
                 auth_kind="session",
                 scopes=frozenset({"studio:read", "studio:private_read", "studio:write"}),
@@ -618,7 +617,7 @@ async def test_snapshot_endpoints_treat_other_workspace_projects_as_missing() ->
 async def test_startup_reconciles_interrupted_snapshot_project_roots() -> None:
     await _reset_projects()
     storage = AssetStorage(get_settings())
-    orphan = storage.project_root("visual-workshop", "orphan-import", workspace_id="default")
+    orphan = storage.project_root("visual-workshop", "orphan-import", owner_user_id="test-user")
     (orphan / "assets").mkdir(parents=True)
     (orphan / ".snapshot-importing").write_text("1", encoding="ascii")
     transport = httpx.ASGITransport(app=app)
@@ -629,7 +628,7 @@ async def test_startup_reconciles_interrupted_snapshot_project_roots() -> None:
                 json={"title": "Committed", "kind": "canvas"},
             )
         ).json()
-    committed = storage.project_root("visual-workshop", project["id"], workspace_id="default")
+    committed = storage.project_root("visual-workshop", project["id"], owner_user_id="test-user")
     marker = committed / ".snapshot-importing"
     marker.write_text("1", encoding="ascii")
     async with SessionLocal() as session:

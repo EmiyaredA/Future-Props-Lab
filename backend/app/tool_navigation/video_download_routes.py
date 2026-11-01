@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 
-from app.deps import WorkspaceDep
+from app.deps import OwnerDep
 from app.tool_navigation.video_download import (
     VideoDownloadDepsOut,
     VideoDownloadError,
@@ -35,10 +35,10 @@ def get_video_download_deps() -> VideoDownloadDepsOut:
 @router.post("/jobs", response_model=VideoDownloadJobOut)
 async def post_video_download_job(
     body: VideoDownloadJobCreate,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
 ) -> VideoDownloadJobOut:
     try:
-        return create_job(body, workspace_id=workspace_id)
+        return create_job(body, owner_user_id=owner_user_id)
     except VideoDownloadError as exc:
         raise _http_error(exc) from exc
     except ValueError as exc:
@@ -46,9 +46,9 @@ async def post_video_download_job(
 
 
 @router.get("/jobs/{job_id}", response_model=VideoDownloadJobOut)
-def get_video_download_job(job_id: str, workspace_id: WorkspaceDep) -> VideoDownloadJobOut:
+def get_video_download_job(job_id: str, owner_user_id: OwnerDep) -> VideoDownloadJobOut:
     try:
-        return get_job(job_id, workspace_id=workspace_id).to_out()
+        return get_job(job_id, owner_user_id=owner_user_id).to_out()
     except VideoDownloadError as exc:
         raise _http_error(exc) from exc
 
@@ -64,9 +64,9 @@ def get_video_download_job(job_id: str, workspace_id: WorkspaceDep) -> VideoDown
         }
     },
 )
-def download_video_download_file(job_id: str, workspace_id: WorkspaceDep) -> FileResponse:
+def download_video_download_file(job_id: str, owner_user_id: OwnerDep) -> FileResponse:
     try:
-        path, filename = job_file(job_id, workspace_id=workspace_id)
+        path, filename = job_file(job_id, owner_user_id=owner_user_id)
     except VideoDownloadError as exc:
         raise _http_error(exc) from exc
     return FileResponse(path, filename=filename, media_type="application/octet-stream")

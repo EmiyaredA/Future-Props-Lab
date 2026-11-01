@@ -252,6 +252,7 @@ async def test_cancelled_transport_is_not_retried():
 
 def test_reproduction_uses_same_protocol_thinking_mode_and_default_address():
     row = LlmCallLog(
+        owner_user_id="test-user",
         id="log",
         provider_kind="deepseek",
         model="deepseek-flash",

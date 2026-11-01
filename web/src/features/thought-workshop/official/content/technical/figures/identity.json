@@ -21,7 +21,7 @@
       "y": 185,
       "width": 220,
       "height": 110,
-      "text": "StudioPrincipal\n空间 A + 有效权限",
+      "text": "StudioPrincipal\n账号 A + 有效权限",
       "fill": "#edf2fb",
       "stroke": "#365f62",
       "icon": "server"
@@ -33,7 +33,7 @@
       "y": 55,
       "width": 220,
       "height": 110,
-      "text": "空间 A 的项目\n通过归属校验",
+      "text": "账号 A 的项目\n通过归属校验",
       "fill": "#eef5f3",
       "stroke": "#365f62"
     },
@@ -44,7 +44,7 @@
       "y": 315,
       "width": 220,
       "height": 110,
-      "text": "空间 B 的项目\n按不存在处理",
+      "text": "账号 B 的项目\n按不存在处理",
       "fill": "#f2edf8",
       "stroke": "#365f62"
     }

@@ -69,23 +69,6 @@
   font-size: 13px;
   color: var(--muted);
 }
-.governance-matrix-scroll {
-  overflow-x: auto;
-}
-.governance-matrix {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 690px;
-}
-.governance-matrix td:not(:first-child),
-.governance-matrix th:not(:first-child) {
-  text-align: center;
-  width: 15%;
-}
-.governance-matrix td:first-child {
-  width: 55%;
-}
-.governance-matrix small,
 .management-table td > small {
   display: block;
   margin-top: 7px;
@@ -298,47 +281,6 @@
   .governance-save-bar .button-row > button {
     flex: 1;
   }
-  .governance-matrix-scroll .management-table {
-    display: table;
-  }
-  .governance-matrix-scroll .management-table thead {
-    display: table-header-group;
-  }
-  .governance-matrix-scroll .management-table tbody {
-    display: table-row-group;
-  }
-  .governance-matrix-scroll .management-table tr {
-    display: table-row;
-  }
-  .governance-matrix-scroll .management-table td,
-  .governance-matrix-scroll .management-table th {
-    display: table-cell;
-  }
-}
-
-.governance-matrix th {
-  padding: 16px 24px;
-  background: var(--surface-soft);
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 600;
-  text-align: left;
-}
-.governance-matrix td {
-  padding: 22px 24px;
-  border-top: 1px solid var(--border);
-  font-size: 14px;
-  line-height: 1.5;
-  vertical-align: middle;
-}
-.governance-matrix td strong {
-  display: block;
-  font-weight: 600;
-}
-.governance-cross-logs {
-  display: flex;
-  justify-content: flex-end;
-  margin: 20px 24px 0;
 }
 .governance-template-secrets {
   display: grid;
@@ -351,4 +293,35 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
+}
+.governance-target-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 18px;
+  padding: 8px 24px 24px;
+}
+.governance-target-form > label {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+  font-size: 13px;
+}
+.governance-target-form input {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--text);
+}
+.governance-target-form > [role="alert"] {
+  grid-column: 1 / -1;
+}
+@media (max-width: 767px) {
+  .governance-target-form {
+    grid-template-columns: 1fr;
+    padding: 8px 18px 18px;
+  }
 }

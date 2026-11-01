@@ -8,17 +8,14 @@ import {
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookOpen, Search } from "lucide-react";
-import {
-  useAccountId,
-  useWorkspaceId,
-} from "@platform/auth/WorkspacePermissions";
+import { useAccountId } from "@platform/auth/AccountAccess";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { TextInputDialog } from "@shared/ui/TextInputDialog";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { KnowledgeSidebar } from "./KnowledgeSidebar";
 import { PublicationDialog } from "./community/PublicationDialog";
 import { KnowledgeSections, type KnowledgeSection } from "./KnowledgeSections";
-import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
+import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { NoteReaderPane } from "./NoteReaderPane";
 import { useDocumentChrome } from "./document-layout/useDocumentChrome";
 import { ProjectLibraryCard } from "@shared/ui/project-library/ProjectLibraryCard";
@@ -92,14 +89,13 @@ export function ThoughtWorkshopPage({
   onNavigateSection?: (section: KnowledgeSection) => void;
 }) {
   const documentUI = useDocumentChrome();
-  const canPublish = useWorkspacePermission("workspace.manage");
-  const canSync = useWorkspacePermission("configuration.manage");
+  const canPublish = useAccountPermission("content.write");
+  const canSync = useAccountPermission("configuration.manage");
   const [syncOpen, setSyncOpen] = useState(false);
   const [publishing, setPublishing] = useState(false),
     [reading, setReading] = useState(false);
   const client = useQueryClient();
-  const accountId = useAccountId(),
-    workspaceId = useWorkspaceId();
+  const accountId = useAccountId();
   const [discovery, setDiscovery] = useState(false),
     [templatesOpen, setTemplatesOpen] = useState(false);
   const [copySource, setCopySource] = useState<NoteSummary | null>(null);
@@ -678,7 +674,7 @@ export function ThoughtWorkshopPage({
                     </div>
                   ) : note.data.kind === "multitable" ? (
                     <TableEditor
-                      key={`${accountId}:${workspaceId}:${note.data.id}`}
+                      key={`${accountId}:${accountId}:${note.data.id}`}
                       noteId={note.data.id}
                       note={note.data}
                       readOnly={reading}
@@ -693,7 +689,7 @@ export function ThoughtWorkshopPage({
                   ) : (
                     <NoteEditorPane
                       documentChrome={documentUI.chrome}
-                      key={`${accountId}:${workspaceId}:${note.data.id}`}
+                      key={`${accountId}:${accountId}:${note.data.id}`}
                       note={note.data}
                       onSaved={save}
                       onOpen={open}

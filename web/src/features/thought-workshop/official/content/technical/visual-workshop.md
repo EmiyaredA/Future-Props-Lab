@@ -82,7 +82,7 @@ sequenceDiagram
 
 ```mermaid
 flowchart LR
-  G[GIF 上传] --> V[Workspace、节点和 revision 校验]
+  G[GIF 上传] --> V[账号、节点和 revision 校验]
   V --> C[有界临时文件与单次动画转换]
   C --> M[无声 MP4]
   M --> S[素材与输出版本 CAS 保存]
@@ -97,7 +97,7 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-  D[确认删除上传版本] --> V[Workspace、节点与固定引用校验]
+  D[确认删除上传版本] --> V[账号、节点与固定引用校验]
   V --> C[取得画布 revision CAS]
   C --> H[移除版本记录]
   H --> F{删除的是最终版？}

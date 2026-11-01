@@ -1,4 +1,4 @@
-import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
+import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -76,7 +76,7 @@ export function VisualWorkshopTasksPage({
   onOpenProject: (projectId: string) => void;
   onOpenAssets: (projectId: string) => void;
 }) {
-  const canWrite = useWorkspacePermission("content.write");
+  const canWrite = useAccountPermission("content.write");
   const client = useQueryClient();
   const [projectId, setProjectId] = useState("");
   const [kind, setKind] = useState<"" | "image" | "video">("");

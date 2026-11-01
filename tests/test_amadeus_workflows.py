@@ -13,7 +13,7 @@ from app.console.amadeus.schemas import ModelTurnIn
 from app.console.models.accounts import User
 from app.console.routes.amadeus import validate_model_turn
 from app.main import app
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.db import SessionLocal
 from db.migrations.registry import LATEST_MIGRATION_ID
 from db.migrations.runner import apply_migrations, check_migrations, connect_database
@@ -26,7 +26,7 @@ def desktop_amadeus(monkeypatch: pytest.MonkeyPatch) -> None:
 
 async def _test_user() -> None:
     async with SessionLocal() as session:
-        bind_workspace(session, "default")
+        bind_owner(session, "test-user")
         if await session.get(User, "test-user") is None:
             session.add(
                 User(
@@ -231,7 +231,7 @@ async def test_amadeus_plan_to_agent_adds_video_draft_after_restored_approval() 
         async with SessionLocal() as session:
             await validate_model_turn(
                 session,
-                SimpleNamespace(workspace_id="default", user_id="test-user"),
+                SimpleNamespace(owner_user_id="test-user", user_id="test-user"),
                 ModelTurnIn(
                     model_id="mock",
                     run_id=plan["id"],

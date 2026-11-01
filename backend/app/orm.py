@@ -1,8 +1,6 @@
-"""ORM assembly: mapper imports and workspace-scoped session rules."""
+"""ORM assembly: mapper imports and account-scoped session rules."""
 
 from __future__ import annotations
-
-from typing import Any
 
 from sqlalchemy import event
 from sqlalchemy.orm import Session, with_loader_criteria
@@ -122,6 +120,7 @@ from app.capabilities.asset_store.models import (
     VisualAssetFolder,
     VisualProjectAssetReference,
 )
+from app.capabilities.asset_store.upgrade_records import AccountStorageUpgradeRoot
 from app.console.amadeus.models import (
     AmadeusAction,
     AmadeusConversation,
@@ -144,9 +143,6 @@ from app.console.models import (
     RuntimeAdmission,
     SecurityAuditEvent,
     User,
-    Workspace,
-    WorkspaceInvitation,
-    WorkspaceMembership,
 )
 from app.integrations.external.models import ExternalConnection
 from app.integrations.models import (
@@ -172,6 +168,7 @@ from app.llm.models import (
 )
 from app.llm.models.model_inference import ModelInferenceAsset, ModelInferenceTask
 from app.runtime.orm_base import Base
+from app.runtime.ownership import TenantScopeError, bind_owner, require_owner_id
 from app.runtime.project_operations import ProjectOperationReceipt
 from app.tool_navigation.models import (
     ToolNavigationItem,
@@ -205,17 +202,6 @@ CERTIFIABLE_PROJECT_ROOTS: dict[str, type] = {
     "visual": VisualWorkshopProject,
 }
 
-# Public workspace projection for migrated apps.
-PUBLIC_WORKSPACE_PROJECT_MODELS: dict[str, type] = {
-    "galgame": GalgameWorkshopProject,
-    "visual": VisualWorkshopProject,
-}
-
-PUBLIC_WORKSPACE_GALGAME_MODELS: dict[str, type] = {
-    "asset_reference": GalgameProjectAssetReference,
-    "story": GalgameStoryDocument,
-}
-
 # Runtime quota task kinds owned by migrated apps and llm.
 RUNTIME_QUOTA_TASK_MODELS: dict[str, type] = {
     "visual_acceptance": AcceptanceRun,
@@ -238,6 +224,7 @@ LAYOUT_PROJECT_MODELS: dict[str, type] = {
 
 # Ensure reference mappers are registered on Base.metadata for capability queries.
 _ = (
+    AccountStorageUpgradeRoot,
     PresentationTemplateAsset,
     PresentationExampleAsset,
     PresentationAssetReference,
@@ -272,9 +259,6 @@ _ = (
     RuntimeAdmission,
     SecurityAuditEvent,
     User,
-    Workspace,
-    WorkspaceInvitation,
-    WorkspaceMembership,
 )
 
 TENANT_MODELS = (
@@ -358,8 +342,8 @@ TENANT_MODELS = (
 
 @event.listens_for(Session, "do_orm_execute")
 def _scope_tenant_selects(execute_state) -> None:
-    workspace_id = execute_state.session.info.get("workspace_id")
-    if not workspace_id or execute_state.session.info.get("tenant_bypass"):
+    owner_user_id = execute_state.session.info.get("owner_user_id")
+    if not owner_user_id or execute_state.session.info.get("tenant_bypass"):
         return
     statement = execute_state.statement
     if execute_state.is_select:
@@ -367,7 +351,7 @@ def _scope_tenant_selects(execute_state) -> None:
             statement = statement.options(
                 with_loader_criteria(
                     model,
-                    lambda cls: cls.workspace_id == workspace_id,
+                    lambda cls: cls.owner_user_id == owner_user_id,
                     include_aliases=True,
                 )
             )
@@ -379,41 +363,23 @@ def _scope_tenant_selects(execute_state) -> None:
     mapper = execute_state.bind_mapper
     if mapper is None or mapper.class_ not in TENANT_MODELS:
         return
-    workspace_column = mapper.local_table.c.get("workspace_id")
-    if workspace_column is None:
+    owner_column = mapper.local_table.c.get("owner_user_id")
+    if owner_column is None:
         return
-    execute_state.statement = statement.where(workspace_column == workspace_id)
+    execute_state.statement = statement.where(owner_column == owner_user_id)
 
 
 @event.listens_for(Session, "before_flush")
-def _assign_workspace(session: Session, _flush_context, _instances) -> None:
-    workspace_id = session.info.get("workspace_id")
-    if not workspace_id or session.info.get("tenant_bypass"):
+def _assign_owner(session: Session, _flush_context, _instances) -> None:
+    owner_user_id = session.info.get("owner_user_id")
+    if not owner_user_id or session.info.get("tenant_bypass"):
         return
     for row in session.new:
-        if isinstance(row, TENANT_MODELS) and getattr(row, "workspace_id", None) in {
-            None,
-            "default",
-        }:
-            row.workspace_id = workspace_id
-    for row in {*session.dirty, *session.deleted}:
-        if isinstance(row, TENANT_MODELS) and getattr(row, "workspace_id", None) != workspace_id:
-            raise TenantScopeError(f"{type(row).__name__} does not belong to the bound workspace")
-
-
-class TenantScopeError(RuntimeError):
-    """Raised when an ORM write crosses the workspace bound to its session."""
-
-
-def require_workspace_id(value: object, *, subject: str = "resource") -> str:
-    workspace_id = str(value or "").strip()
-    if not workspace_id:
-        raise TenantScopeError(f"{subject} is missing workspace ownership")
-    return workspace_id
-
-
-def bind_workspace(session: Any, workspace_id: str) -> None:
-    session.info["workspace_id"] = require_workspace_id(workspace_id, subject="database session")
+        if isinstance(row, TENANT_MODELS) and getattr(row, "owner_user_id", None) is None:
+            row.owner_user_id = owner_user_id
+    for row in {*session.new, *session.dirty, *session.deleted}:
+        if isinstance(row, TENANT_MODELS) and getattr(row, "owner_user_id", None) != owner_user_id:
+            raise TenantScopeError(f"{type(row).__name__} does not belong to the bound account")
 
 
 __all__ = [
@@ -436,11 +402,9 @@ __all__ = [
     "CERTIFIABLE_PROJECT_ROOTS",
     "DESKTOP_UI_ROOTS",
     "LAYOUT_PROJECT_MODELS",
-    "PUBLIC_WORKSPACE_GALGAME_MODELS",
-    "PUBLIC_WORKSPACE_PROJECT_MODELS",
     "RUNTIME_QUOTA_TASK_MODELS",
     "TENANT_MODELS",
     "TenantScopeError",
-    "bind_workspace",
-    "require_workspace_id",
+    "bind_owner",
+    "require_owner_id",
 ]

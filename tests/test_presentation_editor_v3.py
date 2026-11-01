@@ -6,12 +6,13 @@ import json
 import httpx
 import pytest
 from pptx import Presentation
+from tests.migration_fixtures import apply_migrations
 from tests.presentation_helpers import sample_document
 
 from app.apps.presentation_workshop.pptx_export import write_pptx
 from app.apps.presentation_workshop.schemas.document import PresentationDocument
 from app.main import app
-from db.migrations import apply_migrations, runner
+from db.migrations import runner
 from db.migrations.runner import connect_database
 
 

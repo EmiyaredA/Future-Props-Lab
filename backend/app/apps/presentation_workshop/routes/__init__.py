@@ -17,7 +17,7 @@ from app.apps.presentation_workshop.schemas.document import (
 )
 from app.apps.presentation_workshop.schemas.operations import PresentationOperationsIn
 from app.capabilities.asset_store import AssetStorage
-from app.deps import SessionDep, WorkspaceDep
+from app.deps import OwnerDep, SessionDep
 from app.runtime.config import get_settings
 from app.runtime.operation_receipts import OperationError
 
@@ -45,38 +45,36 @@ async def mapped_operation(operation):
 @router.get("/projects", response_model=PresentationProjectList)
 async def list_projects(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     query: str = Query("", max_length=120),
     offset: int = Query(0, ge=0),
     limit: int = Query(30, ge=1, le=100),
 ):
-    return await Presentations(session, workspace_id).list(query, offset, limit)
+    return await Presentations(session, owner_user_id).list(query, offset, limit)
 
 
 @router.post("/projects", response_model=PresentationProjectOut)
-async def create_project(
-    session: SessionDep, workspace_id: WorkspaceDep, body: PresentationProjectIn
-):
+async def create_project(session: SessionDep, owner_user_id: OwnerDep, body: PresentationProjectIn):
     try:
-        return await Presentations(session, workspace_id).create(body)
+        return await Presentations(session, owner_user_id).create(body)
     except PresentationError as exc:
         raise mapped(exc) from None
 
 
 @router.get("/projects/{project_id}", response_model=PresentationProjectOut)
-async def get_project(session: SessionDep, workspace_id: WorkspaceDep, project_id: str):
+async def get_project(session: SessionDep, owner_user_id: OwnerDep, project_id: str):
     try:
-        return await Presentations(session, workspace_id).get(project_id)
+        return await Presentations(session, owner_user_id).get(project_id)
     except PresentationError as exc:
         raise mapped(exc) from None
 
 
 @router.put("/projects/{project_id}", response_model=PresentationProjectOut)
 async def put_project(
-    session: SessionDep, workspace_id: WorkspaceDep, project_id: str, body: PresentationProjectPut
+    session: SessionDep, owner_user_id: OwnerDep, project_id: str, body: PresentationProjectPut
 ):
     try:
-        return await Presentations(session, workspace_id).put(project_id, body)
+        return await Presentations(session, owner_user_id).put(project_id, body)
     except PresentationError as exc:
         raise mapped(exc) from None
 
@@ -84,12 +82,12 @@ async def put_project(
 @router.delete("/projects/{project_id}")
 async def delete_project(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     project_id: str,
     expected_revision: int = Query(ge=0),
 ) -> dict[str, bool]:
     try:
-        await Presentations(session, workspace_id).delete(project_id, expected_revision)
+        await Presentations(session, owner_user_id).delete(project_id, expected_revision)
         return {"deleted": True}
     except PresentationError as exc:
         raise mapped(exc) from None
@@ -97,9 +95,9 @@ async def delete_project(
 
 @router.post("/projects/{project_id}/operations", response_model=PresentationProjectOut)
 async def apply_presentation_operations(
-    project_id: str, body: PresentationOperationsIn, session: SessionDep, workspace_id: WorkspaceDep
+    project_id: str, body: PresentationOperationsIn, session: SessionDep, owner_user_id: OwnerDep
 ):
-    return await mapped_operation(presentation_operations(session, workspace_id, project_id, body))
+    return await mapped_operation(presentation_operations(session, owner_user_id, project_id, body))
 
 
 @router.post(
@@ -116,11 +114,11 @@ async def apply_presentation_operations(
     },
 )
 async def export_pptx(
-    session: SessionDep, workspace_id: WorkspaceDep, project_id: str, body: PresentationExportIn
+    session: SessionDep, owner_user_id: OwnerDep, project_id: str, body: PresentationExportIn
 ):
     try:
         result = await export_project(
-            Presentations(session, workspace_id),
+            Presentations(session, owner_user_id),
             AssetStorage(get_settings()),
             project_id,
             body.expected_revision,

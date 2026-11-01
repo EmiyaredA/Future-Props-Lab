@@ -1,5 +1,6 @@
+import { AccountStorageUpgrade } from "@features/accounts/AccountStorageUpgrade";
 import { registerAccount } from "@features/accounts/platformApi";
-import { WorkspacePermissionsProvider } from "@platform/auth/WorkspacePermissions";
+import { AccountAccessProvider } from "@platform/auth/AccountAccess";
 import {
   type FormEvent,
   Fragment,
@@ -11,10 +12,7 @@ import {
   useState,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  AUTH_REQUIRED_EVENT,
-  WORKSPACE_CHANGED_EVENT,
-} from "@platform/api/studioAuth";
+import { AUTH_REQUIRED_EVENT } from "@platform/api/studioAuth";
 import { BrandMark } from "@shared/ui/BrandMark";
 import {
   type AuthMe,
@@ -26,7 +24,6 @@ import {
   getMe,
   login as loginAccount,
   logout as logoutAccount,
-  switchWorkspace as switchAccountWorkspace,
 } from "@features/accounts/api";
 import { clearRetainedRealtimeVoiceState } from "@features/models/realtime/realtimeVoiceMemory";
 import { useResourceBroadcastSync } from "@app/useResourceBroadcastSync";
@@ -65,9 +62,8 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
       if (
         previous &&
         (previous.user.id !== current.user.id ||
-          previous.workspace.id !== current.workspace.id ||
-          JSON.stringify(previous.workspace.permission_keys) !==
-            JSON.stringify(current.workspace.permission_keys))
+          JSON.stringify(previous.permission_keys) !==
+            JSON.stringify(current.permission_keys))
       ) {
         clearRetainedRealtimeVoiceState();
         await queryClient.cancelQueries();
@@ -96,14 +92,6 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
       setMe(null);
       setStatus("signed-out");
     };
-    const workspaceChanged = () => {
-      void window.futurePropsDesktop?.publishPetContext?.(null);
-      const event = new CustomEvent("future-props:before-workspace-switch", {
-        cancelable: true,
-        detail: () => window.location.reload(),
-      });
-      if (window.dispatchEvent(event)) window.location.reload();
-    };
     const permissionsChanged = () => {
       if (identityRef.current) void refresh();
     };
@@ -114,12 +102,6 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
       permissionsChanged,
     );
     window.addEventListener(AUTH_REQUIRED_EVENT, signedOut);
-    window.addEventListener(WORKSPACE_CHANGED_EVENT, workspaceChanged);
-    const channel =
-      typeof BroadcastChannel === "undefined"
-        ? null
-        : new BroadcastChannel("future-props-workspace");
-    if (channel) channel.onmessage = workspaceChanged;
     return () => {
       window.clearInterval(timer);
       window.removeEventListener("focus", permissionsChanged);
@@ -128,8 +110,6 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
         permissionsChanged,
       );
       window.removeEventListener(AUTH_REQUIRED_EVENT, signedOut);
-      window.removeEventListener(WORKSPACE_CHANGED_EVENT, workspaceChanged);
-      channel?.close();
     };
   }, [queryClient, refresh]);
 
@@ -197,32 +177,6 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
         setMe(null);
         setStatus("signed-out");
       },
-      switchWorkspace: async (workspaceId: string) => {
-        const perform = async () => {
-          await switchAccountWorkspace(workspaceId);
-          clearRetainedRealtimeVoiceState();
-          queryClient.clear();
-          if (typeof BroadcastChannel !== "undefined") {
-            const channel = new BroadcastChannel("future-props-workspace");
-            channel.postMessage({ workspace_id: workspaceId });
-            channel.close();
-          }
-          window.location.assign("/home");
-        };
-        const event = new CustomEvent("future-props:before-workspace-switch", {
-          cancelable: true,
-          detail: () => {
-            void perform().catch((reason: unknown) => {
-              setError(
-                reason instanceof Error
-                  ? reason.message
-                  : "工作区切换失败，请重试",
-              );
-            });
-          },
-        });
-        if (window.dispatchEvent(event)) await perform();
-      },
     };
   }, [me, queryClient, refresh]);
 
@@ -241,7 +195,7 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
             </h1>
             <p>
               {registration
-                ? "使用邀请码创建个人账号与工作区。"
+                ? "使用邀请码创建个人账号。"
                 : registrationAllowed
                   ? "使用已有账号登录，或通过邀请码注册。"
                   : "使用已有 Future Props Lab 账号登录。"}
@@ -367,12 +321,13 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
     );
   }
 
+  if (me.storage_upgrade_required) return <AccountStorageUpgrade me={me} />;
+
   return (
     <SessionContext.Provider value={context}>
-      <WorkspacePermissionsProvider
+      <AccountAccessProvider
         userId={me.user.id}
-        workspaceId={me.workspace.id}
-        permissions={me.workspace.permission_keys || []}
+        permissions={me.permission_keys || []}
       >
         {error ? (
           <div className="inline-alert danger" role="alert">
@@ -383,11 +338,11 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
           </div>
         ) : null}
         <Fragment
-          key={`${me.user.id}:${me.workspace.id}:${me.user.is_platform_admin}:${me.workspace.permission_keys?.join(",")}`}
+          key={`${me.user.id}:${me.user.is_platform_admin}:${me.permission_keys?.join(",")}`}
         >
           {children}
         </Fragment>
-      </WorkspacePermissionsProvider>
+      </AccountAccessProvider>
     </SessionContext.Provider>
   );
 }

@@ -350,7 +350,7 @@ export function ChatWindow({ projectId }: { projectId: string }) {
                 </button>
               ))
             ) : (
-              <small>当前 Workspace 没有可用的文字模型</small>
+              <small>当前账号没有可用的文字模型</small>
             )}
           </div>
           <label className="dp-chat-proactive">

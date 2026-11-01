@@ -23,20 +23,20 @@ from app.runtime.time import utc_now
 
 
 class VideoEditorAssetBakes:
-    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
         self.session = session
-        self.workspace_id = workspace_id
-        self.media = VideoEditorMedia(session, workspace_id)
+        self.owner_user_id = owner_user_id
+        self.media = VideoEditorMedia(session, owner_user_id)
 
     async def create(
         self, project_id: str, asset_id: str, body: VideoEditorAssetBakeCreateIn
     ) -> VideoEditorTaskOut:
-        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
+        await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
         existing = (
             await self.session.execute(
                 select(VideoEditorTask).where(
                     VideoEditorTask.project_id == project_id,
-                    VideoEditorTask.workspace_id == self.workspace_id,
+                    VideoEditorTask.owner_user_id == self.owner_user_id,
                     VideoEditorTask.request_id == body.request_id,
                 )
             )
@@ -67,7 +67,7 @@ class VideoEditorAssetBakes:
             raise VideoEditorValidationError("烘焙需要启用抠像参数", code="chroma_required")
 
         task = VideoEditorTask(
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             project_id=project_id,
             request_id=body.request_id,
             kind="asset_bake",
@@ -84,13 +84,13 @@ class VideoEditorAssetBakes:
         return task_out(task)
 
     async def get(self, project_id: str, task_id: str) -> VideoEditorTaskOut:
-        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
+        await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
         row = (
             await self.session.execute(
                 select(VideoEditorTask).where(
                     VideoEditorTask.id == task_id,
                     VideoEditorTask.project_id == project_id,
-                    VideoEditorTask.workspace_id == self.workspace_id,
+                    VideoEditorTask.owner_user_id == self.owner_user_id,
                     VideoEditorTask.kind == "asset_bake",
                 )
             )

@@ -13,6 +13,7 @@ import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { accountQueryKeys } from "./queryKeys";
 import { ManagementDialog, ManagementError } from "./ManagementUi";
 import { useManagementDraft } from "./useManagementDraft";
+import { TemplateSyncTarget } from "./TemplateSyncTarget";
 import {
   fetchTemplate,
   fetchSyncJob,
@@ -44,7 +45,7 @@ const purposes: { value: Capability; label: string }[] = [
   { value: "audio_generation", label: "音频生成" },
 ];
 export function ModelTemplatesPage() {
-  const [role, setRole] = useState<PlatformRole>("member");
+  const [role, setRole] = useState<PlatformRole>("user");
   const query = useQuery({
     queryKey: accountQueryKeys.template(role),
     queryFn: () => fetchTemplate(role),
@@ -56,7 +57,7 @@ export function ModelTemplatesPage() {
       <header className="management-page-head">
         <div>
           <h1>全局设置</h1>
-          <p>为各平台身份配置新工作区的模型目录，并预览同步已有工作区。</p>
+          <p>为各平台身份配置新账号的模型目录，并预览同步已有账号。</p>
         </div>
       </header>
       <div
@@ -115,6 +116,7 @@ function TemplateEditor({
   onDirty: (dirty: boolean) => void;
 }) {
   const [current, setCurrent] = useState(initial);
+  const [targetAccount, setTargetAccount] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(templateDraft(initial.value));
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
@@ -302,7 +304,7 @@ function TemplateEditor({
     <>
       <div className="governance-template-note">
         <span>
-          新工作区按拥有者身份初始化。现有空间通过下方预览后同步，自建连接及有效默认选择会保留。
+          新账号按拥有者身份初始化。现有账号通过下方预览后同步，自建连接及有效默认选择会保留。
         </span>
         <small>当前模板版本 {current.revision}</small>
       </div>
@@ -315,13 +317,13 @@ function TemplateEditor({
           canEditField: () => true,
           canDelete: () => true,
         }}
-        advancedInfo="模板密钥仅用于服务端连接，工作区不能提取或修改。"
+        advancedInfo="模板密钥仅用于服务端连接，账号不能提取或修改。"
       />
       <section className="management-list-panel governance-panel">
         <header>
           <div>
             <h2>默认模型用途</h2>
-            <p>按能力选择默认模型，未指定时沿用工作区现有选择。</p>
+            <p>按能力选择默认模型，未指定时沿用账号现有选择。</p>
           </div>
         </header>
         <div className="governance-quota-grid">
@@ -363,7 +365,7 @@ function TemplateEditor({
           <header>
             <div>
               <h2>模板连接密钥</h2>
-              <p>清除会在保存模板后生效，已有工作区在确认同步后更新。</p>
+              <p>清除会在保存模板后生效，已有账号在确认同步后更新。</p>
             </div>
           </header>
           <div className="governance-template-secrets">
@@ -396,6 +398,7 @@ function TemplateEditor({
         </section>
       )}
       <ManagementError error={error} />
+      <TemplateSyncTarget role={current.role} onChange={setTargetAccount} />
       <div className="governance-save-bar">
         <span>{dirty ? "有尚未保存的更改" : "模板已保存"}</span>
         <div className="button-row">
@@ -417,15 +420,22 @@ function TemplateEditor({
             disabled={
               busy ||
               dirty ||
+              targetAccount === "" ||
               (!draft.providers?.length && !draft.suppliers?.length)
             }
             onClick={() =>
               void work(async () =>
-                setJob(await previewTemplate(current.role, current.revision)),
+                setJob(
+                  await previewTemplate(
+                    current.role,
+                    current.revision,
+                    targetAccount ? [targetAccount] : undefined,
+                  ),
+                ),
               )
             }
           >
-            预览同步已有空间
+            预览同步已有账号
           </button>
           <button
             className="btn primary"
@@ -494,7 +504,7 @@ function TemplateEditor({
           <div className="governance-sync-items">
             {shownJob.items.map((item) => (
               <article key={item.id}>
-                <strong>{item.workspace_name}</strong>
+                <strong>{item.account_name}</strong>
                 <span>
                   {{
                     pending: "待执行",

@@ -9,7 +9,7 @@ from sqlalchemy import select
 
 from app.llm.models import ModelTestTool, ModelTestToolCall
 from app.llm.playground.test_tools import TestToolResult, execute_test_tool
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.db import SessionLocal
 from app.runtime.time import utc_now
 
@@ -37,13 +37,13 @@ class RealtimeToolExecutor:
     def __init__(
         self,
         *,
-        workspace_id: str,
+        owner_user_id: str,
         trace_id: str,
         snapshots: tuple[dict[str, Any], ...],
         emit: Callable[[dict[str, Any]], None],
         submit_result: Callable[[str, object | None, dict[str, Any] | None], None],
     ) -> None:
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
         self.trace_id = trace_id
         self.snapshots = {str(item["name"]): item for item in snapshots}
         self.emit = emit
@@ -88,7 +88,7 @@ class RealtimeToolExecutor:
         round_index: int,
     ) -> str:
         async with SessionLocal() as session:
-            bind_workspace(session.sync_session, self.workspace_id)
+            bind_owner(session.sync_session, self.owner_user_id)
             tool_id = str(snapshot.get("id") or "") or None
             if tool_id:
                 existing = await session.scalar(
@@ -97,6 +97,7 @@ class RealtimeToolExecutor:
                 if existing is None:
                     tool_id = None
             row = ModelTestToolCall(
+                owner_user_id=self.owner_user_id,
                 tool_id=tool_id,
                 source="realtime_voice",
                 action_id=call_id,
@@ -125,7 +126,7 @@ class RealtimeToolExecutor:
         duration_ms: int = 0,
     ) -> None:
         async with SessionLocal() as session:
-            bind_workspace(session.sync_session, self.workspace_id)
+            bind_owner(session.sync_session, self.owner_user_id)
             row = await session.get(ModelTestToolCall, row_id)
             if row is None:
                 return

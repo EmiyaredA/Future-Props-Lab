@@ -27,6 +27,8 @@ vi.mock("@features/files/api", async () => {
 
 const pendingStatus = {
   target_version: 2 as const,
+  account_upgrade_pending: 0,
+  restart_required: false,
   pending_projects: 2,
   pending_assets: 3,
   migrated_assets: 1,
@@ -38,6 +40,8 @@ const pendingStatus = {
 
 function batch(overrides = {}) {
   return {
+    account_upgrade_pending: 0,
+    restart_required: false,
     processed_assets: 2,
     migrated_projects: 1,
     migrated_assets: 2,
@@ -92,6 +96,8 @@ test("migrates storage in ordered batches and hides the prompt when complete", a
     .mockResolvedValueOnce(batch())
     .mockResolvedValueOnce(
       batch({
+        account_upgrade_pending: 0,
+        restart_required: false,
         processed_assets: 1,
         migrated_projects: 1,
         migrated_assets: 1,

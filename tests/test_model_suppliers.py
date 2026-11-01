@@ -14,7 +14,7 @@ pytestmark = [pytest.mark.asyncio, pytest.mark.real_auth]
 async def account_client():
     username = f"supplier-{uuid4().hex[:12]}"
     async with SessionLocal() as session:
-        _, _, password = await create_account(
+        _, password = await create_account(
             session, username=username, display_name=username, is_platform_admin=False
         )
     client = httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test")
@@ -162,9 +162,9 @@ async def test_template_supplier_name_and_deletion_are_locked_in_workspace():
     admin, _, _, _ = await client_account(admin=True)
     key = f"managed-supplier-{uuid4().hex}"
     async with aclosing(admin):
-        template = (await admin.get("/v1/platform/model-service-templates/member")).json()
+        template = (await admin.get("/v1/platform/model-service-templates/user")).json()
         response = await admin.put(
-            "/v1/platform/model-service-templates/member",
+            "/v1/platform/model-service-templates/user",
             json={
                 "expected_revision": template["revision"],
                 "value": {"suppliers": [{"template_key": key, "name": "平台分组"}]},
@@ -210,9 +210,9 @@ async def test_template_sync_preserves_supplier_connection_model_ids_and_custom_
         ],
     }
     async with aclosing(admin):
-        template = (await admin.get("/v1/platform/model-service-templates/member")).json()
+        template = (await admin.get("/v1/platform/model-service-templates/user")).json()
         response = await admin.put(
-            "/v1/platform/model-service-templates/member",
+            "/v1/platform/model-service-templates/user",
             json={"expected_revision": template["revision"], "value": payload},
         )
         assert response.status_code == 200, response.text
@@ -238,7 +238,7 @@ async def test_template_sync_preserves_supplier_connection_model_ids_and_custom_
             payload["suppliers"][0]["name"] = "新平台分组"
             payload["providers"][0]["models"][0]["label"] = "新模型名称"
             response = await admin.put(
-                "/v1/platform/model-service-templates/member",
+                "/v1/platform/model-service-templates/user",
                 json={"expected_revision": saved["revision"], "value": payload},
             )
             assert response.status_code == 200, response.text
@@ -248,7 +248,7 @@ async def test_template_sync_preserves_supplier_connection_model_ids_and_custom_
                 == "原平台分组"
             )
             preview = await admin.post(
-                "/v1/platform/model-service-templates/member/preview",
+                "/v1/platform/model-service-templates/user/preview",
                 json={"expected_template_revision": response.json()["revision"]},
             )
             assert preview.status_code == 201, preview.text

@@ -32,7 +32,7 @@ export const thoughtKeys = {
       : ([...thoughtKeys.all, "multitable-records", context, note] as const),
   multitableChoices: (context: string, query: string) =>
     [...thoughtKeys.all, "multitable-choices", context, query] as const,
-  workspaceMembers: () => [...thoughtKeys.all, "workspace-members"] as const,
+  accountDirectory: () => [...thoughtKeys.all, "account-directory"] as const,
   multitableHistory: (context: string, note: string, offset: number) =>
     [...thoughtKeys.all, "multitable-history", context, note, offset] as const,
   multitableSnapshot: (
@@ -88,8 +88,8 @@ export const thoughtKeys = {
     [...thoughtKeys.all, "official", library, "document", document] as const,
   officialSearch: (library: string, query: string) =>
     [...thoughtKeys.all, "official", library, "search", query] as const,
-  linkPreview: (workspaceId: string, url: string) =>
-    [...thoughtKeys.all, "link-preview", workspaceId, url] as const,
+  linkPreview: (accountId: string, url: string) =>
+    [...thoughtKeys.all, "link-preview", accountId, url] as const,
   notes: (query: object) => [...thoughtKeys.all, "notes", query] as const,
   projectLists: () => [...thoughtKeys.all, "projects"] as const,
   projects: (query = "", trash = false) =>

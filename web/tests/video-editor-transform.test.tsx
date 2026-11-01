@@ -1,4 +1,4 @@
-import { WorkspacePermissionsProvider } from "@platform/auth/WorkspacePermissions";
+import { AccountAccessProvider } from "@platform/auth/AccountAccess";
 import {
   act,
   fireEvent,
@@ -653,9 +653,9 @@ describe("preview transform interaction", () => {
   it("does not expose gestures without write permission or while saves are pending", () => {
     const commit = vi.fn().mockResolvedValue(undefined);
     const view = render(
-      <WorkspacePermissionsProvider permissions={[]}>
+      <AccountAccessProvider userId="test-user" permissions={[]}>
         <VideoEditorPreview {...props} commit={commit} />
-      </WorkspacePermissionsProvider>,
+      </AccountAccessProvider>,
     );
     expect(screen.queryByRole("group", { name: "画面变换操作框" })).toBeNull();
     view.rerender(<VideoEditorPreview {...props} saving commit={commit} />);

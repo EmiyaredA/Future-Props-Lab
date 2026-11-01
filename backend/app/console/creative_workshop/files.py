@@ -25,19 +25,19 @@ class CreativeFileError(ValueError):
     pass
 
 
-def _root(settings: Settings, workspace_id: str) -> Path:
-    return settings.workspace_path(workspace_id)
+def _root(settings: Settings, owner_user_id: str) -> Path:
+    return settings.account_path(owner_user_id)
 
 
-def resolve_file(workspace_id: str, relative: str, *, settings: Settings | None = None) -> Path:
-    root = _root(settings or get_settings(), workspace_id)
+def resolve_file(owner_user_id: str, relative: str, *, settings: Settings | None = None) -> Path:
+    root = _root(settings or get_settings(), owner_user_id)
     path = (root / relative).resolve()
     if not path.is_relative_to(root):
         raise CreativeFileError("文件路径无效")
     return path
 
 
-async def save_cover(workspace_id: str, upload: IncomingFile) -> str:
+async def save_cover(owner_user_id: str, upload: IncomingFile) -> str:
     payload = bytearray()
     try:
         while chunk := await upload.read(1024 * 1024):
@@ -60,7 +60,7 @@ async def save_cover(workspace_id: str, upload: IncomingFile) -> str:
             canvas = Image.new("RGB", (1200, 675), "#f8ede5")
             canvas.paste(image, ((1200 - image.width) // 2, (675 - image.height) // 2))
             relative = f"creative-workshop/covers/{uuid4().hex}.webp"
-            target = resolve_file(workspace_id, relative)
+            target = resolve_file(owner_user_id, relative)
             target.parent.mkdir(parents=True, exist_ok=True)
             canvas.save(target, format="WEBP", quality=88, method=5)
             return relative
@@ -69,12 +69,12 @@ async def save_cover(workspace_id: str, upload: IncomingFile) -> str:
 
 
 async def save_skill_draft(
-    workspace_id: str, item_id: str, upload: IncomingFile
+    owner_user_id: str, item_id: str, upload: IncomingFile
 ) -> tuple[str, dict]:
-    storage = SkillArchiveStorage(get_settings(), workspace_id)
+    storage = SkillArchiveStorage(get_settings(), owner_user_id)
     staged = await storage.stage(upload)
     relative = f"creative-workshop/skill-drafts/{item_id}/{uuid4().hex}"
-    target = resolve_file(workspace_id, relative)
+    target = resolve_file(owner_user_id, relative)
     target.parent.mkdir(parents=True, exist_ok=True)
     try:
         staged.directory.rename(target)
@@ -90,8 +90,8 @@ async def save_skill_draft(
     }
 
 
-def copy_skill_release(workspace_id: str, source_relative: str, release_id: str) -> str:
-    source = resolve_file(workspace_id, source_relative)
+def copy_skill_release(owner_user_id: str, source_relative: str, release_id: str) -> str:
+    source = resolve_file(owner_user_id, source_relative)
     if not (source / "SKILL.md").is_file():
         raise CreativeFileError("Skill 文件不可用")
     for path in source.rglob("*"):
@@ -106,7 +106,7 @@ def copy_skill_release(workspace_id: str, source_relative: str, release_id: str)
         if path.stat().st_size <= 2 * 1024 * 1024 and PRIVATE_TEXT.search(path.read_bytes()):
             raise CreativeFileError("Skill 文件疑似包含密钥，请移除后重试")
     relative = f"creative-workshop/skill-releases/{release_id}"
-    target = resolve_file(workspace_id, relative)
+    target = resolve_file(owner_user_id, relative)
     target.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(source, target)
     return relative

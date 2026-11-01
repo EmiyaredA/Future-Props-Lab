@@ -24,14 +24,16 @@ from app.llm.providers.senseaudio_audio import (
     get_music_task,
 )
 from app.main import app
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.db import SessionLocal
 
 
 async def _reset_projects() -> None:
     async with SessionLocal() as session:
         await session.execute(delete(VideoEditorProject))
-        await session.execute(delete(VisualWorkshopProject))
+        await session.execute(
+            delete(VisualWorkshopProject).where(VisualWorkshopProject.owner_user_id == "test-user")
+        )
         await session.commit()
 
 
@@ -58,6 +60,7 @@ def _media_clip(
 
 async def _ready_video_asset(project_id: str) -> str:
     asset = VisualAsset(
+        owner_user_id="test-user",
         video_editor_project_id=project_id,
         original_filename="source.mp4",
         display_name="source.mp4",
@@ -320,14 +323,10 @@ async def test_video_editor_business_routes_hide_other_workspace_projects() -> N
         ).json()
 
         async def other_workspace(session: SessionDep) -> StudioPrincipal:
-            bind_workspace(session, "other-workspace")
+            bind_owner(session, "other-workspace")
             return StudioPrincipal(
+                platform_role="admin",
                 user_id="other-user",
-                workspace_id="other-workspace",
-                membership_id="other-membership",
-                workspace_access="owner",
-                member_role="owner",
-                is_platform_admin=False,
                 must_change_password=False,
                 auth_kind="session",
                 scopes=frozenset({"studio:read", "studio:private_read", "studio:write"}),

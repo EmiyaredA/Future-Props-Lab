@@ -220,7 +220,7 @@ export function AudioAnnotationEditorDialogs({
       <ConfirmDialog
         open={confirmLeave || Boolean(pendingNavigation)}
         title="离开并放弃未保存内容？"
-        description="当前还有尚未保存到 Workspace 的修改。"
+        description="当前还有尚未保存到账号的修改。"
         confirmLabel="放弃并离开"
         onCancel={() => {
           setConfirmLeave(false);

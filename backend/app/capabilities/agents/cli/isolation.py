@@ -115,7 +115,7 @@ def dsh_connection_patches(home):
 @asynccontextmanager
 async def launch(kind, executable, root, tool_config):
     root = Path(root)
-    # Profiles may link CLI-owned credentials. Keep them outside persistent Workspace trees
+    # Profiles may link CLI-owned credentials. Keep them outside persistent account trees
     # so a killed process cannot leave external symlinks in a future offline backup.
     with TemporaryDirectory(prefix="fpl-cli-") as directory:
         profile = Path(directory)

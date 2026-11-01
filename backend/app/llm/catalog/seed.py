@@ -303,13 +303,13 @@ SAYFLOW_TEXT_CATALOG = (
 )
 
 
-async def ensure_workspace_model_catalog(session: AsyncSession, workspace_id: str) -> bool:
-    """向指定 Workspace 的全新目录播种无密钥内置供应商。"""
-    state = await session.get(ModelCatalogState, workspace_id)
+async def ensure_account_model_catalog(session: AsyncSession, owner_user_id: str) -> bool:
+    """向指定账号的全新目录播种无密钥内置供应商。"""
+    state = await session.get(ModelCatalogState, owner_user_id)
     providers = (
         (
             await session.execute(
-                select(ModelProvider).where(ModelProvider.workspace_id == workspace_id)
+                select(ModelProvider).where(ModelProvider.owner_user_id == owner_user_id)
             )
         )
         .scalars()
@@ -318,16 +318,16 @@ async def ensure_workspace_model_catalog(session: AsyncSession, workspace_id: st
     if (state is not None and state.revision != 0) or providers:
         return False
     if state is None:
-        state = ModelCatalogState(workspace_id=workspace_id, revision=0)
+        state = ModelCatalogState(owner_user_id=owner_user_id, revision=0)
         session.add(state)
         await session.flush()
 
     providers_by_id: dict[str, ModelProvider] = {}
     for provider_seed in SAYFLOW_TEXT_CATALOG:
-        provider_id = provider_seed.id if workspace_id == "default" else new_id()
+        provider_id = new_id()
         provider = ModelProvider(
             id=provider_id,
-            workspace_id=workspace_id,
+            owner_user_id=owner_user_id,
             name=provider_seed.name,
             kind=provider_seed.kind,
             base_url=provider_seed.base_url,
@@ -344,8 +344,8 @@ async def ensure_workspace_model_catalog(session: AsyncSession, workspace_id: st
         for sort_order, model_seed in enumerate(provider_seed.models):
             session.add(
                 ModelEntry(
-                    id=model_seed.id if workspace_id == "default" else new_id(),
-                    workspace_id=workspace_id,
+                    id=new_id(),
+                    owner_user_id=owner_user_id,
                     provider_id=provider.id,
                     slug=model_seed.slug,
                     label=model_seed.label,
@@ -361,8 +361,8 @@ async def ensure_workspace_model_catalog(session: AsyncSession, workspace_id: st
     return True
 
 
-async def seed_sayflow_text_catalog(session: AsyncSession) -> bool:
-    """向历史 default Workspace 播种内置供应商。"""
-    changed = await ensure_workspace_model_catalog(session, "default")
+async def seed_sayflow_text_catalog(session: AsyncSession, owner_user_id: str) -> bool:
+    """向历史 default账号播种内置供应商。"""
+    changed = await ensure_account_model_catalog(session, owner_user_id)
     await session.commit()
     return changed

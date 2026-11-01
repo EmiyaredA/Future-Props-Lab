@@ -278,7 +278,7 @@ export function RegistrationInvitesPage() {
               });
             }}
           >
-            <p>兑换成功后创建普通用户账号与个人工作区。</p>
+            <p>兑换成功后创建普通用户账号。</p>
             <label>
               名称
               <input

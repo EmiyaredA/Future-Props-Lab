@@ -29,7 +29,7 @@ from app.llm.schemas.realtime_voice import (
     RealtimeVoicePlaybackOut,
     RealtimeVoiceVadOut,
 )
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.credentials import decrypt_secret
 
 
@@ -121,9 +121,9 @@ async def list_realtime_models(session: AsyncSession) -> RealtimeVoiceOptionsOut
 
 
 async def resolve_realtime_model(
-    session: AsyncSession, *, workspace_id: str, model_id: str
+    session: AsyncSession, *, owner_user_id: str, model_id: str
 ) -> ResolvedRealtimeModel:
-    bind_workspace(session, workspace_id)
+    bind_owner(session, owner_user_id)
     row = (
         await session.execute(
             select(ModelEntry, ModelProvider)

@@ -35,14 +35,14 @@ def run_out(row):
     )
 
 
-async def review_models(session, workspace_id):
+async def review_models(session, owner_user_id):
     rows = (
         await session.execute(
             select(ModelEntry, ModelProvider)
             .join(ModelProvider, ModelProvider.id == ModelEntry.provider_id)
             .where(
-                ModelEntry.workspace_id == workspace_id,
-                ModelProvider.workspace_id == workspace_id,
+                ModelEntry.owner_user_id == owner_user_id,
+                ModelProvider.owner_user_id == owner_user_id,
                 ModelEntry.enabled.is_(True),
                 ModelProvider.enabled.is_(True),
                 ModelProvider.kind.in_(TEXT_PROVIDER_KINDS),
@@ -58,16 +58,16 @@ async def review_models(session, workspace_id):
 
 
 class Runs:
-    def __init__(self, session, workspace_id):
-        self.session, self.workspace_id = session, workspace_id
+    def __init__(self, session, owner_user_id):
+        self.session, self.owner_user_id = session, owner_user_id
 
     async def row(self, project_id, run_id):
-        await project(self.session, self.workspace_id, project_id)
+        await project(self.session, self.owner_user_id, project_id)
         row = await self.session.scalar(
             select(AcceptanceRun).where(
                 AcceptanceRun.id == run_id,
                 AcceptanceRun.project_id == project_id,
-                AcceptanceRun.workspace_id == self.workspace_id,
+                AcceptanceRun.owner_user_id == self.owner_user_id,
             )
         )
         if row is None:
@@ -78,9 +78,10 @@ class Runs:
         return run_out(await self.row(project_id, run_id))
 
     async def list(self, project_id, node_id=None, page=1):
-        await project(self.session, self.workspace_id, project_id)
+        await project(self.session, self.owner_user_id, project_id)
         query = select(AcceptanceRun).where(
-            AcceptanceRun.project_id == project_id, AcceptanceRun.workspace_id == self.workspace_id
+            AcceptanceRun.project_id == project_id,
+            AcceptanceRun.owner_user_id == self.owner_user_id,
         )
         if node_id:
             query = query.where(AcceptanceRun.node_id == node_id)

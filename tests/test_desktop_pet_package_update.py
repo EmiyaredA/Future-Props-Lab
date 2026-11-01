@@ -16,7 +16,7 @@ from app.capabilities.identity.route_permissions import route_permission
 from app.console.models.accounts import User
 from app.deps import SessionDep, require_studio_auth
 from app.main import app
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.db import SessionLocal
 from app.runtime.revisions import RevisionConflictError
 from test_desktop_pet import whale_archive
@@ -179,7 +179,7 @@ async def test_late_cas_conflict_returns_current_document_and_workspace_http_iso
     ) as client:
         pet, base, original = await imported(client)
         async with SessionLocal() as session:
-            service = DesktopPetProjects(session, "default")
+            service = DesktopPetProjects(session, "test-user")
             directory = service.whale_path(
                 pet["id"], next(iter(original["whaleAssets"].values()))
             ).parent
@@ -209,8 +209,8 @@ async def test_late_cas_conflict_returns_current_document_and_workspace_http_iso
 
         async def foreign(session: SessionDep):
             principal = await default_principal(session)
-            bind_workspace(session, "foreign")
-            return replace(principal, workspace_id="foreign", user_id="another-account")
+            bind_owner(session, "foreign")
+            return replace(principal, user_id="another-account")
 
         app.dependency_overrides[require_studio_auth] = foreign
         try:
@@ -234,7 +234,7 @@ async def test_partial_write_or_late_conflict_compensates_only_new_assets(monkey
     ) as client:
         pet, base, original = await imported(client)
         async with SessionLocal() as session:
-            service = DesktopPetProjects(session, "default")
+            service = DesktopPetProjects(session, "test-user")
             paths = [
                 service.whale_path(pet["id"], asset) for asset in original["whaleAssets"].values()
             ]

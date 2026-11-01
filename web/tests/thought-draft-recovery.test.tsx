@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
-import { WorkspacePermissionsProvider } from "@platform/auth/WorkspacePermissions";
+import { AccountAccessProvider } from "@platform/auth/AccountAccess";
 import { useNoteDraft } from "@features/thought-workshop/useNoteDraft";
 import * as api from "@features/thought-workshop/api";
 import * as storage from "@features/thought-workshop/drafts/storage";
@@ -36,7 +36,7 @@ const note: api.Note = {
 };
 const row: storage.LocalDraft = {
   userId: "user-a",
-  workspaceId: "workspace-a",
+  accountId: "user-a",
   key: "previous-tab",
   noteId: note.id,
   tabId: "previous-tab",
@@ -46,13 +46,12 @@ const row: storage.LocalDraft = {
 };
 function wrapper({ children }: { children: ReactNode }) {
   return (
-    <WorkspacePermissionsProvider
+    <AccountAccessProvider
       userId="user-a"
-      workspaceId="workspace-a"
       permissions={["content.read", "content.write"]}
     >
       {children}
-    </WorkspacePermissionsProvider>
+    </AccountAccessProvider>
   );
 }
 beforeEach(() => {
@@ -88,7 +87,7 @@ describe("owner-scoped draft recovery", () => {
     });
     await waitFor(() => expect(result.current.localReady).toBe(true));
     expect(storage.listLocalDrafts).toHaveBeenCalledWith(
-      { userId: "user-a", workspaceId: "workspace-a" },
+      { userId: "user-a", accountId: "user-a" },
       "note",
     );
     await expect(result.current.flush()).rejects.toThrow("请先恢复或丢弃");

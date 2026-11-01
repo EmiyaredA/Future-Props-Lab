@@ -13,8 +13,8 @@ import { CustomSelect } from "@shared/ui/CustomSelect";
 import { ApiKeyMoreMenu } from "./ApiKeyMoreMenu";
 import { deleteApiKey, renewApiKey, revokeApiKey, type ApiKey } from "./api";
 import { formatAccountDate } from "./formatAccountDate";
-import { workspaceAllows } from "./permissions";
-import type { useAccountWorkspacePanel } from "./useAccountWorkspacePanel";
+import { accountAllows } from "./permissions";
+import type { useAccountPanel } from "./useAccountPanel";
 import "./api-keys-settings.css";
 import "./api-keys-responsive.css";
 
@@ -56,7 +56,7 @@ function expectedRenewal(key: ApiKey, days: number, now: number) {
 export function ApiKeysSettings({
   state,
 }: {
-  state: ReturnType<typeof useAccountWorkspacePanel>;
+  state: ReturnType<typeof useAccountPanel>;
 }) {
   const {
     busy,
@@ -81,7 +81,7 @@ export function ApiKeysSettings({
   const [renewTarget, setRenewTarget] = useState<ApiKey | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ApiKey | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<ApiKey | null>(null);
-  const canWrite = workspaceAllows(me.workspace, "content.write");
+  const canWrite = accountAllows(me, "content.write");
   const [now] = useState(() => Date.now());
   const filteredKeys = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase();
@@ -141,7 +141,7 @@ export function ApiKeysSettings({
         </span>
         <div>
           <h3>管理 API 密钥</h3>
-          <p>创建、续期或删除用于当前工作区访问的管理密钥。</p>
+          <p>创建、续期或删除用于当前账号访问的管理密钥。</p>
         </div>
       </header>
 
@@ -171,7 +171,7 @@ export function ApiKeysSettings({
         <div className="api-key-card-title">
           <div>
             <h4>创建新密钥</h4>
-            <p>密钥将绑定当前工作区，创建后无法再次查看明文。</p>
+            <p>密钥将绑定当前账号，创建后无法再次查看明文。</p>
           </div>
           <Info aria-hidden />
         </div>
@@ -196,14 +196,14 @@ export function ApiKeysSettings({
               <button
                 type="button"
                 role="checkbox"
-                aria-label="允许写入当前工作区"
+                aria-label="允许写入当前账号"
                 aria-checked={canWrite && keyWrite}
                 className={`api-key-permission${canWrite && keyWrite ? " is-selected" : ""}`}
                 disabled={!canWrite}
                 onClick={() => setKeyWrite(!keyWrite)}
               >
                 <Check aria-hidden />
-                写入当前工作区
+                写入当前账号
               </button>
             </div>
           </div>
@@ -338,7 +338,7 @@ export function ApiKeysSettings({
             <span>
               {keys.length
                 ? "调整搜索或状态筛选后重试。"
-                : "在上方创建第一个工作区密钥。"}
+                : "在上方创建第一个账号密钥。"}
             </span>
           </div>
         ) : null}

@@ -1,5 +1,6 @@
 import httpx
 import pytest
+from tests.account_fixtures import account_record
 
 from app.main import app
 
@@ -127,7 +128,7 @@ async def test_project_files_roundtrip_and_delete_removes_directory():
         )
         assert rejected.status_code == 422
         root = AssetStorage(get_settings()).project_root(
-            "director-desk", project["id"], workspace_id="default"
+            "director-desk", project["id"], owner_user_id="test-user"
         )
         assert (root / "files" / key).is_file()
         assert (await client.delete(url, params={"expected_revision": 1})).status_code == 200
@@ -139,18 +140,17 @@ async def test_other_workspace_project_file_is_missing():
     from uuid import uuid4
 
     from app.apps.director_desk.models import DirectorDeskProject
-    from app.console.models import Workspace
     from app.runtime.db import SessionLocal
 
     project_id = str(uuid4())
     other = str(uuid4())
     async with SessionLocal() as session:
-        session.add(Workspace(id=other, name="隔离预演"))
+        session.add(account_record(id=other, name="隔离预演"))
         await session.flush()
         session.add(
             DirectorDeskProject(
                 id=project_id,
-                workspace_id=other,
+                owner_user_id=other,
                 title="隔离工程",
                 document={
                     "format": "director-desk",

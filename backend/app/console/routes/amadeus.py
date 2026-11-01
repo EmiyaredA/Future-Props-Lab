@@ -447,7 +447,7 @@ async def model_turn(session: SessionDep, principal: StudioAuth, body: ModelTurn
     try:
         await validate_model_turn(session, principal, body)
         credential = await snapshot_from_principal(session, principal)
-        async for line in stream_model_turn(session, principal.workspace_id, body, credential):
+        async for line in stream_model_turn(session, principal.owner_user_id, body, credential):
             event = json.loads(line)
             if event["type"] == "delta":
                 text_parts.append(event["text"])
@@ -475,7 +475,7 @@ async def model_turn_stream(
 
     async def events():
         try:
-            async for line in stream_model_turn(session, principal.workspace_id, body, credential):
+            async for line in stream_model_turn(session, principal.owner_user_id, body, credential):
                 yield line
         except OperationError as exc:
             yield json.dumps({"type": "error", "code": exc.code, "message": str(exc)}) + "\n"
@@ -495,7 +495,7 @@ async def files_list(
 ) -> FileListOut:
     try:
         await Conversations(session, principal)._get(conversation_id)
-        return FileListOut(items=list_files(principal.workspace_id, conversation_id))
+        return FileListOut(items=list_files(principal.owner_user_id, conversation_id))
     except OperationError as exc:
         raise _error(exc) from None
 
@@ -511,7 +511,7 @@ async def files_open_folder(
 ) -> dict[str, bool]:
     try:
         await Conversations(session, principal)._get(conversation_id)
-        open_work_folder(principal.workspace_id, conversation_id)
+        open_work_folder(principal.owner_user_id, conversation_id)
         return {"opened": True}
     except OperationError as exc:
         raise _error(exc) from None
@@ -523,7 +523,7 @@ async def file_download(
 ) -> Response:
     try:
         await Conversations(session, principal)._get(conversation_id)
-        data = read_file_bytes(principal.workspace_id, conversation_id, kind, name)
+        data = read_file_bytes(principal.owner_user_id, conversation_id, kind, name)
         return Response(
             data, headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(name)}"}
         )
@@ -544,7 +544,7 @@ async def file_write(
         await Conversations(session, principal)._get(conversation_id)
         return FileOut(
             **write_file(
-                principal.workspace_id,
+                principal.owner_user_id,
                 conversation_id,
                 kind,
                 name,
@@ -565,7 +565,7 @@ async def import_file(
         content = await upload.read(MAX_FILE_BYTES + 1)
         return FileOut(
             **write_file(
-                principal.workspace_id,
+                principal.owner_user_id,
                 conversation_id,
                 "imports",
                 upload.filename or "import",
@@ -585,7 +585,7 @@ async def skill_load(
 ) -> dict[str, str]:
     try:
         await Conversations(session, principal)._get(conversation_id)
-        return await load_skill(session, principal.workspace_id, conversation_id, skill_id)
+        return await load_skill(session, principal.owner_user_id, conversation_id, skill_id)
     except OperationError as exc:
         raise _error(exc) from None
 
@@ -604,7 +604,7 @@ async def skill_file_read(
     try:
         await Conversations(session, principal)._get(conversation_id)
         return read_skill_file(
-            principal.workspace_id,
+            principal.owner_user_id,
             conversation_id,
             skill_id,
             version,

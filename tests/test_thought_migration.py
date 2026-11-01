@@ -1,4 +1,5 @@
-from db.migrations import apply_migrations
+from tests.migration_fixtures import apply_migrations
+
 from db.migrations.runner import connect_database
 from db.migrations.versions.r0044_thought_workshop import SQL
 

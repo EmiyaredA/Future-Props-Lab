@@ -192,16 +192,16 @@ def rank_audio_seams(
 
 
 class VideoEditorAudioMatching:
-    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
         self.session = session
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
 
     async def candidates(
         self,
         project_id: str,
         body: AudioSeamCandidatesIn,
     ) -> AudioSeamCandidatesOut:
-        timeline = await VideoEditorTimelines(self.session, self.workspace_id).row(project_id)
+        timeline = await VideoEditorTimelines(self.session, self.owner_user_id).row(project_id)
         if timeline.revision != body.expected_revision:
             raise RevisionConflictError(
                 body.expected_revision,
@@ -211,7 +211,7 @@ class VideoEditorAudioMatching:
         _track, source, target = audio_seam_pair(
             timeline.document, body.from_clip_id, body.to_clip_id
         )
-        media = VideoEditorMedia(self.session, self.workspace_id)
+        media = VideoEditorMedia(self.session, self.owner_user_id)
         asset, metadata = await media.asset(project_id, source["assetId"])
         if asset.media_kind != "audio" or metadata.processing_status != "ready":
             raise VideoEditorValidationError("音频素材尚未准备好", code="audio_not_ready")

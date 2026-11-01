@@ -114,8 +114,8 @@ def test_pinned_manifest_and_credential_boundary():
     "role,auth,expected",
     [
         ("admin", "session", True),
-        ("super_admin", "session", True),
-        ("member", "session", False),
+        ("admin", "session", True),
+        ("user", "session", False),
         ("admin", "api_key", False),
     ],
 )

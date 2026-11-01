@@ -185,6 +185,8 @@ class StorageLayoutIssueOut(BaseModel):
 
 
 class StorageLayoutStatusOut(BaseModel):
+    account_upgrade_pending: int = 0
+    restart_required: bool = False
     target_version: Literal[2] = 2
     pending_projects: int
     pending_assets: int
@@ -196,6 +198,8 @@ class StorageLayoutStatusOut(BaseModel):
 
 
 class StorageLayoutMigrationOut(BaseModel):
+    account_upgrade_pending: int = 0
+    restart_required: bool = False
     processed_assets: int
     migrated_projects: int
     migrated_assets: int

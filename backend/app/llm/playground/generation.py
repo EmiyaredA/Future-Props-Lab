@@ -75,10 +75,10 @@ def generation_task_out(row: ModelTestGenerationTask) -> ModelTestGenerationTask
 
 class ModelTestGeneration:
     def __init__(
-        self, session: AsyncSession, workspace_id: str, settings: Settings | None = None
+        self, session: AsyncSession, owner_user_id: str, settings: Settings | None = None
     ) -> None:
         self.session = session
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
         self.settings = settings or get_settings()
 
     async def _model(self, model_id: str, kind: str) -> tuple[ModelEntry, ModelProvider]:
@@ -260,7 +260,7 @@ class ModelTestGeneration:
                     SeedanceReference(
                         asset.media_kind,
                         asset.mime_type,
-                        self.settings.workspace_model_test_path(asset.workspace_id, "references")
+                        self.settings.account_model_test_path(asset.owner_user_id, "references")
                         / asset.storage_key,
                     )
                 )
@@ -294,7 +294,7 @@ class ModelTestGeneration:
                 asset = await self.session.get(ModelTestGenerationAsset, identity)
                 if (
                     asset is None
-                    or asset.workspace_id != self.workspace_id
+                    or asset.owner_user_id != self.owner_user_id
                     or asset.task_id is not None
                 ):
                     raise ModelTestGenerationError(
@@ -323,7 +323,7 @@ class ModelTestGeneration:
         if isinstance(body, ModelTestVideoGenerationIn):
             try:
                 await ModelTestGenerationAssets(
-                    self.session, self.workspace_id, self.settings
+                    self.session, self.owner_user_id, self.settings
                 ).claim_for_task(
                     row.id,
                     (
@@ -411,7 +411,7 @@ class ModelTestGeneration:
             .all()
         )
         asset_paths = [
-            self.settings.workspace_model_test_path(asset.workspace_id, "references")
+            self.settings.account_model_test_path(asset.owner_user_id, "references")
             / asset.storage_key
             for asset in assets
         ]
@@ -472,6 +472,6 @@ class ModelTestGeneration:
         if not row.result_storage_key:
             return None
         return (
-            self.settings.workspace_model_test_path(row.workspace_id, "generated")
+            self.settings.account_model_test_path(row.owner_user_id, "generated")
             / row.result_storage_key
         )

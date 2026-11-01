@@ -31,7 +31,7 @@ from app.runtime.config import get_settings
 from app.runtime.ids import new_id
 from app.runtime.project_records import (
     delete_revisioned_project,
-    load_workspace_project,
+    load_owned_project,
     patch_revisioned_project,
 )
 from app.runtime.revisions import RevisionConflictError
@@ -65,20 +65,20 @@ def decode_png(data: bytes) -> tuple[bytes, int, int]:
 
 
 class Live2DProjectsStore:
-    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
         self.session = session
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
         self.storage = AssetStorage(get_settings())
 
     def root(self, project_id: str):
-        return self.storage.project_root(APP, project_id, workspace_id=self.workspace_id)
+        return self.storage.project_root(APP, project_id, owner_user_id=self.owner_user_id)
 
     async def row(self, project_id: str) -> Live2DProject:
-        return await load_workspace_project(
+        return await load_owned_project(
             self.session,
             Live2DProject,
             project_id,
-            self.workspace_id,
+            self.owner_user_id,
             not_found=lambda: Live2DNotFound("角色项目不存在"),
         )
 
@@ -99,7 +99,7 @@ class Live2DProjectsStore:
         rows = (
             await self.session.scalars(
                 select(Live2DProject)
-                .where(Live2DProject.workspace_id == self.workspace_id)
+                .where(Live2DProject.owner_user_id == self.owner_user_id)
                 .order_by(Live2DProject.updated_at.desc())
             )
         ).all()
@@ -113,14 +113,14 @@ class Live2DProjectsStore:
             raise Live2DInvalid("项目名称不能为空")
         row = Live2DProject(
             id=new_id(),
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             title=body.title.strip(),
             document=initial_document(body.width, body.height).model_dump(
                 mode="json", by_alias=True
             ),
         )
         async with creating_project_layout(
-            self.session, self.storage, APP, row.id, workspace_id=self.workspace_id
+            self.session, self.storage, APP, row.id, owner_user_id=self.owner_user_id
         ):
             self.session.add(row)
         await self.session.refresh(row)
@@ -140,7 +140,7 @@ class Live2DProjectsStore:
             self.session,
             Live2DProject,
             project_id,
-            self.workspace_id,
+            self.owner_user_id,
             expected_revision=body.expected_revision,
             values={
                 "title": body.title.strip(),
@@ -164,7 +164,7 @@ class Live2DProjectsStore:
             self.session,
             Live2DProject,
             project_id,
-            self.workspace_id,
+            self.owner_user_id,
             expected_revision=body.expected_revision,
             values={
                 "document": body.document.model_dump(mode="json", by_alias=True),
@@ -181,20 +181,20 @@ class Live2DProjectsStore:
         running = await self.session.scalar(
             select(Live2DExport.id).where(
                 Live2DExport.project_id == project_id,
-                Live2DExport.workspace_id == self.workspace_id,
+                Live2DExport.owner_user_id == self.owner_user_id,
                 Live2DExport.status.in_(["queued", "running"]),
             )
         )
         if running:
             raise Live2DInvalid("请先取消正在运行的导出任务，再删除项目")
         async with deleting_project_layout(
-            self.session, self.storage, APP, project_id, workspace_id=self.workspace_id
+            self.session, self.storage, APP, project_id, owner_user_id=self.owner_user_id
         ):
             await delete_revisioned_project(
                 self.session,
                 Live2DProject,
                 project_id,
-                self.workspace_id,
+                self.owner_user_id,
                 expected_revision=revision,
                 load_current=lambda: self.get(project_id),
             )
@@ -206,7 +206,7 @@ class Live2DProjectsStore:
                 await self.session.scalars(
                     select(Live2DAsset).where(
                         Live2DAsset.project_id == project_id,
-                        Live2DAsset.workspace_id == self.workspace_id,
+                        Live2DAsset.owner_user_id == self.owner_user_id,
                     )
                 )
             ).all()
@@ -255,7 +255,7 @@ class Live2DProjectsStore:
             select(Live2DAsset).where(
                 Live2DAsset.id == asset_id,
                 Live2DAsset.project_id == project_id,
-                Live2DAsset.workspace_id == self.workspace_id,
+                Live2DAsset.owner_user_id == self.owner_user_id,
             )
         )
         if asset is None:
@@ -265,7 +265,7 @@ class Live2DProjectsStore:
             self.session,
             Live2DProject,
             project_id,
-            self.workspace_id,
+            self.owner_user_id,
             expected_revision=expected_revision,
             values={"revision": expected_revision + 1, "updated_at": utc_now()},
             load_current=lambda: self.document(project_id),
@@ -284,7 +284,7 @@ class Live2DProjectsStore:
         row = Live2DAsset(
             id=new_id(),
             project_id=project_id,
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             name=(incoming.filename or "素材.png")[:255],
             width=width,
             height=height,

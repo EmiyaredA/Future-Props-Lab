@@ -22,8 +22,8 @@ class ArticleSyncBinding(Base):
     __tablename__ = "thought_sync_bindings"
     __table_args__ = (UniqueConstraint("note_id"), UniqueConstraint("target_key"))
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(
-        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    owner_user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     note_id: Mapped[str] = mapped_column(ForeignKey("thought_notes.id", ondelete="CASCADE"))
     connection_id: Mapped[str] = mapped_column(
@@ -42,7 +42,7 @@ class ArticleSyncBinding(Base):
 class ArticleSyncTask(Base):
     __tablename__ = "thought_sync_tasks"
     __table_args__ = (
-        UniqueConstraint("workspace_id", "operation_id"),
+        UniqueConstraint("owner_user_id", "operation_id"),
         Index(
             "uq_thought_sync_active_target",
             "target_key",
@@ -51,8 +51,8 @@ class ArticleSyncTask(Base):
         ),
     )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(
-        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    owner_user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     note_id: Mapped[str] = mapped_column(String(36), index=True)
     binding_id: Mapped[str] = mapped_column(String(36))

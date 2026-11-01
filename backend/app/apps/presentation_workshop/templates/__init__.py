@@ -1,1 +1,1 @@
-"""Workspace template library and deterministic presentation masters."""
+"""account template library and deterministic presentation masters."""

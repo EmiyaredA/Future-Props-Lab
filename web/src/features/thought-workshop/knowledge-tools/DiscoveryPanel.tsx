@@ -4,10 +4,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import {
-  useAccountId,
-  useWorkspaceId,
-} from "@platform/auth/WorkspacePermissions";
+import { useAccountId } from "@platform/auth/AccountAccess";
 import { TextInputDialog } from "@shared/ui/TextInputDialog";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { thoughtKeys } from "../queryKeys";
@@ -35,7 +32,7 @@ export function DiscoveryPanel({
   close: () => void;
 }) {
   const user = useAccountId() ?? "",
-    workspace = useWorkspaceId() ?? "",
+    workspace = useAccountId() ?? "",
     client = useQueryClient();
   const [criteria, setCriteria] = useState<SearchCriteria>({
     query: "",
@@ -213,7 +210,7 @@ export function DiscoveryPanel({
           ))}
         </div>
       )}
-      <h3>Workspace 文档 · {search.data?.pages[0]?.total ?? 0} 篇</h3>
+      <h3>账号文档 · {search.data?.pages[0]?.total ?? 0} 篇</h3>
       {search.isError && (
         <p role="alert">
           {search.error.message}

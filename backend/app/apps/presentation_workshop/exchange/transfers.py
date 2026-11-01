@@ -1,4 +1,4 @@
-"""Workspace-aware presentation transfer use cases and private file staging."""
+"""account-aware presentation transfer use cases and private file staging."""
 
 import asyncio
 import base64
@@ -135,7 +135,7 @@ async def import_presentation(
                 work = asyncio.create_task(
                     library.stage_local_copy(
                         source,
-                        workspace_id=projects.workspace_id,
+                        owner_user_id=projects.owner_user_id,
                         filename=file.filename,
                         content_type=file.mime_type,
                         max_bytes=MAX_BYTES,

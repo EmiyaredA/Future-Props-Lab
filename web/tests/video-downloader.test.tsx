@@ -97,10 +97,12 @@ beforeEach(() => {
 test("requires a destination before starting", async () => {
   const user = userEvent.setup();
   renderPage();
-  expect(await screen.findByText("yt-dlp 与 ffmpeg 已就绪")).toBeInTheDocument();
+  expect(
+    await screen.findByText("yt-dlp 与 ffmpeg 已就绪"),
+  ).toBeInTheDocument();
 
   await user.click(screen.getByLabelText("本机下载（浏览器另存）"));
-  await user.click(screen.getByLabelText("Workspace 文件库"));
+  await user.click(screen.getByLabelText("账号文件库"));
   await user.type(
     screen.getByRole("textbox", { name: "视频链接" }),
     "https://www.bilibili.com/video/BV1xx411c7mD",

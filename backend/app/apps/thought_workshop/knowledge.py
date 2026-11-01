@@ -1,4 +1,4 @@
-"""Workspace document projects and atomic project revision reservations."""
+"""account document projects and atomic project revision reservations."""
 
 from datetime import UTC
 
@@ -21,8 +21,8 @@ from app.runtime.time import utc_now
 
 
 class KnowledgeBases:
-    def __init__(self, session: AsyncSession, workspace_id: str, author_id: str | None = None):
-        self.session, self.workspace_id = session, workspace_id
+    def __init__(self, session: AsyncSession, owner_user_id: str, author_id: str | None = None):
+        self.session, self.owner_user_id = session, owner_user_id
         self.author_id = author_id
 
     async def get(self, project_id: str, *, include_deleted: bool = False) -> ThoughtKnowledgeBase:
@@ -30,7 +30,7 @@ class KnowledgeBases:
             select(ThoughtKnowledgeBase)
             .where(
                 ThoughtKnowledgeBase.id == project_id,
-                ThoughtKnowledgeBase.workspace_id == self.workspace_id,
+                ThoughtKnowledgeBase.owner_user_id == self.owner_user_id,
             )
             .execution_options(populate_existing=True)
         )
@@ -62,7 +62,7 @@ class KnowledgeBases:
             await self.session.scalars(
                 select(ThoughtKnowledgeBase)
                 .where(
-                    ThoughtKnowledgeBase.workspace_id == self.workspace_id,
+                    ThoughtKnowledgeBase.owner_user_id == self.owner_user_id,
                     ThoughtKnowledgeBase.deleted_at.is_not(None)
                     if trash
                     else ThoughtKnowledgeBase.deleted_at.is_(None),
@@ -79,7 +79,7 @@ class KnowledgeBases:
         row = await self.session.scalar(
             select(VisualAsset).where(
                 VisualAsset.id == asset_id,
-                VisualAsset.workspace_id == self.workspace_id,
+                VisualAsset.owner_user_id == self.owner_user_id,
                 VisualAsset.media_kind == "image",
                 VisualAsset.project_id.is_(None),
                 VisualAsset.galgame_project_id.is_(None),
@@ -97,7 +97,7 @@ class KnowledgeBases:
             update(ThoughtKnowledgeBase)
             .where(
                 ThoughtKnowledgeBase.id == project_id,
-                ThoughtKnowledgeBase.workspace_id == self.workspace_id,
+                ThoughtKnowledgeBase.owner_user_id == self.owner_user_id,
                 ThoughtKnowledgeBase.revision == expected,
             )
             .values(revision=expected + 1, updated_at=utc_now())
@@ -110,11 +110,11 @@ class KnowledgeBases:
 
     async def create(self, body: KnowledgeBaseIn) -> KnowledgeBaseOut:
         await self.cover(body.cover_asset_id)
-        row = ThoughtKnowledgeBase(workspace_id=self.workspace_id, **body.model_dump())
+        row = ThoughtKnowledgeBase(owner_user_id=self.owner_user_id, **body.model_dump())
         self.session.add(row)
         await self.session.flush()
         home = ThoughtNote(
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             knowledge_base_id=row.id,
             is_home=True,
             title="首页",

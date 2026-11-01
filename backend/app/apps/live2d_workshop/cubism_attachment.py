@@ -27,7 +27,7 @@ class Live2DCubismStore(Live2DProjectsStore):
         row = await self.session.scalar(
             select(Live2DCubismAttachment).where(
                 Live2DCubismAttachment.project_id == project_id,
-                Live2DCubismAttachment.workspace_id == self.workspace_id,
+                Live2DCubismAttachment.owner_user_id == self.owner_user_id,
             )
         )
         if row is None:
@@ -89,7 +89,7 @@ class Live2DCubismStore(Live2DProjectsStore):
         digest = hashlib.sha256(data).hexdigest()
         path = self.source_path(project_id, digest)
         old = await self.session.get(Live2DCubismAttachment, project_id)
-        old_digest = old.sha256 if old and old.workspace_id == self.workspace_id else None
+        old_digest = old.sha256 if old and old.owner_user_id == self.owner_user_id else None
         resolved_bindings = bindings if bindings is not None else self.suggested_bindings(metadata)
         self.validate_bindings(resolved_bindings, metadata)
         new_file = not path.is_file()
@@ -101,7 +101,7 @@ class Live2DCubismStore(Live2DProjectsStore):
                 self.session,
                 Live2DProject,
                 project_id,
-                self.workspace_id,
+                self.owner_user_id,
                 expected_revision=expected_revision,
                 values={"revision": expected_revision + 1, "updated_at": utc_now()},
                 load_current=lambda: self.document(project_id),
@@ -110,7 +110,7 @@ class Live2DCubismStore(Live2DProjectsStore):
                 self.session.add(
                     Live2DCubismAttachment(
                         project_id=project_id,
-                        workspace_id=self.workspace_id,
+                        owner_user_id=self.owner_user_id,
                         sha256=digest,
                         metadata_json=metadata,
                         state_bindings=resolved_bindings,
@@ -155,7 +155,7 @@ class Live2DCubismStore(Live2DProjectsStore):
             self.session,
             Live2DProject,
             project_id,
-            self.workspace_id,
+            self.owner_user_id,
             expected_revision=body.expected_revision,
             values={"revision": body.expected_revision + 1, "updated_at": utc_now()},
             load_current=lambda: self.document(project_id),
@@ -171,7 +171,7 @@ class Live2DCubismStore(Live2DProjectsStore):
             self.session,
             Live2DProject,
             project_id,
-            self.workspace_id,
+            self.owner_user_id,
             expected_revision=expected_revision,
             values={"revision": expected_revision + 1, "updated_at": utc_now()},
             load_current=lambda: self.document(project_id),

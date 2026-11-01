@@ -152,11 +152,7 @@ class CreativeCatalog:
 
     async def _owned(self, item_id: str) -> CreativeItem:
         item = await self.session.get(CreativeItem, item_id)
-        if (
-            item is None
-            or item.origin_workspace_id != self.principal.workspace_id
-            or item.author_user_id != self.principal.user_id
-        ):
+        if item is None or item.origin_owner_user_id != self.principal.owner_user_id:
             raise CreativeError("创作不存在", 404, "not_found")
         return item
 
@@ -235,7 +231,7 @@ class CreativeCatalog:
             revision=item.revision,
             author_user_id=item.author_user_id,
             author_name=(user.display_name or user.username) if user else "已注销用户",
-            origin_workspace_id=item.origin_workspace_id,
+            origin_owner_user_id=item.origin_owner_user_id,
             current_release_id=item.current_release_id,
             version=release.version if release else None,
             installable=await self._installable(release) if release else False,
@@ -251,8 +247,7 @@ class CreativeCatalog:
         statement = select(CreativeItem)
         if mine:
             statement = statement.where(
-                CreativeItem.origin_workspace_id == self.principal.workspace_id,
-                CreativeItem.author_user_id == self.principal.user_id,
+                CreativeItem.origin_owner_user_id == self.principal.owner_user_id,
             )
         else:
             statement = statement.where(CreativeItem.status == "published")
@@ -324,7 +319,7 @@ class CreativeCatalog:
         relative = item.draft_cover_path if draft else (release.cover_path if release else "")
         if not relative:
             raise CreativeError("封面不存在", 404, "not_found")
-        path = resolve_file(item.origin_workspace_id, relative)
+        path = resolve_file(item.origin_owner_user_id, relative)
         if not path.is_file():
             raise CreativeError("封面文件不可用", 404, "not_found")
         return path
@@ -333,7 +328,7 @@ class CreativeCatalog:
         item, release = await self._viewable_release(release_id)
         if not release.cover_path:
             raise CreativeError("封面不存在", 404, "not_found")
-        path = resolve_file(item.origin_workspace_id, release.cover_path)
+        path = resolve_file(item.origin_owner_user_id, release.cover_path)
         if not path.is_file():
             raise CreativeError("封面文件不可用", 404, "not_found")
         return path
@@ -345,7 +340,7 @@ class CreativeCatalog:
         item = await self._owned(item_id)
         if item.revision != expected_revision:
             raise CreativeError("草稿已在其他位置更新", 409, "revision_conflict")
-        relative = await save_cover(item.origin_workspace_id, upload)
+        relative = await save_cover(item.origin_owner_user_id, upload)
         try:
             item.draft_cover_path = relative
             item.revision += 1
@@ -353,7 +348,7 @@ class CreativeCatalog:
             await self.session.commit()
         except Exception:
             await self.session.rollback()
-            resolve_file(item.origin_workspace_id, relative).unlink(missing_ok=True)
+            resolve_file(item.origin_owner_user_id, relative).unlink(missing_ok=True)
             raise
         return await self.get(item_id, draft=True)
 
@@ -366,7 +361,7 @@ class CreativeCatalog:
             raise CreativeError("只有 Skill 创作可以上传 ZIP")
         if item.revision != expected_revision:
             raise CreativeError("草稿已在其他位置更新", 409, "revision_conflict")
-        relative, manifest = await save_skill_draft(item.origin_workspace_id, item.id, upload)
+        relative, manifest = await save_skill_draft(item.origin_owner_user_id, item.id, upload)
         try:
             item.draft_skill_path = relative
             item.draft_manifest = manifest
@@ -375,14 +370,14 @@ class CreativeCatalog:
             await self.session.commit()
         except Exception:
             await self.session.rollback()
-            shutil.rmtree(resolve_file(item.origin_workspace_id, relative), ignore_errors=True)
+            shutil.rmtree(resolve_file(item.origin_owner_user_id, relative), ignore_errors=True)
             raise
         return await self.get(item_id, draft=True)
 
     async def create(self, body: CreativeDraftIn) -> CreativeItemOut:
         self._can_write()
         item = CreativeItem(
-            origin_workspace_id=self.principal.workspace_id,
+            origin_owner_user_id=self.principal.owner_user_id,
             author_user_id=self.principal.user_id,
             kind=body.kind,
             title=body.title,
@@ -469,7 +464,7 @@ class CreativeCatalog:
         try:
             if item.kind == "skill":
                 skill_path = copy_skill_release(
-                    item.origin_workspace_id, item.draft_skill_path, release.id
+                    item.origin_owner_user_id, item.draft_skill_path, release.id
                 )
                 release.skill_path = skill_path
             self.session.add(release)
@@ -490,7 +485,7 @@ class CreativeCatalog:
             await self.session.rollback()
             if skill_path:
                 shutil.rmtree(
-                    resolve_file(item.origin_workspace_id, skill_path), ignore_errors=True
+                    resolve_file(item.origin_owner_user_id, skill_path), ignore_errors=True
                 )
             raise
         return await self.get(item_id)
@@ -524,7 +519,7 @@ class CreativeCatalog:
         skill_source = ""
         if kind == "tool_api":
             row = await self.session.get(ToolApiIntegration, source_id)
-            if row is not None and row.workspace_id == self.principal.workspace_id:
+            if row is not None and row.owner_user_id == self.principal.owner_user_id:
                 title, summary = row.name, row.description
                 manifest = {
                     "method": row.method,
@@ -537,7 +532,7 @@ class CreativeCatalog:
                 }
         elif kind == "mcp":
             row = await self.session.get(McpIntegration, source_id)
-            if row is not None and row.workspace_id == self.principal.workspace_id:
+            if row is not None and row.owner_user_id == self.principal.owner_user_id:
                 title, summary = row.name, row.description
                 manifest = (
                     {"transport": "streamable_http", "url": row.url}
@@ -546,7 +541,7 @@ class CreativeCatalog:
                 )
         elif kind == "skill":
             row = await self.session.get(SkillIntegration, source_id)
-            if row is not None and row.workspace_id == self.principal.workspace_id:
+            if row is not None and row.owner_user_id == self.principal.owner_user_id:
                 title, summary = row.name, row.description
                 version = await self.session.scalar(
                     select(SkillVersion).where(
@@ -566,9 +561,9 @@ class CreativeCatalog:
                         "expanded_bytes": version.expanded_bytes,
                     }
         if not title:
-            raise CreativeError("当前工作区内找不到该集成", 404, "not_found")
+            raise CreativeError("当前账号内找不到该集成", 404, "not_found")
         item = CreativeItem(
-            origin_workspace_id=self.principal.workspace_id,
+            origin_owner_user_id=self.principal.owner_user_id,
             author_user_id=self.principal.user_id,
             kind=kind,
             title=title,

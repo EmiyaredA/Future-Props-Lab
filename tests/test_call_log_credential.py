@@ -19,6 +19,7 @@ async def test_call_log_credential_filter_and_model_inference_source():
         session.add_all(
             [
                 LlmCallLog(
+                    owner_user_id="test-user",
                     id=session_id,
                     call_source="model_playground",
                     provider_kind="openai",
@@ -29,6 +30,7 @@ async def test_call_log_credential_filter_and_model_inference_source():
                     latency_ms=10,
                 ),
                 LlmCallLog(
+                    owner_user_id="test-user",
                     id=key_id,
                     call_source="model_playground",
                     provider_kind="openai",
@@ -42,6 +44,7 @@ async def test_call_log_credential_filter_and_model_inference_source():
                     latency_ms=20,
                 ),
                 LlmCallLog(
+                    owner_user_id="test-user",
                     id=inference_id,
                     call_source="model_inference",
                     provider_kind="openai",

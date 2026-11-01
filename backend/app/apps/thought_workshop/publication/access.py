@@ -1,4 +1,4 @@
-"""Publication-scoped access checks, independent of the active Workspace."""
+"""Publication-scoped access checks, independent of the active account."""
 
 from dataclasses import replace
 
@@ -6,8 +6,8 @@ from sqlalchemy import select
 
 from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
-from app.console.models import User, WorkspaceMembership
-from app.orm import bind_workspace
+from app.console.models import User
+from app.orm import bind_owner
 
 from .models import ArticleMember, Publication, PublishedArticle
 
@@ -20,48 +20,20 @@ async def current_actor(session, principal):
     user = await session.get(User, principal.user_id, populate_existing=True)
     if user is None or user.status != "active":
         raise missing()
-    return replace(
-        principal, platform_role=user.platform_role, is_platform_admin=user.is_platform_admin
-    )
+    return replace(principal, platform_role=user.platform_role)
 
 
-async def manages_source(session, principal, workspace_id):
+async def manages_source(session, principal, owner_user_id):
     principal = await current_actor(session, principal)
-    if principal.can_manage_all_workspaces and principal.workspace_id == workspace_id:
-        return True
-    membership = await session.scalar(
-        select(WorkspaceMembership).where(
-            WorkspaceMembership.workspace_id == workspace_id,
-            WorkspaceMembership.user_id == principal.user_id,
-            WorkspaceMembership.status == "active",
-            WorkspaceMembership.role.in_(["owner", "admin"]),
-        )
-    )
-    return bool(membership)
+    return principal.user_id == owner_user_id
 
 
-async def source_role(session, principal, workspace_id):
-    principal = await current_actor(session, principal)
-    if principal.can_manage_all_workspaces and principal.workspace_id == workspace_id:
-        return "manage"
-    membership = await session.scalar(
-        select(WorkspaceMembership).where(
-            WorkspaceMembership.workspace_id == workspace_id,
-            WorkspaceMembership.user_id == principal.user_id,
-            WorkspaceMembership.status == "active",
-        )
-    )
-    return (
-        {"owner": "manage", "admin": "manage", "member": "edit", "viewer": "read"}.get(
-            membership.role
-        )
-        if membership
-        else None
-    )
+async def source_role(session, principal, owner_user_id):
+    return "manage" if await manages_source(session, principal, owner_user_id) else None
 
 
-async def require_source_manager(session, principal, workspace_id):
-    if not await manages_source(session, principal, workspace_id):
+async def require_source_manager(session, principal, owner_user_id):
+    if not await manages_source(session, principal, owner_user_id):
         raise missing()
 
 
@@ -73,7 +45,7 @@ async def publication(session, id, *, active=True):
     source = await session.scalar(
         select(ThoughtKnowledgeBase).where(
             ThoughtKnowledgeBase.id == row.knowledge_base_id,
-            ThoughtKnowledgeBase.workspace_id == row.workspace_id,
+            ThoughtKnowledgeBase.owner_user_id == row.owner_user_id,
             ThoughtKnowledgeBase.deleted_at.is_(None),
         )
     )
@@ -84,13 +56,13 @@ async def publication(session, id, *, active=True):
 
 def effective_role(pub, principal, original_role, member_role, visibility):
     # Platform-role editing never grants visibility or publication management.
-    if principal.user_id == pub.publisher_id:
+    if principal.user_id == pub.owner_user_id:
         return "manage"
     if not original_role and not member_role and visibility != "public":
         return None
     inherited = "read" if pub.read_only and original_role == "edit" else original_role
     roles = [inherited, member_role, "read"]
-    if principal.user_id == pub.publisher_id:
+    if principal.user_id == pub.owner_user_id:
         roles.append("manage")
     if principal.platform_role in (pub.editable_platform_roles or []):
         roles.append("edit")
@@ -102,7 +74,7 @@ def capabilities(role):
 
 
 def can_certify(principal):
-    return principal.platform_role in {"super_admin", "admin"}
+    return principal.platform_role in {"admin"}
 
 
 async def article(session, principal, pub, note_id, *, level="read", inactive=False):
@@ -112,13 +84,13 @@ async def article(session, principal, pub, note_id, *, level="read", inactive=Fa
         select(ThoughtNote).where(
             ThoughtNote.id == note_id,
             ThoughtNote.knowledge_base_id == pub.knowledge_base_id,
-            ThoughtNote.workspace_id == pub.workspace_id,
+            ThoughtNote.owner_user_id == pub.owner_user_id,
             ThoughtNote.deleted_at.is_(None),
         )
     )
     if config is None or note is None or (not inactive and not config.active):
         raise missing()
-    original_role = await source_role(session, principal, pub.workspace_id)
+    original_role = await source_role(session, principal, pub.owner_user_id)
     member = await session.get(ArticleMember, (pub.id, note_id, principal.user_id))
     role = effective_role(
         pub, principal, original_role, member.role if member else None, config.visibility
@@ -147,4 +119,4 @@ async def members(session, pub_id, note_id):
 
 def bind_source(session, pub):
     # Only called after publication/role checks. No tenant_bypass or default fallback.
-    bind_workspace(session, pub.workspace_id)
+    bind_owner(session, pub.owner_user_id)

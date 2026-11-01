@@ -224,7 +224,7 @@ class ModelTestGenerationRunner(PollingTaskRunner):
                 if private.task_id != task_id or private.media_kind != expected_kind:
                     raise ValueError("参考素材已不存在或类型不匹配")
                 return (
-                    self.settings.workspace_model_test_path(private.workspace_id, "references")
+                    self.settings.account_model_test_path(private.owner_user_id, "references")
                     / private.storage_key,
                     private.mime_type,
                 )
@@ -262,7 +262,7 @@ class ModelTestGenerationRunner(PollingTaskRunner):
         log_id = str(uuid4())
         log = LlmCallLog(
             id=log_id,
-            workspace_id=row.workspace_id,
+            owner_user_id=row.owner_user_id,
             call_source="model_playground",
             provider_kind=row.provider_kind,
             model=row.model_slug,
@@ -294,8 +294,8 @@ class ModelTestGenerationRunner(PollingTaskRunner):
             task = await self._load_task(session, task_id)
             if task is None:
                 return
-            workspace_id = task.workspace_id
-        root = self.settings.workspace_model_test_path(workspace_id, "generated")
+            owner_user_id = task.owner_user_id
+        root = self.settings.account_model_test_path(owner_user_id, "generated")
         temp_dir = root / ".tmp"
         temp_dir.mkdir(parents=True, exist_ok=True)
         storage_key = uuid4().hex

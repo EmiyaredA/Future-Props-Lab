@@ -2,9 +2,9 @@ from sqlalchemy import select
 
 from app.capabilities.identity.errors import AccountError
 from app.console.governance.governance_transactions import begin_governance
-from app.console.governance.platform_policy import read_setting
 from app.console.governance.platform_settings import write_setting
 from app.console.governance.service import add_audit_event
+from app.console.governance.settings_records import read_setting
 from app.demo_runtime.runtime import (
     DEFAULT_CONFIG,
     MOCK_BASE_URL,
@@ -71,18 +71,18 @@ async def action(session, principal, service_id, body, client_ip):
 async def install(session, principal, service_id, expected_catalog_revision, client_ip):
     principal = await begin_governance(session, principal)
     if not principal.allows("configuration.manage"):
-        raise AccountError("workspace_owner_required")
+        raise AccountError("account_access_required")
     if service_id == "mock_model":
         exists = await session.scalar(
             select(ModelProvider.id).where(
-                ModelProvider.workspace_id == principal.workspace_id,
+                ModelProvider.owner_user_id == principal.owner_user_id,
                 ModelProvider.base_url == MOCK_BASE_URL,
             )
         )
     else:
         exists = await session.scalar(
             select(ToolApiIntegration.id).where(
-                ToolApiIntegration.workspace_id == principal.workspace_id,
+                ToolApiIntegration.owner_user_id == principal.owner_user_id,
                 ToolApiIntegration.url.startswith(TOOL_BASE_URL + "/"),
             )
         )
@@ -91,7 +91,7 @@ async def install(session, principal, service_id, expected_catalog_revision, cli
     revision = await ModelCatalogService(session)._bump(expected_catalog_revision)
     if service_id == "mock_model":
         provider = ModelProvider(
-            workspace_id=principal.workspace_id,
+            owner_user_id=principal.owner_user_id,
             name="本地 Mock 模型",
             kind="openai",
             base_url=MOCK_BASE_URL,
@@ -102,7 +102,7 @@ async def install(session, principal, service_id, expected_catalog_revision, cli
         await session.flush()
         session.add(
             ModelEntry(
-                workspace_id=principal.workspace_id,
+                owner_user_id=principal.owner_user_id,
                 provider_id=provider.id,
                 slug="fpl-mock",
                 label="本地确定性模型",
@@ -120,7 +120,7 @@ async def install(session, principal, service_id, expected_catalog_revision, cli
             ("product", "演示商品详情", {"id": {"type": "string"}}),
         ):
             row = ToolApiIntegration(
-                workspace_id=principal.workspace_id,
+                owner_user_id=principal.owner_user_id,
                 name=label,
                 description="固定演示数据，不读取真实业务记录",
                 method="GET",
@@ -139,9 +139,9 @@ async def install(session, principal, service_id, expected_catalog_revision, cli
         session,
         "demo_service.installed",
         actor_user_id=principal.user_id,
-        workspace_id=principal.workspace_id,
+        owner_user_id=principal.owner_user_id,
         client_ip=client_ip,
         metadata={"revision": revision},
     )
     await session.commit()
-    return {"id": result_id, "message": "已接入当前工作区"}
+    return {"id": result_id, "message": "已接入当前账号"}

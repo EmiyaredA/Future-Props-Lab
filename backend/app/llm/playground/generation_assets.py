@@ -75,7 +75,7 @@ class LegacyAssetSource:
 @dataclass(frozen=True)
 class LegacyTaskSnapshot:
     id: str
-    workspace_id: str
+    owner_user_id: str
     status: str
     revision: int
     request_payload: dict
@@ -105,16 +105,16 @@ def _looks_like(kind: str, head: bytes) -> bool:
 
 class ModelTestGenerationAssets:
     def __init__(
-        self, session: AsyncSession, workspace_id: str, settings: Settings | None = None
+        self, session: AsyncSession, owner_user_id: str, settings: Settings | None = None
     ) -> None:
         self.session = session
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
         self.settings = settings or get_settings()
         self.storage = AssetStorage(self.settings)
 
-    def _root(self, workspace_id: str | None = None) -> Path:
-        return self.settings.workspace_model_test_path(
-            workspace_id or self.workspace_id, "references"
+    def _root(self, owner_user_id: str | None = None) -> Path:
+        return self.settings.account_model_test_path(
+            owner_user_id or self.owner_user_id, "references"
         )
 
     async def upload(self, files: list[IncomingFile]) -> ModelTestGenerationAssetListOut:
@@ -164,6 +164,7 @@ class ModelTestGenerationAssets:
                 os.replace(temp_path, final_path)
                 cleanup_paths.add(final_path)
                 row = ModelTestGenerationAsset(
+                    owner_user_id=self.owner_user_id,
                     original_filename=filename,
                     storage_key=storage_key,
                     media_kind=media_kind,
@@ -193,7 +194,7 @@ class ModelTestGenerationAssets:
             raise GenerationAssetError("参考素材不存在", code="not_found", status=404)
         if row.task_id is not None:
             raise GenerationAssetError("参考素材已被任务使用", code="asset_claimed", status=409)
-        path = self._root(row.workspace_id) / row.storage_key
+        path = self._root(row.owner_user_id) / row.storage_key
         await self.session.delete(row)
         await self.session.commit()
         path.unlink(missing_ok=True)
@@ -234,7 +235,7 @@ class ModelTestGenerationAssets:
                     )
                 if row.media_kind != expected_kind:
                     raise GenerationAssetError("参考素材类型不匹配")
-                if not (self._root(row.workspace_id) / row.storage_key).is_file():
+                if not (self._root(row.owner_user_id) / row.storage_key).is_file():
                     raise GenerationAssetError(
                         "参考素材文件不存在", code="reference_asset_missing", status=404
                     )
@@ -287,7 +288,7 @@ class ModelTestGenerationAssets:
             .scalars()
             .all()
         )
-        deleted_paths = [self._root(row.workspace_id) / row.storage_key for row in rows]
+        deleted_paths = [self._root(row.owner_user_id) / row.storage_key for row in rows]
         if rows:
             await self.session.execute(
                 delete(ModelTestGenerationAsset).where(
@@ -360,7 +361,7 @@ class ModelTestGenerationAssets:
             payload = dict(task.request_payload)
             try:
                 await self.session.rollback()
-                root = self._root(task.workspace_id)
+                root = self._root(task.owner_user_id)
                 temp_dir = root / ".tmp"
                 temp_dir.mkdir(parents=True, exist_ok=True)
                 positions: dict[str, int] = {}
@@ -375,6 +376,7 @@ class ModelTestGenerationAssets:
                         cleanup_paths.add(temp_path)
                         await asyncio.to_thread(shutil.copyfile, source.path, temp_path)
                         row = ModelTestGenerationAsset(
+                            owner_user_id=self.owner_user_id,
                             id=str(uuid4()),
                             task_id=task_id,
                             role=role,
@@ -458,7 +460,7 @@ class ModelTestGenerationAssets:
         return [
             LegacyTaskSnapshot(
                 id=task.id,
-                workspace_id=task.workspace_id,
+                owner_user_id=task.owner_user_id,
                 status=task.status,
                 revision=task.revision,
                 request_payload=dict(task.request_payload or {}),

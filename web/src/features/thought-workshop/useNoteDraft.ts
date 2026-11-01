@@ -1,9 +1,6 @@
 import { useDocumentAccess } from "./DocumentAccess";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  useAccountId,
-  useWorkspaceId,
-} from "@platform/auth/WorkspacePermissions";
+import { useAccountId } from "@platform/auth/AccountAccess";
 import {
   draftKey,
   draftTabId,
@@ -19,11 +16,11 @@ import { noteInput, type Note, type NoteInput } from "./api";
 export type SaveState = "saved" | "dirty" | "saving" | "error" | "conflict";
 export function useNoteDraft(initial: Note, onSaved: (note: Note) => void) {
   const access = useDocumentAccess();
-  const activeWorkspace = useWorkspaceId();
+  const activeAccount = useAccountId();
   const userId = useAccountId(),
-    workspaceId = access.community ? access.namespace : activeWorkspace;
+    accountId = access.community ? access.namespace : activeAccount;
   const [tabId] = useState(draftTabId);
-  const identity = userId && workspaceId ? { userId, workspaceId } : null;
+  const identity = userId && accountId ? { userId, accountId } : null;
   const key = identity ? draftKey(identity, initial.id, tabId) : null;
   const [recovery, setRecovery] = useState<LocalDraft[]>([]);
   const recoveryRef = useRef<LocalDraft[]>([]);
@@ -88,9 +85,9 @@ export function useNoteDraft(initial: Note, onSaved: (note: Note) => void) {
       .catch(localFailure);
   };
   useEffect(() => {
-    if (!userId || !workspaceId) return;
+    if (!userId || !accountId) return;
     let active = true;
-    ready.current = listLocalDrafts({ userId, workspaceId }, initial.id)
+    ready.current = listLocalDrafts({ userId, accountId }, initial.id)
       .then(async (records) => {
         const pending: LocalDraft[] = [];
         for (const row of records) {
@@ -114,7 +111,7 @@ export function useNoteDraft(initial: Note, onSaved: (note: Note) => void) {
     return () => {
       active = false;
     };
-  }, [userId, workspaceId, initial.id]);
+  }, [userId, accountId, initial.id]);
 
   const change = useCallback((patch: Partial<NoteInput>) => {
     if (
@@ -254,7 +251,7 @@ export function useNoteDraft(initial: Note, onSaved: (note: Note) => void) {
       access.duplicate ??
       (() =>
         Promise.reject(
-          new Error("社区草稿不能另存到源 Workspace；请保留草稿或复制文本。"),
+          new Error("社区草稿不能另存到源账号；请保留草稿或复制文本。"),
         ))
     )({
       ...draftRef.current,
@@ -294,7 +291,7 @@ export function useNoteDraft(initial: Note, onSaved: (note: Note) => void) {
     duplicateLocal: async (row: LocalDraft) => {
       const next = await (
         access.duplicate ??
-        (() => Promise.reject(new Error("社区草稿不能另存到源 Workspace")))
+        (() => Promise.reject(new Error("社区草稿不能另存到源账号")))
       )({
         ...row.body,
         title: row.body.title.slice(0, 230) + "（恢复副本）",

@@ -7,24 +7,12 @@
       "kind": "icon",
       "x": 40,
       "y": 50,
-      "width": 230,
+      "width": 250,
       "height": 130,
-      "text": "账号与空间成员关系\n身份和角色",
+      "text": "账号 / user_id\n身份与私人资源归属",
       "fill": "#eef5f3",
       "stroke": "#365f62",
       "icon": "user"
-    },
-    {
-      "id": "workspace",
-      "kind": "icon",
-      "x": 380,
-      "y": 50,
-      "width": 230,
-      "height": 130,
-      "text": "Workspace\n逻辑资源归属",
-      "fill": "#edf2fb",
-      "stroke": "#365f62",
-      "icon": "lock"
     },
     {
       "id": "project",
@@ -77,18 +65,8 @@
   ],
   "edges": [
     {
-      "id": "e0",
-      "source": "account",
-      "target": "workspace",
-      "label": "经成员关系访问",
-      "arrow": true,
-      "style": "step",
-      "sourceAnchor": "right",
-      "targetAnchor": "left"
-    },
-    {
       "id": "e1",
-      "source": "workspace",
+      "source": "account",
       "target": "project",
       "label": "资源归属",
       "arrow": true,
@@ -118,7 +96,7 @@
     },
     {
       "id": "e4",
-      "source": "workspace",
+      "source": "account",
       "target": "asset",
       "label": "素材归属",
       "arrow": true,
@@ -128,7 +106,7 @@
     },
     {
       "id": "e5",
-      "source": "workspace",
+      "source": "account",
       "target": "task",
       "label": "任务归属",
       "arrow": true,

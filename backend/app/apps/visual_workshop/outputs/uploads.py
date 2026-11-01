@@ -41,7 +41,7 @@ async def upload_version(
         ) as (prepared, inspection):
             asset = await library.store_upload(
                 prepared,
-                workspace_id=outputs.workspace_id,
+                owner_user_id=outputs.owner_user_id,
                 visual_project_id=project_id,
                 allowed_extensions=extensions,
                 commit=False,
@@ -52,7 +52,7 @@ async def upload_version(
             if inspection:
                 inspection_asset = await library.store_upload(
                     inspection,
-                    workspace_id=outputs.workspace_id,
+                    owner_user_id=outputs.owner_user_id,
                     visual_project_id=project_id,
                     allowed_extensions={".webm"},
                     commit=False,
@@ -80,7 +80,7 @@ async def upload_version(
 async def upload_material(
     session,
     settings: Settings,
-    workspace_id: str,
+    owner_user_id: str,
     project_id: str,
     upload: IncomingFile,
     expected_revision: int,
@@ -106,7 +106,7 @@ async def upload_material(
     try:
         asset = await library.store_upload(
             upload,
-            workspace_id=workspace_id,
+            owner_user_id=owner_user_id,
             visual_project_id=project_id,
             allowed_extensions={
                 extension

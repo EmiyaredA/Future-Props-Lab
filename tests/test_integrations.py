@@ -35,7 +35,7 @@ from app.integrations.skills.archive import SkillArchiveStorage
 from app.integrations.skills.catalog import SkillCatalog
 from app.integrations.tool_apis import ToolApiCatalog
 from app.main import app
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.outbound_urls import require_safe_integration_http_url
@@ -96,13 +96,13 @@ async def test_skill_download_after_runtime_directory_move(tmp_path, monkeypatch
     moved = settings.model_copy(
         update={"fpl_database_path": str(tmp_path / "moved/future-props.db")}
     )
-    old_root = SkillArchiveStorage(settings, "default").final_path(skill_id, "v1")
-    new_root = SkillArchiveStorage(moved, "default").final_path(skill_id, "v1")
+    old_root = SkillArchiveStorage(settings, "test-user").final_path(skill_id, "v1")
+    new_root = SkillArchiveStorage(moved, "test-user").final_path(skill_id, "v1")
     shutil.copytree(old_root, new_root)
     old_root.rename(old_root.with_name("offline-v1"))
     monkeypatch.setattr("app.integrations.skills.catalog.get_settings", lambda: moved)
     async with SessionLocal() as session:
-        _, payload = await SkillCatalog(session, "default").version_zip(skill_id, "v1")
+        _, payload = await SkillCatalog(session, "test-user").version_zip(skill_id, "v1")
     with zipfile.ZipFile(io.BytesIO(payload)) as archive:
         assert "name: demo-skill" in archive.read("SKILL.md").decode()
 
@@ -123,8 +123,8 @@ async def test_tool_api_crud_secret_redaction_cas_and_mock_validation() -> None:
         )
 
     async with SessionLocal() as session:
-        bind_workspace(session, "default")
-        catalog = ToolApiCatalog(session, "default", transport=httpx.MockTransport(handler))
+        bind_owner(session, "test-user")
+        catalog = ToolApiCatalog(session, "test-user", transport=httpx.MockTransport(handler))
         created = await catalog.create(
             ToolApiCreateIn(
                 name="Local echo",
@@ -194,8 +194,8 @@ async def test_tool_api_validation_does_not_follow_redirects_and_limits_response
         raise TimeoutError
 
     async with SessionLocal() as session:
-        bind_workspace(session, "default")
-        catalog = ToolApiCatalog(session, "default", transport=httpx.MockTransport(handler))
+        bind_owner(session, "test-user")
+        catalog = ToolApiCatalog(session, "test-user", transport=httpx.MockTransport(handler))
         for name, path, expected in (
             ("Redirect fixture", "redirect", "HTTP 302"),
             ("Large fixture", "large", "超过 1 MiB"),
@@ -213,8 +213,8 @@ async def test_tool_api_validation_does_not_follow_redirects_and_limits_response
 async def test_catalog_queries_are_workspace_scoped() -> None:
     await _clear_integrations()
     async with SessionLocal() as session:
-        bind_workspace(session, "default")
-        await ToolApiCatalog(session, "default").create(
+        bind_owner(session, "test-user")
+        await ToolApiCatalog(session, "test-user").create(
             ToolApiCreateIn(name="Default only", url="https://example.com/tool")
         )
     async with SessionLocal() as session:
@@ -243,14 +243,10 @@ async def test_member_can_view_but_cannot_manage_integrations() -> None:
     await _clear_integrations()
 
     async def member(session: SessionDep) -> StudioPrincipal:
-        bind_workspace(session, "default")
+        bind_owner(session, "test-user")
         return StudioPrincipal(
-            user_id="member",
-            workspace_id="default",
-            membership_id="membership",
-            workspace_access="member",
-            member_role="member",
-            is_platform_admin=False,
+            platform_role="admin",
+            user_id="user",
             must_change_password=False,
             auth_kind="session",
             scopes=frozenset({"studio:read"}),
@@ -267,7 +263,7 @@ async def test_member_can_view_but_cannot_manage_integrations() -> None:
                 json={"name": "Nope", "url": "https://example.com"},
             )
             assert denied.status_code == 403
-            assert denied.json()["code"] == "workspace_owner_required"
+            assert denied.json()["code"] == "account_access_required"
     finally:
         app.dependency_overrides.pop(require_studio_auth, None)
 
@@ -300,8 +296,8 @@ class _FailingMcpClient:
 async def test_mcp_validation_replaces_discovery_snapshot() -> None:
     await _clear_integrations()
     async with SessionLocal() as session:
-        bind_workspace(session, "default")
-        catalog = McpCatalog(session, "default", client=_FakeMcpClient())
+        bind_owner(session, "test-user")
+        catalog = McpCatalog(session, "test-user", client=_FakeMcpClient())
         created = await catalog.create(
             McpCreateIn(
                 name="Fixture MCP",
@@ -323,8 +319,8 @@ async def test_mcp_validation_replaces_discovery_snapshot() -> None:
 async def test_mcp_failure_summaries_and_responses_do_not_leak_secrets() -> None:
     await _clear_integrations()
     async with SessionLocal() as session:
-        bind_workspace(session, "default")
-        catalog = McpCatalog(session, "default", client=_FailingMcpClient())
+        bind_owner(session, "test-user")
+        catalog = McpCatalog(session, "test-user", client=_FailingMcpClient())
         created = await catalog.create(
             McpCreateIn(
                 name="Failing MCP",
@@ -565,7 +561,7 @@ async def test_skill_version_preview_lists_files_and_rejects_unsafe_paths() -> N
             )
         ).status_code == 422
 
-        root = SkillArchiveStorage(get_settings(), "default").final_path(skill_id, "v1")
+        root = SkillArchiveStorage(get_settings(), "test-user").final_path(skill_id, "v1")
         (root / "outside").symlink_to(Path("/etc/passwd"))
         linked = await client.get(
             f"/v1/integrations/skills/{skill_id}/versions/v1/files/content",

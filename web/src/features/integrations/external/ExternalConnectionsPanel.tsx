@@ -110,7 +110,7 @@ function ConnectionForm({
       </aside>
       <p className="external-connection-security">
         <ShieldCheck size={15} aria-hidden />
-        凭据加密保存，仅用于当前工作区。保存后可检查鉴权。
+        凭据加密保存，仅用于当前账号。保存后可检查鉴权。
       </p>
       <div className="external-connection-toggle">
         <div>
@@ -166,9 +166,7 @@ export function ExternalConnectionsPanel({
     }
   }
   if (!canManage)
-    return (
-      <PanelMessage>外部连接由工作区管理员和拥有者管理与使用。</PanelMessage>
-    );
+    return <PanelMessage>外部连接由账号所有者管理与使用。</PanelMessage>;
   const items = query.data?.items ?? [];
   const filtered = items.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase()),
@@ -202,7 +200,7 @@ export function ExternalConnectionsPanel({
               placeholder="搜索连接…"
             />
           </label>
-          <span>{items.length} 个连接 · 当前工作区</span>
+          <span>{items.length} 个连接 · 当前账号</span>
         </div>
       )}
       {query.isPending && <p role="status">正在加载连接…</p>}

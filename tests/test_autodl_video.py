@@ -31,7 +31,7 @@ from app.llm.schemas.generation_tasks import VideoGenerationTaskCreateIn
 from app.llm.schemas.model_inference import InferenceTaskIn
 from app.llm.schemas.model_service import ProviderIn
 from app.llm.schemas.model_test import ModelTestVideoGenerationIn
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
 
@@ -253,18 +253,22 @@ async def test_options_and_all_admission_paths_share_the_contract(model_slug):
     from app.runtime.config import get_settings
 
     async with SessionLocal() as session:
-        bind_workspace(session, "default")
+        bind_owner(session, "test-user")
         provider = ModelProvider(
+            owner_user_id="test-user",
             id=str(uuid4()),
             name="AutoDL fixture",
             kind="autodl_video",
             base_url="https://www.autodl.art",
             api_key_ciphertext=encrypt_secret("test-token"),
         )
-        project = VisualWorkshopProject(id=str(uuid4()), title="AutoDL", kind="video")
+        project = VisualWorkshopProject(
+            owner_user_id="test-user", id=str(uuid4()), title="AutoDL", kind="video"
+        )
         session.add_all([provider, project])
         await session.flush()
         model = ModelEntry(
+            owner_user_id="test-user",
             id=str(uuid4()),
             provider_id=provider.id,
             slug=model_slug,
@@ -305,6 +309,7 @@ async def test_options_and_all_admission_paths_share_the_contract(model_slug):
             for identity in identities:
                 mime = {"image": "image/png", "audio": "audio/flac", "video": "video/webm"}[kind]
                 asset = VisualAsset(
+                    owner_user_id="test-user",
                     id=str(uuid4()),
                     project_id=project.id,
                     media_kind=kind,
@@ -321,6 +326,7 @@ async def test_options_and_all_admission_paths_share_the_contract(model_slug):
                 path.write_bytes(b"data")
                 visual_ids.append(asset.id)
                 private = ModelTestGenerationAsset(
+                    owner_user_id="test-user",
                     id=str(uuid4()),
                     original_filename=identity,
                     storage_key=uuid4().hex,
@@ -329,7 +335,7 @@ async def test_options_and_all_admission_paths_share_the_contract(model_slug):
                     byte_size=4,
                 )
                 session.add(private)
-                root = get_settings().workspace_model_test_path("default", "references")
+                root = get_settings().account_model_test_path("test-user", "references")
                 root.mkdir(parents=True, exist_ok=True)
                 (root / private.storage_key).write_bytes(b"data")
                 private_ids.append(private.id)
@@ -351,7 +357,7 @@ async def test_options_and_all_admission_paths_share_the_contract(model_slug):
                 )
         await session.commit()
         visual = VisualGeneration(session)
-        test = ModelTestGeneration(session, "default")
+        test = ModelTestGeneration(session, "test-user")
         for option in ((await visual.options()).models, (await test.options()).items):
             selected = next(item for item in option if item.id == model.id)
             assert selected.video_capabilities.duration_min == 1

@@ -3,8 +3,8 @@
 from sqlalchemy import select, text, update
 
 from app.capabilities.identity.errors import AccountError
-from app.console.governance.platform_policy import read_setting
-from app.console.models import AuthSession, ManagementApiKey, User, WorkspaceMembership
+from app.console.governance.settings_records import read_setting
+from app.console.models import AuthSession, ManagementApiKey, User
 from app.console.models.runtime_admission import RuntimeAdmission as Admission
 from app.console.schemas.platform_governance import RuntimeQuotas
 from app.orm import RUNTIME_QUOTA_TASK_MODELS
@@ -31,14 +31,14 @@ async def settle_admissions(session):
         active_by_kind[kind] = set(
             (
                 await session.execute(
-                    select(model.id, model.workspace_id).where(model.status.in_(ACTIVE))
+                    select(model.id, model.owner_user_id).where(model.status.in_(ACTIVE))
                 )
             ).all()
         )
     for lease in leases:
         if lease.task_kind and lease.task_ids:
             active = sum(
-                (identity, lease.workspace_id) in active_by_kind.get(lease.task_kind, set())
+                (identity, lease.owner_user_id) in active_by_kind.get(lease.task_kind, set())
                 for identity in lease.task_ids
             )
             if not active:
@@ -50,8 +50,10 @@ async def settle_admissions(session):
 
 
 async def check_capacity(
-    session, *, user_id, workspace_id, role, voice, weight, excluding=None, submitted_ids=()
+    session, *, user_id, owner_user_id, role, voice, weight, excluding=None, submitted_ids=()
 ):
+    if user_id != owner_user_id:
+        raise AccountError("account_access_forbidden")
     policy = RuntimeQuotas.model_validate(
         (await read_setting(session, "runtime_quotas", RuntimeQuotas().model_dump()))["value"]
     )
@@ -65,11 +67,11 @@ async def check_capacity(
         model = task_model.__table__.c
         rows = (
             await session.execute(
-                select(model.id, model.workspace_id).where(model.status.in_(ACTIVE))
+                select(model.id, model.owner_user_id).where(model.status.in_(ACTIVE))
             )
         ).all()
         legacy.extend(
-            (row.id, row.workspace_id)
+            (row.id, row.owner_user_id)
             for row in rows
             if row.id not in known[kind] and row.id not in submitted_ids
         )
@@ -77,18 +79,14 @@ async def check_capacity(
     leases = [lease for lease in leases if not lease.waiting]
     limit = getattr(policy, role)
     total = sum(lease.weight for lease in leases) + len(legacy)
-    workspace = sum(lease.weight for lease in leases if lease.workspace_id == workspace_id) + sum(
-        1 for _, legacy_workspace_id in legacy if legacy_workspace_id == workspace_id
-    )
     own = sum(lease.weight for lease in leases if lease.user_id == user_id)
     voices = sum(lease.weight for lease in leases if lease.realtime_voice)
     own_voices = sum(
         lease.weight for lease in leases if lease.realtime_voice and lease.user_id == user_id
     )
-    ceiling = policy.instance.total - (policy.reserved_for_admins if role == "member" else 0)
+    ceiling = policy.instance.total - (policy.reserved_for_admins if role == "user" else 0)
     if (
         total + weight > ceiling
-        or workspace + weight > policy.workspace_total
         or own + weight > limit.total
         or (
             voice
@@ -104,20 +102,18 @@ async def check_capacity(
 async def acquire(principal, *, voice=False, weight=1):
     async with SessionLocal() as session:
         await session.execute(text("BEGIN IMMEDIATE"))
-        role = principal.platform_role or (
-            "super_admin" if principal.is_platform_admin else "member"
-        )
+        role = principal.platform_role or ("admin" if principal.is_platform_admin else "user")
         await check_capacity(
             session,
             user_id=principal.user_id,
-            workspace_id=principal.workspace_id,
+            owner_user_id=principal.owner_user_id,
             role=role,
             voice=voice,
             weight=weight,
         )
         lease = Admission(
             user_id=principal.user_id,
-            workspace_id=principal.workspace_id,
+            owner_user_id=principal.owner_user_id,
             platform_role=role,
             realtime_voice=voice,
             weight=weight,
@@ -138,7 +134,7 @@ async def attach(session, lease_id, kind, task_ids):
     model = TASK_MODELS[kind]
     found = set(
         await session.scalars(
-            select(model.id).where(model.workspace_id == row.workspace_id, model.id.in_(task_ids))
+            select(model.id).where(model.owner_user_id == row.owner_user_id, model.id.in_(task_ids))
         )
     )
     if found != set(task_ids):
@@ -148,7 +144,7 @@ async def attach(session, lease_id, kind, task_ids):
         await check_capacity(
             session,
             user_id=row.user_id,
-            workspace_id=row.workspace_id,
+            owner_user_id=row.owner_user_id,
             role=row.platform_role,
             voice=False,
             weight=weight,
@@ -201,24 +197,13 @@ async def validate_spawned_actor(session, principal):
     if principal.auth_kind == "management_api_key" and credential.expires_at <= utc_now():
         raise AccountError("studio_auth_required")
     if principal.auth_kind == "session" and (
-        credential.active_workspace_id != principal.workspace_id
+        credential.user_id != principal.user_id
         or credential.idle_expires_at <= utc_now()
         or credential.absolute_expires_at <= utc_now()
     ):
-        raise AccountError("workspace_access_changed")
-    member = await session.scalar(
-        select(WorkspaceMembership).where(
-            WorkspaceMembership.user_id == user.id,
-            WorkspaceMembership.workspace_id == principal.workspace_id,
-            WorkspaceMembership.status == "active",
-        )
-    )
-    if user.platform_role not in {"super_admin", "admin"} and (
-        member is None or member.role == "viewer"
-    ):
-        raise AccountError("workspace_access_changed")
+        raise AccountError("account_access_changed")
     if "studio:write" not in principal.scopes:
-        raise AccountError("workspace_access_changed")
+        raise AccountError("account_access_changed")
     return user
 
 
@@ -228,7 +213,7 @@ async def admit_spawned_tasks(session, principal, kind, task_ids):
     await check_capacity(
         session,
         user_id=user.id,
-        workspace_id=principal.workspace_id,
+        owner_user_id=principal.owner_user_id,
         role=user.platform_role,
         voice=False,
         weight=len(task_ids),
@@ -237,7 +222,7 @@ async def admit_spawned_tasks(session, principal, kind, task_ids):
     session.add(
         Admission(
             user_id=user.id,
-            workspace_id=principal.workspace_id,
+            owner_user_id=principal.owner_user_id,
             platform_role=user.platform_role,
             task_kind=kind,
             task_ids=list(task_ids),

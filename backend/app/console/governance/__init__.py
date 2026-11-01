@@ -1,1 +1,1 @@
-"""Studio account, workspace, and platform governance use cases."""
+"""Studio account and platform governance use cases."""

@@ -27,12 +27,12 @@ from app.runtime.time import utc_now
 
 
 class VideoEditorSegmentExports:
-    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
         self.session = session
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
 
     async def _timeline(self, project_id: str) -> VideoEditorTimeline:
-        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
+        await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
         row = await self.session.get(VideoEditorTimeline, project_id)
         if row is None:
             raise VideoEditorNotFoundError("时间轴不存在")
@@ -46,7 +46,7 @@ class VideoEditorSegmentExports:
             await self.session.execute(
                 select(VideoEditorTask).where(
                     VideoEditorTask.project_id == project_id,
-                    VideoEditorTask.workspace_id == self.workspace_id,
+                    VideoEditorTask.owner_user_id == self.owner_user_id,
                     VideoEditorTask.request_id == body.request_id,
                 )
             )
@@ -70,7 +70,7 @@ class VideoEditorSegmentExports:
                 await self.session.execute(
                     select(VisualWorkshopProject).where(
                         VisualWorkshopProject.id == body.target.project_id,
-                        VisualWorkshopProject.workspace_id == self.workspace_id,
+                        VisualWorkshopProject.owner_user_id == self.owner_user_id,
                     )
                 )
             ).scalar_one_or_none()
@@ -131,7 +131,7 @@ class VideoEditorSegmentExports:
             for item, clip in selected
         ]
         task = VideoEditorTask(
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             project_id=project_id,
             request_id=body.request_id,
             kind="segment_export",
@@ -152,14 +152,14 @@ class VideoEditorSegmentExports:
         return task_out(task)
 
     async def list(self, project_id: str) -> VideoEditorTaskListOut:
-        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
+        await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
         rows = list(
             (
                 await self.session.execute(
                     select(VideoEditorTask)
                     .where(
                         VideoEditorTask.project_id == project_id,
-                        VideoEditorTask.workspace_id == self.workspace_id,
+                        VideoEditorTask.owner_user_id == self.owner_user_id,
                         VideoEditorTask.kind == "segment_export",
                     )
                     .order_by(VideoEditorTask.created_at.desc())
@@ -169,13 +169,13 @@ class VideoEditorSegmentExports:
         return VideoEditorTaskListOut(items=[task_out(row) for row in rows])
 
     async def get(self, project_id: str, task_id: str) -> VideoEditorTaskOut:
-        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
+        await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
         row = (
             await self.session.execute(
                 select(VideoEditorTask).where(
                     VideoEditorTask.id == task_id,
                     VideoEditorTask.project_id == project_id,
-                    VideoEditorTask.workspace_id == self.workspace_id,
+                    VideoEditorTask.owner_user_id == self.owner_user_id,
                     VideoEditorTask.kind == "segment_export",
                 )
             )
@@ -185,13 +185,13 @@ class VideoEditorSegmentExports:
         return task_out(row)
 
     async def cancel(self, project_id: str, task_id: str) -> VideoEditorTaskOut:
-        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
+        await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
         row = (
             await self.session.execute(
                 select(VideoEditorTask).where(
                     VideoEditorTask.id == task_id,
                     VideoEditorTask.project_id == project_id,
-                    VideoEditorTask.workspace_id == self.workspace_id,
+                    VideoEditorTask.owner_user_id == self.owner_user_id,
                     VideoEditorTask.kind == "segment_export",
                 )
             )

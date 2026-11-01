@@ -162,7 +162,7 @@ async def apply_change(library, project_id, body):
             update(PresentationTemplate)
             .where(
                 PresentationTemplate.id == body.template_id,
-                PresentationTemplate.workspace_id == library.workspace_id,
+                PresentationTemplate.owner_user_id == library.owner_user_id,
                 PresentationTemplate.revision == body.template_revision,
             )
             .values(revision=PresentationTemplate.revision)

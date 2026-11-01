@@ -10,7 +10,7 @@ import { exportHtml, exportMarkdown } from "./portability";
 import { markdownWarnings, toMarkdown } from "./markdown";
 import type { NoteEditorChrome } from "./noteEditorChrome";
 import type { DocumentChrome } from "./document-layout/useDocumentChrome";
-import { useWorkspaceId } from "@platform/auth/WorkspacePermissions";
+import { useAccountId } from "@platform/auth/AccountAccess";
 
 const NoteHistory = lazy(() =>
   import("./NoteHistory").then((m) => ({ default: m.NoteHistory })),
@@ -41,7 +41,7 @@ export function NoteEditorPane({
 }) {
   const access = useDocumentAccess();
   const editing = useNoteDraft(note, onSaved);
-  const workspace = useWorkspaceId();
+  const workspace = useAccountId();
   const recoveryPending = !editing.localReady || !!editing.recovery.length;
   const [editor, setEditor] = useState<Editor | null>(null);
   const titleInput = useRef<HTMLInputElement>(null);

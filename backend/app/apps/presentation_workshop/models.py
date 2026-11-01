@@ -11,11 +11,11 @@ from app.runtime.time import utc_now
 class PresentationProject(Base):
     __tablename__ = "presentation_projects"
     __table_args__ = (
-        Index("ix_presentation_projects_workspace_updated", "workspace_id", "updated_at"),
+        Index("ix_presentation_projects_account_updated", "owner_user_id", "updated_at"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     title: Mapped[str] = mapped_column(String(120))
     # Versioned scene JSON; 0101 upgrades document metadata without changing project revisions.
     document: Mapped[dict] = mapped_column(JSON)

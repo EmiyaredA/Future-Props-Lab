@@ -4,12 +4,13 @@ from uuid import uuid4
 import httpx
 import pytest
 from starlette.responses import PlainTextResponse
+from tests.account_fixtures import account_record
 
 from app.capabilities.identity.principal import StudioPrincipal
 from app.console.governance.desktop_agent import allows_agent
 from app.deps import SessionDep, require_studio_auth
 from app.main import app
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.desktop import DesktopTransport
 
 ROOT = "/v1/director-desk/projects"
@@ -17,14 +18,10 @@ TOKEN = "director-agent-test-token"
 
 
 async def _viewer(session: SessionDep) -> StudioPrincipal:
-    bind_workspace(session, "default")
+    bind_owner(session, "test-user")
     return StudioPrincipal(
+        platform_role="admin",
         user_id="test-user",
-        workspace_id="default",
-        membership_id="test-membership",
-        workspace_access="member",
-        member_role="viewer",
-        is_platform_admin=False,
         must_change_password=False,
         auth_kind="session",
         scopes=frozenset({"studio:read", "studio:private_read"}),
@@ -106,18 +103,17 @@ async def test_open_editor_runs_tool_once_per_request_id():
 @pytest.mark.asyncio
 async def test_other_workspace_tool_call_is_missing():
     from app.apps.director_desk.models import DirectorDeskProject
-    from app.console.models import Workspace
     from app.runtime.db import SessionLocal
 
     project_id = str(uuid4())
     other = str(uuid4())
     async with SessionLocal() as session:
-        session.add(Workspace(id=other, name="隔离工具"))
+        session.add(account_record(id=other, name="隔离工具"))
         await session.flush()
         session.add(
             DirectorDeskProject(
                 id=project_id,
-                workspace_id=other,
+                owner_user_id=other,
                 title="隔离工程",
                 document={
                     "format": "director-desk",

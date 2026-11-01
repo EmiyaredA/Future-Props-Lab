@@ -45,9 +45,9 @@ def note_out(row: ThoughtNote) -> ThoughtNoteOut:
 
 
 class Notes:
-    def __init__(self, session: AsyncSession, workspace_id: str, author_id: str | None = None):
+    def __init__(self, session: AsyncSession, owner_user_id: str, author_id: str | None = None):
         self.session = session
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
         self.author_id = author_id
 
     async def get(self, note_id: str) -> ThoughtNote:
@@ -55,13 +55,13 @@ class Notes:
             select(ThoughtNote)
             .where(
                 ThoughtNote.id == note_id,
-                ThoughtNote.workspace_id == self.workspace_id,
+                ThoughtNote.owner_user_id == self.owner_user_id,
             )
             .execution_options(populate_existing=True)
         )
         if row is None:
             raise ThoughtError("笔记不存在", 404, "not_found")
-        await KnowledgeBases(self.session, self.workspace_id).get(row.knowledge_base_id)
+        await KnowledgeBases(self.session, self.owner_user_id).get(row.knowledge_base_id)
         return row
 
     async def list(
@@ -76,11 +76,11 @@ class Notes:
         offset: int = 0,
         limit: int = 40,
     ) -> ThoughtNoteList:
-        await KnowledgeBases(self.session, self.workspace_id).get(knowledge_base_id)
+        await KnowledgeBases(self.session, self.owner_user_id).get(knowledge_base_id)
         filters = [
             ThoughtNote.knowledge_base_id == knowledge_base_id,
             ThoughtNote.is_home.is_(False),
-            ThoughtNote.workspace_id == self.workspace_id,
+            ThoughtNote.owner_user_id == self.owner_user_id,
             ThoughtNote.deleted_at.is_not(None)
             if view == "trash"
             else ThoughtNote.deleted_at.is_(None),
@@ -129,7 +129,7 @@ class Notes:
         all_tags = (
             await self.session.scalars(
                 select(ThoughtNote.tags).where(
-                    ThoughtNote.workspace_id == self.workspace_id,
+                    ThoughtNote.owner_user_id == self.owner_user_id,
                     ThoughtNote.knowledge_base_id == knowledge_base_id,
                     ThoughtNote.deleted_at.is_(None),
                 )
@@ -142,7 +142,7 @@ class Notes:
         )
 
     async def validate_refs(self, body: ThoughtNoteIn, *, importing: bool = False) -> set[str]:
-        await KnowledgeBases(self.session, self.workspace_id).get(
+        await KnowledgeBases(self.session, self.owner_user_id).get(
             body.knowledge_base_id, include_deleted=importing
         )
         if body.parent_id and not importing:
@@ -150,7 +150,7 @@ class Notes:
                 select(ThoughtNote).where(
                     ThoughtNote.id == body.parent_id,
                     ThoughtNote.knowledge_base_id == body.knowledge_base_id,
-                    ThoughtNote.workspace_id == self.workspace_id,
+                    ThoughtNote.owner_user_id == self.owner_user_id,
                     ThoughtNote.is_home.is_(False),
                     ThoughtNote.deleted_at.is_(None),
                 )
@@ -165,7 +165,7 @@ class Notes:
                 await self.session.scalars(
                     select(VisualAsset).where(
                         VisualAsset.id.in_(ids),
-                        VisualAsset.workspace_id == self.workspace_id,
+                        VisualAsset.owner_user_id == self.owner_user_id,
                         VisualAsset.project_id.is_(None),
                         VisualAsset.galgame_project_id.is_(None),
                         VisualAsset.video_editor_project_id.is_(None),
@@ -173,7 +173,7 @@ class Notes:
                 )
             ).all()
             if {r.id for r in rows} != ids:
-                raise ThoughtError("文件不存在或不属于当前空间的公共文件", 404, "not_found")
+                raise ThoughtError("文件不存在或不属于当前账号的公共文件", 404, "not_found")
             assets = {row.id: row for row in rows}
             if any(assets[key].media_kind != "image" for key in images):
                 raise ThoughtError("图片引用必须为图片文件")
@@ -206,10 +206,10 @@ class Notes:
         note_id: str | None = None,
     ) -> ThoughtNote:
         if not importing:
-            await validate_targets(self.session, self.workspace_id, body.document)
+            await validate_targets(self.session, self.owner_user_id, body.document)
         ids = await self.validate_refs(body, importing=importing)
         row = ThoughtNote(
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             **body.model_dump(),
             search_text=document_text(body.document),
         )
@@ -245,7 +245,7 @@ class Notes:
             or current.parent_id != body.parent_id
         ):
             raise ThoughtError("请使用目录移动操作修改文档归属")
-        await validate_targets(self.session, self.workspace_id, body.document, current.document)
+        await validate_targets(self.session, self.owner_user_id, body.document, current.document)
         ids = await self.validate_refs(body)
         content_changed = any(getattr(current, key) != getattr(body, key) for key in CONTENT_FIELDS)
         values = body.model_dump(exclude={"expected_revision", "knowledge_base_id", "parent_id"})
@@ -258,7 +258,7 @@ class Notes:
             update(ThoughtNote)
             .where(
                 ThoughtNote.id == note_id,
-                ThoughtNote.workspace_id == self.workspace_id,
+                ThoughtNote.owner_user_id == self.owner_user_id,
                 ThoughtNote.revision == body.expected_revision,
                 ThoughtNote.deleted_at.is_(None),
             )
@@ -345,7 +345,7 @@ class Notes:
         row = await self.get(note_id)
         if row.is_home:
             raise ThoughtError("首页不能单独删除或恢复")
-        await KnowledgeBases(self.session, self.workspace_id).reserve(
+        await KnowledgeBases(self.session, self.owner_user_id).reserve(
             row.knowledge_base_id, expected_knowledge
         )
         snapshot = note_out(row)
@@ -353,16 +353,16 @@ class Notes:
             raise ThoughtError("只能永久删除回收站笔记")
         predicate = (
             ThoughtNote.id == note_id,
-            ThoughtNote.workspace_id == self.workspace_id,
+            ThoughtNote.owner_user_id == self.owner_user_id,
             ThoughtNote.revision == expected,
         )
         if action == "purge":
-            await ensure_can_purge(self.session, self.workspace_id, note_id)
+            await ensure_can_purge(self.session, self.owner_user_id, note_id)
             result = await self.session.execute(delete(ThoughtNote).where(*predicate))
             if result.rowcount != 1:
                 await self.conflict(note_id, expected)
             await forget(
-                self.session, workspace_id=self.workspace_id, kind="thought", resource_id=note_id
+                self.session, owner_user_id=self.owner_user_id, kind="thought", resource_id=note_id
             )
             await self.session.commit()
             return snapshot
@@ -399,7 +399,7 @@ class Notes:
             update(ThoughtNote)
             .where(
                 ThoughtNote.id == note_id,
-                ThoughtNote.workspace_id == self.workspace_id,
+                ThoughtNote.owner_user_id == self.owner_user_id,
                 ThoughtNote.revision == expected,
                 ThoughtNote.deleted_at.is_(None),
             )
@@ -412,7 +412,7 @@ class Notes:
                 update(ThoughtNote)
                 .where(
                     ThoughtNote.id.in_(targets[1:]),
-                    ThoughtNote.workspace_id == self.workspace_id,
+                    ThoughtNote.owner_user_id == self.owner_user_id,
                     ThoughtNote.deleted_at.is_(None),
                 )
                 .values(
@@ -427,7 +427,7 @@ class Notes:
                 select(ThoughtNote)
                 .where(
                     ThoughtNote.knowledge_base_id == row.knowledge_base_id,
-                    ThoughtNote.workspace_id == self.workspace_id,
+                    ThoughtNote.owner_user_id == self.owner_user_id,
                     ThoughtNote.parent_id == parent_id,
                     ThoughtNote.is_home.is_(False),
                     ThoughtNote.deleted_at.is_(None),

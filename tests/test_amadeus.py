@@ -24,7 +24,7 @@ from app.console.amadeus.scripts import run_script
 from app.console.models.accounts import User
 from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
 from app.main import app
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
 from app.runtime.operation_receipts import OperationError
@@ -83,7 +83,7 @@ async def test_amadeus_model_bridge_streams_text_and_tool_calls(
         ],
     )
     events = [
-        json.loads(item) async for item in stream_model_turn(MockSession(), "default", request)
+        json.loads(item) async for item in stream_model_turn(MockSession(), "test-user", request)
     ]
     assert events[-1]["type"] == "end"
     assert events[-1]["tool_calls"] == [
@@ -108,7 +108,7 @@ async def test_amadeus_model_bridge_streams_text_and_tool_calls(
         ],
     )
     events = [
-        json.loads(item) async for item in stream_model_turn(MockSession(), "default", followup)
+        json.loads(item) async for item in stream_model_turn(MockSession(), "test-user", followup)
     ]
     assert "这是本地测试模型的确定性回复" in "".join(
         item["text"] for item in events if item["type"] == "delta"
@@ -128,7 +128,7 @@ async def test_amadeus_model_bridge_settles_after_request_session_rollback(
 
     async with SessionLocal() as session:
         provider = ModelProvider(
-            workspace_id="default",
+            owner_user_id="test-user",
             name="Amadeus Bridge Probe",
             kind="openai",
             base_url="https://example.invalid/v1",
@@ -138,7 +138,7 @@ async def test_amadeus_model_bridge_settles_after_request_session_rollback(
         session.add(provider)
         await session.flush()
         model = ModelEntry(
-            workspace_id="default",
+            owner_user_id="test-user",
             provider_id=provider.id,
             slug="amadeus-bridge-probe",
             label="Amadeus Bridge Probe",
@@ -165,7 +165,9 @@ async def test_amadeus_model_bridge_settles_after_request_session_rollback(
         tools=[],
     )
     async with SessionLocal() as session:
-        events = [json.loads(item) async for item in stream_model_turn(session, "default", request)]
+        events = [
+            json.loads(item) async for item in stream_model_turn(session, "test-user", request)
+        ]
     assert [event["type"] for event in events] == ["delta", "end"]
     assert events[0]["text"] == "probe"
     assert events[-1]["tool_calls"] == []
@@ -193,7 +195,7 @@ async def test_amadeus_tool_api_execute_checks_revision_schema_and_connection(
         async def rollback(self) -> None:
             pass
 
-    catalog = tool_catalog.ToolApiCatalog(MockSession(), "default")
+    catalog = tool_catalog.ToolApiCatalog(MockSession(), "test-user")
     row = SimpleNamespace(secret_ciphertext="")
     snapshot = SimpleNamespace(
         enabled=True,
@@ -246,7 +248,7 @@ async def test_amadeus_mcp_execute_checks_discovery_and_redacts_sensitive_result
         async def call(self, **_kwargs: object) -> dict[str, str]:
             return {"text": "secret response"}
 
-    catalog = mcp_catalog.McpCatalog(MockSession(), "default", client=MockClient())
+    catalog = mcp_catalog.McpCatalog(MockSession(), "test-user", client=MockClient())
     row = SimpleNamespace(bearer_ciphertext="", environment_ciphertext="")
     snapshot = SimpleNamespace(
         enabled=True,
@@ -414,7 +416,10 @@ async def test_amadeus_skill_keeps_loaded_version(
 
         async def get(self, _id: str) -> SimpleNamespace:
             return SimpleNamespace(
-                enabled=True, default_version=state["default"], latest_version="v2", name="测试技能"
+                enabled=True,
+                default_version=state["default"],
+                latest_version="v2",
+                name="测试技能",
             )
 
         async def versions(self, _id: str) -> list[SimpleNamespace]:
@@ -426,26 +431,26 @@ async def test_amadeus_skill_keeps_loaded_version(
 
     monkeypatch.setattr(skills, "SkillCatalog", Catalog)
     monkeypatch.setattr(skills, "work_root", lambda *_args: tmp_path / "session")
-    first = await skills.load_skill(Session(), "default", "conversation", "skill")
+    first = await skills.load_skill(Session(), "test-user", "conversation", "skill")
     state["default"] = "v2"
-    again = await skills.load_skill(Session(), "default", "conversation", "skill")
+    again = await skills.load_skill(Session(), "test-user", "conversation", "skill")
     assert (first["version"], first["content"]) == ("v1", "v1")
     assert (again["version"], again["content"]) == ("v1", "v1")
     (tmp_path / "session" / "skills" / "skill" / "v1" / "guide.txt").write_text("固定版本附属文件")
-    resource = skills.read_skill_file("default", "conversation", "skill", "v1", "guide.txt")
+    resource = skills.read_skill_file("test-user", "conversation", "skill", "v1", "guide.txt")
     assert resource["content"] == "固定版本附属文件"
     with pytest.raises(OperationError, match="文件不存在"):
-        skills.read_skill_file("default", "conversation", "skill", "v1", "missing.txt")
+        skills.read_skill_file("test-user", "conversation", "skill", "v1", "missing.txt")
     with pytest.raises(OperationError, match="路径无效"):
-        skills.read_skill_file("default", "conversation", "skill", "v1", "../v2/SKILL.md")
+        skills.read_skill_file("test-user", "conversation", "skill", "v1", "../v2/SKILL.md")
     (tmp_path / "session" / "skills" / "skill" / "v1" / "binary.txt").write_bytes(b"\xff")
     with pytest.raises(OperationError, match="不是 UTF-8"):
-        skills.read_skill_file("default", "conversation", "skill", "v1", "binary.txt")
+        skills.read_skill_file("test-user", "conversation", "skill", "v1", "binary.txt")
     (tmp_path / "session" / "skills" / "skill" / "v1" / "large.txt").write_bytes(
         b"x" * (skills.MAX_SKILL_FILE_BYTES + 1)
     )
     with pytest.raises(OperationError, match="超过 1 MiB"):
-        skills.read_skill_file("default", "conversation", "skill", "v1", "large.txt")
+        skills.read_skill_file("test-user", "conversation", "skill", "v1", "large.txt")
 
 
 @pytest.mark.asyncio
@@ -504,7 +509,7 @@ async def test_amadeus_script_execution_streams_output(
     await _test_user()
 
     async def fake_script(
-        _workspace_id: str,
+        _owner_user_id: str,
         _conversation_id: str,
         _arguments: dict,
         on_output=None,
@@ -574,10 +579,10 @@ async def test_amadeus_read_only_principal_cannot_execute_approved_write() -> No
             },
         )
     principal = SimpleNamespace(
-        user_id="test-user", workspace_id="default", allows=lambda _capability: False
+        user_id="test-user", owner_user_id="test-user", allows=lambda _capability: False
     )
     async with SessionLocal() as session:
-        bind_workspace(session, "default")
+        bind_owner(session, "test-user")
         with pytest.raises(OperationError) as error:
             await execute_action(session, principal, conversation_id, action["id"], None)
         assert error.value.status == 403
@@ -585,7 +590,7 @@ async def test_amadeus_read_only_principal_cannot_execute_approved_write() -> No
 
 async def _test_user() -> None:
     async with SessionLocal() as session:
-        bind_workspace(session, "default")
+        bind_owner(session, "test-user")
         if await session.get(User, "test-user") is None:
             session.add(
                 User(
@@ -649,12 +654,12 @@ async def test_amadeus_conversation_references_cas_and_owner() -> None:
         detail = await client.get(f"/v1/amadeus/conversations/{conversation['id']}")
         assert detail.json()["messages"][0]["references"][0]["value"] == "80%"
     async with SessionLocal() as session:
-        bind_workspace(session, "default")
-        other = SimpleNamespace(user_id="someone-else", workspace_id="default")
+        bind_owner(session, "test-user")
+        other = SimpleNamespace(user_id="someone-else", owner_user_id="test-user")
         with pytest.raises(OperationError) as exc:
             await Conversations(session, other).detail(conversation["id"])
         assert exc.value.status == 404
-        other_workspace = SimpleNamespace(user_id="test-user", workspace_id="another")
+        other_workspace = SimpleNamespace(user_id="test-user", owner_user_id="another")
         with pytest.raises(OperationError) as exc:
             await Conversations(session, other_workspace).detail(conversation["id"])
         assert exc.value.status == 404
@@ -720,12 +725,12 @@ async def test_amadeus_startup_recovery_interrupts_run_without_replay() -> None:
         root = f"/v1/amadeus/conversations/{conversation['id']}"
         identity = new_id()
         async with SessionLocal() as session:
-            bind_workspace(session, "default")
+            bind_owner(session, "test-user")
             session.add(
                 AmadeusRun(
                     id=identity,
                     conversation_id=conversation["id"],
-                    workspace_id="default",
+                    owner_user_id="test-user",
                     user_id="test-user",
                     model_id="legacy",
                     status="running",
@@ -737,7 +742,7 @@ async def test_amadeus_startup_recovery_interrupts_run_without_replay() -> None:
             session.add(
                 AmadeusAction(
                     conversation_id=conversation["id"],
-                    workspace_id="default",
+                    owner_user_id="test-user",
                     user_id="test-user",
                     run_id=identity,
                     tool_name="write_script",
@@ -786,7 +791,7 @@ async def test_amadeus_approval_binds_arguments_and_runs_once() -> None:
         completed = await client.post(root + f"/actions/{action['id']}/execute")
         assert completed.status_code == 200, completed.text
         assert completed.json()["status"] == "completed"
-        saved = read_file_bytes("default", conversation["id"], "scripts", "hello.py")
+        saved = read_file_bytes("test-user", conversation["id"], "scripts", "hello.py")
         assert saved == b"print('hello')"
         again = await client.post(root + f"/actions/{action['id']}/execute")
         assert again.status_code == 409
@@ -800,20 +805,20 @@ async def test_amadeus_files_reject_traversal_symlinks_and_stale_writes(tmp_path
     ) as client:
         conversation_id = (await client.post("/v1/amadeus/conversations")).json()["id"]
     with pytest.raises(OperationError):
-        write_file("default", conversation_id, "imports", "../outside", b"bad", "")
-    item = write_file("default", conversation_id, "imports", "safe.txt", b"first", "")
+        write_file("test-user", conversation_id, "imports", "../outside", b"bad", "")
+    item = write_file("test-user", conversation_id, "imports", "safe.txt", b"first", "")
     assert item["sha256"] == hashlib.sha256(b"first").hexdigest()
     with pytest.raises(OperationError) as conflict:
-        write_file("default", conversation_id, "imports", "safe.txt", b"second", "")
+        write_file("test-user", conversation_id, "imports", "safe.txt", b"second", "")
     assert conflict.value.status == 409
     outside = tmp_path / "secret.txt"
     outside.write_text("private")
-    link = work_root("default", conversation_id) / "imports" / "link.txt"
+    link = work_root("test-user", conversation_id) / "imports" / "link.txt"
     os.symlink(outside, link)
     with pytest.raises(OperationError):
-        read_file_bytes("default", conversation_id, "imports", "link.txt")
+        read_file_bytes("test-user", conversation_id, "imports", "link.txt")
     with pytest.raises(OperationError):
-        write_file("default", conversation_id, "imports", "link.txt", b"bad", "")
+        write_file("test-user", conversation_id, "imports", "link.txt", b"bad", "")
     assert outside.read_text() == "private"
 
 
@@ -935,7 +940,7 @@ async def test_amadeus_script_sandbox_reads_only_conversation_files(
     ) as client:
         conversation_id = (await client.post("/v1/amadeus/conversations")).json()["id"]
         other_id = (await client.post("/v1/amadeus/conversations")).json()["id"]
-    other = work_root("default", other_id) / "imports" / "private.txt"
+    other = work_root("test-user", other_id) / "imports" / "private.txt"
     other.parent.mkdir(parents=True)
     other.write_text("private")
     script = (
@@ -961,10 +966,10 @@ async def test_amadeus_script_sandbox_reads_only_conversation_files(
         "    print('process-denied')\n"
         "Path('outputs/result.txt').write_text('done')\n"
     ).encode()
-    work_root("default", conversation_id).joinpath("outputs").mkdir(parents=True)
-    write_file("default", conversation_id, "scripts", "check.py", script, "")
+    work_root("test-user", conversation_id).joinpath("outputs").mkdir(parents=True)
+    write_file("test-user", conversation_id, "scripts", "check.py", script, "")
     result = await run_script(
-        "default",
+        "test-user",
         conversation_id,
         {
             "kind": "python",
@@ -978,7 +983,7 @@ async def test_amadeus_script_sandbox_reads_only_conversation_files(
     assert "outside-readable" not in result["output"]
     assert "network-denied" in result["output"]
     assert "process-denied" in result["output"]
-    assert read_file_bytes("default", conversation_id, "outputs", "result.txt") == b"done"
+    assert read_file_bytes("test-user", conversation_id, "outputs", "result.txt") == b"done"
 
 
 @pytest.mark.asyncio
@@ -1003,10 +1008,10 @@ async def test_amadeus_script_timeout_terminates_process_group(
     ) as client:
         conversation_id = (await client.post("/v1/amadeus/conversations")).json()["id"]
     script = b"import time\ntime.sleep(10)\n"
-    write_file("default", conversation_id, "scripts", "slow.py", script, "")
+    write_file("test-user", conversation_id, "scripts", "slow.py", script, "")
     with pytest.raises(TimeoutError):
         await run_script(
-            "default",
+            "test-user",
             conversation_id,
             {"kind": "python", "name": "slow.py", "sha256": hashlib.sha256(script).hexdigest()},
         )

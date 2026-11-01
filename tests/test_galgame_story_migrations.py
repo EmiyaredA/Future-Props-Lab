@@ -6,6 +6,7 @@ from uuid import uuid4
 import httpx
 import pytest
 from sqlalchemy import select, update
+from tests.account_fixtures import account_record
 
 from app.apps.galgame_workshop.models import GalgameStoryDocument, GalgameWorkshopProject
 from app.apps.galgame_workshop.story.story import default_story_document
@@ -13,9 +14,8 @@ from app.apps.galgame_workshop.story.story_migrations import (
     GalgameStoryMigrations,
     inspect_story_migration,
 )
-from app.console.models import Workspace
 from app.main import app
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.db import SessionLocal
 
 
@@ -42,12 +42,12 @@ def test_story_migration_inspection_rejects_unknown_and_invalid_documents() -> N
 
 @pytest.mark.asyncio
 async def test_story_migration_status_run_and_idempotency() -> None:
-    workspace_id = str(uuid4())
+    owner_user_id = str(uuid4())
     project_ids = [str(uuid4()) for _ in range(3)]
     async with SessionLocal() as session:
-        session.add(Workspace(id=workspace_id, name="Story 迁移测试"))
+        session.add(account_record(id=owner_user_id, name="Story 迁移测试"))
         await session.flush()
-        bind_workspace(session.sync_session, workspace_id)
+        bind_owner(session.sync_session, owner_user_id)
         documents: list[tuple[str, dict]] = []
         for project_id, document in zip(
             project_ids,
@@ -57,7 +57,7 @@ async def test_story_migration_status_run_and_idempotency() -> None:
             session.add(
                 GalgameWorkshopProject(
                     id=project_id,
-                    workspace_id=workspace_id,
+                    owner_user_id=owner_user_id,
                     title=project_id,
                 )
             )
@@ -67,7 +67,7 @@ async def test_story_migration_status_run_and_idempotency() -> None:
             session.add(GalgameStoryDocument(project_id=project_id, document=document))
         await session.commit()
 
-        migrations = GalgameStoryMigrations(session, workspace_id)
+        migrations = GalgameStoryMigrations(session, owner_user_id)
         assert (await migrations.status()).model_dump() == {
             "pending": 1,
             "invalid": 1,
@@ -93,19 +93,19 @@ async def test_story_migration_status_run_and_idempotency() -> None:
 
 @pytest.mark.asyncio
 async def test_story_migration_only_scans_and_updates_current_workspace() -> None:
-    workspace_ids = [str(uuid4()), str(uuid4())]
+    owner_user_ids = [str(uuid4()), str(uuid4())]
     project_ids = [str(uuid4()), str(uuid4())]
-    for index, (workspace_id, project_id) in enumerate(
-        zip(workspace_ids, project_ids, strict=True)
+    for index, (owner_user_id, project_id) in enumerate(
+        zip(owner_user_ids, project_ids, strict=True)
     ):
         async with SessionLocal() as session:
-            session.add(Workspace(id=workspace_id, name=f"Story 空间 {index + 1}"))
+            session.add(account_record(id=owner_user_id, name=f"Story 空间 {index + 1}"))
             await session.flush()
-            bind_workspace(session.sync_session, workspace_id)
+            bind_owner(session.sync_session, owner_user_id)
             session.add(
                 GalgameWorkshopProject(
                     id=project_id,
-                    workspace_id=workspace_id,
+                    owner_user_id=owner_user_id,
                     title=f"空间 {index + 1} 工程",
                 )
             )
@@ -119,8 +119,8 @@ async def test_story_migration_only_scans_and_updates_current_workspace() -> Non
             await session.commit()
 
     async with SessionLocal() as first_workspace:
-        bind_workspace(first_workspace.sync_session, workspace_ids[0])
-        migrations = GalgameStoryMigrations(first_workspace, workspace_ids[0])
+        bind_owner(first_workspace.sync_session, owner_user_ids[0])
+        migrations = GalgameStoryMigrations(first_workspace, owner_user_ids[0])
         assert (await migrations.status()).model_dump() == {
             "pending": 1,
             "invalid": 0,
@@ -130,8 +130,8 @@ async def test_story_migration_only_scans_and_updates_current_workspace() -> Non
         assert (await migrations.run(100)).migrated == 1
 
     async with SessionLocal() as second_workspace:
-        bind_workspace(second_workspace.sync_session, workspace_ids[1])
-        migrations = GalgameStoryMigrations(second_workspace, workspace_ids[1])
+        bind_owner(second_workspace.sync_session, owner_user_ids[1])
+        migrations = GalgameStoryMigrations(second_workspace, owner_user_ids[1])
         assert (await migrations.status()).model_dump() == {
             "pending": 1,
             "invalid": 0,
@@ -146,28 +146,28 @@ async def test_story_migration_only_scans_and_updates_current_workspace() -> Non
 
 @pytest.mark.asyncio
 async def test_story_migration_reports_cas_conflict(monkeypatch: pytest.MonkeyPatch) -> None:
-    workspace_id = str(uuid4())
+    owner_user_id = str(uuid4())
     project_id = str(uuid4())
     async with SessionLocal() as session:
-        session.add(Workspace(id=workspace_id, name="Story CAS 测试"))
+        session.add(account_record(id=owner_user_id, name="Story CAS 测试"))
         await session.flush()
-        bind_workspace(session.sync_session, workspace_id)
+        bind_owner(session.sync_session, owner_user_id)
         session.add(
             GalgameWorkshopProject(
                 id=project_id,
-                workspace_id=workspace_id,
+                owner_user_id=owner_user_id,
                 title="冲突工程",
             )
         )
         await session.flush()
         session.add(GalgameStoryDocument(project_id=project_id, document=story_document("1.2")))
         await session.commit()
-        migrations = GalgameStoryMigrations(session, workspace_id)
+        migrations = GalgameStoryMigrations(session, owner_user_id)
         stale = await migrations._candidates()
         original_candidates = migrations._candidates
 
         async with SessionLocal() as concurrent:
-            bind_workspace(concurrent.sync_session, workspace_id)
+            bind_owner(concurrent.sync_session, owner_user_id)
             await concurrent.execute(
                 update(GalgameStoryDocument)
                 .where(GalgameStoryDocument.project_id == project_id)

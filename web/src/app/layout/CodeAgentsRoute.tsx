@@ -4,21 +4,21 @@ import { ModelInfrastructureHeader } from "./ModelInfrastructureHeader";
 
 export function CodeAgentsRoute({
   user,
-  workspaceId,
+  accountId,
   navigate,
   focusSelected,
 }: {
   user: { id: string; platform_role?: string };
-  workspaceId: string;
+  accountId: string;
   navigate: (page: StudioPage, keyboard?: boolean) => void;
   focusSelected?: boolean;
 }) {
-  const scope = `${user.id}:${workspaceId}`;
+  const scope = `${user.id}:${accountId}`;
   return (
     <CodeAgentsPage
       key={scope}
       scope={scope}
-      canManage={["admin", "super_admin"].includes(user.platform_role || "")}
+      canManage={["admin", "admin"].includes(user.platform_role || "")}
       renderHeader={(actions) => (
         <ModelInfrastructureHeader
           page="code-agents"

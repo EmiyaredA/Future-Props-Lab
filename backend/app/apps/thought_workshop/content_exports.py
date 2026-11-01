@@ -21,12 +21,12 @@ from app.runtime.config import get_settings
 from app.runtime.revisions import RevisionConflictError
 
 
-async def resolve_assets(session, workspace_id, ids):
+async def resolve_assets(session, owner_user_id, ids):
     rows = list(
         await session.scalars(
             select(VisualAsset).where(
                 VisualAsset.id.in_(ids),
-                VisualAsset.workspace_id == workspace_id,
+                VisualAsset.owner_user_id == owner_user_id,
                 VisualAsset.project_id.is_(None),
                 VisualAsset.galgame_project_id.is_(None),
                 VisualAsset.video_editor_project_id.is_(None),
@@ -38,27 +38,27 @@ async def resolve_assets(session, workspace_id, ids):
     return {row.id: row for row in rows}
 
 
-async def convert(session, workspace_id, body):
-    rows = await resolve_assets(session, workspace_id, set(body.assets.values()))
+async def convert(session, owner_user_id, body):
+    rows = await resolve_assets(session, owner_user_id, set(body.assets.values()))
     document, warnings = parse_markdown(
         body.markdown, {path: rows[id] for path, id in body.assets.items()}
     )
     return ThoughtMarkdownOut(document=document, warnings=warnings)
 
 
-async def export_note(session, workspace_id, note_id, expected_revision, format):
-    note = await Notes(session, workspace_id).get(note_id)
+async def export_note(session, owner_user_id, note_id, expected_revision, format):
+    note = await Notes(session, owner_user_id).get(note_id)
     if note.revision != expected_revision:
         raise RevisionConflictError(
             expected_revision, note.revision, note_out(note).model_dump(mode="json")
         )
-    assets = await resolve_assets(session, workspace_id, file_ids(note.document))
+    assets = await resolve_assets(session, owner_user_id, file_ids(note.document))
     storage = AssetStorage(get_settings())
     files = {
         id: (storage.path_for(row), "assets/" + id + Path(row.original_filename).suffix.lower())
         for id, row in assets.items()
     }
-    title, document = note.title, await project(session, workspace_id, note)
+    title, document = note.title, await project(session, owner_user_id, note)
     await session.rollback()
     content = (
         "# " + title + "\n\n" + markdown(document, {id: item[1] for id, item in files.items()})

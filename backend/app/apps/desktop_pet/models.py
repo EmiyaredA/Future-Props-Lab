@@ -22,10 +22,10 @@ from app.runtime.time import utc_now
 
 class DesktopPetProject(Base):
     __tablename__ = "desktop_pet_projects"
-    __table_args__ = (Index("ix_desktop_pet_workspace_updated", "workspace_id", "updated_at"),)
+    __table_args__ = (Index("ix_desktop_pet_account_updated", "owner_user_id", "updated_at"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     source_type: Mapped[str] = mapped_column(String(32), default="live2d")
     source_project_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     source_revision: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -43,12 +43,12 @@ class DesktopPetProject(Base):
 class DesktopPetChat(Base):
     __tablename__ = "desktop_pet_chats"
     __table_args__ = (
-        UniqueConstraint("workspace_id", "project_id", "user_id"),
-        Index("ix_desktop_pet_chats_user", "user_id", "workspace_id"),
+        UniqueConstraint("owner_user_id", "project_id", "user_id"),
+        Index("ix_desktop_pet_chats_user", "user_id", "owner_user_id"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     project_id: Mapped[str] = mapped_column(
         ForeignKey("desktop_pet_projects.id", ondelete="CASCADE")
     )

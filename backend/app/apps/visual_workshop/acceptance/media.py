@@ -22,7 +22,7 @@ def positions(duration_ms, start=0, end=None):
 
 
 async def extract_evidence(session, settings, run, source_id, times):
-    source = await asset(session, run.workspace_id, run.project_id, source_id)
+    source = await asset(session, run.owner_user_id, run.project_id, source_id)
     storage = AssetStorage(settings)
     source_path = storage.path_for(source)
     evidence, written, seen = [], [], set()
@@ -38,7 +38,7 @@ async def extract_evidence(session, settings, run, source_id, times):
                 key,
                 visual_project_id=run.project_id,
                 galgame_project_id=None,
-                workspace_id=run.workspace_id,
+                owner_user_id=run.owner_user_id,
             )
             path.parent.mkdir(parents=True, exist_ok=True)
             written.append(path)
@@ -47,7 +47,7 @@ async def extract_evidence(session, settings, run, source_id, times):
             session.add(
                 VisualAsset(
                     id=identity,
-                    workspace_id=run.workspace_id,
+                    owner_user_id=run.owner_user_id,
                     project_id=run.project_id,
                     original_filename=f"frame-{position}ms.png",
                     display_name=f"验收取样 {position} ms",
@@ -132,5 +132,5 @@ async def metadata(session, settings, run):
     output = run.snapshot["output"]
     if output["kind"] not in {"image", "video"}:
         return {}
-    row = await asset(session, run.workspace_id, run.project_id, output["asset_id"])
+    row = await asset(session, run.owner_user_id, run.project_id, output["asset_id"])
     return await inspect_media(AssetStorage(settings).path_for(row), output["kind"])

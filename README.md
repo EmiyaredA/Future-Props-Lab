@@ -7,7 +7,7 @@ FFmpeg/FFprobe；持续集成同时验证 Python 3.11
 最低支持版本和 Python 3.14。克隆后先运行 `git lfs install`；若检出时跳过了 LFS 对象，运行
 `git lfs pull` 后再执行安装。
 
-账号治理新增独立管理中台与四种固定工作区角色；升级前的普通成员保留协作能力，模型配置和完整日志改由空间管理员负责。详见[账号与工作区治理](docs/reference/account-governance.md)。
+账号直接拥有私人数据，平台角色仅有管理员和普通用户。管理员可分配共享模型与 Agent，但不能浏览他人私人项目。详见[账号与数据归属](docs/reference/account-governance.md)。
 
 ## 快速开始
 
@@ -16,7 +16,7 @@ macOS App 支持本地 CLI / Python SDK 接入：在「账号设置 → API 密�
 不需要为内置 CLI 安装 Python；默认不开放接入，不改变现有登录和数据。详见
 [本地 Agent 接入](docs/operations/desktop-agent.md)。
 
-桌面顶栏的「Amadeus」打开独立的助手窗口。它在当前授权 Workspace 内显示已打开的 FPL
+桌面顶栏的「Amadeus」打开独立的助手窗口。它在当前授权账号内显示已打开的 FPL
 窗口和手动选取的控件，按账号保存本地会话；新对话使用管理员授权的 Codex、Claude Code、OpenCode、DeepSeek Harness 或 Pi CLI。AI 能力菜单中的
 “AI 能力 → 模型与智能体”统一提供模型服务和编程智能体切换；编程智能体提供连接检测与按用途授权；CLI 路径和启用项由 TOML 部署配置管理。窗口可加载所选
 工具 API、MCP 和 Skills，写入需确认。旧对话只读保留；外部客户端可通过 `fpl mcp serve`
@@ -57,11 +57,11 @@ SenseAudio 实时语音通道：OpenAI 兼容网关
 启停状态、模型描述或其他手工配置，也不会重新加入此前删除的旧文本模型。默认清单是随代码
 发布的审核快照，应用启动时不会联网同步官网；完成迁移后，后续编辑和删除不会被启动流程覆盖。
 
-Studio 默认地址为 <http://127.0.0.1:3000>，打开后进入账号登录页；API 文档为 <http://127.0.0.1:9000/docs>。应用保持单机 SQLite 与单进程运行，同时支持多个账号和逻辑隔离的 Workspace。一级“文件管理”保存可被视觉项目引用的图片、视频、音频与文档；工具导航聚合站内模型能力与常用公开研发工具，并按 Workspace 持久化收藏和最近使用记录。独立“集成中心”用于按 Workspace 管理和验证工具 API、MCP 服务与本地不可变版本 Skill；桌面 Amadeus 可按会话加载这些资源。AI 能力菜单包含持久化多轮“模型测试”、只返回本地 Mock 数据的“测试工具”、供应商与模型管理，以及可按快速诊断/模型测试区分的调用日志；具备完整纯文本请求的日志可导出不含密钥的复现包，用标准库脚本执行同步串行或异步并发批量调用。模型测试支持文本、图片、视频、语音识别与端到端实时语音；文本会话可为声明工具能力的 OpenAI/Anthropic 模型绑定测试工具，展示参数、Mock 结果和多轮执行步骤。实时页使用聊天式消息流，提供免按键双工、自动断句、双方转写、流式播放、说话打断和本地 Mock 工具调用；转写与音频只保留在当前页面内存中，工具调用详情会写入测试记录。文件语音可从本地上传或从当前 Workspace 文件管理选择，自定义 Pro 端点单文件限 100 MB，其余模型限 10 MB。识别页按模型能力显示语言、翻译、时间戳、文本整理、说话人、标点、热词与缩写参数，并可导出 JSON 1.1 或创建录音标注任务。
+Studio 默认地址为 <http://127.0.0.1:3000>，打开后进入账号登录页；API 文档为 <http://127.0.0.1:9000/docs>。应用保持单机 SQLite 与单进程运行，同时支持多个账号及其隔离的私人数据。一级“文件管理”保存可被视觉项目引用的图片、视频、音频与文档；工具导航聚合站内模型能力与常用公开研发工具，并按账号持久化收藏和最近使用记录。独立“集成中心”用于按账号管理和验证工具 API、MCP 服务与本地不可变版本 Skill；桌面 Amadeus 可按会话加载这些资源。AI 能力菜单包含持久化多轮“模型测试”、只返回本地 Mock 数据的“测试工具”、供应商与模型管理，以及可按快速诊断/模型测试区分的调用日志；具备完整纯文本请求的日志可导出不含密钥的复现包，用标准库脚本执行同步串行或异步并发批量调用。模型测试支持文本、图片、视频、语音识别与端到端实时语音；文本会话可为声明工具能力的 OpenAI/Anthropic 模型绑定测试工具，展示参数、Mock 结果和多轮执行步骤。实时页使用聊天式消息流，提供免按键双工、自动断句、双方转写、流式播放、说话打断和本地 Mock 工具调用；转写与音频只保留在当前页面内存中，工具调用详情会写入测试记录。文件语音可从本地上传或从当前账号文件管理选择，自定义 Pro 端点单文件限 100 MB，其余模型限 10 MB。识别页按模型能力显示语言、翻译、时间戳、文本整理、说话人、标点、热词与缩写参数，并可导出 JSON 1.1 或创建录音标注任务。
 
 Galgame 工坊使用 Story 1.4 管理角色表情/皮肤、真实多层场景、剧情 CG、BGM、音效、语音、视频和资源总览。项目素材拥有稳定虚拟路径、媒体元数据与打包策略；语音识别通过已启用且声明 `speech_recognition` 能力的 OpenAI 兼容或 SenseAudio ASR 模型执行。SenseAudio ASR Pro 会保存带说话人和起止时间的句级分段，不随应用捆绑大型本地模型。
 
-视频剪辑工坊使用 Workspace 隔离的工程、素材快照和微秒级多轨时间线，支持代理预览、后端确定性
+视频剪辑工坊使用账号隔离的工程、素材快照和微秒级多轨时间线，支持代理预览、后端确定性
 精确帧、关联片段交接、片段导出与完整 MP4 渲染。视觉创作、Galgame 和视频剪辑三套工坊共用项目
 快照生命周期，但各自保留领域文档、事务与错误规则；使用方法见应用内文档中心。
 
@@ -72,11 +72,9 @@ Galgame 工坊使用 Story 1.4 管理角色表情/皮肤、真实多层场景、
 [文档覆盖清单](docs/architecture/documentation-coverage.md)。
 正文展示复用 Sayflow 的受控文档组件框架，沿用研究所配色与鉴权。步骤、卡片、字段表、输入输出、公式与流程图的示例见[阅读展示](web/src/docs/articles/help/docs-reading.md)，编写约定见[渲染框架](web/src/docs/rendering/README.md)；`npm run docs:check` 检查组件契约、正文编译及生成参考。
 
-备份时先停止应用，再同时复制 `.runtime/future-props.db`、`.runtime/library/assets/`、
-`.runtime/applications/`、
-`.runtime/model-test/attachments/`、`.runtime/model-test/references/` 与
-`.runtime/model-test/generated/`、`.runtime/workspaces/` 与 `.runtime/profiles/`。数据库路径可通过
-`FPL_DATABASE_PATH` 调整，这些文件目录都位于数据库所在目录下。
+备份时先停止应用，再复制完整运行目录与 `backend/config.toml`。运行目录包含 SQLite、
+`accounts/`、`profiles/` 和回收站；升级后保留的旧文件也应一并备份。数据库路径可通过
+`FPL_DATABASE_PATH` 调整，运行目录是数据库所在目录。
 
 详细说明见 [贡献指南](CONTRIBUTING.md)、[项目结构](docs/architecture/project-layout.md)、[素材清单](docs/assets/MANIFEST.md)、[生产部署](docs/operations/production-deployment.md)、[开发交付说明](docs/architecture/handoff-readiness.md)、[环境变量](docs/reference/configuration.md)、[故障排查](docs/operations/troubleshooting.md)、[后台 Runner 运维](docs/operations/background-runners.md)、[文件与事务约束](docs/operations/file-transactions.md) 和 [API 参考](docs/reference/api.md)。
 
@@ -86,13 +84,13 @@ Galgame 工坊使用 Story 1.4 管理角色表情/皮肤、真实多层场景、
 ### 思绪工坊
 
 在「应用 → 效率协作」打开思绪工坊，创建知识库卡片，以可编辑首页、多级文件夹和文档组织内容。
-「知识库」仅表示文档项目容器，按 Workspace 共享并隔离。支持表格、图片、附件、链接、LaTeX、
+「知识库」仅表示文档项目容器，归账号私有，发布后可逐篇授权。支持表格、图片、附件、链接、LaTeX、
 Mermaid；AI 写作经 Agent/SDK 接入（应用内无入口）。提供回收站、v3 完整或单库备份、Markdown 导入导出与 HTML 离线阅读。
 旧笔记本经 0046 迁移转为文件夹，文档 ID 与内容保留；旧备份仅在导入转换层兼容。编辑器依赖通过既有 `npm run setup` 安装，无额外服务或新环境变量。
 
 ### 面试助手
 
-在「应用 → 效率协作 → 面试助手」提交 JD 与 TXT / Markdown / PDF / DOCX 简历原件，由本机 Codex 读取、联网整理本场资料。准备任务、输入快照与资料版本按账号和 Workspace 私有保存，支持取消、手动重试、刷新恢复、来源审阅及 Markdown / JSON 导出；文字练习固定使用资料蓝图的首轮三题。
+在「应用 → 效率协作 → 面试助手」提交 JD 与 TXT / Markdown / PDF / DOCX 简历原件，由本机 Codex 读取、联网整理本场资料。准备任务、输入快照与资料版本按账号私有保存，支持取消、手动重试、刷新恢复、来源审阅及 Markdown / JSON 导出；文字练习固定使用资料蓝图的首轮三题。
 
 真实准备默认关闭，在本机 `backend/config.toml` 的 `[interview_codex]` 启用并绑定 FPL 账号；需要已登录的 Codex CLI 0.163 或更新版本，首版支持 macOS。不会改写 Codex 全局配置。画面、语音输入与评分仍为模拟，练习回答及规则复盘仅保存在本页，刷新会清空；资料继续保留。配置、任务边界和接口见[面试资料准备](docs/operations/interview-preparation.md)。
 
@@ -125,7 +123,9 @@ Python 3.11+ 的独立包位于 [`sdk/python`](sdk/python/README.md)，发行名
 
 Apple Silicon Mac（macOS 15+）可在模型服务中按需安装 Qwen3-TTS Base 0.6B/1.7B，
 使用参考录音克隆音色。默认安装、启动及升级不下载模型或 MLX 环境；平台管理员安装后，
-各 Workspace 主动接入并在模型测试中使用。无需系统 Python/uv；详见
+各账号主动接入并在模型测试中使用。无需系统 Python/uv；详见
 [桌面运行说明](docs/operations/desktop-macos.md#可选本地-qwen-语音)。
 
-视觉工坊的视频节点提供固定动作迁移验收：模型 API 在 `[visual_acceptance]` 配置，Codex、Claude Code、OpenCode、DeepSeek Harness 和 Pi CLI 在 `[code_agents]` 配置并按当前空间账号授权。默认未配置，不自动安装或登录 CLI；项目负责模板说明和节点汇总，质量记录不限制最终输出采用。配置、版本要求与执行边界见[节点验收](docs/operations/node-acceptance.md)。
+视觉工坊的视频节点提供固定动作迁移验收：模型 API 在 `[visual_acceptance]` 配置，Codex、Claude Code、OpenCode、DeepSeek Harness 和 Pi CLI 在 `[code_agents]` 配置并按账号授权。默认未配置，不自动安装或登录 CLI；项目负责模板说明和节点汇总，质量记录不限制最终输出采用。配置、版本要求与执行边界见[节点验收](docs/operations/node-acceptance.md)。
+
+账号归属升级使用 `0116_account_ownership`。完成 schema 迁移后，管理员在维护页执行文件迁移与核验，全部完成后重启应用。正式数据升级前停机备份；开发热加载不会自动应用此迁移。旧凭据撤销，需要重新登录及签发 API Key。

@@ -32,7 +32,7 @@ from app.integrations.skills.archive import (
     StagedSkillArchive,
 )
 from app.integrations.skills.preview import list_skill_files, read_skill_image, read_skill_text
-from app.orm import require_workspace_id
+from app.orm import require_owner_id
 from app.runtime.config import get_settings
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import iso_utc, utc_now
@@ -52,14 +52,14 @@ def _version_out(row: SkillVersion) -> SkillVersionOut:
 
 
 class SkillCatalog:
-    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
         self.session = session
-        self.workspace_id = require_workspace_id(workspace_id, subject="Skill catalog")
-        self.storage = SkillArchiveStorage(get_settings(), self.workspace_id)
+        self.owner_user_id = require_owner_id(owner_user_id, subject="Skill catalog")
+        self.storage = SkillArchiveStorage(get_settings(), self.owner_user_id)
 
     async def _get(self, skill_id: str) -> SkillIntegration:
         row = await self.session.get(SkillIntegration, skill_id)
-        if row is None or row.workspace_id != self.workspace_id:
+        if row is None or row.owner_user_id != self.owner_user_id:
             raise IntegrationNotFoundError("Skill 不存在")
         return row
 
@@ -97,7 +97,7 @@ class SkillCatalog:
             (
                 await self.session.execute(
                     select(SkillIntegration)
-                    .where(SkillIntegration.workspace_id == self.workspace_id)
+                    .where(SkillIntegration.owner_user_id == self.owner_user_id)
                     .order_by(SkillIntegration.updated_at.desc(), SkillIntegration.name)
                 )
             )
@@ -146,7 +146,7 @@ class SkillCatalog:
         metadata = SkillTagsIn(tags=tags or [])
         staged = await self.storage.stage(upload)
         row = SkillIntegration(
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             tags=metadata.tags,
             name=staged.name,
             description=staged.description,

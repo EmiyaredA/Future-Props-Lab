@@ -1,9 +1,6 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  useAccountId,
-  useWorkspaceId,
-} from "@platform/auth/WorkspacePermissions";
+import { useAccountId } from "@platform/auth/AccountAccess";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import type { components } from "@generated/api";
 import { unwrap } from "@platform/api/client";
@@ -18,7 +15,7 @@ export function OfficialImportDialog({
   close: () => void;
   imported: (id: string) => void;
 }) {
-  const key = `fpl-official-import/${useAccountId()}/${useWorkspaceId()}`;
+  const key = `fpl-official-import/${useAccountId()}/${useAccountId()}`;
   const client = useQueryClient();
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -77,7 +74,7 @@ export function OfficialImportDialog({
     <ConfirmDialog
       open
       title="导入现有官方文档"
-      confirmLabel="导入到当前 Workspace"
+      confirmLabel="导入到当前账号"
       pending={busy}
       onCancel={close}
       onConfirm={() => void submit()}

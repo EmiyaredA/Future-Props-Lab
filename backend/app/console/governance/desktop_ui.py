@@ -20,13 +20,13 @@ async def open_resource(runtime, session, principal, body):
     row = await session.get(ROOTS[body.kind], body.resource_id) if body.resource_id else None
     if body.resource_id and (
         row is None
-        or row.workspace_id != principal.workspace_id
+        or row.owner_user_id != principal.owner_user_id
         or getattr(row, "deleted_at", None)
     ):
         raise AgentError(404, "resource_not_found")
     if len(runtime.ui_requests) >= 100:
         raise AgentError(429, "too_many_ui_requests")
-    audience = (principal.user_id, principal.workspace_id)
+    audience = (principal.user_id, principal.owner_user_id)
     result = dict(
         id=secrets.token_hex(16),
         **body.model_dump(),
@@ -42,7 +42,7 @@ async def open_resource(runtime, session, principal, body):
 def ui_request(runtime, principal, request_id):
     runtime.prune()
     row = runtime.ui_requests.get(request_id)
-    if row is None or row["audience"] != (principal.user_id, principal.workspace_id):
+    if row is None or row["audience"] != (principal.user_id, principal.owner_user_id):
         raise AgentError(404, "ui_request_not_found")
     if principal.auth_kind != "session" and row["key_id"] != principal.api_key_id:
         raise AgentError(404, "ui_request_not_found")

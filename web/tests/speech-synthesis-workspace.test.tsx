@@ -11,7 +11,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { SpeechSynthesisTestPanel } from "@features/models/generation/SpeechSynthesisTestPanel";
 import * as speechApi from "@features/models/localModelApi";
-import { WorkspacePermissionsProvider } from "@platform/auth/WorkspacePermissions";
+import { AccountAccessProvider } from "@platform/auth/AccountAccess";
 import type { InferenceTask } from "@features/models/localModelApi";
 import { modelQueryKeys } from "@features/models/queryKeys";
 
@@ -84,35 +84,28 @@ function result(overrides: Partial<InferenceTask> = {}): InferenceTask {
 let records: InferenceTask[];
 const clients: QueryClient[] = [];
 const selectModel = vi.fn();
-function mount(
-  permissions = ["models.use", "content.write"],
-  workspaceId = "w",
-) {
+function mount(permissions = ["models.use", "content.write"], accountId = "w") {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   clients.push(client);
   const tree = (workspace: string) => (
     <QueryClientProvider client={client}>
-      <WorkspacePermissionsProvider
-        userId="u"
-        workspaceId={workspace}
-        permissions={permissions}
-      >
+      <AccountAccessProvider userId={workspace} permissions={permissions}>
         <SpeechSynthesisTestPanel
           models={models}
           modelId="m"
           onSelectModel={selectModel}
           onSelectMode={vi.fn()}
         />
-      </WorkspacePermissionsProvider>
+      </AccountAccessProvider>
     </QueryClientProvider>
   );
-  const view = render(tree(workspaceId));
+  const view = render(tree(accountId));
   return {
     ...view,
     client,
-    switchWorkspace: (workspace: string) => view.rerender(tree(workspace)),
+    switchAccount: (next: string) => view.rerender(tree(next)),
   };
 }
 beforeEach(() => {
@@ -430,7 +423,7 @@ test("workspace changes reset drafts and old submissions cannot refill the new c
   await user.click(screen.getByRole("button", { name: "生成语音" }));
   await act(async () => {
     view.client.clear();
-    view.switchWorkspace("new-workspace");
+    view.switchAccount("new-workspace");
   });
   await act(async () => finish(result()));
   expect(screen.getByLabelText("目标文字")).toHaveValue("");

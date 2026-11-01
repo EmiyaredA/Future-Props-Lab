@@ -57,18 +57,18 @@ def task_out(row, steps=()):
 
 
 class ArticleSync:
-    def __init__(self, session, workspace_id, principal, transport=None):
-        self.session, self.workspace_id, self.principal, self.transport = (
+    def __init__(self, session, owner_user_id, principal, transport=None):
+        self.session, self.owner_user_id, self.principal, self.transport = (
             session,
-            workspace_id,
+            owner_user_id,
             principal,
             transport,
         )
         if not principal.allows("configuration.manage"):
-            raise ExternalError("需要工作区管理员或拥有者权限", 403, "permission_denied")
+            raise ExternalError("需要账号管理员或拥有者权限", 403, "permission_denied")
 
     async def note(self, id):
-        row = await Notes(self.session, self.workspace_id).get(id)
+        row = await Notes(self.session, self.owner_user_id).get(id)
         library = await self.session.get(ThoughtKnowledgeBase, row.knowledge_base_id)
         if row.deleted_at or not library or library.deleted_at:
             raise ExternalError("文章已进入回收站", 409, "note_deleted")
@@ -77,7 +77,7 @@ class ArticleSync:
     async def binding(self, note_id):
         return await self.session.scalar(
             select(ArticleSyncBinding).where(
-                ArticleSyncBinding.workspace_id == self.workspace_id,
+                ArticleSyncBinding.owner_user_id == self.owner_user_id,
                 ArticleSyncBinding.note_id == note_id,
             )
         )
@@ -89,7 +89,7 @@ class ArticleSync:
             await self.session.scalars(
                 select(ArticleSyncTask)
                 .where(
-                    ArticleSyncTask.workspace_id == self.workspace_id,
+                    ArticleSyncTask.owner_user_id == self.owner_user_id,
                     ArticleSyncTask.note_id == note_id,
                     ArticleSyncTask.status != "preview",
                 )
@@ -126,14 +126,14 @@ class ArticleSync:
         note_revision = note.revision
         current_id = current.id if current else None
         document_id, url = await ExternalConnections(
-            self.session, self.workspace_id, self.transport
+            self.session, self.owner_user_id, self.transport
         ).resolve_document(body.connection_id, body.url)
         target_key = "feishu:" + document_id
         await self.idle(target_key)
         connection_revision = (
-            await ExternalConnections(self.session, self.workspace_id).get(body.connection_id)
+            await ExternalConnections(self.session, self.owner_user_id).get(body.connection_id)
         ).revision
-        remote = await ExternalConnections(self.session, self.workspace_id, self.transport).target(
+        remote = await ExternalConnections(self.session, self.owner_user_id, self.transport).target(
             body.connection_id, url
         )
         if not remote.can_write:
@@ -142,7 +142,7 @@ class ArticleSync:
         note = await self.note(note_id)
         if note.revision != note_revision:
             raise ExternalError("文章已变化，请重新绑定", 409)
-        await ExternalConnections(self.session, self.workspace_id).require_enabled(
+        await ExternalConnections(self.session, self.owner_user_id).require_enabled(
             body.connection_id, expected_revision=connection_revision
         )
         await self.idle(target_key)
@@ -173,7 +173,7 @@ class ArticleSync:
                     raise ExternalError("绑定已变化，请刷新", 409)
             else:
                 self.session.add(
-                    ArticleSyncBinding(workspace_id=self.workspace_id, note_id=note_id, **values)
+                    ArticleSyncBinding(owner_user_id=self.owner_user_id, note_id=note_id, **values)
                 )
             await self.session.commit()
         except IntegrityError:
@@ -208,7 +208,7 @@ class ArticleSync:
         if not binding or binding.revision != body.binding_revision:
             raise ExternalError("绑定已变化，请重新预览", 409)
         await self.idle(binding.target_key)
-        expanded = await project_tables(self.session, self.workspace_id, note)
+        expanded = await project_tables(self.session, self.owner_user_id, note)
         content = project_content(note.title, expanded)
         if note.kind == "multitable" or has_multitable_view(note.document):
             content["warnings"] = sorted({*content["warnings"], TABLE_SNAPSHOT})
@@ -217,7 +217,7 @@ class ArticleSync:
                 feishu_tree(content["nodes"])
             except ExternalError as exc:
                 content["blockers"].append(str(exc))
-        assets = await resolve_assets(self.session, self.workspace_id, set(content["asset_ids"]))
+        assets = await resolve_assets(self.session, self.owner_user_id, set(content["asset_ids"]))
         for asset in assets.values():
             if asset.byte_size > 20 * 1024 * 1024 or asset.mime_type not in {
                 "image/png",
@@ -228,11 +228,11 @@ class ArticleSync:
                 content["blockers"].append(
                     f"图片 {asset.original_filename} 格式不支持或超过 20 MiB"
                 )
-        connection = await ExternalConnections(self.session, self.workspace_id).get(
+        connection = await ExternalConnections(self.session, self.owner_user_id).get(
             binding.connection_id
         )
         fields = dict(
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             note_id=note_id,
             binding_id=binding.id,
             binding_revision=binding.revision,
@@ -249,7 +249,7 @@ class ArticleSync:
             "api_key_id": self.principal.api_key_id,
         }
         document_id, previous = binding.document_id, binding.last_fingerprint
-        client = await ExternalConnections(self.session, self.workspace_id, self.transport).client(
+        client = await ExternalConnections(self.session, self.owner_user_id, self.transport).client(
             fields["connection_id"], expected_revision=fields["connection_revision"]
         )
         try:
@@ -284,7 +284,7 @@ class ArticleSync:
         row = await self.session.scalar(
             select(ArticleSyncTask).where(
                 ArticleSyncTask.id == task_id,
-                ArticleSyncTask.workspace_id == self.workspace_id,
+                ArticleSyncTask.owner_user_id == self.owner_user_id,
                 ArticleSyncTask.note_id == note_id,
             )
         )
@@ -307,7 +307,7 @@ class ArticleSync:
         operation_id = str(body.operation_id)
         existing = await self.session.scalar(
             select(ArticleSyncTask).where(
-                ArticleSyncTask.workspace_id == self.workspace_id,
+                ArticleSyncTask.owner_user_id == self.owner_user_id,
                 ArticleSyncTask.operation_id == operation_id,
             )
         )
@@ -334,7 +334,7 @@ class ArticleSync:
         document_id, expected = task.remote["document_id"], task.remote["fingerprint"]
         remote_revision = task.remote["revision"]
         task_id = task.id
-        client = await ExternalConnections(self.session, self.workspace_id, self.transport).client(
+        client = await ExternalConnections(self.session, self.owner_user_id, self.transport).client(
             connection_id, expected_revision=connection_revision
         )
         remote = await client.read(document_id)
@@ -350,7 +350,7 @@ class ArticleSync:
             or note.revision != task.note_revision
         ):
             raise ExternalError("文章或绑定已变化，请重新预览", 409)
-        await ExternalConnections(self.session, self.workspace_id).require_enabled(
+        await ExternalConnections(self.session, self.owner_user_id).require_enabled(
             connection_id, expected_revision=connection_revision
         )
         try:
@@ -375,7 +375,7 @@ class ArticleSync:
             await self.session.rollback()
             existing = await self.session.scalar(
                 select(ArticleSyncTask).where(
-                    ArticleSyncTask.workspace_id == self.workspace_id,
+                    ArticleSyncTask.owner_user_id == self.owner_user_id,
                     ArticleSyncTask.operation_id == operation_id,
                 )
             )
@@ -417,7 +417,7 @@ class ArticleSync:
                 ArticleSyncStep.task_id == task_id, ArticleSyncStep.status == "pending"
             )
         )
-        client = await ExternalConnections(self.session, self.workspace_id, self.transport).client(
+        client = await ExternalConnections(self.session, self.owner_user_id, self.transport).client(
             connection_id, expected_revision=connection_revision
         )
         remote = await client.read(expected["document_id"])
@@ -431,7 +431,7 @@ class ArticleSync:
         )
         if safe:
             await self.note(note_id)
-            await ExternalConnections(self.session, self.workspace_id).require_enabled(
+            await ExternalConnections(self.session, self.owner_user_id).require_enabled(
                 connection_id, expected_revision=connection_revision
             )
             binding = await self.binding(note_id)

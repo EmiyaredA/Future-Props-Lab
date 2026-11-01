@@ -508,7 +508,7 @@ test("offers the SenseAudio speaker recognition provider and ASR capability", as
 test("shows a useful empty state for call logs", async () => {
   renderWithQuery(
     <ModelCallLogsPage
-      currentWorkspace={{ id: "default", name: "测试工作区" }}
+      currentAccount={{ id: "default", name: "测试工作区" }}
     />,
   );
   expect(await screen.findByText("暂无调用日志")).toBeInTheDocument();
@@ -567,7 +567,7 @@ test("renders call log payloads as a readable role-based message trace", async (
   });
   const { container } = renderWithQuery(
     <ModelCallLogsPage
-      currentWorkspace={{ id: "default", name: "测试工作区" }}
+      currentAccount={{ id: "default", name: "测试工作区" }}
     />,
   );
   await user.click(await screen.findByRole("button", { name: "查看" }));

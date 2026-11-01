@@ -16,7 +16,7 @@ const purposes = [
   ["audio_generation", "音频生成"],
 ] as const;
 
-export function WorkspaceDefaults({
+export function AccountDefaults({
   catalog,
   canWrite,
 }: {

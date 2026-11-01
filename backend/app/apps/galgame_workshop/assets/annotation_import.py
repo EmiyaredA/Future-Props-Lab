@@ -97,10 +97,10 @@ def _curtain_intervals(segments: list[AudioAnnotationSegment], duration_ms: int)
 
 class GalgameAnnotationImports:
     def __init__(
-        self, session: AsyncSession, workspace_id: str, settings: Settings | None = None
+        self, session: AsyncSession, owner_user_id: str, settings: Settings | None = None
     ) -> None:
         self.session = session
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
         self.settings = settings or get_settings()
         self.storage = AssetStorage(self.settings)
 
@@ -437,7 +437,7 @@ class GalgameAnnotationImports:
                 detail={"issues": [item.model_dump(mode="json") for item in preview.issues]},
             )
         task = GalgameAnnotationImportTask(
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             project_id=project_id,
             source_project_id=body.source_project_id,
             request_id=body.request_id,

@@ -1,10 +1,9 @@
 import type { components } from "@generated/api";
 import { api, unwrap } from "@platform/api/client";
-export type PlatformRole = "super_admin" | "admin" | "member";
+export type PlatformRole = "admin" | "user";
 export const platformRoleLabels: Record<PlatformRole, string> = {
-  super_admin: "超级管理员",
-  admin: "运营管理员",
-  member: "普通用户",
+  admin: "管理员",
+  user: "普通用户",
 };
 export const platformRoleOptions = Object.entries(platformRoleLabels).map(
   ([value, label]) => ({ value, label }),
@@ -62,11 +61,6 @@ export const fetchRedemptions = async (id: string, page: number) =>
 export const registerAccount = async (
   body: components["schemas"]["RegistrationIn"],
 ) => unwrap(await api.POST("/v1/auth/register", { body }));
-export const fetchPolicy = async () =>
-  unwrap(await api.GET("/v1/platform/permission-policy"));
-export const savePolicy = async (
-  body: components["schemas"]["PermissionPolicyIn"],
-) => unwrap(await api.PATCH("/v1/platform/permission-policy", { body }));
 export const fetchQuotas = async () =>
   unwrap(await api.GET("/v1/platform/runtime-quotas"));
 export const saveQuotas = async (
@@ -91,11 +85,15 @@ export const saveTemplate = async (
 export const previewTemplate = async (
   role: PlatformRole,
   expected_template_revision: number,
+  account_ids?: string[],
 ) =>
   unwrap(
     await api.POST("/v1/platform/model-service-templates/{role}/preview", {
       params: { path: { role } },
-      body: { expected_template_revision },
+      body: {
+        expected_template_revision,
+        ...(account_ids ? { account_ids } : {}),
+      },
     }),
   );
 export const fetchSyncJob = async (job_id: string) =>
@@ -145,49 +143,6 @@ export const installDemoService = async (
     }),
   );
 
-export const fetchLogWorkspaces = async () =>
-  unwrap(await api.GET("/v1/account/log-workspaces"));
-export type LogOverviewFilters = {
-  q: string;
-  callSource: string;
-  providerKind: string;
-  model: string;
-  apiKeyId: string;
-  status: string;
-  from: string;
-  to: string;
-  page: number;
-  pageSize: number;
-};
-export const fetchCrossWorkspaceLogs = async (
-  workspaces: string[],
-  filters: LogOverviewFilters,
-) =>
-  unwrap(
-    await api.GET("/v1/account/cross-workspace-call-logs", {
-      params: {
-        query: {
-          workspace_ids: workspaces,
-          q: filters.q,
-          call_source: filters.callSource,
-          provider_kind: filters.providerKind,
-          model: filters.model,
-          api_key_id: filters.apiKeyId || undefined,
-          status: filters.status,
-          from: filters.from || undefined,
-          to: filters.to || undefined,
-          page: filters.page,
-          page_size: filters.pageSize,
-        },
-      },
-    }),
-  );
-export const fetchCrossWorkspaceLogStats = async (workspaces: string[]) =>
-  unwrap(
-    await api.GET("/v1/account/cross-workspace-call-logs/stats", {
-      params: { query: { workspace_ids: workspaces } },
-    }),
-  );
 export const fetchSyncHistory = async (role: PlatformRole) =>
   unwrap(
     await api.GET("/v1/platform/model-service-templates/{role}/sync-jobs", {

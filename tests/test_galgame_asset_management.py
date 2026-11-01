@@ -439,6 +439,7 @@ async def test_portrait_height_upgrade_previews_snapshots_and_restores() -> None
 async def test_asr_runner_manual_override_force_and_dialogue_match() -> None:
     async with SessionLocal() as session:
         provider = ModelProvider(
+            owner_user_id="test-user",
             name="测试 ASR",
             kind="openai",
             base_url="https://asr.example/v1",
@@ -448,6 +449,7 @@ async def test_asr_runner_manual_override_force_and_dialogue_match() -> None:
         session.add(provider)
         await session.flush()
         model = ModelEntry(
+            owner_user_id="test-user",
             provider_id=provider.id,
             slug="whisper-test",
             label="Whisper Test",
@@ -575,6 +577,7 @@ async def test_asr_runner_manual_override_force_and_dialogue_match() -> None:
 async def test_senseaudio_asr_runner_persists_segments_and_manual_edit_clears_them() -> None:
     async with SessionLocal() as session:
         provider = ModelProvider(
+            owner_user_id="test-user",
             name="SenseAudio 测试 ASR",
             kind="senseaudio_asr",
             base_url="https://api.senseaudio.test/v1",
@@ -584,6 +587,7 @@ async def test_senseaudio_asr_runner_persists_segments_and_manual_edit_clears_th
         session.add(provider)
         await session.flush()
         model = ModelEntry(
+            owner_user_id="test-user",
             provider_id=provider.id,
             slug="senseaudio-asr-pro-1.5-260319",
             label="SenseAudio ASR Pro 1.5",

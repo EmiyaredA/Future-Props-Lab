@@ -38,7 +38,7 @@ async def realtime_socket(websocket: WebSocket) -> None:
         return
     try:
         principal = await resolve_studio_websocket_principal(websocket)
-        workspace_id = principal.workspace_id
+        owner_user_id = principal.owner_user_id
     except HTTPException as exc:
         await websocket.close(code=4401 if exc.status_code == 401 else 4403)
         return
@@ -55,10 +55,10 @@ async def realtime_socket(websocket: WebSocket) -> None:
         try:
             current = await resolve_studio_websocket_principal(websocket)
             current_principal = current
-            if current.workspace_id != workspace_id or current.session_id != principal.session_id:
+            if current.owner_user_id != owner_user_id or current.session_id != principal.session_id:
                 raise HTTPException(403)
         except HTTPException:
-            await websocket.close(code=4403, reason="workspace_access_changed")
+            await websocket.close(code=4403, reason="account_access_changed")
             from starlette.websockets import WebSocketDisconnect
 
             raise WebSocketDisconnect(4403) from None
@@ -79,7 +79,7 @@ async def realtime_socket(websocket: WebSocket) -> None:
         credential = await snapshot_caller_credential(principal)
         await run_realtime_model_test(
             websocket,
-            workspace_id=workspace_id,
+            owner_user_id=owner_user_id,
             check_access=check_access,
             credential=credential,
         )

@@ -4,7 +4,7 @@ from pydantic import ValidationError
 from sqlalchemy import select, update
 
 from app.console.governance.code_agents import authorized
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.operation_receipts import OperationError
@@ -57,7 +57,7 @@ class InterviewPreparationRunner(PollingTaskRunner):
             task = await session.get(InterviewPreparation, task_id)
             if not task or task.status not in {"running", "validating"}:
                 return False
-            bind_workspace(session, task.workspace_id)
+            bind_owner(session, task.owner_user_id)
             room = await session.get(InterviewRoom, task.room_id)
             settings = get_settings()
             return bool(
@@ -65,13 +65,13 @@ class InterviewPreparationRunner(PollingTaskRunner):
                 and room.active_task_id == task.id
                 and await authorized(
                     session,
-                    task.workspace_id,
+                    task.owner_user_id,
                     task.user_id,
                     "codex",
                     "interview_preparation",
                     settings=settings,
                 )
-                and await self.actor_allowed(session, task.workspace_id, task.user_id)
+                and await self.actor_allowed(session, task.owner_user_id, task.user_id)
             )
 
     async def event(self, task_id, kind, message, urls=None):
@@ -112,7 +112,7 @@ class InterviewPreparationRunner(PollingTaskRunner):
             row = await session.get(InterviewPreparation, task_id)
             if not row or row.status not in {"running", "validating"}:
                 return
-            bind_workspace(session, row.workspace_id)
+            bind_owner(session, row.owner_user_id)
             room = await session.get(InterviewRoom, row.room_id)
             if not room or room.active_task_id != row.id:
                 status, message = "interrupted", "已有更新的输入，旧任务结果不会替换本场资料"
@@ -189,7 +189,7 @@ class InterviewPreparationRunner(PollingTaskRunner):
         try:
             if not await self.active(identifier):
                 raise OperationError("执行者权限或本机授权已变化", "executor_access", 403)
-            status = await executor_status(task.user_id, task.workspace_id)
+            status = await executor_status(task.user_id, task.owner_user_id)
             if not status.available:
                 raise OperationError(status.message, status.code, 409)
             root = task_context(task)

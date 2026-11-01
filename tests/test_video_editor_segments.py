@@ -21,7 +21,7 @@ from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from app.apps.visual_workshop.outputs.references import resolve_references
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
-from app.deps import workspace_from_principal
+from app.deps import owner_from_principal
 from app.llm.schemas.generation_tasks import VideoGenerationTaskCreateIn
 from app.main import app
 from app.runtime.config import get_settings
@@ -292,7 +292,7 @@ async def test_segment_export_roundtrip(
         # Completed response cleanup and missing-file handling use the same exported path.
         async with SessionLocal() as session:
             path = await download_segments(
-                session, get_settings(), "default", task["projectId"], task["id"]
+                session, get_settings(), "test-user", task["projectId"], task["id"]
             )
             assert path.is_file()
             path.unlink()
@@ -468,7 +468,7 @@ async def test_legacy_segment_outputs_can_be_backfilled_through_api(video: bytes
         for node in before["nodes"]:
             output_url = f"/v1/visual-workshop/projects/{project_id}/nodes/{node['id']}/outputs"
             assert (await client.get(output_url)).json()["total"] == 0
-            app.dependency_overrides[workspace_from_principal] = lambda: "other-workspace"
+            app.dependency_overrides[owner_from_principal] = lambda: "other-workspace"
             try:
                 assert (await client.get(output_url)).status_code == 404
                 assert (
@@ -478,7 +478,7 @@ async def test_legacy_segment_outputs_can_be_backfilled_through_api(video: bytes
                     )
                 ).status_code == 404
             finally:
-                app.dependency_overrides.pop(workspace_from_principal, None)
+                app.dependency_overrides.pop(owner_from_principal, None)
             stale = await client.post(
                 output_url,
                 json={"asset_id": node["asset_id"], "expected_revision": revision - 1},

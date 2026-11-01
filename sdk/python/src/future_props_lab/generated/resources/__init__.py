@@ -23,7 +23,6 @@ from .logs import Logs, AsyncLogs
 from .models import Models, AsyncModels
 from .motion_compositor import MotionCompositor, AsyncMotionCompositor
 from .presentation import Presentation, AsyncPresentation
-from .public import Public, AsyncPublic
 from .system import System, AsyncSystem
 from .templates import Templates, AsyncTemplates
 from .test_tools import TestTools, AsyncTestTools
@@ -33,10 +32,9 @@ from .tools import Tools, AsyncTools
 from .video import Video, AsyncVideo
 from .visual import Visual, AsyncVisual
 from .visual_assistant import VisualAssistant, AsyncVisualAssistant
-from .workspaces import Workspaces, AsyncWorkspaces
 
-RESOURCES = {'accounts': Accounts, 'admin': Admin, 'amadeus': Amadeus, 'annotation': Annotation, 'code_agents': CodeAgents, 'creative_workshop': CreativeWorkshop, 'demo': Demo, 'demo_calls': DemoCalls, 'desktop': Desktop, 'desktop_pet': DesktopPet, 'director': Director, 'files': Files, 'galgame': Galgame, 'generation': Generation, 'governance': Governance, 'inference': Inference, 'integrations': Integrations, 'interview': Interview, 'live2d_workshop': Live2DWorkshop, 'logs': Logs, 'models': Models, 'motion_compositor': MotionCompositor, 'presentation': Presentation, 'public': Public, 'system': System, 'templates': Templates, 'test_tools': TestTools, 'testing': Testing, 'thought': Thought, 'tools': Tools, 'video': Video, 'visual': Visual, 'visual_assistant': VisualAssistant, 'workspaces': Workspaces}
-ASYNC_RESOURCES = {'accounts': AsyncAccounts, 'admin': AsyncAdmin, 'amadeus': AsyncAmadeus, 'annotation': AsyncAnnotation, 'code_agents': AsyncCodeAgents, 'creative_workshop': AsyncCreativeWorkshop, 'demo': AsyncDemo, 'demo_calls': AsyncDemoCalls, 'desktop': AsyncDesktop, 'desktop_pet': AsyncDesktopPet, 'director': AsyncDirector, 'files': AsyncFiles, 'galgame': AsyncGalgame, 'generation': AsyncGeneration, 'governance': AsyncGovernance, 'inference': AsyncInference, 'integrations': AsyncIntegrations, 'interview': AsyncInterview, 'live2d_workshop': AsyncLive2DWorkshop, 'logs': AsyncLogs, 'models': AsyncModels, 'motion_compositor': AsyncMotionCompositor, 'presentation': AsyncPresentation, 'public': AsyncPublic, 'system': AsyncSystem, 'templates': AsyncTemplates, 'test_tools': AsyncTestTools, 'testing': AsyncTesting, 'thought': AsyncThought, 'tools': AsyncTools, 'video': AsyncVideo, 'visual': AsyncVisual, 'visual_assistant': AsyncVisualAssistant, 'workspaces': AsyncWorkspaces}
+RESOURCES = {'accounts': Accounts, 'admin': Admin, 'amadeus': Amadeus, 'annotation': Annotation, 'code_agents': CodeAgents, 'creative_workshop': CreativeWorkshop, 'demo': Demo, 'demo_calls': DemoCalls, 'desktop': Desktop, 'desktop_pet': DesktopPet, 'director': Director, 'files': Files, 'galgame': Galgame, 'generation': Generation, 'governance': Governance, 'inference': Inference, 'integrations': Integrations, 'interview': Interview, 'live2d_workshop': Live2DWorkshop, 'logs': Logs, 'models': Models, 'motion_compositor': MotionCompositor, 'presentation': Presentation, 'system': System, 'templates': Templates, 'test_tools': TestTools, 'testing': Testing, 'thought': Thought, 'tools': Tools, 'video': Video, 'visual': Visual, 'visual_assistant': VisualAssistant}
+ASYNC_RESOURCES = {'accounts': AsyncAccounts, 'admin': AsyncAdmin, 'amadeus': AsyncAmadeus, 'annotation': AsyncAnnotation, 'code_agents': AsyncCodeAgents, 'creative_workshop': AsyncCreativeWorkshop, 'demo': AsyncDemo, 'demo_calls': AsyncDemoCalls, 'desktop': AsyncDesktop, 'desktop_pet': AsyncDesktopPet, 'director': AsyncDirector, 'files': AsyncFiles, 'galgame': AsyncGalgame, 'generation': AsyncGeneration, 'governance': AsyncGovernance, 'inference': AsyncInference, 'integrations': AsyncIntegrations, 'interview': AsyncInterview, 'live2d_workshop': AsyncLive2DWorkshop, 'logs': AsyncLogs, 'models': AsyncModels, 'motion_compositor': AsyncMotionCompositor, 'presentation': AsyncPresentation, 'system': AsyncSystem, 'templates': AsyncTemplates, 'test_tools': AsyncTestTools, 'testing': AsyncTesting, 'thought': AsyncThought, 'tools': AsyncTools, 'video': AsyncVideo, 'visual': AsyncVisual, 'visual_assistant': AsyncVisualAssistant}
 
 class SyncResources:
     accounts: Accounts
@@ -62,7 +60,6 @@ class SyncResources:
     models: Models
     motion_compositor: MotionCompositor
     presentation: Presentation
-    public: Public
     system: System
     templates: Templates
     test_tools: TestTools
@@ -72,7 +69,6 @@ class SyncResources:
     video: Video
     visual: Visual
     visual_assistant: VisualAssistant
-    workspaces: Workspaces
 
 class AsyncResources:
     accounts: AsyncAccounts
@@ -98,7 +94,6 @@ class AsyncResources:
     models: AsyncModels
     motion_compositor: AsyncMotionCompositor
     presentation: AsyncPresentation
-    public: AsyncPublic
     system: AsyncSystem
     templates: AsyncTemplates
     test_tools: AsyncTestTools
@@ -108,4 +103,3 @@ class AsyncResources:
     video: AsyncVideo
     visual: AsyncVisual
     visual_assistant: AsyncVisualAssistant
-    workspaces: AsyncWorkspaces

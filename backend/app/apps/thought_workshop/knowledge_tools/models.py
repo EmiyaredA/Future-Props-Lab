@@ -19,9 +19,9 @@ class ThoughtDocumentReference(Base):
 
 class ThoughtTemplate(Base):
     __tablename__ = "thought_templates"
-    __table_args__ = (Index("ix_thought_templates_workspace", "workspace_id"),)
+    __table_args__ = (Index("ix_thought_templates_account", "owner_user_id"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     name: Mapped[str] = mapped_column(String(120))
     description: Mapped[str] = mapped_column(Text, default="")
     document: Mapped[dict] = mapped_column(JSON)
@@ -59,9 +59,9 @@ class ThoughtCheckpoint(Base):
 
 class ThoughtSavedFilter(Base):
     __tablename__ = "thought_saved_filters"
-    __table_args__ = (Index("ix_thought_filters_owner", "workspace_id", "user_id"),)
+    __table_args__ = (Index("ix_thought_filters_owner", "owner_user_id", "user_id"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     name: Mapped[str] = mapped_column(String(120))
     criteria: Mapped[dict] = mapped_column(JSON)
@@ -71,11 +71,11 @@ class ThoughtSavedFilter(Base):
 class ThoughtReadingState(Base):
     __tablename__ = "thought_reading_states"
     __table_args__ = (
-        UniqueConstraint("workspace_id", "user_id", "resource_id"),
-        Index("ix_thought_reading_owner", "workspace_id", "user_id", "visited_at"),
+        UniqueConstraint("owner_user_id", "user_id", "resource_id"),
+        Index("ix_thought_reading_owner", "owner_user_id", "user_id", "visited_at"),
     )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     resource_id: Mapped[str] = mapped_column(String(200))
     title: Mapped[str] = mapped_column(String(240))

@@ -1,4 +1,4 @@
-"""Workspace user-motion library. Bytes stay in the library directory."""
+"""account user-motion library. Bytes stay in the library directory."""
 
 from __future__ import annotations
 
@@ -35,13 +35,13 @@ def file_keys(value: object) -> set[str]:
 
 
 class DirectorDeskMotions:
-    def __init__(self, session: AsyncSession, workspace_id: str):
+    def __init__(self, session: AsyncSession, owner_user_id: str):
         self.session = session
-        self.workspace_id = workspace_id
-        self.files = DirectorDeskFiles(session, workspace_id)
+        self.owner_user_id = owner_user_id
+        self.files = DirectorDeskFiles(session, owner_user_id)
 
     async def list(self, query: str) -> DirectorMotionList:
-        filters = [DirectorDeskUserMotion.workspace_id == self.workspace_id]
+        filters = [DirectorDeskUserMotion.owner_user_id == self.owner_user_id]
         if query.strip():
             filters.append(DirectorDeskUserMotion.name.contains(query.strip(), autoescape=True))
         rows = (
@@ -69,7 +69,7 @@ class DirectorDeskMotions:
         row = await self._find(motion_key)
         if row is None:
             row = DirectorDeskUserMotion(
-                workspace_id=self.workspace_id,
+                owner_user_id=self.owner_user_id,
                 motion_key=motion_key,
                 name=name.strip(),
                 motion=body.motion,
@@ -101,7 +101,7 @@ class DirectorDeskMotions:
     async def _find(self, motion_key: str) -> DirectorDeskUserMotion | None:
         return await self.session.scalar(
             select(DirectorDeskUserMotion).where(
-                DirectorDeskUserMotion.workspace_id == self.workspace_id,
+                DirectorDeskUserMotion.owner_user_id == self.owner_user_id,
                 DirectorDeskUserMotion.motion_key == motion_key,
             )
         )
@@ -112,7 +112,7 @@ class DirectorDeskMotions:
         rows = (
             await self.session.scalars(
                 select(DirectorDeskUserMotion.resource).where(
-                    DirectorDeskUserMotion.workspace_id == self.workspace_id
+                    DirectorDeskUserMotion.owner_user_id == self.owner_user_id
                 )
             )
         ).all()

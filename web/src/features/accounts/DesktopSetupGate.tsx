@@ -34,7 +34,7 @@ export function DesktopSetupGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (desktop) void check();
     return window.futurePropsDesktop?.onQuitRequested((approve) => {
-      const event = new CustomEvent("future-props:before-workspace-switch", {
+      const event = new CustomEvent("future-props:before-navigation", {
         cancelable: true,
         detail: approve,
       });

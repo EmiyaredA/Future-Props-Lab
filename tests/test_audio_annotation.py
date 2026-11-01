@@ -6,17 +6,18 @@ from uuid import uuid4
 
 import httpx
 import pytest
+from tests.account_fixtures import account_record
 
 from app.apps.audio_annotation.projects import AudioAnnotationError, AudioAnnotationProjects
 from app.capabilities.transcription.support import (
     resolve_transcription_language,
     resolve_transcription_target_language,
 )
-from app.console.models import Workspace
+from app.console.models import User
 from app.llm.models import ModelEntry, ModelProvider, ModelTestTranscriptionTask
 from app.llm.providers.transcription import TranscriptionResult, TranscriptSegment
 from app.main import app
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 
@@ -78,18 +79,19 @@ async def seed_transcription_task(
     source_asset_id: str | None = None,
     text: str = "识别全文",
     segments: list[dict] | None = None,
-    workspace_id: str = "default",
+    owner_user_id: str = "test-user",
     write_private_audio: bool = True,
 ) -> str:
     storage_key = uuid4().hex
     content = wav_bytes()
-    path = get_settings().workspace_model_test_path(workspace_id, "references") / storage_key
+    path = get_settings().account_model_test_path(owner_user_id, "references") / storage_key
     if write_private_audio:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(content)
     async with SessionLocal() as session:
-        bind_workspace(session, workspace_id)
+        bind_owner(session, owner_user_id)
         row = ModelTestTranscriptionTask(
+            owner_user_id=owner_user_id,
             provider_kind="openai",
             provider_name="测试识别供应商",
             model_slug="test-asr",
@@ -692,6 +694,7 @@ async def test_audio_annotation_transcribes_selected_range_to_target_language_an
 
 def test_transcription_language_supports_pro_aliases_and_auto_fallback() -> None:
     provider = ModelProvider(
+        owner_user_id="test-user",
         id="provider",
         name="Pro ASR",
         kind="senseaudio_asr_pro",
@@ -699,6 +702,7 @@ def test_transcription_language_supports_pro_aliases_and_auto_fallback() -> None
         enabled=True,
     )
     model = ModelEntry(
+        owner_user_id="test-user",
         id="model",
         provider_id=provider.id,
         slug="pro-asr",
@@ -1023,11 +1027,11 @@ async def test_transcription_import_keeps_overlaps_and_rejects_invalid_results()
         assert pending.status_code == 409
         assert pending.json()["code"] == "transcription_not_completed"
 
-        other_workspace_id = str(uuid4())
+        other_owner_user_id = str(uuid4())
         async with SessionLocal() as session:
-            session.add(Workspace(id=other_workspace_id, name="其他标注空间"))
+            session.add(account_record(id=other_owner_user_id, name="其他标注空间"))
             await session.commit()
-        other_task_id = await seed_transcription_task(workspace_id=other_workspace_id)
+        other_task_id = await seed_transcription_task(owner_user_id=other_owner_user_id)
         isolated = await client.post(
             "/v1/audio-annotation/transcription-imports",
             json={"source_kind": "task", "task_id": other_task_id},
@@ -1036,7 +1040,7 @@ async def test_transcription_import_keeps_overlaps_and_rejects_invalid_results()
 
         pending_task = (await client.get(f"/v1/model-test/transcription-tasks/{pending_id}")).json()
         async with SessionLocal() as session:
-            bind_workspace(session, "default")
+            bind_owner(session, "test-user")
             row = await session.get(ModelTestTranscriptionTask, pending_id)
             assert row is not None
             row.status = "failed"
@@ -1060,18 +1064,18 @@ async def test_transcription_import_keeps_overlaps_and_rejects_invalid_results()
             )
         ).status_code == 200
         async with SessionLocal() as session:
-            bind_workspace(session, other_workspace_id)
+            bind_owner(session, other_owner_user_id)
             task = await session.get(ModelTestTranscriptionTask, other_task_id)
             assert task is not None
             private_path = (
-                get_settings().workspace_model_test_path(other_workspace_id, "references")
+                get_settings().account_model_test_path(other_owner_user_id, "references")
                 / task.input_storage_key
             )
             await session.delete(task)
             await session.commit()
             private_path.unlink(missing_ok=True)
         async with SessionLocal() as session:
-            workspace = await session.get(Workspace, other_workspace_id)
+            workspace = await session.get(User, other_owner_user_id)
             assert workspace is not None
             await session.delete(workspace)
             await session.commit()
@@ -1092,7 +1096,7 @@ async def test_transcription_import_reports_missing_source_and_cleans_failed_cop
         assert missing.status_code == 404
         assert missing.json()["code"] == "source_not_found"
 
-        library_root = get_settings().library_asset_path
+        library_root = get_settings().account_path("test-user") / "library/assets"
         files_before = set(library_root.iterdir()) if library_root.exists() else set()
         original_duration = AudioAnnotationProjects._duration
 

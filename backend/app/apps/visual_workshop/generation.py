@@ -504,7 +504,7 @@ class VisualGeneration:
                 if asset_id in reference_assets
             }
         row = VisualGenerationTask(
-            workspace_id=(await self._project(project_id)).workspace_id,
+            owner_user_id=(await self._project(project_id)).owner_user_id,
             project_id=project_id,
             provider_id=provider.id,
             model_id=model.id,
@@ -606,7 +606,7 @@ class VisualGeneration:
             task_ids.append(row.id)
         batch = VisualGenerationBatch(
             id=batch_id,
-            workspace_id=(await self._project(project_id)).workspace_id,
+            owner_user_id=(await self._project(project_id)).owner_user_id,
             project_id=project_id,
             grid_size=body.grid_size,
             grid_output=body.grid_output,

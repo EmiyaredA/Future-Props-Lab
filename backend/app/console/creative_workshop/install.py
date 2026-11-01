@@ -39,12 +39,12 @@ class CreativeInstaller:
 
     def _authorize(self) -> None:
         if not self.principal.allows("configuration.manage"):
-            raise CreativeError("需要当前工作区的集成管理权限", 403, "permission_denied")
+            raise CreativeError("需要当前账号的集成管理权限", 403, "permission_denied")
 
     async def _existing(self, release_id: str) -> CreativeInstallation | None:
         return await self.session.scalar(
             select(CreativeInstallation).where(
-                CreativeInstallation.workspace_id == self.principal.workspace_id,
+                CreativeInstallation.owner_user_id == self.principal.owner_user_id,
                 CreativeInstallation.release_id == release_id,
             )
         )
@@ -80,7 +80,7 @@ class CreativeInstaller:
             if not already:
                 match = await self.session.scalar(
                     select(model.id).where(
-                        model.workspace_id == self.principal.workspace_id,
+                        model.owner_user_id == self.principal.owner_user_id,
                         func.lower(model.name) == name.casefold(),
                     )
                 )
@@ -115,7 +115,7 @@ class CreativeInstaller:
             )
         preview = await self.preview(body)
         if not preview.installable:
-            raise CreativeError("目标工作区有名称冲突，请调整名称后重试", 409, "name_conflict")
+            raise CreativeError("目标账号有名称冲突，请调整名称后重试", 409, "name_conflict")
         parts = await self._parts(body.release_id)
         copied: list[object] = []
         resources: list[dict] = []
@@ -131,7 +131,7 @@ class CreativeInstaller:
                     self.session.add(
                         ToolApiIntegration(
                             id=resource_id,
-                            workspace_id=self.principal.workspace_id,
+                            owner_user_id=self.principal.owner_user_id,
                             name=part.target_name,
                             description=release.summary,
                             method=manifest["method"],
@@ -152,7 +152,7 @@ class CreativeInstaller:
                     self.session.add(
                         McpIntegration(
                             id=resource_id,
-                            workspace_id=self.principal.workspace_id,
+                            owner_user_id=self.principal.owner_user_id,
                             name=part.target_name,
                             description=release.summary,
                             transport="streamable_http",
@@ -169,13 +169,13 @@ class CreativeInstaller:
                     resource_id = ""
                     state = "pending_setup"
                 else:
-                    source = resolve_file(item.origin_workspace_id, release.skill_path)
+                    source = resolve_file(item.origin_owner_user_id, release.skill_path)
                     if not (source / "SKILL.md").is_file():
                         raise CreativeError(
                             "Skill 发布文件不可用，安装已取消", 409, "missing_skill_file"
                         )
                     target = SkillArchiveStorage(
-                        get_settings(), self.principal.workspace_id
+                        get_settings(), self.principal.owner_user_id
                     ).final_path(resource_id, "v1")
                     target.parent.mkdir(parents=True, exist_ok=True)
                     copied.append(target.parent)
@@ -183,7 +183,7 @@ class CreativeInstaller:
                     self.session.add(
                         SkillIntegration(
                             id=resource_id,
-                            workspace_id=self.principal.workspace_id,
+                            owner_user_id=self.principal.owner_user_id,
                             name=part.target_name,
                             description=release.summary,
                             default_version="v1",
@@ -217,14 +217,14 @@ class CreativeInstaller:
                 if release.id != body.release_id:
                     self.session.add(
                         CreativeInstallation(
-                            workspace_id=self.principal.workspace_id,
+                            owner_user_id=self.principal.owner_user_id,
                             release_id=release.id,
                             installed_by_user_id=self.principal.user_id,
                             resources=[entry],
                         )
                     )
             record = CreativeInstallation(
-                workspace_id=self.principal.workspace_id,
+                owner_user_id=self.principal.owner_user_id,
                 release_id=body.release_id,
                 installed_by_user_id=self.principal.user_id,
                 resources=resources,
@@ -238,7 +238,7 @@ class CreativeInstaller:
                 shutil.rmtree(path, ignore_errors=True)
             if isinstance(exc, IntegrityError):
                 raise CreativeError(
-                    "目标工作区配置发生冲突，请重新预检", 409, "name_conflict"
+                    "目标账号配置发生冲突，请重新预检", 409, "name_conflict"
                 ) from exc
             raise
 
@@ -247,7 +247,7 @@ class CreativeInstaller:
     ) -> CreativeInstallOut:
         self._authorize()
         record = await self.session.get(CreativeInstallation, installation_id)
-        if record is None or record.workspace_id != self.principal.workspace_id:
+        if record is None or record.owner_user_id != self.principal.owner_user_id:
             raise CreativeError("安装记录不存在", 404, "not_found")
         entries = list(record.resources or [])
         index = next(
@@ -281,17 +281,17 @@ class CreativeInstaller:
             raise CreativeError(str(exc)) from exc
         conflict = await self.session.scalar(
             select(McpIntegration.id).where(
-                McpIntegration.workspace_id == self.principal.workspace_id,
+                McpIntegration.owner_user_id == self.principal.owner_user_id,
                 func.lower(McpIntegration.name) == entry["name"].casefold(),
             )
         )
         if conflict:
-            raise CreativeError("目标工作区已有同名 MCP", 409, "name_conflict")
+            raise CreativeError("目标账号已有同名 MCP", 409, "name_conflict")
         resource_id = new_id()
         self.session.add(
             McpIntegration(
                 id=resource_id,
-                workspace_id=self.principal.workspace_id,
+                owner_user_id=self.principal.owner_user_id,
                 name=checked.name,
                 description=checked.description,
                 transport="stdio",
@@ -310,7 +310,7 @@ class CreativeInstaller:
             (
                 await self.session.execute(
                     select(CreativeInstallation).where(
-                        CreativeInstallation.workspace_id == self.principal.workspace_id
+                        CreativeInstallation.owner_user_id == self.principal.owner_user_id
                     )
                 )
             )
@@ -329,7 +329,7 @@ class CreativeInstaller:
             await self.session.commit()
         except IntegrityError as exc:
             await self.session.rollback()
-            raise CreativeError("目标工作区已有同名 MCP", 409, "name_conflict") from exc
+            raise CreativeError("目标账号已有同名 MCP", 409, "name_conflict") from exc
         return CreativeInstallOut(
             id=record.id, release_id=record.release_id, resources=record.resources
         )

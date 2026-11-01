@@ -17,6 +17,7 @@ async def fixture_task(
     )
     assert response.status_code == 200
     task = VisualGenerationTask(
+        owner_user_id="test-user",
         id=str(uuid4()),
         project_id=response.json()["id"],
         provider_id=None,

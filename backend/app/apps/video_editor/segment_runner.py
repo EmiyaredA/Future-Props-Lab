@@ -190,7 +190,7 @@ class VideoEditorSegmentTaskRunner:
             }
             if set(source_assets) != asset_ids:
                 raise RuntimeError("分段源素材不存在")
-            workspace_id = task.workspace_id
+            owner_user_id = task.owner_user_id
             target_payload = dict(payload.get("target") or {})
             segment_payloads = {
                 str(item["clipId"]): dict(item) for item in payload.get("segments", [])
@@ -208,7 +208,7 @@ class VideoEditorSegmentTaskRunner:
             await self.raise_if_cancelled(task_id)
             await self._import_all(
                 task_id,
-                workspace_id,
+                owner_user_id,
                 target_payload,
                 segment_details,
                 outputs,
@@ -325,7 +325,7 @@ class VideoEditorSegmentTaskRunner:
     async def _import_all(
         self,
         task_id: str,
-        workspace_id: str,
+        owner_user_id: str,
         target_payload: dict,
         segment_details: list[dict],
         outputs: list[tuple[Path, dict, dict]],
@@ -348,7 +348,7 @@ class VideoEditorSegmentTaskRunner:
                     await self.raise_if_cancelled(task_id)
                     asset, staged = await library.stage_local_copy(
                         output,
-                        workspace_id=workspace_id,
+                        owner_user_id=owner_user_id,
                         filename=segment_filename(str(config["name"])),
                         content_type="video/mp4",
                         video_editor_project_id=source_project_id if not target_payload else None,
@@ -367,7 +367,7 @@ class VideoEditorSegmentTaskRunner:
                 canvas = None
                 if target_payload:
                     canvas, target_project_id, created_project_root = await self._target_canvas(
-                        session, target_payload, target_project_id, workspace_id, detail
+                        session, target_payload, target_project_id, owner_user_id, detail
                     )
                 nodes = [dict(node) for node in (canvas.nodes or [])] if canvas else []
                 if canvas:
@@ -391,6 +391,7 @@ class VideoEditorSegmentTaskRunner:
                     if canvas:
                         session.add(
                             VisualProjectAssetReference(
+                                owner_user_id=owner_user_id,
                                 project_id=target_project_id,
                                 asset_id=asset.id,
                                 folder_id=None,
@@ -476,7 +477,7 @@ class VideoEditorSegmentTaskRunner:
                 self.storage.remove_project_root(
                     "visual-workshop",
                     target_project_id,
-                    workspace_id=workspace_id,
+                    owner_user_id=owner_user_id,
                 )
             raise
 
@@ -485,19 +486,19 @@ class VideoEditorSegmentTaskRunner:
         session: AsyncSession,
         target_payload: dict,
         target_project_id: str | None,
-        workspace_id: str,
+        owner_user_id: str,
         detail: dict,
     ) -> tuple[VisualCanvasDocument, str, bool]:
         if target_project_id:
             project = await session.get(VisualWorkshopProject, target_project_id)
             canvas = await session.get(VisualCanvasDocument, target_project_id)
-            if project is None or project.workspace_id != workspace_id or canvas is None:
+            if project is None or project.owner_user_id != owner_user_id or canvas is None:
                 raise RuntimeError("目标工作坊项目不存在")
             if canvas.revision != detail.get("targetCanvasRevision"):
                 raise RuntimeError("目标工作坊画布已变化，请重新提交")
             return canvas, target_project_id, False
         project = VisualWorkshopProject(
-            workspace_id=workspace_id,
+            owner_user_id=owner_user_id,
             title=str(target_payload["newProjectTitle"]),
             kind="canvas",
             status="draft",
@@ -505,7 +506,7 @@ class VideoEditorSegmentTaskRunner:
         session.add(project)
         await session.flush()
         created = self.storage.ensure_project_layout(
-            "visual-workshop", project.id, workspace_id=workspace_id
+            "visual-workshop", project.id, owner_user_id=owner_user_id
         )
         canvas = VisualCanvasDocument(project_id=project.id, nodes=[], edges=[])
         session.add(canvas)

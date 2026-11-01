@@ -27,7 +27,7 @@ from app.capabilities.asset_store import (
     open_project_folder,
 )
 from app.capabilities.asset_store.schemas.project_snapshots import ProjectFolderOpenOut
-from app.deps import SessionDep, StudioAuth, WorkspaceDep
+from app.deps import OwnerDep, SessionDep, StudioAuth
 from app.runtime.config import get_settings
 
 router = APIRouter()
@@ -39,40 +39,40 @@ def _project_file_error(exc: ProjectSnapshotError | ProjectFolderError) -> HTTPE
 
 @router.get("", response_model=GalgameWorkshopProjectListOut)
 async def list_projects(
-    session: SessionDep, workspace_id: WorkspaceDep
+    session: SessionDep, owner_user_id: OwnerDep
 ) -> GalgameWorkshopProjectListOut:
-    return await GalgameWorkshopProjects(session, workspace_id).list()
+    return await GalgameWorkshopProjects(session, owner_user_id).list()
 
 
 @router.post("", response_model=GalgameWorkshopProjectOut)
 async def create_project(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     body: GalgameWorkshopProjectCreateIn,
 ) -> GalgameWorkshopProjectOut:
-    return await GalgameWorkshopProjects(session, workspace_id).create(body)
+    return await GalgameWorkshopProjects(session, owner_user_id).create(body)
 
 
 @router.post("/snapshot-imports", response_model=GalgameProjectSnapshotImportOut)
 async def import_project_snapshot(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     file: Annotated[UploadFile, File()],
 ) -> GalgameProjectSnapshotImportOut:
     try:
-        return await GalgameProjectSnapshots(session, get_settings(), workspace_id).import_snapshot(
-            file
-        )
+        return await GalgameProjectSnapshots(
+            session, get_settings(), owner_user_id
+        ).import_snapshot(file)
     except ProjectSnapshotError as exc:
         raise _project_file_error(exc) from None
 
 
 @router.get("/{project_id}", response_model=GalgameWorkshopProjectOut)
 async def get_project(
-    session: SessionDep, workspace_id: WorkspaceDep, project_id: str
+    session: SessionDep, owner_user_id: OwnerDep, project_id: str
 ) -> GalgameWorkshopProjectOut:
     try:
-        return await GalgameWorkshopProjects(session, workspace_id).get(project_id)
+        return await GalgameWorkshopProjects(session, owner_user_id).get(project_id)
     except GalgameWorkshopProjectNotFoundError as exc:
         raise _not_found(exc) from None
 
@@ -83,10 +83,10 @@ async def get_project(
     responses={200: {"content": {"application/zip": {}}}},
 )
 async def export_project_snapshot(
-    session: SessionDep, workspace_id: WorkspaceDep, project_id: str
+    session: SessionDep, owner_user_id: OwnerDep, project_id: str
 ) -> FileResponse:
     try:
-        exported = await GalgameProjectSnapshots(session, get_settings(), workspace_id).export(
+        exported = await GalgameProjectSnapshots(session, get_settings(), owner_user_id).export(
             project_id
         )
     except ProjectSnapshotError as exc:
@@ -103,7 +103,7 @@ async def export_project_snapshot(
 async def reveal_project_folder(
     principal: StudioAuth,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     project_id: str,
 ) -> ProjectFolderOpenOut:
     if principal.auth_kind != "session":
@@ -112,12 +112,12 @@ async def reveal_project_folder(
             {"code": "browser_session_required", "message": "打开文件夹必须使用浏览器 Session"},
         )
     try:
-        await GalgameWorkshopProjects(session, workspace_id).get(project_id)
+        await GalgameWorkshopProjects(session, owner_user_id).get(project_id)
         await open_project_folder(
             AssetStorage(get_settings()),
             "galgame-workshop",
             project_id,
-            workspace_id=workspace_id,
+            owner_user_id=owner_user_id,
         )
     except GalgameWorkshopProjectNotFoundError as exc:
         raise _not_found(exc) from None
@@ -129,12 +129,12 @@ async def reveal_project_folder(
 @router.patch("/{project_id}", response_model=GalgameWorkshopProjectOut)
 async def patch_project(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     project_id: str,
     body: GalgameWorkshopProjectPatchIn,
 ) -> GalgameWorkshopProjectOut:
     try:
-        return await GalgameWorkshopProjects(session, workspace_id).patch(project_id, body)
+        return await GalgameWorkshopProjects(session, owner_user_id).patch(project_id, body)
     except GalgameWorkshopProjectNotFoundError as exc:
         raise _not_found(exc) from None
     except GalgameStoryNotReadyError as exc:
@@ -151,12 +151,12 @@ async def patch_project(
 @router.delete("/{project_id}")
 async def delete_project(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     project_id: str,
     expected_revision: int = Query(ge=0),
 ) -> dict[str, bool]:
     try:
-        await GalgameWorkshopProjects(session, workspace_id).delete(project_id, expected_revision)
+        await GalgameWorkshopProjects(session, owner_user_id).delete(project_id, expected_revision)
     except GalgameWorkshopProjectNotFoundError as exc:
         raise _not_found(exc) from None
     return {"deleted": True}

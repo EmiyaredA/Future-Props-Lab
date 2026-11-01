@@ -11,7 +11,7 @@ export const auditLabels: Record<string, string> = {
   "platform.model_template.updated": "更新角色模型模板",
   "platform.model_template.previewed": "预览模板同步",
   "platform.model_template.sync_started": "开始模板同步",
-  "platform.model_template.sync_item": "同步工作区模型模板",
+  "platform.model_template.sync_item": "同步账号模型模板",
   "project.certification.updated": "更新官方作品标记",
   "demo_service.installed": "接入本地测试服务",
   "platform.demo_service:mock_model.updated": "更新 Mock 模型服务",

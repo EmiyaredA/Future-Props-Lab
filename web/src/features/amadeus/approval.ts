@@ -48,7 +48,7 @@ export async function decideAmadeusApproval({
         item.projectId === projectId &&
         item.unsaved &&
         item.userId === session.me.user.id &&
-        item.workspaceId === session.me.workspace.id,
+        item.accountId === session.me.user.id,
     )
   ) {
     setError("目标项目有未保存的编辑。请先在原窗口保存，再确认这项操作。");
@@ -128,7 +128,7 @@ export async function decideAmadeusApproval({
         application: "video-editor",
         projectId,
         userId: session.me.user.id,
-        workspaceId: session.me.workspace.id,
+        accountId: session.me.user.id,
       });
     if (
       outcome.status === "completed" &&
@@ -138,7 +138,7 @@ export async function decideAmadeusApproval({
         application: "*",
         projectId,
         userId: session.me.user.id,
-        workspaceId: session.me.workspace.id,
+        accountId: session.me.user.id,
       });
     const snapshot = await fetchApiJson<Detail>(
       `/v1/amadeus/conversations/${conversationId}`,

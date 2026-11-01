@@ -3,7 +3,7 @@ import "../knowledge.css";
 import "./community.css";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useAccountId } from "@platform/auth/WorkspacePermissions";
+import { useAccountId } from "@platform/auth/AccountAccess";
 import { thoughtKeys } from "../queryKeys";
 import { resolveOfficialLink } from "./api";
 export function LegacyOfficialPage({

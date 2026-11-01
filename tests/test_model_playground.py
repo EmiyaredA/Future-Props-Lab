@@ -265,6 +265,7 @@ async def test_cancelled_generation_keeps_partial_reply_and_log(
     async with SessionLocal() as session:
         session.add(
             ModelProvider(
+                owner_user_id="test-user",
                 id=provider_id,
                 name="cancel-provider",
                 kind="openai",
@@ -275,6 +276,7 @@ async def test_cancelled_generation_keeps_partial_reply_and_log(
         await session.commit()
         session.add(
             ModelEntry(
+                owner_user_id="test-user",
                 id=model_id,
                 provider_id=provider_id,
                 slug=f"cancel-model-{uuid4()}",
@@ -283,10 +285,10 @@ async def test_cancelled_generation_keeps_partial_reply_and_log(
             )
         )
         await session.commit()
-        conversation = await ModelTestService(session, "default").create(
+        conversation = await ModelTestService(session, "test-user").create(
             ModelTestConversationCreateIn(model_id=model_id)
         )
-        prepared = await ModelTestService(session, "default").prepare_send(
+        prepared = await ModelTestService(session, "test-user").prepare_send(
             conversation.id, conversation.revision, "cancel me"
         )
 
@@ -520,7 +522,9 @@ async def test_playground_image_attachments_persist_and_reach_multiturn_context(
             row = await session.get(ModelTestAttachment, attachment["id"])
             assert row is not None
             attachment_path = (
-                ModelTestService(session, "default").settings.model_test_attachment_path
+                ModelTestService(session, "test-user").settings.account_model_test_path(
+                    "test-user", "attachments"
+                )
                 / row.storage_key
             )
             assert attachment_path.is_file()

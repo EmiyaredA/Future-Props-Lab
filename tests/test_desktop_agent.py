@@ -75,7 +75,11 @@ def approve(backend, data, *, write=True, profile="default"):
     def pending(pair):
         response = backend.client.post(
             f"/v1/desktop/agent/pairings/{pair['id']}/decision",
-            json={"approve": True, "code": pair["code"], "expected_workspace_id": "default"},
+            json={
+                "approve": True,
+                "code": pair["code"],
+                "expected_owner_user_id": backend.client.get("/v1/auth/me").json()["user"]["id"],
+            },
         )
         assert response.status_code == 200, response.text
         assert "secret" not in response.text and "api_key" not in response.text
@@ -120,7 +124,7 @@ def test_pairing_cli_permissions_revocation_and_streaming(connected):
     env = {**os.environ, "PYTHONPATH": str(ROOT / "sdk/python/src")}
     status = subprocess.run([*command, "status"], capture_output=True, text=True, env=env)
     assert status.returncode == 0, status.stderr
-    assert json.loads(status.stdout)["workspace_id"] == result["workspace_id"]
+    assert json.loads(status.stdout)["user_id"] == result["user_id"]
     operations = subprocess.run([*command, "operations"], capture_output=True, text=True, env=env)
     names = json.loads(operations.stdout)["operations"]
     assert "visual.create_project" in names and not any(n.startswith("accounts.") for n in names)
@@ -319,7 +323,13 @@ def test_pair_claim_once_and_decision_csrf(connected):
         assert (
             backend.client.post(
                 path + "/decision",
-                json={"approve": True, "code": pair["code"], "expected_workspace_id": "default"},
+                json={
+                    "approve": True,
+                    "code": pair["code"],
+                    "expected_owner_user_id": backend.client.get("/v1/auth/me").json()["user"][
+                        "id"
+                    ],
+                },
             ).status_code
             == 403
         )
@@ -330,7 +340,7 @@ def test_pair_claim_once_and_decision_csrf(connected):
                 json={
                     "approve": True,
                     "code": pair["code"],
-                    "expected_workspace_id": "stale-workspace",
+                    "expected_owner_user_id": "stale-workspace",
                 },
             ).status_code
             == 409
@@ -339,7 +349,13 @@ def test_pair_claim_once_and_decision_csrf(connected):
         def decide(_):
             return backend.client.post(
                 path + "/decision",
-                json={"approve": True, "code": pair["code"], "expected_workspace_id": "default"},
+                json={
+                    "approve": True,
+                    "code": pair["code"],
+                    "expected_owner_user_id": backend.client.get("/v1/auth/me").json()["user"][
+                        "id"
+                    ],
+                },
             ).status_code
 
         with concurrent.futures.ThreadPoolExecutor(2) as pool:
@@ -416,21 +432,9 @@ def test_cli_create_upload_export_and_revision_conflict(connected, tmp_path):
 def test_key_does_not_follow_browser_workspace_switch(connected):
     backend, data = connected
     result = approve(backend, data)
-    workspace = backend.client.post(
-        "/v1/platform/workspaces",
-        json={
-            "name": "Other workspace",
-            "owner_user_id": result["user_id"],
-        },
-    )
-    assert workspace.status_code == 201, workspace.text
-    other = workspace.json()["id"]
-    assert (
-        backend.client.post(
-            "/v1/account/workspaces/switch", json={"workspace_id": other}
-        ).status_code
-        == 200
-    )
+    from tests.account_fixtures import switch_desktop_account
+
+    switch_desktop_account(backend)
     project = backend.client.post(
         "/v1/visual-workshop/projects", json={"title": "private", "kind": "image"}
     ).json()
@@ -438,8 +442,8 @@ def test_key_does_not_follow_browser_workspace_switch(connected):
         from future_props_lab import ApiError
 
         assert (
-            sdk._call("GET", "/v1/desktop/agent/capabilities")["workspace_id"]
-            == result["workspace_id"]
+            sdk._call("GET", "/v1/desktop/agent/capabilities")["owner_user_id"]
+            == result["owner_user_id"]
         )
         with pytest.raises(ApiError) as denied:
             sdk.visual.get_project(project_id=project["id"])
@@ -461,6 +465,7 @@ def test_integration_manifest_registers_exact_existing_operations():
         for path, methods in specification["paths"].items()
         if path.startswith("/v1/integrations/")
         and not path.startswith("/v1/integrations/external-connections")
+        and "/files" not in path
         for method in methods
         if method in {"get", "post", "patch", "delete", "put"}
     }

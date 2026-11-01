@@ -7,13 +7,13 @@ from typing import Any
 from app.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from app.apps.video_editor.schemas.timeline import VideoEditorTimelineBatchIn
 from app.apps.video_editor.timeline import VideoEditorTimelines
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.db import SessionLocal
 from app.runtime.operation_receipts import OperationError
 
 
 async def apply_assistant_timeline_batch(
-    workspace_id: str, action_id: str, project_id: str, arguments: dict[str, Any]
+    owner_user_id: str, action_id: str, project_id: str, arguments: dict[str, Any]
 ) -> dict[str, Any]:
     body = VideoEditorTimelineBatchIn.model_validate(
         {
@@ -24,8 +24,8 @@ async def apply_assistant_timeline_batch(
     )
     try:
         async with SessionLocal() as session:
-            bind_workspace(session, workspace_id)
-            outcome = await VideoEditorTimelines(session, workspace_id).apply(project_id, body)
+            bind_owner(session, owner_user_id)
+            outcome = await VideoEditorTimelines(session, owner_user_id).apply(project_id, body)
     except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
         raise OperationError(str(exc), getattr(exc, "code", "execution_failed"), 422) from exc
     return {

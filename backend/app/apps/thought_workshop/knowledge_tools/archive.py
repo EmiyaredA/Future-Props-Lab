@@ -16,12 +16,12 @@ from .references import remap_references
 from .schemas import CheckpointOut, TemplateOut
 
 
-async def export_tools(session, workspace_id, note_ids, include_templates):
+async def export_tools(session, owner_user_id, note_ids, include_templates):
     templates = (
         list(
             await session.scalars(
                 select(ThoughtTemplate)
-                .where(ThoughtTemplate.workspace_id == workspace_id)
+                .where(ThoughtTemplate.owner_user_id == owner_user_id)
                 .order_by(ThoughtTemplate.id)
             )
         )
@@ -73,7 +73,7 @@ def validate_tools(payload):
 
 async def import_tools(
     session,
-    workspace_id,
+    owner_user_id,
     payload,
     note_mapping,
     history_mapping,
@@ -93,7 +93,7 @@ async def import_tools(
             ).model_dump(mode="json")
         row = ThoughtTemplate(
             id=new_id(),
-            workspace_id=workspace_id,
+            owner_user_id=owner_user_id,
             name=source.name,
             description=source.description,
             document=deepcopy(document),

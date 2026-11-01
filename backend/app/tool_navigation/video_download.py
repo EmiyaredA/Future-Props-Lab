@@ -48,7 +48,7 @@ _HOST_LABEL = re.compile(r"^[a-z0-9.-]+$")
 _URL_IN_TEXT = re.compile(r"https?://[^\s<>\"'`，。；、！？]+", re.IGNORECASE)
 _DOUYIN_VIDEO_PATH = re.compile(r"/video/(\d+)", re.IGNORECASE)
 _JOBS_LOCK = threading.Lock()
-_JOBS: dict[str, "VideoDownloadJob"] = {}
+_JOBS: dict[str, VideoDownloadJob] = {}
 
 
 class BinaryStatus(BaseModel):
@@ -69,7 +69,9 @@ class VideoDownloadJobCreate(BaseModel):
     url: str = Field(min_length=8, max_length=4096)
     quality: str = Field(default="best", pattern=r"^(best|1080|720|480)$")
     use_browser_cookies: bool = False
-    cookies_from_browser: str = Field(default="chrome", pattern=r"^(chrome|chromium|edge|safari|brave|firefox)$")
+    cookies_from_browser: str = Field(
+        default="chrome", pattern=r"^(chrome|chromium|edge|safari|brave|firefox)$"
+    )
     save_to_disk: bool = True
     save_to_library: bool = True
     folder_id: str | None = Field(default=None, max_length=64)
@@ -112,7 +114,7 @@ class VideoDownloadJobOut(BaseModel):
 @dataclass
 class VideoDownloadJob:
     id: str
-    workspace_id: str
+    owner_user_id: str
     url: str
     quality: str
     use_browser_cookies: bool
@@ -229,7 +231,7 @@ def _probe_binary(name: str, *, version_flag: str = "--version") -> BinaryStatus
     path = shutil.which(name)
     if not path:
         hint = (
-            'macOS: brew install yt-dlp ffmpeg'
+            "macOS: brew install yt-dlp ffmpeg"
             if name == "yt-dlp"
             else "macOS: brew install ffmpeg"
         )
@@ -328,9 +330,7 @@ def _network_hint(stderr: str) -> str:
     if "tunnel connection failed" in lower or "unable to connect to proxy" in lower:
         return "本机代理拒绝了 yt-dlp 的外网请求。请检查系统/终端代理设置后重试。"
     if re.search(r"\b403\b", lower) or "forbidden" in lower:
-        return (
-            "来源拒绝访问（403）。可开启浏览器 Cookie，先在浏览器打开并播放该视频后再试。"
-        )
+        return "来源拒绝访问（403）。可开启浏览器 Cookie，先在浏览器打开并播放该视频后再试。"
     if "429" in lower or "too many requests" in lower:
         return "来源限流，请稍后再试。"
     clipped = detail[-800:] if len(detail) > 800 else detail
@@ -516,7 +516,7 @@ async def _ingest_library(
         try:
             row, _staged = await library.stage_local_copy(
                 media,
-                workspace_id=job.workspace_id,
+                owner_user_id=job.owner_user_id,
                 filename=media.name,
                 content_type=MIME_BY_EXTENSION.get(media.suffix.lower(), "video/mp4"),
                 folder_id=job.folder_id,
@@ -581,7 +581,7 @@ async def _execute_job(job_id: str) -> None:
 def create_job(
     body: VideoDownloadJobCreate,
     *,
-    workspace_id: str,
+    owner_user_id: str,
 ) -> VideoDownloadJobOut:
     deps = probe_deps()
     if not deps.ready:
@@ -601,7 +601,7 @@ def create_job(
     cookies = body.cookies_from_browser if body.use_browser_cookies else None
     job = VideoDownloadJob(
         id=job_id,
-        workspace_id=workspace_id,
+        owner_user_id=owner_user_id,
         url=url,
         quality=body.quality,
         use_browser_cookies=body.use_browser_cookies,
@@ -617,16 +617,16 @@ def create_job(
     return job.to_out()
 
 
-def get_job(job_id: str, *, workspace_id: str) -> VideoDownloadJob:
+def get_job(job_id: str, *, owner_user_id: str) -> VideoDownloadJob:
     with _JOBS_LOCK:
         job = _JOBS.get(job_id)
-    if job is None or job.workspace_id != workspace_id:
+    if job is None or job.owner_user_id != owner_user_id:
         raise VideoDownloadError("下载任务不存在", code="not_found", status=404)
     return job
 
 
-def job_file(job_id: str, *, workspace_id: str) -> tuple[Path, str]:
-    job = get_job(job_id, workspace_id=workspace_id)
+def job_file(job_id: str, *, owner_user_id: str) -> tuple[Path, str]:
+    job = get_job(job_id, owner_user_id=owner_user_id)
     if job.status != "succeeded" or not job.save_to_disk:
         raise VideoDownloadError("当前任务没有可下载文件", code="file_unavailable", status=404)
     if job.file_path is None or not job.file_path.is_file():

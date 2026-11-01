@@ -4,10 +4,7 @@ export type AudienceOverlay = AnnotationState & {
   index: number;
 };
 import { useEffect, useRef, useState } from "react";
-import {
-  AUTH_REQUIRED_EVENT,
-  WORKSPACE_CHANGED_EVENT,
-} from "@platform/api/studioAuth";
+import { AUTH_REQUIRED_EVENT } from "@platform/api/studioAuth";
 import type { Deck } from "../types";
 
 export function useAudience({
@@ -50,11 +47,9 @@ export function useAudience({
       2000,
     );
     window.addEventListener(AUTH_REQUIRED_EVENT, close);
-    window.addEventListener(WORKSPACE_CHANGED_EVENT, close);
     return () => {
       clearInterval(timer);
       window.removeEventListener(AUTH_REQUIRED_EVENT, close);
-      window.removeEventListener(WORKSPACE_CHANGED_EVENT, close);
       close();
     };
   }, []);

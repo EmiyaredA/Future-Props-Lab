@@ -3,7 +3,6 @@ import type { paths } from "@generated/api";
 import {
   applySessionHeaders,
   notifyAuthRequired,
-  notifyWorkspaceChanged,
 } from "@platform/api/studioAuth";
 import {
   ApiError,
@@ -35,14 +34,6 @@ async function responseProblem(response: Response): Promise<ProblemDetail> {
   }
 }
 
-function isWorkspaceChanged(problem: ProblemDetail): boolean {
-  const detail = problem.detail as { code?: string } | string | undefined;
-  return (
-    problem.code === "workspace_access_changed" ||
-    (typeof detail === "object" && detail?.code === "workspace_access_changed")
-  );
-}
-
 export async function requestApi(
   path: string,
   init: RequestInit = {},
@@ -57,8 +48,6 @@ export async function requestApi(
   if (response.status === 401) notifyAuthRequired();
   if (!response.ok) {
     const problem = await responseProblem(response);
-    if (response.status === 409 && isWorkspaceChanged(problem))
-      notifyWorkspaceChanged();
     if (
       response.status === 403 &&
       ["insufficient_permission", "insufficient_scope"].includes(
@@ -140,11 +129,6 @@ api.use({
         )
       )
         window.dispatchEvent(new Event("future-props:permissions-changed"));
-    }
-    if (response.status === 409) {
-      const clone = response.clone();
-      const problem = parseProblemDetail(await clone.json().catch(() => ({})));
-      if (isWorkspaceChanged(problem)) notifyWorkspaceChanged();
     }
     return response;
   },

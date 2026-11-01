@@ -25,8 +25,8 @@ class ModelTemplateSyncItem(Base):
     __tablename__ = "model_template_sync_items"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     job_id: Mapped[str] = mapped_column(ForeignKey("model_template_sync_jobs.id"))
-    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id"))
-    workspace_name: Mapped[str] = mapped_column(String(255))
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    account_name: Mapped[str] = mapped_column(String(255))
     catalog_revision: Mapped[int] = mapped_column(Integer)
     status: Mapped[str] = mapped_column(String(16), default="pending")
     summary: Mapped[dict] = mapped_column(JSON, default=dict)

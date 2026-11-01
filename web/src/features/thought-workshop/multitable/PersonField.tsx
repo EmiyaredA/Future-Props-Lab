@@ -4,8 +4,7 @@ import { api, unwrap } from "@platform/api/client";
 import { thoughtKeys } from "../queryKeys";
 import { personText, type People } from "./formatting";
 
-const members = async () =>
-  unwrap(await api.GET("/v1/account/workspaces/current/members"));
+const members = async () => unwrap(await api.GET("/v1/account/directory"));
 
 export function PersonChoices({
   label,
@@ -23,7 +22,7 @@ export function PersonChoices({
   editable: boolean;
 }) {
   const directory = useQuery({
-    queryKey: thoughtKeys.workspaceMembers(),
+    queryKey: thoughtKeys.accountDirectory(),
     queryFn: members,
     enabled: editable,
     staleTime: 30_000,
@@ -38,7 +37,7 @@ export function PersonChoices({
       ? [value]
       : [];
   if (!editable) return <span>{personText(value, people) || "—"}</span>;
-  if (directory.isError) return <p role="alert">无法读取当前空间成员。</p>;
+  if (directory.isError) return <p role="alert">无法读取账号目录。</p>;
   if (!multiple) {
     const current = selected[0] ?? "";
     const known = options.some((option) => option.value === current);
@@ -47,7 +46,7 @@ export function PersonChoices({
         ariaLabel={label}
         value={current}
         options={[
-          { value: "", label: "请选择成员" },
+          { value: "", label: "请选择账号" },
           ...(current && !known
             ? [
                 {

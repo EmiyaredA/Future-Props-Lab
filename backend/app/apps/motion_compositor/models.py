@@ -22,10 +22,10 @@ from app.runtime.time import utc_now
 
 class MotionProject(Base):
     __tablename__ = "motion_compositor_projects"
-    __table_args__ = (Index("ix_motion_projects_workspace_updated", "workspace_id", "updated_at"),)
+    __table_args__ = (Index("ix_motion_projects_account_updated", "owner_user_id", "updated_at"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     title: Mapped[str] = mapped_column(String(120))
     revision: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
@@ -48,7 +48,7 @@ class MotionOperationBatch(Base):
     __table_args__ = (UniqueConstraint("project_id", "request_id"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     project_id: Mapped[str] = mapped_column(
         ForeignKey("motion_compositor_projects.id", ondelete="CASCADE")
     )
@@ -68,7 +68,7 @@ class MotionTask(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     project_id: Mapped[str] = mapped_column(
         ForeignKey("motion_compositor_projects.id", ondelete="CASCADE")
     )

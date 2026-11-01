@@ -83,7 +83,7 @@ def remap_images(node: dict, mapping: dict[str, str]) -> None:
 async def export_backup(
     notes: Notes, settings: Settings, knowledge_base_id: str | None = None
 ) -> Path:
-    knowledge = KnowledgeBases(notes.session, notes.workspace_id)
+    knowledge = KnowledgeBases(notes.session, notes.owner_user_id)
     projects = (
         [await knowledge.output(await knowledge.get(knowledge_base_id, include_deleted=True))]
         if knowledge_base_id
@@ -94,7 +94,7 @@ async def export_backup(
         await notes.session.scalars(
             select(ThoughtNote)
             .where(
-                ThoughtNote.workspace_id == notes.workspace_id,
+                ThoughtNote.owner_user_id == notes.owner_user_id,
                 ThoughtNote.knowledge_base_id.in_(project_ids),
             )
             .order_by(ThoughtNote.id)
@@ -103,7 +103,7 @@ async def export_backup(
     documents = [note_out(row).model_dump(mode="json") for row in rows]
     history = await export_history(notes.session, [row.id for row in rows])
     tools = await export_tools(
-        notes.session, notes.workspace_id, [row.id for row in rows], knowledge_base_id is None
+        notes.session, notes.owner_user_id, [row.id for row in rows], knowledge_base_id is None
     )
     multitables = await export_tables(notes.session, rows)
     ids = archive_assets(multitables)
@@ -122,7 +122,7 @@ async def export_backup(
             await notes.session.scalars(
                 select(VisualAsset).where(
                     VisualAsset.id.in_(ids),
-                    VisualAsset.workspace_id == notes.workspace_id,
+                    VisualAsset.owner_user_id == notes.owner_user_id,
                 )
             )
         ).all()
@@ -255,7 +255,7 @@ async def import_backup(
             for asset in payload["assets"]:
                 row, final_path = await library.stage_local_copy(
                     Path(asset["staged_path"]),
-                    workspace_id=notes.workspace_id,
+                    owner_user_id=notes.owner_user_id,
                     filename=asset["filename"],
                     content_type=asset["content_type"],
                     allowed_extensions={".png", ".jpg", ".jpeg", ".webp", ".gif"}
@@ -272,7 +272,7 @@ async def import_backup(
                 return replay
         notes.session.add_all(staged_rows)
         await notes.session.flush()
-        knowledge = KnowledgeBases(notes.session, notes.workspace_id)
+        knowledge = KnowledgeBases(notes.session, notes.owner_user_id)
         project_mapping = {}
         note_mapping = {n["id"]: str(uuid4()) for n in payload.get("notes", [])}
         project_rows = {}
@@ -292,7 +292,7 @@ async def import_backup(
                 continue
             row = ThoughtKnowledgeBase(
                 id=str(uuid4()),
-                workspace_id=notes.workspace_id,
+                owner_user_id=notes.owner_user_id,
                 title=project["title"],
                 description=project.get("description", ""),
                 cover_asset_id=mapping.get(project.get("cover_asset_id")),
@@ -365,7 +365,7 @@ async def import_backup(
         )
         await import_tools(
             notes.session,
-            notes.workspace_id,
+            notes.owner_user_id,
             payload,
             note_mapping,
             history_mapping,

@@ -26,8 +26,8 @@ async def resolve(session, principal, pub_id, ids):
             .join(Publication, Publication.knowledge_base_id == ThoughtNote.knowledge_base_id)
             .where(
                 ThoughtNote.id.in_(ids),
-                ThoughtNote.workspace_id == source.workspace_id,
-                Publication.workspace_id == source.workspace_id,
+                ThoughtNote.owner_user_id == source.owner_user_id,
+                Publication.owner_user_id == source.owner_user_id,
                 Publication.active.is_(True),
             )
         )

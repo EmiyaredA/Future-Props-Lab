@@ -12,7 +12,7 @@ class RuntimeAdmission(Base):
     __tablename__ = "runtime_admissions"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
-    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id"))
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
     platform_role: Mapped[str] = mapped_column(String(16))
     realtime_voice: Mapped[bool] = mapped_column(Boolean, default=False)
     weight: Mapped[int] = mapped_column(Integer, default=1)

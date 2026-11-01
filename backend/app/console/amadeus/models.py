@@ -14,12 +14,12 @@ from app.runtime.time import utc_now
 class AmadeusConversation(Base):
     __tablename__ = "amadeus_conversations"
     __table_args__ = (
-        Index("ix_amadeus_conversations_owner_updated", "workspace_id", "user_id", "updated_at"),
+        Index("ix_amadeus_conversations_owner_updated", "owner_user_id", "user_id", "updated_at"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("workspaces.id", ondelete="CASCADE")
+    owner_user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE")
     )
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"))
     executor_kind: Mapped[str] = mapped_column(String(24), default="code-agent")
@@ -41,8 +41,8 @@ class AmadeusMessage(Base):
     conversation_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("amadeus_conversations.id", ondelete="CASCADE")
     )
-    workspace_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("workspaces.id", ondelete="CASCADE")
+    owner_user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE")
     )
     role: Mapped[str] = mapped_column(String(16))
     content: Mapped[str] = mapped_column(Text)
@@ -64,8 +64,8 @@ class AmadeusAction(Base):
     conversation_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("amadeus_conversations.id", ondelete="CASCADE")
     )
-    workspace_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("workspaces.id", ondelete="CASCADE")
+    owner_user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE")
     )
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"))
     tool_name: Mapped[str] = mapped_column(String(120))
@@ -83,7 +83,7 @@ class AmadeusAction(Base):
 class AmadeusRun(Base):
     __tablename__ = "amadeus_runs"
     __table_args__ = (
-        Index("ix_amadeus_runs_owner_updated", "workspace_id", "user_id", "updated_at"),
+        Index("ix_amadeus_runs_owner_updated", "owner_user_id", "user_id", "updated_at"),
         Index("ix_amadeus_runs_conversation_created", "conversation_id", "created_at"),
     )
 
@@ -91,8 +91,8 @@ class AmadeusRun(Base):
     conversation_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("amadeus_conversations.id", ondelete="CASCADE")
     )
-    workspace_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("workspaces.id", ondelete="CASCADE")
+    owner_user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE")
     )
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"))
     agent_id: Mapped[str | None] = mapped_column(String(24), nullable=True)
@@ -132,8 +132,8 @@ class AmadeusQuestion(Base):
     run_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("amadeus_runs.id", ondelete="CASCADE")
     )
-    workspace_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("workspaces.id", ondelete="CASCADE")
+    owner_user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE")
     )
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"))
     tool_call_id: Mapped[str] = mapped_column(String(120))
@@ -158,8 +158,8 @@ class AmadeusRunEvent(Base):
     run_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("amadeus_runs.id", ondelete="CASCADE")
     )
-    workspace_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("workspaces.id", ondelete="CASCADE")
+    owner_user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE")
     )
     sequence: Mapped[int] = mapped_column(Integer)
     kind: Mapped[str] = mapped_column(String(40))

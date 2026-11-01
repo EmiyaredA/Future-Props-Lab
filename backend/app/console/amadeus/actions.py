@@ -56,7 +56,7 @@ async def execute_action(
     owner = await session.scalar(
         select(AmadeusConversation).where(
             AmadeusConversation.id == conversation_id,
-            AmadeusConversation.workspace_id == principal.workspace_id,
+            AmadeusConversation.owner_user_id == principal.owner_user_id,
             AmadeusConversation.user_id == principal.user_id,
         )
     )
@@ -68,7 +68,7 @@ async def execute_action(
         select(AmadeusAction).where(
             AmadeusAction.id == action_id,
             AmadeusAction.conversation_id == conversation_id,
-            AmadeusAction.workspace_id == principal.workspace_id,
+            AmadeusAction.owner_user_id == principal.owner_user_id,
             AmadeusAction.user_id == principal.user_id,
         )
     )
@@ -81,7 +81,7 @@ async def execute_action(
         if source_run and source_run.agent_id:
             await resolve(
                 session,
-                principal.workspace_id,
+                principal.owner_user_id,
                 principal.user_id,
                 source_run.agent_id,
                 "amadeus",
@@ -90,7 +90,7 @@ async def execute_action(
         active = await session.scalar(
             select(AmadeusRun.id).where(
                 AmadeusRun.id == row.run_id,
-                AmadeusRun.workspace_id == principal.workspace_id,
+                AmadeusRun.owner_user_id == principal.owner_user_id,
                 AmadeusRun.user_id == principal.user_id,
                 AmadeusRun.status.in_(("running", "waiting_approval")),
             )
@@ -120,14 +120,14 @@ async def execute_action(
         _running_tasks[action_id] = task
     try:
         if name.startswith("tool_api:"):
-            result = await ToolApiCatalog(session, principal.workspace_id).execute(
+            result = await ToolApiCatalog(session, principal.owner_user_id).execute(
                 name.removeprefix("tool_api:"), args.get("input", {}), args["revision"]
             )
         elif name.startswith("mcp:"):
             parts = name.split(":", 2)
             if len(parts) != 3:
                 raise ValueError("MCP 工具名无效")
-            result = await McpCatalog(session, principal.workspace_id).execute(
+            result = await McpCatalog(session, principal.owner_user_id).execute(
                 parts[1], parts[2], args.get("input", {}), args["revision"]
             )
         elif name in {"write_script", "write_work_file"}:
@@ -136,7 +136,7 @@ async def execute_action(
             if not isinstance(content, str):
                 raise ValueError("脚本内容无效")
             result = write_file(
-                principal.workspace_id,
+                principal.owner_user_id,
                 conversation_id,
                 "scripts" if name == "write_script" else "outputs",
                 filename,
@@ -147,7 +147,7 @@ async def execute_action(
             if _video_executor is None:
                 raise OperationError("视频工具不可用", "unsupported_tool", 503)
             result = await _video_executor(
-                principal.workspace_id, row.id, str(args.get("project_id", "")), args
+                principal.owner_user_id, row.id, str(args.get("project_id", "")), args
             )
         elif name.startswith("fpl_operation:"):
             result = await call_operation(
@@ -159,7 +159,7 @@ async def execute_action(
             )
         else:
             result = await run_script(
-                principal.workspace_id, conversation_id, args, output_callback
+                principal.owner_user_id, conversation_id, args, output_callback
             )
         status = "failed" if name == "run_script" and result["exit_code"] != 0 else "completed"
     except asyncio.CancelledError:
@@ -201,7 +201,7 @@ async def cancel_action(session, principal, conversation_id: str, action_id: str
     owner = await session.scalar(
         select(AmadeusConversation.id).where(
             AmadeusConversation.id == conversation_id,
-            AmadeusConversation.workspace_id == principal.workspace_id,
+            AmadeusConversation.owner_user_id == principal.owner_user_id,
             AmadeusConversation.user_id == principal.user_id,
         )
     )
@@ -211,7 +211,7 @@ async def cancel_action(session, principal, conversation_id: str, action_id: str
         select(AmadeusAction).where(
             AmadeusAction.id == action_id,
             AmadeusAction.conversation_id == conversation_id,
-            AmadeusAction.workspace_id == principal.workspace_id,
+            AmadeusAction.owner_user_id == principal.owner_user_id,
             AmadeusAction.user_id == principal.user_id,
         )
     )
@@ -241,7 +241,7 @@ async def cancel_actions_for_run(session, principal, run_id: str) -> None:
         await session.scalars(
             select(AmadeusAction).where(
                 AmadeusAction.run_id == run_id,
-                AmadeusAction.workspace_id == principal.workspace_id,
+                AmadeusAction.owner_user_id == principal.owner_user_id,
                 AmadeusAction.user_id == principal.user_id,
                 AmadeusAction.status.in_(("pending", "approved", "running")),
             )

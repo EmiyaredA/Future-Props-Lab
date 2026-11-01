@@ -8,11 +8,9 @@ from app.console.governance.management import (
     reset_account_password,
     update_account,
 )
-from app.console.governance.provisioning import create_managed_account, create_workspace
+from app.console.governance.provisioning import create_managed_account
 from app.console.governance.service import AccountError
-from app.console.governance.workspaces import list_workspaces, require_workspace_governance
 from app.console.routes.auth import _account_out, _audit_response, _browser_auth, _platform_auth
-from app.console.routes.workspaces import _workspace_out
 from app.console.schemas.accounts import (
     AccountCreatedOut,
     AccountCreateIn,
@@ -22,10 +20,6 @@ from app.console.schemas.accounts import (
     AccountResetPasswordIn,
     ResetPasswordOut,
     SecurityAuditListOut,
-    WorkspaceCreateIn,
-    WorkspaceListItem,
-    WorkspaceListOut,
-    WorkspaceOut,
 )
 from app.deps import SessionDep, client_ip
 
@@ -44,7 +38,7 @@ async def accounts(
     q: str = Query("", max_length=200),
     status: str = Query("", pattern="^(|active|disabled)$"),
     is_platform_admin: bool | None = None,
-    platform_role: str = Query("", pattern="^(|super_admin|admin|member)$"),
+    platform_role: str = Query("", pattern="^(|admin|user)$"),
     page: int = Query(1, ge=1),
     page_size: int = Query(25, ge=1, le=100),
 ):
@@ -67,7 +61,7 @@ async def accounts(
 async def add_account(request: Request, session: SessionDep, body: AccountCreateIn):
     principal = await _platform_auth(request, session)
     try:
-        user, _, temporary = await create_managed_account(
+        user, temporary = await create_managed_account(
             session,
             principal,
             **body.model_dump(),
@@ -110,52 +104,7 @@ async def reset_password(
     return ResetPasswordOut(account=_account_out(user), temporary_password=temporary)
 
 
-@router.get("/platform/workspaces", response_model=WorkspaceListOut)
-async def workspaces(
-    request: Request,
-    session: SessionDep,
-    q: str = Query("", max_length=200),
-    visibility: str = Query("", pattern="^(|private|public)$"),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(25, ge=1, le=100),
-):
-    principal = await _platform_auth(request, session)
-    rows, total = await list_workspaces(
-        session, principal=principal, query=q, page=page, page_size=page_size, visibility=visibility
-    )
-    return WorkspaceListOut(
-        items=[
-            WorkspaceListItem(
-                **_workspace_out(row["workspace"], row["access_kind"], row["role"]).model_dump(),
-                owner_username=row["owner_username"],
-                owner_display_name=row["owner_display_name"],
-                member_count=row["member_count"],
-            )
-            for row in rows
-        ],
-        total=total,
-        page=page,
-        page_size=page_size,
-    )
-
-
-@router.post("/platform/workspaces", response_model=WorkspaceOut, status_code=201)
-async def add_workspace(request: Request, session: SessionDep, body: WorkspaceCreateIn):
-    principal = await _platform_auth(request, session)
-    try:
-        workspace = await create_workspace(
-            session, principal, **body.model_dump(), client_ip=client_ip(request)
-        )
-    except AccountError as exc:
-        _raise(exc)
-    owner = body.owner_user_id == principal.user_id
-    return _workspace_out(
-        workspace, "owner" if owner else "platform_admin", "owner" if owner else None
-    )
-
-
 @router.get("/platform/security-events", response_model=SecurityAuditListOut)
-@router.get("/account/workspaces/current/audit-events", response_model=SecurityAuditListOut)
 async def audit(
     request: Request,
     session: SessionDep,
@@ -174,11 +123,6 @@ async def audit(
         if platform
         else await _browser_auth(request, session)
     )
-    if not platform:
-        try:
-            require_workspace_governance(principal)
-        except AccountError as exc:
-            _raise(exc)
     if from_date:
         from_date = (
             from_date.astimezone(UTC).replace(tzinfo=None) if from_date.tzinfo else from_date
@@ -193,7 +137,6 @@ async def audit(
         session,
         principal,
         platform=platform,
-        workspace_only=not platform,
         page=page,
         page_size=page_size,
         event_type=event_type,

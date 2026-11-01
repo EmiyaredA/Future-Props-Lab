@@ -902,50 +902,29 @@ async def test_connections_bindings_and_jobs_are_workspace_scoped(remote):
 
 @pytest.mark.real_auth
 @pytest.mark.asyncio
-async def test_member_cannot_sync_and_admin_downgrade_stops_queued_job(remote):
+async def test_other_account_cannot_sync_and_disabled_owner_stops_queued_job(remote):
     from tests.test_workspace_governance import client_account
 
     from app.console.governance.external_sync_access import external_sync_actor_allowed
 
-    owner, _, _, workspace_id = await client_account()
-    member, username, user_id, _ = await client_account()
-    async with aclosing(owner), aclosing(member):
+    owner, _, owner_id, _ = await client_account()
+    other, *_ = await client_account()
+    admin, *_ = await client_account(admin=True)
+    async with aclosing(owner), aclosing(other), aclosing(admin):
         _, note, prefix, binding = await setup_article(owner, remote)
-        invited = (
-            await owner.post(
-                "/v1/account/workspaces/current/invitations",
-                json={"username": username, "role": "member"},
-            )
-        ).json()
-        assert (
-            await member.post(
-                f"/v1/account/workspace-invitations/{invited['id']}/accept",
-                json={"expected_revision": invited["revision"]},
-            )
-        ).status_code == 204
-        assert (
-            await member.post("/v1/account/workspaces/switch", json={"workspace_id": workspace_id})
-        ).status_code == 200
-        assert (await member.get("/v1/integrations/external-connections")).status_code == 403
-        assert (await member.get(prefix)).status_code == 403
-        membership = next(
-            m
-            for m in (await owner.get("/v1/account/workspaces/current/members")).json()["items"]
-            if m["user_id"] == user_id
+        assert (await other.get(prefix)).status_code == 404
+        task, _ = await submit_preview(owner, prefix, note, binding)
+        rows = (await admin.get("/v1/platform/accounts")).json()["items"]
+        account = next(row for row in rows if row["id"] == owner_id)
+        disabled = await admin.patch(
+            "/v1/platform/accounts/" + owner_id,
+            json={"status": "disabled", "expected_revision": account["revision"]},
         )
-        path = f"/v1/account/workspaces/current/members/{membership['membership_id']}"
-        promoted = await owner.patch(
-            path, json={"role": "admin", "expected_revision": membership["revision"]}
-        )
-        assert promoted.status_code == 200, promoted.text
-        task, _ = await submit_preview(member, prefix, note, binding)
-        assert (
-            await owner.patch(
-                path, json={"role": "member", "expected_revision": promoted.json()["revision"]}
-            )
-        ).status_code == 200
+        assert disabled.status_code == 200, disabled.text
         await ArticleSyncRunner(external_sync_actor_allowed, remote.transport).process_once()
-        assert (await owner.get(prefix + "/tasks/" + task["id"])).json()["status"] == "failed"
+        async with SessionLocal() as session:
+            current = await session.get(ArticleSyncTask, task["id"])
+            assert current.status == "failed"
         assert remote.writes == []
 
 

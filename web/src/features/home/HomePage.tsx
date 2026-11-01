@@ -73,7 +73,7 @@ export function HomePage({
             </span>
           </div>
           <h1>今天想从哪里开始？</h1>
-          <p>把灵感、模型和工具，收拢到一个顺手的工作空间。</p>
+          <p>把灵感、模型和工具，收拢到一个顺手的创作环境。</p>
         </div>
         <HomeHeroPet />
       </header>

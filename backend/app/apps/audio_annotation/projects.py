@@ -81,7 +81,7 @@ class AudioAnnotationProjects:
         if row is None:
             raise AudioAnnotationError("音频文件不存在", code="not_found", status=404)
         if row.project_id is not None or row.galgame_project_id is not None:
-            raise AudioAnnotationError("只能使用 Workspace 文件库中的音频", code="scope_mismatch")
+            raise AudioAnnotationError("只能使用账号文件库中的音频", code="scope_mismatch")
         if row.media_kind != "audio":
             raise AudioAnnotationError("标注任务只能使用音频文件", code="invalid_audio")
         if row.byte_size > MAX_AUDIO_BYTES:
@@ -221,6 +221,7 @@ class AudioAnnotationProjects:
         cleanup_path: Path | None = None,
     ) -> AudioAnnotationProjectOut:
         row = AudioAnnotationProject(
+            owner_user_id=asset.owner_user_id,
             title=title,
             asset_id=asset.id,
             duration_ms=duration_ms,
@@ -372,7 +373,7 @@ class AudioAnnotationProjects:
                 )
             filename = task.input_filename
             mime_type = task.input_mime_type
-            task_workspace_id = task.workspace_id
+            task_owner_user_id = task.owner_user_id
             text = task.result_text or ""
             try:
                 segments = [
@@ -400,7 +401,7 @@ class AudioAnnotationProjects:
                 asset = None
             if asset is None:
                 source_path = (
-                    self.settings.workspace_model_test_path(task_workspace_id, "references")
+                    self.settings.account_model_test_path(task_owner_user_id, "references")
                     / task.input_storage_key
                 )
                 if not source_path.is_file():
@@ -413,7 +414,7 @@ class AudioAnnotationProjects:
                 try:
                     asset, cleanup_path = await self.library.stage_local_copy(
                         source_path,
-                        workspace_id=task_workspace_id,
+                        owner_user_id=task_owner_user_id,
                         filename=filename,
                         content_type=mime_type,
                         allowed_extensions=TRANSCRIPTION_AUDIO_EXTENSIONS,
@@ -469,7 +470,7 @@ class AudioAnnotationProjects:
 
     async def delete(self, project_id: str, expected_revision: int) -> None:
         project = await self._project(project_id)
-        workspace_id = project.workspace_id
+        owner_user_id = project.owner_user_id
         result = await self.session.execute(
             delete(AudioAnnotationProject).where(
                 AudioAnnotationProject.id == project_id,
@@ -483,7 +484,7 @@ class AudioAnnotationProjects:
                 expected_revision, current.revision, current.model_dump(mode="json")
             )
         await forget(
-            self.session, workspace_id=workspace_id, kind="annotation", resource_id=project_id
+            self.session, owner_user_id=owner_user_id, kind="annotation", resource_id=project_id
         )
         await self.session.commit()
 

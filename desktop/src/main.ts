@@ -834,17 +834,17 @@ else {
         JSON.stringify(value).length > 1000
       )
         throw new Error("资源通知无效");
-      const target = value as { userId?: unknown; workspaceId?: unknown };
+      const target = value as { userId?: unknown; accountId?: unknown };
       if (
         typeof target.userId !== "string" ||
-        typeof target.workspaceId !== "string"
+        typeof target.accountId !== "string"
       )
         throw new Error("资源通知缺少租户范围");
       for (const win of liveStudioWindows()) {
         const context = studioContexts.get(win.webContents.id);
         if (
           context?.userId === target.userId &&
-          context.workspaceId === target.workspaceId
+          context.accountId === target.accountId
         )
           win.webContents.send("desktop:amadeus-mutation", value);
       }

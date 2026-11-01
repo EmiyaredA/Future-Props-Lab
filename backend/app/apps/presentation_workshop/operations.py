@@ -82,10 +82,10 @@ def transform(current, body):
     )
 
 
-async def apply_operations(session, workspace_id, project_id, body):
-    projects = Presentations(session, workspace_id)
+async def apply_operations(session, owner_user_id, project_id, body):
+    projects = Presentations(session, owner_user_id)
     current = await projects.get(project_id)
-    key = dict(workspace_id=workspace_id, kind="presentation", resource_id=project_id, body=body)
+    key = dict(owner_user_id=owner_user_id, kind="presentation", resource_id=project_id, body=body)
     saved = await replay(session, **key)
     if saved is not None:
         return PresentationProjectOut.model_validate(saved)

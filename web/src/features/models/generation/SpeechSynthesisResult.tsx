@@ -9,7 +9,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
-import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
+import { useAccountPermission } from "@platform/auth/AccountAccess";
 import {
   saveSpeechTask,
   type InferenceTask,
@@ -30,7 +30,7 @@ export function SpeechSynthesisResult({
 }) {
   const player = useRef<HTMLAudioElement>(null);
   const saving = useRef(false);
-  const canWrite = useWorkspacePermission("content.write");
+  const canWrite = useAccountPermission("content.write");
   const audio = useApiBlobUrl(
     task.result_available
       ? `/v1/model-inference/tasks/${task.id}/content`

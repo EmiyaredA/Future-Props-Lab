@@ -1,4 +1,4 @@
-"""Per-conversation working files; no path can escape its workspace root."""
+"""Per-conversation working files; no path can escape its account root."""
 
 from __future__ import annotations
 
@@ -17,16 +17,16 @@ KINDS = frozenset({"imports", "scripts", "outputs"})
 MAX_FILE_BYTES = 50 * 1024 * 1024
 
 
-def work_root(workspace_id: str, conversation_id: str) -> Path:
+def work_root(owner_user_id: str, conversation_id: str) -> Path:
     if Path(conversation_id).name != conversation_id or not conversation_id:
         raise OperationError("会话 ID 无效")
-    return get_settings().workspace_path(workspace_id) / "amadeus" / conversation_id
+    return get_settings().account_path(owner_user_id) / "amadeus" / conversation_id
 
 
-def work_file(workspace_id: str, conversation_id: str, kind: str, name: str) -> Path:
+def work_file(owner_user_id: str, conversation_id: str, kind: str, name: str) -> Path:
     if kind not in KINDS or not name or Path(name).name != name or name in {".", ".."}:
         raise OperationError("文件路径无效")
-    root = work_root(workspace_id, conversation_id)
+    root = work_root(owner_user_id, conversation_id)
     target = root / kind / name
     if root.is_symlink() or (root / kind).is_symlink() or target.is_symlink():
         raise OperationError("不允许符号链接")
@@ -35,15 +35,15 @@ def work_file(workspace_id: str, conversation_id: str, kind: str, name: str) -> 
     return target
 
 
-def read_file(workspace_id: str, conversation_id: str, kind: str, name: str) -> Path:
-    target = work_file(workspace_id, conversation_id, kind, name)
+def read_file(owner_user_id: str, conversation_id: str, kind: str, name: str) -> Path:
+    target = work_file(owner_user_id, conversation_id, kind, name)
     if not target.is_file():
         raise OperationError("文件不存在", "not_found", 404)
     return target
 
 
-def _directory_fd(workspace_id: str, conversation_id: str, kind: str, *, create: bool) -> int:
-    root = work_root(workspace_id, conversation_id)
+def _directory_fd(owner_user_id: str, conversation_id: str, kind: str, *, create: bool) -> int:
+    root = work_root(owner_user_id, conversation_id)
     try:
         if create:
             root.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -69,10 +69,10 @@ def _directory_fd(workspace_id: str, conversation_id: str, kind: str, *, create:
         os.close(root_fd)
 
 
-def read_file_bytes(workspace_id: str, conversation_id: str, kind: str, name: str) -> bytes:
-    work_file(workspace_id, conversation_id, kind, name)
+def read_file_bytes(owner_user_id: str, conversation_id: str, kind: str, name: str) -> bytes:
+    work_file(owner_user_id, conversation_id, kind, name)
     try:
-        directory_fd = _directory_fd(workspace_id, conversation_id, kind, create=False)
+        directory_fd = _directory_fd(owner_user_id, conversation_id, kind, create=False)
         try:
             file_fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=directory_fd)
             try:
@@ -91,8 +91,8 @@ def read_file_bytes(workspace_id: str, conversation_id: str, kind: str, name: st
         raise OperationError("文件无法安全读取") from exc
 
 
-def list_files(workspace_id: str, conversation_id: str) -> list[dict]:
-    root = work_root(workspace_id, conversation_id)
+def list_files(owner_user_id: str, conversation_id: str) -> list[dict]:
+    root = work_root(owner_user_id, conversation_id)
     result = []
     for kind in KINDS:
         directory = root / kind
@@ -113,10 +113,10 @@ def list_files(workspace_id: str, conversation_id: str) -> list[dict]:
     return result
 
 
-def open_work_folder(workspace_id: str, conversation_id: str) -> None:
+def open_work_folder(owner_user_id: str, conversation_id: str) -> None:
     if sys.platform != "darwin":
         raise OperationError("只支持 macOS 桌面打开会话目录", "unsupported_platform", 409)
-    root = work_root(workspace_id, conversation_id)
+    root = work_root(owner_user_id, conversation_id)
     if root.is_symlink():
         raise OperationError("会话目录不安全")
     root.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -130,7 +130,7 @@ def open_work_folder(workspace_id: str, conversation_id: str) -> None:
 
 
 def write_file(
-    workspace_id: str,
+    owner_user_id: str,
     conversation_id: str,
     kind: str,
     name: str,
@@ -141,11 +141,11 @@ def write_file(
         raise OperationError("文件类别无效")
     if len(content) > MAX_FILE_BYTES:
         raise OperationError("文件超过 50 MiB")
-    work_file(workspace_id, conversation_id, kind, name)
-    directory_fd = _directory_fd(workspace_id, conversation_id, kind, create=True)
+    work_file(owner_user_id, conversation_id, kind, name)
+    directory_fd = _directory_fd(owner_user_id, conversation_id, kind, create=True)
     try:
         try:
-            old = read_file_bytes(workspace_id, conversation_id, kind, name)
+            old = read_file_bytes(owner_user_id, conversation_id, kind, name)
         except OperationError as exc:
             if exc.code != "not_found":
                 raise

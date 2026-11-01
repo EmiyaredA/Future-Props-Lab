@@ -97,6 +97,7 @@ class GalgameVideoEditorHandoffs:
         payload["resolvedFragmentIds"] = preview.route.fragment_ids
         payload["compilerVersion"] = COMPILER_VERSION
         task = GalgameVideoEditorHandoffTask(
+            owner_user_id=(await self._project(project_id)).owner_user_id,
             project_id=project_id,
             snapshot_id=snapshot.id,
             request_id=body.request_id,

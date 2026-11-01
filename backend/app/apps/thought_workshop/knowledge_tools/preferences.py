@@ -17,11 +17,11 @@ from .schemas import ReadingOut, SavedFilterOut
 
 
 class Preferences:
-    def __init__(self, session, workspace_id, user_id):
-        self.session, self.workspace_id, self.user_id = session, workspace_id, user_id
+    def __init__(self, session, owner_user_id, user_id):
+        self.session, self.owner_user_id, self.user_id = session, owner_user_id, user_id
 
     def owner(self, model):
-        return model.workspace_id == self.workspace_id, model.user_id == self.user_id
+        return model.owner_user_id == self.owner_user_id, model.user_id == self.user_id
 
     async def filters(self):
         return [
@@ -48,7 +48,7 @@ class Preferences:
             project = await self.session.scalar(
                 select(ThoughtKnowledgeBase.id).where(
                     ThoughtKnowledgeBase.id == body.criteria.knowledge_base_id,
-                    ThoughtKnowledgeBase.workspace_id == self.workspace_id,
+                    ThoughtKnowledgeBase.owner_user_id == self.owner_user_id,
                     ThoughtKnowledgeBase.deleted_at.is_(None),
                 )
             )
@@ -56,7 +56,7 @@ class Preferences:
                 raise ThoughtError("知识库不存在", 404, "not_found")
         if id is None:
             row = ThoughtSavedFilter(
-                workspace_id=self.workspace_id, user_id=self.user_id, **body.model_dump()
+                owner_user_id=self.owner_user_id, user_id=self.user_id, **body.model_dump()
             )
             self.session.add(row)
         else:
@@ -102,7 +102,7 @@ class Preferences:
             if not re.fullmatch(r"official/[a-z0-9-]{1,100}/[a-z0-9-]{1,100}", id):
                 raise ThoughtError("官方文档标识无效")
             return None
-        targets = await resolve(self.session, self.workspace_id, [id])
+        targets = await resolve(self.session, self.owner_user_id, [id])
         if not targets[0].available:
             raise ThoughtError("文档不存在", 404, "not_found")
         return targets[0].title
@@ -121,7 +121,7 @@ class Preferences:
         values = {
             **body.model_dump(),
             "title": title or body.title,
-            "workspace_id": self.workspace_id,
+            "owner_user_id": self.owner_user_id,
             "user_id": self.user_id,
             "visited_at": utc_now(),
         }
@@ -129,7 +129,7 @@ class Preferences:
             insert(ThoughtReadingState)
             .values(id=new_id(), **values)
             .on_conflict_do_update(
-                index_elements=["workspace_id", "user_id", "resource_id"], set_=values
+                index_elements=["owner_user_id", "user_id", "resource_id"], set_=values
             )
         )
         await self.session.execute(statement)
@@ -141,7 +141,7 @@ class Preferences:
             select(ThoughtNote.id)
             .join(ThoughtKnowledgeBase, ThoughtKnowledgeBase.id == ThoughtNote.knowledge_base_id)
             .where(
-                ThoughtNote.workspace_id == self.workspace_id,
+                ThoughtNote.owner_user_id == self.owner_user_id,
                 ThoughtNote.deleted_at.is_(None),
                 ThoughtKnowledgeBase.deleted_at.is_(None),
             )
@@ -168,7 +168,7 @@ class Preferences:
                     ThoughtKnowledgeBase, ThoughtKnowledgeBase.id == ThoughtNote.knowledge_base_id
                 )
                 .where(
-                    ThoughtNote.workspace_id == self.workspace_id,
+                    ThoughtNote.owner_user_id == self.owner_user_id,
                     ThoughtNote.id.in_([r.resource_id for r in rows]),
                     ThoughtNote.deleted_at.is_(None),
                     ThoughtKnowledgeBase.deleted_at.is_(None),

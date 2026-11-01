@@ -33,9 +33,6 @@ from app.console.routes.desktop import router as desktop_router
 from app.console.routes.desktop_agent import router as desktop_agent_router
 from app.console.routes.file_management import router as file_management_router
 from app.console.routes.platform_governance import router as platform_governance_router
-from app.console.routes.public_workspace import router as public_workspace_router
-from app.console.routes.workspaces import invitation_router
-from app.console.routes.workspaces import router as workspaces_router
 from app.demo_runtime.routes import call_router as demo_call_router
 from app.demo_runtime.routes import router as demo_runtime_router
 from app.deps import require_studio_auth
@@ -78,9 +75,6 @@ api_router.include_router(demo_call_router)
 api_router.include_router(platform_governance_router)
 api_router.include_router(model_templates_router)
 api_router.include_router(management_router)
-api_router.include_router(workspaces_router)
-api_router.include_router(invitation_router)
-api_router.include_router(public_workspace_router)
 api_router.include_router(
     catalog.router, dependencies=[Depends(require_studio_auth), ModelCapacity]
 )

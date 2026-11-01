@@ -145,7 +145,8 @@ def test_setup_concurrency_session_and_restart(desktop):
     login(desktop)
     me = desktop.client.get("/v1/auth/me")
     assert me.status_code == 200
-    assert me.json()["workspace"]["id"] == "default"
+    assert "workspace" not in me.json()
+    assert me.json()["user"]["platform_role"] == "admin"
     project = desktop.client.post(
         "/v1/visual-workshop/projects", json={"title": "桌面持久化", "kind": "image"}
     )

@@ -49,8 +49,8 @@ vi.mock("@features/visual-workshop/acceptance/nodeApi", async (original) => ({
   selectAcceptanceScheme: mocks.select,
   startNodeAcceptance: mocks.start,
 }));
-vi.mock("@platform/auth/WorkspacePermissions", () => ({
-  useWorkspacePermission: () => mocks.writable,
+vi.mock("@platform/auth/AccountAccess", () => ({
+  useAccountPermission: () => mocks.writable,
 }));
 vi.mock("@platform/api/useApiBlobUrl", () => ({
   useApiBlobUrl: () => ({ url: "", loading: false, error: null }),

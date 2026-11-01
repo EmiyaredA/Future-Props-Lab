@@ -173,7 +173,7 @@ async def test_api_desktop_mac_session_and_admin_guards(tmp_path, monkeypatch):
 
             return denied
 
-        for change in ({"is_platform_admin": False}, {"auth_kind": "management_api_key"}):
+        for change in ({"platform_role": "user"}, {"auth_kind": "management_api_key"}):
             app.dependency_overrides[require_studio_auth] = denied_principal(change)
             try:
                 assert (await client.get(base)).status_code == 403

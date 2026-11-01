@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import {
-  useWorkspacePermission,
+  useAccountPermission,
   useAccountId,
-} from "@platform/auth/WorkspacePermissions";
+} from "@platform/auth/AccountAccess";
 import { thoughtKeys } from "../queryKeys";
 import { download } from "../download";
 import type { NavigationGuard } from "../NoteEditorPane";
@@ -57,7 +57,7 @@ export function TableEditor({
 }) {
   const controller = useTableDocument(noteId, scope, guard),
     client = useQueryClient();
-  const workspaceWrite = useWorkspacePermission("content.write"),
+  const workspaceWrite = useAccountPermission("content.write"),
     user = useAccountId();
   const cellScope = {
     ...scope,

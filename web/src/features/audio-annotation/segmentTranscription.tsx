@@ -53,7 +53,7 @@ function snapshot(document: AudioAnnotationDocument): AnnotationSnapshot {
 
 export function useSegmentTranscription({
   projectId,
-  workspaceId,
+  accountId,
   documentRef,
   selected,
   conflict,
@@ -66,7 +66,7 @@ export function useSegmentTranscription({
   setNotice,
 }: {
   projectId: string;
-  workspaceId: string;
+  accountId: string;
   documentRef: MutableRefObject<AudioAnnotationDocument | null>;
   selected: AudioAnnotationSegment | null;
   conflict: boolean;
@@ -101,12 +101,12 @@ export function useSegmentTranscription({
     }
     if (options.some((option) => option.id === modelId)) return;
     const remembered = window.localStorage.getItem(
-      `${MODEL_STORAGE_PREFIX}:${workspaceId}`,
+      `${MODEL_STORAGE_PREFIX}:${accountId}`,
     );
     setModelId(
       options.find((option) => option.id === remembered)?.id ?? options[0]!.id,
     );
-  }, [modelId, options, workspaceId]);
+  }, [modelId, options, accountId]);
 
   const targetText = (target: SegmentTranscriptionTarget): string | null => {
     const segment = documentRef.current?.segments.find(
@@ -243,7 +243,7 @@ export function useSegmentTranscription({
     onModelChange: (nextModelId) => {
       setModelId(nextModelId);
       window.localStorage.setItem(
-        `${MODEL_STORAGE_PREFIX}:${workspaceId}`,
+        `${MODEL_STORAGE_PREFIX}:${accountId}`,
         nextModelId,
       );
     },

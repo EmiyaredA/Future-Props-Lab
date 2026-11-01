@@ -32,7 +32,7 @@ class GalgameWorkshopProject(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     title: Mapped[str] = mapped_column(String(120))
     status: Mapped[str] = mapped_column(String(16), default="draft")
     revision: Mapped[int] = mapped_column(Integer, default=0)
@@ -147,7 +147,7 @@ class GalgameAssetTranscriptionTask(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     project_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("galgame_workshop_projects.id", ondelete="CASCADE")
     )
@@ -189,7 +189,7 @@ class GalgameStorySnapshot(Base):
 class GalgameAnnotationImportTask(Base):
     __tablename__ = "galgame_annotation_import_tasks"
     __table_args__ = (
-        UniqueConstraint("workspace_id", "project_id", "request_id"),
+        UniqueConstraint("owner_user_id", "project_id", "request_id"),
         Index(
             "ix_galgame_annotation_import_tasks_project_status",
             "project_id",
@@ -199,7 +199,7 @@ class GalgameAnnotationImportTask(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     project_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("galgame_workshop_projects.id", ondelete="CASCADE")
     )
@@ -224,7 +224,7 @@ class GalgameAnnotationImportTask(Base):
 class GalgameVideoExportTask(Base):
     __tablename__ = "galgame_video_export_tasks"
     __table_args__ = (
-        UniqueConstraint("workspace_id", "project_id", "request_id"),
+        UniqueConstraint("owner_user_id", "project_id", "request_id"),
         Index(
             "ix_galgame_video_export_tasks_project_status",
             "project_id",
@@ -234,7 +234,7 @@ class GalgameVideoExportTask(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     project_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("galgame_workshop_projects.id", ondelete="CASCADE")
     )
@@ -262,7 +262,7 @@ class GalgameVideoExportTask(Base):
 class GalgameVideoEditorHandoffTask(Base):
     __tablename__ = "galgame_video_editor_handoffs"
     __table_args__ = (
-        UniqueConstraint("workspace_id", "project_id", "request_id"),
+        UniqueConstraint("owner_user_id", "project_id", "request_id"),
         Index(
             "ix_galgame_video_editor_handoffs_project_status",
             "project_id",
@@ -272,7 +272,7 @@ class GalgameVideoEditorHandoffTask(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     project_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("galgame_workshop_projects.id", ondelete="CASCADE")
     )

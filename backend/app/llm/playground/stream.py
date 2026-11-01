@@ -14,7 +14,7 @@ from app.llm.models import LlmCallLog, ModelTestConversation, ModelTestMessage
 from app.llm.playground.service import PreparedGeneration, message_out
 from app.llm.playground.tool_stream import tool_generation_events
 from app.llm.providers import stream_text_completion
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal
 from app.runtime.time import utc_now
@@ -46,7 +46,7 @@ async def _settle(
 ) -> tuple[ModelTestMessage, LlmCallLog, int]:
     latency_ms = max(0, round((time.monotonic() - started) * 1000))
     async with SessionLocal() as session:
-        bind_workspace(session.sync_session, prepared.workspace_id)
+        bind_owner(session.sync_session, prepared.owner_user_id)
         message = await session.get(ModelTestMessage, prepared.assistant_message_id)
         conversation = await session.get(ModelTestConversation, prepared.conversation_id)
         if message is None or conversation is None:
@@ -68,7 +68,7 @@ async def _settle(
             raise RuntimeError("模型测试会话结算失败")
         await session.refresh(conversation)
         log = LlmCallLog(
-            workspace_id=prepared.workspace_id,
+            owner_user_id=prepared.owner_user_id,
             call_source="model_playground",
             provider_kind=prepared.provider_kind,
             model=prepared.model_slug,

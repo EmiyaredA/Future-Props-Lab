@@ -4,6 +4,7 @@ from copy import deepcopy
 import httpx
 import pytest
 from pydantic import ValidationError
+from tests.migration_fixtures import MIGRATIONS, apply_migrations
 
 from app.apps.visual_workshop.schemas.workshop import (
     VisualCanvasAudioGenerationDraft,
@@ -15,9 +16,7 @@ from app.apps.visual_workshop.snapshots import _remap_canvas
 from app.capabilities.identity.principal import StudioPrincipal
 from app.deps import SessionDep, require_studio_auth
 from app.main import app
-from app.orm import bind_workspace
-from db.migrations import apply_migrations
-from db.migrations.registry import MIGRATIONS
+from app.orm import bind_owner
 from db.migrations.runner import connect_database, ensure_registry, migration_checksum
 
 DRAFTS = [
@@ -285,14 +284,10 @@ async def test_prompt_versions_cannot_be_read_or_changed_from_other_workspace():
         assert saved.status_code == 200
 
         async def other_workspace(session: SessionDep):
-            bind_workspace(session, "other-workspace")
+            bind_owner(session, "other-workspace")
             return StudioPrincipal(
+                platform_role="admin",
                 user_id="other",
-                workspace_id="other-workspace",
-                membership_id="other",
-                workspace_access="owner",
-                member_role="owner",
-                is_platform_admin=False,
                 must_change_password=False,
                 auth_kind="session",
                 scopes=frozenset({"studio:read", "studio:private_read", "studio:write"}),

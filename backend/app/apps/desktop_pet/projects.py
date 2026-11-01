@@ -39,7 +39,7 @@ from app.runtime.config import get_settings
 from app.runtime.ids import new_id
 from app.runtime.project_records import (
     delete_revisioned_project,
-    load_workspace_project,
+    load_owned_project,
     patch_revisioned_project,
 )
 from app.runtime.revisions import RevisionConflictError
@@ -100,13 +100,13 @@ def _remove_package_images(paths: list[Path]) -> None:
 
 
 class DesktopPetProjects:
-    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
         self.session = session
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
         self.storage = AssetStorage(get_settings())
 
     def root(self, project_id: str) -> Path:
-        return self.storage.project_root(APP, project_id, workspace_id=self.workspace_id)
+        return self.storage.project_root(APP, project_id, owner_user_id=self.owner_user_id)
 
     def source_root(self, project_id: str, revision: int) -> Path:
         return self.root(project_id) / "assets" / "source" / str(revision)
@@ -118,11 +118,11 @@ class DesktopPetProjects:
         return self.root(project_id) / "assets" / "whale" / f"{asset_id}.png"
 
     async def row(self, project_id: str) -> DesktopPetProject:
-        return await load_workspace_project(
+        return await load_owned_project(
             self.session,
             DesktopPetProject,
             project_id,
-            self.workspace_id,
+            self.owner_user_id,
             not_found=lambda: PetNotFound("桌宠项目不存在"),
         )
 
@@ -151,7 +151,7 @@ class DesktopPetProjects:
         rows = (
             await self.session.scalars(
                 select(DesktopPetProject)
-                .where(DesktopPetProject.workspace_id == self.workspace_id)
+                .where(DesktopPetProject.owner_user_id == self.owner_user_id)
                 .order_by(DesktopPetProject.updated_at.desc())
             )
         ).all()
@@ -216,14 +216,14 @@ class DesktopPetProjects:
     async def create(self, body: PetCreate) -> PetProjectOut:
         snapshot = await snapshot_character(
             self.session,
-            self.workspace_id,
+            self.owner_user_id,
             body.source_project_id,
             expected_revision=body.source_revision,
         )
         title = body.title.strip() or f"{snapshot.title} · 桌宠"
         row = DesktopPetProject(
             id=new_id(),
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             source_type="live2d",
             source_project_id=snapshot.project_id,
             source_revision=snapshot.revision,
@@ -233,7 +233,7 @@ class DesktopPetProjects:
             config=PetConfig().model_dump(mode="json", by_alias=True),
         )
         async with creating_project_layout(
-            self.session, self.storage, APP, row.id, workspace_id=self.workspace_id
+            self.session, self.storage, APP, row.id, owner_user_id=self.owner_user_id
         ):
             await self._copy_source(snapshot, row.id)
             self.session.add(row)
@@ -260,7 +260,7 @@ class DesktopPetProjects:
             }
         row = DesktopPetProject(
             id=new_id(),
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             source_type="coopanion-whale",
             source_project_id=None,
             source_revision=None,
@@ -272,7 +272,7 @@ class DesktopPetProjects:
             config=config.model_dump(mode="json", by_alias=True),
         )
         async with importing_project_layout(
-            self.session, self.storage, APP, row.id, workspace_id=self.workspace_id
+            self.session, self.storage, APP, row.id, owner_user_id=self.owner_user_id
         ):
             for name, content in package.images.items():
                 path = self.whale_path(row.id, assets[name])
@@ -328,7 +328,7 @@ class DesktopPetProjects:
                 self.session,
                 DesktopPetProject,
                 project_id,
-                self.workspace_id,
+                self.owner_user_id,
                 expected_revision=expected_revision,
                 values={
                     "whale_model": package.model,
@@ -360,7 +360,7 @@ class DesktopPetProjects:
             self.session,
             DesktopPetProject,
             project_id,
-            self.workspace_id,
+            self.owner_user_id,
             expected_revision=body.expected_revision,
             values={
                 "title": title,
@@ -429,7 +429,7 @@ class DesktopPetProjects:
             self.session,
             DesktopPetProject,
             project_id,
-            self.workspace_id,
+            self.owner_user_id,
             expected_revision=body.expected_revision,
             values={
                 "config": body.config.model_dump(mode="json", by_alias=True),
@@ -489,7 +489,7 @@ class DesktopPetProjects:
                 self.session,
                 DesktopPetProject,
                 project_id,
-                self.workspace_id,
+                self.owner_user_id,
                 expected_revision=expected_revision,
                 values={
                     "config": config.model_dump(mode="json", by_alias=True),
@@ -520,7 +520,7 @@ class DesktopPetProjects:
             )
         snapshot = await snapshot_character(
             self.session,
-            self.workspace_id,
+            self.owner_user_id,
             row.source_project_id,
             expected_revision=body.source_revision,
         )
@@ -543,7 +543,7 @@ class DesktopPetProjects:
                 self.session,
                 DesktopPetProject,
                 project_id,
-                self.workspace_id,
+                self.owner_user_id,
                 expected_revision=body.expected_revision,
                 values={
                     "source_revision": snapshot.revision,
@@ -588,13 +588,13 @@ class DesktopPetProjects:
     async def delete(self, project_id: str, expected_revision: int) -> None:
         await self.row(project_id)
         async with deleting_project_layout(
-            self.session, self.storage, APP, project_id, workspace_id=self.workspace_id
+            self.session, self.storage, APP, project_id, owner_user_id=self.owner_user_id
         ):
             await delete_revisioned_project(
                 self.session,
                 DesktopPetProject,
                 project_id,
-                self.workspace_id,
+                self.owner_user_id,
                 expected_revision=expected_revision,
                 load_current=lambda: self.get(project_id),
             )

@@ -1,6 +1,7 @@
 """Validate the new migration against an isolated previous-version database."""
 
-from db.migrations.registry import MIGRATIONS
+from tests.migration_fixtures import MIGRATIONS
+
 from db.migrations.runner import connect_database
 from db.migrations.versions.r0049_thought_history import SQL
 

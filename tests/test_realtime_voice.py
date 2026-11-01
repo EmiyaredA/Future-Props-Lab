@@ -31,7 +31,7 @@ from app.llm.providers.realtime.senseaudio import SenseAudioRealtimeBridge
 from app.llm.realtime.session import TurnMetrics, _client_configuration, _write_log
 from app.llm.realtime.tool_calls import RealtimeToolExecutor, provider_tool_definitions
 from app.main import app
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.db import SessionLocal
 
 
@@ -407,7 +407,7 @@ async def test_realtime_log_contains_metrics_but_not_transcripts() -> None:
     )
     turn.first_audio_at = turn.started_at + 0.25
     await _write_log(
-        workspace_id="default",
+        owner_user_id="test-user",
         trace_id=trace_id,
         model=SimpleNamespace(provider_kind="senseaudio_realtime", slug="senseaudio-realtime-1.0"),
         voice=SENSEAUDIO_DEFAULT_VOICE,
@@ -461,6 +461,7 @@ async def test_realtime_log_contains_metrics_but_not_transcripts() -> None:
 @pytest.mark.asyncio
 async def test_realtime_tool_selection_is_workspace_scoped_and_enabled() -> None:
     tool = ModelTestTool(
+        owner_user_id="test-user",
         name=f"weather_{uuid4().hex[:8]}",
         description="查询天气",
         input_schema={
@@ -473,7 +474,7 @@ async def test_realtime_tool_selection_is_workspace_scoped_and_enabled() -> None
         enabled=True,
     )
     async with SessionLocal() as session:
-        bind_workspace(session.sync_session, "default")
+        bind_owner(session.sync_session, "test-user")
         session.add(tool)
         await session.commit()
         snapshots = await load_selected_tool_snapshots(session, [tool.id])
@@ -485,12 +486,12 @@ async def test_realtime_tool_selection_is_workspace_scoped_and_enabled() -> None
         }
 
     async with SessionLocal() as session:
-        bind_workspace(session.sync_session, "other-workspace")
+        bind_owner(session.sync_session, "other-workspace")
         with pytest.raises(ToolSelectionError):
             await load_selected_tool_snapshots(session, [tool.id])
 
     async with SessionLocal() as session:
-        bind_workspace(session.sync_session, "default")
+        bind_owner(session.sync_session, "test-user")
         stored = await session.get(ModelTestTool, tool.id)
         assert stored is not None
         stored.enabled = False
@@ -504,6 +505,7 @@ async def test_realtime_tool_selection_is_workspace_scoped_and_enabled() -> None
 @pytest.mark.asyncio
 async def test_realtime_tool_executor_persists_full_success_and_returns_mock_json() -> None:
     tool = ModelTestTool(
+        owner_user_id="test-user",
         name=f"weather_{uuid4().hex[:8]}",
         description="查询天气",
         input_schema={
@@ -516,7 +518,7 @@ async def test_realtime_tool_executor_persists_full_success_and_returns_mock_jso
         enabled=True,
     )
     async with SessionLocal() as session:
-        bind_workspace(session.sync_session, "default")
+        bind_owner(session.sync_session, "test-user")
         session.add(tool)
         await session.commit()
         snapshot = tool_snapshot(tool)
@@ -524,7 +526,7 @@ async def test_realtime_tool_executor_persists_full_success_and_returns_mock_jso
     updates: list[dict] = []
     provider_results: list[tuple[str, object | None, dict | None]] = []
     executor = RealtimeToolExecutor(
-        workspace_id="default",
+        owner_user_id="test-user",
         trace_id=f"voice-{uuid4().hex[:24]}",
         snapshots=(snapshot,),
         emit=updates.append,
@@ -547,7 +549,7 @@ async def test_realtime_tool_executor_persists_full_success_and_returns_mock_jso
     assert [update["status"] for update in updates] == ["running", "completed"]
     assert provider_results == [("call-weather", {"weather": "晴", "temperature": 24}, None)]
     async with SessionLocal() as session:
-        bind_workspace(session.sync_session, "default")
+        bind_owner(session.sync_session, "test-user")
         row = await session.scalar(
             select(ModelTestToolCall).where(
                 ModelTestToolCall.action_id == "call-weather",
@@ -599,7 +601,7 @@ async def test_realtime_tool_executor_handles_concurrent_failure_size_and_cancel
     updates: list[dict] = []
     provider_results: list[tuple[str, object | None, dict | None]] = []
     executor = RealtimeToolExecutor(
-        workspace_id="default",
+        owner_user_id="test-user",
         trace_id=f"voice-{uuid4().hex[:24]}",
         snapshots=(oversized, validation, delayed),
         emit=updates.append,
@@ -649,7 +651,7 @@ async def test_realtime_tool_executor_handles_concurrent_failure_size_and_cancel
     assert all(error is not None for _call_id, _result, error in provider_results)
 
     async with SessionLocal() as session:
-        bind_workspace(session.sync_session, "default")
+        bind_owner(session.sync_session, "test-user")
         rows = list(
             (
                 await session.execute(
@@ -743,17 +745,17 @@ def test_realtime_websocket_accepts_authenticated_workspace(
 
     async def authenticated(*_args):
         return SimpleNamespace(
-            workspace_id="workspace-a",
+            owner_user_id="workspace-a",
             session_id="session-a",
             auth_kind="session",
             api_key_id=None,
             allows=lambda _permission: True,
         )
 
-    async def run(websocket, *, workspace_id: str, check_access, credential):
+    async def run(websocket, *, owner_user_id: str, check_access, credential):
         assert credential.auth_kind == "session"
         await check_access()
-        await websocket.send_json({"type": "workspace", "id": workspace_id})
+        await websocket.send_json({"type": "workspace", "id": owner_user_id})
         await websocket.close(code=1000)
 
     monkeypatch.setattr(route, "resolve_studio_websocket_principal", authenticated)

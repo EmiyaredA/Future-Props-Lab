@@ -32,7 +32,7 @@ from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from app.orm import bind_workspace, require_workspace_id
+from app.orm import bind_owner, require_owner_id
 from app.runtime.config import Settings, get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.polling_runner import PollingTaskRunner
@@ -45,7 +45,7 @@ class AnnotationImportRun:
     task_id: str
     body: GalgameAnnotationImportIn
     project_id: str
-    workspace_id: str
+    owner_user_id: str
     source_path: Path | None = None
     segments: list[AudioAnnotationSegment] = field(default_factory=list)
     preview: GalgameAnnotationImportPreviewOut | None = None
@@ -154,19 +154,19 @@ class GalgameAnnotationImportRunner(PollingTaskRunner):
         task = await session.get(GalgameAnnotationImportTask, task_id)
         if task is None:
             return None
-        workspace_id = require_workspace_id(task.workspace_id, subject="annotation import task")
+        owner_user_id = require_owner_id(task.owner_user_id, subject="annotation import task")
         project = await session.get(GalgameWorkshopProject, task.project_id)
-        if project is None or project.workspace_id != workspace_id:
+        if project is None or project.owner_user_id != owner_user_id:
             task.status = "failed"
             task.progress = 0
-            task.result_detail = {"phase": "failed", "code": "workspace_mismatch"}
-            task.error = "导入任务与目标项目的 Workspace 不一致，请重新创建任务"
+            task.result_detail = {"phase": "failed", "code": "account_mismatch"}
+            task.error = "导入任务与目标项目的账号不一致，请重新创建任务"
             task.revision += 1
             task.updated_at = utc_now()
             task.finished_at = utc_now()
             await session.commit()
             return None
-        bind_workspace(session, workspace_id)
+        bind_owner(session, owner_user_id)
         return task
 
     async def recover(self) -> None:
@@ -281,15 +281,15 @@ class GalgameAnnotationImportRunner(PollingTaskRunner):
                 task_id=task_id,
                 body=GalgameAnnotationImportIn.model_validate(task.request_payload),
                 project_id=task.project_id,
-                workspace_id=task.workspace_id,
+                owner_user_id=task.owner_user_id,
             )
             await session.commit()
             return run
 
     async def _preflight(self, run: AnnotationImportRun) -> bool:
         async with self.session_factory() as session:
-            bind_workspace(session, run.workspace_id)
-            imports = GalgameAnnotationImports(session, run.workspace_id, self.settings)
+            bind_owner(session, run.owner_user_id)
+            imports = GalgameAnnotationImports(session, run.owner_user_id, self.settings)
             run.preview = await imports.preview(run.project_id, run.body)
             if not run.preview.ready:
                 conflicts = {"source_revision_conflict", "story_revision_conflict"}
@@ -431,7 +431,7 @@ class GalgameAnnotationImportRunner(PollingTaskRunner):
     ) -> str:
         virtual_path = f"voice/{filename}"
         async with self.session_factory() as session:
-            bind_workspace(session, run.workspace_id)
+            bind_owner(session, run.owner_user_id)
             existing = (
                 await session.execute(
                     select(VisualAsset, GalgameAssetMetadata)
@@ -449,7 +449,7 @@ class GalgameAnnotationImportRunner(PollingTaskRunner):
                 return asset.id
             asset, staged_path = await AssetLibrary(session, self.settings).stage_local_copy(
                 output_path,
-                workspace_id=run.workspace_id,
+                owner_user_id=run.owner_user_id,
                 filename=filename,
                 content_type="audio/mp4",
                 galgame_project_id=run.project_id,
@@ -490,7 +490,7 @@ class GalgameAnnotationImportRunner(PollingTaskRunner):
             if asset.get("role") == "voiceLine":
                 asset["fileId"] = run.generated[asset["fileId"]]
         async with self.session_factory() as session:
-            bind_workspace(session, run.workspace_id)
+            bind_owner(session, run.owner_user_id)
             master = await session.get(GalgameAssetMetadata, run.body.master_asset_id)
             if master is None or master.project_id != run.project_id:
                 raise RuntimeError("完整主音轨素材元数据已不存在")
@@ -514,7 +514,7 @@ class GalgameAnnotationImportRunner(PollingTaskRunner):
                     "storyRevision": run.saved_revision,
                 },
             )
-            report = await GalgameReadiness(session, self.settings, run.workspace_id).report(
+            report = await GalgameReadiness(session, self.settings, run.owner_user_id).report(
                 run.project_id
             )
             if not report.ready or report.errors or report.warnings:

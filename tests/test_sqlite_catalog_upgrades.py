@@ -10,11 +10,10 @@ import pytest
 from fastapi import Request
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
+from tests.migration_fixtures import LATEST_MIGRATION_ID, MIGRATIONS, apply_migrations
 
 import app.main as main_module
 from app.problem_details import storage_operational_error_handler
-from db.migrations import apply_migrations
-from db.migrations.registry import LATEST_MIGRATION_ID, MIGRATIONS
 from db.migrations.runner import connect_database, ensure_registry, migration_checksum
 
 DEFAULT_OPENAI_PROVIDER_ID = "f0000000-0000-4000-8000-000000000001"
@@ -371,16 +370,9 @@ async def test_lifespan_applies_migrations_and_disposes_engine(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     migrated: list[Path] = []
-    seeded: list[object] = []
     disposed: list[bool] = []
 
     monkeypatch.setattr(main_module, "apply_migrations", migrated.append)
-
-    async def fake_seed(session: object) -> bool:
-        seeded.append(session)
-        return True
-
-    monkeypatch.setattr(main_module, "seed_sayflow_text_catalog", fake_seed)
 
     async def fake_dispose() -> None:
         disposed.append(True)
@@ -390,7 +382,6 @@ async def test_lifespan_applies_migrations_and_disposes_engine(
         pass
 
     assert migrated == [main_module.settings.database_path]
-    assert len(seeded) == 1
     assert disposed == [True]
 
 

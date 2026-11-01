@@ -7,7 +7,7 @@ import {
 } from "@tiptap/react";
 import { useQuery } from "@tanstack/react-query";
 import { CustomSelect } from "@shared/ui/CustomSelect";
-import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
+import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { useDocumentAccess } from "../DocumentAccess";
 import { thoughtKeys } from "../queryKeys";
 import { tableStructure } from "./api";
@@ -18,7 +18,7 @@ const TableEditor = lazy(() =>
   import("./TableEditor").then((m) => ({ default: m.TableEditor })),
 );
 function EmbedView({ node, editor, updateAttributes }: NodeViewProps) {
-  const canWrite = useWorkspacePermission("content.write");
+  const canWrite = useAccountPermission("content.write");
   const access = useDocumentAccess(),
     [choose, setChoose] = useState(false),
     [query, setQuery] = useState(""),

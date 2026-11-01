@@ -31,8 +31,6 @@ from app.console.models import (
     ManagementApiKey,
     SecurityAuditEvent,
     User,
-    Workspace,
-    WorkspaceMembership,
 )
 from app.runtime.time import utc_now
 
@@ -43,7 +41,7 @@ def add_audit_event(
     *,
     actor_user_id: str | None = None,
     target_user_id: str | None = None,
-    workspace_id: str | None = None,
+    owner_user_id: str | None = None,
     client_ip: str = "",
     user_agent: str = "",
     outcome: str = "success",
@@ -53,7 +51,7 @@ def add_audit_event(
         SecurityAuditEvent(
             actor_user_id=actor_user_id,
             target_user_id=target_user_id,
-            workspace_id=workspace_id,
+            owner_user_id=owner_user_id,
             event_type=event_type,
             outcome=outcome,
             client_ip=client_ip,
@@ -70,7 +68,7 @@ async def complete_login(
     password: str,
     client_ip: str,
     user_agent: str,
-) -> tuple[User, Workspace, AuthSession, str, str] | None:
+) -> tuple[User, AuthSession, str, str] | None:
     try:
         normalized = normalize_username(username)
     except ValueError:
@@ -91,27 +89,12 @@ async def complete_login(
         )
         await session.commit()
         return None
-    membership = await session.scalar(
-        select(WorkspaceMembership)
-        .where(
-            WorkspaceMembership.user_id == user.id,
-            WorkspaceMembership.role == "owner",
-            WorkspaceMembership.status == "active",
-        )
-        .order_by(WorkspaceMembership.created_at)
-    )
-    if membership is None:
-        return None
-    workspace = await session.get(Workspace, membership.workspace_id)
-    if workspace is None:
-        return None
     if upgraded:
         user.password_hash = upgraded
     now = utc_now()
     raw_token, raw_csrf = new_session_secrets()
     auth_session = AuthSession(
         user_id=user.id,
-        active_workspace_id=workspace.id,
         token_hash=hash_secret(raw_token),
         csrf_hash=hash_secret(raw_csrf),
         created_at=now,
@@ -128,25 +111,24 @@ async def complete_login(
         session,
         "auth.login",
         actor_user_id=user.id,
-        workspace_id=workspace.id,
+        owner_user_id=user.id,
         client_ip=client_ip,
         user_agent=user_agent,
     )
     await session.commit()
-    return user, workspace, auth_session, raw_token, raw_csrf
+    return user, auth_session, raw_token, raw_csrf
 
 
 async def load_current_auth(
     session: AsyncSession, principal: StudioPrincipal
-) -> tuple[User, Workspace, AuthSession | None]:
+) -> tuple[User, AuthSession | None]:
     user = await session.get(User, principal.user_id)
-    workspace = await session.get(Workspace, principal.workspace_id)
     auth_session = (
         await session.get(AuthSession, principal.session_id) if principal.session_id else None
     )
-    if user is None or workspace is None:
+    if user is None:
         raise AccountError("studio_auth_required")
-    return user, workspace, auth_session
+    return user, auth_session
 
 
 async def complete_logout(
@@ -161,7 +143,7 @@ async def complete_logout(
             session,
             "auth.logout",
             actor_user_id=principal.user_id,
-            workspace_id=principal.workspace_id,
+            owner_user_id=principal.owner_user_id,
             client_ip=client_ip,
         )
         await session.commit()
@@ -198,7 +180,6 @@ async def list_api_keys(
                 select(ManagementApiKey)
                 .where(
                     ManagementApiKey.user_id == principal.user_id,
-                    ManagementApiKey.workspace_id == principal.workspace_id,
                 )
                 .order_by(ManagementApiKey.created_at.desc())
             )
@@ -351,14 +332,13 @@ async def create_api_key(
     normalized = set(scopes)
     if not normalized or not normalized <= allowed:
         raise AccountError("invalid_api_key_scopes")
-    if principal.workspace_access == "public_viewer" or not normalized <= principal.scopes:
+    if not normalized <= principal.scopes:
         raise AccountError("invalid_api_key_scopes")
     if "studio:write" in normalized:
         normalized.add("studio:read")
     raw = new_management_api_key()
     key = ManagementApiKey(
         user_id=principal.user_id,
-        workspace_id=principal.workspace_id,
         name=name.strip(),
         key_hash=hash_secret(raw),
         key_prefix=raw[:12],
@@ -370,7 +350,7 @@ async def create_api_key(
         session,
         "management_api_key.created",
         actor_user_id=principal.user_id,
-        workspace_id=principal.workspace_id,
+        owner_user_id=principal.owner_user_id,
         client_ip=client_ip,
         metadata={"key_id": key.id, "scopes": key.scopes},
     )
@@ -391,7 +371,6 @@ async def revoke_api_key(
         select(ManagementApiKey).where(
             ManagementApiKey.id == key_id,
             ManagementApiKey.user_id == principal.user_id,
-            ManagementApiKey.workspace_id == principal.workspace_id,
         )
     )
     if key is None:
@@ -409,7 +388,7 @@ async def revoke_api_key(
         session,
         "management_api_key.revoked",
         actor_user_id=principal.user_id,
-        workspace_id=principal.workspace_id,
+        owner_user_id=principal.owner_user_id,
         client_ip=client_ip,
         metadata={"key_id": key.id},
     )
@@ -431,7 +410,6 @@ async def renew_api_key(
         select(ManagementApiKey).where(
             ManagementApiKey.id == key_id,
             ManagementApiKey.user_id == principal.user_id,
-            ManagementApiKey.workspace_id == principal.workspace_id,
         )
     )
     if key is None:
@@ -440,7 +418,7 @@ async def renew_api_key(
         raise AccountError("revision_conflict", current=key)
     if key.revoked_at is not None:
         raise AccountError("api_key_revoked")
-    if principal.workspace_access == "public_viewer" or not set(key.scopes) <= principal.scopes:
+    if not set(key.scopes) <= principal.scopes:
         raise AccountError("invalid_api_key_scopes")
     previous_expires_at = key.expires_at
     base = max(previous_expires_at, utc_now())
@@ -455,7 +433,7 @@ async def renew_api_key(
         session,
         "management_api_key.renewed",
         actor_user_id=principal.user_id,
-        workspace_id=principal.workspace_id,
+        owner_user_id=principal.owner_user_id,
         client_ip=client_ip,
         metadata={
             "key_id": key.id,
@@ -480,7 +458,6 @@ async def delete_api_key(
         select(ManagementApiKey).where(
             ManagementApiKey.id == key_id,
             ManagementApiKey.user_id == principal.user_id,
-            ManagementApiKey.workspace_id == principal.workspace_id,
         )
     )
     if key is None:
@@ -491,7 +468,6 @@ async def delete_api_key(
         delete(ManagementApiKey).where(
             ManagementApiKey.id == key.id,
             ManagementApiKey.user_id == principal.user_id,
-            ManagementApiKey.workspace_id == principal.workspace_id,
             ManagementApiKey.revision == expected_revision,
         )
     )
@@ -504,7 +480,7 @@ async def delete_api_key(
         session,
         "management_api_key.deleted",
         actor_user_id=principal.user_id,
-        workspace_id=principal.workspace_id,
+        owner_user_id=principal.owner_user_id,
         client_ip=client_ip,
         metadata={"key_id": key.id},
     )
@@ -549,7 +525,6 @@ async def audit_page(
     page_size: int,
     event_type: str,
     outcome: str,
-    workspace_only: bool = False,
     actor_query: str = "",
     target_query: str = "",
     from_date: datetime | None = None,
@@ -558,9 +533,7 @@ async def audit_page(
     actor = User.__table__.alias("audit_actor")
     target = User.__table__.alias("audit_target")
     conditions = []
-    if workspace_only:
-        conditions.append(SecurityAuditEvent.workspace_id == principal.workspace_id)
-    elif not platform:
+    if not platform:
         conditions.append(
             or_(
                 SecurityAuditEvent.actor_user_id == principal.user_id,
@@ -604,3 +577,18 @@ async def audit_page(
         )
     ).all()
     return list(rows), total
+
+
+async def account_directory(session, query, limit):
+    conditions = [User.status == "active"]
+    if query.strip():
+        term = "%" + query.strip() + "%"
+        conditions.append(or_(User.username.ilike(term), User.display_name.ilike(term)))
+    rows = await session.scalars(
+        select(User).where(*conditions).order_by(User.username_normalized).limit(limit)
+    )
+    return {
+        "items": [
+            {"user_id": u.id, "username": u.username, "display_name": u.display_name} for u in rows
+        ]
+    }

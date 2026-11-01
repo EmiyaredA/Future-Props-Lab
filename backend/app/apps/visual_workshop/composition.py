@@ -79,7 +79,7 @@ async def create_composition(
         )
     batch = VisualGenerationBatch(
         id=batch_id,
-        workspace_id=project.workspace_id,
+        owner_user_id=project.owner_user_id,
         project_id=project_id,
         batch_kind="composition",
         grid_size=body.grid_size,

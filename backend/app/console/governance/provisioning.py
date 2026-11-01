@@ -1,8 +1,7 @@
-from __future__ import annotations
+"""Provision one private account and its model catalog atomically."""
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.identity.passwords import (
     generate_temporary_password,
@@ -12,150 +11,81 @@ from app.capabilities.identity.passwords import (
 from app.console.governance.governance_transactions import begin_governance, require_platform_admin
 from app.console.governance.model_templates import initialize_from_template
 from app.console.governance.service import AccountError, add_audit_event
-from app.console.models import User, Workspace, WorkspaceMembership
-from app.console.models.workspace import DEFAULT_WORKSPACE_ID
-from app.llm.catalog.seed import ensure_workspace_model_catalog
-from app.orm import bind_workspace
+from app.console.models import User
+from app.llm.catalog.seed import ensure_account_model_catalog
+from app.orm import bind_owner
 
 
 async def create_account(
-    session: AsyncSession,
+    session,
     *,
-    username: str,
-    display_name: str,
-    is_platform_admin: bool,
-    actor_user_id: str | None = None,
-    client_ip: str = "",
-    email: str | None = None,
-    platform_role: str | None = None,
-    password: str | None = None,
-    commit: bool = True,
-) -> tuple[User, Workspace, str]:
-    """Provision the account, ownership and initial catalog in one transaction."""
-    role = platform_role or ("super_admin" if is_platform_admin else "member")
-    if role not in {"super_admin", "admin", "member"}:
+    username,
+    display_name,
+    is_platform_admin=False,
+    actor_user_id=None,
+    client_ip="",
+    email=None,
+    platform_role=None,
+    password=None,
+    commit=True,
+):
+    role = platform_role or ("admin" if is_platform_admin else "user")
+    if role not in {"admin", "user"}:
         raise AccountError("invalid_platform_role")
-    is_platform_admin = role == "super_admin"
     try:
         normalized = normalize_username(username)
-        exists = await session.scalar(select(User.id).where(User.username_normalized == normalized))
-        if exists:
+        if await session.scalar(select(User.id).where(User.username_normalized == normalized)):
             raise AccountError("username_conflict")
         normalized_email = (email or "").strip()
         if normalized_email and ("@" not in normalized_email or len(normalized_email) > 254):
             raise AccountError("invalid_email")
-        temporary_password = generate_temporary_password()
+        temporary = generate_temporary_password()
         user = User(
             username=username.strip(),
             username_normalized=normalized,
             display_name=display_name.strip() or username.strip(),
-            password_hash=hash_password(password or temporary_password),
+            password_hash=hash_password(password or temporary),
             email=normalized_email or None,
             email_normalized=normalized_email.casefold() or None,
-            is_platform_admin=is_platform_admin,
+            is_platform_admin=role == "admin",
             platform_role=role,
             must_change_password=password is None,
         )
         session.add(user)
         await session.flush()
-
-        workspace: Workspace | None = None
-        if is_platform_admin:
-            claimed = await session.scalar(
-                select(WorkspaceMembership.id).where(
-                    WorkspaceMembership.workspace_id == DEFAULT_WORKSPACE_ID,
-                    WorkspaceMembership.role == "owner",
-                    WorkspaceMembership.status == "active",
-                )
-            )
-            if claimed is None:
-                workspace = await session.get(Workspace, DEFAULT_WORKSPACE_ID)
-        created_workspace = workspace is None
-        if workspace is None:
-            workspace = Workspace(name=f"{user.display_name} 的工作区")
-            session.add(workspace)
-            await session.flush()
-        session.add(
-            WorkspaceMembership(
-                user_id=user.id,
-                workspace_id=workspace.id,
-                role="owner",
-                status="active",
-            )
-        )
         add_audit_event(
             session,
             "account.created",
             actor_user_id=actor_user_id,
             target_user_id=user.id,
-            workspace_id=workspace.id,
+            owner_user_id=user.id,
             client_ip=client_ip,
-            metadata={"platform_admin": is_platform_admin},
         )
-        if created_workspace:
-            await initialize_workspace_catalog(session, workspace.id, role)
+        await initialize_account_catalog(session, user.id, role)
         if commit:
             await session.commit()
+        await session.refresh(user)
+        return user, temporary
     except IntegrityError as exc:
         await session.rollback()
         raise AccountError("account_conflict") from exc
     except Exception:
         await session.rollback()
         raise
-    await session.refresh(user)
-    return user, workspace, temporary_password
 
 
-async def create_workspace(
-    session: AsyncSession,
-    principal,
-    *,
-    name: str,
-    owner_user_id: str,
-    visibility: str,
-    client_ip: str,
-) -> Workspace:
-    principal = await begin_governance(session, principal)
-    require_platform_admin(principal)
-    owner = await session.get(User, owner_user_id)
-    if owner is None or owner.status != "active":
-        raise AccountError("owner_not_found")
-    workspace = Workspace(name=name.strip(), visibility=visibility)
-    session.add(workspace)
-    await session.flush()
-    session.add(
-        WorkspaceMembership(
-            user_id=owner.id, workspace_id=workspace.id, role="owner", status="active"
-        )
-    )
-    await initialize_workspace_catalog(session, workspace.id, owner.platform_role)
-    add_audit_event(
-        session,
-        "workspace.created",
-        actor_user_id=principal.user_id,
-        target_user_id=owner.id,
-        workspace_id=workspace.id,
-        client_ip=client_ip,
-    )
-    await session.commit()
-    return workspace
-
-
-async def initialize_workspace_catalog(
-    session: AsyncSession, workspace_id: str, role: str = "member"
-) -> None:
-    # Only called for the workspace created/claimed by the authorized provisioning use case.
-    previous = session.info.get("workspace_id")
-    bind_workspace(session, workspace_id)
+async def initialize_account_catalog(session, owner_user_id, role="user"):
+    previous = session.info.get("owner_user_id")
+    bind_owner(session, owner_user_id)
     try:
-        if not await initialize_from_template(session, workspace_id, role):
-            await ensure_workspace_model_catalog(session, workspace_id)
+        if not await initialize_from_template(session, owner_user_id, role):
+            await ensure_account_model_catalog(session, owner_user_id)
         await session.flush()
     finally:
-        if previous is not None:
-            bind_workspace(session, previous)
+        if previous is None:
+            session.info.pop("owner_user_id", None)
         else:
-            session.info.pop("workspace_id", None)
+            bind_owner(session, previous)
 
 
 async def create_managed_account(
@@ -165,7 +95,7 @@ async def create_managed_account(
     username,
     display_name,
     email,
-    is_platform_admin,
+    is_platform_admin=False,
     client_ip,
     platform_role=None,
 ):

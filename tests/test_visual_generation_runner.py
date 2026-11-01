@@ -42,6 +42,7 @@ def _task(
     result_url: str | None = None,
 ) -> VisualGenerationTask:
     return VisualGenerationTask(
+        owner_user_id="test-user",
         project_id=project_id,
         provider_id=provider_id,
         model_id=model_id,
@@ -63,8 +64,11 @@ def _task(
 
 
 async def _fixture_rows() -> tuple[VisualWorkshopProject, ModelProvider, ModelEntry]:
-    project = VisualWorkshopProject(id=str(uuid4()), title="生成测试", kind="image")
+    project = VisualWorkshopProject(
+        owner_user_id="test-user", id=str(uuid4()), title="生成测试", kind="image"
+    )
     provider = ModelProvider(
+        owner_user_id="test-user",
         id=str(uuid4()),
         name="SenseAudio Runner Test",
         kind="senseaudio_image",
@@ -74,6 +78,7 @@ async def _fixture_rows() -> tuple[VisualWorkshopProject, ModelProvider, ModelEn
         sort_order=99,
     )
     model = ModelEntry(
+        owner_user_id="test-user",
         id=str(uuid4()),
         provider_id=provider.id,
         slug="senseaudio-image-2.0-260319",
@@ -118,7 +123,7 @@ async def _cleanup(provider_id: str, project_id: str) -> None:
             str(asset["storage_key"]),
             visual_project_id=project_id,
             galgame_project_id=None,
-            workspace_id=str(asset["workspace_id"]),
+            owner_user_id=str(asset["owner_user_id"]),
         )
         path.unlink(missing_ok=True)
 
@@ -146,11 +151,11 @@ async def test_video_submit_materializes_asset_ids_and_keeps_legacy_urls(
         submitted.update(kwargs)
         return "provider-task"
 
-    async def fake_image(asset_id: str, _workspace_id: str) -> str:
+    async def fake_image(asset_id: str, _owner_user_id: str) -> str:
         return f"data:image/png;base64,{asset_id}"
 
     async def fake_temporary(
-        asset_id: str, kind: str, _workspace_id: str, filename: str | None = None
+        asset_id: str, kind: str, _owner_user_id: str, filename: str | None = None
     ) -> str:
         temporary_calls.append((asset_id, kind, filename))
         return f"https://temp.sh/{kind}-{asset_id}"
@@ -167,7 +172,7 @@ async def test_video_submit_materializes_asset_ids_and_keeps_legacy_urls(
         base_url="https://api.example/v1",
         api_key="secret",
         model_slug="video-model",
-        workspace_id="default",
+        owner_user_id="test-user",
         payload={
             "prompt": "参考运镜",
             "mode": "reference",
@@ -220,7 +225,7 @@ async def test_temporary_upload_failure_happens_before_provider_submission(
     async def failed_upload(
         _asset_id: str,
         _kind: str,
-        _workspace_id: str,
+        _owner_user_id: str,
         _filename: str | None = None,
     ) -> str:
         raise TemporaryMediaError("private upstream response")
@@ -237,7 +242,7 @@ async def test_temporary_upload_failure_happens_before_provider_submission(
             base_url="https://api.example/v1",
             api_key="secret",
             model_slug="video-model",
-            workspace_id="default",
+            owner_user_id="test-user",
             payload={
                 "prompt": "参考运镜",
                 "mode": "reference",

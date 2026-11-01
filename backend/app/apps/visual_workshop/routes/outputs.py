@@ -13,7 +13,7 @@ from app.apps.visual_workshop.outputs.schemas import (
 from app.apps.visual_workshop.outputs.uploads import upload_version
 from app.apps.visual_workshop.schemas.workshop import VisualCanvasDocumentOut
 from app.capabilities.asset_store import AssetError
-from app.deps import SessionDep, WorkspaceDep
+from app.deps import OwnerDep, SessionDep
 from app.runtime.config import get_settings
 
 router = APIRouter(prefix="/visual-workshop/projects", tags=["visual-workshop"])
@@ -28,12 +28,12 @@ async def list_node_outputs(
     project_id: str,
     node_id: str,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ):
     try:
-        return await NodeOutputs(session, workspace_id).list(project_id, node_id, page, page_size)
+        return await NodeOutputs(session, owner_user_id).list(project_id, node_id, page, page_size)
     except OutputError as exc:
         raise output_error(exc) from None
 
@@ -44,10 +44,10 @@ async def add_node_output(
     node_id: str,
     body: VisualNodeOutputCreateIn,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
 ):
     try:
-        await NodeOutputs(session, workspace_id).add(project_id, node_id, body)
+        await NodeOutputs(session, owner_user_id).add(project_id, node_id, body)
         return await VisualCanvasDocuments(session).get(project_id)
     except OutputError as exc:
         raise output_error(exc) from None
@@ -58,13 +58,13 @@ async def upload_node_output(
     project_id: str,
     node_id: str,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     file: Annotated[UploadFile, File()],
     expected_revision: Annotated[int, Form(ge=0)],
 ):
     try:
         await upload_version(
-            NodeOutputs(session, workspace_id),
+            NodeOutputs(session, owner_user_id),
             get_settings(),
             project_id,
             node_id,
@@ -82,10 +82,10 @@ async def set_node_final_output(
     node_id: str,
     body: VisualNodeFinalOutputIn,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
 ):
     try:
-        await NodeOutputs(session, workspace_id).select_final(project_id, node_id, body)
+        await NodeOutputs(session, owner_user_id).select_final(project_id, node_id, body)
         return await VisualCanvasDocuments(session).get(project_id)
     except OutputError as exc:
         raise output_error(exc) from None
@@ -93,10 +93,10 @@ async def set_node_final_output(
 
 @router.get("/{project_id}/nodes/{node_id}/outputs/{output_id}", response_model=VisualNodeOutputOut)
 async def get_node_output(
-    project_id: str, node_id: str, output_id: str, session: SessionDep, workspace_id: WorkspaceDep
+    project_id: str, node_id: str, output_id: str, session: SessionDep, owner_user_id: OwnerDep
 ):
     try:
-        return await NodeOutputs(session, workspace_id).get(project_id, node_id, output_id)
+        return await NodeOutputs(session, owner_user_id).get(project_id, node_id, output_id)
     except OutputError as exc:
         raise output_error(exc) from None
 
@@ -109,11 +109,11 @@ async def delete_node_output(
     node_id: str,
     output_id: str,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     expected_revision: int = Query(ge=0),
 ):
     try:
-        await NodeOutputs(session, workspace_id).delete(
+        await NodeOutputs(session, owner_user_id).delete(
             project_id, node_id, output_id, expected_revision
         )
         return await VisualCanvasDocuments(session).get(project_id)
@@ -125,7 +125,7 @@ async def delete_node_output(
 async def upload_material_node(
     project_id: str,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     file: Annotated[UploadFile, File()],
     expected_revision: Annotated[int, Form(ge=0)],
     x: Annotated[float, Form()] = 0,
@@ -140,7 +140,7 @@ async def upload_material_node(
         return await upload_material(
             session,
             get_settings(),
-            workspace_id,
+            owner_user_id,
             project_id,
             file,
             expected_revision,

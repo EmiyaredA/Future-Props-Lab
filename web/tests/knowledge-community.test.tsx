@@ -9,7 +9,7 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
-import { WorkspacePermissionsProvider } from "@platform/auth/WorkspacePermissions";
+import { AccountAccessProvider } from "@platform/auth/AccountAccess";
 import { ApiError } from "@platform/api/client";
 import {
   DocumentAccessProvider,
@@ -71,13 +71,9 @@ const source = {
 };
 function owner(children: ReactNode, user = "user-a") {
   return (
-    <WorkspacePermissionsProvider
-      userId={user}
-      workspaceId="different-workspace"
-      permissions={[]}
-    >
+    <AccountAccessProvider userId={user} permissions={[]}>
       {children}
-    </WorkspacePermissionsProvider>
+    </AccountAccessProvider>
   );
 }
 function query(children: ReactNode) {
@@ -200,7 +196,7 @@ describe("社区发布与恢复边界", () => {
         expect.objectContaining({
           is_official: true,
           read_only: true,
-          editable_platform_roles: ["super_admin", "admin"],
+          editable_platform_roles: ["admin", "admin"],
         }),
       ),
     );
@@ -322,7 +318,7 @@ describe("社区发布与恢复边界", () => {
     });
     await waitFor(() => expect(result.current.localReady).toBe(true));
     expect(storage.listLocalDrafts).toHaveBeenCalledWith(
-      { userId: "user-a", workspaceId: "community/user-a/pub" },
+      { userId: "user-a", accountId: "community/user-a/pub" },
       "note",
     );
     act(() => result.current.change({ title: "保留本机修改" }));
@@ -339,7 +335,7 @@ describe("社区发布与恢复边界", () => {
       expect(storage.putLocalDraft).toHaveBeenLastCalledWith(
         expect.objectContaining({
           userId: "user-a",
-          workspaceId: "community/user-a/pub",
+          accountId: "community/user-a/pub",
           body: expect.objectContaining({ title: "继续保留修改" }),
         }),
       ),

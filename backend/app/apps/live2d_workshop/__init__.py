@@ -1,1 +1,1 @@
-"""Workspace-scoped character authoring."""
+"""account-scoped character authoring."""

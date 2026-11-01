@@ -33,11 +33,11 @@ async def creating_project_layout(
     application_id: str,
     project_id: str,
     *,
-    workspace_id: str,
+    owner_user_id: str,
 ) -> AsyncIterator[None]:
     """Commit a new project and compensate a newly created file root on failure."""
     created_root = storage.ensure_project_layout(
-        application_id, project_id, workspace_id=workspace_id
+        application_id, project_id, owner_user_id=owner_user_id
     )
     try:
         yield
@@ -45,7 +45,7 @@ async def creating_project_layout(
     except BaseException:
         await session.rollback()
         if created_root:
-            storage.remove_project_root(application_id, project_id, workspace_id=workspace_id)
+            storage.remove_project_root(application_id, project_id, owner_user_id=owner_user_id)
         raise
 
 
@@ -56,19 +56,19 @@ async def importing_project_layout(
     application_id: str,
     project_id: str,
     *,
-    workspace_id: str,
+    owner_user_id: str,
 ) -> AsyncIterator[None]:
     """以持久标记暂存导入项目，让启动补偿能识别中断状态。"""
     created_root = storage.ensure_project_layout(
-        application_id, project_id, workspace_id=workspace_id
+        application_id, project_id, owner_user_id=owner_user_id
     )
-    root = storage.project_root(application_id, project_id, workspace_id=workspace_id)
+    root = storage.project_root(application_id, project_id, owner_user_id=owner_user_id)
     marker = root / ".snapshot-importing"
     try:
         marker.write_text("1", encoding="ascii")
     except BaseException:
         if created_root:
-            storage.remove_project_root(application_id, project_id, workspace_id=workspace_id)
+            storage.remove_project_root(application_id, project_id, owner_user_id=owner_user_id)
         raise
     try:
         yield
@@ -76,7 +76,7 @@ async def importing_project_layout(
     except BaseException:
         await session.rollback()
         if created_root:
-            storage.remove_project_root(application_id, project_id, workspace_id=workspace_id)
+            storage.remove_project_root(application_id, project_id, owner_user_id=owner_user_id)
         raise
     try:
         marker.unlink(missing_ok=True)
@@ -92,11 +92,11 @@ async def deleting_project_layout(
     application_id: str,
     project_id: str,
     *,
-    workspace_id: str,
+    owner_user_id: str,
     legacy_paths: Iterable[Path] = (),
 ) -> AsyncIterator[None]:
     """Stage project files until the matching database delete is committed."""
-    staged = storage.stage_project_root(application_id, project_id, workspace_id=workspace_id)
+    staged = storage.stage_project_root(application_id, project_id, owner_user_id=owner_user_id)
     try:
         yield
         await session.commit()

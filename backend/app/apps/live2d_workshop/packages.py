@@ -98,14 +98,14 @@ class Live2DPackages(Live2DProjectsStore):
         attachment = await self.session.scalar(
             select(Live2DCubismAttachment).where(
                 Live2DCubismAttachment.project_id == project_id,
-                Live2DCubismAttachment.workspace_id == self.workspace_id,
+                Live2DCubismAttachment.owner_user_id == self.owner_user_id,
             )
         )
         cubism_bytes = None
         if attachment:
             cubism_bytes = await asyncio.to_thread(
                 (
-                    await Live2DCubismStore(self.session, self.workspace_id).archive_path(
+                    await Live2DCubismStore(self.session, self.owner_user_id).archive_path(
                         project_id
                     )
                 ).read_bytes
@@ -162,12 +162,12 @@ class Live2DPackages(Live2DProjectsStore):
             part.asset_id = mapping[part.asset_id]
         row = Live2DProject(
             id=new_id(),
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             title=title or "导入角色",
             document=doc.model_dump(mode="json", by_alias=True),
         )
         async with importing_project_layout(
-            self.session, self.storage, APP, row.id, workspace_id=self.workspace_id
+            self.session, self.storage, APP, row.id, owner_user_id=self.owner_user_id
         ):
             self.session.add(row)
             await self.session.flush()
@@ -180,7 +180,7 @@ class Live2DPackages(Live2DProjectsStore):
                     Live2DAsset(
                         id=asset_id,
                         project_id=row.id,
-                        workspace_id=self.workspace_id,
+                        owner_user_id=self.owner_user_id,
                         name=f"{asset_id}.png",
                         width=width,
                         height=height,
@@ -197,7 +197,7 @@ class Live2DPackages(Live2DProjectsStore):
                 self.session.add(
                     Live2DCubismAttachment(
                         project_id=row.id,
-                        workspace_id=self.workspace_id,
+                        owner_user_id=self.owner_user_id,
                         sha256=digest,
                         metadata_json=metadata,
                         state_bindings=bindings,

@@ -8,10 +8,9 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, afterEach, expect, test, vi } from "vitest";
-import { WorkspacePermissionsProvider } from "@platform/auth/WorkspacePermissions";
+import { AccountAccessProvider } from "@platform/auth/AccountAccess";
 import { ModelCallLogsPage } from "@features/models/logs/ModelCallLogsPage";
 import * as models from "@features/models/api";
-import * as accounts from "@features/accounts/platformApi";
 import { LogFilterDrawer } from "@features/models/logs/LogFilters";
 import { emptyLogFilters } from "@features/models/logs/modelCallLogPresentation";
 vi.mock("@features/models/api", async (importOriginal) => ({
@@ -21,12 +20,6 @@ vi.mock("@features/models/api", async (importOriginal) => ({
   getCatalog: vi.fn(),
   deleteLog: vi.fn(),
   batchDeleteLogs: vi.fn(),
-}));
-vi.mock("@features/accounts/platformApi", async (importOriginal) => ({
-  ...(await importOriginal<typeof accounts>()),
-  fetchLogWorkspaces: vi.fn(),
-  fetchCrossWorkspaceLogs: vi.fn(),
-  fetchCrossWorkspaceLogStats: vi.fn(),
 }));
 vi.mock("@features/accounts/api", async (importOriginal) => {
   const actual =
@@ -68,11 +61,11 @@ function setup() {
   });
   const tree = (perms = permissions) => (
     <QueryClientProvider client={client}>
-      <WorkspacePermissionsProvider permissions={perms}>
+      <AccountAccessProvider userId="test-user" permissions={perms}>
         <ModelCallLogsPage
-          currentWorkspace={{ id: "own", name: "自己的工作区" }}
+          currentAccount={{ id: "own", name: "自己的工作区" }}
         />
-      </WorkspacePermissionsProvider>
+      </AccountAccessProvider>
     </QueryClientProvider>
   );
   return { ...render(tree()), tree };
@@ -88,23 +81,6 @@ beforeEach(() => {
   vi.mocked(models.getCatalog).mockResolvedValue({
     revision: 0,
     providers: [],
-  });
-  vi.mocked(accounts.fetchLogWorkspaces).mockResolvedValue([
-    { id: "own", name: "自己的工作区" },
-    { id: "other", name: "其他工作区" },
-  ]);
-  vi.mocked(accounts.fetchCrossWorkspaceLogs).mockResolvedValue({
-    items: [
-      { ...row, id: "other-log", model: "other-model", workspace_id: "other" },
-    ],
-    total: 1,
-    page: 1,
-    page_size: 25,
-    model_options: ["other-model", "older-model"],
-  });
-  vi.mocked(accounts.fetchCrossWorkspaceLogStats).mockResolvedValue({
-    ...stats,
-    calls_today: 8,
   });
 });
 afterEach(() => {
@@ -141,44 +117,6 @@ test("submits search on Enter, resets pagination and keeps trace IDs out of rows
   await user.click(screen.getByRole("button", { name: "筛选" }));
   await user.click(screen.getByRole("button", { name: "重置" }));
   expect(search).toHaveValue("");
-});
-test("uses one read-only table for other scopes and immediately hides it on permission revocation", async () => {
-  const user = userEvent.setup();
-  const view = setup();
-  await screen.findByText("local-model");
-  await user.click(
-    screen.getByRole("checkbox", { name: "选择日志 local-log" }),
-  );
-  await user.click(screen.getByRole("combobox", { name: "日志工作区" }));
-  await user.click(screen.getByRole("option", { name: "其他工作区" }));
-  await screen.findByText("other-model");
-  expect(screen.queryByRole("checkbox")).toBeNull();
-  expect(screen.queryByRole("button", { name: "查看" })).toBeNull();
-  expect(screen.queryByText("local-model")).toBeNull();
-  expect(accounts.fetchCrossWorkspaceLogStats).toHaveBeenLastCalledWith([
-    "other",
-  ]);
-  await user.click(screen.getByRole("combobox", { name: "模型筛选" }));
-  expect(
-    screen.getByRole("option", { name: "older-model" }),
-  ).toBeInTheDocument();
-  await user.click(screen.getByRole("option", { name: "older-model" }));
-  await user.click(screen.getByRole("combobox", { name: "日志工作区" }));
-  await user.click(screen.getByRole("option", { name: "全部工作区" }));
-  await waitFor(() =>
-    expect(accounts.fetchCrossWorkspaceLogs).toHaveBeenLastCalledWith(
-      ["other", "own"],
-      expect.objectContaining({ model: "", page: 1 }),
-    ),
-  );
-  expect(
-    screen.getByRole("columnheader", { name: "工作区" }),
-  ).toBeInTheDocument();
-  view.rerender(view.tree(["logs.read"]));
-  expect(screen.queryByText("other-model")).toBeNull();
-  expect(screen.queryByRole("combobox", { name: "日志工作区" })).toBeNull();
-  await screen.findByText("local-model");
-  expect(screen.queryByRole("checkbox")).toBeNull();
 });
 test("retains failed deletion for retry and clears a successful selection", async () => {
   const user = userEvent.setup();
@@ -220,38 +158,6 @@ test("blocks reversed dates and does not apply when the drawer is closed", async
   await user.click(screen.getByRole("button", { name: "关闭筛选" }));
   expect(change).not.toHaveBeenCalled();
   expect(close).toHaveBeenCalledOnce();
-});
-
-test("does not show a late cross-workspace response after returning to current scope", async () => {
-  let resolve!: (
-    value: Awaited<ReturnType<typeof accounts.fetchCrossWorkspaceLogs>>,
-  ) => void;
-  vi.mocked(accounts.fetchCrossWorkspaceLogs).mockReturnValueOnce(
-    new Promise((done) => {
-      resolve = done;
-    }),
-  );
-  const user = userEvent.setup();
-  setup();
-  await screen.findByText("local-model");
-  await user.click(screen.getByRole("combobox", { name: "日志工作区" }));
-  await user.click(screen.getByRole("option", { name: "其他工作区" }));
-  expect(screen.queryByText("local-model")).toBeNull();
-  await user.click(screen.getByRole("combobox", { name: "日志工作区" }));
-  await user.click(
-    screen.getByRole("option", { name: "当前工作区 · 自己的工作区" }),
-  );
-  resolve({
-    items: [
-      { ...row, id: "late", workspace_id: "other", model: "late-other-model" },
-    ],
-    total: 1,
-    page: 1,
-    page_size: 25,
-    model_options: [],
-  });
-  await screen.findByText("local-model");
-  expect(screen.queryByText("late-other-model")).toBeNull();
 });
 
 test("retries a failed query without presenting it as an empty list", async () => {

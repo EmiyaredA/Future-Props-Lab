@@ -19,6 +19,7 @@ from app.runtime.db import SessionLocal
 @pytest.mark.asyncio
 async def test_generation_tool_atomically_creates_task_and_canvas_placeholder() -> None:
     provider = ModelProvider(
+        owner_user_id="test-user",
         id=str(uuid4()),
         name="Agent 图片生成测试",
         kind="senseaudio_image",
@@ -28,6 +29,7 @@ async def test_generation_tool_atomically_creates_task_and_canvas_placeholder() 
         sort_order=-100,
     )
     model = ModelEntry(
+        owner_user_id="test-user",
         id=str(uuid4()),
         provider_id=provider.id,
         slug="senseaudio-image-2.0-260319",
@@ -77,7 +79,7 @@ async def test_generation_tool_atomically_creates_task_and_canvas_placeholder() 
                     run_id="run-1",
                     tool_call_id="generation-1",
                     scope={
-                        "workspace_id": "default",
+                        "owner_user_id": "test-user",
                         "project_id": project["id"],
                         "image_model_id": model.id,
                     },
@@ -113,7 +115,7 @@ async def test_generation_tool_atomically_creates_task_and_canvas_placeholder() 
                         run_id="run-2",
                         tool_call_id="generation-2",
                         scope={
-                            "workspace_id": "default",
+                            "owner_user_id": "test-user",
                             "project_id": project["id"],
                             "image_model_id": model.id,
                         },
@@ -144,7 +146,7 @@ async def test_generation_tool_atomically_creates_task_and_canvas_placeholder() 
                     run_id="run-unavailable",
                     tool_call_id="generation-unavailable",
                     scope={
-                        "workspace_id": "default",
+                        "owner_user_id": "test-user",
                         "project_id": project["id"],
                         "image_model_id": model.id,
                     },
@@ -172,7 +174,7 @@ async def test_generation_tool_atomically_creates_task_and_canvas_placeholder() 
                     run_id="run-3",
                     tool_call_id="generation-3",
                     scope={
-                        "workspace_id": "default",
+                        "owner_user_id": "test-user",
                         "project_id": project["id"],
                         "image_model_id": model.id,
                     },
@@ -187,7 +189,7 @@ async def test_generation_tool_atomically_creates_task_and_canvas_placeholder() 
                     run_id="reuse",
                     tool_call_id="reuse-task",
                     scope={
-                        "workspace_id": "default",
+                        "owner_user_id": "test-user",
                         "project_id": project["id"],
                         "image_model_id": model.id,
                     },
@@ -224,7 +226,7 @@ async def test_generation_tool_atomically_creates_task_and_canvas_placeholder() 
                     run_id="automatic",
                     tool_call_id="automatic-task",
                     scope={
-                        "workspace_id": "default",
+                        "owner_user_id": "test-user",
                         "project_id": project["id"],
                         "image_model_id": model.id,
                     },

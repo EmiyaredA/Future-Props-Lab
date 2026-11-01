@@ -60,10 +60,10 @@ def transform(current, body):
     return GalgameStoryDocumentPutIn(document=data, expected_revision=body.expected_revision)
 
 
-async def apply_operations(session, workspace_id, project_id, body):
+async def apply_operations(session, owner_user_id, project_id, body):
     documents = GalgameStoryDocuments(session)
     current = await documents.get(project_id)
-    key = dict(workspace_id=workspace_id, kind="galgame", resource_id=project_id, body=body)
+    key = dict(owner_user_id=owner_user_id, kind="galgame", resource_id=project_id, body=body)
     saved = await replay(session, **key)
     if saved is not None:
         return GalgameStoryDocumentOut.model_validate(saved)

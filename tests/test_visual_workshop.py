@@ -16,6 +16,7 @@ from app.capabilities.asset_store.models import (
     VisualAssetFolder,
     VisualProjectAssetReference,
 )
+from app.capabilities.asset_store.storage import AssetStorage
 from app.llm.models import (
     ModelEntry,
     ModelProvider,
@@ -28,8 +29,13 @@ from app.runtime.db import SessionLocal
 
 @pytest.mark.asyncio
 async def test_visual_workshop_project_crud_validation_sorting_and_conflicts() -> None:
+    from tests.account_fixtures import clear_private_projects
+
+    await clear_private_projects()
     async with SessionLocal() as session:
-        await session.execute(delete(VisualWorkshopProject))
+        await session.execute(
+            delete(VisualWorkshopProject).where(VisualWorkshopProject.owner_user_id == "test-user")
+        )
         await session.commit()
 
     transport = httpx.ASGITransport(app=app)
@@ -179,14 +185,21 @@ async def test_visual_workshop_routes_use_studio_auth() -> None:
 
 @pytest.mark.asyncio
 async def test_file_management_upload_folders_and_project_references() -> None:
+    from tests.account_fixtures import clear_private_projects
+
+    await clear_private_projects()
     async with SessionLocal() as session:
         await session.execute(delete(VisualProjectAssetReference))
-        await session.execute(delete(ThoughtKnowledgeBase))
+        await session.execute(
+            delete(ThoughtKnowledgeBase).where(ThoughtKnowledgeBase.owner_user_id == "test-user")
+        )
         await session.execute(delete(ThoughtNote))
         await session.execute(delete(VisualNodeOutput))
-        await session.execute(delete(VisualAsset))
+        await session.execute(delete(VisualAsset).where(VisualAsset.owner_user_id == "test-user"))
         await session.execute(delete(VisualAssetFolder))
-        await session.execute(delete(VisualWorkshopProject))
+        await session.execute(
+            delete(VisualWorkshopProject).where(VisualWorkshopProject.owner_user_id == "test-user")
+        )
         await session.commit()
 
     transport = httpx.ASGITransport(app=app)
@@ -412,7 +425,12 @@ async def test_visual_workshop_imports_library_references_and_project_copies(
         assert same_project.status_code == 422
         assert same_project.json()["code"] == "scope_mismatch"
 
-        root = get_settings().visual_project_path(target["id"]) / "assets"
+        root = (
+            AssetStorage(get_settings()).project_root(
+                "visual-workshop", target["id"], owner_user_id="test-user"
+            )
+            / "assets"
+        )
         files_before_failure = {path.name for path in root.iterdir() if path.is_file()}
         target_before_failure = (
             await client.get("/v1/files", params={"project_id": target["id"]})
@@ -761,6 +779,7 @@ async def test_canvas_generation_drafts_round_trip_validate_and_tolerate_stale_a
 @pytest.mark.asyncio
 async def test_visual_generation_options_creation_filters_and_active_provider_guard() -> None:
     provider = ModelProvider(
+        owner_user_id="test-user",
         id=str(uuid4()),
         name="SenseAudio 图片测试通道",
         kind="senseaudio_image",
@@ -770,6 +789,7 @@ async def test_visual_generation_options_creation_filters_and_active_provider_gu
         sort_order=90,
     )
     model = ModelEntry(
+        owner_user_id="test-user",
         id=str(uuid4()),
         provider_id=provider.id,
         slug="senseaudio-image-2.0-260319",

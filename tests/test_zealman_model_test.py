@@ -143,6 +143,7 @@ async def _allow(_url):
 async def test_expired_workflow_task_fails_before_polling(monkeypatch):
     async with SessionLocal() as session:
         row = ModelTestGenerationTask(
+            owner_user_id="test-user",
             provider_kind="zealman_video",
             generation_kind="video",
             provider_name="expired",
@@ -163,6 +164,6 @@ async def test_expired_workflow_task_fails_before_polling(monkeypatch):
     runner = ModelTestGenerationRunner()
     async with SessionLocal() as session:
         row = await session.get(ModelTestGenerationTask, identity)
-        context = runner.task_store._context(row, workspace_id="default")
+        context = runner.task_store._context(row, owner_user_id="test-user")
     with pytest.raises(ValueError, match="60 分钟"):
         await runner._poll_context(context)

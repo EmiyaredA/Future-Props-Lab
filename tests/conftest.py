@@ -18,7 +18,7 @@ apply_migrations(TEST_DATABASE_PATH)
 
 
 @pytest.fixture(autouse=True)
-def authenticated_business_routes(request: pytest.FixtureRequest, monkeypatch):
+async def authenticated_business_routes(request: pytest.FixtureRequest, monkeypatch):
     """Override auth only for test modules that explicitly imported the ASGI app.
 
     Pure unit and architecture tests must not import ``app.main`` as a side effect of
@@ -29,23 +29,34 @@ def authenticated_business_routes(request: pytest.FixtureRequest, monkeypatch):
         yield
         return
     from app.capabilities.identity.principal import StudioPrincipal
-    from app.console.governance.platform_policy import CAPABILITIES
+    from app.console.models import User
     from app.deps import SessionDep, require_studio_auth
+    from app.llm.models import ModelCatalogState
     from app.llm.routes.model_capacity import model_capacity
     from app.main import app
-    from app.orm import bind_workspace
+    from app.orm import bind_owner
+    from app.runtime.db import SessionLocal
+
+    async with SessionLocal() as seed:
+        if await seed.get(User, "test-user") is None:
+            seed.add(
+                User(
+                    id="test-user",
+                    username="test-fixture",
+                    username_normalized="test-fixture",
+                    password_hash="unused-test-hash",
+                    platform_role="admin",
+                )
+            )
+        if await seed.get(ModelCatalogState, "test-user") is None:
+            seed.add(ModelCatalogState(owner_user_id="test-user", revision=0))
+        await seed.commit()
 
     async def principal(session: SessionDep) -> StudioPrincipal:
-        bind_workspace(session, "default")
+        bind_owner(session, "test-user")
         return StudioPrincipal(
             user_id="test-user",
-            workspace_id="default",
-            membership_id="test-membership",
-            workspace_access="owner",
-            member_role="owner",
-            is_platform_admin=True,
-            platform_role="super_admin",
-            platform_permissions=frozenset(CAPABILITIES),
+            platform_role="admin",
             must_change_password=False,
             auth_kind="session",
             scopes=frozenset({"studio:read", "studio:private_read", "studio:write"}),
@@ -72,3 +83,33 @@ def authenticated_business_routes(request: pytest.FixtureRequest, monkeypatch):
 
 def pytest_sessionfinish() -> None:
     shutil.rmtree(TEST_RUNTIME_DIR, ignore_errors=True)
+
+
+@pytest.fixture(autouse=True)
+async def isolated_cli_allocation_policy():
+    if "app.main" not in sys.modules:
+        yield
+        return
+    from copy import deepcopy
+
+    from sqlalchemy import delete
+
+    from app.console.models.platform_governance import PlatformSetting
+    from app.runtime.db import SessionLocal
+
+    async with SessionLocal() as session:
+        row = await session.get(PlatformSetting, "code_agents")
+        snapshot = (
+            {
+                key: deepcopy(getattr(row, key))
+                for key in ["payload", "revision", "created_at", "updated_at"]
+            }
+            if row
+            else None
+        )
+    yield
+    async with SessionLocal() as session:
+        await session.execute(delete(PlatformSetting).where(PlatformSetting.id == "code_agents"))
+        if snapshot:
+            session.add(PlatformSetting(id="code_agents", **snapshot))
+        await session.commit()

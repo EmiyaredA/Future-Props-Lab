@@ -329,6 +329,7 @@ class GalgameVideoExports:
         self.session.add(snapshot)
         await self.session.flush()
         task = GalgameVideoExportTask(
+            owner_user_id=(await self._project(project_id)).owner_user_id,
             project_id=project_id,
             snapshot_id=snapshot.id,
             request_id=body.request_id,
@@ -411,7 +412,7 @@ class GalgameVideoExports:
                 document,
                 asset_paths,
                 cache_dir=self.storage.project_root(
-                    "galgame-workshop", project_id, workspace_id=project.workspace_id
+                    "galgame-workshop", project_id, owner_user_id=project.owner_user_id
                 )
                 / "derived"
                 / "audio-envelopes",

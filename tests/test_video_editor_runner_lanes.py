@@ -23,12 +23,12 @@ async def _tasks(status: str = "queued") -> tuple[str, str]:
     # Runner storage fixtures live only in conftest's isolated temporary database.
     async with SessionLocal() as session:
         await session.execute(delete(VideoEditorProject))
-        project = VideoEditorProject(title="预处理与导出调度", workspace_id="default")
+        project = VideoEditorProject(title="预处理与导出调度", owner_user_id="test-user")
         session.add(project)
         await session.flush()
         render = VideoEditorTask(
             project_id=project.id,
-            workspace_id="default",
+            owner_user_id="test-user",
             request_id="render",
             kind="render",
             status=status,
@@ -36,7 +36,7 @@ async def _tasks(status: str = "queued") -> tuple[str, str]:
         )
         media = VideoEditorTask(
             project_id=project.id,
-            workspace_id="default",
+            owner_user_id="test-user",
             request_id="media",
             kind="media",
             status=status,

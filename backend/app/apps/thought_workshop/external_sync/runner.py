@@ -18,7 +18,7 @@ from app.integrations.external.feishu_verification import (
     verify_delete,
     verify_image,
 )
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.polling_runner import PollingTaskRunner
@@ -71,10 +71,10 @@ class ArticleSyncRunner(PollingTaskRunner):
         task = await session.get(ArticleSyncTask, task_id)
         if not task or task.status != "running":
             raise ExternalError("同步任务已停止", 409)
-        bind_workspace(session, task.workspace_id)
+        bind_owner(session, task.owner_user_id)
         note = await session.scalar(
             select(ThoughtNote).where(
-                ThoughtNote.id == task.note_id, ThoughtNote.workspace_id == task.workspace_id
+                ThoughtNote.id == task.note_id, ThoughtNote.owner_user_id == task.owner_user_id
             )
         )
         library = await session.get(ThoughtKnowledgeBase, note.knowledge_base_id) if note else None
@@ -88,16 +88,16 @@ class ArticleSyncRunner(PollingTaskRunner):
             or binding.revision != task.binding_revision
         ):
             raise ExternalError("文章、知识库或绑定已变化，已停止同步", 409)
-        if not await self.actor_allowed(session, task.workspace_id, task.actor):
+        if not await self.actor_allowed(session, task.owner_user_id, task.actor):
             raise ExternalError("执行者权限已变化，已停止同步", 403)
-        await ExternalConnections(session, task.workspace_id).get(task.connection_id)
+        await ExternalConnections(session, task.owner_user_id).get(task.connection_id)
         return task
 
     async def before_step(self, task_id, client):
         async with self.sessions() as session:
             task = await self.context(session, task_id)
             expected = dict(task.checkpoint.get("remote", task.remote))
-            await ExternalConnections(session, task.workspace_id).client(
+            await ExternalConnections(session, task.owner_user_id).client(
                 task.connection_id, expected_revision=task.connection_revision
             )
         remote = await client.read(expected["document_id"])
@@ -107,7 +107,7 @@ class ArticleSyncRunner(PollingTaskRunner):
     async def begin_step(self, task_id, kind):
         async with self.sessions() as session:
             task = await self.context(session, task_id)
-            await ExternalConnections(session, task.workspace_id).require_enabled(
+            await ExternalConnections(session, task.owner_user_id).require_enabled(
                 task.connection_id, expected_revision=task.connection_revision
             )
             step = ArticleSyncStep(task_id=task_id, kind=kind)
@@ -162,7 +162,7 @@ class ArticleSyncRunner(PollingTaskRunner):
                     dict(task.remote),
                 )
                 client = await ExternalConnections(
-                    session, task.workspace_id, self.transport
+                    session, task.owner_user_id, self.transport
                 ).client(task.connection_id, expected_revision=task.connection_revision)
             document_id = remote["document_id"]
             if not await client.can_write(document_id):
@@ -192,7 +192,7 @@ class ArticleSyncRunner(PollingTaskRunner):
                     before = await self.before_step(task_id, client)
                     async with self.sessions() as session:
                         task = await self.context(session, task_id)
-                        assets = await resolve_assets(session, task.workspace_id, {asset_id})
+                        assets = await resolve_assets(session, task.owner_user_id, {asset_id})
                         asset = assets[asset_id]
                         path = AssetStorage(get_settings()).path_for(asset)
                         filename, mime = asset.original_filename, asset.mime_type

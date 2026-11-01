@@ -111,15 +111,15 @@ class ModelCatalogService:
     def categories(self) -> ModelCategoryListOut:
         return ModelCategoryListOut(items=list(MODEL_CATEGORIES))
 
-    def _workspace_id(self) -> str:
-        workspace_id = str(self.session.info.get("workspace_id") or "").strip()
-        if not workspace_id:
-            raise RuntimeError("model catalog session is not bound to a workspace")
-        return workspace_id
+    def _owner_user_id(self) -> str:
+        owner_user_id = str(self.session.info.get("owner_user_id") or "").strip()
+        if not owner_user_id:
+            raise RuntimeError("model catalog session is not bound to an account")
+        return owner_user_id
 
     async def catalog(self) -> ModelCatalogOut:
-        workspace_id = self._workspace_id()
-        state = await self.session.get(ModelCatalogState, workspace_id)
+        owner_user_id = self._owner_user_id()
+        state = await self.session.get(ModelCatalogState, owner_user_id)
         revision = int(state.revision if state else 0)
         providers = (
             (
@@ -162,11 +162,11 @@ class ModelCatalogService:
                     )
             return result
 
-        defaults = await self.session.get(PlatformSetting, f"workspace_defaults:{workspace_id}")
+        defaults = await self.session.get(PlatformSetting, f"account_defaults:{owner_user_id}")
         return ModelCatalogOut(
             revision=revision,
             default_model_ids=dict(defaults.payload) if defaults else {},
-            suppliers=await list_suppliers(self.session, workspace_id),
+            suppliers=await list_suppliers(self.session, owner_user_id),
             providers=[provider_out(row) for row in providers],
         )
 
@@ -197,7 +197,7 @@ class ModelCatalogService:
         result = await self.session.execute(
             update(ModelCatalogState)
             .where(
-                ModelCatalogState.workspace_id == self._workspace_id(),
+                ModelCatalogState.owner_user_id == self._owner_user_id(),
                 ModelCatalogState.revision == expected,
             )
             .values(revision=ModelCatalogState.revision + 1)
@@ -223,6 +223,7 @@ class ModelCatalogService:
         await self._validate_supplier(body.supplier_id)
         count = int((await self.session.execute(select(func.count(ModelProvider.id)))).scalar_one())
         row = ModelProvider(
+            owner_user_id=self._owner_user_id(),
             name=body.name.strip(),
             supplier_id=body.supplier_id,
             kind=body.kind,
@@ -282,7 +283,7 @@ class ModelCatalogService:
     async def _validate_supplier(self, supplier_id: str | None) -> None:
         if (
             supplier_id is not None
-            and await get_supplier(self.session, self._workspace_id(), supplier_id) is None
+            and await get_supplier(self.session, self._owner_user_id(), supplier_id) is None
         ):
             raise ResourceNotFoundError("供应商分组不存在")
 
@@ -307,7 +308,7 @@ class ModelCatalogService:
         revision = await self._bump(expected)
         row = await self.get_provider(provider_id)
         if row.origin == "role_template":
-            raise CatalogResourceBusyError("模板管理项不能在工作区删除")
+            raise CatalogResourceBusyError("模板管理项不能在账号删除")
         await self.session.delete(row)
         await self.session.commit()
         return revision
@@ -325,6 +326,7 @@ class ModelCatalogService:
             ).scalar_one()
         )
         row = ModelEntry(
+            owner_user_id=self._owner_user_id(),
             provider_id=provider_id,
             slug=body.slug.strip(),
             label=body.label.strip(),
@@ -451,11 +453,11 @@ class ModelCatalogService:
         model = definition(body.model_id)
         await require_ready(self.session, body.model_id)
         await self._bump(body.expected_catalog_revision)
-        workspace_id = self._workspace_id()
+        owner_user_id = self._owner_user_id()
         provider = await self.session.scalar(
             select(ModelProvider)
             .where(
-                ModelProvider.workspace_id == workspace_id,
+                ModelProvider.owner_user_id == owner_user_id,
                 ModelProvider.kind == "local_qwen_tts",
                 ModelProvider.origin == "user",
             )
@@ -464,15 +466,15 @@ class ModelCatalogService:
         if provider is None:
             supplier = await self.session.scalar(
                 select(ModelSupplier).where(
-                    ModelSupplier.workspace_id == workspace_id, ModelSupplier.name == "Qwen 本地"
+                    ModelSupplier.owner_user_id == owner_user_id, ModelSupplier.name == "Qwen 本地"
                 )
             )
             if supplier is None:
-                supplier = ModelSupplier(workspace_id=workspace_id, name="Qwen 本地")
+                supplier = ModelSupplier(owner_user_id=owner_user_id, name="Qwen 本地")
                 self.session.add(supplier)
                 await self.session.flush()
             provider = ModelProvider(
-                workspace_id=workspace_id,
+                owner_user_id=owner_user_id,
                 name="本地 Qwen 语音",
                 kind="local_qwen_tts",
                 supplier_id=supplier.id,
@@ -484,7 +486,7 @@ class ModelCatalogService:
             await self.session.flush()
         entry = await self.session.scalar(
             select(ModelEntry).where(
-                ModelEntry.workspace_id == workspace_id,
+                ModelEntry.owner_user_id == owner_user_id,
                 ModelEntry.provider_id == provider.id,
                 ModelEntry.slug == body.model_id,
             )
@@ -492,7 +494,7 @@ class ModelCatalogService:
         if entry is None:
             self.session.add(
                 ModelEntry(
-                    workspace_id=workspace_id,
+                    owner_user_id=owner_user_id,
                     provider_id=provider.id,
                     slug=body.model_id,
                     label=model["label"],

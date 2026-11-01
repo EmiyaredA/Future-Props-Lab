@@ -226,7 +226,7 @@ async def test_preview_requires_authentication():
 
 @pytest.mark.real_auth
 async def test_read_only_workspace_member_can_preview(monkeypatch):
-    owner, _, _, workspace_id = await client_account()
+    owner, _, _, owner_user_id = await client_account()
     viewer, username, _, _ = await client_account()
     mock = AsyncMock(
         return_value=preview.ThoughtLinkPreview(
@@ -235,23 +235,6 @@ async def test_read_only_workspace_member_can_preview(monkeypatch):
     )
     monkeypatch.setattr("app.apps.thought_workshop.routes.preview_link", mock)
     async with aclosing(owner), aclosing(viewer):
-        invitation = await owner.post(
-            "/v1/account/workspaces/current/invitations",
-            json={"username": username, "role": "viewer"},
-        )
-        assert invitation.status_code == 201
-        inv = invitation.json()
-        accepted = await viewer.post(
-            f"/v1/account/workspace-invitations/{inv['id']}/accept",
-            json={"expected_revision": inv["revision"]},
-        )
-        assert accepted.status_code == 204
-        assert (
-            await viewer.post("/v1/account/workspaces/switch", json={"workspace_id": workspace_id})
-        ).status_code == 200
-        assert (await viewer.get("/v1/auth/me")).json()["workspace"]["permission_keys"] == [
-            "content.read"
-        ]
         result = await viewer.get(
             "/v1/thought-workshop/link-preview", params={"url": "https://example.com"}
         )

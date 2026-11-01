@@ -22,9 +22,9 @@ from app.runtime.time import utc_now
 
 class Live2DProject(Base):
     __tablename__ = "live2d_projects"
-    __table_args__ = (Index("ix_live2d_workspace_updated", "workspace_id", "updated_at"),)
+    __table_args__ = (Index("ix_live2d_account_updated", "owner_user_id", "updated_at"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     title: Mapped[str] = mapped_column(String(120))
     revision: Mapped[int] = mapped_column(Integer, default=0)
     document: Mapped[dict] = mapped_column(JSON)
@@ -35,7 +35,7 @@ class Live2DProject(Base):
 class Live2DAsset(Base):
     __tablename__ = "live2d_assets"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     project_id: Mapped[str] = mapped_column(
         ForeignKey("live2d_projects.id", ondelete="CASCADE"), index=True
     )
@@ -50,7 +50,7 @@ class Live2DCubismAttachment(Base):
     project_id: Mapped[str] = mapped_column(
         ForeignKey("live2d_projects.id", ondelete="CASCADE"), primary_key=True
     )
-    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     sha256: Mapped[str] = mapped_column(String(64))
     metadata_json: Mapped[dict] = mapped_column("metadata", JSON)
     state_bindings: Mapped[dict] = mapped_column(JSON, default=dict)
@@ -61,7 +61,7 @@ class Live2DExport(Base):
     __tablename__ = "live2d_exports"
     __table_args__ = (UniqueConstraint("project_id", "request_id"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     project_id: Mapped[str] = mapped_column(
         ForeignKey("live2d_projects.id", ondelete="CASCADE"), index=True
     )

@@ -45,7 +45,9 @@ async def test_realtime_downgrade_closes_provider_before_another_call(monkeypatc
     monkeypatch.setattr(realtime, "load_selected_tool_snapshots", AsyncMock(return_value=[]))
     socket = SimpleNamespace(receive_json=receive_json, send_json=AsyncMock())
     await asyncio.wait_for(
-        realtime.run_realtime_model_test(socket, workspace_id="default", check_access=check_access),
+        realtime.run_realtime_model_test(
+            socket, owner_user_id="test-user", check_access=check_access
+        ),
         timeout=2,
     )
     assert calls == 2

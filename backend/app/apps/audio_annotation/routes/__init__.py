@@ -26,7 +26,7 @@ from app.apps.audio_annotation.schemas.operations import (
     SavedSegmentTranscriptionIn,
 )
 from app.apps.audio_annotation.transcription import AudioAnnotationTranscription
-from app.deps import SessionDep, StudioAuth, WorkspaceDep
+from app.deps import OwnerDep, SessionDep, StudioAuth
 from app.llm.call_logs.credentials import snapshot_from_principal
 from app.runtime.operation_receipts import OperationError
 
@@ -161,9 +161,9 @@ async def put_document(
     response_model=AudioAnnotationDocumentOut,
 )
 async def apply_annotation_operations(
-    project_id: str, body: AnnotationOperationsIn, session: SessionDep, workspace_id: WorkspaceDep
+    project_id: str, body: AnnotationOperationsIn, session: SessionDep, owner_user_id: OwnerDep
 ):
-    return await mapped_operation(annotation_operations(session, workspace_id, project_id, body))
+    return await mapped_operation(annotation_operations(session, owner_user_id, project_id, body))
 
 
 @router.get("/projects/{project_id}/export", response_class=Response, responses=BINARY)

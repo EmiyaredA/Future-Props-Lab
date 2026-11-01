@@ -31,6 +31,10 @@ class Accounts:
         'Remove Api Key. POST /v1/account/api-keys/{key_id}/revoke'
         return self._client._call('POST', '/v1/account/api-keys/{key_id}/revoke', parameters=[('key_id', 'path', key_id)], body=body, media_type='application/json', response_type=models.ApiKeyOut)
 
+    def directory(self, *, q: str | Unset = UNSET, limit: int | Unset = UNSET) -> models.AccountDirectoryOut:
+        'Directory. GET /v1/account/directory'
+        return self._client._call('GET', '/v1/account/directory', parameters=[('q', 'query', q), ('limit', 'query', limit)], response_type=models.AccountDirectoryOut)
+
     def get_profile(self) -> models.CurrentUserOut:
         'Get Profile. GET /v1/account/profile'
         return self._client._call('GET', '/v1/account/profile', parameters=[], response_type=models.CurrentUserOut)
@@ -110,6 +114,10 @@ class AsyncAccounts:
     async def remove_api_key(self, *, key_id: str, body: models.RevokeApiKeyIn | dict) -> models.ApiKeyOut:
         'Remove Api Key. POST /v1/account/api-keys/{key_id}/revoke'
         return await self._client._call('POST', '/v1/account/api-keys/{key_id}/revoke', parameters=[('key_id', 'path', key_id)], body=body, media_type='application/json', response_type=models.ApiKeyOut)
+
+    async def directory(self, *, q: str | Unset = UNSET, limit: int | Unset = UNSET) -> models.AccountDirectoryOut:
+        'Directory. GET /v1/account/directory'
+        return await self._client._call('GET', '/v1/account/directory', parameters=[('q', 'query', q), ('limit', 'query', limit)], response_type=models.AccountDirectoryOut)
 
     async def get_profile(self) -> models.CurrentUserOut:
         'Get Profile. GET /v1/account/profile'

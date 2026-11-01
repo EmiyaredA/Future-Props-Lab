@@ -62,16 +62,16 @@ def probe_media(path: Path) -> dict:
 
 class VideoEditorMedia:
     def __init__(
-        self, session: AsyncSession, workspace_id: str, settings: Settings | None = None
+        self, session: AsyncSession, owner_user_id: str, settings: Settings | None = None
     ) -> None:
         self.session = session
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
         self.settings = settings or get_settings()
         self.storage = AssetStorage(self.settings)
         self.library = AssetLibrary(session, self.settings)
 
     async def _project(self, project_id: str) -> None:
-        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
+        await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
 
     def _out(
         self, project_id: str, asset: VisualAsset, metadata: VideoEditorAssetMetadata
@@ -146,6 +146,7 @@ class VideoEditorMedia:
     async def _register(self, project_id: str, asset: VisualAsset) -> VideoEditorAssetOut:
         metadata = VideoEditorAssetMetadata(asset_id=asset.id, project_id=project_id)
         task = VideoEditorTask(
+            owner_user_id=self.owner_user_id,
             project_id=project_id,
             request_id=f"media-{asset.id}",
             kind="media",
@@ -161,7 +162,7 @@ class VideoEditorMedia:
         await self._project(project_id)
         asset = await self.library.store_upload(
             upload,
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             video_editor_project_id=project_id,
             allowed_extensions=VIDEO_EDITOR_EXTENSIONS,
         )
@@ -189,7 +190,7 @@ class VideoEditorMedia:
             for source in sources:
                 asset, path = await self.library.stage_local_copy(
                     self.storage.path_for(source),
-                    workspace_id=self.workspace_id,
+                    owner_user_id=self.owner_user_id,
                     filename=source.original_filename,
                     content_type=source.mime_type,
                     video_editor_project_id=project_id,
@@ -200,6 +201,7 @@ class VideoEditorMedia:
                 self.session.add(metadata)
                 self.session.add(
                     VideoEditorTask(
+                        owner_user_id=self.owner_user_id,
                         project_id=project_id,
                         request_id=f"media-{asset.id}",
                         kind="media",
@@ -241,6 +243,7 @@ class VideoEditorMedia:
         metadata.revision += 1
         self.session.add(
             VideoEditorTask(
+                owner_user_id=self.owner_user_id,
                 project_id=project_id,
                 request_id=f"media-{asset.id}-{uuid4().hex[:12]}",
                 kind="media",
@@ -351,7 +354,7 @@ class VideoEditorMedia:
         if Path(filename).name != filename:
             raise VideoEditorValidationError("派生文件名无效")
         return (
-            self.storage.project_root("video-editor", project_id, workspace_id=self.workspace_id)
+            self.storage.project_root("video-editor", project_id, owner_user_id=self.owner_user_id)
             / "derived"
             / filename
         )

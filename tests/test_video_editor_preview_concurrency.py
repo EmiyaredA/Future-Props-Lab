@@ -195,7 +195,7 @@ async def test_exact_frame_ignores_cache_from_previous_sampling_rule():
         assert added.status_code == 200, added.text
         derived = (
             AssetStorage(get_settings()).project_root(
-                "video-editor", project["id"], workspace_id="default"
+                "video-editor", project["id"], owner_user_id="test-user"
             )
             / "derived"
         )

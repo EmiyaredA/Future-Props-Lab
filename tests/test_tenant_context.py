@@ -9,16 +9,16 @@ from app.llm.call_logs.service import CallLogService
 from app.llm.models import LlmCallLog
 from app.orm import (
     TenantScopeError,
-    bind_workspace,
-    require_workspace_id,
+    bind_owner,
+    require_owner_id,
 )
 from app.runtime.db import SessionLocal
 
 
-def _log(log_id: str, workspace_id: str, *, model: str) -> LlmCallLog:
+def _log(log_id: str, owner_user_id: str, *, model: str) -> LlmCallLog:
     return LlmCallLog(
         id=log_id,
-        workspace_id=workspace_id,
+        owner_user_id=owner_user_id,
         call_source="tenant-test",
         provider_kind="openai",
         model=model,
@@ -31,8 +31,8 @@ def _log(log_id: str, workspace_id: str, *, model: str) -> LlmCallLog:
 
 
 def test_missing_background_workspace_fails_closed() -> None:
-    with pytest.raises(TenantScopeError, match="missing workspace ownership"):
-        require_workspace_id("", subject="background task")
+    with pytest.raises(TenantScopeError, match="missing account ownership"):
+        require_owner_id("", subject="background task")
 
 
 @pytest.mark.asyncio
@@ -52,7 +52,7 @@ async def test_bound_workspace_scopes_direct_update_and_delete() -> None:
 
     try:
         async with SessionLocal() as session:
-            bind_workspace(session, first_workspace)
+            bind_owner(session, first_workspace)
             updated = await session.execute(
                 update(LlmCallLog)
                 .where(LlmCallLog.id.in_([first_id, second_id]))
@@ -94,7 +94,7 @@ async def test_call_log_batch_delete_cannot_cross_workspace() -> None:
 
     try:
         async with SessionLocal() as session:
-            bind_workspace(session, first_workspace)
+            bind_owner(session, first_workspace)
             assert (
                 await CallLogService(session, first_workspace).batch_delete([first_id, second_id])
                 == 1
@@ -124,7 +124,7 @@ async def test_bound_workspace_rejects_cross_workspace_orm_delete() -> None:
         async with SessionLocal() as session:
             row = await session.get(LlmCallLog, log_id)
             assert row is not None
-            bind_workspace(session, first_workspace)
+            bind_owner(session, first_workspace)
             await session.delete(row)
             with pytest.raises(TenantScopeError):
                 await session.commit()

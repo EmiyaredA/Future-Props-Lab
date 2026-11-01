@@ -10,34 +10,29 @@ from app.capabilities.identity.permissions import effective_permissions
 @dataclass(frozen=True)
 class StudioPrincipal:
     user_id: str
-    workspace_id: str
-    workspace_access: Literal["owner", "member", "platform_admin", "public_viewer"]
-    member_role: Literal["owner", "admin", "member", "viewer"] | None
-    is_platform_admin: bool
     must_change_password: bool
     auth_kind: Literal["session", "management_api_key"]
     scopes: frozenset[str]
-    membership_id: str | None = None
+    platform_role: Literal["admin", "user"] = "user"
     session_id: str | None = None
     api_key_id: str | None = None
     reauthenticated_at: datetime | None = None
 
-    platform_role: str = ""
-    platform_permissions: frozenset[str] = frozenset()
-    policy_revision: int = 0
+    @property
+    def owner_user_id(self) -> str:
+        return self.user_id
 
     @property
-    def can_manage_all_workspaces(self) -> bool:
-        return self.is_platform_admin or self.platform_role in {"super_admin", "admin"}
+    def is_platform_admin(self) -> bool:
+        return self.platform_role == "admin"
 
     @property
     def permission_keys(self) -> frozenset[str]:
-        permissions = effective_permissions(self.workspace_access, self.member_role, self.scopes)
-        if "content.read" in permissions:
-            permissions |= self.platform_permissions - {"projects.certify"}
-        if "content.write" in permissions and "studio:write" in self.scopes:
-            permissions |= self.platform_permissions & {"projects.certify"}
-        return permissions
+        return effective_permissions(self.platform_role, self.scopes)
+
+    @property
+    def platform_permissions(self) -> frozenset[str]:
+        return self.permission_keys
 
     def allows(self, permission: str) -> bool:
         return permission in self.permission_keys

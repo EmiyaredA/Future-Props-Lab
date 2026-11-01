@@ -3,8 +3,6 @@
 from sqlalchemy import and_, func, or_, select, text
 
 from app.capabilities.identity.errors import AccountError
-from app.capabilities.identity.permissions import role_permissions
-from app.console.governance.platform_policy import read_setting
 from app.console.governance.runtime_quotas import (
     TASK_MODELS,
     admit_spawned_tasks,
@@ -12,8 +10,8 @@ from app.console.governance.runtime_quotas import (
     settle_admissions,
     validate_spawned_actor,
 )
-from app.console.governance.workspaces import resolve_access
-from app.console.models import User, Workspace
+from app.console.governance.settings_records import read_setting
+from app.console.models import User
 from app.console.models.runtime_admission import RuntimeAdmission as Admission
 from app.console.schemas.platform_governance import RuntimeQuotas
 from app.llm.models import ModelEntry
@@ -27,7 +25,7 @@ async def admit_generation_tasks(session, principal, kind, task_ids):
     rows = (
         await session.execute(
             select(task.id, task.generation_kind).where(
-                task.workspace_id == principal.workspace_id, task.id.in_(task_ids)
+                task.owner_user_id == principal.owner_user_id, task.id.in_(task_ids)
             )
         )
     ).all()
@@ -51,7 +49,7 @@ async def admit_generation_tasks(session, principal, kind, task_ids):
                 await check_capacity(
                     session,
                     user_id=user.id,
-                    workspace_id=principal.workspace_id,
+                    owner_user_id=principal.owner_user_id,
                     role=user.platform_role,
                     voice=False,
                     weight=1,
@@ -68,7 +66,7 @@ async def admit_generation_tasks(session, principal, kind, task_ids):
         session.add(
             Admission(
                 user_id=user.id,
-                workspace_id=principal.workspace_id,
+                owner_user_id=principal.owner_user_id,
                 platform_role=user.platform_role,
                 task_kind="visual",
                 task_ids=[task_id],
@@ -83,17 +81,13 @@ async def admit_generation_tasks(session, principal, kind, task_ids):
 
 async def _actor(session, lease):
     user = await session.get(User, lease.user_id, populate_existing=True)
-    workspace = await session.get(Workspace, lease.workspace_id)
-    if not user or not workspace or user.status != "active" or user.must_change_password:
-        raise ValueError("提交账号或工作区已不可用，生成任务未提交")
-    try:
-        access, member = await resolve_access(session, user=user, workspace=workspace)
-    except AccountError:
-        raise ValueError("提交账号的工作区生成权限已失效，生成任务未提交") from None
-    if not {"content.write", "models.use"} <= role_permissions(
-        access, member.role if member else None
+    if (
+        not user
+        or user.id != lease.owner_user_id
+        or user.status != "active"
+        or user.must_change_password
     ):
-        raise ValueError("提交账号的工作区生成权限已失效，生成任务未提交")
+        raise ValueError("提交账号已不可用，生成任务未提交")
     return user
 
 
@@ -107,7 +101,7 @@ async def claim_visual_capacity(session, task):
             select(Admission).where(
                 Admission.task_kind == "visual",
                 Admission.queue_task_id.is_(None),
-                Admission.workspace_id == task.workspace_id,
+                Admission.owner_user_id == task.owner_user_id,
                 Admission.released_at.is_(None),
             )
         )
@@ -143,7 +137,7 @@ async def claim_visual_capacity(session, task):
         await check_capacity(
             session,
             user_id=user.id,
-            workspace_id=lease.workspace_id,
+            owner_user_id=lease.owner_user_id,
             role=user.platform_role,
             voice=False,
             weight=1,
@@ -179,7 +173,7 @@ async def visual_queue_candidates(session_factory, *, limit=40):
         blocked = set()
         for task_id, lease in rows:
             if lease and lease.waiting:
-                key = (lease.user_id, lease.workspace_id)
+                key = (lease.user_id, lease.owner_user_id)
                 if key in blocked:
                     continue
                 try:
@@ -194,7 +188,7 @@ async def visual_queue_candidates(session_factory, *, limit=40):
                     await check_capacity(
                         session,
                         user_id=user.id,
-                        workspace_id=lease.workspace_id,
+                        owner_user_id=lease.owner_user_id,
                         role=user.platform_role,
                         voice=False,
                         weight=1,

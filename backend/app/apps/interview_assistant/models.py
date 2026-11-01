@@ -11,8 +11,8 @@ from app.runtime.time import utc_now
 class InterviewRoom(Base):
     __tablename__ = "interview_rooms"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(
-        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    owner_user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     user_id: Mapped[str] = mapped_column(String(36), index=True)
     title: Mapped[str] = mapped_column(String(120))
@@ -40,7 +40,7 @@ class InterviewPreparation(Base):
     __tablename__ = "interview_preparations"
     __table_args__ = (UniqueConstraint("room_id", "request_id"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True)
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     user_id: Mapped[str] = mapped_column(String(36))
     room_id: Mapped[str] = mapped_column(
         ForeignKey("interview_rooms.id", ondelete="CASCADE"), index=True

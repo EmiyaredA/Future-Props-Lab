@@ -7,6 +7,7 @@ import zipfile
 import pytest
 from fastapi import UploadFile
 from sqlalchemy import select
+from tests.account_fixtures import account_record
 
 from app.capabilities.identity.principal import StudioPrincipal
 from app.console.creative_workshop.catalog import CreativeCatalog, CreativeError
@@ -19,18 +20,15 @@ from app.console.creative_workshop.schemas import (
     CreativeInstallPreviewIn,
     CreativeStdioSetupIn,
 )
-from app.console.models import User, Workspace
+from app.console.models import User
 from app.integrations.models import McpIntegration, ToolApiIntegration
 from app.runtime.db import SessionLocal
 
 
-def principal(user_id: str, workspace_id: str, role: str = "admin") -> StudioPrincipal:
+def principal(user_id: str, _owner_user_id: str, _role: str = "admin") -> StudioPrincipal:
     return StudioPrincipal(
+        platform_role="admin",
         user_id=user_id,
-        workspace_id=workspace_id,
-        workspace_access="member",
-        member_role=role,
-        is_platform_admin=False,
         must_change_password=False,
         auth_kind="session",
         scopes=frozenset({"studio:read", "studio:private_read", "studio:write"}),
@@ -42,23 +40,20 @@ async def test_cross_workspace_public_catalog_and_atomic_install() -> None:
     async with SessionLocal() as session:
         session.add_all(
             [
-                Workspace(id="creative-a", name="Creative A"),
-                Workspace(id="creative-b", name="Creative B"),
-                Workspace(id="creative-c", name="Creative C"),
                 User(
-                    id="creative-user-a",
+                    id="creative-a",
                     username="creative-a",
                     username_normalized="creative-a",
                     password_hash="unused",
                 ),
                 User(
-                    id="creative-user-b",
+                    id="creative-b",
                     username="creative-b",
                     username_normalized="creative-b",
                     password_hash="unused",
                 ),
                 User(
-                    id="creative-user-c",
+                    id="creative-c",
                     username="creative-c",
                     username_normalized="creative-c",
                     password_hash="unused",
@@ -66,8 +61,8 @@ async def test_cross_workspace_public_catalog_and_atomic_install() -> None:
             ]
         )
         await session.commit()
-        author = CreativeCatalog(session, principal("creative-user-a", "creative-a", "member"))
-        viewer = CreativeCatalog(session, principal("creative-user-b", "creative-b"))
+        author = CreativeCatalog(session, principal("creative-a", "creative-a", "user"))
+        viewer = CreativeCatalog(session, principal("creative-b", "creative-b"))
         tool = await author.create(
             CreativeDraftIn(
                 kind="tool_api",
@@ -86,13 +81,13 @@ async def test_cross_workspace_public_catalog_and_atomic_install() -> None:
         published = await author.publish(tool.id, tool.revision)
         public = await viewer.list(kind=None, query="Weather", mine=False, cursor=0, limit=24)
         assert len(public.items) == 1
-        assert public.items[0].origin_workspace_id == "creative-a"
+        assert public.items[0].origin_owner_user_id == "creative-a"
         assert "secret" not in str(public.items[0].manifest).lower()
         assert public.items[0].current_release_id == published.current_release_id
         session.add(
             ToolApiIntegration(
                 id="creative-private-source",
-                workspace_id="creative-a",
+                owner_user_id="creative-a",
                 name="Imported",
                 description="Imported tool",
                 method="GET",
@@ -105,7 +100,7 @@ async def test_cross_workspace_public_catalog_and_atomic_install() -> None:
         await session.commit()
         imported = await CreativeCatalog(
             session,
-            principal("creative-user-a", "creative-a", "admin"),
+            principal("creative-a", "creative-a", "admin"),
         ).import_source("tool_api", "creative-private-source")
         imported = await author.publish(imported.id, imported.revision)
         assert "encrypted-secret-never-publish" not in imported.model_dump_json()
@@ -123,12 +118,11 @@ async def test_cross_workspace_public_catalog_and_atomic_install() -> None:
         )
         bundle = await author.publish(bundle.id, bundle.revision)
         assert bundle.components == [published.current_release_id]
-        with pytest.raises(CreativeError) as denied:
-            await CreativeInstaller(
-                session, principal("creative-user-a", "creative-a", "member")
-            ).preview(CreativeInstallPreviewIn(release_id=bundle.current_release_id))
-        assert denied.value.status == 403
-        installer = CreativeInstaller(session, principal("creative-user-b", "creative-b"))
+        own_preview = await CreativeInstaller(
+            session, principal("creative-a", "creative-a", "user")
+        ).preview(CreativeInstallPreviewIn(release_id=bundle.current_release_id))
+        assert own_preview.installable
+        installer = CreativeInstaller(session, principal("creative-b", "creative-b"))
         install_body = CreativeInstallPreviewIn(release_id=bundle.current_release_id)
         preview = await installer.preview(install_body)
         assert preview.installable and len(preview.parts) == 1
@@ -136,7 +130,7 @@ async def test_cross_workspace_public_catalog_and_atomic_install() -> None:
         assert len(installed.resources) == 1
         assert (await installer.install(install_body)).already_installed
         row = await session.scalar(
-            select(ToolApiIntegration).where(ToolApiIntegration.workspace_id == "creative-b")
+            select(ToolApiIntegration).where(ToolApiIntegration.owner_user_id == "creative-b")
         )
         assert row and row.enabled is False and row.secret_ciphertext == ""
         assert row.auth_kind == "bearer"
@@ -201,7 +195,7 @@ async def test_cross_workspace_public_catalog_and_atomic_install() -> None:
         )
         assert configured.resources[0]["state"] == "disabled"
         mcp = await session.scalar(
-            select(McpIntegration).where(McpIntegration.workspace_id == "creative-b")
+            select(McpIntegration).where(McpIntegration.owner_user_id == "creative-b")
         )
         assert mcp and mcp.command == "npx" and not mcp.enabled
         skill = await author.create(
@@ -235,7 +229,7 @@ async def test_cross_workspace_public_catalog_and_atomic_install() -> None:
         skill_release = await session.get(CreativeRelease, skill.current_release_id)
         assert skill_release
         shutil.rmtree(resolve_file("creative-a", skill_release.skill_path))
-        other_installer = CreativeInstaller(session, principal("creative-user-c", "creative-c"))
+        other_installer = CreativeInstaller(session, principal("creative-c", "creative-c"))
         with pytest.raises(CreativeError):
             await other_installer.install(
                 CreativeInstallPreviewIn(
@@ -244,7 +238,7 @@ async def test_cross_workspace_public_catalog_and_atomic_install() -> None:
             )
         assert (
             await session.scalar(
-                select(ToolApiIntegration).where(ToolApiIntegration.workspace_id == "creative-c")
+                select(ToolApiIntegration).where(ToolApiIntegration.owner_user_id == "creative-c")
             )
             is None
         )
@@ -260,19 +254,19 @@ async def test_cross_workspace_public_catalog_and_atomic_install() -> None:
 @pytest.mark.asyncio
 async def test_public_manifest_rejects_credentials_and_empty_bundle() -> None:
     async with SessionLocal() as session:
-        if not await session.get(Workspace, "creative-a"):
-            session.add(Workspace(id="creative-a", name="Creative A"))
-        if not await session.get(User, "creative-user-a"):
+        if not await session.get(User, "creative-a"):
+            session.add(account_record(id="creative-a", name="Creative A"))
+        if not await session.get(User, "creative-a"):
             session.add(
                 User(
-                    id="creative-user-a",
+                    id="creative-a",
                     username="creative-a",
                     username_normalized="creative-a",
                     password_hash="unused",
                 )
             )
         await session.commit()
-        author = CreativeCatalog(session, principal("creative-user-a", "creative-a"))
+        author = CreativeCatalog(session, principal("creative-a", "creative-a"))
         unsafe = await author.create(
             CreativeDraftIn(
                 kind="tool_api",

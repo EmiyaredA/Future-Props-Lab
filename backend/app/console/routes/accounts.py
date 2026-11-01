@@ -13,6 +13,7 @@ from app.console.governance.profile import (
 )
 from app.console.governance.service import (
     AccountError,
+    account_directory,
     change_password,
     complete_login,
     complete_logout,
@@ -35,10 +36,10 @@ from app.console.routes.auth import (
     _login_out,
     _set_cookies,
     _user_out,
-    _workspace_out,
 )
 from app.console.schemas.accounts import (
     AccountAvatarDeleteIn,
+    AccountDirectoryOut,
     AccountProfilePatchIn,
     AccountSessionListOut,
     AccountSessionOut,
@@ -83,20 +84,25 @@ async def login(request: Request, response: Response, session: SessionDep, body:
             401,
             detail={"code": "invalid_credentials", "message": "用户名或密码错误"},
         )
-    user, workspace, auth_session, token, csrf = result
+    user, auth_session, token, csrf = result
     clear_attempts(ip_key, user_key)
     _set_cookies(response, token, csrf)
-    return await _login_out(session, user, workspace, auth_session)
+    return await _login_out(
+        session,
+        user,
+        auth_session,
+        maintenance=getattr(request.app.state, "storage_upgrade_required", False),
+    )
 
 
 @router.get("/auth/me", response_model=AuthMeOut)
 async def me(request: Request, session: SessionDep):
     principal = await _browser_auth(request, session, forced=True)
-    user, workspace, auth_session = await load_current_auth(session, principal)
+    user, auth_session = await load_current_auth(session, principal)
     return AuthMeOut(
-        policy_revision=principal.policy_revision,
+        storage_upgrade_required=getattr(request.app.state, "storage_upgrade_required", False),
         user=_user_out(user),
-        workspace=_workspace_out(workspace, principal),
+        permission_keys=sorted(principal.permission_keys),
         must_change_password=user.must_change_password,
         session_expires_at=auth_session.absolute_expires_at if auth_session else None,
     )
@@ -167,14 +173,14 @@ async def patch_profile(request: Request, session: SessionDep, body: AccountProf
 @router.get("/account/profile", response_model=CurrentUserOut)
 async def get_profile(request: Request, session: SessionDep):
     principal = await _browser_auth(request, session)
-    user, _workspace, _auth_session = await load_current_auth(session, principal)
+    user, _auth_session = await load_current_auth(session, principal)
     return _user_out(user)
 
 
 @router.get("/account/profile/avatar", response_class=FileResponse)
 async def get_avatar(request: Request, session: SessionDep):
     principal = await _browser_auth(request, session)
-    user, _workspace, _auth_session = await load_current_auth(session, principal)
+    user, _auth_session = await load_current_auth(session, principal)
     path = avatar_path(user)
     if path is None or not path.is_file():
         raise HTTPException(404, detail={"code": "profile_avatar_not_found"})
@@ -361,3 +367,14 @@ async def own_audit(
         event_type=event_type,
         outcome=outcome,
     )
+
+
+@router.get("/account/directory", response_model=AccountDirectoryOut)
+async def directory(
+    request: Request,
+    session: SessionDep,
+    q: str = Query("", max_length=120),
+    limit: int = Query(100, ge=1, le=100),
+):
+    await _browser_auth(request, session)
+    return await account_directory(session, q, limit)

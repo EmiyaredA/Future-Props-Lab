@@ -134,7 +134,7 @@ export function DemoServicesPage() {
                   }}
                 >
                   <PlugZap size={15} />
-                  接入当前工作区
+                  接入当前账号
                 </button>
               </div>
               <details className="governance-logs">
@@ -242,15 +242,13 @@ export function DemoServicesPage() {
       )}
       {confirm && (
         <ManagementDialog
-          title={
-            confirm.action === "install" ? "接入当前工作区" : "更改服务状态"
-          }
+          title={confirm.action === "install" ? "接入当前账号" : "更改服务状态"}
           pending={busy}
           close={() => setConfirm(null)}
         >
           <p>
             {confirm.action === "install"
-              ? "将在当前工作区创建演示连接或工具配置。"
+              ? "将在当前账号创建演示连接或工具配置。"
               : confirm.action === "reinitialize"
                 ? "停止接收新调用，等待当前调用结束后重新加载。"
                 : `确认${confirm.action === "start" ? "启用" : "停用"}${names[confirm.service.id]}？`}

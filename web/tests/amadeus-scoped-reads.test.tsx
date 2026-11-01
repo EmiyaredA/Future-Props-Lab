@@ -43,7 +43,7 @@ function useFixture(workspace: string) {
   const activeRunRef = useRef(null);
   const avatarTimerRef = useRef<number | undefined>(undefined);
   const actions = useAmadeusData({
-    session: { me: { user: { id: "user" }, workspace: { id: workspace } } },
+    session: { me: { user: { id: workspace } } },
     bridge,
     detail,
     detailRef,

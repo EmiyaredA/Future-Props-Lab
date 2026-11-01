@@ -25,27 +25,10 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(16), default="active", index=True)
     is_platform_admin: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
-    platform_role: Mapped[str] = mapped_column(String(16), default="member", index=True)
+    platform_role: Mapped[str] = mapped_column(String(16), default="user", index=True)
     must_change_password: Mapped[bool] = mapped_column(Boolean, default=True)
     revision: Mapped[int] = mapped_column(Integer, default=0)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
-
-
-class WorkspaceMembership(Base):
-    __tablename__ = "workspace_memberships"
-
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
-    workspace_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
-    )
-    role: Mapped[str] = mapped_column(String(16), default="owner")
-    status: Mapped[str] = mapped_column(String(16), default="active", index=True)
-    revision: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
 
@@ -60,9 +43,6 @@ class AuthSession(Base):
     user_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
-    active_workspace_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("workspaces.id", ondelete="RESTRICT"), index=True
-    )
     token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     csrf_hash: Mapped[str] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
@@ -75,38 +55,12 @@ class AuthSession(Base):
     user_agent: Mapped[str] = mapped_column(String(500), default="")
 
 
-class WorkspaceInvitation(Base):
-    __tablename__ = "workspace_invitations"
-
-    role: Mapped[str] = mapped_column(String(16), default="member")
-
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
-    )
-    invitee_user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
-    invited_by_user_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
-    )
-    status: Mapped[str] = mapped_column(String(16), default="pending", index=True)
-    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
-    responded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    revision: Mapped[int] = mapped_column(Integer, default=0)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
-
-
 class ManagementApiKey(Base):
     __tablename__ = "management_api_keys"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     user_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
-    workspace_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
     )
     name: Mapped[str] = mapped_column(String(64))
     key_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
@@ -130,8 +84,8 @@ class SecurityAuditEvent(Base):
     target_user_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
-    workspace_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("workspaces.id", ondelete="SET NULL"), nullable=True, index=True
+    owner_user_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
     event_type: Mapped[str] = mapped_column(String(64), index=True)
     outcome: Mapped[str] = mapped_column(String(16), default="success", index=True)
@@ -146,6 +100,4 @@ __all__ = [
     "ManagementApiKey",
     "SecurityAuditEvent",
     "User",
-    "WorkspaceInvitation",
-    "WorkspaceMembership",
 ]

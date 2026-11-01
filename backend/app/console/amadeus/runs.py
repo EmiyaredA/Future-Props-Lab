@@ -79,7 +79,7 @@ class Runs:
         row = await self.session.scalar(
             select(AmadeusConversation).where(
                 AmadeusConversation.id == identity,
-                AmadeusConversation.workspace_id == self.principal.workspace_id,
+                AmadeusConversation.owner_user_id == self.principal.owner_user_id,
                 AmadeusConversation.user_id == self.principal.user_id,
             )
         )
@@ -92,7 +92,7 @@ class Runs:
             select(AmadeusRun).where(
                 AmadeusRun.id == run_id,
                 AmadeusRun.conversation_id == conversation_id,
-                AmadeusRun.workspace_id == self.principal.workspace_id,
+                AmadeusRun.owner_user_id == self.principal.owner_user_id,
                 AmadeusRun.user_id == self.principal.user_id,
             )
         )
@@ -104,7 +104,7 @@ class Runs:
         row = await self.session.scalar(
             select(AmadeusRun).where(
                 AmadeusRun.id == run_id,
-                AmadeusRun.workspace_id == self.principal.workspace_id,
+                AmadeusRun.owner_user_id == self.principal.owner_user_id,
                 AmadeusRun.user_id == self.principal.user_id,
             )
         )
@@ -115,7 +115,7 @@ class Runs:
     async def active(self) -> RunDetailOut | None:
         row = await self.session.scalar(
             select(AmadeusRun).where(
-                AmadeusRun.workspace_id == self.principal.workspace_id,
+                AmadeusRun.owner_user_id == self.principal.owner_user_id,
                 AmadeusRun.user_id == self.principal.user_id,
                 AmadeusRun.active_owner_key.is_not(None),
             )
@@ -131,7 +131,7 @@ class Runs:
 
         path = await resolve(
             self.session,
-            self.principal.workspace_id,
+            self.principal.owner_user_id,
             self.principal.user_id,
             body.agent_id,
             "amadeus",
@@ -141,7 +141,7 @@ class Runs:
         unresolved_question = await self.session.scalar(
             select(AmadeusQuestion.id).where(
                 AmadeusQuestion.conversation_id == conversation_id,
-                AmadeusQuestion.workspace_id == self.principal.workspace_id,
+                AmadeusQuestion.owner_user_id == self.principal.owner_user_id,
                 AmadeusQuestion.user_id == self.principal.user_id,
                 AmadeusQuestion.status == "pending",
             )
@@ -149,7 +149,7 @@ class Runs:
         unresolved_action = await self.session.scalar(
             select(AmadeusAction.id).where(
                 AmadeusAction.conversation_id == conversation_id,
-                AmadeusAction.workspace_id == self.principal.workspace_id,
+                AmadeusAction.owner_user_id == self.principal.owner_user_id,
                 AmadeusAction.user_id == self.principal.user_id,
                 AmadeusAction.run_id.is_not(None),
                 AmadeusAction.status.in_(("pending", "approved", "running")),
@@ -185,7 +185,7 @@ class Runs:
         now = utc_now()
         row = AmadeusRun(
             conversation_id=conversation_id,
-            workspace_id=self.principal.workspace_id,
+            owner_user_id=self.principal.owner_user_id,
             user_id=self.principal.user_id,
             model_id=body.model_id,
             agent_id=body.agent_id,
@@ -200,7 +200,7 @@ class Runs:
             mode=body.mode,
             source_run_id=body.source_run_id,
             status="running",
-            active_owner_key=f"{self.principal.workspace_id}:{self.principal.user_id}",
+            active_owner_key=f"{self.principal.owner_user_id}:{self.principal.user_id}",
             context_json=body.context,
             references_json=[item.model_dump(mode="json") for item in body.references],
             capabilities_json=body.capabilities,
@@ -236,7 +236,7 @@ class Runs:
                 select(AmadeusRun)
                 .where(
                     AmadeusRun.conversation_id == conversation_id,
-                    AmadeusRun.workspace_id == self.principal.workspace_id,
+                    AmadeusRun.owner_user_id == self.principal.owner_user_id,
                     AmadeusRun.user_id == self.principal.user_id,
                 )
                 .order_by(AmadeusRun.created_at)
@@ -273,7 +273,7 @@ class Runs:
         row.updated_at = now
         event = AmadeusRunEvent(
             run_id=row.id,
-            workspace_id=self.principal.workspace_id,
+            owner_user_id=self.principal.owner_user_id,
             sequence=row.last_event_sequence,
             kind=body.kind,
             payload_json=body.payload,
@@ -336,7 +336,7 @@ class Runs:
         if row.partial_text and not row.response_message_id:
             message = AmadeusMessage(
                 conversation_id=row.conversation_id,
-                workspace_id=row.workspace_id,
+                owner_user_id=row.owner_user_id,
                 role="assistant",
                 content=row.partial_text,
                 references_json=[],
@@ -395,7 +395,7 @@ async def recover_interrupted_amadeus_runs() -> None:
             if row.partial_text and not row.response_message_id:
                 message = AmadeusMessage(
                     conversation_id=row.conversation_id,
-                    workspace_id=row.workspace_id,
+                    owner_user_id=row.owner_user_id,
                     role="assistant",
                     content=row.partial_text,
                     references_json=[],

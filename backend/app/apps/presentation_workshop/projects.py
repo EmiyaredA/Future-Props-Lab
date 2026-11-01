@@ -24,7 +24,7 @@ from app.runtime.config import get_settings
 from app.runtime.operation_receipts import forget
 from app.runtime.project_records import (
     delete_revisioned_project,
-    load_workspace_project,
+    load_owned_project,
     patch_revisioned_project,
 )
 from app.runtime.time import utc_now
@@ -73,15 +73,15 @@ def summary_slide(row):
 
 
 class Presentations:
-    def __init__(self, session: AsyncSession, workspace_id: str):
-        self.session, self.workspace_id = session, workspace_id
+    def __init__(self, session: AsyncSession, owner_user_id: str):
+        self.session, self.owner_user_id = session, owner_user_id
 
     async def row(self, project_id: str) -> PresentationProject:
-        return await load_workspace_project(
+        return await load_owned_project(
             self.session,
             PresentationProject,
             project_id,
-            self.workspace_id,
+            self.owner_user_id,
             not_found=lambda: PresentationError("演示文稿不存在", 404, "not_found"),
         )
 
@@ -91,7 +91,7 @@ class Presentations:
         return project_out(row)
 
     async def list(self, query: str, offset: int, limit: int) -> PresentationProjectList:
-        filters = [PresentationProject.workspace_id == self.workspace_id]
+        filters = [PresentationProject.owner_user_id == self.owner_user_id]
         if query.strip():
             filters.append(PresentationProject.title.contains(query.strip(), autoescape=True))
         total = await self.session.scalar(
@@ -160,7 +160,7 @@ class Presentations:
             await self.session.scalars(
                 select(VisualAsset).where(
                     VisualAsset.id.in_(ids),
-                    VisualAsset.workspace_id == self.workspace_id,
+                    VisualAsset.owner_user_id == self.owner_user_id,
                     VisualAsset.project_id.is_(None),
                     VisualAsset.galgame_project_id.is_(None),
                     VisualAsset.video_editor_project_id.is_(None),
@@ -170,7 +170,7 @@ class Presentations:
             )
         )
         if {row.id for row in rows} != ids:
-            raise PresentationError("图片不存在或不属于当前空间的公共文件库", 404, "not_found")
+            raise PresentationError("图片不存在或不属于当前账号的公共文件库", 404, "not_found")
         by_id = {row.id: row for row in rows}
         for row in rows:
             if references[row.id] != {row.media_kind}:
@@ -219,7 +219,7 @@ class Presentations:
                 await self.session.scalars(
                     select(PresentationTemplate.id).where(
                         PresentationTemplate.id.in_(sources),
-                        PresentationTemplate.workspace_id == self.workspace_id,
+                        PresentationTemplate.owner_user_id == self.owner_user_id,
                     )
                 )
             )
@@ -230,7 +230,7 @@ class Presentations:
             identity = await self.session.scalar(
                 select(PresentationTemplate.id).where(
                     PresentationTemplate.id == document.template.template_id,
-                    PresentationTemplate.workspace_id == self.workspace_id,
+                    PresentationTemplate.owner_user_id == self.owner_user_id,
                 )
             )
             if identity is None:
@@ -240,7 +240,7 @@ class Presentations:
         await self.normalize_template_source(body.document)
         await self.assets(body.document)
         row = PresentationProject(
-            workspace_id=self.workspace_id, title=body.title, document=body.document.model_dump()
+            owner_user_id=self.owner_user_id, title=body.title, document=body.document.model_dump()
         )
         self.session.add(row)
         await self.session.flush()
@@ -275,7 +275,7 @@ class Presentations:
             self.session,
             PresentationProject,
             project_id,
-            self.workspace_id,
+            self.owner_user_id,
             expected_revision=body.expected_revision,
             values={
                 "title": body.title,
@@ -300,13 +300,13 @@ class Presentations:
             self.session,
             PresentationProject,
             project_id,
-            self.workspace_id,
+            self.owner_user_id,
             expected_revision=revision,
             load_current=lambda: self.get(project_id),
         )
         await forget(
             self.session,
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             kind="presentation",
             resource_id=project_id,
         )

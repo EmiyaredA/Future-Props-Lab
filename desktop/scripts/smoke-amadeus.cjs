@@ -769,7 +769,7 @@ async function main() {
         application: "*",
         projectId: "sample-project",
         userId: source.userId,
-        workspaceId: source.workspaceId,
+        accountId: source.accountId,
       });
     });
     await page

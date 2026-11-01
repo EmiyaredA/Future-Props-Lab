@@ -4,7 +4,7 @@ export function recoverPage(home = false) {
     if (home) window.location.assign("/apps");
     else window.location.reload();
   };
-  const event = new CustomEvent("future-props:before-workspace-switch", {
+  const event = new CustomEvent("future-props:before-navigation", {
     cancelable: true,
     detail: proceed,
   });

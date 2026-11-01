@@ -177,7 +177,7 @@ def _validated_assets(value: object, declared: set[str]) -> list[dict]:
 
 
 async def _model_reference(
-    session: AsyncSession, model_id: str | None, workspace_id: str
+    session: AsyncSession, model_id: str | None, owner_user_id: str
 ) -> dict[str, str] | None:
     if not model_id:
         return None
@@ -187,8 +187,8 @@ async def _model_reference(
             .join(ModelProvider, ModelProvider.id == ModelEntry.provider_id)
             .where(
                 ModelEntry.id == model_id,
-                ModelEntry.workspace_id == workspace_id,
-                ModelProvider.workspace_id == workspace_id,
+                ModelEntry.owner_user_id == owner_user_id,
+                ModelProvider.owner_user_id == owner_user_id,
             )
         )
     ).first()
@@ -198,7 +198,9 @@ async def _model_reference(
     return {"provider_kind": provider.kind, "model_slug": model.slug}
 
 
-async def _resolve_model(session: AsyncSession, reference: object, workspace_id: str) -> str | None:
+async def _resolve_model(
+    session: AsyncSession, reference: object, owner_user_id: str
+) -> str | None:
     if not isinstance(reference, dict):
         return None
     rows = (
@@ -211,8 +213,8 @@ async def _resolve_model(session: AsyncSession, reference: object, workspace_id:
                     ModelEntry.slug == str(reference.get("model_slug") or ""),
                     ModelEntry.enabled.is_(True),
                     ModelProvider.enabled.is_(True),
-                    ModelEntry.workspace_id == workspace_id,
-                    ModelProvider.workspace_id == workspace_id,
+                    ModelEntry.owner_user_id == owner_user_id,
+                    ModelProvider.owner_user_id == owner_user_id,
                 )
             )
         )
@@ -225,10 +227,10 @@ async def _resolve_model(session: AsyncSession, reference: object, workspace_id:
 class GalgameProjectSnapshots:
     application_id = "galgame-workshop"
 
-    def __init__(self, session: AsyncSession, settings: Settings, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, settings: Settings, owner_user_id: str) -> None:
         self.session = session
         self.settings = settings
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
         self.storage = AssetStorage(settings)
 
     async def export(self, project_id: str) -> ExportedProjectSnapshot:
@@ -236,7 +238,7 @@ class GalgameProjectSnapshots:
             await self.session.execute(
                 select(GalgameWorkshopProject).where(
                     GalgameWorkshopProject.id == project_id,
-                    GalgameWorkshopProject.workspace_id == self.workspace_id,
+                    GalgameWorkshopProject.owner_user_id == self.owner_user_id,
                 )
             )
         ).scalar_one_or_none()
@@ -260,7 +262,7 @@ class GalgameProjectSnapshots:
                 await self.session.execute(
                     select(VisualAsset).where(
                         VisualAsset.galgame_project_id == project_id,
-                        VisualAsset.workspace_id == self.workspace_id,
+                        VisualAsset.owner_user_id == self.owner_user_id,
                     )
                 )
             ).scalars()
@@ -271,7 +273,7 @@ class GalgameProjectSnapshots:
                 .join(VisualAsset, VisualAsset.id == GalgameProjectAssetReference.asset_id)
                 .where(
                     GalgameProjectAssetReference.project_id == project_id,
-                    VisualAsset.workspace_id == self.workspace_id,
+                    VisualAsset.owner_user_id == self.owner_user_id,
                 )
             )
         ).all()
@@ -312,7 +314,7 @@ class GalgameProjectSnapshots:
                 "model_reference": await _model_reference(
                     self.session,
                     asset_settings.asr_model_id if asset_settings else None,
-                    self.workspace_id,
+                    self.owner_user_id,
                 ),
             },
         }
@@ -361,14 +363,14 @@ class GalgameProjectSnapshots:
             raw_settings = payload.get("asset_settings")
             raw_settings = raw_settings if isinstance(raw_settings, dict) else {}
             model_reference = raw_settings.get("model_reference")
-            model_id = await _resolve_model(self.session, model_reference, self.workspace_id)
+            model_id = await _resolve_model(self.session, model_reference, self.owner_user_id)
             warnings: list[ProjectSnapshotImportWarning] = []
             if model_reference and not model_id:
                 warnings.append(
                     ProjectSnapshotImportWarning(
                         code="model_binding_unavailable",
                         field="asset_settings.model_id",
-                        message="原语音识别模型在当前 Workspace 中不可用，请重新选择。",
+                        message="原语音识别模型在当前账号中不可用，请重新选择。",
                     )
                 )
             language = str(raw_settings.get("default_language") or "auto")
@@ -381,7 +383,7 @@ class GalgameProjectSnapshots:
                 raise ProjectSnapshotError("Galgame ASR 设置无效")
             project = GalgameWorkshopProject(
                 id=new_id(),
-                workspace_id=self.workspace_id,
+                owner_user_id=self.owner_user_id,
                 title=_copy_title(create.title),
                 status=status,
             )
@@ -392,7 +394,7 @@ class GalgameProjectSnapshots:
                 self.storage,
                 self.application_id,
                 project.id,
-                workspace_id=self.workspace_id,
+                owner_user_id=self.owner_user_id,
             ):
                 for item in assets:
                     storage_key = uuid4().hex
@@ -400,7 +402,7 @@ class GalgameProjectSnapshots:
                     self.session.add(
                         VisualAsset(
                             id=new_asset_id,
-                            workspace_id=self.workspace_id,
+                            owner_user_id=self.owner_user_id,
                             galgame_project_id=project.id,
                             original_filename=item["original_filename"],
                             display_name=item["display_name"],
@@ -437,7 +439,7 @@ class GalgameProjectSnapshots:
                             storage_key,
                             visual_project_id=None,
                             galgame_project_id=project.id,
-                            workspace_id=self.workspace_id,
+                            owner_user_id=self.owner_user_id,
                         ),
                         expected_size=item["byte_size"],
                     )

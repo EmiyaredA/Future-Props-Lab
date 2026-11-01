@@ -252,22 +252,22 @@ def test_dialogue_quick_edit_inheritance_matches_browser_preview() -> None:
             {
                 "id": "hero",
                 "name": "主角",
-                "defaultExpressionId": "default",
+                "defaultExpressionId": "test-user",
                 "defaultPortraitSkinId": "uniform",
                 "expressions": [
-                    {"id": "default", "assetId": "default-face"},
+                    {"id": "test-user", "assetId": "default-face"},
                     {"id": "previous", "assetId": "previous-face"},
                 ],
                 "portraitSkins": [
                     {
                         "id": "uniform",
                         "overrides": [
-                            {"expressionId": "default", "assetId": "default-uniform-face"}
+                            {"expressionId": "test-user", "assetId": "default-uniform-face"}
                         ],
                     },
                     {
                         "id": "alternate",
-                        "overrides": [{"expressionId": "default", "assetId": "alternate-face"}],
+                        "overrides": [{"expressionId": "test-user", "assetId": "alternate-face"}],
                     },
                 ],
                 "displayNames": [],

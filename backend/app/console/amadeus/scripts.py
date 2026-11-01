@@ -52,7 +52,7 @@ def sandbox_available() -> bool:
 
 
 async def run_script(
-    workspace_id: str,
+    owner_user_id: str,
     conversation_id: str,
     arguments: dict,
     on_output: Callable[[str], None] | None = None,
@@ -60,13 +60,13 @@ async def run_script(
     sandbox = Path("/usr/bin/sandbox-exec")
     if sys.platform != "darwin" or not sandbox.is_file():
         raise OperationError("此系统不支持脚本沙箱", "sandbox_unavailable", 409)
-    root = work_root(workspace_id, conversation_id)
+    root = work_root(owner_user_id, conversation_id)
     root.mkdir(parents=True, exist_ok=True, mode=0o700)
     (root / "tmp").mkdir(mode=0o700, exist_ok=True)
     kind = arguments.get("kind")
     if kind == "python":
         name = str(arguments.get("name", ""))
-        script = read_file_bytes(workspace_id, conversation_id, "scripts", name)
+        script = read_file_bytes(owner_user_id, conversation_id, "scripts", name)
         expected = str(arguments.get("sha256", ""))
         if hashlib.sha256(script).hexdigest() != expected:
             raise OperationError("脚本已修改，请重新确认", "approval_conflict", 409)

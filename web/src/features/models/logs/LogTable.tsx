@@ -8,23 +8,17 @@ import {
   sourceLabels,
   formatCredential,
 } from "./modelCallLogPresentation";
-export type LogRow = Omit<CallLogItem, "trace_id"> & { workspace_id?: string };
+export type LogRow = Omit<CallLogItem, "trace_id"> & { owner_user_id?: string };
 export function LogTable({
   rows,
-  local,
   canDelete,
-  all,
-  workspaces,
   selected,
   onSelect,
   onView,
   onDelete,
 }: {
   rows: LogRow[];
-  local: boolean;
   canDelete: boolean;
-  all: boolean;
-  workspaces: { id: string; name: string }[];
   selected: Set<string>;
   onSelect: (ids: string[], on: boolean) => void;
   onView: (id: string) => void;
@@ -60,7 +54,6 @@ export function LogTable({
             <th aria-sort="descending">
               时间 <ArrowDown size={12} />
             </th>
-            {all && <th>工作区</th>}
             <th>调用源</th>
             <th>调用凭据</th>
             <th>模型</th>
@@ -68,7 +61,7 @@ export function LogTable({
             <th className="call-log-num">Token</th>
             <th className="call-log-num">耗时</th>
             <th className="call-log-status">状态</th>
-            {local && <th className="call-log-actions">操作</th>}
+            <th className="call-log-actions">操作</th>
           </tr>
         </thead>
         <tbody>
@@ -93,12 +86,6 @@ export function LogTable({
                     {date.toLocaleTimeString("zh-CN", { hour12: false })}
                   </time>
                 </td>
-                {all && (
-                  <td>
-                    {workspaces.find((x) => x.id === row.workspace_id)?.name ??
-                      "—"}
-                  </td>
-                )}
                 <td>{sourceLabels[row.call_source] ?? row.call_source}</td>
                 <td title={formatCredential(row)}>{formatCredential(row)}</td>
                 <td className="call-log-model">
@@ -120,7 +107,7 @@ export function LogTable({
                     {row.status === "success" ? "成功" : "失败"}
                   </span>
                 </td>
-                {local && (
+                {
                   <td className="call-log-actions">
                     <div>
                       <button
@@ -143,7 +130,7 @@ export function LogTable({
                       )}
                     </div>
                   </td>
-                )}
+                }
               </tr>
             );
           })}

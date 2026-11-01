@@ -130,7 +130,7 @@ async def test_document_bounds_and_unknown_fields():
             ).status_code == 422
         assert (
             await client.post(
-                ROOT, json={"title": "错误", "document": doc, "workspace_id": "default"}
+                ROOT, json={"title": "错误", "document": doc, "owner_user_id": "test-user"}
             )
         ).status_code == 422
 

@@ -4,7 +4,7 @@ from app.runtime.operation_receipts import OperationError
 
 
 def can_manage_local_models(principal):
-    return principal.auth_kind == "session" and principal.platform_role in {"admin", "super_admin"}
+    return principal.auth_kind == "session" and principal.platform_role in {"admin"}
 
 
 async def manage_local_model(manager, principal, model_id, body):

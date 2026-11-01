@@ -78,18 +78,10 @@ export function LogToolbar({
   models,
   credentialOptions,
   onChange,
-  scope,
-  options,
-  onScopeChange,
-  showScope,
   onOpen,
   resetVersion,
 }: ControlsProps & {
   resetVersion: number;
-  scope: string;
-  options: { value: string; label: string }[];
-  onScopeChange: (value: string) => void;
-  showScope: boolean;
   onOpen: () => void;
 }) {
   const [search, setSearch] = useState(filters.q);
@@ -119,16 +111,6 @@ export function LogToolbar({
           onChange={(e) => setSearch(e.target.value)}
         />
       </form>
-      {showScope && (
-        <div className="call-log-scope">
-          <CustomSelect
-            ariaLabel="日志工作区"
-            value={scope}
-            options={options}
-            onChange={onScopeChange}
-          />
-        </div>
-      )}
       <div className="call-log-quick">
         <QuickFilters
           filters={filters}

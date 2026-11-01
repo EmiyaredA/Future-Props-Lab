@@ -1,4 +1,4 @@
-"""Explicit publication registry; never grants access to a source Workspace."""
+"""Explicit publication registry; never grants access to a source account."""
 
 from datetime import datetime
 
@@ -13,8 +13,8 @@ from app.runtime.time import utc_now
 class Publication(Base):
     __tablename__ = "thought_publications"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(
-        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    owner_user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     knowledge_base_id: Mapped[str] = mapped_column(
         ForeignKey("thought_knowledge_bases.id", ondelete="CASCADE"), unique=True
@@ -80,14 +80,14 @@ class CommunityUpload(Base):
 
 
 class OfficialSource(Base):
-    """Import provenance only; content remains an ordinary Workspace note."""
+    """Import provenance only; content remains an ordinary account note."""
 
     __tablename__ = "thought_official_sources"
     note_id: Mapped[str] = mapped_column(
         ForeignKey("thought_notes.id", ondelete="CASCADE"), primary_key=True
     )
-    workspace_id: Mapped[str] = mapped_column(
-        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    owner_user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     library_key: Mapped[str] = mapped_column(String(80), index=True)
     document_key: Mapped[str] = mapped_column(String(80))
@@ -95,8 +95,8 @@ class OfficialSource(Base):
 
 class OfficialImportReceipt(Base):
     __tablename__ = "thought_official_import_receipts"
-    workspace_id: Mapped[str] = mapped_column(
-        ForeignKey("workspaces.id", ondelete="CASCADE"), primary_key=True
+    owner_user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
     )
     user_id: Mapped[str] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), primary_key=True

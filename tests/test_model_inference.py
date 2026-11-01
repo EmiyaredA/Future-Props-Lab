@@ -109,7 +109,7 @@ async def test_task_idempotency_results_and_materialization_retry(monkeypatch):
         from types import SimpleNamespace
 
         from app.llm.routes.model_capacity import model_capacity
-        from app.orm import bind_workspace
+        from app.orm import bind_owner
         from app.runtime.db import SessionLocal
 
         async def no_capacity(*_args, **_kwargs):
@@ -121,13 +121,15 @@ async def test_task_idempotency_results_and_materialization_retry(monkeypatch):
         with monkeypatch.context() as limited:
             limited.setattr("app.llm.routes.model_capacity.acquire", no_capacity)
             async with SessionLocal() as session:
-                bind_workspace(session, "default")
+                bind_owner(session, "test-user")
                 request = SimpleNamespace(
                     method="POST",
                     url=SimpleNamespace(path="/v1/model-inference/tasks"),
                     json=request_json,
                 )
-                capacity = model_capacity(request, SimpleNamespace(workspace_id="default"), session)
+                capacity = model_capacity(
+                    request, SimpleNamespace(owner_user_id="test-user"), session
+                )
                 await anext(capacity)
                 await capacity.aclose()
         assert (await client.post("/v1/model-inference/tasks", json=body)).json()["id"] == task[
@@ -370,11 +372,11 @@ async def test_input_commit_interruption_preserves_owned_file_and_recovery_clean
             asset = await session.scalar(
                 select(ModelInferenceAsset).where(
                     ModelInferenceAsset.filename == "interrupted.wav",
-                    ModelInferenceAsset.workspace_id == "default",
+                    ModelInferenceAsset.owner_user_id == "test-user",
                 )
             )
             assert asset is not None
-            path = root("default") / "inputs" / asset.storage_key
+            path = root("test-user") / "inputs" / asset.storage_key
             asset_id = asset.id
         assert path.is_file()
         orphan = path.parent / "uncommitted-test-file"

@@ -28,6 +28,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/account/directory",
+    "sdk": "client.accounts.directory",
+    "document": "/docs.html?page=sdk-reference-accounts#directory",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/account/profile",
     "sdk": "client.accounts.get_profile",
     "document": "/docs.html?page=sdk-reference-accounts#get-profile",
@@ -133,13 +140,6 @@
     "verification": "named-operation-contract"
   },
   {
-    "http": "GET /v1/account/workspaces/current/audit-events",
-    "sdk": "client.admin.audit",
-    "document": "/docs.html?page=sdk-reference-admin#audit",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
     "http": "GET /v1/platform/accounts",
     "sdk": "client.admin.accounts",
     "document": "/docs.html?page=sdk-reference-admin#accounts",
@@ -150,13 +150,6 @@
     "http": "GET /v1/platform/security-events",
     "sdk": "client.admin.audit_v1_platform_security_events",
     "document": "/docs.html?page=sdk-reference-admin#audit-v1-platform-security-events",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "GET /v1/platform/workspaces",
-    "sdk": "client.admin.workspaces",
-    "document": "/docs.html?page=sdk-reference-admin#workspaces",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -178,13 +171,6 @@
     "http": "POST /v1/platform/accounts/{user_id}/reset-password",
     "sdk": "client.admin.reset_password",
     "document": "/docs.html?page=sdk-reference-admin#reset-password",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "POST /v1/platform/workspaces",
-    "sdk": "client.admin.add_workspace",
-    "document": "/docs.html?page=sdk-reference-admin#add-workspace",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -1092,6 +1078,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/files/{asset_id}/media-info",
+    "sdk": "client.files.video_media_info",
+    "document": "/docs.html?page=sdk-reference-files#video-media-info",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "PATCH /v1/file-folders/{folder_id}",
     "sdk": "client.files.patch_file_folder",
     "document": "/docs.html?page=sdk-reference-files#patch-file-folder",
@@ -1617,37 +1610,9 @@
     "verification": "named-operation-contract"
   },
   {
-    "http": "GET /v1/account/cross-workspace-call-logs",
-    "sdk": "client.governance.cross_logs",
-    "document": "/docs.html?page=sdk-reference-governance#cross-logs",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "GET /v1/account/cross-workspace-call-logs/stats",
-    "sdk": "client.governance.cross_log_stats",
-    "document": "/docs.html?page=sdk-reference-governance#cross-log-stats",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
     "http": "GET /v1/account/developer-documents",
     "sdk": "client.governance.developer_docs",
     "document": "/docs.html?page=sdk-reference-governance#developer-docs",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "GET /v1/account/log-workspaces",
-    "sdk": "client.governance.log_spaces",
-    "document": "/docs.html?page=sdk-reference-governance#log-spaces",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "GET /v1/platform/permission-policy",
-    "sdk": "client.governance.get_policy",
-    "document": "/docs.html?page=sdk-reference-governance#get-policy",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -1676,13 +1641,6 @@
     "http": "PATCH /v1/account/project-certification/{kind}/{project_id}",
     "sdk": "client.governance.certification",
     "document": "/docs.html?page=sdk-reference-governance#certification",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "PATCH /v1/platform/permission-policy",
-    "sdk": "client.governance.patch_policy",
-    "document": "/docs.html?page=sdk-reference-governance#patch-policy",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -2796,27 +2754,6 @@
     "http": "PUT /v1/presentation-workshop/templates/{template_id}",
     "sdk": "client.presentation.put_template",
     "document": "/docs.html?page=sdk-reference-presentation#put-template",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "GET /v1/public-workspace",
-    "sdk": "client.public.projection",
-    "document": "/docs.html?page=sdk-reference-public#projection",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "GET /v1/public-workspace/assets/{asset_id}/content",
-    "sdk": "client.public.asset_content",
-    "document": "/docs.html?page=sdk-reference-public#asset-content",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "GET /v1/public-workspace/galgame-projects/{project_id}/story",
-    "sdk": "client.public.story",
-    "document": "/docs.html?page=sdk-reference-public#story",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -4308,90 +4245,6 @@
     "http": "POST /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/runs/{run_id}/approvals/{approval_id}",
     "sdk": "client.visual_assistant.resolve_approval",
     "document": "/docs.html?page=sdk-reference-visual-assistant#resolve-approval",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "DELETE /v1/account/workspaces/current/invitations/{invitation_id}",
-    "sdk": "client.workspaces.revoke_invitation",
-    "document": "/docs.html?page=sdk-reference-workspaces#revoke-invitation",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "DELETE /v1/account/workspaces/current/members/{membership_id}",
-    "sdk": "client.workspaces.delete_member",
-    "document": "/docs.html?page=sdk-reference-workspaces#delete-member",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "GET /v1/account/workspace-invitations",
-    "sdk": "client.workspaces.my_invitations",
-    "document": "/docs.html?page=sdk-reference-workspaces#my-invitations",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "GET /v1/account/workspaces",
-    "sdk": "client.workspaces.accessible_workspaces",
-    "document": "/docs.html?page=sdk-reference-workspaces#accessible-workspaces",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "GET /v1/account/workspaces/current/invitations",
-    "sdk": "client.workspaces.workspace_invitations",
-    "document": "/docs.html?page=sdk-reference-workspaces#workspace-invitations",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "GET /v1/account/workspaces/current/members",
-    "sdk": "client.workspaces.members",
-    "document": "/docs.html?page=sdk-reference-workspaces#members",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "PATCH /v1/account/workspaces/current",
-    "sdk": "client.workspaces.update_workspace",
-    "document": "/docs.html?page=sdk-reference-workspaces#update-workspace",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "PATCH /v1/account/workspaces/current/members/{membership_id}",
-    "sdk": "client.workspaces.set_member_role",
-    "document": "/docs.html?page=sdk-reference-workspaces#set-member-role",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "POST /v1/account/workspace-invitations/{invitation_id}/accept",
-    "sdk": "client.workspaces.accept_invitation",
-    "document": "/docs.html?page=sdk-reference-workspaces#accept-invitation",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "POST /v1/account/workspace-invitations/{invitation_id}/decline",
-    "sdk": "client.workspaces.decline_invitation",
-    "document": "/docs.html?page=sdk-reference-workspaces#decline-invitation",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "POST /v1/account/workspaces/current/invitations",
-    "sdk": "client.workspaces.invite_member",
-    "document": "/docs.html?page=sdk-reference-workspaces#invite-member",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "POST /v1/account/workspaces/switch",
-    "sdk": "client.workspaces.set_active_workspace",
-    "document": "/docs.html?page=sdk-reference-workspaces#set-active-workspace",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   }

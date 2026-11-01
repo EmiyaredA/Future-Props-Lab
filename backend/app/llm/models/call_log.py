@@ -14,7 +14,7 @@ class LlmCallLog(Base):
     __tablename__ = "llm_call_logs"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     call_source: Mapped[str] = mapped_column(String(64), index=True)
     provider_kind: Mapped[str] = mapped_column(String(24), index=True)
     model: Mapped[str] = mapped_column(String(160), index=True)

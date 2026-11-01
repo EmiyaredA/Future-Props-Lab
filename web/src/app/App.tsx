@@ -7,7 +7,7 @@ import { LIVE2D_WORKSHOP_MODULE } from "@features/live2d-workshop/module";
 import { DESKTOP_PET_MODULE } from "@features/desktop-pet/module";
 import { isWorkshopPage, hasReadOnlyRoute } from "./routes";
 import { ReadOnlyRoutes } from "./ReadOnlyRoutes";
-import { workspaceAllows } from "@features/accounts/permissions";
+import { accountAllows } from "@features/accounts/permissions";
 import type { ManagementPage } from "@features/accounts/ManagementConsole";
 import {
   lazy,
@@ -20,7 +20,6 @@ import {
 } from "react";
 import { StudioShell } from "@app/layout/StudioSidebar";
 import { WorkshopShell } from "@app/layout/WorkshopShell";
-import { PublicWorkspaceShowcase } from "@app/PublicWorkspaceShowcase";
 import { useStudioSession } from "@app/StudioSession";
 import { galgameSpeakerImportSource } from "@app/integrations/galgameSpeakerImport";
 import {
@@ -207,9 +206,9 @@ export default function App() {
   useEffect(() => {
     void window.futurePropsDesktop?.publishPetContext?.({
       userId: me.user.id,
-      workspaceId: me.workspace.id,
+      accountId: me.user.id,
     });
-  }, [me.user.id, me.workspace.id]);
+  }, [me.user.id]);
   useEffect(() => {
     const key = String(page);
     const applications: Record<string, string> = {
@@ -239,12 +238,12 @@ export default function App() {
             application,
             projectId: route.projectId,
             userId: me.user.id,
-            workspaceId: me.workspace.id,
+            accountId: me.user.id,
           },
         }),
       ),
     );
-  }, [page, route.projectId, route.documentId, me.user.id, me.workspace.id]);
+  }, [page, route.projectId, route.documentId, me.user.id]);
   useEffect(() => {
     if (window.location.pathname === "/")
       window.history.replaceState({}, "", "/home");
@@ -336,7 +335,7 @@ export default function App() {
       if (!navigationGuard.current?.(commit)) commit();
     };
     window.addEventListener("future-props:agent-open", agentOpen);
-    window.addEventListener("future-props:before-workspace-switch", guard);
+    window.addEventListener("future-props:before-navigation", guard);
     const deferRefresh = (event: Event) => {
       if (navigationGuard.current) event.preventDefault();
     };
@@ -347,7 +346,7 @@ export default function App() {
     return () => {
       window.removeEventListener("future-props:navigate", handle);
       window.removeEventListener("future-props:agent-open", agentOpen);
-      window.removeEventListener("future-props:before-workspace-switch", guard);
+      window.removeEventListener("future-props:before-navigation", guard);
       window.removeEventListener(
         "future-props:development-query-refresh",
         deferRefresh,
@@ -410,7 +409,7 @@ export default function App() {
     return (
       <PageBoundary>
         <LegacyOfficialPage
-          key={me.workspace.id}
+          key={me.user.id}
           libraryId={route.projectId}
           documentId={route.documentId}
           onOpen={(publication, document) =>
@@ -419,13 +418,6 @@ export default function App() {
           onBack={() => navigate("thought-workshop-community")}
         />
       </PageBoundary>
-    );
-  }
-  if (me.workspace.access_kind === "public_viewer") {
-    return (
-      <PublicWorkspaceShowcase
-        onOpenCommunity={() => navigate("thought-workshop-community")}
-      />
     );
   }
 
@@ -439,8 +431,8 @@ export default function App() {
       >
         <PageBoundary>
           <InterviewAssistantPage
-            key={`${me.user.id}:${me.workspace.id}`}
-            scopeKey={`${me.user.id}:${me.workspace.id}`}
+            key={`${me.user.id}:${me.user.id}`}
+            scopeKey={`${me.user.id}:${me.user.id}`}
             registerNavigationGuard={registerNavigationGuard}
           />
         </PageBoundary>
@@ -453,7 +445,7 @@ export default function App() {
         <PresentationWorkshopRoute
           page={page as WorkshopPage}
           projectId={route.projectId}
-          readOnly={!workspaceAllows(me.workspace, "content.write")}
+          readOnly={!accountAllows(me, "content.write")}
           navigate={navigate}
           registerNavigationGuard={registerNavigationGuard}
         />
@@ -468,7 +460,7 @@ export default function App() {
           projectId={route.projectId}
           onBack={() => navigate("live2d-workshop-projects")}
           registerNavigationGuard={registerNavigationGuard}
-          readOnly={!workspaceAllows(me.workspace, "content.write")}
+          readOnly={!accountAllows(me, "content.write")}
         />
       </PageBoundary>
     );
@@ -483,10 +475,10 @@ export default function App() {
       >
         <PageBoundary>
           <Live2DProjectsPage
-            readOnly={!workspaceAllows(me.workspace, "content.write")}
+            readOnly={!accountAllows(me, "content.write")}
             appearanceScope={{
               userId: me.user.id,
-              workspaceId: me.workspace.id,
+              accountId: me.user.id,
             }}
             onOpen={(projectId) =>
               navigate("live2d-workshop-editor", projectId)
@@ -503,7 +495,7 @@ export default function App() {
           key={route.projectId}
           projectId={route.projectId}
           onBack={() => navigate("desktop-pet-projects")}
-          readOnly={!workspaceAllows(me.workspace, "content.write")}
+          readOnly={!accountAllows(me, "content.write")}
           registerNavigationGuard={registerNavigationGuard}
         />
       </PageBoundary>
@@ -519,7 +511,7 @@ export default function App() {
       >
         <PageBoundary>
           <DesktopPetProjectsPage
-            readOnly={!workspaceAllows(me.workspace, "content.write")}
+            readOnly={!accountAllows(me, "content.write")}
             onOpen={(id) => navigate("desktop-pet-editor", id)}
           />
         </PageBoundary>
@@ -534,7 +526,7 @@ export default function App() {
           projectId={route.projectId}
           onBack={() => navigate("motion-compositor-projects")}
           registerNavigationGuard={registerNavigationGuard}
-          readOnly={!workspaceAllows(me.workspace, "content.write")}
+          readOnly={!accountAllows(me, "content.write")}
         />
       </PageBoundary>
     );
@@ -549,7 +541,7 @@ export default function App() {
       >
         <PageBoundary>
           <MotionCompositorProjectsPage
-            readOnly={!workspaceAllows(me.workspace, "content.write")}
+            readOnly={!accountAllows(me, "content.write")}
             onOpen={(projectId) =>
               navigate("motion-compositor-editor", projectId)
             }
@@ -559,11 +551,10 @@ export default function App() {
     );
 
   if (
-    (!workspaceAllows(me.workspace, "content.write") &&
-      hasReadOnlyRoute(page)) ||
-    (!workspaceAllows(me.workspace, "configuration.manage") &&
+    (!accountAllows(me, "content.write") && hasReadOnlyRoute(page)) ||
+    (!accountAllows(me, "configuration.manage") &&
       ["model-service", "model-test-tools"].includes(page)) ||
-    (!workspaceAllows(me.workspace, "logs.read") && page === "model-call-logs")
+    (!accountAllows(me, "logs.read") && page === "model-call-logs")
   ) {
     return (
       <StudioShell
@@ -574,11 +565,11 @@ export default function App() {
           {page === "model-call-logs" ? (
             <section className="readonly-page">
               <h1>需要管理员权限</h1>
-              <p>完整模型调用日志与诊断包仅向工作区管理员开放。</p>
+              <p>完整模型调用日志与诊断包仅向账号所有者开放。</p>
             </section>
           ) : page === "model-service" ? (
             <ModelServiceRoute
-              workspace={me.workspace}
+              account={me}
               navigate={navigateModelView}
               focusSelected={focusModelTab}
               canWrite={false}
@@ -601,7 +592,7 @@ export default function App() {
     return (
       <PageBoundary>
         <ThoughtWorkshopPage
-          key={me.workspace.id}
+          key={me.user.id}
           page={page}
           onNavigateSection={navigateKnowledgeSection}
           projectId={route.projectId}
@@ -683,7 +674,7 @@ export default function App() {
       <PageBoundary>
         <AudioAnnotationEditorPage
           projectId={route.projectId}
-          workspaceId={me.workspace.id}
+          accountId={me.user.id}
           onBack={() => navigate("audio-annotation-projects")}
           registerNavigationGuard={registerNavigationGuard}
           speakerImportSource={galgameSpeakerImportSource}
@@ -729,7 +720,7 @@ export default function App() {
       >
         <PageBoundary>
           <DirectorDeskProjectsPage
-            readOnly={!workspaceAllows(me.workspace, "content.write")}
+            readOnly={!accountAllows(me, "content.write")}
             onOpen={(projectId) => navigate("director-desk-editor", projectId)}
           />
         </PageBoundary>
@@ -857,8 +848,8 @@ export default function App() {
                 | "creative-workshop-detail"
             }
             itemId={route.projectId}
-            canWrite={workspaceAllows(me.workspace, "content.write")}
-            canInstall={workspaceAllows(me.workspace, "configuration.manage")}
+            canWrite={accountAllows(me, "content.write")}
+            canInstall={accountAllows(me, "configuration.manage")}
             navigate={(next, id) => navigate(next, id)}
           />
         ) : page === "apps" ? (
@@ -882,7 +873,7 @@ export default function App() {
         ) : page.startsWith("integrations-") ? (
           <IntegrationCenterPage
             registerNavigationGuard={registerNavigationGuard}
-            canManage={workspaceAllows(me.workspace, "configuration.manage")}
+            canManage={accountAllows(me, "configuration.manage")}
             kind={
               page === "integrations-mcp"
                 ? "mcp"
@@ -932,13 +923,13 @@ export default function App() {
         ) : page === "code-agents" ? (
           <CodeAgentsRoute
             user={me.user}
-            workspaceId={me.workspace.id}
+            accountId={me.user.id}
             navigate={navigateModelView}
             focusSelected={focusModelTab}
           />
         ) : page === "model-service" ? (
           <ModelServiceRoute
-            workspace={me.workspace}
+            account={me}
             navigate={navigateModelView}
             focusSelected={focusModelTab}
             onTestModel={(model) => {
@@ -948,8 +939,8 @@ export default function App() {
           />
         ) : (
           <ModelCallLogsPage
-            key={me.workspace.id}
-            currentWorkspace={me.workspace}
+            key={me.user.id}
+            currentAccount={{ id: me.user.id, name: me.user.display_name }}
           />
         )}
       </PageBoundary>

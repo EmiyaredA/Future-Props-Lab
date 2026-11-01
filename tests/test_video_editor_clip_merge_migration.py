@@ -1,6 +1,7 @@
+from tests.migration_fixtures import MIGRATIONS, apply_migrations
+
 from db.migrations import runner
-from db.migrations.registry import MIGRATIONS
-from db.migrations.runner import apply_migrations, connect_database
+from db.migrations.runner import connect_database
 
 
 def test_clip_merge_upgrade_preserves_tasks_and_foreign_keys(tmp_path, monkeypatch):

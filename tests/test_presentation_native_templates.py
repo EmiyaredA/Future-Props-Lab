@@ -8,6 +8,7 @@ import sqlite3
 import httpx
 import pytest
 from pptx import Presentation
+from tests.migration_fixtures import apply_migrations
 from tests.presentation_helpers import element
 
 from app.apps.presentation_workshop.schemas.document import PresentationDocument
@@ -15,7 +16,6 @@ from app.apps.presentation_workshop.templates.native_scene import default_page
 from app.apps.presentation_workshop.templates.resolver import materialize, resolve_document
 from app.apps.presentation_workshop.templates.schema import TemplateDefinition
 from app.main import app
-from db.migrations import apply_migrations
 from db.migrations.runner import connect_database
 
 ROOT = "/v1/presentation-workshop"

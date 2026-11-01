@@ -60,7 +60,7 @@ class Conversations:
         row = await self.session.scalar(
             select(AmadeusConversation).where(
                 AmadeusConversation.id == identity,
-                AmadeusConversation.workspace_id == self.principal.workspace_id,
+                AmadeusConversation.owner_user_id == self.principal.owner_user_id,
                 AmadeusConversation.user_id == self.principal.user_id,
             )
         )
@@ -73,7 +73,7 @@ class Conversations:
             await self.session.scalars(
                 select(AmadeusConversation)
                 .where(
-                    AmadeusConversation.workspace_id == self.principal.workspace_id,
+                    AmadeusConversation.owner_user_id == self.principal.owner_user_id,
                     AmadeusConversation.user_id == self.principal.user_id,
                 )
                 .order_by(AmadeusConversation.updated_at.desc())
@@ -83,7 +83,7 @@ class Conversations:
 
     async def create(self) -> ConversationOut:
         row = AmadeusConversation(
-            workspace_id=self.principal.workspace_id,
+            owner_user_id=self.principal.owner_user_id,
             user_id=self.principal.user_id,
             title="新对话",
         )
@@ -98,7 +98,7 @@ class Conversations:
                 select(AmadeusMessage)
                 .where(
                     AmadeusMessage.conversation_id == row.id,
-                    AmadeusMessage.workspace_id == self.principal.workspace_id,
+                    AmadeusMessage.owner_user_id == self.principal.owner_user_id,
                 )
                 .order_by(AmadeusMessage.created_at, AmadeusMessage.id)
             )
@@ -108,7 +108,7 @@ class Conversations:
                 select(AmadeusAction)
                 .where(
                     AmadeusAction.conversation_id == row.id,
-                    AmadeusAction.workspace_id == self.principal.workspace_id,
+                    AmadeusAction.owner_user_id == self.principal.owner_user_id,
                     AmadeusAction.user_id == self.principal.user_id,
                 )
                 .order_by(AmadeusAction.created_at, AmadeusAction.id)
@@ -119,7 +119,7 @@ class Conversations:
                 select(AmadeusQuestion)
                 .where(
                     AmadeusQuestion.conversation_id == row.id,
-                    AmadeusQuestion.workspace_id == self.principal.workspace_id,
+                    AmadeusQuestion.owner_user_id == self.principal.owner_user_id,
                     AmadeusQuestion.user_id == self.principal.user_id,
                 )
                 .order_by(AmadeusQuestion.created_at, AmadeusQuestion.id)
@@ -202,7 +202,7 @@ class Conversations:
         )
         if running is not None:
             raise OperationError("请先停止正在执行的操作", "action_running", 409)
-        folder = get_settings().workspace_path(self.principal.workspace_id) / "amadeus" / identity
+        folder = get_settings().account_path(self.principal.owner_user_id) / "amadeus" / identity
         if folder.is_symlink():
             raise OperationError("会话目录不安全", "unsafe_path", 409)
         removed = await self.session.execute(
@@ -238,7 +238,7 @@ class Conversations:
         self.session.add(
             AmadeusMessage(
                 conversation_id=row.id,
-                workspace_id=self.principal.workspace_id,
+                owner_user_id=self.principal.owner_user_id,
                 role=body.role,
                 content=body.content,
                 references_json=[item.model_dump(mode="json") for item in body.references],
@@ -254,7 +254,7 @@ class Conversations:
                 select(AmadeusRun).where(
                     AmadeusRun.id == body.run_id,
                     AmadeusRun.conversation_id == identity,
-                    AmadeusRun.workspace_id == self.principal.workspace_id,
+                    AmadeusRun.owner_user_id == self.principal.owner_user_id,
                     AmadeusRun.user_id == self.principal.user_id,
                     AmadeusRun.status == "running",
                     AmadeusRun.mode == "agent",
@@ -264,7 +264,7 @@ class Conversations:
                 raise OperationError("运行不存在或已经结束", "run_not_active", 409)
         row = AmadeusAction(
             conversation_id=identity,
-            workspace_id=self.principal.workspace_id,
+            owner_user_id=self.principal.owner_user_id,
             user_id=self.principal.user_id,
             tool_name=body.tool_name,
             arguments_json=body.arguments,
@@ -292,7 +292,7 @@ class Conversations:
             select(AmadeusAction).where(
                 AmadeusAction.id == action_id,
                 AmadeusAction.conversation_id == identity,
-                AmadeusAction.workspace_id == self.principal.workspace_id,
+                AmadeusAction.owner_user_id == self.principal.owner_user_id,
                 AmadeusAction.user_id == self.principal.user_id,
             )
         )

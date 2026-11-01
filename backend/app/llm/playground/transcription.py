@@ -57,9 +57,7 @@ class ModelTestTranscriptionError(Exception):
 def transcription_task_out(
     row: ModelTestTranscriptionTask, settings: Settings
 ) -> ModelTestTranscriptionTaskOut:
-    path = (
-        settings.workspace_model_test_path(row.workspace_id, "references") / row.input_storage_key
-    )
+    path = settings.account_model_test_path(row.owner_user_id, "references") / row.input_storage_key
     custom_pro = row.provider_kind == "senseaudio_asr_pro" or row.model_slug == "pro-asr"
     senseaudio = row.provider_kind in {"senseaudio_asr", "senseaudio_asr_pro"}
     stored_parameters = {
@@ -159,10 +157,10 @@ def _copy_limited(source_path: Path, target_path: Path, max_bytes: int) -> int:
 
 class ModelTestTranscription:
     def __init__(
-        self, session: AsyncSession, workspace_id: str, settings: Settings | None = None
+        self, session: AsyncSession, owner_user_id: str, settings: Settings | None = None
     ) -> None:
         self.session = session
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
         self.settings = settings or get_settings()
         self.asset_storage = AssetStorage(self.settings)
 
@@ -242,8 +240,8 @@ class ModelTestTranscription:
         snapshots = (model.id, model.slug, provider.id, provider.name, provider.kind)
         max_bytes = _max_input_bytes(provider)
         await self.session.rollback()
-        workspace_id = self.workspace_id
-        storage_key, temp_path, final_path = self._paths(workspace_id)
+        owner_user_id = self.owner_user_id
+        storage_key, temp_path, final_path = self._paths(owner_user_id)
         size = 0
         try:
             with temp_path.open("xb") as target:
@@ -314,9 +312,9 @@ class ModelTestTranscription:
         snapshots = (model.id, model.slug, provider.id, provider.name, provider.kind)
         filename = asset.original_filename
         source_asset_id = asset.id
-        workspace_id = asset.workspace_id
+        owner_user_id = asset.owner_user_id
         await self.session.rollback()
-        storage_key, temp_path, final_path = self._paths(workspace_id)
+        storage_key, temp_path, final_path = self._paths(owner_user_id)
         try:
             size = await asyncio.to_thread(_copy_limited, source_path, temp_path, max_bytes)
             _validate_staged_file(temp_path, extension, size, max_bytes)
@@ -339,8 +337,8 @@ class ModelTestTranscription:
             final_path.unlink(missing_ok=True)
             raise
 
-    def _paths(self, workspace_id: str) -> tuple[str, Path, Path]:
-        root = self.settings.workspace_model_test_path(workspace_id, "references")
+    def _paths(self, owner_user_id: str) -> tuple[str, Path, Path]:
+        root = self.settings.account_model_test_path(owner_user_id, "references")
         temp_root = root / ".tmp"
         temp_root.mkdir(parents=True, exist_ok=True)
         storage_key = uuid4().hex
@@ -431,7 +429,7 @@ class ModelTestTranscription:
     async def content(self, task_id: str) -> tuple[ModelTestTranscriptionTask, Path]:
         row = await self._row(task_id)
         path = (
-            self.settings.workspace_model_test_path(row.workspace_id, "references")
+            self.settings.account_model_test_path(row.owner_user_id, "references")
             / row.input_storage_key
         )
         if not path.is_file():
@@ -451,7 +449,7 @@ class ModelTestTranscription:
                 transcription_task_out(row, self.settings).model_dump(mode="json"),
             )
         path = (
-            self.settings.workspace_model_test_path(row.workspace_id, "references")
+            self.settings.account_model_test_path(row.owner_user_id, "references")
             / row.input_storage_key
         )
         result = await self.session.execute(

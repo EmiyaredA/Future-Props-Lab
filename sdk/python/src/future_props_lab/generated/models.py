@@ -205,12 +205,20 @@ class AccountCreateIn(WireModel):
     display_name: str = Field(default='', alias='display_name', max_length=120)
     email: str | None = Field(default=None, alias='email')
     is_platform_admin: bool = Field(default=False, alias='is_platform_admin')
-    platform_role: Literal['super_admin', 'admin', 'member'] | None = Field(default=None, alias='platform_role')
+    platform_role: Literal['admin', 'user'] | None = Field(default=None, alias='platform_role')
     username: str = Field(default=..., alias='username', min_length=1, max_length=64)
 
 class AccountCreatedOut(WireModel):
     account: AccountOut = Field(default=..., alias='account')
     temporary_password: str = Field(default=..., alias='temporary_password', repr=False)
+
+class AccountDirectoryItem(WireModel):
+    display_name: str = Field(default=..., alias='display_name')
+    user_id: str = Field(default=..., alias='user_id')
+    username: str = Field(default=..., alias='username')
+
+class AccountDirectoryOut(WireModel):
+    items: list[AccountDirectoryItem] = Field(default=..., alias='items')
 
 class AccountListOut(WireModel):
     items: list[AccountOut] = Field(default=..., alias='items')
@@ -226,7 +234,7 @@ class AccountOut(WireModel):
     is_platform_admin: bool = Field(default=..., alias='is_platform_admin')
     last_login_at: datetime | None = Field(default=..., alias='last_login_at')
     must_change_password: bool = Field(default=..., alias='must_change_password', repr=False)
-    platform_role: Literal['super_admin', 'admin', 'member'] = Field(default='member', alias='platform_role')
+    platform_role: Literal['admin', 'user'] = Field(default='user', alias='platform_role')
     revision: int = Field(default=..., alias='revision')
     status: Literal['active', 'disabled'] = Field(default=..., alias='status')
     username: str = Field(default=..., alias='username')
@@ -234,7 +242,7 @@ class AccountOut(WireModel):
 class AccountPatchIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     is_platform_admin: bool | None = Field(default=None, alias='is_platform_admin')
-    platform_role: Literal['super_admin', 'admin', 'member'] | None = Field(default=None, alias='platform_role')
+    platform_role: Literal['admin', 'user'] | None = Field(default=None, alias='platform_role')
     status: Literal['active', 'disabled'] | None = Field(default=None, alias='status')
 
 class AccountProfilePatchIn(WireModel):
@@ -293,11 +301,11 @@ class AddTransitionOperation(WireModel):
 
 class AgentCapabilities(WireModel):
     operations: dict[str, Any] = Field(default=..., alias='operations')
+    owner_user_id: str = Field(default=..., alias='owner_user_id')
     schemas: dict[str, Any] = Field(default=..., alias='schemas')
     scopes: list[str] = Field(default=..., alias='scopes')
     user_id: str = Field(default=..., alias='user_id')
     version: int = Field(default=1, alias='version')
-    workspace_id: str = Field(default=..., alias='workspace_id')
 
 class AgentClaimIn(WireModel):
     claim_token: str = Field(default=..., alias='claim_token', repr=False, min_length=32, max_length=128)
@@ -305,14 +313,14 @@ class AgentClaimIn(WireModel):
 class AgentClaimOut(WireModel):
     api_key: str | None = Field(default=None, alias='api_key', repr=False)
     key_id: str | None = Field(default=None, alias='key_id')
+    owner_user_id: str | None = Field(default=None, alias='owner_user_id')
     status: str = Field(default=..., alias='status')
     user_id: str | None = Field(default=None, alias='user_id')
-    workspace_id: str | None = Field(default=None, alias='workspace_id')
 
 class AgentDecisionIn(WireModel):
     approve: bool = Field(default=..., alias='approve')
     code: str = Field(default=..., alias='code', min_length=6, max_length=6)
-    expected_workspace_id: str = Field(default=..., alias='expected_workspace_id', min_length=1, max_length=128)
+    expected_owner_user_id: str = Field(default=..., alias='expected_owner_user_id', min_length=1, max_length=128)
 
 class AgentOut(WireModel):
     available: bool = Field(default=..., alias='available')
@@ -634,10 +642,10 @@ class AudioSeamCandidatesOut(WireModel):
 
 class AuthMeOut(WireModel):
     must_change_password: bool = Field(default=..., alias='must_change_password', repr=False)
-    policy_revision: int = Field(default=0, alias='policy_revision')
+    permission_keys: list[str] | None = Field(default=None, alias='permission_keys')
     session_expires_at: datetime | None = Field(default=..., alias='session_expires_at')
+    storage_upgrade_required: bool = Field(default=False, alias='storage_upgrade_required')
     user: CurrentUserOut = Field(default=..., alias='user')
-    workspace: WorkspaceOut = Field(default=..., alias='workspace')
 
 class BatchDeleteIn(WireModel):
     ids: list[str] | None = Field(default=None, alias='ids', max_length=200)
@@ -1245,7 +1253,7 @@ class CreativeItemOut(WireModel):
     installable: bool = Field(default=..., alias='installable')
     kind: Literal['tool_api', 'mcp', 'skill', 'bundle'] = Field(default=..., alias='kind')
     manifest: dict[str, Any] = Field(default=..., alias='manifest')
-    origin_workspace_id: str = Field(default=..., alias='origin_workspace_id')
+    origin_owner_user_id: str = Field(default=..., alias='origin_owner_user_id')
     revision: int = Field(default=..., alias='revision')
     status: Literal['draft', 'published', 'withdrawn'] = Field(default=..., alias='status')
     summary: str = Field(default=..., alias='summary')
@@ -1284,28 +1292,6 @@ class CreativeStdioSetupIn(WireModel):
     environment: dict[str, str] | None = Field(default=None, alias='environment')
     release_id: str = Field(default=..., alias='release_id')
 
-class CrossWorkspaceLogOut(WireModel):
-    api_key_id: str | None = Field(default=None, alias='api_key_id', repr=False)
-    api_key_name: str | None = Field(default=None, alias='api_key_name', repr=False)
-    api_key_prefix: str | None = Field(default=None, alias='api_key_prefix', repr=False)
-    auth_kind: str | None = Field(default=None, alias='auth_kind')
-    call_source: str = Field(default=..., alias='call_source')
-    created_at: str = Field(default=..., alias='created_at')
-    id: str = Field(default=..., alias='id')
-    latency_ms: int = Field(default=..., alias='latency_ms')
-    model: str = Field(default=..., alias='model')
-    provider_kind: str = Field(default=..., alias='provider_kind')
-    status: str = Field(default=..., alias='status')
-    total_tokens: int | None = Field(default=..., alias='total_tokens', repr=False)
-    workspace_id: str = Field(default=..., alias='workspace_id')
-
-class CrossWorkspaceLogPage(WireModel):
-    items: list[CrossWorkspaceLogOut] = Field(default=..., alias='items')
-    model_options: list[str] | None = Field(default=None, alias='model_options')
-    page: int = Field(default=..., alias='page')
-    page_size: int = Field(default=..., alias='page_size')
-    total: int = Field(default=..., alias='total')
-
 class CsvIn(WireModel):
     csv: str = Field(default=..., alias='csv', max_length=8388608)
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
@@ -1331,7 +1317,7 @@ class CurrentUserOut(WireModel):
     email: str | None = Field(default=..., alias='email')
     id: str = Field(default=..., alias='id')
     is_platform_admin: bool = Field(default=..., alias='is_platform_admin')
-    platform_role: Literal['super_admin', 'admin', 'member'] = Field(default='member', alias='platform_role')
+    platform_role: Literal['admin', 'user'] = Field(default='user', alias='platform_role')
     revision: int = Field(default=..., alias='revision')
     username: str = Field(default=..., alias='username')
 
@@ -2957,8 +2943,7 @@ class GenerationOptionsOut(WireModel):
 
 class GenerationQueueLimits(WireModel):
     admin: int = Field(default=20, alias='admin', ge=0.0, le=1024.0)
-    member: int = Field(default=20, alias='member', ge=0.0, le=1024.0)
-    super_admin: int = Field(default=20, alias='super_admin', ge=0.0, le=1024.0)
+    user: int = Field(default=20, alias='user', ge=0.0, le=1024.0)
 
 class GenerationTaskListOut(WireModel):
     items: list[GenerationTaskOut] = Field(default=..., alias='items')
@@ -3451,10 +3436,6 @@ class LocalModelOut(WireModel):
 class LocalModelsOut(WireModel):
     can_manage: bool = Field(default=..., alias='can_manage')
     items: list[LocalModelOut] = Field(default=..., alias='items')
-
-class LogWorkspaceOut(WireModel):
-    id: str = Field(default=..., alias='id')
-    name: str = Field(default=..., alias='name')
 
 class LoginIn(WireModel):
     password: str = Field(default=..., alias='password', repr=False)
@@ -4179,18 +4160,6 @@ class ParameterKeyform(WireModel):
 class PermissionInput(WireModel):
     articles: list[ArticleSetting] = Field(default=..., alias='articles', min_length=1, max_length=2000)
 
-class PermissionPolicy(WireModel):
-    admin: RolePolicy = Field(default=..., alias='admin')
-    member: RolePolicy = Field(default=..., alias='member')
-
-class PermissionPolicyIn(WireModel):
-    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
-    value: PermissionPolicy = Field(default=..., alias='value')
-
-class PermissionPolicyOut(WireModel):
-    revision: int = Field(default=..., alias='revision')
-    value: PermissionPolicy = Field(default=..., alias='value')
-
 class PetChatClearIn(WireModel):
     expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
 
@@ -4784,42 +4753,6 @@ class ProviderOut(WireModel):
     supplier_id: str | None = Field(default=None, alias='supplier_id')
     template_key: str | None = Field(default=None, alias='template_key')
 
-class PublicAssetOut(WireModel):
-    byte_size: int = Field(default=..., alias='byte_size')
-    display_name: str = Field(default=..., alias='display_name')
-    id: str = Field(default=..., alias='id')
-    media_kind: str = Field(default=..., alias='media_kind')
-    mime_type: str = Field(default=..., alias='mime_type')
-    preview_url: str = Field(default=..., alias='preview_url')
-
-class PublicGalgameProjectOut(WireModel):
-    assets: list[PublicAssetOut] = Field(default=[], alias='assets')
-    id: str = Field(default=..., alias='id')
-    is_official: bool = Field(default=False, alias='is_official')
-    status: str = Field(default=..., alias='status')
-    title: str = Field(default=..., alias='title')
-    updated_at: datetime = Field(default=..., alias='updated_at')
-
-class PublicGalgameStoryOut(WireModel):
-    document: dict[str, Any] = Field(default=..., alias='document')
-    project_id: str = Field(default=..., alias='project_id')
-    revision: int = Field(default=..., alias='revision')
-
-class PublicVisualProjectOut(WireModel):
-    assets: list[PublicAssetOut] = Field(default=[], alias='assets')
-    id: str = Field(default=..., alias='id')
-    is_official: bool = Field(default=False, alias='is_official')
-    kind: str = Field(default=..., alias='kind')
-    status: str = Field(default=..., alias='status')
-    title: str = Field(default=..., alias='title')
-    updated_at: datetime = Field(default=..., alias='updated_at')
-
-class PublicWorkspaceProjectionOut(WireModel):
-    galgame_projects: list[PublicGalgameProjectOut] = Field(default=..., alias='galgame_projects')
-    visual_projects: list[PublicVisualProjectOut] = Field(default=..., alias='visual_projects')
-    workspace_id: str = Field(default=..., alias='workspace_id')
-    workspace_name: str = Field(default=..., alias='workspace_name')
-
 class PublicationConfig(WireModel):
     articles: list[ArticleConfig] = Field(default=..., alias='articles')
     can_set_official: bool = Field(default=False, alias='can_set_official')
@@ -4833,7 +4766,7 @@ class PublicationOut(WireModel):
     cover_url: str | None = Field(default=None, alias='cover_url')
     description: str = Field(default=..., alias='description')
     document_count: int = Field(default=..., alias='document_count')
-    editable_platform_roles: list[Literal['super_admin', 'admin', 'member']] | None = Field(default=None, alias='editable_platform_roles')
+    editable_platform_roles: list[Literal['admin', 'user']] | None = Field(default=None, alias='editable_platform_roles')
     favorite: bool = Field(default=False, alias='favorite')
     id: str = Field(default=..., alias='id')
     is_official: bool = Field(default=False, alias='is_official')
@@ -4846,7 +4779,7 @@ class PublishInput(WireModel):
     active: bool = Field(default=True, alias='active')
     articles: list[ArticleSetting] = Field(default=..., alias='articles', max_length=2000)
     description: str = Field(default='', alias='description', max_length=4000)
-    editable_platform_roles: list[Literal['super_admin', 'admin', 'member']] | None = Field(default=None, alias='editable_platform_roles', max_length=3)
+    editable_platform_roles: list[Literal['admin', 'user']] | None = Field(default=None, alias='editable_platform_roles', max_length=3)
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     is_official: bool = Field(default=False, alias='is_official')
     read_only: bool = Field(default=True, alias='read_only')
@@ -5107,16 +5040,8 @@ class RoleModelTemplateIn(WireModel):
 
 class RoleModelTemplateOut(WireModel):
     revision: int = Field(default=..., alias='revision')
-    role: Literal['super_admin', 'admin', 'member'] = Field(default=..., alias='role')
+    role: Literal['admin', 'user'] = Field(default=..., alias='role')
     value: RoleModelTemplate_Output = Field(default=..., alias='value')
-
-class RolePolicy(WireModel):
-    mark_workshop_official: bool = Field(default=False, alias='mark_workshop_official')
-    view_cross_workspace_logs: bool = Field(default=False, alias='view_cross_workspace_logs')
-    view_developer_docs: bool = Field(default=False, alias='view_developer_docs')
-    view_model_diagnostics: bool = Field(default=False, alias='view_model_diagnostics')
-    view_realtime_voice_diagnostics: bool = Field(default=False, alias='view_realtime_voice_diagnostics')
-    view_sensitive_tool_results: bool = Field(default=False, alias='view_sensitive_tool_results')
 
 class RubricDimension(WireModel):
     answer_points: list[str] = Field(default=..., alias='answer_points')
@@ -5180,10 +5105,8 @@ class RuntimeQuotas(WireModel):
     admin: QuotaLimit = Field(default={'realtime_voice': 2, 'total': 4}, alias='admin')
     generation_queue: GenerationQueueLimits | None = Field(default=None, alias='generation_queue')
     instance: QuotaLimit = Field(default={'realtime_voice': 8, 'total': 16}, alias='instance')
-    member: QuotaLimit = Field(default={'realtime_voice': 1, 'total': 2}, alias='member')
     reserved_for_admins: int = Field(default=2, alias='reserved_for_admins', ge=0.0, le=1024.0)
-    super_admin: QuotaLimit = Field(default={'realtime_voice': 4, 'total': 8}, alias='super_admin')
-    workspace_total: int = Field(default=8, alias='workspace_total', ge=1.0, le=1024.0)
+    user: QuotaLimit = Field(default={'realtime_voice': 1, 'total': 2}, alias='user')
 
 class RuntimeQuotasIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
@@ -5256,9 +5179,9 @@ class SecurityAuditEventOut(WireModel):
     id: str = Field(default=..., alias='id')
     metadata: dict[str, Any] = Field(default=..., alias='metadata')
     outcome: str = Field(default=..., alias='outcome')
+    owner_user_id: str | None = Field(default=..., alias='owner_user_id')
     target_username: str | None = Field(default=..., alias='target_username')
     user_agent: str = Field(default=..., alias='user_agent')
-    workspace_id: str | None = Field(default=..., alias='workspace_id')
 
 class SecurityAuditListOut(WireModel):
     items: list[SecurityAuditEventOut] = Field(default=..., alias='items')
@@ -5424,6 +5347,7 @@ class StorageLayoutIssueOut(WireModel):
     message: str = Field(default=..., alias='message')
 
 class StorageLayoutMigrationOut(WireModel):
+    account_upgrade_pending: int = Field(default=0, alias='account_upgrade_pending')
     already_materialized_assets: int = Field(default=..., alias='already_materialized_assets')
     complete: bool = Field(default=..., alias='complete')
     conflicts: int = Field(default=..., alias='conflicts')
@@ -5434,8 +5358,10 @@ class StorageLayoutMigrationOut(WireModel):
     processed_assets: int = Field(default=..., alias='processed_assets')
     remaining_assets: int = Field(default=..., alias='remaining_assets')
     remaining_projects: int = Field(default=..., alias='remaining_projects')
+    restart_required: bool = Field(default=False, alias='restart_required')
 
 class StorageLayoutStatusOut(WireModel):
+    account_upgrade_pending: int = Field(default=0, alias='account_upgrade_pending')
     complete: bool = Field(default=..., alias='complete')
     conflicting_files: int = Field(default=..., alias='conflicting_files')
     migrated_assets: int = Field(default=..., alias='migrated_assets')
@@ -5443,6 +5369,7 @@ class StorageLayoutStatusOut(WireModel):
     pending_assets: int = Field(default=..., alias='pending_assets')
     pending_bytes: int = Field(default=..., alias='pending_bytes')
     pending_projects: int = Field(default=..., alias='pending_projects')
+    restart_required: bool = Field(default=False, alias='restart_required')
     target_version: Literal[2] = Field(default=2, alias='target_version')
 
 class StorageOpenReceipt(WireModel):
@@ -5658,6 +5585,7 @@ class TemplatePageMapping(WireModel):
     title_element_ids: list[str] | None = Field(default=None, alias='title_element_ids', max_length=30)
 
 class TemplatePreviewIn(WireModel):
+    account_ids: list[str] | None = Field(default=None, alias='account_ids')
     expected_template_revision: int = Field(default=..., alias='expected_template_revision', ge=0.0)
 
 class TemplateProvider_Input(WireModel):
@@ -5722,20 +5650,20 @@ class TemplateSyncIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
 
 class TemplateSyncItemOut(WireModel):
+    account_name: str = Field(default=..., alias='account_name')
     catalog_revision: int = Field(default=..., alias='catalog_revision')
     error_message: str = Field(default=..., alias='error_message')
     id: str = Field(default=..., alias='id')
+    owner_user_id: str = Field(default=..., alias='owner_user_id')
     status: str = Field(default=..., alias='status')
     summary: dict[str, list[str]] = Field(default=..., alias='summary')
-    workspace_id: str = Field(default=..., alias='workspace_id')
-    workspace_name: str = Field(default=..., alias='workspace_name')
 
 class TemplateSyncJobOut(WireModel):
     created_at: datetime = Field(default=..., alias='created_at')
     id: str = Field(default=..., alias='id')
     items: list[TemplateSyncItemOut] = Field(default=..., alias='items')
     revision: int = Field(default=..., alias='revision')
-    role: Literal['super_admin', 'admin', 'member'] = Field(default=..., alias='role')
+    role: Literal['admin', 'user'] = Field(default=..., alias='role')
     status: str = Field(default=..., alias='status')
     template_revision: int = Field(default=..., alias='template_revision')
 
@@ -6844,92 +6772,6 @@ class WorkflowVideoParameters(WireModel):
     upscale_factor: float | None = Field(default=None, alias='upscale_factor')
     width: int | None = Field(default=None, alias='width')
 
-class WorkspaceCreateIn(WireModel):
-    name: str = Field(default=..., alias='name', min_length=1, max_length=255)
-    owner_user_id: str = Field(default=..., alias='owner_user_id', min_length=1, max_length=36)
-    visibility: Literal['private', 'public'] = Field(default='private', alias='visibility')
-
-class WorkspaceInvitationActionIn(WireModel):
-    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
-
-class WorkspaceInvitationCreateIn(WireModel):
-    role: Literal['admin', 'member', 'viewer'] = Field(default='member', alias='role')
-    username: str = Field(default=..., alias='username', min_length=1, max_length=64)
-
-class WorkspaceInvitationListOut(WireModel):
-    items: list[WorkspaceInvitationOut] = Field(default=..., alias='items')
-    total: int = Field(default=..., alias='total')
-
-class WorkspaceInvitationOut(WireModel):
-    created_at: datetime = Field(default=..., alias='created_at')
-    expires_at: datetime = Field(default=..., alias='expires_at')
-    id: str = Field(default=..., alias='id')
-    invitee_display_name: str = Field(default=..., alias='invitee_display_name')
-    invitee_user_id: str = Field(default=..., alias='invitee_user_id')
-    invitee_username: str = Field(default=..., alias='invitee_username')
-    inviter_username: str | None = Field(default=..., alias='inviter_username')
-    responded_at: datetime | None = Field(default=..., alias='responded_at')
-    revision: int = Field(default=..., alias='revision')
-    role: Literal['admin', 'member', 'viewer'] = Field(default='member', alias='role')
-    status: Literal['pending', 'accepted', 'declined', 'revoked', 'expired'] = Field(default=..., alias='status')
-    workspace_id: str = Field(default=..., alias='workspace_id')
-    workspace_name: str = Field(default=..., alias='workspace_name')
-
-class WorkspaceListItem(WireModel):
-    access_kind: Literal['owner', 'member', 'platform_admin', 'public_viewer'] = Field(default=..., alias='access_kind')
-    id: str = Field(default=..., alias='id')
-    member_count: int = Field(default=0, alias='member_count')
-    name: str = Field(default=..., alias='name')
-    owner_display_name: str = Field(default=..., alias='owner_display_name')
-    owner_username: str = Field(default=..., alias='owner_username')
-    permission_keys: list[str] | None = Field(default=None, alias='permission_keys')
-    revision: int = Field(default=..., alias='revision')
-    role: Literal['owner', 'admin', 'member', 'viewer'] | None = Field(default=..., alias='role')
-    visibility: Literal['private', 'public'] = Field(default=..., alias='visibility')
-
-class WorkspaceListOut(WireModel):
-    items: list[WorkspaceListItem] = Field(default=..., alias='items')
-    page: int = Field(default=..., alias='page')
-    page_size: int = Field(default=..., alias='page_size')
-    total: int = Field(default=..., alias='total')
-
-class WorkspaceMemberListOut(WireModel):
-    items: list[WorkspaceMemberOut] = Field(default=..., alias='items')
-    total: int = Field(default=..., alias='total')
-
-class WorkspaceMemberOut(WireModel):
-    display_name: str = Field(default=..., alias='display_name')
-    joined_at: datetime = Field(default=..., alias='joined_at')
-    membership_id: str = Field(default=..., alias='membership_id')
-    revision: int = Field(default=..., alias='revision')
-    role: Literal['owner', 'admin', 'member', 'viewer'] = Field(default=..., alias='role')
-    user_id: str = Field(default=..., alias='user_id')
-    username: str = Field(default=..., alias='username')
-
-class WorkspaceMemberRemoveIn(WireModel):
-    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
-
-class WorkspaceMemberRoleIn(WireModel):
-    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
-    role: Literal['admin', 'member', 'viewer'] = Field(default=..., alias='role')
-
-class WorkspaceOut(WireModel):
-    access_kind: Literal['owner', 'member', 'platform_admin', 'public_viewer'] = Field(default=..., alias='access_kind')
-    id: str = Field(default=..., alias='id')
-    name: str = Field(default=..., alias='name')
-    permission_keys: list[str] | None = Field(default=None, alias='permission_keys')
-    revision: int = Field(default=..., alias='revision')
-    role: Literal['owner', 'admin', 'member', 'viewer'] | None = Field(default=..., alias='role')
-    visibility: Literal['private', 'public'] = Field(default=..., alias='visibility')
-
-class WorkspacePatchIn(WireModel):
-    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
-    name: str = Field(default=..., alias='name', min_length=1, max_length=255)
-    visibility: Literal['private', 'public'] = Field(default=..., alias='visibility')
-
-class WorkspaceSwitchIn(WireModel):
-    workspace_id: str = Field(default=..., alias='workspace_id', min_length=1, max_length=36)
-
 AcceptanceCriterion.model_rebuild()
 AcceptanceDecisionIn.model_rebuild()
 AcceptanceDocument.model_rebuild()
@@ -6957,6 +6799,8 @@ AcceptanceTemplateWriteIn.model_rebuild()
 AccountAvatarDeleteIn.model_rebuild()
 AccountCreateIn.model_rebuild()
 AccountCreatedOut.model_rebuild()
+AccountDirectoryItem.model_rebuild()
+AccountDirectoryOut.model_rebuild()
 AccountListOut.model_rebuild()
 AccountOut.model_rebuild()
 AccountPatchIn.model_rebuild()
@@ -7127,8 +6971,6 @@ CreativePageOut.model_rebuild()
 CreativeReleaseOut.model_rebuild()
 CreativeRevisionIn.model_rebuild()
 CreativeStdioSetupIn.model_rebuild()
-CrossWorkspaceLogOut.model_rebuild()
-CrossWorkspaceLogPage.model_rebuild()
 CsvIn.model_rebuild()
 CsvPreview.model_rebuild()
 CsvSource.model_rebuild()
@@ -7444,7 +7286,6 @@ LocalModelActionIn.model_rebuild()
 LocalModelAttachIn.model_rebuild()
 LocalModelOut.model_rebuild()
 LocalModelsOut.model_rebuild()
-LogWorkspaceOut.model_rebuild()
 LoginIn.model_rebuild()
 McpCatalogOut.model_rebuild()
 McpCreateIn.model_rebuild()
@@ -7535,9 +7376,6 @@ OperationBatchIn.model_rebuild()
 ParameterBinding.model_rebuild()
 ParameterKeyform.model_rebuild()
 PermissionInput.model_rebuild()
-PermissionPolicy.model_rebuild()
-PermissionPolicyIn.model_rebuild()
-PermissionPolicyOut.model_rebuild()
 PetChatClearIn.model_rebuild()
 PetChatMessageOut.model_rebuild()
 PetChatMessagesOut.model_rebuild()
@@ -7617,11 +7455,6 @@ ProviderEnabledIn.model_rebuild()
 ProviderIn.model_rebuild()
 ProviderMutationOut.model_rebuild()
 ProviderOut.model_rebuild()
-PublicAssetOut.model_rebuild()
-PublicGalgameProjectOut.model_rebuild()
-PublicGalgameStoryOut.model_rebuild()
-PublicVisualProjectOut.model_rebuild()
-PublicWorkspaceProjectionOut.model_rebuild()
 PublicationConfig.model_rebuild()
 PublicationOut.model_rebuild()
 PublishInput.model_rebuild()
@@ -7670,7 +7503,6 @@ RoleModelTemplate_Input.model_rebuild()
 RoleModelTemplate_Output.model_rebuild()
 RoleModelTemplateIn.model_rebuild()
 RoleModelTemplateOut.model_rebuild()
-RolePolicy.model_rebuild()
 RubricDimension.model_rebuild()
 RunCreateIn.model_rebuild()
 RunDetailOut.model_rebuild()
@@ -7898,17 +7730,3 @@ VisualWorkshopProjectPatchIn.model_rebuild()
 WorkflowNumericParameterOut.model_rebuild()
 WorkflowVideoCapabilitiesOut.model_rebuild()
 WorkflowVideoParameters.model_rebuild()
-WorkspaceCreateIn.model_rebuild()
-WorkspaceInvitationActionIn.model_rebuild()
-WorkspaceInvitationCreateIn.model_rebuild()
-WorkspaceInvitationListOut.model_rebuild()
-WorkspaceInvitationOut.model_rebuild()
-WorkspaceListItem.model_rebuild()
-WorkspaceListOut.model_rebuild()
-WorkspaceMemberListOut.model_rebuild()
-WorkspaceMemberOut.model_rebuild()
-WorkspaceMemberRemoveIn.model_rebuild()
-WorkspaceMemberRoleIn.model_rebuild()
-WorkspaceOut.model_rebuild()
-WorkspacePatchIn.model_rebuild()
-WorkspaceSwitchIn.model_rebuild()

@@ -17,7 +17,7 @@ from app.apps.motion_compositor.models import MotionTask
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.motion_document import MotionComposition
 from app.capabilities.media_rendering.motion_frames import MotionFrameRenderer
-from app.orm import bind_workspace, require_workspace_id
+from app.orm import bind_owner, require_owner_id
 from app.runtime.config import Settings, get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.polling_runner import PollingTaskRunner
@@ -43,16 +43,16 @@ class MotionExportRunner(PollingTaskRunner):
             interrupted = list(
                 (
                     await session.execute(
-                        select(MotionTask.id, MotionTask.workspace_id).where(
+                        select(MotionTask.id, MotionTask.owner_user_id).where(
                             MotionTask.status == "running"
                         )
                     )
                 ).all()
             )
-        for task_id, raw_workspace_id in interrupted:
-            workspace_id = require_workspace_id(raw_workspace_id, subject="motion export task")
+        for task_id, raw_owner_user_id in interrupted:
+            owner_user_id = require_owner_id(raw_owner_user_id, subject="motion export task")
             async with self.session_factory() as session:
-                bind_workspace(session, workspace_id)
+                bind_owner(session, owner_user_id)
                 row = await session.get(MotionTask, task_id)
                 if row is None or row.status != "running":
                     continue
@@ -90,9 +90,7 @@ class MotionExportRunner(PollingTaskRunner):
             row = await session.get(MotionTask, task_id)
             if row is None:
                 return
-            bind_workspace(
-                session, require_workspace_id(row.workspace_id, subject="motion export task")
-            )
+            bind_owner(session, require_owner_id(row.owner_user_id, subject="motion export task"))
             if status is not None:
                 row.status = status
             if progress is not None:
@@ -150,16 +148,16 @@ class MotionExportRunner(PollingTaskRunner):
         task = await self._load_task(task_id)
         if task is None or task.status != "queued":
             return
-        workspace_id = require_workspace_id(task.workspace_id, subject="motion export task")
+        owner_user_id = require_owner_id(task.owner_user_id, subject="motion export task")
         await self._set(task_id, status="running", progress=1)
         root = self.storage.project_root(
-            "motion-compositor", task.project_id, workspace_id=workspace_id
+            "motion-compositor", task.project_id, owner_user_id=owner_user_id
         )
         target = root / "exports" / task_id
         try:
             async with self.session_factory() as session:
-                bind_workspace(session, workspace_id)
-                assets = await MotionAssets(session, workspace_id).paths(task.project_id)
+                bind_owner(session, owner_user_id)
+                assets = await MotionAssets(session, owner_user_id).paths(task.project_id)
             document = MotionComposition.model_validate(task.snapshot_document)
             payload = task.request_payload
             start = int(payload["startFrame"])

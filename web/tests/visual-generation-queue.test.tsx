@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { WorkspacePermissionsProvider } from "@platform/auth/WorkspacePermissions";
+import { AccountAccessProvider } from "@platform/auth/AccountAccess";
 import {
   CancelQueuedTasks,
   CancelQueuedBatch,
@@ -85,9 +85,9 @@ function mount(
   });
   render(
     <QueryClientProvider client={client}>
-      <WorkspacePermissionsProvider permissions={permissions}>
+      <AccountAccessProvider userId="test-user" permissions={permissions}>
         {content}
-      </WorkspacePermissionsProvider>
+      </AccountAccessProvider>
     </QueryClientProvider>,
   );
   return client;

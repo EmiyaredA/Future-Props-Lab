@@ -45,15 +45,15 @@ def test_container_uses_ebml_doctype_instead_of_incidental_strings():
 async def test_media_info_missing_or_cross_workspace_asset_is_not_found(monkeypatch):
     from app.capabilities.asset_store import media_info
     from app.capabilities.asset_store.models import VisualAsset
-    from app.orm import bind_workspace
+    from app.orm import bind_owner
     from app.runtime.db import SessionLocal
 
     async with SessionLocal() as session:
-        bind_workspace(session, "other-workspace")
+        bind_owner(session, "other-workspace")
         session.add(
             VisualAsset(
                 id="other-video-info",
-                workspace_id="other-workspace",
+                owner_user_id="other-workspace",
                 storage_key="other-video-info",
                 original_filename="video.webm",
                 display_name="video",
@@ -77,16 +77,16 @@ async def test_media_info_missing_or_cross_workspace_asset_is_not_found(monkeypa
 async def test_corrupt_and_non_video_media_info_fail_without_mutation():
     from app.capabilities.asset_store.models import VisualAsset
     from app.capabilities.asset_store.storage import AssetStorage
-    from app.orm import bind_workspace
+    from app.orm import bind_owner
     from app.runtime.config import get_settings
     from app.runtime.db import SessionLocal
 
     async with SessionLocal() as session:
-        bind_workspace(session, "default")
+        bind_owner(session, "test-user")
         for kind in ("video", "image"):
             asset = VisualAsset(
                 id=f"corrupt-info-{kind}",
-                workspace_id="default",
+                owner_user_id="test-user",
                 storage_key=f"corrupt-info-{kind}",
                 original_filename="corrupt",
                 display_name="corrupt",
@@ -107,7 +107,7 @@ async def test_corrupt_and_non_video_media_info_fail_without_mutation():
             response = await client.get(f"/v1/files/corrupt-info-{kind}/media-info")
             assert response.status_code == 422
     async with SessionLocal() as session:
-        bind_workspace(session, "default")
+        bind_owner(session, "test-user")
         for kind in ("video", "image"):
             asset = await session.get(VisualAsset, f"corrupt-info-{kind}")
             assert asset.revision == 0 and asset.byte_size == 8

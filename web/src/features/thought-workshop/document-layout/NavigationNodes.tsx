@@ -7,10 +7,7 @@ import {
 } from "@tiptap/react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  useAccountId,
-  useWorkspaceId,
-} from "@platform/auth/WorkspacePermissions";
+import { useAccountId } from "@platform/auth/AccountAccess";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { ReferencePicker } from "../knowledge-tools/ReferencePicker";
 import { useDocumentAccess } from "../DocumentAccess";
@@ -24,7 +21,7 @@ function useDirectory() {
   const scope = useNavigationScope(),
     access = useDocumentAccess();
   const account = useAccountId(),
-    workspace = useWorkspaceId();
+    workspace = useAccountId();
   const query = useQuery({
     queryKey: thoughtKeys.layoutDirectory(
       `${account}/${workspace}/${access.namespace}`,
@@ -53,7 +50,7 @@ function CardView({
 }: NodeViewProps) {
   const access = useDocumentAccess(),
     account = useAccountId(),
-    workspace = useWorkspaceId();
+    workspace = useAccountId();
   const attrs = node.attrs as CardTarget;
   const scope = useNavigationScope();
   const index = scope.cardIds.indexOf(attrs.noteId ?? ""),

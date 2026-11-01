@@ -15,7 +15,7 @@ vi.mock("@features/accounts/managementApi", async () => ({
   ...management,
 }));
 const account = {
-  platform_role: "member" as const,
+  platform_role: "user" as const,
   id: "target",
   username: "collaborator",
   display_name: "协作账号",
@@ -114,14 +114,14 @@ test("角色变更携带读取版本，冲突后刷新且不自动重试", async
   setup();
   await screen.findByText("协作账号");
   await user.click(screen.getByRole("button", { name: "管理 collaborator" }));
-  await user.click(screen.getByRole("menuitem", { name: "设为超级管理员" }));
+  await user.click(screen.getByRole("menuitem", { name: "设为管理员" }));
   const confirm = screen.getByRole("alertdialog");
   await user.click(within(confirm).getByRole("button", { name: "确认" }));
   await screen.findByRole("alert");
   expect(management.patchManagedAccount).toHaveBeenCalledExactlyOnceWith(
     "target",
     {
-      platform_role: "super_admin" as const,
+      platform_role: "admin" as const,
       expected_revision: 8,
     },
   );
@@ -138,7 +138,7 @@ test("普通用户直接进入管理地址不挂载治理查询", () => {
   const session = {
     me: {
       user: {
-        platform_role: "member" as const,
+        platform_role: "user" as const,
         is_platform_admin: false,
       },
     },

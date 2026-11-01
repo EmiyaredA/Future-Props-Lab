@@ -47,7 +47,7 @@ async def model_capacity(request: Request, principal: StudioAuth, session: Sessi
             body = None  # The endpoint reports normal request validation errors.
         if body is not None:
             try:
-                prior = await InferenceTasks(session, principal.workspace_id).replay(body)
+                prior = await InferenceTasks(session, principal.owner_user_id).replay(body)
             except OperationError as exc:
                 raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
             if prior is not None:

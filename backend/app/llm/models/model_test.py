@@ -24,7 +24,7 @@ class ModelTestConversation(Base):
     __tablename__ = "model_test_conversations"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     title: Mapped[str] = mapped_column(String(120), default="新对话")
     model_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("model_entries.id", ondelete="SET NULL"), nullable=True, index=True
@@ -104,7 +104,7 @@ class ModelTestGenerationTask(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     provider_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("model_providers.id", ondelete="SET NULL")
     )
@@ -150,7 +150,7 @@ class ModelTestGenerationAsset(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     task_id: Mapped[str | None] = mapped_column(
         String(36),
         ForeignKey("model_test_generation_tasks.id", ondelete="CASCADE"),
@@ -170,13 +170,13 @@ class ModelTestGenerationAsset(Base):
 class ModelTestTranscriptionTask(Base):
     __tablename__ = "model_test_transcription_tasks"
     __table_args__ = (
-        Index("ix_model_test_transcription_workspace_created", "workspace_id", "created_at"),
+        Index("ix_model_test_transcription_account_created", "owner_user_id", "created_at"),
         Index("ix_model_test_transcription_status_created", "status", "created_at"),
         Index("ix_model_test_transcription_model_created", "model_id", "created_at"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     provider_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("model_providers.id", ondelete="SET NULL")
     )

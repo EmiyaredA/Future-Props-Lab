@@ -37,7 +37,7 @@ class Rooms:
         row = await self.session.scalar(
             select(InterviewRoom).where(
                 InterviewRoom.id == room_id,
-                InterviewRoom.workspace_id == self.principal.workspace_id,
+                InterviewRoom.owner_user_id == self.principal.owner_user_id,
                 InterviewRoom.user_id == self.principal.user_id,
             )
         )
@@ -87,7 +87,7 @@ class Rooms:
             await self.session.scalars(
                 select(InterviewRoom.id)
                 .where(
-                    InterviewRoom.workspace_id == self.principal.workspace_id,
+                    InterviewRoom.owner_user_id == self.principal.owner_user_id,
                     InterviewRoom.user_id == self.principal.user_id,
                 )
                 .order_by(InterviewRoom.updated_at.desc())
@@ -101,7 +101,7 @@ class Rooms:
 
     async def create(self, body):
         receipt = dict(
-            workspace_id=self.principal.workspace_id,
+            owner_user_id=self.principal.owner_user_id,
             kind="interview-create",
             resource_id=self.principal.user_id,
             body=body,
@@ -110,7 +110,7 @@ class Rooms:
         if previous:
             return await self.get(previous["id"])
         row = InterviewRoom(
-            workspace_id=self.principal.workspace_id,
+            owner_user_id=self.principal.owner_user_id,
             user_id=self.principal.user_id,
             title=body.title.strip() or "新面试",
         )
@@ -133,7 +133,7 @@ class Rooms:
             update(InterviewRoom)
             .where(
                 InterviewRoom.id == room_id,
-                InterviewRoom.workspace_id == self.principal.workspace_id,
+                InterviewRoom.owner_user_id == self.principal.owner_user_id,
                 InterviewRoom.user_id == self.principal.user_id,
                 InterviewRoom.revision == expected,
             )
@@ -148,7 +148,7 @@ class Rooms:
         await self.get_row(room_id)
         filename, data, digest = await receive_material(incoming)
         identifier = new_id()
-        path = material_path(self.principal.workspace_id, room_id, identifier, filename)
+        path = material_path(self.principal.owner_user_id, room_id, identifier, filename)
         exclusive_write(path, data)
         try:
             await self.cas(room_id, expected)
@@ -178,7 +178,7 @@ class Rooms:
         if row is None:
             raise OperationError("材料不存在", "not_found", 404)
         return material_path(
-            self.principal.workspace_id, room_id, row.id, row.filename
+            self.principal.owner_user_id, room_id, row.id, row.filename
         ), row.filename
 
     async def prepare(self, room_id, body):
@@ -228,7 +228,7 @@ class Rooms:
         self.session.add(
             InterviewPreparation(
                 id=identifier,
-                workspace_id=self.principal.workspace_id,
+                owner_user_id=self.principal.owner_user_id,
                 user_id=self.principal.user_id,
                 room_id=room_id,
                 request_id=body.request_id,
@@ -293,7 +293,7 @@ class Rooms:
         await self.cas(room_id, expected)
         await self.session.execute(delete(InterviewRoom).where(InterviewRoom.id == room_id))
         await self.session.commit()
-        root = room_root(self.principal.workspace_id, room_id)
+        root = room_root(self.principal.owner_user_id, room_id)
         if root.exists():
             shutil.rmtree(root)
 

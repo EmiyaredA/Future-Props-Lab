@@ -1,6 +1,6 @@
 import { render, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { WorkspacePermissionsProvider } from "@platform/auth/WorkspacePermissions";
+import { AccountAccessProvider } from "@platform/auth/AccountAccess";
 import { useReadingPosition } from "@features/thought-workshop/knowledge-tools/ReadingPosition";
 import * as api from "@features/thought-workshop/knowledge-tools/api";
 
@@ -17,35 +17,21 @@ function Reader({ id }: { id: string }) {
     </main>
   );
 }
-function Owner({
-  user,
-  workspace,
-  id,
-}: {
-  user: string;
-  workspace: string;
-  id: string;
-}) {
+function Owner({ user, id }: { user: string; id: string }) {
   return (
-    <WorkspacePermissionsProvider
-      userId={user}
-      workspaceId={workspace}
-      permissions={["content.read"]}
-    >
+    <AccountAccessProvider userId={user} permissions={["content.read"]}>
       <Reader id={id} />
-    </WorkspacePermissionsProvider>
+    </AccountAccessProvider>
   );
 }
 afterEach(() => vi.clearAllMocks());
 
 describe("personal reading ownership", () => {
   it("does not record the new article's DOM as the previous article's reading position", async () => {
-    const view = render(
-      <Owner user="user-a" workspace="workspace-a" id="note-a" />,
-    );
+    const view = render(<Owner user="user-a" id="note-a" />);
     await waitFor(() => expect(api.recordReading).toHaveBeenCalled());
     vi.mocked(api.recordReading).mockClear();
-    view.rerender(<Owner user="user-a" workspace="workspace-a" id="note-b" />);
+    view.rerender(<Owner user="user-a" id="note-b" />);
     expect(api.recordReading).not.toHaveBeenCalled();
     await waitFor(() =>
       expect(api.recordReading).toHaveBeenCalledWith(
@@ -57,9 +43,7 @@ describe("personal reading ownership", () => {
     view.unmount();
   });
   it("does not flush the previous user's location through the new account after switching", async () => {
-    const view = render(
-      <Owner user="user-a" workspace="workspace-a" id="note-a" />,
-    );
+    const view = render(<Owner user="user-a" id="note-a" />);
     await waitFor(() =>
       expect(api.recordReading).toHaveBeenCalledWith(
         "note-a",
@@ -68,7 +52,7 @@ describe("personal reading ownership", () => {
       ),
     );
     vi.mocked(api.recordReading).mockClear();
-    view.rerender(<Owner user="user-b" workspace="workspace-b" id="note-b" />);
+    view.rerender(<Owner user="user-b" id="note-b" />);
     expect(api.recordReading).not.toHaveBeenCalled();
     await waitFor(() =>
       expect(api.recordReading).toHaveBeenCalledWith(

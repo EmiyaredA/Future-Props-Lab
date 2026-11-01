@@ -17,7 +17,7 @@ class ManagedSupplierError(Exception):
 
 class ModelSupplierService(ModelCatalogService):
     async def _supplier(self, supplier_id: str) -> ModelSupplier:
-        row = await get_supplier(self.session, self._workspace_id(), supplier_id)
+        row = await get_supplier(self.session, self._owner_user_id(), supplier_id)
         if row is None:
             raise ResourceNotFoundError("协议类型不存在")
         return row
@@ -31,11 +31,11 @@ class ModelSupplierService(ModelCatalogService):
         revision = await self._bump(body.expected_catalog_revision)
         count = await self.session.scalar(
             select(func.count(ModelSupplier.id)).where(
-                ModelSupplier.workspace_id == self._workspace_id()
+                ModelSupplier.owner_user_id == self._owner_user_id()
             )
         )
         row = ModelSupplier(
-            workspace_id=self._workspace_id(), name=body.name, sort_order=int(count or 0)
+            owner_user_id=self._owner_user_id(), name=body.name, sort_order=int(count or 0)
         )
         self.session.add(row)
         await self.session.flush()

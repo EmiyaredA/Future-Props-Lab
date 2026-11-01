@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import type { Editor } from "@tiptap/core";
 import { ExternalLink, Globe } from "lucide-react";
-import { useWorkspaceId } from "@platform/auth/WorkspacePermissions";
+import { useAccountId } from "@platform/auth/AccountAccess";
 import { getLinkPreview } from "./api";
 import { thoughtKeys } from "./queryKeys";
 import { useLinkPreview } from "./useLinkPreview";
@@ -9,12 +9,12 @@ import { useLinkPreviewPosition } from "./useLinkPreviewPosition";
 import "./link-preview.css";
 
 export function LinkPreviewCard({ editor }: { editor: Editor }) {
-  const workspaceId = useWorkspaceId();
+  const accountId = useAccountId();
   const { anchor, surface, openAction, controls } = useLinkPreview(editor);
   const query = useQuery({
-    queryKey: thoughtKeys.linkPreview(workspaceId ?? "", anchor?.url ?? ""),
+    queryKey: thoughtKeys.linkPreview(accountId ?? "", anchor?.url ?? ""),
     queryFn: ({ signal }) => getLinkPreview(anchor!.url, signal),
-    enabled: !!anchor && !!workspaceId,
+    enabled: !!anchor && !!accountId,
     staleTime: (query) => (query.state.data?.available ? 600_000 : 60_000),
     gcTime: 600_000,
     retry: false,
@@ -24,7 +24,7 @@ export function LinkPreviewCard({ editor }: { editor: Editor }) {
   useLinkPreviewPosition(anchor, surface, controls.current.close);
   if (!anchor) return null;
   const data = query.data;
-  const loading = query.isPending && !!workspaceId;
+  const loading = query.isPending && !!accountId;
   return (
     <div
       ref={surface}

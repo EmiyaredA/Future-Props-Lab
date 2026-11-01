@@ -72,7 +72,7 @@ export type Context = {
   focused: boolean;
   path?: string;
   userId?: string;
-  workspaceId?: string;
+  accountId?: string;
 };
 
 export type ModelOption = { id: string; label: string };

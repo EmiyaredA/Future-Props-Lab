@@ -2,14 +2,13 @@
 
 from dataclasses import replace
 
-from sqlalchemy import select, text, update
+from sqlalchemy import text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.identity.errors import AccountError
 from app.capabilities.identity.permissions import role_scopes
 from app.capabilities.identity.principal import StudioPrincipal
-from app.console.governance.platform_policy import apply_policy
-from app.console.models import AuthSession, ManagementApiKey, User, WorkspaceMembership
+from app.console.models import AuthSession, ManagementApiKey, User
 from app.runtime.time import utc_now
 
 
@@ -32,37 +31,14 @@ async def begin_governance(session: AsyncSession, principal: StudioPrincipal) ->
         or auth.absolute_expires_at <= now
     ):
         raise AccountError("studio_auth_required")
-    if auth.active_workspace_id != principal.workspace_id:
-        raise AccountError("workspace_access_changed")
-    membership = await session.scalar(
-        select(WorkspaceMembership).where(
-            WorkspaceMembership.user_id == user.id,
-            WorkspaceMembership.workspace_id == principal.workspace_id,
-            WorkspaceMembership.status == "active",
-        )
-    )
-    role = membership.role if membership else None
-    access = (
-        "owner"
-        if role == "owner"
-        else "platform_admin"
-        if user.platform_role in {"admin", "super_admin"}
-        else "member"
-        if membership
-        else "public_viewer"
-    )
-
-    refreshed = replace(
+    if auth.user_id != principal.user_id:
+        raise AccountError("studio_auth_required")
+    return replace(
         principal,
-        is_platform_admin=user.platform_role == "super_admin",
         platform_role=user.platform_role,
-        workspace_access=access,
-        member_role=role,
         reauthenticated_at=auth.reauthenticated_at,
-        scopes=role_scopes(access, role),
+        scopes=role_scopes(user.platform_role),
     )
-
-    return await apply_policy(session, refreshed)
 
 
 async def cas(session: AsyncSession, model, resource_id: str, revision: int, **values):
@@ -78,18 +54,6 @@ async def cas(session: AsyncSession, model, resource_id: str, revision: int, **v
         current = await session.get(model, resource_id, populate_existing=True)
         raise AccountError("revision_conflict", current=current)
     return await session.get(model, resource_id, populate_existing=True)
-
-
-async def revoke_workspace_keys(session: AsyncSession, user_id: str, workspace_id: str) -> None:
-    await session.execute(
-        update(ManagementApiKey)
-        .where(
-            ManagementApiKey.user_id == user_id,
-            ManagementApiKey.workspace_id == workspace_id,
-            ManagementApiKey.revoked_at.is_(None),
-        )
-        .values(revoked_at=utc_now(), revision=ManagementApiKey.revision + 1)
-    )
 
 
 async def revoke_account_credentials(session: AsyncSession, user_id: str) -> None:

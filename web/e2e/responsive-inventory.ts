@@ -1,8 +1,8 @@
 // 项目只读模板、节点验收、汇总、结果与复验在 visual-acceptance.spec.ts 覆盖 390/768/1600 宽度。
 // 思绪工坊多维表格的数据表侧栏、视图标签、详情抽屉、三种视图、局部滚动、明暗主题与手机操作由 thought-multitable.spec.ts 覆盖。
 // 文档导航、SDK 示例切换、受控渲染块、公式/图表、桌面三栏和手机抽屉由 docs-sdk.spec.ts 补充验证。
-// 账号公共入口、工作区全屏弹窗与管理抽屉由 account-ui.spec.ts 验证。
-// 独立成员/角色/审计管理与收到邀请弹窗由 workspace-management.spec.ts 验证。
+// 账号设置与运行额度由 account-governance.spec.ts 验证。
+// 已移除空间治理与公开空间入口。
 // 模型目录、协议类型连接树与编辑弹窗由 model-catalog.spec.ts 补充明暗主题及手机检查。
 // 模型与智能体统一入口、键盘切换、授权矩阵由 code-agents.spec.ts 覆盖 390/768/1280/1600px 与明暗主题。
 // 官方技术文档图、放大阅读和个人全屏画板由 technical-knowledge.spec.ts 覆盖 390/768/1600 宽度与明暗主题。
@@ -22,12 +22,11 @@ export const desktopSurfaces = {
 export const responsiveOwners = {
   "interview-assistant-session": "shell",
   "management-accounts": "shell",
-  "management-workspaces": "shell",
   "management-audit": "shell",
   "management-invites": "shell",
   "management-settings": "shell",
   "management-services": "shell",
-  "management-permissions": "shell",
+  "management-quotas": "shell",
   home: "shell",
   "creative-workshop": "shell",
   "creative-workshop-mine": "shell",
@@ -83,21 +82,15 @@ export const responsiveOwners = {
   "director-desk-projects": "shell",
   "director-desk-editor": "editors",
 } satisfies Record<AppPage, "shell" | "editors" | "thought">;
-export const publicSurfaces = [
-  "login",
-  "account-workspace",
-  "public-workspace",
-  "docs",
-] as const;
+export const publicSurfaces = ["login", "account-settings", "docs"] as const;
 export const staticPaths = [
   "/apps/interview-assistant",
   "/management/accounts",
-  "/management/workspaces",
   "/management/audit",
   "/management/invites",
   "/management/settings",
   "/management/services",
-  "/management/permissions",
+  "/management/quotas",
   "/home",
   "/creative-workshop",
   "/creative-workshop/mine",

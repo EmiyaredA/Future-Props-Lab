@@ -76,7 +76,7 @@ def test_other_account_cannot_read_project_or_asset(studio):
     ).json()
     created = client.post(
         "/v1/platform/accounts",
-        json={"username": "separate-user", "display_name": "隔离测试", "platform_role": "member"},
+        json={"username": "separate-user", "display_name": "隔离测试", "platform_role": "user"},
     )
     assert created.status_code == 201, created.text
     temporary = created.json()["temporary_password"]

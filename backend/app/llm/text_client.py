@@ -22,8 +22,8 @@ class TextModel:
     slug: str
 
 
-async def resolve_text_model(session: AsyncSession, workspace_id: str, model_id: str) -> TextModel:
-    model, provider = await get_model(session, workspace_id, model_id, "text")
+async def resolve_text_model(session: AsyncSession, owner_user_id: str, model_id: str) -> TextModel:
+    model, provider = await get_model(session, owner_user_id, model_id, "text")
     return TextModel(
         kind=provider.kind,
         base_url=provider.base_url,
@@ -51,7 +51,7 @@ async def stream_product_text(
 def add_product_text_log(
     session: AsyncSession,
     *,
-    workspace_id: str,
+    owner_user_id: str,
     call_source: str,
     model: TextModel,
     trace_id: str,
@@ -65,7 +65,7 @@ def add_product_text_log(
 ) -> None:
     session.add(
         LlmCallLog(
-            workspace_id=workspace_id,
+            owner_user_id=owner_user_id,
             call_source=call_source,
             provider_kind=model.kind,
             model=model.slug,

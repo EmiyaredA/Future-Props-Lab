@@ -19,7 +19,7 @@ from app.apps.visual_workshop.models import (
 )
 from app.console.governance.generation_queue import claim_visual_capacity, visual_queue_candidates
 from app.console.governance.runtime_quotas import recover_admissions
-from app.console.models import User, WorkspaceMembership
+from app.console.models import User
 from app.console.models.runtime_admission import RuntimeAdmission
 from app.llm.models import ModelEntry, ModelProvider
 from app.runtime.credentials import encrypt_secret
@@ -34,10 +34,10 @@ pytestmark = pytest.mark.real_auth
 @asynccontextmanager
 async def environment(*, queue_limit=20):
     admin, *_ = await client_account(admin=True)
-    client, _, user_id, workspace_id = await client_account()
+    client, _, user_id, owner_user_id = await client_account()
     provider = ModelProvider(
         id=str(uuid4()),
-        workspace_id=workspace_id,
+        owner_user_id=owner_user_id,
         name="Queue test",
         kind="senseaudio_image",
         base_url="https://example.invalid/v1",
@@ -46,7 +46,7 @@ async def environment(*, queue_limit=20):
     )
     model = ModelEntry(
         id=str(uuid4()),
-        workspace_id=workspace_id,
+        owner_user_id=owner_user_id,
         provider_id=provider.id,
         slug="senseaudio-image-2.0-260319",
         label="Queue test",
@@ -54,7 +54,7 @@ async def environment(*, queue_limit=20):
         capabilities=["image_generation"],
     )
     project = VisualWorkshopProject(
-        id=str(uuid4()), workspace_id=workspace_id, title="Queue test", kind="image"
+        id=str(uuid4()), owner_user_id=owner_user_id, title="Queue test", kind="image"
     )
     async with SessionLocal() as session:
         session.add_all([provider, project])
@@ -65,7 +65,7 @@ async def environment(*, queue_limit=20):
     original = (await admin.get("/v1/platform/runtime-quotas")).json()
     policy = {
         **original["value"],
-        "generation_queue": {**original["value"]["generation_queue"], "member": queue_limit},
+        "generation_queue": {**original["value"]["generation_queue"], "user": queue_limit},
     }
     result = await admin.patch(
         "/v1/platform/runtime-quotas",
@@ -73,7 +73,7 @@ async def environment(*, queue_limit=20):
     )
     assert result.status_code == 200, result.text
     try:
-        yield client, admin, user_id, workspace_id, project.id, model.id
+        yield client, admin, user_id, owner_user_id, project.id, model.id
     finally:
         current = (await admin.get("/v1/platform/runtime-quotas")).json()
         await admin.patch(
@@ -86,11 +86,11 @@ async def environment(*, queue_limit=20):
             )
             await session.execute(
                 delete(VisualWorkshopProject).where(
-                    VisualWorkshopProject.workspace_id == workspace_id
+                    VisualWorkshopProject.owner_user_id == owner_user_id
                 )
             )
             await session.execute(
-                delete(ModelProvider).where(ModelProvider.workspace_id == workspace_id)
+                delete(ModelProvider).where(ModelProvider.owner_user_id == owner_user_id)
             )
             await session.commit()
         await client.aclose()
@@ -246,7 +246,7 @@ async def test_zero_and_lowered_queue_limit_preserve_accepted_tasks():
     async with environment(queue_limit=2) as (client, admin, _, _, project, model):
         tasks = [(await create(client, project, model)).json() for _ in range(4)]
         state = (await admin.get("/v1/platform/runtime-quotas")).json()
-        state["value"]["generation_queue"]["member"] = 0
+        state["value"]["generation_queue"]["user"] = 0
         assert (
             await admin.patch(
                 "/v1/platform/runtime-quotas",
@@ -259,7 +259,7 @@ async def test_zero_and_lowered_queue_limit_preserve_accepted_tasks():
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("invalid", ["account", "membership", "model"])
+@pytest.mark.parametrize("invalid", ["account", "model"])
 async def test_waiting_task_rechecks_execution_authorization(invalid, monkeypatch):
     submit = AsyncMock(return_value="should-not-submit")
     monkeypatch.setattr("app.apps.visual_workshop.generation_runner.submit_generation_task", submit)
@@ -273,14 +273,6 @@ async def test_waiting_task_rechecks_execution_authorization(invalid, monkeypatc
             if invalid == "account":
                 row = await session.get(User, user)
                 row.status = "disabled"
-            elif invalid == "membership":
-                row = await session.scalar(
-                    select(WorkspaceMembership).where(
-                        WorkspaceMembership.user_id == user,
-                        WorkspaceMembership.workspace_id == workspace,
-                    )
-                )
-                row.role = "viewer"
             else:
                 row = await session.get(ModelEntry, model)
                 row.enabled = False
@@ -316,11 +308,11 @@ async def test_long_blocked_queue_does_not_starve_other_owners_or_polling(monkey
         # More blocked waiters than the polling page size.
         for _ in range(43):
             assert (await create(client, project, model)).status_code == 200
-        other, _, user_id, workspace_id = await client_account()
+        other, _, user_id, owner_user_id = await client_account()
         async with aclosing(other):
             async with SessionLocal() as session:
                 other_project = VisualWorkshopProject(
-                    workspace_id=workspace_id, title="Other owner", kind="image"
+                    owner_user_id=owner_user_id, title="Other owner", kind="image"
                 )
                 session.add(other_project)
                 await session.flush()
@@ -328,7 +320,7 @@ async def test_long_blocked_queue_does_not_starve_other_owners_or_polling(monkey
                 # This test seeds a task directly in its isolated storage to give it a
                 # provider while preserving normal admission through the actual API.
                 provider = ModelProvider(
-                    workspace_id=workspace_id,
+                    owner_user_id=owner_user_id,
                     name="Other queue test",
                     kind="senseaudio_image",
                     base_url="https://example.invalid/v1",
@@ -338,7 +330,7 @@ async def test_long_blocked_queue_does_not_starve_other_owners_or_polling(monkey
                 session.add(provider)
                 await session.flush()
                 entry = ModelEntry(
-                    workspace_id=workspace_id,
+                    owner_user_id=owner_user_id,
                     provider_id=provider.id,
                     slug="senseaudio-image-2.0-260319",
                     enabled=True,
@@ -375,7 +367,7 @@ async def test_long_blocked_queue_does_not_starve_other_owners_or_polling(monkey
 
 
 @pytest.mark.asyncio
-async def test_account_queue_shared_across_workspaces_and_sdk():
+async def test_account_queue_shared_across_projects_and_sdk():
     import httpx
     from future_props_lab import ApiError, AsyncClient
 
@@ -384,19 +376,10 @@ async def test_account_queue_shared_across_workspaces_and_sdk():
     async with environment(queue_limit=1) as (client, admin, user, workspace, project, model):
         for _ in range(3):
             assert (await create(client, project, model)).status_code == 200
-        created = await admin.post(
-            "/v1/platform/workspaces",
-            json={"name": "Second queue workspace", "owner_user_id": user},
-        )
-        assert created.status_code == 201, created.text
-        second = created.json()["id"]
-        assert (
-            await client.post("/v1/account/workspaces/switch", json={"workspace_id": second})
-        ).status_code == 200
-        # Use another in-workspace model, and request the task through the standalone SDK.
+        second = workspace
         async with SessionLocal() as session:
             provider = ModelProvider(
-                workspace_id=second,
+                owner_user_id=second,
                 name="SDK queue",
                 kind="senseaudio_video",
                 api_key_ciphertext=encrypt_secret("test-key"),
@@ -405,14 +388,14 @@ async def test_account_queue_shared_across_workspaces_and_sdk():
             session.add(provider)
             await session.flush()
             entry = ModelEntry(
-                workspace_id=second,
+                owner_user_id=second,
                 provider_id=provider.id,
                 slug="doubao-seedance-2-0-260128",
                 enabled=True,
                 capabilities=["video_generation"],
             )
             other_project = VisualWorkshopProject(
-                workspace_id=second, title="SDK queue", kind="video"
+                owner_user_id=second, title="SDK queue", kind="video"
             )
             session.add_all([entry, other_project])
             await session.commit()
@@ -439,11 +422,6 @@ async def test_account_queue_shared_across_workspaces_and_sdk():
                 assert failure.value.status == 429
                 assert failure.value.code == "generation_queue_full"
                 # Release the same account's older waiting entry via its original workspace.
-                assert (
-                    await client.post(
-                        "/v1/account/workspaces/switch", json={"workspace_id": workspace}
-                    )
-                ).status_code == 200
                 tasks = (
                     await client.get(
                         "/v1/visual-workshop/generation-tasks", params={"project_id": project}
@@ -467,15 +445,15 @@ async def test_account_queue_shared_across_workspaces_and_sdk():
         finally:
             async with SessionLocal() as session:
                 await session.execute(
-                    delete(RuntimeAdmission).where(RuntimeAdmission.workspace_id == second)
+                    delete(RuntimeAdmission).where(RuntimeAdmission.owner_user_id == second)
                 )
                 await session.execute(
                     delete(VisualWorkshopProject).where(
-                        VisualWorkshopProject.workspace_id == second
+                        VisualWorkshopProject.owner_user_id == second
                     )
                 )
                 await session.execute(
-                    delete(ModelProvider).where(ModelProvider.workspace_id == second)
+                    delete(ModelProvider).where(ModelProvider.owner_user_id == second)
                 )
                 await session.commit()
 

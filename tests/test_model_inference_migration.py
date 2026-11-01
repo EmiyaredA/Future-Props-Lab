@@ -4,9 +4,14 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
+from tests.migration_fixtures import (
+    LATEST_MIGRATION_ID,
+    MIGRATIONS,
+    apply_migrations,
+    check_migrations,
+)
 
-from db.migrations import MigrationDriftError, apply_migrations, check_migrations, runner
-from db.migrations.registry import LATEST_MIGRATION_ID, MIGRATIONS
+from db.migrations import MigrationDriftError, runner
 from db.migrations.runner import connect_database, migration_checksum
 
 APPLIED_INFERENCE_CHECKSUM = "9c7dcccf24f9fb18f500aba9ba87d97cf4d2f5d16e2e8e37fe61cc7ec6295974"

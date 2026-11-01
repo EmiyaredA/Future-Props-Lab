@@ -30,13 +30,13 @@ def connection_out(row) -> ExternalConnectionOut:
 
 
 class ExternalConnections:
-    def __init__(self, session, workspace_id, transport=None):
-        self.session, self.workspace_id, self.transport = session, workspace_id, transport
+    def __init__(self, session, owner_user_id, transport=None):
+        self.session, self.owner_user_id, self.transport = session, owner_user_id, transport
 
     async def get(self, id):
         row = await self.session.scalar(
             select(ExternalConnection).where(
-                ExternalConnection.id == id, ExternalConnection.workspace_id == self.workspace_id
+                ExternalConnection.id == id, ExternalConnection.owner_user_id == self.owner_user_id
             )
         )
         if row is None:
@@ -46,7 +46,7 @@ class ExternalConnections:
     async def list(self):
         rows = await self.session.scalars(
             select(ExternalConnection)
-            .where(ExternalConnection.workspace_id == self.workspace_id)
+            .where(ExternalConnection.owner_user_id == self.owner_user_id)
             .order_by(ExternalConnection.name)
         )
         return ExternalConnectionList(items=[connection_out(r) for r in rows])
@@ -77,7 +77,7 @@ class ExternalConnections:
                     update(ExternalConnection)
                     .where(
                         ExternalConnection.id == row.id,
-                        ExternalConnection.workspace_id == self.workspace_id,
+                        ExternalConnection.owner_user_id == self.owner_user_id,
                         ExternalConnection.revision == body.expected_revision,
                     )
                     .values(**values, revision=ExternalConnection.revision + 1)
@@ -89,7 +89,7 @@ class ExternalConnections:
                         body.expected_revision, current.revision, current.model_dump(mode="json")
                     )
             else:
-                row = ExternalConnection(workspace_id=self.workspace_id, **values)
+                row = ExternalConnection(owner_user_id=self.owner_user_id, **values)
                 self.session.add(row)
             await self.session.commit()
         except IntegrityError:
@@ -125,7 +125,7 @@ class ExternalConnections:
             update(ExternalConnection)
             .where(
                 ExternalConnection.id == id,
-                ExternalConnection.workspace_id == self.workspace_id,
+                ExternalConnection.owner_user_id == self.owner_user_id,
                 ExternalConnection.revision == revision,
             )
             .values(status=status, status_message=message, last_checked_at=utc_now())

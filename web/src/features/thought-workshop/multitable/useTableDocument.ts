@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "@platform/api/client";
-import {
-  useAccountId,
-  useWorkspaceId,
-} from "@platform/auth/WorkspacePermissions";
+import { useAccountId } from "@platform/auth/AccountAccess";
 import {
   publishResourceRevision,
   subscribeResourceRevisions,
@@ -31,7 +28,7 @@ export function useTableDocument(
   const client = useQueryClient(),
     access = useDocumentAccess(),
     user = useAccountId(),
-    workspace = useWorkspaceId();
+    workspace = useAccountId();
   const context = scope.publication
     ? `${scope.publication}/${scope.parent ?? note}`
     : (workspace ?? "");

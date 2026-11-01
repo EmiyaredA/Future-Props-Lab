@@ -47,7 +47,7 @@ export function DesktopDevelopmentHost() {
       if (
         current.pending.some((kind) => kind === "desktop" || kind === "page")
       ) {
-        const event = new CustomEvent("future-props:before-workspace-switch", {
+        const event = new CustomEvent("future-props:before-navigation", {
           cancelable: true,
           detail: commit,
         });

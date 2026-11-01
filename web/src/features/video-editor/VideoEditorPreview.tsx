@@ -10,7 +10,7 @@ import { VideoEditorLightLeak } from "./VideoEditorLightLeak";
 import { VideoEditorPreciseFrame } from "./VideoEditorPreciseFrame";
 import { previewVideoPlaybackKeys } from "./previewPlayback";
 import type { TimelineEditBuilder } from "./timelineSaveQueue";
-import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
+import { useAccountPermission } from "@platform/auth/AccountAccess";
 import {
   useEffect,
   useMemo,
@@ -274,7 +274,7 @@ export function VideoEditorPreview({
   previewingAsset?: VideoEditorAsset;
   onClearPreviewingAsset?: () => void;
 }) {
-  const canWrite = useWorkspacePermission("content.write");
+  const canWrite = useAccountPermission("content.write");
   const [frameExport, setFrameExport] = useState<{
     revision: number;
     timeUs: number;

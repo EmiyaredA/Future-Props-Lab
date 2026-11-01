@@ -21,7 +21,7 @@
       "y": 50,
       "width": 230,
       "height": 130,
-      "text": "Principal / WorkspaceDep\n身份与有效权限",
+      "text": "Principal / OwnerDep\n身份与有效权限",
       "fill": "#edf2fb",
       "stroke": "#365f62",
       "icon": "lock"

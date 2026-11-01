@@ -18,7 +18,7 @@ from app.llm.models import LlmCallLog
 def _log(**overrides: object) -> LlmCallLog:
     values: dict[str, object] = {
         "id": "log-reproduction-test",
-        "workspace_id": "workspace-test",
+        "owner_user_id": "workspace-test",
         "call_source": "model_playground",
         "provider_kind": "openai",
         "model": "gpt-test",

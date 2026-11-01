@@ -50,9 +50,9 @@ async def open_project_folder(
     application_id: str,
     project_id: str,
     *,
-    workspace_id: str,
+    owner_user_id: str,
 ) -> None:
-    path = storage.project_root(application_id, project_id, workspace_id=workspace_id)
+    path = storage.project_root(application_id, project_id, owner_user_id=owner_user_id)
     if not path.is_dir():
         raise ProjectFolderError(
             "项目文件夹不存在",
@@ -62,12 +62,12 @@ async def open_project_folder(
     await asyncio.to_thread(_open_folder, path)
 
 
-async def open_library_folder(storage: AssetStorage, *, workspace_id: str) -> None:
+async def open_library_folder(storage: AssetStorage, *, owner_user_id: str) -> None:
     path = storage.target_root(
         visual_project_id=None,
         galgame_project_id=None,
         video_editor_project_id=None,
-        workspace_id=workspace_id,
+        owner_user_id=owner_user_id,
     )
     if not path.is_dir():
         raise ProjectFolderError(

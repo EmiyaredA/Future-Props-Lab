@@ -9,7 +9,7 @@ const chapters = [
   ["component-contracts", "组件契约与生命周期", "组件化设计"],
   ["app-handoffs", "公共能力复用与应用交接", "组件化设计"],
   ["data-model", "核心对象与数据归属", "数据模型与数据流"],
-  ["identity", "Workspace 与权限", "数据模型与数据流"],
+  ["identity", "账号与权限", "数据模型与数据流"],
   ["revision", "编辑、保存、历史与并发", "数据模型与数据流"],
   ["assets", "素材上传、引用与预览", "数据模型与数据流"],
   ["sqlite", "SQLite、事务与迁移", "数据模型与数据流"],

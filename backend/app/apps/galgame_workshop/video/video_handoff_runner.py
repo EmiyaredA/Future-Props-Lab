@@ -29,7 +29,7 @@ from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import VIDEO_EDITABLE_EXTENSIONS
 from app.capabilities.asset_store.storage import AssetStorage
-from app.orm import bind_workspace, require_workspace_id
+from app.orm import bind_owner, require_owner_id
 from app.runtime.config import Settings, get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.polling_runner import PollingTaskRunner
@@ -96,9 +96,9 @@ class GalgameVideoEditorHandoffRunner(PollingTaskRunner):
             row = await session.get(GalgameVideoEditorHandoffTask, task_id)
             if row is None:
                 return
-            bind_workspace(
+            bind_owner(
                 session,
-                require_workspace_id(row.workspace_id, subject="video handoff task"),
+                require_owner_id(row.owner_user_id, subject="video handoff task"),
             )
             if status is not None:
                 row.status = status
@@ -120,13 +120,13 @@ class GalgameVideoEditorHandoffRunner(PollingTaskRunner):
             row = await session.get(GalgameVideoEditorHandoffTask, task_id)
             return row is None or row.cancel_requested
 
-    async def _discard_project(self, project_id: str, workspace_id: str) -> None:
+    async def _discard_project(self, project_id: str, owner_user_id: str) -> None:
         staged = self.storage.stage_project_root(
-            "video-editor", project_id, workspace_id=workspace_id
+            "video-editor", project_id, owner_user_id=owner_user_id
         )
         try:
             async with self.session_factory() as session:
-                bind_workspace(session, workspace_id)
+                bind_owner(session, owner_user_id)
                 await session.execute(
                     delete(VideoEditorProject).where(VideoEditorProject.id == project_id)
                 )
@@ -143,8 +143,8 @@ class GalgameVideoEditorHandoffRunner(PollingTaskRunner):
                 task = await session.get(GalgameVideoEditorHandoffTask, task_id)
                 if task is None or task.status != "queued":
                     return
-                workspace_id = require_workspace_id(task.workspace_id, subject="video handoff task")
-                bind_workspace(session, workspace_id)
+                owner_user_id = require_owner_id(task.owner_user_id, subject="video handoff task")
+                bind_owner(session, owner_user_id)
                 task.status = "running"
                 task.started_at = task.started_at or utc_now()
                 task.progress = 2
@@ -208,7 +208,7 @@ class GalgameVideoEditorHandoffRunner(PollingTaskRunner):
                     document,
                     source_paths,
                     cache_dir=self.storage.project_root(
-                        "galgame-workshop", task.project_id, workspace_id=workspace_id
+                        "galgame-workshop", task.project_id, owner_user_id=owner_user_id
                     )
                     / "derived"
                     / "audio-envelopes",
@@ -236,8 +236,9 @@ class GalgameVideoEditorHandoffRunner(PollingTaskRunner):
                 raise InterruptedError("剪辑交接已取消")
 
             async with self.session_factory() as session:
-                bind_workspace(session, workspace_id)
+                bind_owner(session, owner_user_id)
                 project = VideoEditorProject(
+                    owner_user_id=owner_user_id,
                     title=title[:120],
                     status="draft",
                     source_application="galgame-workshop",
@@ -249,7 +250,7 @@ class GalgameVideoEditorHandoffRunner(PollingTaskRunner):
                 await session.flush()
                 created_project_id = project.id
                 self.storage.ensure_project_layout(
-                    "video-editor", project.id, workspace_id=workspace_id
+                    "video-editor", project.id, owner_user_id=owner_user_id
                 )
                 session.add(VideoEditorTimeline(project_id=project.id, document={}))
                 await session.commit()
@@ -276,11 +277,11 @@ class GalgameVideoEditorHandoffRunner(PollingTaskRunner):
                 )
                 content_type = source.mime_type if source is not None else "image/png"
                 async with self.session_factory() as session:
-                    bind_workspace(session, workspace_id)
+                    bind_owner(session, owner_user_id)
                     library = AssetLibrary(session, self.settings)
                     copied, staged = await library.stage_local_copy(
                         source_path,
-                        workspace_id=workspace_id,
+                        owner_user_id=owner_user_id,
                         filename=filename,
                         content_type=content_type,
                         video_editor_project_id=created_project_id,
@@ -295,6 +296,7 @@ class GalgameVideoEditorHandoffRunner(PollingTaskRunner):
                         )
                         session.add(
                             VideoEditorTask(
+                                owner_user_id=owner_user_id,
                                 project_id=created_project_id,
                                 request_id=f"media-{copied.id}",
                                 kind="media",
@@ -320,7 +322,7 @@ class GalgameVideoEditorHandoffRunner(PollingTaskRunner):
                 mode="json", by_alias=True, exclude_none=True
             )
             async with self.session_factory() as session:
-                bind_workspace(session, workspace_id)
+                bind_owner(session, owner_user_id)
                 timeline = await session.get(VideoEditorTimeline, created_project_id)
                 if timeline is None:
                     raise RuntimeError("剪辑项目时间轴创建失败")
@@ -337,12 +339,12 @@ class GalgameVideoEditorHandoffRunner(PollingTaskRunner):
             )
         except InterruptedError:
             if created_project_id is not None:
-                await self._discard_project(created_project_id, workspace_id)
+                await self._discard_project(created_project_id, owner_user_id)
             await self._set(task_id, status="cancelled", progress=0, error=None, finished=True)
         except Exception as exc:
             if created_project_id is not None:
                 try:
-                    await self._discard_project(created_project_id, workspace_id)
+                    await self._discard_project(created_project_id, owner_user_id)
                 except Exception as cleanup_error:
                     exc = RuntimeError(f"{exc}; 清理半成品失败：{cleanup_error}")
             await self._set(

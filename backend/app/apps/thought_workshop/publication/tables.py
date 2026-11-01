@@ -29,7 +29,7 @@ class TableAccess:
                 .join(ThoughtNote, ThoughtNote.knowledge_base_id == Publication.knowledge_base_id)
                 .where(
                     ThoughtNote.id == note_id,
-                    Publication.workspace_id == pub.workspace_id,
+                    Publication.owner_user_id == pub.owner_user_id,
                     Publication.active.is_(True),
                 )
             )
@@ -40,7 +40,7 @@ class TableAccess:
             self.session, self.principal, pub, note_id, level="edit" if write else "read"
         )
         bind_source(self.session, pub)
-        use_case = Multitable(self.session, pub.workspace_id, self.principal.user_id)
+        use_case = Multitable(self.session, pub.owner_user_id, self.principal.user_id)
         await use_case.note(note.id)
         return use_case, pub, role
 

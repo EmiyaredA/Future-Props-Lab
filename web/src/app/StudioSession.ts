@@ -3,7 +3,6 @@ import type { components } from "@generated/api";
 import type { AccountSessionContext } from "@features/accounts";
 
 export type SessionUser = components["schemas"]["CurrentUserOut"];
-export type SessionWorkspace = components["schemas"]["WorkspaceOut"];
 export type AuthMe = components["schemas"]["AuthMeOut"];
 
 export type SessionContextValue = AccountSessionContext;

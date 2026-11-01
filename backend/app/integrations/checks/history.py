@@ -23,14 +23,14 @@ def check_out(row: IntegrationCheck) -> IntegrationCheckOut:
 
 
 async def list_recent_checks(
-    session: AsyncSession, workspace_id: str, kind: str, *, limit: int = 8
+    session: AsyncSession, owner_user_id: str, kind: str, *, limit: int = 8
 ) -> list[IntegrationCheckOut]:
     rows = (
         (
             await session.execute(
                 select(IntegrationCheck)
                 .where(
-                    IntegrationCheck.workspace_id == workspace_id,
+                    IntegrationCheck.owner_user_id == owner_user_id,
                     IntegrationCheck.resource_kind == kind,
                 )
                 .order_by(IntegrationCheck.created_at.desc())
@@ -46,7 +46,7 @@ async def list_recent_checks(
 async def record_check(
     session: AsyncSession,
     *,
-    workspace_id: str,
+    owner_user_id: str,
     kind: str,
     resource_id: str,
     resource_name: str,
@@ -56,7 +56,7 @@ async def record_check(
     summary: str,
 ) -> IntegrationCheckOut:
     row = IntegrationCheck(
-        workspace_id=workspace_id,
+        owner_user_id=owner_user_id,
         resource_kind=kind,
         resource_id=resource_id,
         resource_name=resource_name,
@@ -71,7 +71,7 @@ async def record_check(
         await session.execute(
             select(IntegrationCheck.id)
             .where(
-                IntegrationCheck.workspace_id == workspace_id,
+                IntegrationCheck.owner_user_id == owner_user_id,
                 IntegrationCheck.resource_kind == kind,
             )
             .order_by(IntegrationCheck.created_at.desc())
@@ -82,7 +82,7 @@ async def record_check(
     if stale:
         await session.execute(
             delete(IntegrationCheck).where(
-                IntegrationCheck.workspace_id == workspace_id, IntegrationCheck.id.in_(stale)
+                IntegrationCheck.owner_user_id == owner_user_id, IntegrationCheck.id.in_(stale)
             )
         )
     return check_out(row)

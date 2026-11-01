@@ -23,7 +23,7 @@ class IntegrationPermissionError(Exception):
 
 def require_integration_owner(principal: StudioPrincipal) -> None:
     if not principal.allows("configuration.manage"):
-        raise IntegrationPermissionError("只有 Workspace Owner 可以管理集成")
+        raise IntegrationPermissionError("只有账号Owner 可以管理集成")
 
 
 def redact_sensitive(value: str, secrets: list[str]) -> str:

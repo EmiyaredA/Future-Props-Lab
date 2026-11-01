@@ -15,8 +15,8 @@ from app.runtime.db import SessionLocal
 from app.runtime.operation_receipts import OperationError
 
 
-async def prepare(session, workspace_id, body):
-    model, provider = await get_model(session, workspace_id, body.model_id, "text")
+async def prepare(session, owner_user_id, body):
+    model, provider = await get_model(session, owner_user_id, body.model_id, "text")
     args = dict(
         kind=provider.kind,
         base_url=provider.base_url,
@@ -30,14 +30,14 @@ async def prepare(session, workspace_id, body):
     for message in body.messages:
         images = []
         for identity in message.asset_ids:
-            asset = await InferenceAssets(session, workspace_id).get(identity)
+            asset = await InferenceAssets(session, owner_user_id).get(identity)
             if (
                 asset.media_kind != "image"
                 or asset.byte_size > 8 * 1024 * 1024
                 or "vision" not in model.capabilities
             ):
                 raise OperationError("模型不支持视觉输入，或图片超过 8 MiB")
-            path = root(workspace_id) / "inputs" / asset.storage_key
+            path = root(owner_user_id) / "inputs" / asset.storage_key
             images.append(
                 ImageInput(
                     mime_type=asset.mime_type,
@@ -54,7 +54,7 @@ async def prepare(session, workspace_id, body):
 
 
 async def events(
-    workspace_id, body, args, *, transport=None, credential: CredentialSnapshot | None = None
+    owner_user_id, body, args, *, transport=None, credential: CredentialSnapshot | None = None
 ):
     started, log_id = monotonic(), str(uuid4())
     text, usage, finish_reason, error = "", {}, None, None
@@ -83,7 +83,7 @@ async def events(
                 session.add(
                     LlmCallLog(
                         id=log_id,
-                        workspace_id=workspace_id,
+                        owner_user_id=owner_user_id,
                         call_source="model_inference",
                         provider_kind=args["kind"],
                         model=args["model"],

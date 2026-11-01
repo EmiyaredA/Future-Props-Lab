@@ -221,12 +221,12 @@ def test_encoding_preserves_quotes_backslashes_and_newlines(tmp_path):
 def test_fixed_acceptance_connections_use_native_toml_and_empty_defaults(tmp_path):
     config = tmp_path / "acceptance.toml"
     config.write_text(
-        '[visual_acceptance]\nmodel_workspace_id="space"\nmodel_id="model"\n'
+        '[visual_acceptance]\nmodel_owner_user_id="space"\nmodel_id="model"\n'
         'codex_executable="/opt/codex"\ncodex_user_ids=["one","two"]\n'
         'claude_executable="/opt/claude"\nclaude_user_ids=["three"]\n'
     )
     settings = Settings(_config_file=config, _read_environment=False, fpl_secrets_key=KEY)
-    assert settings.fpl_acceptance_model_workspace_id == "space"
+    assert settings.fpl_acceptance_model_owner_user_id == "space"
     assert settings.fpl_acceptance_model_id == "model"
     assert settings.fpl_acceptance_codex_user_ids.split(os.pathsep) == ["one", "two"]
     assert settings.fpl_acceptance_claude_user_ids == "three"

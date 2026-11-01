@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient, useQueries } from "@tanstack/react-query";
-import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
+import { useAccountPermission } from "@platform/auth/AccountAccess";
 import {
   cancelGenerationTask,
   getGenerationTask,
@@ -10,7 +10,7 @@ import {
 import { visualWorkshopQueryKeys as keys } from "../queryKeys";
 
 export function CancelQueuedTasks({ tasks }: { tasks: GenerationTask[] }) {
-  const canWrite = useWorkspacePermission("content.write");
+  const canWrite = useAccountPermission("content.write");
   const client = useQueryClient();
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");

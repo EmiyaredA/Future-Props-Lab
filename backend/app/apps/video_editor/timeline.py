@@ -770,12 +770,12 @@ async def validate_timeline(session: AsyncSession, project_id: str, document: di
 
 
 class VideoEditorTimelines:
-    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
         self.session = session
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
 
     async def row(self, project_id: str) -> VideoEditorTimeline:
-        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
+        await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
         row = await self.session.get(VideoEditorTimeline, project_id)
         if row is None:
             raise VideoEditorNotFoundError("时间轴不存在")
@@ -801,7 +801,7 @@ class VideoEditorTimelines:
             await self.session.execute(
                 select(VideoEditorOperationBatch).where(
                     VideoEditorOperationBatch.project_id == project_id,
-                    VideoEditorOperationBatch.workspace_id == self.workspace_id,
+                    VideoEditorOperationBatch.owner_user_id == self.owner_user_id,
                     VideoEditorOperationBatch.request_id == body.request_id,
                 )
             )
@@ -827,7 +827,7 @@ class VideoEditorTimelines:
             op.model_dump(mode="json", by_alias=True, exclude_none=True) for op in body.operations
         ]
         merge_contexts = await VideoEditorClipMerges(
-            self.session, self.workspace_id
+            self.session, self.owner_user_id
         ).operation_contexts(project_id, body.operations)
         document = await validate_timeline(
             self.session, project_id, apply_operations(row.document, body, merge_contexts)
@@ -864,7 +864,7 @@ class VideoEditorTimelines:
             )
         self.session.add(
             VideoEditorOperationBatch(
-                workspace_id=self.workspace_id,
+                owner_user_id=self.owner_user_id,
                 project_id=project_id,
                 request_id=body.request_id,
                 base_revision=body.expected_revision,
@@ -876,7 +876,7 @@ class VideoEditorTimelines:
             update(VideoEditorProject)
             .where(
                 VideoEditorProject.id == project_id,
-                VideoEditorProject.workspace_id == self.workspace_id,
+                VideoEditorProject.owner_user_id == self.owner_user_id,
             )
             .values(updated_at=now)
         )

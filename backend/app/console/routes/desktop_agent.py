@@ -80,8 +80,8 @@ async def decide_pairing(
     request: Request, pair_id: str, body: AgentDecisionIn, session: SessionDep
 ):
     principal = await identity(request, session, browser=True)
-    if body.expected_workspace_id != principal.workspace_id:
-        raise AgentError(409, "workspace_access_changed")
+    if body.expected_owner_user_id != principal.owner_user_id:
+        raise AgentError(409, "account_access_changed")
     return await runtime(request).decide(pair_id, body, session, principal, client_ip(request))
 
 
@@ -100,7 +100,7 @@ async def capabilities(request: Request, session: SessionDep):
     return dict(
         version=MANIFEST["version"],
         user_id=principal.user_id,
-        workspace_id=principal.workspace_id,
+        owner_user_id=principal.owner_user_id,
         scopes=sorted(principal.scopes),
         operations=operations,
         schemas=schema["components"]["schemas"],
@@ -125,7 +125,7 @@ async def inbox(request: Request, session: SessionDep):
     principal = await identity(request, session, browser=True)
     state = runtime(request)
     state.prune()
-    audience = (principal.user_id, principal.workspace_id)
+    audience = (principal.user_id, principal.owner_user_id)
     state.viewers[audience] = time.monotonic()
     return dict(
         requests=[

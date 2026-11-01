@@ -164,7 +164,7 @@ def _canvas_asset_ids(nodes: list[dict]) -> set[str]:
 
 
 async def _model_references(
-    session: AsyncSession, model_ids: set[str], workspace_id: str
+    session: AsyncSession, model_ids: set[str], owner_user_id: str
 ) -> dict[str, dict]:
     if not model_ids:
         return {}
@@ -174,8 +174,8 @@ async def _model_references(
             .join(ModelProvider, ModelProvider.id == ModelEntry.provider_id)
             .where(
                 ModelEntry.id.in_(model_ids),
-                ModelEntry.workspace_id == workspace_id,
-                ModelProvider.workspace_id == workspace_id,
+                ModelEntry.owner_user_id == owner_user_id,
+                ModelProvider.owner_user_id == owner_user_id,
             )
         )
     ).all()
@@ -186,7 +186,7 @@ async def _model_references(
 
 
 async def _resolve_models(
-    session: AsyncSession, references: object, workspace_id: str
+    session: AsyncSession, references: object, owner_user_id: str
 ) -> dict[str, str]:
     if not isinstance(references, dict):
         return {}
@@ -204,8 +204,8 @@ async def _resolve_models(
             .where(
                 ModelEntry.enabled.is_(True),
                 ModelProvider.enabled.is_(True),
-                ModelEntry.workspace_id == workspace_id,
-                ModelProvider.workspace_id == workspace_id,
+                ModelEntry.owner_user_id == owner_user_id,
+                ModelProvider.owner_user_id == owner_user_id,
             )
         )
     ).all()
@@ -272,7 +272,7 @@ def _remap_canvas(
                     ProjectSnapshotImportWarning(
                         code="model_binding_unavailable",
                         field=f"canvas.nodes[{index}].generation_draft.model_id",
-                        message="原生成模型在当前 Workspace 中不可用，请重新选择。",
+                        message="原生成模型在当前账号中不可用，请重新选择。",
                     )
                 )
     edges = [edge.model_dump(mode="json") for edge in canvas.edges]
@@ -282,10 +282,10 @@ def _remap_canvas(
 class VisualWorkshopProjectSnapshots:
     application_id = "visual-workshop"
 
-    def __init__(self, session: AsyncSession, settings: Settings, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, settings: Settings, owner_user_id: str) -> None:
         self.session = session
         self.settings = settings
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
         self.storage = AssetStorage(settings)
 
     async def export(self, project_id: str) -> ExportedProjectSnapshot:
@@ -293,7 +293,7 @@ class VisualWorkshopProjectSnapshots:
             await self.session.execute(
                 select(VisualWorkshopProject).where(
                     VisualWorkshopProject.id == project_id,
-                    VisualWorkshopProject.workspace_id == self.workspace_id,
+                    VisualWorkshopProject.owner_user_id == self.owner_user_id,
                 )
             )
         ).scalar_one_or_none()
@@ -305,7 +305,7 @@ class VisualWorkshopProjectSnapshots:
                 await self.session.execute(
                     select(VisualAssetFolder).where(
                         VisualAssetFolder.project_id == project_id,
-                        VisualAssetFolder.workspace_id == self.workspace_id,
+                        VisualAssetFolder.owner_user_id == self.owner_user_id,
                     )
                 )
             ).scalars()
@@ -315,7 +315,7 @@ class VisualWorkshopProjectSnapshots:
                 await self.session.execute(
                     select(VisualAsset).where(
                         VisualAsset.project_id == project_id,
-                        VisualAsset.workspace_id == self.workspace_id,
+                        VisualAsset.owner_user_id == self.owner_user_id,
                     )
                 )
             ).scalars()
@@ -326,8 +326,8 @@ class VisualWorkshopProjectSnapshots:
                 .join(VisualAsset, VisualAsset.id == VisualProjectAssetReference.asset_id)
                 .where(
                     VisualProjectAssetReference.project_id == project_id,
-                    VisualProjectAssetReference.workspace_id == self.workspace_id,
-                    VisualAsset.workspace_id == self.workspace_id,
+                    VisualProjectAssetReference.owner_user_id == self.owner_user_id,
+                    VisualAsset.owner_user_id == self.owner_user_id,
                 )
             )
         ).all()
@@ -355,7 +355,7 @@ class VisualWorkshopProjectSnapshots:
                 await self.session.execute(
                     select(VisualGenerationTask.result_asset_id).where(
                         VisualGenerationTask.project_id == project_id,
-                        VisualGenerationTask.workspace_id == self.workspace_id,
+                        VisualGenerationTask.owner_user_id == self.owner_user_id,
                         VisualGenerationTask.result_asset_id.is_not(None),
                     )
                 )
@@ -390,7 +390,7 @@ class VisualWorkshopProjectSnapshots:
         # History remains a valid project-owned reference after a library tree entry is removed.
         history_assets = await self.session.scalars(
             select(VisualAsset).where(
-                VisualAsset.workspace_id == self.workspace_id, VisualAsset.id.in_(used_ids - seen)
+                VisualAsset.owner_user_id == self.owner_user_id, VisualAsset.id.in_(used_ids - seen)
             )
         )
         for asset in history_assets:
@@ -421,7 +421,9 @@ class VisualWorkshopProjectSnapshots:
                 {"id": row.id, "parent_id": row.parent_id, "name": row.name} for row in folders
             ],
             "assets": asset_records,
-            "model_references": await _model_references(self.session, model_ids, self.workspace_id),
+            "model_references": await _model_references(
+                self.session, model_ids, self.owner_user_id
+            ),
         }
         title = project.title
         source_project = project_out(project).model_dump(mode="json")
@@ -465,14 +467,14 @@ class VisualWorkshopProjectSnapshots:
                 raise ProjectSnapshotError("视觉项目素材引用的文件夹不存在")
             asset_ids = {item["id"]: new_id() for item in assets}
             model_ids = await _resolve_models(
-                self.session, payload.get("model_references"), self.workspace_id
+                self.session, payload.get("model_references"), self.owner_user_id
             )
             nodes, edges, warnings = _remap_canvas(
                 canvas, asset_ids, model_ids, payload.get("model_references")
             )
             project = VisualWorkshopProject(
                 id=new_id(),
-                workspace_id=self.workspace_id,
+                owner_user_id=self.owner_user_id,
                 title=_copy_title(create.title),
                 kind=create.kind,
                 status=status,
@@ -501,13 +503,13 @@ class VisualWorkshopProjectSnapshots:
                 self.storage,
                 self.application_id,
                 project.id,
-                workspace_id=self.workspace_id,
+                owner_user_id=self.owner_user_id,
             ):
                 for item in folders:
                     self.session.add(
                         VisualAssetFolder(
                             id=folder_ids[item["id"]],
-                            workspace_id=self.workspace_id,
+                            owner_user_id=self.owner_user_id,
                             project_id=project.id,
                             parent_id=folder_ids.get(item.get("parent_id")),
                             name=str(item["name"]),
@@ -518,7 +520,7 @@ class VisualWorkshopProjectSnapshots:
                     storage_key = uuid4().hex
                     asset = VisualAsset(
                         id=asset_ids[item["id"]],
-                        workspace_id=self.workspace_id,
+                        owner_user_id=self.owner_user_id,
                         project_id=project.id,
                         folder_id=folder_ids.get(item.get("folder_id")),
                         original_filename=item["original_filename"],
@@ -536,7 +538,7 @@ class VisualWorkshopProjectSnapshots:
                             storage_key,
                             visual_project_id=project.id,
                             galgame_project_id=None,
-                            workspace_id=self.workspace_id,
+                            owner_user_id=self.owner_user_id,
                         ),
                         expected_size=item["byte_size"],
                     )
@@ -552,7 +554,7 @@ class VisualWorkshopProjectSnapshots:
                     self.session,
                     payload.get("acceptance"),
                     project.id,
-                    self.workspace_id,
+                    self.owner_user_id,
                     node_ids,
                     output_ids,
                     asset_ids,

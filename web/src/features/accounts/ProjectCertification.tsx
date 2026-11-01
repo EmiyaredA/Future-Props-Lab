@@ -2,7 +2,7 @@ import { useState } from "react";
 import { BadgeCheck } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, unwrap } from "@platform/api/client";
-import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
+import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { ManagementDialog, ManagementError } from "./ManagementUi";
 export function ProjectCertification({
   kind,
@@ -18,8 +18,8 @@ export function ProjectCertification({
   };
   queryKey: readonly unknown[];
 }) {
-  const allowed = useWorkspacePermission("projects.certify");
-  const writable = useWorkspacePermission("content.write");
+  const allowed = useAccountPermission("projects.certify");
+  const writable = useAccountPermission("content.write");
   const cache = useQueryClient();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -45,7 +45,7 @@ export function ProjectCertification({
         >
           <p>
             确认更改「{project.title}
-            」的官方认证状态？公开工作区的展台会同步展示此标记。
+            」的官方认证状态？认证标记只影响此作品的官方身份。
           </p>
           <ManagementError error={error} />
           <footer>

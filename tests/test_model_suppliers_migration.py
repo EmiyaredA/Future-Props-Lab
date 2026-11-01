@@ -1,8 +1,9 @@
 import sqlite3
 
 import pytest
+from tests.migration_fixtures import apply_migrations
 
-from db.migrations import apply_migrations, runner
+from db.migrations import runner
 from db.migrations.runner import connect_database
 
 

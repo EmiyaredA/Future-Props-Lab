@@ -45,7 +45,7 @@ async def client():
 async def configured_model(monkeypatch):
     async with SessionLocal() as session:
         provider = ModelProvider(
-            workspace_id="default",
+            owner_user_id="test-user",
             name="验收假供应商",
             kind="openai",
             base_url="https://example.com/v1",
@@ -54,7 +54,7 @@ async def configured_model(monkeypatch):
         session.add(provider)
         await session.flush()
         model = ModelEntry(
-            workspace_id="default",
+            owner_user_id="test-user",
             provider_id=provider.id,
             slug="vision-test",
             label="视觉测试",
@@ -63,7 +63,7 @@ async def configured_model(monkeypatch):
         session.add(model)
         await session.commit()
         identity = model.id
-    monkeypatch.setattr(get_settings(), "fpl_acceptance_model_workspace_id", "default")
+    monkeypatch.setattr(get_settings(), "fpl_acceptance_model_owner_user_id", "test-user")
     monkeypatch.setattr(get_settings(), "fpl_acceptance_model_id", identity)
     return identity
 
@@ -401,7 +401,7 @@ async def test_generation_provenance_is_frozen_and_snapshot_import_is_history(cl
     value = await select_scheme(client, base)
     async with SessionLocal() as session:
         task = VisualGenerationTask(
-            workspace_id="default",
+            owner_user_id="test-user",
             project_id=identity,
             provider_kind="senseaudio_video",
             provider_name="fake",

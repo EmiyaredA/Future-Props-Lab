@@ -45,12 +45,12 @@ class Community:
         async with self.sessions() as session:
             await session.execute(text("BEGIN"))
             pub = await publication(session, id, active=False)
-            await require_source_manager(session, self.principal, pub.workspace_id)
+            await require_source_manager(session, self.principal, pub.owner_user_id)
             bind_source(session, pub)
             return CommunityManagement(
-                directory=await Directory(session, pub.workspace_id).tree(pub.knowledge_base_id),
+                directory=await Directory(session, pub.owner_user_id).tree(pub.knowledge_base_id),
                 config=await mutations.config(
-                    session, self.principal, pub.knowledge_base_id, pub.workspace_id
+                    session, self.principal, pub.knowledge_base_id, pub.owner_user_id
                 ),
             )
 
@@ -58,7 +58,7 @@ class Community:
         async with self.sessions() as session:
             pub = await publication(session, id, active=False)
             return await mutations.publish(
-                session, self.principal, pub.knowledge_base_id, body, pub.workspace_id
+                session, self.principal, pub.knowledge_base_id, body, pub.owner_user_id
             )
 
     async def settings(self, id, notes):
@@ -123,7 +123,7 @@ class Community:
                         .join(ThoughtNote, ThoughtNote.id == OfficialSource.note_id)
                         .where(
                             ThoughtNote.knowledge_base_id == pub.knowledge_base_id,
-                            OfficialSource.workspace_id == pub.workspace_id,
+                            OfficialSource.owner_user_id == pub.owner_user_id,
                         )
                     )
                     await session.execute(

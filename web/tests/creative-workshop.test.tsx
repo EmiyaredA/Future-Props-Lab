@@ -41,7 +41,7 @@ const item: CreativeItem = {
   revision: 2,
   author_user_id: "u1",
   author_name: "阿星",
-  origin_workspace_id: "a",
+  origin_owner_user_id: "a",
   current_release_id: "r1",
   version: 1,
   installable: true,

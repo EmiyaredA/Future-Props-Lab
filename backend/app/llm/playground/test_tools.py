@@ -99,7 +99,7 @@ async def load_selected_tool_snapshots(
     )
     by_id = {row.id: row for row in rows}
     if any(tool_id not in by_id for tool_id in normalized):
-        raise TestToolSelectionError("部分测试工具不存在或不属于当前 Workspace")
+        raise TestToolSelectionError("部分测试工具不存在或不属于当前账号")
     if any(not by_id[tool_id].enabled for tool_id in normalized):
         raise TestToolSelectionError("部分测试工具已停用，请重新选择")
     return tuple(tool_snapshot(by_id[tool_id]) for tool_id in normalized)
@@ -271,7 +271,7 @@ class ModelTestTools:
             await self.session.commit()
         except IntegrityError as exc:
             await self.session.rollback()
-            raise DuplicateTestToolError("当前 Workspace 已存在同名测试工具") from exc
+            raise DuplicateTestToolError("当前账号已存在同名测试工具") from exc
         await self.session.refresh(row)
         return await self._out(row)
 
@@ -299,7 +299,7 @@ class ModelTestTools:
             await self.session.commit()
         except IntegrityError as exc:
             await self.session.rollback()
-            raise DuplicateTestToolError("当前 Workspace 已存在同名测试工具") from exc
+            raise DuplicateTestToolError("当前账号已存在同名测试工具") from exc
         return await self.get(tool_id)
 
     async def delete(self, tool_id: str, expected_revision: int) -> None:
@@ -325,6 +325,7 @@ class ModelTestTools:
         if validation.error_code == "invalid_arguments":
             raise TestToolInputError(validation.error_message)
         call = ModelTestToolCall(
+            owner_user_id=row.owner_user_id,
             tool_id=row.id,
             source="dry_run",
             tool_name=row.name,

@@ -1,4 +1,4 @@
-"""Workspace-owned templates, complete examples and their protected asset references."""
+"""account-owned templates, complete examples and their protected asset references."""
 
 from datetime import datetime
 
@@ -13,10 +13,10 @@ from app.runtime.time import utc_now
 class PresentationTemplate(Base):
     __tablename__ = "presentation_templates"
     __table_args__ = (
-        Index("ix_presentation_templates_workspace_updated", "workspace_id", "updated_at"),
+        Index("ix_presentation_templates_account_updated", "owner_user_id", "updated_at"),
     )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     title: Mapped[str] = mapped_column(String(120))
     description: Mapped[str] = mapped_column(String(1000), default="")
     definition: Mapped[dict] = mapped_column(JSON)
@@ -28,10 +28,10 @@ class PresentationTemplate(Base):
 class PresentationExample(Base):
     __tablename__ = "presentation_examples"
     __table_args__ = (
-        Index("ix_presentation_examples_workspace_updated", "workspace_id", "updated_at"),
+        Index("ix_presentation_examples_account_updated", "owner_user_id", "updated_at"),
     )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     title: Mapped[str] = mapped_column(String(120))
     description: Mapped[str] = mapped_column(String(1000), default="")
     document: Mapped[dict] = mapped_column(JSON)

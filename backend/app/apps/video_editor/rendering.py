@@ -50,12 +50,12 @@ def task_out(row: VideoEditorTask) -> VideoEditorTaskOut:
 
 
 class VideoEditorRenders:
-    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
         self.session = session
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
 
     async def _timeline(self, project_id: str) -> VideoEditorTimeline:
-        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
+        await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
         row = await self.session.get(VideoEditorTimeline, project_id)
         if row is None:
             raise VideoEditorNotFoundError("时间轴不存在")
@@ -165,7 +165,7 @@ class VideoEditorRenders:
             await self.session.execute(
                 select(VideoEditorTask).where(
                     VideoEditorTask.project_id == project_id,
-                    VideoEditorTask.workspace_id == self.workspace_id,
+                    VideoEditorTask.owner_user_id == self.owner_user_id,
                     VideoEditorTask.request_id == body.request_id,
                 )
             )
@@ -185,7 +185,7 @@ class VideoEditorRenders:
             raise VideoEditorValidationError("预检结果已过期", code="preview_stale")
         timeline = await self._timeline(project_id)
         task = VideoEditorTask(
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             project_id=project_id,
             request_id=body.request_id,
             kind="render",
@@ -204,14 +204,14 @@ class VideoEditorRenders:
         return task_out(task)
 
     async def list(self, project_id: str) -> VideoEditorTaskListOut:
-        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
+        await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
         rows = list(
             (
                 await self.session.execute(
                     select(VideoEditorTask)
                     .where(
                         VideoEditorTask.project_id == project_id,
-                        VideoEditorTask.workspace_id == self.workspace_id,
+                        VideoEditorTask.owner_user_id == self.owner_user_id,
                         VideoEditorTask.kind == "render",
                     )
                     .order_by(VideoEditorTask.created_at.desc())
@@ -221,13 +221,13 @@ class VideoEditorRenders:
         return VideoEditorTaskListOut(items=[task_out(row) for row in rows])
 
     async def get(self, project_id: str, task_id: str) -> VideoEditorTaskOut:
-        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
+        await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
         row = (
             await self.session.execute(
                 select(VideoEditorTask).where(
                     VideoEditorTask.id == task_id,
                     VideoEditorTask.project_id == project_id,
-                    VideoEditorTask.workspace_id == self.workspace_id,
+                    VideoEditorTask.owner_user_id == self.owner_user_id,
                 )
             )
         ).scalar_one_or_none()
@@ -236,13 +236,13 @@ class VideoEditorRenders:
         return task_out(row)
 
     async def cancel(self, project_id: str, task_id: str) -> VideoEditorTaskOut:
-        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
+        await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
         row = (
             await self.session.execute(
                 select(VideoEditorTask).where(
                     VideoEditorTask.id == task_id,
                     VideoEditorTask.project_id == project_id,
-                    VideoEditorTask.workspace_id == self.workspace_id,
+                    VideoEditorTask.owner_user_id == self.owner_user_id,
                 )
             )
         ).scalar_one_or_none()
@@ -269,7 +269,7 @@ class VideoEditorRenders:
             delete(VideoEditorTask).where(
                 VideoEditorTask.id == task_id,
                 VideoEditorTask.project_id == project_id,
-                VideoEditorTask.workspace_id == self.workspace_id,
+                VideoEditorTask.owner_user_id == self.owner_user_id,
                 VideoEditorTask.kind == "render",
                 VideoEditorTask.status.in_({"completed", "failed", "cancelled"}),
                 VideoEditorTask.revision == expected_revision,
@@ -281,14 +281,14 @@ class VideoEditorRenders:
             expected=expected_revision,
             load_current=lambda: self.get(project_id, task_id),
         )
-        media = VideoEditorMedia(self.session, self.workspace_id)
+        media = VideoEditorMedia(self.session, self.owner_user_id)
         derived_paths = []
         try:
             if task.output_asset_id:
                 active_tasks = await self.session.scalars(
                     select(VideoEditorTask).where(
                         VideoEditorTask.project_id == project_id,
-                        VideoEditorTask.workspace_id == self.workspace_id,
+                        VideoEditorTask.owner_user_id == self.owner_user_id,
                         VideoEditorTask.status.in_({"queued", "running"}),
                     )
                 )

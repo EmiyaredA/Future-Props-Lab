@@ -1,10 +1,10 @@
 # 创意工坊与固定版本安装
 
-发现别人分享的工具或方案后，你可以把它安装到自己的工作空间，再补充本地配置。本篇以“找到一个工具 → 检查依赖 → 安装副本 → 验证可用”为目标，解释为什么安装完成后往往还需要配置。
+发现别人分享的工具或方案后，你可以把它安装到自己的账号，再补充本地配置。本篇以“找到一个工具 → 检查依赖 → 安装副本 → 验证可用”为目标，解释为什么安装完成后往往还需要配置。
 
 ## 开始前
 
-确认目标 Workspace 与集成管理权限。创意工坊在同一部署内分享工具 API、MCP、Skill 和组合方案；公开内容不会把发布者私人凭证交给安装者。
+确认目标账号与集成管理权限。创意工坊在同一部署内分享工具 API、MCP、Skill 和组合方案；公开内容不会把发布者私人凭证交给安装者。
 
 ## 查找并安装
 
@@ -23,7 +23,7 @@
 | 工具 API  | 默认禁用，补充目标环境凭证并验证       |
 | HTTP MCP  | 默认禁用，检查连接与认证               |
 | Skill     | 默认禁用，阅读文件与依赖后启用         |
-| stdio MCP | 由目标空间管理员配置本机命令和运行依赖 |
+| stdio MCP | 由目标账号管理员配置本机命令和运行依赖 |
 | 组合方案  | 逐一验收其固定依赖，再验证组合用途     |
 
 > [!NOTE]
@@ -51,5 +51,5 @@
 ## 相关阅读
 
 - [工具 API、MCP 与 Skill](/apps/thought-workshop/official-knowledge-bases/general/documents/integrations)
-- [Workspace 与账号权限](/apps/thought-workshop/official-knowledge-bases/general/documents/accounts)
+- [账号与账号权限](/apps/thought-workshop/official-knowledge-bases/general/documents/accounts)
 - [桌面、Amadeus 与本地 Agent](/apps/thought-workshop/official-knowledge-bases/general/documents/desktop)

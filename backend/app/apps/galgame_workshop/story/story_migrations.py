@@ -45,9 +45,9 @@ def inspect_story_migration(
 
 
 class GalgameStoryMigrations:
-    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
         self.session = session
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
 
     async def _candidates(self) -> list[StoryMigrationCandidate]:
         rows = list(
@@ -58,7 +58,7 @@ class GalgameStoryMigrations:
                         GalgameWorkshopProject,
                         GalgameWorkshopProject.id == GalgameStoryDocument.project_id,
                     )
-                    .where(GalgameWorkshopProject.workspace_id == self.workspace_id)
+                    .where(GalgameWorkshopProject.owner_user_id == self.owner_user_id)
                     .order_by(GalgameStoryDocument.project_id)
                 )
             )
@@ -85,7 +85,7 @@ class GalgameStoryMigrations:
         migrated = 0
         conflicts = 0
         project_ids = select(GalgameWorkshopProject.id).where(
-            GalgameWorkshopProject.workspace_id == self.workspace_id
+            GalgameWorkshopProject.owner_user_id == self.owner_user_id
         )
         for candidate in pending:
             assert candidate.normalized is not None

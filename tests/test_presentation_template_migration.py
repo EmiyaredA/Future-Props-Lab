@@ -1,9 +1,10 @@
 import itertools
 import json
 
+from tests.migration_fixtures import apply_migrations
 from tests.presentation_helpers import sample_document
 
-from db.migrations import apply_migrations, runner
+from db.migrations import runner
 from db.migrations.runner import connect_database
 
 

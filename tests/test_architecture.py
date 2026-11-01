@@ -204,13 +204,12 @@ def _resolve_web_module(source: Path, specifier: str) -> Path | None:
 
 
 def test_workspace_models_are_registered_for_tenant_scoping() -> None:
+    from app.capabilities.asset_store.upgrade_records import AccountStorageUpgradeRoot
     from app.console.models import (
         ManagementApiKey,
         ModelTemplateSyncItem,
         RuntimeAdmission,
         SecurityAuditEvent,
-        WorkspaceInvitation,
-        WorkspaceMembership,
     )
     from app.orm import TENANT_MODELS
     from app.runtime.orm_base import Base
@@ -220,14 +219,13 @@ def test_workspace_models_are_registered_for_tenant_scoping() -> None:
         RuntimeAdmission,
         ManagementApiKey,
         SecurityAuditEvent,
-        WorkspaceInvitation,
-        WorkspaceMembership,
+        AccountStorageUpgradeRoot,
     }
     workspace_models = {
-        mapper.class_ for mapper in Base.registry.mappers if hasattr(mapper.class_, "workspace_id")
+        mapper.class_ for mapper in Base.registry.mappers if hasattr(mapper.class_, "owner_user_id")
     }
     missing = workspace_models - set(TENANT_MODELS) - account_governance_models
-    assert not missing, "带 workspace_id 的业务模型必须注册租户过滤：" + ", ".join(
+    assert not missing, "带 owner_user_id 的业务模型必须注册租户过滤：" + ", ".join(
         sorted(model.__name__ for model in missing)
     )
 
@@ -354,7 +352,7 @@ def test_business_modules_do_not_depend_on_fastapi_upload_file() -> None:
 def test_workspace_context_has_no_ambient_fallback() -> None:
     source = (BACKEND_APP / "orm.py").read_text(encoding="utf-8")
     assert "ContextVar" not in source
-    assert "current_workspace_id" not in source
+    assert "current_owner_user_id" not in source
 
 
 def test_backend_production_code_has_no_wildcard_imports() -> None:
@@ -639,7 +637,7 @@ def test_runtime_assembly_entrypoints_exist() -> None:
     assert (BACKEND_APP / "api.py").is_file()
     assert (BACKEND_APP / "capabilities" / "identity" / "principal.py").is_file()
     assert (BACKEND_APP / "capabilities" / "asset_store" / "storage.py").is_file()
-    assert (BACKEND_APP / "console" / "governance" / "workspaces.py").is_file()
+    assert (BACKEND_APP / "console" / "governance" / "provisioning.py").is_file()
     assert (BACKEND_APP / "console" / "file_library" / "library_folder_archive.py").is_file()
 
 

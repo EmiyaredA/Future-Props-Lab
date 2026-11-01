@@ -91,13 +91,13 @@ def _read_base64(path: Path) -> str:
 
 
 class ModelTestAttachments:
-    def __init__(self, session: AsyncSession, settings: Settings, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, settings: Settings, owner_user_id: str) -> None:
         self.session = session
         self.settings = settings
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
 
     def _root(self) -> Path:
-        return self.settings.workspace_model_test_path(self.workspace_id, "attachments")
+        return self.settings.account_model_test_path(self.owner_user_id, "attachments")
 
     async def _conversation(self, conversation_id: str) -> ModelTestConversation:
         row = await self.session.get(ModelTestConversation, conversation_id)

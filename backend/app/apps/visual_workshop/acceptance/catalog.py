@@ -37,9 +37,9 @@ def cli_configuration(settings, scheme_id):
     return agent_id, path, set(filter(None, users.split(os.pathsep)))
 
 
-async def fixed_model(session, workspace_id, settings):
+async def fixed_model(session, owner_user_id, settings):
     if (
-        settings.fpl_acceptance_model_workspace_id != workspace_id
+        settings.fpl_acceptance_model_owner_user_id != owner_user_id
         or not settings.fpl_acceptance_model_id
     ):
         return None
@@ -48,8 +48,8 @@ async def fixed_model(session, workspace_id, settings):
             select(ModelEntry, ModelProvider)
             .join(ModelProvider, ModelEntry.provider_id == ModelProvider.id)
             .where(
-                ModelEntry.workspace_id == workspace_id,
-                ModelProvider.workspace_id == workspace_id,
+                ModelEntry.owner_user_id == owner_user_id,
+                ModelProvider.owner_user_id == owner_user_id,
                 ModelEntry.id == settings.fpl_acceptance_model_id,
                 ModelEntry.enabled.is_(True),
                 ModelProvider.enabled.is_(True),
@@ -62,12 +62,14 @@ async def fixed_model(session, workspace_id, settings):
     return pair if pair[1].api_key_ciphertext or pair[1].base_url else None
 
 
-async def scheme_status(session, workspace_id, user_id, identity, *, check_cli=True, settings=None):
+async def scheme_status(
+    session, owner_user_id, user_id, identity, *, check_cli=True, settings=None
+):
     settings = settings or get_settings()
     title, kind = SCHEMES[identity]
     label, slug, provider_kind = title, "", ""
     if kind == "model_api":
-        pair = await fixed_model(session, workspace_id, settings)
+        pair = await fixed_model(session, owner_user_id, settings)
         available = bool(pair)
         message = "已配置" if pair else "尚未配置本空间可用的固定视觉模型"
         if pair:
@@ -80,7 +82,7 @@ async def scheme_status(session, workspace_id, user_id, identity, *, check_cli=T
         available = bool(
             path
             and await authorized(
-                session, workspace_id, user_id, agent, "visual_acceptance", settings=settings
+                session, owner_user_id, user_id, agent, "visual_acceptance", settings=settings
             )
         )
         message = "已配置" if available else "此账号尚未获准使用该固定 Agent 连接"
@@ -104,14 +106,14 @@ async def scheme_status(session, workspace_id, user_id, identity, *, check_cli=T
     )
 
 
-async def catalog(session, workspace_id, user_id):
+async def catalog(session, owner_user_id, user_id):
     criteria = builtin_templates()[0].document.criteria
     return NodeAcceptanceCatalogOut(
         items=[
             NodeAcceptanceTemplateOut(
                 criteria=criteria,
                 schemes=[
-                    await scheme_status(session, workspace_id, user_id, key) for key in SCHEMES
+                    await scheme_status(session, owner_user_id, user_id, key) for key in SCHEMES
                 ],
             )
         ]

@@ -4,7 +4,11 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.visual_workshop.acceptance.standards import delete_acceptance
-from app.apps.visual_workshop.models import VisualCanvasDocument, VisualWorkshopProject
+from app.apps.visual_workshop.models import (
+    VisualAssistantConversation,
+    VisualCanvasDocument,
+    VisualWorkshopProject,
+)
 from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from app.apps.visual_workshop.schemas.workshop import (
     VisualWorkshopProjectCreateIn,
@@ -12,7 +16,7 @@ from app.apps.visual_workshop.schemas.workshop import (
     VisualWorkshopProjectOut,
     VisualWorkshopProjectPatchIn,
 )
-from app.capabilities.asset_store.models import VisualAsset
+from app.capabilities.asset_store.models import VisualAsset, VisualProjectAssetReference
 from app.capabilities.asset_store.project_transactions import (
     creating_project_layout,
     deleting_project_layout,
@@ -22,7 +26,7 @@ from app.runtime.config import get_settings
 from app.runtime.operation_receipts import forget
 from app.runtime.project_records import (
     delete_revisioned_project,
-    load_workspace_project,
+    load_owned_project,
     patch_revisioned_project,
 )
 from app.runtime.time import iso_utc, utc_now
@@ -46,9 +50,9 @@ def project_out(row: VisualWorkshopProject) -> VisualWorkshopProjectOut:
 
 
 class VisualWorkshopProjects:
-    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
         self.session = session
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
         self.storage = AssetStorage(get_settings())
 
     async def list(self) -> VisualWorkshopProjectListOut:
@@ -56,7 +60,7 @@ class VisualWorkshopProjects:
             (
                 await self.session.execute(
                     select(VisualWorkshopProject)
-                    .where(VisualWorkshopProject.workspace_id == self.workspace_id)
+                    .where(VisualWorkshopProject.owner_user_id == self.owner_user_id)
                     .order_by(
                         VisualWorkshopProject.updated_at.desc(),
                         VisualWorkshopProject.created_at.desc(),
@@ -69,11 +73,11 @@ class VisualWorkshopProjects:
         return VisualWorkshopProjectListOut(items=[project_out(row) for row in rows])
 
     async def _row(self, project_id: str) -> VisualWorkshopProject:
-        return await load_workspace_project(
+        return await load_owned_project(
             self.session,
             VisualWorkshopProject,
             project_id,
-            self.workspace_id,
+            self.owner_user_id,
             not_found=lambda: VisualWorkshopProjectNotFoundError("项目不存在"),
         )
 
@@ -82,7 +86,7 @@ class VisualWorkshopProjects:
 
     async def create(self, body: VisualWorkshopProjectCreateIn) -> VisualWorkshopProjectOut:
         row = VisualWorkshopProject(
-            workspace_id=self.workspace_id, title=body.title, kind=body.kind, status="draft"
+            owner_user_id=self.owner_user_id, title=body.title, kind=body.kind, status="draft"
         )
         self.session.add(row)
         await self.session.flush()
@@ -91,7 +95,7 @@ class VisualWorkshopProjects:
             self.storage,
             "visual-workshop",
             row.id,
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
         ):
             self.session.add(VisualCanvasDocument(project_id=row.id, nodes=[]))
         await self.session.refresh(row)
@@ -117,7 +121,7 @@ class VisualWorkshopProjects:
             self.session,
             VisualWorkshopProject,
             project_id,
-            self.workspace_id,
+            self.owner_user_id,
             expected_revision=body.expected_revision,
             values=values,
             load_current=lambda: self.get(project_id),
@@ -146,9 +150,19 @@ class VisualWorkshopProjects:
             self.storage,
             "visual-workshop",
             project_id,
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             legacy_paths=legacy_paths,
         ):
+            await self.session.execute(
+                delete(VisualProjectAssetReference).where(
+                    VisualProjectAssetReference.project_id == project_id
+                )
+            )
+            await self.session.execute(
+                delete(VisualAssistantConversation).where(
+                    VisualAssistantConversation.project_id == project_id
+                )
+            )
             await delete_acceptance(self.session, project_id)
             await self.session.execute(
                 delete(VisualNodeOutput).where(VisualNodeOutput.project_id == project_id)
@@ -157,10 +171,13 @@ class VisualWorkshopProjects:
                 self.session,
                 VisualWorkshopProject,
                 project_id,
-                self.workspace_id,
+                self.owner_user_id,
                 expected_revision=expected_revision,
                 load_current=lambda: self.get(project_id),
             )
             await forget(
-                self.session, workspace_id=self.workspace_id, kind="visual", resource_id=project_id
+                self.session,
+                owner_user_id=self.owner_user_id,
+                kind="visual",
+                resource_id=project_id,
             )

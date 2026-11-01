@@ -12,10 +12,9 @@ from PIL import Image
 
 from app.apps.desktop_pet.projects import DesktopPetProjects, PetNotFound
 from app.capabilities.identity.principal import StudioPrincipal
-from app.console.governance.platform_policy import CAPABILITIES
 from app.deps import SessionDep, require_studio_auth
 from app.main import app
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.db import SessionLocal
 
 CHARACTER = json.loads((Path(__file__).parent / "fixtures/live2d-evaluation.json").read_text())[
@@ -66,16 +65,10 @@ async def test_pet_snapshot_skin_events_and_cas_survive_source_delete():
         original_principal = app.dependency_overrides[require_studio_auth]
 
         async def other_principal(session: SessionDep) -> StudioPrincipal:
-            bind_workspace(session, "other-workspace")
+            bind_owner(session, "other-workspace")
             return StudioPrincipal(
                 user_id="other-user",
-                workspace_id="other-workspace",
-                membership_id="other-membership",
-                workspace_access="owner",
-                member_role="owner",
-                is_platform_admin=True,
-                platform_role="super_admin",
-                platform_permissions=frozenset(CAPABILITIES),
+                platform_role="admin",
                 must_change_password=False,
                 auth_kind="session",
                 scopes=frozenset({"studio:read", "studio:private_read", "studio:write"}),
@@ -293,16 +286,10 @@ async def test_whale_import_is_frozen_workspace_scoped_and_cas_validated(tmp_pat
         original_principal = app.dependency_overrides[require_studio_auth]
 
         async def other_principal(session: SessionDep) -> StudioPrincipal:
-            bind_workspace(session, "other-workspace")
+            bind_owner(session, "other-workspace")
             return StudioPrincipal(
                 user_id="other-user",
-                workspace_id="other-workspace",
-                membership_id="other-membership",
-                workspace_access="owner",
-                member_role="owner",
-                is_platform_admin=True,
-                platform_role="super_admin",
-                platform_permissions=frozenset(CAPABILITIES),
+                platform_role="admin",
                 must_change_password=False,
                 auth_kind="session",
                 scopes=frozenset({"studio:read", "studio:private_read", "studio:write"}),

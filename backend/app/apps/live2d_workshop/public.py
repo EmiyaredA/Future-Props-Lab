@@ -34,12 +34,12 @@ class CharacterSnapshot:
 
 async def snapshot_character(
     session: AsyncSession,
-    workspace_id: str,
+    owner_user_id: str,
     project_id: str,
     *,
     expected_revision: int | None = None,
 ) -> CharacterSnapshot:
-    store = Live2DProjectsStore(session, workspace_id)
+    store = Live2DProjectsStore(session, owner_user_id)
     try:
         row = await store.row(project_id)
     except Live2DNotFound as exc:

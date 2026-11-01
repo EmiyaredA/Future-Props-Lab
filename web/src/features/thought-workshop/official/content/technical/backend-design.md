@@ -14,7 +14,7 @@ backend-design
 
 图例：箭头表示调用或结果传递，数据库与素材是不同目标。权限原语与功能校验都参与请求，但不会让路由直接持有 ORM 事务。
 
-路由从依赖得到会话与 Workspace，调用 Notes 后将领域结果或错误映射为响应。Notes 了解笔记、目录归属、文档引用和历史；素材能力了解托管文件。文件内容与数据库行的生命周期不同，不能把外部网络或大文件复制放进已经开始写入的长事务。
+路由从依赖得到会话与账号，调用 Notes 后将领域结果或错误映射为响应。Notes 了解笔记、目录归属、文档引用和历史；素材能力了解托管文件。文件内容与数据库行的生命周期不同，不能把外部网络或大文件复制放进已经开始写入的长事务。
 
 ## 图二：一次版本化正文更新
 
@@ -26,9 +26,9 @@ sequenceDiagram
   participant N as Notes
   participant D as SQLite
   R->>N: note_id、正文与 expected_revision
-  N->>D: 当前 Workspace 中加载笔记
+  N->>D: 当前账号中加载笔记
   N->>N: 文档、目标与素材引用校验
-  N->>D: ID、Workspace、revision 条件更新
+  N->>D: ID、账号、revision 条件更新
   alt 版本匹配
     N->>D: 更新引用索引与内容历史，提交
     N-->>R: 新快照
@@ -50,11 +50,11 @@ apps 拥有各创作应用的项目、默认文档、快照和导出规则；con
 
 ## 请求身份与文件输入要显式传递
 
-StudioPrincipal 是唯一租户来源，业务请求不接收客户端声明 workspace_id。需要显式空间参数时使用 WorkspaceDep。功能处理文件接收 IncomingFile，UploadFile 留在路由；AssetStorage 写入显式传 Workspace，后台执行从任务记录恢复空间。隐藏上下文会让离开 HTTP 的 SDK 与后台任务难以验证归属。
+StudioPrincipal 是唯一租户来源，业务请求不接收客户端声明 owner_user_id。需要显式空间参数时使用 OwnerDep。功能处理文件接收 IncomingFile，UploadFile 留在路由；AssetStorage 写入显式传账号，后台执行从任务记录恢复空间。隐藏上下文会让离开 HTTP 的 SDK 与后台任务难以验证归属。
 
 ## 失败和验证如何落在同一边界
 
-功能错误包含明确领域意义，路由映射为协议错误。跨空间资源返回不存在，CAS 冲突返回 409 和当前快照，缺少 revision 由请求校验拒绝。导入的外部文件准备与失败补偿由导入用例负责，不把“数据库回滚”当成自动清理磁盘的保证。
+功能错误包含明确领域意义，路由映射为协议错误。跨账号资源返回不存在，CAS 冲突返回 409 和当前快照，缺少 revision 由请求校验拒绝。导入的外部文件准备与失败补偿由导入用例负责，不把“数据库回滚”当成自动清理磁盘的保证。
 
 架构测试检查路由依赖方向和权限登记；笔记 API 测试验证归属、引用、并发与历史。将相同正文通过普通保存、历史还原和正式导入路径验证，才能证明规则属于功能所有者，而不是只覆盖某个按钮。
 
@@ -64,7 +64,7 @@ StudioPrincipal 是唯一租户来源，业务请求不接收客户端声明 wor
 ## 相关阅读
 
 - [代码组织与依赖方向](/apps/thought-workshop/official-knowledge-bases/technical/documents/modules)
-- [Workspace 与权限](/apps/thought-workshop/official-knowledge-bases/technical/documents/identity)
+- [账号与权限](/apps/thought-workshop/official-knowledge-bases/technical/documents/identity)
 - [SQLite、事务与迁移](/apps/thought-workshop/official-knowledge-bases/technical/documents/sqlite)
 
 ## 代码入口

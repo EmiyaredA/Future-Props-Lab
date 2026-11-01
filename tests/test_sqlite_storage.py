@@ -6,9 +6,14 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
+from tests.migration_fixtures import (
+    LATEST_MIGRATION_ID,
+    MIGRATIONS,
+    apply_migrations,
+    check_migrations,
+)
 
-from db.migrations import MigrationDriftError, apply_migrations, check_migrations
-from db.migrations.registry import LATEST_MIGRATION_ID, MIGRATIONS
+from db.migrations import MigrationDriftError
 from db.migrations.runner import connect_database, ensure_registry, migration_checksum
 
 DEFAULT_OPENAI_PROVIDER_ID = "f0000000-0000-4000-8000-000000000001"

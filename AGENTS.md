@@ -3,9 +3,8 @@
 ## 开始前
 
 - 每次正式处理仓库任务前先阅读本文件；所有命令默认在仓库根目录执行。
-- 本项目定位为单机部署的模型基础设施管理台，支持同一进程和同一 SQLite 内的多账号与逻辑多
-  Workspace 隔离；实时语音仅用于模型测试，不引入 Bot、模型检索知识库（RAG）、电话接入、浏览器扩展或多实例部署能力。
-  思绪工坊中的「知识库」仅表示文档项目容器，普通文档沿用 Workspace 权限；知识社区通过显式发布和逐篇授权开放给同一部署中的登录账号，不授予源 Workspace 访问权。AI 写作仅通过 Agent/SDK 接入，应用内无入口。
+- 本项目定位为单机部署的模型基础设施管理台，支持同一进程和同一 SQLite 内按账号隔离的私人数据；实时语音仅用于模型测试，不引入 Bot、模型检索知识库（RAG）、电话接入、浏览器扩展或多实例部署能力。
+  思绪工坊中的「知识库」仅表示文档项目容器，普通文档归当前账号私有；知识社区通过显式发布和逐篇授权开放给同一部署中的登录账号，不授予源账号私人资源访问权。AI 写作仅通过 Agent/SDK 接入，应用内无入口。
 - 目录职责以 [`docs/architecture/project-layout.md`](docs/architecture/project-layout.md)
   为唯一完整索引；新增目录或改变职责时同步更新该文件。
 - Python 命令与临时诊断优先通过 `uv run` 执行。
@@ -21,8 +20,8 @@
 - 非机械性的行为、架构、跨文件契约、流程工具链、测试策略或落盘/网络/配置格式改动，按
   `docs/operations/agent-notes.md` 在 `.agents/notes/` 创建或更新 Agent Note；纯格式化、样式、无歧义重命名和局部机械修复免写。
 - `web/src/docs/`、`web/public/docs/`、文档中心覆盖清单和 `scripts/generate_sdk_docs.py` 是产品文档中心的受保护内容。工程决策整理不得迁移、删除、重写或重新生成这些路径。
-- 思绪工坊的 `web/src/features/thought-workshop/official/content/` 是知识库版主要使用指南；修改用户行为时同步维护对应正文。官方文档是管理员维护并发布的普通笔记；内置 Markdown 与图形仅构建管理员主动导入包，导入不自动发布，升级不覆盖已导入内容。官方标记仅平台超级管理员／管理员可设置，只读、可见范围与编辑授权独立校验；现有文档中心继续按原保护规则维护。
-- 技术文档正文与旁置图形同步反映当前实现。画板持久化使用 `CanvasScene.sceneVersion` 契约，不保存 React Flow 运行状态；前后端校验和静态 SVG 布局规则保持一致，图片只引用经 Workspace 校验的托管素材。
+- 思绪工坊的 `web/src/features/thought-workshop/official/content/` 是知识库版主要使用指南；修改用户行为时同步维护对应正文。官方文档是管理员维护并发布的普通笔记；内置 Markdown 与图形仅构建管理员主动导入包，导入不自动发布，升级不覆盖已导入内容。官方标记仅平台管理员可设置，只读、可见范围与编辑授权独立校验；现有文档中心继续按原保护规则维护。
+- 技术文档正文与旁置图形同步反映当前实现。画板持久化使用 `CanvasScene.sceneVersion` 契约，不保存 React Flow 运行状态；前后端校验和静态 SVG 布局规则保持一致，图片只引用经账号归属校验的托管素材。
 - 官方文章遵守 `docs/operations/official-knowledge-writing.md`：操作步骤带可验证结果，技术图解释实例与边界，每篇维护简介和相关阅读。导入转换只解析受控 Markdown 提示框，运行期共用标准富文本阅读组件，关闭原始 HTML；菜单和弹窗不得重建图形、重置视口。
 
 ## 代码编写原则
@@ -84,7 +83,7 @@
   应用更新，不在热加载流程内执行正式迁移。更新不得绕过未保存保护或自动重试写入/模型提交。
   开发网关在同一窗口生命周期内保持来源稳定，只向固定 Vite/后端转发并校验私有凭据；Vite 不代理
   业务 API。正式打包不启用开发桥或开发网关，自动测试不得使用 live 数据。
-- Amadeus 新对话由已登记的 Codex、Claude Code、OpenCode、DeepSeek Harness 或 Pi CLI 执行；FPL 后端持有运行、事件、审批和恢复，CLI 仅获得任务工具授权，不继承个人工具或通用 Shell。连接部署配置归 TOML，按 Workspace／账号／用途的授权归治理；固定业务任务共用连接注册表并保留自有任务边界。外部 CLI 的模型和认证配置按白名单读取，执行配置、插件和工具目录不直接继承。
+- Amadeus 新对话由已登记的 Codex、Claude Code、OpenCode、DeepSeek Harness 或 Pi CLI 执行；FPL 后端持有运行、事件、审批和恢复，CLI 仅获得任务工具授权，不继承个人工具或通用 Shell。连接部署配置归 TOML，按账号／用途的授权归治理；固定业务任务共用连接注册表并保留自有任务边界。外部 CLI 的模型和认证配置按白名单读取，执行配置、插件和工具目录不直接继承。
 - 桌面 CLI/SDK 接入默认关闭。`agent/` 保存无密钥的连接描述和 `0600` 客户端凭据，目录为
   `0700`；短路径 Unix Socket 由 Electron 持有，私有启动 token 不得交给 SDK。Agent 通道只开放
   `console/governance/desktop_agent_operations.json` 明确登记的业务操作，新 API 默认拒绝。配对与界面请求
@@ -111,23 +110,23 @@
 - 确定性时间线画面与视频渲染由 `backend/app/capabilities/media_rendering/` 统一拥有；Galgame 直接导出不得
   依赖 `video_editor/` 实现，只有显式的视频编辑器交接用例可以跨功能调用。
 - ORM 的 ID/时间默认工厂由 `runtime/ids.py` 与 `runtime/time.py` 维护；各包 ORM 模型只依赖
-  `runtime.orm_base` 与上述工厂。生产 Python 包不得形成强依赖环。Workspace 项目记录的加载、CAS
+  `runtime.orm_base` 与上述工厂。生产 Python 包不得形成强依赖环。账号项目记录的加载、CAS
   更新和删除原语可复用 `runtime/project_records.py`，但事务、默认文档、快照和领域规则必须留在所属功能包。
   编辑批处理回执与传输形状归属 `runtime/project_operations.py`、`runtime/operation_batches.py`。
 - Story 总校验保持纯函数分层：身份/角色、素材、国际化、时间轴、流程与表现层规则归属
   `apps/galgame_workshop/schemas/story_validation.py`；Pydantic Story 入口只负责迁移适配和统一调用。
-- 鉴权原语归属 `capabilities/identity/`；账号、Session、审计、Management API Key 与 Workspace 治理归属
-  `console/governance/`；`StudioPrincipal` 是业务请求的唯一租户来源，业务 API 不接受客户端提交
-  `workspace_id`。路由需要显式租户参数时使用 `WorkspaceDep`；不得新增 ContextVar、`default`
-  回退或其他环境式 Workspace 来源。业务文件用例依赖 `capabilities.asset_store.IncomingFile`，
-  `UploadFile` 只能出现在路由适配层；`AssetStorage` 的项目路径与写入方法必须显式传入
-  `workspace_id`。根资源必须直接保存 `workspace_id`，子资源通过已校验的根资源继承；跨 Workspace
-  的 ID 一律按不存在处理。后台执行器必须从任务记录恢复 Workspace，不能依赖请求上下文。
-- 思绪工坊 `publication/` 拥有发布与逐篇授权，社区接口仅使用浏览器 Session；先验证发布记录、当前文章与有效角色，再在独立会话中显式绑定源 Workspace。素材仅开放可读正文实际引用的文件与发布封面；不开放历史、私人目录或普通文件库查询。正文仍由 Notes 用例执行校验、CAS 和历史，回收站事务同步撤回发布，恢复不自动重新发布。
-- 固定 Workspace 权限由 `capabilities/identity/permissions.py` 维护，业务 HTTP/SSE 操作必须登记在
+- 鉴权原语归属 `capabilities/identity/`；账号、Session、审计、Management API Key 与平台资源分配归属
+  `console/governance/`。仅有 `admin` 和 `user` 两种平台角色。管理员不具有其他账号私人数据的读取权。
+  `StudioPrincipal.user_id` 是私人数据唯一归属来源，`owner_user_id` 与它相同；业务请求不得接受客户端指定归属。
+  路由通过 `OwnerDep` 传递账号，根资源保存 `owner_user_id`，子资源继承已经校验的根资源归属。
+  不存在 Workspace、成员角色、动态权限矩阵、账号切换空间或 `default` 回退；后台执行器从持久任务恢复账号。
+  `AssetStorage` 的项目路径与写入方法必须显式传入账号；跨账号 ID 按不存在处理。
+  HTTP `UploadFile` 只在路由中出现，业务用例依赖 `capabilities.asset_store.IncomingFile`。
+- 思绪工坊 `publication/` 拥有发布与逐篇授权，社区接口仅使用浏览器 Session；先验证发布记录、当前文章与有效角色，再在独立会话中显式绑定源账号。素材仅开放可读正文实际引用的文件与发布封面；不开放历史、私人目录或普通文件库查询。正文仍由 Notes 用例执行校验、CAS 和历史，回收站事务同步撤回发布，恢复不自动重新发布。
+- 固定账号权限由 `capabilities/identity/permissions.py` 维护，业务 HTTP/SSE 操作必须登记在
   `capabilities/identity/route_permissions.py`；架构测试禁止未登记路由。Web 统一消费 Principal 的有效权限，
   只读浏览页面由各功能模块拥有，账号查询键由 `features/accounts/queryKeys.ts` 唯一维护。
-- 平台模板同步项与运行额度记录属于 `console/governance/`，跨空间访问由治理用例显式校验；固定演示运行时
+- 平台模板同步项与运行额度记录属于 `console/governance/`，平台资源分配由治理用例显式校验；固定演示运行时
   `demo_runtime/` 不得依赖账号治理或模型目录，治理入口仍在 `console/governance/`。
 - Web 不保存密码、Session、CSRF 或 Management API Key 明文；Session 只使用 HttpOnly Cookie，
   写请求统一携带可读 CSRF Cookie 对应的请求头。API Key 明文和临时密码只允许展示一次。
@@ -140,7 +139,7 @@
 
 - Python SDK 位于 `sdk/python/`，不依赖后端运行时。`generated/` 由 OpenAPI 和 `operations.json` 生成，不手工编辑。
 - 修改公共接口后运行 `npm run contracts:generate`，同时更新 SDK 与文档参考；`npm run sdk:check` 检查生成物。具名方法覆盖不等于业务闭环测试。
-- 独立模型任务归属 `llm/inference/`；备份 Workspace 时一并保留 `model-inference/inputs/`、`model-inference/outputs/`。提交中断禁止重新提交供应商。
+- 独立模型任务归属 `llm/inference/`；备份账号时一并保留 `model-inference/inputs/`、`model-inference/outputs/`。提交中断禁止重新提交供应商。
 
 ## SQLite、迁移与并发
 
@@ -154,7 +153,7 @@
   该 API，不得把直接操作持久数据库作为实现方案或故障恢复步骤。仅允许存储层和迁移测试在
   各自创建的临时隔离数据库中直接构造测试状态，测试结束后不得影响任何持久数据库。
 - `npm run account -- create-admin|create-user|reset-password` 是账号恢复的离线入口，但只能调用
-  `accounts/` 中与 HTTP 共用的正式用例，不得执行裸 SQL；首个管理员负责认领 `default` Workspace。
+  `accounts/` 中与 HTTP 共用的正式用例，不得执行裸 SQL；账号与其模型目录在同一事务创建。
 - `db/migrations/` 是唯一 schema 迁移入口。已登记迁移的 ID、顺序和 SQL 不得改写；修复或
   扩展只能在 `versions/` 追加新版本并更新 `registry.py`。
 - schema 演进只能通过新增并登记 migration 完成；migration 可以承担 schema 所必需的确定性
@@ -166,9 +165,8 @@
   不得放在已经开始写入的长事务中；流式生成应使用独立短事务准备和结算状态。
 - 整体 JSON、配置和会话等 revisioned 资源使用数据库 CAS：缺少 revision 返回 422，冲突
   返回 409 与当前快照，客户端不得静默覆盖。
-- 备份数据库前先停止应用，并同时复制 SQLite 主文件、`workspaces/`、`profiles/`、
-  `library/assets/`、`applications/` 与 `model-test/attachments/`、`model-test/references/`、
-  `model-test/generated/`；不要把
+- 备份数据库前先停止应用，复制完整运行目录与配置，包含 SQLite、`accounts/`、`profiles/`、
+  回收站和升级保留的旧文件；不要把
   `.runtime/` 当作可提交的代码、
   迁移或测试资产。
 
@@ -197,3 +195,11 @@
 - 修复问题时先定位根因和同类风险；保留用户已有的未提交改动，不覆盖或顺手重写无关文件。
 - 新增或替换 `docs/` 图片、固定字体或 VAD 二进制时同步更新 `docs/assets/MANIFEST.md`，并执行
   `git lfs fsck`；未核清来源和许可证的演示素材不得视为可再分发资产。
+
+## 账号归属升级
+
+- `0116_account_ownership` 是逻辑空间移除的唯一 schema 迁移，旧空间按唯一活动 Owner 归属；没有唯一 Owner 时拒绝迁移。
+  历史迁移不改写，旧 Session 与 Management API Key 全部撤销。角色 `super_admin/admin` 合并为 `admin`，`member` 变为 `user`。
+- 文件归属清单由 `capabilities/asset_store/account_upgrade.py` 和正式布局 API 执行，路径为 `accounts/<user-id>/`。
+  迁移期间仅允许身份与管理员布局升级接口，后台任务不启动；逐文件校验后落盘，拒绝链接和异内容覆盖，保留原文件作恢复副本。
+  完成后必须重启应用；开发测试只使用隔离数据库，禁止自动升级或重启正式桌面实例。

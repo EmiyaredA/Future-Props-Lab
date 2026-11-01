@@ -1,1 +1,1 @@
-"""Workspace-scoped desktop assistant."""
+"""account-scoped desktop assistant."""

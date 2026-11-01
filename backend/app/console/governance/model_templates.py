@@ -1,4 +1,4 @@
-"""Role template storage and explicit workspace catalog reconciliation."""
+"""Role template storage and explicit account catalog reconciliation."""
 
 from copy import deepcopy
 
@@ -10,9 +10,9 @@ from app.console.governance.governance_transactions import (
     cas,
     require_platform_admin,
 )
-from app.console.governance.platform_policy import read_setting
 from app.console.governance.runtime_quotas import ACTIVE, TASK_MODELS
 from app.console.governance.service import add_audit_event
+from app.console.governance.settings_records import read_setting
 from app.console.models.platform_governance import PlatformSetting
 from app.llm.catalog.metadata import categories_for_provider
 from app.llm.models import ModelCatalogState, ModelEntry, ModelProvider
@@ -85,16 +85,16 @@ async def save_template(session, principal, role, body, client_ip):
     return await get_template(session, role)
 
 
-async def catalog_rows(session, workspace_id):
+async def catalog_rows(session, owner_user_id):
     providers = list(
         await session.scalars(
-            select(ModelProvider).where(ModelProvider.workspace_id == workspace_id)
+            select(ModelProvider).where(ModelProvider.owner_user_id == owner_user_id)
         )
     )
     models = list(
-        await session.scalars(select(ModelEntry).where(ModelEntry.workspace_id == workspace_id))
+        await session.scalars(select(ModelEntry).where(ModelEntry.owner_user_id == owner_user_id))
     )
-    state = await session.get(ModelCatalogState, workspace_id)
+    state = await session.get(ModelCatalogState, owner_user_id)
     return providers, models, state.revision if state else 0
 
 
@@ -120,40 +120,41 @@ def reconciliation_preview(payload, providers, models, suppliers=()):
     next_keys = {
         m["template_key"] for p in payload.get("providers", []) for m in p.get("models", [])
     }
-    summary["retained"] = [
-        m.slug for m in models if m.origin != "role_template" or m.template_key not in next_keys
-    ]
+    retained_count = sum(
+        m.origin != "role_template" or m.template_key not in next_keys for m in models
+    )
+    summary["retained"] = ["现有模型"] * retained_count
     summary["defaults"] = [
         f"{purpose}: {key}" for purpose, key in payload.get("defaults", {}).items()
     ]
     return summary
 
 
-async def apply_template(session, workspace_id, payload, expected_revision):
-    providers, models, revision = await catalog_rows(session, workspace_id)
+async def apply_template(session, owner_user_id, payload, expected_revision):
+    providers, models, revision = await catalog_rows(session, owner_user_id)
     if revision != expected_revision:
         raise AccountError("catalog_revision_conflict")
     suppliers = list(
         await session.scalars(
-            select(ModelSupplier).where(ModelSupplier.workspace_id == workspace_id)
+            select(ModelSupplier).where(ModelSupplier.owner_user_id == owner_user_id)
         )
     )
     summary = reconciliation_preview(payload, providers, models, suppliers)
     for model in TASK_MODELS.values():
         active = await session.scalar(
             select(model.id)
-            .where(model.workspace_id == workspace_id, model.status.in_(ACTIVE))
+            .where(model.owner_user_id == owner_user_id, model.status.in_(ACTIVE))
             .limit(1)
         )
         if active:
-            summary["conflicts"].append("工作区有活动模型任务，请在任务结束后重新预览")
+            summary["conflicts"].append("账号有活动模型任务，请在任务结束后重新预览")
             break
     if summary["conflicts"]:
         raise AccountError("template_catalog_conflict", current=summary)
     result = await session.execute(
         update(ModelCatalogState)
         .where(
-            ModelCatalogState.workspace_id == workspace_id,
+            ModelCatalogState.owner_user_id == owner_user_id,
             ModelCatalogState.revision == expected_revision,
         )
         .values(revision=expected_revision + 1, updated_at=utc_now())
@@ -162,7 +163,7 @@ async def apply_template(session, workspace_id, payload, expected_revision):
         raise AccountError("catalog_revision_conflict")
     suppliers = list(
         await session.scalars(
-            select(ModelSupplier).where(ModelSupplier.workspace_id == workspace_id)
+            select(ModelSupplier).where(ModelSupplier.owner_user_id == owner_user_id)
         )
     )
     by_supplier = {item.template_key: item for item in suppliers if item.origin == "role_template"}
@@ -173,7 +174,7 @@ async def apply_template(session, workspace_id, payload, expected_revision):
         supplier = by_supplier.get(raw["template_key"])
         if supplier is None:
             supplier = ModelSupplier(
-                workspace_id=workspace_id,
+                owner_user_id=owner_user_id,
                 template_key=raw["template_key"],
                 origin="role_template",
                 name=raw["name"],
@@ -188,7 +189,7 @@ async def apply_template(session, workspace_id, payload, expected_revision):
         p = by_p.get(source["template_key"])
         if p is None:
             p = ModelProvider(
-                workspace_id=workspace_id,
+                owner_user_id=owner_user_id,
                 origin="role_template",
                 template_key=source["template_key"],
                 enabled=source.get("enabled", True),
@@ -206,7 +207,7 @@ async def apply_template(session, workspace_id, payload, expected_revision):
             m = by_m.get(raw["template_key"])
             if m is None:
                 m = ModelEntry(
-                    workspace_id=workspace_id,
+                    owner_user_id=owner_user_id,
                     provider_id=p.id,
                     origin="role_template",
                     template_key=raw["template_key"],
@@ -229,7 +230,7 @@ async def apply_template(session, workspace_id, payload, expected_revision):
             and supplier.id not in referenced_suppliers
         ):
             await session.delete(supplier)
-    defaults_key = f"workspace_defaults:{workspace_id}"
+    defaults_key = f"account_defaults:{owner_user_id}"
     defaults = await session.get(PlatformSetting, defaults_key)
     selection = deepcopy(defaults.payload if defaults else {})
     enabled_providers = {p.id for p in providers if p.enabled}
@@ -251,11 +252,11 @@ async def apply_template(session, workspace_id, payload, expected_revision):
     return summary
 
 
-async def initialize_from_template(session, workspace_id, role):
+async def initialize_from_template(session, owner_user_id, role):
     state = await read_setting(session, f"role_template:{role}", {})
     if not state["value"].get("providers") and not state["value"].get("suppliers"):
         return False
-    session.add(ModelCatalogState(workspace_id=workspace_id, revision=0))
+    session.add(ModelCatalogState(owner_user_id=owner_user_id, revision=0))
     await session.flush()
-    await apply_template(session, workspace_id, state["value"], 0)
+    await apply_template(session, owner_user_id, state["value"], 0)
     return True

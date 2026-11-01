@@ -42,13 +42,13 @@ async def run() -> None:
     apply_migrations(get_settings().database_path)
     async with SessionLocal() as session:
         if args.command in {"create-admin", "create-user"}:
-            user, workspace, temporary = await create_account(
+            user, temporary = await create_account(
                 session,
                 username=args.username,
                 display_name=args.display_name,
                 is_platform_admin=args.command == "create-admin",
             )
-            print(f"账号已创建：{user.username}（{workspace.name}）")
+            print(f"账号已创建：{user.username}")
         else:
             normalized = normalize_username(args.username)
             user = await session.scalar(select(User).where(User.username_normalized == normalized))

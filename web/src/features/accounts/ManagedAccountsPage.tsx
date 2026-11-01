@@ -38,7 +38,7 @@ export function ManagedAccountsPage({ userId }: { userId: string }) {
     username: "",
     display_name: "",
     email: "",
-    platform_role: "member" as PlatformRole,
+    platform_role: "user" as PlatformRole,
   });
   const [secret, setSecret] = useState<{
     username: string;
@@ -63,7 +63,7 @@ export function ManagedAccountsPage({ userId }: { userId: string }) {
     mutationFn: () =>
       createManagedAccount({
         ...draft,
-        is_platform_admin: draft.platform_role === "super_admin",
+        is_platform_admin: draft.platform_role === "admin",
       }),
     onSuccess: (result) => {
       setCreating(false);
@@ -71,7 +71,7 @@ export function ManagedAccountsPage({ userId }: { userId: string }) {
         username: "",
         display_name: "",
         email: "",
-        platform_role: "member" as PlatformRole,
+        platform_role: "user" as PlatformRole,
       });
       setSecret({
         username: result.account.username,
@@ -117,7 +117,7 @@ export function ManagedAccountsPage({ userId }: { userId: string }) {
       <header className="management-page-head">
         <div>
           <h1>账号管理</h1>
-          <p>管理登录资格与平台身份。工作区权限通过成员角色分配。</p>
+          <p>管理登录资格与平台身份。私人数据按账号隔离。</p>
         </div>
         <button
           className="btn primary"
@@ -205,7 +205,7 @@ export function ManagedAccountsPage({ userId }: { userId: string }) {
                     {
                       platformRoleLabels[
                         a.platform_role ||
-                          (a.is_platform_admin ? "super_admin" : "member")
+                          (a.is_platform_admin ? "admin" : "user")
                       ]
                     }
                   </td>
@@ -335,7 +335,7 @@ export function ManagedAccountsPage({ userId }: { userId: string }) {
                 setDraft({ ...draft, platform_role: value as PlatformRole })
               }
             />
-            <p>自动创建个人工作区，首次登录需设置新密码。</p>
+            <p>首次登录需设置新密码。</p>
             <ManagementError error={create.error} />
             <button className="btn primary" disabled={create.isPending}>
               {create.isPending ? "正在创建…" : "创建账号"}

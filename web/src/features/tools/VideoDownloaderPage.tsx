@@ -149,8 +149,7 @@ function LinkHelpDialog({
               </li>
               <li>
                 地址栏优先使用形如{" "}
-                <code>https://www.douyin.com/video/数字ID</code>{" "}
-                的链接。
+                <code>https://www.douyin.com/video/数字ID</code> 的链接。
               </li>
               <li>
                 <code>jingxuan?modal_id=…</code>{" "}
@@ -162,7 +161,9 @@ function LinkHelpDialog({
             <h3>哔哩哔哩</h3>
             <ol>
               <li>打开视频页，复制地址栏链接（含 BV 号）。</li>
-              <li>或点「分享 → 复制链接」，短链 <code>b23.tv</code> 也可。</li>
+              <li>
+                或点「分享 → 复制链接」，短链 <code>b23.tv</code> 也可。
+              </li>
             </ol>
           </section>
           <section>
@@ -264,11 +265,7 @@ export function VideoDownloaderPage({ onBack }: { onBack: () => void }) {
       setJobId(created.id);
       setJob(created);
       setError("");
-      setNotice(
-        created.status === "failed"
-          ? ""
-          : "正在下载，请稍候…",
-      );
+      setNotice(created.status === "failed" ? "" : "正在下载，请稍候…");
     },
     onError: (failure) => {
       setError(errorMessage(failure));
@@ -343,7 +340,9 @@ export function VideoDownloaderPage({ onBack }: { onBack: () => void }) {
     setError("");
     const opened = window.open(target, "_blank", "noopener,noreferrer");
     if (!opened) {
-      setError("浏览器拦截了弹窗，请允许本站弹窗后重试，或手动把链接粘到 Chrome。");
+      setError(
+        "浏览器拦截了弹窗，请允许本站弹窗后重试，或手动把链接粘到 Chrome。",
+      );
       return;
     }
     setNotice(
@@ -407,8 +406,8 @@ export function VideoDownloaderPage({ onBack }: { onBack: () => void }) {
               />
             </div>
             <p className="video-download-hint">
-              支持分享短链、标准视频页，以及抖音精选页的{" "}
-              <code>modal_id</code> 链接。
+              支持分享短链、标准视频页，以及抖音精选页的 <code>modal_id</code>{" "}
+              链接。
             </p>
 
             <label htmlFor="video-download-quality">清晰度</label>
@@ -430,7 +429,9 @@ export function VideoDownloaderPage({ onBack }: { onBack: () => void }) {
 
             {useCookies ? (
               <>
-                <label htmlFor="video-download-browser">读取哪个浏览器的 Cookie</label>
+                <label htmlFor="video-download-browser">
+                  读取哪个浏览器的 Cookie
+                </label>
                 <CustomSelect
                   ariaLabel="浏览器"
                   value={browser}
@@ -445,7 +446,8 @@ export function VideoDownloaderPage({ onBack }: { onBack: () => void }) {
                   </li>
                   <li>等视频能播起来后，回到本页。</li>
                   <li>
-                    再点「开始下载」；工具会读取该浏览器 Cookie（可能弹出钥匙串确认）。普通抖音公开视频通常不必开此项。
+                    再点「开始下载」；工具会读取该浏览器
+                    Cookie（可能弹出钥匙串确认）。普通抖音公开视频通常不必开此项。
                   </li>
                 </ol>
                 <button
@@ -475,7 +477,7 @@ export function VideoDownloaderPage({ onBack }: { onBack: () => void }) {
                   checked={saveToLibrary}
                   onChange={(event) => setSaveToLibrary(event.target.checked)}
                 />
-                <span>Workspace 文件库</span>
+                <span>账号文件库</span>
               </label>
             </fieldset>
           </div>
@@ -513,10 +515,7 @@ export function VideoDownloaderPage({ onBack }: { onBack: () => void }) {
                 ) : null}
                 {job.status === "failed" ? <CircleAlert aria-hidden /> : null}
                 {job.status === "queued" || job.status === "running" ? (
-                  <LoaderCircle
-                    className="video-download-spin"
-                    aria-hidden
-                  />
+                  <LoaderCircle className="video-download-spin" aria-hidden />
                 ) : null}
                 <strong>{statusLabel(job.status)}</strong>
               </div>

@@ -91,7 +91,7 @@ export function useAmadeusData(options: Options) {
     setLoaded,
     setLoadedConversationId,
   } = options;
-  const owner = `${session.me.user.id}:${session.me.workspace.id}`;
+  const owner = `${session.me.user.id}:${session.me.user.id}`;
   const readsRef = useRef<Reads>({ owner, selection: 0 });
   if (readsRef.current.owner !== owner) {
     readsRef.current.list?.abort();
@@ -232,7 +232,7 @@ export function useAmadeusData(options: Options) {
       );
       if (
         origin?.userId === session.me.user.id &&
-        origin.workspaceId === session.me.workspace.id
+        origin.accountId === session.me.user.id
       )
         setReferences((previous) => [...previous, reference].slice(0, 20));
     });
@@ -251,7 +251,7 @@ export function useAmadeusData(options: Options) {
     };
   }, [
     session.me.user.id,
-    session.me.workspace.id,
+
     bridge,
     open,
     refreshList,
@@ -280,10 +280,10 @@ export function useAmadeusData(options: Options) {
   useEffect(() => {
     if (!conversationId) return;
     localStorage.setItem(
-      `amadeus-current:${session.me.user.id}:${session.me.workspace.id}`,
+      `amadeus-current:${session.me.user.id}:${session.me.user.id}`,
       conversationId,
     );
-  }, [conversationId, session.me.user.id, session.me.workspace.id]);
+  }, [conversationId, session.me.user.id]);
 
   useEffect(() => {
     if (!conversationId) {

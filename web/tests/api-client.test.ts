@@ -1,9 +1,6 @@
 import { beforeEach, expect, test, vi } from "vitest";
 import { ApiError, fetchApiJson, requestApi } from "@platform/api/client";
-import {
-  AUTH_REQUIRED_EVENT,
-  WORKSPACE_CHANGED_EVENT,
-} from "@platform/api/studioAuth";
+import { AUTH_REQUIRED_EVENT } from "@platform/api/studioAuth";
 
 beforeEach(() => {
   document.cookie = "fpl_csrf=test-csrf; path=/";
@@ -47,21 +44,21 @@ test("notifies authentication and maps non-JSON failures to ApiError", async () 
   expect(notified).toHaveBeenCalledTimes(1);
 });
 
-test("notifies when workspace access changes", async () => {
+test("keeps ordinary revision conflicts distinct from session expiry", async () => {
   const notified = vi.fn();
-  window.addEventListener(WORKSPACE_CHANGED_EVENT, notified, { once: true });
+  window.addEventListener(AUTH_REQUIRED_EVENT, notified, { once: true });
   vi.spyOn(globalThis, "fetch").mockResolvedValue(
     new Response(
       JSON.stringify({
-        code: "workspace_access_changed",
-        detail: "Workspace 权限已变化",
+        code: "revision_conflict",
+        detail: "版本冲突",
       }),
       { status: 409, headers: { "Content-Type": "application/json" } },
     ),
   );
 
   await expect(requestApi("/v1/private")).rejects.toBeInstanceOf(ApiError);
-  expect(notified).toHaveBeenCalledTimes(1);
+  expect(notified).not.toHaveBeenCalled();
 });
 
 test("successful no-content responses allow account workflows to continue", async () => {

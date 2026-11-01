@@ -40,7 +40,7 @@ from app.capabilities.asset_store.schemas.files import (
     VisualAssetReferencePatchIn,
 )
 from app.capabilities.asset_store.schemas.project_snapshots import ProjectFolderOpenOut
-from app.deps import SessionDep, StudioAuth, WorkspaceDep
+from app.deps import OwnerDep, SessionDep, StudioAuth
 from app.runtime.config import get_settings
 from app.runtime.operation_receipts import OperationError
 
@@ -65,29 +65,29 @@ def _project_file_error(exc: ProjectSnapshotError | ProjectFolderError) -> HTTPE
 
 @router.get("", response_model=VisualWorkshopProjectListOut)
 async def list_projects(
-    session: SessionDep, workspace_id: WorkspaceDep
+    session: SessionDep, owner_user_id: OwnerDep
 ) -> VisualWorkshopProjectListOut:
-    return await VisualWorkshopProjects(session, workspace_id).list()
+    return await VisualWorkshopProjects(session, owner_user_id).list()
 
 
 @router.post("", response_model=VisualWorkshopProjectOut)
 async def create_project(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     body: VisualWorkshopProjectCreateIn,
 ) -> VisualWorkshopProjectOut:
-    return await VisualWorkshopProjects(session, workspace_id).create(body)
+    return await VisualWorkshopProjects(session, owner_user_id).create(body)
 
 
 @router.post("/snapshot-imports", response_model=VisualProjectSnapshotImportOut)
 async def import_project_snapshot(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     file: Annotated[UploadFile, File()],
 ) -> VisualProjectSnapshotImportOut:
     try:
         return await VisualWorkshopProjectSnapshots(
-            session, get_settings(), workspace_id
+            session, get_settings(), owner_user_id
         ).import_snapshot(file)
     except ProjectSnapshotError as exc:
         raise _project_file_error(exc) from None
@@ -95,10 +95,10 @@ async def import_project_snapshot(
 
 @router.get("/{project_id}", response_model=VisualWorkshopProjectOut)
 async def get_project(
-    session: SessionDep, workspace_id: WorkspaceDep, project_id: str
+    session: SessionDep, owner_user_id: OwnerDep, project_id: str
 ) -> VisualWorkshopProjectOut:
     try:
-        return await VisualWorkshopProjects(session, workspace_id).get(project_id)
+        return await VisualWorkshopProjects(session, owner_user_id).get(project_id)
     except VisualWorkshopProjectNotFoundError as exc:
         raise _not_found(exc) from None
 
@@ -109,11 +109,11 @@ async def get_project(
     responses={200: {"content": {"application/zip": {}}}},
 )
 async def export_project_snapshot(
-    session: SessionDep, workspace_id: WorkspaceDep, project_id: str
+    session: SessionDep, owner_user_id: OwnerDep, project_id: str
 ) -> FileResponse:
     try:
         exported = await VisualWorkshopProjectSnapshots(
-            session, get_settings(), workspace_id
+            session, get_settings(), owner_user_id
         ).export(project_id)
     except ProjectSnapshotError as exc:
         raise _project_file_error(exc) from None
@@ -129,7 +129,7 @@ async def export_project_snapshot(
 async def reveal_project_folder(
     principal: StudioAuth,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     project_id: str,
 ) -> ProjectFolderOpenOut:
     if principal.auth_kind != "session":
@@ -138,12 +138,12 @@ async def reveal_project_folder(
             {"code": "browser_session_required", "message": "打开文件夹必须使用浏览器 Session"},
         )
     try:
-        await VisualWorkshopProjects(session, workspace_id).get(project_id)
+        await VisualWorkshopProjects(session, owner_user_id).get(project_id)
         await open_project_folder(
             AssetStorage(get_settings()),
             "visual-workshop",
             project_id,
-            workspace_id=workspace_id,
+            owner_user_id=owner_user_id,
         )
     except VisualWorkshopProjectNotFoundError as exc:
         raise _not_found(exc) from None
@@ -174,10 +174,10 @@ async def put_canvas(
 
 @router.post("/{project_id}/canvas/operations", response_model=VisualCanvasDocumentOut)
 async def apply_canvas_operations(
-    project_id: str, body: VisualOperationsIn, session: SessionDep, workspace_id: WorkspaceDep
+    project_id: str, body: VisualOperationsIn, session: SessionDep, owner_user_id: OwnerDep
 ):
     try:
-        return await visual_operations(session, workspace_id, project_id, body)
+        return await visual_operations(session, owner_user_id, project_id, body)
     except (OperationError, VisualCanvasError) as exc:
         raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
     except ValidationError as exc:
@@ -189,12 +189,12 @@ async def apply_canvas_operations(
 @router.patch("/{project_id}", response_model=VisualWorkshopProjectOut)
 async def patch_project(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     project_id: str,
     body: VisualWorkshopProjectPatchIn,
 ) -> VisualWorkshopProjectOut:
     try:
-        return await VisualWorkshopProjects(session, workspace_id).patch(project_id, body)
+        return await VisualWorkshopProjects(session, owner_user_id).patch(project_id, body)
     except VisualWorkshopProjectNotFoundError as exc:
         raise _not_found(exc) from None
 
@@ -202,12 +202,12 @@ async def patch_project(
 @router.delete("/{project_id}")
 async def delete_project(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     project_id: str,
     expected_revision: int = Query(ge=0),
 ) -> dict[str, bool]:
     try:
-        await VisualWorkshopProjects(session, workspace_id).delete(project_id, expected_revision)
+        await VisualWorkshopProjects(session, owner_user_id).delete(project_id, expected_revision)
     except VisualWorkshopProjectNotFoundError as exc:
         raise _not_found(exc) from None
     return {"deleted": True}
@@ -216,12 +216,12 @@ async def delete_project(
 @router.post("/{project_id}/asset-references", response_model=VisualAssetOut)
 async def create_asset_reference(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     project_id: str,
     body: VisualAssetReferenceCreateIn,
 ) -> VisualAssetOut:
     try:
-        return await VisualAssets(session, get_settings(), workspace_id).create_reference(
+        return await VisualAssets(session, get_settings(), owner_user_id).create_reference(
             project_id, body
         )
     except AssetError as exc:
@@ -231,12 +231,12 @@ async def create_asset_reference(
 @router.post("/{project_id}/asset-imports", response_model=VisualAssetListOut)
 async def import_assets(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     project_id: str,
     body: VisualAssetImportIn,
 ) -> VisualAssetListOut:
     try:
-        return await VisualAssets(session, get_settings(), workspace_id).import_assets(
+        return await VisualAssets(session, get_settings(), owner_user_id).import_assets(
             project_id, body
         )
     except AssetError as exc:
@@ -246,13 +246,13 @@ async def import_assets(
 @router.patch("/{project_id}/asset-references/{reference_id}", response_model=VisualAssetOut)
 async def patch_asset_reference(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     project_id: str,
     reference_id: str,
     body: VisualAssetReferencePatchIn,
 ) -> VisualAssetOut:
     try:
-        return await VisualAssets(session, get_settings(), workspace_id).patch_reference(
+        return await VisualAssets(session, get_settings(), owner_user_id).patch_reference(
             project_id, reference_id, body
         )
     except AssetError as exc:
@@ -262,13 +262,13 @@ async def patch_asset_reference(
 @router.delete("/{project_id}/asset-references/{reference_id}")
 async def delete_asset_reference(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     project_id: str,
     reference_id: str,
     expected_revision: int = Query(ge=0),
 ) -> dict[str, bool]:
     try:
-        await VisualAssets(session, get_settings(), workspace_id).delete_reference(
+        await VisualAssets(session, get_settings(), owner_user_id).delete_reference(
             project_id, reference_id, expected_revision
         )
     except AssetError as exc:

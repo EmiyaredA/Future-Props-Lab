@@ -41,7 +41,12 @@ async def preview(
 ):
     principal = await _platform_auth(request, session)
     return await preview_sync(
-        session, principal, role, body.expected_template_revision, client_ip(request)
+        session,
+        principal,
+        role,
+        body.expected_template_revision,
+        client_ip(request),
+        account_ids=body.account_ids,
     )
 
 

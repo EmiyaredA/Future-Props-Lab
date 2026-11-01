@@ -366,15 +366,15 @@ export class PetWindowController {
         return;
       }
       if (!value || typeof value !== "object") throw new Error("身份无效");
-      const context = value as { userId?: unknown; workspaceId?: unknown };
+      const context = value as { userId?: unknown; accountId?: unknown };
       if (
         typeof context.userId !== "string" ||
-        typeof context.workspaceId !== "string" ||
+        typeof context.accountId !== "string" ||
         context.userId.length > 100 ||
-        context.workspaceId.length > 100
+        context.accountId.length > 100
       )
         throw new Error("身份无效");
-      const scope = `${context.userId}:${context.workspaceId}`;
+      const scope = `${context.userId}:${context.accountId}`;
       this.contexts.set(event.sender.id, scope);
       if (this.scope && this.scope !== scope) this.close();
     });

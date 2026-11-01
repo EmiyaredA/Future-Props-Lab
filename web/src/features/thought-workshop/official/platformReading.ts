@@ -7,7 +7,7 @@ export const PLATFORM_READING: Record<
 > = {
   "general/start": {
     summary:
-      "从确认工作空间到保存第一件作品，建立模型、项目与文件的基本使用顺序。",
+      "从确认当前账号到保存第一件作品，建立模型、项目与文件的基本使用顺序。",
     related: [
       {
         libraryId: "general",
@@ -96,7 +96,7 @@ export const PLATFORM_READING: Record<
     ],
   },
   "general/files": {
-    summary: "上传并复用工作空间文件，理解项目副本、素材引用和删除保护的区别。",
+    summary: "上传并复用账号文件，理解项目副本、素材引用和删除保护的区别。",
     related: [
       {
         libraryId: "thought-workshop",

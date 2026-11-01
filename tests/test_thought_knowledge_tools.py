@@ -296,55 +296,26 @@ async def test_personal_preferences_and_references_are_account_workspace_scoped(
 
 @pytest.mark.real_auth
 @pytest.mark.asyncio
-async def test_viewer_can_manage_only_personal_state_and_export_read_snapshot():
+async def test_personal_preferences_do_not_open_another_accounts_snapshot():
     from contextlib import aclosing
 
     from tests.test_workspace_governance import client_account
 
-    owner, _, _, workspace = await client_account()
-    viewer, username, _, _ = await client_account()
-    async with aclosing(owner), aclosing(viewer):
+    owner, *_ = await client_account()
+    other, *_ = await client_account()
+    async with aclosing(owner), aclosing(other):
         p = await project(owner)
-        n = await note(owner, p, "只读成员可阅读")
-        invitation = (
-            await owner.post(
-                "/v1/account/workspaces/current/invitations",
-                json={"username": username, "role": "viewer"},
-            )
-        ).json()
-        assert (
-            await viewer.post(
-                f"/v1/account/workspace-invitations/{invitation['id']}/accept",
-                json={"expected_revision": invitation["revision"]},
-            )
-        ).status_code == 204
-        assert (
-            await viewer.post("/v1/account/workspaces/switch", json={"workspace_id": workspace})
-        ).status_code == 200
-        viewer.headers.update(unsafe_headers(viewer))
-        saved = await viewer.post(
-            ROOT + "/preferences/filters", json={"name": "只读筛选", "criteria": {"query": "只读"}}
+        n = await note(owner, p, "私人文章")
+        saved = await other.post(
+            ROOT + "/preferences/filters", json={"name": "我的筛选", "criteria": {"query": "私人"}}
         )
         assert saved.status_code == 200, saved.text
         assert (await owner.get(ROOT + "/preferences/filters")).json() == []
         assert (
-            await viewer.post(
+            await other.get(ROOT + f"/knowledge-bases/{p['id']}/export-snapshot")
+        ).status_code == 404
+        assert (
+            await other.post(
                 ROOT + "/preferences/reading", json={"resource_id": n["id"], "title": n["title"]}
             )
-        ).status_code == 200
-        snapshot = await viewer.get(ROOT + f"/knowledge-bases/{p['id']}/export-snapshot")
-        assert snapshot.status_code == 200, snapshot.text
-        assert n["id"] in [item["id"] for item in snapshot.json()["documents"]]
-        assert (
-            await viewer.post(ROOT + "/templates", json={"name": "不能写", "document": doc("内容")})
-        ).status_code == 403
-        assert (
-            await viewer.post(
-                ROOT + f"/notes/{n['id']}/checkpoints",
-                json={
-                    "name": "不能写",
-                    "history_id": "missing",
-                    "expected_note_revision": n["revision"],
-                },
-            )
-        ).status_code == 403
+        ).status_code == 404

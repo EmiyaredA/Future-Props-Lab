@@ -327,7 +327,7 @@ async def test_tool_playground_failure_settles_partial_output_and_usage(monkeypa
 async def test_deepseek_role_template_can_be_saved_and_provisioned():
     admin, _, _, _ = await client_account(admin=True)
     async with aclosing(admin):
-        path = "/v1/platform/model-service-templates/member"
+        path = "/v1/platform/model-service-templates/user"
         before = (await admin.get(path)).json()
         key = "deepseek-" + uuid4().hex
         try:

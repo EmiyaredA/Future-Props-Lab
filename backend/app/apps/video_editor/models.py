@@ -13,11 +13,11 @@ from app.runtime.time import utc_now
 class VideoEditorProject(Base):
     __tablename__ = "video_editor_projects"
     __table_args__ = (
-        Index("ix_video_editor_projects_workspace_updated", "workspace_id", "updated_at"),
+        Index("ix_video_editor_projects_account_updated", "owner_user_id", "updated_at"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     title: Mapped[str] = mapped_column(String(120))
     status: Mapped[str] = mapped_column(String(16), default="draft")
     revision: Mapped[int] = mapped_column(Integer, default=0)
@@ -49,7 +49,7 @@ class VideoEditorOperationBatch(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     project_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("video_editor_projects.id", ondelete="CASCADE")
     )
@@ -92,7 +92,7 @@ class VideoEditorTask(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     project_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("video_editor_projects.id", ondelete="CASCADE")
     )

@@ -25,14 +25,14 @@ from .runs import Runs, run_out
 
 
 class NodeAcceptance:
-    def __init__(self, session, workspace_id, user_id):
-        self.session, self.workspace_id, self.user_id = session, workspace_id, user_id
+    def __init__(self, session, owner_user_id, user_id):
+        self.session, self.owner_user_id, self.user_id = session, owner_user_id, user_id
 
     async def binding(self, project_id, node_id):
         return await self.session.scalar(
             select(NodeAcceptanceBinding)
             .where(
-                NodeAcceptanceBinding.workspace_id == self.workspace_id,
+                NodeAcceptanceBinding.owner_user_id == self.owner_user_id,
                 NodeAcceptanceBinding.project_id == project_id,
                 NodeAcceptanceBinding.node_id == node_id,
             )
@@ -43,13 +43,13 @@ class NodeAcceptance:
         binding = await self.binding(project_id, node_id)
         scheme = binding.scheme_id if binding else None
         canvas, node, output, inputs, specs, issues, snapshot = await resolve_context(
-            self.session, self.workspace_id, project_id, node_id, scheme, output_id
+            self.session, self.owner_user_id, project_id, node_id, scheme, output_id
         )
         if not scheme:
             issues.insert(0, "请选择已配置的验收方案")
         elif scheme in SCHEMES:
             status = await scheme_status(
-                self.session, self.workspace_id, self.user_id, scheme, check_cli=False
+                self.session, self.owner_user_id, self.user_id, scheme, check_cli=False
             )
             if not status.available:
                 issues.append(status.message)
@@ -59,7 +59,7 @@ class NodeAcceptance:
             select(AcceptanceRun)
             .where(
                 AcceptanceRun.project_id == project_id,
-                AcceptanceRun.workspace_id == self.workspace_id,
+                AcceptanceRun.owner_user_id == self.owner_user_id,
                 AcceptanceRun.node_id == node_id,
                 AcceptanceRun.output_id == output.id if output else False,
             )
@@ -89,7 +89,7 @@ class NodeAcceptance:
 
     async def select(self, project_id, node_id, body):
         _, node, *_ = await resolve_context(
-            self.session, self.workspace_id, project_id, node_id, body.scheme_id
+            self.session, self.owner_user_id, project_id, node_id, body.scheme_id
         )
         if node["kind"] != "video":
             raise AcceptanceError("动作迁移模板仅适用于视频节点")
@@ -97,7 +97,7 @@ class NodeAcceptance:
             insert(NodeAcceptanceBinding)
             .values(
                 id=new_id(),
-                workspace_id=self.workspace_id,
+                owner_user_id=self.owner_user_id,
                 project_id=project_id,
                 node_id=node_id,
                 scheme_id=None,
@@ -114,12 +114,12 @@ class NodeAcceptance:
         return await self.get(project_id, node_id)
 
     async def start(self, project_id, node_id, body, admission=None):
-        await project(self.session, self.workspace_id, project_id)
+        await project(self.session, self.owner_user_id, project_id)
         request_hash = fingerprint({"node_id": node_id, **body.model_dump()})
         prior = await self.session.scalar(
             select(AcceptanceRun).where(
                 AcceptanceRun.project_id == project_id,
-                AcceptanceRun.workspace_id == self.workspace_id,
+                AcceptanceRun.owner_user_id == self.owner_user_id,
                 AcceptanceRun.request_id == body.request_id,
             )
         )
@@ -131,7 +131,7 @@ class NodeAcceptance:
         if not binding or binding.scheme_id not in SCHEMES:
             raise AcceptanceError("请先选择验收方案")
         status = await scheme_status(
-            self.session, self.workspace_id, self.user_id, binding.scheme_id
+            self.session, self.owner_user_id, self.user_id, binding.scheme_id
         )
         if not status.available:
             raise AcceptanceError(status.message, "executor_unavailable", 409)
@@ -144,7 +144,7 @@ class NodeAcceptance:
         prior = await self.session.scalar(
             select(AcceptanceRun).where(
                 AcceptanceRun.project_id == project_id,
-                AcceptanceRun.workspace_id == self.workspace_id,
+                AcceptanceRun.owner_user_id == self.owner_user_id,
                 AcceptanceRun.request_id == body.request_id,
             )
         )
@@ -162,20 +162,20 @@ class NodeAcceptance:
         if canvas.revision != body.expected_canvas_revision:
             raise AcceptanceError("节点资料已变化，请重新读取后验收", "context_changed", 409)
         canvas, node, output, inputs, specs, issues, snapshot = await resolve_context(
-            self.session, self.workspace_id, project_id, node_id, binding.scheme_id, body.output_id
+            self.session, self.owner_user_id, project_id, node_id, binding.scheme_id, body.output_id
         )
         if snapshot["context_fingerprint"] != body.context_fingerprint:
             raise AcceptanceError("验收依据已变化，请重新读取后验收", "context_changed", 409)
         if issues:
             raise AcceptanceError("；".join(issues), "inputs_not_ready")
         if body.previous_run_id:
-            previous = await Runs(self.session, self.workspace_id).row(
+            previous = await Runs(self.session, self.owner_user_id).row(
                 project_id, body.previous_run_id
             )
             if previous.node_id != node_id or previous.output_id == output.id:
                 raise AcceptanceError("复验应选择同一节点的另一个输出版本")
         pair = (
-            await fixed_model(self.session, self.workspace_id, get_settings())
+            await fixed_model(self.session, self.owner_user_id, get_settings())
             if status.kind == "model_api"
             else None
         )
@@ -198,7 +198,7 @@ class NodeAcceptance:
         ) or 0
         definition = AcceptanceStandardVersion(
             id=new_id(),
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             project_id=project_id,
             version=number + 1,
             document={
@@ -211,7 +211,7 @@ class NodeAcceptance:
         await self.session.flush()
         run = AcceptanceRun(
             id=new_id(),
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             project_id=project_id,
             node_id=node_id,
             output_id=output.id,
@@ -241,7 +241,7 @@ class NodeAcceptance:
         return run_out(run)
 
     async def summary(self, project_id):
-        await project(self.session, self.workspace_id, project_id)
+        await project(self.session, self.owner_user_id, project_id)
         canvas = await self.session.get(VisualCanvasDocument, project_id)
         if not canvas:
             return AcceptanceSummaryOut(items=[])
@@ -260,7 +260,7 @@ class NodeAcceptance:
             for row in await self.session.scalars(
                 select(NodeAcceptanceBinding).where(
                     NodeAcceptanceBinding.project_id == project_id,
-                    NodeAcceptanceBinding.workspace_id == self.workspace_id,
+                    NodeAcceptanceBinding.owner_user_id == self.owner_user_id,
                 )
             )
         }
@@ -269,7 +269,7 @@ class NodeAcceptance:
                 select(AcceptanceRun)
                 .where(
                     AcceptanceRun.project_id == project_id,
-                    AcceptanceRun.workspace_id == self.workspace_id,
+                    AcceptanceRun.owner_user_id == self.owner_user_id,
                 )
                 .order_by(AcceptanceRun.created_at.desc())
             )

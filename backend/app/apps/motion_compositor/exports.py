@@ -29,10 +29,10 @@ OUTPUT_NAMES = {
 
 
 class MotionExports:
-    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
         self.session = session
-        self.workspace_id = workspace_id
-        self.projects = MotionProjects(session, workspace_id)
+        self.owner_user_id = owner_user_id
+        self.projects = MotionProjects(session, owner_user_id)
         self.storage = AssetStorage(get_settings())
 
     def _out(self, row: MotionTask) -> ExportOut:
@@ -53,7 +53,7 @@ class MotionExports:
                 select(MotionTask).where(
                     MotionTask.id == task_id,
                     MotionTask.project_id == project_id,
-                    MotionTask.workspace_id == self.workspace_id,
+                    MotionTask.owner_user_id == self.owner_user_id,
                 )
             )
         ).scalar_one_or_none()
@@ -92,7 +92,7 @@ class MotionExports:
         ):
             raise MotionInvalid("导出范围超出项目时长")
         task = MotionTask(
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             project_id=project_id,
             request_id=body.request_id,
             request_payload=payload,
@@ -112,7 +112,7 @@ class MotionExports:
                     select(MotionTask)
                     .where(
                         MotionTask.project_id == project_id,
-                        MotionTask.workspace_id == self.workspace_id,
+                        MotionTask.owner_user_id == self.owner_user_id,
                     )
                     .order_by(MotionTask.created_at.desc())
                 )
@@ -142,7 +142,7 @@ class MotionExports:
             raise MotionNotFound("导出文件不存在")
         path = (
             self.storage.project_root(
-                "motion-compositor", project_id, workspace_id=self.workspace_id
+                "motion-compositor", project_id, owner_user_id=self.owner_user_id
             )
             / "exports"
             / row.id
@@ -161,7 +161,7 @@ class MotionExports:
         duration_us = round((end - start) * 1_000_000 / document.settings.fps)
         target_id, asset_id = await import_motion_export(
             self.session,
-            self.workspace_id,
+            self.owner_user_id,
             source,
             filename=filename,
             duration_us=duration_us,

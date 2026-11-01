@@ -69,7 +69,7 @@ class DesktopTransport:
                 principal = scope.get("state", {}).get("studio_principal")
                 if principal:
                     changes = scope["app"].state.desktop_agent.changes
-                    audience = (principal.user_id, principal.workspace_id)
+                    audience = (principal.user_id, principal.owner_user_id)
                     changes[audience] = changes.get(audience, 0) + 1
                     runtime = scope["app"].state.desktop_agent
                     parts = scope["path"].split("/")

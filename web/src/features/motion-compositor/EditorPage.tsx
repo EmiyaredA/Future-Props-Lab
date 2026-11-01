@@ -611,9 +611,7 @@ export function EditorPage({
                       <small>{source.sourceApplication}</small>
                     </button>
                   ))}
-                  {!sources.length && (
-                    <p>当前工作空间没有可导入的图像或视频。</p>
-                  )}
+                  {!sources.length && <p>当前账号没有可导入的图像或视频。</p>}
                 </div>
               )}
               <div className="mc-asset-list">

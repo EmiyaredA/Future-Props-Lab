@@ -153,7 +153,7 @@ export function useAmadeusController(session: AccountSessionContext) {
   }, []);
   useEffect(() => {
     void refreshCapabilities();
-  }, [session.me.workspace.id, refreshCapabilities]);
+  }, [session.me.user.id, refreshCapabilities]);
   const openCapabilities = async () => {
     setCapabilitiesOpen(!capabilitiesOpen);
     if (!capabilitiesOpen) await refreshCapabilities();
@@ -185,7 +185,7 @@ export function useAmadeusController(session: AccountSessionContext) {
       alive = false;
       window.removeEventListener("focus", refresh);
     };
-  }, [session.me.user.id, session.me.workspace.id]);
+  }, [session.me.user.id]);
   useEffect(() => {
     const options = [
       { id: "default", label: "CLI 默认模型" },
@@ -398,7 +398,7 @@ export function useAmadeusController(session: AccountSessionContext) {
             context: contexts.filter(
               (item) =>
                 item.userId === session.me.user.id &&
-                item.workspaceId === session.me.workspace.id,
+                item.accountId === session.me.user.id,
             ),
             references: refs,
             capabilities: loaded,
@@ -546,7 +546,7 @@ export function useAmadeusController(session: AccountSessionContext) {
   const scopedContexts = contexts.filter(
     (item) =>
       item.userId === session.me.user.id &&
-      item.workspaceId === session.me.workspace.id,
+      item.accountId === session.me.user.id,
   );
   const groups = useMemo(
     () => groupConversations(conversations, search, renameItem?.id),

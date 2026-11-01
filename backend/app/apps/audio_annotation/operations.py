@@ -59,10 +59,10 @@ def transform(current, body):
     )
 
 
-async def apply_operations(session, workspace_id, project_id, body):
+async def apply_operations(session, owner_user_id, project_id, body):
     projects = AudioAnnotationProjects(session)
     current = await projects.get_document(project_id)
-    key = dict(workspace_id=workspace_id, kind="annotation", resource_id=project_id, body=body)
+    key = dict(owner_user_id=owner_user_id, kind="annotation", resource_id=project_id, body=body)
     saved = await replay(session, **key)
     if saved is not None:
         return AudioAnnotationDocumentOut.model_validate(saved)

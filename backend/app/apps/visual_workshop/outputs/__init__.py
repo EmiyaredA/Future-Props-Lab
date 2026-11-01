@@ -15,7 +15,7 @@ async def register_imported_output(
 ) -> None:
     """Register imported media in the caller's canvas transaction.
 
-    The caller validates the project/asset Workspace and media kind, holds the
+    The caller validates the project/asset account and media kind, holds the
     canvas CAS write lock, and persists the updated node in the same transaction.
     A stable source key makes duplicate registration a no-op.
     """

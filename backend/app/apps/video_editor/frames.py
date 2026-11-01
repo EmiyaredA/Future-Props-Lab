@@ -74,9 +74,9 @@ def _text_layer_png(clip: VideoEditorClip, font_path: Path | None) -> bytes:
 
 
 class VideoEditorFrames:
-    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
         self.session = session
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
         self.storage = AssetStorage(get_settings())
 
     async def render(
@@ -88,7 +88,7 @@ class VideoEditorFrames:
         width: int = 960,
         without_chroma_clip_id: str | None = None,
     ) -> bytes:
-        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
+        await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
         timeline = await self.session.get(VideoEditorTimeline, project_id)
         if timeline is None:
             raise VideoEditorNotFoundError("时间轴不存在")
@@ -115,7 +115,7 @@ class VideoEditorFrames:
             else "none"
         )
         cache = (
-            self.storage.project_root("video-editor", project_id, workspace_id=self.workspace_id)
+            self.storage.project_root("video-editor", project_id, owner_user_id=self.owner_user_id)
             / "derived"
             / f"frame-v{TEXT_RENDER_VERSION}-composite{FRAME_COMPOSITOR_VERSION}"
             f"-chroma2-sample{VIDEO_SAMPLING_VERSION}"
@@ -171,7 +171,7 @@ class VideoEditorFrames:
         )
 
     async def text_layer(self, project_id: str, *, clip_id: str, revision: int) -> bytes:
-        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
+        await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
         timeline = await self.session.get(VideoEditorTimeline, project_id)
         if timeline is None:
             raise VideoEditorNotFoundError("时间轴不存在")

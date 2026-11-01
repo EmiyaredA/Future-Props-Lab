@@ -299,6 +299,12 @@ def main():
             raise SystemExit(f"Desktop agent allowlist is stale: {key}")
     files = generate(schema, mapping)
     stale = []
+    obsolete = sorted(set((TARGET / "resources").glob("*.py")) - set(files))
+    for path in obsolete:
+        if args.check:
+            stale.append(str(path.relative_to(ROOT)))
+        else:
+            path.unlink()
     for path, content in files.items():
         if args.check:
             if not path.exists() or path.read_text() != content:

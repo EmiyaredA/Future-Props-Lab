@@ -11,7 +11,7 @@ from app.runtime.time import utc_now
 class AcceptanceTemplate(Base):
     __tablename__ = "visual_acceptance_templates"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True)
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     title: Mapped[str] = mapped_column(String(120))
     document: Mapped[dict] = mapped_column(JSON)
     revision: Mapped[int] = mapped_column(Integer, default=0)
@@ -23,7 +23,7 @@ class AcceptanceStandard(Base):
     project_id: Mapped[str] = mapped_column(
         ForeignKey("visual_workshop_projects.id", ondelete="CASCADE"), primary_key=True
     )
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True)
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     draft: Mapped[dict] = mapped_column(JSON)
     published_version: Mapped[int] = mapped_column(Integer, default=0)
     required: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -34,7 +34,7 @@ class AcceptanceStandardVersion(Base):
     __tablename__ = "visual_acceptance_standard_versions"
     __table_args__ = (UniqueConstraint("project_id", "version"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True)
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     project_id: Mapped[str] = mapped_column(
         ForeignKey("visual_workshop_projects.id", ondelete="CASCADE")
     )
@@ -47,7 +47,7 @@ class AcceptanceRun(Base):
     __tablename__ = "visual_acceptance_runs"
     __table_args__ = (UniqueConstraint("project_id", "request_id", "output_id"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True)
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     project_id: Mapped[str] = mapped_column(
         ForeignKey("visual_workshop_projects.id", ondelete="CASCADE"), index=True
     )
@@ -91,7 +91,7 @@ class NodeAcceptanceBinding(Base):
     __tablename__ = "visual_node_acceptance_bindings"
     __table_args__ = (UniqueConstraint("project_id", "node_id"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True)
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     project_id: Mapped[str] = mapped_column(
         ForeignKey("visual_workshop_projects.id", ondelete="CASCADE")
     )
@@ -103,7 +103,7 @@ class NodeAcceptanceBinding(Base):
 class AcceptanceRepairDraft(Base):
     __tablename__ = "visual_acceptance_repair_drafts"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True)
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     project_id: Mapped[str] = mapped_column(
         ForeignKey("visual_workshop_projects.id", ondelete="CASCADE")
     )

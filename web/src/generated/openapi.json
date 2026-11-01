@@ -1270,9 +1270,8 @@
             "anyOf": [
               {
                 "enum": [
-                  "super_admin",
                   "admin",
-                  "member"
+                  "user"
                 ],
                 "type": "string"
               },
@@ -1310,6 +1309,45 @@
           "temporary_password"
         ],
         "title": "AccountCreatedOut",
+        "type": "object"
+      },
+      "AccountDirectoryItem": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "username",
+          "display_name"
+        ],
+        "title": "AccountDirectoryItem",
+        "type": "object"
+      },
+      "AccountDirectoryOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AccountDirectoryItem"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "AccountDirectoryOut",
         "type": "object"
       },
       "AccountListOut": {
@@ -1390,11 +1428,10 @@
             "type": "boolean"
           },
           "platform_role": {
-            "default": "member",
+            "default": "user",
             "enum": [
-              "super_admin",
               "admin",
-              "member"
+              "user"
             ],
             "title": "Platform Role",
             "type": "string"
@@ -1452,9 +1489,8 @@
             "anyOf": [
               {
                 "enum": [
-                  "super_admin",
                   "admin",
-                  "member"
+                  "user"
                 ],
                 "type": "string"
               },
@@ -1796,6 +1832,10 @@
             "title": "Operations",
             "type": "object"
           },
+          "owner_user_id": {
+            "title": "Owner User Id",
+            "type": "string"
+          },
           "schemas": {
             "additionalProperties": true,
             "title": "Schemas",
@@ -1816,15 +1856,11 @@
             "default": 1,
             "title": "Version",
             "type": "integer"
-          },
-          "workspace_id": {
-            "title": "Workspace Id",
-            "type": "string"
           }
         },
         "required": [
           "user_id",
-          "workspace_id",
+          "owner_user_id",
           "scopes",
           "operations",
           "schemas"
@@ -1871,6 +1907,17 @@
             ],
             "title": "Key Id"
           },
+          "owner_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner User Id"
+          },
           "status": {
             "title": "Status",
             "type": "string"
@@ -1885,17 +1932,6 @@
               }
             ],
             "title": "User Id"
-          },
-          "workspace_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Workspace Id"
           }
         },
         "required": [
@@ -1916,17 +1952,17 @@
             "title": "Code",
             "type": "string"
           },
-          "expected_workspace_id": {
+          "expected_owner_user_id": {
             "maxLength": 128,
             "minLength": 1,
-            "title": "Expected Workspace Id",
+            "title": "Expected Owner User Id",
             "type": "string"
           }
         },
         "required": [
           "approve",
           "code",
-          "expected_workspace_id"
+          "expected_owner_user_id"
         ],
         "title": "AgentDecisionIn",
         "type": "object"
@@ -3855,10 +3891,12 @@
             "title": "Must Change Password",
             "type": "boolean"
           },
-          "policy_revision": {
-            "default": 0,
-            "title": "Policy Revision",
-            "type": "integer"
+          "permission_keys": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Permission Keys",
+            "type": "array"
           },
           "session_expires_at": {
             "anyOf": [
@@ -3872,16 +3910,17 @@
             ],
             "title": "Session Expires At"
           },
+          "storage_upgrade_required": {
+            "default": false,
+            "title": "Storage Upgrade Required",
+            "type": "boolean"
+          },
           "user": {
             "$ref": "#/components/schemas/CurrentUserOut"
-          },
-          "workspace": {
-            "$ref": "#/components/schemas/WorkspaceOut"
           }
         },
         "required": [
           "user",
-          "workspace",
           "must_change_password",
           "session_expires_at"
         ],
@@ -7659,8 +7698,8 @@
             "title": "Manifest",
             "type": "object"
           },
-          "origin_workspace_id": {
-            "title": "Origin Workspace Id",
+          "origin_owner_user_id": {
+            "title": "Origin Owner User Id",
             "type": "string"
           },
           "revision": {
@@ -7722,7 +7761,7 @@
           "revision",
           "author_user_id",
           "author_name",
-          "origin_workspace_id",
+          "origin_owner_user_id",
           "current_release_id",
           "version",
           "installable",
@@ -7911,148 +7950,6 @@
         "title": "CreativeStdioSetupIn",
         "type": "object"
       },
-      "CrossWorkspaceLogOut": {
-        "properties": {
-          "api_key_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Api Key Id"
-          },
-          "api_key_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Api Key Name"
-          },
-          "api_key_prefix": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Api Key Prefix"
-          },
-          "auth_kind": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Auth Kind"
-          },
-          "call_source": {
-            "title": "Call Source",
-            "type": "string"
-          },
-          "created_at": {
-            "title": "Created At",
-            "type": "string"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "latency_ms": {
-            "title": "Latency Ms",
-            "type": "integer"
-          },
-          "model": {
-            "title": "Model",
-            "type": "string"
-          },
-          "provider_kind": {
-            "title": "Provider Kind",
-            "type": "string"
-          },
-          "status": {
-            "title": "Status",
-            "type": "string"
-          },
-          "total_tokens": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Total Tokens"
-          },
-          "workspace_id": {
-            "title": "Workspace Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "workspace_id",
-          "call_source",
-          "provider_kind",
-          "model",
-          "status",
-          "latency_ms",
-          "total_tokens",
-          "created_at"
-        ],
-        "title": "CrossWorkspaceLogOut",
-        "type": "object"
-      },
-      "CrossWorkspaceLogPage": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/CrossWorkspaceLogOut"
-            },
-            "title": "Items",
-            "type": "array"
-          },
-          "model_options": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Model Options",
-            "type": "array"
-          },
-          "page": {
-            "title": "Page",
-            "type": "integer"
-          },
-          "page_size": {
-            "title": "Page Size",
-            "type": "integer"
-          },
-          "total": {
-            "title": "Total",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "items",
-          "total",
-          "page",
-          "page_size"
-        ],
-        "title": "CrossWorkspaceLogPage",
-        "type": "object"
-      },
       "CsvIn": {
         "additionalProperties": false,
         "properties": {
@@ -8237,11 +8134,10 @@
             "type": "boolean"
           },
           "platform_role": {
-            "default": "member",
+            "default": "user",
             "enum": [
-              "super_admin",
               "admin",
-              "member"
+              "user"
             ],
             "title": "Platform Role",
             "type": "string"
@@ -19106,18 +19002,11 @@
             "title": "Admin",
             "type": "integer"
           },
-          "member": {
+          "user": {
             "default": 20,
             "maximum": 1024.0,
             "minimum": 0.0,
-            "title": "Member",
-            "type": "integer"
-          },
-          "super_admin": {
-            "default": 20,
-            "maximum": 1024.0,
-            "minimum": 0.0,
-            "title": "Super Admin",
+            "title": "User",
             "type": "integer"
           }
         },
@@ -22193,24 +22082,6 @@
           "can_manage"
         ],
         "title": "LocalModelsOut",
-        "type": "object"
-      },
-      "LogWorkspaceOut": {
-        "properties": {
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "name"
-        ],
-        "title": "LogWorkspaceOut",
         "type": "object"
       },
       "LoginIn": {
@@ -26877,57 +26748,6 @@
         "title": "PermissionInput",
         "type": "object"
       },
-      "PermissionPolicy": {
-        "properties": {
-          "admin": {
-            "$ref": "#/components/schemas/RolePolicy"
-          },
-          "member": {
-            "$ref": "#/components/schemas/RolePolicy"
-          }
-        },
-        "required": [
-          "admin",
-          "member"
-        ],
-        "title": "PermissionPolicy",
-        "type": "object"
-      },
-      "PermissionPolicyIn": {
-        "properties": {
-          "expected_revision": {
-            "minimum": 0.0,
-            "title": "Expected Revision",
-            "type": "integer"
-          },
-          "value": {
-            "$ref": "#/components/schemas/PermissionPolicy"
-          }
-        },
-        "required": [
-          "expected_revision",
-          "value"
-        ],
-        "title": "PermissionPolicyIn",
-        "type": "object"
-      },
-      "PermissionPolicyOut": {
-        "properties": {
-          "revision": {
-            "title": "Revision",
-            "type": "integer"
-          },
-          "value": {
-            "$ref": "#/components/schemas/PermissionPolicy"
-          }
-        },
-        "required": [
-          "revision",
-          "value"
-        ],
-        "title": "PermissionPolicyOut",
-        "type": "object"
-      },
       "PetChatClearIn": {
         "additionalProperties": false,
         "properties": {
@@ -29150,7 +28970,7 @@
                 "type": "null"
               }
             ],
-            "description": "Archived Workspace image; excluded from slide rendering and PPTX.",
+            "description": "Archived account image; excluded from slide rendering and PPTX.",
             "title": "Image Asset Id"
           },
           "infographics": {
@@ -30209,7 +30029,7 @@
                 "type": "null"
               }
             ],
-            "description": "Archived Workspace image; excluded from slide rendering and PPTX.",
+            "description": "Archived account image; excluded from slide rendering and PPTX.",
             "title": "Image Asset Id"
           },
           "infographics": {
@@ -30945,191 +30765,6 @@
         "title": "ProviderOut",
         "type": "object"
       },
-      "PublicAssetOut": {
-        "properties": {
-          "byte_size": {
-            "title": "Byte Size",
-            "type": "integer"
-          },
-          "display_name": {
-            "title": "Display Name",
-            "type": "string"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "media_kind": {
-            "title": "Media Kind",
-            "type": "string"
-          },
-          "mime_type": {
-            "title": "Mime Type",
-            "type": "string"
-          },
-          "preview_url": {
-            "title": "Preview Url",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "display_name",
-          "media_kind",
-          "mime_type",
-          "byte_size",
-          "preview_url"
-        ],
-        "title": "PublicAssetOut",
-        "type": "object"
-      },
-      "PublicGalgameProjectOut": {
-        "properties": {
-          "assets": {
-            "default": [],
-            "items": {
-              "$ref": "#/components/schemas/PublicAssetOut"
-            },
-            "title": "Assets",
-            "type": "array"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "is_official": {
-            "default": false,
-            "title": "Is Official",
-            "type": "boolean"
-          },
-          "status": {
-            "title": "Status",
-            "type": "string"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "updated_at": {
-            "format": "date-time",
-            "title": "Updated At",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "title",
-          "status",
-          "updated_at"
-        ],
-        "title": "PublicGalgameProjectOut",
-        "type": "object"
-      },
-      "PublicGalgameStoryOut": {
-        "properties": {
-          "document": {
-            "additionalProperties": true,
-            "title": "Document",
-            "type": "object"
-          },
-          "project_id": {
-            "title": "Project Id",
-            "type": "string"
-          },
-          "revision": {
-            "title": "Revision",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "project_id",
-          "revision",
-          "document"
-        ],
-        "title": "PublicGalgameStoryOut",
-        "type": "object"
-      },
-      "PublicVisualProjectOut": {
-        "properties": {
-          "assets": {
-            "default": [],
-            "items": {
-              "$ref": "#/components/schemas/PublicAssetOut"
-            },
-            "title": "Assets",
-            "type": "array"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "is_official": {
-            "default": false,
-            "title": "Is Official",
-            "type": "boolean"
-          },
-          "kind": {
-            "title": "Kind",
-            "type": "string"
-          },
-          "status": {
-            "title": "Status",
-            "type": "string"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "updated_at": {
-            "format": "date-time",
-            "title": "Updated At",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "title",
-          "kind",
-          "status",
-          "updated_at"
-        ],
-        "title": "PublicVisualProjectOut",
-        "type": "object"
-      },
-      "PublicWorkspaceProjectionOut": {
-        "properties": {
-          "galgame_projects": {
-            "items": {
-              "$ref": "#/components/schemas/PublicGalgameProjectOut"
-            },
-            "title": "Galgame Projects",
-            "type": "array"
-          },
-          "visual_projects": {
-            "items": {
-              "$ref": "#/components/schemas/PublicVisualProjectOut"
-            },
-            "title": "Visual Projects",
-            "type": "array"
-          },
-          "workspace_id": {
-            "title": "Workspace Id",
-            "type": "string"
-          },
-          "workspace_name": {
-            "title": "Workspace Name",
-            "type": "string"
-          }
-        },
-        "required": [
-          "workspace_id",
-          "workspace_name",
-          "visual_projects",
-          "galgame_projects"
-        ],
-        "title": "PublicWorkspaceProjectionOut",
-        "type": "object"
-      },
       "PublicationConfig": {
         "properties": {
           "articles": {
@@ -31203,9 +30838,8 @@
           "editable_platform_roles": {
             "items": {
               "enum": [
-                "super_admin",
                 "admin",
-                "member"
+                "user"
               ],
               "type": "string"
             },
@@ -31284,9 +30918,8 @@
           "editable_platform_roles": {
             "items": {
               "enum": [
-                "super_admin",
                 "admin",
-                "member"
+                "user"
               ],
               "type": "string"
             },
@@ -32780,9 +32413,8 @@
           },
           "role": {
             "enum": [
-              "super_admin",
               "admin",
-              "member"
+              "user"
             ],
             "title": "Role",
             "type": "string"
@@ -32797,42 +32429,6 @@
           "value"
         ],
         "title": "RoleModelTemplateOut",
-        "type": "object"
-      },
-      "RolePolicy": {
-        "properties": {
-          "mark_workshop_official": {
-            "default": false,
-            "title": "Mark Workshop Official",
-            "type": "boolean"
-          },
-          "view_cross_workspace_logs": {
-            "default": false,
-            "title": "View Cross Workspace Logs",
-            "type": "boolean"
-          },
-          "view_developer_docs": {
-            "default": false,
-            "title": "View Developer Docs",
-            "type": "boolean"
-          },
-          "view_model_diagnostics": {
-            "default": false,
-            "title": "View Model Diagnostics",
-            "type": "boolean"
-          },
-          "view_realtime_voice_diagnostics": {
-            "default": false,
-            "title": "View Realtime Voice Diagnostics",
-            "type": "boolean"
-          },
-          "view_sensitive_tool_results": {
-            "default": false,
-            "title": "View Sensitive Tool Results",
-            "type": "boolean"
-          }
-        },
-        "title": "RolePolicy",
         "type": "object"
       },
       "RubricDimension": {
@@ -33247,13 +32843,6 @@
               "total": 16
             }
           },
-          "member": {
-            "$ref": "#/components/schemas/QuotaLimit",
-            "default": {
-              "realtime_voice": 1,
-              "total": 2
-            }
-          },
           "reserved_for_admins": {
             "default": 2,
             "maximum": 1024.0,
@@ -33261,19 +32850,12 @@
             "title": "Reserved For Admins",
             "type": "integer"
           },
-          "super_admin": {
+          "user": {
             "$ref": "#/components/schemas/QuotaLimit",
             "default": {
-              "realtime_voice": 4,
-              "total": 8
+              "realtime_voice": 1,
+              "total": 2
             }
-          },
-          "workspace_total": {
-            "default": 8,
-            "maximum": 1024.0,
-            "minimum": 1.0,
-            "title": "Workspace Total",
-            "type": "integer"
           }
         },
         "title": "RuntimeQuotas",
@@ -33669,6 +33251,17 @@
             "title": "Outcome",
             "type": "string"
           },
+          "owner_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner User Id"
+          },
           "target_username": {
             "anyOf": [
               {
@@ -33683,17 +33276,6 @@
           "user_agent": {
             "title": "User Agent",
             "type": "string"
-          },
-          "workspace_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Workspace Id"
           }
         },
         "required": [
@@ -33702,7 +33284,7 @@
           "outcome",
           "actor_username",
           "target_username",
-          "workspace_id",
+          "owner_user_id",
           "client_ip",
           "user_agent",
           "metadata",
@@ -34685,6 +34267,11 @@
       },
       "StorageLayoutMigrationOut": {
         "properties": {
+          "account_upgrade_pending": {
+            "default": 0,
+            "title": "Account Upgrade Pending",
+            "type": "integer"
+          },
           "already_materialized_assets": {
             "title": "Already Materialized Assets",
             "type": "integer"
@@ -34727,6 +34314,11 @@
           "remaining_projects": {
             "title": "Remaining Projects",
             "type": "integer"
+          },
+          "restart_required": {
+            "default": false,
+            "title": "Restart Required",
+            "type": "boolean"
           }
         },
         "required": [
@@ -34746,6 +34338,11 @@
       },
       "StorageLayoutStatusOut": {
         "properties": {
+          "account_upgrade_pending": {
+            "default": 0,
+            "title": "Account Upgrade Pending",
+            "type": "integer"
+          },
           "complete": {
             "title": "Complete",
             "type": "boolean"
@@ -34773,6 +34370,11 @@
           "pending_projects": {
             "title": "Pending Projects",
             "type": "integer"
+          },
+          "restart_required": {
+            "default": false,
+            "title": "Restart Required",
+            "type": "boolean"
           },
           "target_version": {
             "const": 2,
@@ -36290,6 +35892,22 @@
       },
       "TemplatePreviewIn": {
         "properties": {
+          "account_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 1000,
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Ids"
+          },
           "expected_template_revision": {
             "minimum": 0.0,
             "title": "Expected Template Revision",
@@ -36726,6 +36344,10 @@
       },
       "TemplateSyncItemOut": {
         "properties": {
+          "account_name": {
+            "title": "Account Name",
+            "type": "string"
+          },
           "catalog_revision": {
             "title": "Catalog Revision",
             "type": "integer"
@@ -36736,6 +36358,10 @@
           },
           "id": {
             "title": "Id",
+            "type": "string"
+          },
+          "owner_user_id": {
+            "title": "Owner User Id",
             "type": "string"
           },
           "status": {
@@ -36751,20 +36377,12 @@
             },
             "title": "Summary",
             "type": "object"
-          },
-          "workspace_id": {
-            "title": "Workspace Id",
-            "type": "string"
-          },
-          "workspace_name": {
-            "title": "Workspace Name",
-            "type": "string"
           }
         },
         "required": [
           "id",
-          "workspace_id",
-          "workspace_name",
+          "owner_user_id",
+          "account_name",
           "catalog_revision",
           "status",
           "summary",
@@ -36797,9 +36415,8 @@
           },
           "role": {
             "enum": [
-              "super_admin",
               "admin",
-              "member"
+              "user"
             ],
             "title": "Role",
             "type": "string"
@@ -44454,535 +44071,6 @@
         },
         "title": "WorkflowVideoParameters",
         "type": "object"
-      },
-      "WorkspaceCreateIn": {
-        "properties": {
-          "name": {
-            "maxLength": 255,
-            "minLength": 1,
-            "title": "Name",
-            "type": "string"
-          },
-          "owner_user_id": {
-            "maxLength": 36,
-            "minLength": 1,
-            "title": "Owner User Id",
-            "type": "string"
-          },
-          "visibility": {
-            "default": "private",
-            "enum": [
-              "private",
-              "public"
-            ],
-            "title": "Visibility",
-            "type": "string"
-          }
-        },
-        "required": [
-          "name",
-          "owner_user_id"
-        ],
-        "title": "WorkspaceCreateIn",
-        "type": "object"
-      },
-      "WorkspaceInvitationActionIn": {
-        "properties": {
-          "expected_revision": {
-            "minimum": 0.0,
-            "title": "Expected Revision",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "expected_revision"
-        ],
-        "title": "WorkspaceInvitationActionIn",
-        "type": "object"
-      },
-      "WorkspaceInvitationCreateIn": {
-        "properties": {
-          "role": {
-            "default": "member",
-            "enum": [
-              "admin",
-              "member",
-              "viewer"
-            ],
-            "title": "Role",
-            "type": "string"
-          },
-          "username": {
-            "maxLength": 64,
-            "minLength": 1,
-            "title": "Username",
-            "type": "string"
-          }
-        },
-        "required": [
-          "username"
-        ],
-        "title": "WorkspaceInvitationCreateIn",
-        "type": "object"
-      },
-      "WorkspaceInvitationListOut": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/WorkspaceInvitationOut"
-            },
-            "title": "Items",
-            "type": "array"
-          },
-          "total": {
-            "title": "Total",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "items",
-          "total"
-        ],
-        "title": "WorkspaceInvitationListOut",
-        "type": "object"
-      },
-      "WorkspaceInvitationOut": {
-        "properties": {
-          "created_at": {
-            "format": "date-time",
-            "title": "Created At",
-            "type": "string"
-          },
-          "expires_at": {
-            "format": "date-time",
-            "title": "Expires At",
-            "type": "string"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "invitee_display_name": {
-            "title": "Invitee Display Name",
-            "type": "string"
-          },
-          "invitee_user_id": {
-            "title": "Invitee User Id",
-            "type": "string"
-          },
-          "invitee_username": {
-            "title": "Invitee Username",
-            "type": "string"
-          },
-          "inviter_username": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Inviter Username"
-          },
-          "responded_at": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Responded At"
-          },
-          "revision": {
-            "title": "Revision",
-            "type": "integer"
-          },
-          "role": {
-            "default": "member",
-            "enum": [
-              "admin",
-              "member",
-              "viewer"
-            ],
-            "title": "Role",
-            "type": "string"
-          },
-          "status": {
-            "enum": [
-              "pending",
-              "accepted",
-              "declined",
-              "revoked",
-              "expired"
-            ],
-            "title": "Status",
-            "type": "string"
-          },
-          "workspace_id": {
-            "title": "Workspace Id",
-            "type": "string"
-          },
-          "workspace_name": {
-            "title": "Workspace Name",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "workspace_id",
-          "workspace_name",
-          "invitee_user_id",
-          "invitee_username",
-          "invitee_display_name",
-          "inviter_username",
-          "status",
-          "expires_at",
-          "responded_at",
-          "revision",
-          "created_at"
-        ],
-        "title": "WorkspaceInvitationOut",
-        "type": "object"
-      },
-      "WorkspaceListItem": {
-        "properties": {
-          "access_kind": {
-            "enum": [
-              "owner",
-              "member",
-              "platform_admin",
-              "public_viewer"
-            ],
-            "title": "Access Kind",
-            "type": "string"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "member_count": {
-            "default": 0,
-            "title": "Member Count",
-            "type": "integer"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "owner_display_name": {
-            "title": "Owner Display Name",
-            "type": "string"
-          },
-          "owner_username": {
-            "title": "Owner Username",
-            "type": "string"
-          },
-          "permission_keys": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Permission Keys",
-            "type": "array"
-          },
-          "revision": {
-            "title": "Revision",
-            "type": "integer"
-          },
-          "role": {
-            "anyOf": [
-              {
-                "enum": [
-                  "owner",
-                  "admin",
-                  "member",
-                  "viewer"
-                ],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Role"
-          },
-          "visibility": {
-            "enum": [
-              "private",
-              "public"
-            ],
-            "title": "Visibility",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "visibility",
-          "revision",
-          "access_kind",
-          "role",
-          "owner_username",
-          "owner_display_name"
-        ],
-        "title": "WorkspaceListItem",
-        "type": "object"
-      },
-      "WorkspaceListOut": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/WorkspaceListItem"
-            },
-            "title": "Items",
-            "type": "array"
-          },
-          "page": {
-            "title": "Page",
-            "type": "integer"
-          },
-          "page_size": {
-            "title": "Page Size",
-            "type": "integer"
-          },
-          "total": {
-            "title": "Total",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "items",
-          "total",
-          "page",
-          "page_size"
-        ],
-        "title": "WorkspaceListOut",
-        "type": "object"
-      },
-      "WorkspaceMemberListOut": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/WorkspaceMemberOut"
-            },
-            "title": "Items",
-            "type": "array"
-          },
-          "total": {
-            "title": "Total",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "items",
-          "total"
-        ],
-        "title": "WorkspaceMemberListOut",
-        "type": "object"
-      },
-      "WorkspaceMemberOut": {
-        "properties": {
-          "display_name": {
-            "title": "Display Name",
-            "type": "string"
-          },
-          "joined_at": {
-            "format": "date-time",
-            "title": "Joined At",
-            "type": "string"
-          },
-          "membership_id": {
-            "title": "Membership Id",
-            "type": "string"
-          },
-          "revision": {
-            "title": "Revision",
-            "type": "integer"
-          },
-          "role": {
-            "enum": [
-              "owner",
-              "admin",
-              "member",
-              "viewer"
-            ],
-            "title": "Role",
-            "type": "string"
-          },
-          "user_id": {
-            "title": "User Id",
-            "type": "string"
-          },
-          "username": {
-            "title": "Username",
-            "type": "string"
-          }
-        },
-        "required": [
-          "membership_id",
-          "user_id",
-          "username",
-          "display_name",
-          "role",
-          "revision",
-          "joined_at"
-        ],
-        "title": "WorkspaceMemberOut",
-        "type": "object"
-      },
-      "WorkspaceMemberRemoveIn": {
-        "properties": {
-          "expected_revision": {
-            "minimum": 0.0,
-            "title": "Expected Revision",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "expected_revision"
-        ],
-        "title": "WorkspaceMemberRemoveIn",
-        "type": "object"
-      },
-      "WorkspaceMemberRoleIn": {
-        "properties": {
-          "expected_revision": {
-            "minimum": 0.0,
-            "title": "Expected Revision",
-            "type": "integer"
-          },
-          "role": {
-            "enum": [
-              "admin",
-              "member",
-              "viewer"
-            ],
-            "title": "Role",
-            "type": "string"
-          }
-        },
-        "required": [
-          "role",
-          "expected_revision"
-        ],
-        "title": "WorkspaceMemberRoleIn",
-        "type": "object"
-      },
-      "WorkspaceOut": {
-        "properties": {
-          "access_kind": {
-            "enum": [
-              "owner",
-              "member",
-              "platform_admin",
-              "public_viewer"
-            ],
-            "title": "Access Kind",
-            "type": "string"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "permission_keys": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Permission Keys",
-            "type": "array"
-          },
-          "revision": {
-            "title": "Revision",
-            "type": "integer"
-          },
-          "role": {
-            "anyOf": [
-              {
-                "enum": [
-                  "owner",
-                  "admin",
-                  "member",
-                  "viewer"
-                ],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Role"
-          },
-          "visibility": {
-            "enum": [
-              "private",
-              "public"
-            ],
-            "title": "Visibility",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "visibility",
-          "revision",
-          "access_kind",
-          "role"
-        ],
-        "title": "WorkspaceOut",
-        "type": "object"
-      },
-      "WorkspacePatchIn": {
-        "properties": {
-          "expected_revision": {
-            "minimum": 0.0,
-            "title": "Expected Revision",
-            "type": "integer"
-          },
-          "name": {
-            "maxLength": 255,
-            "minLength": 1,
-            "title": "Name",
-            "type": "string"
-          },
-          "visibility": {
-            "enum": [
-              "private",
-              "public"
-            ],
-            "title": "Visibility",
-            "type": "string"
-          }
-        },
-        "required": [
-          "name",
-          "visibility",
-          "expected_revision"
-        ],
-        "title": "WorkspacePatchIn",
-        "type": "object"
-      },
-      "WorkspaceSwitchIn": {
-        "properties": {
-          "workspace_id": {
-            "maxLength": 36,
-            "minLength": 1,
-            "title": "Workspace Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "workspace_id"
-        ],
-        "title": "WorkspaceSwitchIn",
-        "type": "object"
       }
     }
   },
@@ -45250,218 +44338,6 @@
         ]
       }
     },
-    "/v1/account/cross-workspace-call-logs": {
-      "get": {
-        "operationId": "cross_logs_v1_account_cross_workspace_call_logs_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "q",
-            "required": false,
-            "schema": {
-              "default": "",
-              "maxLength": 200,
-              "title": "Q",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "call_source",
-            "required": false,
-            "schema": {
-              "default": "",
-              "pattern": "^(|model_diagnostic|model_playground|model_inference|visual_workshop_assistant|visual_workshop_generation|thought_workshop_assistant|audio_annotation|desktop_pet_chat)$",
-              "title": "Call Source",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "provider_kind",
-            "required": false,
-            "schema": {
-              "default": "",
-              "pattern": "^(|openai|deepseek|anthropic|senseaudio_asr|senseaudio_asr_pro|senseaudio_realtime)$",
-              "title": "Provider Kind",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "model",
-            "required": false,
-            "schema": {
-              "default": "",
-              "maxLength": 160,
-              "title": "Model",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "api_key_id",
-            "required": false,
-            "schema": {
-              "default": "",
-              "pattern": "^(|session|[0-9a-fA-F-]{36})$",
-              "title": "Api Key Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "status",
-            "required": false,
-            "schema": {
-              "default": "",
-              "pattern": "^(|success|error)$",
-              "title": "Status",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "from",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "From"
-            }
-          },
-          {
-            "in": "query",
-            "name": "to",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "To"
-            }
-          },
-          {
-            "in": "query",
-            "name": "page",
-            "required": false,
-            "schema": {
-              "default": 1,
-              "minimum": 1,
-              "title": "Page",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "page_size",
-            "required": false,
-            "schema": {
-              "default": 25,
-              "maximum": 100,
-              "minimum": 1,
-              "title": "Page Size",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "workspace_ids",
-            "required": false,
-            "schema": {
-              "items": {
-                "type": "string"
-              },
-              "title": "Workspace Ids",
-              "type": "array"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CrossWorkspaceLogPage"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Cross Logs",
-        "tags": [
-          "platform-governance"
-        ]
-      }
-    },
-    "/v1/account/cross-workspace-call-logs/stats": {
-      "get": {
-        "operationId": "cross_log_stats_v1_account_cross_workspace_call_logs_stats_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "workspace_ids",
-            "required": false,
-            "schema": {
-              "default": [],
-              "items": {
-                "type": "string"
-              },
-              "title": "Workspace Ids",
-              "type": "array"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CallLogStatsOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Cross Log Stats",
-        "tags": [
-          "platform-governance"
-        ]
-      }
-    },
     "/v1/account/demo-services/{service_id}/install": {
       "post": {
         "operationId": "install_v1_account_demo_services__service_id__install_post",
@@ -45539,28 +44415,59 @@
         ]
       }
     },
-    "/v1/account/log-workspaces": {
+    "/v1/account/directory": {
       "get": {
-        "operationId": "log_spaces_v1_account_log_workspaces_get",
+        "operationId": "directory_v1_account_directory_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 120,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/LogWorkspaceOut"
-                  },
-                  "title": "Response Log Spaces V1 Account Log Workspaces Get",
-                  "type": "array"
+                  "$ref": "#/components/schemas/AccountDirectoryOut"
                 }
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
-        "summary": "Log Spaces",
+        "summary": "Directory",
         "tags": [
-          "platform-governance"
+          "accounts"
         ]
       }
     },
@@ -45931,621 +44838,6 @@
         "summary": "Delete Session",
         "tags": [
           "accounts"
-        ]
-      }
-    },
-    "/v1/account/workspace-invitations": {
-      "get": {
-        "operationId": "my_invitations_v1_account_workspace_invitations_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkspaceInvitationListOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "My Invitations",
-        "tags": [
-          "account-workspaces"
-        ]
-      }
-    },
-    "/v1/account/workspace-invitations/{invitation_id}/accept": {
-      "post": {
-        "operationId": "accept_invitation_v1_account_workspace_invitations__invitation_id__accept_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "invitation_id",
-            "required": true,
-            "schema": {
-              "title": "Invitation Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/WorkspaceInvitationActionIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Accept Invitation",
-        "tags": [
-          "account-workspaces"
-        ]
-      }
-    },
-    "/v1/account/workspace-invitations/{invitation_id}/decline": {
-      "post": {
-        "operationId": "decline_invitation_v1_account_workspace_invitations__invitation_id__decline_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "invitation_id",
-            "required": true,
-            "schema": {
-              "title": "Invitation Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/WorkspaceInvitationActionIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Decline Invitation",
-        "tags": [
-          "account-workspaces"
-        ]
-      }
-    },
-    "/v1/account/workspaces": {
-      "get": {
-        "operationId": "accessible_workspaces_v1_account_workspaces_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "q",
-            "required": false,
-            "schema": {
-              "default": "",
-              "maxLength": 200,
-              "title": "Q",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "page",
-            "required": false,
-            "schema": {
-              "default": 1,
-              "minimum": 1,
-              "title": "Page",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "page_size",
-            "required": false,
-            "schema": {
-              "default": 50,
-              "maximum": 100,
-              "minimum": 1,
-              "title": "Page Size",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkspaceListOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Accessible Workspaces",
-        "tags": [
-          "account-workspaces"
-        ]
-      }
-    },
-    "/v1/account/workspaces/current": {
-      "patch": {
-        "operationId": "update_workspace_v1_account_workspaces_current_patch",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/WorkspacePatchIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkspaceOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Update Workspace",
-        "tags": [
-          "account-workspaces"
-        ]
-      }
-    },
-    "/v1/account/workspaces/current/audit-events": {
-      "get": {
-        "operationId": "audit_v1_account_workspaces_current_audit_events_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "page",
-            "required": false,
-            "schema": {
-              "default": 1,
-              "minimum": 1,
-              "title": "Page",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "page_size",
-            "required": false,
-            "schema": {
-              "default": 25,
-              "maximum": 100,
-              "minimum": 1,
-              "title": "Page Size",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "event_type",
-            "required": false,
-            "schema": {
-              "default": "",
-              "maxLength": 64,
-              "title": "Event Type",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "outcome",
-            "required": false,
-            "schema": {
-              "default": "",
-              "maxLength": 16,
-              "title": "Outcome",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "actor_query",
-            "required": false,
-            "schema": {
-              "default": "",
-              "maxLength": 64,
-              "title": "Actor Query",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "target_query",
-            "required": false,
-            "schema": {
-              "default": "",
-              "maxLength": 64,
-              "title": "Target Query",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "from_date",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "format": "date-time",
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "From Date"
-            }
-          },
-          {
-            "in": "query",
-            "name": "to_date",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "format": "date-time",
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "To Date"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SecurityAuditListOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Audit",
-        "tags": [
-          "account-management"
-        ]
-      }
-    },
-    "/v1/account/workspaces/current/invitations": {
-      "get": {
-        "operationId": "workspace_invitations_v1_account_workspaces_current_invitations_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkspaceInvitationListOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Workspace Invitations",
-        "tags": [
-          "account-workspaces"
-        ]
-      },
-      "post": {
-        "operationId": "invite_member_v1_account_workspaces_current_invitations_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/WorkspaceInvitationCreateIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkspaceInvitationOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Invite Member",
-        "tags": [
-          "account-workspaces"
-        ]
-      }
-    },
-    "/v1/account/workspaces/current/invitations/{invitation_id}": {
-      "delete": {
-        "operationId": "revoke_invitation_v1_account_workspaces_current_invitations__invitation_id__delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "invitation_id",
-            "required": true,
-            "schema": {
-              "title": "Invitation Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/WorkspaceInvitationActionIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Revoke Invitation",
-        "tags": [
-          "account-workspaces"
-        ]
-      }
-    },
-    "/v1/account/workspaces/current/members": {
-      "get": {
-        "operationId": "members_v1_account_workspaces_current_members_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkspaceMemberListOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Members",
-        "tags": [
-          "account-workspaces"
-        ]
-      }
-    },
-    "/v1/account/workspaces/current/members/{membership_id}": {
-      "delete": {
-        "operationId": "delete_member_v1_account_workspaces_current_members__membership_id__delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "membership_id",
-            "required": true,
-            "schema": {
-              "title": "Membership Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/WorkspaceMemberRemoveIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Delete Member",
-        "tags": [
-          "account-workspaces"
-        ]
-      },
-      "patch": {
-        "operationId": "set_member_role_v1_account_workspaces_current_members__membership_id__patch",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "membership_id",
-            "required": true,
-            "schema": {
-              "title": "Membership Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/WorkspaceMemberRoleIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkspaceMemberOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Set Member Role",
-        "tags": [
-          "account-workspaces"
-        ]
-      }
-    },
-    "/v1/account/workspaces/switch": {
-      "post": {
-        "operationId": "set_active_workspace_v1_account_workspaces_switch_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/WorkspaceSwitchIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkspaceOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Set Active Workspace",
-        "tags": [
-          "account-workspaces"
         ]
       }
     },
@@ -63506,7 +61798,7 @@
             "required": false,
             "schema": {
               "default": "",
-              "pattern": "^(|super_admin|admin|member)$",
+              "pattern": "^(|admin|user)$",
               "title": "Platform Role",
               "type": "string"
             }
@@ -63999,9 +62291,8 @@
             "required": true,
             "schema": {
               "enum": [
-                "super_admin",
                 "admin",
-                "member"
+                "user"
               ],
               "title": "Role",
               "type": "string"
@@ -64044,9 +62335,8 @@
             "required": true,
             "schema": {
               "enum": [
-                "super_admin",
                 "admin",
-                "member"
+                "user"
               ],
               "title": "Role",
               "type": "string"
@@ -64101,9 +62391,8 @@
             "required": true,
             "schema": {
               "enum": [
-                "super_admin",
                 "admin",
-                "member"
+                "user"
               ],
               "title": "Role",
               "type": "string"
@@ -64158,9 +62447,8 @@
             "required": true,
             "schema": {
               "enum": [
-                "super_admin",
                 "admin",
-                "member"
+                "user"
               ],
               "title": "Role",
               "type": "string"
@@ -64196,66 +62484,6 @@
         "summary": "History",
         "tags": [
           "model-service-templates"
-        ]
-      }
-    },
-    "/v1/platform/permission-policy": {
-      "get": {
-        "operationId": "get_policy_v1_platform_permission_policy_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PermissionPolicyOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Get Policy",
-        "tags": [
-          "platform-governance"
-        ]
-      },
-      "patch": {
-        "operationId": "patch_policy_v1_platform_permission_policy_patch",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PermissionPolicyIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PermissionPolicyOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Patch Policy",
-        "tags": [
-          "platform-governance"
         ]
       }
     },
@@ -64776,123 +63004,6 @@
           }
         },
         "summary": "Audit",
-        "tags": [
-          "account-management"
-        ]
-      }
-    },
-    "/v1/platform/workspaces": {
-      "get": {
-        "operationId": "workspaces_v1_platform_workspaces_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "q",
-            "required": false,
-            "schema": {
-              "default": "",
-              "maxLength": 200,
-              "title": "Q",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "visibility",
-            "required": false,
-            "schema": {
-              "default": "",
-              "pattern": "^(|private|public)$",
-              "title": "Visibility",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "page",
-            "required": false,
-            "schema": {
-              "default": 1,
-              "minimum": 1,
-              "title": "Page",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "page_size",
-            "required": false,
-            "schema": {
-              "default": 25,
-              "maximum": 100,
-              "minimum": 1,
-              "title": "Page Size",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkspaceListOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Workspaces",
-        "tags": [
-          "account-management"
-        ]
-      },
-      "post": {
-        "operationId": "add_workspace_v1_platform_workspaces_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/WorkspaceCreateIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkspaceOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Add Workspace",
         "tags": [
           "account-management"
         ]
@@ -66211,109 +64322,6 @@
         "summary": "Create From Template",
         "tags": [
           "presentation-workshop"
-        ]
-      }
-    },
-    "/v1/public-workspace": {
-      "get": {
-        "operationId": "projection_v1_public_workspace_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicWorkspaceProjectionOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Projection",
-        "tags": [
-          "public-workspace"
-        ]
-      }
-    },
-    "/v1/public-workspace/assets/{asset_id}/content": {
-      "get": {
-        "operationId": "asset_content_v1_public_workspace_assets__asset_id__content_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "asset_id",
-            "required": true,
-            "schema": {
-              "title": "Asset Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Asset Content",
-        "tags": [
-          "public-workspace"
-        ]
-      }
-    },
-    "/v1/public-workspace/galgame-projects/{project_id}/story": {
-      "get": {
-        "operationId": "story_v1_public_workspace_galgame_projects__project_id__story_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicGalgameStoryOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Story",
-        "tags": [
-          "public-workspace"
         ]
       }
     },

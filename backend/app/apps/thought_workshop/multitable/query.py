@@ -5,7 +5,7 @@ import json
 from sqlalchemy import String, and_, case, cast, exists, func, or_, select
 
 from app.apps.thought_workshop.errors import ThoughtError
-from app.console.models import User, WorkspaceMembership
+from app.console.models import User
 
 from .models import DataRecord
 from .schemas import RecordPage, RecordSpec
@@ -19,15 +19,11 @@ def person_ids(value):
     return set()
 
 
-async def active_members(session, workspace_id, ids):
+async def active_members(session, ids):
     if not ids:
         return {}
     rows = await session.execute(
-        select(User.id, User.display_name, User.username)
-        .join(WorkspaceMembership, WorkspaceMembership.user_id == User.id)
-        .where(
-            WorkspaceMembership.workspace_id == workspace_id,
-            WorkspaceMembership.status == "active",
+        select(User.id, User.display_name, User.username).where(
             User.status == "active",
             User.id.in_(ids),
         )
@@ -113,7 +109,7 @@ def statement(table, query):
     return select(DataRecord).where(*predicates).order_by(*order), predicates, config
 
 
-async def records(session, table, query, revision, workspace_id=None):
+async def records(session, table, query, revision, owner_user_id=None):
     stmt, predicates, config = statement(table, query)
     total = await session.scalar(select(func.count()).select_from(DataRecord).where(*predicates))
     rows = list(await session.scalars(stmt.offset(query.offset).limit(query.limit)))
@@ -135,7 +131,7 @@ async def records(session, table, query, revision, workspace_id=None):
             continue
         for item in items:
             referenced |= person_ids(item.values.get(field.id))
-    people = await active_members(session, workspace_id, referenced) if workspace_id else {}
+    people = await active_members(session, referenced) if owner_user_id else {}
     return RecordPage(
         revision=revision,
         items=items,

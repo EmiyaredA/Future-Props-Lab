@@ -47,7 +47,7 @@ class AssetLibrary:
         self,
         upload: IncomingFile,
         *,
-        workspace_id: str,
+        owner_user_id: str,
         filename_override: str | None = None,
         display_name: str | None = None,
         visual_project_id: str | None = None,
@@ -91,7 +91,7 @@ class AssetLibrary:
             galgame_project_id=galgame_project_id,
             video_editor_project_id=video_editor_project_id,
             motion_compositor_project_id=motion_compositor_project_id,
-            workspace_id=workspace_id,
+            owner_user_id=owner_user_id,
         )
         size = 0
         head = bytearray()
@@ -127,7 +127,7 @@ class AssetLibrary:
                 size = temp_path.stat().st_size
             os.replace(temp_path, final_path)
             row = VisualAsset(
-                workspace_id=workspace_id,
+                owner_user_id=owner_user_id,
                 project_id=visual_project_id,
                 galgame_project_id=galgame_project_id,
                 video_editor_project_id=video_editor_project_id,
@@ -160,7 +160,7 @@ class AssetLibrary:
         self,
         source_path: Path,
         *,
-        workspace_id: str,
+        owner_user_id: str,
         filename: str,
         content_type: str,
         folder_id: str | None = None,
@@ -198,7 +198,7 @@ class AssetLibrary:
             galgame_project_id=galgame_project_id,
             video_editor_project_id=video_editor_project_id,
             motion_compositor_project_id=motion_compositor_project_id,
-            workspace_id=workspace_id,
+            owner_user_id=owner_user_id,
         )
 
         def copy_file() -> tuple[int, bytes]:
@@ -226,7 +226,7 @@ class AssetLibrary:
                 raise AssetError("文件内容或内部结构无效", code="invalid_file_content")
             os.replace(temp_path, final_path)
             row = VisualAsset(
-                workspace_id=workspace_id,
+                owner_user_id=owner_user_id,
                 project_id=None,
                 galgame_project_id=galgame_project_id,
                 video_editor_project_id=video_editor_project_id,

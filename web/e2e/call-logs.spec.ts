@@ -44,7 +44,7 @@ test.beforeEach(async ({ page }) => {
             items: [
               {
                 id: "other-log",
-                workspace_id: "other",
+                owner_user_id: "other",
                 model: "other-model",
                 call_source: "model_playground",
                 provider_kind: "openai",

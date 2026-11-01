@@ -25,7 +25,7 @@ FIELDS = {
         "pi_executable": ("fpl_code_agents_pi_executable", str),
     },
     "visual_acceptance": {
-        "model_workspace_id": ("fpl_acceptance_model_workspace_id", str),
+        "model_owner_user_id": ("fpl_acceptance_model_owner_user_id", str),
         "model_id": ("fpl_acceptance_model_id", str),
         "codex_executable": ("fpl_acceptance_codex_executable", str),
         "codex_user_ids": ("fpl_acceptance_codex_user_ids", list),

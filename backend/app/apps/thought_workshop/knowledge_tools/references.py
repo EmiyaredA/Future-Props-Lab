@@ -38,7 +38,7 @@ def reference_ids(document):
     }
 
 
-async def validate_targets(session, workspace_id, document, existing=None):
+async def validate_targets(session, owner_user_id, document, existing=None):
     prior = {
         (n["attrs"].get("noteId"), n["attrs"].get("tableId"), n["attrs"].get("viewId"))
         for n in reference_nodes(existing or {})
@@ -55,7 +55,7 @@ async def validate_targets(session, workspace_id, document, existing=None):
             .join(DataTable, DataTable.id == DataView.table_id)
             .join(ThoughtNote, ThoughtNote.id == DataTable.note_id)
             .where(
-                ThoughtNote.workspace_id == workspace_id,
+                ThoughtNote.owner_user_id == owner_user_id,
                 ThoughtNote.id == a["noteId"],
                 ThoughtNote.kind == "multitable",
                 ThoughtNote.deleted_at.is_(None),
@@ -72,7 +72,7 @@ async def validate_targets(session, workspace_id, document, existing=None):
             select(ThoughtNote.id)
             .join(ThoughtKnowledgeBase, ThoughtKnowledgeBase.id == ThoughtNote.knowledge_base_id)
             .where(
-                ThoughtNote.workspace_id == workspace_id,
+                ThoughtNote.owner_user_id == owner_user_id,
                 ThoughtNote.id.in_(ids),
                 ThoughtNote.deleted_at.is_(None),
                 ThoughtKnowledgeBase.deleted_at.is_(None),
@@ -109,13 +109,13 @@ async def index_table_references(session, note_id, state):
     )
 
 
-async def resolve(session, workspace_id, ids):
+async def resolve(session, owner_user_id, ids):
     rows = list(
         await session.scalars(
             select(ThoughtNote)
             .join(ThoughtKnowledgeBase, ThoughtKnowledgeBase.id == ThoughtNote.knowledge_base_id)
             .where(
-                ThoughtNote.workspace_id == workspace_id,
+                ThoughtNote.owner_user_id == owner_user_id,
                 ThoughtNote.id.in_(ids),
                 ThoughtNote.deleted_at.is_(None),
                 ThoughtKnowledgeBase.deleted_at.is_(None),
@@ -138,8 +138,8 @@ async def resolve(session, workspace_id, ids):
     ]
 
 
-async def backlinks(session, workspace_id, note_id, offset, limit):
-    target = await resolve(session, workspace_id, [note_id])
+async def backlinks(session, owner_user_id, note_id, offset, limit):
+    target = await resolve(session, owner_user_id, [note_id])
     if not target[0].available:
         raise ThoughtError("文档不存在", 404, "not_found")
     rows = list(
@@ -149,7 +149,7 @@ async def backlinks(session, workspace_id, note_id, offset, limit):
             .join(ThoughtKnowledgeBase, ThoughtKnowledgeBase.id == ThoughtNote.knowledge_base_id)
             .where(
                 ThoughtDocumentReference.target_id == note_id,
-                ThoughtNote.workspace_id == workspace_id,
+                ThoughtNote.owner_user_id == owner_user_id,
                 ThoughtNote.deleted_at.is_(None),
                 ThoughtKnowledgeBase.deleted_at.is_(None),
             )

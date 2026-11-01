@@ -6,7 +6,7 @@ import {
   type AudienceOverlay,
 } from "../src/features/presentation-workshop/playback/useAudience";
 import { newDeck } from "../src/features/presentation-workshop/templates";
-import { WORKSPACE_CHANGED_EVENT } from "../src/platform/api/studioAuth";
+import { AUTH_REQUIRED_EVENT } from "../src/platform/api/studioAuth";
 const messages: unknown[] = [];
 class Channel {
   onmessage: ((event: MessageEvent) => void) | null = null;
@@ -51,7 +51,7 @@ it("StrictMode 清理后标注仍同步，切空间结束观众窗口", () => {
     type: "overlay",
     overlay: { ...overlay, blackboard: true },
   });
-  act(() => window.dispatchEvent(new Event(WORKSPACE_CHANGED_EVENT)));
+  act(() => window.dispatchEvent(new Event(AUTH_REQUIRED_EVENT)));
   expect(close).toHaveBeenCalledOnce();
   expect(messages).toContainEqual({ type: "close" });
   unmount();

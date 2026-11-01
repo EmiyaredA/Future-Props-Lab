@@ -1,4 +1,4 @@
-import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
+import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { FormEvent, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Clock3, ExternalLink, Search, Star, Tag } from "lucide-react";
@@ -90,7 +90,7 @@ export function ToolNavigationPage({
   canManageCodex?: boolean;
   canManageStorage?: boolean;
 }) {
-  const canWrite = useWorkspacePermission("content.write");
+  const canWrite = useAccountPermission("content.write");
   const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<"all" | ToolCategory>("all");

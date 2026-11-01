@@ -176,17 +176,10 @@ def test_integration_ids_do_not_cross_workspaces(connected):
     from future_props_lab import ApiError, desktop_client
 
     backend, data = connected
-    principal = agent_tests.approve(backend, data)
-    other = backend.client.post(
-        "/v1/platform/workspaces",
-        json={"name": "Other integrations", "owner_user_id": principal["user_id"]},
-    ).json()["id"]
-    assert (
-        backend.client.post(
-            "/v1/account/workspaces/switch", json={"workspace_id": other}
-        ).status_code
-        == 200
-    )
+    agent_tests.approve(backend, data)
+    from tests.account_fixtures import switch_desktop_account
+
+    switch_desktop_account(backend)
     bodies = {
         "tool-apis": {"name": "Private tool", "url": "http://127.0.0.1/tool"},
         "mcp": {"name": "Private MCP", "transport": "stdio", "command": "/no/command"},

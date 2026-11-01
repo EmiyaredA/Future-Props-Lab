@@ -13,8 +13,6 @@ from app.console.models import (
     ManagementApiKey,
     SecurityAuditEvent,
     User,
-    Workspace,
-    WorkspaceMembership,
 )
 from app.llm.models import (
     ModelProvider,
@@ -27,7 +25,7 @@ from app.runtime.time import utc_now
 async def create_test_account(*, platform_admin: bool = False) -> tuple[str, str]:
     username = f"account-{uuid4().hex[:12]}"
     async with SessionLocal() as session:
-        _user, _workspace, temporary = await create_account(
+        _user, temporary = await create_account(
             session,
             username=username,
             display_name="账号测试",
@@ -44,8 +42,6 @@ async def test_account_provisioning_rolls_back_when_catalog_seed_fails(
     async with SessionLocal() as session:
         before = {
             "users": await session.scalar(select(func.count(User.id))),
-            "workspaces": await session.scalar(select(func.count(Workspace.id))),
-            "memberships": await session.scalar(select(func.count(WorkspaceMembership.id))),
             "audits": await session.scalar(select(func.count(SecurityAuditEvent.id))),
             "providers": await session.scalar(select(func.count(ModelProvider.id))),
         }
@@ -54,7 +50,7 @@ async def test_account_provisioning_rolls_back_when_catalog_seed_fails(
         raise RuntimeError("seed failed")
 
     monkeypatch.setattr(
-        "app.console.governance.provisioning.ensure_workspace_model_catalog", fail_seed
+        "app.console.governance.provisioning.ensure_account_model_catalog", fail_seed
     )
     async with SessionLocal() as session:
         with pytest.raises(RuntimeError, match="seed failed"):
@@ -74,8 +70,6 @@ async def test_account_provisioning_rolls_back_when_catalog_seed_fails(
         )
         after = {
             "users": await session.scalar(select(func.count(User.id))),
-            "workspaces": await session.scalar(select(func.count(Workspace.id))),
-            "memberships": await session.scalar(select(func.count(WorkspaceMembership.id))),
             "audits": await session.scalar(select(func.count(SecurityAuditEvent.id))),
             "providers": await session.scalar(select(func.count(ModelProvider.id))),
         }
@@ -151,7 +145,7 @@ async def test_cookie_login_forced_password_change_csrf_and_logout() -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.real_auth
-async def test_management_key_scope_and_workspace_isolation() -> None:
+async def test_management_key_scope_and_account_isolation() -> None:
     first_username, first_temporary = await create_test_account()
     second_username, second_temporary = await create_test_account()
     transport = httpx.ASGITransport(app=app)

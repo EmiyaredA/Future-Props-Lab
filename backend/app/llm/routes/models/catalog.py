@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 
-from app.deps import SessionDep, StudioAuth, WorkspaceDep
+from app.deps import OwnerDep, SessionDep, StudioAuth
 from app.llm.call_logs.credentials import snapshot_from_principal
 from app.llm.catalog import ModelCatalogService
 from app.llm.catalog.defaults import update_defaults
@@ -152,8 +152,8 @@ async def run_model_test(session: SessionDep, model_id: str, principal: StudioAu
 
 
 @router.put("/model-catalog/defaults", response_model=ModelCatalogOut)
-async def defaults(session: SessionDep, workspace_id: WorkspaceDep, body: ModelDefaultsIn):
+async def defaults(session: SessionDep, owner_user_id: OwnerDep, body: ModelDefaultsIn):
     try:
-        return await update_defaults(session, workspace_id, body)
+        return await update_defaults(session, owner_user_id, body)
     except ValueError as exc:
         raise HTTPException(422, {"code": "invalid_default_model", "message": str(exc)}) from None

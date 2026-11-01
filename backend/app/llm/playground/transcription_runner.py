@@ -21,7 +21,7 @@ from app.llm.models import (
 )
 from app.llm.providers.transcription import transcribe_model_audio
 from app.llm.schemas.model_test import ModelTestTranscriptionResultDetailOut
-from app.orm import bind_workspace, require_workspace_id
+from app.orm import bind_owner, require_owner_id
 from app.runtime.config import Settings, get_settings
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal
@@ -48,9 +48,9 @@ class ModelTestTranscriptionRunner(PollingTaskRunner):
     ) -> ModelTestTranscriptionTask | None:
         task = await session.get(ModelTestTranscriptionTask, task_id)
         if task is not None:
-            bind_workspace(
+            bind_owner(
                 session,
-                require_workspace_id(task.workspace_id, subject="transcription task"),
+                require_owner_id(task.owner_user_id, subject="transcription task"),
             )
         return task
 
@@ -191,7 +191,7 @@ class ModelTestTranscriptionRunner(PollingTaskRunner):
                 await self._fail(task_id, "供应商缺少 API Key")
                 return None
             path = (
-                self.settings.workspace_model_test_path(row.workspace_id, "references")
+                self.settings.account_model_test_path(row.owner_user_id, "references")
                 / row.input_storage_key
             )
             if not path.is_file():
@@ -239,7 +239,7 @@ class ModelTestTranscriptionRunner(PollingTaskRunner):
         session.add(
             LlmCallLog(
                 id=log_id,
-                workspace_id=row.workspace_id,
+                owner_user_id=row.owner_user_id,
                 call_source="model_playground",
                 provider_kind=row.provider_kind,
                 model=row.model_slug,

@@ -66,14 +66,14 @@ async def test_notes_and_knowledge_bases_are_isolated_and_require_write_auth():
             )
         ).status_code == 404
         rejected = await a.post(
-            ROOT + "/notes", headers=unsafe_headers(a), json={"workspace_id": "other"}
+            ROOT + "/notes", headers=unsafe_headers(a), json={"owner_user_id": "other"}
         )
         assert rejected.status_code == 422
 
 
 def prepared() -> PreparedWriting:
     return PreparedWriting(
-        "default",
+        "test-user",
         str(uuid4()),
         0,
         "openai",

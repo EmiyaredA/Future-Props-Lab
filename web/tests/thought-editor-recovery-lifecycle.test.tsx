@@ -10,7 +10,7 @@ import {
 } from "@testing-library/react";
 import type { Editor } from "@tiptap/core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { WorkspacePermissionsProvider } from "@platform/auth/WorkspacePermissions";
+import { AccountAccessProvider } from "@platform/auth/AccountAccess";
 import { NoteEditorPane } from "@features/thought-workshop/NoteEditorPane";
 import { canvasTemplate } from "@features/thought-workshop/diagrams/templates";
 import * as api from "@features/thought-workshop/api";
@@ -74,9 +74,8 @@ function Harness() {
   );
   return (
     <QueryClientProvider client={queryClient}>
-      <WorkspacePermissionsProvider
+      <AccountAccessProvider
         userId="user-a"
-        workspaceId="workspace-a"
         permissions={["content.read", "content.write"]}
       >
         <NoteEditorPane
@@ -86,7 +85,7 @@ function Harness() {
           onOpen={() => {}}
           registerNavigationGuard={() => {}}
         />
-      </WorkspacePermissionsProvider>
+      </AccountAccessProvider>
     </QueryClientProvider>
   );
 }
@@ -165,7 +164,7 @@ describe("note editor initial local recovery boundary", () => {
     async (action) => {
       const row: storage.LocalDraft = {
         userId: "user-a",
-        workspaceId: "workspace-a",
+        accountId: "workspace-a",
         key: "previous-tab",
         noteId: note.id,
         tabId: "previous-tab",

@@ -76,7 +76,7 @@ const applicationChapters = [
 ] as const;
 const generalChapters = [
   ["start", "入门与基本概念", "开始使用"],
-  ["accounts", "Workspace 与账号权限", "平台基础"],
+  ["accounts", "账号与私人数据", "平台基础"],
   ["models", "模型配置与连接", "模型服务"],
   ["testing", "模型测试与后台任务", "模型服务"],
   ["logs", "调用日志与排查", "模型服务"],

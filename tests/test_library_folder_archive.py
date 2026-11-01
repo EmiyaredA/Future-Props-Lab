@@ -19,9 +19,12 @@ PNG = b"\x89PNG\r\n\x1a\nfolder-archive"
 
 
 async def _reset_library() -> None:
+    from tests.account_fixtures import clear_private_projects
+
+    await clear_private_projects()
     async with SessionLocal() as session:
         await session.execute(delete(VisualNodeOutput))
-        await session.execute(delete(VisualAsset))
+        await session.execute(delete(VisualAsset).where(VisualAsset.owner_user_id == "test-user"))
         await session.execute(delete(VisualAssetFolder))
         await session.commit()
 

@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from app.capabilities.asset_store import AssetError
 from app.capabilities.asset_store.schemas.files import VisualAssetOut
 from app.capabilities.transcription import TranscriptionParameterError
-from app.deps import SessionDep, StudioAuth, WorkspaceDep
+from app.deps import OwnerDep, SessionDep, StudioAuth
 from app.llm.call_logs.credentials import snapshot_from_principal
 from app.llm.inference.assets import InferenceAssets
 from app.llm.inference.catalog import options
@@ -46,20 +46,20 @@ async def mapped(operation):
 
 
 @router.get("/options", response_model=InferenceOptionsOut)
-async def model_options(session: SessionDep, workspace_id: WorkspaceDep):
-    return await options(session, workspace_id)
+async def model_options(session: SessionDep, owner_user_id: OwnerDep):
+    return await options(session, owner_user_id)
 
 
 @router.post("/text", response_model=InferenceTextOut)
 async def generate_text(
     body: InferenceTextIn,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     principal: StudioAuth,
 ):
-    args = await mapped(prepare(session, workspace_id, body))
+    args = await mapped(prepare(session, owner_user_id, body))
     credential = await snapshot_from_principal(session, principal)
-    async with aclosing(events(workspace_id, body, args, credential=credential)) as stream:
+    async with aclosing(events(owner_user_id, body, args, credential=credential)) as stream:
         async for event in stream:
             if event.type == "done":
                 return event.result
@@ -88,14 +88,14 @@ async def generate_text(
 async def stream_text(
     body: InferenceTextIn,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     principal: StudioAuth,
 ):
-    args = await mapped(prepare(session, workspace_id, body))
+    args = await mapped(prepare(session, owner_user_id, body))
     credential = await snapshot_from_principal(session, principal)
 
     async def stream():
-        async with aclosing(events(workspace_id, body, args, credential=credential)) as source:
+        async with aclosing(events(owner_user_id, body, args, credential=credential)) as source:
             async for event in source:
                 yield "data: " + event.model_dump_json(exclude_none=True) + "\n\n"
 
@@ -104,24 +104,22 @@ async def stream_text(
 
 @router.post("/assets", response_model=InferenceAssetOut)
 async def upload_asset(
-    session: SessionDep, workspace_id: WorkspaceDep, upload: Annotated[UploadFile, File()]
+    session: SessionDep, owner_user_id: OwnerDep, upload: Annotated[UploadFile, File()]
 ):
     try:
-        return await mapped(InferenceAssets(session, workspace_id).upload(upload))
+        return await mapped(InferenceAssets(session, owner_user_id).upload(upload))
     finally:
         await upload.close()
 
 
 @router.post("/assets/import", response_model=InferenceAssetOut)
-async def import_asset(
-    body: InferenceAssetImportIn, session: SessionDep, workspace_id: WorkspaceDep
-):
-    return await mapped(InferenceAssets(session, workspace_id).import_library(body.asset_id))
+async def import_asset(body: InferenceAssetImportIn, session: SessionDep, owner_user_id: OwnerDep):
+    return await mapped(InferenceAssets(session, owner_user_id).import_library(body.asset_id))
 
 
 @router.delete("/assets/{asset_id}", status_code=204)
-async def delete_asset(asset_id: str, session: SessionDep, workspace_id: WorkspaceDep):
-    await mapped(InferenceAssets(session, workspace_id).delete(asset_id))
+async def delete_asset(asset_id: str, session: SessionDep, owner_user_id: OwnerDep):
+    await mapped(InferenceAssets(session, owner_user_id).delete(asset_id))
 
 
 @router.post("/tasks", response_model=InferenceTaskOut)
@@ -129,12 +127,12 @@ async def create_task(
     body: InferenceTaskIn,
     request: Request,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     principal: StudioAuth,
 ):
     credential = await snapshot_from_principal(session, principal)
     return await mapped(
-        InferenceTasks(session, workspace_id).create(
+        InferenceTasks(session, owner_user_id).create(
             body,
             task_admission(request, session, "inference"),
             credential=credential,
@@ -145,16 +143,16 @@ async def create_task(
 @router.get("/tasks", response_model=InferenceTasksOut)
 async def list_tasks(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     offset: int = Query(0, ge=0),
     limit: int = Query(30, ge=1, le=100),
 ):
-    return await InferenceTasks(session, workspace_id).list(offset, limit)
+    return await InferenceTasks(session, owner_user_id).list(offset, limit)
 
 
 @router.get("/tasks/{task_id}", response_model=InferenceTaskOut)
-async def get_task(task_id: str, session: SessionDep, workspace_id: WorkspaceDep):
-    return await mapped(InferenceTasks(session, workspace_id).get(task_id))
+async def get_task(task_id: str, session: SessionDep, owner_user_id: OwnerDep):
+    return await mapped(InferenceTasks(session, owner_user_id).get(task_id))
 
 
 @router.get(
@@ -168,14 +166,14 @@ async def get_task(task_id: str, session: SessionDep, workspace_id: WorkspaceDep
         }
     },
 )
-async def download_result(task_id: str, session: SessionDep, workspace_id: WorkspaceDep):
-    path, filename, mime = await mapped(InferenceTasks(session, workspace_id).content(task_id))
+async def download_result(task_id: str, session: SessionDep, owner_user_id: OwnerDep):
+    path, filename, mime = await mapped(InferenceTasks(session, owner_user_id).content(task_id))
     return FileResponse(path, filename=filename, media_type=mime)
 
 
 @router.post("/tasks/{task_id}/save-to-library", response_model=VisualAssetOut)
-async def save_result(task_id: str, session: SessionDep, workspace_id: WorkspaceDep):
-    return await mapped(InferenceTasks(session, workspace_id).save_to_library(task_id))
+async def save_result(task_id: str, session: SessionDep, owner_user_id: OwnerDep):
+    return await mapped(InferenceTasks(session, owner_user_id).save_to_library(task_id))
 
 
 @router.post("/tasks/{task_id}/retry-materialization", response_model=InferenceTaskOut)
@@ -184,10 +182,10 @@ async def retry_materialization(
     body: InferenceRevisionIn,
     request: Request,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
 ):
     return await mapped(
-        InferenceTasks(session, workspace_id).retry_materialization(
+        InferenceTasks(session, owner_user_id).retry_materialization(
             task_id, body.expected_revision, task_admission(request, session, "inference")
         )
     )
@@ -197,7 +195,7 @@ async def retry_materialization(
 async def delete_task(
     task_id: str,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     expected_revision: int = Query(ge=0),
 ):
-    await mapped(InferenceTasks(session, workspace_id).delete(task_id, expected_revision))
+    await mapped(InferenceTasks(session, owner_user_id).delete(task_id, expected_revision))

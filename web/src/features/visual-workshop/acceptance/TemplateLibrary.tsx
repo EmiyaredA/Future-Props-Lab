@@ -219,8 +219,8 @@ export function TemplateLibrary({
         ) : (
           <p className="acceptance-empty">
             {term || filter !== "all"
-              ? "没有匹配的 Workspace 模板。"
-              : "保存常用标准后，可在当前 Workspace 的其他项目复用。"}
+              ? "没有匹配的账号模板。"
+              : "保存常用标准后，可在当前账号的其他项目复用。"}
           </p>
         )}
       </section>
@@ -229,7 +229,7 @@ export function TemplateLibrary({
       >
         {current ? (
           <>
-            <small>{current.builtin ? "内置模板" : "Workspace 模板"}</small>
+            <small>{current.builtin ? "内置模板" : "账号模板"}</small>
             <h2>{current.title}</h2>
             <p className="acceptance-muted">
               可复制后自由修改，项目参考资料在使用后绑定。

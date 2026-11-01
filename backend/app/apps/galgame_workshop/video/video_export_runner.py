@@ -30,7 +30,7 @@ from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.render_engine import RenderCancelled, render_plan
-from app.orm import bind_workspace, require_workspace_id
+from app.orm import bind_owner, require_owner_id
 from app.runtime.config import Settings, get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.polling_runner import PollingTaskRunner
@@ -132,9 +132,9 @@ class GalgameVideoExportRunner(PollingTaskRunner):
             task = await session.get(GalgameVideoExportTask, task_id)
             if task is None:
                 return
-            bind_workspace(
+            bind_owner(
                 session,
-                require_workspace_id(task.workspace_id, subject="video export task"),
+                require_owner_id(task.owner_user_id, subject="video export task"),
             )
             detail = dict(task.result_detail or {})
             if phase is not None:
@@ -172,8 +172,8 @@ class GalgameVideoExportRunner(PollingTaskRunner):
                 task = await session.get(GalgameVideoExportTask, task_id)
                 if task is None or task.status != "queued":
                     return
-                workspace_id = require_workspace_id(task.workspace_id, subject="video export task")
-                bind_workspace(session, workspace_id)
+                owner_user_id = require_owner_id(task.owner_user_id, subject="video export task")
+                bind_owner(session, owner_user_id)
                 task.status = "running"
                 task.started_at = task.started_at or utc_now()
                 task.result_detail = {**(task.result_detail or {}), "phase": "preparing"}
@@ -247,7 +247,7 @@ class GalgameVideoExportRunner(PollingTaskRunner):
                         document,
                         asset_paths,
                         cache_dir=self.storage.project_root(
-                            "galgame-workshop", project_id, workspace_id=workspace_id
+                            "galgame-workshop", project_id, owner_user_id=owner_user_id
                         )
                         / "derived"
                         / "audio-envelopes",
@@ -345,11 +345,11 @@ class GalgameVideoExportRunner(PollingTaskRunner):
                 await self._raise_if_cancelled(task_id)
                 await self._set(task_id, phase="registering", progress=95)
                 async with self.session_factory() as session:
-                    bind_workspace(session, workspace_id)
+                    bind_owner(session, owner_user_id)
                     library = AssetLibrary(session, self.settings)
                     asset, staged_path = await library.stage_local_copy(
                         output_path,
-                        workspace_id=workspace_id,
+                        owner_user_id=owner_user_id,
                         filename=filename,
                         content_type="video/mp4",
                         galgame_project_id=project_id,

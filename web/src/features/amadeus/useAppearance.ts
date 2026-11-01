@@ -15,7 +15,7 @@ const builtIn: Selection = {
 export function useAppearance(session: AccountSessionContext) {
   const [selection, setSelection] = useState<Selection>(builtIn);
   useEffect(() => {
-    const key = appearanceKey(session.me.user.id, session.me.workspace.id);
+    const key = appearanceKey(session.me.user.id, session.me.user.id);
     let active = true;
     const refresh = async () => {
       const id = localStorage.getItem(key);
@@ -62,6 +62,6 @@ export function useAppearance(session: AccountSessionContext) {
       window.removeEventListener("storage", storage);
       window.removeEventListener("amadeus-appearance-changed", changed);
     };
-  }, [session.me.user.id, session.me.workspace.id]);
+  }, [session.me.user.id]);
   return selection;
 }

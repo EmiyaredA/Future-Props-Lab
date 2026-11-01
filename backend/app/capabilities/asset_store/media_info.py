@@ -1,4 +1,4 @@
-"""Workspace-scoped, read-only video information."""
+"""account-scoped, read-only video information."""
 
 from sqlalchemy import select
 
@@ -9,11 +9,11 @@ from app.capabilities.media_rendering.media_info import inspect_video_info
 from app.runtime.config import get_settings
 
 
-async def get_video_media_info(session, workspace_id: str, asset_id: str) -> dict:
+async def get_video_media_info(session, owner_user_id: str, asset_id: str) -> dict:
     asset = await session.scalar(
         select(VisualAsset).where(
             VisualAsset.id == asset_id,
-            VisualAsset.workspace_id == workspace_id,
+            VisualAsset.owner_user_id == owner_user_id,
         )
     )
     if asset is None:

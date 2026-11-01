@@ -30,7 +30,7 @@ from app.apps.thought_workshop.knowledge_tools.schemas import (
 )
 from app.apps.thought_workshop.knowledge_tools.search import search
 from app.apps.thought_workshop.schemas.workshop import ThoughtNoteOut, ThoughtNoteSummary
-from app.deps import SessionDep, StudioAuth, WorkspaceDep
+from app.deps import OwnerDep, SessionDep, StudioAuth
 
 router = APIRouter()
 
@@ -45,7 +45,7 @@ async def call(operation):
 @router.get("/search", response_model=SearchResult)
 async def global_search(
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     query: str = Query(default="", max_length=500),
     knowledge_base_id: str | None = None,
     tag: str = Query(default="", max_length=40),
@@ -57,7 +57,7 @@ async def global_search(
     return await call(
         search(
             session,
-            workspace_id,
+            owner_user_id,
             SearchCriteria(
                 query=query,
                 knowledge_base_id=knowledge_base_id,
@@ -72,49 +72,47 @@ async def global_search(
 
 
 @router.post("/references/resolve", response_model=list[ReferenceTarget])
-async def resolve_references(
-    body: ResolveReferences, session: SessionDep, workspace_id: WorkspaceDep
-):
-    return await call(resolve(session, workspace_id, body.ids))
+async def resolve_references(body: ResolveReferences, session: SessionDep, owner_user_id: OwnerDep):
+    return await call(resolve(session, owner_user_id, body.ids))
 
 
 @router.get("/notes/{note_id}/backlinks", response_model=list[ThoughtNoteSummary])
 async def note_backlinks(
     note_id: str,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=40, ge=1, le=100),
 ):
-    return await call(backlinks(session, workspace_id, note_id, offset, limit))
+    return await call(backlinks(session, owner_user_id, note_id, offset, limit))
 
 
 @router.get("/templates", response_model=list[TemplateOut])
-async def templates(session: SessionDep, workspace_id: WorkspaceDep):
-    return await call(ReusableContent(session, workspace_id).templates())
+async def templates(session: SessionDep, owner_user_id: OwnerDep):
+    return await call(ReusableContent(session, owner_user_id).templates())
 
 
 @router.post("/templates", response_model=TemplateOut)
 async def create_template(body: TemplateIn, session: SessionDep, principal: StudioAuth):
-    return await call(ReusableContent(session, principal.workspace_id).create_template(body))
+    return await call(ReusableContent(session, principal.owner_user_id).create_template(body))
 
 
 @router.put("/templates/{template_id}", response_model=TemplateOut)
 async def put_template(
-    template_id: str, body: TemplatePut, session: SessionDep, workspace_id: WorkspaceDep
+    template_id: str, body: TemplatePut, session: SessionDep, owner_user_id: OwnerDep
 ):
-    return await call(ReusableContent(session, workspace_id).update_template(template_id, body))
+    return await call(ReusableContent(session, owner_user_id).update_template(template_id, body))
 
 
 @router.delete("/templates/{template_id}", status_code=204)
 async def delete_template(
     template_id: str,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     expected_revision: int = Query(ge=0),
 ):
     await call(
-        ReusableContent(session, workspace_id).delete_template(template_id, expected_revision)
+        ReusableContent(session, owner_user_id).delete_template(template_id, expected_revision)
     )
 
 
@@ -123,7 +121,7 @@ async def apply_template(
     template_id: str, body: TemplateApply, session: SessionDep, principal: StudioAuth
 ):
     return await call(
-        ReusableContent(session, principal.workspace_id, principal.user_id).apply_template(
+        ReusableContent(session, principal.owner_user_id, principal.user_id).apply_template(
             template_id, body
         )
     )
@@ -131,9 +129,9 @@ async def apply_template(
 
 @router.get("/notes/{note_id}/copy-snapshot", response_model=DuplicateSnapshot)
 async def copy_snapshot(
-    note_id: str, session: SessionDep, workspace_id: WorkspaceDep, subtree: bool = False
+    note_id: str, session: SessionDep, owner_user_id: OwnerDep, subtree: bool = False
 ):
-    return await call(ReusableContent(session, workspace_id).copy_snapshot(note_id, subtree))
+    return await call(ReusableContent(session, owner_user_id).copy_snapshot(note_id, subtree))
 
 
 @router.post("/notes/{note_id}/duplicate", response_model=DuplicateOut)
@@ -141,20 +139,22 @@ async def duplicate_document(
     note_id: str, body: DuplicateIn, session: SessionDep, principal: StudioAuth
 ):
     return await call(
-        ReusableContent(session, principal.workspace_id, principal.user_id).duplicate(note_id, body)
+        ReusableContent(session, principal.owner_user_id, principal.user_id).duplicate(
+            note_id, body
+        )
     )
 
 
 @router.get("/notes/{note_id}/checkpoints", response_model=list[CheckpointOut])
-async def checkpoints(note_id: str, session: SessionDep, workspace_id: WorkspaceDep):
-    return await call(Checkpoints(session, workspace_id).list(note_id))
+async def checkpoints(note_id: str, session: SessionDep, owner_user_id: OwnerDep):
+    return await call(Checkpoints(session, owner_user_id).list(note_id))
 
 
 @router.post("/notes/{note_id}/checkpoints", response_model=CheckpointOut)
 async def create_checkpoint(
-    note_id: str, body: CheckpointIn, session: SessionDep, workspace_id: WorkspaceDep
+    note_id: str, body: CheckpointIn, session: SessionDep, owner_user_id: OwnerDep
 ):
-    return await call(Checkpoints(session, workspace_id).create(note_id, body))
+    return await call(Checkpoints(session, owner_user_id).create(note_id, body))
 
 
 @router.put("/notes/{note_id}/checkpoints/{checkpoint_id}", response_model=CheckpointOut)
@@ -163,10 +163,10 @@ async def rename_checkpoint(
     checkpoint_id: str,
     body: CheckpointPut,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
 ):
     return await call(
-        Checkpoints(session, workspace_id).change(
+        Checkpoints(session, owner_user_id).change(
             note_id, checkpoint_id, body.expected_revision, body.name
         )
     )
@@ -177,21 +177,23 @@ async def delete_checkpoint(
     note_id: str,
     checkpoint_id: str,
     session: SessionDep,
-    workspace_id: WorkspaceDep,
+    owner_user_id: OwnerDep,
     expected_revision: int = Query(ge=0),
 ):
-    await call(Checkpoints(session, workspace_id).change(note_id, checkpoint_id, expected_revision))
+    await call(
+        Checkpoints(session, owner_user_id).change(note_id, checkpoint_id, expected_revision)
+    )
 
 
 @router.get("/preferences/filters", response_model=list[SavedFilterOut])
 async def saved_filters(session: SessionDep, principal: StudioAuth):
-    return await call(Preferences(session, principal.workspace_id, principal.user_id).filters())
+    return await call(Preferences(session, principal.owner_user_id, principal.user_id).filters())
 
 
 @router.post("/preferences/filters", response_model=SavedFilterOut)
 async def save_filter(body: SavedFilterIn, session: SessionDep, principal: StudioAuth):
     return await call(
-        Preferences(session, principal.workspace_id, principal.user_id).save_filter(body)
+        Preferences(session, principal.owner_user_id, principal.user_id).save_filter(body)
     )
 
 
@@ -200,7 +202,9 @@ async def put_filter(
     filter_id: str, body: SavedFilterPut, session: SessionDep, principal: StudioAuth
 ):
     return await call(
-        Preferences(session, principal.workspace_id, principal.user_id).save_filter(body, filter_id)
+        Preferences(session, principal.owner_user_id, principal.user_id).save_filter(
+            body, filter_id
+        )
     )
 
 
@@ -209,7 +213,7 @@ async def delete_filter(
     filter_id: str, session: SessionDep, principal: StudioAuth, expected_revision: int = Query(ge=0)
 ):
     await call(
-        Preferences(session, principal.workspace_id, principal.user_id).delete_filter(
+        Preferences(session, principal.owner_user_id, principal.user_id).delete_filter(
             filter_id, expected_revision
         )
     )
@@ -217,7 +221,7 @@ async def delete_filter(
 
 @router.get("/preferences/recent", response_model=list[ReadingOut])
 async def recently_visited(session: SessionDep, principal: StudioAuth):
-    return await call(Preferences(session, principal.workspace_id, principal.user_id).recent())
+    return await call(Preferences(session, principal.owner_user_id, principal.user_id).recent())
 
 
 @router.get("/preferences/reading", response_model=ReadingOut | None)
@@ -227,15 +231,15 @@ async def reading_position(
     resource_id: str = Query(min_length=1, max_length=200),
 ):
     return await call(
-        Preferences(session, principal.workspace_id, principal.user_id).reading(resource_id)
+        Preferences(session, principal.owner_user_id, principal.user_id).reading(resource_id)
     )
 
 
 @router.post("/preferences/reading", response_model=ReadingOut)
 async def record_reading(body: ReadingIn, session: SessionDep, principal: StudioAuth):
-    return await call(Preferences(session, principal.workspace_id, principal.user_id).record(body))
+    return await call(Preferences(session, principal.owner_user_id, principal.user_id).record(body))
 
 
 @router.get("/knowledge-bases/{project_id}/export-snapshot", response_model=LibraryExportSnapshot)
-async def library_export_snapshot(project_id: str, session: SessionDep, workspace_id: WorkspaceDep):
-    return await call(export_snapshot(session, workspace_id, project_id))
+async def library_export_snapshot(project_id: str, session: SessionDep, owner_user_id: OwnerDep):
+    return await call(export_snapshot(session, owner_user_id, project_id))

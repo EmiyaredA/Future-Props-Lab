@@ -36,7 +36,7 @@ def tools_command(root):
 async def prepare(session, settings, run):
     storage = AssetStorage(settings)
     root = (
-        storage.project_root("visual-workshop", run.project_id, workspace_id=run.workspace_id)
+        storage.project_root("visual-workshop", run.project_id, owner_user_id=run.owner_user_id)
         / "acceptance-tasks"
         / run.id
     )
@@ -59,7 +59,7 @@ async def prepare(session, settings, run):
             ("evidence", run.evidence),
         ):
             for item in items:
-                row = await asset(session, run.workspace_id, run.project_id, item["asset_id"])
+                row = await asset(session, run.owner_user_id, run.project_id, item["asset_id"])
                 source = storage.path_for(row)
                 name = f"input-{index}{source.suffix}"
                 index += 1
@@ -86,7 +86,7 @@ async def prepare(session, settings, run):
 
 
 async def evaluate_agent(session, settings, run, cancelled, executor=execute):
-    identity, workspace_id, project_id = run.id, run.workspace_id, run.project_id
+    identity, owner_user_id, project_id = run.id, run.owner_user_id, run.project_id
     scheme_id = run.scheme_id
     snapshot, original_evidence = deepcopy(run.snapshot), deepcopy(run.evidence)
     kind, path, users = cli_configuration(settings, scheme_id)
@@ -97,7 +97,7 @@ async def evaluate_agent(session, settings, run, cancelled, executor=execute):
 
     if not await authorized(
         session,
-        workspace_id,
+        owner_user_id,
         snapshot.get("executor", {}).get("user_id"),
         kind,
         "visual_acceptance",
@@ -154,7 +154,7 @@ async def evaluate_agent(session, settings, run, cancelled, executor=execute):
                 key,
                 visual_project_id=project_id,
                 galgame_project_id=None,
-                workspace_id=workspace_id,
+                owner_user_id=owner_user_id,
             )
             target.parent.mkdir(parents=True, exist_ok=True)
             await asyncio.to_thread(shutil.copyfile, source, target)
@@ -163,7 +163,7 @@ async def evaluate_agent(session, settings, run, cancelled, executor=execute):
             session.add(
                 VisualAsset(
                     id=asset_id,
-                    workspace_id=workspace_id,
+                    owner_user_id=owner_user_id,
                     project_id=project_id,
                     original_filename=f"agent-frame-{item['position_ms']}ms.png",
                     display_name="Agent 验收证据",

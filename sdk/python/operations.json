@@ -11,14 +11,6 @@
     "method": "delete_session",
     "resource": "accounts"
   },
-  "DELETE /v1/account/workspaces/current/invitations/{invitation_id}": {
-    "method": "revoke_invitation",
-    "resource": "workspaces"
-  },
-  "DELETE /v1/account/workspaces/current/members/{membership_id}": {
-    "method": "delete_member",
-    "resource": "workspaces"
-  },
   "DELETE /v1/amadeus/conversations/{conversation_id}": {
     "method": "delete_conversation",
     "resource": "amadeus"
@@ -223,21 +215,13 @@
     "method": "api_keys",
     "resource": "accounts"
   },
-  "GET /v1/account/cross-workspace-call-logs": {
-    "method": "cross_logs",
-    "resource": "governance"
-  },
-  "GET /v1/account/cross-workspace-call-logs/stats": {
-    "method": "cross_log_stats",
-    "resource": "governance"
-  },
   "GET /v1/account/developer-documents": {
     "method": "developer_docs",
     "resource": "governance"
   },
-  "GET /v1/account/log-workspaces": {
-    "method": "log_spaces",
-    "resource": "governance"
+  "GET /v1/account/directory": {
+    "method": "directory",
+    "resource": "accounts"
   },
   "GET /v1/account/profile": {
     "method": "get_profile",
@@ -254,26 +238,6 @@
   "GET /v1/account/sessions": {
     "method": "sessions",
     "resource": "accounts"
-  },
-  "GET /v1/account/workspace-invitations": {
-    "method": "my_invitations",
-    "resource": "workspaces"
-  },
-  "GET /v1/account/workspaces": {
-    "method": "accessible_workspaces",
-    "resource": "workspaces"
-  },
-  "GET /v1/account/workspaces/current/audit-events": {
-    "method": "audit",
-    "resource": "admin"
-  },
-  "GET /v1/account/workspaces/current/invitations": {
-    "method": "workspace_invitations",
-    "resource": "workspaces"
-  },
-  "GET /v1/account/workspaces/current/members": {
-    "method": "members",
-    "resource": "workspaces"
   },
   "GET /v1/amadeus/conversations": {
     "method": "list_conversations",
@@ -855,10 +819,6 @@
     "method": "history",
     "resource": "templates"
   },
-  "GET /v1/platform/permission-policy": {
-    "method": "get_policy",
-    "resource": "governance"
-  },
   "GET /v1/platform/registration-invite-codes": {
     "method": "invites",
     "resource": "governance"
@@ -873,10 +833,6 @@
   },
   "GET /v1/platform/security-events": {
     "method": "audit_v1_platform_security_events",
-    "resource": "admin"
-  },
-  "GET /v1/platform/workspaces": {
-    "method": "workspaces",
     "resource": "admin"
   },
   "GET /v1/presentation-workshop/examples": {
@@ -902,18 +858,6 @@
   "GET /v1/presentation-workshop/templates/{template_id}": {
     "method": "get_template",
     "resource": "presentation"
-  },
-  "GET /v1/public-workspace": {
-    "method": "projection",
-    "resource": "public"
-  },
-  "GET /v1/public-workspace/assets/{asset_id}/content": {
-    "method": "asset_content",
-    "resource": "public"
-  },
-  "GET /v1/public-workspace/galgame-projects/{project_id}/story": {
-    "method": "story",
-    "resource": "public"
   },
   "GET /v1/thought-workshop/backup": {
     "method": "backup",
@@ -1207,14 +1151,6 @@
     "method": "certification",
     "resource": "governance"
   },
-  "PATCH /v1/account/workspaces/current": {
-    "method": "update_workspace",
-    "resource": "workspaces"
-  },
-  "PATCH /v1/account/workspaces/current/members/{membership_id}": {
-    "method": "set_member_role",
-    "resource": "workspaces"
-  },
   "PATCH /v1/amadeus/conversations/{conversation_id}": {
     "method": "patch_conversation",
     "resource": "amadeus"
@@ -1323,10 +1259,6 @@
     "method": "patch_account",
     "resource": "admin"
   },
-  "PATCH /v1/platform/permission-policy": {
-    "method": "patch_policy",
-    "resource": "governance"
-  },
   "PATCH /v1/platform/registration-invite-codes/{invite_id}": {
     "method": "patch_invite",
     "resource": "governance"
@@ -1378,22 +1310,6 @@
   "POST /v1/account/sessions/revoke-others": {
     "method": "delete_other_sessions",
     "resource": "accounts"
-  },
-  "POST /v1/account/workspace-invitations/{invitation_id}/accept": {
-    "method": "accept_invitation",
-    "resource": "workspaces"
-  },
-  "POST /v1/account/workspace-invitations/{invitation_id}/decline": {
-    "method": "decline_invitation",
-    "resource": "workspaces"
-  },
-  "POST /v1/account/workspaces/current/invitations": {
-    "method": "invite_member",
-    "resource": "workspaces"
-  },
-  "POST /v1/account/workspaces/switch": {
-    "method": "set_active_workspace",
-    "resource": "workspaces"
   },
   "POST /v1/amadeus/conversations": {
     "method": "create_conversation",
@@ -2026,10 +1942,6 @@
   "POST /v1/platform/registration-invite-codes/{invite_id}/secret": {
     "method": "invite_secret",
     "resource": "governance"
-  },
-  "POST /v1/platform/workspaces": {
-    "method": "add_workspace",
-    "resource": "admin"
   },
   "POST /v1/presentation-workshop/examples": {
     "method": "create_example",

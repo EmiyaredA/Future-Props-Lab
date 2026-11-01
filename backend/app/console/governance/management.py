@@ -67,22 +67,22 @@ async def update_account(
         raise AccountError("account_not_found")
     next_status = status if status is not None else user.status
     next_role = platform_role or (
-        ("super_admin" if is_platform_admin else "member")
+        ("admin" if is_platform_admin else "user")
         if is_platform_admin is not None
         else user.platform_role
     )
-    next_admin = next_role == "super_admin"
+    next_admin = next_role == "admin"
     if user.id == principal.user_id and (next_status == "disabled" or not next_admin):
         raise AccountError("cannot_disable_or_demote_self")
     if (
-        user.platform_role == "super_admin"
+        user.platform_role == "admin"
         and user.status == "active"
         and (not next_admin or next_status == "disabled")
     ):
         count = await session.scalar(
             select(func.count())
             .select_from(User)
-            .where(User.platform_role == "super_admin", User.status == "active")
+            .where(User.platform_role == "admin", User.status == "active")
         )
         if int(count or 0) <= 1:
             raise AccountError("last_platform_admin")

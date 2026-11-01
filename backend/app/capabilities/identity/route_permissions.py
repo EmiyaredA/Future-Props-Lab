@@ -16,11 +16,6 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("GET", "/v1/desktop/setup"),
         ("POST", "/v1/desktop/setup"),
     ),
-    "logs.cross_workspace": (
-        ("GET", "/v1/account/log-workspaces"),
-        ("GET", "/v1/account/cross-workspace-call-logs"),
-        ("GET", "/v1/account/cross-workspace-call-logs/stats"),
-    ),
     "content.write": (
         ("POST", "/v1/interview-assistant/rooms"),
         ("DELETE", "/v1/interview-assistant/rooms/{room_id}"),
@@ -267,6 +262,7 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("POST", "/v1/visual-workshop/projects/{project_id}/open-folder"),
     ),
     "content.read": (
+        ("GET", "/v1/account/directory"),
         ("GET", "/v1/code-agents"),
         ("POST", "/v1/code-agents/detect"),
         ("GET", "/v1/code-agents/grants"),
@@ -578,7 +574,7 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
     ),
 }
 
-# Browser Session plus explicit publication role, not Workspace content permission.
+# Browser Session plus explicit publication role, not account content permission.
 OPERATIONS["community.access"] = (
     (
         "GET",

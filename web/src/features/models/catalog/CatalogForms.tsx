@@ -166,7 +166,7 @@ export function ProviderForm({
         <p>本机托管连接，由“本地语音模型”管理安装和运行，无需 API Key。</p>
       )}
       {initial?.origin === "role_template" && (
-        <p className="mc-help">平台模板管理的字段在当前工作区只读。</p>
+        <p className="mc-help">平台模板管理的字段在当前账号只读。</p>
       )}
       {copy && (
         <p className="mc-help">

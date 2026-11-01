@@ -57,10 +57,5 @@ test("every route and independent HTML entry has a responsive scenario", () => {
     "pet-chat.html",
     "pet.html",
   ]);
-  expect(publicSurfaces).toEqual([
-    "login",
-    "account-workspace",
-    "public-workspace",
-    "docs",
-  ]);
+  expect(publicSurfaces).toEqual(["login", "account-settings", "docs"]);
 });

@@ -24,7 +24,7 @@ from app.capabilities.media_rendering.motion_document import MotionComposition
 from app.runtime.config import get_settings
 from app.runtime.project_records import (
     delete_revisioned_project,
-    load_workspace_project,
+    load_owned_project,
     patch_revisioned_project,
 )
 from app.runtime.revisions import RevisionConflictError
@@ -179,17 +179,17 @@ def initial_document(body: ProjectCreateIn) -> MotionComposition:
 
 
 class MotionProjects:
-    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
         self.session = session
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
         self.storage = AssetStorage(get_settings())
 
     async def row(self, project_id: str) -> MotionProject:
-        return await load_workspace_project(
+        return await load_owned_project(
             self.session,
             MotionProject,
             project_id,
-            self.workspace_id,
+            self.owner_user_id,
             not_found=lambda: MotionNotFound("特效项目不存在"),
         )
 
@@ -198,7 +198,7 @@ class MotionProjects:
             (
                 await self.session.execute(
                     select(MotionProject)
-                    .where(MotionProject.workspace_id == self.workspace_id)
+                    .where(MotionProject.owner_user_id == self.owner_user_id)
                     .order_by(MotionProject.updated_at.desc())
                 )
             ).scalars()
@@ -209,11 +209,15 @@ class MotionProjects:
         return project_out(await self.row(project_id))
 
     async def create(self, body: ProjectCreateIn) -> ProjectOut:
-        row = MotionProject(workspace_id=self.workspace_id, title=body.title)
+        row = MotionProject(owner_user_id=self.owner_user_id, title=body.title)
         self.session.add(row)
         await self.session.flush()
         async with creating_project_layout(
-            self.session, self.storage, "motion-compositor", row.id, workspace_id=self.workspace_id
+            self.session,
+            self.storage,
+            "motion-compositor",
+            row.id,
+            owner_user_id=self.owner_user_id,
         ):
             self.session.add(
                 MotionDocument(
@@ -230,7 +234,7 @@ class MotionProjects:
             self.session,
             MotionProject,
             project_id,
-            self.workspace_id,
+            self.owner_user_id,
             expected_revision=body.expected_revision,
             values={
                 "title": body.title.strip(),
@@ -249,13 +253,13 @@ class MotionProjects:
             self.storage,
             "motion-compositor",
             project_id,
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
         ):
             await delete_revisioned_project(
                 self.session,
                 MotionProject,
                 project_id,
-                self.workspace_id,
+                self.owner_user_id,
                 expected_revision=expected_revision,
                 load_current=lambda: self.get(project_id),
             )
@@ -279,7 +283,7 @@ class MotionProjects:
                     select(VisualAsset).where(
                         VisualAsset.id.in_(ids),
                         VisualAsset.motion_compositor_project_id == project_id,
-                        VisualAsset.workspace_id == self.workspace_id,
+                        VisualAsset.owner_user_id == self.owner_user_id,
                     )
                 )
             ).scalars()
@@ -384,7 +388,7 @@ class MotionProjects:
             )
         self.session.add(
             MotionOperationBatch(
-                workspace_id=self.workspace_id,
+                owner_user_id=self.owner_user_id,
                 project_id=project_id,
                 request_id=body.request_id,
                 base_revision=body.expected_revision,

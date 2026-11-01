@@ -1,4 +1,4 @@
-"""Workspace and user scoped desktop pet text conversations."""
+"""account and user scoped desktop pet text conversations."""
 
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ from app.llm.text_client import (
     resolve_text_model,
     stream_product_text,
 )
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.db import SessionLocal
 from app.runtime.ids import new_id
 from app.runtime.operation_receipts import OperationError
@@ -42,7 +42,7 @@ from app.runtime.time import iso_utc, utc_now
 
 @dataclass(frozen=True)
 class PreparedPetReply:
-    workspace_id: str
+    owner_user_id: str
     chat_id: str
     assistant_id: str
     request_id: str
@@ -79,17 +79,17 @@ def _prompt(title: str, config: PetConfig) -> str:
 
 
 class DesktopPetChats:
-    def __init__(self, session: AsyncSession, workspace_id: str, user_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str, user_id: str) -> None:
         self.session = session
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
         self.user_id = user_id
-        self.projects = DesktopPetProjects(session, workspace_id)
+        self.projects = DesktopPetProjects(session, owner_user_id)
 
     async def _chat(self, project_id: str) -> DesktopPetChat | None:
         await self.projects.row(project_id)
         return await self.session.scalar(
             select(DesktopPetChat).where(
-                DesktopPetChat.workspace_id == self.workspace_id,
+                DesktopPetChat.owner_user_id == self.owner_user_id,
                 DesktopPetChat.project_id == project_id,
                 DesktopPetChat.user_id == self.user_id,
             )
@@ -169,7 +169,7 @@ class DesktopPetChats:
     async def settings(self, project_id: str, body: PetChatSettingsIn) -> PetChatOut:
         row = await self._chat(project_id)
         if body.model_id:
-            await resolve_text_model(self.session, self.workspace_id, body.model_id)
+            await resolve_text_model(self.session, self.owner_user_id, body.model_id)
         if row is None:
             if body.expected_revision != 0:
                 await self._conflict(project_id, body.expected_revision)
@@ -177,7 +177,7 @@ class DesktopPetChats:
             result = await self.session.execute(
                 sqlite_insert(DesktopPetChat)
                 .values(
-                    workspace_id=self.workspace_id,
+                    owner_user_id=self.owner_user_id,
                     project_id=project_id,
                     user_id=self.user_id,
                     model_id=body.model_id,
@@ -187,7 +187,7 @@ class DesktopPetChats:
                 )
                 .on_conflict_do_nothing(
                     index_elements=[
-                        "workspace_id",
+                        "owner_user_id",
                         "project_id",
                         "user_id",
                     ]
@@ -258,7 +258,7 @@ class DesktopPetChats:
             raise OperationError("这条消息已经提交，请刷新聊天记录", "duplicate_request", 409)
         if row.revision != body.expected_revision or row.active_request_id:
             await self._conflict(project_id, body.expected_revision)
-        model = await resolve_text_model(self.session, self.workspace_id, row.model_id)
+        model = await resolve_text_model(self.session, self.owner_user_id, row.model_id)
         recent = list(
             (
                 await self.session.scalars(
@@ -329,7 +329,7 @@ class DesktopPetChats:
         )
         await self.session.commit()
         return PreparedPetReply(
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             chat_id=row.id,
             assistant_id=assistant_id,
             request_id=body.request_id,
@@ -350,7 +350,7 @@ async def _settle(
     elapsed_ms: int,
 ) -> tuple[PetChatMessageOut | None, int | None]:
     async with SessionLocal() as session:
-        bind_workspace(session.sync_session, prepared.workspace_id)
+        bind_owner(session.sync_session, prepared.owner_user_id)
         row = await session.get(DesktopPetChat, prepared.chat_id)
         message = await session.get(DesktopPetChatMessage, prepared.assistant_id)
         if row is None or message is None or row.active_request_id != prepared.request_id:
@@ -363,7 +363,7 @@ async def _settle(
         row.updated_at = utc_now()
         add_product_text_log(
             session,
-            workspace_id=prepared.workspace_id,
+            owner_user_id=prepared.owner_user_id,
             call_source="desktop_pet_chat",
             model=prepared.model,
             trace_id=prepared.assistant_id,

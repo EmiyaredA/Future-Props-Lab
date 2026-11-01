@@ -135,16 +135,16 @@ def _folder_segment(name: str) -> str | None:
 
 
 class LibraryFolderArchive:
-    def __init__(self, session: AsyncSession, settings: Settings, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, settings: Settings, owner_user_id: str) -> None:
         self.session = session
         self.settings = settings
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
         self.storage = AssetStorage(settings)
         self.library = AssetLibrary(session, settings)
 
     async def _library_folder(self, folder_id: str) -> VisualAssetFolder:
         row = await self.session.get(VisualAssetFolder, folder_id)
-        if row is None or row.workspace_id != self.workspace_id or row.project_id is not None:
+        if row is None or row.owner_user_id != self.owner_user_id or row.project_id is not None:
             raise LibraryFolderArchiveError("文件夹不存在", code="not_found", status=404)
         return row
 
@@ -166,7 +166,7 @@ class LibraryFolderArchive:
             (
                 await self.session.execute(
                     select(VisualAssetFolder).where(
-                        VisualAssetFolder.workspace_id == self.workspace_id,
+                        VisualAssetFolder.owner_user_id == self.owner_user_id,
                         VisualAssetFolder.project_id.is_(None),
                     )
                 )
@@ -180,7 +180,7 @@ class LibraryFolderArchive:
             (
                 await self.session.execute(
                     select(VisualAsset).where(
-                        VisualAsset.workspace_id == self.workspace_id,
+                        VisualAsset.owner_user_id == self.owner_user_id,
                         VisualAsset.project_id.is_(None),
                         VisualAsset.galgame_project_id.is_(None),
                         VisualAsset.video_editor_project_id.is_(None),
@@ -350,7 +350,7 @@ class LibraryFolderArchive:
                 current = existing
                 continue
             row = VisualAssetFolder(
-                workspace_id=self.workspace_id,
+                owner_user_id=self.owner_user_id,
                 project_id=None,
                 parent_id=parent_id,
                 name=segment,
@@ -377,7 +377,7 @@ class LibraryFolderArchive:
         return (
             await self.session.execute(
                 select(VisualAssetFolder).where(
-                    VisualAssetFolder.workspace_id == self.workspace_id,
+                    VisualAssetFolder.owner_user_id == self.owner_user_id,
                     VisualAssetFolder.project_id.is_(None),
                     VisualAssetFolder.parent_id == parent_id
                     if parent_id is not None
@@ -494,7 +494,7 @@ class LibraryFolderArchive:
                     _media_kind, mime_types = ALLOWED_FILES[extension]
                     row, _path = await self.library.stage_local_copy(
                         destination,
-                        workspace_id=self.workspace_id,
+                        owner_user_id=self.owner_user_id,
                         filename=filename,
                         content_type=sorted(mime_types)[0],
                         folder_id=target_folder.id if target_folder else None,
@@ -554,7 +554,7 @@ class LibraryFolderArchive:
             try:
                 row = await self.library.store_upload(
                     upload,
-                    workspace_id=self.workspace_id,
+                    owner_user_id=self.owner_user_id,
                     filename_override=filename,
                     folder_id=target_folder.id if target_folder else None,
                 )

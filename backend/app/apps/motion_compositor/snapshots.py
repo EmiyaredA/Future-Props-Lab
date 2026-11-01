@@ -24,10 +24,10 @@ MAX_ARCHIVE_BYTES = 1024 * 1024 * 1024
 
 
 class MotionSnapshots:
-    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
         self.session = session
-        self.workspace_id = workspace_id
-        self.projects = MotionProjects(session, workspace_id)
+        self.owner_user_id = owner_user_id
+        self.projects = MotionProjects(session, owner_user_id)
         self.settings = get_settings()
         self.storage = AssetStorage(self.settings)
         self.library = AssetLibrary(session, self.settings)
@@ -40,7 +40,7 @@ class MotionSnapshots:
                 await self.session.execute(
                     select(VisualAsset).where(
                         VisualAsset.motion_compositor_project_id == project_id,
-                        VisualAsset.workspace_id == self.workspace_id,
+                        VisualAsset.owner_user_id == self.owner_user_id,
                     )
                 )
             ).scalars()
@@ -108,7 +108,7 @@ class MotionSnapshots:
                 )
                 mapping: dict[str, str] = {}
                 project_root = self.storage.project_root(
-                    "motion-compositor", created.id, workspace_id=self.workspace_id
+                    "motion-compositor", created.id, owner_user_id=self.owner_user_id
                 )
                 staged: list[Path] = []
                 try:
@@ -128,7 +128,7 @@ class MotionSnapshots:
                         try:
                             row, stored = await self.library.stage_local_copy(
                                 extracted,
-                                workspace_id=self.workspace_id,
+                                owner_user_id=self.owner_user_id,
                                 filename=str(entry["filename"]),
                                 content_type=str(entry["mimeType"]),
                                 motion_compositor_project_id=created.id,

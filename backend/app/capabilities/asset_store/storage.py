@@ -13,7 +13,7 @@ TARGET_STORAGE_VERSION = 2
 
 
 class StoredAsset(Protocol):
-    workspace_id: str
+    owner_user_id: str
     storage_key: str
     storage_version: int | None
     project_id: str | None
@@ -38,49 +38,27 @@ class AssetStorage:
             raise ValueError("invalid storage path segment")
         return value
 
-    def project_root(self, application_id: str, project_id: str, *, workspace_id: str) -> Path:
+    def project_root(self, application_id: str, project_id: str, *, owner_user_id: str) -> Path:
         project_id = self._segment(project_id)
-        workspace_id = self._segment(workspace_id)
-        if workspace_id != "default":
-            root = self.settings.workspace_path(workspace_id) / "applications"
-            return (root / application_id / "projects" / project_id).resolve()
-        if application_id == "visual-workshop":
-            return self.settings.visual_project_path(project_id)
-        if application_id == "galgame-workshop":
-            return self.settings.galgame_project_path(project_id)
-        if application_id == "video-editor":
-            return (
-                self.settings.runtime_path
-                / "applications"
-                / "video-editor"
-                / "projects"
-                / project_id
-            ).resolve()
-        if application_id == "motion-compositor":
-            return (
-                self.settings.runtime_path
-                / "applications"
-                / "motion-compositor"
-                / "projects"
-                / project_id
-            ).resolve()
-        if application_id in {"live2d-workshop", "desktop-pet"}:
-            return (
-                self.settings.runtime_path
-                / "applications"
-                / application_id
-                / "projects"
-                / project_id
-            ).resolve()
-        if application_id == "director-desk":
-            return (
-                self.settings.runtime_path
-                / "applications"
-                / "director-desk"
-                / "projects"
-                / project_id
-            ).resolve()
-        raise ValueError("unknown project application")
+        owner_user_id = self._segment(owner_user_id)
+        allowed = {
+            "visual-workshop",
+            "galgame-workshop",
+            "video-editor",
+            "motion-compositor",
+            "live2d-workshop",
+            "desktop-pet",
+            "director-desk",
+        }
+        if application_id not in allowed:
+            raise ValueError("unknown project application")
+        return (
+            self.settings.account_path(owner_user_id)
+            / "applications"
+            / application_id
+            / "projects"
+            / project_id
+        ).resolve()
 
     def target_root(
         self,
@@ -89,7 +67,7 @@ class AssetStorage:
         galgame_project_id: str | None,
         video_editor_project_id: str | None = None,
         motion_compositor_project_id: str | None = None,
-        workspace_id: str,
+        owner_user_id: str,
     ) -> Path:
         owners = (
             visual_project_id,
@@ -101,32 +79,32 @@ class AssetStorage:
             raise ValueError("asset cannot belong to multiple project applications")
         if visual_project_id:
             return (
-                self.project_root("visual-workshop", visual_project_id, workspace_id=workspace_id)
+                self.project_root("visual-workshop", visual_project_id, owner_user_id=owner_user_id)
                 / "assets"
             )
         if galgame_project_id:
             return (
-                self.project_root("galgame-workshop", galgame_project_id, workspace_id=workspace_id)
+                self.project_root(
+                    "galgame-workshop", galgame_project_id, owner_user_id=owner_user_id
+                )
                 / "assets"
             )
         if video_editor_project_id:
             return (
                 self.project_root(
-                    "video-editor", video_editor_project_id, workspace_id=workspace_id
+                    "video-editor", video_editor_project_id, owner_user_id=owner_user_id
                 )
                 / "assets"
             )
         if motion_compositor_project_id:
             return (
                 self.project_root(
-                    "motion-compositor", motion_compositor_project_id, workspace_id=workspace_id
+                    "motion-compositor", motion_compositor_project_id, owner_user_id=owner_user_id
                 )
                 / "assets"
             )
-        workspace_id = self._segment(workspace_id)
-        if workspace_id != "default":
-            return self.settings.workspace_path(workspace_id) / "library" / "assets"
-        return self.settings.library_asset_path
+        owner_user_id = self._segment(owner_user_id)
+        return self.settings.account_path(owner_user_id) / "library" / "assets"
 
     def target_path(
         self,
@@ -136,18 +114,20 @@ class AssetStorage:
         galgame_project_id: str | None,
         video_editor_project_id: str | None = None,
         motion_compositor_project_id: str | None = None,
-        workspace_id: str,
+        owner_user_id: str,
     ) -> Path:
         return self.target_root(
             visual_project_id=visual_project_id,
             galgame_project_id=galgame_project_id,
             video_editor_project_id=video_editor_project_id,
             motion_compositor_project_id=motion_compositor_project_id,
-            workspace_id=workspace_id,
+            owner_user_id=owner_user_id,
         ) / self._segment(storage_key)
 
-    def legacy_path(self, storage_key: str) -> Path:
-        return self.settings.visual_asset_path / self._segment(storage_key)
+    def legacy_path(self, storage_key: str, *, owner_user_id: str) -> Path:
+        return (
+            self.settings.account_path(owner_user_id) / "legacy-assets" / self._segment(storage_key)
+        )
 
     def path_for(self, asset: StoredAsset) -> Path:
         if (asset.storage_version or 1) >= TARGET_STORAGE_VERSION:
@@ -157,9 +137,9 @@ class AssetStorage:
                 galgame_project_id=asset.galgame_project_id,
                 video_editor_project_id=asset.video_editor_project_id,
                 motion_compositor_project_id=asset.motion_compositor_project_id,
-                workspace_id=asset.workspace_id,
+                owner_user_id=asset.owner_user_id,
             )
-        return self.legacy_path(asset.storage_key)
+        return self.legacy_path(asset.storage_key, owner_user_id=asset.owner_user_id)
 
     def prepare_write(
         self,
@@ -169,7 +149,7 @@ class AssetStorage:
         galgame_project_id: str | None,
         video_editor_project_id: str | None = None,
         motion_compositor_project_id: str | None = None,
-        workspace_id: str,
+        owner_user_id: str,
     ) -> tuple[Path, Path]:
         final_path = self.target_path(
             storage_key,
@@ -177,16 +157,16 @@ class AssetStorage:
             galgame_project_id=galgame_project_id,
             video_editor_project_id=video_editor_project_id,
             motion_compositor_project_id=motion_compositor_project_id,
-            workspace_id=workspace_id,
+            owner_user_id=owner_user_id,
         )
         temp_dir = final_path.parent / ".tmp"
         temp_dir.mkdir(parents=True, exist_ok=True)
         return temp_dir / f"{self._segment(storage_key)}-{uuid4().hex}.tmp", final_path
 
     def ensure_project_layout(
-        self, application_id: str, project_id: str, *, workspace_id: str
+        self, application_id: str, project_id: str, *, owner_user_id: str
     ) -> bool:
-        root = self.project_root(application_id, project_id, workspace_id=workspace_id)
+        root = self.project_root(application_id, project_id, owner_user_id=owner_user_id)
         created = not root.exists()
         directories = [root / "assets"]
         if application_id == "visual-workshop":
@@ -198,21 +178,21 @@ class AssetStorage:
         return created
 
     def remove_project_root(
-        self, application_id: str, project_id: str, *, workspace_id: str
+        self, application_id: str, project_id: str, *, owner_user_id: str
     ) -> None:
         shutil.rmtree(
-            self.project_root(application_id, project_id, workspace_id=workspace_id),
+            self.project_root(application_id, project_id, owner_user_id=owner_user_id),
             ignore_errors=True,
         )
 
     def stage_project_root(
-        self, application_id: str, project_id: str, *, workspace_id: str
+        self, application_id: str, project_id: str, *, owner_user_id: str
     ) -> StagedProjectRoot | None:
-        workspace_id = self._segment(workspace_id)
-        original = self.project_root(application_id, project_id, workspace_id=workspace_id)
+        owner_user_id = self._segment(owner_user_id)
+        original = self.project_root(application_id, project_id, owner_user_id=owner_user_id)
         if not original.exists():
             return None
-        trash = self.settings.storage_trash_path / workspace_id / application_id
+        trash = self.settings.storage_trash_path / owner_user_id / application_id
         trash.mkdir(parents=True, exist_ok=True)
         staged = trash / f"{self._segment(project_id)}--trash--{uuid4().hex}"
         os.replace(original, staged)

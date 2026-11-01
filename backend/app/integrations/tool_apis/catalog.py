@@ -28,7 +28,7 @@ from app.integrations.schemas import (
     ToolApiUpdateIn,
     ToolApiValidationOut,
 )
-from app.orm import require_workspace_id
+from app.orm import require_owner_id
 from app.runtime.credentials import decrypt_secret, encrypt_secret
 from app.runtime.outbound_urls import require_safe_integration_http_url
 from app.runtime.revisions import RevisionConflictError
@@ -141,17 +141,17 @@ class ToolApiCatalog:
     def __init__(
         self,
         session: AsyncSession,
-        workspace_id: str,
+        owner_user_id: str,
         *,
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         self.session = session
-        self.workspace_id = require_workspace_id(workspace_id, subject="integration catalog")
+        self.owner_user_id = require_owner_id(owner_user_id, subject="integration catalog")
         self.transport = transport
 
     async def _get(self, integration_id: str) -> ToolApiIntegration:
         row = await self.session.get(ToolApiIntegration, integration_id)
-        if row is None or row.workspace_id != self.workspace_id:
+        if row is None or row.owner_user_id != self.owner_user_id:
             raise IntegrationNotFoundError("工具 API 不存在")
         return row
 
@@ -187,7 +187,7 @@ class ToolApiCatalog:
             (
                 await self.session.execute(
                     select(ToolApiIntegration)
-                    .where(ToolApiIntegration.workspace_id == self.workspace_id)
+                    .where(ToolApiIntegration.owner_user_id == self.owner_user_id)
                     .order_by(ToolApiIntegration.updated_at.desc(), ToolApiIntegration.name)
                 )
             )
@@ -199,7 +199,7 @@ class ToolApiCatalog:
             (
                 await self.session.execute(
                     select(func.count(IntegrationCheck.id)).where(
-                        IntegrationCheck.workspace_id == self.workspace_id,
+                        IntegrationCheck.owner_user_id == self.owner_user_id,
                         IntegrationCheck.resource_kind == "tool_api",
                         IntegrationCheck.created_at >= today,
                     )
@@ -212,13 +212,13 @@ class ToolApiCatalog:
                 primary_count=sum(row.enabled for row in rows),
                 failed_count=sum(row.status == "failed" for row in rows),
                 tertiary_count=checks_today,
-                recent=await list_recent_checks(self.session, self.workspace_id, "tool_api"),
+                recent=await list_recent_checks(self.session, self.owner_user_id, "tool_api"),
             ),
         )
 
     async def create(self, body: ToolApiCreateIn) -> ToolApiOut:
         row = ToolApiIntegration(
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             name=body.name,
             description=body.description,
             method=body.method,
@@ -256,7 +256,7 @@ class ToolApiCatalog:
         result = await self.session.execute(
             update(ToolApiIntegration)
             .where(
-                ToolApiIntegration.workspace_id == self.workspace_id,
+                ToolApiIntegration.owner_user_id == self.owner_user_id,
                 ToolApiIntegration.id == integration_id,
                 ToolApiIntegration.revision == body.expected_revision,
             )
@@ -302,14 +302,14 @@ class ToolApiCatalog:
             )
         await self.session.execute(
             delete(IntegrationCheck).where(
-                IntegrationCheck.workspace_id == self.workspace_id,
+                IntegrationCheck.owner_user_id == self.owner_user_id,
                 IntegrationCheck.resource_kind == "tool_api",
                 IntegrationCheck.resource_id == integration_id,
             )
         )
         result = await self.session.execute(
             delete(ToolApiIntegration).where(
-                ToolApiIntegration.workspace_id == self.workspace_id,
+                ToolApiIntegration.owner_user_id == self.owner_user_id,
                 ToolApiIntegration.id == integration_id,
                 ToolApiIntegration.revision == expected_revision,
             )
@@ -364,7 +364,7 @@ class ToolApiCatalog:
         result = await self.session.execute(
             update(ToolApiIntegration)
             .where(
-                ToolApiIntegration.workspace_id == self.workspace_id,
+                ToolApiIntegration.owner_user_id == self.owner_user_id,
                 ToolApiIntegration.id == integration_id,
                 ToolApiIntegration.revision == snapshot.revision,
             )
@@ -382,7 +382,7 @@ class ToolApiCatalog:
             )
         check = await record_check(
             self.session,
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             kind="tool_api",
             resource_id=integration_id,
             resource_name=latest.name,

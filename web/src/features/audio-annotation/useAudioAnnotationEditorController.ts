@@ -45,12 +45,12 @@ function snapshot(document: AudioAnnotationDocument): AnnotationSnapshot {
 
 export function useAudioAnnotationEditorController({
   projectId,
-  workspaceId,
+  accountId,
   onBack,
   registerNavigationGuard,
 }: {
   projectId: string;
-  workspaceId: string;
+  accountId: string;
   onBack: () => void;
   registerNavigationGuard: (
     guard: ((continueNavigation: () => void) => boolean) | null,
@@ -409,7 +409,7 @@ export function useAudioAnnotationEditorController({
 
   const segmentTranscription = useSegmentTranscription({
     projectId,
-    workspaceId,
+    accountId,
     documentRef,
     selected,
     conflict,

@@ -1,13 +1,17 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.galgame_workshop.errors import (
     GalgameStoryNotReadyError,
     GalgameWorkshopProjectNotFoundError,
 )
-from app.apps.galgame_workshop.models import GalgameStoryDocument, GalgameWorkshopProject
+from app.apps.galgame_workshop.models import (
+    GalgameProjectAssetReference,
+    GalgameStoryDocument,
+    GalgameWorkshopProject,
+)
 from app.apps.galgame_workshop.readiness import GalgameReadiness
 from app.apps.galgame_workshop.schemas import (
     GalgameWorkshopProjectCreateIn,
@@ -26,7 +30,7 @@ from app.runtime.config import get_settings
 from app.runtime.operation_receipts import forget
 from app.runtime.project_records import (
     delete_revisioned_project,
-    load_workspace_project,
+    load_owned_project,
     patch_revisioned_project,
 )
 from app.runtime.time import iso_utc, utc_now
@@ -45,9 +49,9 @@ def project_out(row: GalgameWorkshopProject) -> GalgameWorkshopProjectOut:
 
 
 class GalgameWorkshopProjects:
-    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
         self.session = session
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
         self.storage = AssetStorage(get_settings())
 
     async def list(self) -> GalgameWorkshopProjectListOut:
@@ -55,7 +59,7 @@ class GalgameWorkshopProjects:
             (
                 await self.session.execute(
                     select(GalgameWorkshopProject)
-                    .where(GalgameWorkshopProject.workspace_id == self.workspace_id)
+                    .where(GalgameWorkshopProject.owner_user_id == self.owner_user_id)
                     .order_by(
                         GalgameWorkshopProject.updated_at.desc(),
                         GalgameWorkshopProject.created_at.desc(),
@@ -68,11 +72,11 @@ class GalgameWorkshopProjects:
         return GalgameWorkshopProjectListOut(items=[project_out(row) for row in rows])
 
     async def _row(self, project_id: str) -> GalgameWorkshopProject:
-        return await load_workspace_project(
+        return await load_owned_project(
             self.session,
             GalgameWorkshopProject,
             project_id,
-            self.workspace_id,
+            self.owner_user_id,
             not_found=lambda: GalgameWorkshopProjectNotFoundError("项目不存在"),
         )
 
@@ -81,7 +85,7 @@ class GalgameWorkshopProjects:
 
     async def create(self, body: GalgameWorkshopProjectCreateIn) -> GalgameWorkshopProjectOut:
         row = GalgameWorkshopProject(
-            workspace_id=self.workspace_id, title=body.title, status="draft"
+            owner_user_id=self.owner_user_id, title=body.title, status="draft"
         )
         self.session.add(row)
         await self.session.flush()
@@ -90,7 +94,7 @@ class GalgameWorkshopProjects:
             self.storage,
             "galgame-workshop",
             row.id,
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
         ):
             self.session.add(
                 GalgameStoryDocument(
@@ -108,9 +112,9 @@ class GalgameWorkshopProjects:
     ) -> GalgameWorkshopProjectOut:
         await self._row(project_id)
         if body.status == "completed":
-            report = await GalgameReadiness(self.session, get_settings(), self.workspace_id).report(
-                project_id
-            )
+            report = await GalgameReadiness(
+                self.session, get_settings(), self.owner_user_id
+            ).report(project_id)
             if not report.ready:
                 raise GalgameStoryNotReadyError(report)
         values: dict[str, object] = {
@@ -125,7 +129,7 @@ class GalgameWorkshopProjects:
             self.session,
             GalgameWorkshopProject,
             project_id,
-            self.workspace_id,
+            self.owner_user_id,
             expected_revision=body.expected_revision,
             values=values,
             load_current=lambda: self.get(project_id),
@@ -154,17 +158,25 @@ class GalgameWorkshopProjects:
             self.storage,
             "galgame-workshop",
             project_id,
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             legacy_paths=legacy_paths,
         ):
+            await self.session.execute(
+                delete(GalgameProjectAssetReference).where(
+                    GalgameProjectAssetReference.project_id == project_id
+                )
+            )
             await delete_revisioned_project(
                 self.session,
                 GalgameWorkshopProject,
                 project_id,
-                self.workspace_id,
+                self.owner_user_id,
                 expected_revision=expected_revision,
                 load_current=lambda: self.get(project_id),
             )
             await forget(
-                self.session, workspace_id=self.workspace_id, kind="galgame", resource_id=project_id
+                self.session,
+                owner_user_id=self.owner_user_id,
+                kind="galgame",
+                resource_id=project_id,
             )

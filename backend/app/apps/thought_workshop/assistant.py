@@ -36,8 +36,8 @@ async def models(notes: Notes) -> list[ThoughtModelOut]:
                 ModelProvider.id == ModelEntry.provider_id,
             )
             .where(
-                ModelEntry.workspace_id == notes.workspace_id,
-                ModelProvider.workspace_id == notes.workspace_id,
+                ModelEntry.owner_user_id == notes.owner_user_id,
+                ModelProvider.owner_user_id == notes.owner_user_id,
                 ModelEntry.enabled.is_(True),
                 ModelProvider.enabled.is_(True),
             )
@@ -52,7 +52,7 @@ async def models(notes: Notes) -> list[ThoughtModelOut]:
 
 @dataclass(frozen=True)
 class PreparedWriting:
-    workspace_id: str
+    owner_user_id: str
     note_id: str
     revision: int
     provider_kind: str
@@ -89,8 +89,8 @@ async def prepare(
             )
             .where(
                 ModelEntry.id == body.model_id,
-                ModelEntry.workspace_id == notes.workspace_id,
-                ModelProvider.workspace_id == notes.workspace_id,
+                ModelEntry.owner_user_id == notes.owner_user_id,
+                ModelProvider.owner_user_id == notes.owner_user_id,
             )
         )
     ).first()
@@ -115,7 +115,7 @@ async def prepare(
         raise ThoughtError("请输入写作要求")
     snap = credential or CredentialSnapshot()
     prepared = PreparedWriting(
-        notes.workspace_id,
+        notes.owner_user_id,
         note_id,
         note.revision,
         provider.kind,
@@ -186,7 +186,7 @@ async def writing_events(prepared: PreparedWriting):
             async with SessionLocal() as session:
                 session.add(
                     LlmCallLog(
-                        workspace_id=prepared.workspace_id,
+                        owner_user_id=prepared.owner_user_id,
                         call_source="thought_workshop_assistant",
                         provider_kind=prepared.provider_kind,
                         model=prepared.model,

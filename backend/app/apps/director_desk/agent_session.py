@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from app.apps.director_desk.projects import DirectorDeskError, DirectorDeskProjects
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.db import SessionLocal
 
 WAIT_SECONDS = 30
@@ -56,10 +56,10 @@ def needs_write(name: str, arguments: dict[str, Any]) -> bool:
     return False
 
 
-async def require_project(workspace_id: str, project_id: str) -> None:
+async def require_project(owner_user_id: str, project_id: str) -> None:
     async with SessionLocal() as session:
-        bind_workspace(session, workspace_id)
-        await DirectorDeskProjects(session, workspace_id).row(project_id)
+        bind_owner(session, owner_user_id)
+        await DirectorDeskProjects(session, owner_user_id).row(project_id)
 
 
 @dataclass
@@ -101,37 +101,37 @@ def _fail(session: _Session) -> None:
     session.by_call.clear()
 
 
-async def claim(workspace_id: str, project_id: str) -> str:
-    await require_project(workspace_id, project_id)
+async def claim(owner_user_id: str, project_id: str) -> str:
+    await require_project(owner_user_id, project_id)
     session_id = secrets.token_hex(16)
     async with _guard:
-        previous = _sessions.get((workspace_id, project_id))
+        previous = _sessions.get((owner_user_id, project_id))
         if previous is not None:
             _fail(previous)
-        _sessions[(workspace_id, project_id)] = _Session(session_id)
+        _sessions[(owner_user_id, project_id)] = _Session(session_id)
     return session_id
 
 
-async def release(workspace_id: str, project_id: str, session_id: str) -> None:
-    await require_project(workspace_id, project_id)
+async def release(owner_user_id: str, project_id: str, session_id: str) -> None:
+    await require_project(owner_user_id, project_id)
     async with _guard:
-        current = _sessions.get((workspace_id, project_id))
+        current = _sessions.get((owner_user_id, project_id))
         if current is None or current.session_id != session_id:
             return
         _fail(current)
-        _sessions.pop((workspace_id, project_id), None)
+        _sessions.pop((owner_user_id, project_id), None)
 
 
-def _current(workspace_id: str, project_id: str, session_id: str) -> _Session:
-    current = _sessions.get((workspace_id, project_id))
+def _current(owner_user_id: str, project_id: str, session_id: str) -> _Session:
+    current = _sessions.get((owner_user_id, project_id))
     if current is None or current.closed or current.session_id != session_id:
         raise EditorClosed()
     return current
 
 
-async def poll(workspace_id: str, project_id: str, session_id: str, wait: float) -> _Call | None:
-    await require_project(workspace_id, project_id)
-    session = _current(workspace_id, project_id, session_id)
+async def poll(owner_user_id: str, project_id: str, session_id: str, wait: float) -> _Call | None:
+    await require_project(owner_user_id, project_id)
+    session = _current(owner_user_id, project_id, session_id)
     try:
         item = await asyncio.wait_for(session.queue.get(), max(wait, 0.01))
     except TimeoutError:
@@ -144,7 +144,7 @@ async def poll(workspace_id: str, project_id: str, session_id: str, wait: float)
 
 
 async def complete(
-    workspace_id: str,
+    owner_user_id: str,
     project_id: str,
     session_id: str,
     call_id: str,
@@ -152,8 +152,8 @@ async def complete(
     result: Any = None,
     error: str | None = None,
 ) -> None:
-    await require_project(workspace_id, project_id)
-    session = _current(workspace_id, project_id, session_id)
+    await require_project(owner_user_id, project_id)
+    session = _current(owner_user_id, project_id, session_id)
     call = session.by_call.get(call_id)
     if call is None or call.future.done():
         raise DirectorDeskError("工具调用不存在或已结束", 404, "call_not_found")
@@ -172,13 +172,13 @@ async def complete(
 
 
 async def invoke(
-    workspace_id: str, project_id: str, name: str, arguments: dict[str, Any], request_id: str
+    owner_user_id: str, project_id: str, name: str, arguments: dict[str, Any], request_id: str
 ) -> Any:
     if name not in KNOWN_TOOLS:
         raise DirectorDeskError("未知的导演台工具", 422, "unknown_tool")
-    await require_project(workspace_id, project_id)
+    await require_project(owner_user_id, project_id)
     async with _guard:
-        session = _sessions.get((workspace_id, project_id))
+        session = _sessions.get((owner_user_id, project_id))
         if session is None or session.closed:
             raise EditorClosed()
     async with session.lock:

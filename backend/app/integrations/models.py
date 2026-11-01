@@ -15,11 +15,11 @@ class ToolApiIntegration(Base):
     sensitive_result: Mapped[bool] = mapped_column(Boolean, default=False)
     __tablename__ = "integration_tool_apis"
     __table_args__ = (
-        UniqueConstraint("workspace_id", "name", name="uq_integration_tool_apis_workspace_name"),
+        UniqueConstraint("owner_user_id", "name", name="uq_integration_tool_apis_account_name"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     name: Mapped[str] = mapped_column(String(120))
     description: Mapped[str] = mapped_column(String(500), default="")
     method: Mapped[str] = mapped_column(String(8))
@@ -44,11 +44,11 @@ class McpIntegration(Base):
     sensitive_result: Mapped[bool] = mapped_column(Boolean, default=False)
     __tablename__ = "integration_mcp_servers"
     __table_args__ = (
-        UniqueConstraint("workspace_id", "name", name="uq_integration_mcp_workspace_name"),
+        UniqueConstraint("owner_user_id", "name", name="uq_integration_mcp_account_name"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     name: Mapped[str] = mapped_column(String(120))
     description: Mapped[str] = mapped_column(String(500), default="")
     transport: Mapped[str] = mapped_column(String(24))
@@ -90,11 +90,11 @@ class McpDiscoveredTool(Base):
 class SkillIntegration(Base):
     __tablename__ = "integration_skills"
     __table_args__ = (
-        UniqueConstraint("workspace_id", "name", name="uq_integration_skills_workspace_name"),
+        UniqueConstraint("owner_user_id", "name", name="uq_integration_skills_account_name"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     name: Mapped[str] = mapped_column(String(120))
     description: Mapped[str] = mapped_column(String(4000), default="")
     default_version: Mapped[str] = mapped_column(String(24), default="v1")
@@ -132,7 +132,7 @@ class IntegrationCheck(Base):
     __tablename__ = "integration_checks"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     resource_kind: Mapped[str] = mapped_column(String(24), index=True)
     resource_id: Mapped[str] = mapped_column(String(36), index=True)
     resource_name: Mapped[str] = mapped_column(String(120))

@@ -11,21 +11,9 @@ class Governance:
     def __init__(self, client):
         self._client = client
 
-    def cross_logs(self, *, q: str | Unset = UNSET, call_source: str | Unset = UNSET, provider_kind: str | Unset = UNSET, model: str | Unset = UNSET, api_key_id: str | Unset = UNSET, status: str | Unset = UNSET, from_: str | None | Unset = UNSET, to: str | None | Unset = UNSET, page: int | Unset = UNSET, page_size: int | Unset = UNSET, workspace_ids: list[str] | Unset = UNSET) -> models.CrossWorkspaceLogPage:
-        'Cross Logs. GET /v1/account/cross-workspace-call-logs'
-        return self._client._call('GET', '/v1/account/cross-workspace-call-logs', parameters=[('q', 'query', q), ('call_source', 'query', call_source), ('provider_kind', 'query', provider_kind), ('model', 'query', model), ('api_key_id', 'query', api_key_id), ('status', 'query', status), ('from', 'query', from_), ('to', 'query', to), ('page', 'query', page), ('page_size', 'query', page_size), ('workspace_ids', 'query', workspace_ids)], response_type=models.CrossWorkspaceLogPage)
-
-    def cross_log_stats(self, *, workspace_ids: list[str] | Unset = UNSET) -> models.CallLogStatsOut:
-        'Cross Log Stats. GET /v1/account/cross-workspace-call-logs/stats'
-        return self._client._call('GET', '/v1/account/cross-workspace-call-logs/stats', parameters=[('workspace_ids', 'query', workspace_ids)], response_type=models.CallLogStatsOut)
-
     def developer_docs(self) -> models.DeveloperDocumentsOut:
         'Developer Docs. GET /v1/account/developer-documents'
         return self._client._call('GET', '/v1/account/developer-documents', parameters=[], response_type=models.DeveloperDocumentsOut)
-
-    def log_spaces(self) -> list[models.LogWorkspaceOut]:
-        'Log Spaces. GET /v1/account/log-workspaces'
-        return self._client._call('GET', '/v1/account/log-workspaces', parameters=[], response_type=list[models.LogWorkspaceOut])
 
     def certification(self, *, kind: Literal['visual', 'galgame'], project_id: str, body: models.CertificationIn | dict) -> models.CertificationOut:
         'Certification. PATCH /v1/account/project-certification/{kind}/{project_id}'
@@ -34,14 +22,6 @@ class Governance:
     def registration(self, *, body: models.RegistrationIn | dict) -> models.AuthMeOut:
         'Registration. POST /v1/auth/register'
         return self._client._call('POST', '/v1/auth/register', parameters=[], body=body, media_type='application/json', response_type=models.AuthMeOut)
-
-    def get_policy(self) -> models.PermissionPolicyOut:
-        'Get Policy. GET /v1/platform/permission-policy'
-        return self._client._call('GET', '/v1/platform/permission-policy', parameters=[], response_type=models.PermissionPolicyOut)
-
-    def patch_policy(self, *, body: models.PermissionPolicyIn | dict) -> models.PermissionPolicyOut:
-        'Patch Policy. PATCH /v1/platform/permission-policy'
-        return self._client._call('PATCH', '/v1/platform/permission-policy', parameters=[], body=body, media_type='application/json', response_type=models.PermissionPolicyOut)
 
     def invites(self, *, q: str | Unset = UNSET, status: str | Unset = UNSET, page: int | Unset = UNSET, page_size: int | Unset = UNSET) -> models.RegistrationInvitePage:
         'Invites. GET /v1/platform/registration-invite-codes'
@@ -79,21 +59,9 @@ class AsyncGovernance:
     def __init__(self, client):
         self._client = client
 
-    async def cross_logs(self, *, q: str | Unset = UNSET, call_source: str | Unset = UNSET, provider_kind: str | Unset = UNSET, model: str | Unset = UNSET, api_key_id: str | Unset = UNSET, status: str | Unset = UNSET, from_: str | None | Unset = UNSET, to: str | None | Unset = UNSET, page: int | Unset = UNSET, page_size: int | Unset = UNSET, workspace_ids: list[str] | Unset = UNSET) -> models.CrossWorkspaceLogPage:
-        'Cross Logs. GET /v1/account/cross-workspace-call-logs'
-        return await self._client._call('GET', '/v1/account/cross-workspace-call-logs', parameters=[('q', 'query', q), ('call_source', 'query', call_source), ('provider_kind', 'query', provider_kind), ('model', 'query', model), ('api_key_id', 'query', api_key_id), ('status', 'query', status), ('from', 'query', from_), ('to', 'query', to), ('page', 'query', page), ('page_size', 'query', page_size), ('workspace_ids', 'query', workspace_ids)], response_type=models.CrossWorkspaceLogPage)
-
-    async def cross_log_stats(self, *, workspace_ids: list[str] | Unset = UNSET) -> models.CallLogStatsOut:
-        'Cross Log Stats. GET /v1/account/cross-workspace-call-logs/stats'
-        return await self._client._call('GET', '/v1/account/cross-workspace-call-logs/stats', parameters=[('workspace_ids', 'query', workspace_ids)], response_type=models.CallLogStatsOut)
-
     async def developer_docs(self) -> models.DeveloperDocumentsOut:
         'Developer Docs. GET /v1/account/developer-documents'
         return await self._client._call('GET', '/v1/account/developer-documents', parameters=[], response_type=models.DeveloperDocumentsOut)
-
-    async def log_spaces(self) -> list[models.LogWorkspaceOut]:
-        'Log Spaces. GET /v1/account/log-workspaces'
-        return await self._client._call('GET', '/v1/account/log-workspaces', parameters=[], response_type=list[models.LogWorkspaceOut])
 
     async def certification(self, *, kind: Literal['visual', 'galgame'], project_id: str, body: models.CertificationIn | dict) -> models.CertificationOut:
         'Certification. PATCH /v1/account/project-certification/{kind}/{project_id}'
@@ -102,14 +70,6 @@ class AsyncGovernance:
     async def registration(self, *, body: models.RegistrationIn | dict) -> models.AuthMeOut:
         'Registration. POST /v1/auth/register'
         return await self._client._call('POST', '/v1/auth/register', parameters=[], body=body, media_type='application/json', response_type=models.AuthMeOut)
-
-    async def get_policy(self) -> models.PermissionPolicyOut:
-        'Get Policy. GET /v1/platform/permission-policy'
-        return await self._client._call('GET', '/v1/platform/permission-policy', parameters=[], response_type=models.PermissionPolicyOut)
-
-    async def patch_policy(self, *, body: models.PermissionPolicyIn | dict) -> models.PermissionPolicyOut:
-        'Patch Policy. PATCH /v1/platform/permission-policy'
-        return await self._client._call('PATCH', '/v1/platform/permission-policy', parameters=[], body=body, media_type='application/json', response_type=models.PermissionPolicyOut)
 
     async def invites(self, *, q: str | Unset = UNSET, status: str | Unset = UNSET, page: int | Unset = UNSET, page_size: int | Unset = UNSET) -> models.RegistrationInvitePage:
         'Invites. GET /v1/platform/registration-invite-codes'

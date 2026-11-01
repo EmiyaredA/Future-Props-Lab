@@ -2,12 +2,11 @@ import { expect, test } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 const pages = [
   ["accounts", "账号管理"],
-  ["workspaces", "工作区管理"],
   ["audit", "安全审计"],
   ["invites", "邀请码管理"],
   ["settings", "全局设置"],
   ["services", "服务管理"],
-  ["permissions", "权限策略"],
+  ["quotas", "运行额度"],
 ];
 
 test("七个中台页面在桌面手机明暗主题下可访问且无横向溢出", async ({ page }) => {
@@ -94,7 +93,7 @@ test("创建邀请码后注册登录，普通用户不能访问中台和敏感�
       (await guest.request.get("/v1/account/developer-documents")).status(),
     ).toBe(403);
     const me = await (await guest.request.get("/v1/auth/me")).json();
-    expect(me.user.platform_role).toBe("member");
+    expect(me.user.platform_role).toBe("user");
     expect(me.workspace.permission_keys).not.toContain("diagnostics.model");
     const stored = await registration.evaluate(() =>
       JSON.stringify({
@@ -111,29 +110,4 @@ test("创建邀请码后注册登录，普通用户不能访问中台和敏感�
   await expect(
     page.getByRole("dialog", { name: `${name} · 兑换记录` }),
   ).toContainText("registered-");
-});
-
-test("权限策略冲突保留草稿并可核对后保存", async ({ page }) => {
-  await page.goto("/management/permissions");
-  const response = await page.request.get("/v1/platform/permission-policy");
-  const original = await response.json();
-  const toggle = page.getByRole("switch", {
-    name: /普通用户.*开发者文档|开发者文档.*普通用户/,
-  });
-  await expect(toggle).toBeVisible();
-  await toggle.click();
-  const csrf = (await page.context().cookies()).find(
-    (item) => item.name === "fpl_csrf",
-  )!.value;
-  const patch = await page.request.patch("/v1/platform/permission-policy", {
-    data: { expected_revision: original.revision, value: original.value },
-    headers: { "X-CSRF-Token": csrf, Origin: new URL(page.url()).origin },
-  });
-  expect(patch.ok()).toBeTruthy();
-  await page.getByRole("button", { name: "保存权限策略" }).click();
-  await expect(page.getByRole("alert")).toBeVisible();
-  await expect(toggle).toHaveAttribute(
-    "aria-checked",
-    String(!original.value.member.view_developer_docs),
-  );
 });

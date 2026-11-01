@@ -39,7 +39,7 @@ class Live2DExportsStore(Live2DProjectsStore):
             select(Live2DExport).where(
                 Live2DExport.id == task_id,
                 Live2DExport.project_id == project_id,
-                Live2DExport.workspace_id == self.workspace_id,
+                Live2DExport.owner_user_id == self.owner_user_id,
             )
         )
         if row is None:
@@ -87,7 +87,7 @@ class Live2DExportsStore(Live2DProjectsStore):
         existing = await self.session.scalar(
             select(Live2DExport).where(
                 Live2DExport.project_id == project_id,
-                Live2DExport.workspace_id == self.workspace_id,
+                Live2DExport.owner_user_id == self.owner_user_id,
                 Live2DExport.request_id == body.request_id,
             )
         )
@@ -107,7 +107,7 @@ class Live2DExportsStore(Live2DProjectsStore):
             )
         task = Live2DExport(
             id=new_id(),
-            workspace_id=self.workspace_id,
+            owner_user_id=self.owner_user_id,
             project_id=project_id,
             request_id=body.request_id,
             payload=payload,
@@ -125,7 +125,7 @@ class Live2DExportsStore(Live2DProjectsStore):
                 select(Live2DExport)
                 .where(
                     Live2DExport.project_id == project_id,
-                    Live2DExport.workspace_id == self.workspace_id,
+                    Live2DExport.owner_user_id == self.owner_user_id,
                 )
                 .order_by(Live2DExport.created_at.desc())
             )

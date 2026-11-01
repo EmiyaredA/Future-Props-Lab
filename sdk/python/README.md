@@ -11,9 +11,9 @@ with Client(base_url="http://127.0.0.1:9000", api_key=os.environ["FPL_MANAGEMENT
     print(projects)
 ```
 
-`AsyncClient` 提供相同资源和方法，普通请求使用 `await`。密钥绑定工作区；账号治理使用
+`AsyncClient` 提供相同资源和方法，普通请求使用 `await`。密钥绑定签发账号；账号治理使用
 无密钥客户端的 `accounts.login(body=...)`，需要二次验证时显式调用 `accounts.reauth`。
-Session 仅在客户端内存中保存。并发访问不同工作区时请创建不同客户端。
+Session 仅在客户端内存中保存。并发访问不同账号时请创建不同客户端。
 
 所有写入与模型提交默认不自动重试。修改内容时携带读取到的 revision；冲突异常保留服务器
 快照。任务等待超时不会取消任务。下载和事件流必须使用上下文管理器关闭。
@@ -34,7 +34,7 @@ Session 仅在客户端内存中保存。并发访问不同工作区时请创建
 `future_props_lab.canvas_example.thought_canvas_example` 提供可执行的异步例子：
 调用者传入已有个人知识库 ID、导出路径，以及可选的已上传公共文件库图片 ID。
 它读取知识库修订号，通过正常 `thought.create_note` 创建包含 `canvas` 节点的笔记，
-再导出 Markdown；不修改官方知识库，不绕过 Workspace 权限，也不重试创建。
+再导出 Markdown；不修改官方知识库，不绕过账号权限，也不重试创建。
 
 画板节点为 `{"type":"canvas","attrs":{"scene": ...}}`，场景使用 `sceneVersion: 1`，
 包括 `title`、`elements`、`edges`。元素坐标为绝对坐标，分区成员通过 `parentId` 关联；
@@ -43,7 +43,7 @@ Session 仅在客户端内存中保存。并发访问不同工作区时请创建
 已有笔记通过读取最新 revision 后调用 `thought.put_note` 保存，冲突必须由调用者处理。
 
 Markdown 的 `fpl-canvas` 代码块保留编辑数据；普通 Markdown 阅读器显示源码。
-含图片的导出为 ZIP，图片路径通过 Markdown 转换接口的 `assets` 映射到目标 Workspace
+含图片的导出为 ZIP，图片路径通过 Markdown 转换接口的 `assets` 映射到目标账号
 新上传的图片 ID。完整备份同时保存历史与图片并在恢复时重映射 ID。
 服务端 HTML 导出将画板绘成离线 SVG，并保留既有 Mermaid 源码输出；应用内 HTML 导出
 同时提供渲染后的 Mermaid SVG。
@@ -53,7 +53,7 @@ Markdown 的 `fpl-canvas` 代码块保留编辑数据；普通 Markdown 阅读�
 
 ## 文档引用、复用与阅读状态
 
-`thought.resolve_references`、`thought.note_backlinks` 与 `thought.global_search` 提供当前 Workspace
+`thought.resolve_references`、`thought.note_backlinks` 与 `thought.global_search` 提供当前账号
 引用解析、反向链接和全文检索。`thought.create_template` 保存独立模板；
 `thought.apply_template` 校验模板和目标库版本后创建文档。
 复制先读取 `thought.copy_snapshot`，再用该快照的源库和各文档版本调用
@@ -69,7 +69,7 @@ Markdown 的 `fpl-canvas` 代码块保留编辑数据；普通 Markdown 阅读�
 
 演示文稿当前为 `version: 2`，读取与写入仍接受旧版 1 并确定性规范化。每页保留
 `elements`，新增 `groups`、`connections`、`infographics` 和编辑参考图 `reference`。
-参考图是受 Workspace 校验和引用保护的托管素材，不进入放映或 PPTX。
+参考图是受账号校验和引用保护的托管素材，不进入放映或 PPTX。
 
 Agent 通过现有 `presentation.get_project`、`put_project` 和
 `apply_presentation_operations` 写入同一原生结构。AntV 源码在浏览器预览和转换；
@@ -99,10 +99,10 @@ result = client.presentation.apply_presentation_operations(
 相同 request_id 与请求体可重放回执。替换会删除旧组及其成员和关联边，再插入新对象。
 直接插入须提供文稿内唯一 ID；复制页面由服务端统一重映射所有子对象与连接。
 `group`、`connection`、`infographic` 可单独批量编辑；删除组表示解组并将成员交还父级，
-删除节点会清理关联边，移动节点会清理过时的布局折点。非法引用、循环组、跨 Workspace
+删除节点会清理关联边，移动节点会清理过时的布局折点。非法引用、循环组、跨账号
 素材和版本冲突不会部分落盘。PPTX 使用可编辑文本、原生组和绑定端点的连接线。
 
-每页可选 `image_asset_id` 归档一张原始生成图，值为当前 Workspace 公共文件库的图片 ID，
+每页可选 `image_asset_id` 归档一张原始生成图，值为当前账号公共文件库的图片 ID，
 默认为 `None`。它与参考图独立，参与素材删除保护；复制页面保留关联，清空或替换不会删除源文件。
 图像版本不进入画布、放映或 PPTX。先用文件上传 API 取得素材 ID，再通过现有批量编辑更新页面：
 

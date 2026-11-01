@@ -22,10 +22,10 @@ from app.runtime.time import utc_now
 
 class ModelTestTool(Base):
     __tablename__ = "model_test_tools"
-    __table_args__ = (Index("ix_model_test_tools_workspace_updated", "workspace_id", "updated_at"),)
+    __table_args__ = (Index("ix_model_test_tools_account_updated", "owner_user_id", "updated_at"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     name: Mapped[str] = mapped_column(String(64))
     description: Mapped[str] = mapped_column(Text, default="")
     input_schema: Mapped[dict] = mapped_column(JSON, default=dict)
@@ -61,13 +61,13 @@ class ModelTestToolCall(Base):
     __tablename__ = "model_test_tool_calls"
     __table_args__ = (
         UniqueConstraint("message_id", "action_id", name="uq_model_test_tool_call_action"),
-        Index("ix_model_test_tool_calls_workspace_created", "workspace_id", "created_at"),
+        Index("ix_model_test_tool_calls_account_created", "owner_user_id", "created_at"),
         Index("ix_model_test_tool_calls_tool_created", "tool_id", "created_at"),
         Index("ix_model_test_tool_calls_message", "message_id", "created_at"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     tool_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("model_test_tools.id", ondelete="SET NULL"), nullable=True
     )

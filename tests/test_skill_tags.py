@@ -10,7 +10,7 @@ import pytest
 from app.capabilities.identity.principal import StudioPrincipal
 from app.deps import SessionDep, require_studio_auth
 from app.main import app
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.config import get_settings
 
 
@@ -138,22 +138,22 @@ async def test_tag_limits_and_legacy_upload():
 
 @pytest.mark.asyncio
 async def test_skill_tags_workspace_isolation_and_member_permissions():
-    workspace = "default"
-    role = "owner"
+    workspace = "test-user"
+    writable = True
 
     async def principal(session: SessionDep) -> StudioPrincipal:
-        bind_workspace(session, workspace)
+        bind_owner(session, workspace)
         return StudioPrincipal(
-            user_id="fixture",
-            workspace_id=workspace,
-            membership_id="fixture",
-            workspace_access=role,
-            member_role=role,
-            is_platform_admin=False,
+            platform_role="admin",
+            user_id=workspace,
             must_change_password=False,
             auth_kind="session",
             session_id="fixture",
-            scopes=frozenset({"studio:read", "studio:private_read", "studio:write"}),
+            scopes=frozenset(
+                {"studio:read", "studio:private_read", "studio:write"}
+                if writable
+                else {"studio:read"}
+            ),
         )
 
     previous = app.dependency_overrides.get(require_studio_auth)
@@ -173,7 +173,7 @@ async def test_skill_tags_workspace_isolation_and_member_permissions():
             current = created.json()
             path = f"/v1/integrations/skills/{current['id']}"
             storage = (
-                get_settings().workspace_skill_path(workspace) / current["id"] / "v1" / "SKILL.md"
+                get_settings().account_skill_path(workspace) / current["id"] / "v1" / "SKILL.md"
             )
             assert storage.is_file()
             body = {
@@ -182,7 +182,7 @@ async def test_skill_tags_workspace_isolation_and_member_permissions():
                 "default_version": "v1",
                 "tags": ["changed"],
             }
-            role = "member"
+            writable = False
             assert (await client.get(path)).status_code == 200
             assert (await client.patch(path, json=body)).status_code == 403
             assert (
@@ -191,13 +191,13 @@ async def test_skill_tags_workspace_isolation_and_member_permissions():
                     files={"file": ("new.zip", skill_zip("forbidden"), "application/zip")},
                 )
             ).status_code == 403
-            role = "owner"
+            writable = True
             workspace = "other-tags-workspace"
             assert (await client.get("/v1/integrations/skills")).json()["items"] == []
             for suffix in ("", "/versions", "/versions/v1/content"):
                 assert (await client.get(path + suffix)).status_code == 404
             assert (await client.patch(path, json=body)).status_code == 404
-            workspace = "default"
+            workspace = "test-user"
             assert (await client.get(path)).json()["tags"] == ["private-tag"]
             assert (
                 await client.delete(path, params={"expected_revision": current["revision"]})

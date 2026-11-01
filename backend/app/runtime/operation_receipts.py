@@ -19,9 +19,9 @@ def fingerprint(body):
     ).hexdigest()
 
 
-async def replay(session, *, workspace_id, kind, resource_id, body):
+async def replay(session, *, owner_user_id, kind, resource_id, body):
     row = await session.get(
-        ProjectOperationReceipt, (workspace_id, kind, resource_id, body.request_id)
+        ProjectOperationReceipt, (owner_user_id, kind, resource_id, body.request_id)
     )
     if row is None:
         return None
@@ -30,10 +30,10 @@ async def replay(session, *, workspace_id, kind, resource_id, body):
     return row.result
 
 
-def record(session, *, workspace_id, kind, resource_id, body, result):
+def record(session, *, owner_user_id, kind, resource_id, body, result):
     session.add(
         ProjectOperationReceipt(
-            workspace_id=workspace_id,
+            owner_user_id=owner_user_id,
             resource_kind=kind,
             resource_id=resource_id,
             request_id=body.request_id,
@@ -43,12 +43,12 @@ def record(session, *, workspace_id, kind, resource_id, body, result):
     )
 
 
-async def forget(session, *, workspace_id, kind, resource_id):
+async def forget(session, *, owner_user_id, kind, resource_id):
     from sqlalchemy import delete
 
     await session.execute(
         delete(ProjectOperationReceipt).where(
-            ProjectOperationReceipt.workspace_id == workspace_id,
+            ProjectOperationReceipt.owner_user_id == owner_user_id,
             ProjectOperationReceipt.resource_kind == kind,
             ProjectOperationReceipt.resource_id == resource_id,
         )

@@ -10,11 +10,11 @@ from app.runtime.time import utc_now
 
 class ExternalConnection(Base):
     __tablename__ = "integration_external_connections"
-    __table_args__ = (UniqueConstraint("workspace_id", "name"),)
+    __table_args__ = (UniqueConstraint("owner_user_id", "name"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    owner_user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     provider: Mapped[str] = mapped_column(String(24), default="feishu")
     name: Mapped[str] = mapped_column(String(120))

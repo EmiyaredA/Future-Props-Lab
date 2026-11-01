@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field, model_validator
 
 from app.llm.schemas.model_service import ModelCapability, ModelCategory, ProviderIn, ProviderKind
 
-PlatformRole = Literal["super_admin", "admin", "member"]
+PlatformRole = Literal["admin", "user"]
 
 
 class TemplateModel(BaseModel):
@@ -90,6 +90,7 @@ class RoleModelTemplateIn(BaseModel):
 
 class TemplatePreviewIn(BaseModel):
     expected_template_revision: int = Field(ge=0)
+    account_ids: list[str] | None = Field(default=None, min_length=1, max_length=1000)
 
 
 class TemplateSyncIn(BaseModel):
@@ -98,8 +99,8 @@ class TemplateSyncIn(BaseModel):
 
 class TemplateSyncItemOut(BaseModel):
     id: str
-    workspace_id: str
-    workspace_name: str
+    owner_user_id: str
+    account_name: str
     catalog_revision: int
     status: str
     summary: dict[str, list[str]]

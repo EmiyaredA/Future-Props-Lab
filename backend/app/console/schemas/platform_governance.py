@@ -4,36 +4,6 @@ from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 
 
-class RolePolicy(BaseModel):
-    view_cross_workspace_logs: bool = False
-    view_model_diagnostics: bool = False
-    view_realtime_voice_diagnostics: bool = False
-    view_sensitive_tool_results: bool = False
-    view_developer_docs: bool = False
-    mark_workshop_official: bool = False
-
-
-class PermissionPolicy(BaseModel):
-    admin: RolePolicy
-    member: RolePolicy
-
-    @model_validator(mode="after")
-    def ordinary_certification(self):
-        if self.member.mark_workshop_official:
-            raise ValueError("普通用户不能获得官方认证权限")
-        return self
-
-
-class PermissionPolicyOut(BaseModel):
-    revision: int
-    value: PermissionPolicy
-
-
-class PermissionPolicyIn(BaseModel):
-    expected_revision: int = Field(ge=0)
-    value: PermissionPolicy
-
-
 class QuotaLimit(BaseModel):
     total: int = Field(ge=0, le=1024)
     realtime_voice: int = Field(ge=0, le=1024)
@@ -46,27 +16,24 @@ class QuotaLimit(BaseModel):
 
 
 class GenerationQueueLimits(BaseModel):
-    member: int = Field(default=20, ge=0, le=1024)
+    user: int = Field(default=20, ge=0, le=1024)
     admin: int = Field(default=20, ge=0, le=1024)
-    super_admin: int = Field(default=20, ge=0, le=1024)
 
 
 class RuntimeQuotas(BaseModel):
     generation_queue: GenerationQueueLimits = Field(default_factory=GenerationQueueLimits)
-    member: QuotaLimit = QuotaLimit(total=2, realtime_voice=1)
+    user: QuotaLimit = QuotaLimit(total=2, realtime_voice=1)
     admin: QuotaLimit = QuotaLimit(total=4, realtime_voice=2)
-    super_admin: QuotaLimit = QuotaLimit(total=8, realtime_voice=4)
     instance: QuotaLimit = QuotaLimit(total=16, realtime_voice=8)
-    workspace_total: int = Field(default=8, ge=1, le=1024)
     reserved_for_admins: int = Field(default=2, ge=0, le=1024)
 
     @model_validator(mode="after")
     def limits(self):
-        if self.instance.total < 1 or self.workspace_total > self.instance.total:
-            raise ValueError("工作区额度不能超过实例总额度")
+        if self.instance.total < 1:
+            raise ValueError("账号额度不能超过实例总额度")
         if self.reserved_for_admins > self.instance.total:
             raise ValueError("管理员预留额度不能超过实例总额度")
-        for role in (self.member, self.admin, self.super_admin):
+        for role in (self.user, self.admin):
             if (
                 role.total > self.instance.total
                 or role.realtime_voice > self.instance.realtime_voice
@@ -175,32 +142,3 @@ class CertificationOut(BaseModel):
     id: str
     is_official: bool
     revision: int
-
-
-class LogWorkspaceOut(BaseModel):
-    id: str
-    name: str
-
-
-class CrossWorkspaceLogOut(BaseModel):
-    id: str
-    workspace_id: str
-    call_source: str
-    provider_kind: str
-    model: str
-    auth_kind: str | None = None
-    api_key_id: str | None = None
-    api_key_name: str | None = None
-    api_key_prefix: str | None = None
-    status: str
-    latency_ms: int
-    total_tokens: int | None
-    created_at: str
-
-
-class CrossWorkspaceLogPage(BaseModel):
-    model_options: list[str] = Field(default_factory=list)
-    items: list[CrossWorkspaceLogOut]
-    total: int
-    page: int
-    page_size: int

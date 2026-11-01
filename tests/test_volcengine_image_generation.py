@@ -13,7 +13,7 @@ from app.llm.generation_runtime import ImmediateGenerationResult
 from app.llm.models import ModelEntry, ModelProvider
 from app.llm.providers.volcengine_image import SEEDREAM_MODEL, generate_image
 from app.llm.schemas.generation_tasks import ImageGenerationTaskCreateIn
-from app.orm import bind_workspace
+from app.orm import bind_owner
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
 
@@ -90,13 +90,13 @@ async def test_server_validates_multi_image_order_count_format_and_submission_sn
     project_id, provider_id, model_id = (str(uuid4()) for _ in range(3))
     asset_ids = [str(uuid4()) for _ in range(2)]
     async with SessionLocal() as session:
-        bind_workspace(session, "default")
+        bind_owner(session, "test-user")
         project = VisualWorkshopProject(
-            id=project_id, workspace_id="default", title="多图模型测试", kind="canvas"
+            id=project_id, owner_user_id="test-user", title="多图模型测试", kind="canvas"
         )
         provider = ModelProvider(
             id=provider_id,
-            workspace_id="default",
+            owner_user_id="test-user",
             name="方舟模拟",
             kind="volcengine_image",
             base_url="https://ark.example/api/v3",
@@ -106,7 +106,7 @@ async def test_server_validates_multi_image_order_count_format_and_submission_sn
         await session.flush()
         model = ModelEntry(
             id=model_id,
-            workspace_id="default",
+            owner_user_id="test-user",
             provider_id=provider_id,
             slug=SEEDREAM_MODEL,
             label="Seedream 4.5",
@@ -117,7 +117,7 @@ async def test_server_validates_multi_image_order_count_format_and_submission_sn
             session.add(
                 VisualAsset(
                     id=identity,
-                    workspace_id="default",
+                    owner_user_id="test-user",
                     project_id=project_id,
                     media_kind="image",
                     original_filename="reference.png",

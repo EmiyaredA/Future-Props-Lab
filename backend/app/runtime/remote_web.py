@@ -84,7 +84,7 @@ class RemoteWeb:
         if path.startswith("/v1/"):
             if not websocket and path != "/v1/auth/login":
                 # Reuse real account/session validation, including expiry, revocation,
-                # CSRF and Workspace binding. Route-specific permissions still run.
+                # CSRF and account binding. Route-specific permissions still run.
                 try:
                     await self.authenticate(scope, receive)
                 except HTTPException as exc:

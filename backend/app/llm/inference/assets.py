@@ -13,8 +13,8 @@ from app.llm.schemas.model_inference import InferenceAssetOut
 from app.runtime.config import get_settings
 
 
-def root(workspace_id):
-    return get_settings().workspace_path(workspace_id) / "model-inference"
+def root(owner_user_id):
+    return get_settings().account_path(owner_user_id) / "model-inference"
 
 
 class LocalInput:
@@ -30,14 +30,14 @@ class LocalInput:
 
 
 class InferenceAssets:
-    def __init__(self, session, workspace_id):
-        self.session, self.workspace_id = session, workspace_id
+    def __init__(self, session, owner_user_id):
+        self.session, self.owner_user_id = session, owner_user_id
 
     async def get(self, asset_id):
         row = await self.session.scalar(
             select(ModelInferenceAsset).where(
                 ModelInferenceAsset.id == asset_id,
-                ModelInferenceAsset.workspace_id == self.workspace_id,
+                ModelInferenceAsset.owner_user_id == self.owner_user_id,
             )
         )
         if row is None:
@@ -54,7 +54,7 @@ class InferenceAssets:
         if mime not in policy[1] and mime != "application/octet-stream":
             raise AssetError("输入 MIME 与扩展名不一致")
         key = uuid4().hex
-        path = root(self.workspace_id) / "inputs" / key
+        path = root(self.owner_user_id) / "inputs" / key
         path.parent.mkdir(parents=True, exist_ok=True)
         # End the authentication/read transaction before copying potentially large inputs.
         await self.session.rollback()
@@ -74,7 +74,7 @@ class InferenceAssets:
             if not await asyncio.to_thread(validate_file_structure, path, suffix):
                 raise AssetError("文件内容损坏")
             row = ModelInferenceAsset(
-                workspace_id=self.workspace_id,
+                owner_user_id=self.owner_user_id,
                 storage_key=key,
                 filename=filename,
                 mime_type=sorted(policy[1])[0] if mime == "application/octet-stream" else mime,
@@ -96,7 +96,7 @@ class InferenceAssets:
         asset = await self.session.scalar(
             select(VisualAsset).where(
                 VisualAsset.id == asset_id,
-                VisualAsset.workspace_id == self.workspace_id,
+                VisualAsset.owner_user_id == self.owner_user_id,
                 VisualAsset.project_id.is_(None),
                 VisualAsset.galgame_project_id.is_(None),
                 VisualAsset.video_editor_project_id.is_(None),
@@ -116,11 +116,11 @@ class InferenceAssets:
         row = await self.get(asset_id)
         if row.task_id:
             raise AssetError("输入已被任务认领", code="asset_in_use", status=409)
-        path = root(self.workspace_id) / "inputs" / row.storage_key
+        path = root(self.owner_user_id) / "inputs" / row.storage_key
         result = await self.session.execute(
             delete(ModelInferenceAsset).where(
                 ModelInferenceAsset.id == asset_id,
-                ModelInferenceAsset.workspace_id == self.workspace_id,
+                ModelInferenceAsset.owner_user_id == self.owner_user_id,
                 ModelInferenceAsset.task_id.is_(None),
             )
         )

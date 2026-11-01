@@ -23,10 +23,10 @@ from app.runtime.time import utc_now
 
 class ThoughtKnowledgeBase(Base):
     __tablename__ = "thought_knowledge_bases"
-    __table_args__ = (Index("ix_thought_knowledge_bases_workspace", "workspace_id"),)
+    __table_args__ = (Index("ix_thought_knowledge_bases_account", "owner_user_id"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     title: Mapped[str] = mapped_column(String(120))
     description: Mapped[str] = mapped_column(Text, default="")
     cover_asset_id: Mapped[str | None] = mapped_column(
@@ -42,7 +42,7 @@ class ThoughtKnowledgeBase(Base):
 class ThoughtNote(Base):
     __tablename__ = "thought_notes"
     __table_args__ = (
-        Index("ix_thought_notes_workspace_updated", "workspace_id", "updated_at"),
+        Index("ix_thought_notes_account_updated", "owner_user_id", "updated_at"),
         Index("ix_thought_notes_knowledge_base", "knowledge_base_id"),
         Index("ix_thought_notes_parent", "parent_id"),
         Index(
@@ -54,7 +54,7 @@ class ThoughtNote(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     knowledge_base_id: Mapped[str] = mapped_column(
         ForeignKey("thought_knowledge_bases.id", ondelete="CASCADE")
     )

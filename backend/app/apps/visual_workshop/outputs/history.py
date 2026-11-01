@@ -160,14 +160,14 @@ async def publish_generated_output(
 
 
 class NodeOutputs:
-    def __init__(self, session: AsyncSession, workspace_id: str):
-        self.session, self.workspace_id = session, workspace_id
+    def __init__(self, session: AsyncSession, owner_user_id: str):
+        self.session, self.owner_user_id = session, owner_user_id
 
     async def document(self, project_id: str, node_id: str):
         project = await self.session.scalar(
             select(VisualWorkshopProject).where(
                 VisualWorkshopProject.id == project_id,
-                VisualWorkshopProject.workspace_id == self.workspace_id,
+                VisualWorkshopProject.owner_user_id == self.owner_user_id,
             )
         )
         canvas = await self.session.get(VisualCanvasDocument, project_id) if project else None
@@ -237,7 +237,7 @@ class NodeOutputs:
             )
             if (
                 not asset
-                or asset.workspace_id != self.workspace_id
+                or asset.owner_user_id != self.owner_user_id
                 or (asset.project_id != project_id and not reference)
             ):
                 raise OutputError("素材不属于当前项目", code="not_found", status=404)
@@ -248,7 +248,7 @@ class NodeOutputs:
             if (
                 node["kind"] != "video"
                 or not inspection
-                or inspection.workspace_id != self.workspace_id
+                or inspection.owner_user_id != self.owner_user_id
                 or inspection.project_id != project_id
                 or inspection.mime_type != "video/webm"
             ):

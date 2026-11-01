@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Editor } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { WorkspacePermissionsProvider } from "@platform/auth/WorkspacePermissions";
+import { AccountAccessProvider } from "@platform/auth/AccountAccess";
 import { LinkPreviewCard } from "@features/thought-workshop/LinkPreviewCard";
 import { getLinkPreview } from "@features/thought-workshop/api";
 import { thoughtKeys } from "@features/thought-workshop/queryKeys";
@@ -40,7 +40,7 @@ async function tick(ms: number) {
     await vi.advanceTimersByTimeAsync(1);
   });
 }
-function setup(workspaceId = "workspace-a") {
+function setup(accountId = "workspace-a") {
   const editor = new Editor({
     extensions: [
       StarterKit.configure({ link: { HTMLAttributes: { tabindex: "0" } } }),
@@ -56,15 +56,12 @@ function setup(workspaceId = "workspace-a") {
   clients.push(client);
   const view = (workspace: string) => (
     <QueryClientProvider client={client}>
-      <WorkspacePermissionsProvider
-        workspaceId={workspace}
-        permissions={["content.read"]}
-      >
+      <AccountAccessProvider userId={workspace} permissions={["content.read"]}>
         <LinkPreviewCard key={workspace} editor={editor} />
-      </WorkspacePermissionsProvider>
+      </AccountAccessProvider>
     </QueryClientProvider>
   );
-  const rendered = render(view(workspaceId));
+  const rendered = render(view(accountId));
   const links = editor.view.dom.querySelectorAll("a");
   vi.mocked(getLinkPreview).mockImplementation(async (url) => result(url));
   return { editor, client, links, ...rendered, view };

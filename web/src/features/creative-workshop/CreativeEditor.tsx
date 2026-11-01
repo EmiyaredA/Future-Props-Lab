@@ -112,7 +112,7 @@ export function Editor({
   if (!item || !draft)
     return <p className="creative-empty">{error || "正在加载草稿…"}</p>;
   if (!canWrite)
-    return <p className="creative-empty">当前工作区没有内容编辑权限。</p>;
+    return <p className="creative-empty">当前账号没有内容编辑权限。</p>;
   return (
     <>
       <div className="creative-section-heading">

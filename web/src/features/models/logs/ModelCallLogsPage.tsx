@@ -2,13 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import "@features/models/models.css";
 import "./call-logs.css";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  useLogWorkspaceScope,
-  useCrossWorkspaceLogQueries,
-  accountQueryKeys,
-  listApiKeys,
-} from "@features/accounts";
-import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
+import { accountQueryKeys, listApiKeys } from "@features/accounts";
+import { useAccountPermission } from "@platform/auth/AccountAccess";
 import {
   batchDeleteLogs,
   deleteLog,
@@ -28,28 +23,20 @@ import {
 import { LogToolbar, LogFilterDrawer } from "./LogFilters";
 import { LogTable, LogPagination } from "./LogTable";
 
-type Scope = ReturnType<typeof useLogWorkspaceScope>;
 export function ModelCallLogsPage({
-  currentWorkspace,
+  currentAccount,
 }: {
-  currentWorkspace: { id: string; name: string };
+  currentAccount: { id: string; name: string };
 }) {
-  const scope = useLogWorkspaceScope(currentWorkspace);
-  const canDelete = useWorkspacePermission("configuration.manage");
+  const canDelete = useAccountPermission("configuration.manage");
   const [filters, setFilters] = useState<LogFilters>(emptyLogFilters);
-  const [lastScope, setLastScope] = useState(scope.scope);
-  if (lastScope !== scope.scope) {
-    setLastScope(scope.scope);
-    setFilters((current) => ({ ...current, model: "", page: 1 }));
-  }
   return (
     <LogsContent
-      key={`${currentWorkspace.id}:${scope.scope}:${scope.ids.join(",")}:${canDelete}:${scope.allowed}`}
+      key={currentAccount.id}
       filters={filters}
       setFilters={setFilters}
-      scope={scope}
-      currentWorkspaceId={currentWorkspace.id}
-      canDelete={canDelete && scope.local}
+      currentAccountId={currentAccount.id}
+      canDelete={canDelete}
     />
   );
 }
@@ -64,16 +51,14 @@ function LogError({ error, retry }: { error: unknown; retry: () => void }) {
   );
 }
 function LogsContent({
-  scope,
   filters,
   setFilters,
-  currentWorkspaceId,
+  currentAccountId,
   canDelete,
 }: {
-  scope: Scope;
   filters: LogFilters;
   setFilters: React.Dispatch<React.SetStateAction<LogFilters>>;
-  currentWorkspaceId: string;
+  currentAccountId: string;
   canDelete: boolean;
 }) {
   const queryClient = useQueryClient();
@@ -84,24 +69,21 @@ function LogsContent({
   const [resetVersion, setResetVersion] = useState(0);
   const localList = useQuery({
     queryKey: modelQueryKeys.logList({
-      workspace: currentWorkspaceId,
+      account: currentAccountId,
       ...filters,
     }),
     queryFn: () => getLogs(filters),
-    enabled: scope.local,
   });
   const catalog = useQuery({
     queryKey: modelQueryKeys.catalog,
     queryFn: getCatalog,
-    enabled: scope.local,
   });
   const localStats = useQuery({
-    queryKey: [...modelQueryKeys.logStats, currentWorkspaceId],
+    queryKey: [...modelQueryKeys.logStats, currentAccountId],
     queryFn: getLogStats,
-    enabled: scope.local,
   });
   const keys = useQuery({
-    queryKey: [...accountQueryKeys.root, "api-keys", currentWorkspaceId],
+    queryKey: [...accountQueryKeys.root, "api-keys", currentAccountId],
     queryFn: listApiKeys,
   });
   const credentialOptions = useMemo(
@@ -112,28 +94,20 @@ function LogsContent({
       })),
     [keys.data],
   );
-  const cross = useCrossWorkspaceLogQueries(
-    scope.ids,
-    filters,
-    !scope.local && !scope.spaces.isError && !scope.spaces.isPending,
-  );
-  const list = scope.local ? localList : cross.list;
-  const stats = scope.local ? localStats : cross.stats;
+  const list = localList;
+  const stats = localStats;
   const models = useMemo(
     () =>
-      scope.local
-        ? [
-            ...new Set(
-              (catalog.data?.providers ?? []).flatMap((provider) =>
-                provider.models.map((model) => model.slug),
-              ),
-            ),
-          ].sort()
-        : (cross.list.data?.model_options ?? []),
-    [scope.local, catalog.data, cross.list.data],
+      [
+        ...new Set(
+          (catalog.data?.providers ?? []).flatMap((provider) =>
+            provider.models.map((model) => model.slug),
+          ),
+        ),
+      ].sort(),
+    [catalog.data],
   );
-  const scopeError = !scope.local && scope.spaces.isError;
-  const total = scopeError ? 0 : (list.data?.total ?? 0);
+  const total = list.data?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / filters.pageSize));
   useEffect(() => {
     if (list.isSuccess && filters.page > pages)
@@ -143,12 +117,6 @@ function LogsContent({
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: modelQueryKeys.logs }),
       queryClient.invalidateQueries({ queryKey: modelQueryKeys.logStats }),
-      queryClient.invalidateQueries({
-        queryKey: accountQueryKeys.crossLogsRoot,
-      }),
-      queryClient.invalidateQueries({
-        queryKey: accountQueryKeys.crossLogStatsRoot,
-      }),
     ]);
   };
   const removed = async () => {
@@ -192,8 +160,8 @@ function LogsContent({
       </header>
       <div
         className="stat-grid"
-        aria-label="所选工作区今日统计（UTC），不受列表筛选影响"
-        title="所选工作区今日数据，按 UTC 计算，不受列表筛选影响"
+        aria-label="当前账号今日统计（UTC），不受列表筛选影响"
+        title="当前账号今日数据，按 UTC 计算，不受列表筛选影响"
       >
         {[
           ["今日调用", stats.data?.calls_today, "次"],
@@ -207,7 +175,7 @@ function LogsContent({
           >
             <span>{label}</span>
             <strong>
-              {stats.isError || scopeError
+              {stats.isError
                 ? "—"
                 : stats.isPending
                   ? "…"
@@ -232,21 +200,9 @@ function LogsContent({
           models={models}
           credentialOptions={credentialOptions}
           onChange={apply}
-          scope={scope.scope}
-          options={scope.options}
-          onScopeChange={scope.setScope}
-          showScope={scope.allowed}
           onOpen={() => setDrawer(true)}
         />
-        {scope.allowed && scope.spaces.isError && (
-          <LogError
-            error={scope.spaces.error}
-            retry={() => {
-              void scope.spaces.refetch();
-            }}
-          />
-        )}
-        {scope.local && catalog.isError && (
+        {catalog.isError && (
           <LogError
             error={catalog.error}
             retry={() => {
@@ -258,9 +214,6 @@ function LogsContent({
           <p>
             共 <strong>{list.isError ? "—" : formatNumber(total)}</strong>{" "}
             条调用日志
-            {!scope.local && (
-              <span className="call-log-readonly">只读概况</span>
-            )}
           </p>
           {canDelete && (
             <button
@@ -276,11 +229,7 @@ function LogsContent({
             </button>
           )}
         </div>
-        {scopeError ? (
-          <div className="call-log-empty">
-            工作区范围暂不可用，请重试或重新选择。
-          </div>
-        ) : list.isError ? (
+        {list.isError ? (
           <LogError error={list.error} retry={retry} />
         ) : list.isPending ? (
           <div className="call-log-empty" role="status">
@@ -294,10 +243,7 @@ function LogsContent({
         ) : (
           <LogTable
             rows={list.data.items}
-            local={scope.local}
-            all={scope.all}
             canDelete={canDelete}
-            workspaces={scope.spaces.data ?? []}
             selected={selected}
             onSelect={(ids, on) =>
               setSelected((current) => {
@@ -331,7 +277,7 @@ function LogsContent({
           onReset={reset}
         />
       )}
-      {scope.local && detailId && (
+      {detailId && (
         <LogDetail
           id={detailId}
           onClose={() => setDetailId(null)}

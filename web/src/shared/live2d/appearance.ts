@@ -1,7 +1,7 @@
 import type { CharacterDocument } from "./types";
 
-export const appearanceKey = (userId: string, workspaceId: string) =>
-  `amadeus-appearance:${userId}:${workspaceId}`;
+export const appearanceKey = (userId: string, accountId: string) =>
+  `amadeus-appearance:${userId}:${accountId}`;
 
 export function inspectAppearance(
   document: CharacterDocument,

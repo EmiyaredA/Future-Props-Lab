@@ -28,14 +28,14 @@ async def begin_write(session):
     await session.execute(text("BEGIN IMMEDIATE"))
 
 
-async def config(session, principal, library_id, workspace_id=None):
-    workspace_id = workspace_id or principal.workspace_id
-    await require_source_manager(session, principal, workspace_id)
-    await KnowledgeBases(session, workspace_id).get(library_id)
+async def config(session, principal, library_id, owner_user_id=None):
+    owner_user_id = owner_user_id or principal.owner_user_id
+    await require_source_manager(session, principal, owner_user_id)
+    await KnowledgeBases(session, owner_user_id).get(library_id)
     pub = await session.scalar(
         select(Publication).where(
             Publication.knowledge_base_id == library_id,
-            Publication.workspace_id == workspace_id,
+            Publication.owner_user_id == owner_user_id,
         )
     )
     if not pub:
@@ -48,7 +48,7 @@ async def config(session, principal, library_id, workspace_id=None):
             .join(ThoughtNote, ThoughtNote.id == PublishedArticle.note_id)
             .where(
                 PublishedArticle.publication_id == pub.id,
-                ThoughtNote.workspace_id == pub.workspace_id,
+                ThoughtNote.owner_user_id == pub.owner_user_id,
                 ThoughtNote.deleted_at.is_(None),
             )
         )
@@ -129,16 +129,16 @@ async def apply_settings(session, pub, setting, *, new=False):
     )
 
 
-async def publish(session, principal, library_id, body, workspace_id=None):
-    workspace_id = workspace_id or principal.workspace_id
+async def publish(session, principal, library_id, body, owner_user_id=None):
+    owner_user_id = owner_user_id or principal.owner_user_id
     await begin_write(session)
     principal = await current_actor(session, principal)
-    await require_source_manager(session, principal, workspace_id)
-    source = await KnowledgeBases(session, workspace_id).get(library_id)
+    await require_source_manager(session, principal, owner_user_id)
+    source = await KnowledgeBases(session, owner_user_id).get(library_id)
     pub = await session.scalar(
         select(Publication).where(
             Publication.knowledge_base_id == library_id,
-            Publication.workspace_id == workspace_id,
+            Publication.owner_user_id == owner_user_id,
         )
     )
     if pub:
@@ -159,7 +159,7 @@ async def publish(session, principal, library_id, body, workspace_id=None):
         if body.expected_revision != 0:
             raise ThoughtError("发布配置版本已变化", 409, "revision_conflict")
         pub = Publication(
-            workspace_id=workspace_id,
+            owner_user_id=owner_user_id,
             knowledge_base_id=library_id,
             publisher_id=principal.user_id,
             revision=0,
@@ -188,7 +188,7 @@ async def publish(session, principal, library_id, body, workspace_id=None):
             select(ThoughtNote).where(
                 ThoughtNote.id == setting.note_id,
                 ThoughtNote.knowledge_base_id == library_id,
-                ThoughtNote.workspace_id == pub.workspace_id,
+                ThoughtNote.owner_user_id == pub.owner_user_id,
                 ThoughtNote.deleted_at.is_(None),
             )
         )
@@ -196,7 +196,7 @@ async def publish(session, principal, library_id, body, workspace_id=None):
             raise missing()
         await apply_settings(session, pub, setting, new=True)
     await session.commit()
-    return await config(session, principal, library_id, workspace_id)
+    return await config(session, principal, library_id, owner_user_id)
 
 
 async def permissions(session, principal, pub_id, body):

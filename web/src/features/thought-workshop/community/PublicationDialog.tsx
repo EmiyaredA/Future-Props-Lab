@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAccountId } from "@platform/auth/WorkspacePermissions";
+import { useAccountId } from "@platform/auth/AccountAccess";
 import { useQuery } from "@tanstack/react-query";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import type { Directory } from "../knowledgeApi";
@@ -179,7 +179,7 @@ export function PublicationDialog({
                       editable_platform_roles:
                         e.target.checked &&
                         !value.editable_platform_roles?.length
-                          ? ["super_admin", "admin"]
+                          ? ["admin", "admin"]
                           : value.editable_platform_roles,
                     })
                   }
@@ -190,9 +190,9 @@ export function PublicationDialog({
                 <legend>可编辑的平台角色</legend>
                 {(
                   [
-                    ["super_admin", "超级管理员"],
+                    ["admin", "超级管理员"],
                     ["admin", "管理员"],
-                    ["member", "普通用户"],
+                    ["user", "普通用户"],
                   ] as const
                 ).map(([role, label]) => (
                   <label key={role}>

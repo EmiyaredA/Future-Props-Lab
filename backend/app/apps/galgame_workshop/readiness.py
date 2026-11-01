@@ -17,10 +17,10 @@ from app.runtime.config import Settings
 class GalgameReadiness:
     """Composes Story control-flow checks with the asset package manifest."""
 
-    def __init__(self, session: AsyncSession, settings: Settings, workspace_id: str) -> None:
+    def __init__(self, session: AsyncSession, settings: Settings, owner_user_id: str) -> None:
         self.session = session
         self.settings = settings
-        self.workspace_id = workspace_id
+        self.owner_user_id = owner_user_id
 
     async def report(self, project_id: str) -> GalgameStoryRouteReportOut:
         stories = GalgameStoryDocuments(self.session)
@@ -86,7 +86,7 @@ class GalgameReadiness:
                         )
                     )
         manifest = await GalgameProjectAssets(
-            self.session, self.settings, self.workspace_id
+            self.session, self.settings, self.owner_user_id
         ).package_manifest(project_id)
         existing_codes = {(issue.code, issue.message) for issue in errors}
         for issue in manifest.issues:
