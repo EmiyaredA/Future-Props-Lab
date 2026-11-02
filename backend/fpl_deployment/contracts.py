@@ -96,6 +96,8 @@ def operation_owner(path):
 
 
 def table_owner(module, table):
+    if module.startswith("fpl_models."):
+        return "models"
     if module.startswith("fpl_management."):
         return "management"
     if module.startswith("fpl_assets."):
@@ -140,6 +142,7 @@ def model_tables(root):
         + list((root / "backend/fpl_agents").rglob("*.py"))
         + list((root / "backend/fpl_gateway").rglob("*.py"))
         + list((root / "backend/fpl_assets").rglob("*.py"))
+        + list((root / "backend/fpl_models").rglob("*.py"))
     ):
         tree = ast.parse(path.read_text())
         module = ".".join(path.relative_to(root / "backend").with_suffix("").parts)
@@ -197,7 +200,11 @@ def document(root):
         "partitions": {
             "platform_settings": {
                 "keys": {"runtime_quotas": "models", "code_agents": "agent-runtime"},
-                "prefixes": {"role_template:": "models", "demo_service:": "models"},
+                "prefixes": {
+                    "role_template:": "models",
+                    "demo_service:": "models",
+                    "account_defaults:": "models",
+                },
                 "unassigned": "reject",
             },
             "project_operation_receipts": "resource_kind",

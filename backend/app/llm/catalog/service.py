@@ -4,7 +4,7 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.console.models.platform_governance import PlatformSetting
+from app.llm.catalog.default_storage import CatalogDefaults
 from app.llm.catalog.metadata import categories_for_provider
 from app.llm.catalog.supplier_records import get_supplier, list_suppliers
 from app.llm.catalog.task_usage import CatalogTaskUsage
@@ -101,10 +101,15 @@ def _model_out(row: ModelEntry) -> ModelEntryOut:
 
 class ModelCatalogService:
     def __init__(
-        self, session: AsyncSession, *, task_usage: CatalogTaskUsage | None = None
+        self,
+        session: AsyncSession,
+        *,
+        task_usage: CatalogTaskUsage | None = None,
+        defaults_store: CatalogDefaults | None = None,
     ) -> None:
         self.session = session
         self.task_usage = task_usage
+        self.defaults_store = defaults_store
 
     def _task_usage(self) -> CatalogTaskUsage:
         if self.task_usage is None:
@@ -122,6 +127,9 @@ class ModelCatalogService:
 
     async def catalog(self) -> ModelCatalogOut:
         owner_user_id = self._owner_user_id()
+        if self.defaults_store is None:
+            raise RuntimeError("模型目录缺少明确的账号默认模型存储")
+        defaults = await self.defaults_store.read(owner_user_id=owner_user_id)
         state = await self.session.get(ModelCatalogState, owner_user_id)
         revision = int(state.revision if state else 0)
         providers = (
@@ -165,10 +173,9 @@ class ModelCatalogService:
                     )
             return result
 
-        defaults = await self.session.get(PlatformSetting, f"account_defaults:{owner_user_id}")
         return ModelCatalogOut(
             revision=revision,
-            default_model_ids=dict(defaults.payload) if defaults else {},
+            default_model_ids=defaults,
             suppliers=await list_suppliers(self.session, owner_user_id),
             providers=[provider_out(row) for row in providers],
         )

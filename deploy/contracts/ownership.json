@@ -4473,6 +4473,12 @@
       "service": "management",
       "module": "fpl_management.models",
       "model": "HostSnapshot"
+    },
+    {
+      "table": "model_account_defaults",
+      "service": "models",
+      "module": "fpl_models.models",
+      "model": "AccountDefaults"
     }
   ],
   "partitions": {
@@ -4483,7 +4489,8 @@
       },
       "prefixes": {
         "role_template:": "models",
-        "demo_service:": "models"
+        "demo_service:": "models",
+        "account_defaults:": "models"
       },
       "unassigned": "reject"
     },

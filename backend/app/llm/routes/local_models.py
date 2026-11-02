@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request
 
 from app.console.governance.local_models import can_manage_local_models, manage_local_model
 from app.deps import SessionDep, StudioAuth
-from app.llm.catalog.service import ModelCatalogService
+from app.llm.catalog.legacy import legacy_catalog
 from app.llm.routes.model_inference import mapped
 from app.llm.schemas.local_models import (
     LocalModelActionIn,
@@ -31,4 +31,4 @@ async def model_action(
 
 @router.post("/local-models/attach", response_model=ModelCatalogOut)
 async def attach_model(body: LocalModelAttachIn, session: SessionDep):
-    return await mapped(ModelCatalogService(session).attach_local_model(body))
+    return await mapped(legacy_catalog(session).attach_local_model(body))

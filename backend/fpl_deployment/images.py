@@ -25,6 +25,7 @@ PROJECT_PACKAGES = (
     "fpl_portal",
     "fpl_assets",
     "fpl_rendering",
+    "fpl_models",
     "fpl_runtime",
     "fpl_config",
     "fpl_host",

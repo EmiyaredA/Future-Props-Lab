@@ -8,8 +8,15 @@ from app.llm.catalog.service import (
     ModelCatalogService,
     ResourceNotFoundError,
 )
-from app.llm.models import ModelCatalogState, ModelEntry, ModelProvider, ModelSupplier
+from app.llm.models import (
+    LocalModelInstallation,
+    ModelCatalogState,
+    ModelEntry,
+    ModelProvider,
+    ModelSupplier,
+)
 from app.runtime.orm_base import Base
+from app.runtime.revisions import RevisionConflictError
 from fpl_runtime.database import Database
 
 
@@ -29,7 +36,7 @@ class Occupancy:
 
 @pytest.fixture
 async def catalog(tmp_path):
-    models = (ModelCatalogState, ModelProvider, ModelEntry, ModelSupplier)
+    models = (ModelCatalogState, ModelProvider, ModelEntry, ModelSupplier, LocalModelInstallation)
     database = Database("models", tmp_path, models=models)
     async with database.engine.begin() as connection:
         await connection.run_sync(
@@ -88,3 +95,44 @@ async def test_missing_write_port_fails_closed_and_owned_result_needs_no_worksho
         service = ModelCatalogService(session, task_usage=Occupancy(False))
         assert await service.delete_model("model", 0) == 1
         assert (await session.scalars(select(ModelEntry))).all() == []
+
+
+class Defaults:
+    def __init__(self):
+        self.owners = []
+
+    async def read(self, *, owner_user_id):
+        self.owners.append(owner_user_id)
+        return {"chat": "model"}
+
+
+async def test_catalog_reads_only_explicit_account_defaults_and_preserves_cas_snapshot(catalog):
+    defaults = Defaults()
+    async with catalog.sessions() as session:
+        session.info["owner_user_id"] = "alpha"
+        with pytest.raises(RuntimeError, match="默认模型存储"):
+            await ModelCatalogService(session).catalog()
+        service = ModelCatalogService(session, defaults_store=defaults)
+        view = await service.catalog()
+        assert view.default_model_ids == {"chat": "model"}
+        with pytest.raises(RevisionConflictError) as error:
+            await service._bump(99)
+        assert error.value.snapshot["default_model_ids"] == {"chat": "model"}
+        assert error.value.snapshot["revision"] == 0
+        assert defaults.owners == ["alpha", "alpha"]
+
+
+async def test_default_update_rejects_foreign_owner_before_mutation(catalog):
+    from app.llm.catalog.defaults import update_defaults
+    from app.llm.schemas.model_service import ModelDefaultsIn
+
+    async with catalog.sessions() as session:
+        session.info["owner_user_id"] = "alpha"
+        with pytest.raises(ValueError, match="归属"):
+            await update_defaults(
+                session,
+                "other",
+                ModelDefaultsIn(expected_revision=0, default_model_ids={}),
+                defaults_store=Defaults(),
+            )
+        assert (await session.get(ModelCatalogState, "alpha")).revision == 0

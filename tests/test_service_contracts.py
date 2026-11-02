@@ -30,6 +30,7 @@ def test_all_public_operations_and_tables_have_reviewable_owners():
         == "agents"
     )
     generate(ROOT, check=True)
+    assert data["partitions"]["platform_settings"]["prefixes"]["account_defaults:"] == "models"
     catalog = RouteCatalog.read(ROOT / "deploy/contracts/ownership.json")
     assert catalog.match("GET", "/v1/agent-workbench/sessions/owned").service == "agents"
     assert catalog.match("GET", "/v1/unregistered") is None

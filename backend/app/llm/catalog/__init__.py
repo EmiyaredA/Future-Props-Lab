@@ -1,3 +1,1 @@
-from app.llm.catalog.service import ModelCatalogService
-
-__all__ = ["ModelCatalogService"]
+"""Model catalog cases require explicit storage and execution occupancy adapters."""

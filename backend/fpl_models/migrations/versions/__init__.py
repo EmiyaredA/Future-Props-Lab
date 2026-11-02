@@ -1,0 +1,1 @@
+"""Frozen registered Models migrations."""
