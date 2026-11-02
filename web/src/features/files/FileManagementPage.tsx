@@ -25,7 +25,11 @@ function bytesLabel(value: number) {
   return `${(value / 1024 / 1024 / 1024).toFixed(1)} GB`;
 }
 
-export function FileManagementPage() {
+export function FileManagementPage({
+  canOpenLocalFolder = true,
+}: {
+  canOpenLocalFolder?: boolean;
+}) {
   const client = useQueryClient();
   const [progress, setProgress] = useState<StorageLayoutMigration>();
   const layout = useQuery({
@@ -63,16 +67,18 @@ export function FileManagementPage() {
           <h1>文件管理</h1>
           <p>统一管理可供各个项目引用的图片、视频、音频和文档。</p>
         </div>
-        <div className="file-management-page__actions">
-          <button
-            type="button"
-            disabled={openFolder.isPending}
-            onClick={() => openFolder.mutate()}
-          >
-            <FolderOpen aria-hidden />
-            {openFolder.isPending ? "正在打开…" : "打开本地文件夹"}
-          </button>
-        </div>
+        {canOpenLocalFolder && (
+          <div className="file-management-page__actions">
+            <button
+              type="button"
+              disabled={openFolder.isPending}
+              onClick={() => openFolder.mutate()}
+            >
+              <FolderOpen aria-hidden />
+              {openFolder.isPending ? "正在打开…" : "打开本地文件夹"}
+            </button>
+          </div>
+        )}
       </header>
       {status && !status.complete ? (
         <section className="file-storage-migration" aria-live="polite">

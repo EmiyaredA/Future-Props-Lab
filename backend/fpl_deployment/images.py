@@ -8,6 +8,7 @@ from importlib.util import resolve_name
 from pathlib import Path
 
 ENTRY_POINTS = {
+    "assets": "fpl_assets.__main__",
     "identity": "fpl_identity.__main__",
     "agents": "fpl_agents.__main__",
     "gateway": "fpl_gateway.__main__",
@@ -199,7 +200,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
                     raise ValueError("文档源码不能是符号链接或位于仓库之外")
                 payloads[path.relative_to(root).as_posix()] = path.read_bytes()
     web_build = None
-    if service in {"agents", "portal"}:
+    if service in {"agents", "portal", "assets"}:
         if web_release is None:
             payloads["web/.api-only"] = b"No browser program in this API acceptance image.\n"
         else:

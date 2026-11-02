@@ -53,9 +53,7 @@ async def owned(tmp_path):
 
     def cases(session, owner="alpha"):
         session.info["owner_user_id"] = owner
-        return Files(
-            session, settings, owner, project_exists=project_exists, project_references=None
-        )
+        return Files(session, settings, owner, project_exists=project_exists)
 
     try:
         yield database, settings, cases, calls
@@ -153,7 +151,7 @@ async def test_referenced_subtree_rejects_delete_atomically(owned):
         assert await session.scalar(select(AssetDeletion)) is None
 
 
-async def test_project_validation_is_explicit_and_missing_reference_port_fails_closed(owned):
+async def test_project_validation_is_explicit_and_owned_reference_listing_is_complete(owned):
     database, _settings, cases, calls = owned
     async with database.sessions() as session:
         with pytest.raises(AssetError) as missing:
@@ -176,16 +174,17 @@ async def test_project_validation_is_explicit_and_missing_reference_port_fails_c
     async with database.sessions() as session:
         await cases(session).upload(Upload(), project_id="owned-project", folder_id=folder.id)
     async with database.sessions() as session:
-        with pytest.raises(AssetError) as unavailable:
-            await cases(session).list_assets(
-                project_id="owned-project",
-                folder_id=folder.id,
-                query="",
-                media_kind=None,
-                sort="name",
-                include_references=True,
-            )
-        assert unavailable.value.status == 503
+        result = await cases(session).list_assets(
+            project_id="owned-project",
+            folder_id=folder.id,
+            query="",
+            media_kind=None,
+            sort="name",
+            include_references=True,
+        )
+        assert len(result.items) == 1
+        assert result.items[0].project_id == "owned-project"
+        assert result.items[0].is_reference is False
     assert calls == ["other-project", "owned-project", "owned-project", "owned-project"]
 
 

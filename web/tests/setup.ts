@@ -6,6 +6,11 @@ import { cleanup } from "@testing-library/react";
 configure({ asyncUtilTimeout: 5000 });
 
 beforeEach(() => {
+  // JSDOM has no layout scrolling; model the browser API for deferred focus
+  // and documentation navigation without changing application timing.
+  if (!Element.prototype.scrollIntoView) {
+    Element.prototype.scrollIntoView = () => {};
+  }
   if (!window.matchMedia) {
     window.matchMedia = (query) => ({
       matches: false,

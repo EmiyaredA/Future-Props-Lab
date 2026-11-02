@@ -867,7 +867,7 @@
       "operation_id": "migrate_storage_layout_v1_file_storage_layout_migrate_post"
     },
     {
-      "service": "assets",
+      "service": "tools",
       "method": "POST",
       "path": "/v1/file-storage/open-folder",
       "operation_id": "reveal_library_folder_v1_file_storage_open_folder_post"
@@ -909,7 +909,7 @@
       "operation_id": "preview_file_v1_files__asset_id__content_get"
     },
     {
-      "service": "assets",
+      "service": "rendering",
       "method": "POST",
       "path": "/v1/files/{asset_id}/crop",
       "operation_id": "crop_file_image_v1_files__asset_id__crop_post"
@@ -921,13 +921,13 @@
       "operation_id": "download_file_v1_files__asset_id__download_get"
     },
     {
-      "service": "assets",
+      "service": "rendering",
       "method": "POST",
       "path": "/v1/files/{asset_id}/frames",
       "operation_id": "extract_video_frames_v1_files__asset_id__frames_post"
     },
     {
-      "service": "assets",
+      "service": "rendering",
       "method": "GET",
       "path": "/v1/files/{asset_id}/media-info",
       "operation_id": "video_media_info_v1_files__asset_id__media_info_get"
@@ -3405,25 +3405,25 @@
       "operation_id": "acceptance_summary_v1_visual_workshop_projects__project_id__acceptance_summary_get"
     },
     {
-      "service": "visual",
+      "service": "assets",
       "method": "POST",
       "path": "/v1/visual-workshop/projects/{project_id}/asset-imports",
       "operation_id": "import_assets_v1_visual_workshop_projects__project_id__asset_imports_post"
     },
     {
-      "service": "visual",
+      "service": "assets",
       "method": "POST",
       "path": "/v1/visual-workshop/projects/{project_id}/asset-references",
       "operation_id": "create_asset_reference_v1_visual_workshop_projects__project_id__asset_references_post"
     },
     {
-      "service": "visual",
+      "service": "assets",
       "method": "DELETE",
       "path": "/v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}",
       "operation_id": "delete_asset_reference_v1_visual_workshop_projects__project_id__asset_references__reference_id__delete"
     },
     {
-      "service": "visual",
+      "service": "assets",
       "method": "PATCH",
       "path": "/v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}",
       "operation_id": "patch_asset_reference_v1_visual_workshop_projects__project_id__asset_references__reference_id__patch"
@@ -4443,6 +4443,12 @@
       "service": "assets",
       "module": "fpl_assets.models",
       "model": "PreparedAssetPin"
+    },
+    {
+      "table": "asset_visual_project_links",
+      "service": "assets",
+      "module": "fpl_assets.models",
+      "model": "VisualProjectFileLink"
     },
     {
       "table": "gateway_change_cursors",

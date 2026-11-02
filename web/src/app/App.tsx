@@ -783,7 +783,7 @@ export default function App() {
             onOpen={navigatePath}
           />
         ) : page === "files" ? (
-          <FileManagementPage />
+          <FileManagementPage canOpenLocalFolder={localBrowser} />
         ) : page === "tools" ? (
           <ToolNavigationPage
             onOpenInternal={navigatePath}

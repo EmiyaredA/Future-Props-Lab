@@ -364,8 +364,16 @@
   .file-browser-toolbar {
     padding: 10px;
   }
+  .file-primary-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
   .file-primary-actions button {
-    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 8px;
+    white-space: nowrap;
   }
   .file-items.grid,
   .is-compact .file-items.grid {
@@ -435,4 +443,10 @@
   align-items: center;
   margin-bottom: 16px;
   color: var(--success, #2f9e67);
+}
+
+@media (max-width: 360px) {
+  .file-primary-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

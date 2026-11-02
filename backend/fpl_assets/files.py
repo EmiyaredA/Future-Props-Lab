@@ -25,15 +25,15 @@ from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import utc_now
 
 from .deletions import schedule
+from .models import VisualProjectFileLink
 from .references import protect_references
 
 
 class Files(AssetFolders):
-    def __init__(self, session, settings, owner, *, project_exists, project_references):
+    def __init__(self, session, settings, owner, *, project_exists):
         if project_exists is None:
             raise ValueError("项目验证接口不可缺失")
         super().__init__(session, settings, owner, project_exists=project_exists)
-        self.project_references = project_references
 
     async def list_assets(
         self,
@@ -82,17 +82,26 @@ class Files(AssetFolders):
         )
         items = [asset_out(row) for row in rows]
         if include_references and project_id:
-            if self.project_references is None:
-                raise AssetError("项目引用服务暂不可用", code="component_unavailable", status=503)
-            items.extend(
-                await self.project_references(
-                    project_id=project_id,
-                    folder_id=folder_id,
-                    query=query,
-                    media_kind=media_kind,
-                    include_svg=include_svg,
-                )
+            links = [VisualProjectFileLink.project_id == project_id]
+            links.append(
+                VisualProjectFileLink.folder_id == folder_id
+                if folder_id is not None
+                else VisualProjectFileLink.folder_id.is_(None)
             )
+            if query:
+                links.append(VisualProjectFileLink.display_name.ilike(f"%{query}%"))
+            if media_kind:
+                links.append(VisualAsset.media_kind == media_kind)
+            if not include_svg:
+                links.append(VisualAsset.mime_type != "image/svg+xml")
+            referenced = (
+                await self.session.execute(
+                    select(VisualProjectFileLink, VisualAsset)
+                    .join(VisualAsset, VisualProjectFileLink.asset_id == VisualAsset.id)
+                    .where(*links)
+                )
+            ).all()
+            items.extend(asset_out(asset, reference=link) for link, asset in referenced)
             items.sort(
                 key=(lambda item: item.display_name.lower())
                 if sort == "name"
@@ -180,8 +189,17 @@ class Files(AssetFolders):
         if any(not is_visual_project_asset(row, body.source_project_id) for row in ordered):
             raise AssetError("素材不属于所选来源项目", code="scope_mismatch")
 
+        return await self.copy_assets(
+            ordered,
+            project_id=None,
+            folder_id=body.folder_id,
+            display_names=body.display_names,
+        )
+
+    async def copy_assets(self, ordered, *, project_id, folder_id=None, display_names=None):
         copied_paths: list[Path] = []
         imported_rows: list[VisualAsset] = []
+        commit_started = False
         try:
             for source in ordered:
                 source_path = self.storage.path_for(source)
@@ -190,9 +208,8 @@ class Files(AssetFolders):
                 storage_key = uuid4().hex
                 temp_path, final_path = self.storage.prepare_write(
                     storage_key,
-                    visual_project_id=None,
+                    visual_project_id=project_id,
                     galgame_project_id=None,
-                    video_editor_project_id=None,
                     owner_user_id=self.owner_user_id,
                 )
                 try:
@@ -201,12 +218,12 @@ class Files(AssetFolders):
                 finally:
                     temp_path.unlink(missing_ok=True)
                 copied_paths.append(final_path)
-                override = body.display_names.get(source.id)
+                override = (display_names or {}).get(source.id)
                 imported = VisualAsset(
                     owner_user_id=self.owner_user_id,
-                    project_id=None,
+                    project_id=project_id,
                     galgame_project_id=None,
-                    folder_id=body.folder_id,
+                    folder_id=folder_id,
                     original_filename=source.original_filename,
                     display_name=display_name_without_original_extension(
                         override or source.display_name,
@@ -220,23 +237,22 @@ class Files(AssetFolders):
                 )
                 imported_rows.append(imported)
                 self.session.add(imported)
+            commit_started = True
             await self.session.commit()
-            for imported in imported_rows:
-                await self.session.refresh(imported)
             return VisualAssetListOut(items=[asset_out(row) for row in imported_rows])
-        except AssetError:
-            await self.session.rollback()
-            for path in copied_paths:
-                path.unlink(missing_ok=True)
-            raise
-        except Exception as exc:
-            await self.session.rollback()
-            for path in copied_paths:
-                path.unlink(missing_ok=True)
+        except BaseException as exc:
+            try:
+                await self.session.rollback()
+            finally:
+                if not commit_started:
+                    for path in copied_paths:
+                        path.unlink(missing_ok=True)
+            if not isinstance(exc, Exception) or isinstance(exc, AssetError):
+                raise
             raise AssetError(
-                "项目素材复制到公共库失败",
-                code="asset_import_failed",
-                status=500,
+                "素材提交结果未确认，请先核验文件列表" if commit_started else "素材复制失败",
+                code="asset_commit_unknown" if commit_started else "asset_import_failed",
+                status=503 if commit_started else 500,
             ) from exc
 
     async def delete_asset(self, asset_id, expected_revision):

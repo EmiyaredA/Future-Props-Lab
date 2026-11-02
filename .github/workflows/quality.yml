@@ -104,7 +104,7 @@ jobs:
       - run: python3 scripts/check_lfs_assets.py --pointers
 
   docker-isolation:
-    name: Isolated services and independent Portal/Agents browsers
+    name: Isolated services and independent Portal/Agents/Assets browsers
     runs-on: ubuntu-latest
     env:
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.local/playwright-browsers
@@ -133,6 +133,7 @@ jobs:
         run: |
           npm run services:build:web -- agents > .local/service-split/ci-web-build.log
           npm run services:build:web -- portal > .local/service-split/ci-portal-web-build.log
+          npm run services:build:web -- assets > .local/service-split/ci-assets-web-build.log
       - name: Build the independently owned images
         run: |
           uv run python scripts/website/service_build.py identity --build > .local/service-split/ci-build.log
@@ -144,6 +145,7 @@ jobs:
           for service, program_log in (
               ('agents', '.local/service-split/ci-web-build.log'),
               ('portal', '.local/service-split/ci-portal-web-build.log'),
+              ('assets', '.local/service-split/ci-assets-web-build.log'),
           ):
               program = json.loads(Path(program_log).read_text().splitlines()[-1])
               with Path(f'.local/service-split/ci-{service}-build.log').open('w') as log:
@@ -164,6 +166,7 @@ jobs:
           gateway = image('.local/service-split/ci-gateway-build.log')
           agents = image('.local/service-split/ci-agents-build.log')
           portal = image('.local/service-split/ci-portal-build.log')
+          assets = image('.local/service-split/ci-assets-build.log')
           subprocess.run([
               'uv', 'run', 'python', 'scripts/website/service_docker_smoke.py',
               '--image', identity, '--gateway-image', gateway,
@@ -171,6 +174,6 @@ jobs:
           subprocess.run([
               'uv', 'run', 'python', 'scripts/website/agents_docker_smoke.py',
               '--identity-image', identity, '--agents-image', agents,
-              '--gateway-image', gateway, '--portal-image', portal, '--browser',
+              '--gateway-image', gateway, '--portal-image', portal, '--assets-image', assets, '--browser',
           ], check=True)
           PY

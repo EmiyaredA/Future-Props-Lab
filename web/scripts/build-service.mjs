@@ -13,7 +13,7 @@ const repo = path.resolve(
 );
 const web = path.join(repo, "web");
 const service = process.argv[2];
-if (!["agents", "portal"].includes(service))
+if (!["agents", "portal", "assets"].includes(service))
   throw new Error("This service has no independent browser entry yet");
 const digest = (value) => createHash("sha256").update(value).digest("hex");
 function walk(directory, prefix = "") {

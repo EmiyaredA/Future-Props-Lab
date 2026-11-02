@@ -95,6 +95,7 @@ class AssetLibrary:
         )
         size = 0
         head = bytearray()
+        commit_started = False
         try:
             with temp_path.open("xb") as target:
                 while chunk := await upload.read(1024 * 1024):
@@ -144,6 +145,7 @@ class AssetLibrary:
             if not defer_persistence:
                 self.session.add(row)
                 if commit:
+                    commit_started = True
                     await self.session.commit()
                     await self.session.refresh(row)
                 else:
@@ -151,7 +153,10 @@ class AssetLibrary:
             return row
         except BaseException:
             temp_path.unlink(missing_ok=True)
-            final_path.unlink(missing_ok=True)
+            # A failed commit/refresh may have lost its acknowledgement after
+            # SQLite committed. Keep the file until that outcome is known.
+            if not commit_started:
+                final_path.unlink(missing_ok=True)
             raise
         finally:
             await upload.close()

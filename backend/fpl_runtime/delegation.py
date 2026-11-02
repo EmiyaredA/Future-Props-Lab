@@ -40,6 +40,10 @@ ASSET_PROJECT_READS = frozenset(
         ("GET", "/v1/file-folders"),
         ("POST", "/v1/file-folders"),
         ("POST", "/v1/file-library/asset-imports"),
+        ("POST", "/v1/visual-workshop/projects/{project_id}/asset-imports"),
+        ("POST", "/v1/visual-workshop/projects/{project_id}/asset-references"),
+        ("PATCH", "/v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}"),
+        ("DELETE", "/v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}"),
     }
 )
 
@@ -56,7 +60,7 @@ def permitted(grant, catalog):
     return bool(
         grant.caller == "assets"
         and grant.purpose == "assets.visual-project.read"
-        and (grant.source_method, grant.source_path) in ASSET_PROJECT_READS
+        and (grant.source_method, original.path) in ASSET_PROJECT_READS
         and grant.target_service == "visual"
         and grant.target_method == "GET"
         and re.fullmatch(r"/v1/visual-workshop/projects/[A-Za-z0-9_-]{1,128}", grant.target_path)

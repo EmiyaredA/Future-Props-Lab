@@ -30,6 +30,7 @@ def exercise(
     native_port=29090,
     browser_check=False,
     portal_image=None,
+    assets_image=None,
     gateway_image="caddy@sha256:36c24ad91a7ff7bc4c87fe22bfa8df3c4b18da0773d73fc12ee2c52b98c0bb7e",
 ):
     project = "fpl-isolated-agents-" + secrets.token_hex(5)
@@ -37,11 +38,13 @@ def exercise(
     subprocess.run(["git", "check-ignore", "--quiet", str(root)], check=True, cwd=ROOT)
     root.mkdir(mode=0o700)
     control = not gateway_image.startswith("caddy@")
-    for name in ("identity", "agents", "gateway", "portal", "native"):
+    for name in ("identity", "agents", "gateway", "portal", "assets", "native"):
         (root / name).mkdir(mode=0o700)
     gateway_token, service_token, lane_token, worker_token = [
         secrets.token_urlsafe(48) for _ in range(4)
     ]
+    assets_token = secrets.token_urlsafe(48)
+    gateway_service_token = secrets.token_urlsafe(48)
     password = secrets.token_urlsafe(32) + "-Aa9!"
     key = Ed25519PrivateKey.generate()
     origin = f"http://127.0.0.1:{local_port}"
@@ -54,6 +57,9 @@ def exercise(
     material = {
         "identity.toml": config.encode(),
         "agents.toml": config.encode(),
+        "assets.toml": b'[storage]\ndatabase_path = "/state/service.db"\n',
+        "assets-client.json": json.dumps({"credential": assets_token}).encode(),
+        "gateway-identity-token": gateway_service_token.encode(),
         "portal.toml": b'[storage]\ndatabase_path = "/state/service.db"\n',
         "identity-signing.pem": key.private_bytes(
             serialization.Encoding.PEM,
@@ -69,7 +75,7 @@ def exercise(
         "native-ingress": lane_token.encode(),
         "workers.json": json.dumps({"fixture-collector": worker_token}).encode(),
         "service-credentials.json": json.dumps(
-            {"agents": service_token, "gateway": service_token}
+            {"agents": service_token, "gateway": gateway_service_token, "assets": assets_token}
         ).encode(),
         "publishers.json": b"{}",
         "connection.json": json.dumps(
@@ -125,13 +131,17 @@ def exercise(
             "FPL_SERVICE_UID": str(os.getuid()),
             "FPL_SERVICE_GID": str(os.getgid()),
             "FPL_IDENTITY_IMAGE": identity_image,
+            "FPL_ASSETS_IMAGE": assets_image or "fpl/assets:acceptance-unselected",
+            "FPL_ASSETS_STATE": str(root / "assets"),
+            "FPL_ASSETS_CONFIG": str(root / "assets.toml"),
+            "FPL_ASSETS_IDENTITY_CLIENT": str(root / "assets-client.json"),
             "FPL_PORTAL_IMAGE": portal_image or "fpl/portal:acceptance-unselected",
             "FPL_PORTAL_STATE": str(root / "portal"),
             "FPL_PORTAL_CONFIG": str(root / "portal.toml"),
             "FPL_GATEWAY_IMAGE": gateway_image,
             "FPL_GATEWAY_STATE": str(root / "gateway"),
             "FPL_GATEWAY_SETTINGS": str(root / "gateway.toml"),
-            "FPL_GATEWAY_IDENTITY_TOKEN": str(root / "identity-token"),
+            "FPL_GATEWAY_IDENTITY_TOKEN": str(root / "gateway-identity-token"),
             "FPL_GATEWAY_PUBLISHERS": str(root / "publishers.json"),
             "FPL_AGENTS_IMAGE": agents_image,
             "FPL_IDENTITY_STATE": str(root / "identity"),
@@ -218,6 +228,8 @@ def exercise(
             "create-admin",
             input_text=json.dumps({"username": "isolated-admin", "password": password}),
         )
+        if assets_image:
+            compose("run", "--rm", "--no-deps", "assets", "migrate")
         if portal_image:
             compose("run", "--rm", "--no-deps", "portal", "migrate")
         compose(
@@ -228,6 +240,7 @@ def exercise(
             "agents",
             "gateway",
             *(("portal",) if portal_image else ()),
+            *(("assets",) if assets_image else ()),
         )
         collector = subprocess.Popen(
             [
@@ -341,10 +354,32 @@ def exercise(
             checks.append(
                 "independent Agents replacement preserves data, Identity, Gateway and native follow"
             )
+            if assets_image:
+                from assets_docker_checks import exercise_assets
+
+                checks.append(
+                    exercise_assets(
+                        root=root,
+                        repo=ROOT,
+                        client=client,
+                        unsafe=unsafe,
+                        compose=compose,
+                        started=started,
+                        wait=wait,
+                        browser_check=browser_check,
+                        password=password,
+                    )
+                )
             if portal_image:
                 wait(client, "/")
                 stable = {
-                    service: started(service) for service in ("identity", "agents", "gateway")
+                    service: started(service)
+                    for service in (
+                        "identity",
+                        "agents",
+                        "gateway",
+                        *(("assets",) if assets_image else ()),
+                    )
                 }
                 if browser_check:
                     result = subprocess.run(
@@ -373,6 +408,8 @@ def exercise(
                 assert client.get("/").status_code == 502
                 assert all(started(service) == stamp for service, stamp in stable.items())
                 assert client.get(history).status_code == 200
+                if assets_image:
+                    assert client.get("/v1/files").status_code == 200
                 checks.append(
                     "Portal browser, independent replacement and stop preserve Agents and Identity"
                 )
@@ -387,6 +424,8 @@ def exercise(
                 assert response.status_code == 200
                 assert fresh.get("/v1/auth/me").json()["user"]["id"] == owner
                 assert fresh.get(path).json()["items"][0]["id"] == session_id
+                if assets_image:
+                    assert fresh.get("/v1/files").status_code == 200
             checks.append("fresh browser login and workbench reads need no Portal process")
             if browser_check:
                 page = client.get("/agents")
@@ -489,6 +528,7 @@ def exercise(
             "identity",
             "agents",
             "portal",
+            "assets",
             check=False,
         )
         compose("down", "--remove-orphans", check=False)
@@ -500,6 +540,7 @@ if __name__ == "__main__":
     parser.add_argument("--agents-image", required=True)
     parser.add_argument("--browser", action="store_true")
     parser.add_argument("--portal-image")
+    parser.add_argument("--assets-image")
     parser.add_argument(
         "--gateway-image",
         default="caddy@sha256:36c24ad91a7ff7bc4c87fe22bfa8df3c4b18da0773d73fc12ee2c52b98c0bb7e",
@@ -513,4 +554,5 @@ if __name__ == "__main__":
         gateway_image=args.gateway_image,
         browser_check=args.browser,
         portal_image=args.portal_image,
+        assets_image=args.assets_image,
     )

@@ -96,6 +96,26 @@ class PreparedAssetPin(ReferenceBase):
     owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
 
 
+class VisualProjectFileLink(ReferenceBase):
+    """Library-file placement, not the source project's document or history."""
+
+    __tablename__ = "asset_visual_project_links"
+    __table_args__ = (UniqueConstraint("owner_user_id", "project_id", "asset_id"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
+    project_id: Mapped[str] = mapped_column(String(36))
+    asset_id: Mapped[str] = mapped_column(
+        ForeignKey(VisualAsset.__table__.c.id, ondelete="RESTRICT"), index=True
+    )
+    folder_id: Mapped[str | None] = mapped_column(
+        ForeignKey(VisualAssetFolder.__table__.c.id, ondelete="CASCADE"), nullable=True
+    )
+    display_name: Mapped[str] = mapped_column(String(255))
+    revision: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
+
+
 MODELS = (
     VisualAssetFolder,
     VisualAsset,
@@ -105,4 +125,5 @@ MODELS = (
     AssetDeletion,
     ReferenceIntent,
     PreparedAssetPin,
+    VisualProjectFileLink,
 )

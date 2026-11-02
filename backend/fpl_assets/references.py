@@ -16,6 +16,7 @@ from .models import (
     AssetReferenceSet,
     PreparedAssetPin,
     ReferenceIntent,
+    VisualProjectFileLink,
 )
 
 
@@ -172,7 +173,7 @@ async def protect_references(session, asset_ids):
     """Call while holding the same short write transaction as asset deletion."""
     if not asset_ids:
         return
-    for model in (AssetReferencePin, PreparedAssetPin):
+    for model in (AssetReferencePin, PreparedAssetPin, VisualProjectFileLink):
         if (
             await session.scalar(
                 select(model.asset_id).where(model.asset_id.in_(asset_ids)).limit(1)

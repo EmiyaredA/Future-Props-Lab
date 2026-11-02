@@ -2,6 +2,7 @@ import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 
 export const serviceAssets = {
+  assets: ["brand/brand-mark.png", "brand/favicon.png"],
   portal: [
     "brand/brand-mark.png", "brand/favicon.png",
     "brand/home/kurisu-idle.png", "brand/home/kurisu-idle.webm",

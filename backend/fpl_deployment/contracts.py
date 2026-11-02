@@ -62,6 +62,16 @@ def operation_owner(path):
     parts = path.strip("/").split("/")
     if len(parts) < 2 or parts[0] != "v1":
         raise ValueError("不是业务 API")
+    if path == "/v1/file-storage/open-folder":
+        return "tools"
+    if path in {
+        "/v1/files/{asset_id}/crop",
+        "/v1/files/{asset_id}/frames",
+        "/v1/files/{asset_id}/media-info",
+    }:
+        return "rendering"
+    if path.startswith("/v1/visual-workshop/projects/{project_id}/asset-"):
+        return "assets"
     if path.startswith("/v1/account/demo-services/"):
         return "models"
     if path == "/v1/account/developer-documents":
