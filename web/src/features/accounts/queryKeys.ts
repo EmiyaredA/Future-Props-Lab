@@ -1,4 +1,11 @@
 export const accountQueryKeys = {
+  management: ["accounts", "management"] as const,
+  managementRuntime: ["accounts", "management", "runtime"] as const,
+  managementApplication: ["accounts", "management", "application"] as const,
+  managementAccess: (target: string) =>
+    ["accounts", "management", "access", target] as const,
+  managementLogs: ["accounts", "management", "logs"] as const,
+  managementJob: (id: string) => ["accounts", "management", "job", id] as const,
   runtime: () => ["accounts", "runtime"] as const,
   syncHistory: (role: string) =>
     ["accounts", "platform", "sync-history", role] as const,

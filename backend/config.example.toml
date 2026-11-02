@@ -89,3 +89,29 @@ pi_executable = ""
 enabled = true
 poll_seconds = 1
 files_per_pass = 100
+
+# 独立管理服务：只有完成多服务隔离验收和正式配置后才能启用。
+[management]
+local_origin = "http://127.0.0.1:9002"
+public_origin = ""
+
+[management_host]
+base_url = "http://127.0.0.1:29092/management"
+credential_file = ".runtime/management-credentials/worker-token"
+state_root = ".runtime/management-host"
+business_services = ["gateway", "portal", "agents"]
+credentials_root = "backend/web-access/credentials"
+auto_start = true
+
+[management_remote]
+enabled = false
+port = 28083
+ssh_host = ""
+ssh_user = ""
+ssh_port = 22
+remote_port = 28082
+identity_id = ""
+known_hosts_id = ""
+
+# deployment.compose_file/project_name/environment 由正式部署流程明确填写；
+# environment 仅接受字符串类型的 FPL_* Compose 投影变量，不读取 .env。

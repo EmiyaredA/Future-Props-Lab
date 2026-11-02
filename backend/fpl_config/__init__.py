@@ -42,6 +42,36 @@ FIELDS = {
         "executable": ("fpl_interview_codex_executable", str),
         "user_id": ("fpl_interview_codex_user_id", str),
     },
+    "management": {
+        "local_origin": ("fpl_management_local_origin", str),
+        "public_origin": ("fpl_management_public_origin", str),
+    },
+    "deployment": {
+        "compose_file": ("fpl_deployment_compose_file", str),
+        "project_name": ("fpl_deployment_project_name", str),
+        "environment": ("fpl_deployment_environment", dict),
+    },
+    "management_host": {
+        "base_url": ("fpl_management_host_base_url", str),
+        "credential_file": ("fpl_management_host_credential_file", str),
+        "state_root": ("fpl_management_host_state_root", str),
+        "business_services": ("fpl_management_host_business_services", list),
+        "credentials_root": ("fpl_management_host_credentials_root", str),
+        "auto_start": ("fpl_management_host_auto_start", bool),
+    },
+    "management_remote": {
+        name: (f"fpl_management_remote_{name}", kind)
+        for name, kind in {
+            "port": int,
+            "ssh_host": str,
+            "ssh_user": str,
+            "ssh_port": int,
+            "remote_port": int,
+            "identity_id": str,
+            "known_hosts_id": str,
+            "enabled": bool,
+        }.items()
+    },
     "website": {
         "port": ("fpl_website_port", int),
         "web_root": ("fpl_website_web_root", str),

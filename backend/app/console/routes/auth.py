@@ -7,7 +7,8 @@ from datetime import timedelta
 from fastapi import HTTPException, Request, Response
 
 from app.capabilities.identity.permissions import role_permissions
-from app.capabilities.identity.security import CSRF_COOKIE, SESSION_ABSOLUTE_DAYS, SESSION_COOKIE
+from app.capabilities.identity.security import SESSION_ABSOLUTE_DAYS
+from app.capabilities.identity.session_policy import STUDIO_SESSION, SessionPolicy
 from app.console.governance.profile import avatar_url
 from app.console.governance.service import audit_page
 from app.console.schemas.accounts import (
@@ -64,13 +65,15 @@ def _key_out(key) -> ApiKeyOut:
     )
 
 
-def _set_cookies(response: Response, token: str, csrf: str) -> None:
+def _set_cookies(
+    response: Response, token: str, csrf: str, policy: SessionPolicy = STUDIO_SESSION
+) -> None:
     from app.runtime.config import get_settings
 
     secure = get_settings().auth_cookie_secure
     max_age = int(timedelta(days=SESSION_ABSOLUTE_DAYS).total_seconds())
     response.set_cookie(
-        SESSION_COOKIE,
+        policy.session_cookie,
         token,
         httponly=True,
         secure=secure,
@@ -79,7 +82,7 @@ def _set_cookies(response: Response, token: str, csrf: str) -> None:
         max_age=max_age,
     )
     response.set_cookie(
-        CSRF_COOKIE,
+        policy.csrf_cookie,
         csrf,
         httponly=False,
         secure=secure,
@@ -89,12 +92,12 @@ def _set_cookies(response: Response, token: str, csrf: str) -> None:
     )
 
 
-def _clear_cookies(response: Response) -> None:
+def _clear_cookies(response: Response, policy: SessionPolicy = STUDIO_SESSION) -> None:
     from app.runtime.config import get_settings
 
     secure = get_settings().auth_cookie_secure
-    response.delete_cookie(SESSION_COOKIE, path="/", secure=secure, samesite="lax")
-    response.delete_cookie(CSRF_COOKIE, path="/", secure=secure, samesite="lax")
+    response.delete_cookie(policy.session_cookie, path="/", secure=secure, samesite="lax")
+    response.delete_cookie(policy.csrf_cookie, path="/", secure=secure, samesite="lax")
 
 
 async def _browser_auth(request: Request, session: SessionDep, *, forced: bool = False):

@@ -17,12 +17,6 @@ export const responsiveOwners = {
   "agent-workbench-session": "shell",
   "agent-workbench-sources": "shell",
   "interview-assistant-session": "shell",
-  "management-accounts": "shell",
-  "management-audit": "shell",
-  "management-invites": "shell",
-  "management-settings": "shell",
-  "management-services": "shell",
-  "management-quotas": "shell",
   home: "shell",
   "creative-workshop": "shell",
   "creative-workshop-mine": "shell",
@@ -136,3 +130,16 @@ export const viewports = [
   { width: 1920, height: 1080 },
   { width: 844, height: 390 },
 ];
+
+// Independent management HTML and all its routes are covered by management.spec.ts.
+export const managementSurfaces = [
+  "/management.html",
+  "/management/accounts",
+  "/management/invites",
+  "/management/settings",
+  "/management/services",
+  "/management/quotas",
+  "/management/audit",
+  "/management/application",
+  "/management/access",
+] as const;

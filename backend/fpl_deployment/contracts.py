@@ -21,6 +21,7 @@ APP_OWNERS = {
     "visual_workshop": "visual",
 }
 API_OWNERS = {
+    "management": "management",
     "account": "identity",
     "auth": "identity",
     "agent-workbench": "agents",
@@ -95,6 +96,8 @@ def operation_owner(path):
 
 
 def table_owner(module, table):
+    if module.startswith("fpl_management."):
+        return "management"
     if module.startswith("fpl_assets."):
         return "assets"
     if module.startswith("fpl_identity."):
@@ -133,6 +136,7 @@ def model_tables(root):
     for path in sorted(
         list((root / "backend/app").rglob("*.py"))
         + list((root / "backend/fpl_identity").rglob("*.py"))
+        + list((root / "backend/fpl_management").rglob("*.py"))
         + list((root / "backend/fpl_agents").rglob("*.py"))
         + list((root / "backend/fpl_gateway").rglob("*.py"))
         + list((root / "backend/fpl_assets").rglob("*.py"))

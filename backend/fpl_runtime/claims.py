@@ -22,7 +22,11 @@ class Actor:
     local: bool = False
     reauthenticated_at: str | None = None
 
+    purpose: str = "studio"
+
     def __post_init__(self):
+        if self.purpose not in {"studio", "management"}:
+            raise ValueError("会话用途无效")
         if type(self.local) is not bool or not isinstance(self.scopes, tuple):
             raise ValueError("认证上下文类型无效")
         if not self.user_id or self.platform_role not in {"admin", "user"}:
@@ -59,6 +63,7 @@ def issue_context(actor: Actor, *, service, method, path, private_key, key_id, n
         "path": path,
         "role": actor.platform_role,
         "kind": actor.auth_kind,
+        "purpose": actor.purpose,
         "scopes": actor.scopes,
         "session": actor.session_id,
         "api_key": actor.api_key_id,
@@ -101,6 +106,7 @@ def verify_context(token, *, service, method, path, public_key, allow_expired=Fa
         raise jwt.InvalidTokenError("认证上下文有效期无效")
     return Actor(
         user_id=claims["sub"],
+        purpose=claims.get("purpose", "studio"),
         platform_role=claims["role"],
         auth_kind=claims["kind"],
         scopes=tuple(claims["scopes"]),

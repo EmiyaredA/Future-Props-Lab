@@ -12,13 +12,13 @@ from app.capabilities.identity.permissions import role_scopes
 from app.capabilities.identity.principal import StudioPrincipal
 from app.capabilities.identity.route_permissions import route_permission
 from app.capabilities.identity.security import (
-    CSRF_COOKIE,
     REAUTH_MINUTES,
     SESSION_ACTIVITY_WRITE_SECONDS,
     SESSION_COOKIE,
     SESSION_IDLE_HOURS,
     hash_secret,
 )
+from app.capabilities.identity.session_policy import session_policy
 from app.console.models import AuthSession, ManagementApiKey, User
 from app.runtime.config import get_settings
 from app.runtime.db import get_session
@@ -55,7 +55,7 @@ def _forbidden(code: str, message: str) -> HTTPException:
 def _validate_session_request(request: Request, auth_session: AuthSession) -> None:
     if request.method not in _UNSAFE_METHODS:
         return
-    csrf_cookie = request.cookies.get(CSRF_COOKIE, "")
+    csrf_cookie = request.cookies.get(session_policy(request).csrf_cookie, "")
     csrf_header = request.headers.get("X-CSRF-Token", "")
     if (
         not csrf_cookie
@@ -138,7 +138,7 @@ async def _authenticate_identity_database(
     allow_forced_password_change: bool = False,
 ) -> StudioPrincipal:
     now = utc_now()
-    raw = request.cookies.get(SESSION_COOKIE, "")
+    raw = request.cookies.get(session_policy(request).session_cookie, "")
     if raw:
         row = (
             await session.execute(
@@ -147,9 +147,20 @@ async def _authenticate_identity_database(
                 .where(AuthSession.token_hash == hash_secret(raw))
             )
         ).first()
-        if row is None or not _valid_session(*row, now):
+        if (
+            row is None
+            or not _valid_session(*row, now)
+            or (session_policy(request).purpose == "management" and row[1].platform_role != "admin")
+        ):
             raise _unauthorized()
         auth, user = row
+        purpose = "studio"
+        if getattr(request.app.state, "service_id", None) == "identity":
+            purpose = await session.scalar(
+                select(AuthSession.purpose).where(AuthSession.id == auth.id)
+            )
+        if purpose != session_policy(request).purpose:
+            raise _unauthorized()
         _validate_session_request(request, auth)
         if user.must_change_password and not allow_forced_password_change:
             raise _forbidden("password_change_required", "必须先修改临时密码")
@@ -161,6 +172,8 @@ async def _authenticate_identity_database(
             await session.commit()
         principal = _principal(user, auth=auth)
     else:
+        if session_policy(request).purpose == "management":
+            raise _unauthorized()
         authorization = request.headers.get("Authorization", "")
         if not authorization.lower().startswith("bearer "):
             raise _unauthorized()

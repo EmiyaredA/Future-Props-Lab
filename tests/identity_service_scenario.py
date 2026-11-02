@@ -32,6 +32,9 @@ app = create_app(
     local_origin="http://127.0.0.1:19000",
     public_origin="https://studio.example.test",
     private_key=private,
+    management_gateway_token="management-test-gateway-" * 3,
+    management_local_origin="http://127.0.0.1:19002",
+    management_public_origin="https://admin.example.test",
     service_credentials={
         "agents": "agents-test-service-credential-123456",
         "gateway": "gateway-test-service-credential-123456",
@@ -70,7 +73,7 @@ async def scenario():
             assert login.status_code == 200, login.text
             assert login.json()["user"]["id"] == owner
             assert (await client.get("/v1/auth/me")).status_code == 200
-            assert (await client.get("/v1/platform/accounts")).status_code == 200
+            assert (await client.get("/v1/platform/accounts")).status_code == 404
             csrf = client.cookies.get("fpl_csrf")
             unsafe = {"X-CSRF-Token": csrf, "Origin": "http://127.0.0.1:19000"}
             rejected = await client.post("/v1/auth/logout")
@@ -221,9 +224,21 @@ async def scenario():
                 headers={**auth_headers, "X-Fpl-Target-Service": "remote"},
             )
             assert wrong_service.status_code == 403
+            management_headers = {
+                "Host": "127.0.0.1:19002",
+                "Origin": "http://127.0.0.1:19002",
+                "X-Fpl-Gateway": "management-test-gateway-" * 3,
+            }
+            management_login = await client.post(
+                "/v1/auth/login",
+                json={"username": "identity-admin", "password": password},
+                headers=management_headers,
+            )
+            assert management_login.status_code == 200
+            management_headers["X-CSRF-Token"] = client.cookies["fpl_management_csrf"]
             created = await client.post(
                 "/v1/platform/accounts",
-                headers=unsafe,
+                headers=management_headers,
                 json={
                     "username": "second-account",
                     "display_name": "Second Account",

@@ -1,0 +1,137 @@
+import { expect, test, type Page } from "@playwright/test";
+
+const user = {
+  id: "admin",
+  username: "admin",
+  display_name: "管理员",
+  email: null,
+  avatar_url: null,
+  is_platform_admin: true,
+  platform_role: "admin",
+  revision: 0,
+};
+async function mock(page: Page, local: boolean) {
+  const actions: { url: string; data: Record<string, unknown> }[] = [];
+  await page.route("**/v1/**", async (route) => {
+    const request = route.request(),
+      path = new URL(request.url()).pathname;
+    let value: unknown;
+    if (path === "/v1/auth/me")
+      value = {
+        user,
+        must_change_password: false,
+        permission_keys: ["configuration.manage"],
+        storage_upgrade_required: false,
+        session_expires_at: "2099-01-01T00:00:00",
+      };
+    else if (path === "/v1/management/runtime")
+      value = { local_browser: local };
+    else if (path === "/v1/management/application")
+      value = { phase: "stopped", error: "", force_stop_available: false };
+    else if (path === "/v1/management/application/logs")
+      value = { lines: ["应用已停止", "token=[redacted]"] };
+    else if (path.endsWith("/actions")) {
+      actions.push({ url: path, data: request.postDataJSON() });
+      value = {
+        id: "11111111-1111-4111-8111-111111111111",
+        status: "queued",
+        operation: "management.application",
+        revision: 0,
+      };
+    } else if (path.includes("/management/jobs/"))
+      value = {
+        id: "11111111-1111-4111-8111-111111111111",
+        status: "completed",
+        operation: "management.application",
+        revision: 1,
+      };
+    else if (path.includes("/management/access/"))
+      value = {
+        phase: "off",
+        url: path.endsWith("business")
+          ? "https://studio.example.test"
+          : "https://admin.example.test",
+        error: "",
+      };
+    else if (path === "/v1/platform/accounts")
+      value = { items: [], total: 0, page: 1, page_size: 25 };
+    else if (path === "/v1/account/profile") value = user;
+    else if (path === "/v1/account/sessions") value = { items: [], total: 0 };
+    else if (path === "/v1/account/api-keys") value = [];
+    else if (path === "/v1/account/security-events")
+      value = { items: [], total: 0 };
+    else
+      return route.fulfill({
+        status: 404,
+        json: { detail: "unexpected management request" },
+      });
+    await route.fulfill({ json: value });
+  });
+  return actions;
+}
+for (const theme of ["light", "dark"]) {
+  for (const width of [390, 768, 1600]) {
+    test(`independent management ${theme} ${width}`, async ({ page }, info) => {
+      const actions = await mock(page, true);
+      await page.setViewportSize({ width, height: 960 });
+      await page.addInitScript((value) => {
+        localStorage.setItem("future_props_theme", value);
+        document.documentElement.dataset.theme = value;
+      }, theme);
+      await page.goto("/management/application");
+      await expect(
+        page.getByRole("heading", { name: "应用运行", exact: true }),
+      ).toBeVisible();
+      await page.getByRole("button", { name: "启动应用", exact: true }).click();
+      expect(actions).toHaveLength(0);
+      await expect(page.getByRole("alertdialog")).toBeVisible();
+      await page.getByRole("button", { name: "取消", exact: true }).click();
+      if (width < 767)
+        await page.getByRole("button", { name: "打开管理导航" }).click();
+      await page.getByRole("button", { name: "访问管理", exact: true }).click();
+      await expect(
+        page.getByRole("heading", { name: "访问管理", exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByText("https://admin.example.test", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByText("https://studio.example.test", { exact: true }),
+      ).toBeVisible();
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth + 1,
+        ),
+      ).toBeTruthy();
+      await page.screenshot({
+        path: info.outputPath(`management-${theme}-${width}.png`),
+        fullPage: true,
+      });
+      await page.getByRole("button", { name: "账号菜单" }).click();
+      await expect(
+        page.getByRole("menuitem", { name: "管理中台" }),
+      ).toHaveCount(0);
+      await expect(
+        page.getByRole("menuitem", { name: "本地与公网访问" }),
+      ).toHaveCount(0);
+      await page.keyboard.press("Escape");
+      await expect(
+        page.getByRole("button", { name: "账号菜单" }),
+      ).toBeFocused();
+    });
+  }
+}
+test("public management hides host mutations and logs", async ({ page }) => {
+  const actions = await mock(page, false);
+  await page.goto("/management/application");
+  await expect(
+    page.getByRole("heading", { name: "应用运行", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "启动应用", exact: true }),
+  ).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "查看应用日志" })).toHaveCount(
+    0,
+  );
+  expect(actions).toHaveLength(0);
+});

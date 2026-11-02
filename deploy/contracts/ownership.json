@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "openapi_sha256": "f7236a31a91814061b5f9611d08dadb62e3f0291777563bb6a3877ac9e7fed4a",
+  "openapi_sha256": "cc0f52e88bb01fe73dee22532fad6b7438d4020628017e0e8a4ce9214c263e26",
   "operations": [
     {
       "service": "identity",
@@ -535,18 +535,6 @@
       "method": "POST",
       "path": "/v1/auth/register",
       "operation_id": "registration_v1_auth_register_post"
-    },
-    {
-      "service": "gateway",
-      "method": "GET",
-      "path": "/v1/automation/access",
-      "operation_id": "access_status_v1_automation_access_get"
-    },
-    {
-      "service": "gateway",
-      "method": "POST",
-      "path": "/v1/automation/access/actions",
-      "operation_id": "access_action_v1_automation_access_actions_post"
     },
     {
       "service": "gateway",
@@ -1555,6 +1543,48 @@
       "method": "POST",
       "path": "/v1/local-models/attach",
       "operation_id": "attach_model_v1_local_models_attach_post"
+    },
+    {
+      "service": "management",
+      "method": "GET",
+      "path": "/v1/management/access/{target}",
+      "operation_id": "access_v1_management_access__target__get"
+    },
+    {
+      "service": "management",
+      "method": "POST",
+      "path": "/v1/management/access/{target}/actions",
+      "operation_id": "access_action_v1_management_access__target__actions_post"
+    },
+    {
+      "service": "management",
+      "method": "GET",
+      "path": "/v1/management/application",
+      "operation_id": "application_v1_management_application_get"
+    },
+    {
+      "service": "management",
+      "method": "POST",
+      "path": "/v1/management/application/actions",
+      "operation_id": "application_action_v1_management_application_actions_post"
+    },
+    {
+      "service": "management",
+      "method": "GET",
+      "path": "/v1/management/application/logs",
+      "operation_id": "application_logs_v1_management_application_logs_get"
+    },
+    {
+      "service": "management",
+      "method": "GET",
+      "path": "/v1/management/jobs/{job_id}",
+      "operation_id": "read_job_v1_management_jobs__job_id__get"
+    },
+    {
+      "service": "management",
+      "method": "GET",
+      "path": "/v1/management/runtime",
+      "operation_id": "runtime_v1_management_runtime_get"
     },
     {
       "service": "models",
@@ -4419,6 +4449,18 @@
       "service": "identity",
       "module": "fpl_identity.models",
       "model": "AccountEvent"
+    },
+    {
+      "table": "management_native_jobs",
+      "service": "management",
+      "module": "fpl_management.models",
+      "model": "NativeJob"
+    },
+    {
+      "table": "management_host_snapshot",
+      "service": "management",
+      "module": "fpl_management.models",
+      "model": "HostSnapshot"
     }
   ],
   "partitions": {

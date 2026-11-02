@@ -18,13 +18,14 @@ LibreOffice 或额外预览服务。视频和音频继续使用上述 FFmpeg/FFp
 
 ## 独立服务迁移
 
-正在按同仓库独立服务拆分。Identity、Gateway、Agents、Portal、Assets 和 Rendering 已有独立构建与 Compose 装配；Agents 与文件库拥有独立浏览器入口，门户停止后的新登录、素材访问和原生同步已通过隔离验收。Rendering 当前承接五个兼容媒体处理接口，持久导出任务、其余服务和正式切换仍在实施。`npm run services:build -- identity --build` 构建独立镜像；操作与验收范围见[独立服务迁移](docs/operations/independent-services.md)。完成全部门禁前，正式网站继续使用下述现有入口。
+正在按同仓库独立服务拆分。Identity、Gateway、Agents、Portal、Assets、Rendering 和 Management 已有独立构建与 Compose 装配；Agents 与文件库拥有独立浏览器入口，门户停止后的新登录、素材访问和原生同步已通过隔离验收。Rendering 当前承接五个兼容媒体处理接口，持久导出任务、其余服务和正式切换仍在实施。`npm run services:build -- identity --build` 构建独立镜像；操作与验收范围见[独立服务迁移](docs/operations/independent-services.md)。完成全部门禁前，正式网站继续使用下述现有入口。
 
 ## 快速开始
 
-正式使用通过浏览器访问 Mac 上的网站。`npm run build:studio` 构建正式资源，`npm start` 启动单进程网站；
-`npm run website:service -- install` 安装登录后自动启动的后台服务。默认本机入口是
-[http://127.0.0.1:9000](http://127.0.0.1:9000)。关闭浏览器不会停止后台任务。
+正式使用通过浏览器访问 Mac 上的网站。当前分支的 `npm start` 和 `website:service` 已转向独立服务协调器，
+使用已安装镜像与受控配置投影，不在登录时构建或迁移；只有完成 Models、其余服务与正式切换门禁后才安装到正式实例。
+迁移期旧网站与匹配数据继续使用原恢复版本；本分支保留 `npm run start:legacy` 和 `website:service:legacy` 入口。
+默认网站入口仍为 [http://127.0.0.1:9000](http://127.0.0.1:9000)，管理入口为 9002。关闭浏览器不会停止后台任务。
 
 Amadeus 从顶栏或工坊按钮打开页面侧栏，可引用当前页面与选中控件。CLI / Python SDK / MCP 使用
 网站地址和账号设置创建的 Management API Key；`fpl connect --url http://127.0.0.1:9000` 安全保存客户端配置。
@@ -131,3 +132,7 @@ Apple Silicon Mac（macOS 15+）可在模型服务中按需安装 Qwen3-TTS Base
 视觉工坊的视频节点提供固定动作迁移验收：模型 API 在 `[visual_acceptance]` 配置，Codex、Claude Code、OpenCode、DeepSeek Harness 和 Pi CLI 在 `[code_agents]` 配置并按账号授权。默认未配置，不自动安装或登录 CLI；项目负责模板说明和节点汇总，质量记录不限制最终输出采用。配置、版本要求与执行边界见[节点验收](docs/operations/node-acceptance.md)。
 
 账号归属升级使用 `0116_account_ownership`。完成 schema 迁移后，管理员在维护页执行文件迁移与核验，全部完成后重启应用。正式数据升级前停机备份；开发热加载不会自动应用此迁移。旧凭据撤销，需要重新登录及签发 API Key。
+
+### 独立管理端
+
+管理中台使用独立服务与数据库，账号和模型治理分别由 Identity、Models 承接。已配置并完成迁移的多服务部署使用 `npm start`，仅启动管理侧使用 `npm run management:start`；管理页面使用 `npm run build:management` 独立构建。管理入口默认 `http://127.0.0.1:9002`，开发入口为 3001。旧单体恢复入口为 `npm run start:legacy`，正式切换前不能与新管理器竞争同一部署。配置、权限和隔离验收见[独立管理服务](docs/reference/management-service.md)。

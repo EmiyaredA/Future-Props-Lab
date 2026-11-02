@@ -2292,6 +2292,37 @@
         "title": "ApiKeyOut",
         "type": "object"
       },
+      "ApplicationState": {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Error",
+            "type": "string"
+          },
+          "force_stop_available": {
+            "default": false,
+            "title": "Force Stop Available",
+            "type": "boolean"
+          },
+          "phase": {
+            "default": "unavailable",
+            "enum": [
+              "stopped",
+              "starting",
+              "running",
+              "stopping",
+              "failed",
+              "unavailable"
+            ],
+            "title": "Phase",
+            "type": "string"
+          }
+        },
+        "title": "ApplicationState",
+        "type": "object"
+      },
       "ArticleBindingInput": {
         "additionalProperties": false,
         "properties": {
@@ -7981,6 +8012,44 @@
           "revisions"
         ],
         "title": "DuplicateSnapshot",
+        "type": "object"
+      },
+      "EndpointState": {
+        "additionalProperties": false,
+        "properties": {
+          "build_id": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Build Id",
+            "type": "string"
+          },
+          "error": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Error",
+            "type": "string"
+          },
+          "phase": {
+            "default": "unavailable",
+            "enum": [
+              "off",
+              "connecting",
+              "ready",
+              "reconnecting",
+              "failed",
+              "unavailable"
+            ],
+            "title": "Phase",
+            "type": "string"
+          },
+          "url": {
+            "default": "",
+            "maxLength": 2048,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "title": "EndpointState",
         "type": "object"
       },
       "EndpointStatus": {
@@ -20505,6 +20574,107 @@
         "title": "LoginIn",
         "type": "object"
       },
+      "ManagementAccessAction": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "public_start",
+              "public_stop",
+              "check"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "request_id": {
+            "format": "uuid",
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "action"
+        ],
+        "title": "ManagementAccessAction",
+        "type": "object"
+      },
+      "ManagementApplicationAction": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "start",
+              "stop",
+              "restart",
+              "force_stop"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "request_id": {
+            "format": "uuid",
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "action"
+        ],
+        "title": "ManagementApplicationAction",
+        "type": "object"
+      },
+      "ManagementJob": {
+        "properties": {
+          "error_code": {
+            "default": "",
+            "title": "Error Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "message": {
+            "default": "",
+            "title": "Message",
+            "type": "string"
+          },
+          "operation": {
+            "title": "Operation",
+            "type": "string"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "operation",
+          "revision"
+        ],
+        "title": "ManagementJob",
+        "type": "object"
+      },
       "McpCatalogOut": {
         "properties": {
           "items": {
@@ -29759,6 +29929,35 @@
           "finished_at"
         ],
         "title": "RunOut",
+        "type": "object"
+      },
+      "RuntimeContext": {
+        "properties": {
+          "local_browser": {
+            "title": "Local Browser",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "local_browser"
+        ],
+        "title": "RuntimeContext",
+        "type": "object"
+      },
+      "RuntimeLogs": {
+        "properties": {
+          "lines": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Lines",
+            "type": "array"
+          }
+        },
+        "required": [
+          "lines"
+        ],
+        "title": "RuntimeLogs",
         "type": "object"
       },
       "RuntimeQuotas": {
@@ -45859,68 +46058,6 @@
         ]
       }
     },
-    "/v1/automation/access": {
-      "get": {
-        "operationId": "access_status_v1_automation_access_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AccessStatus"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Access Status",
-        "tags": [
-          "automation"
-        ]
-      }
-    },
-    "/v1/automation/access/actions": {
-      "post": {
-        "operationId": "access_action_v1_automation_access_actions_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AccessAction"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AccessStatus"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Access Action",
-        "tags": [
-          "automation"
-        ]
-      }
-    },
     "/v1/automation/capabilities": {
       "get": {
         "operationId": "capabilities_v1_automation_capabilities_get",
@@ -53855,6 +53992,255 @@
         "summary": "Attach Model",
         "tags": [
           "local-models"
+        ]
+      }
+    },
+    "/v1/management/access/{target}": {
+      "get": {
+        "operationId": "access_v1_management_access__target__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "target",
+            "required": true,
+            "schema": {
+              "enum": [
+                "business",
+                "management"
+              ],
+              "title": "Target",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndpointState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Access",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/v1/management/access/{target}/actions": {
+      "post": {
+        "operationId": "access_action_v1_management_access__target__actions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "target",
+            "required": true,
+            "schema": {
+              "enum": [
+                "business",
+                "management"
+              ],
+              "title": "Target",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManagementAccessAction"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementJob"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Access Action",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/v1/management/application": {
+      "get": {
+        "operationId": "application_v1_management_application_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Application",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/v1/management/application/actions": {
+      "post": {
+        "operationId": "application_action_v1_management_application_actions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManagementApplicationAction"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementJob"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Application Action",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/v1/management/application/logs": {
+      "get": {
+        "operationId": "application_logs_v1_management_application_logs_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeLogs"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Application Logs",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/v1/management/jobs/{job_id}": {
+      "get": {
+        "operationId": "read_job_v1_management_jobs__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementJob"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Job",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/v1/management/runtime": {
+      "get": {
+        "operationId": "runtime_v1_management_runtime_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeContext"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Runtime",
+        "tags": [
+          "management"
         ]
       }
     },

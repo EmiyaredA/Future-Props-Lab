@@ -220,7 +220,13 @@ test("账号菜单键盘导航及关闭后恢复焦点", async () => {
   await user.click(trigger);
   expect(screen.getByRole("menuitem", { name: "账号设置" })).toHaveFocus();
   await user.keyboard("{ArrowDown}");
-  expect(screen.getByRole("menuitem", { name: "管理中台" })).toHaveFocus();
+  expect(
+    screen.queryByRole("menuitem", { name: "管理中台" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("menuitem", { name: "本地与公网访问" }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole("menuitem", { name: "退出登录" })).toHaveFocus();
   await user.keyboard("{End}");
   expect(screen.getByRole("menuitem", { name: "退出登录" })).toHaveFocus();
   await user.keyboard("{Escape}");

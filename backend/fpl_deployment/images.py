@@ -10,6 +10,7 @@ from pathlib import Path
 ENTRY_POINTS = {
     "rendering": "fpl_rendering.__main__",
     "assets": "fpl_assets.__main__",
+    "management": "fpl_management.__main__",
     "identity": "fpl_identity.__main__",
     "agents": "fpl_agents.__main__",
     "gateway": "fpl_gateway.__main__",
@@ -17,6 +18,7 @@ ENTRY_POINTS = {
 }
 PROJECT_PACKAGES = (
     "app",
+    "fpl_management",
     "fpl_identity",
     "fpl_agents",
     "fpl_gateway",
@@ -72,6 +74,21 @@ def source_closure(root: Path, service):
         name = pending.pop()
         if name in result:
             continue
+        if service == "management" and any(
+            name == prefix or name.startswith(prefix + ".")
+            for prefix in (
+                "app.main",
+                "app.api",
+                "app.orm",
+                "app.deps",
+                "app.apps",
+                "app.llm",
+                "app.console.models",
+                "fpl_identity",
+                "fpl_host",
+            )
+        ):
+            raise ValueError(f"Management 镜像包含越界依赖：{name}")
         if service == "identity" and any(
             name == prefix or name.startswith(prefix + ".") for prefix in FORBIDDEN_IDENTITY
         ):
@@ -229,7 +246,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
                     raise ValueError("文档源码不能是符号链接或位于仓库之外")
                 payloads[path.relative_to(root).as_posix()] = path.read_bytes()
     web_build = None
-    if service in {"agents", "portal", "assets"}:
+    if service in {"agents", "portal", "assets", "management"}:
         if web_release is None:
             payloads["web/.api-only"] = b"No browser program in this API acceptance image.\n"
         else:

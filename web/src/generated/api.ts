@@ -1295,40 +1295,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/automation/access": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Access Status */
-        get: operations["access_status_v1_automation_access_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/automation/access/actions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Access Action */
-        post: operations["access_action_v1_automation_access_actions_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/automation/capabilities": {
         parameters: {
             query?: never;
@@ -3555,6 +3521,125 @@ export interface paths {
         put?: never;
         /** Attach Model */
         post: operations["attach_model_v1_local_models_attach_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/management/access/{target}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Access */
+        get: operations["access_v1_management_access__target__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/management/access/{target}/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Access Action */
+        post: operations["access_action_v1_management_access__target__actions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/management/application": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Application */
+        get: operations["application_v1_management_application_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/management/application/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Application Action */
+        post: operations["application_action_v1_management_application_actions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/management/application/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Application Logs */
+        get: operations["application_logs_v1_management_application_logs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/management/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Job */
+        get: operations["read_job_v1_management_jobs__job_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/management/runtime": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Runtime */
+        get: operations["runtime_v1_management_runtime_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8914,6 +8999,25 @@ export interface components {
             /** Scopes */
             scopes: string[];
         };
+        /** ApplicationState */
+        ApplicationState: {
+            /**
+             * Error
+             * @default
+             */
+            error: string;
+            /**
+             * Force Stop Available
+             * @default false
+             */
+            force_stop_available: boolean;
+            /**
+             * Phase
+             * @default unavailable
+             * @enum {string}
+             */
+            phase: "stopped" | "starting" | "running" | "stopping" | "failed" | "unavailable";
+        };
         /** ArticleBindingInput */
         ArticleBindingInput: {
             /** Connection Id */
@@ -10968,6 +11072,30 @@ export interface components {
             revisions: {
                 [key: string]: number;
             };
+        };
+        /** EndpointState */
+        EndpointState: {
+            /**
+             * Build Id
+             * @default
+             */
+            build_id: string;
+            /**
+             * Error
+             * @default
+             */
+            error: string;
+            /**
+             * Phase
+             * @default unavailable
+             * @enum {string}
+             */
+            phase: "off" | "connecting" | "ready" | "reconnecting" | "failed" | "unavailable";
+            /**
+             * Url
+             * @default
+             */
+            url: string;
         };
         /** EndpointStatus */
         EndpointStatus: {
@@ -15673,6 +15801,57 @@ export interface components {
             /** Username */
             username: string;
         };
+        /** ManagementAccessAction */
+        ManagementAccessAction: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "public_start" | "public_stop" | "check";
+            /**
+             * Request Id
+             * Format: uuid
+             */
+            request_id: string;
+        };
+        /** ManagementApplicationAction */
+        ManagementApplicationAction: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "start" | "stop" | "restart" | "force_stop";
+            /**
+             * Request Id
+             * Format: uuid
+             */
+            request_id: string;
+        };
+        /** ManagementJob */
+        ManagementJob: {
+            /**
+             * Error Code
+             * @default
+             */
+            error_code: string;
+            /** Id */
+            id: string;
+            /**
+             * Message
+             * @default
+             */
+            message: string;
+            /** Operation */
+            operation: string;
+            /** Result */
+            result?: {
+                [key: string]: unknown;
+            } | null;
+            /** Revision */
+            revision: number;
+            /** Status */
+            status: string;
+        };
         /** McpCatalogOut */
         McpCatalogOut: {
             /** Items */
@@ -19252,6 +19431,16 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /** RuntimeContext */
+        RuntimeContext: {
+            /** Local Browser */
+            local_browser: boolean;
+        };
+        /** RuntimeLogs */
+        RuntimeLogs: {
+            /** Lines */
+            lines: string[];
         };
         /** RuntimeQuotas */
         RuntimeQuotas: {
@@ -26490,59 +26679,6 @@ export interface operations {
             };
         };
     };
-    access_status_v1_automation_access_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AccessStatus"];
-                };
-            };
-        };
-    };
-    access_action_v1_automation_access_actions_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AccessAction"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AccessStatus"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     capabilities_v1_automation_capabilities_get: {
         parameters: {
             query?: never;
@@ -31916,6 +32052,196 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    access_v1_management_access__target__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                target: "business" | "management";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EndpointState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    access_action_v1_management_access__target__actions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                target: "business" | "management";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManagementAccessAction"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagementJob"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    application_v1_management_application_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationState"];
+                };
+            };
+        };
+    };
+    application_action_v1_management_application_actions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManagementApplicationAction"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagementJob"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    application_logs_v1_management_application_logs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuntimeLogs"];
+                };
+            };
+        };
+    };
+    read_job_v1_management_jobs__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagementJob"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    runtime_v1_management_runtime_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuntimeContext"];
                 };
             };
         };

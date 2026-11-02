@@ -23,6 +23,9 @@ def parser():
     result.add_argument(
         "--service-credentials", type=Path, default=Path("/run/fpl/service-credentials.json")
     )
+    result.add_argument(
+        "--management-gateway-token", type=Path, default=Path("/run/fpl/management-gateway-token")
+    )
     result.add_argument("--port", type=int, default=8080)
     return result
 
@@ -68,6 +71,11 @@ def run(options):
             local_origin=f"http://127.0.0.1:{settings.fpl_website_port}",
             public_origin=settings.fpl_remote_web_origin,
             private_key=key,
+            management_gateway_token=options.management_gateway_token.read_text().strip()
+            if options.management_gateway_token.exists()
+            else None,
+            management_local_origin=settings.fpl_management_local_origin,
+            management_public_origin=settings.fpl_management_public_origin,
             service_credentials=json.loads(options.service_credentials.read_text())
             if options.service_credentials.exists()
             else {},

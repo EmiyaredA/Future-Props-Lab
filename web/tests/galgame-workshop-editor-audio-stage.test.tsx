@@ -10,6 +10,7 @@ import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { beforeEach, vi } from "vitest";
 import { GalgameWorkshopEditorPage } from "@features/galgame-workshop/editor";
+import { DEFAULT_CHARACTER_TRANSFORM } from "@features/galgame-workshop/editor/stage";
 import {
   getGalgameStoryDocument,
   getGalgameStoryReport,
@@ -740,7 +741,7 @@ test("edits saved dialogue placement and removes all staged actors", async () =>
       characterId: "hero",
       distance: "medium",
       positionId: "position-left",
-      transform: { brightness: 1.4 },
+      transform: { ...DEFAULT_CHARACTER_TRANSFORM, brightness: 1.4 },
     },
     {
       id: "dialogue-one",

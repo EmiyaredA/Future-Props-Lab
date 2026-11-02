@@ -30,7 +30,7 @@ export default defineConfig(async (environment) => {
   const build = process.env.FPL_WEB_BUILD_ID;
   if (
     !service ||
-    !["agents", "portal", "assets"].includes(service) ||
+    !["agents", "portal", "assets", "management"].includes(service) ||
     !build ||
     !/^[a-f0-9]{20}$/.test(build)
   )
@@ -48,7 +48,7 @@ export default defineConfig(async (environment) => {
     plugins: [
       ...(shared.plugins || []),
       programResources(
-        serviceAssets[service as "agents" | "portal" | "assets"],
+        serviceAssets[service as "agents" | "portal" | "assets" | "management"],
       ),
     ],
     define: {

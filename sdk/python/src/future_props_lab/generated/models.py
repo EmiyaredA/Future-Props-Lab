@@ -372,6 +372,11 @@ class ApiKeyOut(WireModel):
     revoked_at: datetime | None = Field(default=..., alias='revoked_at')
     scopes: list[str] = Field(default=..., alias='scopes')
 
+class ApplicationState(WireModel):
+    error: str = Field(default='', alias='error', max_length=500)
+    force_stop_available: bool = Field(default=False, alias='force_stop_available')
+    phase: Literal['stopped', 'starting', 'running', 'stopping', 'failed', 'unavailable'] = Field(default='unavailable', alias='phase')
+
 class ArticleBindingInput(WireModel):
     connection_id: str = Field(default=..., alias='connection_id')
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
@@ -1314,6 +1319,12 @@ class DuplicateOut(WireModel):
 class DuplicateSnapshot(WireModel):
     knowledge_revision: int = Field(default=..., alias='knowledge_revision')
     revisions: dict[str, int] = Field(default=..., alias='revisions')
+
+class EndpointState(WireModel):
+    build_id: str = Field(default='', alias='build_id', max_length=100)
+    error: str = Field(default='', alias='error', max_length=500)
+    phase: Literal['off', 'connecting', 'ready', 'reconnecting', 'failed', 'unavailable'] = Field(default='unavailable', alias='phase')
+    url: str = Field(default='', alias='url', max_length=2048)
 
 class EndpointStatus(WireModel):
     error: str = Field(default='', alias='error')
@@ -3186,6 +3197,23 @@ class LoginIn(WireModel):
     password: str = Field(default=..., alias='password', repr=False)
     username: str = Field(default=..., alias='username')
 
+class ManagementAccessAction(WireModel):
+    action: Literal['public_start', 'public_stop', 'check'] = Field(default=..., alias='action')
+    request_id: str = Field(default=..., alias='request_id')
+
+class ManagementApplicationAction(WireModel):
+    action: Literal['start', 'stop', 'restart', 'force_stop'] = Field(default=..., alias='action')
+    request_id: str = Field(default=..., alias='request_id')
+
+class ManagementJob(WireModel):
+    error_code: str = Field(default='', alias='error_code')
+    id: str = Field(default=..., alias='id')
+    message: str = Field(default='', alias='message')
+    operation: str = Field(default=..., alias='operation')
+    result: dict[str, Any] | None = Field(default=None, alias='result')
+    revision: int = Field(default=..., alias='revision')
+    status: str = Field(default=..., alias='status')
+
 class McpCatalogOut(WireModel):
     items: list[McpOut] = Field(default=..., alias='items')
     overview: IntegrationOverviewOut = Field(default=..., alias='overview')
@@ -4620,6 +4648,12 @@ class RunOut(WireModel):
     source_run_id: str | None = Field(default=..., alias='source_run_id')
     status: str = Field(default=..., alias='status')
     updated_at: datetime = Field(default=..., alias='updated_at')
+
+class RuntimeContext(WireModel):
+    local_browser: bool = Field(default=..., alias='local_browser')
+
+class RuntimeLogs(WireModel):
+    lines: list[str] = Field(default=..., alias='lines')
 
 class RuntimeQuotas(WireModel):
     admin: QuotaLimit = Field(default={'realtime_voice': 2, 'total': 4}, alias='admin')
@@ -6426,6 +6460,7 @@ AnnotationSplitOperation.model_rebuild()
 ApiKeyCreateIn.model_rebuild()
 ApiKeyCreatedOut.model_rebuild()
 ApiKeyOut.model_rebuild()
+ApplicationState.model_rebuild()
 ArticleBindingInput.model_rebuild()
 ArticleBindingOut.model_rebuild()
 ArticleConfig.model_rebuild()
@@ -6586,6 +6621,7 @@ DocumentOut.model_rebuild()
 DuplicateIn.model_rebuild()
 DuplicateOut.model_rebuild()
 DuplicateSnapshot.model_rebuild()
+EndpointState.model_rebuild()
 EndpointStatus.model_rebuild()
 Experience.model_rebuild()
 ExportCreateIn.model_rebuild()
@@ -6846,6 +6882,9 @@ LocalModelAttachIn.model_rebuild()
 LocalModelOut.model_rebuild()
 LocalModelsOut.model_rebuild()
 LoginIn.model_rebuild()
+ManagementAccessAction.model_rebuild()
+ManagementApplicationAction.model_rebuild()
+ManagementJob.model_rebuild()
 McpCatalogOut.model_rebuild()
 McpCreateIn.model_rebuild()
 McpOut.model_rebuild()
@@ -7040,6 +7079,8 @@ RunEventIn.model_rebuild()
 RunEventOut.model_rebuild()
 RunFinishIn.model_rebuild()
 RunOut.model_rebuild()
+RuntimeContext.model_rebuild()
+RuntimeLogs.model_rebuild()
 RuntimeQuotas.model_rebuild()
 RuntimeQuotasIn.model_rebuild()
 RuntimeQuotasOut.model_rebuild()

@@ -1,7 +1,6 @@
 import { LoadingState } from "@shared/ui/LoadingState";
 import { LocalModelsPanel } from "./LocalModelsPanel";
 import type { ReactNode } from "react";
-import "./local-models.css";
 import { AccountDefaults } from "./AccountDefaults";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { QueryFeedback } from "@shared/ui/QueryFeedback";

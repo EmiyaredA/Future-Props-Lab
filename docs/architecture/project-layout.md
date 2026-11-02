@@ -728,3 +728,7 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 ### Models 拆分准备
 
 `llm/catalog/task_usage.py` 定义目录修改所需的显式任务占用接口。`legacy_usage.py` 仅用于迁移期单体，读取其原有任务表并显式限定账号；目录本体不再查询工坊内部表。独立 Models 必须注入自有执行记录的实现，缺少实现时拒绝相关写操作。提供方先验证归属再检查占用，其他账号 ID 仍返回不存在。
+
+## 独立管理服务
+
+`backend/fpl_management/` 拥有管理装配、公开协议、自有运维任务/状态 ORM、显式迁移和 worker 接收协议；不导入其他服务 ORM。Identity 拥有管理会话及用途迁移；Models 拥有模板、额度与演示治理，浏览器经独立管理网关访问这些接口。`backend/fpl_host/management*.py` 拥有 Mac 限定 Compose 控制、双 SSH 生命周期和持久执行回执。`scripts/management/` 拥有一键启动及独立 LaunchAgent。`web/src/app/entries/management.tsx` 拥有独立入口与认证装配，`features/accounts/management/` 拥有运行与访问页面；公开类型来自单独管理 OpenAPI。`deploy/management.compose.yaml` 是独立管理部署叠加清单，`deploy/images/management/` 保存最小依赖锁和镜像定义。验证入口为 `tests/test_management_service.py`、`tests/test_management_host.py` 与 `web/playwright.management.config.ts`。详见[管理服务参考](../reference/management-service.md)。
