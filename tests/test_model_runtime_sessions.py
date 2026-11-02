@@ -19,8 +19,6 @@ from fpl_runtime.database import Database
 def test_model_execution_modules_do_not_import_the_monolith_session_factory():
     root = Path(__file__).resolve().parents[1] / "backend/app/llm"
     for path in root.rglob("*.py"):
-        if path.relative_to(root).as_posix() == "call_logs/credentials.py":
-            continue  # Explicit recovery-website credential adapter, not execution code.
         for node in ast.walk(ast.parse(path.read_text())):
             imports = (
                 [node.module]

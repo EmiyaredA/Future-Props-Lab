@@ -6,9 +6,9 @@ from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 
 from app.capabilities.asset_store.thumbnails import ThumbnailSize
-from app.deps import OwnerDep, SessionDep, StudioAuth
-from app.llm.call_logs.credentials import snapshot_from_principal
+from app.deps import OwnerDep, SessionDep
 from app.llm.catalog.service import ResourceNotFoundError
+from app.llm.http_credentials import CallCredentialDep
 from app.llm.playground.attachments import AttachmentError, ModelTestAttachments
 from app.llm.playground.service import (
     ConversationBusyError,
@@ -164,10 +164,9 @@ async def stream_message(
     owner_user_id: OwnerDep,
     conversation_id: str,
     body: ModelTestSendIn,
-    principal: StudioAuth,
+    credential: CallCredentialDep,
 ) -> StreamingResponse:
     try:
-        credential = await snapshot_from_principal(session, principal)
         prepared = await _service(session, owner_user_id).prepare_send(
             conversation_id,
             body.expected_revision,
@@ -196,10 +195,9 @@ async def regenerate_message(
     owner_user_id: OwnerDep,
     conversation_id: str,
     body: ModelTestRegenerateIn,
-    principal: StudioAuth,
+    credential: CallCredentialDep,
 ) -> StreamingResponse:
     try:
-        credential = await snapshot_from_principal(session, principal)
         prepared = await _service(session, owner_user_id).prepare_regenerate(
             conversation_id, body.expected_revision, credential=credential
         )

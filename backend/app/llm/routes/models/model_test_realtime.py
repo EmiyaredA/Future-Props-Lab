@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, WebSocket
 from app.capabilities.identity.errors import AccountError
 from app.console.governance.runtime_quotas import acquire, release
 from app.deps import SessionDep, StudioAuth, resolve_studio_websocket_principal
-from app.llm.call_logs.credentials import snapshot_caller_credential
+from app.llm.http_credentials import socket_credential
 from app.llm.realtime import list_realtime_models, run_realtime_model_test
 from app.llm.schemas.realtime_voice import RealtimeVoiceOptionsOut
 from app.runtime.config import get_settings
@@ -76,7 +76,7 @@ async def realtime_socket(websocket: WebSocket) -> None:
 
     websocket.send_json = projected_send
     try:
-        credential = await snapshot_caller_credential(principal)
+        credential = await socket_credential(websocket, principal)
         await run_realtime_model_test(
             websocket,
             session_factory=websocket.app.state.database.sessions,

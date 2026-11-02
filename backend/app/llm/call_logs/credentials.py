@@ -20,7 +20,6 @@ from app.llm.credential_snapshot import (
 from app.llm.credential_snapshot import (
     snapshot_from_row as snapshot_from_row,
 )
-from app.runtime.db import SessionLocal
 
 
 class CallerCredential(Protocol):
@@ -52,11 +51,3 @@ async def snapshot_from_principal(
         api_key_name=key.name,
         api_key_prefix=key.key_prefix,
     )
-
-
-async def snapshot_caller_credential(
-    principal: CallerCredential | None,
-) -> CredentialSnapshot:
-    """Read the snapshot in its own short session for socket entry points."""
-    async with SessionLocal() as session:
-        return await snapshot_from_principal(session, principal)

@@ -5,8 +5,8 @@ from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 
 from app.capabilities.asset_store.schemas.files import VisualAssetOut
-from app.deps import OwnerDep, SessionDep, StudioAuth
-from app.llm.call_logs.credentials import snapshot_from_principal
+from app.deps import OwnerDep, SessionDep
+from app.llm.http_credentials import CallCredentialDep
 from app.llm.http_errors import mapped
 from app.llm.inference.assets import InferenceAssets
 from app.llm.inference.catalog import options
@@ -40,10 +40,9 @@ async def generate_text(
     body: InferenceTextIn,
     session: SessionDep,
     owner_user_id: OwnerDep,
-    principal: StudioAuth,
+    credential: CallCredentialDep,
 ):
     args = await mapped(prepare(session, owner_user_id, body))
-    credential = await snapshot_from_principal(session, principal)
     async with aclosing(
         events(
             owner_user_id,
@@ -83,10 +82,9 @@ async def stream_text(
     body: InferenceTextIn,
     session: SessionDep,
     owner_user_id: OwnerDep,
-    principal: StudioAuth,
+    credential: CallCredentialDep,
 ):
     args = await mapped(prepare(session, owner_user_id, body))
-    credential = await snapshot_from_principal(session, principal)
 
     async def stream():
         async with aclosing(
@@ -130,9 +128,8 @@ async def create_task(
     request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
-    principal: StudioAuth,
+    credential: CallCredentialDep,
 ):
-    credential = await snapshot_from_principal(session, principal)
     return await mapped(
         InferenceTasks(session, owner_user_id).create(
             body,
