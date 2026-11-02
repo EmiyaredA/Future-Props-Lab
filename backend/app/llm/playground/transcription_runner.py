@@ -12,7 +12,7 @@ from app.capabilities.transcription import (
     model_supports_transcription,
     safe_transcription_error,
 )
-from app.llm.call_logs.credentials import snapshot_from_row
+from app.llm.credential_snapshot import snapshot_from_row
 from app.llm.models import (
     LlmCallLog,
     ModelEntry,

@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.capabilities.asset_store.assets import VisualAssets
 from app.capabilities.transcription import max_transcription_input_bytes
-from app.llm.call_logs.credentials import CredentialSnapshot
+from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.inference.assets import InferenceAssets, LocalInput, root
 from app.llm.inference.catalog import get_model, normalize_parameters
 from app.llm.models.model_inference import ModelInferenceAsset, ModelInferenceTask

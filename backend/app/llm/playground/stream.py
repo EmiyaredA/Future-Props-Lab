@@ -11,7 +11,7 @@ from sqlalchemy import update
 
 from app.llm.models import LlmCallLog, ModelTestConversation, ModelTestMessage
 from app.llm.playground.service import PreparedGeneration, message_out
-from app.llm.providers import stream_text_completion
+from app.llm.providers.streaming import stream_text_completion
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal
 from app.runtime.ownership import bind_owner

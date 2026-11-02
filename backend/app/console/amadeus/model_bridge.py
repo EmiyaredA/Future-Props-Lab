@@ -11,7 +11,7 @@ from uuid import uuid4
 
 from app.capabilities.agents.harness.contracts import AgentMessage, ImageInput, ToolCall, ToolSpec
 from app.console.amadeus.schemas import ModelTurnIn
-from app.llm.call_logs.credentials import CredentialSnapshot
+from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.inference.catalog import get_model
 from app.llm.models import LlmCallLog
 from app.llm.providers.agent import HttpAgentAdapter

@@ -97,6 +97,48 @@ async def scenario():
             )
             assert actor.user_id == owner and actor.local
             assert actor.reauthenticated_at is not None
+            created_key = await client.post(
+                "/v1/account/api-keys",
+                headers=unsafe,
+                json={"name": "Model attribution fixture", "scopes": ["studio:read"]},
+            )
+            assert created_key.status_code == 201
+            issued = created_key.json()
+            key_headers = {
+                "X-Fpl-Target-Service": "models",
+                "X-Fpl-Request-Method": "GET",
+                "X-Fpl-Request-Uri": "/v1/model-inference/options",
+                "Authorization": "Bearer " + issued["secret"],
+            }
+
+            async def authorize_key():
+                async with httpx.AsyncClient(
+                    transport=transport,
+                    base_url="http://127.0.0.1:19000",
+                    headers={**headers, **key_headers},
+                ) as automation:
+                    return await automation.get("/_internal/v1/authorize")
+
+            key_context = await authorize_key()
+            assert key_context.status_code == 204
+            key_actor = verify_context(
+                key_context.headers[HEADER],
+                service="models",
+                method="GET",
+                path="/v1/model-inference/options",
+                public_key=private.public_key(),
+            )
+            assert key_actor.user_id == owner and not key_actor.local
+            assert key_actor.api_key_name == issued["api_key"]["name"]
+            assert key_actor.api_key_prefix == issued["api_key"]["key_prefix"]
+            assert issued["secret"] not in repr(key_actor)
+            key_revoke = await client.post(
+                "/v1/account/api-keys/" + issued["api_key"]["id"] + "/revoke",
+                headers=unsafe,
+                json={"expected_revision": issued["api_key"]["revision"]},
+            )
+            assert key_revoke.status_code == 200
+            assert (await authorize_key()).status_code == 401
             live_body = {
                 "service": "agents",
                 "method": "GET",

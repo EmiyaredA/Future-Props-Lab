@@ -10,7 +10,7 @@ import pytest
 from sqlalchemy import delete, select
 
 from app.llm.models import LlmCallLog, ModelProvider
-from app.llm.providers import DiagnosticResult
+from app.llm.providers.text import DiagnosticResult
 from app.main import app
 from app.runtime.db import SessionLocal
 from db.migrations.registry import LATEST_MIGRATION_ID

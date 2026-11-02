@@ -11,6 +11,8 @@ from app.console.governance.automation_access import automation_allowed
 from app.deps import authenticate_studio_request
 from fpl_runtime.claims import HEADER, Actor, issue_context
 
+from .credential_metadata import credential_metadata
+
 router = APIRouter()
 
 
@@ -92,6 +94,7 @@ async def authorize(request: Request):
             reauthenticated_at=(
                 principal.reauthenticated_at.isoformat() if principal.reauthenticated_at else None
             ),
+            **await credential_metadata(session, principal),
         )
     token = issue_context(
         actor,

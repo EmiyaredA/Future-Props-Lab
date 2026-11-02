@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from app.llm.call_logs.credentials import snapshot_from_row
+from app.llm.credential_snapshot import snapshot_from_row
 from app.llm.generation_runtime import (
     GenerationMaterializationError,
     GenerationTaskContext,

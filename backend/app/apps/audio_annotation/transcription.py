@@ -20,7 +20,7 @@ from app.capabilities.transcription import (
     safe_transcription_error,
 )
 from app.capabilities.transcription.schemas import ModelTestTranscriptionParametersIn
-from app.llm.call_logs.credentials import CredentialSnapshot
+from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
 from app.llm.providers.transcription import TranscriptionResult, transcribe_model_audio
 from app.runtime.credentials import decrypt_secret

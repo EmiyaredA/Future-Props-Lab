@@ -181,6 +181,7 @@ Future-Props-Lab/
   `vendor/pi/` 仅保留历史来源快照，不参与 Amadeus 构建。进程监督由桌面独立工具入口提供，
   不复用携带后端凭据的服务进程。
 
+- `llm/credential_snapshot.py` 保存纯调用归因快照，不导入账号 ORM 或数据库。单体凭证解析仍在 `llm/call_logs/credentials.py`；独立服务只读取 Identity 签名账号上下文中的 API Key ID、显示名与前缀，不跨库读取账号或密钥。
 - `llm/catalog/` 拥有供应商分组、接入连接与模型目录。`supplier_records.py` 提供账号限定的
   分组读取及安全输出，`suppliers.py` 通过目录统一 CAS 执行分组写入；协议边界位于
   `llm/routes/models/suppliers.py`。供应商不持有密钥或启停状态，连接通过 `supplier_id` 显式归组。

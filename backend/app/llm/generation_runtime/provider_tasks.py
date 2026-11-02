@@ -9,13 +9,6 @@ from app.llm.generation_runtime.driver import ImmediateGenerationResult
 from app.llm.generation_runtime.media import GenerationMaterializationError
 from app.llm.providers import (
     autodl_video,
-    create_image_task,
-    create_music_task,
-    create_sound_effect,
-    create_video_task,
-    get_image_task,
-    get_music_task,
-    get_video_task,
     volcengine_video,
 )
 from app.llm.providers._senseaudio import (
@@ -23,6 +16,13 @@ from app.llm.providers._senseaudio import (
     SenseAudioProviderError,
     sanitize_provider_message,
 )
+from app.llm.providers.senseaudio_audio import (
+    create_music_task,
+    create_sound_effect,
+    get_music_task,
+)
+from app.llm.providers.senseaudio_image import create_image_task, get_image_task
+from app.llm.providers.senseaudio_video import create_video_task, get_video_task
 from app.llm.providers.temporary_media import TemporaryMediaError, upload_temporary_media
 from app.llm.providers.volcengine_image import generate_image
 from app.runtime.outbound_urls import require_safe_provider_base_url

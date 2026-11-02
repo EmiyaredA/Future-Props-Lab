@@ -19,7 +19,7 @@ from app.capabilities.transcription import (
     parameter_capabilities,
     resolve_parameters,
 )
-from app.llm.call_logs.credentials import CredentialSnapshot
+from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.models import ModelEntry, ModelProvider, ModelTestTranscriptionTask
 from app.llm.providers.senseaudio_asr import MAX_ASR_FILE_BYTES
 from app.llm.schemas.model_test import (

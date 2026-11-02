@@ -39,8 +39,8 @@ from app.llm.models import (
     ModelEntry,
     ModelProvider,
 )
-from app.llm.providers import ChatMessageInput
 from app.llm.providers.chat_completions import TEXT_PROVIDER_KINDS
+from app.llm.providers.streaming import ChatMessageInput
 from app.runtime.config import Settings, get_settings
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import iso_utc, utc_now

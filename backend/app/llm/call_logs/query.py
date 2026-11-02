@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy import case, func, or_, select
 
-from app.llm.call_logs.credentials import SESSION_AUTH, SESSION_FILTER
+from app.llm.credential_snapshot import SESSION_AUTH, SESSION_FILTER
 from app.llm.models import LlmCallLog
 from app.llm.schemas.call_log import CallLogStatsOut
 

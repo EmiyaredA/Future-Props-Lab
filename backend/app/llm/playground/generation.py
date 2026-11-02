@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.thumbnails import ThumbnailSize, derived_thumbnail
-from app.llm.call_logs.credentials import CredentialSnapshot
+from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.models import (
     ModelEntry,
     ModelProvider,

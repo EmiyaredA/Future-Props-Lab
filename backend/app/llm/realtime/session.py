@@ -9,7 +9,7 @@ from typing import Any
 
 from fastapi import WebSocket, WebSocketDisconnect
 
-from app.llm.call_logs.credentials import CredentialSnapshot
+from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.models import LlmCallLog
 from app.llm.providers.realtime.constants import (
     SENSEAUDIO_DEFAULT_VOICE,

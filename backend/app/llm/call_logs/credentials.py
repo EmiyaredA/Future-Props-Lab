@@ -2,17 +2,25 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
 from typing import Protocol
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.console.models.accounts import ManagementApiKey
+from app.llm.credential_snapshot import (
+    MANAGEMENT_API_KEY_AUTH,
+    SESSION_AUTH,
+)
+from app.llm.credential_snapshot import (
+    SESSION_FILTER as SESSION_FILTER,
+)
+from app.llm.credential_snapshot import (
+    CredentialSnapshot as CredentialSnapshot,
+)
+from app.llm.credential_snapshot import (
+    snapshot_from_row as snapshot_from_row,
+)
 from app.runtime.db import SessionLocal
-
-SESSION_AUTH = "session"
-MANAGEMENT_API_KEY_AUTH = "management_api_key"
-SESSION_FILTER = "session"
 
 
 class CallerCredential(Protocol):
@@ -23,21 +31,6 @@ class CallerCredential(Protocol):
 
     @property
     def api_key_id(self) -> str | None: ...
-
-
-@dataclass(frozen=True)
-class CredentialSnapshot:
-    auth_kind: str | None = None
-    api_key_id: str | None = None
-    api_key_name: str | None = None
-    api_key_prefix: str | None = None
-
-    def as_kwargs(self) -> dict[str, str | None]:
-        return asdict(self)
-
-    def apply(self, row) -> None:
-        for key, value in self.as_kwargs().items():
-            setattr(row, key, value)
 
 
 async def snapshot_from_principal(
@@ -67,12 +60,3 @@ async def snapshot_caller_credential(
     """Read the snapshot in its own short session for socket entry points."""
     async with SessionLocal() as session:
         return await snapshot_from_principal(session, principal)
-
-
-def snapshot_from_row(row) -> CredentialSnapshot:
-    return CredentialSnapshot(
-        auth_kind=getattr(row, "auth_kind", None),
-        api_key_id=getattr(row, "api_key_id", None),
-        api_key_name=getattr(row, "api_key_name", None),
-        api_key_prefix=getattr(row, "api_key_prefix", None),
-    )

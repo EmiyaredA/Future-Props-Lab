@@ -7,7 +7,7 @@ from uuid import uuid4
 from sqlalchemy import select
 
 from app.console.models import User
-from app.llm.call_logs.credentials import snapshot_from_row
+from app.llm.credential_snapshot import snapshot_from_row
 from app.llm.generation_runtime import (
     GenerationTaskDriver,
     GenerationTaskStore,

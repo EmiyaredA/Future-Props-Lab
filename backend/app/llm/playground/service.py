@@ -20,8 +20,8 @@ from app.llm.playground.attachments import (
     ModelTestAttachments,
     attachment_out,
 )
-from app.llm.providers import ChatMessageInput, ImageInput
 from app.llm.providers.chat_completions import TEXT_PROVIDER_KINDS
+from app.llm.providers.streaming import ChatMessageInput, ImageInput
 from app.llm.schemas.model_test import (
     ModelTestConversationCreateIn,
     ModelTestConversationListOut,

@@ -4,7 +4,7 @@ from time import monotonic
 from uuid import uuid4
 
 from app.capabilities.agents.harness.contracts import ImageInput
-from app.llm.call_logs.credentials import CredentialSnapshot
+from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.inference.assets import InferenceAssets, root
 from app.llm.inference.catalog import get_model
 from app.llm.models import LlmCallLog

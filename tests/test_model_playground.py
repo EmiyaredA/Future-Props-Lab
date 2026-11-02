@@ -20,7 +20,7 @@ from app.llm.models import (
 )
 from app.llm.playground.service import ModelTestService
 from app.llm.playground.stream import generation_events
-from app.llm.providers import TextDelta
+from app.llm.providers.streaming import TextDelta
 from app.llm.schemas.model_test import ModelTestConversationCreateIn
 from app.main import app
 from app.runtime.credentials import encrypt_secret
