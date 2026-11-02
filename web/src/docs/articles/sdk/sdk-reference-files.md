@@ -18,6 +18,7 @@
 | [preview_file](#preview-file) | `GET /v1/files/{asset_id}/content` |
 | [download_file](#download-file) | `GET /v1/files/{asset_id}/download` |
 | [video_media_info](#video-media-info) | `GET /v1/files/{asset_id}/media-info` |
+| [file_preview_metadata](#file-preview-metadata) | `GET /v1/files/{asset_id}/preview` |
 | [preview_thumbnail](#preview-thumbnail) | `GET /v1/files/{asset_id}/thumbnail` |
 | [patch_file_folder](#patch-file-folder) | `PATCH /v1/file-folders/{folder_id}` |
 | [patch_file](#patch-file) | `PATCH /v1/files/{asset_id}` |
@@ -211,6 +212,25 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## file_preview_metadata {#file-preview-metadata}
+
+`client.files.file_preview_metadata(...)`
+
+**接口**：`GET /v1/files/{asset_id}/preview`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `asset_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `FilePreviewOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## preview_thumbnail {#preview-thumbnail}
 
 `client.files.preview_thumbnail(...)`
@@ -225,6 +245,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | --- | --- | --- | --- |
 | `asset_id` | path | string | 是 |
 | `size` | query | 128 / 320 / 640 / 1280 | 否 |
+| `page` | query | integer | 否 |
 
 **响应**：
 - `200` · `image/svg+xml` · `string`
