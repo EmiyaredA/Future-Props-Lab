@@ -4497,6 +4497,12 @@
       "service": "models",
       "module": "fpl_models.models",
       "model": "QuotaPolicy"
+    },
+    {
+      "table": "model_task_authorizations",
+      "service": "models",
+      "module": "fpl_models.models",
+      "model": "TaskAuthorization"
     }
   ],
   "partitions": {

@@ -4,23 +4,18 @@ from sqlalchemy import case, exists, func, or_, select, text
 
 from app.capabilities.identity.errors import AccountError
 from app.llm.admission import AdmissionBindings
-from app.llm.models import ModelInferenceTask, ModelTestGenerationTask, ModelTestTranscriptionTask
 from app.llm.models.runtime_admission import RuntimeAdmission as Admission
 from app.llm.task_outcomes import (
     SUBMISSION_INTERRUPTED_MESSAGE,
     TERMINAL_STATUSES,
     confirmed_terminal,
 )
+from app.runtime.ids import new_id
 from app.runtime.task_records import load_runner_task
 from app.runtime.time import utc_now
 
 from .quotas import QuotaPolicies
-
-TASK_MODELS = {
-    "inference": ModelInferenceTask,
-    "model": ModelTestGenerationTask,
-    "transcription": ModelTestTranscriptionTask,
-}
+from .task_records import TASK_MODELS
 
 
 def require_principal(principal):
@@ -176,25 +171,39 @@ class ModelAdmission:
 
     async def acquire(self, principal, *, voice=False, weight=1):
         require_principal(principal)
-        async with self.sessions(info={"owner_user_id": principal.owner_user_id}) as session:
-            await session.execute(text("BEGIN IMMEDIATE"))
-            await check_capacity(
-                session,
-                owner=principal.owner_user_id,
-                role=principal.platform_role,
-                voice=voice,
-                weight=weight,
-            )
-            lease = Admission(
-                user_id=principal.user_id,
-                owner_user_id=principal.owner_user_id,
-                platform_role=principal.platform_role,
-                realtime_voice=voice,
-                weight=weight,
-            )
-            session.add(lease)
-            await session.commit()
-            return lease.id
+        lease_id, committing = new_id(), False
+        try:
+            async with self.sessions(info={"owner_user_id": principal.owner_user_id}) as session:
+                await session.execute(text("BEGIN IMMEDIATE"))
+                await check_capacity(
+                    session,
+                    owner=principal.owner_user_id,
+                    role=principal.platform_role,
+                    voice=voice,
+                    weight=weight,
+                )
+                session.add(
+                    Admission(
+                        id=lease_id,
+                        user_id=principal.user_id,
+                        owner_user_id=principal.owner_user_id,
+                        platform_role=principal.platform_role,
+                        realtime_voice=voice,
+                        weight=weight,
+                    )
+                )
+                committing = True
+                await session.commit()
+            return lease_id
+        except BaseException as exc:
+            # The commit may already have succeeded, but the caller never received the
+            # ID and cannot release it. This function has not authorized/created a job.
+            if committing:
+                try:
+                    await self.release(lease_id)
+                except Exception:
+                    exc.add_note("模型额度释放状态未确认；启动恢复将继续核对")
+            raise
 
     async def attach(self, session, lease_id, kind, task_ids):
         """Attach inside the task creation transaction; immutable replay cannot change tasks."""

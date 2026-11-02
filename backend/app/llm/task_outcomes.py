@@ -4,5 +4,9 @@ SUBMISSION_INTERRUPTED_MESSAGE = "应用在提交供应商任务期间中断；�
 TERMINAL_STATUSES = ("completed", "succeeded", "failed", "cancelled", "canceled")
 
 
+class TaskClaimRejected(ValueError):
+    """A queued task may be rejected only inside its serialized claim transaction."""
+
+
 def confirmed_terminal(task):
     return task.status in TERMINAL_STATUSES and task.error_message != SUBMISSION_INTERRUPTED_MESSAGE

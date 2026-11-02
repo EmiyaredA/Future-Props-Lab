@@ -72,11 +72,25 @@ class QuotaPolicy(ModelsBase):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
 
 
+class TaskAuthorization(ModelsBase):
+    __tablename__ = "model_task_authorizations"
+    __table_args__ = (CheckConstraint("kind IN ('inference', 'model', 'transcription')"),)
+    kind: Mapped[str] = mapped_column(String(24), primary_key=True)
+    task_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    source_method: Mapped[str] = mapped_column(String(12))
+    source_path: Mapped[str] = mapped_column(String(4096))
+    assertion: Mapped[str] = mapped_column(String(8192))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
 MODELS = (
     AccountDefaults,
     CatalogProvisioningReceipt,
     RoleTemplate,
     QuotaPolicy,
+    TaskAuthorization,
     LlmCallLog,
     LocalModelInstallation,
     LocalModelOperation,

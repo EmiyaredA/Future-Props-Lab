@@ -132,6 +132,31 @@ async def test_per_account_voice_limits_and_release_are_independent(database):
     assert await ledger.acquire(actor("beta"), voice=True)
 
 
+@pytest.mark.parametrize("failure", [asyncio.CancelledError, RuntimeError])
+async def test_failed_reservation_response_releases_unreturned_lease(database, failure):
+    sessions = database.sessions
+    interrupt = [True]
+
+    def interrupted_sessions(*args, **kwargs):
+        session = sessions(*args, **kwargs)
+        commit = session.commit
+
+        async def interrupted_commit():
+            await commit()
+            if interrupt[0]:
+                interrupt[0] = False
+                raise failure("synthetic interruption after commit")
+
+        session.commit = interrupted_commit
+        return session
+
+    with pytest.raises(failure):
+        await ModelAdmission(interrupted_sessions).acquire(actor())
+    async with sessions(info={"owner_user_id": "alpha"}) as session:
+        leases = list(await session.scalars(select(Admission)))
+        assert len(leases) == 1 and leases[0].released_at is not None
+
+
 @pytest.mark.parametrize("principal", [actor(scopes=()), actor(must_change=True)])
 async def test_unusable_principal_cannot_reserve(database, principal):
     with pytest.raises(AccountError, match="account_access_forbidden"):

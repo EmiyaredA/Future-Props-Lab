@@ -13,7 +13,7 @@ from app.llm.generation_runtime.poll_recovery import POLL_RETRY_PREFIX, is_trans
 from app.llm.local_models.catalog import credential_ready
 from app.llm.models import ModelProvider
 from app.llm.task_execution import TaskExecutionInfo
-from app.llm.task_outcomes import SUBMISSION_INTERRUPTED_MESSAGE
+from app.llm.task_outcomes import SUBMISSION_INTERRUPTED_MESSAGE, TaskClaimRejected
 from app.runtime.credentials import decrypt_secret
 from app.runtime.ownership import require_owner_id
 from app.runtime.task_records import load_runner_task, recovery_accounts
@@ -53,6 +53,8 @@ PollHook = Callable[[GenerationTaskContext], Awaitable[ProviderTaskStatus]]
 MaterializeHook = Callable[[str, str], Awaitable[None]]
 ErrorMapper = Callable[[Exception], str]
 ClaimAdmission = Callable[[AsyncSession, Any], Awaitable[bool]]
+PrepareClaim = Callable[[str], Awaitable[ClaimAdmission | None]]
+TerminalSettlement = Callable[[AsyncSession], Awaitable[Any]]
 
 
 class GenerationTaskStore:
@@ -67,6 +69,8 @@ class GenerationTaskStore:
         task_subject: str,
         terminal_hook: TerminalHook | None = None,
         claim_admission: ClaimAdmission | None = None,
+        prepare_claim: PrepareClaim | None = None,
+        terminal_settlement: TerminalSettlement | None = None,
     ) -> None:
         self.session_factory = session_factory
         self.task_type = task_type
@@ -74,6 +78,8 @@ class GenerationTaskStore:
         self.task_subject = task_subject
         self.terminal_hook = terminal_hook
         self.claim_admission = claim_admission
+        self.prepare_claim = prepare_claim
+        self.terminal_settlement = terminal_settlement
 
     async def load(self, session: AsyncSession, task_id: str) -> Any | None:
         return await load_runner_task(session, self.task_type, task_id, subject=self.task_subject)
@@ -97,7 +103,7 @@ class GenerationTaskStore:
                     row.error_message = SUBMISSION_INTERRUPTED_MESSAGE
                     row.revision += 1
                     row.updated_at = utc_now()
-                    self._on_terminal(session, row)
+                    await self._on_terminal(session, row)
                 await session.commit()
 
     async def active_task_ids(
@@ -122,8 +128,12 @@ class GenerationTaskStore:
             )
 
     async def claim(self, task_id: str) -> GenerationTaskContext | None:
+        # Identity/network work finishes before the SQLite writer transaction starts.
+        prepared = await self.prepare_claim(task_id) if self.prepare_claim else None
+        if self.prepare_claim is not None and prepared is None:
+            return None
         async with self.session_factory() as session:
-            if self.claim_admission is not None:
+            if self.claim_admission is not None or prepared is not None:
                 await session.execute(text("BEGIN IMMEDIATE"))
             task = await self.load(session, task_id)
             if task is None or task.status not in self.active_statuses:
@@ -135,6 +145,21 @@ class GenerationTaskStore:
                 context = self._context(task, owner_user_id=owner_user_id)
                 await session.rollback()
                 return context
+
+            if status == "queued" and prepared is not None:
+                try:
+                    allowed = await prepared(session, task)
+                except TaskClaimRejected as exc:
+                    task.status = "failed"
+                    task.error_message = str(exc)[:4000]
+                    task.revision += 1
+                    task.updated_at = utc_now()
+                    await self._on_terminal(session, task)
+                    await session.commit()
+                    return None
+                if not allowed:
+                    await session.rollback()
+                    return None
 
             provider = (
                 await session.get(ModelProvider, task.provider_id) if task.provider_id else None
@@ -267,7 +292,7 @@ class GenerationTaskStore:
                 await session.rollback()
                 return
             await session.refresh(task)
-            self._on_terminal(session, task)
+            await self._on_terminal(session, task)
             await session.commit()
 
     def _context(
@@ -291,9 +316,11 @@ class GenerationTaskStore:
             owner_user_id=owner_user_id,
         )
 
-    def _on_terminal(self, session: AsyncSession, task: Any) -> None:
+    async def _on_terminal(self, session: AsyncSession, task: Any) -> None:
         if self.terminal_hook is not None:
             self.terminal_hook(session, task)
+        if self.terminal_settlement is not None:
+            await self.terminal_settlement(session)
 
 
 class GenerationTaskDriver:
