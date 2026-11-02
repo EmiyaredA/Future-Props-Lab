@@ -26,9 +26,7 @@ class VisualAssetFolder(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
-    project_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("visual_workshop_projects.id", ondelete="CASCADE")
-    )
+    project_id: Mapped[str | None] = mapped_column(String(36))
     parent_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("visual_asset_folders.id", ondelete="CASCADE")
     )
@@ -54,18 +52,10 @@ class VisualAsset(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
-    project_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("visual_workshop_projects.id", ondelete="CASCADE")
-    )
-    galgame_project_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("galgame_workshop_projects.id", ondelete="CASCADE")
-    )
-    video_editor_project_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("video_editor_projects.id", ondelete="CASCADE")
-    )
-    motion_compositor_project_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("motion_compositor_projects.id", ondelete="CASCADE")
-    )
+    project_id: Mapped[str | None] = mapped_column(String(36))
+    galgame_project_id: Mapped[str | None] = mapped_column(String(36))
+    video_editor_project_id: Mapped[str | None] = mapped_column(String(36))
+    motion_compositor_project_id: Mapped[str | None] = mapped_column(String(36))
     folder_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("visual_asset_folders.id", ondelete="CASCADE")
     )

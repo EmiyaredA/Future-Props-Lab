@@ -12,14 +12,21 @@ from app.runtime.orm_base import Base
 
 
 class VisualAssetContext:
-    def __init__(self, session: AsyncSession, settings: Settings, owner_user_id: str) -> None:
+    def __init__(
+        self, session: AsyncSession, settings: Settings, owner_user_id: str, *, project_exists=None
+    ) -> None:
         self.session = session
         self.settings = settings
         self.owner_user_id = owner_user_id
         self.storage = AssetStorage(settings)
         self.library = AssetLibrary(session, settings)
+        self.project_exists = project_exists
 
     async def _project(self, project_id: str) -> None:
+        if self.project_exists is not None:
+            if not await self.project_exists(project_id):
+                raise AssetError("项目不存在", code="not_found", status=404)
+            return
         projects = Base.metadata.tables.get("visual_workshop_projects")
         if (
             projects is None

@@ -19,6 +19,10 @@
 
 `backend/fpl_identity/` 装配独立账号 ASGI 应用、账号事件、显式维护入口及自有 `migrations/`；不加载门户、工坊或模型 ORM。`console/governance/account_creation.py` 接受显式事务初始化回调，旧 `provisioning.py` 仅承担单体目录初始化适配；账号与注册路由使用装配时注入的用例。
 
+`backend/fpl_assets/` 拥有正在拆分的文件用例、素材保留集合、幂等回执与持久删除队列。`references.py` 在同一短写事务中校验归属、CAS、资源版本和全部素材，替换集合并记录不可变回执；应用提交作品前先保留旧与新素材的并集，提交后再收敛。`files.py` 只访问自有文件和文件夹，通过显式项目验证与引用查询接口保持原行为；`deletions.py` 在数据库提交后逐文件清理，可在进程中断后恢复，不递归清空目录。该包的完整 HTTP 装配、引用调用方和 Docker 入口仍待接通，不能视为 Assets 已可正式部署。
+
+`capabilities/asset_store/folders.py` 复用同属文件能力的文件夹 CAS、名称和深度规则；`asset_context.py` 允许显式注入项目验证。新 Assets 数据库将外部项目 ID 视为不透明标识，仅保留自有表外键；旧迁移与数据库外键保持原样，迁移期单体继续使用旧适配。`fpl_runtime/asset_references.py` 维护受限消费方、资源种类和版本化引用消息，不接受客户端指定归属。
+
 `backend/fpl_agents/` 装配独立工作台，拥有自有迁移、原生任务、来源订阅、投影回执、协调器与私有协议；复用工作台的阅读、搜索、CAS 和投影用例，不加载账号 ORM 或 Mac 解析器。`fpl_runtime/http_dependencies.py` 只消费签名身份；`change_stream.py` 使用显式实时授权与数据库会话，旧 `events.py` 保留单体身份适配。
 
 `backend/fpl_host/` 是独立 Mac 原生采集 CLI，仅发起受认证回环请求，读取明确来源的原生会话及引用附件。`collector.py` 管理有界任务，`follow.py` 跟随原生日志或事件，`follow_journal.py` 持久化单帧确认状态，`receipts.py` 保存一次性操作意图与结果；不确定动作不重做，跟随仅按原任务、租约和服务端检查点继续。容器镜像不包含此包。

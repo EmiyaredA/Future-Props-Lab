@@ -68,7 +68,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["backend/app", "backend/fpl_config", "backend/fpl_runtime", "backend/fpl_deployment", "backend/fpl_identity", "backend/fpl_agents", "backend/fpl_host", "backend/fpl_gateway", "db"]
+packages = ["backend/app", "backend/fpl_config", "backend/fpl_runtime", "backend/fpl_deployment", "backend/fpl_identity", "backend/fpl_agents", "backend/fpl_host", "backend/fpl_gateway", "backend/fpl_assets", "db"]
 
 [tool.uv.sources]
 future-props-lab-sdk = { path = "sdk/python", editable = true }

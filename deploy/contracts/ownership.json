@@ -4409,6 +4409,30 @@
       "model": "NativeWorkerSeen"
     },
     {
+      "table": "asset_reference_sets",
+      "service": "assets",
+      "module": "fpl_assets.models",
+      "model": "AssetReferenceSet"
+    },
+    {
+      "table": "asset_reference_pins",
+      "service": "assets",
+      "module": "fpl_assets.models",
+      "model": "AssetReferencePin"
+    },
+    {
+      "table": "asset_reference_receipts",
+      "service": "assets",
+      "module": "fpl_assets.models",
+      "model": "AssetReferenceReceipt"
+    },
+    {
+      "table": "asset_file_deletions",
+      "service": "assets",
+      "module": "fpl_assets.models",
+      "model": "AssetDeletion"
+    },
+    {
       "table": "gateway_change_cursors",
       "service": "gateway",
       "module": "fpl_gateway.models",
