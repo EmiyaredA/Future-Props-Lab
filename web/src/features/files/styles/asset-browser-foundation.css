@@ -1,10 +1,10 @@
 .file-management-page {
   min-height: 100vh;
-  padding: 28px 32px 48px;
+  padding: 20px var(--page-gutter) 36px;
 }
 
 .file-management-page > header {
-  margin-bottom: 22px;
+  margin-bottom: 18px;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -15,7 +15,7 @@
 .file-management-page > header h1 {
   margin: 0 0 6px;
   color: var(--text-strong);
-  font-size: 28px;
+  font-size: 24px;
 }
 
 .file-management-page > header p {
@@ -543,4 +543,26 @@ button.file-item-main:focus-visible {
   font-size: 8.5px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.file-management-page .file-browser {
+  padding: 14px;
+}
+.file-management-page .file-browser-controls {
+  margin-bottom: 14px;
+}
+.file-management-page :is(.file-browser-toolbar, .file-browser-filters) {
+  min-height: 50px;
+  padding: 7px 10px;
+  gap: 12px;
+}
+.file-management-page .file-items.grid article {
+  min-height: 174px;
+}
+.file-management-page .file-item-main {
+  padding: 16px 48px 12px 14px;
+}
+.file-management-page .file-item-footer {
+  min-height: 42px;
+  padding: 7px 10px 7px 13px;
 }

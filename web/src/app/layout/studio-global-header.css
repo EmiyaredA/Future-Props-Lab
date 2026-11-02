@@ -2,13 +2,13 @@
   position: relative;
   z-index: 40;
   flex: none;
-  min-height: 40px;
+  min-height: 36px;
   display: flex;
   justify-content: flex-end;
   align-items: center;
   gap: 8px;
   margin: 0;
-  padding: 4px var(--page-gutter);
+  padding: 2px var(--page-gutter);
 }
 .studio-header-start,
 .studio-header-theme,
@@ -183,5 +183,21 @@
   }
   .studio-header-theme .theme-toggle button {
     padding: 3px 7px;
+  }
+}
+
+.studio-global-header .account-identity-avatar {
+  width: 30px;
+  height: 30px;
+  flex-basis: 30px;
+  border-radius: 10px;
+}
+
+@media (pointer: coarse) {
+  .studio-global-header .studio-header-theme .theme-toggle button,
+  .studio-global-header .account-menu-trigger,
+  .studio-global-header button,
+  .studio-global-header .studio-docs-link {
+    min-height: 44px;
   }
 }

@@ -66,6 +66,7 @@ export type {
 const CANVAS_MEDIA_KINDS = new Set(["image", "video", "audio"]);
 
 export function AssetBrowser({
+  initialKind,
   projectId,
   compact = false,
   importSource,
@@ -78,6 +79,7 @@ export function AssetBrowser({
   onImported,
   onAssetDragStart,
 }: {
+  initialKind?: string;
   projectId?: string;
   compact?: boolean;
   importSource?: AssetImportSource;
@@ -168,6 +170,7 @@ export function AssetBrowser({
     editorSubmitLabel,
     editorSubmitDisabled,
   } = useAssetBrowserController({
+    initialKind,
     projectId,
     compact,
     importSource,

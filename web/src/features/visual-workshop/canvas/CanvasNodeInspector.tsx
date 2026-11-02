@@ -273,8 +273,16 @@ export function CanvasNodeInspector({
         >
           <button
             role="tab"
-            aria-selected={tab !== "acceptance"}
-            className={tab !== "acceptance" ? "active" : ""}
+            aria-selected={tab === "content"}
+            className={tab === "content" ? "active" : ""}
+            onClick={() => setTab("content")}
+          >
+            素材
+          </button>
+          <button
+            role="tab"
+            aria-selected={tab === "generate"}
+            className={tab === "generate" ? "active" : ""}
             onClick={() => setTab("generate")}
           >
             生成设置

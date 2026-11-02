@@ -79,6 +79,7 @@ export type DirectorDeskPage = Extract<WorkshopPage, `director-desk-${string}`>;
 export type AppPage = StudioPage | WorkshopPage;
 
 export type AppRoute = {
+  search?: string;
   page: AppPage;
   projectId?: string;
   documentId?: string;
@@ -129,7 +130,14 @@ export function parsePage(pathname = window.location.pathname): AppPage {
   return parseRoute(pathname).page;
 }
 
-export function parseRoute(pathname = window.location.pathname): AppRoute {
+export function parseRoute(
+  path = window.location.pathname + window.location.search,
+): AppRoute {
+  const url = new URL(path, window.location.origin);
+  return { ...parsePathRoute(url.pathname), search: url.search || undefined };
+}
+
+function parsePathRoute(pathname: string): AppRoute {
   if (pathname.startsWith("/management/invites"))
     return { page: "management-invites" };
   if (pathname.startsWith("/management/settings"))

@@ -1,5 +1,5 @@
 import { publicImageSources } from "@shared/lib/imageSources";
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, vi } from "vitest";
 import { APPLICATION_DEFINITIONS } from "@app/applicationRegistry";
@@ -16,21 +16,60 @@ beforeEach(() => {
   vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
 });
 
-test("home keeps the three destinations equal and links model shortcuts", async () => {
+test("home showcases application folders and keeps test mode on navigation", async () => {
   const user = userEvent.setup();
   const navigate = vi.fn();
-  render(<HomePage onNavigate={navigate} />);
+  render(
+    <HomePage applications={APPLICATION_DEFINITIONS} onNavigate={navigate} />,
+  );
+  expect(screen.getByRole("heading", { name: "AI 应用" })).toBeInTheDocument();
+  const folder = screen.getByRole("button", { name: "视觉与叙事，3 个应用" });
+  expect(folder).toHaveAttribute("aria-expanded", "false");
   expect(
-    screen.getByRole("heading", { name: "今天想从哪里开始？" }),
-  ).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: /应用/ })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: /工具导航/ })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: /AI 能力/ })).toBeInTheDocument();
-  expect(screen.queryByText("视觉创作工坊")).not.toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: /浏览应用/ }));
-  expect(navigate).toHaveBeenCalledWith("/apps");
-  await user.click(screen.getByRole("button", { name: /模型测试/ }));
-  expect(navigate).toHaveBeenCalledWith("/model-test");
+    screen.queryByRole("button", { name: "打开视觉创作工坊" }),
+  ).not.toBeInTheDocument();
+  folder.focus();
+  await user.keyboard("{Enter}");
+  await user.keyboard("{Tab}");
+  expect(
+    screen.getByRole("button", { name: "打开视觉创作工坊" }),
+  ).toHaveFocus();
+  await user.click(screen.getByRole("button", { name: "打开视觉创作工坊" }));
+  expect(navigate).toHaveBeenCalledWith("/apps/visual-workshop");
+  await user.keyboard("{Escape}");
+  expect(folder).toHaveFocus();
+  expect(folder).toHaveAttribute("aria-expanded", "false");
+  await user.keyboard(" ");
+  expect(folder).toHaveAttribute("aria-expanded", "true");
+  await user.click(screen.getByRole("button", { name: "图像" }));
+  await user.click(screen.getByRole("button", { name: /开始测试/ }));
+  expect(navigate).toHaveBeenLastCalledWith("/model-test?mode=image");
+  await user.click(screen.getByRole("button", { name: /全部应用/ }));
+  expect(navigate).toHaveBeenLastCalledWith("/apps");
+});
+
+test("home resources collapse independently and host tools follow permissions", async () => {
+  const user = userEvent.setup();
+  const { container } = render(
+    <HomePage onNavigate={vi.fn()} canReadLogs={false} />,
+  );
+  const tools = container.querySelector("#home-tools")! as HTMLElement;
+  const files = container.querySelector("#home-files")! as HTMLElement;
+  await user.click(within(tools).getByRole("button", { name: "收起" }));
+  expect(within(tools).getByRole("button", { name: "展开" })).toHaveAttribute(
+    "aria-expanded",
+    "false",
+  );
+  expect(within(files).getByRole("button", { name: "收起" })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
+  expect(
+    screen.queryByRole("button", { name: /Codex 模型源/ }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: /调用日志/ }),
+  ).not.toBeInTheDocument();
 });
 
 test("home plays bundled Kurisu and pauses while the page is hidden", () => {
@@ -66,7 +105,7 @@ test("home keeps its static poster when media fails", () => {
   );
 });
 
-test("home uses a static image under reduced motion and follows preference changes", () => {
+test("home uses a static image under reduced motion and follows preference changes", async () => {
   let listener = () => {};
   const preference = {
     matches: true,
@@ -81,7 +120,7 @@ test("home uses a static image under reduced motion and follows preference chang
   const { container } = render(<HomePage onNavigate={vi.fn()} />);
   expect(container.querySelector("video")).toBeNull();
   preference.matches = false;
-  act(() => listener());
+  await act(async () => listener());
   expect(container.querySelector("video")).not.toBeNull();
 });
 

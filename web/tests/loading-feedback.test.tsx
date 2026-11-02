@@ -88,6 +88,8 @@ test("progress remains bounded and public icons select precomputed WebP files", 
     /thumbnails\/thought-workshop-mark-.*-64.webp$/,
   );
   expect(icon.getAttribute("srcset")).toContain("256w");
+  expect(icon).toHaveAttribute("sizes", "64px");
+  expect(icon).toHaveAttribute("loading", "lazy");
 });
 
 test("community variant URLs preserve the article authorization context", () => {
@@ -173,5 +175,23 @@ test("an action failure clears its transfer UI and leaves retries with its owner
   fireEvent.click(screen.getByText("上传"));
   await waitFor(() =>
     expect(screen.queryByText("服务端处理中…")).not.toBeInTheDocument(),
+  );
+});
+
+test("responsive public pictures use viewport sizing without implicit containment and preserve caller sizes", () => {
+  render(
+    <>
+      <ResponsiveImage src="/brand/visual-workshop-mark.png" alt="自适应图片" />
+      <ResponsiveImage
+        src="/brand/visual-workshop-mark.png"
+        alt="显式尺寸"
+        sizes="(max-width: 600px) 46px, 42px"
+      />
+    </>,
+  );
+  expect(screen.getByAltText("自适应图片")).toHaveAttribute("sizes", "100vw");
+  expect(screen.getByAltText("显式尺寸")).toHaveAttribute(
+    "sizes",
+    "(max-width: 600px) 46px, 42px",
   );
 });

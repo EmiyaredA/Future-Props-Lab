@@ -2,7 +2,8 @@ import { useState, type ComponentPropsWithRef } from "react";
 import { publicImageSources } from "@shared/lib/imageSources";
 import "./responsive-image.css";
 
-/** An img-compatible public/local image. Keeps existing layout, refs and handlers. */
+/** Native lazy loading with explicit sizes: automatic size containment can
+ * enlarge percentage-height images inside fixed grid cells to 150px. */
 export function ResponsiveImage({
   src,
   width,
@@ -30,9 +31,7 @@ export function ResponsiveImage({
       loading={imageLoading}
       sizes={
         props.sizes ??
-        (imageLoading === "lazy" && sources.sizes
-          ? `auto, ${sources.sizes}`
-          : sources.sizes)
+        (sources.srcSet ? (width ? sources.sizes : "100vw") : undefined)
       }
       decoding={decoding}
       className={`fpl-image ${className}`}

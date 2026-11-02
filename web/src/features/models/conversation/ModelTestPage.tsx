@@ -55,10 +55,12 @@ import {
 export function ModelTestPage({
   onOpenAudioAnnotation = () => undefined,
   initialModelId,
+  initialMode,
   onInitialModelHandled,
 }: {
   onOpenAudioAnnotation?: (projectId: string) => void;
   initialModelId?: string | null;
+  initialMode?: string;
   onInitialModelHandled?: () => void;
 }) {
   const { run: runTransfer, progress: activeTransferProgress } =
@@ -76,6 +78,7 @@ export function ModelTestPage({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [error, setError] = useState("");
+  const [modeNotice, setModeNotice] = useState("");
   const [streamingId, setStreamingId] = useState<string | null>(null);
   const [streamedContent, setStreamedContent] = useState("");
   const [stoppedPreview, setStoppedPreview] = useState<{
@@ -119,6 +122,46 @@ export function ModelTestPage({
     () => availableCatalogModels(catalogQuery.data),
     [catalogQuery.data],
   );
+  const handledMode = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (
+      !initialMode ||
+      catalogQuery.isPending ||
+      catalogQuery.isError ||
+      handledMode.current === initialMode ||
+      initialModelId
+    )
+      return;
+    handledMode.current = initialMode;
+    setModeNotice("");
+    if (initialMode === "chat") {
+      setGenerationModelId(null);
+      return;
+    }
+    if (
+      !["image", "video", "synthesis", "speech", "realtime_voice"].includes(
+        initialMode,
+      )
+    )
+      return;
+    autoCreated.current = true;
+    const model = preferredModeModel(
+      availableModels,
+      initialMode as Exclude<ModelTestMode, "chat">,
+      undefined,
+      catalogQuery.data?.default_model_ids,
+    );
+    if (model) setGenerationModelId(model.value);
+    else
+      setModeNotice("所选测试模式暂无可用模型，请先在模型服务中接入对应模型。");
+  }, [
+    initialMode,
+    initialModelId,
+    catalogQuery.isPending,
+    catalogQuery.isError,
+    catalogQuery.data?.default_model_ids,
+    availableModels,
+  ]);
   const textModels = useMemo(
     () =>
       availableModels.filter(
@@ -508,7 +551,9 @@ export function ModelTestPage({
     ),
   };
   const selectMode = (mode: ModelTestMode) => {
+    setModeNotice("");
     if (mode === "chat") {
+      autoCreated.current = false;
       setGenerationModelId(null);
       return;
     }
@@ -569,10 +614,16 @@ export function ModelTestPage({
           </div>
         }
       />
-      {error ? (
+      {error || modeNotice ? (
         <div className="inline-alert danger playground-alert" role="alert">
-          {error}
-          <button aria-label="关闭提示" onClick={() => setError("")}>
+          {error || modeNotice}
+          <button
+            aria-label="关闭提示"
+            onClick={() => {
+              setError("");
+              setModeNotice("");
+            }}
+          >
             <X aria-hidden />
           </button>
         </div>

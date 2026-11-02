@@ -47,6 +47,8 @@ export function WorkshopShell({
               definition.brandImage ? (
                 <ResponsiveImage
                   src={definition.brandImage}
+                  width={34}
+                  height={34}
                   alt=""
                   aria-hidden
                   draggable={false}

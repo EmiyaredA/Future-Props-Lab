@@ -1,29 +1,29 @@
 .tools-page {
-  --tools-side-width: 286px;
+  --tools-side-width: 252px;
 }
 
 .tools-header {
-  margin-bottom: 22px;
+  margin-bottom: 18px;
 }
 
 .tools-header h1 {
   margin: 0 0 8px;
   color: var(--text-strong);
-  font-size: 30px;
+  font-size: 26px;
   letter-spacing: -0.04em;
 }
 
 .tools-header p {
   margin: 0;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .tools-search {
   width: min(900px, 100%);
-  min-height: 54px;
-  margin-bottom: 18px;
-  padding: 6px 7px 6px 18px;
+  min-height: 44px;
+  margin-bottom: 14px;
+  padding: 4px 5px 4px 14px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -55,7 +55,7 @@
 
 .tools-search button {
   min-width: 92px;
-  min-height: 40px;
+  min-height: 32px;
   border: 0;
   border-radius: 9px;
   background: var(--accent);
@@ -82,8 +82,8 @@
 }
 
 .tools-categories button {
-  min-height: 38px;
-  padding: 0 18px;
+  min-height: 32px;
+  padding: 0 14px;
   border-radius: 9px;
   font-weight: 650;
 }
@@ -102,7 +102,7 @@
 
 .tools-tags {
   min-height: 32px;
-  margin-bottom: 22px;
+  margin-bottom: 18px;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -152,21 +152,21 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--tools-side-width);
   align-items: start;
-  gap: 20px;
+  gap: 16px;
 }
 
 .tool-grid {
   min-width: 0;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  gap: 12px;
 }
 
 .tool-card {
   position: relative;
   min-width: 0;
-  min-height: 150px;
-  padding: 18px;
+  min-height: 132px;
+  padding: 15px;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface);
@@ -187,17 +187,17 @@
   width: 100%;
   padding: 0 30px 34px 0;
   display: grid;
-  grid-template-columns: 46px minmax(0, 1fr);
+  grid-template-columns: 40px minmax(0, 1fr);
   align-items: start;
-  gap: 13px;
+  gap: 10px;
   border: 0;
   background: transparent;
   text-align: left;
 }
 
 .tool-card-icon {
-  width: 46px;
-  height: 46px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
   border: 1px solid var(--accent-line);
@@ -207,8 +207,8 @@
 }
 
 .tool-card-icon svg {
-  width: 22px;
-  height: 22px;
+  width: 19px;
+  height: 19px;
   stroke-width: 1.7;
 }
 
@@ -328,7 +328,7 @@
 
 .tool-side-item {
   width: 100%;
-  min-height: 64px;
+  min-height: 56px;
   padding: 9px 0;
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr) 14px;
@@ -459,7 +459,7 @@
   }
 
   .tools-search {
-    min-height: 50px;
+    min-height: 44px;
   }
 
   .tools-search button {

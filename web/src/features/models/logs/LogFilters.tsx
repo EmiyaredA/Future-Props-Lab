@@ -59,6 +59,10 @@ function QuickFilters({
       {fields.map((field) => (
         <CustomSelect
           key={field.key}
+          className="call-log-select"
+          menuMinWidth={
+            field.key === "apiKeyId" || field.key === "model" ? 280 : 180
+          }
           ariaLabel={`${field.label}筛选`}
           value={filters[field.key]}
           options={[

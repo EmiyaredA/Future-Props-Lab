@@ -116,10 +116,10 @@
 }
 
 .workshop-toolbar {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   display: grid;
   grid-template-columns: minmax(220px, 1fr) auto 150px;
-  gap: 12px;
+  gap: 10px;
 }
 
 .workshop-toolbar-simple {
@@ -127,7 +127,7 @@
 }
 
 .workshop-toolbar > label {
-  min-height: 42px;
+  min-height: 36px;
   padding: 0 13px;
   display: flex;
   align-items: center;
@@ -212,7 +212,7 @@
 .workshop-project-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
+  gap: 15px;
 }
 
 .workshop-project-card {
@@ -236,7 +236,7 @@
 
 .workshop-project-cover {
   position: relative;
-  height: 148px;
+  height: 128px;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -357,7 +357,7 @@
 }
 
 .workshop-project-copy {
-  padding: 16px 16px 0;
+  padding: 14px 14px 0;
 }
 
 .workshop-project-meta {
@@ -403,18 +403,18 @@
 }
 
 .workshop-project-copy h2 {
-  min-height: 42px;
-  margin: 13px 0 16px;
+  min-height: 36px;
+  margin: 11px 0 14px;
   color: var(--text-strong);
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.4;
   letter-spacing: -0.02em;
 }
 
 .workshop-project-actions {
-  min-height: 52px;
-  margin: 0 -16px;
-  padding: 10px 12px;
+  min-height: 46px;
+  margin: 0 -14px;
+  padding: 8px 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -478,4 +478,14 @@
   width: 13px;
   height: 13px;
   stroke-width: 1.8;
+}
+
+@media (pointer: coarse) {
+  .workshop-projects-page :is(button, .custom-select-trigger),
+  .workshop-projects-page .workshop-toolbar > label {
+    min-height: 44px;
+  }
+  .workshop-projects-page .workshop-project-secondary-actions button {
+    width: 44px;
+  }
 }

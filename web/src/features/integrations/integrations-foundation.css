@@ -1,5 +1,5 @@
 .integrations-page {
-  --integration-side-width: 288px;
+  --integration-side-width: 252px;
 }
 
 .integrations-header {
@@ -9,7 +9,7 @@
 .integrations-header h1 {
   margin: 0 0 7px;
   color: var(--text-strong);
-  font-size: 30px;
+  font-size: 26px;
   letter-spacing: -0.04em;
 }
 
@@ -27,8 +27,8 @@
 }
 
 .integration-tabs button {
-  min-width: 112px;
-  min-height: 36px;
+  min-width: 96px;
+  min-height: 32px;
   margin-bottom: -2px;
   border: 0;
   border-bottom: 2px solid transparent;
@@ -60,12 +60,12 @@
 .integration-toolbar {
   margin-bottom: 12px;
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) 190px auto;
-  gap: 10px;
+  grid-template-columns: minmax(220px, 1fr) 168px auto;
+  gap: 8px;
 }
 
 .integration-search {
-  min-height: 36px;
+  min-height: 32px;
   padding: 0 13px;
   display: flex;
   align-items: center;
@@ -109,7 +109,7 @@
 
 .integration-grid > .integration-message {
   grid-column: 1 / -1;
-  min-height: 160px;
+  min-height: 140px;
   display: grid;
   place-items: center;
   border-style: dashed;
@@ -127,8 +127,8 @@
 
 .integration-card {
   min-width: 0;
-  min-height: 184px;
-  padding: 13px;
+  min-height: 160px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   transition:
@@ -150,8 +150,8 @@
 }
 
 .integration-card-icon {
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
   border: 1px solid var(--accent-line);
@@ -165,10 +165,10 @@
 }
 
 .integration-card h3 {
-  margin: 14px 0 7px;
+  margin: 12px 0 6px;
   overflow: hidden;
   color: var(--text-strong);
-  font-size: 15px;
+  font-size: 14px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -244,7 +244,7 @@
 .integration-overview {
   position: sticky;
   top: 20px;
-  padding: 18px;
+  padding: 15px;
 }
 
 .integration-overview h2 {

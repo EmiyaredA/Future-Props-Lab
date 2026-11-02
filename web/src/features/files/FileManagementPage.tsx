@@ -26,7 +26,7 @@ function bytesLabel(value: number) {
   return `${(value / 1024 / 1024 / 1024).toFixed(1)} GB`;
 }
 
-export function FileManagementPage() {
+export function FileManagementPage({ initialKind }: { initialKind?: string }) {
   const client = useQueryClient();
   const [progress, setProgress] = useState<StorageLayoutMigration>();
   const layout = useQuery({
@@ -124,7 +124,7 @@ export function FileManagementPage() {
           项目素材目录整理完成
         </div>
       ) : null}
-      <AssetBrowser />
+      <AssetBrowser initialKind={initialKind} />
     </section>
   );
 }

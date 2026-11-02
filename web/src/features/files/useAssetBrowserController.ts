@@ -59,6 +59,7 @@ export type AssetBrowserSourceProject = {
 };
 
 export function useAssetBrowserController({
+  initialKind,
   projectId,
   compact,
   importSource,
@@ -68,6 +69,7 @@ export function useAssetBrowserController({
   viewMode,
   onViewModeChange,
 }: {
+  initialKind?: string;
   projectId?: string;
   compact: boolean;
   importSource?: AssetImportSource;
@@ -88,7 +90,18 @@ export function useAssetBrowserController({
   const dialogTitleId = useId();
   const [folderId, setFolderId] = useState<string>();
   const [query, setQuery] = useState("");
-  const [kind, setKind] = useState<"all" | MediaKind>("all");
+  const [kind, setKind] = useState<"all" | MediaKind>(() =>
+    ["image", "video", "audio", "document"].includes(initialKind ?? "")
+      ? (initialKind as MediaKind)
+      : "all",
+  );
+  useEffect(() => {
+    setKind(
+      ["image", "video", "audio", "document"].includes(initialKind ?? "")
+        ? (initialKind as MediaKind)
+        : "all",
+    );
+  }, [initialKind]);
   const [sort, setSort] = useState<"updated" | "name">("updated");
   const [localView, setLocalView] = useState<AssetViewMode>(() =>
     window.localStorage.getItem(VIEW_KEY) === "list" ? "list" : "grid",

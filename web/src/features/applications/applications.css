@@ -1,5 +1,5 @@
 .applications-page {
-  --applications-side-width: 286px;
+  --applications-side-width: 252px;
 }
 .applications-header {
   margin-bottom: 16px;
@@ -7,7 +7,7 @@
 .applications-header h1 {
   margin: 0 0 8px;
   color: var(--text-strong);
-  font-size: 30px;
+  font-size: 26px;
   letter-spacing: -0.04em;
 }
 .applications-header p {
@@ -16,12 +16,12 @@
 }
 .applications-search {
   width: min(900px, 100%);
-  min-height: 42px;
+  min-height: 36px;
   margin-bottom: 12px;
   padding: 4px 5px 4px 12px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface);
@@ -40,7 +40,7 @@
 }
 .applications-search button {
   min-width: 92px;
-  min-height: 40px;
+  min-height: 32px;
   border: 0;
   border-radius: 9px;
   background: var(--accent);
@@ -54,7 +54,7 @@
   gap: 9px;
 }
 .applications-categories button {
-  min-height: 34px;
+  min-height: 30px;
   padding: 0 13px;
   border: 1px solid var(--border);
   border-radius: 9px;
@@ -113,7 +113,7 @@
   gap: 12px;
 }
 .application-card {
-  min-height: 204px;
+  min-height: 176px;
   border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--surface);
@@ -129,17 +129,19 @@
 .application-card > button {
   width: 100%;
   height: 100%;
-  padding: 16px;
+  padding: 14px;
   display: grid;
-  grid-template-columns: 58px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 10px;
   border: 0;
   background: transparent;
   text-align: left;
 }
 .application-icon {
-  width: 48px;
-  height: 48px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  width: 42px;
+  height: 42px;
   display: grid;
   place-items: center;
   border: 1px solid var(--accent-line);
@@ -148,8 +150,8 @@
   color: var(--accent);
 }
 .application-icon svg {
-  width: 27px;
-  height: 27px;
+  width: 23px;
+  height: 23px;
   stroke-width: 1.6;
 }
 .application-icon:has(img) {
@@ -157,10 +159,12 @@
   background: var(--surface);
 }
 .application-icon img {
+  min-width: 0;
+  min-height: 0;
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
 }
 .application-copy {
   min-width: 0;
@@ -170,7 +174,7 @@
 }
 .application-copy > strong {
   color: var(--text-strong);
-  font-size: 18px;
+  font-size: 16px;
 }
 .application-copy > small {
   margin-top: 5px;
@@ -225,8 +229,8 @@
 }
 .application-recent > button {
   width: 100%;
-  min-height: 52px;
-  padding: 9px 0;
+  min-height: 46px;
+  padding: 7px 0;
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr) 14px;
   align-items: center;
@@ -237,6 +241,8 @@
   text-align: left;
 }
 .application-recent > button > span:first-child {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   width: 38px;
   height: 38px;
   display: grid;
@@ -251,10 +257,12 @@
   background: var(--surface);
 }
 .application-recent > button > span:first-child img {
+  min-width: 0;
+  min-height: 0;
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
 }
 .application-recent > button svg {
   width: 17px;

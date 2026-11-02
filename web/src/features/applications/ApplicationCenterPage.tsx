@@ -133,6 +133,8 @@ export function ApplicationCenterPage({
                     {app.brandImage ? (
                       <ResponsiveImage
                         src={app.brandImage}
+                        width={48}
+                        height={48}
                         alt=""
                         draggable={false}
                       />
@@ -179,6 +181,8 @@ export function ApplicationCenterPage({
                     {app.brandImage ? (
                       <ResponsiveImage
                         src={app.brandImage}
+                        width={38}
+                        height={38}
                         alt=""
                         draggable={false}
                       />
