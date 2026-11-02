@@ -26,6 +26,7 @@ from fpl_runtime.migrations import check
 
 from .accounts import create_account
 from .authorization import router as authorization_router
+from .catalog_events import router as catalog_events_router
 from .delegation import router as delegation_router
 from .live import router as live_router
 from .migrations.registry import MIGRATIONS
@@ -113,6 +114,7 @@ def create_app(
                 included.routes.append(route)
     app.include_router(included, prefix="/v1")
     app.include_router(authorization_router, include_in_schema=False)
+    app.include_router(catalog_events_router)
     app.include_router(live_router, include_in_schema=False)
     app.include_router(delegation_router, include_in_schema=False)
     app.include_router(retention_router)

@@ -4479,6 +4479,12 @@
       "service": "models",
       "module": "fpl_models.models",
       "model": "AccountDefaults"
+    },
+    {
+      "table": "model_catalog_provisioning",
+      "service": "models",
+      "module": "fpl_models.models",
+      "model": "CatalogProvisioningReceipt"
     }
   ],
   "partitions": {

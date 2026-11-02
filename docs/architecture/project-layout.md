@@ -58,6 +58,8 @@
 
 `backend/fpl_models/` 正在构建独立模型服务的持久化边界；`models.py` 显式列出默认选择和全部 Models 自有 ORM，`ACCOUNT_MODELS` 只标记拥有账号归属的根记录。`0001_account_defaults` 保持原样，追加的 `0002_model_capabilities` 创建目录、日志、模型测试／推理、本地模型与治理记录，不创建账号、素材或工坊表。账号、源素材和外部排队任务 ID 是不透明引用；仅保留自有表外键。旧单体数据库继续由原 SQL 迁移维护，已有外键与级联不因 ORM 的服务边界描述而被改写。完整 Models 运行装配、跨服务校验与业务导入尚未完成，不能替代正式网站。
 
+`fpl_runtime/catalog_events.py` 定义仅含事件 ID、账号 ID、角色、版本和短期当前状态的私有目录初始化协议。`fpl_identity/catalog_events.py` 只允许独立 Models 凭据轮询／确认，拒绝浏览器和其他服务；历史事件与当前角色分开，停用账号保留事件但不投递。`fpl_models/account_events.py` 拥有有界 HTTP 传输与恢复轮询，`provisioning.py` 在独立账号事务中执行显式本地初始化回调并保存摘要回执。新增 `0003_catalog_provisioning` 不改写前两版。回执防止确认丢失后重建目录，不构成后续业务授权；自有角色模板策略和完整 ASGI 装配仍待完成。
+
 `llm/catalog/default_storage.py` 定义默认选择的显式存储端口，与目录 CAS 使用同一事务；恢复网站在入口装配点和 `catalog/legacy.py` 兼容用例中提供 `legacy_defaults.py`、`legacy_usage.py`，独立实现不得导入这些兼容适配器。旧 `platform_settings` 的 `account_defaults:` 分区归 Models，正式导入仍须业务接口校验与核验。`llm/models/model_templates.py` 与 `runtime_admission.py` 拥有模板同步和额度记录；旧 Console 模型公开名仅作明确兼容导出，恢复用例继续从模型能力直接导入自有记录。
 
 `llm/catalog/http_bindings.py` 提供不可变的每应用目录装配描述与账号绑定的 HTTP 用例依赖；恢复网站在 `main.py` 安装旧存储／任务占用适配器，目录、供应商和本地模型挂接路由不再直接构造旧适配器。`routes/models/diagnostics.py` 单独拥有模型诊断协议，避免目录只读装配加载供应商执行栈。`llm/http_errors.py` 统一模型操作错误映射，不导入其他路由。独立进程的目录 HTTP 切片验收不等于完整 Models 服务就绪。

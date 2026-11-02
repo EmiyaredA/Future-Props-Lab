@@ -48,6 +48,7 @@ def exercise(
     assets_token = secrets.token_urlsafe(48)
     rendering_token = secrets.token_urlsafe(48)
     gateway_service_token = secrets.token_urlsafe(48)
+    models_token = secrets.token_urlsafe(48)
     password = secrets.token_urlsafe(32) + "-Aa9!"
     key = Ed25519PrivateKey.generate()
     origin = f"http://127.0.0.1:{local_port}"
@@ -85,6 +86,7 @@ def exercise(
                 "gateway": gateway_service_token,
                 "assets": assets_token,
                 "rendering": rendering_token,
+                "models": models_token,
             }
         ).encode(),
         "publishers.json": b"{}",
@@ -216,6 +218,7 @@ def exercise(
             assets_token,
             rendering_token,
             gateway_service_token,
+            models_token,
         ):
             output = output.replace(secret, "[redacted]")
         with (root / "commands.log").open("a") as log:
@@ -308,6 +311,13 @@ def exercise(
             )
             assert login.status_code == 200, login.text
             owner = login.json()["user"]["id"]
+            from catalog_event_docker_checks import verify_private_catalog
+
+            verify_private_catalog(
+                compose, model_token=models_token, agent_token=service_token, owner=owner
+            )
+            assert client.get("/_internal/v1/model-catalog/events").status_code == 404
+            checks.append("Identity catalogue events remain private to the Models subscriber")
             unsafe = {"Origin": origin, "X-CSRF-Token": client.cookies.get("fpl_csrf", "")}
             assert wait(client, "/v1/agent-workbench/sources").json() == []
             for path in ("/_native/v1/claim", "/agents/_native/v1/claim"):
@@ -330,6 +340,18 @@ def exercise(
             with httpx.Client(
                 base_url=f"http://127.0.0.1:{public_port}", trust_env=False, timeout=3
             ) as public:
+                private = "/_internal/v1/model-catalog/events"
+                assert public.get(private).status_code == 403
+                assert (
+                    public.get(
+                        private,
+                        headers={
+                            "Host": "studio.example.test",
+                            "Origin": "https://studio.example.test",
+                        },
+                    ).status_code
+                    == 404
+                )
                 response = public.post(
                     "/v1/agent-workbench/sources",
                     headers={

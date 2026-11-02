@@ -3,6 +3,7 @@
 from sqlalchemy import select, update
 
 from app.console.governance.account_creation import create_account as create_account_record
+from app.console.models.accounts import User
 from app.runtime.time import utc_now
 
 from .models import AccountEvent
@@ -24,15 +25,24 @@ async def create_account(session, **values):
 
 
 async def pending_catalog_events(session, *, limit=100):
-    rows = await session.scalars(
-        select(AccountEvent)
-        .where(AccountEvent.delivered_at.is_(None))
+    rows = await session.execute(
+        select(AccountEvent, User.platform_role, User.revision)
+        .join(User, User.id == AccountEvent.user_id)
+        .where(AccountEvent.delivered_at.is_(None), User.status == "active")
         .order_by(AccountEvent.created_at, AccountEvent.id)
         .limit(limit)
     )
     return [
-        {"id": row.id, "type": row.event_type, "payload": row.payload, "revision": row.revision}
-        for row in rows
+        {
+            "event": {
+                "id": row.id,
+                "type": row.event_type,
+                "payload": row.payload,
+                "revision": row.revision,
+            },
+            "account": {"user_id": row.user_id, "platform_role": role, "revision": revision},
+        }
+        for row, role, revision in rows
     ]
 
 

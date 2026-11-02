@@ -41,8 +41,21 @@ class AccountDefaults(ModelsBase):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
 
 
+class CatalogProvisioningReceipt(ModelsBase):
+    __tablename__ = "model_catalog_provisioning"
+    event_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    owner_user_id: Mapped[str] = mapped_column(String(36), unique=True)
+    event_revision: Mapped[int] = mapped_column(Integer)
+    event_digest: Mapped[str] = mapped_column(String(64))
+    initialization_role: Mapped[str] = mapped_column(String(16))
+    account_revision: Mapped[int] = mapped_column(Integer)
+    outcome: Mapped[str] = mapped_column(String(16))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
 MODELS = (
     AccountDefaults,
+    CatalogProvisioningReceipt,
     LlmCallLog,
     LocalModelInstallation,
     LocalModelOperation,
