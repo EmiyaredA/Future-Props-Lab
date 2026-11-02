@@ -4,10 +4,9 @@ from fastapi import Depends, HTTPException, Request
 from pydantic import ValidationError
 
 from app.capabilities.identity.route_permissions import route_permission
-from app.console.governance.generation_queue import admit_generation_tasks
-from app.console.governance.runtime_quotas import acquire, attach, release
 from app.deps import SessionDep, StudioAuth
-from app.llm.inference.tasks import InferenceTasks
+from app.llm.admission import admission_for
+from app.llm.inference.receipts import replay_task
 from app.llm.schemas.model_inference import InferenceTaskIn
 from app.runtime.operation_receipts import OperationError
 
@@ -24,6 +23,7 @@ async def model_capacity(request: Request, principal: StudioAuth, session: Sessi
     if route_permission(request.method, request.url.path) != "models.use" and not diagnostic:
         yield
         return
+    admission = admission_for(request)
     if request.method == "POST" and path.startswith("/v1/visual-workshop/projects/"):
         body = await request.json()
         if isinstance(body, dict) and (
@@ -46,7 +46,7 @@ async def model_capacity(request: Request, principal: StudioAuth, session: Sessi
             body = None  # The endpoint reports normal request validation errors.
         if body is not None:
             try:
-                prior = await InferenceTasks(session, principal.owner_user_id).replay(body)
+                prior = await replay_task(session, principal.owner_user_id, body)
             except OperationError as exc:
                 raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
             if prior is not None:
@@ -58,22 +58,26 @@ async def model_capacity(request: Request, principal: StudioAuth, session: Sessi
     if request.url.path.endswith("/generation-batches"):
         body = await request.json()
         weight = body.get("grid_size", 1) if body.get("grid_size") in (4, 9) else 1
-    lease_id = await acquire(principal, weight=weight)
+    lease_id = await admission.acquire(principal, weight=weight)
     request.state.model_admission_id = lease_id
     try:
         yield
     finally:
-        await session.rollback()
-        await release(lease_id)
+        try:
+            await session.rollback()
+        finally:
+            await admission.release(lease_id)
 
 
 def task_admission(request: Request, session, kind: str):
+    admission = admission_for(request)
+
     async def retain(task_ids: list[str]):
         principal = getattr(request.state, "visual_queue_principal", None)
         if principal is not None:
-            await admit_generation_tasks(session, principal, kind, task_ids)
+            await admission.admit_tasks(session, principal, kind, task_ids)
         else:
-            await attach(
+            await admission.attach(
                 session, getattr(request.state, "model_admission_id", None), kind, task_ids
             )
 
@@ -83,8 +87,10 @@ def task_admission(request: Request, session, kind: str):
 ModelCapacity = Depends(model_capacity)
 
 
-def spawned_task_admission(principal, kind):
+def spawned_task_admission(connection, principal, kind):
+    admission = admission_for(connection)
+
     async def admit(session, task_ids):
-        await admit_generation_tasks(session, principal, kind, task_ids)
+        await admission.admit_tasks(session, principal, kind, task_ids)
 
     return admit

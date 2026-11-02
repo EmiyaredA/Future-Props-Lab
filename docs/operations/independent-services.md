@@ -22,9 +22,9 @@ npm run services:build:web -- agents
 npm run services:build -- agents --build --web-release .local/service-web/agents/BUILD_ID
 ```
 
-当前独立镜像入口包含 Identity、Gateway、Agents、Portal、Assets 与 Rendering；其他服务的独立构建会明确拒绝。Gateway 包含 Caddy 与独立控制面，互相监督并持有自己的数据锁。构建器计算可审计源码闭包并拒绝单体入口、全部 ORM、工坊与模型内部依赖。镜像不复制整个后端，不打包配置、密钥、运行数据或仓库。Identity 自有锁文件固定所需依赖；版本由实际输入内容决定。
+当前独立镜像入口包含 Identity、Gateway、Agents、Portal、Assets、Rendering 与 Management；其他服务的独立构建会明确拒绝。Gateway 包含 Caddy 与独立控制面，互相监督并持有自己的数据锁。构建器计算可审计源码闭包并拒绝单体入口、全部 ORM、工坊与模型内部依赖。镜像不复制整个后端，不打包配置、密钥、运行数据或仓库。Identity 自有锁文件固定所需依赖；版本由实际输入内容决定。
 
-`deploy/compose.yaml` 目前装配 Identity、Agents、Portal、Assets、Rendering 和 Gateway，启动时只使用已构建镜像，不自动构建或迁移。数据库初始化必须通过所属镜像显式执行 `migrate`；已有数据库迁移历史不符时启动失败。`create-admin` 只接受标准输入 JSON，并且仅用于没有账号的新安装；已有正式账号应从受控导入保留。
+`deploy/compose.yaml` 目前装配 Identity、Agents、Portal、Assets、Rendering 和 Gateway，`deploy/management.compose.yaml` 提供独立管理端叠加清单。启动只使用已构建镜像，不自动构建或迁移。数据库初始化必须通过所属镜像显式执行 `migrate`；已有数据库迁移历史不符时启动失败。`create-admin` 只接受标准输入 JSON，并且仅用于没有账号的新安装；已有正式账号应从受控导入保留。
 
 ## Docker 隔离验收
 
@@ -62,7 +62,7 @@ Mac 采集 CLI 为 `uv run python -m fpl_host collect --connection PATH --state-
 
 工作台页面只包含自身入口、账号组件与阅读功能，程序 URL 为 `/_apps/agents/BUILD_ID/`。构建生成逐文件哈希与压缩副本，镜像封装时再次核验；不挂载源码。启动还校验页面的单服务 API 哈希。旧页面版本只会被相应服务拒绝写入，其他应用和不携带浏览器版本标记的 SDK 保持原公共契约。缺失资源与未知 API 返回 404。旧 `/apps/agent-workbench` 链接按 [Caddy redir 语法](https://caddyserver.com/docs/caddyfile/directives/redir) 显式指定匹配器，跳转到 `/agents`。
 
-Gateway 的 Mac 公网访问管理桥接、服务状态聚合和各服务的通知发件箱尚未完成；相应管理调用会明确返回组件不可用。它们属于正式切换门禁，不能用当前隔离验收替代。
+Gateway 的 Mac 公网访问管理桥接和各服务的通知发件箱尚未完成；相应管理调用会明确返回组件不可用。服务状态聚合已接入 Management 的受限观测接口，见下文；其余门禁不能用当前隔离验收替代。
 
 ## 当前批次验证记录
 
@@ -136,3 +136,11 @@ Assets 已接通独立 HTTP、浏览器、镜像及 Compose，并通过五服务
 稳定管理分支 `6e993a38` 已按独立数据库方案整合。管理页面、Session 用途、原生通道和 Compose 叠加清单独立保留；Assets/Rendering、响应式资源和查询参数兼容也保留。生成清单由正式生成器重建，未选择任一侧覆盖。合并后的身份／管理／媒体／架构检查 85 项通过，类型检查及 76 项 Web 回归通过；管理镜像 `fpl/management:868a3335d02f6b1724aa` 与 Identity `fpl/identity:d39152b59b4ed051d88b` 的真实隔离验收 `management-real/bbd6b10d36` 通过。业务停机用的是合成 HTTP 容器，不能代替 Models 真实联调。
 
 监督器原有的组故障清场策略已调整：退出、缺失或不健康只产生状态反馈，不自动停止其他服务；服务恢复后自动更新观测。对应 21 项管理／主机检查通过。Compose 明确禁用 dotenv。当前启动命令指向新协调器，旧网站保留 `start:legacy` 和匹配归档；未通过剩余门禁前不安装到正式实例。
+
+### 应用状态与 Models 隔离准备
+
+应用卡片显示运行、启动、停止、暂停、重启、健康检查失败、退出异常、不可达、未部署、未知和依赖异常，并可展开说明。Gateway 综合就绪探针与 Mac 管理 worker 的新鲜生命周期观测；只有主机证据能确认停止或未部署，连接失败不直接表示已停止，刷新失败时旧结果标为历史。此读取仅开放浏览器 Session，普通账号不因此取得日志、主机路径或运维权限。真实七容器验收覆盖停止／恢复 Portal、工作台继续使用及状态变化，页面已核对明暗和手机／平板／桌面布局。
+
+Models 已具备 19 张自有表、追加迁移、独立默认值 CAS、显式目录存储与调用归因绑定、应用会话工厂，以及按账号提交的生成／转录恢复。推理输入与输出恢复只核对自己的目录和记录，不读取账号表或其他应用数据。旧数据库迁移与物理外键保持原样；这些准备不等于 Models 已可部署。
+
+模型 HTTP、实时语音与派生任务的额度生命周期通过当前 ASGI 应用显式装配，恢复网站安装原治理账本。缺少绑定拒绝新任务，幂等重放仍只读取本账号已有回执、不申请新额度。Models 自有额度账本、供应商演示运行、素材接口、原生任务授权和完整服务装配仍在实施，正式数据与现有网站保持原状。

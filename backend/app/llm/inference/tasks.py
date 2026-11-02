@@ -8,6 +8,7 @@ from app.capabilities.transcription import max_transcription_input_bytes
 from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.inference.assets import InferenceAssets, LocalInput, root
 from app.llm.inference.catalog import get_model, normalize_parameters
+from app.llm.inference.receipts import replay_task
 from app.llm.models.model_inference import ModelInferenceAsset, ModelInferenceTask
 from app.llm.providers.local_qwen import MAX_REFERENCE_BYTES, inspect_reference
 from app.llm.providers.seedance_references import SeedanceReference, validate_seedance_references
@@ -67,14 +68,7 @@ class InferenceTasks:
         return InferenceTasksOut(items=[task_out(row) for row in rows], total=total)
 
     async def replay(self, body):
-        row = await self.session.scalar(
-            select(ModelInferenceTask).where(
-                ModelInferenceTask.owner_user_id == self.owner_user_id,
-                ModelInferenceTask.request_id == body.request_id,
-            )
-        )
-        if row and row.fingerprint != fingerprint(body):
-            raise OperationError("request_id 已用于其他调用", "idempotency_conflict", 409)
+        row = await replay_task(self.session, self.owner_user_id, body)
         return task_out(row) if row else None
 
     async def create(self, body, admission=None, credential: CredentialSnapshot | None = None):

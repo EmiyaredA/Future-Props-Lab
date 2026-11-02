@@ -41,14 +41,19 @@ from app.console.governance.database_auth import (
     authenticate_database_websocket,
 )
 from app.console.governance.external_sync_access import external_sync_actor_allowed
-from app.console.governance.generation_queue import claim_visual_capacity, visual_queue_candidates
+from app.console.governance.generation_queue import (
+    admit_generation_tasks,
+    claim_visual_capacity,
+    visual_queue_candidates,
+)
 from app.console.governance.interview_executor_access import interview_actor_allowed
 from app.console.governance.model_template_sync import ModelTemplateSyncRunner
 from app.console.governance.profile import reconcile_profile_avatars
 from app.console.governance.provisioning import create_account
-from app.console.governance.runtime_quotas import recover_admissions
+from app.console.governance.runtime_quotas import acquire, attach, recover_admissions, release
 from app.console.governance.service import AccountError
 from app.console.governance.visual_acceptance_access import acceptance_actor_allowed
+from app.llm.admission import AdmissionBindings
 from app.llm.call_logs.credentials import snapshot_from_principal
 from app.llm.catalog.http_bindings import CatalogBindings
 from app.llm.catalog.legacy_defaults import LegacyCatalogDefaults
@@ -154,6 +159,7 @@ app.state.model_catalog_bindings = CatalogBindings(
     task_usage=LegacyCatalogTaskUsage,
 )
 app.state.model_credential_reader = snapshot_from_principal
+app.state.model_admission = AdmissionBindings(acquire, release, attach, admit_generation_tasks)
 app.state.workbench_native = LocalSourceAccess()
 app.state.account_creator = create_account
 app.state.account_storage_check = upgrade_pending

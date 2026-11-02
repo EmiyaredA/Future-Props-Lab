@@ -107,6 +107,7 @@ async def test_task_idempotency_results_and_materialization_retry(monkeypatch):
         assert response.status_code == 200, response.text
         task = response.json()
         # Replaying an existing receipt remains possible when no new quota slot is available.
+        from dataclasses import replace
         from types import SimpleNamespace
 
         from app.llm.routes.model_capacity import model_capacity
@@ -119,10 +120,15 @@ async def test_task_idempotency_results_and_materialization_retry(monkeypatch):
             return body
 
         with monkeypatch.context() as limited:
-            limited.setattr("app.llm.routes.model_capacity.acquire", no_capacity)
+            limited.setattr(
+                app.state,
+                "model_admission",
+                replace(app.state.model_admission, acquire=no_capacity),
+            )
             async with SessionLocal() as session:
                 bind_owner(session, "test-user")
                 request = SimpleNamespace(
+                    app=app,
                     method="POST",
                     url=SimpleNamespace(path="/v1/model-inference/tasks"),
                     json=request_json,

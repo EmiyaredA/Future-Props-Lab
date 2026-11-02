@@ -66,6 +66,7 @@
 - 模型 Runner、恢复、文字流与实时语音结算必须接收明确的会话工厂，所有 LLM 模块不得直接导入单体全局数据库工厂；HTTP/WebSocket 传入自己的 ASGI 绑定。结算短事务显式绑定账号，不跨网络等待共享 AsyncSession。`llm/http_credentials.py` 从已经验证且与 Principal 匹配的 Identity 上下文取得历史调用归因；实时语音只接受已经认证的浏览器 Principal。恢复网站显式安装 `llm/call_logs/credentials.py` 的旧账号查询，独立服务不加载该适配器；完整 Models 装配仍须完成其余存储和原生端口。
 - 后台任务通过 `runtime/task_records.py` 从本服务持久任务解析账号，已有会话绑定不得替换；系统读取只能枚举恢复账号与任务 ID，恢复写入按账号使用独立短事务。此内部查找不是浏览器或跨服务调用授权。`llm/inference/storage.py` 拥有推理输入／输出目录和启动期未提交文件核对，不查询 Identity 账号表，不跟随符号链接或清理其他应用目录。
 - 模型目录 HTTP 通过 `llm/catalog/http_bindings.py` 从当前应用取得默认模型存储与任务占用端口，路由不得直接构造旧数据库适配器。模型诊断与目录装配分离，共用错误映射归 `llm/http_errors.py`；缺少目录绑定时拒绝请求，不回退旧数据库。
+- 模型 HTTP、实时语音及派生任务从当前 ASGI 应用的 `llm/admission.py` 绑定取得额度生命周期，缺少绑定拒绝新任务，不直接导入旧治理账本。推理幂等回执查询归 `llm/inference/receipts.py`，重放不申请新额度；额度绑定本身不代替跨服务任务授权或独立账本实现。
 - 用户已确认管理端也采用独立服务和独立数据库，通过 Identity/Models 接口治理，不与业务服务共同写旧 SQLite。并行管理端任务的接口稳定后统一纳入部署。
 - 当前正式网站在多服务切换门禁通过前继续由现有入口运行；以下单体入口说明作为迁移期的恢复契约。新架构原生 Mac worker 主动连接受认证回环任务入口，容器不得挂载整个用户目录、个人 CLI 凭据或 Docker Socket。
 

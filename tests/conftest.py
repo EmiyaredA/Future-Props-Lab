@@ -66,12 +66,14 @@ async def authenticated_business_routes(request: pytest.FixtureRequest, monkeypa
     async def capacity():
         yield
 
-    from app.llm.routes.models import model_test_realtime
+    from dataclasses import replace
 
     async def acquire_capacity(*_args, **_kwargs):
         return None
 
-    monkeypatch.setattr(model_test_realtime, "acquire", acquire_capacity)
+    monkeypatch.setattr(
+        app.state, "model_admission", replace(app.state.model_admission, acquire=acquire_capacity)
+    )
     app.dependency_overrides[model_capacity] = capacity
     app.dependency_overrides[require_studio_auth] = principal
     try:
