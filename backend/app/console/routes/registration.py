@@ -13,7 +13,7 @@ from app.console.governance.registration import (
 )
 from app.console.routes.auth import _login_out, _platform_auth, _set_cookies
 from app.console.schemas.accounts import AuthMeOut
-from app.console.schemas.platform_governance import (
+from app.console.schemas.registration import (
     RedemptionPage,
     RegistrationIn,
     RegistrationInviteAction,

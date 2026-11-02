@@ -4491,6 +4491,12 @@
       "service": "models",
       "module": "fpl_models.models",
       "model": "RoleTemplate"
+    },
+    {
+      "table": "model_quota_policy",
+      "service": "models",
+      "module": "fpl_models.models",
+      "model": "QuotaPolicy"
     }
   ],
   "partitions": {

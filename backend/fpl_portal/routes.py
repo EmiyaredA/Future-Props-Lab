@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException
 
 from app.console.governance.developer_docs import developer_documents
-from app.console.schemas.platform_governance import DeveloperDocumentsOut
+from app.console.schemas.developer_documents import DeveloperDocumentsOut
 from fpl_runtime.http_dependencies import StudioAuth
 
 router = APIRouter(tags=["platform-governance"])

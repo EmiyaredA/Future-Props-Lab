@@ -62,6 +62,10 @@
 
 `llm/catalog/template_reconciliation.py` 拥有模板预览、保留 ID 的目录合并与默认选择规则；`template_values.py` 拥有输入密钥替换／保留及脱敏视图，不依赖治理存储。`fpl_models/templates.py` 使用追加的 `0004_role_templates` 自有角色策略表提供 CAS 与账号初始化，空策略沿用无密钥内置目录；调用方负责管理员授权和保存／审计事务。`task_usage.py` 只查询 Models 自有任务。恢复网站的旧设置、账号审计与跨工坊占用留在 `console/governance/model_templates.py` 适配器，独立服务不得导入它。
 
+`fpl_models/quotas.py` 使用追加的 `0005_quota_policy` 保存独立 CAS 策略；协议类型归 `llm/schemas/runtime_quotas.py`，旧治理 schema 只作兼容导出。`admission.py` 持有同步调用与三个 Models 任务种类的额度生命周期：全局统计仅返回固定自有表的汇总，恢复任务没有账本也计入占用；任务关联与创建同事务，重放不可改绑。`llm/task_outcomes.py` 共享供应商提交中断结果标记，未知与缺失任务不会因超时被当作已完成。额度不等于执行授权；排队授权、Runner 结算与治理审计仍待完整装配。
+
+`console/schemas/registration.py` 独立拥有注册／邀请码协议，`developer_documents.py` 拥有只读开发文档协议。Identity 和 Portal 直接使用各自协议文件，不能通过旧 `platform_governance.py` 聚合兼容导出间接加载模型模块。
+
 `llm/catalog/default_storage.py` 定义默认选择的显式存储端口，与目录 CAS 使用同一事务；恢复网站在入口装配点和 `catalog/legacy.py` 兼容用例中提供 `legacy_defaults.py`、`legacy_usage.py`，独立实现不得导入这些兼容适配器。旧 `platform_settings` 的 `account_defaults:` 分区归 Models，正式导入仍须业务接口校验与核验。`llm/models/model_templates.py` 与 `runtime_admission.py` 拥有模板同步和额度记录；旧 Console 模型公开名仅作明确兼容导出，恢复用例继续从模型能力直接导入自有记录。
 
 `llm/catalog/http_bindings.py` 提供不可变的每应用目录装配描述与账号绑定的 HTTP 用例依赖；恢复网站在 `main.py` 安装旧存储／任务占用适配器，目录、供应商和本地模型挂接路由不再直接构造旧适配器。`routes/models/diagnostics.py` 单独拥有模型诊断协议，避免目录只读装配加载供应商执行栈。`llm/http_errors.py` 统一模型操作错误映射，不导入其他路由。独立进程的目录 HTTP 切片验收不等于完整 Models 服务就绪。

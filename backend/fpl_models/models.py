@@ -63,10 +63,20 @@ class RoleTemplate(ModelsBase):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
 
 
+class QuotaPolicy(ModelsBase):
+    __tablename__ = "model_quota_policy"
+    __table_args__ = (CheckConstraint("id = 'runtime'"),)
+    id: Mapped[str] = mapped_column(String(16), primary_key=True, default="runtime")
+    payload: Mapped[dict] = mapped_column(JSON)
+    revision: Mapped[int] = mapped_column(Integer)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
+
+
 MODELS = (
     AccountDefaults,
     CatalogProvisioningReceipt,
     RoleTemplate,
+    QuotaPolicy,
     LlmCallLog,
     LocalModelInstallation,
     LocalModelOperation,
