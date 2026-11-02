@@ -64,6 +64,8 @@
 
 `llm/admission.py` 定义不可变的额度申请、释放、任务保留与派生任务接纳绑定；模型 HTTP 与实时语音从自己的 ASGI 应用取得它，恢复网站显式安装原治理实现。`llm/inference/receipts.py` 只依赖 Models 任务记录，负责账号限定的请求回执与摘要冲突校验，避免为重放检查导入素材能力。独立账本、队列和跨服务任务授权仍须单独实现，缺少绑定不允许回退单体数据库。
 
+`fpl_runtime/migrations.py` 在只读预检中核验已应用历史的位置、服务、版本和 checksum，使用转义 URI 保留真实路径字符。显式迁移接受有效历史前缀，启动检查要求完整注册表；打开目标连接后先重复校验，再设置 WAL 或创建表。错误归属与漂移库保持原状，不自动修复或接管未登记旧库。
+
 `runtime/image_sizes.py` 和 `runtime/raster.py` 维护无 ORM 的图片尺寸及受限解码；头像通过 Identity 自有适配使用，不为头像导入素材数据库。`media_rendering/preview_metadata.py` 和 `pdf_preview_worker.py` 拥有实际文本、PDF 与媒体预览；旧素材入口只负责账号查询适配。PDF 使用限时子进程，宫格字体按白名单封入 Rendering 镜像。Assets 上传暂存位于自己的状态卷，避免大文件占满容器内存临时盘。`scripts/website/rendering_docker_checks.py` 使用合成媒体验证真实容器链路，`assets_docker_checks.py` 覆盖超过内存临时盘大小的上传与 ZIP 导入。
 
 `capabilities/asset_store/folders.py` 复用同属文件能力的文件夹 CAS、名称和深度规则；`asset_context.py` 允许显式注入项目验证。新 Assets 数据库将外部项目 ID 视为不透明标识，仅保留自有表外键；旧迁移与数据库外键保持原样，迁移期单体继续使用旧适配。`fpl_runtime/asset_references.py` 维护受限消费方、资源种类和版本化引用消息，不接受客户端指定归属。
