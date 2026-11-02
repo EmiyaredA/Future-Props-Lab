@@ -11,6 +11,10 @@ FFmpeg/FFprobe；持续集成同时验证 Python 3.11
 
 账号直接拥有私人数据，平台角色仅有管理员和普通用户。管理员可分配共享模型与 Agent，但不能浏览他人私人项目。详见[账号与数据归属](docs/reference/account-governance.md)。
 
+## 独立服务迁移
+
+正在按同仓库独立服务拆分。Identity 与 Gateway 已提供隔离构建和 Compose 验收入口；其余服务和正式切换仍在实施。`npm run services:build -- identity --build` 构建独立镜像；操作与验收范围见[独立服务迁移](docs/operations/independent-services.md)。完成全部门禁前，正式网站继续使用下述现有入口。
+
 ## 快速开始
 
 正式使用通过浏览器访问 Mac 上的网站。`npm run build:studio` 构建正式资源，`npm start` 启动单进程网站；

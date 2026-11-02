@@ -3,12 +3,12 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, HTTPException, Query, Request
 
 from app.capabilities.identity.error_views import error_detail
+from app.console.governance.account_creation import create_managed_account
 from app.console.governance.management import (
     account_page,
     reset_account_password,
     update_account,
 )
-from app.console.governance.provisioning import create_managed_account
 from app.console.governance.service import AccountError
 from app.console.routes.auth import _account_out, _audit_response, _browser_auth, _platform_auth
 from app.console.schemas.accounts import (
@@ -60,10 +60,12 @@ async def accounts(
 @router.post("/platform/accounts", response_model=AccountCreatedOut, status_code=201)
 async def add_account(request: Request, session: SessionDep, body: AccountCreateIn):
     principal = await _platform_auth(request, session)
+    account_creator = request.app.state.account_creator
     try:
         user, temporary = await create_managed_account(
             session,
             principal,
+            account_creator=account_creator,
             **body.model_dump(),
             client_ip=client_ip(request),
         )

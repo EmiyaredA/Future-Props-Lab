@@ -14,7 +14,6 @@ from app.console.governance.governance_transactions import (
     cas,
     require_platform_admin,
 )
-from app.console.governance.provisioning import create_account
 from app.console.governance.service import add_audit_event, complete_login
 from app.console.models import User
 from app.console.models.platform_governance import RegistrationInviteCode as Invite
@@ -196,7 +195,7 @@ async def redemption_page(session, invite_id, page, page_size):
     }
 
 
-async def register(session: AsyncSession, body, client_ip, user_agent):
+async def register(session: AsyncSession, body, client_ip, user_agent, *, account_creator):
     validate_password(body.password)
     await session.rollback()
     await session.execute(text("BEGIN IMMEDIATE"))
@@ -206,7 +205,7 @@ async def register(session: AsyncSession, body, client_ip, user_agent):
         )
         if row is None or invite_status(row) != "active":
             raise AccountError("registration_invite_unavailable")
-        user, _ = await create_account(
+        user, _ = await account_creator(
             session,
             username=body.username,
             display_name=body.display_name,

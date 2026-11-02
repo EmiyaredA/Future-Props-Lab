@@ -208,3 +208,13 @@ def test_fixed_acceptance_connections_use_native_toml_and_empty_defaults(tmp_pat
     assert settings.fpl_acceptance_claude_user_ids == "three"
     empty = Settings(_config_file=None, _read_environment=False, fpl_secrets_key=KEY)
     assert not empty.fpl_acceptance_codex_executable
+
+
+def test_shipped_configuration_example_uses_current_supported_keys(tmp_path):
+    source = Path(__file__).resolve().parents[1] / "backend/config.example.toml"
+    content = source.read_text().replace("replace-with-a-valid-fernet-key", KEY)
+    target = tmp_path / "config.toml"
+    target.write_text(content)
+    settings = Settings(_config_file=target, _read_environment=False)
+    assert settings.fpl_acceptance_model_owner_user_id == ""
+    assert settings.fpl_agent_workbench_enabled is True

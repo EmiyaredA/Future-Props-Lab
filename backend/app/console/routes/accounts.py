@@ -87,12 +87,11 @@ async def login(request: Request, response: Response, session: SessionDep, body:
     user, auth_session, token, csrf = result
     clear_attempts(ip_key, user_key)
     _set_cookies(response, token, csrf)
-    return await _login_out(
-        session,
+    pending = await request.app.state.account_storage_check(session)
+    return _login_out(
         user,
         auth_session,
-        maintenance=getattr(request.app.state, "storage_upgrade_required", False),
-        check_storage=getattr(request.app.state, "service_id", None) != "identity",
+        maintenance=pending or getattr(request.app.state, "storage_upgrade_required", False),
     )
 
 

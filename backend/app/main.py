@@ -39,6 +39,7 @@ from app.console.governance.generation_queue import claim_visual_capacity, visua
 from app.console.governance.interview_executor_access import interview_actor_allowed
 from app.console.governance.model_template_sync import ModelTemplateSyncRunner
 from app.console.governance.profile import reconcile_profile_avatars
+from app.console.governance.provisioning import create_account
 from app.console.governance.runtime_quotas import recover_admissions
 from app.console.governance.service import AccountError
 from app.console.governance.visual_acceptance_access import acceptance_actor_allowed
@@ -135,6 +136,8 @@ app = FastAPI(
     description="未来道具研究所模型目录与调用观测 API",
     lifespan=lifespan,
 )
+app.state.account_creator = create_account
+app.state.account_storage_check = upgrade_pending
 app.state.code_agent_runs = CodeAgentRuns()
 app.add_middleware(
     CORSMiddleware,

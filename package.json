@@ -49,7 +49,9 @@
     "start": "uv run python scripts/website/serve.py",
     "website:service": "uv run python scripts/website/service.py",
     "services:contracts:generate": "uv run python scripts/website/service_contracts.py",
-    "services:contracts:check": "uv run python scripts/website/service_contracts.py --check"
+    "services:contracts:check": "uv run python scripts/website/service_contracts.py --check",
+    "services:build": "uv run python scripts/website/service_build.py",
+    "services:test:docker": "uv run python scripts/website/service_docker_smoke.py"
   },
   "devDependencies": {
     "@typescript/native-preview": "^7.0.0-dev.20260120.1",

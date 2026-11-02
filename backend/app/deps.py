@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import secrets
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request, WebSocket, status
@@ -24,6 +24,7 @@ from app.runtime.config import get_settings
 from app.runtime.db import get_session
 from app.runtime.ownership import bind_owner
 from app.runtime.time import utc_now
+from fpl_runtime.claims import Actor
 
 
 async def db_session():
@@ -93,6 +94,43 @@ def _valid_session(auth, user, now):
 
 
 async def authenticate_studio_request(
+    request: Request,
+    session: AsyncSession,
+    *,
+    required_scope: str,
+    allow_forced_password_change: bool = False,
+) -> StudioPrincipal:
+    service = getattr(request.app.state, "service_id", None)
+    if service is None or service == "identity":
+        return await _authenticate_identity_database(
+            request,
+            session,
+            required_scope=required_scope,
+            allow_forced_password_change=allow_forced_password_change,
+        )
+    actor = getattr(request.state, "service_actor", None)
+    if not isinstance(actor, Actor):
+        raise _unauthorized()
+    principal = StudioPrincipal(
+        user_id=actor.user_id,
+        platform_role=actor.platform_role,
+        must_change_password=False,
+        auth_kind=actor.auth_kind,
+        scopes=frozenset(actor.scopes),
+        session_id=actor.session_id,
+        api_key_id=actor.api_key_id,
+        reauthenticated_at=(
+            datetime.fromisoformat(actor.reauthenticated_at) if actor.reauthenticated_at else None
+        ),
+    )
+    if not principal.permits(required_scope):
+        raise _forbidden("insufficient_scope", f"缺少 {required_scope} 权限")
+    request.state.studio_principal = principal
+    bind_owner(session, principal.user_id)
+    return principal
+
+
+async def _authenticate_identity_database(
     request: Request,
     session: AsyncSession,
     *,

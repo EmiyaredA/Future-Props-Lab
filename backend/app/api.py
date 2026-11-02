@@ -30,6 +30,7 @@ from app.console.routes.code_agents import router as code_agents_router
 from app.console.routes.creative_workshop import router as creative_workshop_router
 from app.console.routes.file_management import router as file_management_router
 from app.console.routes.platform_governance import router as platform_governance_router
+from app.console.routes.registration import router as registration_router
 from app.demo_runtime.routes import call_router as demo_call_router
 from app.demo_runtime.routes import router as demo_runtime_router
 from app.deps import require_studio_auth
@@ -68,6 +69,7 @@ api_router.include_router(accounts_router)
 api_router.include_router(demo_runtime_router)
 api_router.include_router(demo_call_router)
 api_router.include_router(platform_governance_router)
+api_router.include_router(registration_router)
 api_router.include_router(model_templates_router)
 api_router.include_router(management_router)
 api_router.include_router(

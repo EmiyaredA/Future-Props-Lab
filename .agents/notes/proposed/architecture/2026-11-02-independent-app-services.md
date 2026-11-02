@@ -28,3 +28,9 @@ All applications and capabilities have separate releases and data. Stop Portal w
 ## Risks
 
 Service boundaries can preserve hidden database joins, stale authorization or duplicate supplier submissions if only entry points are separated. New runtime primitives and ownership manifests are preparation, not production readiness. Keep production on the archived monolith until every service has isolated business, storage, migration and restore coverage, including revocation of active streams and native worker receipts. Never copy the complete legacy database into each service.
+
+## Implementation progress
+
+Identity now has its own ASGI assembly, registered schema, SQLite lock, account creation outbox and minimal dependency-locked image. Public account operations reuse existing governance rules through explicit initialization callbacks; the legacy monolith retains catalog seeding. The gateway routes by the operation manifest, removes forged identity headers and asks Identity for request-bound assertions. Service authentication and live authorization primitives do not query another service's database.
+
+Real isolated Compose checks exercise account login without Portal, independent restarts, duplicate-writer rejection, WAL, offline snapshot restore and logout. A disposable protocol probe checks header forwarding and listener authority; it is not an Agents implementation. All other business services, independent browser entries, native workers, event consumers and formal data import remain required before production cutover.

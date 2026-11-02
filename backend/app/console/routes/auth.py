@@ -116,15 +116,9 @@ async def _platform_auth(request: Request, session: SessionDep):
     return principal
 
 
-async def _login_out(session, user, auth_session, *, maintenance=False, check_storage=True):
-    pending = False
-    if check_storage:
-        from app.capabilities.asset_store.account_upgrade import upgrade_pending
-
-        pending = await upgrade_pending(session)
-
+def _login_out(user, auth_session, *, maintenance=False):
     return AuthMeOut(
-        storage_upgrade_required=maintenance or pending,
+        storage_upgrade_required=maintenance,
         user=_user_out(user),
         permission_keys=sorted(role_permissions(user.platform_role)),
         must_change_password=user.must_change_password,

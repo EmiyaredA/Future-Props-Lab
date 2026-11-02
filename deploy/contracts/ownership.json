@@ -4383,6 +4383,12 @@
       "service": "tools",
       "module": "app.tool_navigation.models",
       "model": "ToolNavigationItem"
+    },
+    {
+      "table": "identity_account_events",
+      "service": "identity",
+      "module": "fpl_identity.models",
+      "model": "AccountEvent"
     }
   ],
   "partitions": {

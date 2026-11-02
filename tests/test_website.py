@@ -32,6 +32,8 @@ async def website(tmp_path):
     application = FastAPI()
     application.exception_handlers.update(main_app.exception_handlers)
     application.include_router(api_router)
+    application.state.account_creator = main_app.state.account_creator
+    application.state.account_storage_check = main_app.state.account_storage_check
     application.state.automation_changes = {}
     public = RemoteWeb(
         origin="https://studio.example.test",

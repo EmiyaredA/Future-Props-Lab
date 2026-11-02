@@ -1,0 +1,87 @@
+name: future-props-lab
+
+services:
+  identity:
+    image: ${FPL_IDENTITY_IMAGE:?Build and select an Identity release}
+    user: "${FPL_SERVICE_UID:?Set the data owner UID}:${FPL_SERVICE_GID:?Set the data owner GID}"
+    restart: unless-stopped
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    stop_grace_period: 45s
+    cpus: 1
+    mem_limit: 512m
+    tmpfs:
+      - /tmp:mode=1777,size=64m
+    volumes:
+      - type: bind
+        source: ${FPL_IDENTITY_STATE:?Select isolated or formally migrated Identity data}
+        target: /state
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${FPL_IDENTITY_CONFIG:?Select the minimal read-only Identity TOML}
+        target: /run/fpl/config.toml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${FPL_IDENTITY_SIGNING_KEY:?Select the Identity signing key}
+        target: /run/fpl/identity-signing.pem
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${FPL_GATEWAY_TOKEN:?Select the private gateway credential file}
+        target: /run/fpl/gateway-token
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/ready', timeout=2)"
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks: [private]
+
+  gateway:
+    image: caddy@sha256:36c24ad91a7ff7bc4c87fe22bfa8df3c4b18da0773d73fc12ee2c52b98c0bb7e
+    restart: unless-stopped
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: [no-new-privileges:true]
+    cpus: 0.5
+    mem_limit: 128m
+    environment:
+      XDG_CONFIG_HOME: /tmp/caddy-config
+      XDG_DATA_HOME: /tmp/caddy-data
+    tmpfs:
+      - /tmp:mode=1777,size=32m
+    ports:
+      - "127.0.0.1:${FPL_LOCAL_PORT:-9000}:9000"
+      - "127.0.0.1:${FPL_PUBLIC_PORT:-28081}:28081"
+    volumes:
+      - type: bind
+        source: ${FPL_GATEWAY_CONFIG:?Select the private generated gateway routing file}
+        target: /etc/caddy/Caddyfile
+        read_only: true
+        bind:
+          create_host_path: false
+    depends_on:
+      identity:
+        condition: service_healthy
+    networks: [private, ingress]
+
+networks:
+  private:
+    internal: true
+  ingress:
+    driver: bridge

@@ -102,3 +102,34 @@ jobs:
           lfs: false
       - run: git lfs install --local
       - run: python3 scripts/check_lfs_assets.py --pointers
+
+  docker-isolation:
+    name: Isolated Identity and Gateway containers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+          enable-cache: true
+      - run: uv sync --frozen --all-groups
+      - name: Prepare ignored acceptance logs
+        run: |
+          git check-ignore .local/service-split/ci-build.log
+          mkdir -p .local/service-split
+      - name: Build the independently owned image
+        run: uv run python scripts/website/service_build.py identity --build > .local/service-split/ci-build.log
+      - name: Verify real container isolation and restore
+        run: |
+          uv run python - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+          release = json.loads(Path('.local/service-split/ci-build.log').read_text().splitlines()[-1])
+          subprocess.run([
+              'uv', 'run', 'python', 'scripts/website/service_docker_smoke.py',
+              '--image', release['image'],
+          ], check=True)
+          PY
