@@ -62,6 +62,8 @@ def operation_owner(path):
     parts = path.strip("/").split("/")
     if len(parts) < 2 or parts[0] != "v1":
         raise ValueError("不是业务 API")
+    if path.startswith("/v1/account/demo-services/"):
+        return "models"
     if path == "/v1/account/developer-documents":
         return "portal"
     if path.startswith("/v1/account/project-certification/"):

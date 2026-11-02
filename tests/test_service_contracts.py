@@ -8,7 +8,7 @@ import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from fpl_deployment.contracts import document, generate
+from fpl_deployment.contracts import document, generate, operation_owner
 from fpl_runtime.catalog import SERVICES
 from fpl_runtime.claims import Actor, issue_context, verify_context
 from fpl_runtime.routing import Operation, RouteCatalog
@@ -81,3 +81,16 @@ def test_manifest_does_not_include_credentials_or_runtime_paths():
     assert "fpm_" not in content
     assert "/Users/" not in content
     assert "secrets_key" not in content
+
+
+@pytest.mark.parametrize(
+    ("path", "service"),
+    [
+        ("/v1/account/demo-services/{service_id}/install", "models"),
+        ("/v1/account/developer-documents", "portal"),
+        ("/v1/account/project-certification/{kind}/{project_id}", "creative"),
+        ("/v1/tool-navigation/codex-source", "agent-runtime"),
+    ],
+)
+def test_account_and_host_capability_prefixes_preserve_business_ownership(path, service):
+    assert operation_owner(path) == service

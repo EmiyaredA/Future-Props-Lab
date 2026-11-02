@@ -33,7 +33,7 @@
       "operation_id": "remove_api_key_v1_account_api_keys__key_id__revoke_post"
     },
     {
-      "service": "identity",
+      "service": "models",
       "method": "POST",
       "path": "/v1/account/demo-services/{service_id}/install",
       "operation_id": "install_v1_account_demo_services__service_id__install_post"
