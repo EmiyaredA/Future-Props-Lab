@@ -6,7 +6,6 @@ from uuid import uuid4
 
 from sqlalchemy import select
 
-from app.console.models import User
 from app.llm.credential_snapshot import snapshot_from_row
 from app.llm.generation_runtime import (
     GenerationTaskDriver,
@@ -18,7 +17,7 @@ from app.llm.generation_runtime import (
     submit_generation_task,
     upload_temporary_reference,
 )
-from app.llm.inference.assets import root
+from app.llm.inference.storage import InferenceStorage
 from app.llm.inference.tasks import ACTIVE
 from app.llm.models import LlmCallLog
 from app.llm.models.model_inference import ModelInferenceAsset, ModelInferenceTask
@@ -55,10 +54,12 @@ def add_log(session, row):
 class InferenceRunner(PollingTaskRunner):
     runner_name = "model-inference"
 
-    def __init__(self, session_factory, transport=None, local_runtime=None):
+    def __init__(self, session_factory, transport=None, local_runtime=None, *, settings=None):
         super().__init__()
         self.session_factory, self.transport = session_factory, transport
         self.local_runtime = local_runtime
+        self.settings = settings or get_settings()
+        self.storage = InferenceStorage(self.settings)
         self.store = GenerationTaskStore(
             session_factory=session_factory,
             task_type=ModelInferenceTask,
@@ -77,8 +78,7 @@ class InferenceRunner(PollingTaskRunner):
     async def recover(self):
         await self.driver.recover()
         # Startup recovery runs before workers; remove files never committed to an output record.
-        async with self.session_factory() as session:
-            accounts = list(await session.scalars(select(User.id)))
+        async with self.session_factory(info={"allow_system_reads": True}) as session:
             outputs = set(
                 (
                     await session.execute(
@@ -97,16 +97,7 @@ class InferenceRunner(PollingTaskRunner):
                 ).all()
             )
 
-        def cleanup():
-            for owner_user_id in accounts:
-                for kind, references in (("outputs", outputs), ("inputs", inputs)):
-                    directory = root(owner_user_id) / kind
-                    if directory.is_dir():
-                        for path in directory.iterdir():
-                            if path.is_file() and (owner_user_id, path.name) not in references:
-                                path.unlink(missing_ok=True)
-
-        await asyncio.to_thread(cleanup)
+        await asyncio.to_thread(self.storage.cleanup_uncommitted, inputs, outputs)
 
     async def process_once(self):
         await self.run_concurrently(await self.store.active_task_ids(), self.process)
@@ -123,7 +114,7 @@ class InferenceRunner(PollingTaskRunner):
             await self.driver.process(task_id)
 
     async def inputs(self, task):
-        async with self.session_factory() as session:
+        async with self.session_factory(info={"owner_user_id": task.owner_user_id}) as session:
             assets = list(
                 await session.scalars(
                     select(ModelInferenceAsset).where(
@@ -134,7 +125,7 @@ class InferenceRunner(PollingTaskRunner):
             )
             return {
                 row.id: (
-                    root(task.owner_user_id) / "inputs" / row.storage_key,
+                    self.storage.root(task.owner_user_id) / "inputs" / row.storage_key,
                     row.mime_type,
                     row.filename,
                     row.byte_size,
@@ -154,7 +145,7 @@ class InferenceRunner(PollingTaskRunner):
             return await upload_temporary_reference(
                 path=path,
                 mime_type=mime,
-                upload_url=get_settings().fpl_temp_media_upload_url,
+                upload_url=self.settings.fpl_temp_media_upload_url,
                 transport=self.transport,
             )
 
@@ -228,7 +219,7 @@ class InferenceRunner(PollingTaskRunner):
             if not row or row.status != "processing":
                 return
             owner_user_id, expected_kind = row.owner_user_id, row.kind
-        output = root(owner_user_id) / "outputs"
+        output = self.storage.root(owner_user_id) / "outputs"
         output.mkdir(parents=True, exist_ok=True)
         key = uuid4().hex
         temporary, final = output / (key + ".tmp"), output / key
@@ -236,7 +227,7 @@ class InferenceRunner(PollingTaskRunner):
             size, media_kind, mime, suffix = await download_generated_media(
                 url=result_url,
                 target=temporary,
-                max_bytes=get_settings().fpl_visual_asset_max_bytes,
+                max_bytes=self.settings.fpl_visual_asset_max_bytes,
                 transport=self.transport,
             )
             expected_media = (
@@ -300,7 +291,7 @@ class InferenceRunner(PollingTaskRunner):
             payload = asdict(result)
             content = json.dumps(payload, ensure_ascii=False).encode()
             key = uuid4().hex
-            path = root(task.owner_user_id) / "outputs" / key
+            path = self.storage.root(task.owner_user_id) / "outputs" / key
             path.parent.mkdir(parents=True, exist_ok=True)
             await asyncio.to_thread(path.write_bytes, content)
             await self.finish(
@@ -322,14 +313,14 @@ class InferenceRunner(PollingTaskRunner):
             inputs = await self.inputs(task)
             source = inputs[task.payload["reference_asset_id"]][0]
             key = uuid4().hex
-            output = root(task.owner_user_id) / "outputs" / key
+            output = self.storage.root(task.owner_user_id) / "outputs" / key
             output.parent.mkdir(parents=True, exist_ok=True)
             result = await synthesize(
                 self.local_runtime, self.session_factory, task, source, output
             )
             if (
                 not output.is_file()
-                or output.stat().st_size > get_settings().fpl_visual_asset_max_bytes
+                or output.stat().st_size > self.settings.fpl_visual_asset_max_bytes
             ):
                 raise ValueError("本地语音输出无效或超过大小限制")
             if not await self.finish(

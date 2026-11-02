@@ -14,7 +14,8 @@ from app.llm.local_models.catalog import credential_ready
 from app.llm.models import ModelProvider
 from app.llm.task_execution import TaskExecutionInfo
 from app.runtime.credentials import decrypt_secret
-from app.runtime.ownership import bind_owner, require_owner_id
+from app.runtime.ownership import require_owner_id
+from app.runtime.task_records import load_runner_task, recovery_accounts
 from app.runtime.time import utc_now
 
 SUBMISSION_INTERRUPTED_MESSAGE = "应用在提交供应商任务期间中断；为避免重复计费，请重新生成"
@@ -76,38 +77,34 @@ class GenerationTaskStore:
         self.claim_admission = claim_admission
 
     async def load(self, session: AsyncSession, task_id: str) -> Any | None:
-        task = await session.get(self.task_type, task_id)
-        if task is not None:
-            bind_owner(
-                session,
-                require_owner_id(task.owner_user_id, subject=self.task_subject),
-            )
-        return task
+        return await load_runner_task(session, self.task_type, task_id, subject=self.task_subject)
 
     async def recover_submitting(self) -> None:
-        async with self.session_factory() as session:
-            rows = list(
-                (
-                    await session.execute(
-                        select(self.task_type).where(self.task_type.status == "submitting")
+        owners = await recovery_accounts(
+            self.session_factory, self.task_type, statuses=("submitting",)
+        )
+        for owner in owners:
+            async with self.session_factory(info={"owner_user_id": owner}) as session:
+                rows = list(
+                    await session.scalars(
+                        select(self.task_type).where(
+                            self.task_type.owner_user_id == owner,
+                            self.task_type.status == "submitting",
+                        )
                     )
                 )
-                .scalars()
-                .all()
-            )
-            for row in rows:
-                require_owner_id(row.owner_user_id, subject=self.task_subject)
-                row.status = "failed"
-                row.error_message = SUBMISSION_INTERRUPTED_MESSAGE
-                row.revision += 1
-                row.updated_at = utc_now()
-                self._on_terminal(session, row)
-            await session.commit()
+                for row in rows:
+                    row.status = "failed"
+                    row.error_message = SUBMISSION_INTERRUPTED_MESSAGE
+                    row.revision += 1
+                    row.updated_at = utc_now()
+                    self._on_terminal(session, row)
+                await session.commit()
 
     async def active_task_ids(
         self, *, limit: int = 40, statuses: Collection[str] | None = None
     ) -> list[str]:
-        async with self.session_factory() as session:
+        async with self.session_factory(info={"allow_system_reads": True}) as session:
             return list(
                 (
                     await session.execute(
@@ -143,7 +140,12 @@ class GenerationTaskStore:
             provider = (
                 await session.get(ModelProvider, task.provider_id) if task.provider_id else None
             )
-            if provider is None or not provider.enabled or not credential_ready(provider):
+            if (
+                provider is None
+                or provider.owner_user_id != owner_user_id
+                or not provider.enabled
+                or not credential_ready(provider)
+            ):
                 await session.rollback()
                 raise ValueError("供应商已停用、删除或缺少 API Key")
             context = self._context(

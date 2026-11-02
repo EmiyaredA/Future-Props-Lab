@@ -23,8 +23,8 @@ from app.llm.providers.transcription import transcribe_model_audio
 from app.llm.schemas.model_test import ModelTestTranscriptionResultDetailOut
 from app.runtime.config import Settings, get_settings
 from app.runtime.credentials import decrypt_secret
-from app.runtime.ownership import bind_owner, require_owner_id
 from app.runtime.polling_runner import PollingTaskRunner
+from app.runtime.task_records import load_runner_task, recovery_accounts
 from app.runtime.time import utc_now
 
 
@@ -45,38 +45,35 @@ class ModelTestTranscriptionRunner(PollingTaskRunner):
     async def _load_task(
         self, session: AsyncSession, task_id: str
     ) -> ModelTestTranscriptionTask | None:
-        task = await session.get(ModelTestTranscriptionTask, task_id)
-        if task is not None:
-            bind_owner(
-                session,
-                require_owner_id(task.owner_user_id, subject="transcription task"),
-            )
-        return task
+        return await load_runner_task(
+            session, ModelTestTranscriptionTask, task_id, subject="transcription task"
+        )
 
     async def recover(self) -> None:
-        async with self.session_factory() as session:
-            rows = list(
-                (
-                    await session.execute(
+        owners = await recovery_accounts(
+            self.session_factory, ModelTestTranscriptionTask, statuses=("running",)
+        )
+        for owner in owners:
+            async with self.session_factory(info={"owner_user_id": owner}) as session:
+                rows = list(
+                    await session.scalars(
                         select(ModelTestTranscriptionTask).where(
-                            ModelTestTranscriptionTask.status == "running"
+                            ModelTestTranscriptionTask.owner_user_id == owner,
+                            ModelTestTranscriptionTask.status == "running",
                         )
                     )
                 )
-                .scalars()
-                .all()
-            )
-            for row in rows:
-                row.status = "failed"
-                row.error_message = "应用在识别请求期间中断；为避免重复计费，请重新开始测试"
-                row.completed_at = utc_now()
-                row.updated_at = row.completed_at
-                row.revision += 1
-                self._add_log(session, row)
-            await session.commit()
+                for row in rows:
+                    row.status = "failed"
+                    row.error_message = "应用在识别请求期间中断；为避免重复计费，请重新开始测试"
+                    row.completed_at = utc_now()
+                    row.updated_at = row.completed_at
+                    row.revision += 1
+                    self._add_log(session, row)
+                await session.commit()
 
     async def process_once(self) -> None:
-        async with self.session_factory() as session:
+        async with self.session_factory(info={"allow_system_reads": True}) as session:
             task_ids = list(
                 (
                     await session.execute(
