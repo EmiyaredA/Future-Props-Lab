@@ -116,16 +116,7 @@ async def journey():
                 json={"kind": "skill", "view": "upload"},
             )
             assert denied.status_code == 403
-            path = "/v1/automation/access"
-            assert (
-                await client.get(path, headers=headers("GET", path, local=False, admin=True))
-            ).status_code == 403
-            assert (
-                await client.get(path, headers=headers("GET", path, admin=False))
-            ).status_code == 403
-            assert (
-                await client.get(path, headers=headers("GET", path, admin=True))
-            ).status_code == 503
+            assert (await client.get("/v1/automation/access")).status_code == 404
             event = {"service": "models", "event_id": str(uuid4()), "owner_user_id": "alpha"}
             private_path = "/_internal/v1/change-events"
             assert (await client.post(private_path, json=event)).status_code == 403

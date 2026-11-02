@@ -7,7 +7,6 @@ import { PageErrorBoundary } from "./PageErrorBoundary";
 import { isWorkshopPage, hasReadOnlyRoute } from "./routes";
 import { ReadOnlyRoutes } from "./ReadOnlyRoutes";
 import { accountAllows } from "@features/accounts/permissions";
-import type { ManagementPage } from "@features/accounts/ManagementConsole";
 import {
   lazy,
   Suspense,
@@ -327,18 +326,6 @@ export default function App() {
       );
     };
   });
-
-  if (page.startsWith("management-"))
-    return (
-      <PageBoundary>
-        <ManagementConsole
-          page={page as ManagementPage}
-          session={session}
-          navigate={navigate}
-          onBack={() => navigate("home")}
-        />
-      </PageBoundary>
-    );
 
   const navigateKnowledgeSection = (section: KnowledgeSection) =>
     navigate(
@@ -867,12 +854,6 @@ export default function App() {
     </StudioShell>
   );
 }
-
-const ManagementConsole = lazy(() =>
-  import("@features/accounts/ManagementConsole").then((m) => ({
-    default: m.ManagementConsole,
-  })),
-);
 
 const ReadOnlyConfiguration = lazy(() =>
   import("@features/models/ReadOnlyConfiguration").then((m) => ({

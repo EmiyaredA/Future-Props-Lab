@@ -19,10 +19,10 @@ test("账号管理保留一次性密码，私人数据和旧空间 API 有明确
   context,
   browser,
 }) => {
-  await page.goto("/management/accounts");
-  await expect(
-    page.getByRole("heading", { name: "账号管理", exact: true }),
-  ).toBeVisible();
+  await page.goto("/home");
+  await page.getByRole("button", { name: "账号菜单" }).click();
+  await expect(page.getByRole("menuitem", { name: "管理中台" })).toHaveCount(0);
+  await page.keyboard.press("Escape");
   await expect(
     page.getByRole("button", { name: "工作区管理", exact: true }),
   ).toHaveCount(0);
@@ -60,10 +60,9 @@ test("账号管理保留一次性密码，私人数据和旧空间 API 有明确
     );
     expect(response.status()).toBe(404);
     const p = await other.newPage();
-    await p.goto("/management/accounts");
-    await expect(
-      p.getByRole("heading", { name: "需要平台管理员权限" }),
-    ).toBeVisible();
+    await p.goto("/home");
+    await p.getByRole("button", { name: "账号菜单" }).click();
+    await expect(p.getByRole("menuitem", { name: "管理中台" })).toHaveCount(0);
     const userProject = await write(
       other,
       "/v1/thought-workshop/knowledge-bases",
@@ -79,46 +78,19 @@ test("账号管理保留一次性密码，私人数据和旧空间 API 有明确
   } finally {
     await other.close();
   }
-  await page.goto("/management/settings");
-  await page.getByRole("button", { name: "仅同步指定账号" }).click();
-  await page.getByLabel("查找同步账号").fill(username);
-  await page.getByRole("combobox", { name: "同步目标账号" }).click();
-  await page
-    .getByRole("option", { name: `账号归属测试 · @${username}` })
-    .click();
-  await expect(
-    page.getByRole("combobox", { name: "同步目标账号" }),
-  ).toContainText(username);
-  await page.screenshot({
-    path: "../.local/account-ownership/browser/template-target.png",
-    fullPage: true,
-  });
-  await page.setViewportSize({ width: 390, height: 900 });
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth + 1,
-    ),
-  ).toBeTruthy();
-  await page
-    .getByRole("combobox", { name: "同步目标账号" })
-    .scrollIntoViewIfNeeded();
-  await page.screenshot({
-    path: "../.local/account-ownership/browser/template-target-mobile.png",
-  });
+  // Independent management UI and runtime permissions are covered by management.spec.ts.
 });
 
 for (const theme of ["light", "dark"]) {
-  test(`账号设置与运行额度适配桌面和手机：${theme}`, async ({ page }) => {
+  test(`账号设置适配桌面和手机：${theme}`, async ({ page }) => {
     await page.addInitScript(
       (t) => localStorage.setItem("future_props_theme", t),
       theme,
     );
     for (const width of [390, 1440]) {
       await page.setViewportSize({ width, height: 900 });
-      await page.goto("/management/quotas");
-      await expect(
-        page.getByRole("heading", { name: "运行额度", exact: true }),
-      ).toBeVisible();
+      await page.goto("/home");
+
       await page.getByRole("button", { name: "账号菜单", exact: true }).click();
       await page
         .getByRole("menuitem", { name: "账号设置", exact: true })

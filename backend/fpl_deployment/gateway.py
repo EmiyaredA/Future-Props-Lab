@@ -26,7 +26,10 @@ def render_gateway(
     native_tokens=None,
     native_port=29090,
     control=False,
+    audience="studio",
 ):
+    if audience not in {"studio", "management"}:
+        raise ValueError("Unknown gateway audience")
     origins = {"local": urlsplit(local_origin), "public": urlsplit(public_origin)}
     if (
         origins["local"].scheme != "http"
@@ -40,8 +43,43 @@ def render_gateway(
         raise ValueError("网关来源必须是精确的本机 HTTP 与公网 HTTPS 来源")
     if not re.fullmatch(r"[A-Za-z0-9_-]{32,256}", gateway_token):
         raise ValueError("网关凭据格式无效")
+
+    def upstream(service):
+        return (
+            "127.0.0.1:8080"
+            if audience == "management" and service == "management"
+            else service_upstream(service)
+        )
+
     groups = defaultdict(list)
     for operation in catalog.operations:
+        if audience == "studio" and (
+            operation.path.startswith("/v1/platform/")
+            or operation.service == "management"
+            or operation.path.startswith("/v1/automation/access")
+        ):
+            continue
+        if audience == "management" and not (
+            operation.service == "management"
+            or (
+                operation.service == "identity"
+                and operation.path.startswith(("/v1/platform/", "/v1/auth/", "/v1/account/"))
+            )
+            or (
+                operation.service == "models"
+                and (
+                    operation.path.startswith(("/v1/platform/", "/v1/account/demo-services/"))
+                    or (
+                        operation.method == "GET"
+                        and operation.path
+                        in {"/v1/model-categories", "/v1/model-providers", "/v1/local-models"}
+                    )
+                )
+            )
+        ):
+            continue
+        if audience == "management" and operation.path == "/v1/auth/register":
+            continue
         groups[(operation.service, operation.method)].append(operation)
     result = ["{", "  admin off", "  auto_https off", "}"]
     for ingress, port in (("local", 9000), ("public", 28081)):
@@ -121,7 +159,7 @@ def render_gateway(
                 )
             lines.extend(
                 [
-                    f"        reverse_proxy {service_upstream(service)} {{",
+                    f"        reverse_proxy {upstream(service)} {{",
                     "          flush_interval -1",
                 ]
             )
@@ -148,7 +186,13 @@ def render_gateway(
             ]
         )
         for service in sorted(SERVICES, key=lambda unit: unit.id == "portal"):
+            if (audience == "studio" and service.id == "management") or (
+                audience == "management" and service.id != "management"
+            ):
+                continue
             paths = [f"/_apps/{service.id}/*"]
+            if audience == "management":
+                paths.append("/")
             for root in service.page_roots:
                 paths.append(root)
                 if root not in {"/", "/apps"} and not root.endswith(".html"):
@@ -160,7 +204,7 @@ def render_gateway(
                 [
                     f"    @{name} path " + " ".join(paths),
                     f"    handle @{name} {{",
-                    f"      reverse_proxy {service.id}:8080 {{",
+                    f"      reverse_proxy {upstream(service.id)} {{",
                     "        header_up -Cookie",
                     "        header_up -Authorization",
                     "      }",
@@ -185,7 +229,9 @@ def render_gateway(
             ]
         )
         for service, token in sorted(native_tokens.items()):
-            if service != "agents" or not re.fullmatch(r"[A-Za-z0-9_-]{32,256}", token):
+            if service not in {"agents", "management"} or not re.fullmatch(
+                r"[A-Za-z0-9_-]{32,256}", token
+            ):
                 raise ValueError("原生通道服务或凭据无效")
             result.extend(
                 [
@@ -193,7 +239,7 @@ def render_gateway(
                     "      route {",
                     f"        uri strip_prefix /{service}",
                     f"        request_header X-Fpl-Native-Ingress {quoted(token)}",
-                    f"        reverse_proxy {service_upstream(service)} {{",
+                    f"        reverse_proxy {upstream(service)} {{",
                     "          flush_interval -1",
                     "        }",
                     "      }",

@@ -46,14 +46,19 @@
     "check-docs-center-protected": "node scripts/check-docs-center-protected.mjs",
     "test:sdk": "uv run pytest -q tests/test_python_sdk.py tests/test_workshop_operations.py tests/test_model_inference.py tests/test_automation_exports.py tests/test_sdk_workflows.py",
     "build:studio": "python3 scripts/check_lfs_assets.py --web && npm run build:studio --workspace web",
-    "start": "uv run python scripts/website/serve.py",
-    "website:service": "uv run python scripts/website/service.py",
+    "start": "uv run python scripts/management/start.py",
+    "website:service": "uv run python scripts/management/service.py",
     "services:contracts:generate": "uv run python scripts/website/service_contracts.py",
     "services:contracts:check": "uv run python scripts/website/service_contracts.py --check",
     "services:build": "uv run python scripts/website/service_build.py",
     "services:build:web": "npm run build:service --workspace web --",
     "services:test:agents": "uv run python scripts/website/agents_docker_smoke.py",
-    "services:test:docker": "uv run python scripts/website/service_docker_smoke.py"
+    "services:test:docker": "uv run python scripts/website/service_docker_smoke.py",
+    "start:legacy": "uv run python scripts/website/serve.py",
+    "management:start": "uv run python scripts/management/start.py --only-management",
+    "management:worker": "uv run python -m fpl_host.management",
+    "build:management": "npm run build:service --workspace web -- management",
+    "website:service:legacy": "uv run python scripts/website/service.py"
   },
   "devDependencies": {
     "@typescript/native-preview": "^7.0.0-dev.20260120.1",

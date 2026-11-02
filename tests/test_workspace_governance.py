@@ -98,7 +98,10 @@ def test_every_business_operation_has_an_explicit_policy():
         ("GET", "/v1/account/directory"),
         ("GET", "/v1/account/developer-documents"),
     }
-    assert actual | local_management | directory == set(ROUTE_PERMISSIONS)
+    from fpl_management.routes import router
+
+    management = {(method, route.path) for route in router.routes for method in route.methods}
+    assert actual | local_management | directory | management == set(ROUTE_PERMISSIONS)
 
 
 @pytest.mark.asyncio

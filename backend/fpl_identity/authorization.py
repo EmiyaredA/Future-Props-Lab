@@ -6,6 +6,7 @@ from urllib.parse import unquote, urlsplit
 from fastapi import APIRouter, HTTPException, Request, Response
 
 from app.capabilities.identity.route_permissions import route_permission
+from app.capabilities.identity.session_policy import MANAGEMENT_SESSION, STUDIO_SESSION
 from app.console.governance.automation_access import automation_allowed
 from app.deps import authenticate_studio_request
 from fpl_runtime.claims import HEADER, Actor, issue_context
@@ -16,9 +17,11 @@ router = APIRouter()
 @router.get("/_internal/v1/authorize")
 async def authorize(request: Request):
     options = request.app.state.identity_options
-    if not secrets.compare_digest(
-        request.headers.get("x-fpl-gateway", ""), options["gateway_token"]
-    ):
+    supplied = request.headers.get("x-fpl-gateway", "")
+    management = bool(options.get("management_gateway_token")) and secrets.compare_digest(
+        supplied, options["management_gateway_token"]
+    )
+    if not management and not secrets.compare_digest(supplied, options["gateway_token"]):
         raise HTTPException(403, "gateway_required")
     service = request.headers.get("x-fpl-target-service", "")
     method = request.headers.get("x-fpl-request-method", "")
@@ -34,7 +37,15 @@ async def authorize(request: Request):
         raise HTTPException(404, "unknown_operation")
     if operation.service != service or service == "identity":
         raise HTTPException(403, "invalid_service_target")
-    origin = options["origins"].get(request.headers.get("x-fpl-ingress"))
+    if not management and (path.startswith("/v1/platform/") or service == "management"):
+        raise HTTPException(404, "management_gateway_required")
+    origins = options["management_origins"] if management else options["origins"]
+    if (
+        path.startswith("/v1/platform/local-models/")
+        and request.headers.get("x-fpl-ingress") != "local"
+    ):
+        raise HTTPException(403, "local_management_required")
+    origin = origins.get(request.headers.get("x-fpl-ingress"))
     if origin is None or request.headers.get("host") != origin.netloc:
         raise HTTPException(403, "invalid_ingress")
     headers = [
@@ -50,7 +61,7 @@ async def authorize(request: Request):
         "scheme": origin.scheme,
         "query_string": target.query.encode(),
         "headers": headers,
-        "state": {},
+        "state": {"session_policy": MANAGEMENT_SESSION if management else STUDIO_SESSION},
     }
     forwarded = Request(scope)
     permission = route_permission(method, path)
@@ -70,6 +81,7 @@ async def authorize(request: Request):
             raise HTTPException(403, "insufficient_permission")
         actor = Actor(
             user_id=principal.user_id,
+            purpose="management" if management else "studio",
             platform_role=principal.platform_role,
             auth_kind=principal.auth_kind,
             scopes=tuple(sorted(principal.scopes)),

@@ -124,3 +124,7 @@ Apple Silicon Mac（macOS 15+）可在模型服务中按需安装 Qwen3-TTS Base
 视觉工坊的视频节点提供固定动作迁移验收：模型 API 在 `[visual_acceptance]` 配置，Codex、Claude Code、OpenCode、DeepSeek Harness 和 Pi CLI 在 `[code_agents]` 配置并按账号授权。默认未配置，不自动安装或登录 CLI；项目负责模板说明和节点汇总，质量记录不限制最终输出采用。配置、版本要求与执行边界见[节点验收](docs/operations/node-acceptance.md)。
 
 账号归属升级使用 `0116_account_ownership`。完成 schema 迁移后，管理员在维护页执行文件迁移与核验，全部完成后重启应用。正式数据升级前停机备份；开发热加载不会自动应用此迁移。旧凭据撤销，需要重新登录及签发 API Key。
+
+### 独立管理端
+
+管理中台使用独立服务与数据库，账号和模型治理分别由 Identity、Models 承接。已配置并完成迁移的多服务部署使用 `npm start`，仅启动管理侧使用 `npm run management:start`；管理页面使用 `npm run build:management` 独立构建。管理入口默认 `http://127.0.0.1:9002`，开发入口为 3001。旧单体恢复入口为 `npm run start:legacy`，正式切换前不能与新管理器竞争同一部署。配置、权限和隔离验收见[独立管理服务](docs/reference/management-service.md)。

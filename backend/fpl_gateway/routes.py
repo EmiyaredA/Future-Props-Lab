@@ -1,17 +1,12 @@
 """The stable public automation contract depends on explicit owning-service interfaces."""
 
-from typing import Literal
-
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel
 
-from app.capabilities.web_access.contracts import AccessStatus
 from app.console.schemas.automation import (
     AutomationCapabilities,
     AutomationOpenIn,
     AutomationOpenOut,
 )
-from app.runtime.website import require_local_browser
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
 from fpl_runtime.http_dependencies import StudioAuth
 from fpl_runtime.resource_routes import RESOURCE_ROUTES, page_link
@@ -79,31 +74,4 @@ async def open_resource(request: Request, body: AutomationOpenIn, principal: Stu
             raise HTTPException(404, {"code": "resource_not_found"})
     return AutomationOpenOut(
         **body.model_dump(), path=page_link(body.kind, body.resource_id, body.view)
-    )
-
-
-def local_access(request, principal):
-    require_local_browser(request, principal)
-    if not principal.is_platform_admin:
-        raise HTTPException(403, "仅本机网站平台管理员可管理公网入口")
-    if request.app.state.access is None:
-        raise HTTPException(503, "Mac 公网访问管理组件尚未连接")
-    return request.app.state.access
-
-
-@router.get("/access", response_model=AccessStatus)
-async def access_status(request: Request, principal: StudioAuth):
-    return await local_access(request, principal).status(principal, request.state.service_assertion)
-
-
-class AccessAction(BaseModel):
-    action: Literal["public_start", "public_stop", "check"]
-
-
-@router.post("/access/actions", response_model=AccessStatus)
-async def access_action(request: Request, body: AccessAction, principal: StudioAuth):
-    return await local_access(request, principal).action(
-        body.action,
-        principal,
-        request.state.service_assertion,
     )

@@ -68,6 +68,7 @@ async def complete_login(
     password: str,
     client_ip: str,
     user_agent: str,
+    purpose: str = "studio",
 ) -> tuple[User, AuthSession, str, str] | None:
     try:
         normalized = normalize_username(username)
@@ -78,7 +79,14 @@ async def complete_login(
     upgraded = None
     if user is not None:
         valid, upgraded = verify_password(user.password_hash, password)
-    if user is None or not valid or user.status != "active":
+    if purpose not in {"studio", "management"}:
+        raise ValueError("invalid session purpose")
+    if (
+        user is None
+        or not valid
+        or user.status != "active"
+        or (purpose == "management" and user.platform_role != "admin")
+    ):
         add_audit_event(
             session,
             "auth.login",
@@ -105,6 +113,8 @@ async def complete_login(
         client_ip=client_ip,
         user_agent=user_agent[:500],
     )
+    if purpose == "management":
+        auth_session.purpose = purpose
     user.last_login_at = now
     session.add(auth_session)
     add_audit_event(

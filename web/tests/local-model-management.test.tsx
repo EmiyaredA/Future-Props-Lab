@@ -89,6 +89,7 @@ function mount(
   options: {
     catalog?: Catalog;
     canWrite?: boolean;
+    allowHostManagement?: boolean;
     canTest?: boolean;
     editor?: boolean;
     slot?: boolean;
@@ -108,6 +109,7 @@ function mount(
     const panel = (open: (providerId: string) => void = onOpenConnection) => (
       <LocalModelsPanel
         catalog={catalog}
+        allowHostManagement={options.allowHostManagement ?? true}
         canWrite={options.canWrite ?? true}
         canTest={options.canTest ?? true}
         onTestModel={onTestModel}
@@ -299,7 +301,7 @@ test("non-admin space managers may attach an enabled model but cannot manage sha
 test("read-only viewers see why installation and attachment are unavailable", async () => {
   canManage = false;
   const view = mount({ canWrite: false, canTest: false });
-  await screen.findByText("安装和运行管理由平台管理员操作。");
+  await screen.findByText("安装和运行管理由平台管理员在本机管理端操作。");
   expect(screen.queryByRole("button", { name: "下载安装" })).toBeNull();
   view.unmount();
   state = [{ ...item, status: "installed", enabled: true }];
@@ -518,4 +520,12 @@ test("late attachment responses cannot repopulate caches after an identity chang
   await act(async () => finish(attachedCatalog()));
   expect(view.client.getQueryData(modelQueryKeys.catalog)).toBeUndefined();
   expect(view.client.getQueryData(modelQueryKeys.localModels)).toBeUndefined();
+});
+
+test("business model pages hide host installation controls for administrators", async () => {
+  mount({ allowHostManagement: false });
+  await screen.findByRole("heading", { name: item.label });
+  expect(
+    screen.queryByRole("button", { name: "下载安装" }),
+  ).not.toBeInTheDocument();
 });

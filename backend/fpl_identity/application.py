@@ -55,6 +55,9 @@ def create_app(
     key_id="identity-1",
     version="development",
     service_credentials=None,
+    management_gateway_token=None,
+    management_local_origin="http://127.0.0.1:9002",
+    management_public_origin="",
 ):
     database = Database("identity", state_root, models=MODELS, account_models=())
     if get_settings().database_path != database.path:
@@ -88,6 +91,11 @@ def create_app(
     app.state.identity_options = {
         "service_credentials": dict(service_credentials or {}),
         "gateway_token": gateway_token,
+        "management_gateway_token": management_gateway_token,
+        "management_origins": {
+            "local": urlsplit(management_local_origin),
+            "public": urlsplit(management_public_origin),
+        },
         "private_key": private_key,
         "key_id": key_id,
         "origins": {"local": urlsplit(local_origin), "public": urlsplit(public_origin)},
@@ -123,6 +131,9 @@ def create_app(
         local_origin=local_origin,
         public_origin=public_origin,
         catalog=catalog,
+        management_gateway_token=management_gateway_token,
+        management_local_origin=management_local_origin,
+        management_public_origin=management_public_origin,
     )
 
     @app.get("/health")

@@ -2,12 +2,6 @@ export type StudioPage =
   | "thought-workshop-community"
   | "thought-workshop-favorites"
   | "thought-workshop-published"
-  | "management-accounts"
-  | "management-audit"
-  | "management-invites"
-  | "management-settings"
-  | "management-services"
-  | "management-quotas"
   | "home"
   | "creative-workshop"
   | "creative-workshop-mine"
@@ -130,18 +124,6 @@ export function parsePage(pathname = window.location.pathname): AppPage {
 }
 
 export function parseRoute(pathname = window.location.pathname): AppRoute {
-  if (pathname.startsWith("/management/invites"))
-    return { page: "management-invites" };
-  if (pathname.startsWith("/management/settings"))
-    return { page: "management-settings" };
-  if (pathname.startsWith("/management/services"))
-    return { page: "management-services" };
-  if (pathname.startsWith("/management/quotas"))
-    return { page: "management-quotas" };
-  if (pathname.startsWith("/management/audit"))
-    return { page: "management-audit" };
-  if (pathname.startsWith("/management"))
-    return { page: "management-accounts" };
   const community = pathname.match(
     /^\/apps\/thought-workshop\/community(?:\/([^/]+)(?:\/documents\/([^/]+))?)?\/?$/,
   );
@@ -245,12 +227,6 @@ export function pathFor(
     "thought-workshop-community": `/apps/thought-workshop/community${projectId ? `/${encodeURIComponent(projectId)}${documentId ? `/documents/${encodeURIComponent(documentId)}` : ""}` : ""}`,
     "thought-workshop-favorites": "/apps/thought-workshop/favorites",
     "thought-workshop-published": "/apps/thought-workshop/published",
-    "management-accounts": "/management/accounts",
-    "management-audit": "/management/audit",
-    "management-invites": "/management/invites",
-    "management-settings": "/management/settings",
-    "management-services": "/management/services",
-    "management-quotas": "/management/quotas",
     home: "/home",
     "creative-workshop": "/creative-workshop",
     "creative-workshop-mine": "/creative-workshop/mine",

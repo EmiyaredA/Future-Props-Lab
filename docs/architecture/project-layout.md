@@ -697,3 +697,7 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 ### 角色工坊退役验收
 
 `web/e2e/retired-character-workshops.spec.ts` 覆盖首页内置动画、明暗主题、390/768/1600 宽度、减少动态效果及 Agent 工作台徽章。该首页展示不启动任何独立角色窗口，也不读取私人角色项目。
+
+## 独立管理服务
+
+`backend/fpl_management/` 拥有管理装配、公开协议、自有运维任务/状态 ORM、显式迁移和 worker 接收协议；不导入其他服务 ORM。Identity 拥有管理会话及用途迁移；Models 拥有模板、额度与演示治理，浏览器经独立管理网关访问这些接口。`backend/fpl_host/management*.py` 拥有 Mac 限定 Compose 控制、双 SSH 生命周期和持久执行回执。`scripts/management/` 拥有一键启动及独立 LaunchAgent。`web/src/app/entries/management.tsx` 拥有独立入口与认证装配，`features/accounts/management/` 拥有运行与访问页面；公开类型来自单独管理 OpenAPI。`deploy/management.compose.yaml` 是独立管理部署叠加清单，`deploy/images/management/` 保存最小依赖锁和镜像定义。验证入口为 `tests/test_management_service.py`、`tests/test_management_host.py` 与 `web/playwright.management.config.ts`。详见[管理服务参考](../reference/management-service.md)。

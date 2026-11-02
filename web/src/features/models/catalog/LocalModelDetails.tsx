@@ -38,7 +38,7 @@ export function LocalModelDetails({
   canWrite: boolean;
   canTest: boolean;
   onTestModel?: ModelCatalogEditorProps["onTestModel"];
-  onOpenConnection: (providerId: string) => void;
+  onOpenConnection?: (providerId: string) => void;
   pending: boolean;
   stale: boolean;
   act: (model: LocalModel, action: LocalModelAction) => Promise<boolean>;
@@ -111,7 +111,7 @@ export function LocalModelDetails({
       action: () => void act(model, "attach"),
       disabled: disabled || !model.compatible,
     };
-  else if (connection && running && !connectionEnabled)
+  else if (connection && running && !connectionEnabled && onOpenConnection)
     primary = {
       label: "前往接入管理",
       action: () => onOpenConnection(connection.provider.id),
@@ -126,7 +126,7 @@ export function LocalModelDetails({
 
   const permissionHint =
     !installed && !canManage
-      ? "安装和运行管理由平台管理员操作。"
+      ? "安装和运行管理由平台管理员在本机管理端操作。"
       : installed && !model.enabled && !canManage
         ? "请联系平台管理员启用本机服务。"
         : running && !connection && !canWrite
@@ -259,7 +259,7 @@ export function LocalModelDetails({
           <small>停止服务会影响本机所有空间对此模型的调用。</small>
           {!canManage && (
             <p className="lm-permission-hint">
-              安装和运行管理由平台管理员操作。
+              安装和运行管理由平台管理员在本机管理端操作。
             </p>
           )}
         </div>

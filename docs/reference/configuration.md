@@ -92,3 +92,5 @@ Web 开发代理已经为 `/v1` 开启 WebSocket upgrade。HTTPS 生产反向代
 
 `npm run setup` 不安装 Chromium。FFmpeg 与 FFprobe 必须可从系统命令路径调用；Chromium 仅用于
 Playwright E2E，按 Playwright 的安装说明单独准备，不参与正式视频导出。
+
+独立管理侧增加 `[management]`、`[management_host]`、`[management_remote]` 与 `[deployment]`；配置仍只维护于 `backend/config.toml`。字段用途、最小投影和管理会话边界见[独立管理服务](management-service.md)。

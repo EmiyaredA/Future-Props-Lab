@@ -1,3 +1,4 @@
+import "./local-models.css";
 import { useId, useState } from "react";
 import { AudioLines, ChevronRight, Info, Monitor } from "lucide-react";
 import type { Catalog } from "@features/models/api";
@@ -13,14 +14,16 @@ export function LocalModelsPanel({
   catalog,
   canWrite,
   canTest = false,
+  allowHostManagement = false,
   onTestModel,
   onOpenConnection,
 }: {
   catalog: Catalog;
   canWrite: boolean;
   canTest?: boolean;
+  allowHostManagement?: boolean;
   onTestModel?: ModelCatalogEditorProps["onTestModel"];
-  onOpenConnection: (providerId: string) => void;
+  onOpenConnection?: (providerId: string) => void;
 }) {
   const { query, ...operations } = useLocalModels(catalog.revision);
   const [selectedId, setSelectedId] = useState("qwen3-tts-0.6b-base");
@@ -119,7 +122,9 @@ export function LocalModelsPanel({
               key={selected.id}
               model={selected}
               connection={connection}
-              canManage={query.data?.can_manage ?? false}
+              canManage={
+                allowHostManagement && (query.data?.can_manage ?? false)
+              }
               canWrite={canWrite}
               canTest={canTest}
               onTestModel={onTestModel}

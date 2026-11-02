@@ -638,6 +638,16 @@ OPERATIONS["models.use"] += (
     ("POST", "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance/runs"),
 )
 
+OPERATIONS["configuration.manage"] += (
+    ("GET", "/v1/management/runtime"),
+    ("GET", "/v1/management/application"),
+    ("POST", "/v1/management/application/actions"),
+    ("GET", "/v1/management/application/logs"),
+    ("GET", "/v1/management/access/{target}"),
+    ("POST", "/v1/management/access/{target}/actions"),
+    ("GET", "/v1/management/jobs/{job_id}"),
+)
+
 ROUTE_PERMISSIONS = {
     operation: key for key, operations in OPERATIONS.items() for operation in operations
 }

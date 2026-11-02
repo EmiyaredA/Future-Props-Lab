@@ -54,6 +54,7 @@
 ## 应用与目录边界
 
 - 经用户批准，正在将网站单体迁往同仓库独立服务和 Docker Compose。`backend/fpl_runtime/` 拥有无业务 ORM 依赖的服务清单、身份断言、路由与存储契约；`backend/fpl_deployment/` 拥有构建、归属检查和受控部署，不能成为业务实现层。每个服务独立数据库、迁移、Runner 和版本，不加载单体全部 ORM，不跨服务直接读写数据库。
+- `backend/fpl_management/` 拥有独立管理页面、运维回执、自有数据库与迁移，不导入 Identity、Models 或工坊 ORM；治理请求经管理网关直达所属服务。本机启停、日志和双隧道由 `fpl_host/management.py` 的受认证回环 worker 执行，容器不持有 Docker Socket 或主机凭据。Identity 自有迁移和服务端用途校验隔离管理会话；旧单体仅作迁移期恢复入口。
 - `backend/fpl_identity/` 装配账号独立服务，自有账号事件与迁移；复用治理用例但不得依赖模型或工坊 ORM。账号创建使用显式事务回调，单体入口注入旧目录初始化，Identity 注入持久事件。镜像从静态源码闭包构建，不能复制全部后端。
 - `backend/fpl_gateway/` 拥有稳定网关控制面、能力发现、有归属校验的资源链接和去重变更游标；不导入门户、工坊或 Identity ORM。跨应用查询必须使用绑定原请求与目标用途的委托，不能用服务凭据任意代理账号。Caddy 与控制面共用一个 Gateway 发布单元，进程互相监督。
 - `backend/fpl_agents/` 拥有工作台独立装配、版本化原生采集协议、任务与帧回执、自有迁移和协调器；不加载 Identity ORM 或原生读取器。`backend/fpl_host/` 仅在 Mac 运行，主动连接回环入口；原生读取与检查点跟随不取得容器数据库或通用执行权限。工作台使用显式认证与存储依赖，单体适配入口仅作迁移期兼容。

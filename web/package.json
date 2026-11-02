@@ -9,14 +9,16 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "lint": "eslint src tests e2e playwright.config.ts --max-warnings=0",
+    "lint": "eslint src tests e2e playwright.config.ts playwright.management.config.ts management.config.ts --max-warnings=0",
     "format": "prettier --write src tests e2e *.html *.ts *.json",
     "format:check": "prettier --check src tests e2e *.html *.ts *.json",
-    "contracts:generate": "openapi-typescript src/generated/openapi.json -o src/generated/api.ts",
-    "contracts:check": "openapi-typescript src/generated/openapi.json | diff - src/generated/api.ts",
+    "contracts:generate": "openapi-typescript src/generated/openapi.json -o src/generated/api.ts && openapi-typescript src/generated/management-openapi.json -o src/generated/managementApi.ts",
+    "contracts:check": "openapi-typescript src/generated/openapi.json | diff - src/generated/api.ts && openapi-typescript src/generated/management-openapi.json | diff - src/generated/managementApi.ts",
     "voice-vad:sync": "node scripts/sync-voice-vad-assets.mjs",
     "build:service": "tsc -b && node scripts/build-service.mjs",
-    "build:studio": "node scripts/sync-voice-vad-assets.mjs --check && tsc -b && vite build --mode studio --outDir ${FPL_WEB_DIST_DIR:-../.local/studio-release} && FPL_WEB_DIST_DIR=${FPL_WEB_DIST_DIR:-../.local/studio-release} node scripts/check-bundle-budgets.mjs && FPL_WEB_DIST_DIR=${FPL_WEB_DIST_DIR:-../.local/studio-release} node scripts/prepare-studio-release.mjs"
+    "build:studio": "node scripts/sync-voice-vad-assets.mjs --check && tsc -b && vite build --mode studio --outDir ${FPL_WEB_DIST_DIR:-../.local/studio-release} && FPL_WEB_DIST_DIR=${FPL_WEB_DIST_DIR:-../.local/studio-release} node scripts/check-bundle-budgets.mjs && FPL_WEB_DIST_DIR=${FPL_WEB_DIST_DIR:-../.local/studio-release} node scripts/prepare-studio-release.mjs",
+    "dev:management": "vite --config management.config.ts --host 127.0.0.1",
+    "test:e2e:management": "playwright test --config playwright.management.config.ts"
   },
   "dependencies": {
     "@antv/infographic": "0.2.20",

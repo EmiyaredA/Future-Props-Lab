@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def test_all_public_operations_and_tables_have_reviewable_owners():
     data = document(ROOT)
-    assert len(SERVICES) == 22
+    assert len(SERVICES) == 23
     assert len(data["operations"]) > 590
     assert len(data["tables"]) > 100
     assert (

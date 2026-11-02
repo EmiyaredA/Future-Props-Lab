@@ -5,6 +5,7 @@ import secrets
 import jwt
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 
 from app.capabilities.identity.permissions import role_permissions, role_scopes
 from app.console.models.accounts import AuthSession, ManagementApiKey, User
@@ -40,6 +41,8 @@ async def active_actor(session, actor):
             and auth.revoked_at is None
             and auth.idle_expires_at > now
             and auth.absolute_expires_at > now
+            and (await session.scalar(select(AuthSession.purpose).where(AuthSession.id == auth.id)))
+            == actor.purpose
         )
     else:
         key = await session.get(ManagementApiKey, actor.api_key_id)

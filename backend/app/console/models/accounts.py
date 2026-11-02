@@ -35,6 +35,7 @@ class User(Base):
 
 class AuthSession(Base):
     __tablename__ = "auth_sessions"
+    __mapper_args__ = {"eager_defaults": False}
     __table_args__ = (
         Index("ix_auth_sessions_user_active", "user_id", "revoked_at", "absolute_expires_at"),
     )
@@ -43,6 +44,7 @@ class AuthSession(Base):
     user_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
+    purpose: Mapped[str] = mapped_column(String(16), server_default="studio", deferred=True)
     token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     csrf_hash: Mapped[str] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)

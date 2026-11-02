@@ -1,5 +1,6 @@
 """Authenticated outbound loopback RPC; never follow redirects or proxy environment."""
 
+import re
 from urllib.parse import urlsplit
 
 import httpx
@@ -14,7 +15,9 @@ class ProtocolConflict(RuntimeError):
 
 
 class NativeTransport:
-    def __init__(self, *, base_url, credential, transport=None):
+    def __init__(self, *, base_url, credential, transport=None, service="agents"):
+        if service not in {"agents", "management"}:
+            raise ValueError("未登记的原生通道")
         url = urlsplit(base_url)
         if (
             url.scheme != "http"
@@ -24,8 +27,8 @@ class NativeTransport:
             or url.password
             or url.query
             or url.fragment
-            or url.path != "/agents"
-            or len(credential) < 32
+            or url.path != "/" + service
+            or not re.fullmatch(r"[A-Za-z0-9_-]{32,256}", credential)
         ):
             raise ValueError("原生采集只能连接指定的受认证回环入口")
         self.client = httpx.AsyncClient(
