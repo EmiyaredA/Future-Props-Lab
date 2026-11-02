@@ -20,6 +20,9 @@ def parser():
     result.add_argument(
         "--catalog", type=Path, default=Path("/app/deploy/contracts/ownership.json")
     )
+    result.add_argument(
+        "--service-credentials", type=Path, default=Path("/run/fpl/service-credentials.json")
+    )
     result.add_argument("--port", type=int, default=8080)
     return result
 
@@ -65,6 +68,9 @@ def run(options):
             local_origin=f"http://127.0.0.1:{settings.fpl_website_port}",
             public_origin=settings.fpl_remote_web_origin,
             private_key=key,
+            service_credentials=json.loads(options.service_credentials.read_text())
+            if options.service_credentials.exists()
+            else {},
             version=os.environ.get("FPL_SERVICE_VERSION", "development"),
         )
         uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)

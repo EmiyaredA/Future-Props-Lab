@@ -1,0 +1,373 @@
+"""Real workbench containers plus an outbound native collector; synthetic data only."""
+
+import argparse
+import json
+import os
+import secrets
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+import httpx
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "backend"))
+
+from fpl_deployment.gateway import render_gateway  # noqa: E402
+from fpl_runtime.routing import RouteCatalog  # noqa: E402
+
+
+def exercise(
+    identity_image, agents_image, *, local_port=19100, public_port=19181, native_port=29090
+):
+    project = "fpl-isolated-agents-" + secrets.token_hex(5)
+    root = ROOT / ".local/service-split" / project
+    subprocess.run(["git", "check-ignore", "--quiet", str(root)], check=True, cwd=ROOT)
+    root.mkdir(mode=0o700)
+    for name in ("identity", "agents", "native"):
+        (root / name).mkdir(mode=0o700)
+    gateway_token, service_token, lane_token, worker_token = [
+        secrets.token_urlsafe(48) for _ in range(4)
+    ]
+    password = secrets.token_urlsafe(32) + "-Aa9!"
+    key = Ed25519PrivateKey.generate()
+    origin = f"http://127.0.0.1:{local_port}"
+    native_base = f"http://127.0.0.1:{native_port}"
+    config = (
+        '[storage]\ndatabase_path = "/state/service.db"\n[security]\nsecrets_key = '
+        + json.dumps(Fernet.generate_key().decode())
+        + f'\n[website]\nport = {local_port}\n[remote_web]\norigin = "https://studio.example.test"\n'
+    )
+    material = {
+        "identity.toml": config.encode(),
+        "agents.toml": config.encode(),
+        "identity-signing.pem": key.private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        ),
+        "identity-public.pem": key.public_key().public_bytes(
+            serialization.Encoding.PEM,
+            serialization.PublicFormat.SubjectPublicKeyInfo,
+        ),
+        "gateway-token": gateway_token.encode(),
+        "identity-token": service_token.encode(),
+        "native-ingress": lane_token.encode(),
+        "workers.json": json.dumps({"fixture-collector": worker_token}).encode(),
+        "service-credentials.json": json.dumps({"agents": service_token}).encode(),
+        "connection.json": json.dumps(
+            {
+                "base_url": native_base + "/agents",
+                "credential": worker_token,
+            }
+        ).encode(),
+        "Caddyfile": render_gateway(
+            RouteCatalog.read(ROOT / "deploy/contracts/ownership.json"),
+            gateway_token=gateway_token,
+            local_origin=origin,
+            public_origin="https://studio.example.test",
+            native_tokens={"agents": lane_token},
+            native_port=native_port,
+        ).encode(),
+    }
+    for name, content in material.items():
+        path = root / name
+        path.write_bytes(content)
+        path.chmod(0o600)
+    records = [
+        {
+            "type": "session_meta",
+            "payload": {
+                "id": "docker-native-one",
+                "cwd": "/fixture",
+                "source": "cli",
+                "originator": "codex_cli_rs",
+            },
+        },
+        {
+            "type": "response_item",
+            "payload": {
+                "id": "first",
+                "type": "message",
+                "role": "user",
+                "content": [{"type": "input_text", "text": "isolated original"}],
+            },
+        },
+    ]
+    original = "".join(json.dumps(row) + "\n" for row in records).encode()
+    native_file = root / "native/rollout-isolated.jsonl"
+    native_file.write_bytes(original)
+    environment = {
+        key: value for key, value in os.environ.items() if not key.startswith(("FPL_", "COMPOSE_"))
+    }
+    environment.update(
+        {
+            "COMPOSE_DISABLE_ENV_FILE": "true",
+            "FPL_SERVICE_UID": str(os.getuid()),
+            "FPL_SERVICE_GID": str(os.getgid()),
+            "FPL_IDENTITY_IMAGE": identity_image,
+            "FPL_AGENTS_IMAGE": agents_image,
+            "FPL_IDENTITY_STATE": str(root / "identity"),
+            "FPL_AGENTS_STATE": str(root / "agents"),
+            "FPL_IDENTITY_CONFIG": str(root / "identity.toml"),
+            "FPL_AGENTS_CONFIG": str(root / "agents.toml"),
+            "FPL_IDENTITY_SIGNING_KEY": str(root / "identity-signing.pem"),
+            "FPL_IDENTITY_PUBLIC_KEY": str(root / "identity-public.pem"),
+            "FPL_GATEWAY_TOKEN": str(root / "gateway-token"),
+            "FPL_IDENTITY_SERVICE_CREDENTIALS": str(root / "service-credentials.json"),
+            "FPL_AGENTS_IDENTITY_TOKEN": str(root / "identity-token"),
+            "FPL_AGENTS_NATIVE_INGRESS": str(root / "native-ingress"),
+            "FPL_AGENTS_WORKERS": str(root / "workers.json"),
+            "FPL_GATEWAY_CONFIG": str(root / "Caddyfile"),
+            "FPL_LOCAL_PORT": str(local_port),
+            "FPL_PUBLIC_PORT": str(public_port),
+            "FPL_NATIVE_PORT": str(native_port),
+        }
+    )
+    prefix = [
+        "docker",
+        "compose",
+        "--env-file",
+        "/dev/null",
+        "--project-name",
+        project,
+        "--file",
+        str(ROOT / "deploy/compose.yaml"),
+    ]
+
+    def compose(*args, input_text=None, check=True):
+        result = subprocess.run(
+            [*prefix, *args],
+            env=environment,
+            cwd=ROOT,
+            input=input_text,
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        output = result.stdout + result.stderr
+        for secret in (gateway_token, service_token, lane_token, worker_token, password):
+            output = output.replace(secret, "[redacted]")
+        with (root / "commands.log").open("a") as log:
+            log.write("compose " + " ".join(args) + "\n" + output + "\n")
+        if check and result.returncode:
+            raise RuntimeError("Compose failed: " + " ".join(args) + "\n" + output[-5000:])
+        return result
+
+    def started(service):
+        container = compose("ps", "--quiet", service).stdout.strip()
+        return subprocess.check_output(
+            ["docker", "inspect", "--format", "{{.State.StartedAt}}", container],
+            text=True,
+        ).strip()
+
+    def wait(client, path, predicate=lambda response: response.status_code == 200):
+        deadline = time.monotonic() + 40
+        last = "no response"
+        while time.monotonic() < deadline:
+            try:
+                response = client.get(path)
+                last = f"{response.status_code}: {response.text[:300]}"
+                if predicate(response):
+                    return response
+            except httpx.HTTPError as exc:
+                last = type(exc).__name__
+            time.sleep(0.2)
+        raise RuntimeError("Wait failed: " + path + " (" + last + ")")
+
+    collector = None
+    collector_log = (root / "collector.log").open("w")
+    checks = []
+    try:
+        compose("config", "--quiet")
+        for service in ("identity", "agents"):
+            compose("run", "--rm", "--no-deps", service, "migrate")
+        compose(
+            "run",
+            "--rm",
+            "--no-deps",
+            "-T",
+            "identity",
+            "create-admin",
+            input_text=json.dumps({"username": "isolated-admin", "password": password}),
+        )
+        compose("up", "--detach", "--no-build", "identity", "agents", "gateway")
+        collector = subprocess.Popen(
+            [
+                sys.executable,
+                "-m",
+                "fpl_host",
+                "collect",
+                "--connection",
+                str(root / "connection.json"),
+                "--state-root",
+                str(root / "collector"),
+            ],
+            cwd=ROOT,
+            env={**environment, "PYTHONPATH": str(ROOT / "backend")},
+            stdout=collector_log,
+            stderr=subprocess.STDOUT,
+        )
+        with httpx.Client(base_url=origin, trust_env=False, timeout=45) as client:
+            wait(client, "/ready")
+            login = client.post(
+                "/v1/auth/login",
+                json={
+                    "username": "isolated-admin",
+                    "password": password,
+                },
+            )
+            assert login.status_code == 200, login.text
+            owner = login.json()["user"]["id"]
+            unsafe = {"Origin": origin, "X-CSRF-Token": client.cookies.get("fpl_csrf", "")}
+            assert wait(client, "/v1/agent-workbench/sources").json() == []
+            for path in ("/_native/v1/claim", "/agents/_native/v1/claim"):
+                assert client.post(path, json={}).status_code == 404
+            with httpx.Client(base_url=native_base, trust_env=False, timeout=3) as lane:
+                assert lane.post("/agents/_native/v1/claim", json={}).status_code == 403
+                response = lane.post(
+                    "/agents/_native/v1/claim",
+                    headers={"Authorization": "Bearer " + worker_token, "Origin": origin},
+                    json={},
+                )
+                assert response.status_code == 403
+            source_body = {
+                "agent_id": "codex",
+                "label": "Isolated native source",
+                "root": str(root / "native"),
+            }
+            with httpx.Client(
+                base_url=f"http://127.0.0.1:{public_port}", trust_env=False, timeout=3
+            ) as public:
+                response = public.post(
+                    "/v1/agent-workbench/sources",
+                    headers={
+                        "Host": "studio.example.test",
+                        "Origin": "https://studio.example.test",
+                        "Cookie": "fpl_session="
+                        + client.cookies.get("fpl_session")
+                        + "; fpl_csrf="
+                        + client.cookies.get("fpl_csrf"),
+                        "X-CSRF-Token": client.cookies.get("fpl_csrf"),
+                        "X-Fpl-Ingress": "local",
+                        "X-Fpl-Context": "forged",
+                        "X-Fpl-Native-Ingress": lane_token,
+                    },
+                    json=source_body,
+                )
+                assert response.status_code == 403, response.text
+            checks.append("browser/public lanes cannot access or forge native host authority")
+            response = client.post(
+                "/v1/agent-workbench/sources",
+                headers=unsafe,
+                json=source_body,
+            )
+            assert response.status_code == 201, response.text
+            source = response.json()
+            path = "/v1/agent-workbench/sessions"
+            response = wait(
+                client, path, lambda r: r.status_code == 200 and len(r.json()["items"]) == 1
+            )
+            session_id = response.json()["items"][0]["id"]
+            history = f"{path}/{session_id}/history"
+            assert len(client.get(history).json()["items"]) == 1
+            assert native_file.read_bytes() == original
+            checks.append(
+                "actual Agents container indexes a synthetic native session through the Mac worker"
+            )
+            identity_started, gateway_started = started("identity"), started("gateway")
+            compose("up", "--detach", "--no-deps", "--force-recreate", "agents")
+            assert wait(client, history).json()["items"][0]["text"] == "isolated original"
+            assert started("identity") == identity_started and started("gateway") == gateway_started
+            addition = (
+                json.dumps(
+                    {
+                        "type": "response_item",
+                        "payload": {
+                            "id": "second",
+                            "type": "message",
+                            "role": "assistant",
+                            "content": [
+                                {"type": "output_text", "text": "after service replacement"}
+                            ],
+                        },
+                    }
+                )
+                + "\n"
+            )
+            with native_file.open("a") as stream:
+                stream.write(addition)
+            wait(client, history, lambda r: r.status_code == 200 and len(r.json()["items"]) == 2)
+            assert native_file.read_bytes() == original + addition.encode()
+            checks.append(
+                "independent Agents replacement preserves data, Identity, Gateway and native follow"
+            )
+            with httpx.Client(base_url=origin, trust_env=False, timeout=3) as fresh:
+                response = fresh.post(
+                    "/v1/auth/login",
+                    json={
+                        "username": "isolated-admin",
+                        "password": password,
+                    },
+                )
+                assert response.status_code == 200
+                assert fresh.get("/v1/auth/me").json()["user"]["id"] == owner
+                assert fresh.get(path).json()["items"][0]["id"] == session_id
+            checks.append("fresh browser login and workbench reads need no Portal process")
+            paused = client.patch(
+                f"/v1/agent-workbench/sources/{source['id']}",
+                headers=unsafe,
+                json={"expected_revision": source["revision"], "enabled": False},
+            )
+            assert paused.status_code == 200, paused.text
+            assert client.post("/v1/auth/logout", headers=unsafe).status_code == 204
+            assert client.get(history).status_code == 401
+            checks.append("source pause and browser logout revoke further authorized work")
+            diagnostics = compose(
+                "exec",
+                "-T",
+                "agents",
+                "python",
+                "-c",
+                "import sqlite3; c=sqlite3.connect('file:/state/service.db?mode=ro',uri=True);"
+                "assert c.execute('PRAGMA integrity_check').fetchone()[0]=='ok';"
+                "assert c.execute('PRAGMA foreign_key_check').fetchall()==[];"
+                "tables={r[0] for r in c.execute("
+                "\"SELECT name FROM sqlite_master WHERE type='table'\")};"
+                "assert 'users' not in tables and 'visual_assets' not in tables;print('isolated')",
+            )
+            assert "isolated" in diagnostics.stdout
+            checks.append("Agents owns only its database and passes SQLite integrity checks")
+        report = {
+            "status": "passed",
+            "project": project,
+            "identity": identity_image,
+            "agents": agents_image,
+            "checks": checks,
+        }
+        (root / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+        print(json.dumps(report, ensure_ascii=False))
+    finally:
+        if collector is not None:
+            collector.terminate()
+            try:
+                collector.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                collector.kill()
+                collector.wait(timeout=5)
+        collector_log.close()
+        compose("logs", "--no-color", "--tail", "50", "gateway", "identity", "agents", check=False)
+        compose("down", "--remove-orphans", check=False)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--identity-image", required=True)
+    parser.add_argument("--agents-image", required=True)
+    parser.add_argument("--native-port", type=int, default=29090)
+    args = parser.parse_args()
+    exercise(args.identity_image, args.agents_image, native_port=args.native_port)

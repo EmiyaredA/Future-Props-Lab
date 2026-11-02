@@ -7,7 +7,7 @@ from app.deps import OwnerDep, SessionDep, StudioAuth
 from app.runtime.website import require_local_browser
 
 from .. import reading, sources
-from ..attachments import attachment
+from ..attachments import attachment_reference
 from ..events import stream_events
 from ..schemas import (
     WorkbenchCandidate,
@@ -34,6 +34,14 @@ def require_local_source_access(request: Request, principal: StudioAuth):
     require_local_browser(request, principal)
 
 
+async def reauthorize_native(request: Request):
+    reauthorize = getattr(request.app.state, "workbench_reauthorize", None)
+    if reauthorize is not None:
+        await reauthorize(request)
+    elif getattr(request.app.state, "service_id", None) == "agents":
+        raise HTTPException(503, "工作台身份复核能力不可用")
+
+
 WorkbenchAuth = Annotated[object, Depends(require_workbench_session)]
 router = APIRouter(
     prefix="/agent-workbench",
@@ -47,8 +55,10 @@ router = APIRouter(
     response_model=list[WorkbenchCandidate],
     dependencies=[Depends(require_local_source_access)],
 )
-def list_candidates():
-    return sources.source_candidates()
+async def list_candidates(request: Request, owner: OwnerDep):
+    result = await request.app.state.workbench_native.candidates(owner=owner)
+    await reauthorize_native(request)
+    return result
 
 
 @router.get("/sources", response_model=list[WorkbenchSourceOut])
@@ -62,8 +72,15 @@ async def list_sources(session: SessionDep, owner: OwnerDep):
     status_code=201,
     dependencies=[Depends(require_local_source_access)],
 )
-async def create_source(body: WorkbenchSourceCreate, session: SessionDep, owner: OwnerDep):
-    return await sources.create_source(session, owner, body)
+async def create_source(
+    request: Request, body: WorkbenchSourceCreate, session: SessionDep, owner: OwnerDep
+):
+    try:
+        location = await request.app.state.workbench_native.location(body, owner=owner)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    await reauthorize_native(request)
+    return await sources.create_source(session, owner, body, location=location)
 
 
 @router.patch("/sources/{source_id}", response_model=WorkbenchSourceOut)
@@ -146,10 +163,19 @@ async def history(
 
 
 @router.get("/sessions/{session_id}/attachments/{attachment_id}")
-async def get_attachment(session_id: str, attachment_id: str, session: SessionDep, owner: OwnerDep):
+async def get_attachment(
+    request: Request, session_id: str, attachment_id: str, session: SessionDep, owner: OwnerDep
+):
     from urllib.parse import quote
 
-    data, filename = await attachment(session, owner, session_id, attachment_id)
+    roots, reference = await attachment_reference(session, owner, session_id, attachment_id)
+    try:
+        data, filename = await request.app.state.workbench_native.attachment(
+            roots, reference, owner=owner
+        )
+    except (OSError, ValueError) as exc:
+        raise HTTPException(404, "原生附件不在已授权来源范围内或已不可用") from exc
+    await reauthorize_native(request)
     return Response(
         data,
         media_type="application/octet-stream",
@@ -185,8 +211,9 @@ def event_response(request, principal, after, session_id=None):
                 raise ValueError
         except ValueError as exc:
             raise HTTPException(422, "事件游标无效") from exc
+    stream = getattr(request.app.state, "workbench_event_stream", stream_events)
     return StreamingResponse(
-        stream_events(request, principal, after, session_id),
+        stream(request, principal, after, session_id),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
     )

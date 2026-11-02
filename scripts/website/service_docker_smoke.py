@@ -32,6 +32,7 @@ def exercise(image, *, local_port, public_port):
     subprocess.run(["git", "check-ignore", "--quiet", str(root)], cwd=ROOT, check=True)
     root.mkdir(parents=True, mode=0o700)
     (root / "identity").mkdir(mode=0o700)
+    (root / "agents").mkdir(mode=0o700)
     gateway_token = secrets.token_urlsafe(48)
     password = secrets.token_urlsafe(30) + "-Aa9!"
     encryption_key = Fernet.generate_key().decode()
@@ -49,6 +50,10 @@ def exercise(image, *, local_port, public_port):
             serialization.NoEncryption(),
         ),
         "gateway-token": gateway_token.encode(),
+        "service-credentials.json": b"{}",
+        "workers.json": b"{}",
+        "native-ingress": secrets.token_urlsafe(48).encode(),
+        "agents-token": secrets.token_urlsafe(48).encode(),
         "identity-public.pem": key.public_key().public_bytes(
             serialization.Encoding.PEM,
             serialization.PublicFormat.SubjectPublicKeyInfo,
@@ -60,6 +65,7 @@ def exercise(image, *, local_port, public_port):
             public_origin="https://studio.example.test",
         ).encode(),
     }
+    material["agents.toml"] = material["identity.toml"]
     for name, content in material.items():
         path = root / name
         path.write_bytes(content)
@@ -71,6 +77,15 @@ def exercise(image, *, local_port, public_port):
         {
             "COMPOSE_DISABLE_ENV_FILE": "true",
             "FPL_IDENTITY_IMAGE": image,
+            "FPL_IDENTITY_SERVICE_CREDENTIALS": str(root / "service-credentials.json"),
+            "FPL_AGENTS_IMAGE": image,
+            "FPL_AGENTS_STATE": str(root / "agents"),
+            "FPL_AGENTS_CONFIG": str(root / "agents.toml"),
+            "FPL_IDENTITY_PUBLIC_KEY": str(root / "identity-public.pem"),
+            "FPL_AGENTS_IDENTITY_TOKEN": str(root / "agents-token"),
+            "FPL_AGENTS_NATIVE_INGRESS": str(root / "native-ingress"),
+            "FPL_AGENTS_WORKERS": str(root / "workers.json"),
+            "FPL_NATIVE_PORT": "19090",
             "FPL_SERVICE_UID": str(os.getuid()),
             "FPL_SERVICE_GID": str(os.getgid()),
             "FPL_IDENTITY_STATE": str(root / "identity"),
@@ -230,6 +245,8 @@ def exercise(image, *, local_port, public_port):
                 "local": True,
                 "gateway_token_leaked": False,
                 "ingress_header_leaked": False,
+                "session_cookie_leaked": False,
+                "authorization_leaked": False,
             }
             with httpx.Client(
                 base_url=f"http://127.0.0.1:{public_port}", trust_env=False, timeout=3
@@ -249,6 +266,8 @@ def exercise(image, *, local_port, public_port):
                     "local": False,
                     "gateway_token_leaked": False,
                     "ingress_header_leaked": False,
+                    "session_cookie_leaked": False,
+                    "authorization_leaked": False,
                 }
             checks.append("public ingress cannot forge host authority or identity headers")
             assert client.post("/v1/auth/logout").status_code == 403

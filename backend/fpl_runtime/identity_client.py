@@ -34,5 +34,25 @@ class LiveAuthorization:
         except (ValueError, AttributeError):
             return False
 
+    async def owner_permission(self, *, owner, permission):
+        try:
+            response = await self.client.post(
+                "/_internal/v1/tasks/authorize",
+                json={"service": self.service, "owner_user_id": owner, "permission": permission},
+            )
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("allowed") is False:
+                    return {"allowed": False, "available": True, "revision": None}
+                if (
+                    data.get("allowed") is True
+                    and type(data.get("revision")) is int
+                    and data["revision"] >= 0
+                ):
+                    return {**data, "available": True}
+        except (httpx.HTTPError, ValueError, AttributeError):
+            pass
+        return {"allowed": False, "available": False, "revision": None}
+
     async def close(self):
         await self.client.aclose()

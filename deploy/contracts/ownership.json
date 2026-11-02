@@ -4385,6 +4385,30 @@
       "model": "ToolNavigationItem"
     },
     {
+      "table": "agent_native_jobs",
+      "service": "agents",
+      "module": "fpl_agents.models",
+      "model": "NativeJob"
+    },
+    {
+      "table": "agent_native_subscriptions",
+      "service": "agents",
+      "module": "fpl_agents.models",
+      "model": "NativeSubscription"
+    },
+    {
+      "table": "agent_native_projection_receipts",
+      "service": "agents",
+      "module": "fpl_agents.models",
+      "model": "NativeProjectionReceipt"
+    },
+    {
+      "table": "agent_native_worker_seen",
+      "service": "agents",
+      "module": "fpl_agents.models",
+      "model": "NativeWorkerSeen"
+    },
+    {
       "table": "identity_account_events",
       "service": "identity",
       "module": "fpl_identity.models",

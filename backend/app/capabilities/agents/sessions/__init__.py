@@ -1,6 +1,24 @@
-"""Read-only native session discovery. No Agent process is started by this package."""
+"""Read-only native contracts; format adapters are loaded only by native callers."""
 
-from .catalog import candidates, get_adapter
-from .contracts import AgentId, Entry, ReadBatch, SessionInfo
+from importlib import import_module
+from types import MappingProxyType
 
-__all__ = ["AgentId", "Entry", "ReadBatch", "SessionInfo", "candidates", "get_adapter"]
+_EXPORTS = MappingProxyType(
+    {
+        "AgentId": (".contracts", "AgentId"),
+        "Entry": (".contracts", "Entry"),
+        "ReadBatch": (".contracts", "ReadBatch"),
+        "SessionInfo": (".contracts", "SessionInfo"),
+        "candidates": (".catalog", "candidates"),
+        "get_adapter": (".catalog", "get_adapter"),
+    }
+)
+__all__ = list(_EXPORTS)
+
+
+def __getattr__(name):
+    try:
+        module, attribute = _EXPORTS[name]
+    except KeyError:
+        raise AttributeError(name) from None
+    return getattr(import_module(module, __name__), attribute)

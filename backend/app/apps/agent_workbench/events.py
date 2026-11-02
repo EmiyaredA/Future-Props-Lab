@@ -1,9 +1,5 @@
-"""Durable invalidation streams. Reauthorize every batch, with no request-long DB session."""
+"""Monolith compatibility: authenticate streaming sessions against its local Identity."""
 
-import asyncio
-import json
-
-from fastapi import HTTPException
 from sqlalchemy import select
 
 from app.console.models import AuthSession, User
@@ -11,25 +7,8 @@ from app.runtime.db import SessionLocal
 from app.runtime.ownership import bind_owner
 from app.runtime.time import utc_now
 
-from .models import WorkbenchChange
-from .reading import change_cursor, get_conversation
-
-
-async def event_page(db, owner, after, session_id=None):
-    if session_id:
-        await get_conversation(db, owner, session_id)
-    latest = await change_cursor(db, owner)
-    if after > latest:
-        return [{"sequence": latest, "kind": "reset", "session_id": session_id}]
-    query = select(WorkbenchChange).where(
-        WorkbenchChange.owner_user_id == owner, WorkbenchChange.id > after
-    )
-    if session_id:
-        query = query.where(WorkbenchChange.session_id == session_id)
-    rows = (await db.scalars(query.order_by(WorkbenchChange.id).limit(201))).all()
-    if len(rows) > 200:
-        return [{"sequence": latest, "kind": "reset", "session_id": session_id}]
-    return [{"sequence": row.id, "kind": row.kind, "session_id": row.session_id} for row in rows]
+from .change_stream import event_page as event_page
+from .change_stream import stream_events as authenticated_stream
 
 
 async def valid_auth(db, principal):
@@ -55,22 +34,20 @@ async def valid_auth(db, principal):
     )
 
 
-async def stream_events(request, principal, after, session_id=None, sessions=SessionLocal):
-    owner = principal.user_id
-    yield ": connected\n\n"
-    while not await request.is_disconnected():
+async def stream_events(
+    request, principal, after, session_id=None, sessions=SessionLocal, authorizer=None
+):
+    async def local_authorizer(_request, current):
         async with sessions() as db:
-            bind_owner(db, owner)
-            if not await valid_auth(db, principal):
-                yield 'event: auth_expired\ndata: {"kind":"auth_expired","sequence":0}\n\n'
-                return
-            try:
-                events = await event_page(db, owner, after, session_id)
-            except HTTPException:
-                return
-        for event in events:
-            after = event["sequence"]
-            yield f"id: {after}\nevent: change\ndata: {json.dumps(event)}\n\n"
-        if not events:
-            yield ": heartbeat\n\n"
-        await asyncio.sleep(1)
+            bind_owner(db, current.user_id)
+            return await valid_auth(db, current)
+
+    async for event in authenticated_stream(
+        request,
+        principal,
+        after,
+        session_id,
+        sessions=sessions,
+        authorizer=authorizer or local_authorizer,
+    ):
+        yield event

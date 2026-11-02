@@ -12,7 +12,9 @@ def quoted(value):
     return json.dumps(value, ensure_ascii=True)
 
 
-def render_gateway(catalog, *, gateway_token, local_origin, public_origin):
+def render_gateway(
+    catalog, *, gateway_token, local_origin, public_origin, native_tokens=None, native_port=29090
+):
     origins = {"local": urlsplit(local_origin), "public": urlsplit(public_origin)}
     if (
         origins["local"].scheme != "http"
@@ -50,7 +52,7 @@ def render_gateway(catalog, *, gateway_token, local_origin, public_origin):
             '      header Content-Type "application/json"',
             '      respond "{\\"status\\":\\"ok\\",\\"service\\":\\"gateway\\"}" 200',
             "    }",
-            "    @internal path /_internal /_internal/*",
+            "    @internal path /_internal /_internal/* /_native /_native/*",
             "    respond @internal 404",
         ]
         for index, ((service, method), operations) in enumerate(sorted(groups.items())):
@@ -91,6 +93,8 @@ def render_gateway(catalog, *, gateway_token, local_origin, public_origin):
             if service != "identity":
                 lines.extend(
                     [
+                        "          header_up -Cookie",
+                        "          header_up -Authorization",
                         "          header_up -X-Fpl-Gateway",
                         "          header_up -X-Fpl-Target-Service",
                         "          header_up -X-Fpl-Request-*",
@@ -121,10 +125,45 @@ def render_gateway(catalog, *, gateway_token, local_origin, public_origin):
                 [
                     f"    @{name} path " + " ".join(paths),
                     f"    handle @{name} {{",
-                    f"      reverse_proxy {service.id}:8080",
+                    f"      reverse_proxy {service.id}:8080 {{",
+                    "        header_up -Cookie",
+                    "        header_up -Authorization",
+                    "      }",
                     "    }",
                 ]
             )
         lines.extend(["    respond 404", "  }", "}"])
         result.extend(lines)
+    if native_tokens:
+        result.extend(
+            [
+                "http://:29090 {",
+                "  route {",
+                f'    @host expression {{http.request.hostport}} != "127.0.0.1:{native_port}"',
+                "    respond @host 403",
+                "    @browser header Origin *",
+                "    respond @browser 403",
+                "    request_header -X-Fpl-*",
+                "    request_header -Cookie",
+                "    request_header -X-Forwarded-*",
+                "    request_header -Forwarded",
+            ]
+        )
+        for service, token in sorted(native_tokens.items()):
+            if service != "agents" or not re.fullmatch(r"[A-Za-z0-9_-]{32,256}", token):
+                raise ValueError("原生通道服务或凭据无效")
+            result.extend(
+                [
+                    f"    handle /{service}/_native/* {{",
+                    "      route {",
+                    f"        uri strip_prefix /{service}",
+                    f"        request_header X-Fpl-Native-Ingress {quoted(token)}",
+                    f"        reverse_proxy {service}:8080 {{",
+                    "          flush_interval -1",
+                    "        }",
+                    "      }",
+                    "    }",
+                ]
+            )
+        result.extend(["    respond 404", "  }", "}"])
     return "\n".join(result) + "\n"

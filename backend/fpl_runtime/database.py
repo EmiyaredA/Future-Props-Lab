@@ -25,7 +25,11 @@ def scoped_operations(state):
     if not mapped <= owned:
         raise ServiceStorageError("禁止访问其他服务的数据模型")
     owner = state.session.info.get("owner_user_id")
-    if mapped.intersection(models) and not owner:
+    if (
+        mapped.intersection(models)
+        and not owner
+        and not (state.is_select and state.session.info.get("allow_system_reads") is True)
+    ):
         raise ServiceStorageError("账号业务查询或写入缺少账号上下文")
     if state.is_insert and mapped.intersection(models):
         raise ServiceStorageError("账号记录必须通过受校验的 ORM 实例创建")

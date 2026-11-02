@@ -50,3 +50,30 @@ def test_compose_only_publishes_gateway_and_mounts_minimal_owned_state():
             if volume["target"] != "/state":
                 assert volume["read_only"] is True
     assert document["networks"]["private"]["internal"] is True
+
+
+def test_agents_image_contains_no_identity_orm_or_native_readers():
+    closure = source_closure(ROOT, "agents")
+    assert "fpl_agents.application" in closure
+    assert "app.apps.agent_workbench.models" in closure
+    assert "app.apps.agent_workbench.sync.projection" in closure
+    for name in closure:
+        assert not name.startswith(("fpl_identity", "fpl_host", "app.console.models", "app.llm"))
+        assert name not in {
+            "app.main",
+            "app.orm",
+            "app.api",
+            "app.deps",
+            "app.capabilities.agents.sessions.catalog",
+        }
+
+
+def test_native_queue_models_do_not_pollute_legacy_schema():
+    from app.runtime.orm_base import Base
+    from fpl_agents.application import MODELS
+    from fpl_agents.models import NativeJob, NativeProjectionReceipt, NativeSubscription
+
+    assert all(
+        model in MODELS for model in (NativeJob, NativeSubscription, NativeProjectionReceipt)
+    )
+    assert "agent_native_jobs" not in Base.metadata.tables

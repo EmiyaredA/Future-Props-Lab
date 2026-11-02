@@ -85,6 +85,8 @@ def operation_owner(path):
 def table_owner(module, table):
     if module.startswith("fpl_identity."):
         return "identity"
+    if module.startswith("fpl_agents."):
+        return "agents"
     parts = module.split(".")
     if module.startswith("app.apps."):
         return APP_OWNERS[parts[2]]
@@ -115,6 +117,7 @@ def model_tables(root):
     for path in sorted(
         list((root / "backend/app").rglob("*.py"))
         + list((root / "backend/fpl_identity").rglob("*.py"))
+        + list((root / "backend/fpl_agents").rglob("*.py"))
     ):
         tree = ast.parse(path.read_text())
         module = ".".join(path.relative_to(root / "backend").with_suffix("").parts)

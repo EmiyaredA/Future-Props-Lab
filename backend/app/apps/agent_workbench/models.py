@@ -12,9 +12,7 @@ class WorkbenchSource(Base):
     __tablename__ = "agent_workbench_sources"
     __table_args__ = (UniqueConstraint("agent_id", "root", "endpoint"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    owner_user_id: Mapped[str] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     agent_id: Mapped[str] = mapped_column(String(24))
     label: Mapped[str] = mapped_column(String(120))
     root: Mapped[str] = mapped_column(Text)
@@ -31,9 +29,7 @@ class WorkbenchSession(Base):
     __tablename__ = "agent_workbench_sessions"
     __table_args__ = (UniqueConstraint("owner_user_id", "agent_id", "native_id"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    owner_user_id: Mapped[str] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     agent_id: Mapped[str] = mapped_column(String(24))
     native_id: Mapped[str] = mapped_column(String(255))
     title: Mapped[str] = mapped_column(String(120), default="未命名会话")
@@ -86,9 +82,7 @@ class WorkbenchCheckpoint(Base):
 class WorkbenchOperation(Base):
     __tablename__ = "agent_workbench_operations"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    owner_user_id: Mapped[str] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     source_id: Mapped[str] = mapped_column(
         ForeignKey("agent_workbench_sources.id", ondelete="CASCADE")
     )
@@ -101,9 +95,7 @@ class WorkbenchChange(Base):
     __tablename__ = "agent_workbench_changes"
     __table_args__ = {"sqlite_autoincrement": True}
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    owner_user_id: Mapped[str] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     session_id: Mapped[str | None] = mapped_column(String(36), index=True)
     kind: Mapped[str] = mapped_column(String(24))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)

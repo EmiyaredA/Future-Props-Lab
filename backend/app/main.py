@@ -24,6 +24,7 @@ from app.apps.video_editor.runner import VideoEditorRunner
 from app.apps.visual_workshop.acceptance.runner import AcceptanceRunner
 from app.apps.visual_workshop.assistant import recover_interrupted_visual_assistant_runs
 from app.apps.visual_workshop.generation_runner import VisualGenerationRunner
+from app.capabilities.agents.sessions.access import LocalSourceAccess
 from app.capabilities.asset_store.account_upgrade import upgrade_pending
 from app.capabilities.asset_store.layout_migration import (
     reconcile_project_trash,
@@ -136,6 +137,7 @@ app = FastAPI(
     description="未来道具研究所模型目录与调用观测 API",
     lifespan=lifespan,
 )
+app.state.workbench_native = LocalSourceAccess()
 app.state.account_creator = create_account
 app.state.account_storage_check = upgrade_pending
 app.state.code_agent_runs = CodeAgentRuns()

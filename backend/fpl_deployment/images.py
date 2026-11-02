@@ -7,8 +7,8 @@ import subprocess
 from importlib.util import resolve_name
 from pathlib import Path
 
-ENTRY_POINTS = {"identity": "fpl_identity.__main__"}
-PROJECT_PACKAGES = ("app", "fpl_identity", "fpl_runtime", "fpl_config")
+ENTRY_POINTS = {"identity": "fpl_identity.__main__", "agents": "fpl_agents.__main__"}
+PROJECT_PACKAGES = ("app", "fpl_identity", "fpl_agents", "fpl_runtime", "fpl_config", "fpl_host")
 FORBIDDEN_IDENTITY = (
     "app.main",
     "app.api",
@@ -18,6 +18,19 @@ FORBIDDEN_IDENTITY = (
     "app.capabilities.asset_store",
     "app.capabilities.agents",
     "app.console.governance.provisioning",
+)
+
+FORBIDDEN_AGENTS = (
+    "app.main",
+    "app.api",
+    "app.orm",
+    "app.llm",
+    "app.console.models",
+    "app.deps",
+    "fpl_host",
+    "app.capabilities.agents.sessions.catalog",
+    "app.capabilities.agents.sessions.parsers",
+    "app.apps.agent_workbench.sync.runner",
 )
 
 
@@ -43,6 +56,10 @@ def source_closure(root: Path, service):
             name == prefix or name.startswith(prefix + ".") for prefix in FORBIDDEN_IDENTITY
         ):
             raise ValueError(f"Identity 镜像包含越界依赖：{name}")
+        if service == "agents" and any(
+            name == prefix or name.startswith(prefix + ".") for prefix in FORBIDDEN_AGENTS
+        ):
+            raise ValueError(f"Agents 镜像包含越界依赖：{name}")
         path = module_file(root, name)
         if path is None:
             continue

@@ -101,6 +101,26 @@ async def scenario():
                 "/_internal/v1/authorization/live", json=live_body, headers=live_headers
             )
             assert live.status_code == 200 and live.json()["active"] is True
+            task_body = {"service": "agents", "owner_user_id": owner, "permission": "content.read"}
+            task = await client.post(
+                "/_internal/v1/tasks/authorize", json=task_body, headers=live_headers
+            )
+            assert task.status_code == 200 and task.json()["allowed"] is True
+            assert type(task.json()["revision"]) is int
+            forbidden = await client.post(
+                "/_internal/v1/tasks/authorize",
+                json={**task_body, "permission": "configuration.manage"},
+                headers=live_headers,
+            )
+            assert forbidden.status_code == 403
+            anonymous = await client.post("/_internal/v1/tasks/authorize", json=task_body)
+            assert anonymous.status_code == 403
+            unknown_owner = await client.post(
+                "/_internal/v1/tasks/authorize",
+                json={**task_body, "owner_user_id": "absent"},
+                headers=live_headers,
+            )
+            assert unknown_owner.status_code == 200 and unknown_owner.json()["allowed"] is False
             unauthenticated_live = await client.post(
                 "/_internal/v1/authorization/live", json=live_body
             )

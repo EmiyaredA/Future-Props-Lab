@@ -31,6 +31,8 @@ class Probe(BaseHTTPRequestHandler):
                 "local": actor.local,
                 "gateway_token_leaked": bool(self.headers.get("X-Fpl-Gateway")),
                 "ingress_header_leaked": bool(self.headers.get("X-Fpl-Ingress")),
+                "session_cookie_leaked": bool(self.headers.get("Cookie")),
+                "authorization_leaked": bool(self.headers.get("Authorization")),
             }
         ).encode()
         self.send_response(200)

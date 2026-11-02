@@ -6,7 +6,7 @@ import jwt
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from app.capabilities.identity.permissions import role_scopes
+from app.capabilities.identity.permissions import role_permissions, role_scopes
 from app.console.models.accounts import AuthSession, ManagementApiKey, User
 from app.runtime.time import utc_now
 from fpl_runtime.claims import verify_context
@@ -78,3 +78,32 @@ async def live(request: Request, body: LiveRequest):
         return {"active": False}
     async with request.app.state.database.sessions() as session:
         return {"active": await active_actor(session, actor)}
+
+
+class TaskAuthorizationRequest(BaseModel):
+    service: str = Field(max_length=64)
+    owner_user_id: str = Field(min_length=1, max_length=100)
+    permission: str = Field(max_length=100)
+
+
+TASK_PERMISSIONS = {"agents": frozenset({"content.read"})}
+
+
+@router.post("/_internal/v1/tasks/authorize")
+async def task_authorization(request: Request, body: TaskAuthorizationRequest):
+    options = request.app.state.identity_options
+    credential = request.headers.get("authorization", "").removeprefix("Bearer ")
+    expected = options["service_credentials"].get(body.service)
+    if expected is None or not secrets.compare_digest(credential, expected):
+        raise HTTPException(403, "service_credential_required")
+    if body.permission not in TASK_PERMISSIONS.get(body.service, ()):
+        raise HTTPException(403, "task_permission_forbidden")
+    async with request.app.state.database.sessions() as session:
+        user = await session.get(User, body.owner_user_id)
+        allowed = bool(
+            user
+            and user.status == "active"
+            and not user.must_change_password
+            and body.permission in role_permissions(user.platform_role)
+        )
+        return {"allowed": allowed, "revision": user.revision if user else None}

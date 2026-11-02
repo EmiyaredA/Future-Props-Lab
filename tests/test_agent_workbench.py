@@ -18,6 +18,7 @@ from app.apps.agent_workbench.routes import router
 from app.apps.agent_workbench.sync.projection import apply_batch
 from app.apps.agent_workbench.sync.runner import WorkbenchSyncRunner
 from app.capabilities.agents.sessions import get_adapter
+from app.capabilities.agents.sessions.access import LocalSourceAccess
 from app.capabilities.identity.principal import StudioPrincipal
 from app.console.models import User
 from app.deps import SessionDep, db_session, require_studio_auth
@@ -120,6 +121,7 @@ async def store(tmp_path):
             )
         await db.commit()
     application = FastAPI()
+    application.state.workbench_native = LocalSourceAccess()
     application.include_router(router, prefix="/v1")
 
     async def session_dependency():

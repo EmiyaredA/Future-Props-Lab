@@ -15,7 +15,11 @@
 
 `backend/fpl_identity/` 装配独立账号 ASGI 应用、账号事件、显式维护入口及自有 `migrations/`；不加载门户、工坊或模型 ORM。`console/governance/account_creation.py` 接受显式事务初始化回调，旧 `provisioning.py` 仅承担单体目录初始化适配；账号与注册路由使用装配时注入的用例。
 
-`fpl_deployment/images.py` 构建可审计源码闭包，`gateway.py` 从操作归属生成监听器路由。`deploy/images/identity/` 保存独立依赖锁和镜像定义，`deploy/compose.yaml` 当前装配 Identity 与 Gateway。`scripts/website/service_build.py` 和 `service_docker_smoke.py` 分别提供 CLI 构建与隔离容器验收；`tests/gateway_assertion_probe.py` 只属于测试传输探针，不是工作台服务。运行及切换状态见[独立服务迁移](../operations/independent-services.md)。
+`backend/fpl_agents/` 装配独立工作台，拥有自有迁移、原生任务、来源订阅、投影回执、协调器与私有协议；复用工作台的阅读、搜索、CAS 和投影用例，不加载账号 ORM 或 Mac 解析器。`fpl_runtime/http_dependencies.py` 只消费签名身份；`change_stream.py` 使用显式实时授权与数据库会话，旧 `events.py` 保留单体身份适配。
+
+`backend/fpl_host/` 是独立 Mac 原生采集 CLI，仅发起受认证回环请求，读取明确来源的原生会话及引用附件。`collector.py` 管理有界任务，`follow.py` 跟随原生日志或事件，`follow_journal.py` 持久化单帧确认状态，`receipts.py` 保存一次性操作意图与结果；不确定动作不重做，跟随仅按原任务、租约和服务端检查点继续。容器镜像不包含此包。
+
+`fpl_deployment/images.py` 构建可审计源码闭包，`gateway.py` 从操作归属生成监听器路由。`deploy/images/identity/` 与 `deploy/images/agents/` 保存各自依赖锁和镜像定义，`deploy/compose.yaml` 当前装配 Identity、Agents 与 Gateway。`scripts/website/service_build.py` 和 `service_docker_smoke.py` 分别提供 CLI 构建与账号容器隔离验收，`agents_docker_smoke.py` 验证真实工作台容器和 Mac 原生采集器；`tests/gateway_assertion_probe.py` 只属于测试传输探针，不是工作台服务。运行及切换状态见[独立服务迁移](../operations/independent-services.md)。
 
 服务化实现及 Compose 切换尚在隔离工作树验证，正式入口仍使用下述网站单体；不得把清单生成视为应用迁移完成。当前网站 `.runtime/` 是唯一迁移真源，桌面原目录仅用于恢复。
 
