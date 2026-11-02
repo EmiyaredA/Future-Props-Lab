@@ -53,3 +53,6 @@ Portal now has an independent image and browser program, with no account/worksho
 
 
 The documentation guard now checks individual commits in CI: authorized product documentation must be isolated from code and Agent Notes. Working-tree protection remains strict, mixed commits fail, and merge commits are checked through their constituent history. This implements the existing separate-commit rule rather than granting permission to rewrite protected content; fixture repositories cover isolated, mixed and uncommitted changes.
+
+
+Assets storage settings now reject foreign configuration groups and contain no encryption key. Existing file and folder archive use cases run with that minimal projection. Project ownership reads exchange a current original Assets request for a narrow Visual GET assertion; only five registered source operations can request it, host authority is removed, cookies are not forwarded, and logout revokes exchange. Target redirects, outages and unexpected success statuses are errors; only a real 404 means absent. Full Assets HTTP assembly and its reference/rendering ports remain required.

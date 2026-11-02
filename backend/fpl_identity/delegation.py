@@ -22,7 +22,7 @@ class DelegationRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     caller: str = Field(min_length=1, max_length=64)
     purpose: str = Field(min_length=1, max_length=100)
-    source_method: Literal["POST"]
+    source_method: Literal["GET", "POST"]
     source_path: str = Field(max_length=4096)
     target_service: str = Field(max_length=64)
     target_method: Literal["GET"]

@@ -40,6 +40,21 @@ class CapabilityClient:
             "GET",
             target_path,
         )
+        return await self._exists(assertion, grant)
+
+    async def project_exists(self, *, assertion, source_method, source_path, project_id):
+        grant = RequestGrant(
+            self.service,
+            "assets.visual-project.read",
+            source_method,
+            source_path,
+            "visual",
+            "GET",
+            "/v1/visual-workshop/projects/" + project_id,
+        )
+        return await self._exists(assertion, grant)
+
+    async def _exists(self, assertion, grant):
         if not permitted(grant, self.catalog):
             raise CapabilityDenied(403)
         try:
@@ -56,7 +71,7 @@ class CapabilityClient:
                 raise ValueError("invalid assertion")
             async with self.client.stream(
                 "GET",
-                f"http://{target_service}:8080" + target_path,
+                f"http://{grant.target_service}:8080" + grant.target_path,
                 headers={"X-Fpl-Context": token},
             ) as response:
                 if response.status_code == 404:
@@ -64,7 +79,9 @@ class CapabilityClient:
                 if response.status_code in {401, 403}:
                     raise CapabilityDenied(response.status_code)
                 response.raise_for_status()
-                return response.status_code == 200
+                if response.status_code != 200:
+                    raise ValueError("unexpected resource status")
+                return True
         except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
             raise CapabilityUnavailable("所属应用暂不可用，未确认资源归属") from exc
 

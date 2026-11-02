@@ -53,3 +53,29 @@ def test_resource_lookup_is_registered_to_the_expected_service():
 )
 def test_no_service_wide_or_user_chosen_destination_is_authorized(changes):
     assert not permitted(grant(**changes), CATALOG)
+
+
+@pytest.mark.parametrize(
+    "method, path",
+    [
+        ("GET", "/v1/files"),
+        ("POST", "/v1/files"),
+        ("GET", "/v1/file-folders"),
+        ("POST", "/v1/file-folders"),
+        ("POST", "/v1/file-library/asset-imports"),
+    ],
+)
+def test_asset_project_validation_has_registered_source_operations(method, path):
+    request = RequestGrant(
+        "assets",
+        "assets.visual-project.read",
+        method,
+        path,
+        "visual",
+        "GET",
+        "/v1/visual-workshop/projects/owned",
+    )
+    assert permitted(request, CATALOG)
+    assert not permitted(replace(request, target_method="DELETE"), CATALOG)
+    assert not permitted(replace(request, source_path="/v1/automation/open"), CATALOG)
+    assert not permitted(replace(request, caller="models"), CATALOG)

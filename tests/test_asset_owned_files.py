@@ -9,7 +9,6 @@ from sqlalchemy import select
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.models import VisualAsset, VisualAssetFolder
 from app.capabilities.asset_store.schemas.files import VisualAssetFolderCreateIn, VisualAssetPatchIn
-from app.runtime.config import Settings
 from app.runtime.revisions import RevisionConflictError
 from fpl_assets.deletions import FileCleanup
 from fpl_assets.files import Files
@@ -21,6 +20,7 @@ from fpl_assets.models import (
     AssetReferenceSet,
 )
 from fpl_assets.references import AssetReferences
+from fpl_assets.settings import StorageSettings
 from fpl_runtime.asset_references import ReferenceUpdate
 from fpl_runtime.database import Database
 from fpl_runtime.migrations import apply
@@ -55,7 +55,7 @@ class Upload:
 async def owned(tmp_path):
     apply(tmp_path / "service.db", "assets", MIGRATIONS)
     database = Database("assets", tmp_path, models=MODELS)
-    settings = Settings(fpl_database_path=str(tmp_path / "service.db"))
+    settings = StorageSettings(tmp_path / "service.db")
     calls = []
 
     async def project_exists(project):
@@ -240,3 +240,39 @@ async def test_cleanup_refuses_symlinks_and_preserves_external_original(owned, t
         await cases(session).delete_asset(asset.id, asset.revision)
     assert await FileCleanup(database, settings).run_once() == 0
     assert outside.is_file() and path.is_symlink()
+
+
+async def test_folder_archive_uses_only_owned_storage_and_preserves_account_boundaries(owned):
+    from app.console.file_library import LibraryFolderArchive
+
+    database, settings, cases, _calls = owned
+    async with database.sessions() as session:
+        folder = await cases(session).create_folder(
+            VisualAssetFolderCreateIn(
+                scope="library",
+                name="Exported folder",
+            )
+        )
+    async with database.sessions() as session:
+        original = await cases(session).upload(Upload(), project_id=None, folder_id=folder.id)
+    async with database.sessions() as session:
+        session.info["owner_user_id"] = "alpha"
+        archive = await LibraryFolderArchive(session, settings, "alpha").export_subtree(folder.id)
+    incoming = Upload()
+    incoming.data.close()
+    incoming.data = BytesIO(archive.path.read_bytes())
+    incoming.filename = "exported.zip"
+    incoming.content_type = "application/zip"
+    async with database.sessions() as session:
+        session.info["owner_user_id"] = "beta"
+        result = await LibraryFolderArchive(session, settings, "beta").import_archive(
+            incoming, parent_folder_id=None
+        )
+        assert result.created_files == 1
+    async with database.sessions() as session:
+        session.info["owner_user_id"] = "beta"
+        imported = list((await session.scalars(select(VisualAsset))).all())
+        assert len(imported) == 1 and imported[0].id != original.id
+        assert imported[0].owner_user_id == "beta"
+        _row, path = await cases(session, "beta").content(imported[0].id)
+        assert path.is_relative_to(settings.account_path("beta"))

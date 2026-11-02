@@ -35,6 +35,7 @@ app = create_app(
     service_credentials={
         "agents": "agents-test-service-credential-123456",
         "gateway": "gateway-test-service-credential-123456",
+        "assets": "assets-test-service-credential-123456",
     },
 )
 apply(state / "service.db", "identity", MIGRATIONS)
@@ -173,6 +174,44 @@ async def scenario():
                 json={**delegation_body, "assertion": authorized.headers[HEADER]},
             )
             assert wrong_source.status_code == 401
+            asset_source = await client.get(
+                "/_internal/v1/authorize",
+                headers={
+                    **auth_headers,
+                    "X-Fpl-Target-Service": "assets",
+                    "X-Fpl-Request-Method": "GET",
+                    "X-Fpl-Request-Uri": "/v1/files",
+                },
+            )
+            assert asset_source.status_code == 204, asset_source.text
+            asset_grant = {
+                **delegation_body,
+                "caller": "assets",
+                "purpose": "assets.visual-project.read",
+                "source_method": "GET",
+                "source_path": "/v1/files",
+                "assertion": asset_source.headers[HEADER],
+            }
+            asset_headers = {"Authorization": "Bearer assets-test-service-credential-123456"}
+            asset_result = await client.post(
+                "/_internal/v1/authorization/delegate", headers=asset_headers, json=asset_grant
+            )
+            assert asset_result.status_code == 200, asset_result.text
+            asset_actor = verify_context(
+                asset_result.json()["assertion"],
+                service="visual",
+                method="GET",
+                path=asset_grant["target_path"],
+                public_key=private.public_key(),
+            )
+            assert asset_actor.user_id == owner and asset_actor.local is False
+            assert (
+                await client.post(
+                    "/_internal/v1/authorization/delegate",
+                    headers=delegation_headers,
+                    json=asset_grant,
+                )
+            ).status_code == 403
             forged = await client.get(
                 "/_internal/v1/authorize", headers={**auth_headers, "X-Fpl-Gateway": "untrusted"}
             )
@@ -204,6 +243,12 @@ async def scenario():
                 json=delegation_body,
             )
             assert revoked_delegation.status_code == 401
+            revoked_asset_grant = await client.post(
+                "/_internal/v1/authorization/delegate",
+                headers=asset_headers,
+                json=asset_grant,
+            )
+            assert revoked_asset_grant.status_code == 401
             revoked = await client.get("/_internal/v1/authorize", headers=auth_headers)
             assert revoked.status_code == 401
             live = await client.post(
