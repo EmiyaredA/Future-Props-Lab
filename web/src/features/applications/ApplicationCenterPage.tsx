@@ -10,6 +10,8 @@ import {
   type ApplicationDefinition,
 } from "@features/applications/catalog";
 import "@features/applications/applications.css";
+import { ApplicationServiceStatus } from "./ApplicationServiceStatus";
+import { serviceStatusTime, type ServicesStatus } from "./serviceStatus";
 
 const RECENT_KEY = "future-props-recent-applications";
 
@@ -33,9 +35,17 @@ function rememberApplication(id: string) {
 export function ApplicationCenterPage({
   onOpen,
   applications,
+  services,
+  checking = false,
+  unavailable = false,
+  onRefresh,
 }: {
   onOpen: (path: string) => void;
   applications: readonly ApplicationDefinition[];
+  services?: ServicesStatus;
+  checking?: boolean;
+  unavailable?: boolean;
+  onRefresh?: () => void;
 }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<"all" | ApplicationCategory>("all");
@@ -119,6 +129,21 @@ export function ApplicationCenterPage({
           </button>
         ))}
       </div>
+      <div className="applications-status-bar">
+        <span>
+          {unavailable
+            ? "状态暂不可读"
+            : checking
+              ? "正在检查服务…"
+              : `最近检查 ${serviceStatusTime(services?.checked_at)}`}
+        </span>
+        <span>每 5 秒自动检查</span>
+        {onRefresh && (
+          <button type="button" onClick={onRefresh} disabled={checking}>
+            刷新状态
+          </button>
+        )}
+      </div>
       <div className="applications-layout">
         <div className="application-grid" aria-live="polite">
           {filtered.map((app) => {
@@ -153,6 +178,14 @@ export function ApplicationCenterPage({
                     </span>
                   </span>
                 </button>
+                <ApplicationServiceStatus
+                  name={app.name}
+                  value={services?.services.find(
+                    (value) => value.service_id === app.serviceId,
+                  )}
+                  checking={checking}
+                  unavailable={unavailable}
+                />
               </article>
             );
           })}

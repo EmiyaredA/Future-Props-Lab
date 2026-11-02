@@ -25,6 +25,7 @@ from .migrations.registry import MIGRATIONS
 from .models import ChangeCursor, ChangeReceipt
 from .notifications import router as notification_router
 from .routes import router
+from .service_status import ServiceMonitor
 
 MODELS = (ChangeCursor, ChangeReceipt)
 
@@ -39,9 +40,11 @@ def create_app(
     manifest,
     publishers=None,
     access=None,
+    monitor=None,
     version="development",
 ):
     database = Database("gateway", state_root, models=MODELS)
+    service_monitor = monitor if monitor is not None else ServiceMonitor(capabilities)
     if get_settings().database_path != database.path:
         raise ValueError("网关配置必须指向自己的数据目录")
     catalog.check_openapi(
@@ -61,6 +64,7 @@ def create_app(
         try:
             yield
         finally:
+            await service_monitor.close()
             await capabilities.close()
             await database.close()
 
@@ -79,6 +83,7 @@ def create_app(
     app.state.automation_manifest = manifest
     app.state.publishers = dict(publishers or {})
     app.state.access = access
+    app.state.service_monitor = service_monitor
     app.include_router(router, prefix="/v1")
     app.include_router(notification_router)
     app.add_exception_handler(HTTPException, http_exception_handler)

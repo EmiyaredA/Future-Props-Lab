@@ -1363,6 +1363,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/automation/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Service Status */
+        get: operations["service_status_v1_automation_services_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/code-agents": {
         parameters: {
             query?: never;
@@ -3638,6 +3655,23 @@ export interface paths {
         };
         /** Runtime */
         get: operations["runtime_v1_management_runtime_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/management/service-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Service Status */
+        get: operations["service_status_v1_management_service_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -10841,6 +10875,25 @@ export interface components {
             /** State */
             state: string;
             value: components["schemas"]["DemoConfig"];
+        };
+        /** DeploymentServiceState */
+        DeploymentServiceState: {
+            /** Exit Code */
+            exit_code?: number | null;
+            phase: components["schemas"]["ServicePhase"];
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+            service_id: components["schemas"]["ServiceId"];
+        };
+        /** DeploymentServicesOut */
+        DeploymentServicesOut: {
+            /** Observed At */
+            observed_at?: string | null;
+            /** Services */
+            services?: components["schemas"]["DeploymentServiceState"][];
         };
         /** DeveloperDocumentOut */
         DeveloperDocumentOut: {
@@ -19691,6 +19744,54 @@ export interface components {
             /** Visualtrackid */
             visualTrackId: string;
         };
+        /**
+         * ServiceId
+         * @enum {string}
+         */
+        ServiceId: "gateway" | "management" | "identity" | "portal" | "agents" | "remote" | "visual" | "thought" | "galgame" | "video" | "motion" | "presentation" | "annotation" | "director" | "interview" | "creative" | "assets" | "models" | "rendering" | "agent-runtime" | "integrations" | "amadeus" | "tools";
+        /** ServiceIssue */
+        ServiceIssue: {
+            /** Label */
+            label: string;
+            phase: components["schemas"]["ServicePhase"];
+            service_id: components["schemas"]["ServiceId"];
+        };
+        /**
+         * ServicePhase
+         * @enum {string}
+         */
+        ServicePhase: "running" | "starting" | "stopped" | "paused" | "restarting" | "unhealthy" | "failed" | "unreachable" | "not_deployed" | "unknown" | "degraded";
+        /** ServiceStatusOut */
+        ServiceStatusOut: {
+            /**
+             * Checked At
+             * Format: date-time
+             */
+            checked_at: string;
+            /** Dependencies */
+            dependencies?: components["schemas"]["ServiceIssue"][];
+            /** Detail */
+            detail: string;
+            /** Label */
+            label: string;
+            phase: components["schemas"]["ServicePhase"];
+            service_id: components["schemas"]["ServiceId"];
+        };
+        /** ServicesStatusOut */
+        ServicesStatusOut: {
+            /**
+             * Checked At
+             * Format: date-time
+             */
+            checked_at: string;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "monolith" | "independent";
+            /** Services */
+            services: components["schemas"]["ServiceStatusOut"][];
+        };
         /** SetAssetOrganizationOperation */
         SetAssetOrganizationOperation: {
             organization: components["schemas"]["VideoEditorAssetOrganization"];
@@ -26776,6 +26877,26 @@ export interface operations {
             };
         };
     };
+    service_status_v1_automation_services_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServicesStatusOut"];
+                };
+            };
+        };
+    };
     list_code_agents_v1_code_agents_get: {
         parameters: {
             query?: never;
@@ -32242,6 +32363,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RuntimeContext"];
+                };
+            };
+        };
+    };
+    service_status_v1_management_service_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeploymentServicesOut"];
                 };
             };
         };

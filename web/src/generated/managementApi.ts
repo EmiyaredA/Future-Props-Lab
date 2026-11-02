@@ -123,6 +123,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/management/service-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Service Status */
+        get: operations["service_status_v1_management_service_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -145,6 +162,25 @@ export interface components {
              * @enum {string}
              */
             phase: "stopped" | "starting" | "running" | "stopping" | "failed" | "unavailable";
+        };
+        /** DeploymentServiceState */
+        DeploymentServiceState: {
+            /** Exit Code */
+            exit_code?: number | null;
+            phase: components["schemas"]["ServicePhase"];
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+            service_id: components["schemas"]["ServiceId"];
+        };
+        /** DeploymentServicesOut */
+        DeploymentServicesOut: {
+            /** Observed At */
+            observed_at?: string | null;
+            /** Services */
+            services?: components["schemas"]["DeploymentServiceState"][];
         };
         /** EndpointState */
         EndpointState: {
@@ -236,6 +272,16 @@ export interface components {
             /** Lines */
             lines: string[];
         };
+        /**
+         * ServiceId
+         * @enum {string}
+         */
+        ServiceId: "gateway" | "management" | "identity" | "portal" | "agents" | "remote" | "visual" | "thought" | "galgame" | "video" | "motion" | "presentation" | "annotation" | "director" | "interview" | "creative" | "assets" | "models" | "rendering" | "agent-runtime" | "integrations" | "amadeus" | "tools";
+        /**
+         * ServicePhase
+         * @enum {string}
+         */
+        ServicePhase: "running" | "starting" | "stopped" | "paused" | "restarting" | "unhealthy" | "failed" | "unreachable" | "not_deployed" | "unknown" | "degraded";
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -444,6 +490,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RuntimeContext"];
+                };
+            };
+        };
+    };
+    service_status_v1_management_service_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeploymentServicesOut"];
                 };
             };
         };

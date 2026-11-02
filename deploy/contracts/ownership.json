@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "openapi_sha256": "cc0f52e88bb01fe73dee22532fad6b7438d4020628017e0e8a4ce9214c263e26",
+  "openapi_sha256": "18c2501e334f33d4d024bb2619833d956160fe24a50abcb4dbedd1d7e2fc7c45",
   "operations": [
     {
       "service": "identity",
@@ -559,6 +559,12 @@
       "method": "GET",
       "path": "/v1/automation/runtime",
       "operation_id": "runtime_v1_automation_runtime_get"
+    },
+    {
+      "service": "gateway",
+      "method": "GET",
+      "path": "/v1/automation/services",
+      "operation_id": "service_status_v1_automation_services_get"
     },
     {
       "service": "agent-runtime",
@@ -1585,6 +1591,12 @@
       "method": "GET",
       "path": "/v1/management/runtime",
       "operation_id": "runtime_v1_management_runtime_get"
+    },
+    {
+      "service": "management",
+      "method": "GET",
+      "path": "/v1/management/service-status",
+      "operation_id": "service_status_v1_management_service_status_get"
     },
     {
       "service": "models",

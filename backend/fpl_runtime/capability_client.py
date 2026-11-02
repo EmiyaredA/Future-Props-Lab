@@ -43,6 +43,33 @@ class CapabilityClient:
         )
         return await self._exists(assertion, grant)
 
+    async def deployment_status(self, *, assertion):
+        from .service_status import DeploymentServicesOut
+
+        grant = RequestGrant(
+            self.service,
+            "deployment.status.read",
+            "GET",
+            "/v1/automation/services",
+            "management",
+            "GET",
+            "/v1/management/service-status",
+        )
+        token = await self._authorize(assertion, grant)
+        try:
+            response = await self.client.get(
+                "http://management:8080" + grant.target_path,
+                headers={"X-Fpl-Context": token},
+                timeout=2,
+            )
+            if response.status_code in {401, 403}:
+                raise CapabilityDenied(response.status_code)
+            if response.status_code != 200:
+                raise CapabilityUnavailable("主机监控暂不可读")
+            return DeploymentServicesOut.model_validate(response.json())
+        except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+            raise CapabilityUnavailable("主机监控暂不可读") from exc
+
     async def project_exists(self, *, assertion, source_method, source_path, project_id):
         grant = RequestGrant(
             self.service,

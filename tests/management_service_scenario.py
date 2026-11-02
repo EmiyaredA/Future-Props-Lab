@@ -35,6 +35,7 @@ service_token, native_token, worker_token = (
     "native_ingress_" * 3,
     "worker_private_" * 3,
 )
+gateway_service_token = "gateway_service_" * 3
 identity = identity_app(
     state_root=identity_root,
     catalog=catalog,
@@ -45,7 +46,7 @@ identity = identity_app(
     management_gateway_token=management_token,
     management_local_origin="http://127.0.0.1:9002",
     management_public_origin="https://admin.example.test",
-    service_credentials={"management": service_token},
+    service_credentials={"management": service_token, "gateway": gateway_service_token},
 )
 identity_transport = httpx.ASGITransport(app=identity)
 management = create_app(
@@ -206,7 +207,16 @@ async def scenario():
                     assert delivered.status_code == 200, delivered.text
                 report = await client.post(
                     "/_native/v1/report",
-                    json={"application": {"phase": "running"}},
+                    json={
+                        "application": {"phase": "running"},
+                        "services": [
+                            {
+                                "service_id": "agents",
+                                "phase": "stopped",
+                                "reason": "process_stopped",
+                            }
+                        ],
+                    },
                     headers=worker_headers,
                 )
                 assert report.status_code == 200, report.text
@@ -215,6 +225,56 @@ async def scenario():
                     apppath, headers={HEADER: await assertion("GET", apppath, public=True)}
                 )
                 assert observed.status_code == 200 and observed.json()["phase"] == "running"
+                async with httpx.AsyncClient(
+                    transport=identity_transport,
+                    base_url="http://127.0.0.1:9000",
+                    headers={
+                        "X-Fpl-Gateway": gateway_token,
+                        "X-Fpl-Ingress": "local",
+                        "Origin": "http://127.0.0.1:9000",
+                    },
+                ) as normal_business:
+                    logged = await normal_business.post(
+                        "/v1/auth/login", json={"username": "management-user", "password": password}
+                    )
+                    assert logged.status_code == 200
+                    original = await normal_business.get(
+                        "/_internal/v1/authorize",
+                        headers={
+                            "X-Fpl-Target-Service": "gateway",
+                            "X-Fpl-Request-Method": "GET",
+                            "X-Fpl-Request-Uri": "/v1/automation/services",
+                        },
+                    )
+                    assert original.status_code == 204
+                    grant = {
+                        "caller": "gateway",
+                        "purpose": "deployment.status.read",
+                        "source_method": "GET",
+                        "source_path": "/v1/automation/services",
+                        "target_service": "management",
+                        "target_method": "GET",
+                        "target_path": "/v1/management/service-status",
+                        "assertion": original.headers[HEADER],
+                    }
+                    delegated = await normal_business.post(
+                        "/_internal/v1/authorization/delegate",
+                        headers={"Authorization": "Bearer " + gateway_service_token},
+                        json=grant,
+                    )
+                    assert delegated.status_code == 200
+                    state = await client.get(
+                        grant["target_path"], headers={HEADER: delegated.json()["assertion"]}
+                    )
+                    assert state.status_code == 200, state.text
+                    assert state.json()["services"][0]["phase"] == "stopped"
+                    assert set(state.json()) == {"observed_at", "services"}
+                    widened = await normal_business.post(
+                        "/_internal/v1/authorization/delegate",
+                        headers={"Authorization": "Bearer " + gateway_service_token},
+                        json={**grant, "target_path": "/v1/management/application/logs"},
+                    )
+                    assert widened.status_code == 403
                 revoked = await client.post(
                     actions,
                     json={"action": "stop", "request_id": str(uuid4())},

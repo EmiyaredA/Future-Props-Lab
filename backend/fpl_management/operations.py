@@ -86,7 +86,7 @@ async def job(request, job_id):
 async def observation(database):
     async with database.sessions() as session:
         row = await session.get(HostSnapshot, "host")
-        if row is None or utc_now() - row.observed_at > timedelta(seconds=20):
+        if row is None or not timedelta(0) <= utc_now() - row.observed_at <= timedelta(seconds=20):
             return HostState()
         return HostState.model_validate(row.payload)
 

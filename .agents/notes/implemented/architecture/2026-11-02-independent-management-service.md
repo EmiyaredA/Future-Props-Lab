@@ -31,3 +31,7 @@ Formal data export/import and the final deployment switch remain the responsibil
 Fresh-process tests exercise real Identity login, session audience separation, ordinary-user rejection, public-host-operation denial, authorization revocation, idempotent requests and native receipt settlement using separate temporary databases. Host tests use fake Compose/SSH/network dependencies, including explicit force-stop and independent tunnel shutdown. The standalone browser journey covers light/dark modes at 390/768/1600 widths and keyboard focus. Container acceptance uses disposable data and simulated business execution only.
 
 Final isolated acceptance: backend 1905 passed / 4 skipped; Web 281 files / 1802 tests passed; management browser 7 passed and retained business browser 5 passed. Full build, standalone Management build, TypeScript, lint, format, contract stale-checks, Agent Note checks and protected-doc checks passed. Final Identity/Management Docker images passed the disposable-container acceptance, including account governance after the simulated business service stopped, public host-control denial and receipt recovery after Management restart. Real Models integration, production data migration and the formal deployment switch are not claimed by these tests.
+
+## Related decisions
+
+The automatic cleanup of sibling services is superseded by [Preserve sibling services during failure observation](../bug-fix/2026-11-03-preserve-sibling-services.md), following integration with the full independent-service lifecycle.

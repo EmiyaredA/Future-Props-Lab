@@ -32,6 +32,7 @@ def exercise(
     portal_image=None,
     assets_image=None,
     rendering_image=None,
+    management_image=None,
     gateway_image="caddy@sha256:36c24ad91a7ff7bc4c87fe22bfa8df3c4b18da0773d73fc12ee2c52b98c0bb7e",
 ):
     project = "fpl-isolated-agents-" + secrets.token_hex(5)
@@ -104,10 +105,6 @@ def exercise(
         ).encode(),
     }
     material["gateway.toml"] = material["agents.toml"]
-    for name, content in material.items():
-        path = root / name
-        path.write_bytes(content)
-        path.chmod(0o600)
     records = [
         {
             "type": "session_meta",
@@ -174,6 +171,18 @@ def exercise(
             "FPL_NATIVE_PORT": str(native_port),
         }
     )
+    status_fixture = None
+    if management_image:
+        if not control or not portal_image:
+            raise ValueError("Service status acceptance requires Gateway control and Portal")
+        from service_status_docker_checks import StatusFixture
+
+        status_fixture = StatusFixture(root, ROOT)
+        status_fixture.prepare(material, environment, management_image)
+    for name, content in material.items():
+        path = root / name
+        path.write_bytes(content)
+        path.chmod(0o600)
     prefix = [
         "docker",
         "compose",
@@ -184,8 +193,10 @@ def exercise(
         "--file",
         str(ROOT / "deploy/compose.yaml"),
     ]
+    if management_image:
+        prefix.extend(["--file", str(ROOT / "deploy/management.compose.yaml")])
 
-    def compose(*args, input_text=None, check=True):
+    def compose(*args, input_text=None, check=True, timeout_seconds=120):
         result = subprocess.run(
             [*prefix, *args],
             env=environment,
@@ -193,7 +204,7 @@ def exercise(
             input=input_text,
             capture_output=True,
             text=True,
-            timeout=120,
+            timeout=timeout_seconds,
         )
         output = result.stdout + result.stderr
         for secret in (
@@ -256,6 +267,8 @@ def exercise(
             compose("run", "--rm", "--no-deps", "assets", "migrate")
         if portal_image:
             compose("run", "--rm", "--no-deps", "portal", "migrate")
+        if management_image:
+            compose("run", "--rm", "--no-deps", "management", "migrate")
         compose(
             "up",
             "--detach",
@@ -266,6 +279,7 @@ def exercise(
             *(("portal",) if portal_image else ()),
             *(("assets",) if assets_image else ()),
             *(("rendering",) if rendering_image else ()),
+            *(("management",) if management_image else ()),
         )
         collector = subprocess.Popen(
             [
@@ -379,6 +393,8 @@ def exercise(
             checks.append(
                 "independent Agents replacement preserves data, Identity, Gateway and native follow"
             )
+            if status_fixture:
+                checks.append(status_fixture.check(client, compose, started, wait, history))
             if assets_image:
                 from assets_docker_checks import exercise_assets
 
@@ -410,6 +426,8 @@ def exercise(
                 )
             if portal_image:
                 wait(client, "/")
+                if status_fixture:
+                    status_fixture.follow(compose)
                 stable = {
                     service: started(service)
                     for service in (
@@ -431,6 +449,7 @@ def exercise(
                                 "password": password,
                                 "output": str(root / "portal-browser"),
                                 "repo": str(ROOT),
+                                "serviceStatus": bool(status_fixture),
                             }
                         ),
                         capture_output=True,
@@ -554,6 +573,8 @@ def exercise(
         (root / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
         print(json.dumps(report, ensure_ascii=False))
     finally:
+        if status_fixture:
+            status_fixture.close()
         if collector is not None:
             collector.terminate()
             try:
@@ -576,6 +597,8 @@ def exercise(
             check=False,
         )
         compose("down", "--remove-orphans", check=False)
+        if status_fixture:
+            status_fixture.verify()
 
 
 if __name__ == "__main__":
@@ -586,6 +609,7 @@ if __name__ == "__main__":
     parser.add_argument("--portal-image")
     parser.add_argument("--assets-image")
     parser.add_argument("--rendering-image")
+    parser.add_argument("--management-image")
     parser.add_argument(
         "--gateway-image",
         default="caddy@sha256:36c24ad91a7ff7bc4c87fe22bfa8df3c4b18da0773d73fc12ee2c52b98c0bb7e",
@@ -601,4 +625,5 @@ if __name__ == "__main__":
         portal_image=args.portal_image,
         assets_image=args.assets_image,
         rendering_image=args.rendering_image,
+        management_image=args.management_image,
     )

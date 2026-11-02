@@ -5,7 +5,9 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter, HTTPException, Request
 
+from fpl_runtime.http_dependencies import StudioAuth
 from fpl_runtime.native_queue import NativeQueueError
+from fpl_runtime.service_status import DeploymentServicesOut
 
 from .contracts import (
     ApplicationState,
@@ -19,6 +21,14 @@ from .contracts import (
 from .operations import authorize, enqueue, job, observation
 
 router = APIRouter(prefix="/v1/management", tags=["management"])
+
+
+@router.get("/service-status", response_model=DeploymentServicesOut)
+async def service_status(request: Request, principal: StudioAuth):
+    if principal.auth_kind != "session":
+        raise HTTPException(403, "browser_session_required")
+    value = await observation(request.app.state.database)
+    return DeploymentServicesOut(observed_at=value.observed_at or None, services=value.services)
 
 
 @router.get("/runtime", response_model=RuntimeContext)

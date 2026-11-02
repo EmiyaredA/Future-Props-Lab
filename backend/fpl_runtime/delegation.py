@@ -57,6 +57,15 @@ def permitted(grant, catalog):
         return False
     if _automation_lookup(grant):
         return True
+    if grant.purpose == "deployment.status.read":
+        return (
+            grant.caller == "gateway"
+            and grant.source_method == "GET"
+            and grant.source_path == "/v1/automation/services"
+            and grant.target_service == "management"
+            and grant.target_method == "GET"
+            and grant.target_path == "/v1/management/service-status"
+        )
     if grant.caller == "rendering" and grant.purpose == "rendering.source.read":
         source = re.fullmatch(
             r"/v1/files/([A-Za-z0-9_-]{1,128})/(crop|frames|media-info|preview|thumbnail)",

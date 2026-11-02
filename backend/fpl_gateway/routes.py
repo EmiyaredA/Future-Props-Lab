@@ -10,10 +10,23 @@ from app.console.schemas.automation import (
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
 from fpl_runtime.http_dependencies import StudioAuth
 from fpl_runtime.resource_routes import RESOURCE_ROUTES, page_link
+from fpl_runtime.service_status import ServicesStatusOut
 
 from .changes import revision
 
 router = APIRouter(prefix="/automation", tags=["automation"])
+
+
+@router.get("/services", response_model=ServicesStatusOut)
+async def service_status(request: Request, principal: StudioAuth):
+    if principal.auth_kind != "session":
+        raise HTTPException(403, {"code": "browser_session_required"})
+    try:
+        return await request.app.state.service_monitor.snapshot(
+            assertion=request.state.service_assertion
+        )
+    except CapabilityDenied as exc:
+        raise HTTPException(exc.status, {"code": "service_status_authorization_denied"}) from exc
 
 
 @router.get("/capabilities", response_model=AutomationCapabilities)

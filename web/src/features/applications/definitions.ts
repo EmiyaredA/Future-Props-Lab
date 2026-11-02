@@ -10,6 +10,7 @@ import type { ApplicationDefinition } from "./catalog";
 
 export const AUDIO_ANNOTATION_DEFINITION = {
   id: "audio-annotation",
+  serviceId: "annotation",
   name: "录音标注工坊",
   category: "productivity",
   description: "切分录音、配置说话人与情绪，逐段转写并导出字幕与片段。",
@@ -21,6 +22,7 @@ export const AUDIO_ANNOTATION_DEFINITION = {
 
 export const DIRECTOR_DESK_DEFINITION = {
   id: "director-desk",
+  serviceId: "director",
   name: "导演台",
   category: "visual",
   description: "搭三维场景、排走位和运镜，导出预演参考。",
@@ -32,6 +34,7 @@ export const DIRECTOR_DESK_DEFINITION = {
 
 export const PRESENTATION_WORKSHOP_DEFINITION = {
   id: "presentation-workshop",
+  serviceId: "presentation",
   name: "演示工坊",
   category: "productivity",
   description: "用文字、图片和图形整理想法，编辑、放映并导出可编辑 PPTX。",
@@ -43,6 +46,7 @@ export const PRESENTATION_WORKSHOP_DEFINITION = {
 
 export const THOUGHT_WORKSHOP_DEFINITION = {
   id: "thought-workshop",
+  serviceId: "thought",
   name: "思绪工坊",
   category: "productivity",
   description:
@@ -55,6 +59,7 @@ export const THOUGHT_WORKSHOP_DEFINITION = {
 
 export const GALGAME_WORKSHOP_DEFINITION = {
   id: "galgame-workshop",
+  serviceId: "galgame",
   name: "Galgame 工坊",
   description: "本地优先的 Galgame 创作工坊，编辑结构化剧本、分支并直接试玩。",
   category: "visual",
@@ -66,6 +71,7 @@ export const GALGAME_WORKSHOP_DEFINITION = {
 
 export const VISUAL_WORKSHOP_DEFINITION = {
   id: "visual-workshop",
+  serviceId: "visual",
   name: "视觉创作工坊",
   description: "统一管理图像、视频与自由画布项目，让视觉内容从灵感走向成品。",
   category: "visual",
@@ -77,6 +83,7 @@ export const VISUAL_WORKSHOP_DEFINITION = {
 
 export const VIDEO_EDITOR_DEFINITION = {
   id: "video-editor",
+  serviceId: "video",
   name: "视频剪辑工坊",
   description: "确定性多轨剪辑、精确停帧与原生 FFmpeg 成片。",
   category: "visual",
@@ -88,6 +95,7 @@ export const VIDEO_EDITOR_DEFINITION = {
 
 export const MOTION_COMPOSITOR_DEFINITION = {
   id: "motion-compositor",
+  serviceId: "motion",
   name: "特效制作工坊",
   description: "制作可编辑的二维特效、路径遮罩与透明镜头。",
   category: "visual",
@@ -99,6 +107,7 @@ export const MOTION_COMPOSITOR_DEFINITION = {
 
 export const INTERVIEW_ASSISTANT_DEFINITION = {
   id: "interview-assistant",
+  serviceId: "interview",
   name: "面试助手",
   category: "productivity",
   description:
@@ -111,6 +120,7 @@ export const INTERVIEW_ASSISTANT_DEFINITION = {
 
 export const AGENT_WORKBENCH_DEFINITION = {
   id: "agent-workbench",
+  serviceId: "agents",
   name: "Agent 工作台",
   category: "development",
   description: "查看本机 APP 与 CLI 的已有编程会话，实时跟随新增内容。",

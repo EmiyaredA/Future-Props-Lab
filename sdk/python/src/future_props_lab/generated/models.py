@@ -1215,6 +1215,16 @@ class DemoServiceOut(WireModel):
     state: str = Field(default=..., alias='state')
     value: DemoConfig = Field(default=..., alias='value')
 
+class DeploymentServiceState(WireModel):
+    exit_code: int | None = Field(default=None, alias='exit_code')
+    phase: ServicePhase = Field(default=..., alias='phase')
+    reason: str = Field(default='', alias='reason', max_length=64)
+    service_id: ServiceId = Field(default=..., alias='service_id')
+
+class DeploymentServicesOut(WireModel):
+    observed_at: datetime | None = Field(default=None, alias='observed_at')
+    services: list[DeploymentServiceState] | None = Field(default=None, alias='services', max_length=23)
+
 class DeveloperDocumentOut(WireModel):
     group: str = Field(default=..., alias='group')
     id: str = Field(default=..., alias='id')
@@ -4766,6 +4776,30 @@ class SeparateClipOperation(WireModel):
     type: Literal['separateClip'] = Field(default=..., alias='type')
     visual_track_id: str = Field(default=..., alias='visualTrackId')
 
+class ServiceId(RootModel[Literal['gateway', 'management', 'identity', 'portal', 'agents', 'remote', 'visual', 'thought', 'galgame', 'video', 'motion', 'presentation', 'annotation', 'director', 'interview', 'creative', 'assets', 'models', 'rendering', 'agent-runtime', 'integrations', 'amadeus', 'tools']]):
+    pass
+
+class ServiceIssue(WireModel):
+    label: str = Field(default=..., alias='label')
+    phase: ServicePhase = Field(default=..., alias='phase')
+    service_id: ServiceId = Field(default=..., alias='service_id')
+
+class ServicePhase(RootModel[Literal['running', 'starting', 'stopped', 'paused', 'restarting', 'unhealthy', 'failed', 'unreachable', 'not_deployed', 'unknown', 'degraded']]):
+    pass
+
+class ServiceStatusOut(WireModel):
+    checked_at: datetime = Field(default=..., alias='checked_at')
+    dependencies: list[ServiceIssue] | None = Field(default=None, alias='dependencies')
+    detail: str = Field(default=..., alias='detail')
+    label: str = Field(default=..., alias='label')
+    phase: ServicePhase = Field(default=..., alias='phase')
+    service_id: ServiceId = Field(default=..., alias='service_id')
+
+class ServicesStatusOut(WireModel):
+    checked_at: datetime = Field(default=..., alias='checked_at')
+    mode: Literal['monolith', 'independent'] = Field(default=..., alias='mode')
+    services: list[ServiceStatusOut] = Field(default=..., alias='services')
+
 class SetAssetOrganizationOperation(WireModel):
     organization: VideoEditorAssetOrganization = Field(default=..., alias='organization')
     type: Literal['setAssetOrganization'] = Field(default=..., alias='type')
@@ -6599,6 +6633,8 @@ DemoInstallIn.model_rebuild()
 DemoInstallOut.model_rebuild()
 DemoLog.model_rebuild()
 DemoServiceOut.model_rebuild()
+DeploymentServiceState.model_rebuild()
+DeploymentServicesOut.model_rebuild()
 DeveloperDocumentOut.model_rebuild()
 DeveloperDocumentsOut.model_rebuild()
 DirectorAgentCallComplete.model_rebuild()
@@ -7098,6 +7134,11 @@ SeedImportInput.model_rebuild()
 SeedPreview.model_rebuild()
 SelectOption.model_rebuild()
 SeparateClipOperation.model_rebuild()
+ServiceId.model_rebuild()
+ServiceIssue.model_rebuild()
+ServicePhase.model_rebuild()
+ServiceStatusOut.model_rebuild()
+ServicesStatusOut.model_rebuild()
 SetAssetOrganizationOperation.model_rebuild()
 SetAudioTransitionOperation.model_rebuild()
 SetClipSpeedOperation.model_rebuild()

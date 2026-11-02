@@ -3,7 +3,7 @@ import { useRuntimeAccess } from "@features/accounts/useRuntimeAccess";
 import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { useStudioSession } from "@app/StudioSession";
 import { HomePage } from "@features/home/HomePage";
-import { ApplicationCenterPage } from "@features/applications/ApplicationCenterPage";
+import { ApplicationCenterRoute } from "@features/applications/ApplicationCenterRoute";
 import { APPLICATION_DEFINITIONS } from "@features/applications/definitions";
 import { IndependentShell } from "./IndependentShell";
 import { guardedNavigation } from "./navigation";
@@ -26,7 +26,7 @@ function PortalContents() {
     <IndependentShell title="Future Props Lab">
       <div className="portal-scroll">
         {/^\/apps\/?$/.test(location.pathname) ? (
-          <ApplicationCenterPage applications={applications} onOpen={open} />
+          <ApplicationCenterRoute applications={applications} onOpen={open} />
         ) : (
           <HomePage
             onNavigate={open}

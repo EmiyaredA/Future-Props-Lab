@@ -10,6 +10,8 @@ from pathlib import Path
 
 from fpl_runtime.catalog import BY_ID
 
+from .service_observation import ServiceObserver
+
 PROTECTED = frozenset({"identity", "management", "models"})
 
 
@@ -68,6 +70,7 @@ class DeploymentControl:
         self.phase, self.error, self.force = "unavailable", "", False
         self.expected_running = None
         self.lock = asyncio.Lock()
+        self.service_observer = ServiceObserver(self.run, clock=self.clock)
 
     def run(self, arguments, timeout=15):
         try:
@@ -125,6 +128,7 @@ class DeploymentControl:
         except (RuntimeError, ValueError, KeyError):
             self.phase, self.error = "unavailable", "本机部署状态暂不可读"
         return {
+            "services": await asyncio.to_thread(self.service_observer.read),
             "application": {
                 "phase": self.phase,
                 "error": self.error,

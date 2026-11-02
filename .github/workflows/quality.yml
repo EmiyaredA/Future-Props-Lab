@@ -104,7 +104,7 @@ jobs:
       - run: python3 scripts/check_lfs_assets.py --pointers
 
   docker-isolation:
-    name: Isolated services and independent Portal/Agents/Assets browsers
+    name: Isolated services, lifecycle status and independent application browsers
     runs-on: ubuntu-latest
     env:
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.local/playwright-browsers
@@ -134,6 +134,7 @@ jobs:
           npm run services:build:web -- agents > .local/service-split/ci-web-build.log
           npm run services:build:web -- portal > .local/service-split/ci-portal-web-build.log
           npm run services:build:web -- assets > .local/service-split/ci-assets-web-build.log
+          npm run services:build:web -- management > .local/service-split/ci-management-web-build.log
       - name: Build the independently owned images
         run: |
           uv run python scripts/website/service_build.py identity --build > .local/service-split/ci-build.log
@@ -147,6 +148,7 @@ jobs:
               ('agents', '.local/service-split/ci-web-build.log'),
               ('portal', '.local/service-split/ci-portal-web-build.log'),
               ('assets', '.local/service-split/ci-assets-web-build.log'),
+              ('management', '.local/service-split/ci-management-web-build.log'),
           ):
               program = json.loads(Path(program_log).read_text().splitlines()[-1])
               with Path(f'.local/service-split/ci-{service}-build.log').open('w') as log:
@@ -169,6 +171,7 @@ jobs:
           portal = image('.local/service-split/ci-portal-build.log')
           assets = image('.local/service-split/ci-assets-build.log')
           rendering = image('.local/service-split/ci-rendering-build.log')
+          management = image('.local/service-split/ci-management-build.log')
           subprocess.run([
               'uv', 'run', 'python', 'scripts/website/service_docker_smoke.py',
               '--image', identity, '--gateway-image', gateway,
@@ -176,6 +179,7 @@ jobs:
           subprocess.run([
               'uv', 'run', 'python', 'scripts/website/agents_docker_smoke.py',
               '--identity-image', identity, '--agents-image', agents,
-              '--gateway-image', gateway, '--portal-image', portal, '--assets-image', assets, '--rendering-image', rendering, '--browser',
+              '--gateway-image', gateway, '--portal-image', portal, '--assets-image', assets,
+              '--rendering-image', rendering, '--management-image', management, '--browser',
           ], check=True)
           PY

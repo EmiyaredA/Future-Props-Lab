@@ -57,8 +57,8 @@ const HomePage = lazy(() =>
   })),
 );
 const ApplicationCenterPage = lazy(() =>
-  import("@features/applications/ApplicationCenterPage").then((module) => ({
-    default: module.ApplicationCenterPage,
+  import("@features/applications/ApplicationCenterRoute").then((module) => ({
+    default: module.ApplicationCenterRoute,
   })),
 );
 const CreativeWorkshopPage = lazy(() =>

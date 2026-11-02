@@ -12,9 +12,11 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from fpl_gateway.application import create_app
 from fpl_gateway.migrations.registry import MIGRATIONS
+from fpl_gateway.service_status import ServiceMonitor
 from fpl_runtime.claims import Actor, issue_context, verify_context
 from fpl_runtime.migrations import apply
 from fpl_runtime.routing import RouteCatalog
+from fpl_runtime.service_status import DeploymentServicesOut
 
 assert "app.main" not in sys.modules and "app.orm" not in sys.modules
 assert "app.console.models.accounts" not in sys.modules
@@ -44,6 +46,16 @@ class Capabilities:
     async def close(self):
         pass
 
+    async def deployment_status(self, *, assertion):
+        verify_context(
+            assertion,
+            service="gateway",
+            method="GET",
+            path="/v1/automation/services",
+            public_key=key.public_key(),
+        )
+        return DeploymentServicesOut()
+
 
 capabilities = Capabilities()
 app = create_app(
@@ -54,20 +66,29 @@ app = create_app(
     schema=schema,
     manifest=manifest,
     publishers={"models": "test-publisher-" * 3},
+    monitor=ServiceMonitor(
+        capabilities,
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(
+                200, json={"status": "ready", "service": request.url.host}
+            )
+        ),
+    ),
 )
 apply(state / "service.db", "gateway", MIGRATIONS)
 
 
-def headers(method, path, *, owner="alpha", local=True, admin=False, readonly=False):
+def headers(method, path, *, owner="alpha", local=True, admin=False, readonly=False, api_key=False):
     actor = Actor(
         owner,
         "admin" if admin else "user",
-        "session",
+        "management_api_key" if api_key else "session",
         ("studio:read", "studio:private_read")
         if readonly
         else ("studio:read", "studio:private_read", "studio:write"),
-        session_id="session-" + owner,
-        local=local,
+        session_id=None if api_key else "session-" + owner,
+        api_key_id="key-" + owner if api_key else None,
+        local=False if api_key else local,
     )
     return {
         "X-Fpl-Context": issue_context(
@@ -94,6 +115,16 @@ async def journey():
             assert (await client.get(path, headers=headers("GET", path, local=False))).json() == {
                 "local_browser": False
             }
+            path = "/v1/automation/services"
+            assert (await client.get(path)).status_code == 401
+            response = await client.get(path, headers=headers("GET", path, readonly=True))
+            assert response.status_code == 200, response.text
+            assert response.headers["cache-control"] == "no-store"
+            assert response.json()["mode"] == "independent"
+            assert all(item["phase"] == "running" for item in response.json()["services"])
+            assert (
+                await client.get(path, headers=headers("GET", path, api_key=True))
+            ).status_code == 403
             path = "/v1/automation/capabilities"
             response = await client.get(path, headers=headers("GET", path))
             assert response.status_code == 200 and response.json()["owner_user_id"] == "alpha"

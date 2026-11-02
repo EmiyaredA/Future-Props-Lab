@@ -3,7 +3,9 @@
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from fpl_runtime.service_status import DeploymentServicesOut, DeploymentServiceState
 
 
 class ApplicationState(BaseModel):
@@ -31,6 +33,12 @@ class HostState(BaseModel):
     business: EndpointState = Field(default_factory=EndpointState)
     management: EndpointState = Field(default_factory=EndpointState)
     observed_at: str = ""
+    services: list[DeploymentServiceState] = Field(default_factory=list, max_length=100)
+
+    @field_validator("services")
+    @classmethod
+    def valid_services(cls, value):
+        return DeploymentServicesOut(services=value).services
 
 
 class ManagementApplicationAction(BaseModel):

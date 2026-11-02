@@ -28,6 +28,16 @@ try {
   for (const section of ["home", "apps"]) {
     await page.goto(new URL(section === "home" ? "/" : "/apps", origin).href);
     await expect(page.getByRole("heading", {name: section === "home" ? "今天想从哪里开始？" : "应用", exact: true})).toBeVisible();
+    if (section === "apps" && options.serviceStatus) {
+      const status = page.getByRole("button", {name: "查看Agent 工作台服务状态：运行中", exact: true});
+      await expect(status).toBeVisible({timeout: 15000});
+      await status.focus();
+      await page.keyboard.press("Enter");
+      await expect(page.getByRole("region", {name: "Agent 工作台服务状态", exact: true})).toContainText("服务已就绪");
+      await expect(page.getByRole("region", {name: "Agent 工作台服务状态", exact: true})).toContainText("最近检查");
+      await expect(page).toHaveURL(new URL("/apps", origin).href);
+      checks.push("actual service status expands by keyboard without navigating the application card");
+    }
     for (const width of [390, 768, 1600]) {
       await page.setViewportSize({width, height: 1000});
       for (const theme of ["light", "dark"]) {

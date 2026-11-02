@@ -7432,6 +7432,70 @@
         "title": "DemoServiceOut",
         "type": "object"
       },
+      "DeploymentServiceState": {
+        "additionalProperties": false,
+        "properties": {
+          "exit_code": {
+            "anyOf": [
+              {
+                "maximum": 255.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exit Code"
+          },
+          "phase": {
+            "$ref": "#/components/schemas/ServicePhase"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 64,
+            "pattern": "^[a-z_]*$",
+            "title": "Reason",
+            "type": "string"
+          },
+          "service_id": {
+            "$ref": "#/components/schemas/ServiceId"
+          }
+        },
+        "required": [
+          "service_id",
+          "phase"
+        ],
+        "title": "DeploymentServiceState",
+        "type": "object"
+      },
+      "DeploymentServicesOut": {
+        "additionalProperties": false,
+        "properties": {
+          "observed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed At"
+          },
+          "services": {
+            "items": {
+              "$ref": "#/components/schemas/DeploymentServiceState"
+            },
+            "maxItems": 23,
+            "title": "Services",
+            "type": "array"
+          }
+        },
+        "title": "DeploymentServicesOut",
+        "type": "object"
+      },
       "DeveloperDocumentOut": {
         "properties": {
           "group": {
@@ -30584,6 +30648,143 @@
         "title": "SeparateClipOperation",
         "type": "object"
       },
+      "ServiceId": {
+        "enum": [
+          "gateway",
+          "management",
+          "identity",
+          "portal",
+          "agents",
+          "remote",
+          "visual",
+          "thought",
+          "galgame",
+          "video",
+          "motion",
+          "presentation",
+          "annotation",
+          "director",
+          "interview",
+          "creative",
+          "assets",
+          "models",
+          "rendering",
+          "agent-runtime",
+          "integrations",
+          "amadeus",
+          "tools"
+        ],
+        "title": "ServiceId",
+        "type": "string"
+      },
+      "ServiceIssue": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "phase": {
+            "$ref": "#/components/schemas/ServicePhase"
+          },
+          "service_id": {
+            "$ref": "#/components/schemas/ServiceId"
+          }
+        },
+        "required": [
+          "service_id",
+          "label",
+          "phase"
+        ],
+        "title": "ServiceIssue",
+        "type": "object"
+      },
+      "ServicePhase": {
+        "enum": [
+          "running",
+          "starting",
+          "stopped",
+          "paused",
+          "restarting",
+          "unhealthy",
+          "failed",
+          "unreachable",
+          "not_deployed",
+          "unknown",
+          "degraded"
+        ],
+        "title": "ServicePhase",
+        "type": "string"
+      },
+      "ServiceStatusOut": {
+        "properties": {
+          "checked_at": {
+            "format": "date-time",
+            "title": "Checked At",
+            "type": "string"
+          },
+          "dependencies": {
+            "items": {
+              "$ref": "#/components/schemas/ServiceIssue"
+            },
+            "title": "Dependencies",
+            "type": "array"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "phase": {
+            "$ref": "#/components/schemas/ServicePhase"
+          },
+          "service_id": {
+            "$ref": "#/components/schemas/ServiceId"
+          }
+        },
+        "required": [
+          "service_id",
+          "phase",
+          "label",
+          "detail",
+          "checked_at"
+        ],
+        "title": "ServiceStatusOut",
+        "type": "object"
+      },
+      "ServicesStatusOut": {
+        "properties": {
+          "checked_at": {
+            "format": "date-time",
+            "title": "Checked At",
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "monolith",
+              "independent"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "services": {
+            "items": {
+              "$ref": "#/components/schemas/ServiceStatusOut"
+            },
+            "title": "Services",
+            "type": "array"
+          }
+        },
+        "required": [
+          "mode",
+          "checked_at",
+          "services"
+        ],
+        "title": "ServicesStatusOut",
+        "type": "object"
+      },
       "SetAssetOrganizationOperation": {
         "properties": {
           "organization": {
@@ -46170,6 +46371,27 @@
         ]
       }
     },
+    "/v1/automation/services": {
+      "get": {
+        "operationId": "service_status_v1_automation_services_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServicesStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Service Status",
+        "tags": [
+          "automation"
+        ]
+      }
+    },
     "/v1/code-agents": {
       "get": {
         "operationId": "list_code_agents_v1_code_agents_get",
@@ -54239,6 +54461,27 @@
           }
         },
         "summary": "Runtime",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/v1/management/service-status": {
+      "get": {
+        "operationId": "service_status_v1_management_service_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentServicesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Service Status",
         "tags": [
           "management"
         ]

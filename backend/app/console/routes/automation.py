@@ -17,8 +17,16 @@ from app.console.schemas.automation import (
 from app.deps import SessionDep, StudioAuth
 from app.runtime.operation_receipts import OperationError
 from app.runtime.website import require_local_browser
+from fpl_runtime.service_status import ServicesStatusOut, monolith_status, status_time
 
 router = APIRouter(prefix="/automation", tags=["automation"])
+
+
+@router.get("/services", response_model=ServicesStatusOut)
+async def service_status(principal: StudioAuth):
+    if principal.auth_kind != "session":
+        raise HTTPException(403, detail="此状态入口仅供浏览器会话使用")
+    return monolith_status(status_time())
 
 
 @router.get("/capabilities", response_model=AutomationCapabilities)

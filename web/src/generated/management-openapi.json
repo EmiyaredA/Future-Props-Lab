@@ -32,6 +32,70 @@
         "title": "ApplicationState",
         "type": "object"
       },
+      "DeploymentServiceState": {
+        "additionalProperties": false,
+        "properties": {
+          "exit_code": {
+            "anyOf": [
+              {
+                "maximum": 255.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exit Code"
+          },
+          "phase": {
+            "$ref": "#/components/schemas/ServicePhase"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 64,
+            "pattern": "^[a-z_]*$",
+            "title": "Reason",
+            "type": "string"
+          },
+          "service_id": {
+            "$ref": "#/components/schemas/ServiceId"
+          }
+        },
+        "required": [
+          "service_id",
+          "phase"
+        ],
+        "title": "DeploymentServiceState",
+        "type": "object"
+      },
+      "DeploymentServicesOut": {
+        "additionalProperties": false,
+        "properties": {
+          "observed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed At"
+          },
+          "services": {
+            "items": {
+              "$ref": "#/components/schemas/DeploymentServiceState"
+            },
+            "maxItems": 23,
+            "title": "Services",
+            "type": "array"
+          }
+        },
+        "title": "DeploymentServicesOut",
+        "type": "object"
+      },
       "EndpointState": {
         "additionalProperties": false,
         "properties": {
@@ -212,6 +276,52 @@
         ],
         "title": "RuntimeLogs",
         "type": "object"
+      },
+      "ServiceId": {
+        "enum": [
+          "gateway",
+          "management",
+          "identity",
+          "portal",
+          "agents",
+          "remote",
+          "visual",
+          "thought",
+          "galgame",
+          "video",
+          "motion",
+          "presentation",
+          "annotation",
+          "director",
+          "interview",
+          "creative",
+          "assets",
+          "models",
+          "rendering",
+          "agent-runtime",
+          "integrations",
+          "amadeus",
+          "tools"
+        ],
+        "title": "ServiceId",
+        "type": "string"
+      },
+      "ServicePhase": {
+        "enum": [
+          "running",
+          "starting",
+          "stopped",
+          "paused",
+          "restarting",
+          "unhealthy",
+          "failed",
+          "unreachable",
+          "not_deployed",
+          "unknown",
+          "degraded"
+        ],
+        "title": "ServicePhase",
+        "type": "string"
       },
       "ValidationError": {
         "properties": {
@@ -505,6 +615,27 @@
           }
         },
         "summary": "Runtime",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/v1/management/service-status": {
+      "get": {
+        "operationId": "service_status_v1_management_service_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentServicesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Service Status",
         "tags": [
           "management"
         ]
