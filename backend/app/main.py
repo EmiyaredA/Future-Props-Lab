@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from types import SimpleNamespace
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
@@ -35,6 +36,10 @@ from app.capabilities.asset_store.storage import AssetStorage
 from app.console.amadeus.execution import CodeAgentRuns
 from app.console.amadeus.runs import recover_interrupted_amadeus_runs
 from app.console.file_library.library_folder_archive import cleanup_library_folder_archive_staging
+from app.console.governance.database_auth import (
+    authenticate_database_request,
+    authenticate_database_websocket,
+)
 from app.console.governance.external_sync_access import external_sync_actor_allowed
 from app.console.governance.generation_queue import claim_visual_capacity, visual_queue_candidates
 from app.console.governance.interview_executor_access import interview_actor_allowed
@@ -137,6 +142,9 @@ app = FastAPI(
     description="未来道具研究所模型目录与调用观测 API",
     lifespan=lifespan,
 )
+app.state.database = SimpleNamespace(sessions=SessionLocal)
+app.state.studio_http_auth = authenticate_database_request
+app.state.studio_socket_auth = authenticate_database_websocket
 app.state.workbench_native = LocalSourceAccess()
 app.state.account_creator = create_account
 app.state.account_storage_check = upgrade_pending

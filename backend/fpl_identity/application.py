@@ -10,10 +10,10 @@ from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.capabilities.identity.errors import AccountError
+from app.console.governance.database_auth import authenticate_database_request
 from app.console.models.accounts import AuthSession, ManagementApiKey, SecurityAuditEvent, User
 from app.console.models.platform_governance import RegistrationInviteCode, RegistrationRedemption
 from app.console.routes import account_management, accounts, registration
-from app.deps import db_session
 from app.problem_details import (
     account_exception_handler,
     http_exception_handler,
@@ -81,6 +81,7 @@ def create_app(
     )
     app.state.service_id = "identity"
     app.state.database = database
+    app.state.studio_http_auth = authenticate_database_request
     app.state.account_creator = create_account
 
     async def no_storage_upgrade(_session):
@@ -101,11 +102,6 @@ def create_app(
         "origins": {"local": urlsplit(local_origin), "public": urlsplit(public_origin)},
     }
 
-    async def sessions():
-        async with database.sessions() as session:
-            yield session
-
-    app.dependency_overrides[db_session] = sessions
     included = APIRouter()
     for source in (accounts.router, account_management.router, registration.router):
         for route in source.routes:

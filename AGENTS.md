@@ -78,6 +78,7 @@
 - 路由模块不得直接导入 SQLAlchemy、ORM 模型或 `db.migrations`，不得自行持有查询、写入和
   事务规则。它们只校验请求、调用功能模块并把领域结果或错误映射为协议响应；`apps/*/routes/`、
   `llm/routes/`、`console/routes/`、`capabilities/*/routes/` 与各业务包 `routes.py` 遵守同一边界。
+- `app/deps.py` 只使用当前 ASGI 应用显式绑定的会话工厂与已验证身份，不导入账号 ORM 或单体数据库工厂。浏览器凭证的数据库校验在 `console/governance/database_auth.py`，仅 Identity 与恢复网站装配该适配器；独立业务服务不得回退读取 Cookie 或账号表。WebSocket 必须有明确的认证适配器。
 - 不新增 `services/`、`domain/`、`platform/`、`product/` 等通用后端抽象层目录。需要拆分时，
   在所属能力内按具体职责命名文件或子包，例如 `llm/catalog/`、`capabilities/asset_store/`。
 - 业务 API 统一注册在 `/v1`；只有 `/health` 与 `/ready` 作为根级探针。

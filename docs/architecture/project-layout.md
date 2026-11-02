@@ -184,6 +184,7 @@ Future-Props-Lab/
   不复用携带后端凭据的服务进程。
 
 - `llm/credential_snapshot.py` 保存纯调用归因快照，不导入账号 ORM 或数据库。单体凭证解析仍在 `llm/call_logs/credentials.py`；独立服务只读取 Identity 签名账号上下文中的 API Key ID、显示名与前缀，不跨库读取账号或密钥。
+- `app/deps.py` 从当前 ASGI 应用取得显式会话工厂，业务身份仅消费已验证签名上下文。`console/governance/database_auth.py` 拥有浏览器 Cookie、CSRF、API Key、Session 用途和原实时语音认证的账号数据校验；Identity 与恢复网站在装配时明确安装该适配器，其他应用不加载账号 ORM 或旧数据库。`capabilities/identity/http_context.py` 提供无存储依赖的协议错误、客户端地址和最近重新认证前置条件。缺少绑定不能触发单体数据库回退。
 - `llm/catalog/` 拥有供应商分组、接入连接与模型目录。`supplier_records.py` 提供账号限定的
   分组读取及安全输出，`suppliers.py` 通过目录统一 CAS 执行分组写入；协议边界位于
   `llm/routes/models/suppliers.py`。供应商不持有密钥或启停状态，连接通过 `supplier_id` 显式归组。

@@ -16,17 +16,18 @@ def test_identity_source_closure_does_not_package_unrelated_business():
     assert "app.console.governance.account_creation" in closure
     for name in closure:
         assert not name.startswith(("app.llm", "app.apps", "app.capabilities.asset_store"))
-        assert name not in {"app.orm", "app.main", "app.api"}
+        assert name not in {"app.orm", "app.main", "app.api", "app.runtime.db"}
     assert all(path.suffix == ".py" for path in closure.values())
 
 
-def test_image_preparation_refuses_a_hidden_monolith_import(tmp_path):
+@pytest.mark.parametrize("module", ["app.main", "app.runtime.db"])
+def test_image_preparation_refuses_a_hidden_monolith_import(tmp_path, module):
     own = tmp_path / "backend/fpl_identity"
     own.mkdir(parents=True)
-    (own / "__main__.py").write_text("import app.main\n")
-    foreign = tmp_path / "backend/app"
-    foreign.mkdir()
-    (foreign / "main.py").write_text("# unrelated monolith\n")
+    (own / "__main__.py").write_text("import " + module + "\n")
+    foreign = tmp_path / "backend" / (module.replace(".", "/") + ".py")
+    foreign.parent.mkdir(parents=True)
+    foreign.write_text("# unrelated monolith\n")
     with pytest.raises(ValueError, match="越界依赖"):
         source_closure(tmp_path, "identity")
 

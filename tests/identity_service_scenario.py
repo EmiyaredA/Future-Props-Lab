@@ -21,6 +21,7 @@ state = Path(os.environ["IDENTITY_TEST_ROOT"])
 assert "app.main" not in sys.modules
 assert "app.api" not in sys.modules
 assert "app.orm" not in sys.modules
+assert "app.runtime.db" not in sys.modules
 assert not any(name.startswith("app.llm") or name.startswith("app.apps") for name in sys.modules)
 
 private = Ed25519PrivateKey.generate()

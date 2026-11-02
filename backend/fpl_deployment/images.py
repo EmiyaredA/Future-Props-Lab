@@ -31,6 +31,7 @@ PROJECT_PACKAGES = (
     "fpl_host",
 )
 FORBIDDEN_IDENTITY = (
+    "app.runtime.db",
     "app.main",
     "app.api",
     "app.orm",
