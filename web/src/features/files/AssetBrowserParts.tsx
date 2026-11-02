@@ -1,3 +1,4 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 /* eslint-disable react-refresh/only-export-components */
 import { useEffect, useId, useRef } from "react";
 import {
@@ -148,7 +149,7 @@ export function AssetPreview({ file }: { file: ManagedFile }) {
       }}
     >
       {url ? (
-        <img src={url} alt="" decoding="async" />
+        <ResponsiveImage src={url} alt="" decoding="async" />
       ) : (
         <span>
           <FileKindIcon kind={file.media_kind} />
@@ -174,7 +175,7 @@ export function AssetPreviewDialog({
     file.media_kind === "audio";
   const { url: source, error } = useApiBlobUrl(
     canInlinePreview
-      ? `/v1/files/${encodeURIComponent(file.id)}/content`
+      ? `/v1/files/${encodeURIComponent(file.id)}/${file.media_kind === "image" && file.mime_type !== "image/svg+xml" ? "thumbnail?size=1280" : "content"}`
       : null,
   );
   const failed = Boolean(error);
@@ -237,7 +238,7 @@ export function AssetPreviewDialog({
             </span>
           ) : null}
           {source && file.media_kind === "image" ? (
-            <img src={source} alt={fileDisplayName(file)} />
+            <ResponsiveImage src={source} alt={fileDisplayName(file)} />
           ) : null}
           {source && file.media_kind === "video" ? (
             <video src={source} controls />

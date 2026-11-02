@@ -1,3 +1,4 @@
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, UserRound, KeyRound, ShieldCheck, ScrollText } from "lucide-react";
@@ -94,6 +95,7 @@ export function AccountPanel({
               aria-modal="true"
               aria-label="账号设置"
             >
+              <TransferFeedback progress={state.transferProgress} />
               <header className="account-dialog-heading">
                 <div className="account-dialog-heading-copy">
                   <h2>账号设置</h2>

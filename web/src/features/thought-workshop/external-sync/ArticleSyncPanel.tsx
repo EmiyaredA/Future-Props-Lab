@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -336,7 +337,9 @@ export function ArticleSyncPanel({
                 </p>
               )
             )}
-            {state.isPending && <p role="status">正在读取同步配置…</p>}
+            {state.isPending && (
+              <LoadingState label="正在读取同步配置…" variant="region" />
+            )}
             {binding ? (
               <>
                 <section className="article-sync-card">

@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useId, useRef } from "react";
 import { TriangleAlert, X } from "lucide-react";
 import { createPortal } from "react-dom";
@@ -97,7 +98,11 @@ export function DeleteDocumentDialog({
             disabled={pending}
             onClick={() => void onDeleteSelf()}
           >
-            {pending ? "处理中…" : "仅删除此文档"}
+            {pending ? (
+              <LoadingState variant="inline" label="处理中…" />
+            ) : (
+              "仅删除此文档"
+            )}
           </button>
           <button
             type="button"
@@ -105,7 +110,11 @@ export function DeleteDocumentDialog({
             disabled={pending}
             onClick={() => void onDeleteSubtree()}
           >
-            {pending ? "处理中…" : "删除此文档及子文档"}
+            {pending ? (
+              <LoadingState variant="inline" label="处理中…" />
+            ) : (
+              "删除此文档及子文档"
+            )}
           </button>
         </div>
       </div>

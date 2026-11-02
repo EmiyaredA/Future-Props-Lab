@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useQuery } from "@tanstack/react-query";
 import type { Editor } from "@tiptap/core";
 import { ExternalLink, Globe } from "lucide-react";
@@ -47,8 +48,8 @@ export function LinkPreviewCard({ editor }: { editor: Editor }) {
       </div>
       <div aria-live="polite" aria-busy={loading}>
         {loading ? (
-          <div className="thought-link-preview-loading" role="status">
-            <span>正在读取链接信息…</span>
+          <div className="thought-link-preview-loading">
+            <LoadingState label="正在读取链接信息…" variant="inline" />
             <i />
             <i />
           </div>

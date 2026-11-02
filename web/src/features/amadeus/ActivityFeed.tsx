@@ -1,3 +1,5 @@
+import { LoadingState } from "@shared/ui/LoadingState";
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { buildDisplayTimeline, type ToolStep } from "./displayTimeline";
@@ -427,7 +429,7 @@ export function ActivityFeed({
                     >
                       <span className="amadeus-ref-thumb">
                         {reference.thumbnail ? (
-                          <img src={reference.thumbnail} alt="" />
+                          <ResponsiveImage src={reference.thumbnail} alt="" />
                         ) : (
                           "▧"
                         )}
@@ -519,11 +521,13 @@ export function ActivityFeed({
               onClick={() => onInspect?.(item.runId)}
             >
               <span>
-                {item.status === "failed"
-                  ? "部分步骤失败"
-                  : item.status === "running"
-                    ? "正在检查"
-                    : "已完成检查"}{" "}
+                {item.status === "failed" ? (
+                  "部分步骤失败"
+                ) : item.status === "running" ? (
+                  <LoadingState variant="inline" label="正在检查" />
+                ) : (
+                  "已完成检查"
+                )}{" "}
                 · {item.count} 次调用
               </span>
               <small>查看执行详情 →</small>

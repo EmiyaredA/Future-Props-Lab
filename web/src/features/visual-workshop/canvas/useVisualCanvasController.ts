@@ -440,18 +440,19 @@ export function useVisualCanvasController({
       selectedNodeIds,
       setSaveMessage,
     });
-  const { upload, uploadNotice, setUploadNotice } = useCanvasUpload({
-    projectId,
-    prepareCanvas: prepareCanvasForAgent,
-    applyServerCanvas,
-    uploadPosition,
-    getInsertionAnchor,
-    resolveNodePosition,
-    revealNodes,
-    setSelectedId,
-    setInspectedNodeId,
-    setMediaEditorTab,
-  });
+  const { upload, uploadNotice, setUploadNotice, transferProgress } =
+    useCanvasUpload({
+      projectId,
+      prepareCanvas: prepareCanvasForAgent,
+      applyServerCanvas,
+      uploadPosition,
+      getInsertionAnchor,
+      resolveNodePosition,
+      revealNodes,
+      setSelectedId,
+      setInspectedNodeId,
+      setMediaEditorTab,
+    });
   useEffect(() => {
     if (inspectedNodeId && inspectedNodeId !== selectedId)
       setInspectedNodeId(undefined);
@@ -874,6 +875,7 @@ export function useVisualCanvasController({
     renameMutation,
     upload,
     uploadNotice,
+    transferProgress,
     setZoom,
     resetZoom,
     screenToWorld,

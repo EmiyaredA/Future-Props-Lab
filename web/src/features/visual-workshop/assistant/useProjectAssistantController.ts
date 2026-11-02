@@ -1,3 +1,4 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
 import {
   useEffect,
   useMemo,
@@ -60,6 +61,9 @@ export function useProjectAssistantController({
   prepareCanvas,
   onClose,
 }: ProjectAssistantPanelProps) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const client = useQueryClient();
   const fileInput = useRef<HTMLInputElement>(null);
   const composerRef = useRef<AssistantComposerHandle>(null);
@@ -479,7 +483,15 @@ export function useProjectAssistantController({
     try {
       const uploaded: SelectedAttachment[] = [];
       for (const file of candidates) {
-        uploaded.push(toSelected(await uploadManagedFile(file, projectId)));
+        uploaded.push(
+          toSelected(
+            await runTransfer((onProgress) =>
+              uploadManagedFile(file, projectId, undefined, undefined, {
+                onProgress,
+              }),
+            ),
+          ),
+        );
       }
       composerRef.current?.insertAssets(uploaded);
       await invalidateFileScope(client, projectId);
@@ -524,6 +536,7 @@ export function useProjectAssistantController({
   const messages = conversation?.messages ?? [];
 
   return {
+    transferProgress: activeTransferProgress,
     projectId,
     open,
     onClose,

@@ -1,3 +1,6 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useState } from "react";
 import { Archive, ChevronDown, Download } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -9,6 +12,9 @@ import type { VideoEditorTask } from "./types";
 import "./video-editor-segments.css";
 
 export function SegmentExportDownloads({ task }: { task: VideoEditorTask }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const client = useQueryClient();
   const completedTarget =
     task.status === "completed"
@@ -36,16 +42,25 @@ export function SegmentExportDownloads({ task }: { task: VideoEditorTask }) {
   const download = useMutation({
     mutationFn: async (assetId?: string) => {
       const file = assetId
-        ? await fetchApiDownload(
-            `/v1/files/${encodeURIComponent(assetId)}/download`,
+        ? await runTransfer((onProgress) =>
+            fetchApiDownload(
+              `/v1/files/${encodeURIComponent(assetId)}/download`,
+              { onProgress },
+            ),
           )
-        : await downloadVideoEditorSegments(task.projectId, task.id);
+        : await runTransfer((onProgress) =>
+            downloadVideoEditorSegments(task.projectId, task.id, {
+              onProgress,
+            }),
+          );
       downloadProjectSnapshot(file, assetId ? "片段.mp4" : "分段导出.zip");
     },
   });
   if (task.status !== "completed" || !segments.length) return null;
   return (
     <div className="ve-segment-downloads">
+      <TransferFeedback progress={activeTransferProgress} />
+
       <div>
         <button
           className="ve-segment-download-all"
@@ -53,7 +68,11 @@ export function SegmentExportDownloads({ task }: { task: VideoEditorTask }) {
           onClick={() => download.mutate(undefined)}
         >
           <Archive aria-hidden />
-          {download.isPending ? "正在下载…" : "全部打包下载"}
+          {download.isPending ? (
+            <LoadingState variant="inline" label="正在下载…" />
+          ) : (
+            "全部打包下载"
+          )}
         </button>
         <button
           aria-expanded={expanded}

@@ -1,7 +1,8 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 /** Feishu client brand mark; source: flathub/cn.feishu.Feishu. */
 export function FeishuMark({ size = 40 }: { size?: number }) {
   return (
-    <img
+    <ResponsiveImage
       src="/providers/feishu-logo.svg"
       width={size}
       height={size}

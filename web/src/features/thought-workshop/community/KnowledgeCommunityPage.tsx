@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useState } from "react";
 import { useAccountId } from "@platform/auth/AccountAccess";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -58,9 +59,11 @@ export function KnowledgeCommunityPage({
         />
       )}
       {managing && management.isPending && (
-        <p className="knowledge-notice" role="status">
-          正在加载发布设置…
-        </p>
+        <LoadingState
+          label="正在加载发布设置…"
+          variant="region"
+          className="knowledge-notice"
+        />
       )}
       {managing && management.isError && (
         <p role="alert">

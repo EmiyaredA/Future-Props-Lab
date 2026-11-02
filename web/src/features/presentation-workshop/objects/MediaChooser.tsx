@@ -1,3 +1,6 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CustomSelect } from "@shared/ui/CustomSelect";
@@ -15,6 +18,9 @@ export function MediaChooser({
   change: (id: string) => void;
   label: string;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
@@ -31,6 +37,8 @@ export function MediaChooser({
   });
   return (
     <div className="presentation-object-media">
+      <TransferFeedback progress={activeTransferProgress} />
+
       <input
         aria-label={`搜索${label}`}
         value={query}
@@ -57,7 +65,11 @@ export function MediaChooser({
         onChange={change}
       />
       <label className="btn presentation-object-upload">
-        {busy ? "上传中…" : `上传${label}`}
+        {busy ? (
+          <LoadingState variant="inline" label="上传中…" />
+        ) : (
+          `上传${label}`
+        )}
         <input
           aria-label={`上传${label}`}
           type="file"
@@ -70,7 +82,7 @@ export function MediaChooser({
             if (!file) return;
             setBusy(true);
             setError("");
-            void uploadImage(file)
+            void runTransfer((onProgress) => uploadImage(file, { onProgress }))
               .then((asset) => {
                 if (!mounted.current) return;
                 change(asset.id);

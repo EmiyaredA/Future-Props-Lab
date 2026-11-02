@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
@@ -134,7 +135,11 @@ export function StorageUsagePage({
                 }}
               >
                 <RefreshCw aria-hidden />
-                {query.isFetching ? "正在读取…" : "刷新容量 / 重新检测"}
+                {query.isFetching ? (
+                  <LoadingState variant="inline" label="正在读取…" />
+                ) : (
+                  "刷新容量 / 重新检测"
+                )}
               </button>
             </div>
           </div>
@@ -221,7 +226,9 @@ export function StorageUsagePage({
                 </div>
               </>
             )}
-            {query.isFetching && <p role="status">正在读取磁盘容量…</p>}
+            {query.isFetching && (
+              <LoadingState label="正在读取磁盘容量…" variant="region" />
+            )}
           </div>
           <div className="storage-panel storage-guide">
             <h2>从占用图找到目录</h2>

@@ -1,3 +1,4 @@
+import { type TransferOptions } from "@platform/api/transfer";
 import type { components } from "@generated/api";
 import {
   api,
@@ -52,18 +53,25 @@ export async function deleteGalgameWorkshopProject(
   );
 }
 
-export function exportGalgameWorkshopProjectSnapshot(projectId: string) {
+export function exportGalgameWorkshopProjectSnapshot(
+  projectId: string,
+  transfer: TransferOptions = {},
+) {
   return fetchApiDownload(
     `/v1/galgame-workshop/projects/${encodeURIComponent(projectId)}/snapshot`,
+    transfer,
   );
 }
 
-export function importGalgameWorkshopProjectSnapshot(file: File) {
+export function importGalgameWorkshopProjectSnapshot(
+  file: File,
+  transfer: TransferOptions = {},
+) {
   const body = new FormData();
   body.append("file", file);
   return fetchApiJson<components["schemas"]["GalgameProjectSnapshotImportOut"]>(
     "/v1/galgame-workshop/projects/snapshot-imports",
-    { method: "POST", body },
+    { ...transfer, method: "POST", body },
   );
 }
 

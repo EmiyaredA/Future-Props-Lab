@@ -1,3 +1,5 @@
+import { LoadingState } from "@shared/ui/LoadingState";
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { deleteAccountSession, deleteAvatar, revokeOtherSessions } from "./api";
 import { formatAccountDate as shortDate } from "./formatAccountDate";
 import { avatarSrc } from "./avatarSrc";
@@ -51,7 +53,7 @@ export function AccountSettingsContent({
             <span className="account-profile-label">头像</span>
             <div className="account-profile-avatar-editor">
               {profileAvatar ? (
-                <img src={profileAvatar} alt="当前头像" />
+                <ResponsiveImage src={profileAvatar} alt="当前头像" />
               ) : (
                 <span className="account-identity-avatar">
                   {me.user.display_name.slice(0, 1)}
@@ -129,7 +131,11 @@ export function AccountSettingsContent({
           </label>
           <footer className="account-profile-footer">
             <button className="btn primary" disabled={state.busy}>
-              {state.busy ? "正在保存…" : "保存资料"}
+              {state.busy ? (
+                <LoadingState variant="inline" label="正在保存…" />
+              ) : (
+                "保存资料"
+              )}
             </button>
           </footer>
         </form>

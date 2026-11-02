@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
 import { useMemo, useState } from "react";
 import { Check, Plus, Trash2, X } from "lucide-react";
@@ -453,11 +454,13 @@ export function ModelTestToolWizard({
               } else void save();
             }}
           >
-            {step === 1
-              ? "下一步：模拟返回"
-              : saving
-                ? "保存中…"
-                : "保存测试工具"}
+            {step === 1 ? (
+              "下一步：模拟返回"
+            ) : saving ? (
+              <LoadingState variant="inline" label="保存中…" />
+            ) : (
+              "保存测试工具"
+            )}
           </button>
         </footer>
       </section>

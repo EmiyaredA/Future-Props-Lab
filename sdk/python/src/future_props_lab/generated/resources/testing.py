@@ -39,9 +39,9 @@ class Testing:
         'Delete Attachment. DELETE /v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}'
         return self._client._call('DELETE', '/v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}', parameters=[('conversation_id', 'path', conversation_id), ('attachment_id', 'path', attachment_id)], response_type=dict[str, bool])
 
-    def attachment_content(self, *, conversation_id: str, attachment_id: str) -> Any:
+    def attachment_content(self, *, conversation_id: str, attachment_id: str, size: Literal[128, 320, 640, 1280] | None | Unset = UNSET) -> Any:
         'Attachment Content. GET /v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}/content'
-        return self._client._call('GET', '/v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}/content', parameters=[('conversation_id', 'path', conversation_id), ('attachment_id', 'path', attachment_id)], response_type=Any)
+        return self._client._call('GET', '/v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}/content', parameters=[('conversation_id', 'path', conversation_id), ('attachment_id', 'path', attachment_id), ('size', 'query', size)], response_type=Any)
 
     def stream_message(self, *, conversation_id: str, body: models.ModelTestSendIn | dict) -> EventStream:
         'Stream Message. POST /v1/model-test/conversations/{conversation_id}/messages/stream'
@@ -91,9 +91,9 @@ class Testing:
         'Get Generation Task. GET /v1/model-test/generation-tasks/{task_id}'
         return self._client._call('GET', '/v1/model-test/generation-tasks/{task_id}', parameters=[('task_id', 'path', task_id)], response_type=models.ModelTestGenerationTaskOut)
 
-    def generation_content(self, *, task_id: str) -> Any:
+    def generation_content(self, *, task_id: str, size: Literal[128, 320, 640, 1280] | None | Unset = UNSET) -> Any:
         'Generation Content. GET /v1/model-test/generation-tasks/{task_id}/content'
-        return self._client._call('GET', '/v1/model-test/generation-tasks/{task_id}/content', parameters=[('task_id', 'path', task_id)], response_type=Any)
+        return self._client._call('GET', '/v1/model-test/generation-tasks/{task_id}/content', parameters=[('task_id', 'path', task_id), ('size', 'query', size)], response_type=Any)
 
     def retry_materialization(self, *, task_id: str) -> models.ModelTestGenerationTaskOut:
         'Retry Materialization. POST /v1/model-test/generation-tasks/{task_id}/retry-materialization'
@@ -163,9 +163,9 @@ class AsyncTesting:
         'Delete Attachment. DELETE /v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}'
         return await self._client._call('DELETE', '/v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}', parameters=[('conversation_id', 'path', conversation_id), ('attachment_id', 'path', attachment_id)], response_type=dict[str, bool])
 
-    async def attachment_content(self, *, conversation_id: str, attachment_id: str) -> Any:
+    async def attachment_content(self, *, conversation_id: str, attachment_id: str, size: Literal[128, 320, 640, 1280] | None | Unset = UNSET) -> Any:
         'Attachment Content. GET /v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}/content'
-        return await self._client._call('GET', '/v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}/content', parameters=[('conversation_id', 'path', conversation_id), ('attachment_id', 'path', attachment_id)], response_type=Any)
+        return await self._client._call('GET', '/v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}/content', parameters=[('conversation_id', 'path', conversation_id), ('attachment_id', 'path', attachment_id), ('size', 'query', size)], response_type=Any)
 
     async def stream_message(self, *, conversation_id: str, body: models.ModelTestSendIn | dict) -> AsyncEventStream:
         'Stream Message. POST /v1/model-test/conversations/{conversation_id}/messages/stream'
@@ -215,9 +215,9 @@ class AsyncTesting:
         'Get Generation Task. GET /v1/model-test/generation-tasks/{task_id}'
         return await self._client._call('GET', '/v1/model-test/generation-tasks/{task_id}', parameters=[('task_id', 'path', task_id)], response_type=models.ModelTestGenerationTaskOut)
 
-    async def generation_content(self, *, task_id: str) -> Any:
+    async def generation_content(self, *, task_id: str, size: Literal[128, 320, 640, 1280] | None | Unset = UNSET) -> Any:
         'Generation Content. GET /v1/model-test/generation-tasks/{task_id}/content'
-        return await self._client._call('GET', '/v1/model-test/generation-tasks/{task_id}/content', parameters=[('task_id', 'path', task_id)], response_type=Any)
+        return await self._client._call('GET', '/v1/model-test/generation-tasks/{task_id}/content', parameters=[('task_id', 'path', task_id), ('size', 'query', size)], response_type=Any)
 
     async def retry_materialization(self, *, task_id: str) -> models.ModelTestGenerationTaskOut:
         'Retry Materialization. POST /v1/model-test/generation-tasks/{task_id}/retry-materialization'

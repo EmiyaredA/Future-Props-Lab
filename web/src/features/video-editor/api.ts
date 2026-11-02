@@ -1,3 +1,4 @@
+import { type TransferOptions } from "@platform/api/transfer";
 import type { paths } from "@generated/api";
 import type { components } from "@generated/api";
 import {
@@ -49,17 +50,28 @@ export const deleteVideoEditorProject = async (project: VideoEditorProject) =>
     }),
   );
 
-export const exportVideoEditorProjectSnapshot = (projectId: string) =>
+export const exportVideoEditorProjectSnapshot = (
+  projectId: string,
+  transfer: TransferOptions = {},
+) =>
   fetchApiDownload(
     `/v1/video-editor/projects/${encodeURIComponent(projectId)}/snapshot`,
+    transfer,
   );
 
-export function importVideoEditorProjectSnapshot(file: File) {
+export function importVideoEditorProjectSnapshot(
+  file: File,
+  transfer: TransferOptions = {},
+) {
   const body = new FormData();
   body.append("file", file);
   return fetchApiJson<
     components["schemas"]["VideoEditorProjectSnapshotImportOut"]
-  >("/v1/video-editor/projects/snapshot-imports", { method: "POST", body });
+  >("/v1/video-editor/projects/snapshot-imports", {
+    ...transfer,
+    method: "POST",
+    body,
+  });
 }
 
 export const openVideoEditorProjectFolder = (projectId: string) =>
@@ -237,12 +249,13 @@ export async function uploadVideoEditorAsset(
   projectId: string,
   file: File,
   signal?: AbortSignal,
+  transfer: TransferOptions = {},
 ) {
   const form = new FormData();
   form.append("upload", file);
   return fetchApiJson<components["schemas"]["VideoEditorAssetOut"]>(
     `/v1/video-editor/projects/${encodeURIComponent(projectId)}/assets`,
-    { method: "POST", body: form, signal },
+    { ...transfer, method: "POST", body: form, signal },
   );
 }
 
@@ -370,9 +383,11 @@ export const exactFrameUrl = (
 export const downloadVideoEditorSegments = (
   projectId: string,
   taskId: string,
+  transfer: TransferOptions = {},
 ) =>
   fetchApiDownload(
     `/v1/video-editor/projects/${encodeURIComponent(projectId)}/segment-exports/${encodeURIComponent(taskId)}/download`,
+    transfer,
   );
 
 export const textLayerPath = (

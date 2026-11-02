@@ -1,3 +1,4 @@
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import type { GalgameStoryProject } from "@features/galgame-workshop/api";
 import { useAssetOverviewController } from "@features/galgame-workshop/editor/assets/useAssetOverviewController";
 import { AssetOverviewView } from "@features/galgame-workshop/editor/assets/AssetOverviewView";
@@ -17,5 +18,10 @@ export function AssetOverviewWorkspace(props: {
   ) => Promise<boolean>;
 }) {
   const controller = useAssetOverviewController(props);
-  return <AssetOverviewView controller={controller} />;
+  return (
+    <>
+      <TransferFeedback progress={controller.transferProgress} />
+      <AssetOverviewView controller={controller} />
+    </>
+  );
 }

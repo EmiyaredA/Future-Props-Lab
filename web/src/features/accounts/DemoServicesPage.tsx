@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Server, FlaskConical, PlugZap } from "lucide-react";
@@ -60,7 +61,13 @@ export function DemoServicesPage() {
           {notice}
         </p>
       )}
-      {query.isPending && <p className="empty-copy">正在加载服务…</p>}
+      {query.isPending && (
+        <LoadingState
+          label="正在加载服务…"
+          variant="region"
+          className="empty-copy"
+        />
+      )}
       <div className="governance-services">
         {query.data?.map((service) => (
           <section

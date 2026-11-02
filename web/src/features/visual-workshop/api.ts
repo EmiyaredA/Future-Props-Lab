@@ -1,3 +1,4 @@
+import { type TransferOptions } from "@platform/api/transfer";
 import type { components } from "@generated/api";
 import {
   api,
@@ -134,18 +135,25 @@ export async function deleteVisualWorkshopProject(
   );
 }
 
-export function exportVisualWorkshopProjectSnapshot(projectId: string) {
+export function exportVisualWorkshopProjectSnapshot(
+  projectId: string,
+  transfer: TransferOptions = {},
+) {
   return fetchApiDownload(
     `/v1/visual-workshop/projects/${encodeURIComponent(projectId)}/snapshot`,
+    transfer,
   );
 }
 
-export function importVisualWorkshopProjectSnapshot(file: File) {
+export function importVisualWorkshopProjectSnapshot(
+  file: File,
+  transfer: TransferOptions = {},
+) {
   const body = new FormData();
   body.append("file", file);
   return fetchApiJson<VisualProjectSnapshotImport>(
     "/v1/visual-workshop/projects/snapshot-imports",
-    { method: "POST", body },
+    { ...transfer, method: "POST", body },
   );
 }
 
@@ -257,13 +265,14 @@ export function uploadNodeOutput(
   nodeId: string,
   file: File,
   expectedRevision: number,
+  transfer: TransferOptions = {},
 ) {
   const body = new FormData();
   body.append("file", file);
   body.append("expected_revision", String(expectedRevision));
   return fetchApiJson<VisualCanvasDocument>(
     `/v1/visual-workshop/projects/${encodeURIComponent(projectId)}/nodes/${encodeURIComponent(nodeId)}/output-uploads`,
-    { method: "POST", body },
+    { ...transfer, method: "POST", body },
   );
 }
 
@@ -579,6 +588,7 @@ export async function uploadMaterialNode(
   revision: number,
   position: { x: number; y: number },
   destination?: MaterialUploadDestination,
+  transfer: TransferOptions = {},
 ) {
   const form = new FormData();
   form.append("file", file);
@@ -590,7 +600,7 @@ export async function uploadMaterialNode(
   if (destination?.group) form.append("group", destination.group);
   return fetchApiJson<VisualCanvasDocument>(
     `/v1/visual-workshop/projects/${encodeURIComponent(projectId)}/node-uploads`,
-    { method: "POST", body: form },
+    { ...transfer, method: "POST", body: form },
   );
 }
 

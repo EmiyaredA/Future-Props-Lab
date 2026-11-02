@@ -1,3 +1,6 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CustomSelect } from "@shared/ui/CustomSelect";
@@ -44,6 +47,9 @@ export function CellEditor({
   people?: People;
   noteId: string;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const access = useDocumentAccess(),
     [edit, setEdit] = useState(false),
     [text, setText] = useState(""),
@@ -110,6 +116,8 @@ export function CellEditor({
     if (field.type === "note")
       return (
         <span>
+          <TransferFeedback progress={activeTransferProgress} />
+
           {references.data?.map((r) => (
             <span key={r.id}>
               {r.available ? (
@@ -118,12 +126,19 @@ export function CellEditor({
                 "文档不可访问"
               )}{" "}
             </span>
-          )) ?? (Array.isArray(value) && value.length ? "正在加载引用…" : "")}
+          )) ??
+            (Array.isArray(value) && value.length ? (
+              <LoadingState variant="inline" label="正在加载引用…" />
+            ) : (
+              ""
+            ))}
         </span>
       );
     if (field.type === "attachment")
       return (
         <span>
+          <TransferFeedback progress={activeTransferProgress} />
+
           {(Array.isArray(value) ? value : []).map((id) => (
             <AttachmentLink
               key={id}
@@ -140,49 +155,67 @@ export function CellEditor({
     if (field.type === "url" && typeof value === "string")
       return (
         <a href={value} target="_blank" rel="noreferrer">
+          <TransferFeedback progress={activeTransferProgress} />
+
           {value}
         </a>
       );
-    return <FieldValue field={field} value={value} people={people} />;
+    return (
+      <>
+        <TransferFeedback progress={activeTransferProgress} />
+        <FieldValue field={field} value={value} people={people} />
+      </>
+    );
   }
   if (field.type === "person")
     return (
-      <PersonChoices
-        label={field.name}
-        multiple={!!field.config?.allow_multiple}
-        value={value}
-        people={people}
-        editable={!scope.publication}
-        onChange={change}
-      />
+      <>
+        <TransferFeedback progress={activeTransferProgress} />
+        <PersonChoices
+          label={field.name}
+          multiple={!!field.config?.allow_multiple}
+          value={value}
+          people={people}
+          editable={!scope.publication}
+          onChange={change}
+        />
+      </>
     );
   if (field.type === "checkbox")
     return (
-      <input
-        type="checkbox"
-        aria-label={field.name}
-        checked={value === true}
-        onChange={(e) => change(e.target.checked)}
-      />
+      <>
+        <TransferFeedback progress={activeTransferProgress} />
+        <input
+          type="checkbox"
+          aria-label={field.name}
+          checked={value === true}
+          onChange={(e) => change(e.target.checked)}
+        />
+      </>
     );
   if (field.type === "single")
     return (
-      <CustomSelect
-        ariaLabel={field.name}
-        className="multitable-choice"
-        leadingIcon={<FieldValue field={field} value={value} people={people} />}
-        showChevron={false}
-        value={typeof value === "string" ? value : ""}
-        options={[
-          { value: "", label: "未设置" },
-          ...(field.options ?? []).map((o) => ({
-            value: o.id,
-            label: o.label,
-            swatch: o.color,
-          })),
-        ]}
-        onChange={(v) => change(v || null)}
-      />
+      <>
+        <TransferFeedback progress={activeTransferProgress} />
+        <CustomSelect
+          ariaLabel={field.name}
+          className="multitable-choice"
+          leadingIcon={
+            <FieldValue field={field} value={value} people={people} />
+          }
+          showChevron={false}
+          value={typeof value === "string" ? value : ""}
+          options={[
+            { value: "", label: "未设置" },
+            ...(field.options ?? []).map((o) => ({
+              value: o.id,
+              label: o.label,
+              swatch: o.color,
+            })),
+          ]}
+          onChange={(v) => change(v || null)}
+        />
+      </>
     );
   const applyText = () => {
     try {
@@ -195,6 +228,8 @@ export function CellEditor({
   };
   return (
     <>
+      <TransferFeedback progress={activeTransferProgress} />
+
       <button
         className="multitable-cell-trigger"
         aria-label={`编辑 ${field.name}`}
@@ -254,18 +289,24 @@ export function CellEditor({
                   hidden
                   onChange={(e) => {
                     const files = Array.from(e.target.files ?? []);
+                    const publication = scope.publication;
                     void (async () => {
                       const uploaded = [];
                       for (const file of files)
                         uploaded.push(
                           (
                             await (scope.publication
-                              ? uploadCommunityFile(
-                                  scope.publication,
-                                  noteId,
-                                  file,
+                              ? runTransfer((onProgress) =>
+                                  uploadCommunityFile(
+                                    publication!,
+                                    noteId,
+                                    file,
+                                    { onProgress },
+                                  ),
                                 )
-                              : access.uploadAttachment(file))
+                              : runTransfer((onProgress) =>
+                                  access.uploadAttachment(file, { onProgress }),
+                                ))
                           ).asset_id,
                         );
                       change([

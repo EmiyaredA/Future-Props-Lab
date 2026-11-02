@@ -1,3 +1,5 @@
+import { LoadingState } from "@shared/ui/LoadingState";
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import {
   forwardRef,
   useEffect,
@@ -9,7 +11,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { Check, File, FileText, Film, Music, X } from "lucide-react";
 import { fileQueryKeys, getFiles, type ManagedFile } from "@features/files";
-import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
+import { useImagePreviewUrl } from "@platform/api/useImagePreviewUrl";
 import {
   EMPTY_EDITOR_TEXT,
   assetPart,
@@ -50,14 +52,18 @@ export function AssistantAssetPreview({
 }) {
   const image = isImage(asset);
   const assetId = asset.id;
-  const { url } = useApiBlobUrl(
+  const { ref, url } = useImagePreviewUrl(
     image ? `/v1/files/${encodeURIComponent(assetId)}/content` : null,
   );
   if (!image) return <AttachmentIcon asset={asset} />;
-  return url ? (
-    <img src={url} alt={asset.display_name} />
-  ) : (
-    <File aria-hidden />
+  return (
+    <div ref={ref}>
+      {url ? (
+        <ResponsiveImage src={url} alt={asset.display_name} />
+      ) : (
+        <File aria-hidden />
+      )}
+    </div>
   );
 }
 
@@ -509,7 +515,7 @@ export const AssistantComposer = forwardRef<
           aria-label="引用项目素材"
         >
           {mentionQuery.isLoading ? (
-            <span>正在读取项目素材…</span>
+            <LoadingState label="正在读取项目素材…" variant="inline" />
           ) : options.length ? (
             options.map((file, index) => {
               const attachment = toSelected(file);

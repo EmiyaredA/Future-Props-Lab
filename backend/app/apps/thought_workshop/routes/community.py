@@ -34,6 +34,7 @@ from app.apps.thought_workshop.publication.schemas import (
 from app.apps.thought_workshop.publication.use_cases import Community
 from app.apps.thought_workshop.schemas.workshop import ThoughtAttachmentOut, ThoughtImportOut
 from app.capabilities.asset_store.library import AssetError
+from app.capabilities.asset_store.thumbnails import ThumbnailSize
 from app.deps import PublicStudioAuth, SessionDep
 
 router = APIRouter(prefix="/community", tags=["knowledge-community"])
@@ -113,11 +114,14 @@ async def permissions(
 
 
 @router.get("/publications/{publication_id}/cover")
-async def cover(publication_id: str, session: SessionDep, principal: PublicStudioAuth):
-    row, path = await call(Community(session, principal).cover(publication_id))
-    return FileResponse(
-        path, media_type=row.mime_type, headers={"Cache-Control": "private, no-store"}
-    )
+async def cover(
+    publication_id: str,
+    session: SessionDep,
+    principal: PublicStudioAuth,
+    size: ThumbnailSize | None = None,
+):
+    mime_type, path = await call(Community(session, principal).cover(publication_id, size))
+    return FileResponse(path, media_type=mime_type, headers={"Cache-Control": "private, no-store"})
 
 
 @router.get("/publications/{publication_id}/assets/{asset_id}/content")
@@ -127,11 +131,14 @@ async def asset(
     session: SessionDep,
     principal: PublicStudioAuth,
     note_id: str | None = None,
+    size: ThumbnailSize | None = None,
 ):
-    row, path = await call(Community(session, principal).asset(publication_id, asset_id, note_id))
+    mime_type, path = await call(
+        Community(session, principal).asset(publication_id, asset_id, note_id, size)
+    )
     return FileResponse(
         path,
-        media_type=row.mime_type,
+        media_type=mime_type,
         headers={"Content-Disposition": "inline", "Cache-Control": "private, no-store"},
     )
 

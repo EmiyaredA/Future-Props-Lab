@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import {
   platformRoleLabels,
   platformRoleOptions,
@@ -166,7 +167,9 @@ export function ManagedAccountsPage({ userId }: { userId: string }) {
           />
         </div>
         <ManagementError error={query.error || change.error} />
-        {query.isPending ? <p role="status">正在加载账号…</p> : null}
+        {query.isPending ? (
+          <LoadingState label="正在加载账号…" variant="region" />
+        ) : null}
         {query.isError ? (
           <button className="btn" onClick={() => void query.refetch()}>
             重试

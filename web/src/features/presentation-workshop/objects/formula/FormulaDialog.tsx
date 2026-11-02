@@ -1,3 +1,7 @@
+import { LoadingState } from "@shared/ui/LoadingState";
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { useEffect, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
@@ -23,7 +27,7 @@ import "./formula.css";
 function TemplateImage({ latex }: { latex: string }) {
   const preview = useFormulaPreview({ latex, color: "#17334A", size: 24 }, 0);
   return preview.drawing ? (
-    <img alt="" src={formulaImage(preview.drawing.svg)} />
+    <ResponsiveImage alt="" src={formulaImage(preview.drawing.svg)} />
   ) : (
     <span className="muted" aria-hidden="true">
       {preview.error ? "预览不可用" : "…"}
@@ -42,6 +46,9 @@ export default function FormulaDialog({
   onApply: (element: SlideElement) => void;
   onClose: () => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const returnFocus = useDialogReturnFocus();
   const [element, setElement] = useState(() =>
     structuredClone(initial ?? newObject("formula")),
@@ -93,6 +100,7 @@ export default function FormulaDialog({
     !!preview.drawing && (!initial || !!original.drawing || !!original.error);
   const apply = async () => {
     if (!ready || !preview.drawing || submitting.current) return;
+    const drawing = preview.drawing;
     submitting.current = true;
     setBusy(true);
     setError("");
@@ -103,8 +111,11 @@ export default function FormulaDialog({
         pageSize,
         initial ? { element: initial, drawing: original.drawing } : undefined,
       );
-      const asset = await uploadImage(
-        new File([preview.drawing.svg], "公式.svg", { type: "image/svg+xml" }),
+      const asset = await runTransfer((onProgress) =>
+        uploadImage(
+          new File([drawing.svg], "公式.svg", { type: "image/svg+xml" }),
+          { onProgress },
+        ),
       );
       if (!cancelled.current) {
         onApply({ ...element, ...geometry, asset_id: asset.id });
@@ -134,6 +145,8 @@ export default function FormulaDialog({
           onEscapeKeyDown={keepDialogEscapeLocal}
           onKeyDownCapture={containDialogComposition}
         >
+          <TransferFeedback progress={activeTransferProgress} />
+
           <header>
             <div>
               <Dialog.Title>{initial ? "编辑公式" : "插入公式"}</Dialog.Title>
@@ -204,7 +217,7 @@ export default function FormulaDialog({
                   aria-busy={!preview.drawing && !preview.error}
                 >
                   {preview.drawing ? (
-                    <img
+                    <ResponsiveImage
                       alt="公式实时预览"
                       src={formulaImage(preview.drawing.svg)}
                       style={{
@@ -215,9 +228,14 @@ export default function FormulaDialog({
                   ) : (
                     <p role="status">
                       {preview.error ??
-                        (composing
-                          ? "输入完成后更新预览"
-                          : "正在生成公式预览…")}
+                        (composing ? (
+                          "输入完成后更新预览"
+                        ) : (
+                          <LoadingState
+                            variant="inline"
+                            label="正在生成公式预览…"
+                          />
+                        ))}
                     </p>
                   )}
                 </div>
@@ -276,7 +294,13 @@ export default function FormulaDialog({
               disabled={busy || !ready}
               onClick={() => void apply()}
             >
-              {busy ? "正在处理…" : initial ? "应用修改" : "插入公式"}
+              {busy ? (
+                <LoadingState variant="inline" label="正在处理…" />
+              ) : initial ? (
+                "应用修改"
+              ) : (
+                "插入公式"
+              )}
             </button>
           </footer>
         </Dialog.Content>

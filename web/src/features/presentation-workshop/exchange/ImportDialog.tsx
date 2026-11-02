@@ -1,3 +1,5 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { keepDialogEscapeLocal, useDialogReturnFocus } from "../dialogKeyboard";
 import { issueText } from "./issueText";
 import { useEffect, useState } from "react";
@@ -19,6 +21,9 @@ export default function ImportDialog({
   onClose: () => void;
   onOpen: (id: string) => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const returnFocus = useDialogReturnFocus();
   const [preview, setPreview] = useState<Preview | null>(null),
     [error, setError] = useState("");
@@ -28,7 +33,9 @@ export default function ImportDialog({
   const cache = useQueryClient();
   useEffect(() => {
     const controller = new AbortController();
-    void previewImport(file, controller.signal)
+    void runTransfer((onProgress) =>
+      previewImport(file, controller.signal, { onProgress }),
+    )
       .then((value) => {
         if (!controller.signal.aborted) setPreview(value);
       })
@@ -37,7 +44,7 @@ export default function ImportDialog({
           setError(e instanceof Error ? e.message : "预览失败");
       });
     return () => controller.abort();
-  }, [file]);
+  }, [file, runTransfer]);
   return (
     <Dialog.Root
       open
@@ -58,6 +65,8 @@ export default function ImportDialog({
             if (busy) e.preventDefault();
           }}
         >
+          <TransferFeedback progress={activeTransferProgress} />
+
           <header>
             <Dialog.Title>导入演示文稿</Dialog.Title>
             <button className="btn" onClick={onClose} disabled={busy}>
@@ -145,7 +154,9 @@ export default function ImportDialog({
                 onClick={() => {
                   setBusy(true);
                   setError("");
-                  void importProject(file, accepted)
+                  void runTransfer((onProgress) =>
+                    importProject(file, accepted, { onProgress }),
+                  )
                     .then(async (project) => {
                       cache.setQueryData(
                         presentationKeys.project(project.id),

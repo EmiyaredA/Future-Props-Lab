@@ -3,10 +3,13 @@ from __future__ import annotations
 from fastapi import APIRouter, File, Form, HTTPException, Query, Request, Response, UploadFile
 from fastapi.responses import FileResponse
 
+from app.capabilities.asset_store.library import AssetError
+from app.capabilities.asset_store.thumbnails import ThumbnailSize
 from app.capabilities.identity.rate_limit import allow_attempt, clear_attempts
 from app.console.governance.profile import (
     apply_avatar,
     avatar_path,
+    avatar_preview,
     delete_avatar,
     stage_avatar,
     update_profile,
@@ -178,18 +181,21 @@ async def get_profile(request: Request, session: SessionDep):
 
 
 @router.get("/account/profile/avatar", response_class=FileResponse)
-async def get_avatar(request: Request, session: SessionDep):
+async def get_avatar(request: Request, session: SessionDep, size: ThumbnailSize | None = None):
     principal = await _browser_auth(request, session)
     user, _auth_session = await load_current_auth(session, principal)
-    path = avatar_path(user)
+    try:
+        path = await avatar_preview(user, size) if size is not None else avatar_path(user)
+    except AssetError as exc:
+        raise HTTPException(exc.status, detail={"code": exc.code, "message": str(exc)}) from None
     if path is None or not path.is_file():
         raise HTTPException(404, detail={"code": "profile_avatar_not_found"})
     return FileResponse(
         path,
-        media_type=user.avatar_content_type,
+        media_type="image/webp" if size is not None else user.avatar_content_type,
         headers={
-            "Cache-Control": "private, max-age=3600",
-            "ETag": f'"{user.avatar_content_sha256}"',
+            "Cache-Control": "private, no-store",
+            "ETag": f'"{user.avatar_content_sha256}-{size or "original"}"',
         },
     )
 

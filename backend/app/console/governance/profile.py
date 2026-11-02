@@ -12,6 +12,7 @@ from sqlalchemy import update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.capabilities.asset_store.thumbnails import ThumbnailSize, derived_thumbnail
 from app.console.governance.service import AccountError, add_audit_event
 from app.console.models import User
 from app.runtime.config import get_settings
@@ -93,6 +94,19 @@ async def update_profile(
         await session.rollback()
         raise AccountError("email_conflict") from exc
     return await session.get(User, user_id)
+
+
+async def avatar_preview(user: User, size: ThumbnailSize) -> Path | None:
+    source = avatar_path(user)
+    if source is None or not source.is_file():
+        return None
+    target = (
+        get_settings().account_path(user.id)
+        / "previews"
+        / "avatar"
+        / f"{user.avatar_content_sha256}-{size}.webp"
+    )
+    return await derived_thumbnail(source, target, size)
 
 
 def _verify_image(path: Path, content_type: str) -> None:

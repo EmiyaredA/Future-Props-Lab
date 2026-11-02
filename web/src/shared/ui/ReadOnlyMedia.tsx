@@ -1,3 +1,5 @@
+import { ImagePreview } from "./ImagePreview";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 export function ReadOnlyMedia({
   path,
@@ -8,15 +10,31 @@ export function ReadOnlyMedia({
   kind: string;
   name: string;
 }) {
-  const media = useApiBlobUrl(path);
-  if (media.loading) return <p role="status">正在加载素材…</p>;
+  const media = useApiBlobUrl(kind === "image" ? null : path);
+  if (kind === "image")
+    return (
+      <div>
+        <ImagePreview src={path} size={1280} alt={name} />
+        <p>
+          <a className="btn small" href={path} download={name}>
+            下载原图
+          </a>
+        </p>
+      </div>
+    );
+  if (media.loading)
+    return (
+      <LoadingState
+        label="正在加载素材…"
+        variant="region"
+        progress={media.progress}
+      />
+    );
   if (media.error) return <p role="alert">{media.error.message}</p>;
   if (!media.url) return null;
   return (
     <div>
-      {kind === "image" ? (
-        <img src={media.url} alt={name} />
-      ) : kind === "video" ? (
+      {kind === "video" ? (
         <video src={media.url} controls preload="metadata" aria-label={name} />
       ) : kind === "audio" ? (
         <audio src={media.url} controls preload="metadata" aria-label={name} />

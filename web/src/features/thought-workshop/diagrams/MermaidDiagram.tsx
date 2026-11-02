@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useId, useState } from "react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { renderDiagram } from "../diagram";
@@ -83,7 +84,7 @@ export function MermaidDiagram({
           />
         </DiagramViewer>
       ) : (
-        <p role="status">正在绘制图表…</p>
+        <LoadingState label="正在绘制图表…" variant="region" />
       )}
     </div>
   );

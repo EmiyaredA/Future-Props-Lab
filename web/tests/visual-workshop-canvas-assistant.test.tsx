@@ -874,7 +874,13 @@ test("uses the unified attachment panel for project files and local uploads", as
   });
   await user.upload(input, file);
   await waitFor(() =>
-    expect(uploadManagedFile).toHaveBeenCalledWith(file, "project-1"),
+    expect(uploadManagedFile).toHaveBeenCalledWith(
+      file,
+      "project-1",
+      undefined,
+      undefined,
+      expect.objectContaining({ onProgress: expect.any(Function) }),
+    ),
   );
   expect(
     screen.getByRole("button", { name: "移除附件 storyboard.pdf" }),

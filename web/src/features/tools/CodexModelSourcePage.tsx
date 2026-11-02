@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -104,7 +105,7 @@ export function CodexModelSourcePage({ onBack }: { onBack: () => void }) {
       </header>
 
       {sourceQuery.isLoading ? (
-        <p role="status">正在读取本机 Codex 配置…</p>
+        <LoadingState label="正在读取本机 Codex 配置…" variant="region" />
       ) : null}
       {sourceQuery.isError ? (
         <div className="codex-source-message error" role="alert">

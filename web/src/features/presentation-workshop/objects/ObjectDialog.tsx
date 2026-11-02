@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { keepDialogEscapeLocal, useDialogReturnFocus } from "../dialogKeyboard";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -117,7 +118,11 @@ export default function ObjectDialog({
               {element.chart && (
                 <div className="presentation-dialog-split">
                   <div className="presentation-object-preview presentation-chart-preview">
-                    <Suspense fallback={<p>正在绘制图表…</p>}>
+                    <Suspense
+                      fallback={
+                        <LoadingState label="正在绘制图表…" variant="region" />
+                      }
+                    >
                       <ChartPreview element={element} />
                     </Suspense>
                   </div>
@@ -203,7 +208,11 @@ export default function ObjectDialog({
               disabled={busy}
               onClick={() => void apply()}
             >
-              {busy ? "正在处理…" : "应用"}
+              {busy ? (
+                <LoadingState variant="inline" label="正在处理…" />
+              ) : (
+                "应用"
+              )}
             </button>
           </footer>
         </Dialog.Content>

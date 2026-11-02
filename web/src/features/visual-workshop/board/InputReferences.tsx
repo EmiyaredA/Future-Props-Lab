@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useId, useState } from "react";
 import { useInfiniteQuery, useQueries } from "@tanstack/react-query";
 import { ChevronRight, Link2, Lock, Plus, X } from "lucide-react";
@@ -133,9 +134,11 @@ export function InputReferences({
                     {edge.binding === "fixed" ? (
                       <>
                         <Lock size={11} /> 固定版本 ·{" "}
-                        {boundVersions[index].data
-                          ? `v${boundVersions[index].data.version}`
-                          : "加载中"}
+                        {boundVersions[index].data ? (
+                          `v${boundVersions[index].data.version}`
+                        ) : (
+                          <LoadingState variant="inline" label="加载中" />
+                        )}
                       </>
                     ) : (
                       `跟随最终输出 · ${upstream?.final_version ? `v${upstream.final_version}` : "等待输出"}`

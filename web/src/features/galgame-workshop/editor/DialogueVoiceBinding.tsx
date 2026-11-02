@@ -1,3 +1,5 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Mic, Sparkles, Trash2, Upload } from "lucide-react";
@@ -40,6 +42,9 @@ export function DialogueVoiceBinding({
   onNotice: (message: string) => void;
   onAutoMatchVoice: (blockId: string) => Promise<boolean>;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const client = useQueryClient();
   const fileInput = useRef<HTMLInputElement>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -95,7 +100,10 @@ export function DialogueVoiceBinding({
   };
 
   const upload = useMutation({
-    mutationFn: (file: File) => uploadGalgameProjectAsset(projectId, file),
+    mutationFn: (file: File) =>
+      runTransfer((onProgress) =>
+        uploadGalgameProjectAsset(projectId, file, undefined, { onProgress }),
+      ),
     onSuccess: (asset) => {
       void invalidateGalgameAssetQueries(client, projectId);
       bindFile(asset.id, asset.display_name);
@@ -106,6 +114,8 @@ export function DialogueVoiceBinding({
 
   return (
     <section className="galgame-dialogue-voice-binding">
+      <TransferFeedback progress={activeTransferProgress} />
+
       <header>
         <strong>语音</strong>
       </header>

@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useId, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -184,7 +185,13 @@ function QueryState({
       ) : (
         <RefreshCcw className="spinning" aria-hidden />
       )}
-      <strong>{error ? "线路报告暂时无法读取" : "正在检查已保存线路…"}</strong>
+      <strong>
+        {error ? (
+          "线路报告暂时无法读取"
+        ) : (
+          <LoadingState variant="inline" label="正在检查已保存线路…" />
+        )}
+      </strong>
       {error ? (
         <button type="button" onClick={onRefresh}>
           <RefreshCcw aria-hidden /> 重试
@@ -312,9 +319,14 @@ export function RouteReportInspector({
         </section>
       ) : null}
       <p className="galgame-report-save-note">
-        {saving
-          ? "故事正在保存；完成后将自动更新检查结果。"
-          : "检查基于最近一次保存的故事。"}
+        {saving ? (
+          <LoadingState
+            variant="inline"
+            label="故事正在保存；完成后将自动更新检查结果。"
+          />
+        ) : (
+          "检查基于最近一次保存的故事。"
+        )}
       </p>
       <div className="galgame-report-actions">
         <button type="button" disabled={refreshing} onClick={onRefresh}>
@@ -403,11 +415,18 @@ export function RouteReportDialog({
           <div>
             <h2 id={titleId}>工程检查</h2>
             <p id={descriptionId}>
-              {model && status
-                ? model.severity === "clear"
-                  ? `未发现线路问题。${model.reachable}/${model.fragments} 个 Fragment 可达，${model.endings} 个结局。`
-                  : status.copy
-                : "正在读取最近一次保存的线路报告。"}
+              {model && status ? (
+                model.severity === "clear" ? (
+                  `未发现线路问题。${model.reachable}/${model.fragments} 个 Fragment 可达，${model.endings} 个结局。`
+                ) : (
+                  status.copy
+                )
+              ) : (
+                <LoadingState
+                  variant="inline"
+                  label="正在读取最近一次保存的线路报告。"
+                />
+              )}
             </p>
           </div>
           <button
@@ -551,9 +570,14 @@ export function RouteReportDialog({
         </div>
         <footer>
           <span>
-            {saving
-              ? "故事正在保存；完成后将自动更新检查结果"
-              : "检查基于最近一次保存的故事"}
+            {saving ? (
+              <LoadingState
+                variant="inline"
+                label="故事正在保存；完成后将自动更新检查结果"
+              />
+            ) : (
+              "检查基于最近一次保存的故事"
+            )}
           </span>
           <div>
             <button type="button" disabled={refreshing} onClick={onRefresh}>

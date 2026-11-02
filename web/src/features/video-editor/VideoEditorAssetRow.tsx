@@ -1,3 +1,6 @@
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import {
   canEditAsset,
   assetPreparationLabel,
@@ -84,11 +87,16 @@ export function VideoEditorAssetRow({
   organizeType: string;
   timelineType: string;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const [renaming, setRenaming] = useState(false);
   const download = useMutation({
     mutationFn: async () => {
-      const file = await fetchApiDownload(
-        `/v1/files/${encodeURIComponent(asset.id)}/download`,
+      const file = await runTransfer((onProgress) =>
+        fetchApiDownload(`/v1/files/${encodeURIComponent(asset.id)}/download`, {
+          onProgress,
+        }),
       );
       downloadProjectSnapshot(
         file,
@@ -119,6 +127,8 @@ export function VideoEditorAssetRow({
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
+      <TransferFeedback progress={activeTransferProgress} />
+
       <div className="ve-asset">
         {batchActive ? (
           <label className="ve-asset-check">
@@ -140,7 +150,7 @@ export function VideoEditorAssetRow({
           onDoubleClick={onAdd}
         >
           {asset.thumbnailUrl ? (
-            <img src={asset.thumbnailUrl} alt="" />
+            <ResponsiveImage src={asset.thumbnailUrl} alt="" />
           ) : (
             <span>
               <Icon aria-hidden />

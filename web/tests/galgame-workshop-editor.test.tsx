@@ -643,6 +643,7 @@ test("previews batch imports and repairs missing assets with the latest Story re
       "project-1",
       expect.arrayContaining([expect.objectContaining({ name: "new-bg.png" })]),
       "scene",
+      expect.objectContaining({ onProgress: expect.any(Function) }),
     ),
   );
 

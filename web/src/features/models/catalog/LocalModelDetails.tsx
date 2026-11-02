@@ -1,3 +1,5 @@
+import { ProgressBar } from "@shared/ui/LoadingState";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useState } from "react";
 import {
   AudioLines,
@@ -175,19 +177,10 @@ export function LocalModelDetails({
         <p>{next.description}</p>
         {model.status === "installing" && (
           <div className="lm-install-progress">
-            <div
-              role="progressbar"
-              aria-label={`${model.label} 安装进度`}
-              aria-valuenow={model.progress}
-              aria-valuemin={0}
-              aria-valuemax={100}
-            >
-              <span
-                style={{
-                  width: `${Math.max(0, Math.min(100, model.progress))}%`,
-                }}
-              />
-            </div>
+            <ProgressBar
+              value={model.progress}
+              label={`${model.label} 安装进度`}
+            />
             <span role="status">安装进度 {model.progress}%</span>
           </div>
         )}
@@ -210,7 +203,11 @@ export function LocalModelDetails({
             ) : primary.label === "添加到当前空间" ? (
               <Plus size={17} aria-hidden />
             ) : null}
-            {pending ? "处理中…" : primary.label}
+            {pending ? (
+              <LoadingState variant="inline" label="处理中…" />
+            ) : (
+              primary.label
+            )}
           </button>
         )}
         {permissionHint && (
@@ -250,11 +247,16 @@ export function LocalModelDetails({
             )}
           </div>
           <p className="lm-memory">
-            {model.busy
-              ? "正在生成语音，完成后可管理服务。"
-              : model.loaded
-                ? "模型已加载 · 空闲 5 分钟后自动释放内存。"
-                : "内存空闲 · 首次调用时加载模型。"}
+            {model.busy ? (
+              <LoadingState
+                variant="inline"
+                label="正在生成语音，完成后可管理服务。"
+              />
+            ) : model.loaded ? (
+              "模型已加载 · 空闲 5 分钟后自动释放内存。"
+            ) : (
+              "内存空闲 · 首次调用时加载模型。"
+            )}
           </p>
           <small>停止服务会影响本机所有空间对此模型的调用。</small>
           {!canManage && (

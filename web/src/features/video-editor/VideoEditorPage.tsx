@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { subscribeAmadeusMutation, openAmadeus } from "@platform/assistant";
 import { VideoEditorProjectTitle } from "./VideoEditorProjectTitle";
 import { VideoEditorClipMergeDialog } from "./VideoEditorClipMergeDialog";
@@ -476,11 +477,13 @@ export function VideoEditorPage({
           </div>
           <div className="ve-save-state">
             <Save aria-hidden />{" "}
-            {editor.failedSaves
-              ? editor.notice
-              : editor.saving
-                ? "保存中…"
-                : editor.notice || "已自动保存"}
+            {editor.failedSaves ? (
+              editor.notice
+            ) : editor.saving ? (
+              <LoadingState variant="inline" label="保存中…" />
+            ) : (
+              editor.notice || "已自动保存"
+            )}
             <VideoEditorSaveGuard
               unsaved={editor.saving}
               busy={editor.saveBusy}

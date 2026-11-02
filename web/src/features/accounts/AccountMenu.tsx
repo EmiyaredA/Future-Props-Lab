@@ -1,3 +1,4 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { useRuntimeAccess } from "./useRuntimeAccess";
 import { lazy, Suspense } from "react";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
@@ -166,7 +167,10 @@ export function AccountMenu({ session }: { session: AccountSessionContext }) {
   const avatar = (
     <span className="account-identity-avatar">
       {me.user.avatar_url ? (
-        <img src={avatarSrc(me.user.avatar_url, me.user.revision)} alt="" />
+        <ResponsiveImage
+          src={avatarSrc(me.user.avatar_url, me.user.revision)}
+          alt=""
+        />
       ) : (
         me.user.display_name.slice(0, 1)
       )}

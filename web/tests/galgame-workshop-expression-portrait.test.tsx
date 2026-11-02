@@ -376,6 +376,9 @@ describe("ExpressionPortrait", () => {
     );
     await settleFrames();
     expect(fetchApiBlob).toHaveBeenCalledTimes(1);
-    expect(fetchApiBlob).toHaveBeenCalledWith("/v1/files/file-2/content");
+    expect(fetchApiBlob).toHaveBeenCalledWith(
+      "/v1/files/file-2/content",
+      expect.objectContaining({ onProgress: expect.any(Function) }),
+    );
   });
 });

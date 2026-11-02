@@ -1,3 +1,4 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { interviewApi, activeTask, type Room } from "./api";
@@ -11,6 +12,9 @@ export const snapshotOf = (room: Room) => {
 };
 
 export function usePreparation(scope: string) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const cache = useQueryClient();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState<InterviewInput>({
@@ -179,7 +183,9 @@ export function usePreparation(scope: string) {
       }
       let uploaded = materialId;
       if (file) {
-        saved = await interviewApi.upload(saved, file);
+        saved = await runTransfer((onProgress) =>
+          interviewApi.upload(saved, file, { onProgress }),
+        );
         uploaded = saved.materials.at(-1)!.id;
         if (mounted.current && generation.current === version) {
           setMaterialId(uploaded);
@@ -225,6 +231,7 @@ export function usePreparation(scope: string) {
     }
   }
   return {
+    transferProgress: activeTransferProgress,
     rooms,
     executor,
     current,

@@ -19,7 +19,7 @@ export function PresentationShape({
   const override = paint?.asset_id ? assetUrls?.[paint.asset_id] : undefined;
   const asset = useApiBlobUrl(
     paint?.asset_id && !override
-      ? `/v1/files/${encodeURIComponent(paint.asset_id)}/content`
+      ? `/v1/files/${encodeURIComponent(paint.asset_id)}/thumbnail?size=1280`
       : null,
   );
   const paintId = `${markerId}-paint`;

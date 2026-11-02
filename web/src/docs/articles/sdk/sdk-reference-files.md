@@ -224,9 +224,10 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | 参数 | 位置 | 类型 | 必填 |
 | --- | --- | --- | --- |
 | `asset_id` | path | string | 是 |
-| `size` | query | 320 / 640 | 否 |
+| `size` | query | 128 / 320 / 640 / 1280 | 否 |
 
 **响应**：
+- `200` · `image/svg+xml` · `string`
 - `200` · `image/webp` · `string`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。

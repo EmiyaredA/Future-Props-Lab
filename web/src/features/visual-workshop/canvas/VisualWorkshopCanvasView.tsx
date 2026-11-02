@@ -1,3 +1,6 @@
+import { LoadingState } from "@shared/ui/LoadingState";
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { CanvasSelectionActions } from "./CanvasSelectionActions";
 import { CanvasContextMenu } from "./CanvasContextMenu";
 import { NodeApproval } from "../NodeApproval";
@@ -53,6 +56,9 @@ export function VisualWorkshopCanvasView({
   onBoard?: () => void;
   onAcceptance?: () => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const {
     client,
     projectId,
@@ -235,12 +241,16 @@ export function VisualWorkshopCanvasView({
   if (projectQuery.isLoading || canvasQuery.isLoading)
     return (
       <div className="canvas-state">
-        <strong>正在打开画布…</strong>
+        <TransferFeedback progress={activeTransferProgress} />
+
+        <LoadingState label="正在打开画布…" variant="inline" />
       </div>
     );
   if (projectQuery.isError || !projectQuery.data || canvasQuery.isError)
     return (
       <div className="canvas-state">
+        <TransferFeedback progress={activeTransferProgress} />
+
         <strong>项目不存在或暂时无法读取</strong>
         <button onClick={onBack}>
           <ArrowLeft aria-hidden />
@@ -255,6 +265,8 @@ export function VisualWorkshopCanvasView({
 
   return (
     <div className={`visual-canvas${assistantOpen ? " has-assistant" : ""}`}>
+      <TransferFeedback progress={activeTransferProgress} />
+
       <div
         ref={attachSurface}
         role="region"
@@ -749,7 +761,11 @@ export function VisualWorkshopCanvasView({
           frameExport={frameExport}
           onClose={() => setFrameExport(undefined)}
           onSave={async (file) => {
-            const asset = await uploadManagedFile(file, projectId);
+            const asset = await runTransfer((onProgress) =>
+              uploadManagedFile(file, projectId, undefined, undefined, {
+                onProgress,
+              }),
+            );
             await addCapturedFrameNode(frameExport.node.id, asset);
           }}
         />

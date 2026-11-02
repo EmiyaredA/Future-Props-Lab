@@ -387,6 +387,8 @@ test("context menu upload creates a media node at the click point", async () => 
       file,
       0,
       { x: 260, y: 220 },
+      undefined,
+      expect.objectContaining({ onProgress: expect.any(Function) }),
     ),
   );
   await waitFor(() =>

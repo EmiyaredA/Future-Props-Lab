@@ -43,9 +43,9 @@ class CreativeWorkshop:
         'Update Item. PATCH /v1/creative-workshop/items/{item_id}'
         return self._client._call('PATCH', '/v1/creative-workshop/items/{item_id}', parameters=[('item_id', 'path', item_id)], body=body, media_type='application/json', response_type=models.CreativeItemOut)
 
-    def item_cover(self, *, item_id: str, draft: bool | Unset = UNSET) -> Any:
+    def item_cover(self, *, item_id: str, draft: bool | Unset = UNSET, size: Literal[128, 320, 640, 1280] | None | Unset = UNSET) -> Any:
         'Item Cover. GET /v1/creative-workshop/items/{item_id}/cover'
-        return self._client._call('GET', '/v1/creative-workshop/items/{item_id}/cover', parameters=[('item_id', 'path', item_id), ('draft', 'query', draft)], response_type=Any)
+        return self._client._call('GET', '/v1/creative-workshop/items/{item_id}/cover', parameters=[('item_id', 'path', item_id), ('draft', 'query', draft), ('size', 'query', size)], response_type=Any)
 
     def upload_cover(self, *, item_id: str, body: models.Body_upload_cover_v1_creative_workshop_items__item_id__cover_post | dict, files: dict | list | None = None) -> models.CreativeItemOut:
         'Upload Cover. POST /v1/creative-workshop/items/{item_id}/cover'
@@ -67,9 +67,9 @@ class CreativeWorkshop:
         'Get Release. GET /v1/creative-workshop/releases/{release_id}'
         return self._client._call('GET', '/v1/creative-workshop/releases/{release_id}', parameters=[('release_id', 'path', release_id)], response_type=models.CreativeReleaseOut)
 
-    def release_cover(self, *, release_id: str) -> Any:
+    def release_cover(self, *, release_id: str, size: Literal[128, 320, 640, 1280] | None | Unset = UNSET) -> Any:
         'Release Cover. GET /v1/creative-workshop/releases/{release_id}/cover'
-        return self._client._call('GET', '/v1/creative-workshop/releases/{release_id}/cover', parameters=[('release_id', 'path', release_id)], response_type=Any)
+        return self._client._call('GET', '/v1/creative-workshop/releases/{release_id}/cover', parameters=[('release_id', 'path', release_id), ('size', 'query', size)], response_type=Any)
 
 class AsyncCreativeWorkshop:
     def __init__(self, client):
@@ -107,9 +107,9 @@ class AsyncCreativeWorkshop:
         'Update Item. PATCH /v1/creative-workshop/items/{item_id}'
         return await self._client._call('PATCH', '/v1/creative-workshop/items/{item_id}', parameters=[('item_id', 'path', item_id)], body=body, media_type='application/json', response_type=models.CreativeItemOut)
 
-    async def item_cover(self, *, item_id: str, draft: bool | Unset = UNSET) -> Any:
+    async def item_cover(self, *, item_id: str, draft: bool | Unset = UNSET, size: Literal[128, 320, 640, 1280] | None | Unset = UNSET) -> Any:
         'Item Cover. GET /v1/creative-workshop/items/{item_id}/cover'
-        return await self._client._call('GET', '/v1/creative-workshop/items/{item_id}/cover', parameters=[('item_id', 'path', item_id), ('draft', 'query', draft)], response_type=Any)
+        return await self._client._call('GET', '/v1/creative-workshop/items/{item_id}/cover', parameters=[('item_id', 'path', item_id), ('draft', 'query', draft), ('size', 'query', size)], response_type=Any)
 
     async def upload_cover(self, *, item_id: str, body: models.Body_upload_cover_v1_creative_workshop_items__item_id__cover_post | dict, files: dict | list | None = None) -> models.CreativeItemOut:
         'Upload Cover. POST /v1/creative-workshop/items/{item_id}/cover'
@@ -131,6 +131,6 @@ class AsyncCreativeWorkshop:
         'Get Release. GET /v1/creative-workshop/releases/{release_id}'
         return await self._client._call('GET', '/v1/creative-workshop/releases/{release_id}', parameters=[('release_id', 'path', release_id)], response_type=models.CreativeReleaseOut)
 
-    async def release_cover(self, *, release_id: str) -> Any:
+    async def release_cover(self, *, release_id: str, size: Literal[128, 320, 640, 1280] | None | Unset = UNSET) -> Any:
         'Release Cover. GET /v1/creative-workshop/releases/{release_id}/cover'
-        return await self._client._call('GET', '/v1/creative-workshop/releases/{release_id}/cover', parameters=[('release_id', 'path', release_id)], response_type=Any)
+        return await self._client._call('GET', '/v1/creative-workshop/releases/{release_id}/cover', parameters=[('release_id', 'path', release_id), ('size', 'query', size)], response_type=Any)

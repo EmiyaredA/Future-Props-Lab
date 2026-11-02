@@ -8,10 +8,10 @@ const { imagePreview, audioPreview } = vi.hoisted(() => ({
   audioPreview: vi.fn(),
 }));
 
-vi.mock("@features/galgame-workshop/editor/StoryAssetImage", () => ({
-  StoryAssetImage: (props: { fileId?: string }) => {
+vi.mock("@shared/ui/ImagePreview", () => ({
+  ImagePreview: (props: { src?: string }) => {
     imagePreview(props);
-    return <span>image:{props.fileId}</span>;
+    return <span>image:{props.src}</span>;
   },
 }));
 
@@ -74,7 +74,7 @@ test("defers compact images until their card approaches the viewport", async () 
   expect(imagePreview).not.toHaveBeenCalled();
 
   await act(async () => notifyVisible?.());
-  expect(screen.getByText("image:cover")).toBeInTheDocument();
+  expect(screen.getByText("image:/v1/files/cover/content")).toBeInTheDocument();
 });
 
 test("does not download audio just to render a compact asset card", () => {

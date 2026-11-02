@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import "./document-layout/reading.css";
 import { useQuery } from "@tanstack/react-query";
 import { lazy, Suspense, useState } from "react";
@@ -218,7 +219,11 @@ export function ThoughtReadOnlyPage({
         ) : note.data ? (
           <>
             {note.data.kind === "multitable" ? (
-              <Suspense fallback={<p>正在加载表格…</p>}>
+              <Suspense
+                fallback={
+                  <LoadingState label="正在加载表格…" variant="region" />
+                }
+              >
                 <TableEditor noteId={note.data.id} note={note.data} readOnly />
               </Suspense>
             ) : (
@@ -234,9 +239,11 @@ export function ThoughtReadOnlyPage({
             />
           </>
         ) : (
-          <p role="status" className="knowledge-notice">
-            正在加载文档…
-          </p>
+          <LoadingState
+            label="正在加载文档…"
+            variant="region"
+            className="knowledge-notice"
+          />
         )}
       </main>
     </div>

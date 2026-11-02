@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import {
   FolderOpen,
   ImagePlus,
@@ -693,7 +694,7 @@ export function DialogueStyleInspectorView({
                 })
               }
             />
-            <span>视频导出中保留状态</span>
+            <LoadingState label="视频导出中保留状态" variant="inline" />
           </label>
         </div>
       </details>

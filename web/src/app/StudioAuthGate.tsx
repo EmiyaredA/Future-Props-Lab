@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { AccountStorageUpgrade } from "@features/accounts/AccountStorageUpgrade";
 import { registerAccount } from "@features/accounts/platformApi";
 import { AccountAccessProvider } from "@platform/auth/AccountAccess";
@@ -185,7 +186,13 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
   }, [me, queryClient, refresh]);
 
   if (status === "checking") {
-    return <main className="auth-screen">正在连接 Future Props Lab…</main>;
+    return (
+      <LoadingState
+        label="正在连接 Future Props Lab…"
+        variant="page"
+        className="auth-screen"
+      />
+    );
   }
 
   if (status === "signed-out" || !me || !context) {
@@ -251,7 +258,13 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
             className="btn primary"
             disabled={busy || !username || !password}
           >
-            {busy ? "正在处理…" : registration ? "注册并登录" : "登录"}
+            {busy ? (
+              <LoadingState variant="inline" label="正在处理…" />
+            ) : registration ? (
+              "注册并登录"
+            ) : (
+              "登录"
+            )}
           </button>
           {registrationAllowed && (
             <button
@@ -318,7 +331,11 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
             className="btn primary"
             disabled={busy || !password || !newPassword || !confirmPassword}
           >
-            {busy ? "保存中…" : "保存并继续"}
+            {busy ? (
+              <LoadingState variant="inline" label="保存中…" />
+            ) : (
+              "保存并继续"
+            )}
           </button>
         </form>
       </main>

@@ -1,3 +1,5 @@
+import { createUploadTransfer } from "@platform/api/transfer";
+import { type TransferOptions } from "@platform/api/transfer";
 import { api, unwrap } from "@platform/api/client";
 import type {
   GalgameAssetCategory,
@@ -29,16 +31,20 @@ export async function uploadGalgameProjectAsset(
   projectId: string,
   file: File,
   category?: GalgameAssetCategory,
+  transfer: TransferOptions = {},
 ): Promise<GalgameProjectAsset> {
+  const uploadTransfer = createUploadTransfer(transfer.onProgress);
+
   return (await unwrap(
     await api.POST("/v1/galgame-workshop/projects/{project_id}/assets", {
+      fetch: uploadTransfer.fetch,
       params: { path: { project_id: projectId } },
       body: { upload: file as unknown as string, category: category ?? null },
       bodySerializer(body) {
         const form = new FormData();
         form.set("upload", body.upload as unknown as File);
         if (body.category) form.set("category", body.category);
-        return form;
+        return uploadTransfer.capture(form);
       },
     }),
   )) as GalgameProjectAsset;
@@ -64,9 +70,13 @@ export async function batchUploadGalgameProjectAssets(
   projectId: string,
   files: File[],
   category: GalgameAssetCategory,
+  transfer: TransferOptions = {},
 ) {
+  const uploadTransfer = createUploadTransfer(transfer.onProgress);
+
   return unwrap(
     await api.POST("/v1/galgame-workshop/projects/{project_id}/assets/batch", {
+      fetch: uploadTransfer.fetch,
       params: { path: { project_id: projectId } },
       body: { uploads: files as unknown as string[], category },
       bodySerializer(body) {
@@ -74,7 +84,7 @@ export async function batchUploadGalgameProjectAssets(
         for (const file of body.uploads as unknown as File[])
           form.append("uploads", file);
         form.set("category", body.category);
-        return form;
+        return uploadTransfer.capture(form);
       },
     }),
   );

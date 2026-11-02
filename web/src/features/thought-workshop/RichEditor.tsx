@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { Search, TextSearch, Link2 } from "lucide-react";
 import { KnowledgeActionMenu } from "./KnowledgeActionMenu";
 import { useDocumentAccess } from "./DocumentAccess";
@@ -357,7 +358,7 @@ export function RichEditor({
   );
   const uploads = useFileUploads(editor);
   uploadRef.current = readOnly ? () => {} : uploads.enqueue;
-  if (!editor) return <p>编辑器加载中…</p>;
+  if (!editor) return <LoadingState label="编辑器加载中…" variant="region" />;
   const link = () =>
     setDialog({ kind: "link", value: editor.getAttributes("link").href || "" });
   return (
@@ -513,11 +514,17 @@ export function RichEditor({
             >
               <span>
                 {entry.file.name} ·{" "}
-                {entry.status === "failed"
-                  ? entry.error
-                  : entry.status === "waiting"
-                    ? "等待上传"
-                    : "上传中…"}
+                {entry.status === "failed" ? (
+                  entry.error
+                ) : entry.status === "waiting" ? (
+                  "等待上传"
+                ) : (
+                  <LoadingState
+                    variant="inline"
+                    label="上传中…"
+                    progress={entry.progress}
+                  />
+                )}
               </span>
               {entry.status === "failed" && (
                 <>

@@ -1,4 +1,9 @@
 import createClient from "openapi-fetch";
+import {
+  measureResponse,
+  uploadRequest,
+  type TransferRequestInit,
+} from "./transfer";
 import type { paths } from "@generated/api";
 import {
   applySessionHeaders,
@@ -36,15 +41,22 @@ async function responseProblem(response: Response): Promise<ProblemDetail> {
 
 export async function requestApi(
   path: string,
-  init: RequestInit = {},
+  init: TransferRequestInit = {},
 ): Promise<Response> {
-  const { signal, ...requestInit } = init;
+  const { signal, onProgress, ...requestInit } = init;
   const request = applySessionHeaders(
     new Request(apiUrl(path), { ...requestInit, credentials: "include" }),
   );
-  const response = signal
-    ? await fetch(request, { signal })
-    : await fetch(request);
+  const response =
+    requestInit.body instanceof FormData && onProgress
+      ? await uploadRequest(
+          new Request(request, { signal }),
+          requestInit.body,
+          onProgress,
+        )
+      : signal
+        ? await fetch(request, { signal })
+        : await fetch(request);
   if (response.status === 401) notifyAuthRequired();
   if (!response.ok) {
     const problem = await responseProblem(response);
@@ -57,12 +69,15 @@ export async function requestApi(
       window.dispatchEvent(new Event("future-props:permissions-changed"));
     throw new ApiError(problemDetailMessage(problem), problem, response.status);
   }
-  return response;
+  return measureResponse(
+    response,
+    requestInit.body instanceof FormData ? undefined : onProgress,
+  );
 }
 
 export async function fetchApiJson<T>(
   path: string,
-  init: RequestInit = {},
+  init: TransferRequestInit = {},
 ): Promise<T> {
   const response = await requestApi(path, init);
   return (await response.json()) as T;
@@ -70,7 +85,7 @@ export async function fetchApiJson<T>(
 
 export async function fetchApiBlob(
   path: string,
-  init: RequestInit = {},
+  init: TransferRequestInit = {},
 ): Promise<Blob> {
   const response = await requestApi(path, init);
   return response.blob();
@@ -100,7 +115,7 @@ export function filenameFromContentDisposition(
 
 export async function fetchApiDownload(
   path: string,
-  init: RequestInit = {},
+  init: TransferRequestInit = {},
 ): Promise<ApiDownload> {
   const response = await requestApi(path, init);
   return {

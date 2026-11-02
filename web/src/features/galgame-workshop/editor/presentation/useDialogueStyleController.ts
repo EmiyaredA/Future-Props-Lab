@@ -1,3 +1,4 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -36,6 +37,9 @@ export function useDialogueStyleController({
   document: GalgameStoryProject;
   onDocument: (document: GalgameStoryProject) => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const client = useQueryClient();
   const fileInput = useRef<HTMLInputElement>(null);
   const [picker, setPicker] = useState<PickerContext>();
@@ -203,7 +207,9 @@ export function useDialogueStyleController({
 
   const upload = useMutation({
     mutationFn: ({ file }: { file: File; target: AssetTarget }) =>
-      uploadGalgameProjectAsset(projectId, file),
+      runTransfer((onProgress) =>
+        uploadGalgameProjectAsset(projectId, file, undefined, { onProgress }),
+      ),
     onSuccess: (asset, variables) => {
       setUploadError("");
       void invalidateGalgameAssetQueries(client, projectId);
@@ -328,6 +334,7 @@ export function useDialogueStyleController({
   };
 
   return {
+    transferProgress: activeTransferProgress,
     projectId,
     document,
     onDocument,

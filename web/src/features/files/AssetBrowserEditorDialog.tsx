@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { Trash2, X } from "lucide-react";
 import { CustomSelect, type SelectOption } from "@shared/ui/CustomSelect";
 import {
@@ -92,7 +93,11 @@ export function AssetBrowserEditorDialog({
                 className="primary"
                 disabled={pending || editorSubmitDisabled}
               >
-                {pending ? "处理中…" : editorSubmitLabel}
+                {pending ? (
+                  <LoadingState variant="inline" label="处理中…" />
+                ) : (
+                  editorSubmitLabel
+                )}
               </button>
             </div>
           </form>
@@ -121,7 +126,11 @@ export function AssetBrowserEditorDialog({
                 className="primary"
                 disabled={pending || editorSubmitDisabled}
               >
-                {pending ? "处理中…" : editorSubmitLabel}
+                {pending ? (
+                  <LoadingState variant="inline" label="处理中…" />
+                ) : (
+                  editorSubmitLabel
+                )}
               </button>
             </div>
           </form>
@@ -150,7 +159,11 @@ export function AssetBrowserEditorDialog({
                 disabled={pending}
                 onClick={() => onSubmit()}
               >
-                {pending ? "处理中…" : editorSubmitLabel}
+                {pending ? (
+                  <LoadingState variant="inline" label="处理中…" />
+                ) : (
+                  editorSubmitLabel
+                )}
               </button>
             </div>
           </div>

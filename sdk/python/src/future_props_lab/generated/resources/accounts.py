@@ -47,9 +47,9 @@ class Accounts:
         'Remove Avatar. DELETE /v1/account/profile/avatar'
         return self._client._call('DELETE', '/v1/account/profile/avatar', parameters=[], body=body, media_type='application/json', response_type=models.CurrentUserOut)
 
-    def get_avatar(self) -> Any:
+    def get_avatar(self, *, size: Literal[128, 320, 640, 1280] | None | Unset = UNSET) -> Any:
         'Get Avatar. GET /v1/account/profile/avatar'
-        return self._client._call('GET', '/v1/account/profile/avatar', parameters=[], response_type=Any)
+        return self._client._call('GET', '/v1/account/profile/avatar', parameters=[('size', 'query', size)], response_type=Any)
 
     def put_avatar(self, *, body: models.Body_put_avatar_v1_account_profile_avatar_put | dict, files: dict | list | None = None) -> models.CurrentUserOut:
         'Put Avatar. PUT /v1/account/profile/avatar'
@@ -131,9 +131,9 @@ class AsyncAccounts:
         'Remove Avatar. DELETE /v1/account/profile/avatar'
         return await self._client._call('DELETE', '/v1/account/profile/avatar', parameters=[], body=body, media_type='application/json', response_type=models.CurrentUserOut)
 
-    async def get_avatar(self) -> Any:
+    async def get_avatar(self, *, size: Literal[128, 320, 640, 1280] | None | Unset = UNSET) -> Any:
         'Get Avatar. GET /v1/account/profile/avatar'
-        return await self._client._call('GET', '/v1/account/profile/avatar', parameters=[], response_type=Any)
+        return await self._client._call('GET', '/v1/account/profile/avatar', parameters=[('size', 'query', size)], response_type=Any)
 
     async def put_avatar(self, *, body: models.Body_put_avatar_v1_account_profile_avatar_put | dict, files: dict | list | None = None) -> models.CurrentUserOut:
         'Put Avatar. PUT /v1/account/profile/avatar'

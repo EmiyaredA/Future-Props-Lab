@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
@@ -126,7 +127,7 @@ export function CatalogDialog({
           )}
           {!hideSave && (
             <button className="btn primary" disabled={busy || disabled}>
-              {busy ? "保存中…" : label}
+              {busy ? <LoadingState variant="inline" label="保存中…" /> : label}
             </button>
           )}
         </footer>

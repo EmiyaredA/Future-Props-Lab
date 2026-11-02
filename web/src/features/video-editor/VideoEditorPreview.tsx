@@ -1,3 +1,6 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { usePreviewTransform } from "./usePreviewTransform";
 import { VideoEditorTransformBox } from "./VideoEditorTransformBox";
 import { transformAt, type TransformDraft } from "./transformModel";
@@ -274,6 +277,9 @@ export function VideoEditorPreview({
   previewingAsset?: VideoEditorAsset;
   onClearPreviewingAsset?: () => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const canWrite = useAccountPermission("content.write");
   const [frameExport, setFrameExport] = useState<{
     revision: number;
@@ -438,6 +444,8 @@ export function VideoEditorPreview({
   if (previewingAsset) {
     return (
       <section className="ve-preview-panel">
+        <TransferFeedback progress={activeTransferProgress} />
+
         <VideoEditorSourceMonitor
           asset={previewingAsset}
           fps={fps}
@@ -452,6 +460,8 @@ export function VideoEditorPreview({
   }
   return (
     <section className="ve-preview-panel">
+      <TransferFeedback progress={activeTransferProgress} />
+
       <header>
         <strong>节目监视器</strong>
         <div>
@@ -691,7 +701,7 @@ export function VideoEditorPreview({
                   { "--compare-percent": `${comparePercent}%` } as CSSProperties
                 }
               >
-                <img
+                <ResponsiveImage
                   src={beforeFrameUrl}
                   alt="抠像前的节目帧"
                   style={{ clipPath: beforeClipPath }}
@@ -817,14 +827,16 @@ export function VideoEditorPreview({
           }
           step={frameExport.stepUs / 1_000_000}
           loadSnapshot={async (capturedAt, signal) => ({
-            blob: await fetchApiBlob(
-              exactFramePath(
-                projectId,
-                frameExport.revision,
-                Math.round(capturedAt * 1_000_000),
-                frameExport.width,
+            blob: await runTransfer((onProgress) =>
+              fetchApiBlob(
+                exactFramePath(
+                  projectId,
+                  frameExport.revision,
+                  Math.round(capturedAt * 1_000_000),
+                  frameExport.width,
+                ),
+                { ...{ signal }, onProgress },
               ),
-              { signal },
             ),
             capturedAt,
             width: frameExport.width,
@@ -832,7 +844,11 @@ export function VideoEditorPreview({
           })}
           onClose={() => setFrameExport(undefined)}
           onSave={async (file) => {
-            await uploadVideoEditorAsset(projectId, file);
+            await runTransfer((onProgress) =>
+              uploadVideoEditorAsset(projectId, file, undefined, {
+                onProgress,
+              }),
+            );
             await onFrameSaved?.();
           }}
         />

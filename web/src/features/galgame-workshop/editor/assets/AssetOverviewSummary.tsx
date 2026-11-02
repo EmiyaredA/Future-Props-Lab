@@ -1,3 +1,4 @@
+import { ProgressBar } from "@shared/ui/LoadingState";
 import { AlertTriangle, ChevronDown, Layers3 } from "lucide-react";
 import {
   KIND_META,
@@ -60,7 +61,7 @@ export function AssetOverviewSummary({
                 <strong>{bytes(packageBytes)}</strong>
                 <em>减少 {reduction}%</em>
               </div>
-              <progress max={Math.max(totalBytes, 1)} value={packageBytes} />
+              <ProgressBar max={Math.max(totalBytes, 1)} value={packageBytes} />
               <footer>
                 <span>
                   <i /> 打包 {bytes(packageBytes)}
@@ -115,7 +116,7 @@ export function AssetOverviewSummary({
                     <strong>
                       {meta.label} {entry.count}
                     </strong>
-                    <progress max="100" value={percent} />
+                    <ProgressBar max={100} value={percent} />
                   </span>
                   <em>{percent}%</em>
                   <small>{bytes(entry.bytes)}</small>
@@ -188,7 +189,7 @@ export function AssetOverviewSummary({
                     <strong>{module.label}</strong>
                     <em>{matching.length}</em>
                     <small>{bytes(moduleBytes)}</small>
-                    <progress
+                    <ProgressBar
                       max={Math.max(totalBytes, 1)}
                       value={moduleBytes}
                     />

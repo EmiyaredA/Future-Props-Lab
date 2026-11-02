@@ -67,7 +67,13 @@ test("video output picker accepts a GIF and sends the original file with the sav
   const gif = new File(["GIF89a"], "dance.gif", { type: "image/gif" });
   await user.upload(input, gif);
   await waitFor(() =>
-    expect(uploadNodeOutput).toHaveBeenCalledWith("project", "dance", gif, 7),
+    expect(uploadNodeOutput).toHaveBeenCalledWith(
+      "project",
+      "dance",
+      gif,
+      7,
+      expect.objectContaining({ onProgress: expect.any(Function) }),
+    ),
   );
   expect(prepareCanvasForAgent).toHaveBeenCalledOnce();
   await waitFor(() =>

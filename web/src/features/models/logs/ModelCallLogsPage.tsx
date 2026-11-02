@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useMemo, useState } from "react";
 import "@features/models/models.css";
 import "./call-logs.css";
@@ -232,9 +233,11 @@ function LogsContent({
         {list.isError ? (
           <LogError error={list.error} retry={retry} />
         ) : list.isPending ? (
-          <div className="call-log-empty" role="status">
-            正在读取调用记录…
-          </div>
+          <LoadingState
+            label="正在读取调用记录…"
+            variant="region"
+            className="call-log-empty"
+          />
         ) : !list.data?.items.length ? (
           <div className="call-log-empty">
             <strong>暂无调用日志</strong>

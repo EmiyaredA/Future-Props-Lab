@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { PageErrorBoundary } from "./PageErrorBoundary";
 import { ViewportBounds } from "@shared/ui/ViewportBounds";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -21,9 +22,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <StudioAuthGate>
           <Suspense
             fallback={
-              <div className="page-loading" role="status">
-                正在打开工作台…
-              </div>
+              <LoadingState
+                label="正在打开工作台…"
+                variant="page"
+                className="page-loading"
+              />
             }
           >
             <SignedInApp />

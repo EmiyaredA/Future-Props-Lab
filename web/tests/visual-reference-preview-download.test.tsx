@@ -104,6 +104,7 @@ test.each(["image", "video", "audio"] as const)(
     );
     expect(fetchApiDownload).toHaveBeenCalledExactlyOnceWith(
       `/v1/files/${kind}%2Fasset/download`,
+      expect.objectContaining({ onProgress: expect.any(Function) }),
     );
     expect(createObjectURL).toHaveBeenCalledWith(blob);
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:download");

@@ -1,3 +1,4 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { useCallback, useLayoutEffect, useRef } from "react";
 import { paintChromaCanvas } from "./chromaCanvas";
 import { paintSpinBlurCanvas } from "./spinBlurCanvas";
@@ -88,7 +89,7 @@ export function VideoEditorEffectImage({
   useLayoutEffect(paint, [paint, source]);
   return (
     <>
-      <img
+      <ResponsiveImage
         ref={image}
         src={source}
         alt={alt}

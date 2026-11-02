@@ -95,7 +95,7 @@ class Files:
         'Video Media Info. GET /v1/files/{asset_id}/media-info'
         return self._client._call('GET', '/v1/files/{asset_id}/media-info', parameters=[('asset_id', 'path', asset_id)], response_type=models.VideoMediaInfoOut)
 
-    def preview_thumbnail(self, *, asset_id: str, size: Literal[320, 640] | Unset = UNSET) -> Download:
+    def preview_thumbnail(self, *, asset_id: str, size: Literal[128, 320, 640, 1280] | Unset = UNSET) -> Download:
         'Preview Thumbnail. GET /v1/files/{asset_id}/thumbnail'
         return self._client._call('GET', '/v1/files/{asset_id}/thumbnail', parameters=[('asset_id', 'path', asset_id), ('size', 'query', size)], response_type=Any)
 
@@ -187,6 +187,6 @@ class AsyncFiles:
         'Video Media Info. GET /v1/files/{asset_id}/media-info'
         return await self._client._call('GET', '/v1/files/{asset_id}/media-info', parameters=[('asset_id', 'path', asset_id)], response_type=models.VideoMediaInfoOut)
 
-    async def preview_thumbnail(self, *, asset_id: str, size: Literal[320, 640] | Unset = UNSET) -> AsyncDownload:
+    async def preview_thumbnail(self, *, asset_id: str, size: Literal[128, 320, 640, 1280] | Unset = UNSET) -> AsyncDownload:
         'Preview Thumbnail. GET /v1/files/{asset_id}/thumbnail'
         return await self._client._call('GET', '/v1/files/{asset_id}/thumbnail', parameters=[('asset_id', 'path', asset_id), ('size', 'query', size)], response_type=Any)

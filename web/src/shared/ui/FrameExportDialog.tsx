@@ -1,3 +1,4 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import {
   useEffect,
   useId,
@@ -225,7 +226,7 @@ export function FrameExportDialog({
                 </span>
               ) : previewUrl && snapshot ? (
                 <>
-                  <img src={previewUrl} alt="当前导出视频帧预览" />
+                  <ResponsiveImage src={previewUrl} alt="当前导出视频帧预览" />
                   <span>
                     {snapshot.width} × {snapshot.height} ·{" "}
                     {formatFramePlaybackTime(snapshot.capturedAt)}

@@ -1,3 +1,4 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { useEffect, useState, type MutableRefObject } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { visualWorkshopQueryKeys } from "../queryKeys";
@@ -62,6 +63,9 @@ export function useCanvasUpload({
   setInspectedNodeId: (id: string | undefined) => void;
   setMediaEditorTab: (tab: "content" | "generate") => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const client = useQueryClient();
   const [uploadNotice, setUploadNotice] = useState<CanvasUploadNotice | null>(
     null,
@@ -85,12 +89,15 @@ export function useCanvasUpload({
             kind,
             batchInsertionAnchor(anchor, index++, count),
           );
-          const updated = await uploadMaterialNode(
-            projectId,
-            file,
-            revision,
-            position,
-            ...(destination ? [destination] : []),
+          const updated = await runTransfer((onProgress) =>
+            uploadMaterialNode(
+              projectId,
+              file,
+              revision,
+              position,
+              destination,
+              { onProgress },
+            ),
           );
           applyServerCanvas(updated);
           client.setQueryData(
@@ -103,7 +110,13 @@ export function useCanvasUpload({
           setInspectedNodeId(node.id);
           setMediaEditorTab("content");
         } else {
-          created.push(await uploadManagedFile(file, projectId));
+          created.push(
+            await runTransfer((onProgress) =>
+              uploadManagedFile(file, projectId, undefined, undefined, {
+                onProgress,
+              }),
+            ),
+          );
         }
       }
       return created;
@@ -131,5 +144,10 @@ export function useCanvasUpload({
     const timer = window.setTimeout(() => setUploadNotice(null), 3200);
     return () => window.clearTimeout(timer);
   }, [uploadNotice]);
-  return { upload, uploadNotice, setUploadNotice };
+  return {
+    transferProgress: activeTransferProgress,
+    upload,
+    uploadNotice,
+    setUploadNotice,
+  };
 }

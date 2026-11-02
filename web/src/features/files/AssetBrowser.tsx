@@ -1,3 +1,5 @@
+import { LoadingState } from "@shared/ui/LoadingState";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { FileEmptyState } from "./FileEmptyState";
 import { AssetBrowserEditorDialog } from "./AssetBrowserEditorDialog";
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
@@ -89,6 +91,7 @@ export function AssetBrowser({
   onAssetDragStart?: (event: DragEvent<HTMLElement>, file: ManagedFile) => void;
 }) {
   const {
+    transferProgress,
     client,
     fileInput,
     zipInput,
@@ -244,6 +247,8 @@ export function AssetBrowser({
 
   return (
     <section className={`file-browser${compact ? " is-compact" : ""}`}>
+      <TransferFeedback progress={transferProgress} />
+
       <div className="file-browser-controls">
         {compact ? (
           <>
@@ -677,7 +682,11 @@ export function AssetBrowser({
           onUpload={() => undefined}
         />
       ) : foldersLoading || filesLoading || sourceProjectsLoading ? (
-        <div className="file-empty">正在读取文件…</div>
+        <LoadingState
+          label="正在读取文件…"
+          variant="region"
+          className="file-empty"
+        />
       ) : foldersFailed || filesFailed ? (
         <div className="file-empty">文件暂时无法读取，请稍后重试。</div>
       ) : showContent ? (
@@ -914,9 +923,11 @@ export function AssetBrowser({
         />
       )}
       {act.isPending || libraryCommit.isPending ? (
-        <div className="file-busy" role="status">
-          正在处理…
-        </div>
+        <LoadingState
+          label="正在处理…"
+          variant="region"
+          className="file-busy"
+        />
       ) : null}
       {previewFile
         ? createPortal(

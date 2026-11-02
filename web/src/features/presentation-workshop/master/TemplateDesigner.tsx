@@ -1,3 +1,6 @@
+import { LoadingState } from "@shared/ui/LoadingState";
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import "./canvas/canvas.css";
 import { useEffect, useRef, useState } from "react";
 import { ApiError } from "@platform/api/client";
@@ -91,6 +94,9 @@ export function TemplateDesigner({
   readOnly: boolean;
   onSaveDefinition?: (d: Definition) => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const [saved, setSaved] = useState(initial),
     [title, setTitle] = useState(initial?.title ?? "技术汇报模板");
   const history = useTemplateHistory(
@@ -380,6 +386,8 @@ export function TemplateDesigner({
         }
       }}
     >
+      <TransferFeedback progress={activeTransferProgress} />
+
       <header className="master-header">
         <button
           className="icon-btn"
@@ -434,11 +442,13 @@ export function TemplateDesigner({
           >
             <Save size={16} />
             <span>
-              {busy
-                ? "正在保存…"
-                : onSaveDefinition
-                  ? "应用全稿样式"
-                  : "保存模板"}
+              {busy ? (
+                <LoadingState variant="inline" label="正在保存…" />
+              ) : onSaveDefinition ? (
+                "应用全稿样式"
+              ) : (
+                "保存模板"
+              )}
             </span>
           </button>
         )}
@@ -507,7 +517,7 @@ export function TemplateDesigner({
             const file = e.target.files?.[0];
             if (!file) return;
             setBusy(true);
-            void uploadImage(file)
+            void runTransfer((onProgress) => uploadImage(file, { onProgress }))
               .then((a) => add("image", a.id))
               .catch((err) => setError(String(err)))
               .finally(() => {

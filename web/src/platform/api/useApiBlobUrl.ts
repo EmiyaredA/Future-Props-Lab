@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { TransferProgress } from "./transfer";
 import { fetchApiBlob } from "@platform/api/client";
 
 export type ApiBlobUrlState = {
@@ -6,6 +7,7 @@ export type ApiBlobUrlState = {
   loading: boolean;
   error: Error | null;
   mimeType?: string;
+  progress?: TransferProgress;
 };
 
 const EMPTY_STATE: ApiBlobUrlState = {
@@ -19,10 +21,14 @@ export function useApiBlobUrl(
   path: string | null | undefined,
 ): ApiBlobUrlState {
   const requestId = useRef(0);
-  const [state, setState] = useState<ApiBlobUrlState>(EMPTY_STATE);
+  const [record, setRecord] = useState<{
+    path: string | null | undefined;
+    value: ApiBlobUrlState;
+  }>({ path: null, value: EMPTY_STATE });
 
   useEffect(() => {
     const currentRequest = ++requestId.current;
+    const setState = (value: ApiBlobUrlState) => setRecord({ path, value });
     if (!path) {
       setState(EMPTY_STATE);
       return;
@@ -31,7 +37,16 @@ export function useApiBlobUrl(
     const controller = new AbortController();
     let objectUrl = "";
     setState({ url: "", loading: true, error: null, mimeType: "" });
-    void fetchApiBlob(path, { signal: controller.signal })
+    void fetchApiBlob(path, {
+      signal: controller.signal,
+      onProgress: (progress) => {
+        if (!controller.signal.aborted && requestId.current === currentRequest)
+          setRecord((current) => ({
+            path,
+            value: { ...current.value, progress },
+          }));
+      },
+    })
       .then((blob) => {
         if (controller.signal.aborted || requestId.current !== currentRequest)
           return;
@@ -60,5 +75,7 @@ export function useApiBlobUrl(
     };
   }, [path]);
 
-  return state;
+  return record.path === path
+    ? record.value
+    : { ...EMPTY_STATE, loading: Boolean(path) };
 }

@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -296,7 +297,11 @@ export function ModelTestToolSelector({
                       .finally(() => setSaving(false));
                   }}
                 >
-                  {saving ? "保存中…" : "保存选择"}
+                  {saving ? (
+                    <LoadingState variant="inline" label="保存中…" />
+                  ) : (
+                    "保存选择"
+                  )}
                 </button>
               </div>
             </footer>

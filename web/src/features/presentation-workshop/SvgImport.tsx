@@ -1,3 +1,4 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { useEffect, useRef, useState } from "react";
 import { previewSvg } from "./api";
 
@@ -121,7 +122,7 @@ export function SvgImport({
         {result && (
           <>
             <div className="presentation-svg-preview">
-              <img src={url} alt="SVG 导入预览" />
+              <ResponsiveImage src={url} alt="SVG 导入预览" />
             </div>
             <p>
               {result.width} × {result.height} ·{" "}

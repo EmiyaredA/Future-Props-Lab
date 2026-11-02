@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { lazy, Suspense, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ChevronLeft, ChevronRight, History, X } from "lucide-react";
@@ -286,7 +287,9 @@ export function NoteHistory({
           </p>
         )}
         {current && diff && (
-          <Suspense fallback={<p>文档加载中…</p>}>
+          <Suspense
+            fallback={<LoadingState label="文档加载中…" variant="region" />}
+          >
             <RichEditor
               libraryId={note.knowledge_base_id}
               key={current.id}
@@ -388,7 +391,7 @@ export function NoteHistory({
             </button>
           </p>
         )}
-        {history.isPending && <p role="status">加载中…</p>}
+        {history.isPending && <LoadingState label="加载中…" variant="region" />}
         {[
           ...new Set(records.map((row) => historyTime(row.created_at, true))),
         ].map((date) => (

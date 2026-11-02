@@ -1,3 +1,5 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Film, LocateFixed, Upload } from "lucide-react";
@@ -32,6 +34,9 @@ export function VideoWorkspace({
   onLocate: (fragmentId: string, blockId: string) => void;
   onNotice: (message: string) => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const client = useQueryClient();
   const input = useRef<HTMLInputElement>(null);
   const [selectedId, setSelectedId] = useState<string>();
@@ -65,11 +70,19 @@ export function VideoWorkspace({
       files.length === 1
         ? {
             items: [
-              await uploadGalgameProjectAsset(projectId, files[0], "video"),
+              await runTransfer((onProgress) =>
+                uploadGalgameProjectAsset(projectId, files[0], "video", {
+                  onProgress,
+                }),
+              ),
             ],
             importItems: [],
           }
-        : batchUploadGalgameProjectAssets(projectId, files, "video"),
+        : runTransfer((onProgress) =>
+            batchUploadGalgameProjectAssets(projectId, files, "video", {
+              onProgress,
+            }),
+          ),
     onSuccess: (result) => {
       const known = new Set(
         (document.assets ?? []).map((asset) => asset.fileId),
@@ -112,6 +125,8 @@ export function VideoWorkspace({
 
   return (
     <div className="galgame-video-workspace">
+      <TransferFeedback progress={activeTransferProgress} />
+
       <header>
         <div>
           <small>VIDEO</small>

@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import {
   lazy,
   Suspense,
@@ -81,7 +82,11 @@ export function AmadeusPageProvider({
             className="website-assistant"
             aria-label="Amadeus 助手"
           >
-            <Suspense fallback={<p role="status">正在打开 Amadeus…</p>}>
+            <Suspense
+              fallback={
+                <LoadingState label="正在打开 Amadeus…" variant="region" />
+              }
+            >
               <Assistant session={session} />
             </Suspense>
           </aside>

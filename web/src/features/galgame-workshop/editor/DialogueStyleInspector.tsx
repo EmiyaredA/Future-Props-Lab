@@ -1,3 +1,4 @@
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import type { GalgameStoryProject } from "@features/galgame-workshop/api";
 import { useDialogueStyleController } from "@features/galgame-workshop/editor/presentation/useDialogueStyleController";
 import { DialogueStyleInspectorView } from "@features/galgame-workshop/editor/presentation/DialogueStyleInspectorView";
@@ -8,5 +9,10 @@ export function DialogueStyleInspector(props: {
   onDocument: (document: GalgameStoryProject) => void;
 }) {
   const controller = useDialogueStyleController(props);
-  return <DialogueStyleInspectorView controller={controller} />;
+  return (
+    <>
+      <TransferFeedback progress={controller.transferProgress} />
+      <DialogueStyleInspectorView controller={controller} />
+    </>
+  );
 }

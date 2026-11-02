@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import * as Dialog from "@radix-ui/react-dialog";
 import type { ReactNode } from "react";
 import { AlertCircle } from "lucide-react";
@@ -52,7 +53,11 @@ export function SyncConfirmation({
               disabled={pending}
               onClick={() => void onConfirm()}
             >
-              {pending ? "正在处理…" : confirmLabel}
+              {pending ? (
+                <LoadingState variant="inline" label="正在处理…" />
+              ) : (
+                confirmLabel
+              )}
             </button>
           </div>
         </Dialog.Content>

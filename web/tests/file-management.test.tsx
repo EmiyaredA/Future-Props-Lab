@@ -188,6 +188,7 @@ test("uses styled filters and keeps successful upload feedback concise", async (
       undefined,
       undefined,
       undefined,
+      expect.objectContaining({ onProgress: expect.any(Function) }),
     ),
   );
   expect(await screen.findByText("已成功上传 1 个文件")).toBeInTheDocument();
@@ -212,6 +213,7 @@ test("uploads JSON documents from file management", async () => {
       undefined,
       undefined,
       undefined,
+      expect.objectContaining({ onProgress: expect.any(Function) }),
     ),
   );
 });
@@ -358,6 +360,7 @@ test("stages local library uploads so the display name can be edited", async () 
       undefined,
       undefined,
       "库内海报",
+      expect.objectContaining({ onProgress: expect.any(Function) }),
     ),
   );
   expect(importLibraryAssets).not.toHaveBeenCalled();
@@ -467,7 +470,10 @@ test("keeps file download visible and moves secondary actions into a dismissible
   expect(screen.getByRole("menu")).toBeInTheDocument();
   await user.click(screen.getByRole("menuitem", { name: "下载" }));
   await waitFor(() =>
-    expect(fetchApiBlob).toHaveBeenCalledWith("/v1/files/file-1/download"),
+    expect(fetchApiBlob).toHaveBeenCalledWith(
+      "/v1/files/file-1/download",
+      expect.objectContaining({ onProgress: expect.any(Function) }),
+    ),
   );
   expect(downloadAnchor?.download).toBe("故事说明.md");
   createElementSpy.mockRestore();
@@ -538,7 +544,7 @@ test("opens an inline preview when a file card is clicked", async () => {
   expect(preview.parentElement?.parentElement).toBe(document.body);
   await waitFor(() =>
     expect(fetchApiBlob).toHaveBeenCalledWith(
-      "/v1/files/image-1/content",
+      "/v1/files/image-1/thumbnail?size=1280",
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     ),
   );

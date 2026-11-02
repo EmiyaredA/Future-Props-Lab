@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Film } from "lucide-react";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
-import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
+import { ImagePreview as AssetImagePreview } from "@shared/ui/ImagePreview";
 import { StoryAudioPreview } from "@features/galgame-workshop/editor/StoryAudioPreview";
 import {
   KIND_META,
@@ -20,13 +20,12 @@ function VideoPreview({ fileId, label }: { fileId: string; label: string }) {
 }
 
 function ImagePreview({ item }: { item: AssetItem }) {
-  const kind = displayKind(item);
-  const Icon = KIND_META[kind].icon;
   return (
-    <StoryAssetImage
-      fileId={item.id}
+    <AssetImagePreview
+      interactive={false}
+      src={`/v1/files/${item.id}/content`}
+      size={320}
       alt={item.display_name}
-      fallback={<Icon aria-hidden />}
     />
   );
 }

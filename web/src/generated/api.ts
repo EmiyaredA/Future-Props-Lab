@@ -24207,7 +24207,9 @@ export interface operations {
     };
     get_avatar_v1_account_profile_avatar_get: {
         parameters: {
-            query?: never;
+            query?: {
+                size?: (128 | 320 | 640 | 1280) | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -24220,6 +24222,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
             };
         };
     };
@@ -27256,6 +27267,7 @@ export interface operations {
         parameters: {
             query?: {
                 draft?: boolean;
+                size?: (128 | 320 | 640 | 1280) | null;
             };
             header?: never;
             path: {
@@ -27458,7 +27470,9 @@ export interface operations {
     };
     release_cover_v1_creative_workshop_releases__release_id__cover_get: {
         parameters: {
-            query?: never;
+            query?: {
+                size?: (128 | 320 | 640 | 1280) | null;
+            };
             header?: never;
             path: {
                 release_id: string;
@@ -28830,7 +28844,7 @@ export interface operations {
     preview_thumbnail_v1_files__asset_id__thumbnail_get: {
         parameters: {
             query?: {
-                size?: 320 | 640;
+                size?: 128 | 320 | 640 | 1280;
             };
             header?: never;
             path: {
@@ -28846,6 +28860,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "image/svg+xml": string;
                     "image/webp": string;
                 };
             };
@@ -33237,7 +33252,9 @@ export interface operations {
     };
     attachment_content_v1_model_test_conversations__conversation_id__attachments__attachment_id__content_get: {
         parameters: {
-            query?: never;
+            query?: {
+                size?: (128 | 320 | 640 | 1280) | null;
+            };
             header?: never;
             path: {
                 conversation_id: string;
@@ -33628,7 +33645,9 @@ export interface operations {
     };
     generation_content_v1_model_test_generation_tasks__task_id__content_get: {
         parameters: {
-            query?: never;
+            query?: {
+                size?: (128 | 320 | 640 | 1280) | null;
+            };
             header?: never;
             path: {
                 task_id: string;
@@ -36794,6 +36813,7 @@ export interface operations {
         parameters: {
             query?: {
                 note_id?: string | null;
+                size?: (128 | 320 | 640 | 1280) | null;
             };
             header?: never;
             path: {
@@ -36826,7 +36846,9 @@ export interface operations {
     };
     cover_v1_thought_workshop_community_publications__publication_id__cover_get: {
         parameters: {
-            query?: never;
+            query?: {
+                size?: (128 | 320 | 640 | 1280) | null;
+            };
             header?: never;
             path: {
                 publication_id: string;

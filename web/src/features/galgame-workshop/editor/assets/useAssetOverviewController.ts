@@ -1,3 +1,4 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
 import {
   useCallback,
   useEffect,
@@ -64,6 +65,9 @@ export function useAssetOverviewController({
     replacementFileId: string,
   ) => Promise<boolean>;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const client = useQueryClient();
   const fileInput = useRef<HTMLInputElement>(null);
   const workbenchRef = useRef<HTMLElement>(null);
@@ -429,7 +433,14 @@ export function useAssetOverviewController({
   });
   const importUpload = useMutation({
     mutationFn: () =>
-      batchUploadGalgameProjectAssets(projectId, importFiles, importCategory),
+      runTransfer((onProgress) =>
+        batchUploadGalgameProjectAssets(
+          projectId,
+          importFiles,
+          importCategory,
+          { onProgress },
+        ),
+      ),
     onSuccess: async (result) => {
       await invalidateAssets();
       const first = result.items[0];
@@ -452,6 +463,7 @@ export function useAssetOverviewController({
   );
 
   return {
+    transferProgress: activeTransferProgress,
     projectId,
     document,
     onLocate,

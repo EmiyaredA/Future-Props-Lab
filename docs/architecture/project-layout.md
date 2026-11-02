@@ -7,6 +7,17 @@
 
 `backend/app/apps/agent_workbench/` 拥有当前账号的来源绑定、只读会话投影、搜索、扫描回执和 SSE；`sync/` 在原生 I/O 结束后以短事务保存归一条目与检查点，并独立调度各来源。`backend/app/capabilities/agents/sessions/` 拥有五种原生格式、只读文件／SQLite／本机 OpenCode HTTP 适配和受限附件读取，不依赖工作台 ORM；`inline_images.py` 按块省略超大内嵌图片编码，检查点保持原始字节位置。`web/src/features/agent-workbench/` 拥有独立应用注册、三栏阅读、来源管理与账号缓存键。本机网站允许显式填写目录，实际 socket 标记用于新绑定校验。来源授权不复用 Amadeus 的任务执行授权，首批不包含续聊。API、存储与来源矩阵见 [`../reference/agent-workbench.md`](../reference/agent-workbench.md)。
 
+## 浏览器加载与图片派生
+
+`web/src/platform/api/transfer.ts` 拥有按请求隔离的流式接收、FormData 上传进度与取消；
+`useTransferProgress` 将状态留在功能控制器，`useApiBlobUrl` 和 `useImagePreviewUrl` 分别管理鉴权文件生命周期和可见图片读取。
+`shared/ui/LoadingState`、`ResponsiveImage`、`ImagePreview` 负责无业务归属的反馈与显示，不持有业务任务状态。
+`shared/lib/imageSources` 负责预览 URL，`imageVariants.ts` 由脚本生成。
+
+`capabilities/asset_store/thumbnails.py` 拥有受限解码、方向校正、透明 WebP 与原子落盘；身份、社区和创作用例先授权后调用。
+`scripts/generate_image_variants.py` 生成 `web/public/brand/thumbnails/` 下的摘要命名静态派生图和清单，构建执行过期检查。
+接口、入口清单与验收约定见 [`../reference/loading-and-images.md`](../reference/loading-and-images.md)。
+
 ## 网站运行与自动化
 
 `runtime/website.py` 拥有可信本机 socket、SPA 静态托管和来源校验；`runtime/remote_web.py` 拥有公网 Host／Origin、浏览器 Session／受控 API Key 和缓存边界。`capabilities/web_access/` 拥有公网回环监听器、专用 SSH 重连和状态；附加 lifespan 关闭，不重复初始化数据库或 Runner。

@@ -1,3 +1,6 @@
+import { imagePreviewSource } from "@shared/lib/imageSources";
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { FileImage, FileText, Music, Video } from "lucide-react";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
@@ -30,7 +33,7 @@ function ThumbnailMedia({
             onError={() => setBroken(url)}
           />
         ) : (
-          <img
+          <ResponsiveImage
             src={url}
             alt={alt}
             onError={() => (kind ? setBroken(url) : setVideoFallback(url))}
@@ -39,7 +42,15 @@ function ThumbnailMedia({
       ) : (
         <span>
           <FileImage size={18} />
-          <small>{error ? "不可读取" : broken ? "无预览" : "加载中"}</small>
+          <small>
+            {error ? (
+              "不可读取"
+            ) : broken ? (
+              "无预览"
+            ) : (
+              <LoadingState variant="inline" label="加载中" />
+            )}
+          </small>
         </span>
       )}
     </span>
@@ -55,7 +66,11 @@ export function AcceptanceThumbnail({
   kind?: string;
   alt?: string;
 }) {
-  const blob = useApiBlobUrl(visualAssetDownloadPath(assetId));
+  const blob = useApiBlobUrl(
+    kind === "image"
+      ? imagePreviewSource(visualAssetDownloadPath(assetId), 320)
+      : visualAssetDownloadPath(assetId),
+  );
   return (
     <ThumbnailMedia
       url={blob.url}
@@ -129,7 +144,11 @@ export function ReferenceMaterialRow({
   }, []);
   const visual = kind !== "audio" && kind !== "text";
   const blob = useApiBlobUrl(
-    visible && assetId && visual ? visualAssetDownloadPath(assetId) : null,
+    visible && assetId && visual
+      ? kind === "image"
+        ? imagePreviewSource(visualAssetDownloadPath(assetId), 320)
+        : visualAssetDownloadPath(assetId)
+      : null,
   );
   const label = materialMediaLabel(kind, blob.mimeType);
   const Icon =

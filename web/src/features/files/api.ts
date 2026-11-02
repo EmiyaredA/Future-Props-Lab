@@ -1,3 +1,5 @@
+import { createUploadTransfer } from "@platform/api/transfer";
+import { type TransferOptions } from "@platform/api/transfer";
 import type { components } from "@generated/api";
 import {
   api,
@@ -96,9 +98,13 @@ export async function uploadManagedFile(
   projectId?: string,
   folderId?: string,
   displayName?: string,
+  transfer: TransferOptions = {},
 ) {
+  const uploadTransfer = createUploadTransfer(transfer.onProgress);
+
   return unwrap(
     await api.POST("/v1/files", {
+      fetch: uploadTransfer.fetch,
       body: {
         upload: file as unknown as string,
         project_id: projectId,
@@ -112,7 +118,7 @@ export async function uploadManagedFile(
         if (body.folder_id) form.set("folder_id", body.folder_id);
         if (body.display_name?.trim())
           form.set("display_name", body.display_name.trim());
-        return form;
+        return uploadTransfer.capture(form);
       },
     }),
   );
@@ -258,27 +264,32 @@ export type LibraryFolderImportResult = {
   skipped: Array<{ path: string; code: string; message: string }>;
 };
 
-export async function exportLibraryFolderArchive(folderId?: string) {
+export async function exportLibraryFolderArchive(
+  folderId?: string,
+  transfer: TransferOptions = {},
+) {
   const query = folderId ? `?folder_id=${encodeURIComponent(folderId)}` : "";
-  return fetchApiDownload(`/v1/file-library/folder-exports${query}`);
+  return fetchApiDownload(`/v1/file-library/folder-exports${query}`, transfer);
 }
 
 export async function importLibraryFolderArchive(
   archive: File,
   parentFolderId?: string,
+  transfer: TransferOptions = {},
 ) {
   const form = new FormData();
   form.set("archive", archive);
   if (parentFolderId) form.set("parent_folder_id", parentFolderId);
   return fetchApiJson<LibraryFolderImportResult>(
     "/v1/file-library/folder-archive-imports",
-    { method: "POST", body: form },
+    { ...transfer, method: "POST", body: form },
   );
 }
 
 export async function importLibraryFolderEntries(
   entries: Array<{ file: File; relativePath: string }>,
   parentFolderId?: string,
+  transfer: TransferOptions = {},
 ) {
   const form = new FormData();
   for (const entry of entries) {
@@ -288,6 +299,6 @@ export async function importLibraryFolderEntries(
   if (parentFolderId) form.set("parent_folder_id", parentFolderId);
   return fetchApiJson<LibraryFolderImportResult>(
     "/v1/file-library/folder-entry-imports",
-    { method: "POST", body: form },
+    { ...transfer, method: "POST", body: form },
   );
 }

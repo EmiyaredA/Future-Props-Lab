@@ -1,3 +1,5 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { useEffect, useMemo, useRef, useState } from "react";
 import "@features/models/models.css";
 import { modelQueryKeys } from "@features/models/queryKeys";
@@ -59,6 +61,9 @@ export function ModelTestPage({
   initialModelId?: string | null;
   onInitialModelHandled?: () => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const queryClient = useQueryClient();
   const catalogQuery = useQuery({
     queryKey: modelQueryKeys.catalog,
@@ -321,7 +326,9 @@ export function ModelTestPage({
     setError("");
     setUploadingAttachments(true);
     try {
-      await uploadModelTestAttachments(conversation.id, selected);
+      await runTransfer((onProgress) =>
+        uploadModelTestAttachments(conversation.id, selected, { onProgress }),
+      );
       await detailQuery.refetch();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
@@ -517,21 +524,26 @@ export function ModelTestPage({
   };
   if (generationModel) {
     return (
-      <ModelTestCapabilityPanel
-        models={availableModels}
-        modelId={generationModel.value}
-        onOpenAudioAnnotation={onOpenAudioAnnotation}
-        onSelectMode={selectMode}
-        onSelectModel={(modelId, mode) => {
-          lastGenerationModelByMode.current[mode] = modelId;
-          setGenerationModelId(modelId);
-        }}
-      />
+      <>
+        <TransferFeedback progress={activeTransferProgress} />
+        <ModelTestCapabilityPanel
+          models={availableModels}
+          modelId={generationModel.value}
+          onOpenAudioAnnotation={onOpenAudioAnnotation}
+          onSelectMode={selectMode}
+          onSelectModel={(modelId, mode) => {
+            lastGenerationModelByMode.current[mode] = modelId;
+            setGenerationModelId(modelId);
+          }}
+        />
+      </>
     );
   }
 
   return (
     <section className="model-test-page">
+      <TransferFeedback progress={activeTransferProgress} />
+
       <ModelTestWorkspaceHeader
         activeMode="chat"
         availableModes={availableModes}

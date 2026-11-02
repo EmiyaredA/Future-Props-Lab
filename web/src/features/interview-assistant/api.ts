@@ -1,3 +1,5 @@
+import { createUploadTransfer } from "@platform/api/transfer";
+import { type TransferOptions } from "@platform/api/transfer";
 import { api, unwrap, fetchApiDownload } from "@platform/api/client";
 import type { components } from "@generated/api";
 
@@ -25,17 +27,20 @@ export const interviewApi = {
         body: { title, request_id },
       })
       .then(unwrap),
-  upload: (room: Room, file: File) => {
+  upload: (room: Room, file: File, transfer: TransferOptions = {}) => {
+    const uploadTransfer = createUploadTransfer(transfer.onProgress);
+
     const body = new FormData();
     body.append("file", file);
     return api
       .POST("/v1/interview-assistant/rooms/{room_id}/materials", {
+        fetch: uploadTransfer.fetch,
         params: {
           path: { room_id: room.id },
           query: { expected_revision: room.revision },
         },
         body: { file: "" },
-        bodySerializer: () => body,
+        bodySerializer: () => uploadTransfer.capture(body),
       })
       .then(unwrap);
   },
@@ -83,9 +88,15 @@ export const interviewApi = {
         },
       )
       .then(unwrap),
-  export: (room_id: string, task_id: string, format: "json" | "markdown") =>
+  export: (
+    room_id: string,
+    task_id: string,
+    format: "json" | "markdown",
+    transfer: TransferOptions = {},
+  ) =>
     fetchApiDownload(
       `/v1/interview-assistant/rooms/${encodeURIComponent(room_id)}/preparations/${encodeURIComponent(task_id)}/export?format=${format}`,
+      transfer,
     ),
 };
 

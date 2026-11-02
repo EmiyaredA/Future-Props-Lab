@@ -1,3 +1,4 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import {
   useEffect,
   useId,
@@ -298,7 +299,7 @@ export function ImageCropDialog({
             onPointerUp={stopDrag}
             onPointerCancel={stopDrag}
           >
-            <img
+            <ResponsiveImage
               src={url}
               alt={alt}
               draggable={false}

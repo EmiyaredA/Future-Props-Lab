@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -182,7 +183,7 @@ export function DirectorDeskProjectsPage({
       {projects.isLoading ? (
         <div className="workshop-state">
           <RefreshCcw className="spinning" aria-hidden />
-          <strong>正在读取预演工程</strong>
+          <LoadingState label="正在读取预演工程" variant="inline" />
         </div>
       ) : projects.isError ? (
         <div className="workshop-state">

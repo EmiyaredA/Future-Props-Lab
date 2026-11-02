@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { Image, Sparkles, Video, X } from "lucide-react";
 import { GenerationSpinner } from "./GenerationActivity";
 import { WorkflowVideoControls } from "@features/models";
@@ -366,11 +367,13 @@ export function StandardGenerationDrawer({
           ) : (
             <Sparkles aria-hidden />
           )}
-          {controller.generating
-            ? "生成中…"
-            : createMutation.isPending
-              ? "正在提交…"
-              : "创建生成任务"}
+          {controller.generating ? (
+            <LoadingState variant="inline" label="生成中…" />
+          ) : createMutation.isPending ? (
+            <LoadingState variant="inline" label="正在提交…" />
+          ) : (
+            "创建生成任务"
+          )}
         </button>
       </form>
     </aside>

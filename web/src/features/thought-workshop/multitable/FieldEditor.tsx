@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useState } from "react";
 import type { components } from "@generated/api";
 import type { Field, Table } from "./api";
@@ -93,11 +94,13 @@ export function FieldEditor({
           disabled={busy}
           onClick={() => void submit()}
         >
-          {busy
-            ? "处理中…"
-            : needsPreview && !result?.valid
-              ? "预览字段变更"
-              : "保存字段"}
+          {busy ? (
+            <LoadingState variant="inline" label="处理中…" />
+          ) : needsPreview && !result?.valid ? (
+            "预览字段变更"
+          ) : (
+            "保存字段"
+          )}
         </button>
       </div>
     </Modal>

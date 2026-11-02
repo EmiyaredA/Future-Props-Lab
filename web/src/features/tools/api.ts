@@ -1,3 +1,4 @@
+import { type TransferOptions } from "@platform/api/transfer";
 import type { components } from "@generated/api";
 import {
   api,
@@ -145,8 +146,10 @@ export async function getVideoDownloadJob(
 
 export async function downloadVideoDownloadFile(
   jobId: string,
+  transfer: TransferOptions = {},
 ): Promise<ApiDownload> {
   return fetchApiDownload(
     `/v1/tool-navigation/video-download/jobs/${encodeURIComponent(jobId)}/file`,
+    transfer,
   );
 }

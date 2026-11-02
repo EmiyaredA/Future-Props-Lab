@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useId, useState, type CSSProperties } from "react";
 import {
   ArrowUp,
@@ -637,11 +638,13 @@ export function CompactVideoGenerationDrawer({
             )}
             {controller.layout === "workbench" && (
               <span>
-                {generating
-                  ? "生成中"
-                  : createMutation.isPending
-                    ? "提交中"
-                    : "生成"}
+                {generating ? (
+                  <LoadingState variant="inline" label="生成中" />
+                ) : createMutation.isPending ? (
+                  "提交中"
+                ) : (
+                  "生成"
+                )}
               </span>
             )}
           </button>

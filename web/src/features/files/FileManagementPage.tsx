@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -70,7 +71,11 @@ export function FileManagementPage() {
             onClick={() => openFolder.mutate()}
           >
             <FolderOpen aria-hidden />
-            {openFolder.isPending ? "正在打开…" : "打开本地文件夹"}
+            {openFolder.isPending ? (
+              <LoadingState variant="inline" label="正在打开…" />
+            ) : (
+              "打开本地文件夹"
+            )}
           </button>
         </div>
       </header>

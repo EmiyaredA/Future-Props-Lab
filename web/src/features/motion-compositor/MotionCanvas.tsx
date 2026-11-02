@@ -1,3 +1,4 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { useEffect, useRef, useState } from "react";
 import {
   Application,
@@ -352,7 +353,7 @@ export function MotionCanvas({
         }}
       />
       {precise && preciseUrl && (
-        <img
+        <ResponsiveImage
           className="mc-precise-frame"
           src={preciseUrl}
           alt={`第 ${frame} 帧精确画面`}

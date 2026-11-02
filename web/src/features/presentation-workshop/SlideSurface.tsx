@@ -1,3 +1,5 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { resolveSlide } from "./master/model";
 import type { Deck } from "./types";
 import { PaintLayer } from "./objects/paint";
@@ -40,7 +42,7 @@ export function ElementImage({
 }) {
   const loadedAsset = useApiBlobUrl(
     element.asset_id && !assetUrl
-      ? `/v1/files/${encodeURIComponent(element.asset_id)}/content`
+      ? `/v1/files/${encodeURIComponent(element.asset_id)}/thumbnail?size=1280`
       : null,
   );
   const url = assetUrl ?? loadedAsset.url;
@@ -111,7 +113,7 @@ export function ElementImage({
         </svg>
       )}
       {url ? (
-        <img
+        <ResponsiveImage
           key={url}
           src={url}
           alt="幻灯片图片"
@@ -171,7 +173,9 @@ export const ElementContent = memo(function ElementContent({
   if (element.kind === "table") return <NativeTable element={element} />;
   if (element.kind === "chart")
     return (
-      <Suspense fallback={<span role="status">正在绘制图表…</span>}>
+      <Suspense
+        fallback={<LoadingState label="正在绘制图表…" variant="inline" />}
+      >
         <ChartSvg element={element} />
       </Suspense>
     );

@@ -1,3 +1,4 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { X } from "lucide-react";
 import type { ModelTestConversationSummary } from "@features/models/api";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
@@ -99,7 +100,7 @@ export function ModelTestDialogs({
               </button>
             </div>
             <div className="attachment-preview-stage">
-              <img src={attachment.url} alt={attachment.name} />
+              <ResponsiveImage src={attachment.url} alt={attachment.name} />
             </div>
           </div>
         </div>

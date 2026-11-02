@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useDocumentAccess } from "./DocumentAccess";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Pin, Star } from "lucide-react";
@@ -165,7 +166,9 @@ export function NoteEditorPane({
   }, [onChromeChange]);
   if (historyNote)
     return (
-      <Suspense fallback={<p>历史记录加载中…</p>}>
+      <Suspense
+        fallback={<LoadingState label="历史记录加载中…" variant="region" />}
+      >
         <NoteHistory
           note={historyNote}
           close={closeHistory}
@@ -238,9 +241,11 @@ export function NoteEditorPane({
           </p>
         )}
         {leaving && (
-          <p role="status" className="thought-navigation-status">
-            正在保存，完成后离开…
-          </p>
+          <LoadingState
+            label="正在保存，完成后离开…"
+            variant="region"
+            className="thought-navigation-status"
+          />
         )}
         {editing.state === "conflict" && (
           <div className="thought-conflict" role="alert">
@@ -293,12 +298,16 @@ export function NoteEditorPane({
         )}
         {recoveryPending ? (
           <p role="status">
-            {!editing.localReady
-              ? "正在检查本机草稿…"
-              : "请选择本机草稿的恢复方式…"}
+            {!editing.localReady ? (
+              <LoadingState variant="inline" label="正在检查本机草稿…" />
+            ) : (
+              "请选择本机草稿的恢复方式…"
+            )}
           </p>
         ) : (
-          <Suspense fallback={<p>编辑器加载中…</p>}>
+          <Suspense
+            fallback={<LoadingState label="编辑器加载中…" variant="region" />}
+          >
             <RichEditor
               documentChrome={documentChrome}
               libraryId={note.knowledge_base_id}

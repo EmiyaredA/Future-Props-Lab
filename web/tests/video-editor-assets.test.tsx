@@ -449,11 +449,15 @@ describe("video editor asset panel", () => {
       1,
       "project-1",
       files[0],
+      undefined,
+      expect.objectContaining({ onProgress: expect.any(Function) }),
     );
     expect(uploadVideoEditorAsset).toHaveBeenNthCalledWith(
       2,
       "project-1",
       files[1],
+      undefined,
+      expect.objectContaining({ onProgress: expect.any(Function) }),
     );
     expect(input.value).toBe("");
     await user.upload(input, files[0]!);
@@ -486,6 +490,8 @@ describe("video editor asset panel", () => {
       3,
       "project-1",
       files[2],
+      undefined,
+      expect.objectContaining({ onProgress: expect.any(Function) }),
     );
   });
 

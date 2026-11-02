@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { newId } from "../templates";
 import type { PageSize, Slide } from "../types";
@@ -341,7 +342,9 @@ export function useSceneTools({
     dialogs: !readOnly && (
       <>
         {dialog === "info" && (
-          <Suspense fallback={<p role="status">加载信息图模块…</p>}>
+          <Suspense
+            fallback={<LoadingState label="加载信息图模块…" variant="region" />}
+          >
             <InfographicDialog
               info={info}
               onClose={() => setDialog(null)}

@@ -1,3 +1,5 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { containDialogComposition } from "../dialogKeyboard";
 import { useState } from "react";
 import { X } from "lucide-react";
@@ -18,6 +20,9 @@ export function ReferenceDialog({
   onChange: (value: Slide["reference"]) => void;
   onClose: () => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const [picking, setPicking] = useState(!slide.reference),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
@@ -28,27 +33,38 @@ export function ReferenceDialog({
   };
   if (picking)
     return (
-      <PresentationImages
-        onChoose={choose}
-        onClose={onClose}
-        busy={busy}
-        error={error}
-        onUpload={async (file) => {
-          setBusy(true);
-          setError("");
-          try {
-            choose((await uploadImage(file)).id);
-          } catch (e) {
-            setError(e instanceof Error ? e.message : "上传失败");
-          } finally {
-            setBusy(false);
-          }
-        }}
-      />
+      <>
+        <TransferFeedback progress={activeTransferProgress} />
+        <PresentationImages
+          onChoose={choose}
+          onClose={onClose}
+          busy={busy}
+          error={error}
+          onUpload={async (file) => {
+            setBusy(true);
+            setError("");
+            try {
+              choose(
+                (
+                  await runTransfer((onProgress) =>
+                    uploadImage(file, { onProgress }),
+                  )
+                ).id,
+              );
+            } catch (e) {
+              setError(e instanceof Error ? e.message : "上传失败");
+            } finally {
+              setBusy(false);
+            }
+          }}
+        />
+      </>
     );
   const reference = slide.reference;
   return (
     <div className="presentation-modal-backdrop">
+      <TransferFeedback progress={activeTransferProgress} />
+
       <div
         onKeyDownCapture={containDialogComposition}
         ref={root}

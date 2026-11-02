@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import type { CSSProperties } from "react";
 import {
   Check,
@@ -406,9 +407,11 @@ export function ProjectAssistantPanelView({
             </label>
             <div className="project-assistant-picker-list">
               {attachmentsQuery.isLoading ? (
-                <span className="project-assistant-picker-empty">
-                  正在读取项目素材…
-                </span>
+                <LoadingState
+                  label="正在读取项目素材…"
+                  variant="inline"
+                  className="project-assistant-picker-empty"
+                />
               ) : attachmentsQuery.data?.items.length ? (
                 attachmentsQuery.data.items.map((file) => {
                   const attachment = toSelected(file);

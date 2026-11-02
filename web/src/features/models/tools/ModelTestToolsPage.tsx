@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { QueryFeedback } from "@shared/ui/QueryFeedback";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -94,7 +95,13 @@ function ToolDetail({
     },
   });
   if (query.isLoading)
-    return <div className="test-tool-loading">正在加载测试工具…</div>;
+    return (
+      <LoadingState
+        label="正在加载测试工具…"
+        variant="region"
+        className="test-tool-loading"
+      />
+    );
   if (!tool)
     return (
       <div className="test-tool-empty">
@@ -357,7 +364,11 @@ export function ModelTestToolsPage({
       <div className="test-tools-layout">
         <div className="test-tools-list">
           {query.isLoading ? (
-            <div className="test-tool-loading">正在加载测试工具…</div>
+            <LoadingState
+              label="正在加载测试工具…"
+              variant="region"
+              className="test-tool-loading"
+            />
           ) : tools.length ? (
             tools.map((tool) => (
               <article className="test-tool-list-card" key={tool.id}>

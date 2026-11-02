@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -356,7 +357,11 @@ export function LogDetail({
           </button>
         </div>
         {query.isLoading ? (
-          <p className="log-detail-state">加载中…</p>
+          <LoadingState
+            label="加载中…"
+            variant="region"
+            className="log-detail-state"
+          />
         ) : log ? (
           <div className="drawer-content">
             <dl className="log-meta-card">

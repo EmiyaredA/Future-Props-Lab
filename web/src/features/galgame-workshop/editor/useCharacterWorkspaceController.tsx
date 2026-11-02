@@ -522,6 +522,7 @@ export function useCharacterWorkspaceController({
     sequenceBatchUpload,
     bindVoiceSample,
     voiceUpload,
+    transferProgress,
   } = useCharacterAssetBindings({
     projectId,
     document,
@@ -625,6 +626,7 @@ export function useCharacterWorkspaceController({
   );
 
   return {
+    transferProgress,
     projectId,
     document,
     onDocument,

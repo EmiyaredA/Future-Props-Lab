@@ -1,3 +1,4 @@
+import { publicImageSources } from "@shared/lib/imageSources";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, vi } from "vitest";
@@ -37,7 +38,10 @@ test("home plays bundled Kurisu and pauses while the page is hidden", () => {
   vi.spyOn(document, "hidden", "get").mockImplementation(() => hidden);
   const { container, unmount } = render(<HomePage onNavigate={vi.fn()} />);
   const video = container.querySelector("video")!;
-  expect(video).toHaveAttribute("src", "/brand/home/kurisu-idle.webm");
+  expect(video).toHaveAttribute(
+    "src",
+    publicImageSources("/brand/home/kurisu-idle.webm").src,
+  );
   expect(video.loop && video.muted && video.playsInline).toBe(true);
   expect(HTMLMediaElement.prototype.play).toHaveBeenCalled();
   hidden = true;
@@ -58,7 +62,7 @@ test("home keeps its static poster when media fails", () => {
   expect(container.querySelector("video")).toBeNull();
   expect(container.querySelector(".home-hero-pet img")).toHaveAttribute(
     "src",
-    "/brand/home/kurisu-idle.png",
+    publicImageSources("/brand/home/kurisu-idle.png").src,
   );
 });
 
@@ -125,7 +129,10 @@ test("application center filters and records recent application access", async (
   ]) {
     expect(
       screen.getByRole("button", { name: `打开${name}` }).querySelector("img"),
-    ).toHaveAttribute("src", `/brand/${asset}-mark.png`);
+    ).toHaveAttribute(
+      "src",
+      publicImageSources(`/brand/${asset}-mark.png`).src,
+    );
   }
   expect(screen.getByRole("heading", { name: "应用" })).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "效率协作" }));

@@ -132,7 +132,7 @@ it("加载中关闭会取消请求，旧请求不会打开弹窗", async () => {
   card();
   const user = userEvent.setup();
   await user.click(screen.getByRole("button", { name: "预览 四页文稿" }));
-  expect(await screen.findByText("正在加载预览…")).toBeVisible();
+  await waitFor(() => expect(screen.getByText("正在加载预览…")).toBeVisible());
   await user.keyboard("{Escape}");
   await waitFor(() => expect(signal?.aborted).toBe(true));
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();

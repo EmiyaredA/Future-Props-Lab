@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
@@ -378,7 +379,7 @@ export function CanvasEditor({
                 if (f) void upload(f);
               }}
             />
-            {busy && <span role="status">正在上传图片…</span>}
+            {busy && <LoadingState label="正在上传图片…" variant="inline" />}
             {error && <span role="alert">{error}</span>}
           </div>
           <div className="canvas-workspace">

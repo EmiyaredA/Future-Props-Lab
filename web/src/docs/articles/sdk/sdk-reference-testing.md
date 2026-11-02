@@ -190,6 +190,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | --- | --- | --- | --- |
 | `conversation_id` | path | string | 是 |
 | `attachment_id` | path | string | 是 |
+| `size` | query | 128 / 320 / 640 / 1280 / null | 否 |
 
 **响应**：
 - `200` · `application/json` · `object`
@@ -285,6 +286,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | 参数 | 位置 | 类型 | 必填 |
 | --- | --- | --- | --- |
 | `task_id` | path | string | 是 |
+| `size` | query | 128 / 320 / 640 / 1280 / null | 否 |
 
 **响应**：
 - `200` · `application/json` · `object`

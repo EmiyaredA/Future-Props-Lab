@@ -1,3 +1,5 @@
+import { LoadingState } from "@shared/ui/LoadingState";
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { useDocumentAccess } from "./DocumentAccess";
 import {
   useEffect,
@@ -7,6 +9,7 @@ import {
 } from "react";
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { NodeSelection, Selection } from "@tiptap/pm/state";
+import { useImagePreviewUrl } from "@platform/api/useImagePreviewUrl";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import { ImageCropDialog, type CropRect } from "./ImageCropDialog";
 import { ImageToolbar } from "./ImageToolbar";
@@ -55,11 +58,42 @@ export function ManagedImageView({
   getPos,
 }: NodeViewProps) {
   const access = useDocumentAccess();
-  const { url, error } = useApiBlobUrl(
+  const {
+    ref: previewRef,
+    url,
+    error,
+    progress,
+  } = useImagePreviewUrl(
     access.assetUrl(String(node.attrs.assetId)),
+    (Number(node.attrs.width) || 480) *
+      Math.min(window.devicePixelRatio || 1, 2) >
+      640
+      ? 1280
+      : 640,
   );
   const [natural, setNatural] = useState({ width: 0, height: 0 });
   const [cropping, setCropping] = useState(false);
+  const [fullSize, setFullSize] = useState<{ width: number; height: number }>();
+  const originalImage = useApiBlobUrl(
+    cropping ? access.assetUrl(String(node.attrs.assetId)) : null,
+  );
+  useEffect(() => {
+    if (!originalImage.url) {
+      setFullSize(undefined);
+      return;
+    }
+    let active = true;
+    const image = new Image();
+    image.onload = () => {
+      if (active)
+        setFullSize({ width: image.naturalWidth, height: image.naturalHeight });
+    };
+    image.src = originalImage.url;
+    return () => {
+      active = false;
+      image.onload = null;
+    };
+  }, [originalImage.url]);
   const rootRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const resize = useRef<{
@@ -194,7 +228,10 @@ export function ManagedImageView({
         style={{ width: displayWidth, maxWidth: "100%" }}
       >
         <div
-          ref={frameRef}
+          ref={(element) => {
+            frameRef.current = element;
+            previewRef.current = element;
+          }}
           className="thought-image-frame"
           onClick={(event) => {
             if (
@@ -219,7 +256,7 @@ export function ManagedImageView({
                 className="thought-image-crop-viewport"
                 style={{ aspectRatio: String(cropAspect) }}
               >
-                <img
+                <ResponsiveImage
                   src={url}
                   alt={alt || "笔记图片"}
                   draggable={false}
@@ -233,7 +270,7 @@ export function ManagedImageView({
                 />
               </div>
             ) : (
-              <img
+              <ResponsiveImage
                 src={url}
                 alt={alt || "笔记图片"}
                 draggable={false}
@@ -241,7 +278,17 @@ export function ManagedImageView({
               />
             )
           ) : (
-            <span>{error ? "图片读取失败" : "图片加载中…"}</span>
+            <span>
+              {error ? (
+                "图片读取失败"
+              ) : (
+                <LoadingState
+                  variant="inline"
+                  label="图片加载中…"
+                  progress={progress}
+                />
+              )}
+            </span>
           )}
           {selected && editor.isEditable && url ? (
             <>
@@ -276,12 +323,23 @@ export function ManagedImageView({
           onReset={() => updateAttributes(clearCrop)}
         />
       ) : null}
-      {cropping && url ? (
+      {cropping && !originalImage.url ? (
+        <LoadingState label="正在加载原图…" progress={originalImage.progress} />
+      ) : null}
+      {cropping && originalImage.error ? (
+        <p role="alert">
+          原图加载失败
+          <button type="button" onClick={closeCrop}>
+            关闭
+          </button>
+        </p>
+      ) : null}
+      {cropping && originalImage.url ? (
         <ImageCropDialog
-          url={url}
+          url={originalImage.url}
           alt={alt || "笔记图片"}
           initial={crop}
-          naturalSize={natural}
+          naturalSize={fullSize ?? natural}
           onCancel={closeCrop}
           onConfirm={(next) => {
             updateAttributes(next ?? clearCrop);

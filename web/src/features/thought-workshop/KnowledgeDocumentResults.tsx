@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { FileText, Home, Pin, Star } from "lucide-react";
 import { relativeTime } from "@shared/lib/date";
 import type { NoteSummary } from "./api";
@@ -49,7 +50,7 @@ export function KnowledgeDocumentResults({
           </span>
         )}
       </header>
-      {loading && <p role="status">正在加载文档…</p>}
+      {loading && <LoadingState label="正在加载文档…" variant="region" />}
       {!loading && total === 0 && (
         <div className="knowledge-results-empty">
           <ViewIcon size={28} strokeWidth={1.4} aria-hidden />
@@ -121,7 +122,11 @@ export function KnowledgeDocumentResults({
           disabled={loadingMore}
           onClick={onLoadMore}
         >
-          {loadingMore ? "正在加载…" : "加载更多"}
+          {loadingMore ? (
+            <LoadingState variant="inline" label="正在加载…" />
+          ) : (
+            "加载更多"
+          )}
         </button>
       )}
     </section>

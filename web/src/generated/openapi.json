@@ -42519,9 +42519,43 @@
       },
       "get": {
         "operationId": "get_avatar_v1_account_profile_avatar_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    128,
+                    320,
+                    640,
+                    1280
+                  ],
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Size"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "Get Avatar",
@@ -47028,6 +47062,28 @@
               "title": "Draft",
               "type": "boolean"
             }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    128,
+                    320,
+                    640,
+                    1280
+                  ],
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Size"
+            }
           }
         ],
         "responses": {
@@ -47315,6 +47371,28 @@
             "schema": {
               "title": "Release Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    128,
+                    320,
+                    640,
+                    1280
+                  ],
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Size"
             }
           }
         ],
@@ -49379,8 +49457,10 @@
             "schema": {
               "default": 320,
               "enum": [
+                128,
                 320,
-                640
+                640,
+                1280
               ],
               "title": "Size",
               "type": "integer"
@@ -49390,6 +49470,12 @@
         "responses": {
           "200": {
             "content": {
+              "image/svg+xml": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              },
               "image/webp": {
                 "schema": {
                   "format": "binary",
@@ -55800,6 +55886,28 @@
               "title": "Attachment Id",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    128,
+                    320,
+                    640,
+                    1280
+                  ],
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Size"
+            }
           }
         ],
         "responses": {
@@ -56356,6 +56464,28 @@
             "schema": {
               "title": "Task Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    128,
+                    320,
+                    640,
+                    1280
+                  ],
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Size"
             }
           }
         ],
@@ -61170,6 +61300,28 @@
               ],
               "title": "Note Id"
             }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    128,
+                    320,
+                    640,
+                    1280
+                  ],
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Size"
+            }
           }
         ],
         "responses": {
@@ -61209,6 +61361,28 @@
             "schema": {
               "title": "Publication Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    128,
+                    320,
+                    640,
+                    1280
+                  ],
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Size"
             }
           }
         ],

@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useRuntimeAccess } from "@features/accounts";
 import { PresentationWorkshopRoute } from "@app/layout/PresentationWorkshopRoute";
 import { CodeAgentsRoute } from "@app/layout/CodeAgentsRoute";
@@ -164,7 +165,15 @@ const LegacyOfficialPage = lazy(() =>
 function PageBoundary({ children }: { children: ReactNode }) {
   return (
     <PageErrorBoundary key={window.location.pathname}>
-      <Suspense fallback={<div className="page-loading">正在加载…</div>}>
+      <Suspense
+        fallback={
+          <LoadingState
+            label="正在加载…"
+            variant="page"
+            className="page-loading"
+          />
+        }
+      >
         {children}
       </Suspense>
     </PageErrorBoundary>

@@ -1,3 +1,5 @@
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useId, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -95,6 +97,8 @@ function SpeechWorkspace({
     draft.busy || !selected || options.isError || !canUse || !canWrite;
   return (
     <section className="page model-speech-test">
+      <TransferFeedback progress={draft.transferProgress} />
+
       <ModelTestWorkspaceHeader
         activeMode="synthesis"
         availableModes={{
@@ -134,9 +138,11 @@ function SpeechWorkspace({
             <p>使用参考录音的音色，为文字生成配音。</p>
           </header>
           {options.isPending && (
-            <p role="status" className="speech-help">
-              正在读取模型参数…
-            </p>
+            <LoadingState
+              label="正在读取模型参数…"
+              variant="region"
+              className="speech-help"
+            />
           )}
           {options.isError && (
             <div className="speech-feedback is-error" role="alert">
@@ -295,7 +301,11 @@ function SpeechWorkspace({
               ) : (
                 <AudioLines size={19} aria-hidden />
               )}
-              {draft.busy ? "正在处理…" : "生成语音"}
+              {draft.busy ? (
+                <LoadingState variant="inline" label="正在处理…" />
+              ) : (
+                "生成语音"
+              )}
             </button>
             <span className="speech-privacy">
               <LockKeyhole size={15} aria-hidden />
@@ -341,9 +351,11 @@ function SpeechWorkspace({
             <p>生成完成后可试听、下载或保存到文件库。</p>
           </header>
           {tasks.isPending && (
-            <p className="speech-help" role="status">
-              正在读取生成记录…
-            </p>
+            <LoadingState
+              label="正在读取生成记录…"
+              variant="region"
+              className="speech-help"
+            />
           )}
           {tasks.isError && (
             <p className="speech-feedback is-error" role="alert">

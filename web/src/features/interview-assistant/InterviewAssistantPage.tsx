@@ -1,3 +1,5 @@
+import { LoadingState } from "@shared/ui/LoadingState";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { useEffect, useRef, useState } from "react";
 import {
   Check,
@@ -89,6 +91,8 @@ export function InterviewAssistantPage({
       className="interview-assistant ia-page"
       aria-label="面试助手"
     >
+      <TransferFeedback progress={prep.transferProgress} />
+
       <header className="ia-app-header">
         <div>
           <strong>面试助手</strong>
@@ -182,7 +186,7 @@ export function InterviewAssistantPage({
       {loading ? (
         <div className="evaluating" role="status">
           <LoaderCircle className="spin" />
-          <p>正在读取已保存场次…</p>
+          <LoadingState label="正在读取已保存场次…" variant="region" />
         </div>
       ) : practice ? (
         <Practice

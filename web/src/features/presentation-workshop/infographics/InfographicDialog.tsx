@@ -1,3 +1,5 @@
+import { LoadingState } from "@shared/ui/LoadingState";
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { containDialogComposition } from "../dialogKeyboard";
 import { slideTheme } from "../slideTheme";
 import { useRef, useState } from "react";
@@ -168,7 +170,7 @@ export default function InfographicDialog({
                         (v) => v.id === d.elementId,
                       )!;
                       return (
-                        <img
+                        <ResponsiveImage
                           key={d.elementId}
                           src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(d.svg)}`}
                           alt="保留为矢量的装饰"
@@ -201,7 +203,11 @@ export default function InfographicDialog({
             onClick={() => void preview()}
             disabled={busy}
           >
-            {busy ? "正在处理…" : "预览转换结果"}
+            {busy ? (
+              <LoadingState variant="inline" label="正在处理…" />
+            ) : (
+              "预览转换结果"
+            )}
           </button>
           <button
             className="btn primary"

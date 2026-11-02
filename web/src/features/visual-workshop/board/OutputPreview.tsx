@@ -1,3 +1,4 @@
+import { ImagePreview } from "@shared/ui/ImagePreview";
 import "./output-preview.css";
 import { FileText, Image, Music, Video } from "lucide-react";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
@@ -15,7 +16,7 @@ export function OutputPreview({
   compact?: boolean;
 }) {
   const blob = useApiBlobUrl(
-    assetId && (!compact || kind === "image")
+    assetId && kind !== "image" && !compact
       ? visualAssetDownloadPath(assetId)
       : undefined,
   );
@@ -28,8 +29,15 @@ export function OutputPreview({
     ) : (
       <pre className="board-text-preview">{text}</pre>
     );
-  if (blob.url && kind === "image")
-    return <img src={blob.url} alt="输出预览" loading="lazy" />;
+  if (assetId && kind === "image")
+    return (
+      <ImagePreview
+        interactive={!compact}
+        src={visualAssetDownloadPath(assetId)}
+        size={compact ? 320 : 1280}
+        alt="输出预览"
+      />
+    );
   if (blob.url && kind === "video")
     return <video src={blob.url} controls={!compact} preload="metadata" />;
   if (blob.url && kind === "audio" && !compact)

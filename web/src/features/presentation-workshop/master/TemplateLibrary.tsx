@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import {
   studioDefinition,
   studioPreview,
@@ -123,7 +124,7 @@ export function TemplateLibrary({
             <span>{templates.data?.total ?? 0} 个模板</span>
           </div>
           {templates.isPending ? (
-            <p role="status">正在加载模板…</p>
+            <LoadingState label="正在加载模板…" variant="region" />
           ) : templates.isError ? (
             <button className="btn" onClick={() => void templates.refetch()}>
               加载失败，重试
@@ -234,7 +235,7 @@ export function TemplateLibrary({
             <span>{examples.data?.total ?? 0} 份示例</span>
           </div>
           {examples.isPending ? (
-            <p role="status">正在加载示例…</p>
+            <LoadingState label="正在加载示例…" variant="region" />
           ) : examples.isError ? (
             <button className="btn" onClick={() => void examples.refetch()}>
               加载失败，重试

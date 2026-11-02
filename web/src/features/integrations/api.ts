@@ -1,3 +1,5 @@
+import { createUploadTransfer } from "@platform/api/transfer";
+import { type TransferOptions } from "@platform/api/transfer";
 import type { components } from "@generated/api";
 import { api, fetchApiBlob, unwrap } from "@platform/api/client";
 
@@ -93,24 +95,35 @@ export async function createSkill(
   file: File,
   enabled: boolean,
   tags: string[] = [],
+  transfer: TransferOptions = {},
 ) {
+  const uploadTransfer = createUploadTransfer(transfer.onProgress);
+
   return unwrap(
     await api.POST("/v1/integrations/skills", {
+      fetch: uploadTransfer.fetch,
       body: { file: file as unknown as string, enabled, tags },
       bodySerializer() {
         const data = new FormData();
         data.set("file", file);
         data.set("enabled", String(enabled));
         tags.forEach((tag) => data.append("tags", tag));
-        return data;
+        return uploadTransfer.capture(data);
       },
     }),
   );
 }
 
-export async function addSkillVersion(current: Skill, file: File) {
+export async function addSkillVersion(
+  current: Skill,
+  file: File,
+  transfer: TransferOptions = {},
+) {
+  const uploadTransfer = createUploadTransfer(transfer.onProgress);
+
   return unwrap(
     await api.POST("/v1/integrations/skills/{skill_id}/versions", {
+      fetch: uploadTransfer.fetch,
       params: { path: { skill_id: current.id } },
       body: {
         file: file as unknown as string,
@@ -120,7 +133,7 @@ export async function addSkillVersion(current: Skill, file: File) {
         const data = new FormData();
         data.set("file", file);
         data.set("expected_revision", String(current.revision));
-        return data;
+        return uploadTransfer.capture(data);
       },
     }),
   );

@@ -1,3 +1,5 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { taskActivity } from "../generation/generationActivityModel";
 import { executionDetails } from "@shared/ui/taskExecutionPresentation";
 import {
@@ -209,7 +211,9 @@ function AssetPreview({
   onMetrics: (metrics: MediaMetrics) => void;
 }) {
   const { url, error } = useApiBlobUrl(
-    assetId ? `/v1/files/${encodeURIComponent(assetId)}/content` : null,
+    assetId
+      ? `/v1/files/${encodeURIComponent(assetId)}/${kind === "image" ? "thumbnail?size=1280" : "content"}`
+      : null,
   );
   if (!assetId)
     return (
@@ -229,7 +233,7 @@ function AssetPreview({
     );
   if (kind === "image")
     return (
-      <img
+      <ResponsiveImage
         src={url}
         alt={name}
         onLoad={(event) =>
@@ -284,12 +288,12 @@ function ReferencePreview({
   name: string;
 }) {
   const { url, error } = useApiBlobUrl(
-    `/v1/files/${encodeURIComponent(assetId)}/content`,
+    `/v1/files/${encodeURIComponent(assetId)}/${kind === "image" ? "thumbnail?size=1280" : "content"}`,
   );
   const Icon = kind === "image" ? Image : kind === "video" ? Video : Music;
   return (
     <span className="canvas-media-reference" title={name}>
-      {url && kind === "image" ? <img src={url} alt="" /> : null}
+      {url && kind === "image" ? <ResponsiveImage src={url} alt="" /> : null}
       {url && kind === "video" ? (
         <video src={url} muted preload="metadata" />
       ) : null}
@@ -302,14 +306,16 @@ function ReferencePreview({
 function HistoryPreview({ task }: { task: GenerationTask }) {
   const { url } = useApiBlobUrl(
     task.result_asset_id
-      ? `/v1/files/${encodeURIComponent(task.result_asset_id)}/content`
+      ? `/v1/files/${encodeURIComponent(task.result_asset_id)}/${task.kind === "image" ? "thumbnail?size=320" : "content"}`
       : null,
   );
   const Icon =
     task.kind === "image" ? Image : task.kind === "video" ? Video : Music;
   return (
     <span className={`canvas-media-history-preview ${task.status}`}>
-      {url && task.kind === "image" ? <img src={url} alt="" /> : null}
+      {url && task.kind === "image" ? (
+        <ResponsiveImage src={url} alt="" />
+      ) : null}
       {url && task.kind === "video" ? (
         <video src={url} muted preload="metadata" />
       ) : null}
@@ -701,7 +707,7 @@ export function CanvasMediaPreviewDialog({
                     <dd>{formatBytes(selectedFile?.byte_size)}</dd>
                     {metrics.width && metrics.height ? (
                       <>
-                        <dt>尺寸</dt>
+                        <dt>{node.kind === "image" ? "预览尺寸" : "尺寸"}</dt>
                         <dd>
                           {metrics.width} × {metrics.height}
                         </dd>
@@ -789,7 +795,11 @@ export function CanvasMediaPreviewDialog({
                     disabled={history.isFetchingNextPage}
                     onClick={() => void history.fetchNextPage()}
                   >
-                    {history.isFetchingNextPage ? "加载中…" : "加载更多"}
+                    {history.isFetchingNextPage ? (
+                      <LoadingState variant="inline" label="加载中…" />
+                    ) : (
+                      "加载更多"
+                    )}
                   </button>
                 ) : null}
               </div>

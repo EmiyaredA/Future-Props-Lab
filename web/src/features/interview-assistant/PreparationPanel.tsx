@@ -1,3 +1,6 @@
+import { LoadingState } from "@shared/ui/LoadingState";
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -43,6 +46,9 @@ export function PreparationPanel({
   onStart: (session: InterviewSession) => void;
   onDelete: () => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const [version, setVersion] = useState(room.active_task_id || "");
   const [showInput, setShowInput] = useState(false);
   const [downloadError, setDownloadError] = useState("");
@@ -65,7 +71,9 @@ export function PreparationPanel({
     setExporting(true);
     setDownloadError("");
     try {
-      const file = await interviewApi.export(room.id, task.id, format);
+      const file = await runTransfer((onProgress) =>
+        interviewApi.export(room.id, task.id, format, { onProgress }),
+      );
       const url = URL.createObjectURL(file.blob);
       const link = document.createElement("a");
       link.href = url;
@@ -81,6 +89,8 @@ export function PreparationPanel({
   }
   return (
     <>
+      <TransferFeedback progress={activeTransferProgress} />
+
       <div className="page-heading">
         <div>
           <p className="eyebrow">PREPARED WITH YOUR CONTEXT.</p>
@@ -182,9 +192,11 @@ export function PreparationPanel({
             </Button>
           )}
           {latest?.id !== task.id && running && (
-            <p className="field-hint">
-              新版本正在准备，当前查看的旧版本保持可用。
-            </p>
+            <LoadingState
+              label="新版本正在准备，当前查看的旧版本保持可用。"
+              variant="region"
+              className="field-hint"
+            />
           )}
         </section>
       )}

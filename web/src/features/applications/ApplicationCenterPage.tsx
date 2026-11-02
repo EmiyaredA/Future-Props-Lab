@@ -1,3 +1,4 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { FormEvent, useMemo, useState } from "react";
 import { ArrowRight, Clock3, Search, Tag } from "lucide-react";
 import {
@@ -130,7 +131,11 @@ export function ApplicationCenterPage({
                 >
                   <span className="application-icon">
                     {app.brandImage ? (
-                      <img src={app.brandImage} alt="" draggable={false} />
+                      <ResponsiveImage
+                        src={app.brandImage}
+                        alt=""
+                        draggable={false}
+                      />
                     ) : (
                       <Icon aria-hidden />
                     )}
@@ -172,7 +177,11 @@ export function ApplicationCenterPage({
                 <button key={app.id} type="button" onClick={() => open(app)}>
                   <span>
                     {app.brandImage ? (
-                      <img src={app.brandImage} alt="" draggable={false} />
+                      <ResponsiveImage
+                        src={app.brandImage}
+                        alt=""
+                        draggable={false}
+                      />
                     ) : (
                       <Icon aria-hidden />
                     )}

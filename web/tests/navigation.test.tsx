@@ -1,3 +1,4 @@
+import { publicImageSources } from "@shared/lib/imageSources";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { vi } from "vitest";
 import { parsePage, parseRoute, pathFor } from "@app/routes";
@@ -245,7 +246,7 @@ test("keeps brand mark above the secondary toggle in the primary rail", () => {
   expect(top).not.toBeNull();
   expect(top?.querySelector(".brand-mark")).toHaveAttribute(
     "src",
-    "/brand/brand-mark.png",
+    publicImageSources("/brand/brand-mark.png").src,
   );
   expect(
     top?.querySelector(".studio-collapsed-rail__brand")?.nextElementSibling,
@@ -355,7 +356,7 @@ test("renders the visual workshop brand and return card", () => {
   );
   expect(container.querySelector(".workshop-brand img")).toHaveAttribute(
     "src",
-    "/brand/visual-workshop-mark.png",
+    publicImageSources("/brand/visual-workshop-mark.png").src,
   );
   expect(screen.getByText("浏览全部应用")).toBeInTheDocument();
   expect(
@@ -386,7 +387,7 @@ test("renders the Galgame workshop brand", () => {
   );
   expect(container.querySelector(".workshop-brand img")).toHaveAttribute(
     "src",
-    "/brand/galgame-workshop-mark.png",
+    publicImageSources("/brand/galgame-workshop-mark.png").src,
   );
 });
 
@@ -403,7 +404,7 @@ test("renders the video editor shell from its module configuration", () => {
   );
   expect(container.querySelector(".workshop-brand img")).toHaveAttribute(
     "src",
-    "/brand/video-editor-mark.png",
+    publicImageSources("/brand/video-editor-mark.png").src,
   );
   expect(
     screen.getByRole("navigation", { name: "视频剪辑工坊导航" }),

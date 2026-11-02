@@ -1,3 +1,6 @@
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useDocumentAccess } from "./DocumentAccess";
 import { Node, mergeAttributes } from "@tiptap/core";
 import {
@@ -18,6 +21,9 @@ function fileSize(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MiB`;
 }
 function AttachmentCard({ node, selected }: NodeViewProps) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const access = useDocumentAccess();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -27,6 +33,8 @@ function AttachmentCard({ node, selected }: NodeViewProps) {
       className={`thought-attachment${selected ? " is-selected" : ""}`}
       contentEditable={false}
     >
+      <TransferFeedback progress={activeTransferProgress} />
+
       <span
         data-drag-handle
         title="拖动附件"
@@ -51,7 +59,9 @@ function AttachmentCard({ node, selected }: NodeViewProps) {
           setError("");
           try {
             download(
-              await fetchApiBlob(access.assetUrl(String(assetId))),
+              await runTransfer((onProgress) =>
+                fetchApiBlob(access.assetUrl(String(assetId)), { onProgress }),
+              ),
               filename,
             );
           } catch (e) {
@@ -62,7 +72,7 @@ function AttachmentCard({ node, selected }: NodeViewProps) {
         }}
       >
         <Download size={16} />
-        {busy ? "下载中…" : "下载"}
+        {busy ? <LoadingState variant="inline" label="下载中…" /> : "下载"}
       </button>
     </NodeViewWrapper>
   );

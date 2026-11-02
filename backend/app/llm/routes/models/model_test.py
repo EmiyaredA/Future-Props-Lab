@@ -5,6 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 
+from app.capabilities.asset_store.thumbnails import ThumbnailSize
 from app.deps import OwnerDep, SessionDep, StudioAuth
 from app.llm.call_logs.credentials import snapshot_from_principal
 from app.llm.catalog.service import ResourceNotFoundError
@@ -139,19 +140,20 @@ async def attachment_content(
     owner_user_id: OwnerDep,
     conversation_id: str,
     attachment_id: str,
+    size: ThumbnailSize | None = None,
 ) -> FileResponse:
     try:
         row, path = await _attachments(session, owner_user_id).content(
-            conversation_id, attachment_id
+            conversation_id, attachment_id, size
         )
     except AttachmentError as exc:
         raise _translate(exc) from None
     return FileResponse(
         path,
-        media_type=row.mime_type,
+        media_type="image/webp" if size is not None else row.mime_type,
         filename=row.original_filename,
         content_disposition_type="inline",
-        headers={"Cache-Control": "private, max-age=3600", "X-Content-Type-Options": "nosniff"},
+        headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"},
     )
 
 

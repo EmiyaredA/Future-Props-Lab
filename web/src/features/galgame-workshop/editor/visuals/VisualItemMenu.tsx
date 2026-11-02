@@ -1,3 +1,6 @@
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -18,6 +21,9 @@ import { fetchApiDownload } from "@platform/api/client";
 type VisualWorkspaceViewModel = ReturnType<typeof useVisualWorkspaceController>;
 
 export function VisualItemMenu({ model }: { model: VisualWorkspaceViewModel }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const {
     itemMenu,
     menuScene,
@@ -74,8 +80,11 @@ export function VisualItemMenu({ model }: { model: VisualWorkspaceViewModel }) {
     const downloadMenuKey = menuKey;
     setDownloadingFileId(menuFileId);
     try {
-      const download = await fetchApiDownload(
-        `/v1/files/${encodeURIComponent(menuFileId)}/download`,
+      const download = await runTransfer((onProgress) =>
+        fetchApiDownload(
+          `/v1/files/${encodeURIComponent(menuFileId)}/download`,
+          { onProgress },
+        ),
       );
       const url = URL.createObjectURL(download.blob);
       const anchor = document.createElement("a");
@@ -102,6 +111,8 @@ export function VisualItemMenu({ model }: { model: VisualWorkspaceViewModel }) {
 
   return (
     <>
+      <TransferFeedback progress={activeTransferProgress} />
+
       {itemMenu && (menuScene || menuCg)
         ? createPortal(
             <div
@@ -139,7 +150,11 @@ export function VisualItemMenu({ model }: { model: VisualWorkspaceViewModel }) {
                 ) : (
                   <Download aria-hidden />
                 )}
-                {downloadingFileId ? "下载中…" : "下载图片"}
+                {downloadingFileId ? (
+                  <LoadingState variant="inline" label="下载中…" />
+                ) : (
+                  "下载图片"
+                )}
               </button>
               <button
                 type="button"

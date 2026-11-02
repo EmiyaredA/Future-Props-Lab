@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { TemplateDesigner } from "./TemplateDesigner";
 import { getTemplate } from "./api";
@@ -24,9 +25,11 @@ export function TemplateDesignerPage({
   });
   if (id !== "new" && query.isPending)
     return (
-      <div className="presentation-loading" role="status">
-        正在打开模板…
-      </div>
+      <LoadingState
+        label="正在打开模板…"
+        variant="region"
+        className="presentation-loading"
+      />
     );
   if (id !== "new" && query.isError)
     return (

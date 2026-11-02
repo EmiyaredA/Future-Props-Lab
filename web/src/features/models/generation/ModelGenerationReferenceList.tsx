@@ -1,3 +1,4 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { FileAudio2, FileImage, FileVideo2, X } from "lucide-react";
 import { formatBytes, type LocalReference } from "./modelGenerationOptions";
 
@@ -15,7 +16,7 @@ export function ModelGenerationReferenceList({
         <div className="generation-reference-item" key={item.id}>
           <div className={`generation-reference-preview ${item.kind}`}>
             {item.kind === "image" ? (
-              <img src={item.previewUrl} alt="" />
+              <ResponsiveImage src={item.previewUrl} alt="" />
             ) : null}
             {item.kind === "video" ? (
               <video src={item.previewUrl} muted preload="metadata" />

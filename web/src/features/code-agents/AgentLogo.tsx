@@ -1,3 +1,4 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import type { Agent } from "./api";
 import "./agent-logo.css";
 
@@ -10,7 +11,7 @@ export function AgentLogo({
 }) {
   if (id === "pi")
     return (
-      <img
+      <ResponsiveImage
         src="/providers/pi-logo.svg"
         className="code-agent-logo"
         width={size}

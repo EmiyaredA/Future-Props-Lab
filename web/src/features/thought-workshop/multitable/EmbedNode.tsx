@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { lazy, Suspense, useState } from "react";
 import { Node, mergeAttributes } from "@tiptap/core";
 import {
@@ -43,7 +44,9 @@ function EmbedView({ node, editor, updateAttributes }: NodeViewProps) {
   return (
     <NodeViewWrapper className="multitable-embed" contentEditable={false}>
       {node.attrs.noteId && node.attrs.tableId && node.attrs.viewId ? (
-        <Suspense fallback={<p>正在加载表格视图…</p>}>
+        <Suspense
+          fallback={<LoadingState label="正在加载表格视图…" variant="region" />}
+        >
           <TableEditor
             key={`${access.namespace}/${node.attrs.noteId}/${node.attrs.tableId}/${node.attrs.viewId}`}
             noteId={node.attrs.noteId}

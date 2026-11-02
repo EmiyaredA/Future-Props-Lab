@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { ChevronRight, Folder } from "lucide-react";
 import type { VisualCanvasNode, VisualMaterialCategory } from "../api";
 import { BoardMenu } from "./BoardMenu";
@@ -86,11 +87,13 @@ export function MaterialTree({
           <strong title={node.title}>{node.title}</strong>
           <small>
             {nodeTypeNames[node.kind]} ·{" "}
-            {runningNodeIds?.has(node.id)
-              ? "生成中"
-              : node.final_version
-                ? `最终 v${node.final_version}`
-                : "暂无输出"}
+            {runningNodeIds?.has(node.id) ? (
+              <LoadingState variant="inline" label="生成中" />
+            ) : node.final_version ? (
+              `最终 v${node.final_version}`
+            ) : (
+              "暂无输出"
+            )}
           </small>
         </span>
         <NodeApproval node={node} compact />

@@ -1,3 +1,5 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { textPresets, type TextPreset } from "./textModel";
 import { canEditAsset } from "./assetReadiness";
@@ -97,6 +99,9 @@ export function VideoEditorAssetPanel({
   onImportSubtitles?: (file: File) => void;
   onOrganizationChange: (next: VideoEditorAssetOrganization) => Promise<void>;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const input = useRef<HTMLInputElement>(null);
   const subtitleInput = useRef<HTMLInputElement>(null);
   const uploadFolderId = useRef<string | undefined>(undefined);
@@ -194,7 +199,9 @@ export function VideoEditorAssetPanel({
           filename: file.name,
         });
         try {
-          const uploaded = await uploadVideoEditorAsset(projectId, file);
+          const uploaded = await runTransfer((onProgress) =>
+            uploadVideoEditorAsset(projectId, file, undefined, { onProgress }),
+          );
           succeeded += 1;
           uploadedIds.push(uploaded.id);
           refresh();
@@ -587,6 +594,8 @@ export function VideoEditorAssetPanel({
 
   return (
     <aside className="ve-assets-panel" data-popover-boundary>
+      <TransferFeedback progress={activeTransferProgress} />
+
       <header>
         <strong>素材</strong>
         <div>

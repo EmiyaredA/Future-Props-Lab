@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, Clock3, RefreshCw } from "lucide-react";
@@ -314,7 +315,9 @@ export function RunsPane({
           记录加载失败。<button onClick={() => void run.refetch()}>重试</button>
         </p>
       )}
-      {selected && run.isPending && <p role="status">正在加载验收记录…</p>}
+      {selected && run.isPending && (
+        <LoadingState label="正在加载验收记录…" variant="region" />
+      )}
       {run.data && (
         <RunReview
           key={run.data.id}

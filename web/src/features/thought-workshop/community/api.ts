@@ -1,3 +1,5 @@
+import { createUploadTransfer } from "@platform/api/transfer";
+import { type TransferOptions } from "@platform/api/transfer";
 import { api, unwrap } from "@platform/api/client";
 import type { components } from "@generated/api";
 import { read, type NoteInput } from "../api";
@@ -137,21 +139,25 @@ export const uploadCommunityFile = async (
   publication_id: string,
   note_id: string,
   file: File,
-) =>
-  unwrap(
+  transfer: TransferOptions = {},
+) => {
+  const uploadTransfer = createUploadTransfer(transfer.onProgress);
+  return unwrap(
     await api.POST(
       "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}/uploads",
       {
+        fetch: uploadTransfer.fetch,
         params: { path: { publication_id, note_id } },
         body: { upload: file as unknown as string },
         bodySerializer() {
           const form = new FormData();
           form.set("upload", file);
-          return form;
+          return uploadTransfer.capture(form);
         },
       },
     ),
   );
+};
 export const communitySnapshot = async (publication_id: string) =>
   unwrap(
     await api.GET(

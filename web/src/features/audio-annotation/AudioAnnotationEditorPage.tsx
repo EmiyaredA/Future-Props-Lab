@@ -1,3 +1,5 @@
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { openAmadeus } from "@platform/assistant";
 import { useEffect, useState } from "react";
 import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
@@ -126,7 +128,11 @@ export function AudioAnnotationEditorPage({
         className="page annotation-editor-page"
         data-mobile-panel={mobilePanel}
       >
-        <div className="page-loading">正在加载录音标注任务…</div>
+        <LoadingState
+          label="正在加载录音标注任务…"
+          variant="page"
+          className="page-loading"
+        />
       </section>
     );
   const {
@@ -196,6 +202,8 @@ export function AudioAnnotationEditorPage({
       className="page annotation-editor-page"
       data-mobile-panel={mobilePanel}
     >
+      <TransferFeedback progress={segmentTranscription.transferProgress} />
+
       <AmadeusAudioContext
         projectId={projectId}
         title={project.title}

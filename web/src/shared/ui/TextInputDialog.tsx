@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useId, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { createPortal } from "react-dom";
@@ -149,7 +150,11 @@ export function TextInputDialog({
             className="btn primary"
             disabled={pending || confirmDisabled || !value.trim()}
           >
-            {pending ? "保存中…" : confirmLabel}
+            {pending ? (
+              <LoadingState variant="inline" label="保存中…" />
+            ) : (
+              confirmLabel
+            )}
           </button>
         </div>
       </form>

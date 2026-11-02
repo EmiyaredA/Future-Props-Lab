@@ -1,3 +1,5 @@
+import { LoadingState } from "@shared/ui/LoadingState";
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { integrationKeys } from "./queryKeys";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -233,7 +235,7 @@ export function SkillVersionBrowser({
       <div className="skill-browser">
         <nav className="skill-file-tree" aria-label="Skill 文件">
           {filesQuery.isPending ? (
-            <p role="status">正在读取文件…</p>
+            <LoadingState label="正在读取文件…" variant="region" />
           ) : filesQuery.isError ? (
             <p role="alert">文件列表加载失败</p>
           ) : files.length === 0 ? (
@@ -263,18 +265,18 @@ export function SkillVersionBrowser({
             </span>
           </header>
           {selected?.kind === "text" && textQuery.isPending ? (
-            <p role="status">正在读取文件…</p>
+            <LoadingState label="正在读取文件…" variant="region" />
           ) : selected?.kind === "text" && textQuery.isError ? (
             <p role="alert">文件读取失败</p>
           ) : selected?.kind === "text" && textQuery.data ? (
             <pre>{textQuery.data.content}</pre>
           ) : selected?.kind === "image" && image.loading ? (
-            <p role="status">正在读取图片…</p>
+            <LoadingState label="正在读取图片…" variant="region" />
           ) : selected?.kind === "image" && image.error ? (
             <p role="alert">图片读取失败</p>
           ) : selected?.kind === "image" && image.url ? (
             <div className="skill-file-image">
-              <img src={image.url} alt={selected.path} />
+              <ResponsiveImage src={image.url} alt={selected.path} />
             </div>
           ) : selected ? (
             <p className="skill-file-note">
@@ -287,9 +289,11 @@ export function SkillVersionBrowser({
       </div>
       <div className="skill-browser-foot">
         <span>
-          {filesQuery.data
-            ? `${files.length} 个文件 · 点左边文件名查看内容 · 脚本不会被执行`
-            : "正在读取文件…"}
+          {filesQuery.data ? (
+            `${files.length} 个文件 · 点左边文件名查看内容 · 脚本不会被执行`
+          ) : (
+            <LoadingState variant="inline" label="正在读取文件…" />
+          )}
         </span>
         <button type="button" className="btn" onClick={onDownload}>
           <Download aria-hidden />

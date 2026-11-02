@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { lazy, Suspense, useRef, useState } from "react";
 import type { Draft, SlideElement } from "../types";
 import { objectLabels, type ObjectKind } from "./objectDefaults";
@@ -80,7 +81,9 @@ export function useObjectEditor({
     },
     dialog:
       request && request.slideId === slideId && !readOnly ? (
-        <Suspense fallback={<p role="status">正在加载内容编辑…</p>}>
+        <Suspense
+          fallback={<LoadingState label="正在加载内容编辑…" variant="region" />}
+        >
           {request.kind === "formula" ? (
             <FormulaDialog
               key={`${request.slideId}:${request.initial?.id ?? request.kind}`}

@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { LocalModelsPanel } from "./LocalModelsPanel";
 import type { ReactNode } from "react";
 import "./local-models.css";
@@ -155,7 +156,7 @@ export function ModelServicePage({
           }}
         />
         {catalog.isPending || categories.isPending ? (
-          <p role="status">正在加载模型目录…</p>
+          <LoadingState label="正在加载模型目录…" variant="region" />
         ) : (
           catalog.data &&
           categories.data && (

@@ -1,3 +1,5 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { useModelCompactPanels } from "@features/models/workspace/useModelCompactPanels";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -94,6 +96,9 @@ export function ModelTranscriptionTestPanel({
   onSelectMode: (mode: ModelTestMode) => void;
   onOpenAudioAnnotation: (projectId: string) => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const compact = useModelCompactPanels("transcription");
   const client = useQueryClient();
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -214,7 +219,11 @@ export function ModelTranscriptionTestPanel({
   const createMutation = useMutation({
     mutationFn: () => {
       if (localFile)
-        return uploadModelTestTranscription(localFile, modelId, parameters);
+        return runTransfer((onProgress) =>
+          uploadModelTestTranscription(localFile, modelId, parameters, {
+            onProgress,
+          }),
+        );
       if (libraryFile)
         return createModelTestTranscriptionFromLibrary(
           libraryFile.id,
@@ -279,6 +288,8 @@ export function ModelTranscriptionTestPanel({
       data-compact-panel={compact.panel}
       className="model-test-page transcription-test-page"
     >
+      <TransferFeedback progress={activeTransferProgress} />
+
       <ModelTestWorkspaceHeader
         activeMode="speech"
         availableModes={availableModes}

@@ -246,10 +246,12 @@ test("uploads with tags and blocks more than twelve tags", async () => {
   await user.click(within(dialog).getByRole("switch", { name: "导入后启用" }));
   await user.click(within(dialog).getByRole("button", { name: "上传并校验" }));
   await waitFor(() =>
-    expect(createSkill).toHaveBeenCalledWith(file, true, [
-      "MiniMax H3",
-      "视频生成",
-    ]),
+    expect(createSkill).toHaveBeenCalledWith(
+      file,
+      true,
+      ["MiniMax H3", "视频生成"],
+      expect.objectContaining({ onProgress: expect.any(Function) }),
+    ),
   );
 });
 

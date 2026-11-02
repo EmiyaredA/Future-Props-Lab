@@ -1,3 +1,4 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   batchUploadGalgameProjectAssets,
@@ -50,6 +51,9 @@ export function useCharacterAssetBindings({
   onDocument: (document: GalgameStoryProject) => void;
   onNotice: (message: string) => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const client = useQueryClient();
 
   const bindFile = (fileId: string, name: string) => {
@@ -102,7 +106,9 @@ export function useCharacterAssetBindings({
 
   const upload = useMutation({
     mutationFn: (file: File) =>
-      uploadGalgameProjectAsset(projectId, file, "character"),
+      runTransfer((onProgress) =>
+        uploadGalgameProjectAsset(projectId, file, "character", { onProgress }),
+      ),
     onSuccess: (asset) => {
       setUploadError("");
       void invalidateGalgameAssetQueries(client, projectId);
@@ -114,7 +120,11 @@ export function useCharacterAssetBindings({
 
   const batchUpload = useMutation({
     mutationFn: (files: File[]) =>
-      batchUploadGalgameProjectAssets(projectId, files, "character"),
+      runTransfer((onProgress) =>
+        batchUploadGalgameProjectAssets(projectId, files, "character", {
+          onProgress,
+        }),
+      ),
     onSuccess: (result) => {
       const nextCharacters = characters.map((character) => ({
         ...character,
@@ -207,7 +217,11 @@ export function useCharacterAssetBindings({
         sequence.frames.length + files.length > 3
       )
         throw new Error("语音口型固定为闭口、半口和张口三帧。");
-      return batchUploadGalgameProjectAssets(projectId, files, "character");
+      return runTransfer((onProgress) =>
+        batchUploadGalgameProjectAssets(projectId, files, "character", {
+          onProgress,
+        }),
+      );
     },
     onSuccess: (result) => {
       appendSequenceFiles(
@@ -269,7 +283,10 @@ export function useCharacterAssetBindings({
   };
 
   const voiceUpload = useMutation({
-    mutationFn: (file: File) => uploadGalgameProjectAsset(projectId, file),
+    mutationFn: (file: File) =>
+      runTransfer((onProgress) =>
+        uploadGalgameProjectAsset(projectId, file, undefined, { onProgress }),
+      ),
     onSuccess: (asset) => {
       void invalidateGalgameAssetQueries(client, projectId);
       bindVoiceSample(asset.id, asset.display_name);
@@ -279,6 +296,7 @@ export function useCharacterAssetBindings({
   });
 
   return {
+    transferProgress: activeTransferProgress,
     bindFile,
     upload,
     batchUpload,

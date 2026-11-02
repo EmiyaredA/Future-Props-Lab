@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { integrationKeys } from "./queryKeys";
 import { useIntegrationInteraction, useIntegrationOpen } from "./interaction";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
@@ -273,7 +274,7 @@ function McpForm({
           className="btn primary"
           disabled={pending || Boolean(invalidJson)}
         >
-          {pending ? "保存中…" : "保存"}
+          {pending ? <LoadingState variant="inline" label="保存中…" /> : "保存"}
         </button>
       </footer>
     </form>
@@ -453,7 +454,7 @@ export function McpPanel({
       <div className="integration-layout">
         <main className="integration-grid">
           {query.isLoading ? (
-            <PanelMessage>正在加载 MCP 服务…</PanelMessage>
+            <LoadingState label="正在加载 MCP 服务…" variant="region" />
           ) : query.isError ? (
             <PanelMessage>加载失败，请重试。</PanelMessage>
           ) : items.length === 0 ? (

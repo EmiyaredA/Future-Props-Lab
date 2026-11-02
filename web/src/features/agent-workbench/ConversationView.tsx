@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import "./conversation.css";
 import { useLayoutEffect, useRef, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
@@ -224,7 +225,11 @@ export function ConversationView({
               void history.fetchNextPage();
             }}
           >
-            {history.isFetchingNextPage ? "正在加载…" : "加载更早记录"}
+            {history.isFetchingNextPage ? (
+              <LoadingState variant="inline" label="正在加载…" />
+            ) : (
+              "加载更早记录"
+            )}
           </button>
         )}
         {history.isPending && (

@@ -1,3 +1,5 @@
+import { ProgressBar } from "@shared/ui/LoadingState";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useState } from "react";
 import { QueryFeedback } from "@shared/ui/QueryFeedback";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
@@ -190,7 +192,11 @@ export function VideoEditorTasksPage({
                 className={refreshing ? "spinning" : undefined}
                 aria-hidden
               />{" "}
-              {refreshing ? "刷新中…" : "刷新"}
+              {refreshing ? (
+                <LoadingState variant="inline" label="刷新中…" />
+              ) : (
+                "刷新"
+              )}
             </button>
           </div>
         }
@@ -273,22 +279,19 @@ export function VideoEditorTasksPage({
                 <div className="ve-task-progress-area">
                   <div>
                     <span>
-                      {task.status === "queued"
-                        ? "等待开始渲染"
-                        : "正在生成视频"}
+                      {task.status === "queued" ? (
+                        "等待开始渲染"
+                      ) : (
+                        <LoadingState variant="inline" label="正在生成视频" />
+                      )}
                     </span>
                     <strong>{progress}%</strong>
                   </div>
-                  <div
+                  <ProgressBar
+                    value={progress}
+                    label={`${title}进度`}
                     className="ve-task-progress"
-                    role="progressbar"
-                    aria-label={`${title}进度`}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-valuenow={progress}
-                  >
-                    <i style={{ width: `${progress}%` }} />
-                  </div>
+                  />
                 </div>
               ) : null}
               {task.error ? (

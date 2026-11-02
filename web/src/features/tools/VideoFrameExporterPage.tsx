@@ -1,3 +1,5 @@
+import { LoadingState } from "@shared/ui/LoadingState";
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import {
   useEffect,
   useMemo,
@@ -309,9 +311,14 @@ export function VideoFrameExporterPage({ onBack }: { onBack: () => void }) {
                   <div>
                     <h2>{file.name}</h2>
                     <p>
-                      {ready
-                        ? `${formatPlaybackTime(duration)} · ${dimensions.width} × ${dimensions.height}`
-                        : "正在读取视频信息…"}
+                      {ready ? (
+                        `${formatPlaybackTime(duration)} · ${dimensions.width} × ${dimensions.height}`
+                      ) : (
+                        <LoadingState
+                          variant="inline"
+                          label="正在读取视频信息…"
+                        />
+                      )}
                     </p>
                   </div>
                 </div>
@@ -362,7 +369,11 @@ export function VideoFrameExporterPage({ onBack }: { onBack: () => void }) {
                   }}
                 />
                 {!ready ? (
-                  <span className="video-frame-loading">正在准备视频…</span>
+                  <LoadingState
+                    label="正在准备视频…"
+                    variant="inline"
+                    className="video-frame-loading"
+                  />
                 ) : null}
               </div>
 
@@ -437,7 +448,10 @@ export function VideoFrameExporterPage({ onBack }: { onBack: () => void }) {
               {preview ? (
                 <div className="video-frame-preview">
                   <div className="video-frame-preview-image">
-                    <img src={preview.url} alt="当前导出视频帧预览" />
+                    <ResponsiveImage
+                      src={preview.url}
+                      alt="当前导出视频帧预览"
+                    />
                     {previewStale ? (
                       <div className="video-frame-preview-stale">
                         <RotateCcw aria-hidden />
@@ -565,7 +579,11 @@ export function VideoFrameExporterPage({ onBack }: { onBack: () => void }) {
                 onClick={() => void generatePreview()}
               >
                 <ImageIcon aria-hidden />
-                {generating ? "正在生成…" : "生成预览"}
+                {generating ? (
+                  <LoadingState variant="inline" label="正在生成…" />
+                ) : (
+                  "生成预览"
+                )}
               </button>
               <button
                 type="button"

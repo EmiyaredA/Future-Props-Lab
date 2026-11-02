@@ -1,3 +1,5 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { openAmadeus } from "@platform/assistant";
 import type { ComponentProps } from "react";
 import {
@@ -62,7 +64,7 @@ export function CanvasScreenChrome({
     <>
       <header className="visual-canvas-topbar">
         <div className="canvas-project-identity">
-          <img
+          <ResponsiveImage
             className="canvas-brand-mark"
             src="/brand/visual-workshop-mark-cutout.png"
             alt=""
@@ -93,13 +95,15 @@ export function CanvasScreenChrome({
           )}
           <span className={`canvas-save-state ${saveState}`} role="status">
             <Save aria-hidden />
-            {saveState === "saving"
-              ? "保存中"
-              : saveState === "saved"
-                ? "已保存"
-                : saveState === "conflict"
-                  ? "存在冲突"
-                  : "保存失败"}
+            {saveState === "saving" ? (
+              <LoadingState variant="inline" label="保存中" />
+            ) : saveState === "saved" ? (
+              "已保存"
+            ) : saveState === "conflict" ? (
+              "存在冲突"
+            ) : (
+              "保存失败"
+            )}
           </span>
         </div>
         <div className="canvas-top-actions">

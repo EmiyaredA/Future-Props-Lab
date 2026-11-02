@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useRef, useState } from "react";
 import {
   CheckCircle2,
@@ -205,11 +206,13 @@ export function SpeechSynthesisResult({
               onClick={() => void save()}
             >
               <FolderPlus size={16} aria-hidden />
-              {savePending
-                ? "正在保存…"
-                : saved
-                  ? "已保存到文件库"
-                  : "保存到文件库"}
+              {savePending ? (
+                <LoadingState variant="inline" label="正在保存…" />
+              ) : saved ? (
+                "已保存到文件库"
+              ) : (
+                "保存到文件库"
+              )}
             </button>
           </div>
           {!canWrite && (

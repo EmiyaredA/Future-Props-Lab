@@ -1,3 +1,4 @@
+import type { TransferOptions } from "@platform/api/transfer";
 import type { components } from "@generated/api";
 import { api, fetchApiBlob, unwrap } from "@platform/api/client";
 
@@ -73,9 +74,11 @@ export async function downloadGalgameVideoExport(
   projectId: string,
   exportId: string,
   filename: string,
+  transfer: TransferOptions = {},
 ) {
   const blob = await fetchApiBlob(
     `/v1/galgame-workshop/projects/${encodeURIComponent(projectId)}/video-exports/${encodeURIComponent(exportId)}/download`,
+    transfer,
   );
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
