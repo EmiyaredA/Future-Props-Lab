@@ -12,9 +12,9 @@ from app.console.governance.runtime_quotas import (
 )
 from app.console.governance.settings_records import read_setting
 from app.console.models import User
-from app.console.models.runtime_admission import RuntimeAdmission as Admission
 from app.console.schemas.platform_governance import RuntimeQuotas
 from app.llm.models import ModelEntry
+from app.llm.models.runtime_admission import RuntimeAdmission as Admission
 from app.runtime.time import utc_now
 
 

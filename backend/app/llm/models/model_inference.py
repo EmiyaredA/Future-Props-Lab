@@ -15,7 +15,7 @@ class ModelInferenceTask(Base):
         Index("ix_model_inference_tasks_account_status", "owner_user_id", "status"),
     )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(String(36))
     request_id: Mapped[str] = mapped_column(String(64))
     fingerprint: Mapped[str] = mapped_column(String(64))
     provider_id: Mapped[str | None] = mapped_column(
@@ -53,9 +53,7 @@ class ModelInferenceTask(Base):
 class ModelInferenceAsset(Base):
     __tablename__ = "model_inference_assets"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    owner_user_id: Mapped[str] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     task_id: Mapped[str | None] = mapped_column(
         ForeignKey("model_inference_tasks.id", ondelete="CASCADE"), nullable=True, index=True
     )

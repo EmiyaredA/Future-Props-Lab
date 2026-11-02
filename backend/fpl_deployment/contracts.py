@@ -126,8 +126,6 @@ def table_owner(module, table):
     if module in {"app.console.models.accounts", "app.console.models.platform_governance"}:
         # Platform settings are explicitly partitioned by key during transfer.
         return "identity"
-    if module in {"app.console.models.model_templates", "app.console.models.runtime_admission"}:
-        return "models"
     if table == "project_operation_receipts":
         return "local-receipts"
     raise ValueError(f"数据表尚未登记服务归属：{module}:{table}")

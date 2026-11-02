@@ -20,8 +20,8 @@ from app.apps.visual_workshop.models import (
 from app.console.governance.generation_queue import claim_visual_capacity, visual_queue_candidates
 from app.console.governance.runtime_quotas import recover_admissions
 from app.console.models import User
-from app.console.models.runtime_admission import RuntimeAdmission
 from app.llm.models import ModelEntry, ModelProvider
+from app.llm.models.runtime_admission import RuntimeAdmission
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
 from test_workspace_governance import client_account

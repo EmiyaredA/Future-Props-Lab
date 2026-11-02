@@ -62,7 +62,7 @@
 - `backend/fpl_portal/` 拥有首页、应用目录、文档页面与原有浏览器专用开发文档 API；不加载工坊、账号 ORM 或 Runner，也不接收加密密钥。应用目录元数据归 `web/src/features/applications/definitions.ts`，不能为展示目录而导入各应用的懒加载页面注册表。受保护文档只作为原样构建输入，程序截图通过白名单跳转到所属版本。
 - `backend/fpl_assets/` 拥有独立素材引用集合、幂等回执和文件清理队列；素材删除与引用替换使用同一服务的短写事务。新资源修改通过独立准备意图保留素材；源数据与回执同事务保存后确认，确认回滚后才能撤销。确认乱序不能覆盖更高源版本或释放更晚准备的素材，未知结果不得按时间清除。文件清理按持久回执逐项恢复，不跨服务查询表或递归删除目录。Assets 配置仅含自有存储路径和文件限制，不取得加密密钥；项目归属查询通过绑定原账号请求和用途的接口完成。私有引用协议使用 Identity 签发且绑定单次修改摘要的授权；新准备必须复核有效身份，已接受意图只允许结算该次结果。授权不是文件读取或任意任务凭据，源服务必须持久保存授权与自己的操作回执。项目文件引用位置归 Assets 自有 `VisualProjectFileLink`，与文件夹同库级联，源作品及历史仍归原应用。旧 Visual 引用 ORM 只作单体兼容与迁移来源。完整容器、引用调用方及受控数据转移验收前不得宣称 Assets 切换完成。
 - `backend/fpl_rendering/` 通过受限委托读取同一素材的 HTTP 字节，不加载 Assets ORM 或挂载其数据库。当前仅承接五个兼容预览／媒体处理接口，确定性导出任务仍待拆分。纯栅格解码归 `runtime/raster.py`，Identity 头像不导入素材库。Assets 大上传暂存使用自有状态卷，不能依赖容器的小容量内存临时盘。
-- `backend/fpl_models/` 当前拥有正在拆分的账号默认模型存储和自有迁移，尚无完整服务装配。目录通过显式默认值存储端口保留 CAS；恢复网站显式装配旧设置与任务占用端口，`llm/catalog/legacy.py` 仅供旧治理用例复用，独立 Models 不得导入旧适配器或跨库读取账号表。
+- `backend/fpl_models/` 拥有独立模型服务的默认选择、完整自有表清单与迁移，尚无完整运行装配。目录通过显式默认值存储端口保留 CAS；恢复网站显式装配旧设置与任务占用端口，`llm/catalog/legacy.py` 仅供旧治理用例复用，独立 Models 不得导入旧适配器或跨库读取账号表。账号、源素材和工坊任务 ID 是跨服务不透明引用；独立 schema 仅保留自有表外键，旧单体 SQL 历史及物理约束不改写。
 - 模型 Runner、恢复、文字流与实时语音结算必须接收明确的会话工厂，不得导入单体全局数据库工厂；HTTP/WebSocket 传入自己的 ASGI 绑定。结算短事务显式绑定账号，不跨网络等待共享 AsyncSession。旧凭证解析仅保留在 `llm/call_logs/credentials.py`，完整 Models 装配仍须完成其余存储和原生端口。
 - 模型目录 HTTP 通过 `llm/catalog/http_bindings.py` 从当前应用取得默认模型存储与任务占用端口，路由不得直接构造旧数据库适配器。模型诊断与目录装配分离，共用错误映射归 `llm/http_errors.py`；缺少目录绑定时拒绝请求，不回退旧数据库。
 - 用户已确认管理端也采用独立服务和独立数据库，通过 Identity/Models 接口治理，不与业务服务共同写旧 SQLite。并行管理端任务的接口稳定后统一纳入部署。
@@ -130,7 +130,7 @@
 - 固定账号权限由 `capabilities/identity/permissions.py` 维护，业务 HTTP/SSE 操作必须登记在
   `capabilities/identity/route_permissions.py`；架构测试禁止未登记路由。Web 统一消费 Principal 的有效权限，
   只读浏览页面由各功能模块拥有，账号查询键由 `features/accounts/queryKeys.ts` 唯一维护。
-- 平台模板同步项与运行额度记录属于 `console/governance/`，平台资源分配由治理用例显式校验；固定演示运行时
+- 平台模板同步项与运行额度 ORM 归 `llm/models/`，数据由 Models 服务拥有；恢复网站的治理用例仍在 `console/governance/`，资源分配必须显式校验。固定演示运行时
   `demo_runtime/` 不得依赖账号治理或模型目录，治理入口仍在 `console/governance/`。
 - Web 不保存密码、Session、CSRF 或 Management API Key 明文；Session 只使用 HttpOnly Cookie，
   写请求统一携带可读 CSRF Cookie 对应的请求头。API Key 明文和临时密码只允许展示一次。

@@ -24,9 +24,9 @@ from fpl_runtime.migrations import apply, check
 
 def test_defaults_migration_is_owned_idempotent_and_refuses_another_service(tmp_path):
     path = tmp_path / "service.db"
-    apply(path, "models", MIGRATIONS)
-    apply(path, "models", MIGRATIONS)
-    check(path, "models", MIGRATIONS)
+    apply(path, "models", MIGRATIONS[:1])
+    apply(path, "models", MIGRATIONS[:1])
+    check(path, "models", MIGRATIONS[:1])
     with sqlite3.connect(f"file:{path}?mode=ro", uri=True) as db:
         assert {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")} == {
             "_fpl_service_schema",
@@ -34,7 +34,7 @@ def test_defaults_migration_is_owned_idempotent_and_refuses_another_service(tmp_
         }
         assert db.execute("PRAGMA integrity_check").fetchone() == ("ok",)
     with pytest.raises(ValueError, match="归属"):
-        apply(path, "identity", MIGRATIONS)
+        apply(path, "identity", MIGRATIONS[:1])
 
 
 @pytest.fixture

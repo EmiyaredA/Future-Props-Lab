@@ -9,8 +9,8 @@ _EXPORTS = MappingProxyType(
         "ManagementApiKey": ("app.console.models.accounts", "ManagementApiKey"),
         "SecurityAuditEvent": ("app.console.models.accounts", "SecurityAuditEvent"),
         "User": ("app.console.models.accounts", "User"),
-        "ModelTemplateSyncItem": ("app.console.models.model_templates", "ModelTemplateSyncItem"),
-        "ModelTemplateSyncJob": ("app.console.models.model_templates", "ModelTemplateSyncJob"),
+        "ModelTemplateSyncItem": ("app.llm.models.model_templates", "ModelTemplateSyncItem"),
+        "ModelTemplateSyncJob": ("app.llm.models.model_templates", "ModelTemplateSyncJob"),
         "PlatformSetting": ("app.console.models.platform_governance", "PlatformSetting"),
         "RegistrationInviteCode": (
             "app.console.models.platform_governance",
@@ -20,7 +20,7 @@ _EXPORTS = MappingProxyType(
             "app.console.models.platform_governance",
             "RegistrationRedemption",
         ),
-        "RuntimeAdmission": ("app.console.models.runtime_admission", "RuntimeAdmission"),
+        "RuntimeAdmission": ("app.llm.models.runtime_admission", "RuntimeAdmission"),
     }
 )
 

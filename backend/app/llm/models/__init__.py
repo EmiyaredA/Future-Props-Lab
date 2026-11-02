@@ -5,6 +5,7 @@ from app.llm.models.local_models import LocalModelInstallation, LocalModelOperat
 from app.llm.models.model_inference import ModelInferenceAsset, ModelInferenceTask
 from app.llm.models.model_service import ModelCatalogState, ModelEntry, ModelProvider
 from app.llm.models.model_supplier import ModelSupplier
+from app.llm.models.model_templates import ModelTemplateSyncItem, ModelTemplateSyncJob
 from app.llm.models.model_test import (
     ModelTestAttachment,
     ModelTestConversation,
@@ -13,6 +14,7 @@ from app.llm.models.model_test import (
     ModelTestMessage,
     ModelTestTranscriptionTask,
 )
+from app.llm.models.runtime_admission import RuntimeAdmission
 
 __all__ = [
     "LlmCallLog",
@@ -24,10 +26,13 @@ __all__ = [
     "ModelInferenceTask",
     "ModelProvider",
     "ModelSupplier",
+    "ModelTemplateSyncItem",
+    "ModelTemplateSyncJob",
     "ModelTestAttachment",
     "ModelTestConversation",
     "ModelTestGenerationAsset",
     "ModelTestGenerationTask",
     "ModelTestMessage",
     "ModelTestTranscriptionTask",
+    "RuntimeAdmission",
 ]
