@@ -77,3 +77,14 @@ def test_native_queue_models_do_not_pollute_legacy_schema():
         model in MODELS for model in (NativeJob, NativeSubscription, NativeProjectionReceipt)
     )
     assert "agent_native_jobs" not in Base.metadata.tables
+
+
+def test_gateway_image_contains_no_business_or_identity_database():
+    closure = source_closure(ROOT, "gateway")
+    assert "fpl_gateway.application" in closure
+    assert "fpl_runtime.capability_client" in closure
+    assert not any(
+        name.startswith(("app.apps", "app.llm", "app.console.models", "fpl_identity", "fpl_host"))
+        for name in closure
+    )
+    assert not {"app.main", "app.orm", "app.api", "app.deps"}.intersection(closure)

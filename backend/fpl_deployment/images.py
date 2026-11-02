@@ -7,8 +7,20 @@ import subprocess
 from importlib.util import resolve_name
 from pathlib import Path
 
-ENTRY_POINTS = {"identity": "fpl_identity.__main__", "agents": "fpl_agents.__main__"}
-PROJECT_PACKAGES = ("app", "fpl_identity", "fpl_agents", "fpl_runtime", "fpl_config", "fpl_host")
+ENTRY_POINTS = {
+    "identity": "fpl_identity.__main__",
+    "agents": "fpl_agents.__main__",
+    "gateway": "fpl_gateway.__main__",
+}
+PROJECT_PACKAGES = (
+    "app",
+    "fpl_identity",
+    "fpl_agents",
+    "fpl_gateway",
+    "fpl_runtime",
+    "fpl_config",
+    "fpl_host",
+)
 FORBIDDEN_IDENTITY = (
     "app.main",
     "app.api",
@@ -60,6 +72,21 @@ def source_closure(root: Path, service):
             name == prefix or name.startswith(prefix + ".") for prefix in FORBIDDEN_AGENTS
         ):
             raise ValueError(f"Agents 镜像包含越界依赖：{name}")
+        if service == "gateway" and any(
+            name == prefix or name.startswith(prefix + ".")
+            for prefix in (
+                "app.main",
+                "app.api",
+                "app.orm",
+                "app.deps",
+                "app.apps",
+                "app.llm",
+                "app.console.models",
+                "app.capabilities.asset_store",
+                "fpl_host",
+            )
+        ):
+            raise ValueError(f"Gateway 镜像包含越界依赖：{name}")
         path = module_file(root, name)
         if path is None:
             continue
@@ -88,7 +115,7 @@ def source_closure(root: Path, service):
     return result
 
 
-def prepare_image(root: Path, service: str):
+def prepare_image(root: Path, service: str, *, web_release=None):
     sources = source_closure(root, service)
     generated = subprocess.run(
         [
@@ -116,9 +143,25 @@ def prepare_image(root: Path, service: str):
             ).read_bytes(),
         }
     )
-    if service == "identity":
+    if service in {"identity", "gateway"}:
         manifest = "backend/app/console/governance/automation_operations.json"
         payloads[manifest] = (root / manifest).read_bytes()
+    if service == "gateway":
+        payloads["deploy/contracts/openapi.json"] = (
+            root / "web/src/generated/openapi.json"
+        ).read_bytes()
+    web_build = None
+    if service == "agents":
+        if web_release is None:
+            payloads["web/.api-only"] = b"No browser program in this API acceptance image.\n"
+        else:
+            from fpl_runtime.web import load_release
+
+            release = load_release(web_release, service)
+            web_build = release.build_id
+            payloads["web/build.json"] = (release.root / "build.json").read_bytes()
+            for name in release.files:
+                payloads["web/" + name] = (release.root / name).read_bytes()
     hashes = {
         name: hashlib.sha256(content).hexdigest() for name, content in sorted(payloads.items())
     }
@@ -141,6 +184,7 @@ def prepare_image(root: Path, service: str):
     metadata = {
         "service": service,
         "version": release,
+        "web_build": web_build,
         "image": f"fpl/{service}:{release}",
         "files": hashes,
     }
@@ -148,8 +192,8 @@ def prepare_image(root: Path, service: str):
     return context, metadata
 
 
-def build_image(root: Path, service: str):
-    context, metadata = prepare_image(root, service)
+def build_image(root: Path, service: str, *, web_release=None):
+    context, metadata = prepare_image(root, service, web_release=web_release)
     subprocess.run(
         [
             "docker",

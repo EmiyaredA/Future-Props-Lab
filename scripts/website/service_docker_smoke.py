@@ -25,7 +25,14 @@ from fpl_deployment.gateway import render_gateway  # noqa: E402
 from fpl_runtime.routing import RouteCatalog  # noqa: E402
 
 
-def exercise(image, *, local_port, public_port):
+def exercise(
+    image,
+    *,
+    local_port,
+    public_port,
+    gateway_image="caddy@sha256:36c24ad91a7ff7bc4c87fe22bfa8df3c4b18da0773d73fc12ee2c52b98c0bb7e",
+):
+    control = not gateway_image.startswith("caddy@")
     run_id = secrets.token_hex(5)
     project = "fpl-isolated-identity-" + run_id
     root = ROOT / ".local/service-split" / project
@@ -33,6 +40,7 @@ def exercise(image, *, local_port, public_port):
     root.mkdir(parents=True, mode=0o700)
     (root / "identity").mkdir(mode=0o700)
     (root / "agents").mkdir(mode=0o700)
+    (root / "gateway").mkdir(mode=0o700)
     gateway_token = secrets.token_urlsafe(48)
     password = secrets.token_urlsafe(30) + "-Aa9!"
     encryption_key = Fernet.generate_key().decode()
@@ -50,7 +58,8 @@ def exercise(image, *, local_port, public_port):
             serialization.NoEncryption(),
         ),
         "gateway-token": gateway_token.encode(),
-        "service-credentials.json": b"{}",
+        "service-credentials.json": json.dumps({"gateway": gateway_token}).encode(),
+        "publishers.json": b"{}",
         "workers.json": b"{}",
         "native-ingress": secrets.token_urlsafe(48).encode(),
         "agents-token": secrets.token_urlsafe(48).encode(),
@@ -63,9 +72,11 @@ def exercise(image, *, local_port, public_port):
             gateway_token=gateway_token,
             local_origin=f"http://127.0.0.1:{local_port}",
             public_origin="https://studio.example.test",
+            control=control,
         ).encode(),
     }
     material["agents.toml"] = material["identity.toml"]
+    material["gateway.toml"] = material["identity.toml"]
     for name, content in material.items():
         path = root / name
         path.write_bytes(content)
@@ -77,6 +88,11 @@ def exercise(image, *, local_port, public_port):
         {
             "COMPOSE_DISABLE_ENV_FILE": "true",
             "FPL_IDENTITY_IMAGE": image,
+            "FPL_GATEWAY_IMAGE": gateway_image,
+            "FPL_GATEWAY_STATE": str(root / "gateway"),
+            "FPL_GATEWAY_SETTINGS": str(root / "gateway.toml"),
+            "FPL_GATEWAY_IDENTITY_TOKEN": str(root / "gateway-token"),
+            "FPL_GATEWAY_PUBLISHERS": str(root / "publishers.json"),
             "FPL_IDENTITY_SERVICE_CREDENTIALS": str(root / "service-credentials.json"),
             "FPL_AGENTS_IMAGE": image,
             "FPL_AGENTS_STATE": str(root / "agents"),
@@ -163,6 +179,8 @@ def exercise(image, *, local_port, public_port):
     try:
         compose("config", "--quiet")
         compose("run", "--rm", "--no-deps", "identity", "migrate")
+        if control:
+            compose("run", "--rm", "--no-deps", "gateway", "migrate")
         compose(
             "run",
             "--rm",
@@ -326,7 +344,16 @@ def exercise(image, *, local_port, public_port):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--image", required=True)
+    parser.add_argument(
+        "--gateway-image",
+        default="caddy@sha256:36c24ad91a7ff7bc4c87fe22bfa8df3c4b18da0773d73fc12ee2c52b98c0bb7e",
+    )
     parser.add_argument("--local-port", type=int, default=19000)
     parser.add_argument("--public-port", type=int, default=19081)
     args = parser.parse_args()
-    exercise(args.image, local_port=args.local_port, public_port=args.public_port)
+    exercise(
+        args.image,
+        local_port=args.local_port,
+        public_port=args.public_port,
+        gateway_image=args.gateway_image,
+    )

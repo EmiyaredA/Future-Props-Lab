@@ -131,3 +131,19 @@ def test_unclassified_execution_error_is_unknown_not_retryable_failure(tmp_path)
         raise RuntimeError("unknown external outcome")
 
     assert store.execute(command, uncertain).status == "unknown"
+
+
+def test_ended_follow_keeps_unacknowledged_content_without_resuming_it(tmp_path):
+    from fpl_host.follow_journal import FollowJournal
+
+    store = FollowJournal(tmp_path / "follow")
+    command = lease("agent_sources.follow", {"source_id": "source", "source_revision": 0})
+    frame = store.stage(
+        command,
+        locator="original.jsonl",
+        expected={},
+        batch={"entries": [{"text": "only unacknowledged copy"}]},
+    )
+    store.end(command)
+    assert store.read(command)["pending"] == frame
+    assert list(store.recover()) == []

@@ -26,6 +26,7 @@ from fpl_runtime.migrations import check
 
 from .accounts import create_account
 from .authorization import router as authorization_router
+from .delegation import router as delegation_router
 from .live import router as live_router
 from .migrations.registry import MIGRATIONS
 from .models import AccountEvent
@@ -108,6 +109,7 @@ def create_app(
     app.include_router(included, prefix="/v1")
     app.include_router(authorization_router)
     app.include_router(live_router)
+    app.include_router(delegation_router)
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)

@@ -75,6 +75,10 @@ export const responsiveOwners = {
   "director-desk-editor": "editors",
 } satisfies Record<AppPage, "shell" | "editors" | "thought">;
 export const publicSurfaces = ["login", "account-settings", "docs"] as const;
+export const independentApplications = {
+  agents: ["/agents", "/agents/sources", "/agents/sessions/:id"],
+} as const;
+
 export const staticPaths = [
   "/apps/agent-workbench",
   "/apps/agent-workbench/sources",

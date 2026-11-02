@@ -15,7 +15,7 @@ class Service:
 SERVICES = (
     Service("gateway", "网站网关"),
     Service("identity", "账号与登录", ("/login", "/account")),
-    Service("portal", "FPL 门户", ("/", "/apps", "/docs.html")),
+    Service("portal", "FPL 门户", ("/", "/home", "/apps", "/docs.html", "/management")),
     Service("agents", "Agent 工作台", ("/agents",), ("identity",), ("agent_sources",)),
     Service("remote", "远程控制", ("/remote",), ("identity",), ("remote_files",)),
     Service(

@@ -15,6 +15,7 @@
     "contracts:generate": "openapi-typescript src/generated/openapi.json -o src/generated/api.ts",
     "contracts:check": "openapi-typescript src/generated/openapi.json | diff - src/generated/api.ts",
     "voice-vad:sync": "node scripts/sync-voice-vad-assets.mjs",
+    "build:service": "tsc -b && node scripts/build-service.mjs",
     "build:studio": "node scripts/sync-voice-vad-assets.mjs --check && tsc -b && vite build --mode studio --outDir ${FPL_WEB_DIST_DIR:-../.local/studio-release} && FPL_WEB_DIST_DIR=${FPL_WEB_DIST_DIR:-../.local/studio-release} node scripts/check-bundle-budgets.mjs && FPL_WEB_DIST_DIR=${FPL_WEB_DIST_DIR:-../.local/studio-release} node scripts/prepare-studio-release.mjs"
   },
   "dependencies": {

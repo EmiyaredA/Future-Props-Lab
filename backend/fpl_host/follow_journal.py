@@ -64,7 +64,7 @@ class FollowJournal:
     def end(self, lease):
         document = self.read(lease)
         document["ended"] = True
-        document["pending"] = None
+        # Keep unacknowledged content for recovery; it may be the only remaining copy.
         self.storage.publish(self.path(lease), document)
 
     def recover(self):

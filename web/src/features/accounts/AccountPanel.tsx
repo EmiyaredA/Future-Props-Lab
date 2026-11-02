@@ -1,3 +1,4 @@
+import { useNavigationProtection } from "@shared/ui/navigationGuards";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, UserRound, KeyRound, ShieldCheck, ScrollText } from "lucide-react";
@@ -16,6 +17,7 @@ export function AccountPanel({
   session: AccountSessionContext;
   hiddenEntries?: boolean;
 }) {
+  const navigation = useNavigationProtection();
   const state = useAccountPanel(session);
   const { open, busy, close } = state;
   const [confirming, setConfirming] = useState(false);
@@ -34,10 +36,25 @@ export function AccountPanel({
     } else state.close();
   };
   useEffect(() => {
+    if (!navigation || !open) return;
+    return navigation.register((resume) => {
+      if (!dirty && !busy) return false;
+      if (!busy) {
+        pending.current = () => {
+          close();
+          resume();
+        };
+        setConfirming(true);
+      }
+      return true;
+    });
+  }, [navigation, open, dirty, busy, close]);
+  useEffect(() => {
     if (!open) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const beforeNavigation = (event: Event) => {
+      if (navigation) return;
       if (!dirty && !busy) return;
       event.preventDefault();
       if (busy) return;
@@ -49,6 +66,7 @@ export function AccountPanel({
       setConfirming(true);
     };
     const beforeUnload = (event: BeforeUnloadEvent) => {
+      if (navigation?.allowsUnload()) return;
       if (dirty || busy) {
         event.preventDefault();
         event.returnValue = "";
@@ -64,7 +82,7 @@ export function AccountPanel({
       );
       window.removeEventListener("beforeunload", beforeUnload);
     };
-  }, [open, busy, close, dirty]);
+  }, [open, busy, close, dirty, navigation]);
   const focus = useDrawerFocus<HTMLElement>(
     requestClose,
     !!state.open && !confirming,

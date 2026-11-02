@@ -1,3 +1,5 @@
+import { programAsset } from "@platform/programAsset";
+import type { CSSProperties } from "react";
 import type { Agent } from "./api";
 import "./agent-logo.css";
 
@@ -11,7 +13,7 @@ export function AgentLogo({
   if (id === "pi")
     return (
       <img
-        src="/providers/pi-logo.svg"
+        src={programAsset("/providers/pi-logo.svg")}
         className="code-agent-logo"
         width={size}
         height={size}
@@ -19,10 +21,22 @@ export function AgentLogo({
         aria-hidden="true"
       />
     );
+  const marks = {
+    codex: "codex",
+    "claude-code": "claudecode",
+    opencode: "opencode",
+    dsh: "deepseek",
+  } as const;
   return (
     <span
       className={`code-agent-logo is-${id}`}
-      style={{ width: size, height: size }}
+      style={
+        {
+          width: size,
+          height: size,
+          "--agent-mark": `url("${programAsset("/providers/" + marks[id] + "-logo.svg")}")`,
+        } as CSSProperties
+      }
       aria-hidden="true"
     />
   );

@@ -1,3 +1,7 @@
+import {
+  addApplicationBuild,
+  observeApplicationBuild,
+} from "./applicationBuild";
 import createClient from "openapi-fetch";
 import type { paths } from "@generated/api";
 import {
@@ -39,12 +43,15 @@ export async function requestApi(
   init: RequestInit = {},
 ): Promise<Response> {
   const { signal, ...requestInit } = init;
-  const request = applySessionHeaders(
-    new Request(apiUrl(path), { ...requestInit, credentials: "include" }),
+  const request = addApplicationBuild(
+    applySessionHeaders(
+      new Request(apiUrl(path), { ...requestInit, credentials: "include" }),
+    ),
   );
   const response = signal
     ? await fetch(request, { signal })
     : await fetch(request);
+  observeApplicationBuild(response);
   if (response.status === 401) notifyAuthRequired();
   if (!response.ok) {
     const problem = await responseProblem(response);
@@ -112,9 +119,10 @@ export async function fetchApiDownload(
 }
 api.use({
   async onRequest({ request }) {
-    return applySessionHeaders(request);
+    return addApplicationBuild(applySessionHeaders(request));
   },
   async onResponse({ response }) {
+    observeApplicationBuild(response);
     if (response.status === 401) notifyAuthRequired();
     if (response.status === 403) {
       const problem = parseProblemDetail(

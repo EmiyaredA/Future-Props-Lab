@@ -22,13 +22,21 @@ from fpl_runtime.routing import RouteCatalog  # noqa: E402
 
 
 def exercise(
-    identity_image, agents_image, *, local_port=19100, public_port=19181, native_port=29090
+    identity_image,
+    agents_image,
+    *,
+    local_port=19100,
+    public_port=19181,
+    native_port=29090,
+    browser_check=False,
+    gateway_image="caddy@sha256:36c24ad91a7ff7bc4c87fe22bfa8df3c4b18da0773d73fc12ee2c52b98c0bb7e",
 ):
     project = "fpl-isolated-agents-" + secrets.token_hex(5)
     root = ROOT / ".local/service-split" / project
     subprocess.run(["git", "check-ignore", "--quiet", str(root)], check=True, cwd=ROOT)
     root.mkdir(mode=0o700)
-    for name in ("identity", "agents", "native"):
+    control = not gateway_image.startswith("caddy@")
+    for name in ("identity", "agents", "gateway", "native"):
         (root / name).mkdir(mode=0o700)
     gateway_token, service_token, lane_token, worker_token = [
         secrets.token_urlsafe(48) for _ in range(4)
@@ -58,7 +66,10 @@ def exercise(
         "identity-token": service_token.encode(),
         "native-ingress": lane_token.encode(),
         "workers.json": json.dumps({"fixture-collector": worker_token}).encode(),
-        "service-credentials.json": json.dumps({"agents": service_token}).encode(),
+        "service-credentials.json": json.dumps(
+            {"agents": service_token, "gateway": service_token}
+        ).encode(),
+        "publishers.json": b"{}",
         "connection.json": json.dumps(
             {
                 "base_url": native_base + "/agents",
@@ -72,8 +83,10 @@ def exercise(
             public_origin="https://studio.example.test",
             native_tokens={"agents": lane_token},
             native_port=native_port,
+            control=control,
         ).encode(),
     }
+    material["gateway.toml"] = material["agents.toml"]
     for name, content in material.items():
         path = root / name
         path.write_bytes(content)
@@ -110,6 +123,11 @@ def exercise(
             "FPL_SERVICE_UID": str(os.getuid()),
             "FPL_SERVICE_GID": str(os.getgid()),
             "FPL_IDENTITY_IMAGE": identity_image,
+            "FPL_GATEWAY_IMAGE": gateway_image,
+            "FPL_GATEWAY_STATE": str(root / "gateway"),
+            "FPL_GATEWAY_SETTINGS": str(root / "gateway.toml"),
+            "FPL_GATEWAY_IDENTITY_TOKEN": str(root / "identity-token"),
+            "FPL_GATEWAY_PUBLISHERS": str(root / "publishers.json"),
             "FPL_AGENTS_IMAGE": agents_image,
             "FPL_IDENTITY_STATE": str(root / "identity"),
             "FPL_AGENTS_STATE": str(root / "agents"),
@@ -184,7 +202,7 @@ def exercise(
     checks = []
     try:
         compose("config", "--quiet")
-        for service in ("identity", "agents"):
+        for service in ("identity", "agents", "gateway") if control else ("identity", "agents"):
             compose("run", "--rm", "--no-deps", service, "migrate")
         compose(
             "run",
@@ -235,6 +253,8 @@ def exercise(
                     json={},
                 )
                 assert response.status_code == 403
+            if control:
+                assert client.get("/v1/automation/runtime").json() == {"local_browser": True}
             source_body = {
                 "agent_id": "codex",
                 "label": "Isolated native source",
@@ -318,6 +338,56 @@ def exercise(
                 assert fresh.get("/v1/auth/me").json()["user"]["id"] == owner
                 assert fresh.get(path).json()["items"][0]["id"] == session_id
             checks.append("fresh browser login and workbench reads need no Portal process")
+            if browser_check:
+                page = client.get("/agents")
+                assert page.status_code == 200 and "text/html" in page.headers["content-type"], (
+                    page.text
+                )
+                old_page = client.get("/apps/agent-workbench/sessions/" + session_id)
+                assert (
+                    old_page.status_code == 308
+                    and old_page.headers["location"] == "/agents/sessions/" + session_id
+                ), (old_page.status_code, old_page.headers.get("location"))
+                stale = client.post(
+                    "/v1/agent-workbench/sources",
+                    headers={
+                        **unsafe,
+                        "X-Application-Id": "agents",
+                        "X-Application-Build": "old",
+                    },
+                    json={},
+                )
+                assert (
+                    stale.status_code == 409
+                    and stale.json()["code"] == "application_update_required"
+                ), stale.text
+                result = subprocess.run(
+                    [
+                        "node",
+                        str(ROOT / "web/scripts/agent-service-browser-smoke.mjs"),
+                    ],
+                    cwd=ROOT,
+                    input=json.dumps(
+                        {
+                            "origin": origin + "/",
+                            "username": "isolated-admin",
+                            "password": password,
+                            "output": str(root / "browser"),
+                            "repo": str(ROOT),
+                        }
+                    ),
+                    capture_output=True,
+                    text=True,
+                    timeout=120,
+                )
+                if result.returncode:
+                    raise RuntimeError(
+                        "Browser acceptance failed: " + result.stdout + result.stderr
+                    )
+                checks.append(
+                    "independent browser login, version fencing and responsive themes work "
+                    "without Portal"
+                )
             paused = client.patch(
                 f"/v1/agent-workbench/sources/{source['id']}",
                 headers=unsafe,
@@ -368,6 +438,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--identity-image", required=True)
     parser.add_argument("--agents-image", required=True)
+    parser.add_argument("--browser", action="store_true")
+    parser.add_argument(
+        "--gateway-image",
+        default="caddy@sha256:36c24ad91a7ff7bc4c87fe22bfa8df3c4b18da0773d73fc12ee2c52b98c0bb7e",
+    )
     parser.add_argument("--native-port", type=int, default=29090)
     args = parser.parse_args()
-    exercise(args.identity_image, args.agents_image, native_port=args.native_port)
+    exercise(
+        args.identity_image,
+        args.agents_image,
+        native_port=args.native_port,
+        gateway_image=args.gateway_image,
+        browser_check=args.browser,
+    )

@@ -24,6 +24,7 @@ def parser():
         "--catalog", type=Path, default=Path("/app/deploy/contracts/ownership.json")
     )
     result.add_argument("--identity-url", default="http://identity:8080")
+    result.add_argument("--web-root", type=Path, default=Path("/app/web"))
     result.add_argument("--port", type=int, default=8080)
     return result
 
@@ -69,6 +70,7 @@ def run(options):
             ),
             native_ingress_token=options.native_ingress_token.read_text().strip(),
             workers=json.loads(options.workers.read_text()),
+            web_root=options.web_root if (options.web_root / "build.json").is_file() else None,
             version=os.environ.get("FPL_SERVICE_VERSION", "development"),
         )
         uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)

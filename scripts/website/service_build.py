@@ -13,10 +13,11 @@ from fpl_deployment.images import build_image, prepare_image  # noqa: E402
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("service")
+    parser.add_argument("--web-release", type=Path)
     parser.add_argument("--build", action="store_true")
     args = parser.parse_args()
     if args.build:
-        release = build_image(ROOT, args.service)
+        release = build_image(ROOT, args.service, web_release=args.web_release)
     else:
-        _context, release = prepare_image(ROOT, args.service)
-    print(json.dumps({key: release[key] for key in ("service", "version", "image")}))
+        _context, release = prepare_image(ROOT, args.service, web_release=args.web_release)
+    print(json.dumps({key: release[key] for key in ("service", "version", "image", "web_build")}))

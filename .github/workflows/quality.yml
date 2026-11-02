@@ -104,47 +104,64 @@ jobs:
       - run: python3 scripts/check_lfs_assets.py --pointers
 
   docker-isolation:
-    name: Isolated Identity, Agents and Gateway containers
+    name: Isolated services and independent Agents browser
     runs-on: ubuntu-latest
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.local/playwright-browsers
     steps:
       - uses: actions/checkout@v4
         with:
           lfs: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.11"
           enable-cache: true
       - run: uv sync --frozen --all-groups
+      - run: npm ci
       - name: Prepare ignored acceptance logs
         run: |
-          git check-ignore .local/service-split/ci-build.log
+          git check-ignore .local/service-split/ci-build.log .local/playwright-browsers
           mkdir -p .local/service-split
-      - name: Build the independently owned image
-        run: uv run python scripts/website/service_build.py identity --build > .local/service-split/ci-build.log
-      - name: Build the independently owned workbench image
-        run: uv run python scripts/website/service_build.py agents --build > .local/service-split/ci-agents-build.log
-      - name: Verify real container isolation and restore
+      - run: npx playwright install --with-deps chromium
+      - name: Build the independent browser program
+        run: npm run services:build:web -- agents > .local/service-split/ci-web-build.log
+      - name: Build the independently owned images
+        run: |
+          uv run python scripts/website/service_build.py identity --build > .local/service-split/ci-build.log
+          uv run python scripts/website/service_build.py gateway --build > .local/service-split/ci-gateway-build.log
+          uv run python - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+          program = json.loads(Path('.local/service-split/ci-web-build.log').read_text().splitlines()[-1])
+          with Path('.local/service-split/ci-agents-build.log').open('w') as log:
+              subprocess.run([
+                  'uv', 'run', 'python', 'scripts/website/service_build.py', 'agents',
+                  '--build', '--web-release', program['root'],
+              ], stdout=log, check=True)
+          PY
+      - name: Verify container isolation, restore and real browser access
         run: |
           uv run python - <<'PY'
           import json
           import subprocess
           from pathlib import Path
-          release = json.loads(Path('.local/service-split/ci-build.log').read_text().splitlines()[-1])
+          def image(name):
+              return json.loads(Path(name).read_text().splitlines()[-1])['image']
+          identity = image('.local/service-split/ci-build.log')
+          gateway = image('.local/service-split/ci-gateway-build.log')
+          agents = image('.local/service-split/ci-agents-build.log')
           subprocess.run([
               'uv', 'run', 'python', 'scripts/website/service_docker_smoke.py',
-              '--image', release['image'],
+              '--image', identity, '--gateway-image', gateway,
           ], check=True)
-          PY
-      - name: Verify native collector and independent workbench replacement
-        run: |
-          uv run python - <<'PY'
-          import json
-          import subprocess
-          from pathlib import Path
-          identity = json.loads(Path('.local/service-split/ci-build.log').read_text().splitlines()[-1])
-          agents = json.loads(Path('.local/service-split/ci-agents-build.log').read_text().splitlines()[-1])
           subprocess.run([
               'uv', 'run', 'python', 'scripts/website/agents_docker_smoke.py',
-              '--identity-image', identity['image'], '--agents-image', agents['image'],
+              '--identity-image', identity, '--agents-image', agents,
+              '--gateway-image', gateway, '--browser',
           ], check=True)
           PY

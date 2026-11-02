@@ -65,6 +65,7 @@ def create_app(
     workers,
     version="development",
     collect=True,
+    web_root=None,
 ):
     database = Database(
         "agents",
@@ -140,6 +141,24 @@ def create_app(
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(OperationalError, storage_operational_error_handler)
+    if web_root is not None:
+        from fpl_runtime.protocol_hash import public_contract
+        from fpl_runtime.web import attach_web, load_release
+
+        release = load_release(web_root, "agents")
+        if release.api_sha256 != public_contract(app.openapi(), "agents", catalog):
+            raise ValueError("工作台页面与服务契约不匹配")
+        attach_web(
+            app,
+            release,
+            pages=(
+                "/agents",
+                "/agents/",
+                "/agents/sources",
+                "/agents/sources/",
+                "/agents/sessions/{session_id}",
+            ),
+        )
     app.add_middleware(SignedIdentity, service="agents", public_key=public_key, catalog=catalog)
     app.add_middleware(RequestLimit, prefix="/_native/", maximum=32 * 1024 * 1024)
     app.add_middleware(

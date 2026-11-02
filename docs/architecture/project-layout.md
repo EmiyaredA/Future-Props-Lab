@@ -13,13 +13,21 @@
 
 `backend/fpl_runtime/` 是不导入业务 ORM 的服务运行契约，拥有 22 个发布单元、精确到 HTTP 方法和路径的归属匹配、请求绑定身份断言、独立 SQLite 会话与迁移校验。`backend/fpl_deployment/` 从静态 OpenAPI 和模型源码生成 `deploy/contracts/ownership.json`，新增或重复操作及未归属表必须阻止构建。`npm run services:contracts:generate|check` 管理该清单，并纳入公共契约检查。跨服务 ORM 访问和缺少账号上下文的私人数据操作被存储边界拒绝。
 
+`backend/fpl_gateway/` 拥有独立控制面、通知游标与自有迁移；`changes.py` 在同一事务记录发布方事件回执和账号游标，`notifications.py` 只接受配置的发布方，`routes.py` 通过明确客户端请求资源所属服务。`__main__.py` 在同一发布单元监督 Caddy 与控制面，Caddy 退出会停止控制面，关闭时回收代理子进程。Mac 公网管理桥接仍待接通。
+
+`fpl_runtime/delegation.py` 限定调用方、来源操作、用途和目标地址；`capability_client.py` 使用原请求断言换取目标签名，不传递完整浏览器凭据。Identity 的 `delegation.py` 复核原账号会话并拒绝注销后的委托。`protocol_hash.py` 计算单服务公开操作及可达 schema 的契约哈希；`web.py` 核验程序清单、静态资源与对应服务契约，并阻止本应用旧页面写入。
+
 `backend/fpl_identity/` 装配独立账号 ASGI 应用、账号事件、显式维护入口及自有 `migrations/`；不加载门户、工坊或模型 ORM。`console/governance/account_creation.py` 接受显式事务初始化回调，旧 `provisioning.py` 仅承担单体目录初始化适配；账号与注册路由使用装配时注入的用例。
 
 `backend/fpl_agents/` 装配独立工作台，拥有自有迁移、原生任务、来源订阅、投影回执、协调器与私有协议；复用工作台的阅读、搜索、CAS 和投影用例，不加载账号 ORM 或 Mac 解析器。`fpl_runtime/http_dependencies.py` 只消费签名身份；`change_stream.py` 使用显式实时授权与数据库会话，旧 `events.py` 保留单体身份适配。
 
 `backend/fpl_host/` 是独立 Mac 原生采集 CLI，仅发起受认证回环请求，读取明确来源的原生会话及引用附件。`collector.py` 管理有界任务，`follow.py` 跟随原生日志或事件，`follow_journal.py` 持久化单帧确认状态，`receipts.py` 保存一次性操作意图与结果；不确定动作不重做，跟随仅按原任务、租约和服务端检查点继续。容器镜像不包含此包。
 
-`fpl_deployment/images.py` 构建可审计源码闭包，`gateway.py` 从操作归属生成监听器路由。`deploy/images/identity/` 与 `deploy/images/agents/` 保存各自依赖锁和镜像定义，`deploy/compose.yaml` 当前装配 Identity、Agents 与 Gateway。`scripts/website/service_build.py` 和 `service_docker_smoke.py` 分别提供 CLI 构建与账号容器隔离验收，`agents_docker_smoke.py` 验证真实工作台容器和 Mac 原生采集器；`tests/gateway_assertion_probe.py` 只属于测试传输探针，不是工作台服务。运行及切换状态见[独立服务迁移](../operations/independent-services.md)。
+`fpl_deployment/images.py` 构建可审计源码闭包，`gateway.py` 从操作归属生成监听器路由。`deploy/images/identity/`、`deploy/images/agents/` 与 `deploy/images/gateway/` 保存各自依赖锁和镜像定义，`deploy/compose.yaml` 当前装配 Identity、Agents 与 Gateway。`scripts/website/service_build.py` 和 `service_docker_smoke.py` 分别提供 CLI 构建与账号容器隔离验收，`agents_docker_smoke.py` 验证真实工作台容器和 Mac 原生采集器；`tests/gateway_assertion_probe.py` 只属于测试传输探针，不是工作台服务。运行及切换状态见[独立服务迁移](../operations/independent-services.md)。
+
+`web/src/app/entries/` 拥有独立应用装配与导航，`agents.tsx` 不加载门户路由，`IndependentShell.tsx` 复用账号、主题和导航组件。`web/service.config.ts` 选择单一入口和所属程序素材，`web/scripts/build-service.mjs` 生成逐文件 SHA256、gzip／Brotli 及单服务契约清单；产物保存在被忽略的 `.local/service-web/`，镜像封装时核验清单。`scripts/website/web_contract.py` 仅读静态契约，不初始化数据库。
+
+`shared/ui/NavigationProtection.tsx` 在每个独立应用内协调多个未保存保护，协议与 Hook 位于 `navigationGuards.ts` 和 `useUnsavedNavigation.tsx`。确认逐项进行，全部通过才继续；明确同意跨页面离开后不重复触发原生提示。`platform/api/applicationBuild.ts` 携带非鉴权的应用版本标记并广播本应用更新，`platform/programAsset.ts` 定位当前程序资源。共享登录通过显式回调清理应用自有临时状态。
 
 服务化实现及 Compose 切换尚在隔离工作树验证，正式入口仍使用下述网站单体；不得把清单生成视为应用迁移完成。当前网站 `.runtime/` 是唯一迁移真源，桌面原目录仅用于恢复。
 

@@ -12,8 +12,20 @@ def quoted(value):
     return json.dumps(value, ensure_ascii=True)
 
 
+def service_upstream(service):
+    host = "127.0.0.1" if service == "gateway" else service
+    return host + ":8080"
+
+
 def render_gateway(
-    catalog, *, gateway_token, local_origin, public_origin, native_tokens=None, native_port=29090
+    catalog,
+    *,
+    gateway_token,
+    local_origin,
+    public_origin,
+    native_tokens=None,
+    native_port=29090,
+    control=False,
 ):
     origins = {"local": urlsplit(local_origin), "public": urlsplit(public_origin)}
     if (
@@ -55,6 +67,29 @@ def render_gateway(
             "    @internal path /_internal /_internal/* /_native /_native/*",
             "    respond @internal 404",
         ]
+        if control:
+            start = lines.index("    @probe path /health /ready")
+            stop = lines.index("    @internal path /_internal /_internal/* /_native /_native/*")
+            lines[start:stop] = [
+                "    @probe path /health /ready /build.json",
+                "    handle @probe {",
+                "      reverse_proxy 127.0.0.1:8080 {",
+                "        header_up -Cookie",
+                "        header_up -Authorization",
+                "      }",
+                "    }",
+            ]
+        lines.extend(
+            [
+                "    @old_agents path /apps/agent-workbench /apps/agent-workbench/*",
+                "    handle @old_agents {",
+                "      route {",
+                "        uri strip_prefix /apps/agent-workbench",
+                "        redir * /agents{uri} 308",
+                "      }",
+                "    }",
+            ]
+        )
         for index, ((service, method), operations) in enumerate(sorted(groups.items())):
             name = f"{ingress}_api_{index}"
             paths = "|".join(op.pattern().pattern[1:-1] for op in operations)
@@ -86,7 +121,7 @@ def render_gateway(
                 )
             lines.extend(
                 [
-                    f"        reverse_proxy {service}:8080 {{",
+                    f"        reverse_proxy {service_upstream(service)} {{",
                     "          flush_interval -1",
                 ]
             )
@@ -158,7 +193,7 @@ def render_gateway(
                     "      route {",
                     f"        uri strip_prefix /{service}",
                     f"        request_header X-Fpl-Native-Ingress {quoted(token)}",
-                    f"        reverse_proxy {service}:8080 {{",
+                    f"        reverse_proxy {service_upstream(service)} {{",
                     "          flush_interval -1",
                     "        }",
                     "      }",

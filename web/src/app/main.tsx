@@ -3,6 +3,7 @@ import { ViewportBounds } from "@shared/ui/ViewportBounds";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React, { lazy, Suspense } from "react";
 import ReactDOM from "react-dom/client";
+import { clearRetainedRealtimeVoiceState } from "@features/models/realtime/realtimeVoiceMemory";
 import { StudioAuthGate } from "@app/StudioAuthGate";
 import "@shared/ui/theme.css";
 import "@app/tailwind.css";
@@ -18,7 +19,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <PageErrorBoundary>
       <ViewportBounds />
       <QueryClientProvider client={queryClient}>
-        <StudioAuthGate>
+        <StudioAuthGate onIdentityReset={clearRetainedRealtimeVoiceState}>
           <Suspense
             fallback={
               <div className="page-loading" role="status">

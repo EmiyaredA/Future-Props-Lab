@@ -9,18 +9,14 @@ img.code-agent-logo {
   mask: none;
 }
 .code-agent-logo.is-codex {
-  --agent-mark: url("/providers/codex-logo.svg");
   background: #7b6cf6;
 }
 .code-agent-logo.is-claude-code {
-  --agent-mark: url("/providers/claudecode-logo.svg");
   background: #d97757;
 }
 .code-agent-logo.is-opencode {
-  --agent-mark: url("/providers/opencode-logo.svg");
   background: var(--text-strong);
 }
 .code-agent-logo.is-dsh {
-  --agent-mark: url("/providers/deepseek-logo.svg");
   background: #4d6bfe;
 }

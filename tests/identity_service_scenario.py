@@ -32,7 +32,10 @@ app = create_app(
     local_origin="http://127.0.0.1:19000",
     public_origin="https://studio.example.test",
     private_key=private,
-    service_credentials={"agents": "agents-test-service-credential-123456"},
+    service_credentials={
+        "agents": "agents-test-service-credential-123456",
+        "gateway": "gateway-test-service-credential-123456",
+    },
 )
 apply(state / "service.db", "identity", MIGRATIONS)
 transport = httpx.ASGITransport(app=app)
@@ -125,6 +128,51 @@ async def scenario():
                 "/_internal/v1/authorization/live", json=live_body
             )
             assert unauthenticated_live.status_code == 403
+            source = await client.get(
+                "/_internal/v1/authorize",
+                headers={
+                    **unsafe,
+                    "X-Fpl-Target-Service": "gateway",
+                    "X-Fpl-Request-Method": "POST",
+                    "X-Fpl-Request-Uri": "/v1/automation/open",
+                },
+            )
+            assert source.status_code == 204, source.text
+            delegation_body = {
+                "caller": "gateway",
+                "purpose": "automation.resource.read",
+                "source_method": "POST",
+                "source_path": "/v1/automation/open",
+                "target_service": "visual",
+                "target_method": "GET",
+                "target_path": "/v1/visual-workshop/projects/owned-id",
+                "assertion": source.headers[HEADER],
+            }
+            delegation_headers = {"Authorization": "Bearer gateway-test-service-credential-123456"}
+            delegated = await client.post(
+                "/_internal/v1/authorization/delegate",
+                headers=delegation_headers,
+                json=delegation_body,
+            )
+            assert delegated.status_code == 200, delegated.text
+            delegated_actor = verify_context(
+                delegated.json()["assertion"],
+                service="visual",
+                method="GET",
+                path=delegation_body["target_path"],
+                public_key=private.public_key(),
+            )
+            assert delegated_actor.user_id == owner and delegated_actor.local is False
+            rejected_delegation = await client.post(
+                "/_internal/v1/authorization/delegate", headers=live_headers, json=delegation_body
+            )
+            assert rejected_delegation.status_code == 403
+            wrong_source = await client.post(
+                "/_internal/v1/authorization/delegate",
+                headers=delegation_headers,
+                json={**delegation_body, "assertion": authorized.headers[HEADER]},
+            )
+            assert wrong_source.status_code == 401
             forged = await client.get(
                 "/_internal/v1/authorize", headers={**auth_headers, "X-Fpl-Gateway": "untrusted"}
             )
@@ -150,6 +198,12 @@ async def scenario():
                 assert len(events) == 2
             logout = await client.post("/v1/auth/logout", headers=unsafe)
             assert logout.status_code == 204, logout.text
+            revoked_delegation = await client.post(
+                "/_internal/v1/authorization/delegate",
+                headers=delegation_headers,
+                json=delegation_body,
+            )
+            assert revoked_delegation.status_code == 401
             revoked = await client.get("/_internal/v1/authorize", headers=auth_headers)
             assert revoked.status_code == 401
             live = await client.post(

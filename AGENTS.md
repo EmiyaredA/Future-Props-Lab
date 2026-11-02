@@ -55,6 +55,7 @@
 
 - 经用户批准，正在将网站单体迁往同仓库独立服务和 Docker Compose。`backend/fpl_runtime/` 拥有无业务 ORM 依赖的服务清单、身份断言、路由与存储契约；`backend/fpl_deployment/` 拥有构建、归属检查和受控部署，不能成为业务实现层。每个服务独立数据库、迁移、Runner 和版本，不加载单体全部 ORM，不跨服务直接读写数据库。
 - `backend/fpl_identity/` 装配账号独立服务，自有账号事件与迁移；复用治理用例但不得依赖模型或工坊 ORM。账号创建使用显式事务回调，单体入口注入旧目录初始化，Identity 注入持久事件。镜像从静态源码闭包构建，不能复制全部后端。
+- `backend/fpl_gateway/` 拥有稳定网关控制面、能力发现、有归属校验的资源链接和去重变更游标；不导入门户、工坊或 Identity ORM。跨应用查询必须使用绑定原请求与目标用途的委托，不能用服务凭据任意代理账号。Caddy 与控制面共用一个 Gateway 发布单元，进程互相监督。
 - `backend/fpl_agents/` 拥有工作台独立装配、版本化原生采集协议、任务与帧回执、自有迁移和协调器；不加载 Identity ORM 或原生读取器。`backend/fpl_host/` 仅在 Mac 运行，主动连接回环入口；原生读取与检查点跟随不取得容器数据库或通用执行权限。工作台使用显式认证与存储依赖，单体适配入口仅作迁移期兼容。
 - 当前正式网站在多服务切换门禁通过前继续由现有入口运行；以下单体入口说明作为迁移期的恢复契约。新架构原生 Mac worker 主动连接受认证回环任务入口，容器不得挂载整个用户目录、个人 CLI 凭据或 Docker Socket。
 
@@ -80,6 +81,7 @@
 - Amadeus 新对话由已登记的 Codex、Claude Code、OpenCode、DeepSeek Harness 或 Pi CLI 执行；FPL 后端持有运行、事件、审批和恢复，CLI 仅获得任务工具授权，不继承个人工具或通用 Shell。连接部署配置归 TOML，按账号／用途的授权归治理；固定业务任务共用连接注册表并保留自有任务边界。外部 CLI 的模型和认证配置按白名单读取，执行配置、插件和工具目录不直接继承。
 - CLI/SDK/MCP 使用网站地址和 Management API Key。`console/governance/automation_operations.json` 维护业务白名单，`/v1/automation` 提供能力发现与有归属校验的资源链接；不控制浏览器标签页，不开放账号治理、密钥管理或任意系统命令。客户端凭据目录 0700、文件 0600，不通过参数或日志传递密钥。
 - Amadeus 使用当前页面侧栏和显式账号上下文接口，不依赖原生窗口或 IPC。下载与演示窗口使用浏览器能力，并保留弹窗阻止反馈和未保存保护。
+- 独立应用浏览器入口归 `web/src/app/entries/`，由 `web/service.config.ts` 与 `web/scripts/build-service.mjs` 单独构建。程序资源按服务及不可变版本托管，私有 API 与素材不进入程序缓存。`fpl_runtime/web.py` 核验文件哈希和所属接口契约，只拒绝相应应用旧页面的写入，不阻断其他应用或 SDK。
 - Web 保持 `app/ + features/ + shared/ + platform/ + generated/`：`app/` 负责入口、壳与路由，
   `features/` 拥有业务页面和用例，`shared/` 放无业务归属的复用 UI，`platform/` 放 API 与认证
   基础设施，`generated/` 只保存生成契约。

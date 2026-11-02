@@ -4,7 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from fastapi import HTTPException
-from sqlalchemy import select, text, update
+from sqlalchemy import or_, select, text, update
 from sqlalchemy.exc import IntegrityError
 
 from app.runtime.config import get_settings
@@ -57,7 +57,10 @@ async def create_source(session, owner, body, *, location):
         (
             await session.execute(
                 select(WorkbenchSource.__table__).where(
-                    WorkbenchSource.__table__.c.agent_id == body.agent_id
+                    or_(
+                        WorkbenchSource.__table__.c.agent_id == body.agent_id,
+                        WorkbenchSource.__table__.c.owner_user_id != owner,
+                    )
                 )
             )
         )

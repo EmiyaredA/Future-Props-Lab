@@ -4409,6 +4409,18 @@
       "model": "NativeWorkerSeen"
     },
     {
+      "table": "gateway_change_cursors",
+      "service": "gateway",
+      "module": "fpl_gateway.models",
+      "model": "ChangeCursor"
+    },
+    {
+      "table": "gateway_change_receipts",
+      "service": "gateway",
+      "module": "fpl_gateway.models",
+      "model": "ChangeReceipt"
+    },
+    {
       "table": "identity_account_events",
       "service": "identity",
       "module": "fpl_identity.models",

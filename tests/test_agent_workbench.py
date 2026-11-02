@@ -224,6 +224,14 @@ async def test_history_incremental_restart_search_and_private_sources(store, tmp
             json={"agent_id": "codex", "label": "other", "root": str(child)},
         )
     ).status_code == 409
+    # Changing the parser must not let another account claim the same native files.
+    assert (
+        await client.post(
+            "/v1/agent-workbench/sources",
+            headers={"x-private": "yes", "x-owner": "beta"},
+            json={"agent_id": "claude-code", "label": "other parser", "root": str(child)},
+        )
+    ).status_code == 409
     assert (
         await client.get(
             f"/v1/agent-workbench/operations/{source['id']}", headers={"x-owner": "beta"}
