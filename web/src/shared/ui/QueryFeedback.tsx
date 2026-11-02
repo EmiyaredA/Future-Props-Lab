@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 export function QueryFeedback({
   error,
   pending,
@@ -21,5 +22,5 @@ export function QueryFeedback({
         </button>
       </div>
     );
-  return pending ? <p role="status">正在加载…</p> : null;
+  return pending ? <LoadingState label="正在加载…" variant="region" /> : null;
 }

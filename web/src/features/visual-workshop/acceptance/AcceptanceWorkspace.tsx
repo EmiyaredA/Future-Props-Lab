@@ -1,3 +1,5 @@
+import { LoadingState } from "@shared/ui/LoadingState";
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -59,7 +61,7 @@ export function AcceptanceWorkspace({
         <button onClick={onBack} aria-label="返回创作工作台">
           <ArrowLeft size={18} />
         </button>
-        <img src="/brand/visual-workshop-mark-cutout.png" alt="" />
+        <ResponsiveImage src="/brand/visual-workshop-mark-cutout.png" alt="" />
         <div>
           <strong>{title}</strong>
           <small>视觉创作工坊 · 项目验收{readOnly ? " · 只读" : ""}</small>
@@ -115,13 +117,15 @@ export function AcceptanceWorkspace({
         )}
         {tab === "templates" ? (
           catalog.isPending ? (
-            <p role="status">正在读取固定模板…</p>
+            <LoadingState label="正在读取固定模板…" variant="region" />
           ) : (
             catalog.data && <ReadonlyTemplates catalog={catalog.data} />
           )
         ) : (
           <>
-            {summary.isPending && <p role="status">正在读取验收汇总…</p>}
+            {summary.isPending && (
+              <LoadingState label="正在读取验收汇总…" variant="region" />
+            )}
             {summary.isError && (
               <p role="alert">
                 汇总读取失败。

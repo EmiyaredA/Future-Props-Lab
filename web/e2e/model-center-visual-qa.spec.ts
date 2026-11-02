@@ -112,7 +112,7 @@ const catalog = {
       id: "realtime",
       supplier_id: null,
       name: "实时语音服务",
-      kind: "openai_realtime",
+      kind: "senseaudio_realtime",
       base_url: "wss://example.test/realtime",
       enabled: true,
       has_api_key: false,
@@ -146,7 +146,6 @@ const conversation = {
   system_prompt: "你是一个专业、友好、乐于助人的 AI 助手。",
   temperature: 0.7,
   max_tokens: 2048,
-  tools: [],
   draft_attachments: [],
   messages: [
     {
@@ -159,38 +158,10 @@ const conversation = {
       status: "completed",
       error_message: null,
       attachments: [],
-      tool_calls: [],
       created_at: "2026-09-10T08:01:00Z",
     },
   ],
 };
-
-const tools = [
-  ["提示词评测", "评估提示词在不同模型下的输出质量。", "success"],
-  ["模型对比", "在相同测试集下对比多个模型表现。", "success"],
-  ["批量测试", "批量导入测试数据并生成评测报告。", "success"],
-  ["安全性检测", "检测模型输出的安全风险与合规性。", "failure"],
-  ["上下文压测", "测试模型在长上下文场景下的性能。", "success"],
-  ["JSON 结构化校验", "验证模型输出是否符合 Schema。", "success"],
-  ["多轮对话评测", "评估多轮对话中的一致性和连贯性。", "success"],
-  ["工具调用测试", "测试模型识别参数与调用工具的能力。", "success"],
-].map(([name, description, mock_kind], index) => ({
-  id: `visual-tool-${index}`,
-  name,
-  description,
-  parameter_count: index % 3,
-  input_schema: { type: "object", properties: {}, additionalProperties: true },
-  mock_kind,
-  mock_result: { ok: true },
-  error_code: mock_kind === "failure" ? "mock_failure" : "",
-  error_message: mock_kind === "failure" ? "模拟安全检测失败" : "",
-  delay_ms: index * 20,
-  enabled: index !== 3,
-  revision: 0,
-  last_used_at: `2026-09-${String(10 + index).padStart(2, "0")}T08:00:00Z`,
-  created_at: "2026-09-01T08:00:00Z",
-  updated_at: "2026-09-10T08:00:00Z",
-}));
 
 const logRows = Array.from({ length: 10 }, (_, index) => ({
   id: `visual-log-${index}`,
@@ -212,20 +183,6 @@ async function installFixedData(page: Page) {
   await page.route("**/v1/model-test/conversations**", (route) =>
     route.fulfill({ json: { items: [conversation] } }),
   );
-  await page.route("**/v1/model-test/tools**", (route) =>
-    route.fulfill({
-      json: {
-        items: tools,
-        overview: {
-          total: tools.length,
-          enabled: tools.filter((tool) => tool.enabled).length,
-          failure: 1,
-          today_runs: 24,
-          recent: tools.slice(0, 3),
-        },
-      },
-    }),
-  );
   await page.route("**/v1/model-test/realtime-options", (route) =>
     route.fulfill({
       json: {
@@ -234,7 +191,7 @@ async function installFixedData(page: Page) {
             id: "realtime-1",
             provider_id: "realtime",
             provider_name: "实时语音服务",
-            provider_kind: "openai_realtime",
+            provider_kind: "senseaudio_realtime",
             slug: "realtime-1",
             label: "Realtime 1",
             voices: [{ value: "alloy", label: "Alloy" }],
@@ -243,7 +200,6 @@ async function installFixedData(page: Page) {
             output_sample_rate: 24000,
             commit_silence_ms: 400,
             supports_interruption: true,
-            supports_tools: true,
             instructions_max_chars: 20000,
             greeting_max_chars: 2000,
             input_format: "pcm_s16le",
@@ -386,7 +342,7 @@ test("captures fixed-data model center references across themes and modes", asyn
     await page.goto("/model-service");
     await setTheme(page, theme);
     await expect(
-      page.getByRole("heading", { name: "模型服务", exact: true }),
+      page.getByRole("heading", { name: "模型与智能体", exact: true }),
     ).toBeVisible();
     await page.screenshot({
       path: join(directory, `model-service-${theme}-1600x1000.png`),
@@ -404,21 +360,14 @@ test("captures fixed-data model center references across themes and modes", asyn
       ["语音识别", "speech"],
       ["实时语音", "realtime"],
     ] as const) {
-      await page.getByRole("tab", { name: mode, exact: true }).click();
+      const tab = page.getByRole("tab", { name: mode, exact: true });
+      await tab.click();
+      await expect(tab).toHaveAttribute("aria-selected", "true");
       await page.screenshot({
         path: join(directory, `model-test-${theme}-${slug}-1600x1000.png`),
         fullPage: false,
       });
     }
-
-    await page.goto("/model-test-tools");
-    await expect(
-      page.getByRole("heading", { name: "测试工具", exact: true }),
-    ).toBeVisible();
-    await page.screenshot({
-      path: join(directory, `test-tools-${theme}-1600x1000.png`),
-      fullPage: false,
-    });
 
     await page.goto("/model-call-logs");
     await expect(
@@ -434,6 +383,7 @@ test("captures fixed-data model center references across themes and modes", asyn
       fullPage: false,
     });
     await assertNoRootOverflow(page);
+    await page.getByRole("button", { name: "关闭调用详情" }).click();
   }
 
   await page.setViewportSize(mobile);
@@ -441,7 +391,6 @@ test("captures fixed-data model center references across themes and modes", asyn
   for (const [path, name] of [
     ["/model-service", "model-service"],
     ["/model-test", "model-test"],
-    ["/model-test-tools", "test-tools"],
     ["/model-call-logs", "call-logs"],
   ] as const) {
     await page.goto(path);
@@ -462,7 +411,6 @@ test("captures current workspace model center smoke views", async ({
     for (const [path, name] of [
       ["/model-service", "model-service"],
       ["/model-test", "model-test"],
-      ["/model-test-tools", "test-tools"],
       ["/model-call-logs", "call-logs"],
     ] as const) {
       await page.goto(path);

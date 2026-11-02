@@ -1,3 +1,7 @@
+import { FileBrowserLocation } from "./FileBrowserLocation";
+import { FileLibraryActions } from "./FileLibraryActions";
+import { LoadingState } from "@shared/ui/LoadingState";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { FileEmptyState } from "./FileEmptyState";
 import { AssetBrowserEditorDialog } from "./AssetBrowserEditorDialog";
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
@@ -10,7 +14,6 @@ import {
   Download,
   Filter,
   Folder,
-  FolderInput,
   FolderOpen,
   FolderPlus,
   Folders,
@@ -64,6 +67,10 @@ export type {
 const CANVAS_MEDIA_KINDS = new Set(["image", "video", "audio"]);
 
 export function AssetBrowser({
+  initialKind,
+  onOpenLocalFolder,
+  pageHeading = false,
+  openingLocalFolder,
   projectId,
   compact = false,
   importSource,
@@ -76,6 +83,10 @@ export function AssetBrowser({
   onImported,
   onAssetDragStart,
 }: {
+  initialKind?: string;
+  onOpenLocalFolder?: () => void;
+  pageHeading?: boolean;
+  openingLocalFolder?: boolean;
   projectId?: string;
   compact?: boolean;
   importSource?: AssetImportSource;
@@ -89,6 +100,7 @@ export function AssetBrowser({
   onAssetDragStart?: (event: DragEvent<HTMLElement>, file: ManagedFile) => void;
 }) {
   const {
+    transferProgress,
     client,
     fileInput,
     zipInput,
@@ -165,6 +177,7 @@ export function AssetBrowser({
     editorSubmitLabel,
     editorSubmitDisabled,
   } = useAssetBrowserController({
+    initialKind,
     projectId,
     compact,
     importSource,
@@ -222,7 +235,7 @@ export function AssetBrowser({
           : "来源项目"
         : projectId
           ? "项目素材"
-          : "全部文件";
+          : "文件管理";
   const sourceProjectFilter =
     resolvedImportSource === "cross-project" ? (
       <>
@@ -244,6 +257,8 @@ export function AssetBrowser({
 
   return (
     <section className={`file-browser${compact ? " is-compact" : ""}`}>
+      <TransferFeedback progress={transferProgress} />
+
       <div className="file-browser-controls">
         {compact ? (
           <>
@@ -401,61 +416,30 @@ export function AssetBrowser({
         ) : (
           <>
             <div className="file-browser-toolbar">
-              <div className="file-location">
-                <div className="file-breadcrumb" aria-label="文件路径">
-                  <button type="button" onClick={() => setFolderId(undefined)}>
-                    {rootBreadcrumbLabel}
-                  </button>
-                  {path.map((folder) => (
-                    <span key={folder.id}>
-                      <i aria-hidden>/</i>
-                      <button
-                        type="button"
-                        onClick={() => setFolderId(folder.id)}
-                      >
-                        {folder.name}
-                      </button>
-                    </span>
-                  ))}
-                </div>
-                {!foldersLoading && !filesLoading ? (
-                  <small>
-                    {childFolders.length} 个文件夹 · {files.length} 个文件
-                  </small>
-                ) : null}
-              </div>
+              <FileBrowserLocation
+                rootLabel={rootBreadcrumbLabel}
+                heading={pageHeading}
+                path={path}
+                folderCount={childFolders.length}
+                fileCount={files.length}
+                loading={foldersLoading || filesLoading}
+                onOpenFolder={setFolderId}
+              />
               {canManage ? (
                 <div className="file-primary-actions">
-                  {libraryMode ? (
+                  {libraryMode && (
                     <>
                       <button
                         type="button"
-                        disabled={archiveTransfer.isPending}
-                        onClick={() => exportFolderArchive(folderId)}
+                        className="primary"
+                        disabled={upload.isPending}
+                        onClick={() => fileInput.current?.click()}
                       >
-                        {archiveTransfer.isPending ? (
-                          <LoaderCircle className="spin" aria-hidden />
-                        ) : (
-                          <Download aria-hidden />
-                        )}
-                        导出当前目录
-                      </button>
-                      <button
-                        type="button"
-                        disabled={archiveTransfer.isPending}
-                        onClick={() => zipInput.current?.click()}
-                      >
-                        <Upload aria-hidden /> 导入 ZIP
-                      </button>
-                      <button
-                        type="button"
-                        disabled={archiveTransfer.isPending}
-                        onClick={() => folderInput.current?.click()}
-                      >
-                        <FolderInput aria-hidden /> 导入文件夹
+                        <Upload aria-hidden />{" "}
+                        {upload.isPending ? "正在上传…" : "上传文件"}
                       </button>
                     </>
-                  ) : null}
+                  )}
                   <button
                     type="button"
                     onClick={() =>
@@ -464,6 +448,16 @@ export function AssetBrowser({
                   >
                     <FolderPlus aria-hidden /> 新建文件夹
                   </button>
+                  {libraryMode && (
+                    <FileLibraryActions
+                      busy={archiveTransfer.isPending}
+                      onExport={() => exportFolderArchive(folderId)}
+                      onImportZip={() => zipInput.current?.click()}
+                      onImportFolder={() => folderInput.current?.click()}
+                      onOpenLocalFolder={onOpenLocalFolder}
+                      openingLocalFolder={openingLocalFolder}
+                    />
+                  )}
                   {libraryManage && projectId ? (
                     <>
                       <button
@@ -677,12 +671,20 @@ export function AssetBrowser({
           onUpload={() => undefined}
         />
       ) : foldersLoading || filesLoading || sourceProjectsLoading ? (
-        <div className="file-empty">正在读取文件…</div>
+        <LoadingState
+          label="正在读取文件…"
+          variant="region"
+          className="file-empty"
+        />
       ) : foldersFailed || filesFailed ? (
         <div className="file-empty">文件暂时无法读取，请稍后重试。</div>
-      ) : showContent ? (
+      ) : showContent &&
+        (!libraryMode ||
+          childFolders.length > 0 ||
+          files.length > 0 ||
+          noMatches) ? (
         <div className={`file-items ${view}`}>
-          {!compact && canManage ? (
+          {!compact && canManage && !libraryMode ? (
             <article className="file-upload-card">
               <button
                 type="button"
@@ -713,182 +715,190 @@ export function AssetBrowser({
               </button>
             </article>
           ) : null}
-          {childFolders.map((folder) => {
-            const menuKey = `folder-${folder.id}`;
-            return (
-              <article className="file-folder-item" key={folder.id}>
-                <button
-                  type="button"
-                  className="file-item-main"
-                  onClick={() => setFolderId(folder.id)}
-                >
-                  <span className="file-item-preview folder">
-                    <Folder aria-hidden />
-                  </span>
-                  <span className="file-item-copy">
-                    <strong title={folder.name}>{folder.name}</strong>
-                    <small>文件夹</small>
-                  </span>
-                </button>
-                <div className="file-item-footer">
-                  <time dateTime={folder.updated_at}>
-                    {relativeUpdatedAt(folder.updated_at)}
-                  </time>
-                  <span className="file-open-label">
-                    打开 <FolderOpen aria-hidden />
-                  </span>
-                </div>
-                {canManage ? (
-                  <ItemActionMenu
-                    id={`file-menu-${menuKey}`}
-                    label={folder.name}
-                    open={openMenu === menuKey}
-                    deleteLabel="删除"
-                    onToggle={() =>
-                      setOpenMenu((current) =>
-                        current === menuKey ? undefined : menuKey,
-                      )
-                    }
-                    onClose={() => setOpenMenu(undefined)}
-                    onExport={
-                      libraryMode
-                        ? () => exportFolderArchive(folder.id)
-                        : undefined
-                    }
-                    onRename={() =>
-                      openEditor({
-                        kind: "rename-folder",
-                        folder,
-                        name: folder.name,
-                      })
-                    }
-                    onMove={() =>
-                      openEditor({
-                        kind: "move-folder",
-                        folder,
-                        target: folder.parent_id ?? "root",
-                      })
-                    }
-                    onDelete={() =>
-                      openEditor({ kind: "delete-folder", folder })
-                    }
-                  />
-                ) : null}
-              </article>
-            );
-          })}
-          {files.map((file) => {
-            const itemKey = `${file.reference_id ?? "asset"}-${file.id}`;
-            const menuKey = `file-${itemKey}`;
-            const displayName = fileDisplayName(file);
-            const canDragToCanvas =
-              Boolean(onAssetDragStart) &&
-              CANVAS_MEDIA_KINDS.has(file.media_kind);
-            return (
-              <article
-                className={`file-asset-item${canDragToCanvas ? " is-canvas-draggable" : ""}`}
-                key={itemKey}
-              >
-                <button
-                  type="button"
-                  className="file-item-main"
-                  draggable={canDragToCanvas}
-                  aria-label={
-                    canDragToCanvas
-                      ? `预览或拖到画布：${displayName}`
-                      : `预览 ${displayName}`
-                  }
-                  title={
-                    canDragToCanvas
-                      ? `拖到画布可添加节点 · 点击预览 ${displayName}`
-                      : `预览 ${displayName}`
-                  }
-                  onDragStart={
-                    canDragToCanvas
-                      ? (event) => {
-                          onAssetDragStart?.(event, file);
-                        }
-                      : undefined
-                  }
-                  onClick={() => setPreviewFile(file)}
-                >
-                  <span className={`file-item-preview ${file.media_kind}`}>
-                    <AssetPreview file={file} />
-                  </span>
-                  <span className="file-item-copy">
-                    <strong title={displayName}>{displayName}</strong>
-                    <span className="file-item-tags">
-                      <small>{kindLabel(file.media_kind)}</small>
-                      <small>{extensionLabel(file)}</small>
-                      {file.is_reference ? <small>来自文件管理</small> : null}
+          <div className="file-folder-collection">
+            {childFolders.map((folder) => {
+              const menuKey = `folder-${folder.id}`;
+              return (
+                <article className="file-folder-item" key={folder.id}>
+                  <button
+                    type="button"
+                    className="file-item-main"
+                    onClick={() => setFolderId(folder.id)}
+                  >
+                    <span className="file-item-preview folder">
+                      <Folder aria-hidden />
                     </span>
-                    <small className="file-item-size">
-                      {formatFileSize(file.byte_size)}
-                    </small>
-                  </span>
-                </button>
-                <div className="file-item-footer">
-                  <time dateTime={file.updated_at}>
-                    {relativeUpdatedAt(file.updated_at)}
-                  </time>
-                  {showImport ? (
-                    <button
-                      type="button"
-                      className="file-item-primary-action"
-                      onClick={() =>
-                        act.mutate(async () => {
-                          await importFileToProject(file);
+                    <span className="file-item-copy">
+                      <strong title={folder.name}>{folder.name}</strong>
+                      <small>
+                        {libraryMode && view === "grid"
+                          ? relativeUpdatedAt(folder.updated_at)
+                          : "文件夹"}
+                      </small>
+                    </span>
+                  </button>
+                  <div className="file-item-footer">
+                    <time dateTime={folder.updated_at}>
+                      {relativeUpdatedAt(folder.updated_at)}
+                    </time>
+                    <span className="file-open-label">
+                      打开 <FolderOpen aria-hidden />
+                    </span>
+                  </div>
+                  {canManage ? (
+                    <ItemActionMenu
+                      id={`file-menu-${menuKey}`}
+                      label={folder.name}
+                      open={openMenu === menuKey}
+                      deleteLabel="删除"
+                      onToggle={() =>
+                        setOpenMenu((current) =>
+                          current === menuKey ? undefined : menuKey,
+                        )
+                      }
+                      onClose={() => setOpenMenu(undefined)}
+                      onExport={
+                        libraryMode
+                          ? () => exportFolderArchive(folder.id)
+                          : undefined
+                      }
+                      onRename={() =>
+                        openEditor({
+                          kind: "rename-folder",
+                          folder,
+                          name: folder.name,
                         })
                       }
-                    >
-                      <Plus aria-hidden /> 导入
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="file-item-primary-action"
-                      onClick={() => void downloadFile(file)}
-                    >
-                      <Download aria-hidden /> 下载
-                    </button>
-                  )}
-                </div>
-                {canManage ? (
-                  <ItemActionMenu
-                    id={`file-menu-${menuKey}`}
-                    label={fileDisplayName(file)}
-                    open={openMenu === menuKey}
-                    deleteLabel={file.is_reference ? "移除引用" : "删除"}
-                    onToggle={() =>
-                      setOpenMenu((current) =>
-                        current === menuKey ? undefined : menuKey,
-                      )
+                      onMove={() =>
+                        openEditor({
+                          kind: "move-folder",
+                          folder,
+                          target: folder.parent_id ?? "root",
+                        })
+                      }
+                      onDelete={() =>
+                        openEditor({ kind: "delete-folder", folder })
+                      }
+                    />
+                  ) : null}
+                </article>
+              );
+            })}
+          </div>
+          <div className="file-asset-collection">
+            {files.map((file) => {
+              const itemKey = `${file.reference_id ?? "asset"}-${file.id}`;
+              const menuKey = `file-${itemKey}`;
+              const displayName = fileDisplayName(file);
+              const canDragToCanvas =
+                Boolean(onAssetDragStart) &&
+                CANVAS_MEDIA_KINDS.has(file.media_kind);
+              return (
+                <article
+                  className={`file-asset-item${canDragToCanvas ? " is-canvas-draggable" : ""}`}
+                  key={itemKey}
+                >
+                  <button
+                    type="button"
+                    className="file-item-main"
+                    draggable={canDragToCanvas}
+                    aria-label={
+                      canDragToCanvas
+                        ? `预览或拖到画布：${displayName}`
+                        : `预览 ${displayName}`
                     }
-                    onClose={() => setOpenMenu(undefined)}
-                    onDownload={() => {
-                      setOpenMenu(undefined);
-                      void downloadFile(file);
-                    }}
-                    onRename={() =>
-                      openEditor({
-                        kind: "rename-file",
-                        file,
-                        name: fileDisplayName(file),
-                      })
+                    title={
+                      canDragToCanvas
+                        ? `拖到画布可添加节点 · 点击预览 ${displayName}`
+                        : `预览 ${displayName}`
                     }
-                    onMove={() =>
-                      openEditor({
-                        kind: "move-file",
-                        file,
-                        target: file.folder_id ?? "root",
-                      })
+                    onDragStart={
+                      canDragToCanvas
+                        ? (event) => {
+                            onAssetDragStart?.(event, file);
+                          }
+                        : undefined
                     }
-                    onDelete={() => openEditor({ kind: "delete-file", file })}
-                  />
-                ) : null}
-              </article>
-            );
-          })}
+                    onClick={() => setPreviewFile(file)}
+                  >
+                    <span className={`file-item-preview ${file.media_kind}`}>
+                      <AssetPreview file={file} />
+                    </span>
+                    <span className="file-item-copy">
+                      <strong title={displayName}>{displayName}</strong>
+                      <span className="file-item-tags">
+                        <small>{kindLabel(file.media_kind)}</small>
+                        <small>{extensionLabel(file)}</small>
+                        {file.is_reference ? <small>来自文件管理</small> : null}
+                      </span>
+                      <small className="file-item-size">
+                        {formatFileSize(file.byte_size)}
+                      </small>
+                    </span>
+                  </button>
+                  <div className="file-item-footer">
+                    <time dateTime={file.updated_at}>
+                      {relativeUpdatedAt(file.updated_at)}
+                    </time>
+                    {showImport ? (
+                      <button
+                        type="button"
+                        className="file-item-primary-action"
+                        onClick={() =>
+                          act.mutate(async () => {
+                            await importFileToProject(file);
+                          })
+                        }
+                      >
+                        <Plus aria-hidden /> 导入
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="file-item-primary-action"
+                        onClick={() => void downloadFile(file)}
+                      >
+                        <Download aria-hidden /> 下载
+                      </button>
+                    )}
+                  </div>
+                  {canManage ? (
+                    <ItemActionMenu
+                      id={`file-menu-${menuKey}`}
+                      label={fileDisplayName(file)}
+                      open={openMenu === menuKey}
+                      deleteLabel={file.is_reference ? "移除引用" : "删除"}
+                      onToggle={() =>
+                        setOpenMenu((current) =>
+                          current === menuKey ? undefined : menuKey,
+                        )
+                      }
+                      onClose={() => setOpenMenu(undefined)}
+                      onDownload={() => {
+                        setOpenMenu(undefined);
+                        void downloadFile(file);
+                      }}
+                      onRename={() =>
+                        openEditor({
+                          kind: "rename-file",
+                          file,
+                          name: fileDisplayName(file),
+                        })
+                      }
+                      onMove={() =>
+                        openEditor({
+                          kind: "move-file",
+                          file,
+                          target: file.folder_id ?? "root",
+                        })
+                      }
+                      onDelete={() => openEditor({ kind: "delete-file", file })}
+                    />
+                  ) : null}
+                </article>
+              );
+            })}
+          </div>
           {noMatches ? (
             <div className="file-results-empty">
               <Search aria-hidden />
@@ -914,18 +924,17 @@ export function AssetBrowser({
         />
       )}
       {act.isPending || libraryCommit.isPending ? (
-        <div className="file-busy" role="status">
-          正在处理…
-        </div>
+        <LoadingState
+          label="正在处理…"
+          variant="region"
+          className="file-busy"
+        />
       ) : null}
       {previewFile
         ? createPortal(
             <AssetPreviewDialog
               file={previewFile}
               onClose={() => setPreviewFile(undefined)}
-              onDownload={() => {
-                void downloadFile(previewFile);
-              }}
             />,
             document.body,
           )

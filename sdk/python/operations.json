@@ -103,10 +103,6 @@
     "method": "delete_generation_task",
     "resource": "testing"
   },
-  "DELETE /v1/model-test/tools/{tool_id}": {
-    "method": "delete_tool",
-    "resource": "test_tools"
-  },
   "DELETE /v1/model-test/transcription-tasks/{task_id}": {
     "method": "delete_transcription_task",
     "resource": "testing"
@@ -383,6 +379,10 @@
     "method": "video_media_info",
     "resource": "files"
   },
+  "GET /v1/files/{asset_id}/preview": {
+    "method": "file_preview_metadata",
+    "resource": "files"
+  },
   "GET /v1/files/{asset_id}/thumbnail": {
     "method": "preview_thumbnail",
     "resource": "files"
@@ -626,14 +626,6 @@
   "GET /v1/model-test/realtime-options": {
     "method": "realtime_options",
     "resource": "testing"
-  },
-  "GET /v1/model-test/tools": {
-    "method": "list_tools",
-    "resource": "test_tools"
-  },
-  "GET /v1/model-test/tools/{tool_id}": {
-    "method": "get_tool",
-    "resource": "test_tools"
   },
   "GET /v1/model-test/transcription-options": {
     "method": "transcription_options",
@@ -1130,10 +1122,6 @@
   "PATCH /v1/model-test/conversations/{conversation_id}": {
     "method": "patch_conversation",
     "resource": "testing"
-  },
-  "PATCH /v1/model-test/tools/{tool_id}": {
-    "method": "update_tool",
-    "resource": "test_tools"
   },
   "PATCH /v1/motion-compositor/projects/{project_id}": {
     "method": "patch_project",
@@ -1670,14 +1658,6 @@
   "POST /v1/model-test/generation-tasks/{task_id}/retry-materialization": {
     "method": "retry_materialization",
     "resource": "testing"
-  },
-  "POST /v1/model-test/tools": {
-    "method": "create_tool",
-    "resource": "test_tools"
-  },
-  "POST /v1/model-test/tools/{tool_id}/execute": {
-    "method": "execute_tool",
-    "resource": "test_tools"
   },
   "POST /v1/model-test/transcription-tasks": {
     "method": "create_transcription_task",

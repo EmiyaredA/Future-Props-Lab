@@ -1,3 +1,5 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { containDialogComposition } from "./dialogKeyboard";
 import { X, Download } from "lucide-react";
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
@@ -48,9 +50,9 @@ export function MediaPreview({
           {error ? (
             <p role="alert">原图加载失败</p>
           ) : url ? (
-            <img src={url} alt="原始素材" />
+            <ResponsiveImage src={url} alt="原始素材" />
           ) : (
-            <p role="status">加载中…</p>
+            <LoadingState label="加载中…" variant="region" />
           )}
         </div>
       </div>

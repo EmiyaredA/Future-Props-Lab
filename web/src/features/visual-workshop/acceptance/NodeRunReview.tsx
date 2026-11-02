@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
@@ -58,7 +59,8 @@ export function NodeRunReview({
       queryKey: ["visual-node-acceptance", projectId],
     });
   };
-  if (run.isPending) return <p role="status">正在读取验收记录…</p>;
+  if (run.isPending)
+    return <LoadingState label="正在读取验收记录…" variant="region" />;
   if (run.isError || !run.data)
     return (
       <p role="alert">

@@ -216,7 +216,6 @@ test("realtime reducer tracks streaming state and retains results on end", () =>
       turnId: "u1",
       userTranscript: "你好",
       assistantTranscript: "",
-      toolCalls: [],
     },
   ]);
 });
@@ -278,7 +277,6 @@ test("realtime reducer replaces cumulative user hypotheses without duplicating t
       turnId: "u1",
       userTranscript: "你现在想了解哪些内容",
       assistantTranscript: "可以帮你",
-      toolCalls: [],
     },
   ]);
 
@@ -311,75 +309,11 @@ test("realtime reducer replaces cumulative user hypotheses without duplicating t
       turnId: "u1",
       userTranscript: "你现在想了解哪些内容",
       assistantTranscript: "可以帮你",
-      toolCalls: [],
     },
     {
       turnId: "u2",
       userTranscript: "第二个问题",
       assistantTranscript: "第二个回答",
-      toolCalls: [],
     },
-  ]);
-});
-
-test("realtime reducer merges tool progress into its assistant turn", () => {
-  let state = realtimeVoiceReducer(initialRealtimeVoiceState, {
-    type: "prepare",
-    toolIds: ["tool-weather"],
-  });
-  state = realtimeVoiceReducer(state, {
-    type: "server",
-    event: { type: "call_started" },
-    now: 1_000,
-  });
-  state = realtimeVoiceReducer(state, {
-    type: "server",
-    event: { type: "user_speech_started", turn_id: "turn-weather" },
-    now: 1_100,
-  });
-  state = realtimeVoiceReducer(state, {
-    type: "server",
-    event: {
-      type: "tool_call_update",
-      turn_id: "turn-weather",
-      call_id: "call-weather",
-      id: "stored-call",
-      tool_id: "tool-weather",
-      tool_name: "查询天气",
-      arguments: { city: "上海" },
-      status: "running",
-      success: null,
-      duration_ms: 0,
-    },
-    now: 1_200,
-  });
-  expect(state.status).toBe("thinking");
-  state = realtimeVoiceReducer(state, {
-    type: "server",
-    event: {
-      type: "tool_call_update",
-      turn_id: "turn-weather",
-      call_id: "call-weather",
-      id: "stored-call",
-      tool_id: "tool-weather",
-      tool_name: "查询天气",
-      arguments: { city: "上海" },
-      status: "completed",
-      success: true,
-      result: { weather: "晴" },
-      duration_ms: 128,
-    },
-    now: 1_328,
-  });
-  expect(state.toolIds).toEqual(["tool-weather"]);
-  expect(state.turns[0]?.toolCalls).toEqual([
-    expect.objectContaining({
-      id: "stored-call",
-      callId: "call-weather",
-      toolName: "查询天气",
-      status: "completed",
-      result: { weather: "晴" },
-      durationMs: 128,
-    }),
   ]);
 });

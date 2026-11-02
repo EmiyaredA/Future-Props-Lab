@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useState, type ReactNode } from "react";
 import "./read-only-page.css";
 export function ReadOnlyPage({
@@ -28,7 +29,7 @@ export function ReadOnlyPage({
           </p>
         </div>
       </header>
-      {loading ? <p role="status">正在加载…</p> : null}
+      {loading ? <LoadingState label="正在加载…" variant="region" /> : null}
       {error ? (
         <p role="alert">
           {error instanceof Error ? error.message : "内容无法读取"}

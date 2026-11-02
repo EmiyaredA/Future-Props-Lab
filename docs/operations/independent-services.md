@@ -22,9 +22,9 @@ npm run services:build:web -- agents
 npm run services:build -- agents --build --web-release .local/service-web/agents/BUILD_ID
 ```
 
-当前独立镜像入口包含 Identity、Gateway、Agents、Portal 与 Assets；其他服务的独立构建会明确拒绝。Gateway 包含 Caddy 与独立控制面，互相监督并持有自己的数据锁。构建器计算可审计源码闭包并拒绝单体入口、全部 ORM、工坊与模型内部依赖。镜像不复制整个后端，不打包配置、密钥、运行数据或仓库。Identity 自有锁文件固定所需依赖；版本由实际输入内容决定。
+当前独立镜像入口包含 Identity、Gateway、Agents、Portal、Assets 与 Rendering；其他服务的独立构建会明确拒绝。Gateway 包含 Caddy 与独立控制面，互相监督并持有自己的数据锁。构建器计算可审计源码闭包并拒绝单体入口、全部 ORM、工坊与模型内部依赖。镜像不复制整个后端，不打包配置、密钥、运行数据或仓库。Identity 自有锁文件固定所需依赖；版本由实际输入内容决定。
 
-`deploy/compose.yaml` 目前装配 Identity、Agents、Portal、Assets 和 Gateway，启动时只使用已构建镜像，不自动构建或迁移。数据库初始化必须通过所属镜像显式执行 `migrate`；已有数据库迁移历史不符时启动失败。`create-admin` 只接受标准输入 JSON，并且仅用于没有账号的新安装；已有正式账号应从受控导入保留。
+`deploy/compose.yaml` 目前装配 Identity、Agents、Portal、Assets、Rendering 和 Gateway，启动时只使用已构建镜像，不自动构建或迁移。数据库初始化必须通过所属镜像显式执行 `migrate`；已有数据库迁移历史不符时启动失败。`create-admin` 只接受标准输入 JSON，并且仅用于没有账号的新安装；已有正式账号应从受控导入保留。
 
 ## Docker 隔离验收
 
@@ -111,3 +111,14 @@ Assets 已接通独立 HTTP、浏览器、镜像及 Compose，并通过五服务
 本批验收：全量后端 1898 项通过、4 项条件跳过，随后新增缓存回归与相关场景 15 项通过；Web 279 个文件、1795 项全部通过，无未处理异常。代码、格式、公开契约与 SDK、官方导入包、构建、Agent Note 和文档保护检查通过。真实五服务运行 `fpl-isolated-agents-c94f0ac6be` 验证了上传、Range、缩略图、归档、独立替换、SIGKILL 后恢复、SQLite 完整性与外键、停止门户后的素材读取和新登录，以及 Mac 原生采集继续同步。390／768／1600 的明暗主题检查已通过，手机按钮实际文字保持一行且触控高度至少 44px。
 
 已验证素材镜像为 `fpl/assets:85ff1dcf822cdde1e634`，浏览器版本 `6cec58bc6573604493c9`；Identity 为 `fpl/identity:cc7eb193964e94f67ca3`，Gateway 为 `fpl/gateway:7f9f8b1f8312af6f4db7`。这些仅为隔离验收版本，尚未安装到正式数据。后续合入主目录已提交的新界面、文件预览与功能退役改动后，需要重新核验契约和依赖边界，不能用这一批报告代替最终切换验收。
+
+
+## 文件预览与 Rendering 联调
+
+已对齐主目录提交至 `8f7b148b` 的首页、进度反馈、响应式图片、文件真实预览及测试工具退役改动；受保护文档参考保留为独立提交。独立页面的图片与生成缩略图使用所属服务版本前缀，不能依赖门户在线托管其他服务的资源。
+
+构建 `npm run services:build -- rendering --build` 后，在工作台容器验收命令增加 `--assets-image fpl/assets:VERSION --portal-image fpl/portal:VERSION --rendering-image fpl/rendering:VERSION`。此时预览、缩略图、媒体信息、裁剪和取帧由 Rendering 独立容器承接；它通过受限原请求委托读取 Assets 的同一账号素材，不挂载素材卷或数据库。验收使用合成媒体，包含真实 FFmpeg、PDF、文本与中文名称、音频波形、宫格导出及独立重建。Assets 另验证 40 MiB 上传和 ZIP 导入。
+
+这只是 Rendering 的媒体处理接口切片。确定性时间线导出、持久任务恢复、其余工坊与正式导入尚未完成；全部通过前继续使用原正式实例。
+
+网关运行日志通过 [Caddy 全局日志配置](https://caddyserver.com/docs/caddyfile/options#log)和 [filter](https://caddyserver.com/docs/caddyfile/directives/log#filter) 删除请求及响应头。默认敏感头规则不能覆盖自定义身份断言；SSE 取消和上游故障也不得把断言写进错误日志。实际容器验收检查错误日志中没有身份头和 JWT。

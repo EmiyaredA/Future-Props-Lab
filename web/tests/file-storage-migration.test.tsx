@@ -10,7 +10,12 @@ import {
 } from "@features/files/api";
 
 vi.mock("@features/files/AssetBrowser", () => ({
-  AssetBrowser: () => <div>素材列表</div>,
+  AssetBrowser: ({ onOpenLocalFolder }: { onOpenLocalFolder: () => void }) => (
+    <div>
+      <h1>文件管理</h1>
+      <button onClick={onOpenLocalFolder}>打开本地文件夹</button>素材列表
+    </div>
+  ),
 }));
 
 vi.mock("@features/files/api", async () => {
@@ -86,6 +91,9 @@ test("shows open-library control without workspace eyebrow", async () => {
     await screen.findByRole("heading", { name: "文件管理" }),
   ).toBeInTheDocument();
   expect(screen.queryByText("工作空间")).not.toBeInTheDocument();
+  expect(
+    screen.queryByText("统一管理可供各个项目引用的图片、视频、音频和文档。"),
+  ).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "打开本地文件夹" }));
   await waitFor(() => expect(openLibraryFolder).toHaveBeenCalledTimes(1));
 });

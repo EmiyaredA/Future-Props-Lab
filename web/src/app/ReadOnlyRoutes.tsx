@@ -53,7 +53,13 @@ export function ReadOnlyRoutes({
   navigate: (page: AppPage, id?: string, documentId?: string) => void;
 }) {
   const { page, projectId, documentId } = route;
-  if (page === "files") return <Files />;
+  if (page === "files")
+    return (
+      <Files
+        key={route.search}
+        initialKind={new URLSearchParams(route.search).get("kind") ?? undefined}
+      />
+    );
   if (page === "visual-workshop-assets") return <Files projectId={projectId} />;
   if (page === "visual-workshop-tasks")
     return (

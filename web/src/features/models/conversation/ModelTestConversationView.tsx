@@ -1,3 +1,4 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import {
   isValidElement,
   type ComponentPropsWithoutRef,
@@ -20,8 +21,7 @@ import type {
   ModelTestAttachment,
   ModelTestMessage,
 } from "@features/models/api";
-import { ModelTestToolCallList } from "@features/models/conversation/ModelTestToolControls";
-import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
+import { useImagePreviewUrl } from "@platform/api/useImagePreviewUrl";
 import { errorPresentation } from "@features/models/conversation/modelTestPresentation";
 
 function extractText(node: ReactNode): string {
@@ -100,24 +100,31 @@ export function AttachmentImage({
   attachment: ModelTestAttachment;
   onOpen: (url: string, name: string) => void;
 }) {
-  const { url } = useApiBlobUrl(
+  const { ref, url } = useImagePreviewUrl(
     `/v1/model-test/conversations/${encodeURIComponent(conversationId)}` +
       `/attachments/${encodeURIComponent(attachment.id)}/content`,
   );
   return (
-    <button
-      type="button"
-      className="attachment-image"
-      aria-label={`查看图片 ${attachment.original_filename}`}
-      disabled={!url}
-      onClick={() => url && onOpen(url, attachment.original_filename)}
-    >
-      {url ? (
-        <img src={url} alt={attachment.original_filename} />
-      ) : (
-        <ImageIcon aria-hidden />
-      )}
-    </button>
+    <span ref={ref}>
+      <button
+        type="button"
+        className="attachment-image"
+        aria-label={`查看图片 ${attachment.original_filename}`}
+        disabled={!url}
+        onClick={() =>
+          onOpen(
+            `/v1/model-test/conversations/${encodeURIComponent(conversationId)}/attachments/${encodeURIComponent(attachment.id)}/content`,
+            attachment.original_filename,
+          )
+        }
+      >
+        {url ? (
+          <ResponsiveImage src={url} alt={attachment.original_filename} />
+        ) : (
+          <ImageIcon aria-hidden />
+        )}
+      </button>
+    </span>
   );
 }
 
@@ -185,7 +192,6 @@ export function MessageCard({
             ))}
           </div>
         ) : null}
-        <ModelTestToolCallList calls={message.tool_calls ?? []} />
         {message.role === "assistant" ? (
           content ? (
             <div className="markdown-body">

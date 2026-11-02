@@ -1,3 +1,5 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { openAmadeus } from "@platform/assistant";
 import { useState } from "react";
 import {
@@ -10,7 +12,7 @@ import {
   useAccountId,
   useAccountPermission,
 } from "@platform/auth/AccountAccess";
-import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
+import { useImagePreviewUrl } from "@platform/api/useImagePreviewUrl";
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
 import { KnowledgeSidebar } from "../KnowledgeSidebar";
 import { KnowledgeSections, type KnowledgeSection } from "../KnowledgeSections";
@@ -28,11 +30,11 @@ import "../thought-workshop.css";
 import "../knowledge.css";
 import "./community.css";
 function Cover({ publication }: { publication: Publication }) {
-  const { url } = useApiBlobUrl(publication.cover_url);
+  const { ref, url } = useImagePreviewUrl(publication.cover_url);
   return (
-    <div className="community-book-cover">
+    <div ref={ref} className="community-book-cover">
       {url ? (
-        <img src={url} alt="" />
+        <ResponsiveImage src={url} alt="" />
       ) : (
         <>
           <BookOpen size={30} />
@@ -286,7 +288,9 @@ export function CommunityPage({
               </article>
             ))}
           </div>
-          {published.isPending && <p role="status">正在加载用户发布…</p>}
+          {published.isPending && (
+            <LoadingState label="正在加载用户发布…" variant="region" />
+          )}
           {published.hasNextPage && (
             <button
               className="btn community-load-more"

@@ -153,6 +153,7 @@ test("imports, exports, and opens a visual project snapshot", async () => {
   await waitFor(() =>
     expect(exportVisualWorkshopProjectSnapshot).toHaveBeenCalledWith(
       "project-1",
+      expect.objectContaining({ onProgress: expect.any(Function) }),
     ),
   );
   expect(createObjectURL).toHaveBeenCalled();

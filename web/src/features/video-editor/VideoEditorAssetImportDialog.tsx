@@ -1,3 +1,4 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import { Image, Music2, Type, Video } from "lucide-react";
 import type { components } from "@generated/api";
@@ -20,7 +21,7 @@ function ImportSourcePreview({ asset }: { asset: AvailableAsset }) {
           : Type;
 
   if (url && asset.mediaKind === "image") {
-    return <img className="ve-import-preview" src={url} alt="" />;
+    return <ResponsiveImage className="ve-import-preview" src={url} alt="" />;
   }
   if (url && asset.mediaKind === "video") {
     return (

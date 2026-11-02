@@ -767,6 +767,7 @@ test("uploads, previews, sends and removes private image drafts", async () => {
     expect(uploadModelTestAttachments).toHaveBeenCalledWith(
       "c1",
       expect.arrayContaining([expect.objectContaining({ name: "screen.png" })]),
+      expect.objectContaining({ onProgress: expect.any(Function) }),
     ),
   );
   await waitFor(() =>

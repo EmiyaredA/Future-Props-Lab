@@ -252,7 +252,6 @@ def test_feature_query_keys_have_one_owner() -> None:
             '"model-categories"',
             '"model-logs"',
             '"model-test-conversations"',
-            '"model-test-tools"',
             '"model-test-generation-options"',
             '"model-test-transcription-options"',
         ),

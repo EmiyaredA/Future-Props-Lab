@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -352,7 +353,11 @@ export function CompactAudioGenerationDrawer({
           ) : (
             <Sparkles aria-hidden />
           )}
-          {generating ? "生成中" : "生成"}
+          {generating ? (
+            <LoadingState variant="inline" label="生成中" />
+          ) : (
+            "生成"
+          )}
         </button>
       </footer>
     </form>

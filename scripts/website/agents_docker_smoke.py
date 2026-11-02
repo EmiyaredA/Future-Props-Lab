@@ -31,6 +31,7 @@ def exercise(
     browser_check=False,
     portal_image=None,
     assets_image=None,
+    rendering_image=None,
     gateway_image="caddy@sha256:36c24ad91a7ff7bc4c87fe22bfa8df3c4b18da0773d73fc12ee2c52b98c0bb7e",
 ):
     project = "fpl-isolated-agents-" + secrets.token_hex(5)
@@ -38,12 +39,13 @@ def exercise(
     subprocess.run(["git", "check-ignore", "--quiet", str(root)], check=True, cwd=ROOT)
     root.mkdir(mode=0o700)
     control = not gateway_image.startswith("caddy@")
-    for name in ("identity", "agents", "gateway", "portal", "assets", "native"):
+    for name in ("identity", "agents", "gateway", "portal", "assets", "rendering", "native"):
         (root / name).mkdir(mode=0o700)
     gateway_token, service_token, lane_token, worker_token = [
         secrets.token_urlsafe(48) for _ in range(4)
     ]
     assets_token = secrets.token_urlsafe(48)
+    rendering_token = secrets.token_urlsafe(48)
     gateway_service_token = secrets.token_urlsafe(48)
     password = secrets.token_urlsafe(32) + "-Aa9!"
     key = Ed25519PrivateKey.generate()
@@ -57,6 +59,8 @@ def exercise(
     material = {
         "identity.toml": config.encode(),
         "agents.toml": config.encode(),
+        "rendering.toml": b'[storage]\ndatabase_path = "/state/service.db"\n',
+        "rendering-client.json": json.dumps({"credential": rendering_token}).encode(),
         "assets.toml": b'[storage]\ndatabase_path = "/state/service.db"\n',
         "assets-client.json": json.dumps({"credential": assets_token}).encode(),
         "gateway-identity-token": gateway_service_token.encode(),
@@ -75,7 +79,12 @@ def exercise(
         "native-ingress": lane_token.encode(),
         "workers.json": json.dumps({"fixture-collector": worker_token}).encode(),
         "service-credentials.json": json.dumps(
-            {"agents": service_token, "gateway": gateway_service_token, "assets": assets_token}
+            {
+                "agents": service_token,
+                "gateway": gateway_service_token,
+                "assets": assets_token,
+                "rendering": rendering_token,
+            }
         ).encode(),
         "publishers.json": b"{}",
         "connection.json": json.dumps(
@@ -131,6 +140,10 @@ def exercise(
             "FPL_SERVICE_UID": str(os.getuid()),
             "FPL_SERVICE_GID": str(os.getgid()),
             "FPL_IDENTITY_IMAGE": identity_image,
+            "FPL_RENDERING_IMAGE": rendering_image or "fpl/rendering:acceptance-unselected",
+            "FPL_RENDERING_STATE": str(root / "rendering"),
+            "FPL_RENDERING_CONFIG": str(root / "rendering.toml"),
+            "FPL_RENDERING_IDENTITY_CLIENT": str(root / "rendering-client.json"),
             "FPL_ASSETS_IMAGE": assets_image or "fpl/assets:acceptance-unselected",
             "FPL_ASSETS_STATE": str(root / "assets"),
             "FPL_ASSETS_CONFIG": str(root / "assets.toml"),
@@ -183,7 +196,16 @@ def exercise(
             timeout=120,
         )
         output = result.stdout + result.stderr
-        for secret in (gateway_token, service_token, lane_token, worker_token, password):
+        for secret in (
+            gateway_token,
+            service_token,
+            lane_token,
+            worker_token,
+            password,
+            assets_token,
+            rendering_token,
+            gateway_service_token,
+        ):
             output = output.replace(secret, "[redacted]")
         with (root / "commands.log").open("a") as log:
             log.write("compose " + " ".join(args) + "\n" + output + "\n")
@@ -228,6 +250,8 @@ def exercise(
             "create-admin",
             input_text=json.dumps({"username": "isolated-admin", "password": password}),
         )
+        if rendering_image:
+            compose("run", "--rm", "--no-deps", "rendering", "migrate")
         if assets_image:
             compose("run", "--rm", "--no-deps", "assets", "migrate")
         if portal_image:
@@ -241,6 +265,7 @@ def exercise(
             "gateway",
             *(("portal",) if portal_image else ()),
             *(("assets",) if assets_image else ()),
+            *(("rendering",) if rendering_image else ()),
         )
         collector = subprocess.Popen(
             [
@@ -370,6 +395,19 @@ def exercise(
                         password=password,
                     )
                 )
+            if rendering_image:
+                from rendering_docker_checks import exercise_rendering
+
+                checks.append(
+                    exercise_rendering(
+                        root=root,
+                        client=client,
+                        unsafe=unsafe,
+                        compose=compose,
+                        started=started,
+                        wait=wait,
+                    )
+                )
             if portal_image:
                 wait(client, "/")
                 stable = {
@@ -379,6 +417,7 @@ def exercise(
                         "agents",
                         "gateway",
                         *(("assets",) if assets_image else ()),
+                        *(("rendering",) if rendering_image else ()),
                     )
                 }
                 if browser_check:
@@ -501,6 +540,10 @@ def exercise(
             )
             assert "isolated" in diagnostics.stdout
             checks.append("Agents owns only its database and passes SQLite integrity checks")
+            gateway_logs = compose("logs", "--no-color", "gateway").stdout
+            assert "X-Fpl-Context" not in gateway_logs
+            assert "eyJhbGciOi" not in gateway_logs
+            checks.append("Gateway runtime errors omit request headers and identity assertions")
         report = {
             "status": "passed",
             "project": project,
@@ -529,6 +572,7 @@ def exercise(
             "agents",
             "portal",
             "assets",
+            "rendering",
             check=False,
         )
         compose("down", "--remove-orphans", check=False)
@@ -541,6 +585,7 @@ if __name__ == "__main__":
     parser.add_argument("--browser", action="store_true")
     parser.add_argument("--portal-image")
     parser.add_argument("--assets-image")
+    parser.add_argument("--rendering-image")
     parser.add_argument(
         "--gateway-image",
         default="caddy@sha256:36c24ad91a7ff7bc4c87fe22bfa8df3c4b18da0773d73fc12ee2c52b98c0bb7e",
@@ -555,4 +600,5 @@ if __name__ == "__main__":
         browser_check=args.browser,
         portal_image=args.portal_image,
         assets_image=args.assets_image,
+        rendering_image=args.rendering_image,
     )

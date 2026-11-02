@@ -214,7 +214,6 @@ test("realtime voice tab is capability-driven, keyboard reachable and responsive
             output_sample_rate: 24000,
             commit_silence_ms: 400,
             supports_interruption: true,
-            supports_tools: true,
             instructions_max_chars: 20_000,
             greeting_max_chars: 2_000,
             input_format: "pcm_s16le",
@@ -276,22 +275,6 @@ test("realtime voice tab is capability-driven, keyboard reachable and responsive
       }),
     });
   });
-  await page.route("**/v1/model-test/tools", async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({
-        revision: 0,
-        overview: {
-          total_tools: 0,
-          enabled_tools: 0,
-          today_runs: 0,
-          success_rate: null,
-        },
-        items: [],
-      }),
-    });
-  });
-
   await page.goto("/model-test");
   const realtimeTab = page.getByRole("tab", { name: "实时语音" });
   await realtimeTab.focus();
@@ -306,9 +289,9 @@ test("realtime voice tab is capability-driven, keyboard reachable and responsive
     page.getByRole("combobox", { name: "实时语音音色" }),
   ).toContainText("气质学姐");
   await expect(page.getByRole("button", { name: "开始通话" })).toBeEnabled();
-  await expect(
-    page.getByRole("button", { name: "选择测试工具" }),
-  ).toBeEnabled();
+  await expect(page.getByRole("button", { name: "选择测试工具" })).toHaveCount(
+    0,
+  );
   await expect(page.getByText("输入 16 kHz pcm_s16le")).toBeVisible();
   await expect(page.getByText("输出 24 kHz pcm_s16le")).toBeVisible();
   await expect(page.getByLabel("开场白")).toBeVisible();
@@ -317,7 +300,7 @@ test("realtime voice tab is capability-driven, keyboard reachable and responsive
     "aria-checked",
     "true",
   );
-  await expect(page.getByText(/工具调用详情会写入测试记录/)).toBeVisible();
+  await expect(page.getByText("转写与语音仅保留在当前页面。")).toBeVisible();
   await expect(page.locator("select")).toHaveCount(0);
   await page.getByRole("button", { name: "深色" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");

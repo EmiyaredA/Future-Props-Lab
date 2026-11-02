@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -129,7 +130,11 @@ function ConnectionForm({
           取消
         </button>
         <button type="submit" className="btn primary" disabled={pending}>
-          {pending ? "保存中…" : "保存连接"}
+          {pending ? (
+            <LoadingState variant="inline" label="保存中…" />
+          ) : (
+            "保存连接"
+          )}
         </button>
       </div>
     </form>
@@ -203,7 +208,9 @@ export function ExternalConnectionsPanel({
           <span>{items.length} 个连接 · 当前账号</span>
         </div>
       )}
-      {query.isPending && <p role="status">正在加载连接…</p>}
+      {query.isPending && (
+        <LoadingState label="正在加载连接…" variant="region" />
+      )}
       {(error || query.error) && (
         <p className="external-connection-error" role="alert">
           {error || query.error?.message}

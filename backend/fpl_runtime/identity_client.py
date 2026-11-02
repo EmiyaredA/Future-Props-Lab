@@ -14,7 +14,7 @@ class LiveAuthorization:
             headers={"Authorization": "Bearer " + credential},
         )
 
-    async def active(self, *, assertion, method, path):
+    async def status(self, *, assertion, method, path):
         try:
             response = await self.client.post(
                 "/_internal/v1/authorization/live",
@@ -25,14 +25,15 @@ class LiveAuthorization:
                     "path": path,
                 },
             )
-        except httpx.HTTPError:
-            return False
-        if response.status_code != 200:
-            return False
-        try:
-            return response.json().get("active") is True
-        except (ValueError, AttributeError):
-            return False
+            if response.status_code != 200:
+                return None
+            result = response.json().get("active")
+            return result if type(result) is bool else None
+        except (httpx.HTTPError, ValueError, AttributeError):
+            return None
+
+    async def active(self, *, assertion, method, path):
+        return await self.status(assertion=assertion, method=method, path=path) is True
 
     async def owner_permission(self, *, owner, permission):
         try:

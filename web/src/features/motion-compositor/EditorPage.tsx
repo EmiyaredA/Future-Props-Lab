@@ -1,3 +1,6 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { openAmadeus } from "@platform/assistant";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -58,6 +61,9 @@ export function EditorPage({
     guard: ((continueNavigation: () => void) => boolean) | null,
   ) => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const [project, setProject] = useState<MotionProject | null>(null);
   const [doc, setDoc] = useState<ResolvedDocument | null>(null);
   const docRef = useRef<ResolvedDocument | null>(null);
@@ -436,7 +442,9 @@ export function EditorPage({
     setAssets((await listAssets(projectId)).items);
   const upload = async (file: File) => {
     try {
-      await uploadAsset(projectId, file);
+      await runTransfer((onProgress) =>
+        uploadAsset(projectId, file, { onProgress }),
+      );
       await refreshAssets();
       setError("");
     } catch (caught) {
@@ -468,16 +476,30 @@ export function EditorPage({
     });
   };
 
-  if (loading) return <div className="mc-editor-state">正在打开特效工程…</div>;
+  if (loading)
+    return (
+      <>
+        <TransferFeedback progress={activeTransferProgress} />
+        <LoadingState
+          label="正在打开特效工程…"
+          variant="region"
+          className="mc-editor-state"
+        />
+      </>
+    );
   if (!doc || !project)
     return (
       <div className="mc-editor-state">
+        <TransferFeedback progress={activeTransferProgress} />
+
         {error || "工程无法打开"}
         <button onClick={onBack}>返回项目</button>
       </div>
     );
   return (
     <div className="mc-editor">
+      <TransferFeedback progress={activeTransferProgress} />
+
       <header className="mc-editor-header">
         <button
           className="mc-icon-button"
@@ -500,7 +522,13 @@ export function EditorPage({
         </div>
         <span className={`mc-save-state ${dirty ? "dirty" : ""}`}>
           {saving ? <Save size={14} /> : dirty ? "●" : <Check size={14} />}{" "}
-          {saving ? "正在保存" : dirty ? "待保存" : "已自动保存"}
+          {saving ? (
+            <LoadingState variant="inline" label="正在保存" />
+          ) : dirty ? (
+            "待保存"
+          ) : (
+            "已自动保存"
+          )}
         </span>
         <div className="mc-header-spacer" />
         <button

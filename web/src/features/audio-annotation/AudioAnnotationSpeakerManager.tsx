@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash2, Users, X } from "lucide-react";
@@ -147,7 +148,7 @@ export function AudioAnnotationSpeakerManager({
               <small>沿用角色名和主题色，导入后仍可继续编辑。</small>
             </div>
             {projectsQuery.isLoading ? (
-              <p>正在读取 Galgame 工程…</p>
+              <LoadingState label="正在读取 Galgame 工程…" variant="region" />
             ) : projects.length ? (
               <div className="annotation-speaker-import-controls">
                 <CustomSelect

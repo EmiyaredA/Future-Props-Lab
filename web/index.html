@@ -16,19 +16,74 @@
         document.documentElement.dataset.theme = "light";
       }
     </script>
+    <style>
+      .fpl-boot-loading {
+        min-height: 70vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        padding: 24px;
+        font: 14px system-ui;
+        color: #82776b;
+      }
+      html[data-theme="dark"] {
+        background: #1b1e1b;
+      }
+      html[data-theme="dark"] .fpl-boot-loading {
+        color: #c0b8ab;
+      }
+      .fpl-boot-orbit {
+        width: 28px;
+        height: 28px;
+        border: 2px solid #82776b44;
+        border-top-color: #ef8054;
+        border-radius: 50%;
+        animation: fpl-boot-turn 1.6s linear infinite;
+      }
+      .fpl-boot-track {
+        display: block;
+        height: 3px;
+        margin-top: 12px;
+        background: #82776b33;
+        overflow: hidden;
+        border-radius: 8px;
+      }
+      .fpl-boot-track i {
+        display: block;
+        width: 35%;
+        height: 100%;
+        background: #ef8054;
+        animation: fpl-boot-slide 1.6s ease-in-out infinite;
+      }
+      @keyframes fpl-boot-turn {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @keyframes fpl-boot-slide {
+        from {
+          transform: translateX(-110%);
+        }
+        to {
+          transform: translateX(390%);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .fpl-boot-orbit,
+        .fpl-boot-track i {
+          animation: none;
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="root">
-      <div
-        role="status"
-        style="
-          padding: 48px;
-          text-align: center;
-          font-family: system-ui;
-          color: #82776b;
-        "
-      >
-        正在打开 Future Props Lab…
+      <div role="status" class="fpl-boot-loading">
+        <span class="fpl-boot-orbit" aria-hidden="true"></span>
+        <span
+          >正在打开 Future Props Lab…<span class="fpl-boot-track"><i></i></span
+        ></span>
       </div>
     </div>
     <script type="module" src="/src/app/bootstrap.ts"></script>

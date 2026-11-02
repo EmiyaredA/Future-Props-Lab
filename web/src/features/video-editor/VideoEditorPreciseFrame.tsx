@@ -1,3 +1,4 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { useLayoutEffect, useRef, useState } from "react";
 
 /** Keep the decoded frame on screen until its requested replacement is ready. */
@@ -14,7 +15,7 @@ export function VideoEditorPreciseFrame({ url }: { url: string }) {
   return (
     <>
       {urls.map((frameUrl) => (
-        <img
+        <ResponsiveImage
           className="ve-precise-frame"
           key={frameUrl}
           src={frameUrl}

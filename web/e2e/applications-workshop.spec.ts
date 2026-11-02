@@ -1,11 +1,15 @@
 import { expect, test } from "@playwright/test";
+import { readFile } from "node:fs/promises";
 
 test("enters the visual workshop, persists projects, and supports deep navigation", async ({
   page,
-}) => {
+}, info) => {
   let projects: Array<Record<string, unknown>> = [];
   let generationTasks: Array<Record<string, unknown>> = [];
   let exposeReferenceImage = false;
+  const referenceImageBytes = await readFile(
+    "public/brand/visual-workshop-mark.png",
+  );
   const referenceImage = {
     id: "e2e-reference-image",
     project_id: "e2e-project",
@@ -15,7 +19,7 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
     display_name: "E2E 参考图.png",
     media_kind: "image",
     mime_type: "image/png",
-    byte_size: 1024,
+    byte_size: referenceImageBytes.length,
     source: "project",
     is_reference: false,
     revision: 0,
@@ -304,6 +308,14 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
     });
   });
   await page.route("**/v1/files**", async (route) => {
+    const url = new URL(route.request().url());
+    if (/\/v1\/files\/[^/]+\/(?:content|thumbnail)$/.test(url.pathname)) {
+      await route.fulfill({
+        contentType: "image/png",
+        body: referenceImageBytes,
+      });
+      return;
+    }
     if (route.request().method() === "POST") {
       exposeReferenceImage = true;
       await route.fulfill({
@@ -315,7 +327,12 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
-        items: exposeReferenceImage ? [referenceImage] : [],
+        items:
+          exposeReferenceImage &&
+          (!url.searchParams.get("media_kind") ||
+            url.searchParams.get("media_kind") === "image")
+            ? [referenceImage]
+            : [],
       }),
     });
   });
@@ -396,14 +413,14 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/home");
-  await page.getByRole("button", { name: /浏览应用/ }).click();
+  await page.getByRole("button", { name: /全部应用/ }).click();
   await expect(page).toHaveURL(/\/apps$/);
   await page.getByRole("button", { name: "打开视觉创作工坊" }).click();
   await expect(page).toHaveURL(/\/apps\/visual-workshop$/);
   await expect(page.locator(".studio-sidebar")).toHaveCount(0);
   await expect(page.locator(".workshop-brand img")).toHaveAttribute(
     "src",
-    "/brand/visual-workshop-mark.png",
+    /^\/brand\/(?:thumbnails\/)?visual-workshop-mark(?:-.*\.webp|\.png)$/,
   );
   await expect(page.getByText("浏览全部应用")).toBeVisible();
   await expect(page.getByText("还没有创作项目")).toBeVisible();
@@ -516,7 +533,7 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
   await fileChooser.setFiles({
     name: "E2E 参考图.png",
     mimeType: "image/png",
-    buffer: Buffer.from("e2e-reference-image"),
+    buffer: referenceImageBytes,
   });
   await expect(
     page.getByRole("button", { name: "E2E 参考图.png", exact: true }),
@@ -602,7 +619,20 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
   await page.reload();
   await page.getByText("连线目标视频").click();
   await page.getByRole("button", { name: "替换素材" }).click();
-  await page.getByRole("tab", { name: "AI 生成" }).click();
+  const videoTabs = page.getByRole("tablist", { name: "视频节点操作" });
+  await expect(
+    videoTabs.getByRole("tab", { name: "素材", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+  await page.getByRole("button", { name: "适配视图" }).click();
+  await expect(videoTabs).toBeInViewport({ ratio: 1 });
+  await page.screenshot({
+    path: info.outputPath("video-material-tab.png"),
+    animations: "disabled",
+  });
+  await videoTabs.getByRole("tab", { name: "生成设置" }).click();
+  await expect(
+    videoTabs.getByRole("tab", { name: "生成设置" }),
+  ).toHaveAttribute("aria-selected", "true");
   const linkedReferenceRow = page.getByRole("group", {
     name: "固定参考素材",
   });
@@ -624,6 +654,13 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
       name: "移除参考文件 E2E 参考图.png",
     }),
   ).toHaveCount(0);
+
+  await page.getByRole("button", { name: "适配视图" }).click();
+  await expect(videoTabs).toBeInViewport({ ratio: 1 });
+  await page.screenshot({
+    path: info.outputPath("video-generation-references.png"),
+    animations: "disabled",
+  });
 
   await page.getByRole("button", { name: "对话" }).click();
   const assistantPanel = page.locator(".project-assistant-panel");

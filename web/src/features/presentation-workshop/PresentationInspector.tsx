@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { canContainText } from "./textAdapter";
 import { slideTheme } from "./slideTheme";
 import { lazy, Suspense, useId, useState, type ReactNode } from "react";
@@ -508,7 +509,9 @@ export function PresentationInspector({
         )}
       </div>
       {codeTarget && element?.id === codeTarget && !disabled && !editor && (
-        <Suspense fallback={<p role="status">正在加载代码高亮…</p>}>
+        <Suspense
+          fallback={<LoadingState label="正在加载代码高亮…" variant="region" />}
+        >
           <CodeHighlightDialog
             key={codeTarget}
             element={element}

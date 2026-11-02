@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { SlidersHorizontal, X } from "lucide-react";
 import { useDebouncedValue } from "./useDebouncedValue";
 import { formatAccountDate } from "./formatAccountDate";
@@ -108,7 +109,9 @@ export function AuditPage() {
           <p role="alert">请输入有效日期，开始日期不能晚于结束日期。</p>
         ) : null}
         <ManagementError error={query.error} />
-        {query.isLoading ? <p role="status">正在加载审计记录…</p> : null}
+        {query.isLoading ? (
+          <LoadingState label="正在加载审计记录…" variant="region" />
+        ) : null}
         {query.isError ? (
           <button className="btn" onClick={() => void query.refetch()}>
             重试

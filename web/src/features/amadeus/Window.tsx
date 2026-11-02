@@ -1,3 +1,5 @@
+import { LoadingState } from "@shared/ui/LoadingState";
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { useRuntimeAccess } from "@features/accounts";
 import "./window.css";
 import "./window-theme.css";
@@ -198,7 +200,13 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
                 className={`amadeus-status-dot amadeus-status-${avatarState}`}
               />
               {avatarStateLabels[avatarState]} ·{" "}
-              {saving ? "正在保存" : busy ? "正在生成" : "已保存到本机"}
+              {saving ? (
+                <LoadingState variant="inline" label="正在保存" />
+              ) : busy ? (
+                <LoadingState variant="inline" label="正在生成" />
+              ) : (
+                "已保存到本机"
+              )}
             </small>
           </div>
         </div>
@@ -591,7 +599,7 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
                       >
                         <span className="amadeus-ref-thumb">
                           {item.thumbnail ? (
-                            <img src={item.thumbnail} alt="" />
+                            <ResponsiveImage src={item.thumbnail} alt="" />
                           ) : (
                             "▧"
                           )}
@@ -810,7 +818,7 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
               </button>
             </div>
             {previewReference.thumbnail && (
-              <img
+              <ResponsiveImage
                 src={previewReference.thumbnail}
                 alt={previewReference.name}
               />

@@ -1,3 +1,4 @@
+import { type TransferOptions } from "@platform/api/transfer";
 import { fetchApiJson, requestApi } from "@platform/api/client";
 
 export type CreativeKind = "tool_api" | "mcp" | "skill" | "bundle";
@@ -126,16 +127,14 @@ export async function uploadCreative(
   revision: number,
   file: File,
   kind: "cover" | "skill-archive",
+  transfer: TransferOptions = {},
 ) {
   const form = new FormData();
   form.set("expected_revision", String(revision));
   form.set("file", file);
   return fetchApiJson<CreativeItem>(
     `${base}/items/${encodeURIComponent(id)}/${kind}`,
-    {
-      method: "POST",
-      body: form,
-    },
+    { ...transfer, method: "POST", body: form },
   );
 }
 export const previewInstall = (

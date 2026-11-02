@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MoreHorizontal, Plus, Search } from "lucide-react";
@@ -166,7 +167,11 @@ export function RegistrationInvitesPage() {
           </button>
         )}
         {query.isPending ? (
-          <p className="empty-copy">正在加载邀请码…</p>
+          <LoadingState
+            label="正在加载邀请码…"
+            variant="region"
+            className="empty-copy"
+          />
         ) : (
           <div className="management-table-wrap management-responsive-table">
             <table className="management-table">
@@ -422,7 +427,7 @@ export function RegistrationInvitesPage() {
         >
           <ManagementError error={redemptions.error} />
           {redemptions.isPending ? (
-            <p>正在加载…</p>
+            <LoadingState label="正在加载…" variant="region" />
           ) : (
             redemptions.data?.items.map((item) => (
               <div className="governance-record" key={item.id}>

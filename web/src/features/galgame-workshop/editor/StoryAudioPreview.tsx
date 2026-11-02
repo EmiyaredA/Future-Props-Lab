@@ -1,3 +1,5 @@
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { useEffect, useRef, useState } from "react";
 import { Pause, Play, Volume2 } from "lucide-react";
 import { fetchApiBlob } from "@platform/api/client";
@@ -21,6 +23,9 @@ export function StoryAudioPreview({
   compact?: boolean;
   onDurationMs?: (durationMs: number) => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const onDurationMsRef = useRef(onDurationMs);
   const [playing, setPlaying] = useState(false);
@@ -54,7 +59,9 @@ export function StoryAudioPreview({
     setReady(false);
     setError("");
     if (fileId)
-      void fetchApiBlob(`/v1/files/${fileId}/content`)
+      void runTransfer((onProgress) =>
+        fetchApiBlob(`/v1/files/${fileId}/content`, { onProgress }),
+      )
         .then((blob) => {
           if (!active) return;
           objectUrl = URL.createObjectURL(blob);
@@ -73,7 +80,7 @@ export function StoryAudioPreview({
       if (objectUrl) URL.revokeObjectURL(objectUrl);
       if (audioRef.current === audio) audioRef.current = null;
     };
-  }, [fileId]);
+  }, [fileId, runTransfer]);
 
   const toggle = async () => {
     const audio = audioRef.current;
@@ -95,6 +102,8 @@ export function StoryAudioPreview({
 
   return (
     <div className={`galgame-audio-preview ${compact ? "compact" : ""}`}>
+      <TransferFeedback progress={activeTransferProgress} />
+
       <button
         type="button"
         aria-label={`${playing ? "暂停" : "试听"}${label}`}

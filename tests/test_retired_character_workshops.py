@@ -25,7 +25,12 @@ RETIRED = {
 
 def test_retirement_upgrades_populated_accounts_without_touching_other_data(tmp_path: Path):
     database = tmp_path / "retirement.db"
-    prefix = MIGRATIONS[:-1]
+    retirement_index = next(
+        i
+        for i, migration in enumerate(MIGRATIONS)
+        if migration.migration_id == "0118_retire_character_workshops"
+    )
+    prefix = MIGRATIONS[:retirement_index]
     with (
         patch.object(runner, "MIGRATIONS", prefix),
         patch.object(runner, "LATEST_MIGRATION_ID", prefix[-1].migration_id),
@@ -76,8 +81,13 @@ def test_retirement_upgrades_populated_accounts_without_touching_other_data(tmp_
         history_before = connection.execute(
             "SELECT * FROM schema_migrations ORDER BY rowid"
         ).fetchall()
-    assert apply_migrations(database) == (MIGRATIONS[-1].migration_id, True)
-    assert apply_migrations(database) == (MIGRATIONS[-1].migration_id, False)
+    target = MIGRATIONS[: retirement_index + 1]
+    with (
+        patch.object(runner, "MIGRATIONS", target),
+        patch.object(runner, "LATEST_MIGRATION_ID", target[-1].migration_id),
+    ):
+        assert apply_migrations(database) == (target[-1].migration_id, True)
+        assert apply_migrations(database) == (target[-1].migration_id, False)
     with connect_database(database) as connection:
         tables_after = {
             row[0]

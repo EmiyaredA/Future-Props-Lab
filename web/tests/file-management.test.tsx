@@ -9,6 +9,7 @@ import {
   deleteFolder,
   deleteManagedFile,
   getFiles,
+  getFilePreview,
   getFolders,
   importFile,
   importLibraryAssets,
@@ -27,6 +28,7 @@ vi.mock("@features/files/api", async () => {
     deleteFolder: vi.fn(),
     deleteManagedFile: vi.fn(),
     getFiles: vi.fn(),
+    getFilePreview: vi.fn(),
     getFolders: vi.fn(),
     importFile: vi.fn(),
     importLibraryAssets: vi.fn(),
@@ -125,6 +127,11 @@ beforeEach(() => {
   window.localStorage.clear();
   vi.mocked(getFolders).mockResolvedValue({ items: [] });
   vi.mocked(getFiles).mockResolvedValue({ items: [libraryFile] });
+  vi.mocked(getFilePreview).mockResolvedValue({
+    kind: "text",
+    text: "故事说明正文",
+    truncated: false,
+  });
   vi.mocked(fetchApiBlob).mockResolvedValue(
     new Blob(["story"], { type: "text/markdown" }),
   );
@@ -166,7 +173,8 @@ test("uses styled filters and keeps successful upload feedback concise", async (
   const user = userEvent.setup();
   const { container } = renderLibraryBrowser();
   expect(await screen.findByText("故事说明")).toBeInTheDocument();
-  expect(container.querySelector(".file-upload-card")).toBeInTheDocument();
+  expect(container.querySelector(".file-upload-card")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "上传文件" })).toBeInTheDocument();
   expect(screen.getByLabelText("选择要上传的文件")).toHaveAttribute(
     "accept",
     expect.stringContaining(".json"),
@@ -188,6 +196,7 @@ test("uses styled filters and keeps successful upload feedback concise", async (
       undefined,
       undefined,
       undefined,
+      expect.objectContaining({ onProgress: expect.any(Function) }),
     ),
   );
   expect(await screen.findByText("已成功上传 1 个文件")).toBeInTheDocument();
@@ -212,6 +221,7 @@ test("uploads JSON documents from file management", async () => {
       undefined,
       undefined,
       undefined,
+      expect.objectContaining({ onProgress: expect.any(Function) }),
     ),
   );
 });
@@ -358,6 +368,7 @@ test("stages local library uploads so the display name can be edited", async () 
       undefined,
       undefined,
       "库内海报",
+      expect.objectContaining({ onProgress: expect.any(Function) }),
     ),
   );
   expect(importLibraryAssets).not.toHaveBeenCalled();
@@ -467,7 +478,10 @@ test("keeps file download visible and moves secondary actions into a dismissible
   expect(screen.getByRole("menu")).toBeInTheDocument();
   await user.click(screen.getByRole("menuitem", { name: "下载" }));
   await waitFor(() =>
-    expect(fetchApiBlob).toHaveBeenCalledWith("/v1/files/file-1/download"),
+    expect(fetchApiBlob).toHaveBeenCalledWith(
+      "/v1/files/file-1/download",
+      expect.objectContaining({ onProgress: expect.any(Function) }),
+    ),
   );
   expect(downloadAnchor?.download).toBe("故事说明.md");
   createElementSpy.mockRestore();
@@ -534,11 +548,11 @@ test("opens an inline preview when a file card is clicked", async () => {
   const preview = screen.getByRole("dialog", { name: "人设图3" });
   expect(preview).toBeInTheDocument();
   expect(container).not.toContainElement(preview);
-  expect(preview.parentElement).toHaveClass("file-preview-backdrop");
-  expect(preview.parentElement?.parentElement).toBe(document.body);
+  expect(preview).toHaveClass("file-content-dialog");
+  expect(preview.parentElement).toBe(document.body);
   await waitFor(() =>
     expect(fetchApiBlob).toHaveBeenCalledWith(
-      "/v1/files/image-1/content",
+      expect.stringContaining("/v1/files/image-1/thumbnail?size=1280"),
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     ),
   );

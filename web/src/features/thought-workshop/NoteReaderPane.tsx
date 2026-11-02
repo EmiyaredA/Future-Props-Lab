@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { lazy, Suspense } from "react";
 import type { Note } from "./api";
 import type { DocumentChrome } from "./document-layout/useDocumentChrome";
@@ -18,7 +19,9 @@ export function NoteReaderPane({
   return (
     <div className="thought-edit-workspace">
       <section className="thought-document">
-        <Suspense fallback={<p role="status">正在加载正文…</p>}>
+        <Suspense
+          fallback={<LoadingState label="正在加载正文…" variant="region" />}
+        >
           <RichEditor
             documentChrome={documentChrome}
             libraryId={note.knowledge_base_id}

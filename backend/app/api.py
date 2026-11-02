@@ -46,7 +46,6 @@ from app.llm.routes.models import (
     model_test,
     model_test_generation,
     model_test_realtime,
-    model_test_tools,
     model_test_transcription,
     suppliers,
 )
@@ -83,9 +82,6 @@ api_router.include_router(
 )
 api_router.include_router(
     model_test.router, dependencies=[Depends(require_studio_auth), ModelCapacity]
-)
-api_router.include_router(
-    model_test_tools.router, dependencies=[Depends(require_studio_auth), ModelCapacity]
 )
 api_router.include_router(
     model_test_generation.router, dependencies=[Depends(require_studio_auth), ModelCapacity]

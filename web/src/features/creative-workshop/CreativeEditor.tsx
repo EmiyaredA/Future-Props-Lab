@@ -1,3 +1,5 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { useEffect, useState } from "react";
 import {
   getCreative,
@@ -23,6 +25,9 @@ export function Editor({
   canWrite: boolean;
   navigate: Nav;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const [item, setItem] = useState<CreativeItem | null>(null);
   const [draft, setDraft] = useState<CreativeDraft | null>(null);
   const [view, setView] = useState<"edit" | "select" | "preview" | "success">(
@@ -110,11 +115,23 @@ export function Editor({
     }
   };
   if (!item || !draft)
-    return <p className="creative-empty">{error || "正在加载草稿…"}</p>;
+    return (
+      <p className="creative-empty">
+        <TransferFeedback progress={activeTransferProgress} />
+        {error || "正在加载草稿…"}
+      </p>
+    );
   if (!canWrite)
-    return <p className="creative-empty">当前账号没有内容编辑权限。</p>;
+    return (
+      <p className="creative-empty">
+        <TransferFeedback progress={activeTransferProgress} />
+        当前账号没有内容编辑权限。
+      </p>
+    );
   return (
     <>
+      <TransferFeedback progress={activeTransferProgress} />
+
       <div className="creative-section-heading">
         <div>
           <div className="creative-breadcrumb">
@@ -236,11 +253,14 @@ export function Editor({
                     void run(async () => {
                       const saved = await save();
                       setItem(
-                        await uploadCreative(
-                          saved.id,
-                          saved.revision,
-                          file,
-                          "cover",
+                        await runTransfer((onProgress) =>
+                          uploadCreative(
+                            saved.id,
+                            saved.revision,
+                            file,
+                            "cover",
+                            { onProgress },
+                          ),
                         ),
                       );
                     });
@@ -363,11 +383,14 @@ export function Editor({
                       if (file)
                         void run(async () => {
                           const saved = await save();
-                          const uploaded = await uploadCreative(
-                            saved.id,
-                            saved.revision,
-                            file,
-                            "skill-archive",
+                          const uploaded = await runTransfer((onProgress) =>
+                            uploadCreative(
+                              saved.id,
+                              saved.revision,
+                              file,
+                              "skill-archive",
+                              { onProgress },
+                            ),
                           );
                           setItem(uploaded);
                           change({ manifest: uploaded.manifest });

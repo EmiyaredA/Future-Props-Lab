@@ -1,3 +1,7 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -66,6 +70,7 @@ export function ProjectBoard({
   previews: Record<string, VisualNodeOutput | undefined>;
   onPreview: (nodeId: string, version?: VisualNodeOutput) => void;
 }) {
+  const transfer = useTransferProgress();
   const [nodeTab, setNodeTab] = useState<"content" | "generate" | "acceptance">(
     "generate",
   );
@@ -190,7 +195,8 @@ export function ProjectBoard({
       if (downloading) return;
       setDownloading(true);
       setNotice("");
-      void downloadNodeOutput(node)
+      void transfer
+        .run((onProgress) => downloadNodeOutput(node, { onProgress }))
         .catch((error: unknown) =>
           setNotice(error instanceof Error ? error.message : "下载失败"),
         )
@@ -241,21 +247,27 @@ export function ProjectBoard({
   const SelectedTypeIcon = typeIcons[selected?.kind ?? "image"];
   return (
     <div className="visual-project-board">
+      <TransferFeedback progress={transfer.progress} />
       <header className="board-header">
         <div className="board-identity">
           <button aria-label="返回项目列表" onClick={c.onBack}>
             <ArrowLeft size={18} />
           </button>
-          <img src="/brand/visual-workshop-mark-cutout.png" alt="" />
+          <ResponsiveImage
+            src="/brand/visual-workshop-mark-cutout.png"
+            alt=""
+          />
           <div>
             <strong>{c.projectQuery.data?.title ?? "创作项目"}</strong>
             <small>
               视觉创作工坊 ·{" "}
-              {c.saveState === "saved"
-                ? "已保存"
-                : c.saveState === "saving"
-                  ? "保存中"
-                  : "保存需要处理"}
+              {c.saveState === "saved" ? (
+                "已保存"
+              ) : c.saveState === "saving" ? (
+                <LoadingState variant="inline" label="保存中" />
+              ) : (
+                "保存需要处理"
+              )}
             </small>
           </div>
         </div>
@@ -461,7 +473,11 @@ export function ProjectBoard({
           )}
           {!c.canvasReady ? (
             <p className="board-empty">
-              {c.canvasQuery.isError ? "项目加载失败" : "正在加载项目…"}
+              {c.canvasQuery.isError ? (
+                "项目加载失败"
+              ) : (
+                <LoadingState variant="inline" label="正在加载项目…" />
+              )}
             </p>
           ) : tab === "status" ? (
             <StatusBoard

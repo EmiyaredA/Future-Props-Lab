@@ -1,3 +1,4 @@
+import { ProgressBar } from "@shared/ui/LoadingState";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
@@ -200,16 +201,11 @@ export function VideoEditorClipMergeDialog({
                 }{" "}
                 · {current.progress}%
               </p>
-              <div
+              <ProgressBar
+                value={current.progress}
+                label="合并进度"
                 className="ve-clip-merge-progress"
-                role="progressbar"
-                aria-label="合并进度"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={current.progress}
-              >
-                <i style={{ width: `${current.progress}%` }} />
-              </div>
+              />
               {current.status === "failed" ? (
                 <p role="alert">{current.error || "合并失败，原片段未替换"}</p>
               ) : null}

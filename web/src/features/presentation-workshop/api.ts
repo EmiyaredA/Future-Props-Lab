@@ -1,3 +1,5 @@
+import { createUploadTransfer } from "@platform/api/transfer";
+import { transferFetch, type TransferOptions } from "@platform/api/transfer";
 import { api, unwrap } from "@platform/api/client";
 import type { Draft } from "./types";
 
@@ -59,17 +61,23 @@ export const listImages = async (signal?: AbortSignal, query = "") =>
       signal,
     }),
   );
-export const uploadImage = async (file: File) =>
-  unwrap(
+export const uploadImage = async (
+  file: File,
+  transfer: TransferOptions = {},
+) => {
+  const uploadTransfer = createUploadTransfer(transfer.onProgress);
+  return unwrap(
     await api.POST("/v1/files", {
+      fetch: uploadTransfer.fetch,
       body: { upload: file as unknown as string },
       bodySerializer() {
         const form = new FormData();
         form.append("upload", file);
-        return form;
+        return uploadTransfer.capture(form);
       },
     }),
   );
+};
 
 export const listMedia = async (
   kind: "image" | "audio" | "video",
@@ -98,9 +106,10 @@ export function download(blob: Blob, filename: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export const imageBlob = async (id: string) =>
+export const imageBlob = async (id: string, transfer: TransferOptions = {}) =>
   unwrap(
     await api.GET("/v1/files/{asset_id}/content", {
+      fetch: transferFetch(transfer.onProgress),
       params: { path: { asset_id: id } },
       parseAs: "blob",
     }),

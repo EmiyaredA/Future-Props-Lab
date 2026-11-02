@@ -24,7 +24,6 @@ TAGS = {
     "models": "models",
     "model-logs": "logs",
     "model-test": "testing",
-    "model-test-tools": "test_tools",
     "model-inference": "inference",
     "file-management": "files",
     "integrations": "integrations",

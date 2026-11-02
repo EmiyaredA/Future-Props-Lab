@@ -86,12 +86,19 @@ export function LogTable({
                     {date.toLocaleTimeString("zh-CN", { hour12: false })}
                   </time>
                 </td>
-                <td>{sourceLabels[row.call_source] ?? row.call_source}</td>
-                <td title={formatCredential(row)}>{formatCredential(row)}</td>
+                <td className="call-log-source">
+                  {sourceLabels[row.call_source] ?? row.call_source}
+                </td>
+                <td
+                  className="call-log-credential"
+                  title={formatCredential(row)}
+                >
+                  <span>{formatCredential(row)}</span>
+                </td>
                 <td className="call-log-model">
                   <strong title={row.model}>{row.model}</strong>
                 </td>
-                <td>
+                <td className="call-log-protocol">
                   {providerLabels[row.provider_kind] ?? row.provider_kind}
                 </td>
                 <td className="call-log-num">

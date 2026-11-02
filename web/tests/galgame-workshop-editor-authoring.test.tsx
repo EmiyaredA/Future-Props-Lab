@@ -1,3 +1,4 @@
+import { publicImageSources } from "@shared/lib/imageSources";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   fireEvent,
@@ -414,7 +415,10 @@ test("creates character and scene entities and auto-saves typed story data", asy
   expect(await screen.findByText("纵向切片")).toBeInTheDocument();
   expect(
     container.querySelector(".galgame-editor-project img"),
-  ).toHaveAttribute("src", "/brand/galgame-workshop-mark-cutout.png");
+  ).toHaveAttribute(
+    "src",
+    publicImageSources("/brand/galgame-workshop-mark-cutout.png").src,
+  );
   await openAssetSection(user, "角色");
   await user.click(screen.getByRole("button", { name: "新建角色" }));
   await waitFor(() => expect(putGalgameStoryDocument).toHaveBeenCalled(), {
@@ -933,6 +937,7 @@ test("downloads the active scene layer and CG variant from item menus", async ()
   await waitFor(() =>
     expect(fetchApiDownload).toHaveBeenLastCalledWith(
       "/v1/files/file-window/download",
+      expect.objectContaining({ onProgress: expect.any(Function) }),
     ),
   );
   expect(anchorClick).toHaveBeenCalledTimes(1);
@@ -944,6 +949,7 @@ test("downloads the active scene layer and CG variant from item menus", async ()
   await waitFor(() =>
     expect(fetchApiDownload).toHaveBeenLastCalledWith(
       "/v1/files/file-cg-default/download",
+      expect.objectContaining({ onProgress: expect.any(Function) }),
     ),
   );
 
@@ -954,6 +960,7 @@ test("downloads the active scene layer and CG variant from item menus", async ()
   await waitFor(() =>
     expect(fetchApiDownload).toHaveBeenLastCalledWith(
       "/v1/files/file-cg-smile/download",
+      expect.objectContaining({ onProgress: expect.any(Function) }),
     ),
   );
 

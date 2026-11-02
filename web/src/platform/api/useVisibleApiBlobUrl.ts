@@ -24,5 +24,5 @@ export function useVisibleApiBlobUrl(path: string | null) {
     observer.observe(target);
     return () => observer.disconnect();
   }, []);
-  return { ref, ...useApiBlobUrl(visible ? path : null) };
+  return { ref, visible, ...useApiBlobUrl(visible ? path : null) };
 }

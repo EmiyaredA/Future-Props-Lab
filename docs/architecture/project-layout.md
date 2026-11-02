@@ -7,6 +7,25 @@
 
 `backend/app/apps/agent_workbench/` 拥有当前账号的来源绑定、只读会话投影、搜索、扫描回执和 SSE；`sync/` 在原生 I/O 结束后以短事务保存归一条目与检查点，并独立调度各来源。`backend/app/capabilities/agents/sessions/` 拥有五种原生格式、只读文件／SQLite／本机 OpenCode HTTP 适配和受限附件读取，不依赖工作台 ORM；`inline_images.py` 按块省略超大内嵌图片编码，检查点保持原始字节位置。`web/src/features/agent-workbench/` 拥有独立应用注册、三栏阅读、来源管理与账号缓存键。本机网站允许显式填写目录，实际 socket 标记用于新绑定校验。来源授权不复用 Amadeus 的任务执行授权，首批不包含续聊。API、存储与来源矩阵见 [`../reference/agent-workbench.md`](../reference/agent-workbench.md)。
 
+## 浏览器加载与图片派生
+
+`capabilities/asset_store/file_previews.py` 拥有文件预览授权、受限文本读取和账号／素材版本派生缓存；
+`pdf_preview_worker.py` 在独立进程中读取 PDF 页数并栅格化当前页面，不执行文档脚本。
+`capabilities/media_rendering/file_previews.py` 拥有有超时的媒体时长检查、视频封面和前 60 秒真实音频波形，
+不接触账号或数据库。文件预览接口先完成归属校验并结束读取事务，再进行解码，缓存不能授予访问权。
+`web/src/features/files/` 的 `FileThumbnail`、`FilePreviewDialog` 与 `FileMediaPlayer` 统一拥有列表缩略内容、
+安全文档阅读和自绘播放控件；首页及只读文件入口复用这些公开组件，文件命名规则留在 `fileNames.ts`。
+`FileLibraryActions` 拥有文件库导入、导出和本地目录菜单，动作由浏览器与页面显式传入；`styles/file-library.css` 将紧凑密度限定在文件管理页，不改变编辑器内嵌素材选择器。首页 `HomeResourceSection` 拥有独立折叠状态和标题栏操作插槽，文件上传及预览状态仍由 `HomeFiles` 持有。`HomeInfrastructure` 以等宽区域展示模型服务与编程智能体，智能体标识复用 `code-agents` 公开组件；首页只传递现有导航路径，不持有目录或连接状态。概览列表为静态说明，模型与智能体各保留一个管理入口。
+
+`web/src/platform/api/transfer.ts` 拥有按请求隔离的流式接收、FormData 上传进度与取消；
+`useTransferProgress` 将状态留在功能控制器，`useApiBlobUrl` 和 `useImagePreviewUrl` 分别管理鉴权文件生命周期和可见图片读取。
+`shared/ui/LoadingState`、`ResponsiveImage`、`ImagePreview` 负责无业务归属的反馈与显示，不持有业务任务状态。
+`shared/lib/imageSources` 负责预览 URL，`imageVariants.ts` 由脚本生成。
+
+`capabilities/asset_store/thumbnails.py` 拥有受限解码、方向校正、透明 WebP 与原子落盘；身份、社区和创作用例先授权后调用。
+`scripts/generate_image_variants.py` 生成 `web/public/brand/thumbnails/` 下的摘要命名静态派生图和清单，构建执行过期检查。
+接口、入口清单与验收约定见 [`../reference/loading-and-images.md`](../reference/loading-and-images.md)。
+
 ## 网站运行与自动化
 
 ### 独立服务迁移
@@ -27,13 +46,17 @@
 
 `fpl_runtime/retention_authority.py` 定义仅能准备和结算一次素材引用修改的签名授权，绑定调用服务、账号、请求 ID 与完整修改摘要；它不能作为公共 API、素材读取或任意后台任务凭据。Identity 的 `retention.py` / `retention_api.py` 从有效的原始业务写请求签发授权，并在新准备前重新检查账号与 Session/API Key。Assets 的 `retention_api.py` 只接受该授权，同一意图的结果确认可以在浏览器注销后完成；新准备拒绝失效或到期授权。`fpl_runtime/retention_client.py` 不自动改请求 ID、不跟随跳转，超时保留未决意图；源应用仍需将授权、修改与回执按其事务流程持久化。
 
-`fpl_assets/project_links.py` 拥有文件库素材在 Visual 项目内的名称、文件夹位置及 CAS；`VisualProjectFileLink` 与追加迁移 `0003_project_file_links` 只引用 Assets 自有素材和文件夹，源项目 ID 不透明。删除项目素材文件夹在同一数据库级联移除这些位置记录，保留库中原件；删除被引用的原件会拒绝。现有 Visual 素材导入和引用 URL 由 Assets 承接，路径、操作 ID 和响应保持不变。旧单体的 `VisualProjectAssetReference` 仅用于兼容和正式导出，后续业务转移必须保留其 ID 与 revision；新 Visual 服务不得加载这张表。媒体裁剪、取帧和媒体信息路径归 Rendering，本机打开文件夹归 Tools，账号、SDK 白名单与公开路径不变。
+`fpl_assets/project_links.py` 拥有文件库素材在 Visual 项目内的名称、文件夹位置及 CAS；`VisualProjectFileLink` 与追加迁移 `0003_project_file_links` 只引用 Assets 自有素材和文件夹，源项目 ID 不透明。删除项目素材文件夹在同一数据库级联移除这些位置记录，保留库中原件；删除被引用的原件会拒绝。现有 Visual 素材导入和引用 URL 由 Assets 承接，路径、操作 ID 和响应保持不变。旧单体的 `VisualProjectAssetReference` 仅用于兼容和正式导出，后续业务转移必须保留其 ID 与 revision；新 Visual 服务不得加载这张表。内容预览、缩略图、媒体裁剪、取帧和媒体信息路径归 Rendering，本机打开文件夹归 Tools，账号、SDK 白名单与公开路径不变。
 
 `layout.py` 仅整理自有旧格式文件，复制、大小及 SHA256 核验后通过 CAS 更新存储版本；不处理其他服务项目目录，不覆盖异内容目标，不删除源文件。中断可核验已经落盘的相同副本后完成登记。共享上传和 Assets 复制在数据库提交已经开始后遇到故障会保留文件，提交未知时不按回滚删除可能已提交的原件。
 
 `backend/app/apps/visual_workshop/asset_references/models.py` 现在拥有 Visual 项目引用 ORM，外部素材与文件夹 ID 不再声明跨服务外键。原 `asset_store.models` 名称只为旧单体显式导入保留兼容；Assets 通过 `asset_outputs.AssetReferenceView` 消费数据投影，不加载该 ORM。镜像闭包检查与全新进程验证共同阻止回归。
 
-`settings.py` 只接受存储路径与三项文件限制，不加载 `.env` 或加密密钥。项目验证通过绑定原请求的 `assets.visual-project.read` 委托，只能从五个已登记文件操作读取 Visual 项目；不会传递原 Cookie 或完整客户端凭据。`application.py` 装配 22 个既有公开操作和私有引用协议，拥有文件清理生命周期；`__main__.py` 在加载 ORM 前解析最小配置、验证目录、取得独占锁并检查显式迁移。公开协议哈希与聚合契约一致。镜像与独立 `/files` 页面已经接通，完整容器验收和业务引用调用方仍是正式切换门禁。
+`settings.py` 只接受存储路径与三项文件限制，不加载 `.env` 或加密密钥。项目验证通过绑定原请求的 `assets.visual-project.read` 委托，只能从五个已登记文件操作读取 Visual 项目；不会传递原 Cookie 或完整客户端凭据。`application.py` 装配 21 个既有公开操作和私有引用协议，拥有文件清理生命周期；`__main__.py` 在加载 ORM 前解析最小配置、验证目录、取得独占锁并检查显式迁移。公开协议哈希与聚合契约一致。镜像与独立 `/files` 页面已经接通，完整容器验收和业务引用调用方仍是正式切换门禁。
+
+`backend/fpl_rendering/` 当前承接五个兼容媒体接口，不加载素材或工坊 ORM。`inputs.py` 通过受限的 `rendering.source.read` 委托读取同一素材的 HTTP 内容，以账号隔离的暂存目录接收并校验类型、revision、大小；Assets 内容响应显式声明这些描述头。`previews.py` 拥有有界缩略、裁剪、取帧及宫格输出，完成响应前再次验证账号授权；身份服务故障返回 503，撤销返回 401。它只挂载自己的状态目录和最小配置。现阶段迁移注册表只标识服务归属；确定性时间线任务队列、跨应用导出及正式数据转移仍未完成。
+
+`runtime/image_sizes.py` 和 `runtime/raster.py` 维护无 ORM 的图片尺寸及受限解码；头像通过 Identity 自有适配使用，不为头像导入素材数据库。`media_rendering/preview_metadata.py` 和 `pdf_preview_worker.py` 拥有实际文本、PDF 与媒体预览；旧素材入口只负责账号查询适配。PDF 使用限时子进程，宫格字体按白名单封入 Rendering 镜像。Assets 上传暂存位于自己的状态卷，避免大文件占满容器内存临时盘。`scripts/website/rendering_docker_checks.py` 使用合成媒体验证真实容器链路，`assets_docker_checks.py` 覆盖超过内存临时盘大小的上传与 ZIP 导入。
 
 `capabilities/asset_store/folders.py` 复用同属文件能力的文件夹 CAS、名称和深度规则；`asset_context.py` 允许显式注入项目验证。新 Assets 数据库将外部项目 ID 视为不透明标识，仅保留自有表外键；旧迁移与数据库外键保持原样，迁移期单体继续使用旧适配。`fpl_runtime/asset_references.py` 维护受限消费方、资源种类和版本化引用消息，不接受客户端指定归属。
 
@@ -41,7 +64,7 @@
 
 `backend/fpl_host/` 是独立 Mac 原生采集 CLI，仅发起受认证回环请求，读取明确来源的原生会话及引用附件。`collector.py` 管理有界任务，`follow.py` 跟随原生日志或事件，`follow_journal.py` 持久化单帧确认状态，`receipts.py` 保存一次性操作意图与结果；不确定动作不重做，跟随仅按原任务、租约和服务端检查点继续。容器镜像不包含此包。
 
-`fpl_deployment/images.py` 构建可审计源码闭包，`gateway.py` 从操作归属生成监听器路由。`deploy/images/identity/`、`deploy/images/agents/` 、`deploy/images/gateway/` 与 `deploy/images/portal/` 保存各自依赖锁和镜像定义，`deploy/compose.yaml` 当前装配 Identity、Agents、Portal 与 Gateway。`scripts/website/service_build.py` 和 `service_docker_smoke.py` 分别提供 CLI 构建与账号容器隔离验收，`agents_docker_smoke.py` 验证真实工作台容器和 Mac 原生采集器；`tests/gateway_assertion_probe.py` 只属于测试传输探针，不是工作台服务。运行及切换状态见[独立服务迁移](../operations/independent-services.md)。
+`fpl_deployment/images.py` 构建可审计源码闭包，`gateway.py` 从操作归属生成监听器路由。`deploy/images/` 下 Identity、Agents、Gateway、Portal、Assets 和 Rendering 各自保存依赖锁和镜像定义，`deploy/compose.yaml` 当前装配这六个服务。`scripts/website/service_build.py` 和 `service_docker_smoke.py` 分别提供 CLI 构建与账号容器隔离验收，`agents_docker_smoke.py` 验证真实工作台容器和 Mac 原生采集器；`tests/gateway_assertion_probe.py` 只属于测试传输探针，不是工作台服务。运行及切换状态见[独立服务迁移](../operations/independent-services.md)。
 
 `web/src/app/entries/` 拥有独立应用装配与导航，`agents.tsx` 不加载门户路由，`IndependentShell.tsx` 复用账号、主题和导航组件。`web/service.config.ts` 选择单一入口和所属程序素材，`web/scripts/build-service.mjs` 生成逐文件 SHA256、gzip／Brotli 及单服务契约清单；产物保存在被忽略的 `.local/service-web/`，镜像封装时核验清单。`scripts/website/web_contract.py` 仅读静态契约，不初始化数据库。
 
@@ -188,10 +211,9 @@ Future-Props-Lab/
   `llm/providers/` 是供应商协议差异的唯一实现边界，并反向实现 Harness
   定义的适配器契约。模型测试、诊断、REST/SSE 与 Web 消费端
   只依赖统一结果或事件，不根据供应商原始载荷控制运行行为；供应商管理界面展示配置属于例外。
-- `llm/playground/` 拥有模型测试会话、测试工具、调用快照与流式结算。测试工具只执行账号内的
-  确定性 Mock，不接入网络或外部系统；选择工具的文本会话复用 `capabilities/agents/harness/`，未选择工具的会话
-  继续使用原单轮流式路径。Web 的工具管理页面和对话工具控件归属 `features/models/tools/` 与
-  `features/models/conversation/`，不把工具逻辑堆入应用壳或通用 UI。
+- `llm/playground/` 拥有模型测试会话、图片上下文、调用快照与单轮流式结算；
+  `recovery.py` 在启动时取消遗留的 pending 回复并更新所属会话 revision，避免会话一直占用。
+  Web 的文字对话和参数控件归属 `features/models/conversation/`。
 - `llm/providers/realtime/` 只拥有供应商无关实时桥接契约与 SenseAudio 协议适配，
   `llm/realtime/` 负责账号模型解析、短会话日志结算和浏览器 WebSocket 编排；
   `web/src/platform/voice/` 负责 16 kHz 采集、Silero VAD、回声参考打断和 24 kHz 缓冲播放。
@@ -382,7 +404,7 @@ Skill 不可变版本保存在 `accounts/<user-id>/integrations/skills/<skill-id
 和文档。`r0019_project_storage_layout` 只增加存储版本；旧文件由受鉴权的显式迁移 API 校验并搬迁，
 schema migration 不执行文件 I/O。
 
-目录配置、模型测试会话、测试工具与生成任务、视觉工坊项目、含节点级生成草稿和动态连线的节点画布、项目对话、文件夹、文件和项目引用
+目录配置、模型测试会话与生成任务、视觉工坊项目、含节点级生成草稿和动态连线的节点画布、项目对话、文件夹、文件和项目引用
 使用 revision/CAS 防止静默覆盖；Galgame 工坊工程元数据与整份故事文档分别使用 revision/CAS，
 故事冲突保留服务器完整快照，完成态工程在故事修改后恢复草稿。Story 1.4 的角色、素材、国际化、
 时间轴、流程与表现层交叉校验由 `apps/galgame_workshop/schemas/story_validation.py` 的纯函数拥有；
@@ -406,9 +428,10 @@ Agent 是通用 Harness 的首个消费者：读取画布、素材和生成任�
 写工具复用视觉工坊校验与短事务，批量节点/连线变更只执行一次画布 CAS，生成任务与占位节点原子创建，
 且不与 `model_test_*` 数据混用。
 
-模型测试对话、测试工具、工具调用快照、图片附件及生成结果是独立的账号调试数据，不进入视觉
-工坊文件管理，也不参与 Bot 或业务编排。测试工具均按无副作用 read 类型自动执行；启动恢复会把遗留
-的 pending 模型回复和工具调用标记为 cancelled。`llm/call_logs/` 根据日志中已有的脱敏请求快照
+模型测试对话、图片附件及生成结果是独立的账号调试数据，不进入视觉
+工坊文件管理，也不参与 Bot 或业务编排。启动恢复会把遗留的 pending 模型回复标记为 cancelled。
+`0119_retire_model_test_tools` 删除已下线的 Mock 工具定义、会话绑定和专用调用记录三张表，
+保留对话、消息与已有模型调用日志。`llm/call_logs/` 根据日志中已有的脱敏请求快照
 按需生成不含凭证的临时复现 ZIP，不新增持久化副本；只有具备完整纯文本输入的供应商协议可导出。
 实时语音通话不建立持久化会话，转写和音频只在浏览器与连接内存中存在，调用日志
 仅保存时长、字符数、延迟、usage 与状态。当前工程包含单机账号和逻辑多账号，但仍刻意不包含

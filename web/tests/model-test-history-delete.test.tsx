@@ -48,14 +48,14 @@ beforeEach(() => {
   });
 });
 
-function renderPage() {
+function renderPage(initialMode?: string) {
   return render(
     <QueryClientProvider
       client={
         new QueryClient({ defaultOptions: { queries: { retry: false } } })
       }
     >
-      <ModelTestPage />
+      <ModelTestPage initialMode={initialMode} />
     </QueryClientProvider>,
   );
 }
@@ -148,5 +148,16 @@ test("deletion failure stays visible in the confirmation and preserves both rows
   ).toBeInTheDocument();
   expect(screen.getByRole("textbox", { name: "对话标题" })).toHaveValue(
     "当前测试对话",
+  );
+});
+
+test("an unavailable initial mode keeps its own notice while history loads", async () => {
+  renderPage("image");
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "所选测试模式暂无可用模型",
+  );
+  await screen.findByDisplayValue("当前测试对话");
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "所选测试模式暂无可用模型",
   );
 });

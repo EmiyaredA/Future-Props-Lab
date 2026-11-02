@@ -12,13 +12,13 @@
   display: grid;
   grid-template-columns: minmax(180px, 1fr) 320px minmax(140px, 1fr);
   align-items: center;
-  gap: 16px;
-  margin-bottom: 18px;
+  gap: 14px;
+  margin-bottom: 14px;
 }
 .model-infrastructure-heading h1 {
   margin: 0 0 6px;
   color: var(--text-strong);
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1.25;
 }
 .model-infrastructure-heading p {

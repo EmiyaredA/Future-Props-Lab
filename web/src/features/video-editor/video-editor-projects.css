@@ -32,7 +32,6 @@
 }
 
 .ve-projects .workshop-project-cover.video {
-  height: 148px;
   color: var(--accent);
   background:
     radial-gradient(

@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -216,7 +217,9 @@ export function StoryImagePicker({
           </p>
         ) : null}
         <div className="galgame-asset-picker-grid">
-          {loading ? <span>正在读取素材…</span> : null}
+          {loading ? (
+            <LoadingState label="正在读取素材…" variant="inline" />
+          ) : null}
           {state.source === "library"
             ? visibleFolders.map((folder) => (
                 <button

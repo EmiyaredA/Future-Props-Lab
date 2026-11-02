@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "openapi_sha256": "a66014637ddbff47a3b23aff8af179ffc76dc1fd90a175ec7eb13722c2431ca7",
+  "openapi_sha256": "f7236a31a91814061b5f9611d08dadb62e3f0291777563bb6a3877ac9e7fed4a",
   "operations": [
     {
       "service": "identity",
@@ -933,7 +933,13 @@
       "operation_id": "video_media_info_v1_files__asset_id__media_info_get"
     },
     {
-      "service": "assets",
+      "service": "rendering",
+      "method": "GET",
+      "path": "/v1/files/{asset_id}/preview",
+      "operation_id": "preview_file_metadata_v1_files__asset_id__preview_get"
+    },
+    {
+      "service": "rendering",
       "method": "GET",
       "path": "/v1/files/{asset_id}/thumbnail",
       "operation_id": "preview_thumbnail_v1_files__asset_id__thumbnail_get"
@@ -1849,42 +1855,6 @@
       "method": "GET",
       "path": "/v1/model-test/realtime-options",
       "operation_id": "realtime_options_v1_model_test_realtime_options_get"
-    },
-    {
-      "service": "models",
-      "method": "GET",
-      "path": "/v1/model-test/tools",
-      "operation_id": "list_tools_v1_model_test_tools_get"
-    },
-    {
-      "service": "models",
-      "method": "POST",
-      "path": "/v1/model-test/tools",
-      "operation_id": "create_tool_v1_model_test_tools_post"
-    },
-    {
-      "service": "models",
-      "method": "DELETE",
-      "path": "/v1/model-test/tools/{tool_id}",
-      "operation_id": "delete_tool_v1_model_test_tools__tool_id__delete"
-    },
-    {
-      "service": "models",
-      "method": "GET",
-      "path": "/v1/model-test/tools/{tool_id}",
-      "operation_id": "get_tool_v1_model_test_tools__tool_id__get"
-    },
-    {
-      "service": "models",
-      "method": "PATCH",
-      "path": "/v1/model-test/tools/{tool_id}",
-      "operation_id": "update_tool_v1_model_test_tools__tool_id__patch"
-    },
-    {
-      "service": "models",
-      "method": "POST",
-      "path": "/v1/model-test/tools/{tool_id}/execute",
-      "operation_id": "execute_tool_v1_model_test_tools__tool_id__execute_post"
     },
     {
       "service": "models",
@@ -4353,24 +4323,6 @@
       "service": "models",
       "module": "app.llm.models.model_test",
       "model": "ModelTestTranscriptionTask"
-    },
-    {
-      "table": "model_test_tools",
-      "service": "models",
-      "module": "app.llm.models.model_test_tools",
-      "model": "ModelTestTool"
-    },
-    {
-      "table": "model_test_conversation_tool_bindings",
-      "service": "models",
-      "module": "app.llm.models.model_test_tools",
-      "model": "ModelTestConversationToolBinding"
-    },
-    {
-      "table": "model_test_tool_calls",
-      "service": "models",
-      "module": "app.llm.models.model_test_tools",
-      "model": "ModelTestToolCall"
     },
     {
       "table": "project_operation_receipts",

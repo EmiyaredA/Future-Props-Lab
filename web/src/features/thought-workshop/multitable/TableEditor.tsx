@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useMemo, useState } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
@@ -221,7 +222,7 @@ export function TableEditor({
       controller.setError(e instanceof Error ? e.message : "操作失败"),
     );
   if (controller.structure.isPending)
-    return <p role="status">正在加载多维表格…</p>;
+    return <LoadingState label="正在加载多维表格…" variant="region" />;
   if (controller.structure.isError)
     return (
       <div className="multitable-unavailable">
@@ -534,7 +535,11 @@ export function TableEditor({
               disabled={results.isFetchingNextPage}
               onClick={() => void results.fetchNextPage()}
             >
-              {results.isFetchingNextPage ? "加载中…" : "加载更多"}
+              {results.isFetchingNextPage ? (
+                <LoadingState variant="inline" label="加载中…" />
+              ) : (
+                "加载更多"
+              )}
             </button>
           )}
         </footer>

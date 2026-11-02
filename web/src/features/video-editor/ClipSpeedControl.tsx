@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useState } from "react";
 import { linkedClipIds } from "./timelineSnap";
 import type { VideoEditorClip, VideoEditorOperation } from "./types";
@@ -126,7 +127,7 @@ export function ClipSpeedControl({
           disabled={saving || Number(value) === currentRate}
           onClick={() => void apply()}
         >
-          {saving ? "保存中…" : "应用"}
+          {saving ? <LoadingState variant="inline" label="保存中…" /> : "应用"}
         </button>
       </div>
       <p className="ve-field-help">

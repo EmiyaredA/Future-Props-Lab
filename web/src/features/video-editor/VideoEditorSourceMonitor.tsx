@@ -1,3 +1,4 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { formatTime, frameUs } from "./editorModel";
 import {
   useCallback,
@@ -281,7 +282,11 @@ export function VideoEditorSourceMonitor({
             />
           ) : null}
           {isImage && mediaUrl ? (
-            <img className="ve-source-media" src={mediaUrl} alt="" />
+            <ResponsiveImage
+              className="ve-source-media"
+              src={mediaUrl}
+              alt=""
+            />
           ) : null}
           {isAudio ? (
             <>

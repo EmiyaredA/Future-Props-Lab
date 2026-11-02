@@ -1,3 +1,4 @@
+import { type TransferOptions } from "@platform/api/transfer";
 import type { components } from "@generated/api";
 import {
   api,
@@ -87,12 +88,16 @@ export const importAssets = async (projectId: string, assetIds: string[]) =>
     ),
   );
 
-export async function uploadAsset(projectId: string, file: File) {
+export async function uploadAsset(
+  projectId: string,
+  file: File,
+  transfer: TransferOptions = {},
+) {
   const form = new FormData();
   form.append("file", file);
   return fetchApiJson<components["schemas"]["AssetOut"]>(
     `/v1/motion-compositor/projects/${encodeURIComponent(projectId)}/assets`,
-    { method: "POST", body: form },
+    { ...transfer, method: "POST", body: form },
   );
 }
 
@@ -155,21 +160,30 @@ export const downloadExport = (
   projectId: string,
   taskId: string,
   format: MotionFormat,
+  transfer: TransferOptions = {},
 ) =>
   fetchApiDownload(
     `/v1/motion-compositor/projects/${encodeURIComponent(projectId)}/exports/${encodeURIComponent(taskId)}/download/${format}`,
+    transfer,
   );
 
-export const downloadSnapshot = (projectId: string) =>
+export const downloadSnapshot = (
+  projectId: string,
+  transfer: TransferOptions = {},
+) =>
   fetchApiDownload(
     `/v1/motion-compositor/projects/${encodeURIComponent(projectId)}/snapshot`,
+    transfer,
   );
 
-export async function importSnapshot(file: File) {
+export async function importSnapshot(
+  file: File,
+  transfer: TransferOptions = {},
+) {
   const form = new FormData();
   form.append("file", file);
   return fetchApiJson<components["schemas"]["ProjectOut"]>(
     "/v1/motion-compositor/projects/snapshot-imports",
-    { method: "POST", body: form },
+    { ...transfer, method: "POST", body: form },
   );
 }

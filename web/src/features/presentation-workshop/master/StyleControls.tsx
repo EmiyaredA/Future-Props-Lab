@@ -1,3 +1,6 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { Palette, Type, Image, ChevronRight, ChevronDown } from "lucide-react";
 import { Numeric, Color } from "./StyleFields";
 import { TemplateSlotEditor } from "./TemplateSlotEditor";
@@ -23,6 +26,9 @@ export function StyleControls({
   selectedSlot?: "chapter" | "title" | "number";
   onSlotChange?: (slot: "chapter" | "title" | "number") => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const [localSlot, setActiveSlot] = useState<"chapter" | "title" | "number">(
     "title",
   );
@@ -61,6 +67,8 @@ export function StyleControls({
     });
   return (
     <fieldset className="master-controls" disabled={uploading}>
+      <TransferFeedback progress={activeTransferProgress} />
+
       <div className="master-tabs" role="tablist" aria-label="模板设置分类">
         {[
           ["theme", "主题与字体"],
@@ -400,7 +408,11 @@ export function StyleControls({
               disabled={uploading}
               onClick={() => input.current?.click()}
             >
-              {uploading ? "正在上传…" : "上传固定 Logo"}
+              {uploading ? (
+                <LoadingState variant="inline" label="正在上传…" />
+              ) : (
+                "上传固定 Logo"
+              )}
             </button>
             <button
               className="btn"
@@ -466,7 +478,9 @@ export function StyleControls({
               if (!file) return;
               setUploading(true);
               setError("");
-              void uploadImage(file)
+              void runTransfer((onProgress) =>
+                uploadImage(file, { onProgress }),
+              )
                 .then((asset) => {
                   if (!alive.current) return;
                   if (background) page({ background_asset_id: asset.id });

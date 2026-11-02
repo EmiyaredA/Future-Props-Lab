@@ -1,3 +1,4 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 export function ProviderIcon({
   kind,
   size = 20,
@@ -22,7 +23,7 @@ export function ProviderIcon({
 }) {
   if (kind === "local_qwen_tts" || kind === "deepseek")
     return (
-      <img
+      <ResponsiveImage
         className="provider-brand-icon"
         src={`/providers/${kind === "local_qwen_tts" ? "qwen" : "deepseek"}-logo.svg`}
         width={size}
@@ -33,7 +34,7 @@ export function ProviderIcon({
     );
   if (kind.startsWith("senseaudio_"))
     return (
-      <img
+      <ResponsiveImage
         className="provider-brand-icon"
         src="/providers/senseaudio-logo.svg"
         width={size}

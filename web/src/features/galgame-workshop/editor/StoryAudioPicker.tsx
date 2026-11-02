@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Folder, Music2, Search, Upload, X } from "lucide-react";
@@ -139,7 +140,9 @@ export function StoryAudioPicker({
           </p>
         ) : null}
         <div className="galgame-asset-picker-grid galgame-audio-picker-grid">
-          {loading ? <span>正在读取声音…</span> : null}
+          {loading ? (
+            <LoadingState label="正在读取声音…" variant="inline" />
+          ) : null}
           {source === "library"
             ? visibleFolders.map((folder) => (
                 <button

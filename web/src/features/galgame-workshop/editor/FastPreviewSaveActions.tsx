@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { Save, SaveAll } from "lucide-react";
 import "@features/galgame-workshop/editor/fast-preview-save-actions.css";
 
@@ -43,7 +44,11 @@ export function FastPreviewSaveActions({
           onClick={onSaveAll}
         >
           <SaveAll aria-hidden />
-          {saving ? "正在保存…" : `全部保存（${pendingCount}）`}
+          {saving ? (
+            <LoadingState variant="inline" label="正在保存…" />
+          ) : (
+            `全部保存（${pendingCount}）`
+          )}
         </button>
         <button
           type="button"

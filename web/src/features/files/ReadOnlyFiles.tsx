@@ -1,14 +1,33 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ReadOnlyPage } from "@shared/ui/ReadOnlyPage";
-import { ReadOnlyMedia } from "@shared/ui/ReadOnlyMedia";
-import { getFiles, getFolders, type ManagedFile } from "./api";
+import { FileThumbnail } from "./FileThumbnail";
+import { FilePreviewDialog } from "./FilePreviewDialog";
+import { getFiles, getFolders, type ManagedFile, type MediaKind } from "./api";
+import { CustomSelect } from "@shared/ui/CustomSelect";
 import { fileQueryKeys } from "./queryKeys";
-export function ReadOnlyFiles({ projectId }: { projectId?: string }) {
+export function ReadOnlyFiles({
+  projectId,
+  initialKind,
+}: {
+  projectId?: string;
+  initialKind?: string;
+}) {
+  const [mediaKind, setMediaKind] = useState<MediaKind | undefined>(() =>
+    ["image", "video", "audio", "document"].includes(initialKind ?? "")
+      ? (initialKind as MediaKind)
+      : undefined,
+  );
   const [folderId, setFolderId] = useState<string>();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<ManagedFile | null>(null);
-  const options = { projectId, folderId, query, includeReferences: true };
+  const options = {
+    projectId,
+    folderId,
+    query,
+    mediaKind,
+    includeReferences: true,
+  };
   const files = useQuery({
     queryKey: fileQueryKeys.list(options),
     queryFn: () => getFiles(options),
@@ -29,6 +48,21 @@ export function ReadOnlyFiles({ projectId }: { projectId?: string }) {
         placeholder="搜索素材名称"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
+      />
+      <CustomSelect
+        ariaLabel="文件类型"
+        value={mediaKind ?? "all"}
+        onChange={(value) => {
+          setMediaKind(value === "all" ? undefined : (value as MediaKind));
+          setSelected(null);
+        }}
+        options={[
+          { value: "all", label: "全部类型" },
+          { value: "image", label: "图片" },
+          { value: "video", label: "视频" },
+          { value: "audio", label: "音频" },
+          { value: "document", label: "文档" },
+        ]}
       />
       <div className="button-row">
         <button
@@ -62,6 +96,9 @@ export function ReadOnlyFiles({ projectId }: { projectId?: string }) {
             key={f.reference_id || f.id}
             onClick={() => setSelected(f)}
           >
+            <span className="readonly-file-thumbnail">
+              <FileThumbnail file={f} />
+            </span>
             <strong>{f.display_name || f.original_filename}</strong>
             <small>
               {f.media_kind} · {(f.byte_size / 1024).toFixed(0)} KB
@@ -71,14 +108,7 @@ export function ReadOnlyFiles({ projectId }: { projectId?: string }) {
       </div>
       {files.data?.items.length === 0 ? <p>当前目录暂无素材。</p> : null}
       {selected ? (
-        <article>
-          <h2>{selected.display_name}</h2>
-          <ReadOnlyMedia
-            path={`/v1/files/${encodeURIComponent(selected.id)}/content`}
-            kind={selected.media_kind}
-            name={selected.original_filename}
-          />
-        </article>
+        <FilePreviewDialog file={selected} onClose={() => setSelected(null)} />
       ) : null}
     </ReadOnlyPage>
   );

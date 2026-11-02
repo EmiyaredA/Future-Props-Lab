@@ -1,3 +1,5 @@
+import { LoadingState } from "@shared/ui/LoadingState";
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
 import "../fast-preview-compact.css";
@@ -484,7 +486,11 @@ export function FastPreviewWorkspace({
             onClick={() => void generateExactFrame()}
           >
             <Image aria-hidden />
-            {exactFrameLoading ? "正在生成精确帧…" : "生成当前精确帧"}
+            {exactFrameLoading ? (
+              <LoadingState variant="inline" label="正在生成精确帧…" />
+            ) : (
+              "生成当前精确帧"
+            )}
           </button>
           <button type="button" onClick={() => onExit(snapshot)}>
             <X aria-hidden />
@@ -532,7 +538,10 @@ export function FastPreviewWorkspace({
               data-stale={exactFrameStale ? "true" : undefined}
               aria-label="当前时间点精确导出帧"
             >
-              <img src={exactFrame.url} alt="正式导出引擎生成的当前帧" />
+              <ResponsiveImage
+                src={exactFrame.url}
+                alt="正式导出引擎生成的当前帧"
+              />
               <header>
                 <strong>精确导出帧</strong>
                 <time>{formatTimelineTime(exactFrame.timeMs)}</time>
@@ -547,7 +556,11 @@ export function FastPreviewWorkspace({
                   disabled={exactFrameLoading}
                   onClick={() => void generateExactFrame()}
                 >
-                  {exactFrameLoading ? "正在生成…" : "重新生成"}
+                  {exactFrameLoading ? (
+                    <LoadingState variant="inline" label="正在生成…" />
+                  ) : (
+                    "重新生成"
+                  )}
                 </button>
               </footer>
             </section>

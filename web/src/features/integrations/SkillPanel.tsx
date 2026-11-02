@@ -1,3 +1,6 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { integrationKeys } from "./queryKeys";
 import { useIntegrationInteraction, useIntegrationOpen } from "./interaction";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -141,6 +144,9 @@ export function SkillPanel({
   onSearchChange: (value: string) => void;
   onStatusChange: (value: string) => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const client = useQueryClient();
   const { blocked } = useIntegrationInteraction();
   const query = useQuery({ queryKey: KEY, queryFn: getSkills });
@@ -175,7 +181,10 @@ export function SkillPanel({
       file: File;
       enabled: boolean;
       tags: string[];
-    }) => createSkill(file, enabled, tags),
+    }) =>
+      runTransfer((onProgress) =>
+        createSkill(file, enabled, tags, { onProgress }),
+      ),
     onSuccess: (skill) => {
       setUploading(false);
       setNotice(`${skill.name} 已通过校验并导入。`);
@@ -193,7 +202,7 @@ export function SkillPanel({
   });
   const add = useMutation({
     mutationFn: ({ skill, file }: { skill: Skill; file: File }) =>
-      addSkillVersion(skill, file),
+      runTransfer((onProgress) => addSkillVersion(skill, file, { onProgress })),
     onSuccess: (skill) => {
       setAddingTo(null);
       setNotice(`${skill.name} ${skill.latest_version} 已导入。`);
@@ -367,6 +376,8 @@ export function SkillPanel({
   };
   return (
     <div className="integration-panel">
+      <TransferFeedback progress={activeTransferProgress} />
+
       <div className="integration-toolbar skill-toolbar">
         <label className="integration-search">
           <Search aria-hidden />
@@ -412,7 +423,7 @@ export function SkillPanel({
       <div className="integration-layout">
         <main className="integration-grid">
           {query.isLoading ? (
-            <PanelMessage>正在加载 Skill…</PanelMessage>
+            <LoadingState label="正在加载 Skill…" variant="region" />
           ) : query.isError ? (
             <PanelMessage>加载失败，请重试。</PanelMessage>
           ) : items.length === 0 ? (

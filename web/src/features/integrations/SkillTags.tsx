@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useId, useState } from "react";
 import { IntegrationModal } from "@features/integrations/components";
 import type { Skill } from "@features/integrations/api";
@@ -72,7 +73,11 @@ export function SkillTagDialog({
             className="btn primary"
             disabled={pending || tags.length > 12}
           >
-            {pending ? "保存中…" : "保存标签"}
+            {pending ? (
+              <LoadingState variant="inline" label="保存中…" />
+            ) : (
+              "保存标签"
+            )}
           </button>
         </footer>
       </form>

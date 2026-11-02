@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { components } from "@generated/api";
@@ -92,7 +93,11 @@ export function ModelTemplatesPage() {
       {query.data ? (
         <TemplateEditor key={role} initial={query.data} onDirty={setDirty} />
       ) : (
-        <p className="empty-copy">正在加载角色模板…</p>
+        <LoadingState
+          label="正在加载角色模板…"
+          variant="region"
+          className="empty-copy"
+        />
       )}
       <ConfirmDialog
         open={!!next}

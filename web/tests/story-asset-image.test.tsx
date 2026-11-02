@@ -143,7 +143,10 @@ describe("StoryAssetImage", () => {
     );
 
     await waitFor(() =>
-      expect(fetchApiBlob).toHaveBeenCalledWith("/v1/files/file-next/content"),
+      expect(fetchApiBlob).toHaveBeenCalledWith(
+        "/v1/files/file-next/content",
+        expect.objectContaining({ onProgress: expect.any(Function) }),
+      ),
     );
     expect(screen.getByAltText("角色")).toHaveAttribute(
       "src",

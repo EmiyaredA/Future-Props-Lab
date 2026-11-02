@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { lazy, Suspense, useRef, useState } from "react";
 import { Upload } from "lucide-react";
 const ImportDialog = lazy(() => import("./ImportDialog"));
@@ -27,7 +28,9 @@ export function ImportButton({ onOpen }: { onOpen: (id: string) => void }) {
         }}
       />
       {file && (
-        <Suspense fallback={<p role="status">正在加载导入工具…</p>}>
+        <Suspense
+          fallback={<LoadingState label="正在加载导入工具…" variant="region" />}
+        >
           <ImportDialog
             file={file}
             onClose={() => setFile(null)}

@@ -1,3 +1,4 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import {
   useEffect,
   useRef,
@@ -61,7 +62,7 @@ export function CanvasMediaPreview({
   readyChangeRef.current = onVideoReadyChange;
   const { ref, url, error } = useVisibleApiBlobUrl(
     preview.assetId && (preview.kind === "image" || interactive)
-      ? `/v1/files/${preview.assetId}/${preview.kind === "image" && !interactive ? "thumbnail?size=640" : "content"}`
+      ? `/v1/files/${preview.assetId}/${preview.kind === "image" ? (interactive ? "thumbnail?size=1280" : "thumbnail?size=640") : "content"}`
       : null,
   );
   const missing = Boolean(error);
@@ -75,7 +76,7 @@ export function CanvasMediaPreview({
   let content;
   if (url && preview.kind === "image")
     content = (
-      <img
+      <ResponsiveImage
         src={url}
         alt={preview.fallback ? "生成参考素材预览" : ""}
         draggable={false}

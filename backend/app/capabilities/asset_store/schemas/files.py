@@ -83,6 +83,15 @@ class VisualAssetListOut(BaseModel):
     items: list[VisualAssetOut]
 
 
+class FilePreviewOut(BaseModel):
+    kind: Literal["image", "video", "audio", "pdf", "text", "unsupported"]
+    duration_seconds: float | None = None
+    waveform_seconds: float | None = None
+    page_count: int | None = None
+    text: str | None = None
+    truncated: bool = False
+
+
 class VisualAssetImportIn(BaseModel):
     source_scope: VisualAssetScope
     source_project_id: str | None = None
@@ -267,3 +276,15 @@ class SvgPreviewOut(BaseModel):
     width: float
     height: float
     monochrome: bool
+
+
+FILE_CONTENT_HEADERS = {
+    "X-Fpl-File-Revision": {
+        "description": "Owned file metadata revision",
+        "schema": {"type": "integer", "minimum": 0},
+    },
+    "X-Fpl-File-Kind": {
+        "description": "Owned file media kind",
+        "schema": {"type": "string", "enum": ["image", "video", "audio", "font", "document"]},
+    },
+}

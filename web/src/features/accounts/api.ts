@@ -1,3 +1,5 @@
+import { createUploadTransfer } from "@platform/api/transfer";
+import { type TransferOptions } from "@platform/api/transfer";
 import type { components } from "@generated/api";
 import { api, unwrap } from "@platform/api/client";
 
@@ -50,9 +52,15 @@ export const updateProfile = async (
     }),
   );
 
-export const putAvatar = async (file: File, expectedRevision: number) =>
-  unwrap(
+export const putAvatar = async (
+  file: File,
+  expectedRevision: number,
+  transfer: TransferOptions = {},
+) => {
+  const uploadTransfer = createUploadTransfer(transfer.onProgress);
+  return unwrap(
     await api.PUT("/v1/account/profile/avatar", {
+      fetch: uploadTransfer.fetch,
       body: {
         file: file as unknown as string,
         expected_revision: expectedRevision,
@@ -61,10 +69,11 @@ export const putAvatar = async (file: File, expectedRevision: number) =>
         const form = new FormData();
         form.set("file", file);
         form.set("expected_revision", String(expectedRevision));
-        return form;
+        return uploadTransfer.capture(form);
       },
     }),
   );
+};
 
 export const deleteAvatar = async (expectedRevision: number) =>
   unwrap(

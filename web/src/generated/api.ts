@@ -2193,6 +2193,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/files/{asset_id}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Preview File Metadata */
+        get: operations["preview_file_metadata_v1_files__asset_id__preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/files/{asset_id}/thumbnail": {
         parameters: {
             query?: never;
@@ -4212,60 +4229,6 @@ export interface paths {
         get: operations["realtime_options_v1_model_test_realtime_options_get"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/model-test/tools": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Tools */
-        get: operations["list_tools_v1_model_test_tools_get"];
-        put?: never;
-        /** Create Tool */
-        post: operations["create_tool_v1_model_test_tools_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/model-test/tools/{tool_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Tool */
-        get: operations["get_tool_v1_model_test_tools__tool_id__get"];
-        put?: never;
-        post?: never;
-        /** Delete Tool */
-        delete: operations["delete_tool_v1_model_test_tools__tool_id__delete"];
-        options?: never;
-        head?: never;
-        /** Update Tool */
-        patch: operations["update_tool_v1_model_test_tools__tool_id__patch"];
-        trace?: never;
-    };
-    "/v1/model-test/tools/{tool_id}/execute": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Execute Tool */
-        post: operations["execute_tool_v1_model_test_tools__tool_id__execute_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -11257,6 +11220,27 @@ export interface components {
             /** Sha256 */
             sha256: string;
         };
+        /** FilePreviewOut */
+        FilePreviewOut: {
+            /** Duration Seconds */
+            duration_seconds?: number | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "image" | "video" | "audio" | "pdf" | "text" | "unsupported";
+            /** Page Count */
+            page_count?: number | null;
+            /** Text */
+            text?: string | null;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated: boolean;
+            /** Waveform Seconds */
+            waveform_seconds?: number | null;
+        };
         /** FileWriteIn */
         FileWriteIn: {
             /** Content */
@@ -16186,8 +16170,6 @@ export interface components {
             temperature: number;
             /** Title */
             title: string;
-            /** Tools */
-            tools?: components["schemas"]["ModelTestToolSummaryOut"][];
             /** Updated At */
             updated_at: string;
         };
@@ -16205,8 +16187,6 @@ export interface components {
             temperature?: number | null;
             /** Title */
             title?: string | null;
-            /** Tool Ids */
-            tool_ids?: string[] | null;
         };
         /** ModelTestConversationSummaryOut */
         ModelTestConversationSummaryOut: {
@@ -16419,8 +16399,6 @@ export interface components {
              * @enum {string}
              */
             status: "pending" | "completed" | "error" | "cancelled" | "superseded";
-            /** Tool Calls */
-            tool_calls?: components["schemas"]["ModelTestToolCallOut"][];
             /** Turn Id */
             turn_id: string;
         };
@@ -16440,242 +16418,6 @@ export interface components {
             content: string;
             /** Expected Revision */
             expected_revision: number;
-        };
-        /** ModelTestToolCallOut */
-        ModelTestToolCallOut: {
-            /** Arguments */
-            arguments: {
-                [key: string]: unknown;
-            };
-            /** Configured Delay Ms */
-            configured_delay_ms: number;
-            /** Conversation Id */
-            conversation_id: string | null;
-            /** Created At */
-            created_at: string;
-            /** Duration Ms */
-            duration_ms: number;
-            /** Error Code */
-            error_code: string;
-            /** Error Message */
-            error_message: string;
-            /** Id */
-            id: string;
-            /** Message Id */
-            message_id: string | null;
-            /** Result */
-            result: unknown | null;
-            /** Round Index */
-            round_index: number;
-            /** Run Id */
-            run_id: string;
-            /**
-             * Source
-             * @enum {string}
-             */
-            source: "dry_run" | "model_test" | "realtime_voice";
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "proposed" | "running" | "completed" | "failed" | "cancelled";
-            /** Success */
-            success: boolean | null;
-            /** Tool Id */
-            tool_id: string | null;
-            /** Tool Name */
-            tool_name: string;
-            /** Tool Revision */
-            tool_revision: number;
-            /** Updated At */
-            updated_at: string;
-        };
-        /** ModelTestToolCatalogOut */
-        ModelTestToolCatalogOut: {
-            /** Items */
-            items: components["schemas"]["ModelTestToolSummaryOut"][];
-            overview: components["schemas"]["ModelTestToolOverviewOut"];
-        };
-        /** ModelTestToolCreateIn */
-        ModelTestToolCreateIn: {
-            /**
-             * Delay Ms
-             * @default 0
-             */
-            delay_ms: number;
-            /**
-             * Description
-             * @default
-             */
-            description: string;
-            /**
-             * Enabled
-             * @default true
-             */
-            enabled: boolean;
-            /**
-             * Error Code
-             * @default mock_failure
-             */
-            error_code: string;
-            /**
-             * Error Message
-             * @default 模拟工具执行失败
-             */
-            error_message: string;
-            /** Input Schema */
-            input_schema?: {
-                [key: string]: unknown;
-            };
-            /**
-             * Mock Kind
-             * @default success
-             * @enum {string}
-             */
-            mock_kind: "success" | "failure";
-            /** Mock Result */
-            mock_result?: unknown;
-            /** Name */
-            name: string;
-        };
-        /** ModelTestToolExecuteIn */
-        ModelTestToolExecuteIn: {
-            /** Expected Revision */
-            expected_revision: number;
-            /** Input */
-            input?: {
-                [key: string]: unknown;
-            };
-        };
-        /** ModelTestToolOut */
-        ModelTestToolOut: {
-            /**
-             * Bound Conversation Count
-             * @default 0
-             */
-            bound_conversation_count: number;
-            /** Created At */
-            created_at: string;
-            /** Delay Ms */
-            delay_ms: number;
-            /** Description */
-            description: string;
-            /** Enabled */
-            enabled: boolean;
-            /** Error Code */
-            error_code: string;
-            /** Error Message */
-            error_message: string;
-            /** Id */
-            id: string;
-            /** Input Schema */
-            input_schema: {
-                [key: string]: unknown;
-            };
-            /** Last Used At */
-            last_used_at: string | null;
-            /**
-             * Mock Kind
-             * @enum {string}
-             */
-            mock_kind: "success" | "failure";
-            /** Mock Result */
-            mock_result: unknown;
-            /** Name */
-            name: string;
-            /** Parameter Count */
-            parameter_count: number;
-            /** Recent Calls */
-            recent_calls?: components["schemas"]["ModelTestToolCallOut"][];
-            /** Revision */
-            revision: number;
-            /** Updated At */
-            updated_at: string;
-        };
-        /** ModelTestToolOverviewOut */
-        ModelTestToolOverviewOut: {
-            /** Enabled */
-            enabled: number;
-            /** Failure */
-            failure: number;
-            /** Recent */
-            recent?: components["schemas"]["ModelTestToolSummaryOut"][];
-            /** Today Runs */
-            today_runs: number;
-            /** Total */
-            total: number;
-        };
-        /** ModelTestToolPatchIn */
-        ModelTestToolPatchIn: {
-            /**
-             * Delay Ms
-             * @default 0
-             */
-            delay_ms: number;
-            /**
-             * Description
-             * @default
-             */
-            description: string;
-            /**
-             * Enabled
-             * @default true
-             */
-            enabled: boolean;
-            /**
-             * Error Code
-             * @default mock_failure
-             */
-            error_code: string;
-            /**
-             * Error Message
-             * @default 模拟工具执行失败
-             */
-            error_message: string;
-            /** Expected Revision */
-            expected_revision: number;
-            /** Input Schema */
-            input_schema?: {
-                [key: string]: unknown;
-            };
-            /**
-             * Mock Kind
-             * @default success
-             * @enum {string}
-             */
-            mock_kind: "success" | "failure";
-            /** Mock Result */
-            mock_result?: unknown;
-            /** Name */
-            name: string;
-        };
-        /** ModelTestToolSummaryOut */
-        ModelTestToolSummaryOut: {
-            /** Created At */
-            created_at: string;
-            /** Delay Ms */
-            delay_ms: number;
-            /** Description */
-            description: string;
-            /** Enabled */
-            enabled: boolean;
-            /** Id */
-            id: string;
-            /** Last Used At */
-            last_used_at: string | null;
-            /**
-             * Mock Kind
-             * @enum {string}
-             */
-            mock_kind: "success" | "failure";
-            /** Name */
-            name: string;
-            /** Parameter Count */
-            parameter_count: number;
-            /** Revision */
-            revision: number;
-            /** Updated At */
-            updated_at: string;
         };
         /** ModelTestTranscriptionAudioInfoOut */
         ModelTestTranscriptionAudioInfoOut: {
@@ -18970,8 +18712,6 @@ export interface components {
             slug: string;
             /** Supports Interruption */
             supports_interruption: boolean;
-            /** Supports Tools */
-            supports_tools: boolean;
             /** Voices */
             voices: components["schemas"]["RealtimeVoiceOptionOut"][];
         };
@@ -24207,7 +23947,9 @@ export interface operations {
     };
     get_avatar_v1_account_profile_avatar_get: {
         parameters: {
-            query?: never;
+            query?: {
+                size?: (128 | 320 | 640 | 1280) | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -24220,6 +23962,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
             };
         };
     };
@@ -27256,6 +27007,7 @@ export interface operations {
         parameters: {
             query?: {
                 draft?: boolean;
+                size?: (128 | 320 | 640 | 1280) | null;
             };
             header?: never;
             path: {
@@ -27458,7 +27210,9 @@ export interface operations {
     };
     release_cover_v1_creative_workshop_releases__release_id__cover_get: {
         parameters: {
-            query?: never;
+            query?: {
+                size?: (128 | 320 | 640 | 1280) | null;
+            };
             header?: never;
             path: {
                 release_id: string;
@@ -28676,6 +28430,10 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 headers: {
+                    /** @description Owned file media kind */
+                    "X-Fpl-File-Kind"?: "image" | "video" | "audio" | "font" | "document";
+                    /** @description Owned file metadata revision */
+                    "X-Fpl-File-Revision"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -28827,10 +28585,42 @@ export interface operations {
             };
         };
     };
+    preview_file_metadata_v1_files__asset_id__preview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FilePreviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     preview_thumbnail_v1_files__asset_id__thumbnail_get: {
         parameters: {
             query?: {
-                size?: 320 | 640;
+                size?: 128 | 320 | 640 | 1280;
+                page?: number;
             };
             header?: never;
             path: {
@@ -28846,6 +28636,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "image/svg+xml": string;
                     "image/webp": string;
                 };
             };
@@ -33237,7 +33028,9 @@ export interface operations {
     };
     attachment_content_v1_model_test_conversations__conversation_id__attachments__attachment_id__content_get: {
         parameters: {
-            query?: never;
+            query?: {
+                size?: (128 | 320 | 640 | 1280) | null;
+            };
             header?: never;
             path: {
                 conversation_id: string;
@@ -33628,7 +33421,9 @@ export interface operations {
     };
     generation_content_v1_model_test_generation_tasks__task_id__content_get: {
         parameters: {
-            query?: never;
+            query?: {
+                size?: (128 | 320 | 640 | 1280) | null;
+            };
             header?: never;
             path: {
                 task_id: string;
@@ -33704,195 +33499,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RealtimeVoiceOptionsOut"];
-                };
-            };
-        };
-    };
-    list_tools_v1_model_test_tools_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ModelTestToolCatalogOut"];
-                };
-            };
-        };
-    };
-    create_tool_v1_model_test_tools_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ModelTestToolCreateIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ModelTestToolOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_tool_v1_model_test_tools__tool_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                tool_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ModelTestToolOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_tool_v1_model_test_tools__tool_id__delete: {
-        parameters: {
-            query: {
-                expected_revision: number;
-            };
-            header?: never;
-            path: {
-                tool_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: boolean;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_tool_v1_model_test_tools__tool_id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                tool_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ModelTestToolPatchIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ModelTestToolOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    execute_tool_v1_model_test_tools__tool_id__execute_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                tool_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ModelTestToolExecuteIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ModelTestToolCallOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -36794,6 +36400,7 @@ export interface operations {
         parameters: {
             query?: {
                 note_id?: string | null;
+                size?: (128 | 320 | 640 | 1280) | null;
             };
             header?: never;
             path: {
@@ -36826,7 +36433,9 @@ export interface operations {
     };
     cover_v1_thought_workshop_community_publications__publication_id__cover_get: {
         parameters: {
-            query?: never;
+            query?: {
+                size?: (128 | 320 | 640 | 1280) | null;
+            };
             header?: never;
             path: {
                 publication_id: string;

@@ -1,5 +1,6 @@
 """Explicit service requests exchange a verified source assertion for a narrow target token."""
 
+from contextlib import asynccontextmanager
 from dataclasses import asdict
 
 import httpx
@@ -54,7 +55,33 @@ class CapabilityClient:
         )
         return await self._exists(assertion, grant)
 
-    async def _exists(self, assertion, grant):
+    @asynccontextmanager
+    async def file_source(self, *, assertion, source_method, source_path, asset_id):
+        grant = RequestGrant(
+            self.service,
+            "rendering.source.read",
+            source_method,
+            source_path,
+            "assets",
+            "GET",
+            "/v1/files/" + asset_id + "/content",
+        )
+        token = await self._authorize(assertion, grant)
+        try:
+            async with self.client.stream(
+                "GET",
+                "http://assets:8080" + grant.target_path,
+                headers={"X-Fpl-Context": token, "Accept-Encoding": "identity"},
+            ) as response:
+                if response.status_code in {401, 403, 404}:
+                    raise CapabilityDenied(response.status_code)
+                if response.status_code != 200:
+                    raise CapabilityUnavailable("来源文件暂不可用")
+                yield response
+        except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+            raise CapabilityUnavailable("来源文件读取未确认") from exc
+
+    async def _authorize(self, assertion, grant):
         if not permitted(grant, self.catalog):
             raise CapabilityDenied(403)
         try:
@@ -65,10 +92,18 @@ class CapabilityClient:
             )
             if delegated.status_code in {401, 403}:
                 raise CapabilityDenied(delegated.status_code)
-            delegated.raise_for_status()
+            if delegated.status_code != 200:
+                raise CapabilityUnavailable("跨服务授权暂不可用")
             token = delegated.json()["assertion"]
             if not isinstance(token, str) or not 1 <= len(token) <= 8192:
                 raise ValueError("invalid assertion")
+            return token
+        except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+            raise CapabilityUnavailable("跨服务授权未确认") from exc
+
+    async def _exists(self, assertion, grant):
+        token = await self._authorize(assertion, grant)
+        try:
             async with self.client.stream(
                 "GET",
                 f"http://{grant.target_service}:8080" + grant.target_path,

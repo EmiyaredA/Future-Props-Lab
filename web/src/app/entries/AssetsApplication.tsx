@@ -13,7 +13,12 @@ function Files() {
     <IndependentShell title="文件管理">
       <div className="file-service-scroll">
         {editable ? (
-          <FileManagementPage canOpenLocalFolder={localBrowser} />
+          <FileManagementPage
+            canOpenLocalFolder={localBrowser}
+            initialKind={
+              new URLSearchParams(location.search).get("kind") ?? undefined
+            }
+          />
         ) : (
           <ReadOnlyFiles />
         )}

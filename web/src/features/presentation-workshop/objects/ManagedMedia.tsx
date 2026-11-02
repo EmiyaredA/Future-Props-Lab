@@ -27,7 +27,7 @@ export function ManagedMedia({
     : undefined;
   const poster = useApiBlobUrl(
     media?.poster_asset_id && !posterOverride
-      ? `/v1/files/${encodeURIComponent(media.poster_asset_id)}/content`
+      ? `/v1/files/${encodeURIComponent(media.poster_asset_id)}/thumbnail?size=1280`
       : null,
   );
   useEffect(() => {

@@ -1,3 +1,6 @@
+import { LoadingState } from "@shared/ui/LoadingState";
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { useEffect, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
@@ -44,6 +47,9 @@ export function ProjectsPage({
   onOpen: (id: string) => void;
   readOnly?: boolean;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const [projects, setProjects] = useState<MotionProject[]>([]);
   const [query, setQuery] = useState("");
   const [form, setForm] = useState<FormState>(INITIAL);
@@ -118,6 +124,8 @@ export function ProjectsPage({
 
   return (
     <section className="workshop-page mc-projects">
+      <TransferFeedback progress={activeTransferProgress} />
+
       <WorkshopAppChrome
         title="我的特效项目"
         description="制作镜头特效、蒙版和风格化视觉效果，再交给视频剪辑工坊。"
@@ -134,7 +142,9 @@ export function ProjectsPage({
                   const file = event.target.files?.[0];
                   if (!file) return;
                   setBusy(true);
-                  void importSnapshot(file)
+                  void runTransfer((onProgress) =>
+                    importSnapshot(file, { onProgress }),
+                  )
                     .then(async (project) => {
                       await refresh();
                       onOpen(project.id);
@@ -192,7 +202,11 @@ export function ProjectsPage({
         </div>
       )}
       {loading ? (
-        <p className="mc-empty">正在读取项目…</p>
+        <LoadingState
+          label="正在读取项目…"
+          variant="region"
+          className="mc-empty"
+        />
       ) : (
         <div className="mc-project-grid">
           {filtered.map((project, index) => (
@@ -234,7 +248,9 @@ export function ProjectsPage({
                       <button
                         aria-label={`下载${project.title}工程包`}
                         onClick={() =>
-                          void downloadSnapshot(project.id)
+                          void runTransfer((onProgress) =>
+                            downloadSnapshot(project.id, { onProgress }),
+                          )
                             .then((file) =>
                               downloadProjectSnapshot(
                                 file,
@@ -370,7 +386,13 @@ export function ProjectsPage({
                 disabled={busy || !form.title.trim()}
                 onClick={() => void save()}
               >
-                {busy ? "正在保存…" : editing ? "保存名称" : "创建并打开项目"}{" "}
+                {busy ? (
+                  <LoadingState variant="inline" label="正在保存…" />
+                ) : editing ? (
+                  "保存名称"
+                ) : (
+                  "创建并打开项目"
+                )}{" "}
                 <ArrowRight size={16} />
               </button>
             </div>

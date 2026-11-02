@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   CheckCircle2,
-  FolderOpen,
   FolderSync,
   LoaderCircle,
 } from "lucide-react";
@@ -26,8 +25,10 @@ function bytesLabel(value: number) {
 }
 
 export function FileManagementPage({
+  initialKind,
   canOpenLocalFolder = true,
 }: {
+  initialKind?: string;
   canOpenLocalFolder?: boolean;
 }) {
   const client = useQueryClient();
@@ -62,24 +63,6 @@ export function FileManagementPage({
   const issues = progress?.issues ?? [];
   return (
     <section className="file-management-page">
-      <header>
-        <div>
-          <h1>文件管理</h1>
-          <p>统一管理可供各个项目引用的图片、视频、音频和文档。</p>
-        </div>
-        {canOpenLocalFolder && (
-          <div className="file-management-page__actions">
-            <button
-              type="button"
-              disabled={openFolder.isPending}
-              onClick={() => openFolder.mutate()}
-            >
-              <FolderOpen aria-hidden />
-              {openFolder.isPending ? "正在打开…" : "打开本地文件夹"}
-            </button>
-          </div>
-        )}
-      </header>
       {status && !status.complete ? (
         <section className="file-storage-migration" aria-live="polite">
           <span className="file-storage-migration-icon">
@@ -125,7 +108,19 @@ export function FileManagementPage({
           项目素材目录整理完成
         </div>
       ) : null}
-      <AssetBrowser />
+      {openFolder.isError && (
+        <p className="file-notice" role="alert">
+          无法打开本地文件夹，请重试。
+        </p>
+      )}
+      <AssetBrowser
+        initialKind={initialKind}
+        onOpenLocalFolder={
+          canOpenLocalFolder ? () => openFolder.mutate() : undefined
+        }
+        pageHeading
+        openingLocalFolder={openFolder.isPending}
+      />
     </section>
   );
 }

@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { TemplateDesignerPage } from "./master/TemplateDesignerPage";
 import { TemplateLibrary } from "./master/TemplateLibrary";
 import { Audience } from "./playback/Audience";
@@ -66,9 +67,11 @@ export function PresentationWorkshopPage({
     return <PresentationLibrary onOpen={onOpen} readOnly={readOnly} />;
   if (project.isPending)
     return (
-      <div className="presentation-loading" role="status">
-        正在打开演示文稿…
-      </div>
+      <LoadingState
+        label="正在打开演示文稿…"
+        variant="region"
+        className="presentation-loading"
+      />
     );
   if (project.isError || !project.data)
     return (

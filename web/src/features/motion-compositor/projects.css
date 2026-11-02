@@ -5,8 +5,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin: 24px 0 18px;
+  gap: 14px;
+  margin: 20px 0 15px;
   color: var(--muted, #8b8078);
   font-size: 13px;
 }
@@ -22,7 +22,7 @@
 }
 .mc-project-toolbar input {
   width: 100%;
-  height: 44px;
+  height: 38px;
   border: 0;
   outline: none;
   background: none;
@@ -30,8 +30,8 @@
 }
 .mc-project-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(295px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+  gap: 16px;
 }
 .mc-project-card,
 .mc-new-card {
@@ -48,10 +48,10 @@
   align-items: flex-start;
   justify-content: flex-end;
   width: 100%;
-  height: 190px;
+  height: 164px;
   overflow: hidden;
   border: 0;
-  padding: 20px;
+  padding: 17px;
   text-align: left;
   color: #fff9ee;
   background: linear-gradient(
@@ -66,7 +66,7 @@
   position: relative;
   z-index: 2;
   max-width: 75%;
-  font-size: 26px;
+  font-size: 23px;
   font-weight: 900;
   transform: rotate(-7deg);
   text-shadow: 3px 3px #111;
@@ -95,11 +95,11 @@
   color: #111820;
 }
 .mc-project-card-body {
-  padding: 16px 18px;
+  padding: 14px 16px;
 }
 .mc-project-card-body h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
 }
 .mc-project-card-body p {
   margin: 6px 0 16px;
@@ -302,5 +302,12 @@
   }
   .mc-dialog {
     padding: 20px;
+  }
+}
+
+@media (pointer: coarse) {
+  .mc-projects button,
+  .mc-project-toolbar input {
+    min-height: 44px;
   }
 }

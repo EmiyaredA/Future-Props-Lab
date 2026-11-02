@@ -1,3 +1,6 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { LoadingState } from "@shared/ui/LoadingState";
 import {
   lazy,
   Suspense,
@@ -88,6 +91,9 @@ export function ThoughtWorkshopPage({
   onOpenOfficial: (libraryId: string) => void;
   onNavigateSection?: (section: KnowledgeSection) => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const documentUI = useDocumentChrome();
   const canPublish = useAccountPermission("content.write");
   const canSync = useAccountPermission("configuration.manage");
@@ -378,6 +384,8 @@ export function ThoughtWorkshopPage({
     <div
       className={`thought-shell knowledge-shell ${projectId ? "inside-knowledge" : ""}`}
     >
+      <TransferFeedback progress={activeTransferProgress} />
+
       {drawer && (
         <button
           className="knowledge-backdrop"
@@ -562,9 +570,11 @@ export function ThoughtWorkshopPage({
           </div>
         )}
         {busy && (
-          <p role="status" className="knowledge-notice">
-            正在处理…
-          </p>
+          <LoadingState
+            label="正在处理…"
+            variant="region"
+            className="knowledge-notice"
+          />
         )}
         {!projectId && page !== "thought-workshop-legacy" ? (
           <section className="knowledge-library">
@@ -617,7 +627,9 @@ export function ThoughtWorkshopPage({
                 </ProjectLibraryCard>
               ))}
             </div>
-            {projects.isLoading && <p role="status">正在加载知识库…</p>}
+            {projects.isLoading && (
+              <LoadingState label="正在加载知识库…" variant="region" />
+            )}
             {projects.data?.length === 0 && (
               <div className="knowledge-empty">
                 <BookOpen size={40} />
@@ -655,13 +667,19 @@ export function ThoughtWorkshopPage({
               <KnowledgeCover assetId={project.cover_asset_id} />
             )}
             {note.isLoading && (
-              <p role="status" className="knowledge-notice">
-                正在加载文档…
-              </p>
+              <LoadingState
+                label="正在加载文档…"
+                variant="region"
+                className="knowledge-notice"
+              />
             )}
             {note.data &&
               (!projectId || note.data.knowledge_base_id === projectId) && (
-                <Suspense fallback={<p>编辑器加载中…</p>}>
+                <Suspense
+                  fallback={
+                    <LoadingState label="编辑器加载中…" variant="region" />
+                  }
+                >
                   {note.data.deleted_at ? (
                     <div className="knowledge-empty">
                       <p>这篇文档在回收站中</p>
@@ -719,7 +737,9 @@ export function ThoughtWorkshopPage({
             e.target.value = "";
             if (f && coverProject)
               void run(async () => {
-                const uploaded = await uploadImage(f);
+                const uploaded = await runTransfer((onProgress) =>
+                  uploadImage(f, { onProgress }),
+                );
                 await updateKnowledge(coverProject, {
                   cover_asset_id: uploaded.asset_id,
                 });

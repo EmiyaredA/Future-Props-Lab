@@ -3,7 +3,7 @@ from __future__ import annotations
 import shutil
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Query, Request, Response, UploadFile
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
@@ -20,11 +20,14 @@ from app.capabilities.asset_store.account_upgrade import (
     migrate_accounts,
     upgrade_status,
 )
+from app.capabilities.asset_store.file_previews import preview_metadata
 from app.capabilities.asset_store.layout_migration import (
     LayoutMigrationBusyError,
     StorageLayoutMigration,
 )
 from app.capabilities.asset_store.schemas.files import (
+    FILE_CONTENT_HEADERS,
+    FilePreviewOut,
     LibraryAssetImportIn,
     LibraryFolderImportOut,
     StorageLayoutMigrationOut,
@@ -40,7 +43,7 @@ from app.capabilities.asset_store.schemas.files import (
     VisualAssetPatchIn,
 )
 from app.capabilities.asset_store.schemas.project_snapshots import ProjectFolderOpenOut
-from app.capabilities.asset_store.thumbnails import thumbnail
+from app.capabilities.asset_store.thumbnails import ThumbnailSize, thumbnail
 from app.console.file_library import (
     LibraryFolderArchive,
     LibraryFolderArchiveError,
@@ -336,7 +339,19 @@ async def delete_file(
     return {"deleted": True}
 
 
-@router.get("/files/{asset_id}/content")
+@router.get("/files/{asset_id}/preview", response_model=FilePreviewOut)
+async def preview_file_metadata(
+    session: SessionDep, owner_user_id: OwnerDep, asset_id: str, response: Response
+) -> FilePreviewOut:
+    try:
+        result = await preview_metadata(session, get_settings(), owner_user_id, asset_id)
+    except AssetError as exc:
+        raise asset_http_error(exc) from None
+    response.headers["Cache-Control"] = "private, no-store"
+    return result
+
+
+@router.get("/files/{asset_id}/content", responses={200: {"headers": FILE_CONTENT_HEADERS}})
 async def preview_file(session: SessionDep, owner_user_id: OwnerDep, asset_id: str) -> FileResponse:
     try:
         row, path = await _assets(session, owner_user_id).content(asset_id)
@@ -349,6 +364,8 @@ async def preview_file(session: SessionDep, owner_user_id: OwnerDep, asset_id: s
         content_disposition_type="inline",
         headers={
             "X-Content-Type-Options": "nosniff",
+            "X-Fpl-File-Revision": str(row.revision),
+            "X-Fpl-File-Kind": row.media_kind,
             **(
                 {
                     "Content-Security-Policy": (
@@ -366,25 +383,35 @@ async def preview_file(session: SessionDep, owner_user_id: OwnerDep, asset_id: s
     "/files/{asset_id}/thumbnail",
     response_class=FileResponse,
     responses={
-        200: {"content": {"image/webp": {"schema": {"type": "string", "format": "binary"}}}}
+        200: {
+            "content": {
+                mime: {"schema": {"type": "string", "format": "binary"}}
+                for mime in ("image/webp", "image/svg+xml")
+            }
+        }
     },
 )
 async def preview_thumbnail(
     session: SessionDep,
     owner_user_id: OwnerDep,
     asset_id: str,
-    size: int = Query(default=320, json_schema_extra={"enum": [320, 640]}),
+    size: ThumbnailSize = 320,
+    page: int = Query(default=1, ge=1),
 ) -> FileResponse:
     try:
-        if size not in (320, 640):
-            raise HTTPException(422, detail="缩略图尺寸仅支持 320 或 640")
-        path = await thumbnail(session, get_settings(), owner_user_id, asset_id, size)
+        path, mime_type = await thumbnail(
+            session, get_settings(), owner_user_id, asset_id, size, page
+        )
     except AssetError as exc:
         raise asset_http_error(exc) from None
     return FileResponse(
         path,
-        media_type="image/webp",
-        headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"},
+        media_type=mime_type,
+        headers={
+            "Cache-Control": "private, no-store",
+            "X-Content-Type-Options": "nosniff",
+            "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+        },
     )
 
 

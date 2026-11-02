@@ -1,3 +1,4 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
 import {
   useEffect,
   useRef,
@@ -78,6 +79,9 @@ export function useSegmentTranscription({
   setDirty: Dispatch<SetStateAction<boolean>>;
   setNotice: Dispatch<SetStateAction<string>>;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const [audioReady, setAudioReady] = useState(false);
   const [modelId, setModelId] = useState("");
   const [confirmTarget, setConfirmTarget] =
@@ -155,15 +159,21 @@ export function useSegmentTranscription({
 
   const mutation = useMutation({
     mutationFn: (input: { target: SegmentTranscriptionTarget; wav: Blob }) =>
-      transcribeAudioAnnotationSegment(projectId, {
-        wav: input.wav,
-        modelId,
-        segmentId: input.target.segmentId,
-        startMs: input.target.startMs,
-        endMs: input.target.endMs,
-        languageTag: input.target.sourceLanguage,
-        targetLanguageTag: input.target.targetLanguage,
-      }),
+      runTransfer((onProgress) =>
+        transcribeAudioAnnotationSegment(
+          projectId,
+          {
+            wav: input.wav,
+            modelId,
+            segmentId: input.target.segmentId,
+            startMs: input.target.startMs,
+            endMs: input.target.endMs,
+            languageTag: input.target.sourceLanguage,
+            targetLanguageTag: input.target.targetLanguage,
+          },
+          { onProgress },
+        ),
+      ),
     onSuccess: (result, input) => {
       if (!result.text.trim()) {
         setNotice("当前片段未识别到语音，内容保持不变。");
@@ -251,6 +261,7 @@ export function useSegmentTranscription({
   };
 
   return {
+    transferProgress: activeTransferProgress,
     controls,
     setAudioReady,
     confirmTarget,

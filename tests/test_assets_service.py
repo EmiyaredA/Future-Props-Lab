@@ -89,7 +89,7 @@ async def test_public_file_contract_is_identical_to_the_aggregated_contract(inst
     assert not any(path.startswith("/_internal/") for path in app.openapi()["paths"])
 
 
-async def test_owned_upload_download_range_folder_links_and_thumbnail(instance):
+async def test_owned_upload_download_range_and_folder_links(instance):
     app, client, private, projects = instance
     png = BytesIO()
     Image.new("RGB", (20, 20), color="blue").save(png, format="PNG")
@@ -108,9 +108,6 @@ async def test_owned_upload_download_range_folder_links_and_thumbnail(instance):
     assert response.headers["cache-control"] == "no-store"
     denied = await client.get(path, headers=headers(private, "GET", path, "beta"))
     assert denied.status_code == 404
-    thumb = f"/v1/files/{uploaded['id']}/thumbnail"
-    response = await client.get(thumb, headers=headers(private, "GET", thumb))
-    assert response.status_code == 200 and response.headers["content-type"] == "image/webp"
     project_path = "/v1/visual-workshop/projects/owned-project/asset-references"
     response = await client.post(
         project_path,
@@ -186,3 +183,28 @@ async def test_owned_program_cache_is_immutable_while_api_and_unknown_resources_
     assert (await client.get("/files")).headers["cache-control"] == "no-cache"
     api = await client.get("/v1/files", headers=headers(private, "GET", "/v1/files"))
     assert api.status_code == 200 and api.headers["cache-control"] == "no-store"
+
+
+async def test_archive_upload_dispatches_to_owned_archive_case(instance):
+    import zipfile
+
+    _app, client, private, _projects = instance
+    packed = BytesIO()
+    with zipfile.ZipFile(packed, "w") as bundle:
+        bundle.writestr("folder/readme.txt", "owned archive")
+    path = "/v1/file-library/folder-archive-imports"
+    response = await client.post(
+        path,
+        headers=headers(private, "POST", path),
+        files={"archive": ("fixture.zip", packed.getvalue(), "application/zip")},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["created_files"] == 1
+    response = await client.get(
+        "/v1/file-folders", headers=headers(private, "GET", "/v1/file-folders")
+    )
+    folder = response.json()["items"][0]
+    response = await client.get(
+        "/v1/files?folder_id=" + folder["id"], headers=headers(private, "GET", "/v1/files")
+    )
+    assert response.json()["items"][0]["original_filename"] == "readme.txt"

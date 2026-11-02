@@ -1,3 +1,6 @@
+import { ProgressBar } from "@shared/ui/LoadingState";
+import { LoadingState } from "@shared/ui/LoadingState";
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -325,7 +328,7 @@ export function VideoEditorSegmentExportDialog({
                   </button>
                   <div className="ve-segment-thumb">
                     {asset?.thumbnailUrl ? (
-                      <img src={asset.thumbnailUrl} alt="" />
+                      <ResponsiveImage src={asset.thumbnailUrl} alt="" />
                     ) : (
                       <Film aria-hidden />
                     )}
@@ -472,13 +475,16 @@ export function VideoEditorSegmentExportDialog({
                 )}
                 <div>
                   <strong>
-                    {!importRequested && trackedTask.status === "running"
-                      ? "正在导出"
-                      : !importRequested && trackedTask.status === "completed"
-                        ? "导出完成"
-                        : !importRequested && trackedTask.status === "failed"
-                          ? "导出失败"
-                          : taskStatusLabels[trackedTask.status]}
+                    {!importRequested && trackedTask.status === "running" ? (
+                      <LoadingState variant="inline" label="正在导出" />
+                    ) : !importRequested &&
+                      trackedTask.status === "completed" ? (
+                      "导出完成"
+                    ) : !importRequested && trackedTask.status === "failed" ? (
+                      "导出失败"
+                    ) : (
+                      taskStatusLabels[trackedTask.status]
+                    )}
                   </strong>
                   <small>
                     {taskActive
@@ -492,16 +498,11 @@ export function VideoEditorSegmentExportDialog({
                 </div>
                 <b>{trackedTask.progress}%</b>
               </div>
-              <div
+              <ProgressBar
+                value={trackedTask.progress}
+                label="分段导出进度"
                 className="ve-segment-progress-bar"
-                role="progressbar"
-                aria-label="分段导出进度"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={trackedTask.progress}
-              >
-                <i style={{ width: `${trackedTask.progress}%` }} />
-              </div>
+              />
               {Array.isArray(trackedTask.resultDetail?.segments) ? (
                 <div className="ve-segment-progress-items">
                   {(
@@ -511,10 +512,14 @@ export function VideoEditorSegmentExportDialog({
                   ).map((segment, index) => (
                     <span key={String(segment.clipId ?? index)}>
                       <em>{String(segment.name || `片段 ${index + 1}`)}</em>
-                      {!importRequested && segment.status === "encoded"
-                        ? "已编码，正在保存"
-                        : segmentStatusLabels[String(segment.status)] ||
-                          "处理中"}
+                      {!importRequested && segment.status === "encoded" ? (
+                        <LoadingState
+                          variant="inline"
+                          label="已编码，正在保存"
+                        />
+                      ) : (
+                        segmentStatusLabels[String(segment.status)] || "处理中"
+                      )}
                     </span>
                   ))}
                 </div>

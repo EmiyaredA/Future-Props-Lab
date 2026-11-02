@@ -1,3 +1,8 @@
+import { useRef, useState } from "react";
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { LoadingState } from "@shared/ui/LoadingState";
+import { ProgressBar } from "@shared/ui/LoadingState";
 import { Download, Film, LoaderCircle } from "lucide-react";
 import {
   downloadGalgameVideoExport,
@@ -43,7 +48,7 @@ function TaskProgress({ task }: { task: GalgameVideoExportTask }) {
             : ""}
         </small>
       </div>
-      <progress max="100" value={task.progress} />
+      <ProgressBar max={100} value={task.progress} />
       <span>{task.progress}%</span>
     </>
   );
@@ -132,13 +137,15 @@ export function VideoExportStartButton({
       ) : (
         <Film aria-hidden />
       )}
-      {submitting
-        ? "正在创建导出任务…"
-        : checking
-          ? "正在检查导出设置…"
-          : ready
-            ? "直接导出 MP4"
-            : "请先完成导出检查"}
+      {submitting ? (
+        "正在创建导出任务…"
+      ) : checking ? (
+        <LoadingState variant="inline" label="正在检查导出设置…" />
+      ) : ready ? (
+        "直接导出 MP4"
+      ) : (
+        "请先完成导出检查"
+      )}
     </button>
   );
 }
@@ -162,14 +169,43 @@ export function VideoExportHistory({
   onRetry: () => void;
   onCancel: (taskId: string) => void;
 }) {
+  const transfer = useTransferProgress();
+  const downloadInFlight = useRef(false);
+  const [downloadPending, setDownloadPending] = useState(false);
+  const [downloadError, setDownloadError] = useState("");
+  const download = async (task: GalgameVideoExportTask) => {
+    if (downloadInFlight.current) return;
+    downloadInFlight.current = true;
+    setDownloadPending(true);
+    setDownloadError("");
+    try {
+      await transfer.run((onProgress) =>
+        downloadGalgameVideoExport(
+          projectId,
+          task.id,
+          task.outputFilename || "galgame-export.mp4",
+          { onProgress },
+        ),
+      );
+    } catch (error) {
+      setDownloadError(
+        error instanceof Error ? error.message : "下载失败，请重试",
+      );
+    } finally {
+      downloadInFlight.current = false;
+      setDownloadPending(false);
+    }
+  };
+
   return (
     <section className="galgame-video-history">
+      <TransferFeedback progress={transfer.progress} />
+      {downloadError ? <p role="alert">{downloadError}</p> : null}
       <header>
         <h3>导出记录</h3>
         {refreshing ? (
-          <small role="status" aria-live="polite">
-            <LoaderCircle className="spinning" aria-hidden />
-            正在刷新…
+          <small>
+            <LoadingState label="正在刷新…" variant="inline" />
           </small>
         ) : null}
       </header>
@@ -181,7 +217,7 @@ export function VideoExportHistory({
         >
           <LoaderCircle className="spinning" aria-hidden />
           <span>
-            <strong>正在加载导出记录</strong>
+            <LoadingState label="正在加载导出记录" variant="inline" />
             <small>任务较多或正在导出时可能需要稍等片刻…</small>
           </span>
         </div>
@@ -197,13 +233,8 @@ export function VideoExportHistory({
               {task.status === "completed" ? (
                 <button
                   type="button"
-                  onClick={() =>
-                    void downloadGalgameVideoExport(
-                      projectId,
-                      task.id,
-                      task.outputFilename || "galgame-export.mp4",
-                    )
-                  }
+                  disabled={downloadPending}
+                  onClick={() => void download(task)}
                 >
                   <Download aria-hidden /> 下载
                 </button>

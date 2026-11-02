@@ -1,10 +1,16 @@
+import { type TransferOptions } from "@platform/api/transfer";
 import { api, fetchApiBlob, fetchApiJson, unwrap } from "@platform/api/client";
 import { externalizeTree, hydrateTree } from "./documentFiles";
 
-async function uploadBytes(path: string, bytes: Uint8Array) {
+async function uploadBytes(
+  path: string,
+  bytes: Uint8Array,
+  transfer: TransferOptions = {},
+) {
   const body = new FormData();
   body.append("upload", new Blob([bytes]), "asset");
   const saved = await fetchApiJson<{ key: string }>(path, {
+    ...transfer,
     method: "POST",
     body,
   });

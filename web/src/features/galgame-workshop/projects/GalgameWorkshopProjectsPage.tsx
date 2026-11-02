@@ -1,3 +1,6 @@
+import { LoadingState } from "@shared/ui/LoadingState";
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { ProjectCertification } from "@features/accounts";
 import { useState } from "react";
 import {
@@ -43,6 +46,9 @@ export function GalgameWorkshopProjectsPage({
 }: {
   onOpenProject?: (projectId: string) => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const [query, setQuery] = useState("");
   const {
     projectsQuery,
@@ -66,7 +72,9 @@ export function GalgameWorkshopProjectsPage({
     deleteProject: deleteGalgameWorkshopProject,
     importSnapshot: importGalgameWorkshopProjectSnapshot,
     exportSnapshot: (project) =>
-      exportGalgameWorkshopProjectSnapshot(project.id),
+      runTransfer((onProgress) =>
+        exportGalgameWorkshopProjectSnapshot(project.id, { onProgress }),
+      ),
     openFolder: (project) => openGalgameWorkshopProjectFolder(project.id),
     onOpenProject,
     errorMessage,
@@ -80,6 +88,8 @@ export function GalgameWorkshopProjectsPage({
 
   return (
     <section className="workshop-page workshop-projects-page galgame-library-page">
+      <TransferFeedback progress={activeTransferProgress} />
+
       <WorkshopAppChrome
         title="我的 Galgame 工程"
         description="管理故事工程，从剧本结构进入分支试玩与线路检查。"
@@ -122,7 +132,7 @@ export function GalgameWorkshopProjectsPage({
       {projectsQuery.isLoading ? (
         <div className="workshop-state">
           <RefreshCcw className="spinning" aria-hidden />
-          <strong>正在读取工程</strong>
+          <LoadingState label="正在读取工程" variant="inline" />
         </div>
       ) : projectsQuery.isError ? (
         <div className="workshop-state">

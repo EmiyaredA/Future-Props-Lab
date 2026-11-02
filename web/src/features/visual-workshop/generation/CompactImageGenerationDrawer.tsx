@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useState } from "react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import {
@@ -360,7 +361,13 @@ export function CompactImageGenerationDrawer({
             )}
             {controller.layout === "workbench" && (
               <span>
-                {generating ? "生成中" : isSubmitting ? "提交中" : "生成"}
+                {generating ? (
+                  <LoadingState variant="inline" label="生成中" />
+                ) : isSubmitting ? (
+                  "提交中"
+                ) : (
+                  "生成"
+                )}
               </span>
             )}
           </button>

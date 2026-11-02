@@ -1,3 +1,4 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Image, LoaderCircle, RefreshCcw } from "lucide-react";
@@ -56,7 +57,7 @@ export function DeterministicExportFrame({
           <LoaderCircle className="spinning" aria-hidden /> 正在合成精确帧…
         </p>
       ) : url ? (
-        <img src={url} alt="当前导出设置生成的精确首帧" />
+        <ResponsiveImage src={url} alt="当前导出设置生成的精确首帧" />
       ) : frame.isError ? (
         <p>{frame.error.message || "精确帧暂时不可用"}</p>
       ) : (

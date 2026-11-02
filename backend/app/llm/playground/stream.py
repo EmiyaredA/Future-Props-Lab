@@ -4,7 +4,6 @@ import asyncio
 import json
 import time
 from collections.abc import AsyncIterator
-from contextlib import aclosing
 from uuid import uuid4
 
 import httpx
@@ -12,7 +11,6 @@ from sqlalchemy import update
 
 from app.llm.models import LlmCallLog, ModelTestConversation, ModelTestMessage
 from app.llm.playground.service import PreparedGeneration, message_out
-from app.llm.playground.tool_stream import tool_generation_events
 from app.llm.providers import stream_text_completion
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal
@@ -104,11 +102,6 @@ async def _settle(
 
 
 async def generation_events(prepared: PreparedGeneration) -> AsyncIterator[bytes]:
-    if prepared.tool_snapshots:
-        async with aclosing(tool_generation_events(prepared)) as events:
-            async for event in events:
-                yield event
-        return
     sequence = 0
     trace_id = str(uuid4())
     started = time.monotonic()

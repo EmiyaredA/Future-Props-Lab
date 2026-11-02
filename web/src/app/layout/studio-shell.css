@@ -1,4 +1,6 @@
 .studio-shell {
+  --studio-rail-width: 56px;
+  --studio-secondary-width: 176px;
   height: 100vh;
   height: 100dvh;
   width: 100%;
@@ -72,7 +74,7 @@
   flex: none;
   flex-direction: column;
   min-height: 0;
-  padding: 10px 8px;
+  padding: 8px 6px;
   background: transparent;
   overflow: hidden;
 }
@@ -80,8 +82,8 @@
 .studio-secondary__header {
   display: flex;
   align-items: center;
-  min-height: 32px;
-  padding: 0 8px 8px;
+  min-height: 28px;
+  padding: 0 8px 6px;
 }
 
 .studio-secondary__header strong {
@@ -104,17 +106,17 @@
 
 .studio-secondary__item {
   width: 100%;
-  min-height: 36px;
+  min-height: 32px;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 10px;
+  padding: 5px 8px;
   border: 0;
   border-radius: 9px;
   background: transparent;
   color: var(--muted);
   font: inherit;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   text-align: left;
   cursor: pointer;
@@ -210,5 +212,64 @@
 
   .studio-sidebar.has-secondary .studio-secondary {
     display: none;
+  }
+}
+
+.studio-sidebar .studio-collapsed-rail.is-labeled .studio-rail-button {
+  width: 48px;
+  min-height: 42px;
+  padding: 4px 2px;
+  gap: 2px;
+}
+.studio-sidebar
+  .studio-collapsed-rail.is-labeled
+  .studio-collapsed-rail__brand {
+  height: 38px;
+}
+@media (pointer: coarse) {
+  .studio-secondary__item,
+  .studio-sidebar .studio-collapsed-rail.is-labeled .studio-rail-button {
+    min-height: 44px;
+  }
+}
+
+.studio-main
+  > :is(
+    .home-page,
+    .applications-page,
+    .tools-page,
+    .integrations-page,
+    .model-infrastructure-page,
+    .call-logs-page
+  ) {
+  --page-gutter: clamp(14px, 1.6vw, 20px);
+  --ui-control-height: 30px;
+  padding: 16px var(--page-gutter) 24px;
+}
+@media (pointer: coarse) {
+  .studio-main
+    > :is(
+      .home-page,
+      .applications-page,
+      .tools-page,
+      .integrations-page,
+      .model-infrastructure-page,
+      .call-logs-page
+    ) {
+    --ui-control-height: 44px;
+  }
+  .studio-main
+    :is(
+      .home-page,
+      .applications-page,
+      .tools-page,
+      .integrations-page,
+      .model-infrastructure-page,
+      .call-logs-page,
+      .file-management-page,
+      .creative-page
+    )
+    :is(button, [role="combobox"]) {
+    min-height: 44px;
   }
 }

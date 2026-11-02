@@ -121,3 +121,55 @@ async def test_unregistered_destinations_are_rejected_before_network(project):
             )
     finally:
         await capability.close()
+
+
+@pytest.mark.parametrize("target_status", [200, 206, 302, 401, 403, 404, 503])
+async def test_rendering_source_stream_is_fixed_and_never_forwards_browser_credentials(
+    target_status,
+):
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        if request.url.host == "identity":
+            payload = json.loads(request.content)
+            assert payload["purpose"] == "rendering.source.read"
+            assert payload["target_path"] == "/v1/files/owned/content"
+            assert payload["source_path"] == "/v1/files/owned/thumbnail"
+            return httpx.Response(200, json={"assertion": "content-only-assertion"})
+        assert request.url == "http://assets:8080/v1/files/owned/content"
+        assert request.headers["x-fpl-context"] == "content-only-assertion"
+        assert request.headers["accept-encoding"] == "identity"
+        assert "authorization" not in request.headers and "cookie" not in request.headers
+        return httpx.Response(
+            target_status,
+            content=b"exact-input",
+            headers={"Location": "https://untrusted.invalid/"},
+        )
+
+    capability = CapabilityClient(
+        service="rendering",
+        credential="private-service-key",
+        catalog=CATALOG,
+        transport=httpx.MockTransport(handler),
+    )
+
+    async def read():
+        async with capability.file_source(
+            assertion="source",
+            source_method="GET",
+            source_path="/v1/files/owned/thumbnail",
+            asset_id="owned",
+        ) as response:
+            assert await response.aread() == b"exact-input"
+
+    try:
+        if target_status == 200:
+            await read()
+        else:
+            error = CapabilityDenied if target_status in {401, 403, 404} else CapabilityUnavailable
+            with pytest.raises(error):
+                await read()
+        assert len(calls) == 2
+    finally:
+        await capability.close()

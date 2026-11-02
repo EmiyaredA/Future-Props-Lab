@@ -43,6 +43,15 @@ def run(options):
         check(state / "service.db", "assets", MIGRATIONS)
         import json
 
+        # Multipart spooling may exceed the small read-only container tmpfs.
+        uploads = state / ".tmp" / "http-uploads"
+        if uploads.is_symlink():
+            raise ValueError("Assets 上传暂存目录不能是符号链接")
+        uploads.mkdir(parents=True, exist_ok=True, mode=0o700)
+        if not uploads.resolve().is_relative_to(state):
+            raise ValueError("Assets 上传暂存目录越界")
+        os.environ["TMPDIR"] = str(uploads)
+
         import uvicorn
         from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
         from cryptography.hazmat.primitives.serialization import load_pem_public_key

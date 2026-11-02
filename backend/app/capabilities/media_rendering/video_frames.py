@@ -12,6 +12,8 @@ async def extract_frame(source: Path, target: Path, position_ms: int, max_width:
         "-y",
         "-ss",
         str(position_ms / 1000),
+        "-protocol_whitelist",
+        "file,pipe",
         "-i",
         str(source),
         "-frames:v",

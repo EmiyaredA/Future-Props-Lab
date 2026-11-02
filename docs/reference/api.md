@@ -228,9 +228,6 @@ HTTPS 或本机回环 HTTP 规则。
 - `GET /v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}/content`：鉴权预览图片。
 - `POST /v1/model-test/conversations/{conversation_id}/messages/stream`
 - `POST /v1/model-test/conversations/{conversation_id}/regenerate/stream`
-- `GET/POST /v1/model-test/tools`：查询概览或创建当前 Workspace 的本地 Mock 测试工具。
-- `GET/PATCH/DELETE /v1/model-test/tools/{tool_id}`：读取、CAS 更新或删除测试工具；已绑定会话的工具不可删除。
-- `POST /v1/model-test/tools/{tool_id}/execute`：使用 JSON 参数执行一次确定性试运行并保存调用记录。
 - `GET /v1/model-test/generation-options`：返回所有已启用图片/视频测试模型及图片尺寸。
 - `GET/POST /v1/model-test/generation-tasks`
 - `GET/DELETE /v1/model-test/generation-tasks/{task_id}`
@@ -255,13 +252,11 @@ HTTPS 或本机回环 HTTP 规则。
 `client_vad {positive_speech_threshold, negative_speech_threshold, min_speech_ms,
 pre_speech_pad_ms, commit_silence_ms}`、`playback {start_buffer_ms, recovery_buffer_ms}`、
 `microphone {echo_cancellation, noise_suppression, auto_gain_control}` 和
-`interruption_enabled`，以及最多 20 个当前 Workspace 已启用测试工具的 `tool_ids`。服务端读取工具
-最新快照并转换为 SenseAudio Function Schema，客户端不能直接提交工具 Schema。客户端之后可发送
+`interruption_enabled`。客户端之后可发送
 `audio`（Base64 PCM16/16 kHz）、
 `commit_input`、`interrupt`、`mute` 和 `stop`。服务端只返回 `call_started`、用户说话与转写事件、
-助手转写、`audio`（Base64 PCM16/24 kHz）、统一的 `tool_call_update`、`turn_done`、`interrupt`、
-`error` 和 `call_ended`；`tool_call_update` 包含 `turn_id`、`call_id`、工具 ID/名称、参数、状态、
-成功标记、结果或结构化错误及耗时。
+助手转写、`audio`（Base64 PCM16/24 kHz）、`turn_done`、`interrupt`、
+`error` 和 `call_ended`。
 其中 `user_transcript_delta.text` 是可被后续事件整体替换的实时识别假设，
 `assistant_transcript_delta.text` 才是需要追加的文本片段。供应商原始事件不会透传。
 未登录或 Session 失效以 4401 关闭，Origin 或 Workspace 校验失败以
@@ -269,8 +264,7 @@ pre_speech_pad_ms, commit_silence_ms}`、`playback {start_buffer_ms, recovery_bu
 音色、输入/输出音频时长、转写字符数、首音频延迟、总耗时、usage 与状态。转写正文和双方 PCM 音频
 只在当前浏览器页面进程内存在，按 `turn_id` 关联并可分别回放；切换模型测试页签或站内导航后仍可
 返回查看。音频缓存总上限为 64 MiB；开始新通话、刷新或关闭页面、登出、切换 Workspace 后清除，
-转写正文和音频都不进入数据库或日志。实时工具调用以 `source=realtime_voice` 使用独立短事务保存
-完整工具快照、参数、结果、状态与耗时；调用日志只保存工具名称、状态与耗时摘要。
+转写正文和音频都不进入数据库或日志。
 
 修改、删除、发送和重新生成使用会话 `expected_revision` 做 CAS 保护。发送请求可携带最多 5 个
 `attachment_ids`，文本和图片至少提供一项。图片仅支持 JPEG、PNG、WebP 与静态 GIF，单张
@@ -278,20 +272,12 @@ pre_speech_pad_ms, commit_silence_ms}`、`playback {start_buffer_ms, recovery_bu
 图片随消息私有保存，成功轮次的历史图片会继续进入后续请求，重新生成复用原用户消息图片。
 调用日志记录脱敏文本上下文、最终文本回复、会话 ID、首 Token、结束原因和轮次；图片仅记录 MIME
 与大小，不记录图片内容或磁盘路径。流式接口返回 SSE v2 envelope，普通会话事件为 `start / delta /
-done / error`；工具会话另有 `step` 事件，按 `proposed / running / completed / failed / cancelled`
-更新工具步骤。成功、失败、超时或取消都会保存消息状态并写入调用日志。
-
-测试工具名称在 Workspace 内唯一，只允许 1–64 位字母、数字和下划线；输入必须是合法的 Draft
-2020-12 object JSON Schema，Schema 与成功返回分别不超过 64 KiB，延迟范围为 0–10,000 ms。
-会话通过 `tool_ids` 按顺序绑定最多 20 个已启用工具；工具和会话更新都使用 revision/CAS。发送时读取
-工具最新版并保存定义快照，历史调用不随工具修改而变化。选择工具后只允许同时声明 `chat` 与 `tools`
-能力的 OpenAI/Anthropic 模型，Tool Choice 固定为 `auto`，最多运行 6 个模型轮次并容忍 3 次工具失败。
-参数校验失败和配置的模拟失败都会作为工具结果交还模型；测试工具不访问网络，也不产生外部副作用。
+done / error`。成功、失败、超时或取消都会保存消息状态并写入调用日志。
 
 模型测试页按能力与供应商协议自适应：只有声明 `chat` 的 OpenAI/Anthropic 模型进入多轮对话，
 SenseAudio 图片/视频模型进入独立异步生成测试，声明 `voice` 的已启用模型进入实时语音测试。
-实时语音使用与文本测试一致的纵向消息卡，工具卡嵌入对应助手消息并可展开参数、结果或失败原因；
-支持免按键自动断句、双方实时转写、流式播放、麦克风/扬声器静音和说话打断。模型、音色、测试工具、
+实时语音使用与文本测试一致的纵向消息卡；
+支持免按键自动断句、双方实时转写、流式播放、麦克风/扬声器静音和说话打断。模型、音色、
 开场白、系统提示词、VAD、播放缓冲与麦克风处理参数在通话中锁定。SenseAudio 固定使用单声道
 PCM16 little-endian，输入 16 kHz、输出 24 kHz；页面不允许提交供应商不支持的音频格式。页面按
 `turn_id` 保留最近一次测试的多轮转写及双方语音；结束通话或离开实时语音页只关闭实时音频链路，
@@ -324,6 +310,9 @@ SenseAudio 结果包含全文、说话人和句级起止时间；ASR API 的嵌�
 阶段、重叠区间和脱敏警告；OpenAI 兼容供应商未返回分段时使用空数组。任务和调用日志保存提交
 时的完整参数快照，不受后续表单默认值或模型配置变化影响。完成或失败均写入
 `model_playground` 调用日志，日志不保存 API Key、音频字节、供应商原始响应或磁盘路径。
+
+Mock 测试工具功能已下线：`/v1/model-test/tools` 接口不再注册，会话及实时语音契约不再提供工具选择或执行字段。
+`0119_retire_model_test_tools` 删除专用工具、绑定和调用记录表，保留普通对话、消息及调用日志快照。
 
 ## 工具导航
 
@@ -885,6 +874,8 @@ ZEALMAN 新提交使用应用独立实时连接，旧控制台客户端身份只
 - `PATCH/DELETE /v1/file-folders/{folder_id}`：CAS 改名、移动或递归删除文件夹。
 - `GET/POST /v1/files`：按项目、当前文件夹、搜索词、媒体类型和排序查询，或 multipart 上传单文件（可选 Form `display_name` 覆盖显示名，扩展名仍按上传文件名）。
 - `PATCH/DELETE /v1/files/{asset_id}`：CAS 改名、移动或删除文件。
+- `GET /v1/files/{asset_id}/preview`：当前账号文件的预览元数据、PDF 页数或最多 64 KiB 安全文本，权限 `content.read`；字段与边界见[文件内容预览](loading-and-images.md#视频音频和文档预览)。Python SDK 使用 `client.files.file_preview_metadata(asset_id=asset_id)`。
+- `GET /v1/files/{asset_id}/thumbnail?size=320&page=1`：图片、视频真实帧、音频前 60 秒波形或 PDF 当前页；页码仅 PDF 可大于 1，尺寸为 128/320/640/1280。Python SDK 的 `preview_thumbnail` 支持 `page`；均返回私人派生资源且重新校验归属。
 - `GET /v1/files/{asset_id}/content`、`/download`：鉴权预览或下载原始内容；下载接口可传
   `download_name` 作为本次下载的显示名，服务端始终追加素材自身的真实后缀并清理路径字符。
 - `POST /v1/visual-workshop/projects/{project_id}/asset-imports`：批量导入公共库引用，或把其他视觉项目素材复制为当前项目的独立副本。

@@ -57,6 +57,19 @@ def permitted(grant, catalog):
         return False
     if _automation_lookup(grant):
         return True
+    if grant.caller == "rendering" and grant.purpose == "rendering.source.read":
+        source = re.fullmatch(
+            r"/v1/files/([A-Za-z0-9_-]{1,128})/(crop|frames|media-info|preview|thumbnail)",
+            grant.source_path,
+        )
+        return bool(
+            source
+            and grant.source_method == ("POST" if source[2] in {"crop", "frames"} else "GET")
+            and grant.target_service == "assets"
+            and grant.target_method == "GET"
+            and grant.target_path == "/v1/files/" + source[1] + "/content"
+        )
+
     return bool(
         grant.caller == "assets"
         and grant.purpose == "assets.visual-project.read"

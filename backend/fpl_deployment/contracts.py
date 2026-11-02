@@ -68,6 +68,8 @@ def operation_owner(path):
         "/v1/files/{asset_id}/crop",
         "/v1/files/{asset_id}/frames",
         "/v1/files/{asset_id}/media-info",
+        "/v1/files/{asset_id}/preview",
+        "/v1/files/{asset_id}/thumbnail",
     }:
         return "rendering"
     if path.startswith("/v1/visual-workshop/projects/{project_id}/asset-"):

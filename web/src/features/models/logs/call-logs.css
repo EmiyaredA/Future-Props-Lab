@@ -5,17 +5,17 @@
   min-width: 0;
 }
 .call-logs-page .page-header {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 .call-logs-page .page-header h1 {
-  font-size: 24px;
+  font-size: 22px;
 }
 .call-logs-page .stat-grid {
   box-shadow: none;
   margin-bottom: 16px;
 }
 .call-logs-page .stat-card {
-  min-height: 102px;
+  min-height: 88px;
 }
 .call-log-card {
   padding: 0;
@@ -23,9 +23,9 @@
   box-shadow: none;
 }
 .call-log-toolbar {
-  padding: 18px;
+  padding: 14px;
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   border-bottom: 1px solid var(--border);
 }
@@ -48,18 +48,14 @@
   width: 100%;
   min-width: 0;
 }
-.call-log-scope {
-  flex: 0 1 185px;
-  min-width: 140px;
-}
 .call-log-quick {
-  display: flex;
-  gap: 10px;
-  flex: 1 1 530px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  flex: 3 1 630px;
   min-width: 0;
 }
 .call-log-quick > .custom-select {
-  flex: 1;
   min-width: 0;
 }
 .call-log-toolbar .custom-select,
@@ -69,11 +65,14 @@
 .call-log-toolbar input,
 .call-log-toolbar .custom-select-trigger,
 .call-log-filter-trigger {
-  height: 40px;
-  min-height: 40px;
+  height: 32px;
+  min-height: 32px;
+  font-size: 12px;
 }
 .call-log-filter-trigger {
   flex: none;
+  width: 72px;
+  white-space: nowrap;
   display: inline-flex;
   gap: 7px;
   align-items: center;
@@ -83,7 +82,7 @@
   color: var(--accent);
 }
 .call-logs-page .table-meta {
-  min-height: 54px;
+  min-height: 46px;
 }
 .call-log-readonly {
   margin-left: 12px;
@@ -100,27 +99,46 @@
 }
 .call-log-table th {
   white-space: nowrap;
-  height: 44px;
+  height: 38px;
 }
 .call-log-table th svg {
   display: inline;
   vertical-align: middle;
 }
 .call-log-table td {
-  height: 66px;
-  padding: 10px 16px;
+  height: 58px;
+  padding: 8px 12px;
   font-size: 12px;
 }
 .call-log-table th {
-  padding-inline: 16px;
+  padding-inline: 12px;
 }
 .call-log-table time {
-  line-height: 1.65;
+  line-height: 1.5;
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 .call-log-table .call-log-model {
-  min-width: 220px;
-  max-width: 340px;
+  min-width: 180px;
+  max-width: 260px;
+}
+.call-log-table .call-log-credential {
+  min-width: 140px;
+  max-width: 200px;
+  overflow-wrap: anywhere;
+}
+.call-log-credential > span {
+  display: -webkit-box;
+  overflow: hidden;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.call-log-table .call-log-source,
+.call-log-table .call-log-protocol {
+  min-width: 100px;
+  max-width: 160px;
+  overflow-wrap: anywhere;
 }
 .call-log-model strong {
   display: block;
@@ -215,7 +233,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
+  padding: 12px 14px;
   gap: 12px;
   color: var(--muted);
   font-size: 12px;
@@ -328,7 +346,7 @@
 @container call-logs (max-width: 1179px) {
   .call-log-toolbar {
     display: grid;
-    grid-template-columns: minmax(150px, 1fr) minmax(0, 4fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
   }
   .call-log-search {
     grid-column: 1 / -1;
@@ -336,8 +354,28 @@
   .call-log-quick {
     min-width: 0;
   }
-  .call-log-scope {
-    min-width: 0;
+}
+
+.call-log-select .custom-select-trigger-content {
+  flex: 1;
+}
+.call-log-select .custom-select-menu button {
+  padding-block: 6px;
+}
+.call-log-select .custom-select-menu button > span {
+  display: block;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+@media (pointer: coarse) {
+  .call-log-toolbar input,
+  .call-log-toolbar .custom-select-trigger,
+  .call-log-filter-trigger,
+  .call-log-select .custom-select-menu button,
+  .call-log-pagination .btn {
+    min-height: 44px;
+    height: auto;
   }
 }
 @container call-logs (max-width: 759px) {

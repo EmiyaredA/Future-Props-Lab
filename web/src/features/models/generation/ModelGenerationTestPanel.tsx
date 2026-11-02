@@ -1,3 +1,7 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { VideoSeedControl } from "./VideoSeedControl";
 import { videoRequestParameters } from "./videoCapabilities";
 import { videoChoices, videoSelectionError } from "./videoCapabilities";
@@ -53,7 +57,10 @@ import {
   type Resolution,
   type TestModel,
 } from "@features/models/generation/modelGenerationOptions";
-import { TaskThumbnail } from "@features/models/generation/ModelGenerationTaskThumbnail";
+import {
+  TaskThumbnail,
+  GenerationResultPending,
+} from "@features/models/generation/ModelGenerationTaskThumbnail";
 import { WorkflowVideoControls } from "./WorkflowVideoControls";
 import { ModelGenerationReferenceList } from "@features/models/generation/ModelGenerationReferenceList";
 
@@ -68,6 +75,9 @@ export function ModelGenerationTestPanel({
   onSelectModel: (modelId: string) => void;
   onSelectMode: (mode: ModelTestMode) => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const compact = useModelCompactPanels("generation");
   const client = useQueryClient();
   const currentModel = models.find((model) => model.value === modelId);
@@ -266,8 +276,11 @@ export function ModelGenerationTestPanel({
       }> = [];
       try {
         if (referenceFiles.length) {
-          const response = await uploadModelTestReferenceAssets(
-            referenceFiles.map((reference) => reference.file),
+          const response = await runTransfer((onProgress) =>
+            uploadModelTestReferenceAssets(
+              referenceFiles.map((reference) => reference.file),
+              { onProgress },
+            ),
           );
           response.items.forEach((asset, index) =>
             uploaded.push({ reference: referenceFiles[index], asset }),
@@ -504,6 +517,8 @@ export function ModelGenerationTestPanel({
       data-compact-panel={compact.panel}
       className="model-test-page generation-test-page"
     >
+      <TransferFeedback progress={activeTransferProgress} />
+
       <ModelTestWorkspaceHeader
         activeMode={generationKind}
         availableModes={availableModes}
@@ -653,7 +668,10 @@ export function ModelGenerationTestPanel({
               </div>
               <div className={`generation-result-stage ${activeTask.kind}`}>
                 {resultUrl && activeTask.kind === "image" ? (
-                  <img src={resultUrl} alt={taskPrompt || "生成图片"} />
+                  <ResponsiveImage
+                    src={resultUrl}
+                    alt={taskPrompt || "生成图片"}
+                  />
                 ) : null}
                 {resultUrl && activeTask.kind === "video" ? (
                   <video src={resultUrl} controls />
@@ -675,15 +693,7 @@ export function ModelGenerationTestPanel({
                 {!resultUrl &&
                 !resultError &&
                 activeTask.status !== "failed" ? (
-                  <div className="generation-result-pending">
-                    <LoaderCircle className="spinning" aria-hidden />
-                    <strong>
-                      {activeTask.result_available
-                        ? "正在加载结果"
-                        : statusLabel[activeTask.status]}
-                    </strong>
-                    <span>任务会在后台继续执行，刷新页面也不会丢失。</span>
-                  </div>
+                  <GenerationResultPending task={activeTask} />
                 ) : null}
                 {activeTask.status === "failed" ? (
                   <div className="generation-result-pending failed">
@@ -974,7 +984,11 @@ export function ModelGenerationTestPanel({
                 ) : (
                   <Sparkles aria-hidden />
                 )}
-                {createMutation.isPending ? "正在上传并提交…" : "开始测试"}
+                {createMutation.isPending ? (
+                  <LoadingState variant="inline" label="正在上传并提交…" />
+                ) : (
+                  "开始测试"
+                )}
               </button>
             </div>
           </form>

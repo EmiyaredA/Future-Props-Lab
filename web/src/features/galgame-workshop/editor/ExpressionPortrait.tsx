@@ -1,3 +1,6 @@
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import {
   useEffect,
   useMemo,
@@ -57,6 +60,9 @@ export function ExpressionPortrait({
   onImageLoad?: (image: HTMLImageElement) => void;
   controlledFrameIndex?: number;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const fileIds = useMemo(
     () => expressionFileIds(expression, assets, skinAssetId),
     [assets, expression, skinAssetId],
@@ -109,7 +115,9 @@ export function ExpressionPortrait({
     const loadFrame = (fileId: string, attempt = 0): Promise<void> => {
       const request = imageCache
         ? imageCache.load(fileId).then((url) => ({ url, owned: false }))
-        : fetchApiBlob(`/v1/files/${fileId}/content`).then((blob) => ({
+        : runTransfer((onProgress) =>
+            fetchApiBlob(`/v1/files/${fileId}/content`, { onProgress }),
+          ).then((blob) => ({
             url: URL.createObjectURL(blob),
             owned: true,
           }));
@@ -156,7 +164,7 @@ export function ExpressionPortrait({
       active = false;
       for (const release of releases) release?.();
     };
-  }, [fileIds, imageCache, sequence, sequenceKey]);
+  }, [fileIds, imageCache, sequence, sequenceKey, runTransfer]);
 
   useEffect(
     () => () => {
@@ -201,15 +209,18 @@ export function ExpressionPortrait({
 
   if (!sequence) {
     return (
-      <StoryAssetImage
-        fileId={fileIds[0]}
-        alt={alt}
-        fallback={fallback}
-        className={className}
-        style={style}
-        onNaturalSize={onNaturalSize}
-        onImageLoad={onImageLoad}
-      />
+      <>
+        <TransferFeedback progress={activeTransferProgress} />
+        <StoryAssetImage
+          fileId={fileIds[0]}
+          alt={alt}
+          fallback={fallback}
+          className={className}
+          style={style}
+          onNaturalSize={onNaturalSize}
+          onImageLoad={onImageLoad}
+        />
+      </>
     );
   }
 
@@ -253,9 +264,11 @@ export function ExpressionPortrait({
       : undefined;
   return (
     <>
+      <TransferFeedback progress={activeTransferProgress} />
+
       {[...(currentGroup?.urls.entries() ?? [])].map(([fileId, url]) =>
         url ? (
-          <img
+          <ResponsiveImage
             key={`preload-${fileId}`}
             src={url}
             alt=""
@@ -279,7 +292,7 @@ export function ExpressionPortrait({
         ) : null,
       )}
       {readyDisplay ? (
-        <img
+        <ResponsiveImage
           src={readyDisplay.url}
           alt={alt}
           className={className}

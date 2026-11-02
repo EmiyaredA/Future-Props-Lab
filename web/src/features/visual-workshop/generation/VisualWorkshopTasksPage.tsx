@@ -1,3 +1,5 @@
+import { ImagePreview } from "@shared/ui/ImagePreview";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -45,8 +47,20 @@ const STATUS_LABELS: Record<GenerationTaskStatus, string> = {
 
 function TaskPreview({ task }: { task: GenerationTask }) {
   const { url: source } = useApiBlobUrl(
-    task.result_asset_id ? `/v1/files/${task.result_asset_id}/content` : null,
+    task.result_asset_id && task.kind !== "image"
+      ? `/v1/files/${task.result_asset_id}/content`
+      : null,
   );
+  if (task.kind === "image" && task.result_asset_id)
+    return (
+      <ImagePreview
+        interactive={false}
+        className="generation-task-preview"
+        src={`/v1/files/${task.result_asset_id}/content`}
+        size={320}
+        alt="生成结果预览"
+      />
+    );
   if (!source)
     return (
       <div className={`generation-task-placeholder ${task.kind}`}>
@@ -57,9 +71,7 @@ function TaskPreview({ task }: { task: GenerationTask }) {
         )}
       </div>
     );
-  return task.kind === "image" ? (
-    <img className="generation-task-preview" src={source} alt="生成结果预览" />
-  ) : (
+  return (
     <video
       className="generation-task-preview"
       src={source}
@@ -198,15 +210,17 @@ export function VisualWorkshopTasksPage({
                   : " · 独立节点"}
               </span>
               <em className={batch.status}>
-                {batch.status === "completed"
-                  ? "已完成"
-                  : batch.status === "failed"
-                    ? "有失败"
-                    : batch.status === "cancelled"
-                      ? "已取消"
-                      : batch.status === "queued"
-                        ? "排队中"
-                        : "处理中"}
+                {batch.status === "completed" ? (
+                  "已完成"
+                ) : batch.status === "failed" ? (
+                  "有失败"
+                ) : batch.status === "cancelled" ? (
+                  "已取消"
+                ) : batch.status === "queued" ? (
+                  "排队中"
+                ) : (
+                  <LoadingState variant="inline" label="处理中" />
+                )}
               </em>
             </div>
           ))}
@@ -215,7 +229,7 @@ export function VisualWorkshopTasksPage({
       {tasks.isLoading ? (
         <div className="workshop-state">
           <LoaderCircle className="spinning" aria-hidden />
-          <strong>正在读取生成任务</strong>
+          <LoadingState label="正在读取生成任务" variant="inline" />
         </div>
       ) : tasks.isError ? (
         <div className="workshop-state">

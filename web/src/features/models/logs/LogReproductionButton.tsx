@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useState } from "react";
 import { Download } from "lucide-react";
 import { downloadLogReproduction, type CallLog } from "@features/models/api";
@@ -43,7 +44,11 @@ export function LogReproductionButton({ log }: { log: CallLog }) {
         onClick={() => void download()}
       >
         <Download aria-hidden />
-        {pending ? "正在生成…" : "导出复现包"}
+        {pending ? (
+          <LoadingState variant="inline" label="正在生成…" />
+        ) : (
+          "导出复现包"
+        )}
       </button>
       <small
         className={error ? "danger-text" : ""}

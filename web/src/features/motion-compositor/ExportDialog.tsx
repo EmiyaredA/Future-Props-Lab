@@ -1,3 +1,5 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { useCallback, useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { ArrowRight, Download, Film, RefreshCcw, X } from "lucide-react";
@@ -33,6 +35,9 @@ export function ExportDialog({
   onBeforeExport: () => Promise<number>;
   onHandoff: (projectId: string) => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const [formats, setFormats] = useState<MotionFormat[]>(["mp4", "mov4444"]);
   const [start, setStart] = useState(0);
   const [end, setEnd] = useState(document.settings.durationFrames);
@@ -108,6 +113,8 @@ export function ExportDialog({
       <Dialog.Portal>
         <Dialog.Overlay className="mc-dialog-overlay" />
         <Dialog.Content className="mc-dialog mc-export-dialog">
+          <TransferFeedback progress={activeTransferProgress} />
+
           <Dialog.Title>
             {handoff ? "交给视频剪辑工坊" : "导出镜头"}
           </Dialog.Title>
@@ -221,10 +228,13 @@ export function ExportDialog({
                           <button
                             key={format}
                             onClick={() =>
-                              void downloadExport(
-                                projectId,
-                                task.id,
-                                format as MotionFormat,
+                              void runTransfer((onProgress) =>
+                                downloadExport(
+                                  projectId,
+                                  task.id,
+                                  format as MotionFormat,
+                                  { onProgress },
+                                ),
                               )
                                 .then((file) =>
                                   downloadProjectSnapshot(

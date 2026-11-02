@@ -1,3 +1,6 @@
+import { LoadingState } from "@shared/ui/LoadingState";
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { useEffect, useId, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
@@ -195,6 +198,9 @@ function LinkHelpDialog({
 }
 
 export function VideoDownloaderPage({ onBack }: { onBack: () => void }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const depsQuery = useQuery({
     queryKey: DEPS_KEY,
     queryFn: getVideoDownloadDeps,
@@ -321,7 +327,9 @@ export function VideoDownloaderPage({ onBack }: { onBack: () => void }) {
     setDownloadingFile(true);
     setError("");
     try {
-      const file = await downloadVideoDownloadFile(job.id);
+      const file = await runTransfer((onProgress) =>
+        downloadVideoDownloadFile(job.id, { onProgress }),
+      );
       download(file.blob, file.filename || job.filename || "video.mp4");
       setNotice("已开始保存到本机。");
     } catch (failure) {
@@ -356,6 +364,8 @@ export function VideoDownloaderPage({ onBack }: { onBack: () => void }) {
 
   return (
     <section className="page video-download-page">
+      <TransferFeedback progress={activeTransferProgress} />
+
       <button className="video-download-back" type="button" onClick={onBack}>
         <ArrowLeft aria-hidden /> 返回工具
       </button>
@@ -583,7 +593,9 @@ export function VideoDownloaderPage({ onBack }: { onBack: () => void }) {
 
         <aside className="video-download-panel video-download-status">
           <h2>本机依赖</h2>
-          {depsQuery.isLoading ? <p role="status">正在检查…</p> : null}
+          {depsQuery.isLoading ? (
+            <LoadingState label="正在检查…" variant="region" />
+          ) : null}
           {depsQuery.isError ? (
             <div className="video-download-message error" role="alert">
               {errorMessage(depsQuery.error)}

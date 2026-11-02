@@ -1,3 +1,4 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { imageBlob, uploadImage, previewSvg } from "./api";
@@ -28,6 +29,9 @@ export function usePresentationMedia({
   select: (ids: string[]) => void;
   readOnly: boolean;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const cache = useQueryClient(),
     [request, setRequest] = useState<Request | null>(null),
     [busy, setBusy] = useState(false),
@@ -158,7 +162,11 @@ export function usePresentationMedia({
     }
   };
   const upload = (file: File) =>
-    execute(async () => ({ id: (await uploadImage(file)).id, file }));
+    execute(async () => ({
+      id: (await runTransfer((onProgress) => uploadImage(file, { onProgress })))
+        .id,
+      file,
+    }));
   const icon = (svg: string, name: string) => {
     if (readOnly) return;
     const target = { slideId, tab: "SVG" };
@@ -168,10 +176,16 @@ export function usePresentationMedia({
       const file = new File([result.svg], `${name}.svg`, {
         type: "image/svg+xml",
       });
-      return { id: (await uploadImage(file)).id, file };
+      return {
+        id: (
+          await runTransfer((onProgress) => uploadImage(file, { onProgress }))
+        ).id,
+        file,
+      };
     }, target);
   };
   return {
+    transferProgress: activeTransferProgress,
     open,
     icon,
     isOpen: !!request,
@@ -184,7 +198,12 @@ export function usePresentationMedia({
         error={error}
         onClose={close}
         onChoose={(id) =>
-          void execute(async () => ({ id, file: await imageBlob(id) }))
+          void execute(async () => ({
+            id,
+            file: await runTransfer((onProgress) =>
+              imageBlob(id, { onProgress }),
+            ),
+          }))
         }
         onUpload={upload}
       />

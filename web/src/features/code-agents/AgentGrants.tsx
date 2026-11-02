@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, ShieldCheck } from "lucide-react";
@@ -148,9 +149,11 @@ export function AgentGrants({
         </p>
       )}
       {save.isPending && (
-        <p className="code-agent-muted" role="status">
-          正在保存授权…
-        </p>
+        <LoadingState
+          label="正在保存授权…"
+          variant="region"
+          className="code-agent-muted"
+        />
       )}
       {grants.data &&
         (!accounts.length ? (

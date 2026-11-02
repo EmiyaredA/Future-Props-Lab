@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { ImportButton } from "./exchange/ImportButton";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -113,7 +114,7 @@ export function PresentationLibrary({
           </p>
         ) : null}
         {query.isPending ? (
-          <p role="status">正在加载文稿…</p>
+          <LoadingState label="正在加载文稿…" variant="region" />
         ) : query.isError ? (
           <p role="alert">
             加载失败{" "}

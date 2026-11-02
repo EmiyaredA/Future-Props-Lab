@@ -1,3 +1,6 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { LoadingState } from "@shared/ui/LoadingState";
 import {
   CancelQueuedTasks,
   CancelQueuedBatch,
@@ -130,6 +133,9 @@ export function CanvasNodeInspector({
   onTabChange?: (tab: "content" | "generate" | "acceptance") => void;
   upstreamNodes?: MediaNode[];
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const client = useQueryClient();
   const input = useRef<HTMLInputElement>(null);
   const preferredTab = initialTab ?? (embedded ? "generate" : "content");
@@ -142,7 +148,12 @@ export function CanvasNodeInspector({
   const { files, loading } = useProjectMedia(projectId, node.kind);
   const selected = files.find((file) => file.id === node.asset_id);
   const upload = useMutation({
-    mutationFn: (file: File) => uploadManagedFile(file, projectId),
+    mutationFn: (file: File) =>
+      runTransfer((onProgress) =>
+        uploadManagedFile(file, projectId, undefined, undefined, {
+          onProgress,
+        }),
+      ),
     onSuccess: (file) => {
       void invalidateFileScope(client, projectId);
       onPatch({ asset_id: file.id }, true);
@@ -232,6 +243,8 @@ export function CanvasNodeInspector({
       onPointerDown={(event) => event.stopPropagation()}
       onClick={(event) => event.stopPropagation()}
     >
+      <TransferFeedback progress={activeTransferProgress} />
+
       {!isAttachedComposer ? (
         <header>
           <div>
@@ -260,8 +273,16 @@ export function CanvasNodeInspector({
         >
           <button
             role="tab"
-            aria-selected={tab !== "acceptance"}
-            className={tab !== "acceptance" ? "active" : ""}
+            aria-selected={tab === "content"}
+            className={tab === "content" ? "active" : ""}
+            onClick={() => setTab("content")}
+          >
+            素材
+          </button>
+          <button
+            role="tab"
+            aria-selected={tab === "generate"}
+            className={tab === "generate" ? "active" : ""}
             onClick={() => setTab("generate")}
           >
             生成设置
@@ -382,7 +403,11 @@ export function CanvasNodeInspector({
             ) : (
               <Upload aria-hidden />
             )}
-            {upload.isPending ? "正在上传…" : "上传并绑定素材"}
+            {upload.isPending ? (
+              <LoadingState variant="inline" label="正在上传…" />
+            ) : (
+              "上传并绑定素材"
+            )}
           </button>
           {node.asset_id && !selected && !loading ? (
             <p className="canvas-inspector-warning">

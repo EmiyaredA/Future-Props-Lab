@@ -1,3 +1,6 @@
+import { LoadingState } from "@shared/ui/LoadingState";
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { useState } from "react";
 import {
   Maximize2,
@@ -42,6 +45,9 @@ export function VideoEditorProjectsPage({
 }: {
   onOpenProject: (projectId: string) => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const [query, setQuery] = useState("");
   const {
     projectsQuery: projects,
@@ -64,7 +70,10 @@ export function VideoEditorProjectsPage({
       patchVideoEditorProject(project, changes),
     deleteProject: deleteVideoEditorProject,
     importSnapshot: importVideoEditorProjectSnapshot,
-    exportSnapshot: (project) => exportVideoEditorProjectSnapshot(project.id),
+    exportSnapshot: (project) =>
+      runTransfer((onProgress) =>
+        exportVideoEditorProjectSnapshot(project.id, { onProgress }),
+      ),
     openFolder: (project) => openVideoEditorProjectFolder(project.id),
     onOpenProject,
     errorMessage,
@@ -75,6 +84,8 @@ export function VideoEditorProjectsPage({
   );
   return (
     <section className="workshop-page workshop-projects-page ve-projects">
+      <TransferFeedback progress={activeTransferProgress} />
+
       <WorkshopAppChrome
         title="我的视频剪辑工程"
         description="管理剪辑工程，从素材组织进入时间轴、分段与成片导出。"
@@ -116,7 +127,7 @@ export function VideoEditorProjectsPage({
       {projects.isLoading ? (
         <div className="workshop-state">
           <RefreshCcw className="spinning" aria-hidden />
-          <strong>正在读取剪辑工程</strong>
+          <LoadingState label="正在读取剪辑工程" variant="inline" />
         </div>
       ) : projects.isError ? (
         <div className="workshop-state">

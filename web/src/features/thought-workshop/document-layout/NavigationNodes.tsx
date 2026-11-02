@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { Node, mergeAttributes } from "@tiptap/core";
 import {
   NodeViewWrapper,
@@ -261,7 +262,7 @@ function DirectoryView({ node, editor, updateAttributes }: NodeViewProps) {
           </button>
         </p>
       ) : !ready ? (
-        <p role="status">正在加载目录…</p>
+        <LoadingState label="正在加载目录…" variant="region" />
       ) : !available ? (
         <p>目录不可访问</p>
       ) : !children.length ? (

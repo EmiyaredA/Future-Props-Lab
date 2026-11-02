@@ -1,3 +1,4 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
 import {
   type FormEvent,
   useEffect,
@@ -58,6 +59,7 @@ export type AssetBrowserSourceProject = {
 };
 
 export function useAssetBrowserController({
+  initialKind,
   projectId,
   compact,
   importSource,
@@ -67,6 +69,7 @@ export function useAssetBrowserController({
   viewMode,
   onViewModeChange,
 }: {
+  initialKind?: string;
   projectId?: string;
   compact: boolean;
   importSource?: AssetImportSource;
@@ -76,6 +79,9 @@ export function useAssetBrowserController({
   viewMode?: AssetViewMode;
   onViewModeChange?: (view: AssetViewMode) => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const client = useQueryClient();
   const fileInput = useRef<HTMLInputElement>(null);
   const zipInput = useRef<HTMLInputElement>(null);
@@ -84,7 +90,18 @@ export function useAssetBrowserController({
   const dialogTitleId = useId();
   const [folderId, setFolderId] = useState<string>();
   const [query, setQuery] = useState("");
-  const [kind, setKind] = useState<"all" | MediaKind>("all");
+  const [kind, setKind] = useState<"all" | MediaKind>(() =>
+    ["image", "video", "audio", "document"].includes(initialKind ?? "")
+      ? (initialKind as MediaKind)
+      : "all",
+  );
+  useEffect(() => {
+    setKind(
+      ["image", "video", "audio", "document"].includes(initialKind ?? "")
+        ? (initialKind as MediaKind)
+        : "all",
+    );
+  }, [initialKind]);
   const [sort, setSort] = useState<"updated" | "name">("updated");
   const [localView, setLocalView] = useState<AssetViewMode>(() =>
     window.localStorage.getItem(VIEW_KEY) === "list" ? "list" : "grid",
@@ -223,11 +240,14 @@ export function useAssetBrowserController({
           ),
         );
         try {
-          await uploadManagedFile(
-            item.file,
-            sourceProjectId,
-            folderId,
-            item.displayName,
+          await runTransfer((onProgress) =>
+            uploadManagedFile(
+              item.file,
+              sourceProjectId,
+              folderId,
+              item.displayName,
+              { onProgress },
+            ),
           );
           succeeded += 1;
           setUploads((current) =>
@@ -508,11 +528,14 @@ export function useAssetBrowserController({
           item.kind === "project",
       );
       for (const item of locals) {
-        await uploadManagedFile(
-          item.file,
-          undefined,
-          folderId,
-          item.displayName.trim(),
+        await runTransfer((onProgress) =>
+          uploadManagedFile(
+            item.file,
+            undefined,
+            folderId,
+            item.displayName.trim(),
+            { onProgress },
+          ),
         );
       }
       const bySource = new Map<
@@ -558,7 +581,9 @@ export function useAssetBrowserController({
   };
   const downloadFile = async (file: ManagedFile) => {
     try {
-      const blob = await fetchApiBlob(`/v1/files/${file.id}/download`);
+      const blob = await runTransfer((onProgress) =>
+        fetchApiBlob(`/v1/files/${file.id}/download`, { onProgress }),
+      );
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
@@ -590,7 +615,9 @@ export function useAssetBrowserController({
     setNotice("");
     setOpenMenu(undefined);
     archiveTransfer.mutate(async () => {
-      const downloaded = await exportLibraryFolderArchive(targetFolderId);
+      const downloaded = await runTransfer((onProgress) =>
+        exportLibraryFolderArchive(targetFolderId, { onProgress }),
+      );
       const url = URL.createObjectURL(downloaded.blob);
       const anchor = document.createElement("a");
       anchor.href = url;
@@ -605,7 +632,9 @@ export function useAssetBrowserController({
     if (!archive || !libraryMode || archiveTransfer.isPending) return;
     setNotice("");
     archiveTransfer.mutate(async () => {
-      const result = await importLibraryFolderArchive(archive, folderId);
+      const result = await runTransfer((onProgress) =>
+        importLibraryFolderArchive(archive, folderId, { onProgress }),
+      );
       setNotice(summarizeImport(result));
       return result;
     });
@@ -623,7 +652,9 @@ export function useAssetBrowserController({
     if (!entries.length) return;
     setNotice("");
     archiveTransfer.mutate(async () => {
-      const result = await importLibraryFolderEntries(entries, folderId);
+      const result = await runTransfer((onProgress) =>
+        importLibraryFolderEntries(entries, folderId, { onProgress }),
+      );
       setNotice(summarizeImport(result));
       return result;
     });
@@ -678,6 +709,7 @@ export function useAssetBrowserController({
     return false;
   })();
   return {
+    transferProgress: activeTransferProgress,
     client,
     fileInput,
     zipInput,

@@ -1,5 +1,5 @@
 .applications-page {
-  --applications-side-width: 286px;
+  --applications-side-width: 220px;
 }
 .applications-header {
   margin-bottom: 16px;
@@ -7,7 +7,7 @@
 .applications-header h1 {
   margin: 0 0 8px;
   color: var(--text-strong);
-  font-size: 30px;
+  font-size: 26px;
   letter-spacing: -0.04em;
 }
 .applications-header p {
@@ -16,12 +16,12 @@
 }
 .applications-search {
   width: min(900px, 100%);
-  min-height: 42px;
+  min-height: 40px;
   margin-bottom: 12px;
   padding: 4px 5px 4px 12px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface);
@@ -40,7 +40,7 @@
 }
 .applications-search button {
   min-width: 92px;
-  min-height: 40px;
+  min-height: 32px;
   border: 0;
   border-radius: 9px;
   background: var(--accent);
@@ -54,7 +54,7 @@
   gap: 9px;
 }
 .applications-categories button {
-  min-height: 34px;
+  min-height: 30px;
   padding: 0 13px;
   border: 1px solid var(--border);
   border-radius: 9px;
@@ -102,6 +102,7 @@
   color: var(--accent);
 }
 .applications-layout {
+  container: applications / inline-size;
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--applications-side-width);
   align-items: start;
@@ -109,13 +110,13 @@
 }
 .application-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+  gap: 10px;
 }
 .application-card {
-  min-height: 204px;
+  height: 96px;
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 11px;
   background: var(--surface);
   box-shadow: var(--shadow);
   transition:
@@ -127,29 +128,32 @@
   border-color: var(--accent-line);
 }
 .application-card > button {
+  position: relative;
   width: 100%;
   height: 100%;
-  padding: 16px;
+  padding: 10px;
   display: grid;
-  grid-template-columns: 58px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 10px;
   border: 0;
   background: transparent;
   text-align: left;
 }
 .application-icon {
-  width: 48px;
-  height: 48px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
   border: 1px solid var(--accent-line);
-  border-radius: 15px;
+  border-radius: 10px;
   background: var(--accent-soft);
   color: var(--accent);
 }
 .application-icon svg {
-  width: 27px;
-  height: 27px;
+  width: 23px;
+  height: 23px;
   stroke-width: 1.6;
 }
 .application-icon:has(img) {
@@ -157,10 +161,12 @@
   background: var(--surface);
 }
 .application-icon img {
+  min-width: 0;
+  min-height: 0;
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
 }
 .application-copy {
   min-width: 0;
@@ -170,40 +176,40 @@
 }
 .application-copy > strong {
   color: var(--text-strong);
-  font-size: 18px;
+  font-size: 14px;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .application-copy > small {
-  margin-top: 5px;
+  margin-top: 3px;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   color: var(--muted);
   font-size: 11px;
   line-height: 1.65;
 }
 .application-capabilities {
-  margin-top: 10px;
+  margin-top: 5px;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 .application-capabilities em {
-  padding: 4px 8px;
+  padding: 2px 6px;
   border-radius: 99px;
   background: var(--surface-soft);
   color: var(--muted);
   font-size: 9px;
   font-style: normal;
 }
-.application-open {
-  margin-top: auto;
-  padding-top: 12px;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  color: var(--accent);
-  font-size: 11px;
-  font-weight: 700;
-}
-.application-open svg {
-  width: 14px;
+.application-card > button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: inherit;
 }
 .application-recent {
   padding: 15px 16px 10px;
@@ -225,10 +231,10 @@
 }
 .application-recent > button {
   width: 100%;
-  min-height: 52px;
-  padding: 9px 0;
+  min-height: 46px;
+  padding: 7px 0;
   display: grid;
-  grid-template-columns: 38px minmax(0, 1fr) 14px;
+  grid-template-columns: 38px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
   border: 0;
@@ -237,6 +243,8 @@
   text-align: left;
 }
 .application-recent > button > span:first-child {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   width: 38px;
   height: 38px;
   display: grid;
@@ -251,10 +259,12 @@
   background: var(--surface);
 }
 .application-recent > button > span:first-child img {
+  min-width: 0;
+  min-height: 0;
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
 }
 .application-recent > button svg {
   width: 17px;
@@ -299,7 +309,7 @@
   grid-column: 1 / -1;
   min-height: 240px;
   border: 1px dashed var(--border-strong);
-  border-radius: 14px;
+  border-radius: 11px;
   background: var(--surface);
 }
 @media (max-width: 1100px) {
@@ -315,11 +325,27 @@
     grid-template-columns: 1fr;
   }
   .application-card > button {
-    grid-template-columns: 46px minmax(0, 1fr);
-    padding: 18px;
+    grid-template-columns: 40px minmax(0, 1fr);
+    padding: 12px;
   }
   .application-icon {
-    width: 46px;
-    height: 46px;
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 760px), (pointer: coarse) {
+  .applications-categories button,
+  .applications-tags button,
+  .applications-search button {
+    min-height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .application-card {
+    transition: none;
+  }
+  .application-card:hover {
+    transform: none;
   }
 }

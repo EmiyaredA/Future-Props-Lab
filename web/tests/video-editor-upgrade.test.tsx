@@ -481,6 +481,7 @@ describe("video editor upgrade", () => {
       expect(downloadVideoEditorSegments).toHaveBeenCalledWith(
         "editor-1",
         "task-1",
+        expect.objectContaining({ onProgress: expect.any(Function) }),
       ),
     );
     await waitFor(() => expect(downloadProjectSnapshot).toHaveBeenCalled());
@@ -489,6 +490,7 @@ describe("video editor upgrade", () => {
     await waitFor(() =>
       expect(fetchApiDownload).toHaveBeenCalledWith(
         "/v1/files/output-a/download",
+        expect.objectContaining({ onProgress: expect.any(Function) }),
       ),
     );
   });

@@ -1,3 +1,5 @@
+import { createUploadTransfer } from "@platform/api/transfer";
+import { type TransferOptions } from "@platform/api/transfer";
 import type { components } from "@generated/api";
 import { api, unwrap } from "@platform/api/client";
 import type {
@@ -166,11 +168,15 @@ export async function transcribeAudioAnnotationSegment(
     languageTag: string | null;
     targetLanguageTag: string | null;
   },
+  transfer: TransferOptions = {},
 ) {
+  const uploadTransfer = createUploadTransfer(transfer.onProgress);
+
   return unwrap(
     await api.POST(
       "/v1/audio-annotation/projects/{project_id}/segment-transcriptions",
       {
+        fetch: uploadTransfer.fetch,
         params: { path: { project_id: projectId } },
         body: {
           upload: input.wav as unknown as string,
@@ -191,7 +197,7 @@ export async function transcribeAudioAnnotationSegment(
           if (input.languageTag) form.set("language_tag", input.languageTag);
           if (input.targetLanguageTag)
             form.set("target_language_tag", input.targetLanguageTag);
-          return form;
+          return uploadTransfer.capture(form);
         },
       },
     ),

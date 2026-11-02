@@ -15,6 +15,8 @@ const scope = (projectId?: string) => projectId ?? "library";
 export const fileQueryKeys = {
   storageLayout: ["file-storage-layout"] as const,
   allFiles: ["managed-files"] as const,
+  preview: (id: string, revision: number) =>
+    ["managed-files", "preview", id, revision] as const,
   allFolders: ["managed-folders"] as const,
   files: (projectId?: string) => ["managed-files", scope(projectId)] as const,
   folders: (projectId?: string) =>

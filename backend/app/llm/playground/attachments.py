@@ -11,6 +11,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.incoming import IncomingFile
+from app.capabilities.asset_store.library import AssetError
+from app.capabilities.asset_store.thumbnails import ThumbnailSize, derived_thumbnail
 from app.llm.models import ModelTestAttachment, ModelTestConversation
 from app.llm.schemas.model_test import ModelTestAttachmentListOut, ModelTestAttachmentOut
 from app.runtime.config import Settings
@@ -225,12 +227,24 @@ class ModelTestAttachments:
         path.unlink(missing_ok=True)
 
     async def content(
-        self, conversation_id: str, attachment_id: str
+        self, conversation_id: str, attachment_id: str, size: ThumbnailSize | None = None
     ) -> tuple[ModelTestAttachment, Path]:
         row = await self._attachment(conversation_id, attachment_id)
         path = self._root() / row.storage_key
         if not path.is_file():
             raise AttachmentError("图片文件不存在", code="attachment_missing", status=404)
+        if size is not None:
+            target = (
+                self.settings.account_path(self.owner_user_id)
+                / "previews"
+                / "model-attachments"
+                / row.id
+                / f"{path.stat().st_mtime_ns}-{size}.webp"
+            )
+            try:
+                path = await derived_thumbnail(path, target, size)
+            except AssetError as exc:
+                raise AttachmentError(str(exc), code=exc.code, status=exc.status) from exc
         return row, path
 
     async def encoded(self, row: ModelTestAttachment) -> str:

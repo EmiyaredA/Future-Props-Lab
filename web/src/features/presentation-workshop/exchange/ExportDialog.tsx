@@ -1,3 +1,7 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { ProgressBar } from "@shared/ui/LoadingState";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { keepDialogEscapeLocal, useDialogReturnFocus } from "../dialogKeyboard";
 import { issueText } from "./issueText";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -21,6 +25,8 @@ export default function ExportDialog({
   getSnapshot: () => Promise<Project>;
   onClose: () => void;
 }) {
+  const { run: runTransfer, progress: transferProgress } =
+    useTransferProgress();
   const returnFocus = useDialogReturnFocus();
   const [range, setRange] = useState("all"),
     [busy, setBusy] = useState(false),
@@ -78,7 +84,9 @@ export default function ExportDialog({
         blob = await exportProject(snapshot.id, snapshot.revision);
       } else if (format === "json" || format === "fplppt") {
         setStage("正在打包文稿与素材…");
-        blob = await exportFile(snapshot.id, snapshot.revision, format);
+        blob = await runTransfer((onProgress) =>
+          exportFile(snapshot.id, snapshot.revision, format, { onProgress }),
+        );
       } else {
         setStage("正在渲染页面，等待字体与素材…");
         const { exportImages, printDocument } = await import("./staticExport");
@@ -106,7 +114,16 @@ export default function ExportDialog({
       running.current = false;
       setBusy(false);
     }
-  }, [accepted, current, format, getSnapshot, range, readyFile, saveFile]);
+  }, [
+    accepted,
+    current,
+    format,
+    getSnapshot,
+    range,
+    readyFile,
+    saveFile,
+    runTransfer,
+  ]);
   const started = useRef(false);
   useEffect(() => {
     if (format === "pptx" && !started.current) {
@@ -189,13 +206,8 @@ export default function ExportDialog({
             {busy && (
               <div className="presentation-export-progress" role="status">
                 <p>{stage}</p>
-                <div
-                  role="progressbar"
-                  aria-label="文件导出进度"
-                  aria-valuetext={stage}
-                >
-                  <span />
-                </div>
+                <TransferFeedback progress={transferProgress} />
+                <ProgressBar label="文件导出进度" />
               </div>
             )}
             {result && (
@@ -211,15 +223,17 @@ export default function ExportDialog({
               disabled={busy}
               onClick={() => (result?.complete ? onClose() : void run())}
             >
-              {busy
-                ? "正在导出…"
-                : result?.complete
-                  ? "完成"
-                  : readyFile
-                    ? "再次下载"
-                    : format === "pdf"
-                      ? "打印 / 保存 PDF"
-                      : "导出文件"}
+              {busy ? (
+                <LoadingState variant="inline" label="正在导出…" />
+              ) : result?.complete ? (
+                "完成"
+              ) : readyFile ? (
+                "再次下载"
+              ) : format === "pdf" ? (
+                "打印 / 保存 PDF"
+              ) : (
+                "导出文件"
+              )}
             </button>
           </footer>
         </Dialog.Content>

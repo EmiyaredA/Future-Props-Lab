@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -183,7 +184,7 @@ export function GalgameWorkshopOverviewPage({
       {loading ? (
         <div className="workshop-state">
           <RefreshCcw className="spinning" aria-hidden />
-          <strong>正在读取工程概览</strong>
+          <LoadingState label="正在读取工程概览" variant="inline" />
         </div>
       ) : failed ? (
         <div className="workshop-state">

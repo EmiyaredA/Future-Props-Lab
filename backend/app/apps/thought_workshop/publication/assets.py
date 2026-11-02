@@ -8,6 +8,7 @@ from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
 from app.capabilities.asset_store.storage import AssetStorage
+from app.capabilities.asset_store.thumbnails import ThumbnailSize, ThumbnailSource, asset_thumbnail
 from app.runtime.config import get_settings
 
 from .access import article, bind_source, missing, publication
@@ -16,7 +17,15 @@ from .models import CommunityUpload
 from .mutations import begin_write
 
 
-async def content(session, principal, pub_id, asset_id, note_id=None, cover=False):
+async def content(
+    session,
+    principal,
+    pub_id,
+    asset_id,
+    note_id=None,
+    cover=False,
+    size: ThumbnailSize | None = None,
+):
     pub = await publication(session, pub_id)
     if note_id:
         _, n, role = await article(session, principal, pub, note_id)
@@ -52,7 +61,14 @@ async def content(session, principal, pub_id, asset_id, note_id=None, cover=Fals
     path = AssetStorage(get_settings()).path_for(row)
     if not path.is_file():
         raise missing()
-    return row, path
+    if size is not None and row.mime_type != "image/svg+xml":
+        info = ThumbnailSource(
+            row.id, row.revision, row.owner_user_id, row.media_kind, row.mime_type
+        )
+        await session.rollback()
+        path = await asset_thumbnail(get_settings(), info, path, size)
+        return "image/webp", path
+    return row.mime_type, path
 
 
 async def upload(session, principal, pub_id, note_id, incoming: IncomingFile):

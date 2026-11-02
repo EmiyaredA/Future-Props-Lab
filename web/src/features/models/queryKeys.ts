@@ -12,7 +12,6 @@ export const modelQueryKeys = {
   logStats: ["model-log-stats"] as const,
   conversations: ["model-test-conversations"] as const,
   conversation: (id: string | null) => ["model-test-conversation", id] as const,
-  tools: ["model-test-tools"] as const,
   tool: (id: string) => ["model-test-tool", id] as const,
   realtimeOptions: ["model-test-realtime-options"] as const,
   generationOptions: ["model-test-generation-options"] as const,

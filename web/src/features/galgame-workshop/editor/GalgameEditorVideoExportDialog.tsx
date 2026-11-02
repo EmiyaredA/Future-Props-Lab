@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { lazy, Suspense } from "react";
 import { Film, LoaderCircle } from "lucide-react";
 import type { GalgameStoryProject } from "@features/galgame-workshop/api";
@@ -48,8 +49,11 @@ export function GalgameEditorVideoExportDialog({
           >
             <Film aria-hidden />
             <span>
-              <strong>正在打开视频导出</strong>
-              <small>正在加载导出设置与任务状态…</small>
+              <LoadingState label="正在打开视频导出" variant="inline" />
+              <LoadingState
+                label="正在加载导出设置与任务状态…"
+                variant="inline"
+              />
             </span>
             <LoaderCircle className="spinning" aria-hidden />
           </section>

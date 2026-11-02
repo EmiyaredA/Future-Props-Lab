@@ -1,3 +1,6 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { Image } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -18,10 +21,13 @@ export function SlideImageVersion({
   readOnly: boolean;
   onChange?: (id: string | null) => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const cache = useQueryClient();
   const id = slide.image_asset_id;
   const { url, error: previewError } = useApiBlobUrl(
-    id ? `/v1/files/${encodeURIComponent(id)}/content` : null,
+    id ? `/v1/files/${encodeURIComponent(id)}/thumbnail?size=1280` : null,
   );
   const [picking, setPicking] = useState(false);
   const [previewing, setPreviewing] = useState(false);
@@ -59,7 +65,9 @@ export function SlideImageVersion({
     setBusy(true);
     setError("");
     try {
-      const asset = await uploadImage(file);
+      const asset = await runTransfer((onProgress) =>
+        uploadImage(file, { onProgress }),
+      );
       await cache.invalidateQueries({ queryKey: presentationKeys.images });
       if (version === token.current && !permission.current) choose(asset.id);
     } catch (e) {
@@ -73,7 +81,9 @@ export function SlideImageVersion({
     if (!id) return;
     setError("");
     try {
-      const blob = await imageBlob(id);
+      const blob = await runTransfer((onProgress) =>
+        imageBlob(id, { onProgress }),
+      );
       const extension =
         (
           {
@@ -92,6 +102,8 @@ export function SlideImageVersion({
   };
   return (
     <section className="presentation-image-version" aria-label="页面图像版本">
+      <TransferFeedback progress={activeTransferProgress} />
+
       <h4>图像版本</h4>
       {id ? (
         <>
@@ -101,7 +113,7 @@ export function SlideImageVersion({
             onClick={() => setPreviewing(true)}
           >
             {url ? (
-              <img src={url} alt="本页归档图像" />
+              <ResponsiveImage src={url} alt="本页归档图像" />
             ) : (
               <span role="status">
                 {previewError ? "图像加载失败" : "加载图像…"}

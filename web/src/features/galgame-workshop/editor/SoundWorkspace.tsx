@@ -1,3 +1,4 @@
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import type { GalgameStoryProject } from "@features/galgame-workshop/api";
 import type { AudioRole } from "@features/galgame-workshop/editor/model";
 import { useSoundWorkspaceController } from "@features/galgame-workshop/editor/audio/useSoundWorkspaceController";
@@ -15,5 +16,10 @@ export function SoundWorkspace(props: {
   storyRevision: number;
 }) {
   const controller = useSoundWorkspaceController(props);
-  return <SoundWorkspaceView controller={controller} />;
+  return (
+    <>
+      <TransferFeedback progress={controller.transferProgress} />
+      <SoundWorkspaceView controller={controller} />
+    </>
+  );
 }

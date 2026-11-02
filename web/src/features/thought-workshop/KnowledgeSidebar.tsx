@@ -1,3 +1,4 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { ArrowLeft, BookOpen, Home, Search, Trash2, X } from "lucide-react";
 import { useState, type CSSProperties, type ReactNode, type Ref } from "react";
 import {
@@ -73,7 +74,7 @@ export function KnowledgeSidebar({
         subtitle="Thought Workshop"
         backSubtitle={inside ? undefined : "浏览全部应用"}
         brand={
-          <img
+          <ResponsiveImage
             src="/brand/thought-workshop-mark.png"
             alt=""
             aria-hidden

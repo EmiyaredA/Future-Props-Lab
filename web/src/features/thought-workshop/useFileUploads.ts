@@ -1,3 +1,4 @@
+import type { TransferProgress } from "@platform/api/transfer";
 import { useEffect, useRef, useState } from "react";
 import type { Editor, JSONContent } from "@tiptap/core";
 import type { Transaction } from "@tiptap/pm/state";
@@ -10,6 +11,7 @@ export type UploadEntry = {
   position: number;
   status: "waiting" | "uploading" | "failed";
   error?: string;
+  progress?: TransferProgress;
 };
 /** Positions follow every document transaction; no temporary nodes enter history or autosave. */
 export function useFileUploads(editor: Editor | null) {
@@ -46,12 +48,16 @@ export function useFileUploads(editor: Editor | null) {
         entry.status = "uploading";
         publish();
         try {
+          const onProgress = (progress: TransferProgress) => {
+            entry.progress = progress;
+            publish();
+          };
           let content: JSONContent;
           if (
             entry.file.type.startsWith("image/") ||
             /\.(png|jpe?g|webp|gif)$/i.test(entry.file.name)
           ) {
-            const result = await uploadImage(entry.file);
+            const result = await uploadImage(entry.file, { onProgress });
             content = {
               type: "image",
               attrs: {
@@ -61,7 +67,7 @@ export function useFileUploads(editor: Editor | null) {
               },
             };
           } else {
-            const result = await uploadAttachment(entry.file);
+            const result = await uploadAttachment(entry.file, { onProgress });
             content = {
               type: "attachment",
               attrs: {

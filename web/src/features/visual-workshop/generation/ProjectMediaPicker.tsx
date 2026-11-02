@@ -1,3 +1,7 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -57,14 +61,19 @@ function GenerationMediaPreviewDialog({
   file: ManagedFile;
   onClose: () => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const titleId = useId();
   const { url: source, error } = useApiBlobUrl(
-    `/v1/files/${encodeURIComponent(file.id)}/content`,
+    `/v1/files/${encodeURIComponent(file.id)}/${file.media_kind === "image" && file.mime_type !== "image/svg+xml" ? "thumbnail?size=1280" : "content"}`,
   );
   const failed = Boolean(error);
   const download = useMutation({
     mutationFn: async () => {
-      const result = await fetchApiDownload(visualAssetDownloadPath(file.id));
+      const result = await runTransfer((onProgress) =>
+        fetchApiDownload(visualAssetDownloadPath(file.id), { onProgress }),
+      );
       const url = URL.createObjectURL(result.blob);
       const anchor = document.createElement("a");
       try {
@@ -102,6 +111,8 @@ function GenerationMediaPreviewDialog({
         if (event.target === event.currentTarget) onClose();
       }}
     >
+      <TransferFeedback progress={activeTransferProgress} />
+
       <section
         className="generation-media-preview-dialog"
         role="dialog"
@@ -127,7 +138,11 @@ function GenerationMediaPreviewDialog({
               ) : (
                 <Download aria-hidden />
               )}
-              {download.isPending ? "下载中…" : "下载"}
+              {download.isPending ? (
+                <LoadingState variant="inline" label="下载中…" />
+              ) : (
+                "下载"
+              )}
             </button>
             <button
               type="button"
@@ -157,7 +172,7 @@ function GenerationMediaPreviewDialog({
             </span>
           ) : null}
           {source && file.media_kind === "image" ? (
-            <img src={source} alt={file.display_name} />
+            <ResponsiveImage src={source} alt={file.display_name} />
           ) : null}
           {source && file.media_kind === "video" ? (
             <video src={source} controls />
@@ -212,6 +227,9 @@ export function ProjectMediaPicker({
   onInvalidSelection?: () => void;
   onDropResult?: (notice: ReferenceDropNoticeState) => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const client = useQueryClient();
   const uploadInput = useRef<HTMLInputElement>(null);
   const sourceTrigger = useRef<HTMLButtonElement>(null);
@@ -312,7 +330,13 @@ export function ProjectMediaPicker({
     mutationFn: async (selected: File[]) => {
       const uploaded: ManagedFile[] = [];
       for (const file of selected)
-        uploaded.push(await uploadManagedFile(file, projectId));
+        uploaded.push(
+          await runTransfer((onProgress) =>
+            uploadManagedFile(file, projectId, undefined, undefined, {
+              onProgress,
+            }),
+          ),
+        );
       return uploaded;
     },
     onSuccess: (uploaded) => {
@@ -444,7 +468,11 @@ export function ProjectMediaPicker({
         <Upload aria-hidden />
       )}
       <span className={minimal ? "sr-only" : undefined}>
-        {upload.isPending ? "上传中" : "上传"}
+        {upload.isPending ? (
+          <LoadingState variant="inline" label="上传中" />
+        ) : (
+          "上传"
+        )}
       </span>
     </button>
   );
@@ -514,6 +542,8 @@ export function ProjectMediaPicker({
       disabled={disabled}
       aria-disabled={disabled}
     >
+      <TransferFeedback progress={activeTransferProgress} />
+
       <legend className={minimal && !showLabel ? "sr-only" : undefined}>
         {label}
       </legend>
@@ -536,7 +566,9 @@ export function ProjectMediaPicker({
       {loading ? (
         <span className="generation-picker-state">
           <LoaderCircle className="spinning" aria-hidden />
-          {minimal ? null : "正在读取项目素材…"}
+          {minimal ? null : (
+            <LoadingState variant="inline" label="正在读取项目素材…" />
+          )}
         </span>
       ) : (
         <div

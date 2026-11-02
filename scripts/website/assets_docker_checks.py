@@ -4,6 +4,7 @@ import io
 import json
 import os
 import subprocess
+import zipfile
 
 from PIL import Image
 
@@ -26,6 +27,39 @@ def exercise_assets(*, root, repo, client, unsafe, compose, started, wait, brows
     assert response.headers["Cache-Control"] == "no-store"
     response = client.get(f"/v1/files/{asset['id']}/thumbnail?size=320")
     assert response.status_code == 200 and response.headers["Content-Type"] == "image/webp"
+    # Multipart spools must use the Assets-owned volume, not the 32 MiB container tmpfs.
+    large = root / "large-upload.txt"
+    with large.open("wb") as target:
+        for _ in range(40):
+            target.write(b"isolated multipart input\n".ljust(1024 * 1024, b" "))
+    with large.open("rb") as source:
+        response = client.post(
+            "/v1/files",
+            headers=unsafe,
+            files={"upload": (large.name, source, "text/plain")},
+            timeout=120,
+        )
+    assert response.status_code == 200, response.text
+    uploaded = response.json()
+    assert uploaded["byte_size"] == large.stat().st_size
+    assert (
+        client.get(f"/v1/files/{uploaded['id']}/content", headers={"Range": "bytes=0-7"}).content
+        == b"isolated"
+    )
+    response = client.delete(
+        f"/v1/files/{uploaded['id']}?expected_revision={uploaded['revision']}", headers=unsafe
+    )
+    assert response.status_code == 200, response.text
+    large.unlink()
+    packed = io.BytesIO()
+    with zipfile.ZipFile(packed, "w") as bundle:
+        bundle.writestr("archive-fixture/readme.txt", "isolated archive content")
+    response = client.post(
+        "/v1/file-library/folder-archive-imports",
+        headers=unsafe,
+        files={"archive": ("folder.zip", packed.getvalue(), "application/zip")},
+    )
+    assert response.status_code == 200 and response.json()["created_files"] == 1, response.text
     response = client.get("/v1/file-library/folder-exports")
     assert response.status_code == 200 and response.content.startswith(b"PK")
     for private in ("/_internal/v1/retention/prepare", "/files/_internal/v1/retention/prepare"):

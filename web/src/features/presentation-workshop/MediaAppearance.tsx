@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useState } from "react";
 import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
 import { NumberField } from "./PresentationNumberField";
@@ -73,9 +74,11 @@ export function MediaAppearance({
           </p>
         ) : (
           <p className="muted">
-            {mono?.id === element.asset_id
-              ? "保留 SVG 原始配色"
-              : "正在读取颜色信息…"}
+            {mono?.id === element.asset_id ? (
+              "保留 SVG 原始配色"
+            ) : (
+              <LoadingState variant="inline" label="正在读取颜色信息…" />
+            )}
           </p>
         )
       ) : (

@@ -1,3 +1,5 @@
+import { createUploadTransfer } from "@platform/api/transfer";
+import { type TransferOptions } from "@platform/api/transfer";
 import type { components } from "@generated/api";
 import { api, unwrap } from "@platform/api/client";
 
@@ -38,14 +40,20 @@ export async function getInferenceOptions() {
 export async function getInferenceTasks() {
   return unwrap(await api.GET("/v1/model-inference/tasks"));
 }
-export async function uploadInferenceAudio(file: File) {
+export async function uploadInferenceAudio(
+  file: File,
+  transfer: TransferOptions = {},
+) {
+  const uploadTransfer = createUploadTransfer(transfer.onProgress);
+
   return unwrap(
     await api.POST("/v1/model-inference/assets", {
+      fetch: uploadTransfer.fetch,
       body: { upload: file as unknown as string },
       bodySerializer: () => {
         const data = new FormData();
         data.append("upload", file);
-        return data;
+        return uploadTransfer.capture(data);
       },
     }),
   );

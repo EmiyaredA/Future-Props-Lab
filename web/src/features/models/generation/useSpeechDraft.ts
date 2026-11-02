@@ -1,3 +1,4 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -31,6 +32,7 @@ export function useSpeechDraft({
   allowed: boolean;
   onCreated: (id: string) => void;
 }) {
+  const transfer = useTransferProgress();
   const client = useQueryClient();
   const [text, setText] = useState("");
   const [referenceText, setReferenceText] = useState("");
@@ -103,7 +105,9 @@ export function useSpeechDraft({
       setError(`请选择 ${limits.reference_extensions.join(" / ")} 格式的录音`);
       return;
     }
-    await replaceReference(() => uploadInferenceAudio(file));
+    await replaceReference(() =>
+      transfer.run((onProgress) => uploadInferenceAudio(file, { onProgress })),
+    );
   }
 
   async function submit() {
@@ -168,6 +172,7 @@ export function useSpeechDraft({
     }
   }
   return {
+    transferProgress: transfer.progress,
     text,
     setText,
     referenceText,

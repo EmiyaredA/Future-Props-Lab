@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import type { CSSProperties } from "react";
 import {
   AlertTriangle,
@@ -511,7 +512,11 @@ export function AssetOverviewView({
                   !editDraft.virtualPath.trim()
                 }
               >
-                {patch.isPending ? "保存中…" : "保存资源信息"}
+                {patch.isPending ? (
+                  <LoadingState variant="inline" label="保存中…" />
+                ) : (
+                  "保存资源信息"
+                )}
               </button>
             </form>
             <dl>

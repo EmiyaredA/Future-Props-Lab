@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import {
   forwardRef,
   useEffect,
@@ -605,7 +606,11 @@ export const AudioWaveform = forwardRef<
         aria-label="录音波形时间轴"
       />
       {!ready ? (
-        <div className="annotation-waveform-loading">正在准备音频波形…</div>
+        <LoadingState
+          label="正在准备音频波形…"
+          variant="region"
+          className="annotation-waveform-loading"
+        />
       ) : null}
       {ready && focusSelectionMode ? (
         <div className="annotation-waveform-selection-hint" role="status">

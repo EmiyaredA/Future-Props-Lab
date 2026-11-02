@@ -1,3 +1,4 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import candidateImage from "./assets/candidate-demo.png";
 import type { InterviewSession, InterviewAnswer, Devices } from "./types";
 import { useEffect, useState } from "react";
@@ -36,7 +37,10 @@ export function Camera({
   return (
     <div className={`camera ${className}`}>
       {enabled ? (
-        <img src={candidateImage} alt="虚构候选人的摄像头示意照片" />
+        <ResponsiveImage
+          src={candidateImage}
+          alt="虚构候选人的摄像头示意照片"
+        />
       ) : (
         <div className="camera-off">
           <VideoOff size={30} />

@@ -5,5 +5,5 @@ export function avatarSrc(
 ): string | undefined {
   if (!url) return undefined;
   const separator = url.includes("?") ? "&" : "?";
-  return `${url}${separator}v=${revision}`;
+  return `${url}${separator}v=${revision}&size=128`;
 }

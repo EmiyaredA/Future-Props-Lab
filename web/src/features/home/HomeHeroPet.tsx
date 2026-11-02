@@ -1,4 +1,5 @@
 import { programAsset } from "@platform/programAsset";
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { useEffect, useRef, useState } from "react";
 
 const POSTER = programAsset("/brand/home/kurisu-idle.png");
@@ -52,7 +53,7 @@ export function HomeHeroPet() {
       aria-hidden="true"
       data-playing={ready && !reduced && !failed}
     >
-      <img src={POSTER} alt="" width="640" height="360" />
+      <ResponsiveImage src={POSTER} alt="" width="640" height="360" />
       {!reduced && !failed && (
         <video
           ref={videoRef}

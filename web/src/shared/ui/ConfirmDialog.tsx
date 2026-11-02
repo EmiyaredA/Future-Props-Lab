@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { RefreshCw, TriangleAlert, X } from "lucide-react";
 import { createPortal } from "react-dom";
@@ -146,7 +147,11 @@ export function ConfirmDialog({
             disabled={pending || confirmDisabled}
             onClick={() => void onConfirm()}
           >
-            {pending ? "处理中…" : confirmLabel}
+            {pending ? (
+              <LoadingState variant="inline" label="处理中…" />
+            ) : (
+              confirmLabel
+            )}
           </button>
         </div>
       </div>

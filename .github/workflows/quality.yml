@@ -128,7 +128,7 @@ jobs:
           mkdir -p .local/service-split
       - run: npx playwright install --with-deps chromium
       - name: Pull independently owned Portal program assets
-        run: git lfs pull --include="web/public/brand/*-mark.png,web/public/brand/home/*" --exclude=""
+        run: git lfs pull --include="web/public/brand/*-mark.png,web/public/brand/home/*,web/public/brand/thumbnails/*,backend/app/capabilities/media_rendering/assets/*.ttf" --exclude=""
       - name: Build the independent browser programs
         run: |
           npm run services:build:web -- agents > .local/service-split/ci-web-build.log
@@ -138,6 +138,7 @@ jobs:
         run: |
           uv run python scripts/website/service_build.py identity --build > .local/service-split/ci-build.log
           uv run python scripts/website/service_build.py gateway --build > .local/service-split/ci-gateway-build.log
+          uv run python scripts/website/service_build.py rendering --build > .local/service-split/ci-rendering-build.log
           uv run python - <<'PY'
           import json
           import subprocess
@@ -167,6 +168,7 @@ jobs:
           agents = image('.local/service-split/ci-agents-build.log')
           portal = image('.local/service-split/ci-portal-build.log')
           assets = image('.local/service-split/ci-assets-build.log')
+          rendering = image('.local/service-split/ci-rendering-build.log')
           subprocess.run([
               'uv', 'run', 'python', 'scripts/website/service_docker_smoke.py',
               '--image', identity, '--gateway-image', gateway,
@@ -174,6 +176,6 @@ jobs:
           subprocess.run([
               'uv', 'run', 'python', 'scripts/website/agents_docker_smoke.py',
               '--identity-image', identity, '--agents-image', agents,
-              '--gateway-image', gateway, '--portal-image', portal, '--assets-image', assets, '--browser',
+              '--gateway-image', gateway, '--portal-image', portal, '--assets-image', assets, '--rendering-image', rendering, '--browser',
           ], check=True)
           PY

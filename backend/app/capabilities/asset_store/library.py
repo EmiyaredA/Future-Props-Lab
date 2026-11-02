@@ -7,6 +7,7 @@ from uuid import uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import (
@@ -18,21 +19,6 @@ from app.capabilities.asset_store.policy import (
 )
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
 from app.runtime.config import Settings
-
-
-class AssetError(Exception):
-    def __init__(
-        self,
-        message: str,
-        *,
-        code: str = "asset_error",
-        status: int = 422,
-        detail: dict[str, object] | None = None,
-    ) -> None:
-        super().__init__(message)
-        self.code = code
-        self.status = status
-        self.detail = detail or {}
 
 
 class AssetLibrary:

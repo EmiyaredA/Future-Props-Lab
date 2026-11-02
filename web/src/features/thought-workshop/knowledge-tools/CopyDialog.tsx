@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
@@ -75,7 +76,7 @@ export function CopyDialog({
       description={
         <div className="thought-tools">
           {(snapshot.isPending || directory.isPending) && (
-            <p role="status">正在读取复制信息…</p>
+            <LoadingState label="正在读取复制信息…" variant="region" />
           )}
           <button
             className="btn"

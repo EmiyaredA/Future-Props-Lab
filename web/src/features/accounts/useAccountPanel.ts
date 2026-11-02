@@ -1,3 +1,4 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { ApiError } from "@platform/api/client";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import {
@@ -15,6 +16,9 @@ import {
 } from "./api";
 
 export function useAccountPanel(session: AccountSessionContext) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const { me, refresh, logout } = session;
   const requestEpoch = useRef(0);
   const [open, setOpen] = useState<"account" | null>(null);
@@ -118,7 +122,9 @@ export function useAccountPanel(session: AccountSessionContext) {
   const uploadAvatar = async (file: File | undefined) => {
     if (!file) return;
     await report(async () => {
-      await putAvatar(file, me.user.revision);
+      await runTransfer((onProgress) =>
+        putAvatar(file, me.user.revision, { onProgress }),
+      );
       await refresh();
       setNotice("头像已更新。");
     });
@@ -194,6 +200,7 @@ export function useAccountPanel(session: AccountSessionContext) {
     };
   }, []);
   return {
+    transferProgress: activeTransferProgress,
     loading,
     reload,
     busy,

@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { openAmadeus } from "@platform/assistant";
 import { lazy, Suspense, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -99,9 +100,10 @@ export function CommunityReader({
       canViewHistory: false,
       backlinks: (id, offset) => communityBacklinks(publication, id, offset),
       assetUrl: (id) => communityAssetUrl(publication, id, current),
-      uploadImage: (file) => uploadCommunityFile(publication, current!, file),
-      uploadAttachment: (file) =>
-        uploadCommunityFile(publication, current!, file),
+      uploadImage: (file, options) =>
+        uploadCommunityFile(publication, current!, file, options),
+      uploadAttachment: (file, options) =>
+        uploadCommunityFile(publication, current!, file, options),
       save: async (id, body, revision) => {
         try {
           return (await saveCommunityNote(publication, id, body, revision))
@@ -411,9 +413,11 @@ export function CommunityReader({
             </div>
           )}
           {directory.isPending || (article.isPending && current) ? (
-            <p role="status" className="knowledge-notice">
-              正在加载文档…
-            </p>
+            <LoadingState
+              label="正在加载文档…"
+              variant="region"
+              className="knowledge-notice"
+            />
           ) : null}
           {article.data && (!article.isError || editing) ? (
             article.data.note.kind === "multitable" ? (
@@ -426,7 +430,11 @@ export function CommunityReader({
                 guard={registerNavigationGuard}
               />
             ) : editing ? (
-              <Suspense fallback={<p role="status">编辑器加载中…</p>}>
+              <Suspense
+                fallback={
+                  <LoadingState label="编辑器加载中…" variant="region" />
+                }
+              >
                 <NoteEditorPane
                   documentChrome={documentUI.chrome}
                   key={`${user}:${publication}:${current}`}

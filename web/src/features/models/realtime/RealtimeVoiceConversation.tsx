@@ -15,7 +15,6 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { ModelTestToolCallList } from "@features/models/conversation/ModelTestToolControls";
 import { useRealtimeVoiceCall } from "@features/models/realtime/useRealtimeVoiceCall";
 import "@features/models/styles/realtime-voice-chat.css";
 
@@ -124,17 +123,6 @@ function CallMessageList({
         const assistantActive =
           call.state.activeAssistantTurnId === turn.turnId &&
           call.state.status === "speaking";
-        const calls = turn.toolCalls.map((toolCall) => ({
-          id: toolCall.id,
-          tool_name: toolCall.toolName,
-          arguments: toolCall.arguments,
-          status: toolCall.status,
-          success: toolCall.success,
-          result: toolCall.result,
-          error_code: toolCall.errorCode,
-          error_message: toolCall.errorMessage,
-          duration_ms: toolCall.durationMs,
-        }));
         return (
           <div className="realtime-turn" key={turn.turnId}>
             <article
@@ -192,13 +180,9 @@ function CallMessageList({
                     />
                   ) : null}
                 </div>
-                <ModelTestToolCallList calls={calls} />
                 <div className="markdown-body">
                   <p>
-                    {turn.assistantTranscript ||
-                      (calls.some((item) => item.status === "running")
-                        ? "正在等待工具返回结果…"
-                        : "正在等待模型回复…")}
+                    {turn.assistantTranscript || "正在等待模型回复…"}
                     {assistantActive ? <i className="stream-caret" /> : null}
                   </p>
                 </div>
@@ -243,12 +227,6 @@ export function RealtimeVoiceConversation({
   onStart: () => void;
 }) {
   const active = !["idle", "ended", "error"].includes(call.state.status);
-  const toolRunning = call.state.turns.some((turn) =>
-    turn.toolCalls.some((toolCall) => toolCall.status === "running"),
-  );
-  const liveLabel = toolRunning
-    ? "正在调用工具…"
-    : statusLabels[call.state.status];
 
   return (
     <main className="realtime-voice-stage chat-panel">
@@ -259,7 +237,9 @@ export function RealtimeVoiceConversation({
         </div>
         <span className={`realtime-session-status ${active ? "active" : ""}`}>
           <i aria-hidden />{" "}
-          {active ? `通话中 · ${formatDuration(elapsed)}` : liveLabel}
+          {active
+            ? `通话中 · ${formatDuration(elapsed)}`
+            : statusLabels[call.state.status]}
         </span>
       </div>
 
@@ -285,7 +265,7 @@ export function RealtimeVoiceConversation({
             aria-live="polite"
           >
             <Mic aria-hidden />
-            <strong>{liveLabel}</strong>
+            <strong>{statusLabels[call.state.status]}</strong>
             <LiveWaveform />
             <small>
               <Clock3 aria-hidden /> 首包延迟{" "}
@@ -339,9 +319,7 @@ export function RealtimeVoiceConversation({
             <span>扬声器</span>
           </button>
         </div>
-        <p className="realtime-privacy-note">
-          转写与语音仅保留在当前页面；工具调用详情会写入测试记录。
-        </p>
+        <p className="realtime-privacy-note">转写与语音仅保留在当前页面。</p>
       </div>
     </main>
   );

@@ -29,7 +29,7 @@
     "lint": "uv run ruff check backend db scripts tests sdk/python/src && npm run lint --workspace web",
     "format": "uv run ruff format backend db scripts tests sdk/python/src && npm run format --workspace web",
     "format:check": "uv run ruff format --check backend db scripts tests sdk/python/src && npm run format:check --workspace web",
-    "build": "python3 scripts/check_lfs_assets.py --web && npm run build --workspace web",
+    "build": "python3 scripts/check_lfs_assets.py --web && npm run images:check && npm run build --workspace web",
     "lfs:check": "python3 scripts/check_lfs_assets.py --all",
     "lfs:check:pointers": "python3 scripts/check_lfs_assets.py --pointers",
     "sdk:generate": "uv run python scripts/generate_sdk.py && uv run python scripts/generate_sdk_docs.py",
@@ -45,7 +45,7 @@
     "check-anchors": "npx tsx scripts/check-note-anchors.ts",
     "check-docs-center-protected": "node scripts/check-docs-center-protected.mjs",
     "test:sdk": "uv run pytest -q tests/test_python_sdk.py tests/test_workshop_operations.py tests/test_model_inference.py tests/test_automation_exports.py tests/test_sdk_workflows.py",
-    "build:studio": "python3 scripts/check_lfs_assets.py --web && npm run build:studio --workspace web",
+    "build:studio": "python3 scripts/check_lfs_assets.py --web && npm run images:check && npm run build:studio --workspace web",
     "start": "uv run python scripts/website/serve.py",
     "website:service": "uv run python scripts/website/service.py",
     "services:contracts:generate": "uv run python scripts/website/service_contracts.py",
@@ -53,7 +53,9 @@
     "services:build": "uv run python scripts/website/service_build.py",
     "services:build:web": "npm run build:service --workspace web --",
     "services:test:agents": "uv run python scripts/website/agents_docker_smoke.py",
-    "services:test:docker": "uv run python scripts/website/service_docker_smoke.py"
+    "services:test:docker": "uv run python scripts/website/service_docker_smoke.py",
+    "images:generate": "uv run python scripts/generate_image_variants.py",
+    "images:check": "uv run python scripts/generate_image_variants.py --check"
   },
   "devDependencies": {
     "@typescript/native-preview": "^7.0.0-dev.20260120.1",

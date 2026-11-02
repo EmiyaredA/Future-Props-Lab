@@ -11,10 +11,6 @@ from fastapi import WebSocket, WebSocketDisconnect
 
 from app.llm.call_logs.credentials import CredentialSnapshot
 from app.llm.models import LlmCallLog
-from app.llm.playground.test_tools import (
-    TestToolSelectionError,
-    load_selected_tool_snapshots,
-)
 from app.llm.providers.realtime.constants import (
     SENSEAUDIO_DEFAULT_VOICE,
     SENSEAUDIO_VOICE_IDS,
@@ -33,7 +29,6 @@ from app.llm.providers.realtime.constants import (
 from app.llm.providers.realtime.contracts import RealtimeProviderUnavailableError
 from app.llm.providers.realtime.senseaudio import SenseAudioRealtimeBridge
 from app.llm.realtime.catalog import RealtimeModelUnavailableError, resolve_realtime_model
-from app.llm.realtime.tool_calls import RealtimeToolExecutor, provider_tool_definitions
 from app.runtime.db import SessionLocal
 from app.runtime.ids import new_id
 from app.runtime.ownership import bind_owner
@@ -52,7 +47,6 @@ class TurnMetrics:
     first_audio_at: float = 0.0
     usage: dict[str, Any] = field(default_factory=dict)
     timings: dict[str, Any] = field(default_factory=dict)
-    tool_calls: list[dict[str, Any]] = field(default_factory=list)
 
 
 async def _write_log(
@@ -114,7 +108,6 @@ async def _write_log(
                     ),
                     "usage": usage,
                     "timings": turn.timings if turn else {},
-                    "tool_calls": turn.tool_calls if turn else [],
                 },
                 prompt_tokens=prompt_tokens,
                 completion_tokens=completion_tokens,
@@ -250,13 +243,11 @@ async def run_realtime_model_test(
     trace_id = new_id()
     model: Any | None = None
     bridge: SenseAudioRealtimeBridge | None = None
-    tool_executor: RealtimeToolExecutor | None = None
     voice = SENSEAUDIO_DEFAULT_VOICE
     instructions = ""
     greeting = ""
     client_configuration: dict[str, Any] = {}
     turns: dict[str, TurnMetrics] = {}
-    turn_rounds: dict[str, int] = {}
     active_turn_id: str | None = None
     logged_turns = 0
     try:
@@ -292,53 +283,18 @@ async def run_realtime_model_test(
         voice = (
             requested_voice if requested_voice in SENSEAUDIO_VOICE_IDS else SENSEAUDIO_DEFAULT_VOICE
         )
-        raw_tool_ids = start.get("tool_ids", [])
-        if not isinstance(raw_tool_ids, list) or any(
-            not isinstance(tool_id, str) for tool_id in raw_tool_ids
-        ):
-            await websocket.send_json(_error("voice_tools_invalid", "测试工具配置格式无效。"))
-            return
-        tool_ids = [tool_id.strip() for tool_id in raw_tool_ids]
-        try:
-            async with SessionLocal() as session:
-                bind_owner(session.sync_session, owner_user_id)
-                model = await resolve_realtime_model(
-                    session, owner_user_id=owner_user_id, model_id=model_id
-                )
-                tool_snapshots = await load_selected_tool_snapshots(session, tool_ids)
-        except TestToolSelectionError as exc:
-            await websocket.send_json(_error("voice_tools_unavailable", str(exc)))
-            return
+        async with SessionLocal() as session:
+            bind_owner(session.sync_session, owner_user_id)
+            model = await resolve_realtime_model(
+                session, owner_user_id=owner_user_id, model_id=model_id
+            )
         bridge = SenseAudioRealtimeBridge(
             model=model,
             instructions=instructions,
             greeting=greeting,
             voice=voice,
-            tools=provider_tool_definitions(tool_snapshots),
         )
 
-        def emit_tool_update(event: dict[str, Any]) -> None:
-            turn_id = str(event.get("turn_id") or "")
-            if turn_id:
-                turn = turns.setdefault(turn_id, TurnMetrics(turn_id))
-                summary = {
-                    "call_id": str(event.get("call_id") or ""),
-                    "name": str(event.get("tool_name") or ""),
-                    "status": str(event.get("status") or ""),
-                    "duration_ms": int(event.get("duration_ms") or 0),
-                }
-                turn.tool_calls = [
-                    item for item in turn.tool_calls if item.get("call_id") != summary["call_id"]
-                ] + [summary]
-            bridge.outbound.put_nowait(event)
-
-        tool_executor = RealtimeToolExecutor(
-            owner_user_id=owner_user_id,
-            trace_id=trace_id,
-            snapshots=tool_snapshots,
-            emit=emit_tool_update,
-            submit_result=bridge.submit_tool_result,
-        )
         await bridge.start()
         await websocket.send_json(
             {
@@ -351,8 +307,6 @@ async def run_realtime_model_test(
                 "output_sample_rate": VOICE_OUTPUT_SAMPLE_RATE,
                 "commit_silence_ms": VOICE_COMMIT_SILENCE_MS,
                 "supports_interruption": True,
-                "supports_tools": True,
-                "tool_ids": tool_ids,
                 "client_configuration": client_configuration,
             }
         )
@@ -402,28 +356,9 @@ async def run_realtime_model_test(
                         True,
                     )
                     event_type = "error"
-                if event_type == "tool_call":
-                    if turn_id:
-                        turns.setdefault(turn_id, TurnMetrics(turn_id))
-                        turn_rounds.setdefault(turn_id, len(turn_rounds))
-                        active_turn_id = active_turn_id or turn_id
-                    if check_access is not None:
-                        await check_access()
-                    tool_executor.start(
-                        event,
-                        round_index=turn_rounds.get(turn_id, len(turn_rounds)),
-                    )
-                    continue
-                if event_type == "tool_cancelled":
-                    await tool_executor.cancel(
-                        str(event.get("call_id") or ""),
-                        str(event.get("reason") or "工具调用已取消"),
-                    )
-                    continue
                 if event_type == "user_speech_started" and turn_id:
                     active_turn_id = turn_id
                     turns[turn_id] = TurnMetrics(turn_id=turn_id)
-                    turn_rounds.setdefault(turn_id, len(turn_rounds))
                 elif event_type == "user_transcript" and turn_id:
                     turns.setdefault(turn_id, TurnMetrics(turn_id)).user_chars = len(
                         str(event.get("text") or "")
@@ -461,7 +396,6 @@ async def run_realtime_model_test(
                     logged_turns += 1
                     active_turn_id = None
                 elif event_type == "error":
-                    await tool_executor.shutdown()
                     turn = turns.get(active_turn_id or "")
                     await _write_log(
                         owner_user_id=owner_user_id,
@@ -507,7 +441,6 @@ async def run_realtime_model_test(
             if not task.cancelled():
                 task.result()
         if active_turn_id:
-            await tool_executor.shutdown()
             await _write_log(
                 owner_user_id=owner_user_id,
                 trace_id=trace_id,
@@ -524,8 +457,6 @@ async def run_realtime_model_test(
             logged_turns += 1
             active_turn_id = None
     except WebSocketDisconnect:
-        if tool_executor is not None:
-            await tool_executor.shutdown()
         if model is not None and active_turn_id:
             await _write_log(
                 owner_user_id=owner_user_id,
@@ -568,8 +499,6 @@ async def run_realtime_model_test(
             ),
         )
     except Exception:
-        if tool_executor is not None:
-            await tool_executor.shutdown()
         if model is not None and logged_turns == 0:
             await _write_log(
                 owner_user_id=owner_user_id,
@@ -589,8 +518,6 @@ async def run_realtime_model_test(
             _error("voice_session_failed", "实时语音会话异常结束，请重新通话。", True),
         )
     finally:
-        if tool_executor is not None:
-            await tool_executor.shutdown()
         if bridge is not None:
             await bridge.close()
         await _safe_send(websocket, {"type": "call_ended"})

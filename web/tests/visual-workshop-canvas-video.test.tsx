@@ -107,7 +107,26 @@ test("renders video nodes as an attached 16:9 creation workspace", async () => {
   expect(screen.getByRole("complementary", { name: "节点检查器" })).toHaveClass(
     "is-embedded",
   );
-  expect(screen.getByRole("tab", { name: "生成设置" })).toBeInTheDocument();
+  expect(screen.getByRole("tab", { name: "素材" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  expect(screen.getByRole("tab", { name: "生成设置" })).toHaveAttribute(
+    "aria-selected",
+    "false",
+  );
+  await user.click(screen.getByRole("tab", { name: "生成设置" }));
+  expect(screen.getByRole("tab", { name: "生成设置" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  expect(screen.getByRole("tab", { name: "素材" })).toHaveAttribute(
+    "aria-selected",
+    "false",
+  );
+  expect(
+    screen.getByRole("complementary", { name: "节点 AI 生成" }),
+  ).toBeInTheDocument();
 });
 
 test.each([0.5, 1, 2])(

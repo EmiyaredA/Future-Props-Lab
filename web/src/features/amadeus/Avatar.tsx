@@ -1,3 +1,4 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { useEffect, useRef, useState } from "react";
 import { Application, Assets, type Texture } from "pixi.js";
 import {
@@ -286,7 +287,11 @@ export function AmadeusAvatar({
         visible ? "model" : failed || reduced ? "poster" : "loading"
       }
     >
-      <img src={fallback} alt="" className="amadeus-avatar-poster" />
+      <ResponsiveImage
+        src={fallback}
+        alt=""
+        className="amadeus-avatar-poster"
+      />
       <span
         ref={canvasHost}
         className="amadeus-avatar-canvas"

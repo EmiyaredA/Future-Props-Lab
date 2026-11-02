@@ -1,3 +1,5 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { useEffect, useMemo, useRef, useState } from "react";
 import "@features/models/models.css";
 import { modelQueryKeys } from "@features/models/queryKeys";
@@ -20,7 +22,6 @@ import {
 } from "@features/models/api";
 import type { SelectOption } from "@shared/ui/CustomSelect";
 import { ModelTestCapabilityPanel } from "@features/models/conversation/ModelTestCapabilityPanel";
-import { ModelTestToolWarnings } from "@features/models/conversation/ModelTestToolControls";
 import {
   ModelTestWorkspaceHeader,
   type ModelTestMode,
@@ -53,12 +54,17 @@ import {
 export function ModelTestPage({
   onOpenAudioAnnotation = () => undefined,
   initialModelId,
+  initialMode,
   onInitialModelHandled,
 }: {
   onOpenAudioAnnotation?: (projectId: string) => void;
   initialModelId?: string | null;
+  initialMode?: string;
   onInitialModelHandled?: () => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const queryClient = useQueryClient();
   const catalogQuery = useQuery({
     queryKey: modelQueryKeys.catalog,
@@ -71,6 +77,7 @@ export function ModelTestPage({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [error, setError] = useState("");
+  const [modeNotice, setModeNotice] = useState("");
   const [streamingId, setStreamingId] = useState<string | null>(null);
   const [streamedContent, setStreamedContent] = useState("");
   const [stoppedPreview, setStoppedPreview] = useState<{
@@ -114,6 +121,46 @@ export function ModelTestPage({
     () => availableCatalogModels(catalogQuery.data),
     [catalogQuery.data],
   );
+  const handledMode = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (
+      !initialMode ||
+      catalogQuery.isPending ||
+      catalogQuery.isError ||
+      handledMode.current === initialMode ||
+      initialModelId
+    )
+      return;
+    handledMode.current = initialMode;
+    setModeNotice("");
+    if (initialMode === "chat") {
+      setGenerationModelId(null);
+      return;
+    }
+    if (
+      !["image", "video", "synthesis", "speech", "realtime_voice"].includes(
+        initialMode,
+      )
+    )
+      return;
+    autoCreated.current = true;
+    const model = preferredModeModel(
+      availableModels,
+      initialMode as Exclude<ModelTestMode, "chat">,
+      undefined,
+      catalogQuery.data?.default_model_ids,
+    );
+    if (model) setGenerationModelId(model.value);
+    else
+      setModeNotice("所选测试模式暂无可用模型，请先在模型服务中接入对应模型。");
+  }, [
+    initialMode,
+    initialModelId,
+    catalogQuery.isPending,
+    catalogQuery.isError,
+    catalogQuery.data?.default_model_ids,
+    availableModels,
+  ]);
   const textModels = useMemo(
     () =>
       availableModels.filter(
@@ -194,16 +241,12 @@ export function ModelTestPage({
     enabled: Boolean(activeId),
   });
   const conversation = detailQuery.data;
-  const conversationTools = conversation?.tools ?? [];
   const draftAttachments = conversation?.draft_attachments ?? [];
   const selectedModel = textModels.find(
     (model) => model.value === conversation?.model_id,
   );
   const selectedModelSupportsVision = Boolean(
     selectedModel?.capabilities.includes("vision"),
-  );
-  const selectedModelSupportsTools = Boolean(
-    selectedModel?.capabilities.includes("tools"),
   );
 
   useEffect(() => {
@@ -242,7 +285,7 @@ export function ModelTestPage({
         ModelTestConversation,
         "title" | "model_id" | "system_prompt" | "temperature" | "max_tokens"
       >
-    > & { tool_ids?: string[] },
+    >,
   ) => {
     if (!conversation || streamingId) return;
     setError("");
@@ -321,7 +364,9 @@ export function ModelTestPage({
     setError("");
     setUploadingAttachments(true);
     try {
-      await uploadModelTestAttachments(conversation.id, selected);
+      await runTransfer((onProgress) =>
+        uploadModelTestAttachments(conversation.id, selected, { onProgress }),
+      );
       await detailQuery.refetch();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
@@ -389,8 +434,6 @@ export function ModelTestPage({
             setStreamedContent(
               (current) => current + String(event.payload.text || ""),
             );
-          } else if (event.type === "step") {
-            void detailQuery.refetch();
           } else if (event.type === "error") {
             const raw = String(event.payload.message || "模型调用失败");
             const friendly = errorPresentation(raw);
@@ -466,10 +509,6 @@ export function ModelTestPage({
     !uploadingAttachments &&
     Boolean(input.trim() || draftAttachments.length) &&
     (!draftAttachments.length || selectedModelSupportsVision);
-  const toolsCompatible =
-    !conversationTools.length ||
-    (selectedModelSupportsTools &&
-      conversationTools.every((tool) => tool.enabled));
   const conversationItems = conversationsQuery.data?.items ?? [];
   const generationModel = availableModels.find(
     (model) => model.value === generationModelId,
@@ -501,7 +540,9 @@ export function ModelTestPage({
     ),
   };
   const selectMode = (mode: ModelTestMode) => {
+    setModeNotice("");
     if (mode === "chat") {
+      autoCreated.current = false;
       setGenerationModelId(null);
       return;
     }
@@ -517,21 +558,26 @@ export function ModelTestPage({
   };
   if (generationModel) {
     return (
-      <ModelTestCapabilityPanel
-        models={availableModels}
-        modelId={generationModel.value}
-        onOpenAudioAnnotation={onOpenAudioAnnotation}
-        onSelectMode={selectMode}
-        onSelectModel={(modelId, mode) => {
-          lastGenerationModelByMode.current[mode] = modelId;
-          setGenerationModelId(modelId);
-        }}
-      />
+      <>
+        <TransferFeedback progress={activeTransferProgress} />
+        <ModelTestCapabilityPanel
+          models={availableModels}
+          modelId={generationModel.value}
+          onOpenAudioAnnotation={onOpenAudioAnnotation}
+          onSelectMode={selectMode}
+          onSelectModel={(modelId, mode) => {
+            lastGenerationModelByMode.current[mode] = modelId;
+            setGenerationModelId(modelId);
+          }}
+        />
+      </>
     );
   }
 
   return (
     <section className="model-test-page">
+      <TransferFeedback progress={activeTransferProgress} />
+
       <ModelTestWorkspaceHeader
         activeMode="chat"
         availableModes={availableModes}
@@ -557,10 +603,16 @@ export function ModelTestPage({
           </div>
         }
       />
-      {error ? (
+      {error || modeNotice ? (
         <div className="inline-alert danger playground-alert" role="alert">
-          {error}
-          <button aria-label="关闭提示" onClick={() => setError("")}>
+          {error || modeNotice}
+          <button
+            aria-label="关闭提示"
+            onClick={() => {
+              setError("");
+              setModeNotice("");
+            }}
+          >
             <X aria-hidden />
           </button>
         </div>
@@ -675,10 +727,6 @@ export function ModelTestPage({
                     当前对话包含图片，请选择支持 vision 的模型。
                   </p>
                 ) : null}
-                <ModelTestToolWarnings
-                  selected={conversationTools}
-                  supported={selectedModelSupportsTools}
-                />
                 <div className="composer">
                   {draftAttachments.length || uploadingAttachments ? (
                     <div
@@ -783,7 +831,7 @@ export function ModelTestPage({
                     <button
                       className="send-button"
                       aria-label="发送"
-                      disabled={!canSend || !toolsCompatible}
+                      disabled={!canSend}
                       onClick={() => void run(false)}
                     >
                       <Send aria-hidden />
@@ -800,8 +848,6 @@ export function ModelTestPage({
         <ModelTestSettingsPanel
           open={mobilePanel === "settings"}
           conversation={conversation}
-          tools={conversationTools}
-          toolsSupported={selectedModelSupportsTools}
           disabled={Boolean(streamingId)}
           onPatch={patch}
           onClose={() => setMobilePanel(null)}

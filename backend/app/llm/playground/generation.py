@@ -5,6 +5,8 @@ from pathlib import Path
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.capabilities.asset_store.library import AssetError
+from app.capabilities.asset_store.thumbnails import ThumbnailSize, derived_thumbnail
 from app.llm.call_logs.credentials import CredentialSnapshot
 from app.llm.models import (
     ModelEntry,
@@ -461,11 +463,27 @@ class ModelTestGeneration:
         await self.session.commit()
         return await self.get(task_id)
 
-    async def content(self, task_id: str) -> tuple[ModelTestGenerationTask, Path]:
+    async def content(
+        self, task_id: str, size: ThumbnailSize | None = None
+    ) -> tuple[ModelTestGenerationTask, Path]:
         row = await self._row(task_id)
         path = self._result_path(row)
         if path is None or not path.is_file():
             raise ModelTestGenerationError("生成结果不存在", code="not_found", status=404)
+        if size is not None:
+            if row.kind != "image":
+                raise ModelTestGenerationError("此任务不是图片", status=422)
+            target = (
+                self.settings.account_path(self.owner_user_id)
+                / "previews"
+                / "model-results"
+                / row.id
+                / f"{path.stat().st_mtime_ns}-{size}.webp"
+            )
+            try:
+                path = await derived_thumbnail(path, target, size)
+            except AssetError as exc:
+                raise ModelTestGenerationError(str(exc), code=exc.code, status=exc.status) from exc
         return row, path
 
     def _result_path(self, row: ModelTestGenerationTask) -> Path | None:

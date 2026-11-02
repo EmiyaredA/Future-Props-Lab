@@ -1,3 +1,6 @@
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import {
   useEffect,
   useRef,
@@ -25,6 +28,9 @@ export function StoryAssetImage({
   onNaturalSize?: (size: { width: number; height: number }) => void;
   onImageLoad?: (image: HTMLImageElement) => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const [url, setUrl] = useState("");
   const [displayedFileId, setDisplayedFileId] = useState("");
   const [loadAttempt, setLoadAttempt] = useState(0);
@@ -62,7 +68,9 @@ export function StoryAssetImage({
     const release = imageCache?.retain(fileId);
     const request = imageCache
       ? imageCache.load(fileId).then((nextUrl) => ({ nextUrl, owned: false }))
-      : fetchApiBlob(`/v1/files/${fileId}/content`).then((blob) => ({
+      : runTransfer((onProgress) =>
+          fetchApiBlob(`/v1/files/${fileId}/content`, { onProgress }),
+        ).then((blob) => ({
           nextUrl: URL.createObjectURL(blob),
           owned: true,
         }));
@@ -109,7 +117,7 @@ export function StoryAssetImage({
       if (retryTimer != null) globalThis.clearTimeout(retryTimer);
       release?.();
     };
-  }, [fileId, imageCache, loadAttempt]);
+  }, [fileId, imageCache, loadAttempt, runTransfer]);
 
   useEffect(
     () =>
@@ -128,7 +136,7 @@ export function StoryAssetImage({
   );
 
   return url ? (
-    <img
+    <ResponsiveImage
       className={className}
       style={style}
       src={url}
@@ -152,6 +160,9 @@ export function StoryAssetImage({
       }}
     />
   ) : (
-    <>{fallback}</>
+    <>
+      <TransferFeedback progress={activeTransferProgress} />
+      {fallback}
+    </>
   );
 }

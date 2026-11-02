@@ -89,6 +89,10 @@ def exercise(
         {
             "COMPOSE_DISABLE_ENV_FILE": "true",
             "FPL_IDENTITY_IMAGE": image,
+            "FPL_RENDERING_IMAGE": "fpl/rendering:acceptance-unselected",
+            "FPL_RENDERING_STATE": str(root / "portal"),
+            "FPL_RENDERING_CONFIG": str(root / "identity.toml"),
+            "FPL_RENDERING_IDENTITY_CLIENT": str(root / "service-credentials.json"),
             "FPL_ASSETS_IMAGE": "fpl/assets:acceptance-unselected",
             "FPL_ASSETS_STATE": str(root / "portal"),
             "FPL_ASSETS_CONFIG": str(root / "identity.toml"),

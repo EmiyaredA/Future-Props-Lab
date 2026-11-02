@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useRuntimeAccess } from "@features/accounts";
 import { PresentationWorkshopRoute } from "@app/layout/PresentationWorkshopRoute";
 import { CodeAgentsRoute } from "@app/layout/CodeAgentsRoute";
@@ -112,11 +113,6 @@ const ModelTestPage = lazy(() =>
     default: module.ModelTestPage,
   })),
 );
-const ModelTestToolsPage = lazy(() =>
-  import("@features/models/tools").then((module) => ({
-    default: module.ModelTestToolsPage,
-  })),
-);
 const ModelCallLogsPage = lazy(() =>
   import("@features/models/logs").then((module) => ({
     default: module.ModelCallLogsPage,
@@ -164,7 +160,15 @@ const LegacyOfficialPage = lazy(() =>
 function PageBoundary({ children }: { children: ReactNode }) {
   return (
     <PageErrorBoundary key={window.location.pathname}>
-      <Suspense fallback={<div className="page-loading">正在加载…</div>}>
+      <Suspense
+        fallback={
+          <LoadingState
+            label="正在加载…"
+            variant="page"
+            className="page-loading"
+          />
+        }
+      >
         {children}
       </Suspense>
     </PageErrorBoundary>
@@ -236,7 +240,8 @@ export default function App() {
           window.history.pushState(
             {},
             "",
-            pathFor(next.page, next.projectId, next.documentId),
+            pathFor(next.page, next.projectId, next.documentId) +
+              (next.search ?? ""),
           );
           setRoute(next);
         })
@@ -245,7 +250,8 @@ export default function App() {
         window.history.pushState(
           {},
           "",
-          pathFor(previous.page, previous.projectId, previous.documentId),
+          pathFor(previous.page, previous.projectId, previous.documentId) +
+            (previous.search ?? ""),
         );
         return;
       }
@@ -258,14 +264,20 @@ export default function App() {
     next: AppPage,
     projectId?: string,
     documentId?: string,
+    search?: string,
   ) => {
-    const path = pathFor(next, projectId, documentId);
-    if (path !== window.location.pathname)
+    const path = pathFor(next, projectId, documentId) + (search ?? "");
+    if (path !== window.location.pathname + window.location.search)
       window.history.pushState({}, "", path);
-    setRoute({ page: next, projectId, documentId });
+    setRoute({ page: next, projectId, documentId, search });
   };
-  const navigate = (next: AppPage, projectId?: string, documentId?: string) => {
-    const commit = () => commitNavigation(next, projectId, documentId);
+  const navigate = (
+    next: AppPage,
+    projectId?: string,
+    documentId?: string,
+    search?: string,
+  ) => {
+    const commit = () => commitNavigation(next, projectId, documentId, search);
     if (navigationGuard.current?.(commit)) return;
     commit();
   };
@@ -281,7 +293,7 @@ export default function App() {
   );
   const navigatePath = (path: string) => {
     const next = parseRoute(path);
-    navigate(next.page, next.projectId, next.documentId);
+    navigate(next.page, next.projectId, next.documentId, next.search);
   };
 
   useEffect(() => {
@@ -477,8 +489,7 @@ export default function App() {
 
   if (
     (!accountAllows(me, "content.write") && hasReadOnlyRoute(page)) ||
-    (!accountAllows(me, "configuration.manage") &&
-      ["model-service", "model-test-tools"].includes(page)) ||
+    (!accountAllows(me, "configuration.manage") && page === "model-service") ||
     (!accountAllows(me, "logs.read") && page === "model-call-logs")
   ) {
     return (
@@ -503,8 +514,6 @@ export default function App() {
                 navigate("model-test");
               }}
             />
-          ) : page === "model-test-tools" ? (
-            <ReadOnlyConfiguration tools />
           ) : (
             <ReadOnlyRoutes route={route} navigate={navigate} />
           )}
@@ -761,7 +770,14 @@ export default function App() {
     >
       <PageBoundary>
         {page === "home" ? (
-          <HomePage onNavigate={navigatePath} />
+          <HomePage
+            onNavigate={navigatePath}
+            applications={APPLICATION_DEFINITIONS}
+            showFiles
+            canWrite={accountAllows(me, "content.write")}
+            canManageHost={localBrowser && me.user.is_platform_admin}
+            canReadLogs={accountAllows(me, "logs.read")}
+          />
         ) : page.startsWith("creative-workshop") ? (
           <CreativeWorkshopPage
             mode={
@@ -783,7 +799,12 @@ export default function App() {
             onOpen={navigatePath}
           />
         ) : page === "files" ? (
-          <FileManagementPage canOpenLocalFolder={localBrowser} />
+          <FileManagementPage
+            canOpenLocalFolder={localBrowser}
+            initialKind={
+              new URLSearchParams(route.search).get("kind") ?? undefined
+            }
+          />
         ) : page === "tools" ? (
           <ToolNavigationPage
             onOpenInternal={navigatePath}
@@ -829,16 +850,13 @@ export default function App() {
         ) : page === "model-test" ? (
           <ModelTestPage
             initialModelId={catalogTestModel}
+            initialMode={
+              new URLSearchParams(route.search).get("mode") ?? undefined
+            }
             onInitialModelHandled={() => setCatalogTestModel(null)}
             onOpenAudioAnnotation={(projectId) =>
               navigate("audio-annotation-editor", projectId)
             }
-          />
-        ) : page === "model-test-tools" ? (
-          <ModelTestToolsPage
-            toolId={route.projectId}
-            onOpenTool={(toolId) => navigate("model-test-tools", toolId)}
-            onBack={() => navigate("model-test-tools")}
           />
         ) : page === "code-agents" ? (
           <CodeAgentsRoute
@@ -871,11 +889,5 @@ export default function App() {
 const ManagementConsole = lazy(() =>
   import("@features/accounts/ManagementConsole").then((m) => ({
     default: m.ManagementConsole,
-  })),
-);
-
-const ReadOnlyConfiguration = lazy(() =>
-  import("@features/models/ReadOnlyConfiguration").then((m) => ({
-    default: m.ReadOnlyConfiguration,
   })),
 );

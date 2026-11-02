@@ -1,3 +1,4 @@
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { CharacterWorkspaceView } from "@features/galgame-workshop/editor/CharacterWorkspaceView";
 import { useCharacterWorkspaceController } from "@features/galgame-workshop/editor/useCharacterWorkspaceController";
 
@@ -6,7 +7,11 @@ type CharacterWorkspaceProps = Parameters<
 >[0];
 
 export function CharacterWorkspace(props: CharacterWorkspaceProps) {
+  const model = useCharacterWorkspaceController(props);
   return (
-    <CharacterWorkspaceView model={useCharacterWorkspaceController(props)} />
+    <>
+      <TransferFeedback progress={model.transferProgress} />
+      <CharacterWorkspaceView model={model} />
+    </>
   );
 }

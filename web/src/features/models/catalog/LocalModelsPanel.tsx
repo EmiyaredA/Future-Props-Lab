@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useId, useState } from "react";
 import { AudioLines, ChevronRight, Info, Monitor } from "lucide-react";
 import type { Catalog } from "@features/models/api";
@@ -51,7 +52,7 @@ export function LocalModelsPanel({
         </div>
       )}
       {query.isPending ? (
-        <p role="status">正在读取本地模型…</p>
+        <LoadingState label="正在读取本地模型…" variant="region" />
       ) : !models.length && !query.isError ? (
         <div className="lm-empty">
           <AudioLines size={30} aria-hidden />

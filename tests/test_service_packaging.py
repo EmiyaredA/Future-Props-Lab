@@ -88,3 +88,21 @@ def test_gateway_image_contains_no_business_or_identity_database():
         for name in closure
     )
     assert not {"app.main", "app.orm", "app.api", "app.deps"}.intersection(closure)
+
+
+def test_renderer_packages_only_owned_media_processing_and_no_foreign_storage():
+    closure = source_closure(ROOT, "rendering")
+    assert "fpl_rendering.application" in closure
+    assert "app.capabilities.media_rendering.pdf_preview_worker" in closure
+    assert not any(
+        name.startswith(
+            (
+                "app.apps.",
+                "app.llm.",
+                "app.console.models",
+                "app.capabilities.asset_store.models",
+                "fpl_assets",
+            )
+        )
+        for name in closure
+    )

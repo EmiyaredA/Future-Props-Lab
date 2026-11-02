@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useDeferredValue, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
@@ -167,7 +168,13 @@ export function AgentWorkbenchPage({
         </div>
       )}
       <div className="aw-session-list" aria-label="已有会话">
-        {data.list.isPending && <p className="aw-note">正在读取已有会话…</p>}
+        {data.list.isPending && (
+          <LoadingState
+            label="正在读取已有会话…"
+            variant="region"
+            className="aw-note"
+          />
+        )}
         {data.list.error && (
           <div className="aw-error" role="alert">
             {data.list.error.message}
@@ -260,7 +267,11 @@ export function AgentWorkbenchPage({
             disabled={data.list.isFetchingNextPage}
             onClick={() => void data.list.fetchNextPage()}
           >
-            {data.list.isFetchingNextPage ? "正在加载…" : "加载更多会话"}
+            {data.list.isFetchingNextPage ? (
+              <LoadingState variant="inline" label="正在加载…" />
+            ) : (
+              "加载更多会话"
+            )}
           </button>
         )}
       </div>
@@ -434,13 +445,15 @@ export function AgentWorkbenchPage({
           className={`aw-status ${data.connection === "live" ? "is-live" : ""}`}
         >
           <span className="aw-dot" />
-          {data.connection === "live"
-            ? "同步已连接"
-            : data.connection === "reconnecting"
-              ? "正在重连"
-              : data.connection === "closed"
-                ? "连接已关闭"
-                : "正在连接"}
+          {data.connection === "live" ? (
+            "同步已连接"
+          ) : data.connection === "reconnecting" ? (
+            "正在重连"
+          ) : data.connection === "closed" ? (
+            "连接已关闭"
+          ) : (
+            <LoadingState variant="inline" label="正在连接" />
+          )}
         </span>
       </header>
       {data.updateError && (
@@ -515,7 +528,11 @@ export function AgentWorkbenchPage({
               paused={data.paused}
             />
           ) : data.detail.isFetching && sessionId ? (
-            <div className="aw-empty">正在读取会话…</div>
+            <LoadingState
+              label="正在读取会话…"
+              variant="region"
+              className="aw-empty"
+            />
           ) : (
             <div className="aw-empty">
               <MessagesSquare size={42} />

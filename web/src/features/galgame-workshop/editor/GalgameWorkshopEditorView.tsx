@@ -1,3 +1,5 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { openAmadeus } from "@platform/assistant";
 import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
 import "../styles/compact-workspaces.css";
@@ -102,7 +104,7 @@ export function GalgameWorkshopEditorView({
     return (
       <div className="workshop-state galgame-editor-state">
         <RefreshCcw className="spinning" aria-hidden />
-        <strong>正在打开剧本编辑器</strong>
+        <LoadingState label="正在打开剧本编辑器" variant="inline" />
       </div>
     );
   if (model.status === "error")
@@ -218,7 +220,13 @@ export function GalgameWorkshopEditorView({
     );
   return (
     <Suspense
-      fallback={<div className="page-loading">正在加载编辑器模块…</div>}
+      fallback={
+        <LoadingState
+          label="正在加载编辑器模块…"
+          variant="page"
+          className="page-loading"
+        />
+      }
     >
       <section className="galgame-editor-page" data-mobile-panel={mobilePanel}>
         <AmadeusEditorContext
@@ -238,7 +246,7 @@ export function GalgameWorkshopEditorView({
             >
               <ArrowLeft aria-hidden />
             </button>
-            <img
+            <ResponsiveImage
               src="/brand/galgame-workshop-mark-cutout.png"
               alt=""
               aria-hidden
@@ -283,13 +291,15 @@ export function GalgameWorkshopEditorView({
               aria-live="polite"
             >
               <Save aria-hidden />
-              {saveState === "saved"
-                ? "已保存"
-                : saveState === "saving"
-                  ? "保存中"
-                  : saveState === "conflict"
-                    ? "存在冲突"
-                    : "保存失败"}
+              {saveState === "saved" ? (
+                "已保存"
+              ) : saveState === "saving" ? (
+                <LoadingState variant="inline" label="保存中" />
+              ) : saveState === "conflict" ? (
+                "存在冲突"
+              ) : (
+                "保存失败"
+              )}
             </div>
             <button
               type="button"
@@ -602,9 +612,11 @@ export function GalgameWorkshopEditorView({
               <div className="galgame-inspector-body">
                 <Suspense
                   fallback={
-                    <div className="galgame-inspector-empty">
-                      正在加载属性编辑器…
-                    </div>
+                    <LoadingState
+                      label="正在加载属性编辑器…"
+                      variant="region"
+                      className="galgame-inspector-empty"
+                    />
                   }
                 >
                   {inspectorTab === "properties" ? (

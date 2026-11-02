@@ -104,6 +104,7 @@ describe("video editor original asset downloads", () => {
       );
       expect(fetchApiDownload).toHaveBeenCalledWith(
         "/v1/files/asset%2Fvideo/download",
+        expect.objectContaining({ onProgress: expect.any(Function) }),
       );
       expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:original");
       expect(document.querySelector("a[download]")).toBeNull();

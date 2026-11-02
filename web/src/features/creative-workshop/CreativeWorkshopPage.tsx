@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useMemo, useState } from "react";
 import { fetchApiJson } from "@platform/api/client";
 import {
@@ -203,7 +204,11 @@ function Listing({
         </p>
       )}
       {loading ? (
-        <p className="creative-empty">正在加载创作…</p>
+        <LoadingState
+          label="正在加载创作…"
+          variant="region"
+          className="creative-empty"
+        />
       ) : filtered.length ? (
         <div className="creative-grid">
           {filtered.map((item) => (

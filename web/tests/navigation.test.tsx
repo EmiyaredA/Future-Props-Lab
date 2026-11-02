@@ -1,3 +1,4 @@
+import { publicImageSources } from "@shared/lib/imageSources";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { vi } from "vitest";
 import { parsePage, parseRoute, pathFor } from "@app/routes";
@@ -90,8 +91,7 @@ test("renders integrations after tools and before the base model group", () => {
   expect(screen.getByRole("link", { name: "文档中心" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /模型测试/ }));
   expect(navigate).toHaveBeenCalledWith("model-test");
-  fireEvent.click(screen.getByRole("button", { name: /测试工具/ }));
-  expect(navigate).toHaveBeenCalledWith("model-test-tools");
+  expect(screen.queryByRole("button", { name: /测试工具/ })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: /模型调用日志/ }));
   expect(navigate).toHaveBeenCalledWith("model-call-logs");
   fireEvent.click(screen.getByRole("button", { name: "收起二级导航" }));
@@ -187,14 +187,9 @@ test("uses home as the default and parses deep application routes", () => {
   );
   expect(pathFor("video-editor-tasks")).toBe("/apps/video-editor/tasks");
   expect(pathFor("model-service")).toBe("/model-service");
-  expect(parseRoute("/model-test-tools/tool-1")).toEqual({
-    page: "model-test-tools",
-    projectId: "tool-1",
-  });
-  expect(pathFor("model-test-tools")).toBe("/model-test-tools");
-  expect(pathFor("model-test-tools", "tool-1")).toBe(
-    "/model-test-tools/tool-1",
-  );
+  expect(parseRoute("/model-test-tools")).toEqual({ page: "home" });
+  expect(parseRoute("/model-test-tools/tool-1")).toEqual({ page: "home" });
+  expect(parseRoute("/model-test")).toEqual({ page: "model-test" });
 });
 
 test("keeps tool navigation active on the video frame exporter", () => {
@@ -245,7 +240,7 @@ test("keeps brand mark above the secondary toggle in the primary rail", () => {
   expect(top).not.toBeNull();
   expect(top?.querySelector(".brand-mark")).toHaveAttribute(
     "src",
-    "/brand/brand-mark.png",
+    publicImageSources("/brand/brand-mark.png").src,
   );
   expect(
     top?.querySelector(".studio-collapsed-rail__brand")?.nextElementSibling,
@@ -355,7 +350,7 @@ test("renders the visual workshop brand and return card", () => {
   );
   expect(container.querySelector(".workshop-brand img")).toHaveAttribute(
     "src",
-    "/brand/visual-workshop-mark.png",
+    publicImageSources("/brand/visual-workshop-mark.png").src,
   );
   expect(screen.getByText("浏览全部应用")).toBeInTheDocument();
   expect(
@@ -386,7 +381,7 @@ test("renders the Galgame workshop brand", () => {
   );
   expect(container.querySelector(".workshop-brand img")).toHaveAttribute(
     "src",
-    "/brand/galgame-workshop-mark.png",
+    publicImageSources("/brand/galgame-workshop-mark.png").src,
   );
 });
 
@@ -403,7 +398,7 @@ test("renders the video editor shell from its module configuration", () => {
   );
   expect(container.querySelector(".workshop-brand img")).toHaveAttribute(
     "src",
-    "/brand/video-editor-mark.png",
+    publicImageSources("/brand/video-editor-mark.png").src,
   );
   expect(
     screen.getByRole("navigation", { name: "视频剪辑工坊导航" }),

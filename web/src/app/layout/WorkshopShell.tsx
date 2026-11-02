@@ -1,3 +1,4 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import {
   ResponsiveSidebarPanel,
   ResponsiveSidebarProvider,
@@ -44,8 +45,10 @@ export function WorkshopShell({
             brandClassName={shellConfig.brandClassName}
             brand={
               definition.brandImage ? (
-                <img
+                <ResponsiveImage
                   src={definition.brandImage}
+                  width={34}
+                  height={34}
                   alt=""
                   aria-hidden
                   draggable={false}

@@ -8,6 +8,7 @@ from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.incoming import IncomingFile
+from app.capabilities.asset_store.thumbnails import ThumbnailSize, derived_thumbnail
 from app.capabilities.identity.principal import StudioPrincipal
 from app.console.creative_workshop.files import (
     copy_skill_release,
@@ -307,7 +308,9 @@ class CreativeCatalog:
             created_at=iso_utc(release.created_at),
         )
 
-    async def cover_file(self, item_id: str, *, draft: bool = False) -> Path:
+    async def cover_file(
+        self, item_id: str, *, draft: bool = False, size: ThumbnailSize | None = None
+    ) -> Path:
         item = (
             await self._owned(item_id) if draft else await self.session.get(CreativeItem, item_id)
         )
@@ -322,15 +325,21 @@ class CreativeCatalog:
         path = resolve_file(item.origin_owner_user_id, relative)
         if not path.is_file():
             raise CreativeError("封面文件不可用", 404, "not_found")
+        if size is not None:
+            await self.session.rollback()
+            return await derived_thumbnail(path, path.with_name(f"{path.stem}-{size}.webp"), size)
         return path
 
-    async def release_cover_file(self, release_id: str) -> Path:
+    async def release_cover_file(self, release_id: str, size: ThumbnailSize | None = None) -> Path:
         item, release = await self._viewable_release(release_id)
         if not release.cover_path:
             raise CreativeError("封面不存在", 404, "not_found")
         path = resolve_file(item.origin_owner_user_id, release.cover_path)
         if not path.is_file():
             raise CreativeError("封面文件不可用", 404, "not_found")
+        if size is not None:
+            await self.session.rollback()
+            return await derived_thumbnail(path, path.with_name(f"{path.stem}-{size}.webp"), size)
         return path
 
     async def upload_cover(

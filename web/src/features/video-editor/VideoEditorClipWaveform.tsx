@@ -1,3 +1,4 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import type { VideoEditorAsset, VideoEditorClip } from "./types";
 
 export function VideoEditorClipWaveform({
@@ -14,7 +15,7 @@ export function VideoEditorClipWaveform({
   if (!url || !(sourceDurationUs > 0) || !(sourceSpanUs > 0)) return null;
   return (
     <span className="ve-clip-waveform" aria-hidden="true">
-      <img
+      <ResponsiveImage
         src={url}
         alt=""
         draggable={false}

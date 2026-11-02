@@ -5,6 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 
+from app.capabilities.asset_store.thumbnails import ThumbnailSize
 from app.deps import OwnerDep, SessionDep, StudioAuth
 from app.llm.call_logs.credentials import snapshot_from_principal
 from app.llm.playground.generation import ModelTestGeneration, ModelTestGenerationError
@@ -170,16 +171,18 @@ async def retry_materialization(
 
 @router.get("/generation-tasks/{task_id}/content")
 async def generation_content(
-    session: SessionDep, owner_user_id: OwnerDep, task_id: str
+    session: SessionDep, owner_user_id: OwnerDep, task_id: str, size: ThumbnailSize | None = None
 ) -> FileResponse:
     try:
-        row, path = await _generation(session, owner_user_id).content(task_id)
+        row, path = await _generation(session, owner_user_id).content(task_id, size)
     except ModelTestGenerationError as exc:
         raise _translate(exc) from None
     return FileResponse(
         path,
-        media_type=row.result_mime_type or "application/octet-stream",
+        media_type="image/webp"
+        if size is not None
+        else row.result_mime_type or "application/octet-stream",
         filename=row.result_filename or f"model-test-{task_id}",
         content_disposition_type="inline",
-        headers={"Cache-Control": "private, max-age=3600", "X-Content-Type-Options": "nosniff"},
+        headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"},
     )

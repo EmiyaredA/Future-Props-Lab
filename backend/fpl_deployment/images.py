@@ -8,6 +8,7 @@ from importlib.util import resolve_name
 from pathlib import Path
 
 ENTRY_POINTS = {
+    "rendering": "fpl_rendering.__main__",
     "assets": "fpl_assets.__main__",
     "identity": "fpl_identity.__main__",
     "agents": "fpl_agents.__main__",
@@ -21,6 +22,7 @@ PROJECT_PACKAGES = (
     "fpl_gateway",
     "fpl_portal",
     "fpl_assets",
+    "fpl_rendering",
     "fpl_runtime",
     "fpl_config",
     "fpl_host",
@@ -63,6 +65,8 @@ def source_closure(root: Path, service):
     if service not in ENTRY_POINTS:
         raise ValueError("此服务的独立构建尚未完成")
     pending = [ENTRY_POINTS[service]]
+    if service == "rendering":
+        pending.append("app.capabilities.media_rendering.pdf_preview_worker")
     result = {}
     while pending:
         name = pending.pop()
@@ -95,6 +99,25 @@ def source_closure(root: Path, service):
             )
         ):
             raise ValueError(f"Assets 镜像包含越界依赖：{name}")
+        if service == "rendering" and any(
+            name == prefix or name.startswith(prefix + ".")
+            for prefix in (
+                "app.main",
+                "app.api",
+                "app.orm",
+                "app.deps",
+                "app.apps",
+                "app.llm",
+                "app.console.models",
+                "app.capabilities.asset_store.models",
+                "app.capabilities.asset_store.assets",
+                "app.capabilities.asset_store.library",
+                "fpl_assets",
+                "fpl_identity",
+                "fpl_host",
+            )
+        ):
+            raise ValueError(f"Rendering 镜像包含越界依赖：{name}")
         if service == "gateway" and any(
             name == prefix or name.startswith(prefix + ".")
             for prefix in (
@@ -190,6 +213,12 @@ def prepare_image(root: Path, service: str, *, web_release=None):
         payloads["deploy/contracts/openapi.json"] = (
             root / "web/src/generated/openapi.json"
         ).read_bytes()
+    if service == "rendering":
+        font = "backend/app/capabilities/media_rendering/assets/NotoSansSC-Regular.ttf"
+        body = (root / font).read_bytes()
+        if body.startswith(b"version https://git-lfs"):
+            raise ValueError("Rendering 字体缺少 LFS 内容")
+        payloads[font] = body
     if service == "portal":
         documents = [root / "README.md", root / "CONTRIBUTING.md", root / "docs/assets/MANIFEST.md"]
         for directory in ("architecture", "operations", "reference"):

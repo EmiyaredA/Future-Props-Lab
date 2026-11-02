@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import type { InterviewInput } from "./types";
 import type { Dispatch, SetStateAction } from "react";
 import { useEffect, useRef, useState } from "react";
@@ -279,7 +280,11 @@ export function Materials({
               }
             >
               <Sparkles size={17} />
-              {busy ? "正在提交…" : "调研并准备"}
+              {busy ? (
+                <LoadingState variant="inline" label="正在提交…" />
+              ) : (
+                "调研并准备"
+              )}
               <ArrowRight size={17} />
             </Button>
           </div>

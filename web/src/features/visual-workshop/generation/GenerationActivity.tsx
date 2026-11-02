@@ -1,3 +1,4 @@
+import { ProgressBar } from "@shared/ui/LoadingState";
 import { useEffect, useState } from "react";
 import { LoaderCircle } from "lucide-react";
 import {
@@ -65,18 +66,11 @@ export function GenerationActivity({
         )}
       </div>
       {details && <p className="visual-generation-details">{details}</p>}
-      <div
+      <ProgressBar
+        value={progress}
+        label={sampling !== undefined ? "当前节点采样进度" : "生成进度"}
         className={`visual-generation-track${progress === undefined ? " is-indeterminate" : ""}`}
-        role="progressbar"
-        aria-label={sampling !== undefined ? "当前节点采样进度" : "生成进度"}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={progress}
-      >
-        <i
-          style={progress === undefined ? undefined : { width: `${progress}%` }}
-        />
-      </div>
+      />
     </div>
   );
 }

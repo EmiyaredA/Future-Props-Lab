@@ -1,3 +1,5 @@
+import { createUploadTransfer } from "@platform/api/transfer";
+import { type TransferOptions } from "@platform/api/transfer";
 import type { components } from "@generated/api";
 import { api, fetchApiBlob, fetchApiJson, unwrap } from "@platform/api/client";
 import { postSse } from "@platform/api/sse";
@@ -57,17 +59,6 @@ export type ModelTestLibraryFolder =
 export type RealtimeVoiceOptions =
   components["schemas"]["RealtimeVoiceOptionsOut"];
 export type RealtimeVoiceModel = components["schemas"]["RealtimeVoiceModelOut"];
-export type ModelTestTool = components["schemas"]["ModelTestToolOut"];
-export type ModelTestToolSummary =
-  components["schemas"]["ModelTestToolSummaryOut"];
-export type ModelTestToolCatalog =
-  components["schemas"]["ModelTestToolCatalogOut"];
-export type ModelTestToolCall = components["schemas"]["ModelTestToolCallOut"];
-export type ModelTestToolInput = Omit<
-  components["schemas"]["ModelTestToolCreateIn"],
-  never
->;
-
 export async function getCatalog(): Promise<Catalog> {
   return unwrap(await api.GET("/v1/model-providers"));
 }
@@ -240,59 +231,6 @@ export async function getModelTestConversations() {
   return unwrap(await api.GET("/v1/model-test/conversations"));
 }
 
-export async function getModelTestTools(): Promise<ModelTestToolCatalog> {
-  return unwrap(await api.GET("/v1/model-test/tools"));
-}
-
-export async function getModelTestTool(id: string): Promise<ModelTestTool> {
-  return unwrap(
-    await api.GET("/v1/model-test/tools/{tool_id}", {
-      params: { path: { tool_id: id } },
-    }),
-  );
-}
-
-export async function createModelTestTool(body: ModelTestToolInput) {
-  return unwrap(await api.POST("/v1/model-test/tools", { body }));
-}
-
-export async function updateModelTestTool(
-  id: string,
-  revision: number,
-  body: ModelTestToolInput,
-) {
-  return unwrap(
-    await api.PATCH("/v1/model-test/tools/{tool_id}", {
-      params: { path: { tool_id: id } },
-      body: { ...body, expected_revision: revision },
-    }),
-  );
-}
-
-export async function deleteModelTestTool(id: string, revision: number) {
-  return unwrap(
-    await api.DELETE("/v1/model-test/tools/{tool_id}", {
-      params: {
-        path: { tool_id: id },
-        query: { expected_revision: revision },
-      },
-    }),
-  );
-}
-
-export async function executeModelTestTool(
-  id: string,
-  revision: number,
-  input: Record<string, unknown>,
-) {
-  return unwrap(
-    await api.POST("/v1/model-test/tools/{tool_id}/execute", {
-      params: { path: { tool_id: id } },
-      body: { expected_revision: revision, input },
-    }),
-  );
-}
-
 export async function createModelTestConversation(modelId?: string) {
   return unwrap(
     await api.POST("/v1/model-test/conversations", {
@@ -317,7 +255,7 @@ export async function patchModelTestConversation(
       ModelTestConversation,
       "title" | "model_id" | "system_prompt" | "temperature" | "max_tokens"
     >
-  > & { tool_ids?: string[] },
+  >,
 ) {
   return unwrap(
     await api.PATCH("/v1/model-test/conversations/{conversation_id}", {
@@ -341,12 +279,16 @@ export async function deleteModelTestConversation(
   );
 }
 
-export async function uploadModelTestAttachments(id: string, files: File[]) {
+export async function uploadModelTestAttachments(
+  id: string,
+  files: File[],
+  transfer: TransferOptions = {},
+) {
   const form = new FormData();
   for (const file of files) form.append("files", file);
   return fetchApiJson<components["schemas"]["ModelTestAttachmentListOut"]>(
     `/v1/model-test/conversations/${encodeURIComponent(id)}/attachments`,
-    { method: "POST", body: form },
+    { ...transfer, method: "POST", body: form },
   );
 }
 
@@ -396,14 +338,20 @@ export async function createModelTestGenerationTask(
   );
 }
 
-export async function uploadModelTestReferenceAssets(files: File[]) {
+export async function uploadModelTestReferenceAssets(
+  files: File[],
+  transfer: TransferOptions = {},
+) {
+  const uploadTransfer = createUploadTransfer(transfer.onProgress);
+
   return unwrap(
     await api.POST("/v1/model-test/generation-assets", {
+      fetch: uploadTransfer.fetch,
       body: { files: files as unknown as string[] },
       bodySerializer() {
         const form = new FormData();
         files.forEach((file) => form.append("files", file));
-        return form;
+        return uploadTransfer.capture(form);
       },
     }),
   );
@@ -460,9 +408,12 @@ export async function retryModelTestGenerationMaterialization(id: string) {
   );
 }
 
-export async function getModelTestGenerationResult(id: string) {
+export async function getModelTestGenerationResult(
+  id: string,
+  size?: 128 | 320 | 640 | 1280,
+) {
   return fetchApiBlob(
-    `/v1/model-test/generation-tasks/${encodeURIComponent(id)}/content`,
+    `/v1/model-test/generation-tasks/${encodeURIComponent(id)}/content${size ? `?size=${size}` : ""}`,
   );
 }
 
@@ -482,9 +433,13 @@ export async function uploadModelTestTranscription(
   file: File,
   modelId: string,
   parameters: ModelTestTranscriptionParameters,
+  transfer: TransferOptions = {},
 ) {
+  const uploadTransfer = createUploadTransfer(transfer.onProgress);
+
   return unwrap(
     await api.POST("/v1/model-test/transcription-tasks/upload", {
+      fetch: uploadTransfer.fetch,
       body: {
         upload: file as unknown as string,
         model_id: modelId,
@@ -497,7 +452,7 @@ export async function uploadModelTestTranscription(
         for (const [key, value] of Object.entries(parameters)) {
           if (value !== null) form.set(key, String(value));
         }
-        return form;
+        return uploadTransfer.capture(form);
       },
     }),
   );
@@ -562,7 +517,7 @@ export async function getModelTestLibraryFolders() {
 }
 
 export type ModelStreamEvent = {
-  type: "start" | "delta" | "step" | "done" | "error";
+  type: "start" | "delta" | "done" | "error";
   schema_version: 2;
   sequence: number;
   payload: Record<string, unknown>;

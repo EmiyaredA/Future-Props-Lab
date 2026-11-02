@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useMemo, useState } from "react";
 import {
   MessageSquareText,
@@ -459,7 +460,12 @@ export function ProjectSettingsWorkspace({
                 }
                 onClick={() => void onTitle(draftTitle.trim())}
               >
-                <Save aria-hidden /> {savingTitle ? "保存中" : "保存名称"}
+                <Save aria-hidden />{" "}
+                {savingTitle ? (
+                  <LoadingState variant="inline" label="保存中" />
+                ) : (
+                  "保存名称"
+                )}
               </button>
             </div>
           </label>

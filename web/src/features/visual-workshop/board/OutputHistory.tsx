@@ -1,3 +1,6 @@
+import { LoadingState } from "@shared/ui/LoadingState";
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import {
   CancelQueuedTasks,
   CancelQueuedBatch,
@@ -48,6 +51,9 @@ export function OutputHistory({
   batches?: GenerationBatch[];
   onAcceptance?: (output: VisualNodeOutput) => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const node = controller.nodes.find((node) => node.id === nodeId)!;
   const activity = nodeGenerationActivity(node, tasks, batches);
   const uploadInput = useRef<HTMLInputElement>(null);
@@ -142,6 +148,8 @@ export function OutputHistory({
       className={`board-output-panel${activity ? " is-generating" : ""}${acceptanceMode ? " is-acceptance" : ""}`}
       aria-label="节点输出历史"
     >
+      <TransferFeedback progress={activeTransferProgress} />
+
       <div className="board-output-heading">
         <div>
           <h2>输出预览</h2>
@@ -258,7 +266,12 @@ export function OutputHistory({
               disabled={pending}
               onClick={() => uploadInput.current?.click()}
             >
-              <Upload size={15} /> {pending ? "正在处理…" : "上传版本"}
+              <Upload size={15} />{" "}
+              {pending ? (
+                <LoadingState variant="inline" label="正在处理…" />
+              ) : (
+                "上传版本"
+              )}
             </button>
             <input
               ref={uploadInput}
@@ -276,11 +289,14 @@ export function OutputHistory({
                 event.currentTarget.value = "";
                 if (file)
                   void mutate((revision) =>
-                    uploadNodeOutput(
-                      controller.projectId,
-                      nodeId,
-                      file,
-                      revision,
+                    runTransfer((onProgress) =>
+                      uploadNodeOutput(
+                        controller.projectId,
+                        nodeId,
+                        file,
+                        revision,
+                        { onProgress },
+                      ),
                     ),
                   );
               }}

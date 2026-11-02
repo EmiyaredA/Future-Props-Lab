@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -216,7 +217,9 @@ export function NodeAcceptancePanel({
               </button>
             </p>
           )}
-          {context.isPending && <p role="status">正在读取节点验收依据…</p>}
+          {context.isPending && (
+            <LoadingState label="正在读取节点验收依据…" variant="region" />
+          )}
           <div className="node-acceptance-scheme">
             <div className="node-acceptance-select-heading">
               <label className="node-acceptance-field">选择验收方案</label>
@@ -396,11 +399,13 @@ export function NodeAcceptancePanel({
               }}
             >
               <Play size={16} />
-              {start.isPending
-                ? "正在提交…"
-                : previous
-                  ? `开始复验 v${value?.output_version ?? ""}`
-                  : `开始验收 v${value?.output_version ?? ""}`}
+              {start.isPending ? (
+                <LoadingState variant="inline" label="正在提交…" />
+              ) : previous ? (
+                `开始复验 v${value?.output_version ?? ""}`
+              ) : (
+                `开始验收 v${value?.output_version ?? ""}`
+              )}
             </button>
           </footer>
           {history && (

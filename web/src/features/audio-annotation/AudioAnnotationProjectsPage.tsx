@@ -1,3 +1,5 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { QueryFeedback } from "@shared/ui/QueryFeedback";
 import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
@@ -73,6 +75,9 @@ function ProjectDialog({
   onClose: () => void;
   onCreated: (project: AudioAnnotationProject) => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const fileInput = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState(importedTitle(imported));
   const [selectedId, setSelectedId] = useState(
@@ -149,7 +154,11 @@ function ProjectDialog({
       return;
     }
     try {
-      const stored = await uploadManagedFile(file);
+      const stored = await runTransfer((onProgress) =>
+        uploadManagedFile(file, undefined, undefined, undefined, {
+          onProgress,
+        }),
+      );
       setSelectedId(stored.id);
       if (!title.trim()) setTitle(stored.display_name);
       await filesQuery.refetch();
@@ -162,6 +171,8 @@ function ProjectDialog({
   if (!open) return null;
   return (
     <div className="annotation-modal-backdrop" role="presentation">
+      <TransferFeedback progress={activeTransferProgress} />
+
       <section
         className="annotation-modal"
         role="dialog"

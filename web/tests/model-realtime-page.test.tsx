@@ -27,7 +27,6 @@ vi.mock("@features/models/api", async () => {
           output_sample_rate: 24_000,
           commit_silence_ms: 400,
           supports_interruption: true,
-          supports_tools: true,
           instructions_max_chars: 20_000,
           greeting_max_chars: 2_000,
           input_format: "pcm_s16le",
@@ -87,16 +86,6 @@ vi.mock("@features/models/api", async () => {
         },
       ],
     }),
-    getModelTestTools: vi.fn().mockResolvedValue({
-      revision: 0,
-      overview: {
-        total_tools: 0,
-        enabled_tools: 0,
-        today_runs: 0,
-        success_rate: null,
-      },
-      items: [],
-    }),
   };
 });
 
@@ -134,7 +123,7 @@ test("renders the hands-free realtime voice workspace without native selects", a
     ).toHaveTextContent("气质学姐 · 开心"),
   );
   expect(screen.getByRole("button", { name: "开始通话" })).toBeEnabled();
-  expect(screen.getByRole("button", { name: /选择测试工具/ })).toBeEnabled();
+  expect(screen.queryByRole("button", { name: /选择测试工具/ })).toBeNull();
   expect(screen.getByText(/输入 16 kHz pcm_s16le/)).toBeInTheDocument();
   expect(screen.getByText(/输出 24 kHz pcm_s16le/)).toBeInTheDocument();
   expect(screen.getByRole("textbox", { name: /开场白/ })).toBeInTheDocument();
@@ -145,6 +134,5 @@ test("renders the hands-free realtime voice workspace without native selects", a
     "aria-checked",
     "true",
   );
-  expect(screen.getByText(/工具调用详情会写入测试记录/)).toBeInTheDocument();
   expect(container.querySelector("select")).toBeNull();
 });

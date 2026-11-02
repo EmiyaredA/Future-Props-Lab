@@ -1,3 +1,6 @@
+import { LoadingState } from "@shared/ui/LoadingState";
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { useEffect, useRef, useState } from "react";
 import { LoaderCircle, RotateCcw } from "lucide-react";
 import {
@@ -37,6 +40,9 @@ export function CanvasImageCrop({
   onSaved: () => void;
   onAdd: (asset: ManagedFile) => Promise<void>;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const { url, error: loadError } = useApiBlobUrl(
     `/v1/files/${encodeURIComponent(assetId)}/content`,
   );
@@ -105,7 +111,11 @@ export function CanvasImageCrop({
     try {
       if (!savedAsset.current) {
         const file = await exportImageCrop(image, image, rect, title);
-        savedAsset.current = await uploadManagedFile(file, projectId);
+        savedAsset.current = await runTransfer((onProgress) =>
+          uploadManagedFile(file, projectId, undefined, undefined, {
+            onProgress,
+          }),
+        );
         if (mounted.current) setUploaded(true);
         void invalidateFileScope(client, projectId);
       }
@@ -134,6 +144,8 @@ export function CanvasImageCrop({
         }
       }}
     >
+      <TransferFeedback progress={activeTransferProgress} />
+
       <div
         className="image-crop-toolbar"
         role="toolbar"
@@ -171,7 +183,11 @@ export function CanvasImageCrop({
           重置
         </button>
         <output aria-label="裁剪尺寸">
-          {pixels ? `${pixels.width} × ${pixels.height} 像素` : "正在读取图片…"}
+          {pixels ? (
+            `${pixels.width} × ${pixels.height} 像素`
+          ) : (
+            <LoadingState variant="inline" label="正在读取图片…" />
+          )}
         </output>
       </div>
       {image && rect ? (
@@ -229,11 +245,13 @@ export function CanvasImageCrop({
           onClick={() => void save()}
         >
           {busy ? <LoaderCircle size={16} className="spinning" /> : null}
-          {busy
-            ? "正在保存…"
-            : uploaded
-              ? "重试保存到画布"
-              : "裁剪并添加到画布"}
+          {busy ? (
+            <LoadingState variant="inline" label="正在保存…" />
+          ) : uploaded ? (
+            "重试保存到画布"
+          ) : (
+            "裁剪并添加到画布"
+          )}
         </button>
       </footer>
     </div>

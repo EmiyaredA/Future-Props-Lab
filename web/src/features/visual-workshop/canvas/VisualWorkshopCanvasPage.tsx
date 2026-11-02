@@ -1,3 +1,4 @@
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import type { VisualWorkshopCanvasPageProps } from "@features/visual-workshop/canvas/visualCanvasTypes";
 import { useVisualCanvasController } from "@features/visual-workshop/canvas/useVisualCanvasController";
 import { VisualWorkshopCanvasView } from "@features/visual-workshop/canvas/VisualWorkshopCanvasView";
@@ -52,6 +53,7 @@ export function VisualWorkshopCanvasPage(props: VisualWorkshopCanvasPageProps) {
   };
   return (
     <>
+      <TransferFeedback progress={controller.transferProgress} />
       {acceptanceError && (
         <p role="alert" className="acceptance-error">
           {acceptanceError}

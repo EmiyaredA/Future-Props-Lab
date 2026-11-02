@@ -1,3 +1,5 @@
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { RichNotesDialog } from "./editor/RichNotesDialog";
 import { AnnotationsPanel } from "./editor/AnnotationsPanel";
 import { SearchDialog } from "./editor/SearchDialog";
@@ -110,6 +112,8 @@ export function PresentationEditor(props: EditorProps) {
         }
       }}
     >
+      <TransferFeedback progress={session.media.transferProgress} />
+
       <EditorHeader session={session} readOnly={readOnly} onBack={onBack} />
       <EditorFeedback session={session} onOpen={onOpen} />
       <div className="presentation-mobile-tabs">
@@ -400,7 +404,9 @@ export function PresentationEditor(props: EditorProps) {
         />
       )}
       {codeSlide === slide.id && !readOnly && !cropSession && (
-        <Suspense fallback={<p role="status">正在加载代码块…</p>}>
+        <Suspense
+          fallback={<LoadingState label="正在加载代码块…" variant="region" />}
+        >
           <CodeHighlightDialog
             key={slide.id}
             onClose={() => setCodeSlide(null)}
@@ -440,7 +446,9 @@ export function PresentationEditor(props: EditorProps) {
       {media.dialog}
       {objects.dialog}
       {session.exportFormat && (
-        <Suspense fallback={<p role="status">正在加载导出工具…</p>}>
+        <Suspense
+          fallback={<LoadingState label="正在加载导出工具…" variant="region" />}
+        >
           <ExportDialog
             format={session.exportFormat}
             current={slideIndex}

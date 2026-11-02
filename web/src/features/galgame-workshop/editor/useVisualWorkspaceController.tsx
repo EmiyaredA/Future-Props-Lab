@@ -1,3 +1,4 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -42,6 +43,9 @@ export function useVisualWorkspaceController({
   focusVisual?: VisualSelection;
   onFocusVisualHandled?: () => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const client = useQueryClient();
   const fileInput = useRef<HTMLInputElement>(null);
   const draggedItem = useRef<VisualSelection | undefined>(undefined);
@@ -402,10 +406,13 @@ export function useVisualWorkspaceController({
 
   const upload = useMutation({
     mutationFn: ({ file, target }: { file: File; target: PickerTarget }) =>
-      uploadGalgameProjectAsset(
-        projectId,
-        file,
-        target.kind === "scene-layer" ? "scene" : "cg",
+      runTransfer((onProgress) =>
+        uploadGalgameProjectAsset(
+          projectId,
+          file,
+          target.kind === "scene-layer" ? "scene" : "cg",
+          { onProgress },
+        ),
       ),
     onSuccess: (asset) => {
       bindFile(asset.id, asset.display_name);
@@ -671,6 +678,7 @@ export function useVisualWorkspaceController({
       : [];
 
   return {
+    transferProgress: activeTransferProgress,
     projectId,
     document,
     onDocument,

@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useDocumentAccess } from "../DocumentAccess";
 import { lazy, Suspense, useState } from "react";
 import { Node } from "@tiptap/core";
@@ -37,7 +38,9 @@ function CanvasView({ node, getPos, editor }: NodeViewProps) {
         <CanvasSvg scene={scene} />
       </DiagramViewer>
       {editing && editor.isEditable && (
-        <Suspense fallback={<p role="status">正在加载画板…</p>}>
+        <Suspense
+          fallback={<LoadingState label="正在加载画板…" variant="region" />}
+        >
           <CanvasEditor
             scene={scene}
             onChange={(value) => {

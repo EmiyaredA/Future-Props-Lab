@@ -79,3 +79,35 @@ def test_asset_project_validation_has_registered_source_operations(method, path)
     assert not permitted(replace(request, target_method="DELETE"), CATALOG)
     assert not permitted(replace(request, source_path="/v1/automation/open"), CATALOG)
     assert not permitted(replace(request, caller="models"), CATALOG)
+
+
+@pytest.mark.parametrize(
+    "operation,method",
+    [
+        ("preview", "GET"),
+        ("thumbnail", "GET"),
+        ("media-info", "GET"),
+        ("crop", "POST"),
+        ("frames", "POST"),
+    ],
+)
+def test_renderer_reads_only_the_original_operation_input(operation, method):
+    request = RequestGrant(
+        "rendering",
+        "rendering.source.read",
+        method,
+        "/v1/files/owned/" + operation,
+        "assets",
+        "GET",
+        "/v1/files/owned/content",
+    )
+    assert permitted(request, CATALOG)
+    for changed in (
+        {"target_path": "/v1/files/another/content"},
+        {"target_path": "/v1/files"},
+        {"caller": "models"},
+        {"target_method": "DELETE"},
+        {"source_path": "/v1/model-entries"},
+        {"purpose": "arbitrary.file.read"},
+    ):
+        assert not permitted(replace(request, **changed), CATALOG)

@@ -43,7 +43,21 @@ def render_gateway(
     groups = defaultdict(list)
     for operation in catalog.operations:
         groups[(operation.service, operation.method)].append(operation)
-    result = ["{", "  admin off", "  auto_https off", "}"]
+    result = [
+        "{",
+        "  admin off",
+        "  auto_https off",
+        "  log default {",
+        "    format filter {",
+        "      wrap json",
+        "      fields {",
+        "        request>headers delete",
+        "        resp_headers delete",
+        "      }",
+        "    }",
+        "  }",
+        "}",
+    ]
     for ingress, port in (("local", 9000), ("public", 28081)):
         origin = origins[ingress]
         lines = [

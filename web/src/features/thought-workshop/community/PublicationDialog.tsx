@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useState } from "react";
 import { useAccountId } from "@platform/auth/AccountAccess";
 import { useQuery } from "@tanstack/react-query";
@@ -122,7 +123,9 @@ export function PublicationDialog({
       }}
       description={
         <div className="community-dialog-body">
-          {config.isPending && <p role="status">正在加载发布配置…</p>}
+          {config.isPending && (
+            <LoadingState label="正在加载发布配置…" variant="region" />
+          )}
           {config.isError && (
             <p role="alert">
               {config.error.message}

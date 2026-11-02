@@ -1,5 +1,8 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useState } from "react";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
+import { imagePreviewSource } from "@shared/lib/imageSources";
 import { visualAssetDownloadPath } from "../api";
 import type { Run, Result } from "./api";
 import { useVideoPlayback, formatMediaTime } from "./useVideoPlayback";
@@ -14,7 +17,9 @@ export function AssetFrame({
   position?: number | null;
   onClick?: () => void;
 }) {
-  const blob = useApiBlobUrl(visualAssetDownloadPath(assetId));
+  const blob = useApiBlobUrl(
+    imagePreviewSource(visualAssetDownloadPath(assetId), 320),
+  );
   return (
     <button
       className="acceptance-frame"
@@ -23,9 +28,15 @@ export function AssetFrame({
       aria-label={position != null ? `查看 ${position} 毫秒证据` : "参考图片"}
     >
       {blob.url ? (
-        <img src={blob.url} alt="验收证据帧" />
+        <ResponsiveImage src={blob.url} alt="验收证据帧" />
       ) : (
-        <span>{blob.error ? "证据不可用" : "正在加载"}</span>
+        <span>
+          {blob.error ? (
+            "证据不可用"
+          ) : (
+            <LoadingState variant="inline" label="正在加载" />
+          )}
+        </span>
       )}
       {position != null && <small>{formatMediaTime(position / 1000)}</small>}
     </button>
@@ -43,10 +54,18 @@ export function EvidenceViewer({
   const current = run.snapshot.output,
     prior = previous?.snapshot.output;
   const source = useApiBlobUrl(
-    current.asset_id ? visualAssetDownloadPath(current.asset_id) : undefined,
+    current.asset_id
+      ? current.kind === "image"
+        ? imagePreviewSource(visualAssetDownloadPath(current.asset_id), 1280)
+        : visualAssetDownloadPath(current.asset_id)
+      : undefined,
   );
   const old = useApiBlobUrl(
-    prior?.asset_id ? visualAssetDownloadPath(prior.asset_id) : undefined,
+    prior?.asset_id
+      ? prior.kind === "image"
+        ? imagePreviewSource(visualAssetDownloadPath(prior.asset_id), 1280)
+        : visualAssetDownloadPath(prior.asset_id)
+      : undefined,
   );
   const playback = useVideoPlayback(
     current.kind === "video" ? source.url : undefined,
@@ -111,7 +130,7 @@ export function EvidenceViewer({
                     onError={playback.failed}
                   />
                 ) : prior?.kind === "image" && old.url ? (
-                  <img src={old.url} alt="返修前输出" />
+                  <ResponsiveImage src={old.url} alt="返修前输出" />
                 ) : prior?.kind === "text" ? (
                   <pre>{prior.text}</pre>
                 ) : (
@@ -148,7 +167,7 @@ export function EvidenceViewer({
                   onError={playback.failed}
                 />
               ) : current.kind === "image" && source.url ? (
-                <img
+                <ResponsiveImage
                   src={source.url}
                   alt="当前验收输出"
                   onLoad={(event) =>
@@ -167,7 +186,11 @@ export function EvidenceViewer({
               ) : (
                 <pre>
                   {current.text ??
-                    (source.error ? "素材加载失败" : "正在加载素材…")}
+                    (source.error ? (
+                      "素材加载失败"
+                    ) : (
+                      <LoadingState variant="inline" label="正在加载素材…" />
+                    ))}
                 </pre>
               )}
               {current.kind === "image" && selected?.region && (

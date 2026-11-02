@@ -20,7 +20,6 @@ async def model_capacity(request: Request, principal: StudioAuth, session: Sessi
             path.startswith(("/v1/integrations/tool-apis/", "/v1/integrations/mcp/"))
             and path.endswith("/validate")
         )
-        or (path.startswith("/v1/model-test/tools/") and path.endswith("/execute"))
     )
     if route_permission(request.method, request.url.path) != "models.use" and not diagnostic:
         yield

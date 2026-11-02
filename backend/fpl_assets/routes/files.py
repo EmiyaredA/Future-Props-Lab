@@ -10,6 +10,7 @@ from starlette.background import BackgroundTask
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.policy import download_filename
 from app.capabilities.asset_store.schemas.files import (
+    FILE_CONTENT_HEADERS,
     LibraryAssetImportIn,
     LibraryFolderImportOut,
     SvgPreviewIn,
@@ -25,7 +26,8 @@ from app.capabilities.asset_store.schemas.files import (
 from app.console.file_library import LibraryFolderArchiveError
 from fpl_runtime.http_dependencies import OwnerDep, SessionDep
 
-from .context import archive, cases
+from .context import archive as archive_cases
+from .context import cases
 
 router = APIRouter(tags=["file-management"])
 
@@ -46,7 +48,7 @@ async def export_library_folder_archive(
     folder_id: str | None = Query(default=None),
 ) -> FileResponse:
     try:
-        exported = await archive(request, session, owner_user_id).export_subtree(folder_id)
+        exported = await archive_cases(request, session, owner_user_id).export_subtree(folder_id)
     except LibraryFolderArchiveError as exc:
         raise archive_http_error(exc) from None
     return FileResponse(
@@ -66,7 +68,7 @@ async def import_library_folder_archive(
     parent_folder_id: Annotated[str | None, Form()] = None,
 ) -> LibraryFolderImportOut:
     try:
-        return await archive(request, session, owner_user_id).import_archive(
+        return await archive_cases(request, session, owner_user_id).import_archive(
             archive, parent_folder_id=parent_folder_id or None
         )
     except LibraryFolderArchiveError as exc:
@@ -83,7 +85,7 @@ async def import_library_folder_entries(
     parent_folder_id: Annotated[str | None, Form()] = None,
 ) -> LibraryFolderImportOut:
     try:
-        return await archive(request, session, owner_user_id).import_entries(
+        return await archive_cases(request, session, owner_user_id).import_entries(
             list(files), list(relative_paths), parent_folder_id=parent_folder_id or None
         )
     except LibraryFolderArchiveError as exc:
@@ -223,7 +225,7 @@ async def delete_file(
     return {"deleted": True}
 
 
-@router.get("/files/{asset_id}/content")
+@router.get("/files/{asset_id}/content", responses={200: {"headers": FILE_CONTENT_HEADERS}})
 async def preview_file(
     request: Request, session: SessionDep, owner_user_id: OwnerDep, asset_id: str
 ) -> FileResponse:
@@ -238,6 +240,8 @@ async def preview_file(
         content_disposition_type="inline",
         headers={
             "X-Content-Type-Options": "nosniff",
+            "X-Fpl-File-Revision": str(row.revision),
+            "X-Fpl-File-Kind": row.media_kind,
             **(
                 {
                     "Content-Security-Policy": (
@@ -278,29 +282,3 @@ async def preview_svg(body: SvgPreviewIn, _owner_user_id: OwnerDep) -> SvgPrevie
         return SvgPreviewOut(**normalize_svg(body.svg))
     except ValueError as exc:
         raise HTTPException(422, {"code": "invalid_svg", "message": str(exc)}) from None
-
-
-@router.get(
-    "/files/{asset_id}/thumbnail",
-    response_class=FileResponse,
-    responses={
-        200: {"content": {"image/webp": {"schema": {"type": "string", "format": "binary"}}}}
-    },
-)
-async def preview_thumbnail(
-    request: Request,
-    session: SessionDep,
-    owner_user_id: OwnerDep,
-    asset_id: str,
-    size: int = Query(default=320, json_schema_extra={"enum": [320, 640]}),
-) -> FileResponse:
-    from ..previews import thumbnail
-
-    if size not in (320, 640):
-        raise HTTPException(422, detail="缩略图尺寸仅支持 320 或 640")
-    path = await thumbnail(cases(request, session, owner_user_id), asset_id, size)
-    return FileResponse(
-        path,
-        media_type="image/webp",
-        headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"},
-    )

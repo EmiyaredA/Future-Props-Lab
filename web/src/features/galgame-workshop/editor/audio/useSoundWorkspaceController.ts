@@ -1,3 +1,4 @@
+import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCatalog, modelQueryKeys } from "@features/models";
@@ -137,6 +138,9 @@ export function useSoundWorkspaceController({
   initialRole?: AudioRole;
   storyRevision: number;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const client = useQueryClient();
   const fileInput = useRef<HTMLInputElement>(null);
   const mode = modeForRole(initialRole);
@@ -282,16 +286,19 @@ export function useSoundWorkspaceController({
 
   const upload = useMutation({
     mutationFn: (file: File) =>
-      uploadGalgameProjectAsset(
-        projectId,
-        file,
-        pendingRole === "backgroundMusic"
-          ? "bgm"
-          : pendingRole === "ambientSound"
-            ? "ambient"
-            : pendingRole === "soundEffect"
-              ? "sfx"
-              : "voice",
+      runTransfer((onProgress) =>
+        uploadGalgameProjectAsset(
+          projectId,
+          file,
+          pendingRole === "backgroundMusic"
+            ? "bgm"
+            : pendingRole === "ambientSound"
+              ? "ambient"
+              : pendingRole === "soundEffect"
+                ? "sfx"
+                : "voice",
+          { onProgress },
+        ),
       ),
     onSuccess: (asset) => {
       void invalidateGalgameAssetQueries(client, projectId);
@@ -406,6 +413,7 @@ export function useSoundWorkspaceController({
     }).length;
 
   return {
+    transferProgress: activeTransferProgress,
     projectId,
     document,
     onDocument,

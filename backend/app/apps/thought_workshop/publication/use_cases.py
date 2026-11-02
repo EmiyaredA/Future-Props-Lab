@@ -67,14 +67,16 @@ class Community:
     async def permissions(self, id, body):
         return await self.run(mutations.permissions, id, body)
 
-    async def asset(self, id, asset, note=None):
-        return await self.run(assets.content, id, asset, note)
+    async def asset(self, id, asset, note=None, size=None):
+        return await self.run(assets.content, id, asset, note, False, size)
 
-    async def cover(self, id):
+    async def cover(self, id, size=None):
         async with self.sessions() as session:
             await session.execute(text("BEGIN"))
             pub = await publication(session, id)
-            return await assets.content(session, self.principal, id, pub.cover_asset_id, cover=True)
+            return await assets.content(
+                session, self.principal, id, pub.cover_asset_id, cover=True, size=size
+            )
 
     async def upload(self, id, note, incoming):
         return await self.run(assets.upload, id, note, incoming)

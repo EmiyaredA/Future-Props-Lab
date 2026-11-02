@@ -1,3 +1,5 @@
+import { createUploadTransfer } from "@platform/api/transfer";
+import { type TransferOptions } from "@platform/api/transfer";
 import type { components, paths } from "@generated/api";
 import { api, unwrap, fetchApiBlob } from "@platform/api/client";
 
@@ -137,33 +139,49 @@ export const restoreNote = async (note: NoteSummary) => {
     }),
   );
 };
-export async function uploadImage(file: File) {
+export async function uploadImage(file: File, transfer: TransferOptions = {}) {
+  const uploadTransfer = createUploadTransfer(transfer.onProgress);
+
   return unwrap(
     await api.POST("/v1/thought-workshop/images", {
+      fetch: uploadTransfer.fetch,
       body: { upload: file as unknown as string },
       bodySerializer() {
         const form = new FormData();
         form.set("upload", file);
-        return form;
+        return uploadTransfer.capture(form);
       },
     }),
   );
 }
-export async function uploadAttachment(file: File) {
+export async function uploadAttachment(
+  file: File,
+  transfer: TransferOptions = {},
+) {
+  const uploadTransfer = createUploadTransfer(transfer.onProgress);
+
   return unwrap(
     await api.POST("/v1/thought-workshop/attachments", {
+      fetch: uploadTransfer.fetch,
       body: { upload: file as unknown as string },
       bodySerializer() {
         const form = new FormData();
         form.set("upload", file);
-        return form;
+        return uploadTransfer.capture(form);
       },
     }),
   );
 }
-export async function importArchive(file: File, project?: KnowledgeBase) {
+export async function importArchive(
+  file: File,
+  project?: KnowledgeBase,
+  transfer: TransferOptions = {},
+) {
+  const uploadTransfer = createUploadTransfer(transfer.onProgress);
+
   return unwrap(
     await api.POST("/v1/thought-workshop/imports", {
+      fetch: uploadTransfer.fetch,
       params: {
         query: project
           ? {
@@ -176,7 +194,7 @@ export async function importArchive(file: File, project?: KnowledgeBase) {
       bodySerializer() {
         const form = new FormData();
         form.set("upload", file);
-        return form;
+        return uploadTransfer.capture(form);
       },
     }),
   );

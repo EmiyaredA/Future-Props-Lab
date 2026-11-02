@@ -12,9 +12,11 @@ from sqlalchemy import update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.capabilities.identity.avatar_previews import avatar_thumbnail
 from app.console.governance.service import AccountError, add_audit_event
 from app.console.models import User
 from app.runtime.config import get_settings
+from app.runtime.image_sizes import ThumbnailSize
 from app.runtime.time import utc_now
 
 AVATAR_MAX_BYTES = 2 * 1024 * 1024
@@ -93,6 +95,19 @@ async def update_profile(
         await session.rollback()
         raise AccountError("email_conflict") from exc
     return await session.get(User, user_id)
+
+
+async def avatar_preview(user: User, size: ThumbnailSize) -> Path | None:
+    source = avatar_path(user)
+    if source is None or not source.is_file():
+        return None
+    target = (
+        get_settings().account_path(user.id)
+        / "previews"
+        / "avatar"
+        / f"{user.avatar_content_sha256}-{size}.webp"
+    )
+    return await avatar_thumbnail(source, target, size)
 
 
 def _verify_image(path: Path, content_type: str) -> None:

@@ -87,15 +87,6 @@ function TestIcon() {
   );
 }
 
-function TestToolIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden>
-      <path d="M8 3h8M10 3v5l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3" />
-      <path d="M8 15h8M12 12v6" />
-    </svg>
-  );
-}
-
 function LogsIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden>
@@ -197,7 +188,6 @@ function StudioChrome({
   const infrastructurePages: StudioPage[] = [
     "code-agents",
     "model-test",
-    "model-test-tools",
     "model-service",
     "model-call-logs",
   ];
@@ -217,13 +207,6 @@ function StudioChrome({
       icon: <TestIcon />,
       active: page === "model-test",
       onSelect: () => navigate("model-test"),
-    },
-    {
-      id: "model-test-tools",
-      label: "测试工具",
-      icon: <TestToolIcon />,
-      active: page === "model-test-tools",
-      onSelect: () => navigate("model-test-tools"),
     },
     ...(canReadLogs
       ? [

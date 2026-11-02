@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useMemo, useState } from "react";
 import {
   Check,
@@ -305,7 +306,11 @@ export function AssistantModelPicker({
                 : "assistant-model-save-state"
             }
           >
-            {saving ? "正在保存…" : error || "配置已保存"}
+            {saving ? (
+              <LoadingState variant="inline" label="正在保存…" />
+            ) : (
+              error || "配置已保存"
+            )}
           </span>
         </footer>
       </section>

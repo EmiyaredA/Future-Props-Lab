@@ -3,6 +3,7 @@ name = "future-props-lab-identity-image"
 version = "0.1.0"
 requires-python = ">=3.11,<3.12"
 dependencies = [
+  "pillow==12.3.0",
   "aiosqlite==0.22.1",
   "argon2-cffi==25.1.0",
   "cryptography==50.0.0",

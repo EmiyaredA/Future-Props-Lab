@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { imageVariants as variants } from "../src/shared/lib/imageVariants.ts";
 import { fileURLToPath } from "node:url";
 
 export const serviceAssets = {
@@ -30,3 +31,11 @@ export const serviceAssets = {
     "providers/pi-logo.svg",
   ],
 };
+
+// Repo-owned generated paths are fixed inputs to each independent program build.
+serviceAssets.portal.push(...serviceAssets.agents.filter(name => name.startsWith("providers/")));
+for (const [service, originals] of Object.entries(serviceAssets)) {
+  const related = originals.flatMap(name => Object.values(variants["/" + name] || {})
+    .map(value => value.replace(/^\//, "")));
+  serviceAssets[service] = [...new Set([...originals, ...related])].sort();
+}

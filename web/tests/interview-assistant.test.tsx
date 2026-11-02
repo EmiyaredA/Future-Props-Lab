@@ -201,7 +201,11 @@ test("PDF/DOCX originals are passed to the API without requiring a pasted summar
   expect(screen.getByRole("textbox", { name: "简历摘要" })).toHaveValue("");
   fireEvent.click(screen.getByRole("button", { name: "调研并准备" }));
   await screen.findByRole("heading", { name: "资料已就绪" });
-  expect(interviewApi.upload).toHaveBeenCalledWith(expect.anything(), file);
+  expect(interviewApi.upload).toHaveBeenCalledWith(
+    expect.anything(),
+    file,
+    expect.objectContaining({ onProgress: expect.any(Function) }),
+  );
   expect(interviewApi.prepare).toHaveBeenCalledWith(
     "room-1",
     expect.objectContaining({ material_id: "material-1", resume: "" }),

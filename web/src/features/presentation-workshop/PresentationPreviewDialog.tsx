@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { keepDialogEscapeLocal } from "./dialogKeyboard";
 import { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -100,9 +101,11 @@ export function PresentationPreviewDialog({
                 </button>
               </div>
             ) : loading || !slides?.length ? (
-              <p className="presentation-preview-status" role="status">
-                正在加载预览…
-              </p>
+              <LoadingState
+                label="正在加载预览…"
+                variant="region"
+                className="presentation-preview-status"
+              />
             ) : (
               <>
                 <div

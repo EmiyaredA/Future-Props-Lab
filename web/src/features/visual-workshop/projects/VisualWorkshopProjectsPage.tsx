@@ -1,3 +1,6 @@
+import { LoadingState } from "@shared/ui/LoadingState";
+import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { ProjectCertification } from "@features/accounts";
 import { useState } from "react";
 import {
@@ -47,6 +50,9 @@ export function VisualWorkshopProjectsPage({
   onOpenProject?: (projectId: string) => void;
   onOpenAssets?: (projectId: string) => void;
 }) {
+  const { run: runTransfer, progress: activeTransferProgress } =
+    useTransferProgress();
+
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"all" | VisualWorkshopProjectStatus>(
     "all",
@@ -73,7 +79,9 @@ export function VisualWorkshopProjectsPage({
     deleteProject: deleteVisualWorkshopProject,
     importSnapshot: importVisualWorkshopProjectSnapshot,
     exportSnapshot: (project) =>
-      exportVisualWorkshopProjectSnapshot(project.id),
+      runTransfer((onProgress) =>
+        exportVisualWorkshopProjectSnapshot(project.id, { onProgress }),
+      ),
     openFolder: (project) => openVisualWorkshopProjectFolder(project.id),
     onOpenProject,
     errorMessage,
@@ -87,6 +95,8 @@ export function VisualWorkshopProjectsPage({
 
   return (
     <section className="workshop-page workshop-projects-page">
+      <TransferFeedback progress={activeTransferProgress} />
+
       <WorkshopAppChrome
         title="我的创作项目"
         description="所有项目统一使用沉浸式创作画布。"
@@ -140,7 +150,7 @@ export function VisualWorkshopProjectsPage({
       {projectsQuery.isLoading ? (
         <div className="workshop-state">
           <RefreshCcw className="spinning" aria-hidden />
-          <strong>正在读取项目</strong>
+          <LoadingState label="正在读取项目" variant="inline" />
         </div>
       ) : projectsQuery.isError ? (
         <div className="workshop-state">

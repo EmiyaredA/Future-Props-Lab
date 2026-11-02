@@ -1,5 +1,6 @@
 import { useDocumentAccess } from "../DocumentAccess";
 import { useId } from "react";
+import { imagePreviewSource } from "@shared/lib/imageSources";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import {
   edgePath,
@@ -36,7 +37,9 @@ function ManagedSvgImage({
   height: number;
 }) {
   const access = useDocumentAccess();
-  const { url, error } = useApiBlobUrl(access.assetUrl(id));
+  const { url, error } = useApiBlobUrl(
+    imagePreviewSource(access.assetUrl(id), width > 640 ? 1280 : 640),
+  );
   return url ? (
     <image
       href={url}

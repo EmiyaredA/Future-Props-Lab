@@ -1,3 +1,5 @@
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useMemo, useState } from "react";
 import {
   ArrowDown,
@@ -10,19 +12,21 @@ import type {
   ImageCompositionInput,
   VisualCanvasNode,
 } from "@features/visual-workshop/api";
-import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
+import { useImagePreviewUrl } from "@platform/api/useImagePreviewUrl";
 
 type ImageNode = Extract<VisualCanvasNode, { kind: "image" }>;
 type CompositionItem = { node: ImageNode; caption: string };
 
 function PreviewCell({ item }: { item: CompositionItem }) {
-  const { url } = useApiBlobUrl(`/v1/files/${item.node.asset_id}/content`);
+  const { ref, url } = useImagePreviewUrl(
+    `/v1/files/${item.node.asset_id}/content`,
+  );
   return (
-    <div className="image-grid-preview-cell">
+    <div ref={ref} className="image-grid-preview-cell">
       {url ? (
-        <img src={url} alt={item.caption || item.node.title} />
+        <ResponsiveImage src={url} alt={item.caption || item.node.title} />
       ) : (
-        <span>加载中…</span>
+        <LoadingState label="加载中…" variant="inline" />
       )}
       {item.caption ? <small>{item.caption}</small> : null}
     </div>

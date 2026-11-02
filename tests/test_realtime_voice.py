@@ -13,14 +13,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from starlette.websockets import WebSocketDisconnect
 
-from app.llm.models import LlmCallLog, ModelTestTool, ModelTestToolCall
-from app.llm.playground.test_tools import (
-    TestToolSelectionError as ToolSelectionError,
-)
-from app.llm.playground.test_tools import (
-    load_selected_tool_snapshots,
-    tool_snapshot,
-)
+from app.llm.models import LlmCallLog
 from app.llm.providers.realtime.constants import (
     SENSEAUDIO_DEFAULT_VOICE,
     SENSEAUDIO_PCM_FRAME_BYTES,
@@ -29,9 +22,7 @@ from app.llm.providers.realtime.constants import (
 from app.llm.providers.realtime.contracts import ResolvedRealtimeModel
 from app.llm.providers.realtime.senseaudio import SenseAudioRealtimeBridge
 from app.llm.realtime.session import TurnMetrics, _client_configuration, _write_log
-from app.llm.realtime.tool_calls import RealtimeToolExecutor, provider_tool_definitions
 from app.main import app
-from app.orm import bind_owner
 from app.runtime.db import SessionLocal
 
 
@@ -99,57 +90,11 @@ async def test_senseaudio_start_command_and_authorization_header() -> None:
                 "format": "pcm_s16le",
                 "channel": 1,
             },
-            "tools": [],
             "voice": SENSEAUDIO_DEFAULT_VOICE,
         }
         assert bridge.session_id == "upstream-session"
     finally:
         await bridge.close()
-
-
-def test_senseaudio_normalizes_tool_calls_and_queues_results() -> None:
-    tools = [
-        {
-            "type": "function",
-            "name": "get_weather",
-            "description": "查询天气",
-            "parameters": {
-                "type": "object",
-                "properties": {"city": {"type": "string"}},
-            },
-        }
-    ]
-    bridge = SenseAudioRealtimeBridge(
-        model=_model(),
-        instructions="",
-        voice=SENSEAUDIO_DEFAULT_VOICE,
-        tools=tools,
-    )
-    bridge._handle_event({"type": "speech.started"})
-    turn_id = bridge.outbound.get_nowait()["turn_id"]
-    bridge._handle_event(
-        {
-            "type": "tool.call",
-            "call_id": "call-weather",
-            "name": "get_weather",
-            "arguments": {"city": "上海"},
-        }
-    )
-    assert bridge.outbound.get_nowait() == {
-        "type": "tool_call",
-        "turn_id": turn_id,
-        "batch_id": "",
-        "call_id": "call-weather",
-        "name": "get_weather",
-        "arguments": {"city": "上海"},
-        "timeout_ms": None,
-    }
-    bridge.submit_tool_result("call-weather", {"weather": "晴"}, None)
-    assert bridge._command_queue.get_nowait() == {
-        "type": "tool.result",
-        "call_id": "call-weather",
-        "result": {"weather": "晴"},
-    }
 
 
 @pytest.mark.asyncio
@@ -357,7 +302,7 @@ async def test_realtime_options_come_from_enabled_voice_capability() -> None:
         assert selected["output_sample_rate"] == 24_000
         assert selected["commit_silence_ms"] == 400
         assert selected["supports_interruption"] is True
-        assert selected["supports_tools"] is True
+        assert "supports_tools" not in selected
         assert selected["instructions_max_chars"] == 20_000
         assert selected["greeting_max_chars"] == 2_000
         assert selected["input_format"] == "pcm_s16le"
@@ -396,14 +341,6 @@ async def test_realtime_log_contains_metrics_but_not_transcripts() -> None:
         assistant_chars=11,
         usage={"input_tokens": 2, "output_tokens": 3},
         timings={"provider_ms": 240},
-        tool_calls=[
-            {
-                "call_id": "call-weather",
-                "name": "get_weather",
-                "status": "completed",
-                "duration_ms": 128,
-            }
-        ],
     )
     turn.first_audio_at = turn.started_at + 0.25
     await _write_log(
@@ -437,14 +374,6 @@ async def test_realtime_log_contains_metrics_but_not_transcripts() -> None:
             "input_tokens": 2,
             "output_tokens": 3,
         }
-        assert row.response_payload["tool_calls"] == [
-            {
-                "call_id": "call-weather",
-                "name": "get_weather",
-                "status": "completed",
-                "duration_ms": 128,
-            }
-        ]
         assert "transcript" not in serialized.replace("transcript_chars", "")
         assert "secret" not in serialized
         transport = httpx.ASGITransport(app=app)
@@ -455,225 +384,6 @@ async def test_realtime_log_contains_metrics_but_not_transcripts() -> None:
             assert reproduction.status_code == 409
             assert reproduction.json()["code"] == "reproduction_unavailable"
         await session.delete(row)
-        await session.commit()
-
-
-@pytest.mark.asyncio
-async def test_realtime_tool_selection_is_workspace_scoped_and_enabled() -> None:
-    tool = ModelTestTool(
-        owner_user_id="test-user",
-        name=f"weather_{uuid4().hex[:8]}",
-        description="查询天气",
-        input_schema={
-            "type": "object",
-            "properties": {"city": {"type": "string"}},
-            "required": ["city"],
-        },
-        mock_kind="success",
-        mock_result={"weather": "晴"},
-        enabled=True,
-    )
-    async with SessionLocal() as session:
-        bind_owner(session.sync_session, "test-user")
-        session.add(tool)
-        await session.commit()
-        snapshots = await load_selected_tool_snapshots(session, [tool.id])
-        assert provider_tool_definitions(snapshots)[0] == {
-            "type": "function",
-            "name": tool.name,
-            "description": "查询天气",
-            "parameters": tool.input_schema,
-        }
-
-    async with SessionLocal() as session:
-        bind_owner(session.sync_session, "other-workspace")
-        with pytest.raises(ToolSelectionError):
-            await load_selected_tool_snapshots(session, [tool.id])
-
-    async with SessionLocal() as session:
-        bind_owner(session.sync_session, "test-user")
-        stored = await session.get(ModelTestTool, tool.id)
-        assert stored is not None
-        stored.enabled = False
-        await session.commit()
-        with pytest.raises(ToolSelectionError):
-            await load_selected_tool_snapshots(session, [tool.id])
-        await session.delete(stored)
-        await session.commit()
-
-
-@pytest.mark.asyncio
-async def test_realtime_tool_executor_persists_full_success_and_returns_mock_json() -> None:
-    tool = ModelTestTool(
-        owner_user_id="test-user",
-        name=f"weather_{uuid4().hex[:8]}",
-        description="查询天气",
-        input_schema={
-            "type": "object",
-            "properties": {"city": {"type": "string"}},
-            "required": ["city"],
-        },
-        mock_kind="success",
-        mock_result={"weather": "晴", "temperature": 24},
-        enabled=True,
-    )
-    async with SessionLocal() as session:
-        bind_owner(session.sync_session, "test-user")
-        session.add(tool)
-        await session.commit()
-        snapshot = tool_snapshot(tool)
-
-    updates: list[dict] = []
-    provider_results: list[tuple[str, object | None, dict | None]] = []
-    executor = RealtimeToolExecutor(
-        owner_user_id="test-user",
-        trace_id=f"voice-{uuid4().hex[:24]}",
-        snapshots=(snapshot,),
-        emit=updates.append,
-        submit_result=lambda call_id, result, error: provider_results.append(
-            (call_id, result, error)
-        ),
-    )
-    executor.start(
-        {
-            "turn_id": "turn-weather",
-            "call_id": "call-weather",
-            "name": tool.name,
-            "arguments": {"city": "上海"},
-        },
-        round_index=0,
-    )
-    while executor.tasks:
-        await asyncio.sleep(0)
-
-    assert [update["status"] for update in updates] == ["running", "completed"]
-    assert provider_results == [("call-weather", {"weather": "晴", "temperature": 24}, None)]
-    async with SessionLocal() as session:
-        bind_owner(session.sync_session, "test-user")
-        row = await session.scalar(
-            select(ModelTestToolCall).where(
-                ModelTestToolCall.action_id == "call-weather",
-                ModelTestToolCall.tool_id == tool.id,
-            )
-        )
-        assert row is not None
-        assert row.source == "realtime_voice"
-        assert row.arguments == {"city": "上海"}
-        assert row.result == {"weather": "晴", "temperature": 24}
-        assert row.status == "completed"
-        assert row.success is True
-        await session.delete(row)
-        stored_tool = await session.get(ModelTestTool, tool.id)
-        assert stored_tool is not None
-        await session.delete(stored_tool)
-        await session.commit()
-
-
-@pytest.mark.asyncio
-async def test_realtime_tool_executor_handles_concurrent_failure_size_and_cancel() -> None:
-    oversized = {
-        "id": None,
-        "name": "oversized_result",
-        "description": "返回超大结果",
-        "input_schema": {"type": "object", "properties": {}},
-        "mock_kind": "success",
-        "mock_result": {"content": "x" * 33_000},
-        "delay_ms": 0,
-        "enabled": True,
-        "revision": 0,
-    }
-    validation = {
-        **oversized,
-        "name": "validate_city",
-        "input_schema": {
-            "type": "object",
-            "properties": {"city": {"type": "string"}},
-            "required": ["city"],
-        },
-        "mock_result": {"weather": "晴"},
-    }
-    delayed = {
-        **oversized,
-        "name": "slow_tool",
-        "mock_result": {"ok": True},
-        "delay_ms": 1_000,
-    }
-    updates: list[dict] = []
-    provider_results: list[tuple[str, object | None, dict | None]] = []
-    executor = RealtimeToolExecutor(
-        owner_user_id="test-user",
-        trace_id=f"voice-{uuid4().hex[:24]}",
-        snapshots=(oversized, validation, delayed),
-        emit=updates.append,
-        submit_result=lambda call_id, result, error: provider_results.append(
-            (call_id, result, error)
-        ),
-    )
-    for call_id, name in (
-        ("call-large", "oversized_result"),
-        ("call-invalid", "validate_city"),
-        ("call-cancel", "slow_tool"),
-    ):
-        executor.start(
-            {
-                "turn_id": "turn-tools",
-                "call_id": call_id,
-                "name": name,
-                "arguments": {},
-            },
-            round_index=1,
-        )
-    for _ in range(100):
-        if any(
-            update["call_id"] == "call-cancel" and update["status"] == "running"
-            for update in updates
-        ):
-            break
-        await asyncio.sleep(0)
-    await executor.cancel("call-cancel", "provider timeout")
-    while executor.tasks:
-        await asyncio.sleep(0)
-
-    terminal = {
-        update["call_id"]: update
-        for update in updates
-        if update["status"] in {"completed", "failed", "cancelled"}
-    }
-    assert terminal["call-large"]["error_code"] == "tool_result_too_large"
-    assert len(terminal["call-large"]["result"]["content"]) == 33_000
-    assert terminal["call-invalid"]["error_code"] == "invalid_arguments"
-    assert terminal["call-cancel"]["status"] == "cancelled"
-    assert terminal["call-cancel"]["error_message"] == "provider timeout"
-    assert {call_id for call_id, _result, _error in provider_results} == {
-        "call-large",
-        "call-invalid",
-    }
-    assert all(error is not None for _call_id, _result, error in provider_results)
-
-    async with SessionLocal() as session:
-        bind_owner(session.sync_session, "test-user")
-        rows = list(
-            (
-                await session.execute(
-                    select(ModelTestToolCall).where(
-                        ModelTestToolCall.action_id.in_(
-                            ["call-large", "call-invalid", "call-cancel"]
-                        )
-                    )
-                )
-            )
-            .scalars()
-            .all()
-        )
-        assert {row.action_id: row.status for row in rows} == {
-            "call-large": "failed",
-            "call-invalid": "failed",
-            "call-cancel": "cancelled",
-        }
-        large_row = next(row for row in rows if row.action_id == "call-large")
-        assert len(large_row.result["content"]) == 33_000
-        for row in rows:
-            await session.delete(row)
         await session.commit()
 
 

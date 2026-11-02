@@ -1,3 +1,5 @@
+import { LoadingState } from "@shared/ui/LoadingState";
+import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import type {
   LibrarySourceProject,
   LibrarySourcePickerMode,
@@ -42,7 +44,7 @@ function LocalFilePreview({ file }: { file: File }) {
     return () => URL.revokeObjectURL(objectUrl);
   }, [file]);
   return url ? (
-    <img src={url} alt="" />
+    <ResponsiveImage src={url} alt="" />
   ) : (
     <span>
       <FileKindIcon kind={localMediaKind(file)} />
@@ -252,7 +254,11 @@ export function LibrarySourcePickerDialog({
               <strong>暂无其他可选取的项目</strong>
             </div>
           ) : filesQuery.isLoading || foldersQuery.isLoading ? (
-            <div className="file-empty">正在读取文件…</div>
+            <LoadingState
+              label="正在读取文件…"
+              variant="region"
+              className="file-empty"
+            />
           ) : filesQuery.isError ? (
             <div className="file-empty">
               文件暂时无法读取。

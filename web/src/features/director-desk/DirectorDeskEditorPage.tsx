@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { openAmadeus } from "@platform/assistant";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -119,7 +120,11 @@ export function DirectorDeskEditorPage({
   return (
     <div className="director-desk-root" data-project-id={projectId}>
       {project.isPending ? (
-        <p className="director-desk-boot">正在打开预演…</p>
+        <LoadingState
+          label="正在打开预演…"
+          variant="region"
+          className="director-desk-boot"
+        />
       ) : null}
       <div id="app" />
     </div>

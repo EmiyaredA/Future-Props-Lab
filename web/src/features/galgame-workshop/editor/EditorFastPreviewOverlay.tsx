@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { ChevronDown, Play } from "lucide-react";
 import type { EditorPageViewModel } from "@features/galgame-workshop/editor/editorViewModel";
@@ -190,7 +191,15 @@ export function EditorFastPreviewOverlay({
         ? "当前故事尚未成功保存"
         : undefined;
   return (
-    <Suspense fallback={<div className="page-loading">正在启动快速预演…</div>}>
+    <Suspense
+      fallback={
+        <LoadingState
+          label="正在启动快速预演…"
+          variant="page"
+          className="page-loading"
+        />
+      }
+    >
       <FastPreviewWorkspace
         projectId={model.projectId}
         storyRevision={model.revisionRef.current}

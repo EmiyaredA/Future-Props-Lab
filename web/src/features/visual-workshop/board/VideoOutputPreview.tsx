@@ -1,3 +1,4 @@
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Maximize } from "lucide-react";
@@ -35,19 +36,21 @@ function MediaInfo({
   return (
     <p className="board-video-info" role="status">
       {label}：
-      {data
-        ? [
-            data.container ?? "格式未知",
-            data.codec?.toUpperCase() ?? "编码未知",
-            {
-              present: "含透明通道",
-              absent: "无透明通道",
-              unknown: "透明通道未知",
-            }[data.alpha_channel],
-          ].join(" · ")
-        : info.isError
-          ? "格式信息暂不可用 · 透明通道未知"
-          : "正在读取格式…"}
+      {data ? (
+        [
+          data.container ?? "格式未知",
+          data.codec?.toUpperCase() ?? "编码未知",
+          {
+            present: "含透明通道",
+            absent: "无透明通道",
+            unknown: "透明通道未知",
+          }[data.alpha_channel],
+        ].join(" · ")
+      ) : info.isError ? (
+        "格式信息暂不可用 · 透明通道未知"
+      ) : (
+        <LoadingState variant="inline" label="正在读取格式…" />
+      )}
       {info.isError && (
         <button type="button" onClick={() => void info.refetch()}>
           重试
