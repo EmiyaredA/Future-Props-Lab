@@ -51,3 +51,23 @@ class ReferenceUpdate(BaseModel):
     def validate_service(self, service):
         if self.resource_kind not in RESOURCE_KINDS.get(service, ()):
             raise ValueError("调用方不能管理此类素材引用")
+
+
+class PrepareReferenceChange(BaseModel):
+    """A source mutation retains prospective files until its local outcome is known."""
+
+    model_config = ConfigDict(extra="forbid")
+    request_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,128}$")
+    resource_kind: str = Field(pattern=r"^[a-z][a-z-]{0,63}$")
+    resource_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,128}$")
+    expected_resource_revision: int = Field(ge=-1, strict=True)
+    asset_ids: list[str] = Field(max_length=10000)
+
+    @field_validator("asset_ids")
+    @classmethod
+    def canonical_assets(cls, values):
+        return ReferenceUpdate.canonical_assets(values)
+
+    def validate_service(self, service):
+        if self.resource_kind not in RESOURCE_KINDS.get(service, ()):
+            raise ValueError("调用方不能管理此类素材引用")

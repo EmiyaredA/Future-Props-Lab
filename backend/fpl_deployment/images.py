@@ -19,6 +19,7 @@ PROJECT_PACKAGES = (
     "fpl_agents",
     "fpl_gateway",
     "fpl_portal",
+    "fpl_assets",
     "fpl_runtime",
     "fpl_config",
     "fpl_host",
@@ -74,6 +75,25 @@ def source_closure(root: Path, service):
             name == prefix or name.startswith(prefix + ".") for prefix in FORBIDDEN_AGENTS
         ):
             raise ValueError(f"Agents 镜像包含越界依赖：{name}")
+        if service == "assets" and any(
+            name == prefix or name.startswith(prefix + ".")
+            for prefix in (
+                "app.main",
+                "app.api",
+                "app.orm",
+                "app.deps",
+                "app.apps",
+                "app.llm",
+                "app.console.models",
+                "fpl_identity",
+                "fpl_host",
+                "app.capabilities.asset_store.assets",
+                "app.capabilities.asset_store.account_upgrade",
+                "app.capabilities.asset_store.layout_migration",
+                "app.capabilities.media_rendering",
+            )
+        ):
+            raise ValueError(f"Assets 镜像包含越界依赖：{name}")
         if service == "gateway" and any(
             name == prefix or name.startswith(prefix + ".")
             for prefix in (

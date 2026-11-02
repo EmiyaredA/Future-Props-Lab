@@ -2,10 +2,10 @@
 
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from app.capabilities.asset_store.models import VisualAsset
+from app.capabilities.asset_store.models import VisualAsset, VisualAssetFolder
 from app.runtime.ids import new_id
 from app.runtime.time import utc_now
 
@@ -25,6 +25,7 @@ class AssetReferenceSet(ReferenceBase):
     resource_kind: Mapped[str] = mapped_column(String(64))
     resource_id: Mapped[str] = mapped_column(String(128))
     resource_revision: Mapped[int] = mapped_column(Integer)
+    deleted: Mapped[bool] = mapped_column(Boolean, default=False)
     revision: Mapped[int] = mapped_column(Integer, default=0)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
 
@@ -62,3 +63,46 @@ class AssetDeletion(ReferenceBase):
     error_code: Mapped[str] = mapped_column(String(64), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
+
+
+class ReferenceIntent(ReferenceBase):
+    __tablename__ = "asset_reference_intents"
+    __table_args__ = (UniqueConstraint("owner_user_id", "service_id", "request_id"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
+    service_id: Mapped[str] = mapped_column(String(64))
+    request_id: Mapped[str] = mapped_column(String(128))
+    reference_set_id: Mapped[str] = mapped_column(ForeignKey("asset_reference_sets.id"))
+    expected_resource_revision: Mapped[int] = mapped_column(Integer)
+    payload_sha256: Mapped[str] = mapped_column(String(64))
+    state: Mapped[str] = mapped_column(String(16), default="prepared", index=True)
+    prepared_result: Mapped[dict] = mapped_column(JSON)
+    committed_revision: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    committed_deleted: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    committed_result: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    aborted_result: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
+
+
+class PreparedAssetPin(ReferenceBase):
+    __tablename__ = "asset_prepared_pins"
+    intent_id: Mapped[str] = mapped_column(
+        ForeignKey("asset_reference_intents.id", ondelete="CASCADE"), primary_key=True
+    )
+    asset_id: Mapped[str] = mapped_column(
+        ForeignKey(VisualAsset.__table__.c.id, ondelete="RESTRICT"), primary_key=True, index=True
+    )
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
+
+
+MODELS = (
+    VisualAssetFolder,
+    VisualAsset,
+    AssetReferenceSet,
+    AssetReferencePin,
+    AssetReferenceReceipt,
+    AssetDeletion,
+    ReferenceIntent,
+    PreparedAssetPin,
+)

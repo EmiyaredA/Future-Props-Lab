@@ -23,7 +23,11 @@
 
 `web/src/app/entries/portal.tsx` 复用首页、应用目录和未改写的文档阅读器；`PortalDocuments.tsx` 只是装配入口。`features/applications/definitions.ts` 拥有纯目录元数据，各应用注册和门户共同消费，目录不导入其他应用页面。`programAsset` 定位首页动画与目录图标；原 `/docs/*` 截图地址只允许跳转到当前门户清单内的不可变程序资源。账号管理页面归 Identity，独立管理页入口尚待完成。
 
-`backend/fpl_assets/` 拥有正在拆分的文件用例、素材保留集合、幂等回执与持久删除队列。`references.py` 在同一短写事务中校验归属、CAS、资源版本和全部素材，替换集合并记录不可变回执；应用提交作品前先保留旧与新素材的并集，提交后再收敛。`files.py` 只访问自有文件和文件夹，通过显式项目验证与引用查询接口保持原行为；`deletions.py` 在数据库提交后逐文件清理，可在进程中断后恢复，不递归清空目录。`settings.py` 只接受存储路径与三项文件限制，不加载 `.env` 或加密密钥。项目验证通过绑定原请求的 `assets.visual-project.read` 委托，只能从五个已登记文件操作读取 Visual 项目；不会传递原 Cookie 或完整客户端凭据。该包的完整 HTTP 装配、引用调用方和 Docker 入口仍待接通，不能视为 Assets 已可正式部署。
+`backend/fpl_assets/` 拥有正在拆分的文件用例、素材保留集合、幂等回执与持久删除队列。`references.py` 为导入或核验已经提交的源快照提供归属、CAS 和素材校验，并记录不可变回执；正常资源修改使用下述独立准备意图。`files.py` 只访问自有文件和文件夹，通过显式项目验证与引用查询接口保持原行为；`deletions.py` 在数据库提交后逐文件清理，可在进程中断后恢复，不递归清空目录。`reference_changes.py` 为每次源修改单独记录准备意图及素材 pin；源数据库将修改与回执一起提交后才确认，只有已证实回滚才撤销。确认乱序只更新到较新的源版本，较新准备意图继续保留；未知结果不按时间清除。`0002_prepared_references` 追加独立表和永久删除标记，旧注册迁移不改写。`references.py` 的已提交快照导入不得覆盖正在准备的修改。
+
+`backend/app/apps/visual_workshop/asset_references/models.py` 现在拥有 Visual 项目引用 ORM，外部素材与文件夹 ID 不再声明跨服务外键。原 `asset_store.models` 名称只为旧单体显式导入保留兼容；Assets 通过 `asset_outputs.AssetReferenceView` 消费数据投影，不加载该 ORM。镜像闭包检查与全新进程验证共同阻止回归。
+
+`settings.py` 只接受存储路径与三项文件限制，不加载 `.env` 或加密密钥。项目验证通过绑定原请求的 `assets.visual-project.read` 委托，只能从五个已登记文件操作读取 Visual 项目；不会传递原 Cookie 或完整客户端凭据。该包的完整 HTTP 装配、引用调用方和 Docker 入口仍待接通，不能视为 Assets 已可正式部署。
 
 `capabilities/asset_store/folders.py` 复用同属文件能力的文件夹 CAS、名称和深度规则；`asset_context.py` 允许显式注入项目验证。新 Assets 数据库将外部项目 ID 视为不透明标识，仅保留自有表外键；旧迁移与数据库外键保持原样，迁移期单体继续使用旧适配。`fpl_runtime/asset_references.py` 维护受限消费方、资源种类和版本化引用消息，不接受客户端指定归属。
 

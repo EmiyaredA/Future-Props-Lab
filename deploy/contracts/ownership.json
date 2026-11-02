@@ -4031,6 +4031,12 @@
       "model": "AcceptanceRepairDraft"
     },
     {
+      "table": "visual_project_asset_references",
+      "service": "visual",
+      "module": "app.apps.visual_workshop.asset_references.models",
+      "model": "VisualProjectAssetReference"
+    },
+    {
       "table": "visual_workshop_projects",
       "service": "visual",
       "module": "app.apps.visual_workshop.models",
@@ -4095,12 +4101,6 @@
       "service": "assets",
       "module": "app.capabilities.asset_store.models",
       "model": "VisualAsset"
-    },
-    {
-      "table": "visual_project_asset_references",
-      "service": "visual",
-      "module": "app.capabilities.asset_store.models",
-      "model": "VisualProjectAssetReference"
     },
     {
       "table": "account_storage_upgrade_roots",
@@ -4431,6 +4431,18 @@
       "service": "assets",
       "module": "fpl_assets.models",
       "model": "AssetDeletion"
+    },
+    {
+      "table": "asset_reference_intents",
+      "service": "assets",
+      "module": "fpl_assets.models",
+      "model": "ReferenceIntent"
+    },
+    {
+      "table": "asset_prepared_pins",
+      "service": "assets",
+      "module": "fpl_assets.models",
+      "model": "PreparedAssetPin"
     },
     {
       "table": "gateway_change_cursors",

@@ -14,25 +14,14 @@ from fpl_assets.deletions import FileCleanup
 from fpl_assets.files import Files
 from fpl_assets.migrations.registry import MIGRATIONS
 from fpl_assets.models import (
+    MODELS,
     AssetDeletion,
-    AssetReferencePin,
-    AssetReferenceReceipt,
-    AssetReferenceSet,
 )
 from fpl_assets.references import AssetReferences
 from fpl_assets.settings import StorageSettings
 from fpl_runtime.asset_references import ReferenceUpdate
 from fpl_runtime.database import Database
 from fpl_runtime.migrations import apply
-
-MODELS = (
-    VisualAsset,
-    VisualAssetFolder,
-    AssetReferenceSet,
-    AssetReferencePin,
-    AssetReferenceReceipt,
-    AssetDeletion,
-)
 
 
 class Upload:

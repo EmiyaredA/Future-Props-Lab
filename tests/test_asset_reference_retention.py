@@ -8,21 +8,13 @@ from sqlalchemy import delete, select, text
 from sqlalchemy.exc import IntegrityError
 
 from app.capabilities.asset_store.library import AssetError
-from app.capabilities.asset_store.models import VisualAsset, VisualAssetFolder
+from app.capabilities.asset_store.models import VisualAsset
 from fpl_assets.migrations.registry import MIGRATIONS
-from fpl_assets.models import AssetReferencePin, AssetReferenceReceipt, AssetReferenceSet
+from fpl_assets.models import MODELS, AssetReferencePin, AssetReferenceReceipt
 from fpl_assets.references import AssetReferences, protect_references
 from fpl_runtime.asset_references import ReferenceUpdate
 from fpl_runtime.database import Database
 from fpl_runtime.migrations import apply, check
-
-MODELS = (
-    VisualAsset,
-    VisualAssetFolder,
-    AssetReferenceSet,
-    AssetReferencePin,
-    AssetReferenceReceipt,
-)
 
 
 @pytest.fixture
@@ -174,7 +166,7 @@ def test_reference_protocol_rejects_unknown_consumers_and_invalid_assets():
 
 async def test_assets_schema_has_no_foreign_service_tables_or_foreign_keys(assets):
     database, _references = assets
-    expected = {model.__tablename__ for model in MODELS} | {"asset_file_deletions"}
+    expected = {model.__tablename__ for model in MODELS}
     async with database.engine.connect() as connection:
         names = set(
             (
@@ -189,3 +181,38 @@ async def test_assets_schema_has_no_foreign_service_tables_or_foreign_keys(asset
             assert all(row[2] in expected for row in keys)
         assert (await connection.exec_driver_sql("PRAGMA integrity_check")).scalar() == "ok"
         assert not (await connection.exec_driver_sql("PRAGMA foreign_key_check")).all()
+
+
+async def test_same_source_revision_cannot_drop_a_competing_prepared_asset(assets):
+    database, references = assets
+    await references.replace(owner="alpha", service="thought", update=update())
+    await references.replace(
+        owner="alpha",
+        service="thought",
+        update=update(
+            "prepare-a",
+            1,
+            ("one", "two"),
+            5,
+        ),
+    )
+    # B may observe A's latest Assets CAS, while its source document is still at 5.
+    # Replacing only B's union would expose A's prospective file to deletion.
+    with pytest.raises(AssetError) as blocked:
+        await references.replace(
+            owner="alpha",
+            service="thought",
+            update=update(
+                "prepare-b",
+                2,
+                ("one", "three"),
+                5,
+            ),
+        )
+    assert blocked.value.code == "pending_reference_conflict"
+    async with database.sessions() as session:
+        session.info["owner_user_id"] = "alpha"
+        assert set((await session.scalars(select(AssetReferencePin.asset_id))).all()) == {
+            "one",
+            "two",
+        }

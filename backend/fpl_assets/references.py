@@ -10,20 +10,40 @@ from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.ids import new_id
 from fpl_runtime.asset_references import ReferenceUpdate
 
-from .models import AssetReferencePin, AssetReferenceReceipt, AssetReferenceSet
+from .models import (
+    AssetReferencePin,
+    AssetReferenceReceipt,
+    AssetReferenceSet,
+    PreparedAssetPin,
+    ReferenceIntent,
+)
 
 
 class AssetReferences:
     def __init__(self, database):
         self.database = database
 
-    async def replace(self, *, owner, service, update: ReferenceUpdate):
-        """Caller authorization binds service, owner and resource before this use case.
+    @staticmethod
+    async def session_has_pending(session, reference_set_id):
+        return (
+            await session.scalar(
+                select(ReferenceIntent.id)
+                .where(
+                    ReferenceIntent.reference_set_id == reference_set_id,
+                    ReferenceIntent.state == "prepared",
+                )
+                .limit(1)
+            )
+            is not None
+        )
 
-        A caller first retains the union of old and proposed assets, commits its
-        document, then replaces the union with the committed set. Interrupted
-        preparation retains extra files and can be reconciled by request ID.
+    async def replace(self, *, owner, service, update: ReferenceUpdate):
+        """Import or verify an already committed source snapshot.
+
+        Live source mutations use ReferenceChanges so each pending intent has
+        independent pins and an explicit durable outcome.
         """
+        update = update.model_copy(deep=True)
         update.validate_service(service)
         payload = update.model_dump(mode="json")
         digest = hashlib.sha256(
@@ -51,6 +71,12 @@ class AssetReferences:
                     AssetReferenceSet.resource_id == update.resource_id,
                 )
             )
+            if row is not None and row.deleted:
+                raise AssetError("源资源已删除", code="not_found", status=404)
+            if row is not None and await self.session_has_pending(session, row.id):
+                raise AssetError(
+                    "引用变更尚未确定，不能覆盖投影", code="reference_mutations_pending", status=409
+                )
             current = row.revision if row is not None else 0
             if update.expected_revision != current:
                 raise AssetError(
@@ -77,6 +103,26 @@ class AssetReferences:
             )
             if present != requested:
                 raise AssetError("部分素材不存在", code="not_found", status=404)
+            if row is not None and update.resource_revision == row.resource_revision:
+                retained = set(
+                    (
+                        await session.scalars(
+                            select(AssetReferencePin.asset_id).where(
+                                AssetReferencePin.reference_set_id == row.id,
+                            )
+                        )
+                    ).all()
+                )
+                if not retained <= requested:
+                    raise AssetError(
+                        "同一资源版本不能释放其他准备步骤保留的素材",
+                        code="pending_reference_conflict",
+                        status=409,
+                        detail={
+                            "current_revision": row.revision,
+                            "current_asset_ids": sorted(retained),
+                        },
+                    )
             if row is None:
                 row = AssetReferenceSet(
                     id=new_id(),
@@ -124,15 +170,13 @@ class AssetReferences:
 
 async def protect_references(session, asset_ids):
     """Call while holding the same short write transaction as asset deletion."""
-    if (
-        asset_ids
-        and await session.scalar(
-            select(AssetReferencePin.asset_id)
-            .where(
-                AssetReferencePin.asset_id.in_(asset_ids),
+    if not asset_ids:
+        return
+    for model in (AssetReferencePin, PreparedAssetPin):
+        if (
+            await session.scalar(
+                select(model.asset_id).where(model.asset_id.in_(asset_ids)).limit(1)
             )
-            .limit(1)
-        )
-        is not None
-    ):
-        raise AssetError("素材仍被应用或历史引用", code="asset_in_use", status=409)
+            is not None
+        ):
+            raise AssetError("素材仍被应用或历史引用", code="asset_in_use", status=409)
