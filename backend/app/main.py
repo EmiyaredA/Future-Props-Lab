@@ -49,6 +49,9 @@ from app.console.governance.provisioning import create_account
 from app.console.governance.runtime_quotas import recover_admissions
 from app.console.governance.service import AccountError
 from app.console.governance.visual_acceptance_access import acceptance_actor_allowed
+from app.llm.catalog.http_bindings import CatalogBindings
+from app.llm.catalog.legacy_defaults import LegacyCatalogDefaults
+from app.llm.catalog.legacy_usage import LegacyCatalogTaskUsage
 from app.llm.inference.runner import InferenceRunner
 from app.llm.local_models.catalog import local_root
 from app.llm.local_models.installer import Installer
@@ -145,6 +148,10 @@ app = FastAPI(
 app.state.database = SimpleNamespace(sessions=SessionLocal)
 app.state.studio_http_auth = authenticate_database_request
 app.state.studio_socket_auth = authenticate_database_websocket
+app.state.model_catalog_bindings = CatalogBindings(
+    defaults=LegacyCatalogDefaults,
+    task_usage=LegacyCatalogTaskUsage,
+)
 app.state.workbench_native = LocalSourceAccess()
 app.state.account_creator = create_account
 app.state.account_storage_check = upgrade_pending

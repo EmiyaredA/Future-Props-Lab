@@ -43,6 +43,7 @@ from app.llm.routes.model_templates import router as model_templates_router
 from app.llm.routes.models import (
     call_logs,
     catalog,
+    diagnostics,
     model_test,
     model_test_generation,
     model_test_realtime,
@@ -73,6 +74,9 @@ api_router.include_router(model_templates_router)
 api_router.include_router(management_router)
 api_router.include_router(
     catalog.router, dependencies=[Depends(require_studio_auth), ModelCapacity]
+)
+api_router.include_router(
+    diagnostics.router, dependencies=[Depends(require_studio_auth), ModelCapacity]
 )
 api_router.include_router(
     suppliers.router, dependencies=[Depends(require_studio_auth), ModelCapacity]

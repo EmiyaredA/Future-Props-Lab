@@ -35,6 +35,7 @@ async def website(tmp_path):
     application.state.database = main_app.state.database
     application.state.studio_http_auth = main_app.state.studio_http_auth
     application.state.studio_socket_auth = main_app.state.studio_socket_auth
+    application.state.model_catalog_bindings = main_app.state.model_catalog_bindings
     application.state.account_creator = main_app.state.account_creator
     application.state.account_storage_check = main_app.state.account_storage_check
     application.state.automation_changes = {}

@@ -3,13 +3,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
-from pydantic import ValidationError
 
-from app.capabilities.asset_store import AssetError
 from app.capabilities.asset_store.schemas.files import VisualAssetOut
-from app.capabilities.transcription import TranscriptionParameterError
 from app.deps import OwnerDep, SessionDep, StudioAuth
 from app.llm.call_logs.credentials import snapshot_from_principal
+from app.llm.http_errors import mapped
 from app.llm.inference.assets import InferenceAssets
 from app.llm.inference.catalog import options
 from app.llm.inference.tasks import InferenceTasks
@@ -27,22 +25,8 @@ from app.llm.schemas.model_inference import (
     InferenceTextIn,
     InferenceTextOut,
 )
-from app.runtime.operation_receipts import OperationError
 
 router = APIRouter(prefix="/model-inference", tags=["model-inference"])
-
-
-async def mapped(operation):
-    try:
-        return await operation
-    except (OperationError, AssetError) as exc:
-        raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
-    except ValidationError as exc:
-        raise HTTPException(
-            422, {"code": "invalid_parameters", "errors": exc.errors(include_context=False)}
-        ) from None
-    except TranscriptionParameterError as exc:
-        raise HTTPException(422, {"code": "unsupported_parameter", "message": str(exc)}) from None
 
 
 @router.get("/options", response_model=InferenceOptionsOut)

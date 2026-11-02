@@ -3,19 +3,10 @@
 from .legacy_defaults import LegacyCatalogDefaults
 from .legacy_usage import LegacyCatalogTaskUsage
 from .service import ModelCatalogService
-from .suppliers import ModelSupplierService
 
 
 def legacy_catalog(session):
     return ModelCatalogService(
-        session,
-        task_usage=LegacyCatalogTaskUsage(session),
-        defaults_store=LegacyCatalogDefaults(session),
-    )
-
-
-def legacy_suppliers(session):
-    return ModelSupplierService(
         session,
         task_usage=LegacyCatalogTaskUsage(session),
         defaults_store=LegacyCatalogDefaults(session),
