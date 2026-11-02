@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 
 from app.capabilities.asset_store.thumbnails import ThumbnailSize
@@ -159,6 +159,7 @@ async def attachment_content(
 
 @router.post("/{conversation_id}/messages/stream")
 async def stream_message(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     conversation_id: str,
@@ -182,7 +183,7 @@ async def stream_message(
     ) as exc:
         raise _translate(exc) from None
     return StreamingResponse(
-        generation_events(prepared),
+        generation_events(prepared, session_factory=request.app.state.database.sessions),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
@@ -190,6 +191,7 @@ async def stream_message(
 
 @router.post("/{conversation_id}/regenerate/stream")
 async def regenerate_message(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     conversation_id: str,
@@ -210,7 +212,7 @@ async def regenerate_message(
     ) as exc:
         raise _translate(exc) from None
     return StreamingResponse(
-        generation_events(prepared),
+        generation_events(prepared, session_factory=request.app.state.database.sessions),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

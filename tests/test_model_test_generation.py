@@ -8,6 +8,7 @@ import pytest
 from app.llm.playground.generation_runner import ModelTestGenerationRunner
 from app.llm.providers._senseaudio import ProviderTaskStatus
 from app.main import app
+from app.runtime.db import SessionLocal
 
 
 @pytest.mark.asyncio
@@ -77,7 +78,7 @@ async def test_image_generation_test_is_created_and_managed_through_v1_api(
         )
         assert blocked.status_code == 409
 
-        runner = ModelTestGenerationRunner()
+        runner = ModelTestGenerationRunner(SessionLocal)
         await runner.process_once()
         await runner.process_once()
 
@@ -203,7 +204,7 @@ async def test_video_generation_accepts_uploaded_reference_audio_and_video(
         assert task["request_payload"]["video_asset_ids"] == [video_asset["id"]]
         assert "data:" not in created.text
 
-        runner = ModelTestGenerationRunner()
+        runner = ModelTestGenerationRunner(SessionLocal)
         await runner.process_once()
         content = submitted["video_content"]
         assert content[0] == {"type": "text", "text": "保留视频运镜并跟随音乐节奏"}

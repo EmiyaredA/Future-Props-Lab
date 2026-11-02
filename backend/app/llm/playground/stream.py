@@ -13,7 +13,6 @@ from app.llm.models import LlmCallLog, ModelTestConversation, ModelTestMessage
 from app.llm.playground.service import PreparedGeneration, message_out
 from app.llm.providers.streaming import stream_text_completion
 from app.runtime.credentials import decrypt_secret
-from app.runtime.db import SessionLocal
 from app.runtime.ownership import bind_owner
 from app.runtime.time import utc_now
 
@@ -31,6 +30,7 @@ def _event(event_type: str, sequence: int, payload: dict) -> bytes:
 async def _settle(
     prepared: PreparedGeneration,
     *,
+    session_factory,
     content: str,
     status: str,
     error_message: str | None,
@@ -43,7 +43,7 @@ async def _settle(
     finish_reason: str | None,
 ) -> tuple[ModelTestMessage, LlmCallLog, int]:
     latency_ms = max(0, round((time.monotonic() - started) * 1000))
-    async with SessionLocal() as session:
+    async with session_factory() as session:
         bind_owner(session.sync_session, prepared.owner_user_id)
         message = await session.get(ModelTestMessage, prepared.assistant_message_id)
         conversation = await session.get(ModelTestConversation, prepared.conversation_id)
@@ -101,7 +101,9 @@ async def _settle(
         return message, log, conversation.revision
 
 
-async def generation_events(prepared: PreparedGeneration) -> AsyncIterator[bytes]:
+async def generation_events(
+    prepared: PreparedGeneration, *, session_factory
+) -> AsyncIterator[bytes]:
     sequence = 0
     trace_id = str(uuid4())
     started = time.monotonic()
@@ -156,6 +158,7 @@ async def generation_events(prepared: PreparedGeneration) -> AsyncIterator[bytes
                 sequence += 1
         message, log, revision = await _settle(
             prepared,
+            session_factory=session_factory,
             content=content,
             status="completed",
             error_message=None,
@@ -185,6 +188,7 @@ async def generation_events(prepared: PreparedGeneration) -> AsyncIterator[bytes
         await asyncio.shield(
             _settle(
                 prepared,
+                session_factory=session_factory,
                 content=content,
                 status="cancelled",
                 error_message="用户停止生成",
@@ -203,6 +207,7 @@ async def generation_events(prepared: PreparedGeneration) -> AsyncIterator[bytes
         message_text = "模型调用超时" if timeout else "模型调用失败"
         message, log, revision = await _settle(
             prepared,
+            session_factory=session_factory,
             content=content,
             status="error",
             error_message=f"{message_text}：{str(exc)[:1000]}",

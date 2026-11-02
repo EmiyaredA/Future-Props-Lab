@@ -37,7 +37,6 @@ from app.llm.providers.temporary_media import TemporaryMediaError
 from app.llm.providers.zealman_live import ZealmanLiveMonitor
 from app.llm.providers.zealman_video import create_task, get_task, upload_reference
 from app.runtime.config import Settings, get_settings
-from app.runtime.db import SessionLocal
 from app.runtime.polling_runner import PollingTaskRunner
 from app.runtime.time import utc_now
 
@@ -55,7 +54,7 @@ class ModelTestGenerationRunner(PollingTaskRunner):
 
     def __init__(
         self,
-        session_factory: async_sessionmaker[AsyncSession] = SessionLocal,
+        session_factory: async_sessionmaker[AsyncSession],
         settings: Settings | None = None,
         download_transport: httpx.AsyncBaseTransport | None = None,
         temporary_media_transport: httpx.AsyncBaseTransport | None = None,

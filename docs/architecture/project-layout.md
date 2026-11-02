@@ -217,6 +217,7 @@ Future-Props-Lab/
   只依赖统一结果或事件，不根据供应商原始载荷控制运行行为；供应商管理界面展示配置属于例外。
 - `llm/playground/` 拥有模型测试会话、图片上下文、调用快照与单轮流式结算；
   `recovery.py` 在启动时取消遗留的 pending 回复并更新所属会话 revision，避免会话一直占用。
+  模型生成／转录／推理 Runner、恢复、文字流和实时语音结算都显式接收所属应用的会话工厂；HTTP 与 WebSocket 从自己的 ASGI 绑定传入，不能回退到单体全局工厂。结算使用独立短事务并显式绑定账号，不能跨网络请求复用同一个 AsyncSession。
   Web 的文字对话和参数控件归属 `features/models/conversation/`。
 - `llm/providers/realtime/` 只拥有供应商无关实时桥接契约与 SenseAudio 协议适配，
   `llm/realtime/` 负责账号模型解析、短会话日志结算和浏览器 WebSocket 编排；

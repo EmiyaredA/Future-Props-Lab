@@ -25,7 +25,6 @@ from app.llm.models.model_inference import ModelInferenceAsset, ModelInferenceTa
 from app.llm.providers.local_qwen import synthesize
 from app.llm.providers.transcription import transcribe_model_audio
 from app.runtime.config import get_settings
-from app.runtime.db import SessionLocal
 from app.runtime.polling_runner import PollingTaskRunner
 from app.runtime.time import utc_now
 
@@ -56,7 +55,7 @@ def add_log(session, row):
 class InferenceRunner(PollingTaskRunner):
     runner_name = "model-inference"
 
-    def __init__(self, session_factory=SessionLocal, transport=None, local_runtime=None):
+    def __init__(self, session_factory, transport=None, local_runtime=None):
         super().__init__()
         self.session_factory, self.transport = session_factory, transport
         self.local_runtime = local_runtime

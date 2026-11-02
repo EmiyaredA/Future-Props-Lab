@@ -96,7 +96,9 @@ async def test_keyless_workflow_api_completion_materialization_logs_and_catalog_
                 headers={"content-type": "video/mp4"},
             )
 
-        runner = ModelTestGenerationRunner(download_transport=httpx.MockTransport(download))
+        runner = ModelTestGenerationRunner(
+            SessionLocal, download_transport=httpx.MockTransport(download)
+        )
         await runner.process_once()
         assert submitted[-1]["api_key"] == ""
         assert (
@@ -161,7 +163,7 @@ async def test_expired_workflow_task_fails_before_polling(monkeypatch):
 
     monkeypatch.setattr("app.llm.playground.generation_runner.get_task", poll)
     # Directly exercise the owner hook with a restored context; no upstream resubmission.
-    runner = ModelTestGenerationRunner()
+    runner = ModelTestGenerationRunner(SessionLocal)
     async with SessionLocal() as session:
         row = await session.get(ModelTestGenerationTask, identity)
         context = runner.task_store._context(row, owner_user_id="test-user")

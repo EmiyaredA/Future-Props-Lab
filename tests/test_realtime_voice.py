@@ -344,6 +344,7 @@ async def test_realtime_log_contains_metrics_but_not_transcripts() -> None:
     )
     turn.first_audio_at = turn.started_at + 0.25
     await _write_log(
+        session_factory=SessionLocal,
         owner_user_id="test-user",
         trace_id=trace_id,
         model=SimpleNamespace(provider_kind="senseaudio_realtime", slug="senseaudio-realtime-1.0"),
@@ -462,7 +463,8 @@ def test_realtime_websocket_accepts_authenticated_workspace(
             allows=lambda _permission: True,
         )
 
-    async def run(websocket, *, owner_user_id: str, check_access, credential):
+    async def run(websocket, *, owner_user_id: str, check_access, credential, session_factory):
+        assert session_factory is SessionLocal
         assert credential.auth_kind == "session"
         await check_access()
         await websocket.send_json({"type": "workspace", "id": owner_user_id})

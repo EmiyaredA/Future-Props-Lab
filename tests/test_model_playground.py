@@ -293,7 +293,7 @@ async def test_cancelled_generation_keeps_partial_reply_and_log(
         )
 
     async def consume() -> None:
-        async for _event in generation_events(prepared):
+        async for _event in generation_events(prepared, session_factory=SessionLocal):
             pass
 
     task = asyncio.create_task(consume())

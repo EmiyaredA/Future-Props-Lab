@@ -23,7 +23,6 @@ from app.llm.providers.transcription import transcribe_model_audio
 from app.llm.schemas.model_test import ModelTestTranscriptionResultDetailOut
 from app.runtime.config import Settings, get_settings
 from app.runtime.credentials import decrypt_secret
-from app.runtime.db import SessionLocal
 from app.runtime.ownership import bind_owner, require_owner_id
 from app.runtime.polling_runner import PollingTaskRunner
 from app.runtime.time import utc_now
@@ -34,7 +33,7 @@ class ModelTestTranscriptionRunner(PollingTaskRunner):
 
     def __init__(
         self,
-        session_factory: async_sessionmaker[AsyncSession] = SessionLocal,
+        session_factory: async_sessionmaker[AsyncSession],
         settings: Settings | None = None,
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:

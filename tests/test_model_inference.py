@@ -9,6 +9,7 @@ import pytest
 from app.llm.inference.runner import InferenceRunner
 from app.llm.providers._senseaudio import ProviderTaskStatus
 from app.main import app
+from app.runtime.db import SessionLocal
 
 CREATED_PROVIDERS = []
 
@@ -110,7 +111,6 @@ async def test_task_idempotency_results_and_materialization_retry(monkeypatch):
 
         from app.llm.routes.model_capacity import model_capacity
         from app.orm import bind_owner
-        from app.runtime.db import SessionLocal
 
         async def no_capacity(*_args, **_kwargs):
             raise AssertionError("A replay must not acquire a new model quota slot")
@@ -140,7 +140,7 @@ async def test_task_idempotency_results_and_materialization_retry(monkeypatch):
         assert (await client.post("/v1/model-inference/tasks", json=changed)).status_code == 409
         url = f"/v1/model-inference/tasks/{task['id']}"
         assert (await client.delete(url, params={"expected_revision": 0})).status_code == 409
-        runner = InferenceRunner()
+        runner = InferenceRunner(SessionLocal)
         await runner.process_once()
         await runner.process_once()
         task = (await client.get(url)).json()
@@ -192,7 +192,7 @@ async def test_interrupted_submission_is_not_replayed(monkeypatch):
                 },
             )
         ).json()
-        runner = InferenceRunner()
+        runner = InferenceRunner(SessionLocal)
         with pytest.raises(asyncio.CancelledError):
             await runner.process(task["id"])
         await runner.recover()
@@ -277,7 +277,7 @@ async def test_supported_modalities_use_shared_driver(
             },
         )
         assert created.status_code == 200, created.text
-        runner = InferenceRunner()
+        runner = InferenceRunner(SessionLocal)
         await runner.process_once()
         await runner.process_once()
         result = (await client.get("/v1/model-inference/tasks/" + created.json()["id"])).json()
@@ -324,7 +324,7 @@ async def test_transcription_private_input_claim_download_and_cleanup(monkeypatc
         task_id = created.json()["id"]
         assert (await client.delete("/v1/model-inference/assets/" + asset["id"])).status_code == 409
         assert (await client.get("/v1/files/" + asset["id"] + "/download")).status_code == 404
-        await InferenceRunner().process_once()
+        await InferenceRunner(SessionLocal).process_once()
         task = (await client.get("/v1/model-inference/tasks/" + task_id)).json()
         assert task["status"] == "completed", task
         result = await client.get("/v1/model-inference/tasks/" + task_id + "/content")
@@ -350,7 +350,6 @@ async def test_input_commit_interruption_preserves_owned_file_and_recovery_clean
 
     from app.llm.inference.assets import root
     from app.llm.models.model_inference import ModelInferenceAsset
-    from app.runtime.db import SessionLocal
 
     original_commit = AsyncSession.commit
 
@@ -381,7 +380,7 @@ async def test_input_commit_interruption_preserves_owned_file_and_recovery_clean
         assert path.is_file()
         orphan = path.parent / "uncommitted-test-file"
         orphan.write_bytes(b"orphan")
-        await InferenceRunner().recover()
+        await InferenceRunner(SessionLocal).recover()
         assert path.is_file() and not orphan.exists()
         assert (await client.delete("/v1/model-inference/assets/" + asset_id)).status_code == 204
         assert not path.exists()

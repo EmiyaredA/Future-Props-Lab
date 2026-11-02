@@ -94,7 +94,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
         await reconcile_snapshot_imports(session, AssetStorage(settings))
     await recover_admissions()
     await recover_interrupted_visual_assistant_runs()
-    await recover_interrupted_model_test_runs()
+    await recover_interrupted_model_test_runs(SessionLocal)
     await recover_interrupted_amadeus_runs()
     lifespan_app.state.code_agent_runs = CodeAgentRuns()
     installer = Installer(local_root(settings))
@@ -112,9 +112,9 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
                 claim_admission=claim_visual_capacity, queue_candidates=visual_queue_candidates
             ),
             AcceptanceRunner(actor_allowed=acceptance_actor_allowed),
-            ModelTestGenerationRunner(),
-            InferenceRunner(local_runtime=local_runtime),
-            ModelTestTranscriptionRunner(),
+            ModelTestGenerationRunner(SessionLocal),
+            InferenceRunner(SessionLocal, local_runtime=local_runtime),
+            ModelTestTranscriptionRunner(SessionLocal),
             GalgameAsrRunner(),
             GalgameAnnotationImportRunner(),
             GalgameVideoExportRunner(),

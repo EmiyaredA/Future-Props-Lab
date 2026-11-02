@@ -52,6 +52,7 @@ async def model_options(session: SessionDep, owner_user_id: OwnerDep):
 
 @router.post("/text", response_model=InferenceTextOut)
 async def generate_text(
+    request: Request,
     body: InferenceTextIn,
     session: SessionDep,
     owner_user_id: OwnerDep,
@@ -59,7 +60,15 @@ async def generate_text(
 ):
     args = await mapped(prepare(session, owner_user_id, body))
     credential = await snapshot_from_principal(session, principal)
-    async with aclosing(events(owner_user_id, body, args, credential=credential)) as stream:
+    async with aclosing(
+        events(
+            owner_user_id,
+            body,
+            args,
+            credential=credential,
+            session_factory=request.app.state.database.sessions,
+        )
+    ) as stream:
         async for event in stream:
             if event.type == "done":
                 return event.result
@@ -86,6 +95,7 @@ async def generate_text(
     },
 )
 async def stream_text(
+    request: Request,
     body: InferenceTextIn,
     session: SessionDep,
     owner_user_id: OwnerDep,
@@ -95,7 +105,15 @@ async def stream_text(
     credential = await snapshot_from_principal(session, principal)
 
     async def stream():
-        async with aclosing(events(owner_user_id, body, args, credential=credential)) as source:
+        async with aclosing(
+            events(
+                owner_user_id,
+                body,
+                args,
+                credential=credential,
+                session_factory=request.app.state.database.sessions,
+            )
+        ) as source:
             async for event in source:
                 yield "data: " + event.model_dump_json(exclude_none=True) + "\n\n"
 

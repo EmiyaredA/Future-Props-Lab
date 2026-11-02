@@ -307,7 +307,7 @@ async def test_transcription_upload_formats_runner_segments_logs_and_cas_cleanup
         assert oversized.status_code == 413
         assert oversized.json()["code"] == "file_too_large"
 
-        await ModelTestTranscriptionRunner().process_once()
+        await ModelTestTranscriptionRunner(SessionLocal).process_once()
         assert len(calls) == 4
         assert all(call["language"] == "zh" for call in calls)
         assert all(call["parameters"]["enable_punctuation"] is True for call in calls)
@@ -436,7 +436,7 @@ async def test_pro_asr_accepts_100_mb_model_limit(monkeypatch: pytest.MonkeyPatc
             "abbreviations": False,
         }
 
-        await ModelTestTranscriptionRunner().process_once()
+        await ModelTestTranscriptionRunner(SessionLocal).process_once()
         assert calls[0]["parameters"] == task["parameters"]
         completed = (await client.get(f"/v1/model-test/transcription-tasks/{task['id']}")).json()
         assert completed["status"] == "completed"
@@ -495,7 +495,7 @@ async def test_transcription_library_source_is_private_and_survives_source_delet
         assert content.status_code == 200
         assert content.content == b"OggSlibrary-audio"
 
-        await ModelTestTranscriptionRunner().process_once()
+        await ModelTestTranscriptionRunner(SessionLocal).process_once()
         completed = (await client.get(f"/v1/model-test/transcription-tasks/{task['id']}")).json()
         assert completed["status"] == "completed"
         assert completed["result_text"] == "来自文件管理的转写"
@@ -531,7 +531,7 @@ async def test_transcription_recovery_marks_running_task_failed_and_logs_it() ->
             row.revision += 1
             await session.commit()
 
-        await ModelTestTranscriptionRunner().recover()
+        await ModelTestTranscriptionRunner(SessionLocal).recover()
         failed = (await client.get(f"/v1/model-test/transcription-tasks/{task['id']}")).json()
         assert failed["status"] == "failed"
         assert "避免重复计费" in failed["error_message"]

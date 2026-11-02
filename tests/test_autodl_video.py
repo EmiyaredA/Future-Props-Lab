@@ -423,8 +423,8 @@ async def test_every_runner_inlines_motion_video_and_audio_without_temporary_upl
         monkeypatch.setattr(module, "submit_generation_task", submit)
     visual, test, inference = (
         visual_module.VisualGenerationRunner(),
-        test_module.ModelTestGenerationRunner(),
-        inference_module.InferenceRunner(),
+        test_module.ModelTestGenerationRunner(SessionLocal),
+        inference_module.InferenceRunner(SessionLocal),
     )
     for runner in (visual, test):
         monkeypatch.setattr(runner, "_asset_data_uri", inline)

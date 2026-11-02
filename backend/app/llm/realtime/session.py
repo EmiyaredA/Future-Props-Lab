@@ -29,7 +29,6 @@ from app.llm.providers.realtime.constants import (
 from app.llm.providers.realtime.contracts import RealtimeProviderUnavailableError
 from app.llm.providers.realtime.senseaudio import SenseAudioRealtimeBridge
 from app.llm.realtime.catalog import RealtimeModelUnavailableError, resolve_realtime_model
-from app.runtime.db import SessionLocal
 from app.runtime.ids import new_id
 from app.runtime.ownership import bind_owner
 
@@ -51,6 +50,7 @@ class TurnMetrics:
 
 async def _write_log(
     *,
+    session_factory,
     owner_user_id: str,
     trace_id: str,
     model: Any,
@@ -78,7 +78,7 @@ async def _write_log(
         max(0, round((max(now, turn.first_audio_at) - turn.started_at) * 1000)) if turn else 0
     )
     snap = credential or CredentialSnapshot()
-    async with SessionLocal() as session:
+    async with session_factory() as session:
         bind_owner(session, owner_user_id)
         session.add(
             LlmCallLog(
@@ -237,6 +237,7 @@ async def run_realtime_model_test(
     websocket: WebSocket,
     *,
     owner_user_id: str,
+    session_factory,
     check_access=None,
     credential: CredentialSnapshot | None = None,
 ) -> None:
@@ -283,7 +284,7 @@ async def run_realtime_model_test(
         voice = (
             requested_voice if requested_voice in SENSEAUDIO_VOICE_IDS else SENSEAUDIO_DEFAULT_VOICE
         )
-        async with SessionLocal() as session:
+        async with session_factory() as session:
             bind_owner(session.sync_session, owner_user_id)
             model = await resolve_realtime_model(
                 session, owner_user_id=owner_user_id, model_id=model_id
@@ -382,6 +383,7 @@ async def run_realtime_model_test(
                     turn.usage = dict(event.get("usage") or {})
                     turn.timings = dict(event.get("timings") or {})
                     await _write_log(
+                        session_factory=session_factory,
                         owner_user_id=owner_user_id,
                         trace_id=trace_id,
                         model=model,
@@ -398,6 +400,7 @@ async def run_realtime_model_test(
                 elif event_type == "error":
                     turn = turns.get(active_turn_id or "")
                     await _write_log(
+                        session_factory=session_factory,
                         owner_user_id=owner_user_id,
                         trace_id=trace_id,
                         model=model,
@@ -442,6 +445,7 @@ async def run_realtime_model_test(
                 task.result()
         if active_turn_id:
             await _write_log(
+                session_factory=session_factory,
                 owner_user_id=owner_user_id,
                 trace_id=trace_id,
                 model=model,
@@ -459,6 +463,7 @@ async def run_realtime_model_test(
     except WebSocketDisconnect:
         if model is not None and active_turn_id:
             await _write_log(
+                session_factory=session_factory,
                 owner_user_id=owner_user_id,
                 trace_id=trace_id,
                 model=model,
@@ -478,6 +483,7 @@ async def run_realtime_model_test(
             model = getattr(exc, "model", None)
         if model is not None and logged_turns == 0:
             await _write_log(
+                session_factory=session_factory,
                 owner_user_id=owner_user_id,
                 trace_id=trace_id,
                 model=model,
@@ -501,6 +507,7 @@ async def run_realtime_model_test(
     except Exception:
         if model is not None and logged_turns == 0:
             await _write_log(
+                session_factory=session_factory,
                 owner_user_id=owner_user_id,
                 trace_id=trace_id,
                 model=model,

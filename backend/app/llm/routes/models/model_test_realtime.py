@@ -79,6 +79,7 @@ async def realtime_socket(websocket: WebSocket) -> None:
         credential = await snapshot_caller_credential(principal)
         await run_realtime_model_test(
             websocket,
+            session_factory=websocket.app.state.database.sessions,
             owner_user_id=owner_user_id,
             check_access=check_access,
             credential=credential,
