@@ -36,4 +36,4 @@ export {
   type FileListKeyOptions,
 } from "./queryKeys";
 
-export { ACCEPT, AssetPreview } from "./AssetBrowserParts";
+export { ACCEPT, AssetPreview, AssetPreviewDialog } from "./AssetBrowserParts";

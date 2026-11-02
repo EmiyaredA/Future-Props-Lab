@@ -1,6 +1,6 @@
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { FormEvent, useMemo, useState } from "react";
-import { ArrowRight, Clock3, Search, Tag } from "lucide-react";
+import { Clock3, Search, Tag } from "lucide-react";
 import {
   APPLICATION_CATEGORIES,
   APPLICATION_TAGS,
@@ -144,15 +144,11 @@ export function ApplicationCenterPage({
                   </span>
                   <span className="application-copy">
                     <strong>{app.name}</strong>
-                    <small>{app.description}</small>
+                    <small title={app.description}>{app.description}</small>
                     <span className="application-capabilities">
-                      {app.capabilities.map((item) => (
+                      {app.capabilities.slice(0, 2).map((item) => (
                         <em key={item}>{item}</em>
                       ))}
-                    </span>
-                    <span className="application-open">
-                      进入应用
-                      <ArrowRight aria-hidden />
                     </span>
                   </span>
                 </button>
@@ -194,7 +190,6 @@ export function ApplicationCenterPage({
                     <strong>{app.name}</strong>
                     <small>{categoryLabel(app.category)}</small>
                   </span>
-                  <ArrowRight aria-hidden />
                 </button>
               );
             })

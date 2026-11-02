@@ -349,6 +349,7 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("GET", "/v1/file-storage/layout"),
         ("GET", "/v1/files"),
         ("GET", "/v1/files/{asset_id}/thumbnail"),
+        ("GET", "/v1/files/{asset_id}/preview"),
         ("GET", "/v1/files/{asset_id}/content"),
         ("GET", "/v1/files/{asset_id}/media-info"),
         ("GET", "/v1/files/{asset_id}/download"),

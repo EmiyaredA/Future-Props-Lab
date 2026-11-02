@@ -8677,6 +8677,76 @@
         "title": "FileOut",
         "type": "object"
       },
+      "FilePreviewOut": {
+        "properties": {
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "kind": {
+            "enum": [
+              "image",
+              "video",
+              "audio",
+              "pdf",
+              "text",
+              "unsupported"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "page_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Count"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "truncated": {
+            "default": false,
+            "title": "Truncated",
+            "type": "boolean"
+          },
+          "waveform_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Waveform Seconds"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "FilePreviewOut",
+        "type": "object"
+      },
       "FileWriteIn": {
         "additionalProperties": false,
         "properties": {
@@ -48870,6 +48940,48 @@
         ]
       }
     },
+    "/v1/files/{asset_id}/preview": {
+      "get": {
+        "operationId": "preview_file_metadata_v1_files__asset_id__preview_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FilePreviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview File Metadata",
+        "tags": [
+          "file-management"
+        ]
+      }
+    },
     "/v1/files/{asset_id}/thumbnail": {
       "get": {
         "operationId": "preview_thumbnail_v1_files__asset_id__thumbnail_get",
@@ -48896,6 +49008,17 @@
                 1280
               ],
               "title": "Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
               "type": "integer"
             }
           }

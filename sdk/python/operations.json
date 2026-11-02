@@ -379,6 +379,10 @@
     "method": "video_media_info",
     "resource": "files"
   },
+  "GET /v1/files/{asset_id}/preview": {
+    "method": "file_preview_metadata",
+    "resource": "files"
+  },
   "GET /v1/files/{asset_id}/thumbnail": {
     "method": "preview_thumbnail",
     "resource": "files"

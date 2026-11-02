@@ -1,21 +1,16 @@
-import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 /* eslint-disable react-refresh/only-export-components */
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useRef } from "react";
 import {
   Download,
   FileText,
   FolderOpen,
   Image,
-  LoaderCircle,
   MoreHorizontal,
   Music,
   Pencil,
   Trash2,
   Video,
-  X,
 } from "lucide-react";
-import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
-import { useVisibleApiBlobUrl } from "@platform/api/useVisibleApiBlobUrl";
 import type { SelectOption } from "@shared/ui/CustomSelect";
 import type {
   ManagedFile,
@@ -94,31 +89,12 @@ export function extensionLabel(file: ManagedFile) {
     : kindLabel(file.media_kind);
 }
 
-export function originalExtension(file: ManagedFile) {
-  const match = /(\.[^./\\]+)$/.exec(file.original_filename);
-  return match?.[1] ?? "";
-}
-
-export function stripOriginalExtension(name: string, file: ManagedFile) {
-  const extension = originalExtension(file);
-  const trimmed = name.trim();
-  if (!extension || trimmed.length <= extension.length) return trimmed;
-  return trimmed
-    .toLocaleLowerCase("zh-CN")
-    .endsWith(extension.toLocaleLowerCase("zh-CN"))
-    ? trimmed.slice(0, -extension.length).trim()
-    : trimmed;
-}
-
-export function fileDisplayName(file: ManagedFile) {
-  return stripOriginalExtension(file.display_name, file) || file.display_name;
-}
-
-export function fileDownloadName(file: ManagedFile) {
-  const baseName = fileDisplayName(file).replace(/[\\/]/g, "-").trim();
-  const fallback = stripOriginalExtension(file.original_filename, file);
-  return `${baseName || fallback || "download"}${originalExtension(file)}`;
-}
+export {
+  originalExtension,
+  stripOriginalExtension,
+  fileDisplayName,
+  fileDownloadName,
+} from "./fileNames";
 
 export function FileKindIcon({ kind }: { kind: MediaKind }) {
   const Icon =
@@ -132,129 +108,8 @@ export function FileKindIcon({ kind }: { kind: MediaKind }) {
   return <Icon aria-hidden />;
 }
 
-export function AssetPreview({ file }: { file: ManagedFile }) {
-  const { url, ref } = useVisibleApiBlobUrl(
-    file.media_kind === "image"
-      ? `/v1/files/${file.id}/thumbnail?size=320`
-      : null,
-  );
-  return (
-    <div
-      ref={ref}
-      style={{
-        width: "100%",
-        height: "100%",
-        display: "grid",
-        placeItems: "center",
-      }}
-    >
-      {url ? (
-        <ResponsiveImage src={url} alt="" decoding="async" />
-      ) : (
-        <span>
-          <FileKindIcon kind={file.media_kind} />
-        </span>
-      )}
-    </div>
-  );
-}
-
-export function AssetPreviewDialog({
-  file,
-  onClose,
-  onDownload,
-}: {
-  file: ManagedFile;
-  onClose: () => void;
-  onDownload: () => void;
-}) {
-  const titleId = useId();
-  const canInlinePreview =
-    file.media_kind === "image" ||
-    file.media_kind === "video" ||
-    file.media_kind === "audio";
-  const { url: source, error } = useApiBlobUrl(
-    canInlinePreview
-      ? `/v1/files/${encodeURIComponent(file.id)}/${file.media_kind === "image" && file.mime_type !== "image/svg+xml" ? "thumbnail?size=1280" : "content"}`
-      : null,
-  );
-  const failed = Boolean(error);
-
-  useEffect(() => {
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [onClose]);
-
-  return (
-    <div
-      className="file-preview-backdrop"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <section
-        className="file-preview-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-      >
-        <header>
-          <div>
-            <span>{kindLabel(file.media_kind)}预览</span>
-            <h2 id={titleId}>{fileDisplayName(file)}</h2>
-          </div>
-          <button
-            type="button"
-            aria-label="关闭预览"
-            title="关闭"
-            onClick={onClose}
-          >
-            <X aria-hidden />
-          </button>
-        </header>
-        <div className={`file-preview-stage ${file.media_kind}`}>
-          {!canInlinePreview ? (
-            <div className="file-preview-fallback">
-              <FileKindIcon kind={file.media_kind} />
-              <strong>{fileDisplayName(file)}</strong>
-              <p>该文件类型暂不支持在线预览，可下载后查看。</p>
-              <button type="button" onClick={onDownload}>
-                <Download aria-hidden /> 下载文件
-              </button>
-            </div>
-          ) : null}
-          {canInlinePreview && !source && !failed ? (
-            <span className="file-preview-state">
-              <LoaderCircle className="spin" aria-hidden />
-              正在加载预览…
-            </span>
-          ) : null}
-          {canInlinePreview && failed ? (
-            <span className="file-preview-state" role="alert">
-              预览加载失败，请关闭后重试。
-            </span>
-          ) : null}
-          {source && file.media_kind === "image" ? (
-            <ResponsiveImage src={source} alt={fileDisplayName(file)} />
-          ) : null}
-          {source && file.media_kind === "video" ? (
-            <video src={source} controls />
-          ) : null}
-          {source && file.media_kind === "audio" ? (
-            <div className="file-audio-preview">
-              <Music aria-hidden />
-              <strong>{fileDisplayName(file)}</strong>
-              <audio src={source} controls />
-            </div>
-          ) : null}
-        </div>
-      </section>
-    </div>
-  );
-}
+export { FileThumbnail as AssetPreview } from "./FileThumbnail";
+export { FilePreviewDialog as AssetPreviewDialog } from "./FilePreviewDialog";
 
 export function pathToFolder(
   folderId: string | undefined,

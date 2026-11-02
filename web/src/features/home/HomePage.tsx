@@ -1,79 +1,24 @@
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import {
-  ArrowRight,
-  ArrowUpRight,
-  AudioLines,
-  Box,
   Braces,
-  ChevronDown,
   FileText,
   FlaskConical,
   Folder,
   Grid2X2,
   History,
-  Image,
   Link,
-  MessageSquare,
   Network,
   Plug,
-  Server,
 } from "lucide-react";
 import type { ApplicationDefinition } from "@features/applications";
 import { TOOLS } from "@features/tools";
 import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
+import { HomeInfrastructure } from "./HomeInfrastructure";
 import { HomeHeroPet } from "./HomeHeroPet";
 import { HomeApplicationFolders } from "./HomeApplicationFolders";
 import { HomeFiles } from "./HomeFiles";
+import { HomeResourceSection as ResourceSection } from "./HomeResourceSection";
 import "./home.css";
-
-function ResourceSection({
-  id,
-  title,
-  description,
-  icon: Icon,
-  action,
-  onOpen,
-  children,
-}: {
-  id: string;
-  title: string;
-  description: string;
-  icon: typeof Folder;
-  action: string;
-  onOpen: () => void;
-  children: ReactNode;
-}) {
-  const [open, setOpen] = useState(true);
-  return (
-    <section id={id} className="home-resource home-panel" tabIndex={-1}>
-      <header className="home-section-heading">
-        <span className="home-copper-icon">
-          <Icon aria-hidden />
-        </span>
-        <div>
-          <h2>{title}</h2>
-          <p>{description}</p>
-        </div>
-        <button className="home-text-link" onClick={onOpen}>
-          {action}
-          <ArrowUpRight aria-hidden />
-        </button>
-        <button
-          className="home-collapse"
-          aria-expanded={open}
-          aria-controls={`${id}-content`}
-          onClick={() => setOpen(!open)}
-        >
-          {open ? "收起" : "展开"}
-          <ChevronDown aria-hidden data-open={open} />
-        </button>
-      </header>
-      <div id={`${id}-content`} hidden={!open}>
-        {children}
-      </div>
-    </section>
-  );
-}
 
 export function HomePage({
   onNavigate,
@@ -103,16 +48,6 @@ export function HomePage({
     video: "从文字或图片开始生成视频",
     synthesis: "输入文本，试听语音合成",
   };
-  const jumpTo = (id: string) => {
-    const section = document.getElementById(id);
-    section?.scrollIntoView({
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? "instant"
-        : "smooth",
-      block: "start",
-    });
-    section?.focus({ preventScroll: true });
-  };
   return (
     <section className="page home-page">
       <header className="home-header">
@@ -136,7 +71,6 @@ export function HomePage({
               onClick={() => onNavigate("/apps")}
             >
               全部应用
-              <ArrowUpRight aria-hidden />
             </button>
           </header>
           <HomeApplicationFolders
@@ -149,69 +83,7 @@ export function HomePage({
             <h2 id="home-ai-title">AI 能力</h2>
             <p>从模型接入，到效果验证。</p>
           </header>
-          <div className="home-ai-feature home-panel">
-            <div className="home-feature-copy">
-              <span className="home-copper-icon">
-                <Box aria-hidden />
-              </span>
-              <h3>模型与智能体</h3>
-              <p>
-                供应商、模型目录与
-                <br />
-                编程智能体
-              </p>
-              <button
-                className="home-text-link"
-                onClick={() => onNavigate("/model-service")}
-              >
-                管理模型
-                <ArrowUpRight aria-hidden />
-              </button>
-            </div>
-            <div className="home-model-preview" aria-label="模型能力入口">
-              {[
-                {
-                  icon: MessageSquare,
-                  title: "对话模型",
-                  tags: ["文本理解", "代码生成", "逻辑推理"],
-                },
-                {
-                  icon: Image,
-                  title: "视觉模型",
-                  tags: ["图像理解", "图像生成", "视频生成"],
-                },
-                {
-                  icon: AudioLines,
-                  title: "语音模型",
-                  tags: ["语音识别", "语音合成", "实时语音"],
-                },
-              ].map(({ icon: Icon, title, tags }) => (
-                <button
-                  key={title}
-                  onClick={() => onNavigate("/model-service")}
-                >
-                  <span>
-                    <Icon aria-hidden />
-                    {title}
-                  </span>
-                  <span className="home-capability-tags">
-                    {tags.map((tag) => (
-                      <small key={tag}>{tag}</small>
-                    ))}
-                  </span>
-                  <ArrowUpRight aria-hidden />
-                </button>
-              ))}
-              <button
-                className="home-agent-link"
-                onClick={() => onNavigate("/code-agents")}
-              >
-                <Server aria-hidden />
-                编程智能体<span>连接与执行配置</span>
-                <ArrowRight aria-hidden />
-              </button>
-            </div>
-          </div>
+          <HomeInfrastructure onNavigate={onNavigate} />
           <div className="home-ai-feature home-test-feature home-panel">
             <div className="home-feature-copy">
               <span className="home-copper-icon">
@@ -223,13 +95,6 @@ export function HomePage({
                 <br />
                 与语音测试
               </p>
-              <button
-                className="home-text-link"
-                onClick={() => onNavigate(`/model-test?mode=${mode}`)}
-              >
-                开始测试
-                <ArrowUpRight aria-hidden />
-              </button>
             </div>
             <div className="home-test-preview">
               <CompactPanelTabs
@@ -243,10 +108,9 @@ export function HomePage({
                 <div>
                   <span className="home-test-hint">参数在测试台配置</span>
                   <button
-                    aria-label={`进入${modes.find((item) => item.value === mode)?.label}测试`}
                     onClick={() => onNavigate(`/model-test?mode=${mode}`)}
                   >
-                    <ArrowUpRight aria-hidden />
+                    开始测试
                   </button>
                 </div>
               </div>
@@ -264,40 +128,25 @@ export function HomePage({
                 <strong>调用日志</strong>
                 <small>用量、耗时与错误记录</small>
               </span>
-              <ArrowRight aria-hidden />
             </button>
           )}
         </section>
       </div>
-      <nav className="home-jump home-panel" aria-label="首页资源导航">
-        {[
-          { id: "home-files", icon: Folder, label: "文件管理" },
-          { id: "home-tools", icon: Grid2X2, label: "工具导航" },
-          { id: "home-integrations", icon: Link, label: "集成中心" },
-        ].map(({ id, icon: Icon, label }) => (
-          <button key={id} onClick={() => jumpTo(id)}>
-            <Icon aria-hidden />
-            {label}
-            <ChevronDown aria-hidden />
-          </button>
-        ))}
-      </nav>
-      <ResourceSection
-        id="home-files"
-        title="文件管理"
-        description="素材与文件，统一整理"
-        icon={Folder}
-        action="进入文件库"
-        onOpen={() => onNavigate("/files")}
-      >
-        {showFiles ? (
-          <HomeFiles onNavigate={onNavigate} canWrite={canWrite} />
-        ) : (
+      {showFiles ? (
+        <HomeFiles onNavigate={onNavigate} canWrite={canWrite} />
+      ) : (
+        <ResourceSection
+          id="home-files"
+          title="文件管理"
+          icon={Folder}
+          action="进入文件库"
+          onOpen={() => onNavigate("/files")}
+        >
           <p className="home-resource-note">
             图片、视频、音频与文档，集中管理。
           </p>
-        )}
-      </ResourceSection>
+        </ResourceSection>
+      )}
       <ResourceSection
         id="home-tools"
         title="工具导航"
@@ -327,7 +176,6 @@ export function HomePage({
                 <strong>{tool.name}</strong>
                 <small>{tool.description}</small>
               </span>
-              <ArrowRight aria-hidden />
             </button>
           ))}
         </div>
@@ -337,8 +185,6 @@ export function HomePage({
         title="集成中心"
         description="连接工具与创作能力"
         icon={Link}
-        action="管理集成"
-        onOpen={() => onNavigate("/integrations/tool-apis")}
       >
         <div className="home-resource-grid">
           {[
@@ -362,7 +208,7 @@ export function HomePage({
             },
             {
               name: "外部连接",
-              description: "配置 CLI 连接",
+              description: "连接外部服务",
               icon: Plug,
               path: "external-connections",
             },
@@ -379,7 +225,6 @@ export function HomePage({
                 <strong>{item.name}</strong>
                 <small>{item.description}</small>
               </span>
-              <ArrowRight aria-hidden />
             </button>
           ))}
         </div>

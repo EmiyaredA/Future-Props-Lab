@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, vi } from "vitest";
 import { HomeFiles } from "@features/home/HomeFiles";
@@ -17,6 +17,11 @@ vi.mock("@features/files/api", () => ({
   getFiles: vi.fn(),
   getFolders: vi.fn().mockResolvedValue({ items: [] }),
   uploadManagedFile: vi.fn(),
+}));
+vi.mock("@features/files/FileThumbnail", () => ({
+  FileThumbnail: ({ file }: { file: ManagedFile }) => (
+    <div data-preview-file={file.id} />
+  ),
 }));
 beforeEach(() => {
   vi.mocked(getFiles).mockReset().mockResolvedValue({ items: [] });
@@ -44,6 +49,71 @@ test("empty categories retain real file type navigation and readonly omits uploa
   ).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: /文档资料/ }));
   expect(navigate).toHaveBeenCalledWith("/files?kind=document");
+});
+
+test.each([0, 1, 2, 3, 5])(
+  "each sleeve shows at most three recent files and fills missing layers (%i files per kind)",
+  async (count) => {
+    const kinds = ["image", "video", "audio", "document"] as const;
+    // The API supplies updated-descending order, interleaved across categories.
+    const items = Array.from({ length: count }, (_, index) =>
+      kinds.map(
+        (kind) =>
+          ({
+            id: `${kind}-${index}`,
+            display_name: `${kind} 样本 ${index}`,
+            media_kind: kind,
+          }) as ManagedFile,
+      ),
+    ).flat();
+    vi.mocked(getFiles).mockResolvedValue({ items });
+    const { container } = mount(false);
+    await waitFor(() =>
+      expect(container.querySelector(".home-file-grid")).toHaveAttribute(
+        "aria-busy",
+        "false",
+      ),
+    );
+    for (const kind of kinds) {
+      const category = container.querySelector(`[data-kind="${kind}"]`)!;
+      const layers = category.querySelectorAll(".home-file-paper");
+      expect(layers).toHaveLength(3);
+      expect(category.querySelectorAll("[data-preview-file]")).toHaveLength(
+        Math.min(count, 3),
+      );
+      for (let index = 0; index < 3; index++) {
+        const layer = category.querySelector(`[data-layer="${index}"]`)!;
+        if (index < count) {
+          expect(layer).toHaveAttribute("data-file-id", `${kind}-${index}`);
+        } else {
+          expect(layer).not.toHaveAttribute("data-file-id");
+        }
+        if (index > 0) {
+          expect(layer).toHaveAttribute("aria-hidden", "true");
+          expect(layer.querySelector("button, [tabindex]")).toBeNull();
+        }
+      }
+      expect(
+        within(category as HTMLElement).queryAllByRole("button", {
+          name: /^预览 /,
+        }),
+      ).toHaveLength(count ? 1 : 0);
+    }
+  },
+);
+
+test("loading sleeves retain navigation and do not invent preview contents", async () => {
+  vi.mocked(getFiles).mockReturnValue(new Promise(() => {}));
+  const { container } = mount(false);
+  expect(container.querySelector(".home-file-grid")).toHaveAttribute(
+    "aria-busy",
+    "true",
+  );
+  expect(screen.getAllByText("正在加载…")).toHaveLength(4);
+  expect(container.querySelector("[data-preview-file]")).toBeNull();
+  expect(screen.getAllByRole("button", { name: /素材|文档资料/ })).toHaveLength(
+    4,
+  );
 });
 
 test("homepage upload invalidates the owner cache and retries only failed files", async () => {

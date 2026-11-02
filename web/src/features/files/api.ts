@@ -11,6 +11,16 @@ import {
 export type ManagedFile = components["schemas"]["VisualAssetOut"];
 export type ManagedFolder = components["schemas"]["VisualAssetFolderOut"];
 export type MediaKind = ManagedFile["media_kind"];
+export type FilePreview = components["schemas"]["FilePreviewOut"];
+
+export async function getFilePreview(assetId: string, signal?: AbortSignal) {
+  return unwrap(
+    await api.GET("/v1/files/{asset_id}/preview", {
+      params: { path: { asset_id: assetId } },
+      signal,
+    }),
+  );
+}
 export type StorageLayoutStatus =
   components["schemas"]["StorageLayoutStatusOut"];
 export type StorageLayoutMigration =

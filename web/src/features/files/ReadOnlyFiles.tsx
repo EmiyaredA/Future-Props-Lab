@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ReadOnlyPage } from "@shared/ui/ReadOnlyPage";
-import { ReadOnlyMedia } from "@shared/ui/ReadOnlyMedia";
+import { FileThumbnail } from "./FileThumbnail";
+import { FilePreviewDialog } from "./FilePreviewDialog";
 import { getFiles, getFolders, type ManagedFile, type MediaKind } from "./api";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { fileQueryKeys } from "./queryKeys";
@@ -95,6 +96,9 @@ export function ReadOnlyFiles({
             key={f.reference_id || f.id}
             onClick={() => setSelected(f)}
           >
+            <span className="readonly-file-thumbnail">
+              <FileThumbnail file={f} />
+            </span>
             <strong>{f.display_name || f.original_filename}</strong>
             <small>
               {f.media_kind} · {(f.byte_size / 1024).toFixed(0)} KB
@@ -104,14 +108,7 @@ export function ReadOnlyFiles({
       </div>
       {files.data?.items.length === 0 ? <p>当前目录暂无素材。</p> : null}
       {selected ? (
-        <article>
-          <h2>{selected.display_name}</h2>
-          <ReadOnlyMedia
-            path={`/v1/files/${encodeURIComponent(selected.id)}/content`}
-            kind={selected.media_kind}
-            name={selected.original_filename}
-          />
-        </article>
+        <FilePreviewDialog file={selected} onClose={() => setSelected(null)} />
       ) : null}
     </ReadOnlyPage>
   );

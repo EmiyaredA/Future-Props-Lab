@@ -189,3 +189,27 @@ test("application center filters and records recent application access", async (
   );
   expect(screen.getAllByText("视觉创作工坊")).toHaveLength(2);
 });
+
+test("home gives model services and programming agents independent management entries", async () => {
+  const user = userEvent.setup();
+  const navigate = vi.fn();
+  render(<HomePage onNavigate={navigate} />);
+  const models = screen.getByRole("region", { name: "模型服务" });
+  const agents = screen.getByRole("region", { name: "编程智能体" });
+  await user.click(within(models).getByRole("button", { name: "管理模型" }));
+  expect(navigate).toHaveBeenLastCalledWith("/model-service");
+  await user.click(within(agents).getByRole("button", { name: "管理智能体" }));
+  expect(navigate).toHaveBeenLastCalledWith("/code-agents");
+  expect(within(models).getAllByRole("button")).toHaveLength(1);
+  expect(within(agents).getAllByRole("button")).toHaveLength(1);
+  expect(within(models).getAllByRole("listitem")).toHaveLength(3);
+  expect(within(agents).getAllByRole("listitem")).toHaveLength(5);
+  expect(within(agents).getByText("Codex")).toBeInTheDocument();
+  expect(screen.getAllByRole("button", { name: "开始测试" })).toHaveLength(1);
+  expect(
+    screen.queryByRole("button", { name: "管理集成" }),
+  ).not.toBeInTheDocument();
+  expect(
+    within(agents).getByText("支持的 CLI · 连接与执行配置"),
+  ).toBeInTheDocument();
+});

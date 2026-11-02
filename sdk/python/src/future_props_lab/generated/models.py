@@ -1427,6 +1427,14 @@ class FileOut(WireModel):
     name: str = Field(default=..., alias='name')
     sha256: str = Field(default=..., alias='sha256')
 
+class FilePreviewOut(WireModel):
+    duration_seconds: float | None = Field(default=None, alias='duration_seconds')
+    kind: Literal['image', 'video', 'audio', 'pdf', 'text', 'unsupported'] = Field(default=..., alias='kind')
+    page_count: int | None = Field(default=None, alias='page_count')
+    text: str | None = Field(default=None, alias='text')
+    truncated: bool = Field(default=False, alias='truncated')
+    waveform_seconds: float | None = Field(default=None, alias='waveform_seconds')
+
 class FileWriteIn(WireModel):
     content: str = Field(default=..., alias='content', max_length=100000)
     expected_sha256: str = Field(default='', alias='expected_sha256', max_length=64)
@@ -6597,6 +6605,7 @@ FieldGroup.model_rebuild()
 FieldSpec.model_rebuild()
 FileListOut.model_rebuild()
 FileOut.model_rebuild()
+FilePreviewOut.model_rebuild()
 FileWriteIn.model_rebuild()
 Filter.model_rebuild()
 GalgameAnnotationImportIn.model_rebuild()

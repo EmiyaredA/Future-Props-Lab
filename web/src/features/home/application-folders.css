@@ -164,9 +164,18 @@
 .home-folder[data-open="true"] .home-folder-paper > span {
   opacity: 1;
 }
-@media (hover: hover) {
+@media (hover: hover) and (pointer: fine) {
   .home-folder:not([data-open="true"]):hover .home-folder-front {
-    transform: rotateX(-12deg);
+    transform: rotateX(-24deg);
+  }
+  .home-folder:not([data-open="true"]):hover .home-folder-paper {
+    top: -17%;
+    left: calc(
+      (43% - (var(--paper-count) - 1) * 22%) / 2 + var(--paper-index) * 22%
+    );
+    transform: rotate(
+      calc(-7deg * (var(--paper-count) - 1) + var(--paper-index) * 14deg)
+    );
   }
   .home-folder-paper:hover {
     transform: translateY(-13%) rotate(0deg) !important;

@@ -874,6 +874,8 @@ ZEALMAN 新提交使用应用独立实时连接，旧控制台客户端身份只
 - `PATCH/DELETE /v1/file-folders/{folder_id}`：CAS 改名、移动或递归删除文件夹。
 - `GET/POST /v1/files`：按项目、当前文件夹、搜索词、媒体类型和排序查询，或 multipart 上传单文件（可选 Form `display_name` 覆盖显示名，扩展名仍按上传文件名）。
 - `PATCH/DELETE /v1/files/{asset_id}`：CAS 改名、移动或删除文件。
+- `GET /v1/files/{asset_id}/preview`：当前账号文件的预览元数据、PDF 页数或最多 64 KiB 安全文本，权限 `content.read`；字段与边界见[文件内容预览](loading-and-images.md#视频音频和文档预览)。Python SDK 使用 `client.files.file_preview_metadata(asset_id=asset_id)`。
+- `GET /v1/files/{asset_id}/thumbnail?size=320&page=1`：图片、视频真实帧、音频前 60 秒波形或 PDF 当前页；页码仅 PDF 可大于 1，尺寸为 128/320/640/1280。Python SDK 的 `preview_thumbnail` 支持 `page`；均返回私人派生资源且重新校验归属。
 - `GET /v1/files/{asset_id}/content`、`/download`：鉴权预览或下载原始内容；下载接口可传
   `download_name` 作为本次下载的显示名，服务端始终追加素材自身的真实后缀并清理路径字符。
 - `POST /v1/visual-workshop/projects/{project_id}/asset-imports`：批量导入公共库引用，或把其他视觉项目素材复制为当前项目的独立副本。

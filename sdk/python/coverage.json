@@ -910,6 +910,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/files/{asset_id}/preview",
+    "sdk": "client.files.file_preview_metadata",
+    "document": "/docs.html?page=sdk-reference-files#file-preview-metadata",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/files/{asset_id}/thumbnail",
     "sdk": "client.files.preview_thumbnail",
     "document": "/docs.html?page=sdk-reference-files#preview-thumbnail",

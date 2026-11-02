@@ -29,6 +29,23 @@
 
 派生缓存位于已授权源账号的 `previews/`，按资源版本和尺寸区分。创作封面在已有账号封面目录按不可变源文件名派生。缓存不能授予访问权；每次请求重新执行原有归属、发布和逐篇权限检查，返回 `private, no-store`，不进入公共缓存。
 
+## 视频、音频和文档预览
+
+`GET /v1/files/{asset_id}/preview` 需要 `content.read`，返回 `kind`（image/video/audio/pdf/text/unsupported）、
+可空的 `duration_seconds`、`waveform_seconds`、`page_count`、`text` 与 `truncated`。
+文本类（TXT、Markdown、JSON、CSV）最多读取前 64 KiB，截断时不保留不完整的 UTF-8 字符；正文仅作为文本显示。
+Office、压缩包和字体返回 unsupported，仍可鉴权下载原始文件。
+
+`GET /v1/files/{asset_id}/thumbnail` 同时支持视频帧、音频波形和 PDF 页面。`page` 为从 1 开始的 PDF 页码，
+默认第一页；非 PDF 仅接受 `page=1`。尺寸继续使用 128/320/640/1280，返回 WebP。
+视频先取约第 1 秒，过短时回退首帧；音频波形来自前 60 秒实际单声道采样，时长短于 60 秒则使用全段。
+PDF 使用独立子进程渲染，支持扫描页面，不执行原始 HTML 或 PDF 脚本。
+
+元数据与派生图均在授权后读取，返回 `private, no-store`；路径包含账号、素材 ID、revision、尺寸和页码。
+最多两个并行处理，单次外部进程最多 30 秒，取消与超时会终止进程并清理临时派生文件。
+原始媒体内容仅在用户打开播放弹窗后请求；PDF 按当前页读取 1280 像素图，翻页会取消过期读取并回收 Object URL。
+预览失败提供重试及下载，原始文件保持不变，无数据库迁移。
+
 ## 入口清单
 
 | 入口 | 加载反馈 | 图片读取策略 |

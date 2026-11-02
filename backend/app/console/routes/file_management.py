@@ -3,7 +3,7 @@ from __future__ import annotations
 import shutil
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Query, Request, Response, UploadFile
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
@@ -20,11 +20,13 @@ from app.capabilities.asset_store.account_upgrade import (
     migrate_accounts,
     upgrade_status,
 )
+from app.capabilities.asset_store.file_previews import preview_metadata
 from app.capabilities.asset_store.layout_migration import (
     LayoutMigrationBusyError,
     StorageLayoutMigration,
 )
 from app.capabilities.asset_store.schemas.files import (
+    FilePreviewOut,
     LibraryAssetImportIn,
     LibraryFolderImportOut,
     StorageLayoutMigrationOut,
@@ -336,6 +338,18 @@ async def delete_file(
     return {"deleted": True}
 
 
+@router.get("/files/{asset_id}/preview", response_model=FilePreviewOut)
+async def preview_file_metadata(
+    session: SessionDep, owner_user_id: OwnerDep, asset_id: str, response: Response
+) -> FilePreviewOut:
+    try:
+        result = await preview_metadata(session, get_settings(), owner_user_id, asset_id)
+    except AssetError as exc:
+        raise asset_http_error(exc) from None
+    response.headers["Cache-Control"] = "private, no-store"
+    return result
+
+
 @router.get("/files/{asset_id}/content")
 async def preview_file(session: SessionDep, owner_user_id: OwnerDep, asset_id: str) -> FileResponse:
     try:
@@ -379,9 +393,12 @@ async def preview_thumbnail(
     owner_user_id: OwnerDep,
     asset_id: str,
     size: ThumbnailSize = 320,
+    page: int = Query(default=1, ge=1),
 ) -> FileResponse:
     try:
-        path, mime_type = await thumbnail(session, get_settings(), owner_user_id, asset_id, size)
+        path, mime_type = await thumbnail(
+            session, get_settings(), owner_user_id, asset_id, size, page
+        )
     except AssetError as exc:
         raise asset_http_error(exc) from None
     return FileResponse(

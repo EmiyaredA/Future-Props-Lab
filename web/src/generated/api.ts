@@ -2193,6 +2193,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/files/{asset_id}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Preview File Metadata */
+        get: operations["preview_file_metadata_v1_files__asset_id__preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/files/{asset_id}/thumbnail": {
         parameters: {
             query?: never;
@@ -11202,6 +11219,27 @@ export interface components {
             name: string;
             /** Sha256 */
             sha256: string;
+        };
+        /** FilePreviewOut */
+        FilePreviewOut: {
+            /** Duration Seconds */
+            duration_seconds?: number | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "image" | "video" | "audio" | "pdf" | "text" | "unsupported";
+            /** Page Count */
+            page_count?: number | null;
+            /** Text */
+            text?: string | null;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated: boolean;
+            /** Waveform Seconds */
+            waveform_seconds?: number | null;
         };
         /** FileWriteIn */
         FileWriteIn: {
@@ -28543,10 +28581,42 @@ export interface operations {
             };
         };
     };
+    preview_file_metadata_v1_files__asset_id__preview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FilePreviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     preview_thumbnail_v1_files__asset_id__thumbnail_get: {
         parameters: {
             query?: {
                 size?: 128 | 320 | 640 | 1280;
+                page?: number;
             };
             header?: never;
             path: {

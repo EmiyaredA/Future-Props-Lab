@@ -9,6 +9,11 @@ FFmpeg/FFprobe；持续集成同时验证 Python 3.11
 最低支持版本和 Python 3.14。克隆后先运行 `git lfs install`；若检出时跳过了 LFS 对象，运行
 `git lfs pull` 后再执行安装。
 
+文件库和首页支持视频帧、真实音频波形、PDF 首页与文本摘要，点击后可播放或阅读。
+PDF 预览使用随 `npm run setup` 安装的 `pypdfium2`，在独立子进程中按页渲染；无需 Office、
+LibreOffice 或额外预览服务。视频和音频继续使用上述 FFmpeg/FFprobe，WebP 由 Pillow 编码，
+不要求 FFmpeg 提供 libwebp。Office 文档和压缩包仍通过下载查看。
+
 账号直接拥有私人数据，平台角色仅有管理员和普通用户。管理员可分配共享模型与 Agent，但不能浏览他人私人项目。详见[账号与数据归属](docs/reference/account-governance.md)。
 
 ## 快速开始

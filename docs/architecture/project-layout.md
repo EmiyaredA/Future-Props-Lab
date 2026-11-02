@@ -9,6 +9,14 @@
 
 ## 浏览器加载与图片派生
 
+`capabilities/asset_store/file_previews.py` 拥有文件预览授权、受限文本读取和账号／素材版本派生缓存；
+`pdf_preview_worker.py` 在独立进程中读取 PDF 页数并栅格化当前页面，不执行文档脚本。
+`capabilities/media_rendering/file_previews.py` 拥有有超时的媒体时长检查、视频封面和前 60 秒真实音频波形，
+不接触账号或数据库。文件预览接口先完成归属校验并结束读取事务，再进行解码，缓存不能授予访问权。
+`web/src/features/files/` 的 `FileThumbnail`、`FilePreviewDialog` 与 `FileMediaPlayer` 统一拥有列表缩略内容、
+安全文档阅读和自绘播放控件；首页及只读文件入口复用这些公开组件，文件命名规则留在 `fileNames.ts`。
+`FileLibraryActions` 拥有文件库导入、导出和本地目录菜单，动作由浏览器与页面显式传入；`styles/file-library.css` 将紧凑密度限定在文件管理页，不改变编辑器内嵌素材选择器。首页 `HomeResourceSection` 拥有独立折叠状态和标题栏操作插槽，文件上传及预览状态仍由 `HomeFiles` 持有。`HomeInfrastructure` 以等宽区域展示模型服务与编程智能体，智能体标识复用 `code-agents` 公开组件；首页只传递现有导航路径，不持有目录或连接状态。概览列表为静态说明，模型与智能体各保留一个管理入口。
+
 `web/src/platform/api/transfer.ts` 拥有按请求隔离的流式接收、FormData 上传进度与取消；
 `useTransferProgress` 将状态留在功能控制器，`useApiBlobUrl` 和 `useImagePreviewUrl` 分别管理鉴权文件生命周期和可见图片读取。
 `shared/ui/LoadingState`、`ResponsiveImage`、`ImagePreview` 负责无业务归属的反馈与显示，不持有业务任务状态。

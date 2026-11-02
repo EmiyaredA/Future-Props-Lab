@@ -1,18 +1,25 @@
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowUpRight,
   AudioLines,
   FileText,
+  Folder,
   Image,
   LoaderCircle,
+  Play,
   Upload,
   Video,
 } from "lucide-react";
 import { getFiles, uploadManagedFile, type MediaKind } from "@features/files";
 import { fileQueryKeys, invalidateFileScope } from "@features/files";
 import "./home-files.css";
-import { ACCEPT, AssetPreview } from "@features/files";
+import { HomeResourceSection } from "./HomeResourceSection";
+import {
+  ACCEPT,
+  AssetPreview,
+  AssetPreviewDialog,
+  type ManagedFile,
+} from "@features/files";
 
 const categories: {
   kind: MediaKind;
@@ -49,6 +56,7 @@ export function HomeFiles({
     queryKey: fileQueryKeys.list({ includeReferences: true }),
     queryFn: () => getFiles({ includeReferences: true }),
   });
+  const [preview, setPreview] = useState<ManagedFile>();
   const [failed, setFailed] = useState<File[]>([]);
   const [feedback, setFeedback] = useState("");
   const [progress, setProgress] = useState("");
@@ -77,10 +85,14 @@ export function HomeFiles({
     },
   });
   return (
-    <>
-      <div className="home-files-toolbar">
-        <span>按类型浏览你的素材</span>
-        {canWrite ? (
+    <HomeResourceSection
+      id="home-files"
+      title="文件管理"
+      icon={Folder}
+      action="进入文件库"
+      onOpen={() => onNavigate("/files")}
+      headerActions={
+        canWrite ? (
           <>
             <input
               hidden
@@ -114,8 +126,9 @@ export function HomeFiles({
           </>
         ) : (
           <span>只读浏览</span>
-        )}
-      </div>
+        )
+      }
+    >
       {(progress || feedback) && (
         <div className="home-file-feedback" role="status">
           {progress || feedback}
@@ -137,35 +150,82 @@ export function HomeFiles({
       )}
       <div className="home-file-grid" aria-busy={files.isLoading}>
         {categories.map(({ kind, title, hint, icon: Icon }) => {
-          const recent = files.data?.items.find(
-            (file) => file.media_kind === kind,
-          );
+          const recentFiles =
+            files.data?.items
+              .filter((file) => file.media_kind === kind)
+              .slice(0, 3) ?? [];
+          const recent = recentFiles[0];
           return (
-            <button
-              className="home-file-category"
-              key={kind}
-              onClick={() => onNavigate(`/files?kind=${kind}`)}
-            >
-              <strong>
-                <span className="home-copper-icon">
+            <article className="home-file-category" data-kind={kind} key={kind}>
+              <div className="home-file-stack">
+                {[2, 1].map((layer) => (
+                  <div
+                    className="home-file-paper home-file-back-card"
+                    data-layer={layer}
+                    data-file-id={recentFiles[layer]?.id}
+                    aria-hidden="true"
+                    key={layer}
+                  >
+                    {recentFiles[layer] && (
+                      <AssetPreview file={recentFiles[layer]} />
+                    )}
+                  </div>
+                ))}
+                <div
+                  className="home-file-paper"
+                  data-layer="0"
+                  data-file-id={recent?.id}
+                >
+                  {recent ? (
+                    <button
+                      className={`home-file-art home-file-art-${kind}`}
+                      aria-label={`预览 ${recent.display_name}`}
+                      onClick={() => setPreview(recent)}
+                    >
+                      <AssetPreview file={recent} />
+                      <span
+                        className="home-file-name"
+                        title={recent.display_name}
+                      >
+                        {recent.display_name}
+                      </span>
+                      {kind === "video" && (
+                        <span className="home-file-play" aria-hidden="true">
+                          <Play />
+                        </span>
+                      )}
+                    </button>
+                  ) : (
+                    <div className={`home-file-art home-file-art-${kind}`}>
+                      <span className="home-file-empty">
+                        {files.isLoading
+                          ? "正在加载…"
+                          : files.isError
+                            ? "暂时无法加载"
+                            : "暂无文件，上传后可预览"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <button
+                  className="home-file-category-link"
+                  onClick={() => onNavigate(`/files?kind=${kind}`)}
+                >
                   <Icon aria-hidden />
-                </span>
-                {title}
-                <ArrowUpRight aria-hidden />
-              </strong>
-              <div className={`home-file-art home-file-art-${kind}`}>
-                {recent ? <AssetPreview file={recent} /> : <Icon aria-hidden />}
+                  <span>{title}</span>
+                </button>
               </div>
-              <small>
-                {files.isLoading
-                  ? "正在加载…"
-                  : (recent?.display_name ??
-                    (files.isError ? "进入文件库查看" : hint))}
-              </small>
-            </button>
+              <small>{hint}</small>
+            </article>
           );
         })}
       </div>
-    </>
+      {preview && (
+        <AssetPreviewDialog
+          file={preview}
+          onClose={() => setPreview(undefined)}
+        />
+      )}
+    </HomeResourceSection>
   );
 }

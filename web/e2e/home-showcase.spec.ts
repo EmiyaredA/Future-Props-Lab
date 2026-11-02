@@ -51,11 +51,10 @@ test("home folders, resources and query handoffs complete their navigation", asy
   await page.goBack();
   await expect(page.getByRole("heading", { name: "AI 应用" })).toBeVisible();
   const top = await page.locator(".studio-global-header").boundingBox();
-  await page
-    .getByRole("navigation", { name: "首页资源导航" })
-    .getByRole("button", { name: "文件管理" })
-    .click();
-  await expect(page.locator("#home-files")).toBeFocused();
+  await expect(
+    page.getByRole("navigation", { name: "首页资源导航" }),
+  ).toHaveCount(0);
+  await page.locator("#home-files").scrollIntoViewIfNeeded();
   expect(await page.locator(".studio-global-header").boundingBox()).toEqual(
     top,
   );

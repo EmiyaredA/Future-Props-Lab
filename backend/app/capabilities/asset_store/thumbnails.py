@@ -12,6 +12,7 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 from pydantic import BeforeValidator
 
 from app.capabilities.asset_store.assets import VisualAssets
+from app.capabilities.asset_store.file_previews import PreviewSource, media_thumbnail
 from app.capabilities.asset_store.library import AssetError
 
 _capacity = asyncio.Semaphore(2)
@@ -82,13 +83,19 @@ async def asset_thumbnail(settings, row, source: Path, size: ThumbnailSize) -> P
 
 
 async def thumbnail(
-    session, settings, owner_user_id: str, asset_id: str, size: ThumbnailSize
+    session, settings, owner_user_id: str, asset_id: str, size: ThumbnailSize, page: int = 1
 ) -> tuple[Path, str]:
     assets = VisualAssets(session, settings, owner_user_id)
     row, source = await assets.content(asset_id)
     # Capture the authorized resource before ending the short read transaction.
     if row.media_kind != "image":
-        raise AssetError("此素材暂不支持缩略预览", code="thumbnail_unsupported", status=422)
+        info = PreviewSource(
+            **{name: getattr(row, name) for name in PreviewSource.__dataclass_fields__}
+        )
+        await session.rollback()
+        return await media_thumbnail(settings, info, source, size, page), "image/webp"
+    if page != 1:
+        raise AssetError("只有 PDF 支持分页预览", code="preview_page_out_of_range")
     if row.mime_type == "image/svg+xml":
         return source, "image/svg+xml"
     source_info = ThumbnailSource(
