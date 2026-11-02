@@ -902,26 +902,6 @@ class ClipMergeOperation(WireModel):
     task_id: str = Field(default=..., alias='taskId', min_length=1, max_length=64)
     type: Literal['applyClipMerge', 'undoClipMerge'] = Field(default=..., alias='type')
 
-class CodexSourceRestore(WireModel):
-    expected_revision: str = Field(default=..., alias='expected_revision', min_length=1)
-
-class CodexSourceState(WireModel):
-    backup_available: bool = Field(default=..., alias='backup_available')
-    base_url: str = Field(default=..., alias='base_url')
-    config_path: str = Field(default=..., alias='config_path')
-    env_key: str = Field(default=..., alias='env_key')
-    managed: bool = Field(default=..., alias='managed')
-    model: str = Field(default=..., alias='model')
-    provider: str = Field(default=..., alias='provider')
-    revision: str = Field(default=..., alias='revision')
-
-class CodexSourceUpdate(WireModel):
-    base_url: str = Field(default='', alias='base_url')
-    env_key: str = Field(default='', alias='env_key')
-    expected_revision: str = Field(default=..., alias='expected_revision', min_length=1)
-    model: str = Field(default='', alias='model')
-    source: str = Field(default=..., alias='source')
-
 class ColorRule(WireModel):
     color: str = Field(default='#7c89c9', alias='color')
     field_id: str = Field(default=..., alias='field_id')
@@ -4849,18 +4829,6 @@ class SplitClipOperation(WireModel):
     new_link_group_id: str | None = Field(default=None, alias='newLinkGroupId')
     type: Literal['splitClip'] = Field(default=..., alias='type')
 
-class StorageAnalyzer(WireModel):
-    installed: bool = Field(default=..., alias='installed')
-    version: str | None = Field(default=None, alias='version')
-
-class StorageCapacity(WireModel):
-    free_bytes: int = Field(default=..., alias='free_bytes')
-    total_bytes: int = Field(default=..., alias='total_bytes')
-    used_bytes: int = Field(default=..., alias='used_bytes')
-
-class StorageDirectoryIn(WireModel):
-    directory: str = Field(default=..., alias='directory', min_length=1, max_length=4096)
-
 class StorageLayoutIssueOut(WireModel):
     asset_id: str = Field(default=..., alias='asset_id')
     code: Literal['source_missing', 'target_conflict', 'copy_failed'] = Field(default=..., alias='code')
@@ -4891,22 +4859,6 @@ class StorageLayoutStatusOut(WireModel):
     pending_projects: int = Field(default=..., alias='pending_projects')
     restart_required: bool = Field(default=False, alias='restart_required')
     target_version: Literal[2] = Field(default=2, alias='target_version')
-
-class StorageOpenReceipt(WireModel):
-    directory: str = Field(default=..., alias='directory')
-    submitted: bool = Field(default=True, alias='submitted')
-
-class StorageShortcut(WireModel):
-    available: bool = Field(default=..., alias='available')
-    directory: str = Field(default=..., alias='directory')
-    id: str = Field(default=..., alias='id')
-    label: str = Field(default=..., alias='label')
-
-class StorageUsageState(WireModel):
-    analyzer: StorageAnalyzer = Field(default=..., alias='analyzer')
-    capacity: StorageCapacity = Field(default=..., alias='capacity')
-    directory: str = Field(default=..., alias='directory')
-    shortcuts: list[StorageShortcut] = Field(default=..., alias='shortcuts')
 
 class Structure(WireModel):
     can_edit: bool = Field(default=True, alias='can_edit')
@@ -6519,9 +6471,6 @@ CheckpointOut.model_rebuild()
 CheckpointPut.model_rebuild()
 ClipIdOperation.model_rebuild()
 ClipMergeOperation.model_rebuild()
-CodexSourceRestore.model_rebuild()
-CodexSourceState.model_rebuild()
-CodexSourceUpdate.model_rebuild()
 ColorRule.model_rebuild()
 CommunityArticle.model_rebuild()
 CommunityDirectory.model_rebuild()
@@ -7075,15 +7024,9 @@ SnapshotRun.model_rebuild()
 Sort.model_rebuild()
 Specification.model_rebuild()
 SplitClipOperation.model_rebuild()
-StorageAnalyzer.model_rebuild()
-StorageCapacity.model_rebuild()
-StorageDirectoryIn.model_rebuild()
 StorageLayoutIssueOut.model_rebuild()
 StorageLayoutMigrationOut.model_rebuild()
 StorageLayoutStatusOut.model_rebuild()
-StorageOpenReceipt.model_rebuild()
-StorageShortcut.model_rebuild()
-StorageUsageState.model_rebuild()
 Structure.model_rebuild()
 SvgPreviewIn.model_rebuild()
 SvgPreviewOut.model_rebuild()

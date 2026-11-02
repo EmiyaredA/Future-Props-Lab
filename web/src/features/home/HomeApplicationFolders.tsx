@@ -28,9 +28,9 @@ const groups = [
   {
     id: "development",
     name: "开发与协作",
-    description: "编程 · 面试",
+    description: "面试 · 练习",
     color: "#718596",
-    apps: ["agent-workbench", "interview-assistant"],
+    apps: ["interview-assistant"],
   },
 ];
 

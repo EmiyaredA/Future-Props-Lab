@@ -25,9 +25,10 @@ class WorkbenchSyncRunner(PollingTaskRunner):
     runner_name = "agent-workbench-sync"
     poll_interval_seconds = 1
 
-    def __init__(self, sessions=SessionLocal):
+    def __init__(self, sessions=SessionLocal, *, actor_allowed):
         super().__init__()
         self.sessions = sessions
+        self.actor_allowed = actor_allowed
         self.positions: dict[str, int] = {}
         self.endpoint_tasks: dict[str, asyncio.Task] = {}
         self.source_tasks: dict[str, tuple[int, asyncio.Task]] = {}
@@ -104,6 +105,11 @@ class WorkbenchSyncRunner(PollingTaskRunner):
                     )
                 ).all()
             )
+            allowed = {}
+            for row in rows:
+                if row.owner_user_id not in allowed:
+                    allowed[row.owner_user_id] = await self.actor_allowed(db, row.owner_user_id)
+            rows = [row for row in rows if allowed[row.owner_user_id]]
         active = {row.id for row in rows}
         for source_id in set(self.endpoint_tasks) - active:
             self.endpoint_tasks.pop(source_id).cancel()

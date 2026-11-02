@@ -8,7 +8,7 @@ const definition = {
     category: "development",
     description: "查看本机 APP 与 CLI 的已有编程会话，实时跟随新增内容。",
     capabilities: ["会话", "编程", "实时同步"],
-    path: "/apps/agent-workbench",
+    path: "/agents",
     icon: MessagesSquare,
     brandImage: "/brand/agent-workbench-mark.png",
   },
@@ -16,7 +16,7 @@ const definition = {
   shell: "agent-workbench",
   shellConfig: {
     subtitle: "本机编程会话",
-    backSubtitle: "浏览全部应用",
+    backSubtitle: "返回云控",
     navigation: [
       {
         page: "agent-workbench-session",
@@ -33,21 +33,18 @@ const definition = {
     ],
   },
   matchPath(path: string) {
-    if (/^\/apps\/agent-workbench\/sources\/?$/.test(path))
+    if (/^\/(?:agents|apps\/agent-workbench)\/sources\/?$/.test(path))
       return { page: "agent-workbench-sources" };
-    const match = /^\/apps\/agent-workbench(?:\/sessions\/([^/]+))?\/?$/.exec(
-      path,
-    );
+    const match =
+      /^\/(?:agents|apps\/agent-workbench)(?:\/sessions\/([^/]+))?\/?$/.exec(
+        path,
+      );
     if (match) return { page: "agent-workbench-session", projectId: match[1] };
   },
   pathFor(page: string, id?: string) {
-    if (page === "agent-workbench-sources")
-      return "/apps/agent-workbench/sources";
+    if (page === "agent-workbench-sources") return "/agents/sources";
     if (page === "agent-workbench-session")
-      return (
-        "/apps/agent-workbench" +
-        (id ? `/sessions/${encodeURIComponent(id)}` : "")
-      );
+      return "/agents" + (id ? `/sessions/${encodeURIComponent(id)}` : "");
   },
   pages: {
     workspace: () =>

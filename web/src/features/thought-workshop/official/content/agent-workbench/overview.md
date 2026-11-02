@@ -1,10 +1,10 @@
 # Agent 工作台：阅读现有会话
 
-本篇说明Agent 工作台的实际操作、可验证结果和数据边界，帮助你在当前账号中完成操作后确认保存状态。
+本篇说明管理员如何使用云控中的 Agent 工作台，核对实际操作、保存状态和账号边界。普通用户不能访问工作台，管理员也不能读取其他账号的副本。
 
 ## 操作与核验
 
-在 FPL 网站打开「应用 → 开发辅助 → Agent 工作台」。先查看来源，再阅读会话；这里展示已有 Codex、Claude Code、OpenCode、DeepSeek Harness 和 Pi 记录。
+在 FPL 网站打开「云控 → Agent 工作台」。以管理员账号登录后，先查看来源，再阅读会话；这里展示已有 Codex、Claude Code、OpenCode、DeepSeek Harness 和 Pi 记录。
 
 完成后核对页面显示的账号、对象名称和最新状态；若状态仍为进行中或有错误提示，先保留当前内容并查看原因，不能把按钮点击本身视为操作成功。
 
@@ -19,3 +19,7 @@
 
 - [Agent 工作台：绑定与持续同步](/apps/thought-workshop/official-knowledge-bases/agent-workbench/documents/workflow)
 - [Agent 工作台：原生记录与阅读副本](/apps/thought-workshop/official-knowledge-bases/agent-workbench/documents/storage)
+
+## 独立访问与权限变化
+
+工作台入口为 `/agents`。当前网站先提供兼容入口，独立服务随服务化任务完成验收后切换。管理员降级或账号停用后，页面和事件流停止访问，采集停止；已有来源、阅读副本与检查点保留，恢复管理员资格后按现有规则继续。来源发现与新绑定仍仅允许本机网站入口。

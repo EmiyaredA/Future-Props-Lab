@@ -1,3 +1,4 @@
+import { ApplicationCard } from "./ApplicationCard";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { FormEvent, useMemo, useState } from "react";
 import { Clock3, Search, Tag } from "lucide-react";
@@ -120,41 +121,9 @@ export function ApplicationCenterPage({
       </div>
       <div className="applications-layout">
         <div className="application-grid" aria-live="polite">
-          {filtered.map((app) => {
-            const Icon = app.icon;
-            return (
-              <article className="application-card" key={app.id}>
-                <button
-                  type="button"
-                  aria-label={`打开${app.name}`}
-                  onClick={() => open(app)}
-                >
-                  <span className="application-icon">
-                    {app.brandImage ? (
-                      <ResponsiveImage
-                        src={app.brandImage}
-                        width={48}
-                        height={48}
-                        alt=""
-                        draggable={false}
-                      />
-                    ) : (
-                      <Icon aria-hidden />
-                    )}
-                  </span>
-                  <span className="application-copy">
-                    <strong>{app.name}</strong>
-                    <small title={app.description}>{app.description}</small>
-                    <span className="application-capabilities">
-                      {app.capabilities.slice(0, 2).map((item) => (
-                        <em key={item}>{item}</em>
-                      ))}
-                    </span>
-                  </span>
-                </button>
-              </article>
-            );
-          })}
+          {filtered.map((app) => (
+            <ApplicationCard key={app.id} application={app} onOpen={open} />
+          ))}
           {filtered.length === 0 ? (
             <div className="application-empty">
               <Search aria-hidden />

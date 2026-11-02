@@ -1,5 +1,4 @@
 import { LoadingState } from "@shared/ui/LoadingState";
-import { useRuntimeAccess } from "@features/accounts";
 import { PresentationWorkshopRoute } from "@app/layout/PresentationWorkshopRoute";
 import { CodeAgentsRoute } from "@app/layout/CodeAgentsRoute";
 import { ModelServiceRoute } from "@app/layout/ModelServiceRoute";
@@ -8,6 +7,8 @@ import { PageErrorBoundary } from "./PageErrorBoundary";
 import { isWorkshopPage, hasReadOnlyRoute } from "./routes";
 import { ReadOnlyRoutes } from "./ReadOnlyRoutes";
 import { accountAllows } from "@features/accounts/permissions";
+import { CloudControlAccess } from "@features/cloud-control/CloudControlAccess";
+import { CloudControlPage } from "@features/cloud-control/CloudControlPage";
 import type { ManagementPage } from "@features/accounts/ManagementConsole";
 import {
   lazy,
@@ -85,16 +86,6 @@ const IntegrationCenterPage = lazy(() =>
 const VideoFrameExporterPage = lazy(() =>
   import("@features/tools/VideoFrameExporterPage").then((module) => ({
     default: module.VideoFrameExporterPage,
-  })),
-);
-const CodexModelSourcePage = lazy(() =>
-  import("@features/tools/CodexModelSourcePage").then((module) => ({
-    default: module.CodexModelSourcePage,
-  })),
-);
-const StorageUsagePage = lazy(() =>
-  import("@features/tools/StorageUsagePage").then((module) => ({
-    default: module.StorageUsagePage,
   })),
 );
 const VideoDownloaderPage = lazy(() =>
@@ -176,7 +167,6 @@ function PageBoundary({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
-  const localBrowser = useRuntimeAccess();
   const session = useStudioSession();
   const { me } = session;
   const [route, setRoute] = useState<AppRoute>(parseRoute);
@@ -231,6 +221,21 @@ export default function App() {
         {},
         "",
         pathFor(current.page, current.projectId, current.documentId),
+      );
+    }
+    if (
+      window.location.pathname.startsWith("/apps/agent-workbench") ||
+      /^\/tools\/(storage-usage|codex-model-source)\/?$/.test(
+        window.location.pathname,
+      )
+    ) {
+      const current = parseRoute();
+      window.history.replaceState(
+        {},
+        "",
+        pathFor(current.page, current.projectId, current.documentId) +
+          window.location.search +
+          window.location.hash,
       );
     }
     const pop = () => {
@@ -409,18 +414,20 @@ export default function App() {
 
   if (page === "agent-workbench-session" || page === "agent-workbench-sources")
     return (
-      <StudioShell page="apps" navigate={navigate}>
-        <PageBoundary>
-          <AgentWorkbenchPage
-            key={me.user.id}
-            scopeKey={me.user.id}
-            sessionId={route.projectId}
-            sourcesPage={page === "agent-workbench-sources"}
-            onOpenSession={(id) => navigate("agent-workbench-session", id)}
-            onSources={() => navigate("agent-workbench-sources")}
-            onBack={() => navigate("apps")}
-          />
-        </PageBoundary>
+      <StudioShell page="cloud-control" navigate={navigate}>
+        <CloudControlAccess>
+          <PageBoundary>
+            <AgentWorkbenchPage
+              key={me.user.id}
+              scopeKey={me.user.id}
+              sessionId={route.projectId}
+              sourcesPage={page === "agent-workbench-sources"}
+              onOpenSession={(id) => navigate("agent-workbench-session", id)}
+              onSources={() => navigate("agent-workbench-sources")}
+              onBack={() => navigate("cloud-control")}
+            />
+          </PageBoundary>
+        </CloudControlAccess>
       </StudioShell>
     );
 
@@ -775,7 +782,6 @@ export default function App() {
             applications={APPLICATION_DEFINITIONS}
             showFiles
             canWrite={accountAllows(me, "content.write")}
-            canManageHost={localBrowser && me.user.is_platform_admin}
             canReadLogs={accountAllows(me, "logs.read")}
           />
         ) : page.startsWith("creative-workshop") ? (
@@ -798,6 +804,11 @@ export default function App() {
             applications={APPLICATION_DEFINITIONS}
             onOpen={navigatePath}
           />
+        ) : page === "cloud-control" ? (
+          <CloudControlPage
+            onOpen={navigatePath}
+            workbench={AGENT_WORKBENCH_MODULE.definition}
+          />
         ) : page === "files" ? (
           <FileManagementPage
             initialKind={
@@ -805,11 +816,7 @@ export default function App() {
             }
           />
         ) : page === "tools" ? (
-          <ToolNavigationPage
-            onOpenInternal={navigatePath}
-            canManageCodex={localBrowser && me.user.is_platform_admin}
-            canManageStorage={localBrowser && me.user.is_platform_admin}
-          />
+          <ToolNavigationPage onOpenInternal={navigatePath} />
         ) : page.startsWith("integrations-") ? (
           <IntegrationCenterPage
             registerNavigationGuard={registerNavigationGuard}
@@ -839,13 +846,6 @@ export default function App() {
           <VideoFrameExporterPage onBack={() => navigate("tools")} />
         ) : page === "video-downloader" ? (
           <VideoDownloaderPage onBack={() => navigate("tools")} />
-        ) : page === "codex-model-source" ? (
-          <CodexModelSourcePage onBack={() => navigate("tools")} />
-        ) : page === "storage-usage" ? (
-          <StorageUsagePage
-            onBack={() => navigate("tools")}
-            allowed={me.user.is_platform_admin}
-          />
         ) : page === "model-test" ? (
           <ModelTestPage
             initialModelId={catalogTestModel}

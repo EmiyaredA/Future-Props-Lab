@@ -11,33 +11,9 @@ class Tools:
     def __init__(self, client):
         self._client = client
 
-    def get_codex_source(self) -> models.CodexSourceState:
-        'Get Codex Source. GET /v1/tool-navigation/codex-source'
-        return self._client._call('GET', '/v1/tool-navigation/codex-source', parameters=[], response_type=models.CodexSourceState)
-
-    def put_codex_source(self, *, body: models.CodexSourceUpdate | dict) -> models.CodexSourceState:
-        'Put Codex Source. PUT /v1/tool-navigation/codex-source'
-        return self._client._call('PUT', '/v1/tool-navigation/codex-source', parameters=[], body=body, media_type='application/json', response_type=models.CodexSourceState)
-
-    def post_codex_source_restore(self, *, body: models.CodexSourceRestore | dict) -> models.CodexSourceState:
-        'Post Codex Source Restore. POST /v1/tool-navigation/codex-source/restore'
-        return self._client._call('POST', '/v1/tool-navigation/codex-source/restore', parameters=[], body=body, media_type='application/json', response_type=models.CodexSourceState)
-
     def get_state(self) -> models.ToolNavigationStateOut:
         'Get State. GET /v1/tool-navigation/state'
         return self._client._call('GET', '/v1/tool-navigation/state', parameters=[], response_type=models.ToolNavigationStateOut)
-
-    def get_storage_usage(self, *, directory: str | None | Unset = UNSET) -> models.StorageUsageState:
-        'Get Storage Usage. GET /v1/tool-navigation/storage-usage'
-        return self._client._call('GET', '/v1/tool-navigation/storage-usage', parameters=[('directory', 'query', directory)], response_type=models.StorageUsageState)
-
-    def analyze_storage_directory(self, *, body: models.StorageDirectoryIn | dict) -> models.StorageOpenReceipt:
-        'Analyze Storage Directory. POST /v1/tool-navigation/storage-usage/analyze'
-        return self._client._call('POST', '/v1/tool-navigation/storage-usage/analyze', parameters=[], body=body, media_type='application/json', response_type=models.StorageOpenReceipt)
-
-    def open_storage_directory(self, *, body: models.StorageDirectoryIn | dict) -> models.StorageOpenReceipt:
-        'Open Directory. POST /v1/tool-navigation/storage-usage/open-directory'
-        return self._client._call('POST', '/v1/tool-navigation/storage-usage/open-directory', parameters=[], body=body, media_type='application/json', response_type=models.StorageOpenReceipt)
 
     def set_favorite(self, *, tool_id: str, body: models.ToolFavoriteIn | dict) -> models.ToolNavigationItemOut:
         'Set Favorite. PATCH /v1/tool-navigation/tools/{tool_id}'
@@ -67,33 +43,9 @@ class AsyncTools:
     def __init__(self, client):
         self._client = client
 
-    async def get_codex_source(self) -> models.CodexSourceState:
-        'Get Codex Source. GET /v1/tool-navigation/codex-source'
-        return await self._client._call('GET', '/v1/tool-navigation/codex-source', parameters=[], response_type=models.CodexSourceState)
-
-    async def put_codex_source(self, *, body: models.CodexSourceUpdate | dict) -> models.CodexSourceState:
-        'Put Codex Source. PUT /v1/tool-navigation/codex-source'
-        return await self._client._call('PUT', '/v1/tool-navigation/codex-source', parameters=[], body=body, media_type='application/json', response_type=models.CodexSourceState)
-
-    async def post_codex_source_restore(self, *, body: models.CodexSourceRestore | dict) -> models.CodexSourceState:
-        'Post Codex Source Restore. POST /v1/tool-navigation/codex-source/restore'
-        return await self._client._call('POST', '/v1/tool-navigation/codex-source/restore', parameters=[], body=body, media_type='application/json', response_type=models.CodexSourceState)
-
     async def get_state(self) -> models.ToolNavigationStateOut:
         'Get State. GET /v1/tool-navigation/state'
         return await self._client._call('GET', '/v1/tool-navigation/state', parameters=[], response_type=models.ToolNavigationStateOut)
-
-    async def get_storage_usage(self, *, directory: str | None | Unset = UNSET) -> models.StorageUsageState:
-        'Get Storage Usage. GET /v1/tool-navigation/storage-usage'
-        return await self._client._call('GET', '/v1/tool-navigation/storage-usage', parameters=[('directory', 'query', directory)], response_type=models.StorageUsageState)
-
-    async def analyze_storage_directory(self, *, body: models.StorageDirectoryIn | dict) -> models.StorageOpenReceipt:
-        'Analyze Storage Directory. POST /v1/tool-navigation/storage-usage/analyze'
-        return await self._client._call('POST', '/v1/tool-navigation/storage-usage/analyze', parameters=[], body=body, media_type='application/json', response_type=models.StorageOpenReceipt)
-
-    async def open_storage_directory(self, *, body: models.StorageDirectoryIn | dict) -> models.StorageOpenReceipt:
-        'Open Directory. POST /v1/tool-navigation/storage-usage/open-directory'
-        return await self._client._call('POST', '/v1/tool-navigation/storage-usage/open-directory', parameters=[], body=body, media_type='application/json', response_type=models.StorageOpenReceipt)
 
     async def set_favorite(self, *, tool_id: str, body: models.ToolFavoriteIn | dict) -> models.ToolNavigationItemOut:
         'Set Favorite. PATCH /v1/tool-navigation/tools/{tool_id}'

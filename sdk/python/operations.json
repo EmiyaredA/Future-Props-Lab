@@ -847,16 +847,8 @@
     "method": "templates",
     "resource": "thought"
   },
-  "GET /v1/tool-navigation/codex-source": {
-    "method": "get_codex_source",
-    "resource": "tools"
-  },
   "GET /v1/tool-navigation/state": {
     "method": "get_state",
-    "resource": "tools"
-  },
-  "GET /v1/tool-navigation/storage-usage": {
-    "method": "get_storage_usage",
     "resource": "tools"
   },
   "GET /v1/tool-navigation/video-download/deps": {
@@ -1911,18 +1903,6 @@
     "method": "apply_template",
     "resource": "thought"
   },
-  "POST /v1/tool-navigation/codex-source/restore": {
-    "method": "post_codex_source_restore",
-    "resource": "tools"
-  },
-  "POST /v1/tool-navigation/storage-usage/analyze": {
-    "method": "analyze_storage_directory",
-    "resource": "tools"
-  },
-  "POST /v1/tool-navigation/storage-usage/open-directory": {
-    "method": "open_storage_directory",
-    "resource": "tools"
-  },
   "POST /v1/tool-navigation/tools/{tool_id}/use": {
     "method": "record_use",
     "resource": "tools"
@@ -2170,10 +2150,6 @@
   "PUT /v1/thought-workshop/templates/{template_id}": {
     "method": "put_template",
     "resource": "thought"
-  },
-  "PUT /v1/tool-navigation/codex-source": {
-    "method": "put_codex_source",
-    "resource": "tools"
   },
   "PUT /v1/visual-workshop/acceptance-templates/{template_id}": {
     "method": "update_acceptance_template",

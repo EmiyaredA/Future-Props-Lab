@@ -70,3 +70,19 @@ async def test_tool_navigation_routes_use_studio_auth() -> None:
         assert (
             await client.get("/v1/tool-navigation/state", headers={"X-Studio-Token": "legacy"})
         ).status_code == 401
+
+
+async def test_retired_host_tool_operations_are_not_served():
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        for method, path in [
+            ("GET", "/v1/tool-navigation/storage-usage"),
+            ("POST", "/v1/tool-navigation/storage-usage/analyze"),
+            ("POST", "/v1/tool-navigation/storage-usage/open-directory"),
+            ("GET", "/v1/tool-navigation/codex-source"),
+            ("PUT", "/v1/tool-navigation/codex-source"),
+            ("POST", "/v1/tool-navigation/codex-source/restore"),
+        ]:
+            response = await client.request(method, path, json={})
+            assert response.status_code == 404, (method, path, response.text)

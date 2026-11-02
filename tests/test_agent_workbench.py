@@ -19,6 +19,7 @@ from app.apps.agent_workbench.sync.projection import apply_batch
 from app.apps.agent_workbench.sync.runner import WorkbenchSyncRunner
 from app.capabilities.agents.sessions import get_adapter
 from app.capabilities.identity.principal import StudioPrincipal
+from app.console.governance.workbench_access import workbench_actor_allowed
 from app.console.models import User
 from app.deps import SessionDep, db_session, require_studio_auth
 from app.orm import bind_owner
@@ -115,7 +116,7 @@ async def store(tmp_path):
                     username_normalized=owner,
                     password_hash="fixture",
                     must_change_password=False,
-                    platform_role="admin" if owner == "beta" else "user",
+                    platform_role="admin",
                 )
             )
         await db.commit()
@@ -131,7 +132,7 @@ async def store(tmp_path):
         bind_owner(session, owner)
         return StudioPrincipal(
             user_id=owner,
-            platform_role="admin" if owner == "beta" else "user",
+            platform_role=request.headers.get("x-role", "admin"),
             auth_kind=request.headers.get("x-auth-kind", "session"),
             must_change_password=False,
             scopes=frozenset({"studio:read", "studio:private_read", "studio:write"}),
@@ -179,7 +180,7 @@ async def test_history_incremental_restart_search_and_private_sources(store, tmp
     original = encode(*codex_records(surface=surface))
     path.write_bytes(original)
     source = await bind(client, root)
-    runner = WorkbenchSyncRunner(sessions)
+    runner = WorkbenchSyncRunner(sessions, actor_allowed=workbench_actor_allowed)
     await scan(runner)
     page = (await client.get("/v1/agent-workbench/sessions")).json()
     assert len(page["items"]) == 1
@@ -198,7 +199,7 @@ async def test_history_incremental_restart_search_and_private_sources(store, tmp
     # Identical text with a distinct native ID must remain a separate message.
     with path.open("ab") as fd:
         fd.write(encode(addition))
-    await scan(WorkbenchSyncRunner(sessions))
+    await scan(WorkbenchSyncRunner(sessions, actor_allowed=workbench_actor_allowed))
     updated = (await client.get(history_url)).json()
     assert len(updated["items"]) == 3
     assert updated["change_cursor"] > history["change_cursor"]
@@ -301,7 +302,7 @@ async def test_pi_branches_include_metadata_ancestors(store, tmp_path):
     ]
     (root / "pi.jsonl").write_bytes(encode(*records))
     await bind(client, root, "pi")
-    await scan(WorkbenchSyncRunner(sessions))
+    await scan(WorkbenchSyncRunner(sessions, actor_allowed=workbench_actor_allowed))
     item = (await client.get("/v1/agent-workbench/sessions")).json()["items"][0]
     url = f"/v1/agent-workbench/sessions/{item['id']}/history"
     latest = (await client.get(url)).json()
@@ -320,13 +321,13 @@ async def test_codex_native_title_index_updates_without_becoming_message_history
     (tmp_path / "history.jsonl").write_bytes(encode({"display": "CLI prompt history"}))
     assert get_adapter("codex").discover(str(tmp_path)) == ["record.jsonl"]
     await bind(client, tmp_path)
-    await scan(WorkbenchSyncRunner(sessions))
+    await scan(WorkbenchSyncRunner(sessions, actor_allowed=workbench_actor_allowed))
     first = (await client.get("/v1/agent-workbench/sessions")).json()["items"][0]
     assert first["title"] == "原生名称"
     with index.open("ab") as fd:
         fd.write(encode({"id": "native", "thread_name": "原端改名"}))
         fd.write(b'{"id":"native","thread_name":"unfinished')
-    await scan(WorkbenchSyncRunner(sessions))
+    await scan(WorkbenchSyncRunner(sessions, actor_allowed=workbench_actor_allowed))
     updated = (await client.get(f"/v1/agent-workbench/sessions/{first['id']}")).json()
     assert updated["title"] == "原端改名"
     history = (await client.get(f"/v1/agent-workbench/sessions/{first['id']}/history")).json()
@@ -463,15 +464,15 @@ async def test_dsh_normalization_upgrade_backfills_error_without_clearing_histor
     with monkeypatch.context() as old:
         old.setattr(files, "NORMALIZATION_VERSION", 0)
         old.setattr(parsers, "dsh", legacy_parser)
-        await scan(WorkbenchSyncRunner(sessions))
+        await scan(WorkbenchSyncRunner(sessions, actor_allowed=workbench_actor_allowed))
     item = (await client.get("/v1/agent-workbench/sessions")).json()["items"][0]
     url = f"/v1/agent-workbench/sessions/{item['id']}/history"
     assert len((await client.get(url)).json()["items"]) == 2
     monkeypatch.setattr(files, "MAX_CHUNK", 1)
-    await scan(WorkbenchSyncRunner(sessions))
+    await scan(WorkbenchSyncRunner(sessions, actor_allowed=workbench_actor_allowed))
     assert len((await client.get(url)).json()["items"]) == 2
     for _ in range(5):
-        await scan(WorkbenchSyncRunner(sessions))
+        await scan(WorkbenchSyncRunner(sessions, actor_allowed=workbench_actor_allowed))
     history = (await client.get(url)).json()["items"]
     assert [entry["text"] for entry in history] == [
         "hello",
@@ -521,7 +522,7 @@ async def test_cas_pause_unbind_clear_and_event_replay(store, tmp_path):
     root.mkdir()
     (root / "record.jsonl").write_bytes(encode(*codex_records()))
     source = await bind(client, root)
-    runner = WorkbenchSyncRunner(sessions)
+    runner = WorkbenchSyncRunner(sessions, actor_allowed=workbench_actor_allowed)
     await scan(runner)
     item = (await client.get("/v1/agent-workbench/sessions")).json()["items"][0]
     copy_url = f"/v1/agent-workbench/sessions/{item['id']}/copy?expected_revision=0"
@@ -607,7 +608,7 @@ async def test_attachments_require_actual_reference_owner_and_approved_root(stor
     )
     (root / "record.jsonl").write_bytes(encode(*records))
     await bind(client, root)
-    await scan(WorkbenchSyncRunner(sessions))
+    await scan(WorkbenchSyncRunner(sessions, actor_allowed=workbench_actor_allowed))
     item = (await client.get("/v1/agent-workbench/sessions")).json()["items"][0]
     history = (await client.get(f"/v1/agent-workbench/sessions/{item['id']}/history")).json()
     attachments = [a for entry in history["items"] for a in entry["attachments"]]
@@ -638,7 +639,7 @@ async def test_archive_duplicates_and_same_inode_rewrite(store, tmp_path):
     path.write_bytes(encode(*records))
     (archive / "copy.jsonl").write_bytes(encode(*records))
     await bind(client, root)
-    runner = WorkbenchSyncRunner(sessions)
+    runner = WorkbenchSyncRunner(sessions, actor_allowed=workbench_actor_allowed)
     await scan(runner)
     assert (await client.get("/v1/agent-workbench/sources")).json()[0]["status"] == "following"
     items = (await client.get("/v1/agent-workbench/sessions")).json()["items"]
@@ -676,7 +677,7 @@ async def test_stream_reauthorizes_after_session_revocation(store):
         await db.commit()
     principal = StudioPrincipal(
         user_id="alpha",
-        platform_role="user",
+        platform_role="admin",
         auth_kind="session",
         must_change_password=False,
         scopes=frozenset({"studio:read"}),
@@ -748,7 +749,7 @@ async def test_missing_native_file_retains_copy_and_recovers(store, tmp_path):
     data = encode(*codex_records())
     path.write_bytes(data)
     await bind(client, root)
-    runner = WorkbenchSyncRunner(sessions)
+    runner = WorkbenchSyncRunner(sessions, actor_allowed=workbench_actor_allowed)
     await scan(runner)
     item = (await client.get("/v1/agent-workbench/sessions")).json()["items"][0]
     url = f"/v1/agent-workbench/sessions/{item['id']}"
@@ -760,6 +761,55 @@ async def test_missing_native_file_retains_copy_and_recovers(store, tmp_path):
     path.write_bytes(data)
     await scan(runner)
     assert (await client.get(url)).json()["source_errors"] == []
+
+
+@pytest.mark.parametrize("auth_kind,role", [("session", "user"), ("management_api_key", "admin")])
+async def test_cloud_control_rejects_every_workbench_operation(store, auth_kind, role):
+    _, client = store
+    for route in router.routes:
+        for method in route.methods:
+            path = "/v1" + route.path
+            for name in ("source_id", "operation_id", "session_id", "attachment_id"):
+                path = path.replace("{" + name + "}", "unavailable")
+            response = await client.request(
+                method,
+                path,
+                headers={"x-role": role, "x-auth-kind": auth_kind, "x-private": "yes"},
+                json={} if method not in {"GET", "DELETE"} else None,
+            )
+            assert response.status_code == 403, (method, path, response.text)
+
+
+async def test_collector_pauses_for_downgraded_owner_and_resumes_without_losing_history(
+    store, tmp_path
+):
+    sessions, client = store
+    root = tmp_path / "records"
+    root.mkdir()
+    record = root / "session.jsonl"
+    record.write_bytes(encode(*codex_records()))
+    await bind(client, root)
+    runner = WorkbenchSyncRunner(sessions, actor_allowed=workbench_actor_allowed)
+    await scan(runner)
+    before = (await client.get("/v1/agent-workbench/sessions")).json()["items"]
+    history_path = f"/v1/agent-workbench/sessions/{before[0]['id']}/history"
+    addition = codex_records()[2]
+    addition["payload"]["id"] = "after-downgrade"
+    with record.open("ab") as output:
+        output.write(encode(addition))
+    async with sessions() as db:
+        account = await db.get(User, "alpha")
+        account.platform_role = "user"
+        await db.commit()
+    await scan(runner)
+    assert not runner.source_tasks and not runner.endpoint_tasks
+    assert len((await client.get(history_path)).json()["items"]) == 2
+    async with sessions() as db:
+        account = await db.get(User, "alpha")
+        account.platform_role = "admin"
+        await db.commit()
+    await scan(runner)
+    assert len((await client.get(history_path)).json()["items"]) == 3
 
 
 def test_workbench_does_not_expand_agent_or_sdk_operation_surface():

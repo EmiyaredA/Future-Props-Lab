@@ -10,7 +10,6 @@ import { INTERVIEW_ASSISTANT_MODULE } from "@features/interview-assistant/module
 import { AGENT_WORKBENCH_MODULE } from "@features/agent-workbench/module";
 
 export const APPLICATION_MODULES = [
-  AGENT_WORKBENCH_MODULE,
   PRESENTATION_WORKSHOP_MODULE,
   THOUGHT_WORKSHOP_MODULE,
   INTERVIEW_ASSISTANT_MODULE,
@@ -27,7 +26,7 @@ export const APPLICATION_DEFINITIONS = APPLICATION_MODULES.map(
 );
 
 export function matchApplicationPath(pathname: string) {
-  for (const application of APPLICATION_MODULES) {
+  for (const application of [AGENT_WORKBENCH_MODULE, ...APPLICATION_MODULES]) {
     const match = application.matchPath(pathname);
     if (match) return match;
   }
@@ -39,7 +38,7 @@ export function applicationPathFor(
   projectId?: string,
   documentId?: string,
 ) {
-  for (const application of APPLICATION_MODULES) {
+  for (const application of [AGENT_WORKBENCH_MODULE, ...APPLICATION_MODULES]) {
     const path = (
       application as import("@features/applications/module").ApplicationModule
     ).pathFor(page, projectId, documentId);

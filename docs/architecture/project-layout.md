@@ -80,7 +80,7 @@ Future-Props-Lab/
 │   │   └── creative_workshop/ # 跨账号公开创作版本、草稿、安装事务与文件校验
 │   ├── apps/          # 已垂直切片的产品 App
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台、调用日志及自有 models/schemas/routes
-│   ├── tool_navigation/ # 工具目录状态、桌面 Codex 模型源与抖音/B站视频下载；自有 models/schemas/routes
+│   ├── tool_navigation/ # 工具目录状态与抖音/B站视频下载；自有 models/schemas/routes
 │   ├── integrations/ # 账号工具 API、MCP、Skill、外部连接；自有 models/schemas/routes
 │   └── demo_runtime/  # 固定演示 Mock 运行时；自有 schemas/routes
 ├── db/migrations/
@@ -177,12 +177,13 @@ Future-Props-Lab/
 - 后端不增加通用 `services/`、`domain/`、`platform/` 或 `product/` 分层。需要拆分大型模块
   时，按具体业务能力在所属功能包内命名，避免同一职责出现多个事实源。
 - 工具目录由 Web 静态注册表维护；后端 `tool_navigation/` 持久化稳定工具 ID 对应的收藏与
-  最近使用状态，不复制工具名称、分类或外部网址。其 Codex 模型源用例仅在桌面私有传输内
-  读取和修改当前用户的 `CODEX_HOME/config.toml`，不进入账号数据库。视频下载用例调用本机
-  `yt-dlp`/`ffmpeg`，仅允许抖音与哔哩哔哩链接，任务与临时文件保存在运行时目录，可选写入文件库。
-  空间占用用例仅向 macOS 桌面端平台管理员 Session 提供本机容量读取、GrandPerspective
-  目录分析与 Finder 打开；不递归扫描、不保存目录或扫描结果，不开放 Agent 通道。
-  本机网页登录后显式输入 Mac 目录路径，Web 工具页通过正式 API 调用本机用例；公网入口不得调用。
+  最近使用状态，不复制工具名称、分类或外部网址。空间占用与 Codex 模型源页面和主机操作 API 已移除。
+  视频下载用例调用本机 `yt-dlp`/`ffmpeg`，仅允许抖音与哔哩哔哩链接，任务与临时文件保存在运行时目录，可选写入文件库。
+- `web/src/features/cloud-control/` 拥有管理员专属云控入口与权限门禁；导航置于应用之后，工作台从应用目录和首页分组移至 `/agents`。
+  API、SSE 与后台采集同时检查 `cloud-control.access`，身份降级后保留原账号副本和检查点。
+  当前网站保留兼容装配，独立服务实现保留在服务化分支并由其统一验收切换。
+`web/src/features/applications/ApplicationCard.tsx` 拥有应用目录与云控共用的紧凑入口卡片；布局、品牌图、简介和能力标签沿用应用目录样式，入口元数据由各装配入口显式传入。
+
 - `integrations/` 拥有独立于工具导航的账号集成目录：`tool_apis/` 管理受限 HTTP 调用配置，
   `mcp/` 管理 Streamable HTTP/stdio 连接与工具快照，`skills/` 管理安全 ZIP 导入和不可变版本，
   `checks/` 只保存脱敏验证元数据。v1 只负责管理、发现和按需验证，不接入 Agent Harness 执行。

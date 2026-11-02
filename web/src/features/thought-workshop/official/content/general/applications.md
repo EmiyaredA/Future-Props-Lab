@@ -4,21 +4,22 @@
 
 ## 按结果选择应用
 
-| 你要得到的结果                    | 应用                                                                                                 | 建议先完成的小任务         |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------- | -------------------------- |
-| 本机 APP / CLI 编程会话记录与同步 | Agent 工作台                                                                                         | 绑定一个来源并查看已有会话 |
-| 幻灯片、放映、可编辑 PPTX         | [演示工坊](/apps/thought-workshop/official-knowledge-bases/presentation-workshop/documents/overview) | 三页产品介绍               |
-| 文档、附件、历史、UML 与信息图    | [思绪工坊](/apps/thought-workshop/official-knowledge-bases/thought-workshop/documents/overview)      | 一篇带标题和画板的说明     |
-| 图片或视频生成、素材节点关系      | [视觉创作工坊](/apps/thought-workshop/official-knowledge-bases/visual-workshop/documents/overview)   | 一张参考图的一次生成       |
-| 角色演出、分支剧情、路线视频      | [Galgame 工坊](/apps/thought-workshop/official-knowledge-bases/galgame-workshop/documents/overview)  | 能从头试玩到结束的短片段   |
-| 多轨画面、字幕、声音与成片        | [视频剪辑工坊](/apps/thought-workshop/official-knowledge-bases/video-editor/documents/overview)      | 带声音的短视频             |
-| 二维动画、路径遮罩、透明镜头      | [特效制作工坊](/apps/thought-workshop/official-knowledge-bases/motion-compositor/documents/overview) | 一段短动画                 |
-| 录音分段、说话人、情绪与字幕      | [录音标注工坊](/apps/thought-workshop/official-knowledge-bases/audio-annotation/documents/overview)  | 一段已校对的短录音         |
-| 三维布景、走位、摄影机预演        | [导演台](/apps/thought-workshop/official-knowledge-bases/director-desk/documents/overview)           | 一个镜头的可复核预演       |
+| 你要得到的结果                 | 应用                                                                                                 | 建议先完成的小任务       |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------- | ------------------------ |
+| 幻灯片、放映、可编辑 PPTX      | [演示工坊](/apps/thought-workshop/official-knowledge-bases/presentation-workshop/documents/overview) | 三页产品介绍             |
+| 文档、附件、历史、UML 与信息图 | [思绪工坊](/apps/thought-workshop/official-knowledge-bases/thought-workshop/documents/overview)      | 一篇带标题和画板的说明   |
+| 图片或视频生成、素材节点关系   | [视觉创作工坊](/apps/thought-workshop/official-knowledge-bases/visual-workshop/documents/overview)   | 一张参考图的一次生成     |
+| 角色演出、分支剧情、路线视频   | [Galgame 工坊](/apps/thought-workshop/official-knowledge-bases/galgame-workshop/documents/overview)  | 能从头试玩到结束的短片段 |
+| 多轨画面、字幕、声音与成片     | [视频剪辑工坊](/apps/thought-workshop/official-knowledge-bases/video-editor/documents/overview)      | 带声音的短视频           |
+| 二维动画、路径遮罩、透明镜头   | [特效制作工坊](/apps/thought-workshop/official-knowledge-bases/motion-compositor/documents/overview) | 一段短动画               |
+| 录音分段、说话人、情绪与字幕   | [录音标注工坊](/apps/thought-workshop/official-knowledge-bases/audio-annotation/documents/overview)  | 一段已校对的短录音       |
+| 三维布景、走位、摄影机预演     | [导演台](/apps/thought-workshop/official-knowledge-bases/director-desk/documents/overview)           | 一个镜头的可复核预演     |
 
-## 查看已有编程会话
+## 在云控查看已有编程会话
 
-1. 在 FPL 桌面窗口打开「应用 → 开发辅助 → Agent 工作台 → 来源」。
+Agent 工作台已移出应用目录，仅管理员可以访问；入口 `/agents` 保持独立服务运行。
+
+1. 在 FPL 网站用管理员账号打开「云控 → Agent 工作台 → 来源」。
 2. 选择 Codex、Claude Code、OpenCode、DeepSeek Harness 或 Pi，选择实际会话目录，确认允许当前账号保存阅读副本，再绑定来源。
 3. 返回「会话」，选择已有 APP 或 CLI 记录，核对项目路径、来源依据和最后同步时间。没有可靠标记时显示「来源待确认」。
 4. 在原 APP 或 CLI 中产生新记录，观察工作台更新。上翻后使用「有新内容」回到底部；「暂停跟随」只影响当前视图，原 Agent 继续运行。

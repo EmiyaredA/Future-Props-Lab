@@ -1,5 +1,12 @@
 """Fixed account capabilities; resource ownership is checked independently."""
 
+CLOUD_CONTROL_PERMISSION = "cloud-control.access"
+
+
+def requires_cloud_control(path: str) -> bool:
+    return path == "/v1/agent-workbench" or path.startswith("/v1/agent-workbench/")
+
+
 READ_PERMISSIONS = frozenset({"content.read", "logs.read", "audit.read", "docs.developer"})
 USER_PERMISSIONS = READ_PERMISSIONS | {
     "content.write",
@@ -9,7 +16,7 @@ USER_PERMISSIONS = READ_PERMISSIONS | {
     "diagnostics.realtime",
     "tools.sensitive",
 }
-ADMIN_PERMISSIONS = USER_PERMISSIONS | {"projects.certify"}
+ADMIN_PERMISSIONS = USER_PERMISSIONS | {"projects.certify", CLOUD_CONTROL_PERMISSION}
 
 
 def role_permissions(role: str) -> frozenset[str]:

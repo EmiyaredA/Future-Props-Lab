@@ -50,17 +50,27 @@ test("home is the default route and tools stay responsive", async ({
   await expect(
     page.getByRole("heading", { name: "今天想从哪里开始？" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: /查找工具/ }).click();
+  await page.getByRole("button", { name: "全部工具", exact: true }).click();
   await expect(page).toHaveURL(/\/tools$/);
   await expect(page.getByRole("heading", { name: "工具导航" })).toBeVisible();
 
-  const navItems = page.getByRole("navigation").getByRole("button");
-  await expect(navItems.nth(0)).toContainText("首页");
-  await expect(navItems.nth(1)).toContainText("应用");
-  await expect(navItems.nth(2)).toContainText("文件管理");
-  await expect(navItems.nth(3)).toContainText("工具导航");
-  await expect(navItems.nth(4)).toContainText("集成中心");
-  await expect(navItems.nth(5)).toContainText("AI 能力");
+  const navItems = page
+    .getByRole("navigation", { name: "栏目导航" })
+    .locator(".studio-rail-button");
+  expect(
+    await navItems.evaluateAll((nodes) =>
+      nodes.map((node) => node.getAttribute("aria-label")?.split("，")[0]),
+    ),
+  ).toEqual([
+    "首页",
+    "创意工坊",
+    "应用",
+    "云控",
+    "文件管理",
+    "工具导航",
+    "集成中心",
+    "AI 能力",
+  ]);
   await expect(page.locator(".tool-grid")).toHaveCSS(
     "grid-template-columns",
     /\S+px \S+px \S+px/,
@@ -387,13 +397,12 @@ test("creates and edits an audio annotation task", async ({
     "nowrap",
   );
 
-  await page.getByRole("button", { name: "管理", exact: true }).click();
+  await page.getByRole("button", { name: "管理", exact: true }).first().click();
   await page.getByRole("button", { name: "添加说话人" }).click();
   await page.getByRole("button", { name: "完成", exact: true }).click();
-  await page
-    .getByRole("group", { name: "选择一个或多个说话人" })
-    .getByRole("button", { name: "说话人 1" })
-    .click();
+  await page.getByRole("combobox", { name: "选择一个或多个说话人" }).click();
+  await page.getByRole("option", { name: "说话人 1", exact: true }).click();
+  await page.keyboard.press("Escape");
   await page
     .getByRole("textbox", { name: "日语说话内容" })
     .fill("自动化验收片段");
@@ -403,7 +412,7 @@ test("creates and edits an audio annotation task", async ({
   await page
     .getByRole("textbox", { name: "日语说话内容" })
     .fill("这段内容还没有保存");
-  await page.getByRole("button", { name: "工具导航", exact: true }).click();
+  await page.getByRole("button", { name: "返回任务列表", exact: true }).click();
   await expect(
     page.getByRole("alertdialog", { name: "离开并放弃未保存内容？" }),
   ).toBeVisible();

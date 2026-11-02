@@ -420,7 +420,7 @@ export function AgentWorkbenchPage({
         <div>
           <button className="aw-link" onClick={onBack}>
             <ArrowLeft size={16} />
-            全部应用
+            云控
           </button>
           <span className="aw-toolbar-divider">/</span>
           <strong>Agent 工作台</strong>
