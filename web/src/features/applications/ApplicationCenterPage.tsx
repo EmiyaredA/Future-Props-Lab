@@ -1,3 +1,4 @@
+import { programAsset } from "@platform/programAsset";
 import { FormEvent, useMemo, useState } from "react";
 import { ArrowRight, Clock3, Search, Tag } from "lucide-react";
 import {
@@ -33,7 +34,7 @@ export function ApplicationCenterPage({
   applications,
 }: {
   onOpen: (path: string) => void;
-  applications: ApplicationDefinition[];
+  applications: readonly ApplicationDefinition[];
 }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<"all" | ApplicationCategory>("all");
@@ -130,7 +131,11 @@ export function ApplicationCenterPage({
                 >
                   <span className="application-icon">
                     {app.brandImage ? (
-                      <img src={app.brandImage} alt="" draggable={false} />
+                      <img
+                        src={programAsset(app.brandImage)}
+                        alt=""
+                        draggable={false}
+                      />
                     ) : (
                       <Icon aria-hidden />
                     )}
@@ -172,7 +177,11 @@ export function ApplicationCenterPage({
                 <button key={app.id} type="button" onClick={() => open(app)}>
                   <span>
                     {app.brandImage ? (
-                      <img src={app.brandImage} alt="" draggable={false} />
+                      <img
+                        src={programAsset(app.brandImage)}
+                        alt=""
+                        draggable={false}
+                      />
                     ) : (
                       <Icon aria-hidden />
                     )}

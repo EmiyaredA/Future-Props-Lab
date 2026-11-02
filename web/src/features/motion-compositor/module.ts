@@ -1,17 +1,9 @@
-import { Clapperboard, Layers3 } from "lucide-react";
+import { MOTION_COMPOSITOR_DEFINITION } from "@features/applications";
+import { Layers3 } from "lucide-react";
 import { defineApplicationModule } from "@features/applications";
 
 export const MOTION_COMPOSITOR_MODULE = defineApplicationModule({
-  definition: {
-    id: "motion-compositor",
-    name: "特效制作工坊",
-    description: "制作可编辑的二维特效、路径遮罩与透明镜头。",
-    category: "visual",
-    capabilities: ["特效", "遮罩", "关键帧", "透明导出"],
-    path: "/apps/motion-compositor",
-    icon: Clapperboard,
-    brandImage: "/brand/motion-compositor-mark.png",
-  },
+  definition: MOTION_COMPOSITOR_DEFINITION,
   supportsProjects: true,
   shell: "motion-compositor",
   shellConfig: {

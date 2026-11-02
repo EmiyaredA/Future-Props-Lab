@@ -117,6 +117,49 @@ services:
       start_period: 10s
     networks: [private]
 
+  portal:
+    image: ${FPL_PORTAL_IMAGE:?Build and select a Portal release}
+    user: "${FPL_SERVICE_UID}:${FPL_SERVICE_GID}"
+    restart: unless-stopped
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    stop_grace_period: 30s
+    cpus: 0.5
+    mem_limit: 256m
+    tmpfs:
+      - /tmp:mode=1777,size=32m
+    volumes:
+      - type: bind
+        source: ${FPL_PORTAL_STATE:?Select isolated or formally migrated Portal data}
+        target: /state
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${FPL_PORTAL_CONFIG:?Select minimal read-only Portal TOML}
+        target: /run/fpl/config.toml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${FPL_IDENTITY_PUBLIC_KEY:?Select Identity public key}
+        target: /run/fpl/identity-public.pem
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/ready', timeout=2)"
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks: [private]
+
   gateway:
     image: ${FPL_GATEWAY_IMAGE:?Build and select a Gateway release}
     user: "${FPL_SERVICE_UID}:${FPL_SERVICE_GID}"

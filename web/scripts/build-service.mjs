@@ -13,7 +13,7 @@ const repo = path.resolve(
 );
 const web = path.join(repo, "web");
 const service = process.argv[2];
-if (service !== "agents")
+if (!["agents", "portal"].includes(service))
   throw new Error("This service has no independent browser entry yet");
 const digest = (value) => createHash("sha256").update(value).digest("hex");
 function walk(directory, prefix = "") {
@@ -43,7 +43,7 @@ sources.push(
   "package-lock.json",
   "web/service.config.ts",
   "web/vite.config.ts",
-  "web/agents.html",
+  "web/" + service + ".html",
 );
 const id = digest(
   sources
@@ -135,7 +135,7 @@ const manifest = {
   version: 1,
   service,
   build_id: id,
-  entry: "agents.html",
+  entry: service + ".html",
   files,
 };
 fs.writeFileSync(

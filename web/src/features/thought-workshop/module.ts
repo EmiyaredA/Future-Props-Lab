@@ -1,19 +1,10 @@
+import { THOUGHT_WORKSHOP_DEFINITION } from "@features/applications";
 import { BookOpen } from "lucide-react";
 import { defineApplicationModule } from "@features/applications";
 import { officialPath } from "./community/legacyReference";
 
 const moduleDefinition = {
-  definition: {
-    id: "thought-workshop",
-    name: "思绪工坊",
-    category: "productivity",
-    description:
-      "记录灵感，整理思绪。支持丰富排版、公式图表；AI 写作经 Agent/SDK 接入。",
-    capabilities: ["笔记", "富文本"],
-    path: "/apps/thought-workshop",
-    icon: BookOpen,
-    brandImage: "/brand/thought-workshop-mark.png",
-  },
+  definition: THOUGHT_WORKSHOP_DEFINITION,
   supportsProjects: true,
   shell: "thought-workshop",
   shellConfig: {

@@ -1,18 +1,9 @@
-import { BookOpen, Box } from "lucide-react";
+import { GALGAME_WORKSHOP_DEFINITION } from "@features/applications";
+import { Box } from "lucide-react";
 import { defineApplicationModule } from "@features/applications";
 
 const galgameWorkshopModule = {
-  definition: {
-    id: "galgame-workshop",
-    name: "Galgame 工坊",
-    description:
-      "本地优先的 Galgame 创作工坊，编辑结构化剧本、分支并直接试玩。",
-    category: "visual",
-    capabilities: ["剧本", "分支", "试玩"],
-    path: "/apps/galgame-workshop",
-    icon: BookOpen,
-    brandImage: "/brand/galgame-workshop-mark.png",
-  },
+  definition: GALGAME_WORKSHOP_DEFINITION,
   supportsProjects: true,
   shell: "galgame-workshop",
   shellConfig: {

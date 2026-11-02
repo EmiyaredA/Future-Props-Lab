@@ -13,7 +13,7 @@ FFmpeg/FFprobe；持续集成同时验证 Python 3.11
 
 ## 独立服务迁移
 
-正在按同仓库独立服务拆分。Identity、Gateway 和 Agents 已提供独立镜像和 Compose 隔离验收；Agents 已拥有独立登录页面与 `/agents` 入口，其余服务和正式切换仍在实施。`npm run services:build -- identity --build` 构建独立镜像；操作与验收范围见[独立服务迁移](docs/operations/independent-services.md)。完成全部门禁前，正式网站继续使用下述现有入口。
+正在按同仓库独立服务拆分。Identity、Gateway、Agents 和 Portal 已有独立构建与 Compose 装配；Agents 已拥有独立登录页面与 `/agents` 入口，门户独立页面、更新与停止隔离已通过验收，其余服务和正式切换仍在实施。`npm run services:build -- identity --build` 构建独立镜像；操作与验收范围见[独立服务迁移](docs/operations/independent-services.md)。完成全部门禁前，正式网站继续使用下述现有入口。
 
 ## 快速开始
 

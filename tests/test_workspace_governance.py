@@ -94,7 +94,10 @@ def test_every_business_operation_has_an_explicit_policy():
         and not path.startswith(("/v1/account", "/v1/auth", "/v1/platform", "/v1/public-workspace"))
     }
     local_management = {("POST", "/v1/platform/local-models/{model_id}/actions")}
-    directory = {("GET", "/v1/account/directory")}
+    directory = {
+        ("GET", "/v1/account/directory"),
+        ("GET", "/v1/account/developer-documents"),
+    }
     assert actual | local_management | directory == set(ROUTE_PERMISSIONS)
 
 

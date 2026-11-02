@@ -6,9 +6,10 @@ import mimetypes
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import quote
 
 from starlette.datastructures import Headers, MutableHeaders
-from starlette.responses import FileResponse, JSONResponse, Response
+from starlette.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from starlette.routing import Route
 
 from .catalog import service_by_id
@@ -65,6 +66,7 @@ def load_release(root, service):
                     "fonts",
                     "voice-vad",
                     "presentation-templates",
+                    *({"docs"} if service == "portal" else set()),
                 }
             ) or (
                 len(path.parts) == 1
@@ -151,7 +153,7 @@ class ProgramCompatibility:
         await self.app(scope, receive, versioned)
 
 
-def attach_web(app, release, *, pages):
+def attach_web(app, release, *, pages, resource_aliases=None):
     async def entry(_request):
         return FileResponse(
             release.root / release.entry,
@@ -208,5 +210,21 @@ def attach_web(app, release, *, pages):
     )
     for page in pages:
         app.router.routes.append(Route(page, entry, methods=["GET", "HEAD"]))
+
+    def alias(prefix):
+        async def redirect(request):
+            name = prefix + request.path_params["path"]
+            if name not in release.files or name.endswith((".gz", ".br")):
+                return JSONResponse({"code": "not_found"}, 404)
+            return RedirectResponse(
+                release.prefix + "/" + quote(name, safe="/"),
+                status_code=307,
+                headers={"Cache-Control": "no-store"},
+            )
+
+        return redirect
+
+    for path, prefix in (resource_aliases or {}).items():
+        app.router.routes.append(Route(path, alias(prefix), methods=["GET", "HEAD"]))
     app.state.web_build = release.build_id
     app.add_middleware(ProgramCompatibility, release=release)

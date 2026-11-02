@@ -1,18 +1,9 @@
+import { INTERVIEW_ASSISTANT_DEFINITION } from "@features/applications";
 import { MessagesSquare } from "lucide-react";
 import { defineApplicationModule } from "@features/applications";
 
 const definition = {
-  definition: {
-    id: "interview-assistant",
-    name: "面试助手",
-    category: "productivity",
-    description:
-      "由本机 Codex 读取 JD 与简历、检索整理本场资料，再进行文字面试练习。",
-    capabilities: ["面试", "简历", "复盘"],
-    path: "/apps/interview-assistant",
-    icon: MessagesSquare,
-    brandImage: "/brand/interview-assistant-mark.png",
-  },
+  definition: INTERVIEW_ASSISTANT_DEFINITION,
   supportsProjects: false,
   shell: "interview-assistant",
   shellConfig: {

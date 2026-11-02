@@ -1,17 +1,9 @@
-import { Box, Film, ListVideo } from "lucide-react";
+import { VIDEO_EDITOR_DEFINITION } from "@features/applications";
+import { Box, ListVideo } from "lucide-react";
 import { defineApplicationModule } from "@features/applications";
 
 const moduleDefinition = {
-  definition: {
-    id: "video-editor",
-    name: "视频剪辑工坊",
-    description: "确定性多轨剪辑、精确停帧与原生 FFmpeg 成片。",
-    category: "visual",
-    capabilities: ["视频", "多轨剪辑", "字幕", "确定性导出"],
-    path: "/apps/video-editor",
-    icon: Film,
-    brandImage: "/brand/video-editor-mark.png",
-  },
+  definition: VIDEO_EDITOR_DEFINITION,
   supportsProjects: true,
   shell: "video-editor",
   shellConfig: {

@@ -3,6 +3,7 @@
 import re
 
 OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
+    "docs.developer": (("GET", "/v1/account/developer-documents"),),
     "content.write": (
         ("POST", "/v1/agent-workbench/sources"),
         ("PATCH", "/v1/agent-workbench/sources/{source_id}"),

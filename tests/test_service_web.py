@@ -134,3 +134,30 @@ def test_modified_or_untracked_files_and_links_block_program_publication(tmp_pat
     (tmp_path / "linked").symlink_to(tmp_path / "assets", target_is_directory=True)
     with pytest.raises(ValueError):
         load_release(tmp_path, "agents")
+
+
+async def test_portal_docs_alias_only_redirects_verified_program_resources(tmp_path):
+    manifest = write_release(tmp_path, service="portal")
+    (tmp_path / "docs").mkdir()
+    body = b"<svg xmlns='http://www.w3.org/2000/svg'></svg>"
+    (tmp_path / "docs/fixture.svg").write_bytes(body)
+    manifest["files"].append(
+        {"path": "docs/fixture.svg", "bytes": len(body), "sha256": hashlib.sha256(body).hexdigest()}
+    )
+    (tmp_path / "build.json").write_text(json.dumps(manifest))
+    release = load_release(tmp_path, "portal")
+    app = FastAPI()
+    attach_web(app, release, pages=("/docs.html",), resource_aliases={"/docs/{path:path}": "docs/"})
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app), base_url="http://fixture"
+    ) as client:
+        redirect = await client.get("/docs/fixture.svg")
+        assert redirect.status_code == 307 and redirect.headers["cache-control"] == "no-store"
+        assert redirect.headers["location"] == release.prefix + "/docs/fixture.svg"
+        resource = await client.get(redirect.headers["location"])
+        assert resource.content == body and "immutable" in resource.headers["cache-control"]
+        assert (await client.get("/docs/missing.svg")).status_code == 404
+    manifest["service"] = "agents"
+    (tmp_path / "build.json").write_text(json.dumps(manifest))
+    with pytest.raises(ValueError):
+        load_release(tmp_path, "agents")

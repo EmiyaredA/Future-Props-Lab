@@ -53,6 +53,9 @@ export function IndependentShell({
             <a href="/remote" onClick={follow}>
               远程控制
             </a>
+            <a href="/docs.html" onClick={follow}>
+              文档
+            </a>
           </nav>
           <div className="independent-account">
             <ThemeToggle compact />

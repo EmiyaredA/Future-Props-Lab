@@ -1,17 +1,9 @@
+import { DIRECTOR_DESK_DEFINITION } from "@features/applications";
 import { Clapperboard } from "lucide-react";
 import { defineApplicationModule } from "@features/applications";
 
 const definition = {
-  definition: {
-    id: "director-desk",
-    name: "导演台",
-    category: "visual",
-    description: "搭三维场景、排走位和运镜，导出预演参考。",
-    brandImage: "/brand/director-desk-mark.png",
-    capabilities: ["三维预演", "走位", "运镜"],
-    path: "/apps/director-desk",
-    icon: Clapperboard,
-  },
+  definition: DIRECTOR_DESK_DEFINITION,
   supportsProjects: true,
   shell: "director-desk",
   shellConfig: {

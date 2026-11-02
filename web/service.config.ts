@@ -5,9 +5,8 @@ import { defineConfig, type Plugin } from "vite";
 import baseConfig from "./vite.config";
 
 import { serviceAssets } from "./scripts/service-assets.mjs";
-const publicFiles = serviceAssets.agents;
 
-function programResources(): Plugin {
+function programResources(publicFiles: string[]): Plugin {
   return {
     name: "owned-program-resources",
     generateBundle() {
@@ -29,7 +28,12 @@ function programResources(): Plugin {
 export default defineConfig(async (environment) => {
   const service = process.env.FPL_WEB_SERVICE;
   const build = process.env.FPL_WEB_BUILD_ID;
-  if (service !== "agents" || !build || !/^[a-f0-9]{20}$/.test(build))
+  if (
+    !service ||
+    !["agents", "portal"].includes(service) ||
+    !build ||
+    !/^[a-f0-9]{20}$/.test(build)
+  )
     throw new Error("Select a supported service and an immutable web build ID");
   const shared = await baseConfig({ ...environment, mode: "studio" });
   const sourceHash = createHash("sha256")
@@ -41,7 +45,10 @@ export default defineConfig(async (environment) => {
     envDir: false,
     publicDir: false,
     base: "/_apps/" + service + "/" + build + "/",
-    plugins: [...(shared.plugins || []), programResources()],
+    plugins: [
+      ...(shared.plugins || []),
+      programResources(serviceAssets[service as "agents" | "portal"]),
+    ],
     define: {
       ...shared.define,
       "import.meta.env.VITE_FPL_SERVICE": JSON.stringify(service),
@@ -54,7 +61,7 @@ export default defineConfig(async (environment) => {
       outDir: process.env.FPL_WEB_DIST_DIR,
       rollupOptions: {
         ...shared.build?.rollupOptions,
-        input: resolve(__dirname, "agents.html"),
+        input: resolve(__dirname, service + ".html"),
       },
     },
   };

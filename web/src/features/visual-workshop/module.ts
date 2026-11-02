@@ -1,17 +1,9 @@
-import { Box, Clapperboard, ListChecks } from "lucide-react";
+import { VISUAL_WORKSHOP_DEFINITION } from "@features/applications";
+import { Box, ListChecks } from "lucide-react";
 import { defineApplicationModule } from "@features/applications";
 
 const visualWorkshopModule = {
-  definition: {
-    id: "visual-workshop",
-    name: "视觉创作工坊",
-    description: "统一管理图像、视频与自由画布项目，让视觉内容从灵感走向成品。",
-    category: "visual",
-    capabilities: ["图像", "视频", "画布", "AI创作"],
-    path: "/apps/visual-workshop",
-    icon: Clapperboard,
-    brandImage: "/brand/visual-workshop-mark.png",
-  },
+  definition: VISUAL_WORKSHOP_DEFINITION,
   supportsProjects: true,
   shell: "visual-workshop",
   shellConfig: {

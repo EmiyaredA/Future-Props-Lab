@@ -1,17 +1,9 @@
+import { PRESENTATION_WORKSHOP_DEFINITION } from "@features/applications";
 import { Presentation, LayoutTemplate } from "lucide-react";
 import { defineApplicationModule } from "@features/applications";
 
 const definition = {
-  definition: {
-    id: "presentation-workshop",
-    name: "演示工坊",
-    category: "productivity",
-    description: "用文字、图片和图形整理想法，编辑、放映并导出可编辑 PPTX。",
-    capabilities: ["演示文稿", "排版", "PPTX导出"],
-    path: "/apps/presentation-workshop",
-    icon: Presentation,
-    brandImage: "/brand/presentation-workshop-mark.png",
-  },
+  definition: PRESENTATION_WORKSHOP_DEFINITION,
   supportsProjects: true,
   shell: "presentation-workshop",
   shellConfig: {

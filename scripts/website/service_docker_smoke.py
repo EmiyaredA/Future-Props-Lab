@@ -41,6 +41,7 @@ def exercise(
     (root / "identity").mkdir(mode=0o700)
     (root / "agents").mkdir(mode=0o700)
     (root / "gateway").mkdir(mode=0o700)
+    (root / "portal").mkdir(mode=0o700)
     gateway_token = secrets.token_urlsafe(48)
     password = secrets.token_urlsafe(30) + "-Aa9!"
     encryption_key = Fernet.generate_key().decode()
@@ -88,6 +89,9 @@ def exercise(
         {
             "COMPOSE_DISABLE_ENV_FILE": "true",
             "FPL_IDENTITY_IMAGE": image,
+            "FPL_PORTAL_IMAGE": "fpl/portal:acceptance-unselected",
+            "FPL_PORTAL_STATE": str(root / "portal"),
+            "FPL_PORTAL_CONFIG": str(root / "identity.toml"),
             "FPL_GATEWAY_IMAGE": gateway_image,
             "FPL_GATEWAY_STATE": str(root / "gateway"),
             "FPL_GATEWAY_SETTINGS": str(root / "gateway.toml"),

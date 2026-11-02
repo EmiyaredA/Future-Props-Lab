@@ -16,13 +16,15 @@ Gateway 从公共操作归属清单生成精确的方法和路径路由；未知
 npm run services:contracts:check
 npm run services:build -- identity --build
 npm run services:build -- gateway --build
+npm run services:build:web -- portal
+npm run services:build -- portal --build --web-release .local/service-web/portal/BUILD_ID
 npm run services:build:web -- agents
 npm run services:build -- agents --build --web-release .local/service-web/agents/BUILD_ID
 ```
 
-当前独立镜像入口已完成 Identity、Gateway 与 Agents；其他服务的独立构建会明确拒绝。Gateway 包含 Caddy 与独立控制面，互相监督并持有自己的数据锁。构建器计算可审计源码闭包并拒绝单体入口、全部 ORM、工坊与模型内部依赖。镜像不复制整个后端，不打包配置、密钥、运行数据或仓库。Identity 自有锁文件固定所需依赖；版本由实际输入内容决定。
+当前独立镜像入口包含 Identity、Gateway、Agents 与 Portal；其他服务的独立构建会明确拒绝。Gateway 包含 Caddy 与独立控制面，互相监督并持有自己的数据锁。构建器计算可审计源码闭包并拒绝单体入口、全部 ORM、工坊与模型内部依赖。镜像不复制整个后端，不打包配置、密钥、运行数据或仓库。Identity 自有锁文件固定所需依赖；版本由实际输入内容决定。
 
-`deploy/compose.yaml` 目前装配 Identity、Agents 和 Gateway，启动时只使用已构建镜像，不自动构建或迁移。数据库初始化必须通过所属镜像显式执行 `migrate`；已有数据库迁移历史不符时启动失败。`create-admin` 只接受标准输入 JSON，并且仅用于没有账号的新安装；已有正式账号应从受控导入保留。
+`deploy/compose.yaml` 目前装配 Identity、Agents、Portal 和 Gateway，启动时只使用已构建镜像，不自动构建或迁移。数据库初始化必须通过所属镜像显式执行 `migrate`；已有数据库迁移历史不符时启动失败。`create-admin` 只接受标准输入 JSON，并且仅用于没有账号的新安装；已有正式账号应从受控导入保留。
 
 ## Docker 隔离验收
 
@@ -66,9 +68,17 @@ Gateway 的 Mac 公网访问管理桥接、服务状态聚合和各服务的通�
 
 Gateway 与 Agents 独立浏览器入口批次已通过全量后端 1822 项测试（4 项按条件跳过）、代码检查、格式检查、聚合契约与 SDK 检查，以及真实三容器与 Chromium 验收。浏览器验收对确认后的实际 URL 和原生弹窗进行断言，避免只检查旧页面仍存在而误报跳转成功。
 
-本机全量 Web 组件测试为 1787 通过、8 失败；五个失败文件单独复核为 33 通过、1 项 15 秒超时。失败项目与耗时随运行变化，目前仍视为未通过的完整门禁；不能用定向通过代替，也不调整产品逻辑来掩盖运行超时。正式切换继续被阻止。
+早期本机全量 Web 组件测试曾出现随运行变化的编辑器超时。后续 Portal 批次在未调整超时配置的情况下，标准单 worker 全量运行 1795 项全部通过；最终后端全量 1843 项通过、4 项条件跳过。完整生产构建、代码、格式、契约与 SDK 检查通过。正式切换仍由剩余服务与数据导入验收阻止。
 
 原生跟随任务结束后保留尚未确认的投影帧；重启不会擅自恢复已经结束的任务，也不会删除可能仅存于本机的未确认内容。
+
+## 门户独立发布
+
+Portal 只挂载自己的状态目录、存储配置和 Identity 公钥，不需要 FPL 加密密钥或其他服务凭据。首页、目录和文档有独立程序版本，目录仅依赖纯元数据。文档阅读器和现有指南复用原内容，SDK 的一行权限参考更新单独提交；原截图地址经过清单验证后跳转到门户版本资源，缺失文件仍返回 404。开发文档通过原账号授权 API 提供，不进入静态程序缓存。
+
+为工作台验收增加 `--portal-image fpl/portal:VERSION`，会先验证门户页面，再重建、停止 Portal，检查其他进程启动时间不变、历史仍可读，并继续执行新的浏览器登录。正式维护前还需完成其余服务与 Identity 的独立账号管理页。
+
+最终四容器与 Chromium 验收已通过：Portal 独立替换和停止后，Agents、Identity 与 Gateway 的启动时间不变，工作台历史及新登录继续工作；门户首页、目录、文档和明暗主题覆盖 390／768／1600px。
 
 ## Assets 拆分中的数据保护
 

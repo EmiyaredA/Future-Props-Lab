@@ -22,9 +22,7 @@ export const APPLICATION_MODULES = [
   DIRECTOR_DESK_MODULE,
 ] as const;
 
-export const APPLICATION_DEFINITIONS = APPLICATION_MODULES.map(
-  (application) => application.definition,
-);
+export { APPLICATION_DEFINITIONS } from "@features/applications/definitions";
 
 export function matchApplicationPath(pathname: string) {
   for (const application of APPLICATION_MODULES) {

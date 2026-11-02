@@ -29,6 +29,7 @@ def exercise(
     public_port=19181,
     native_port=29090,
     browser_check=False,
+    portal_image=None,
     gateway_image="caddy@sha256:36c24ad91a7ff7bc4c87fe22bfa8df3c4b18da0773d73fc12ee2c52b98c0bb7e",
 ):
     project = "fpl-isolated-agents-" + secrets.token_hex(5)
@@ -36,7 +37,7 @@ def exercise(
     subprocess.run(["git", "check-ignore", "--quiet", str(root)], check=True, cwd=ROOT)
     root.mkdir(mode=0o700)
     control = not gateway_image.startswith("caddy@")
-    for name in ("identity", "agents", "gateway", "native"):
+    for name in ("identity", "agents", "gateway", "portal", "native"):
         (root / name).mkdir(mode=0o700)
     gateway_token, service_token, lane_token, worker_token = [
         secrets.token_urlsafe(48) for _ in range(4)
@@ -53,6 +54,7 @@ def exercise(
     material = {
         "identity.toml": config.encode(),
         "agents.toml": config.encode(),
+        "portal.toml": b'[storage]\ndatabase_path = "/state/service.db"\n',
         "identity-signing.pem": key.private_bytes(
             serialization.Encoding.PEM,
             serialization.PrivateFormat.PKCS8,
@@ -123,6 +125,9 @@ def exercise(
             "FPL_SERVICE_UID": str(os.getuid()),
             "FPL_SERVICE_GID": str(os.getgid()),
             "FPL_IDENTITY_IMAGE": identity_image,
+            "FPL_PORTAL_IMAGE": portal_image or "fpl/portal:acceptance-unselected",
+            "FPL_PORTAL_STATE": str(root / "portal"),
+            "FPL_PORTAL_CONFIG": str(root / "portal.toml"),
             "FPL_GATEWAY_IMAGE": gateway_image,
             "FPL_GATEWAY_STATE": str(root / "gateway"),
             "FPL_GATEWAY_SETTINGS": str(root / "gateway.toml"),
@@ -213,7 +218,17 @@ def exercise(
             "create-admin",
             input_text=json.dumps({"username": "isolated-admin", "password": password}),
         )
-        compose("up", "--detach", "--no-build", "identity", "agents", "gateway")
+        if portal_image:
+            compose("run", "--rm", "--no-deps", "portal", "migrate")
+        compose(
+            "up",
+            "--detach",
+            "--no-build",
+            "identity",
+            "agents",
+            "gateway",
+            *(("portal",) if portal_image else ()),
+        )
         collector = subprocess.Popen(
             [
                 sys.executable,
@@ -326,6 +341,41 @@ def exercise(
             checks.append(
                 "independent Agents replacement preserves data, Identity, Gateway and native follow"
             )
+            if portal_image:
+                wait(client, "/")
+                stable = {
+                    service: started(service) for service in ("identity", "agents", "gateway")
+                }
+                if browser_check:
+                    result = subprocess.run(
+                        ["node", str(ROOT / "web/scripts/portal-service-browser-smoke.mjs")],
+                        cwd=ROOT,
+                        input=json.dumps(
+                            {
+                                "origin": origin + "/",
+                                "username": "isolated-admin",
+                                "password": password,
+                                "output": str(root / "portal-browser"),
+                                "repo": str(ROOT),
+                            }
+                        ),
+                        capture_output=True,
+                        text=True,
+                        timeout=180,
+                    )
+                    if result.returncode:
+                        raise RuntimeError(
+                            "Portal browser acceptance failed: " + result.stdout + result.stderr
+                        )
+                compose("up", "--detach", "--no-deps", "--force-recreate", "portal")
+                wait(client, "/")
+                compose("stop", "portal")
+                assert client.get("/").status_code == 502
+                assert all(started(service) == stamp for service, stamp in stable.items())
+                assert client.get(history).status_code == 200
+                checks.append(
+                    "Portal browser, independent replacement and stop preserve Agents and Identity"
+                )
             with httpx.Client(base_url=origin, trust_env=False, timeout=3) as fresh:
                 response = fresh.post(
                     "/v1/auth/login",
@@ -430,7 +480,17 @@ def exercise(
                 collector.kill()
                 collector.wait(timeout=5)
         collector_log.close()
-        compose("logs", "--no-color", "--tail", "50", "gateway", "identity", "agents", check=False)
+        compose(
+            "logs",
+            "--no-color",
+            "--tail",
+            "50",
+            "gateway",
+            "identity",
+            "agents",
+            "portal",
+            check=False,
+        )
         compose("down", "--remove-orphans", check=False)
 
 
@@ -439,6 +499,7 @@ if __name__ == "__main__":
     parser.add_argument("--identity-image", required=True)
     parser.add_argument("--agents-image", required=True)
     parser.add_argument("--browser", action="store_true")
+    parser.add_argument("--portal-image")
     parser.add_argument(
         "--gateway-image",
         default="caddy@sha256:36c24ad91a7ff7bc4c87fe22bfa8df3c4b18da0773d73fc12ee2c52b98c0bb7e",
@@ -451,4 +512,5 @@ if __name__ == "__main__":
         native_port=args.native_port,
         gateway_image=args.gateway_image,
         browser_check=args.browser,
+        portal_image=args.portal_image,
     )
