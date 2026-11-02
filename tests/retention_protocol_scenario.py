@@ -1,0 +1,272 @@
+"""Real Identity + owned Assets HTTP retention; all storage lives in the test directory."""
+
+import asyncio
+import os
+from pathlib import Path
+
+import httpx
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from fastapi import FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
+from starlette.responses import JSONResponse
+
+from app.capabilities.asset_store.library import AssetError
+from app.capabilities.asset_store.models import VisualAsset
+from app.problem_details import http_exception_handler, validation_exception_handler
+from fpl_assets.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
+from fpl_assets.models import MODELS
+from fpl_assets.reference_changes import ReferenceChanges
+from fpl_assets.retention_api import router
+from fpl_identity.accounts import create_account
+from fpl_identity.application import create_app
+from fpl_identity.migrations.registry import MIGRATIONS
+from fpl_runtime.asset_references import PrepareReferenceChange
+from fpl_runtime.capability_client import CapabilityDenied
+from fpl_runtime.claims import HEADER, verify_context
+from fpl_runtime.database import Database
+from fpl_runtime.identity_client import LiveAuthorization
+from fpl_runtime.migrations import apply
+from fpl_runtime.retention_authority import verify_retention
+from fpl_runtime.retention_client import RetentionClient
+from fpl_runtime.routing import RouteCatalog
+
+state = Path(os.environ["IDENTITY_TEST_ROOT"])
+private = Ed25519PrivateKey.generate()
+catalog = RouteCatalog.read(Path("deploy/contracts/ownership.json"))
+credential = "thought-test-retention-credential-1234567890"
+asset_credential = "assets-test-retention-credential-1234567890"
+app = create_app(
+    state_root=state,
+    catalog=catalog,
+    gateway_token="gateway-retention-test-" * 3,
+    local_origin="http://127.0.0.1:19000",
+    public_origin="https://studio.example.test",
+    private_key=private,
+    service_credentials={"thought": credential, "assets": asset_credential},
+)
+apply(state / "service.db", "identity", MIGRATIONS)
+asset_root = state.parent / "assets"
+apply(asset_root / "service.db", "assets", ASSET_MIGRATIONS)
+database = Database("assets", asset_root, models=MODELS)
+assets = FastAPI()
+assets.state.identity_public_key = private.public_key()
+assets.state.reference_changes = ReferenceChanges(database)
+assets.include_router(router)
+assets.add_exception_handler(HTTPException, http_exception_handler)
+assets.add_exception_handler(RequestValidationError, validation_exception_handler)
+
+
+async def asset_error(_request, exc):
+    return JSONResponse(
+        {"code": exc.code}, status_code=exc.status, headers={"Cache-Control": "no-store"}
+    )
+
+
+assets.add_exception_handler(AssetError, asset_error)
+identity_transport = httpx.ASGITransport(app=app)
+asset_transport = httpx.ASGITransport(app=assets)
+
+
+class Transport(httpx.AsyncBaseTransport):
+    async def handle_async_request(self, request):
+        assert not request.headers.get("cookie")
+        if request.url.host == "identity":
+            return await identity_transport.handle_async_request(request)
+        assert request.url.host == "assets"
+        return await asset_transport.handle_async_request(request)
+
+
+transport = Transport()
+assets.state.identity = LiveAuthorization(
+    service="assets",
+    credential=asset_credential,
+    transport=transport,
+)
+headers = {
+    "X-Fpl-Gateway": "gateway-retention-test-" * 3,
+    "X-Fpl-Ingress": "local",
+    "X-Fpl-Client-Ip": "127.0.0.1",
+}
+password = "Retention-Test-Password-2026!"
+
+
+def change(request_id, **overrides):
+    return PrepareReferenceChange(
+        **{
+            "request_id": request_id,
+            "resource_kind": "note",
+            "resource_id": "owned-note",
+            "expected_resource_revision": -1,
+            "asset_ids": ["owned-file"],
+            **overrides,
+        }
+    )
+
+
+async def scenario():
+    try:
+        async with app.router.lifespan_context(app):
+            async with app.state.database.sessions() as session:
+                owner, _ = await create_account(
+                    session,
+                    username="retention-owner",
+                    display_name="Retention Owner",
+                    password=password,
+                    platform_role="user",
+                )
+                owner_id = owner.id
+            async with database.sessions() as session:
+                session.info["owner_user_id"] = owner_id
+                session.add(
+                    VisualAsset(
+                        id="owned-file",
+                        owner_user_id=owner_id,
+                        original_filename="test.png",
+                        display_name="Test",
+                        storage_key="owned",
+                        storage_version=2,
+                        media_kind="image",
+                        mime_type="image/png",
+                        byte_size=100,
+                    )
+                )
+                await session.commit()
+            async with httpx.AsyncClient(
+                transport=identity_transport, base_url="http://127.0.0.1:19000", headers=headers
+            ) as browser:
+                response = await browser.post(
+                    "/v1/auth/login",
+                    json={
+                        "username": "retention-owner",
+                        "password": password,
+                    },
+                )
+                assert response.status_code == 200, response.text
+                csrf = browser.cookies["fpl_csrf"]
+                unsafe = {"X-CSRF-Token": csrf, "Origin": "http://127.0.0.1:19000"}
+                response = await browser.get(
+                    "/_internal/v1/authorize",
+                    headers={
+                        **unsafe,
+                        "X-Fpl-Target-Service": "thought",
+                        "X-Fpl-Request-Method": "PUT",
+                        "X-Fpl-Request-Uri": "/v1/thought-workshop/notes/owned-note",
+                    },
+                )
+                assert response.status_code == 204, response.text
+                assertion = response.headers[HEADER]
+                actor = verify_context(
+                    assertion,
+                    service="thought",
+                    method="PUT",
+                    path="/v1/thought-workshop/notes/owned-note",
+                    public_key=private.public_key(),
+                )
+                assert actor.user_id == owner_id
+                client = RetentionClient(
+                    service="thought", credential=credential, transport=transport
+                )
+                try:
+                    value = change("first")
+                    authority = await client.authorize(
+                        assertion=assertion,
+                        source_method="PUT",
+                        source_path="/v1/thought-workshop/notes/owned-note",
+                        change=value,
+                    )
+                    grant = verify_retention(authority, public_key=private.public_key())
+                    assert grant.actor.user_id == owner_id and grant.matches(value)
+                    for method, path in (("POST", "/v1/files"), ("GET", "/v1/files")):
+                        try:
+                            verify_context(
+                                authority,
+                                service="assets",
+                                method=method,
+                                path=path,
+                                public_key=private.public_key(),
+                            )
+                        except Exception:
+                            pass
+                        else:
+                            raise AssertionError("Retention authority became a public bearer")
+                    prepared = await client.prepare(authority=authority, change=value)
+                    assert prepared["state"] == "prepared"
+                    assert await client.prepare(authority=authority, change=value) == prepared
+                    with_client = await client.status(
+                        authority=authority, intent_id=prepared["intent_id"]
+                    )
+                    assert with_client["state"] == "prepared"
+                    try:
+                        await client.prepare(
+                            authority=authority, change=change("first", asset_ids=[])
+                        )
+                    except CapabilityDenied as exc:
+                        assert exc.status == 403
+                    else:
+                        raise AssertionError("Authority accepted a different asset set")
+                    # A second authority cannot settle the first mutation's outcome.
+                    another = await client.authorize(
+                        assertion=assertion,
+                        source_method="PUT",
+                        source_path="/v1/thought-workshop/notes/owned-note",
+                        change=change("second"),
+                    )
+                    try:
+                        await client.abort(authority=another, intent_id=prepared["intent_id"])
+                    except CapabilityDenied as exc:
+                        assert exc.status == 404
+                    else:
+                        raise AssertionError("Wrong intent was settled")
+                    assert (
+                        await browser.post("/v1/auth/logout", headers=unsafe)
+                    ).status_code == 204
+                    # Revocation denies NEW preparation and authority issuance.
+                    try:
+                        await client.prepare(authority=another, change=change("second"))
+                    except CapabilityDenied as exc:
+                        assert exc.status == 403
+                    else:
+                        raise AssertionError("Logged-out session accepted another mutation")
+                    try:
+                        await client.authorize(
+                            assertion=assertion,
+                            source_method="PUT",
+                            source_path="/v1/thought-workshop/notes/owned-note",
+                            change=change("third"),
+                        )
+                    except CapabilityDenied as exc:
+                        assert exc.status == 401
+                    else:
+                        raise AssertionError("Revoked session minted new authority")
+                    # The source's durable commit can still be acknowledged after logout.
+                    outcome = await client.commit(
+                        authority=authority, intent_id=prepared["intent_id"], resource_revision=0
+                    )
+                    assert outcome["state"] == "committed"
+                    assert (
+                        await client.commit(
+                            authority=authority,
+                            intent_id=prepared["intent_id"],
+                            resource_revision=0,
+                        )
+                        == outcome
+                    )
+                    # Lost preparation acknowledgement does not admit a new mutation.
+                    assert await client.prepare(authority=authority, change=value) == prepared
+                    try:
+                        await client.abort(authority=authority, intent_id=prepared["intent_id"])
+                    except CapabilityDenied as exc:
+                        assert exc.status == 409
+                    else:
+                        raise AssertionError("Durable commit outcome was rewritten")
+                    assert not any(path.startswith("/_internal") for path in app.openapi()["paths"])
+                    assert not assets.openapi()["paths"]
+                finally:
+                    await client.close()
+    finally:
+        await assets.state.identity.close()
+        await database.close()
+
+
+asyncio.run(scenario())
+print("retention protocol passed: owned mutation, revocation, replay and finalization")

@@ -6,6 +6,7 @@ Unknown outcomes keep their pins indefinitely; there is no expiry cleanup.
 
 import hashlib
 import json
+import time
 
 from sqlalchemy import delete, func, select, text
 
@@ -32,7 +33,33 @@ class ReferenceChanges:
     def __init__(self, database):
         self.database = database
 
-    async def prepare(self, *, owner, service, change: PrepareReferenceChange):
+    async def replay(self, *, authority):
+        """A lost acknowledgement may be retrieved without accepting another mutation."""
+        async with self.database.sessions() as session:
+            session.info["owner_user_id"] = authority.actor.user_id
+            intent = await session.scalar(
+                select(ReferenceIntent).where(
+                    ReferenceIntent.service_id == authority.caller,
+                    ReferenceIntent.request_id == authority.request_id,
+                )
+            )
+            if intent is None:
+                return None
+            if intent.payload_sha256 != authority.change_sha256:
+                raise failure("request_id_conflict", "请求 ID 已用于不同的引用变更")
+            return intent.prepared_result
+
+    async def verify_access(self, *, authority, intent_id):
+        async with self.database.sessions() as session:
+            session.info["owner_user_id"] = authority.actor.user_id
+            intent = await owned_intent(session, authority.caller, intent_id)
+            if (intent.request_id, intent.payload_sha256) != (
+                authority.request_id,
+                authority.change_sha256,
+            ):
+                raise failure("not_found", "引用变更不存在", 404)
+
+    async def prepare(self, *, owner, service, change: PrepareReferenceChange, not_after=None):
         change = change.model_copy(deep=True)
         change.validate_service(service)
         digest = hashlib.sha256(
@@ -55,6 +82,8 @@ class ReferenceChanges:
                 if existing.payload_sha256 != digest:
                     raise failure("request_id_conflict", "请求 ID 已用于不同的引用变更")
                 return existing.prepared_result
+            if not_after is not None and time.time() >= not_after:
+                raise failure("retention_preparation_expired", "引用准备授权已到期", 401)
             row = await session.scalar(
                 select(AssetReferenceSet).where(
                     AssetReferenceSet.service_id == service,

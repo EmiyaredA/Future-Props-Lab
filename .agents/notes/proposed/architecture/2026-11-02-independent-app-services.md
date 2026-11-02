@@ -59,3 +59,5 @@ Assets storage settings now reject foreign configuration groups and contain no e
 
 
 Reference preparation now has its own durable intent and pin table. A shared replacement set was insufficient when concurrent source writes saw the same source revision: one preparation could drop another's prospective asset. Prepare now retains independently; source data and its operation receipt commit atomically before confirmation. Newer confirmations supersede old protection while retaining later preparations, and unknown source outcomes never expire. Confirmed rollback, replay and permanent deletion have immutable outcomes. The new Assets migration preserves earlier files, pins, revisions and receipts. Visual's reference ORM moved to its owning feature; explicit legacy imports remain compatible, while a fresh Assets process and its static closure load no Visual ORM.
+
+素材私有协议由 Identity 从原账号业务写请求签发单次修改授权，绑定调用服务、账号、请求 ID 和完整修改摘要。新准备复核有效账号和 Session/API Key，并在短事务取得锁后检查准备期限；已存在的准备回执可重放。确认和撤销只结算该意图，不取得文件读取或其他任务权限。注销后不能新准备，但已经接受的源修改仍能确认结果，避免恢复依赖浏览器常驻。源应用调用方的持久出站意图与回执接入尚待完成，不能据此开放正式多服务写入。

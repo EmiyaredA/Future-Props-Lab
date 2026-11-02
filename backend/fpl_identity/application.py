@@ -30,6 +30,7 @@ from .delegation import router as delegation_router
 from .live import router as live_router
 from .migrations.registry import MIGRATIONS
 from .models import AccountEvent
+from .retention_api import router as retention_router
 from .transport import GatewayTransport
 
 MODELS = (
@@ -107,9 +108,10 @@ def create_app(
             ):
                 included.routes.append(route)
     app.include_router(included, prefix="/v1")
-    app.include_router(authorization_router)
-    app.include_router(live_router)
-    app.include_router(delegation_router)
+    app.include_router(authorization_router, include_in_schema=False)
+    app.include_router(live_router, include_in_schema=False)
+    app.include_router(delegation_router, include_in_schema=False)
+    app.include_router(retention_router)
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)

@@ -54,5 +54,19 @@ class LiveAuthorization:
             pass
         return {"allowed": False, "available": False, "revision": None}
 
+    async def can_prepare_retention(self, authority):
+        if self.service != "assets":
+            return False
+        try:
+            response = await self.client.post(
+                "/_internal/v1/asset-retention/check", json={"authority": authority}
+            )
+            if response.status_code != 200:
+                return None
+            result = response.json().get("active")
+            return result if type(result) is bool else None
+        except (httpx.HTTPError, ValueError, AttributeError):
+            return None
+
     async def close(self):
         await self.client.aclose()
