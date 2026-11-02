@@ -18,9 +18,9 @@ from app.integrations.external.feishu_verification import (
     verify_delete,
     verify_image,
 )
-from app.orm import bind_owner
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
+from app.runtime.ownership import bind_owner
 from app.runtime.polling_runner import PollingTaskRunner
 from app.runtime.time import utc_now
 

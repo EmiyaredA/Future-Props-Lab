@@ -31,9 +31,9 @@ from app.integrations.schemas import (
     McpUpdateIn,
     McpValidationOut,
 )
-from app.orm import require_owner_id
 from app.runtime.config import get_settings
 from app.runtime.credentials import decrypt_secret, encrypt_secret
+from app.runtime.ownership import require_owner_id
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.secret_hints import encrypted_secret_hint
 from app.runtime.time import iso_utc, utc_now

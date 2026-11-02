@@ -7,8 +7,8 @@ from fastapi import HTTPException
 from sqlalchemy import select
 
 from app.console.models import AuthSession, User
-from app.orm import bind_owner
 from app.runtime.db import SessionLocal
+from app.runtime.ownership import bind_owner
 from app.runtime.time import utc_now
 
 from .models import WorkbenchChange

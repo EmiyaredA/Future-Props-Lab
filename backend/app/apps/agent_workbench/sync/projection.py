@@ -2,7 +2,7 @@ from dataclasses import asdict, replace
 
 from sqlalchemy import bindparam, delete, select, text
 
-from app.orm import bind_owner
+from app.runtime.ownership import bind_owner
 from app.runtime.time import utc_now
 
 from ..models import (

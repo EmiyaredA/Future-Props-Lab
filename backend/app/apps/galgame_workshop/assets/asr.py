@@ -40,10 +40,10 @@ from app.llm.providers.senseaudio_asr import (
     SenseAudioAsrFileTooLarge,
 )
 from app.llm.providers.transcription import transcribe_model_audio
-from app.orm import bind_owner
 from app.runtime.config import Settings, get_settings
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal
+from app.runtime.ownership import bind_owner
 from app.runtime.polling_runner import PollingTaskRunner
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.task_admission import TaskAdmission

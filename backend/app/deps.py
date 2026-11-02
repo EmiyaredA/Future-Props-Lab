@@ -20,9 +20,9 @@ from app.capabilities.identity.security import (
     hash_secret,
 )
 from app.console.models import AuthSession, ManagementApiKey, User
-from app.orm import bind_owner
 from app.runtime.config import get_settings
 from app.runtime.db import get_session
+from app.runtime.ownership import bind_owner
 from app.runtime.time import utc_now
 
 

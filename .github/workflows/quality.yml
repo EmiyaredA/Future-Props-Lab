@@ -21,7 +21,7 @@ jobs:
         with:
           lfs: false
       - name: Pull backend runtime assets
-        run: git lfs pull --include="backend/app/capabilities/media_rendering/assets/*.ttf" --exclude=""
+        run: git lfs pull --include="backend/app/capabilities/media_rendering/assets/*.ttf,web/public/brand/amadeus/*" --exclude=""
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}

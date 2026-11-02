@@ -8,8 +8,8 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from app.apps.director_desk.projects import DirectorDeskError, DirectorDeskProjects
-from app.orm import bind_owner
 from app.runtime.db import SessionLocal
+from app.runtime.ownership import bind_owner
 
 WAIT_SECONDS = 30
 READ_TOOLS = frozenset(

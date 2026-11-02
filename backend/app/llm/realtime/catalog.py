@@ -29,8 +29,8 @@ from app.llm.schemas.realtime_voice import (
     RealtimeVoicePlaybackOut,
     RealtimeVoiceVadOut,
 )
-from app.orm import bind_owner
 from app.runtime.credentials import decrypt_secret
+from app.runtime.ownership import bind_owner
 
 
 class RealtimeModelUnavailableError(RuntimeError):

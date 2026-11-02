@@ -13,7 +13,7 @@ from app.console.governance.model_templates import initialize_from_template
 from app.console.governance.service import AccountError, add_audit_event
 from app.console.models import User
 from app.llm.catalog.seed import ensure_account_model_catalog
-from app.orm import bind_owner
+from app.runtime.ownership import bind_owner
 
 
 async def create_account(

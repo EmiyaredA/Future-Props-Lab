@@ -29,9 +29,9 @@ from app.llm.models import (
 from app.llm.playground.service import PreparedGeneration, message_out
 from app.llm.playground.test_tools import call_out, execute_test_tool, model_result_text
 from app.llm.providers.agent import HttpAgentAdapter
-from app.orm import bind_owner
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal
+from app.runtime.ownership import bind_owner
 from app.runtime.time import utc_now
 
 

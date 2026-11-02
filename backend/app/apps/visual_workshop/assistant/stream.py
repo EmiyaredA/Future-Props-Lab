@@ -30,9 +30,9 @@ from app.llm.models import (
     LlmCallLog,
 )
 from app.llm.providers.agent import HttpAgentAdapter
-from app.orm import bind_owner
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal
+from app.runtime.ownership import bind_owner
 from app.runtime.time import utc_now
 
 

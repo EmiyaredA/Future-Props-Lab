@@ -9,8 +9,8 @@ from sqlalchemy import select
 
 from app.llm.models import ModelTestTool, ModelTestToolCall
 from app.llm.playground.test_tools import TestToolResult, execute_test_tool
-from app.orm import bind_owner
 from app.runtime.db import SessionLocal
+from app.runtime.ownership import bind_owner
 from app.runtime.time import utc_now
 
 TOOL_RESULT_LIMIT = 32 * 1024

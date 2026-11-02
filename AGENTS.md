@@ -3,7 +3,7 @@
 ## 开始前
 
 - 每次正式处理仓库任务前先阅读本文件；所有命令默认在仓库根目录执行。
-- 本项目定位为单机部署的模型基础设施管理台，支持同一进程和同一 SQLite 内按账号隔离的私人数据；实时语音仅用于模型测试，不引入 Bot、模型检索知识库（RAG）、电话接入、浏览器扩展或多实例部署能力。
+- 本项目定位为单机部署的模型基础设施管理台，支持单机独立应用服务、每服务 SQLite 和按账号隔离的私人数据；实时语音仅用于模型测试，不引入 Bot、模型检索知识库（RAG）、电话接入、浏览器扩展或多实例部署能力。
   思绪工坊中的「知识库」仅表示文档项目容器，普通文档归当前账号私有；知识社区通过显式发布和逐篇授权开放给同一部署中的登录账号，不授予源账号私人资源访问权。AI 写作仅通过 Agent/SDK 接入，应用内无入口。
 - 目录职责以 [`docs/architecture/project-layout.md`](docs/architecture/project-layout.md)
   为唯一完整索引；新增目录或改变职责时同步更新该文件。
@@ -52,6 +52,9 @@
 - Agent Note：`npm run verify-notes` 检查树结构、格式和归档封印；`npm run check-docs-center-protected` 检查文档中心保护路径。
 
 ## 应用与目录边界
+
+- 经用户批准，正在将网站单体迁往同仓库独立服务和 Docker Compose。`backend/fpl_runtime/` 拥有无业务 ORM 依赖的服务清单、身份断言、路由与存储契约；`backend/fpl_deployment/` 拥有构建、归属检查和受控部署，不能成为业务实现层。每个服务独立数据库、迁移、Runner 和版本，不加载单体全部 ORM，不跨服务直接读写数据库。
+- 当前正式网站在多服务切换门禁通过前继续由现有入口运行；以下单体入口说明作为迁移期的恢复契约。新架构原生 Mac worker 主动连接受认证回环任务入口，容器不得挂载整个用户目录、个人 CLI 凭据或 Docker Socket。
 
 - `backend/app/` 按垂直切片装配：`main.py`、`deps.py`、`problem_details.py`、`api.py` 与
   `orm.py` 负责应用装配；无业务语义的基础设施归属
@@ -140,7 +143,7 @@
   各自创建的临时隔离数据库中直接构造测试状态，测试结束后不得影响任何持久数据库。
 - `npm run account -- create-admin|create-user|reset-password` 是账号恢复的离线入口，但只能调用
   `accounts/` 中与 HTTP 共用的正式用例，不得执行裸 SQL；账号与其模型目录在同一事务创建。
-- `db/migrations/` 是唯一 schema 迁移入口。已登记迁移的 ID、顺序和 SQL 不得改写；修复或
+- `db/migrations/` 是现有单体的唯一 schema 迁移入口；独立服务使用自有版本注册表，由 `fpl_runtime/migrations.py` 显式执行并核验数据库服务归属，启动不自动迁移。已登记迁移的 ID、顺序和 SQL 不得改写；修复或
   扩展只能在 `versions/` 追加新版本并更新 `registry.py`。
 - schema 演进只能通过新增并登记 migration 完成；migration 可以承担 schema 所必需的确定性
   数据变换，但不得替代面向运行期数据管理的 API。迁移首次写入真实持久数据库前必须先在

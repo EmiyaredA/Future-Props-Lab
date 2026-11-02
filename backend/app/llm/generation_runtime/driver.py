@@ -13,8 +13,8 @@ from app.llm.generation_runtime.poll_recovery import POLL_RETRY_PREFIX, is_trans
 from app.llm.local_models.catalog import credential_ready
 from app.llm.models import ModelProvider
 from app.llm.task_execution import TaskExecutionInfo
-from app.orm import bind_owner, require_owner_id
 from app.runtime.credentials import decrypt_secret
+from app.runtime.ownership import bind_owner, require_owner_id
 from app.runtime.time import utc_now
 
 SUBMISSION_INTERRUPTED_MESSAGE = "应用在提交供应商任务期间中断；为避免重复计费，请重新生成"

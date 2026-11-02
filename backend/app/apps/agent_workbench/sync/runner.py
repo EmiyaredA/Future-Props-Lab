@@ -9,9 +9,9 @@ from sqlalchemy import delete, func, select, update
 from watchfiles import awatch
 
 from app.capabilities.agents.sessions import get_adapter
-from app.orm import bind_owner
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
+from app.runtime.ownership import bind_owner
 from app.runtime.polling_runner import PollingTaskRunner
 from app.runtime.time import utc_now
 

@@ -9,8 +9,8 @@ from app.apps.visual_workshop.models import (
 )
 from app.apps.visual_workshop.schemas.workshop import VisualAssistantActionOut
 from app.capabilities.agents.harness import AgentEvent
-from app.orm import bind_owner
 from app.runtime.db import SessionLocal
+from app.runtime.ownership import bind_owner
 from app.runtime.time import iso_utc, utc_now
 
 ACTIVE_ACTION_STATUSES = ("proposed", "waiting_approval", "running")

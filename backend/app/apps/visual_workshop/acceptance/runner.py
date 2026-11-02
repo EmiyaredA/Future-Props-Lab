@@ -22,10 +22,10 @@ from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.inspection import inspect_media, verify_video
 from app.llm.models import LlmCallLog
 from app.llm.providers.streaming import ChatMessageInput, stream_text_completion
-from app.orm import bind_owner
 from app.runtime.config import get_settings
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal
+from app.runtime.ownership import bind_owner
 from app.runtime.polling_runner import PollingTaskRunner
 from app.runtime.time import utc_now
 

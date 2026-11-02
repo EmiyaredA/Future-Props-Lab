@@ -11,10 +11,10 @@ from pathlib import Path
 from app.capabilities.agents.cli.catalog import connection, inspect_connection
 from app.capabilities.agents.cli.model_connection import connection_overrides, toml_value
 from app.console.governance.code_agents import resolve
-from app.orm import bind_owner
 from app.runtime.config import REPO_ROOT, get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.operation_receipts import OperationError
+from app.runtime.ownership import bind_owner
 
 from .files import exclusive_write, material_path, room_root
 from .schemas import InterviewExecutorOut, PreparationBundle

@@ -7,9 +7,9 @@ from typing import Any
 from app.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from app.apps.video_editor.schemas.timeline import VideoEditorTimelineBatchIn
 from app.apps.video_editor.timeline import VideoEditorTimelines
-from app.orm import bind_owner
 from app.runtime.db import SessionLocal
 from app.runtime.operation_receipts import OperationError
+from app.runtime.ownership import bind_owner
 
 
 async def apply_assistant_timeline_batch(

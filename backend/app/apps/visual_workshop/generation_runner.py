@@ -38,9 +38,9 @@ from app.llm.generation_runtime import (
 from app.llm.providers.temporary_media import TemporaryMediaError
 from app.llm.providers.zealman_live import ZealmanLiveMonitor
 from app.llm.providers.zealman_video import create_task, get_task, upload_reference
-from app.orm import bind_owner
 from app.runtime.config import Settings, get_settings
 from app.runtime.db import SessionLocal
+from app.runtime.ownership import bind_owner
 from app.runtime.polling_runner import PollingTaskRunner
 from app.runtime.time import utc_now
 

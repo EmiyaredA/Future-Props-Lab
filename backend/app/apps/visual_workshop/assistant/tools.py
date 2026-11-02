@@ -35,8 +35,8 @@ from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualProjectAssetReference,
 )
-from app.orm import bind_owner
 from app.runtime.db import SessionLocal
+from app.runtime.ownership import bind_owner
 
 CANVAS_CONTEXT_LIMIT = 32_000
 TEXT_NODE_LIMIT = 4_000

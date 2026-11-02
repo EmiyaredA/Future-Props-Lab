@@ -9,6 +9,12 @@
 
 ## 网站运行与自动化
 
+### 独立服务迁移
+
+`backend/fpl_runtime/` 是不导入业务 ORM 的服务运行契约，拥有 22 个发布单元、精确到 HTTP 方法和路径的归属匹配、请求绑定身份断言、独立 SQLite 会话与迁移校验。`backend/fpl_deployment/` 从静态 OpenAPI 和模型源码生成 `deploy/contracts/ownership.json`，新增或重复操作及未归属表必须阻止构建。`npm run services:contracts:generate|check` 管理该清单，并纳入公共契约检查。跨服务 ORM 访问和缺少账号上下文的私人数据操作被存储边界拒绝。
+
+服务化实现及 Compose 切换尚在隔离工作树验证，正式入口仍使用下述网站单体；不得把清单生成视为应用迁移完成。当前网站 `.runtime/` 是唯一迁移真源，桌面原目录仅用于恢复。
+
 `runtime/website.py` 拥有可信本机 socket、SPA 静态托管和来源校验；`runtime/remote_web.py` 拥有公网 Host／Origin、浏览器 Session／受控 API Key 和缓存边界。`capabilities/web_access/` 拥有公网回环监听器、专用 SSH 重连和状态；附加 lifespan 关闭，不重复初始化数据库或 Runner。
 
 `scripts/website/serve.py` 在导入数据库前检查配置和迁移、持有目标与原桌面数据锁；`service.py` 管理用户级 LaunchAgent，`development.py` 隔离开发配置、密钥与数据库，`install_client.py` 核验原客户端授权并安装用户级 fpl 命令，`configure.py` 在停机快照约束下发布网站配置，`data_transfer.py` 拥有停机快照、SHA256、只读 SQLite 核验和文件发布回滚，`cleanup.py` 只清理受控缓存与有正式关联副本的临时媒体。相邻独立工具入口供 Amadeus／面试准备子进程调用，不启动主应用。

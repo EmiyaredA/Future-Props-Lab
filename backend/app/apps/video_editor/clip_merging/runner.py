@@ -13,8 +13,8 @@ from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.media_rendering.render_engine import RenderCancelled, render_document
 from app.capabilities.media_rendering.timeline_document import parse_timeline_document
-from app.orm import bind_owner
 from app.runtime.ids import new_id
+from app.runtime.ownership import bind_owner
 from app.runtime.time import utc_now
 
 

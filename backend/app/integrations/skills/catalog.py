@@ -32,8 +32,8 @@ from app.integrations.skills.archive import (
     StagedSkillArchive,
 )
 from app.integrations.skills.preview import list_skill_files, read_skill_image, read_skill_text
-from app.orm import require_owner_id
 from app.runtime.config import get_settings
+from app.runtime.ownership import require_owner_id
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import iso_utc, utc_now
 

@@ -1,0 +1,4405 @@
+{
+  "version": 1,
+  "openapi_sha256": "a66014637ddbff47a3b23aff8af179ffc76dc1fd90a175ec7eb13722c2431ca7",
+  "operations": [
+    {
+      "service": "identity",
+      "method": "GET",
+      "path": "/v1/account/api-keys",
+      "operation_id": "api_keys_v1_account_api_keys_get"
+    },
+    {
+      "service": "identity",
+      "method": "POST",
+      "path": "/v1/account/api-keys",
+      "operation_id": "add_api_key_v1_account_api_keys_post"
+    },
+    {
+      "service": "identity",
+      "method": "DELETE",
+      "path": "/v1/account/api-keys/{key_id}",
+      "operation_id": "delete_api_key_record_v1_account_api_keys__key_id__delete"
+    },
+    {
+      "service": "identity",
+      "method": "POST",
+      "path": "/v1/account/api-keys/{key_id}/renew",
+      "operation_id": "renew_api_key_expiration_v1_account_api_keys__key_id__renew_post"
+    },
+    {
+      "service": "identity",
+      "method": "POST",
+      "path": "/v1/account/api-keys/{key_id}/revoke",
+      "operation_id": "remove_api_key_v1_account_api_keys__key_id__revoke_post"
+    },
+    {
+      "service": "identity",
+      "method": "POST",
+      "path": "/v1/account/demo-services/{service_id}/install",
+      "operation_id": "install_v1_account_demo_services__service_id__install_post"
+    },
+    {
+      "service": "portal",
+      "method": "GET",
+      "path": "/v1/account/developer-documents",
+      "operation_id": "developer_docs_v1_account_developer_documents_get"
+    },
+    {
+      "service": "identity",
+      "method": "GET",
+      "path": "/v1/account/directory",
+      "operation_id": "directory_v1_account_directory_get"
+    },
+    {
+      "service": "identity",
+      "method": "GET",
+      "path": "/v1/account/profile",
+      "operation_id": "get_profile_v1_account_profile_get"
+    },
+    {
+      "service": "identity",
+      "method": "PATCH",
+      "path": "/v1/account/profile",
+      "operation_id": "patch_profile_v1_account_profile_patch"
+    },
+    {
+      "service": "identity",
+      "method": "DELETE",
+      "path": "/v1/account/profile/avatar",
+      "operation_id": "remove_avatar_v1_account_profile_avatar_delete"
+    },
+    {
+      "service": "identity",
+      "method": "GET",
+      "path": "/v1/account/profile/avatar",
+      "operation_id": "get_avatar_v1_account_profile_avatar_get"
+    },
+    {
+      "service": "identity",
+      "method": "PUT",
+      "path": "/v1/account/profile/avatar",
+      "operation_id": "put_avatar_v1_account_profile_avatar_put"
+    },
+    {
+      "service": "creative",
+      "method": "PATCH",
+      "path": "/v1/account/project-certification/{kind}/{project_id}",
+      "operation_id": "certification_v1_account_project_certification__kind___project_id__patch"
+    },
+    {
+      "service": "identity",
+      "method": "GET",
+      "path": "/v1/account/security-events",
+      "operation_id": "own_audit_v1_account_security_events_get"
+    },
+    {
+      "service": "identity",
+      "method": "GET",
+      "path": "/v1/account/sessions",
+      "operation_id": "sessions_v1_account_sessions_get"
+    },
+    {
+      "service": "identity",
+      "method": "POST",
+      "path": "/v1/account/sessions/revoke-others",
+      "operation_id": "delete_other_sessions_v1_account_sessions_revoke_others_post"
+    },
+    {
+      "service": "identity",
+      "method": "DELETE",
+      "path": "/v1/account/sessions/{session_id}",
+      "operation_id": "delete_session_v1_account_sessions__session_id__delete"
+    },
+    {
+      "service": "agents",
+      "method": "GET",
+      "path": "/v1/agent-workbench/candidates",
+      "operation_id": "list_candidates_v1_agent_workbench_candidates_get"
+    },
+    {
+      "service": "agents",
+      "method": "GET",
+      "path": "/v1/agent-workbench/events",
+      "operation_id": "events_v1_agent_workbench_events_get"
+    },
+    {
+      "service": "agents",
+      "method": "GET",
+      "path": "/v1/agent-workbench/operations/{operation_id}",
+      "operation_id": "get_operation_v1_agent_workbench_operations__operation_id__get"
+    },
+    {
+      "service": "agents",
+      "method": "GET",
+      "path": "/v1/agent-workbench/sessions",
+      "operation_id": "list_sessions_v1_agent_workbench_sessions_get"
+    },
+    {
+      "service": "agents",
+      "method": "GET",
+      "path": "/v1/agent-workbench/sessions/{session_id}",
+      "operation_id": "get_session_v1_agent_workbench_sessions__session_id__get"
+    },
+    {
+      "service": "agents",
+      "method": "GET",
+      "path": "/v1/agent-workbench/sessions/{session_id}/attachments/{attachment_id}",
+      "operation_id": "get_attachment_v1_agent_workbench_sessions__session_id__attachments__attachment_id__get"
+    },
+    {
+      "service": "agents",
+      "method": "DELETE",
+      "path": "/v1/agent-workbench/sessions/{session_id}/copy",
+      "operation_id": "clear_copy_v1_agent_workbench_sessions__session_id__copy_delete"
+    },
+    {
+      "service": "agents",
+      "method": "GET",
+      "path": "/v1/agent-workbench/sessions/{session_id}/events",
+      "operation_id": "session_events_v1_agent_workbench_sessions__session_id__events_get"
+    },
+    {
+      "service": "agents",
+      "method": "GET",
+      "path": "/v1/agent-workbench/sessions/{session_id}/history",
+      "operation_id": "history_v1_agent_workbench_sessions__session_id__history_get"
+    },
+    {
+      "service": "agents",
+      "method": "PATCH",
+      "path": "/v1/agent-workbench/sessions/{session_id}/preferences",
+      "operation_id": "patch_preferences_v1_agent_workbench_sessions__session_id__preferences_patch"
+    },
+    {
+      "service": "agents",
+      "method": "GET",
+      "path": "/v1/agent-workbench/sources",
+      "operation_id": "list_sources_v1_agent_workbench_sources_get"
+    },
+    {
+      "service": "agents",
+      "method": "POST",
+      "path": "/v1/agent-workbench/sources",
+      "operation_id": "create_source_v1_agent_workbench_sources_post"
+    },
+    {
+      "service": "agents",
+      "method": "DELETE",
+      "path": "/v1/agent-workbench/sources/{source_id}",
+      "operation_id": "unbind_source_v1_agent_workbench_sources__source_id__delete"
+    },
+    {
+      "service": "agents",
+      "method": "PATCH",
+      "path": "/v1/agent-workbench/sources/{source_id}",
+      "operation_id": "patch_source_v1_agent_workbench_sources__source_id__patch"
+    },
+    {
+      "service": "agents",
+      "method": "POST",
+      "path": "/v1/agent-workbench/sources/{source_id}/scan",
+      "operation_id": "scan_source_v1_agent_workbench_sources__source_id__scan_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "GET",
+      "path": "/v1/amadeus/conversations",
+      "operation_id": "list_conversations_v1_amadeus_conversations_get"
+    },
+    {
+      "service": "amadeus",
+      "method": "POST",
+      "path": "/v1/amadeus/conversations",
+      "operation_id": "create_conversation_v1_amadeus_conversations_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "DELETE",
+      "path": "/v1/amadeus/conversations/{conversation_id}",
+      "operation_id": "delete_conversation_v1_amadeus_conversations__conversation_id__delete"
+    },
+    {
+      "service": "amadeus",
+      "method": "GET",
+      "path": "/v1/amadeus/conversations/{conversation_id}",
+      "operation_id": "get_conversation_v1_amadeus_conversations__conversation_id__get"
+    },
+    {
+      "service": "amadeus",
+      "method": "PATCH",
+      "path": "/v1/amadeus/conversations/{conversation_id}",
+      "operation_id": "patch_conversation_v1_amadeus_conversations__conversation_id__patch"
+    },
+    {
+      "service": "amadeus",
+      "method": "POST",
+      "path": "/v1/amadeus/conversations/{conversation_id}/actions",
+      "operation_id": "propose_action_v1_amadeus_conversations__conversation_id__actions_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "POST",
+      "path": "/v1/amadeus/conversations/{conversation_id}/actions/{action_id}/cancel",
+      "operation_id": "stop_action_v1_amadeus_conversations__conversation_id__actions__action_id__cancel_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "POST",
+      "path": "/v1/amadeus/conversations/{conversation_id}/actions/{action_id}/decision",
+      "operation_id": "decide_action_v1_amadeus_conversations__conversation_id__actions__action_id__decision_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "POST",
+      "path": "/v1/amadeus/conversations/{conversation_id}/actions/{action_id}/execute",
+      "operation_id": "run_action_v1_amadeus_conversations__conversation_id__actions__action_id__execute_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "POST",
+      "path": "/v1/amadeus/conversations/{conversation_id}/actions/{action_id}/execute/stream",
+      "operation_id": "run_action_stream_v1_amadeus_conversations__conversation_id__actions__action_id__execute_stream_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "GET",
+      "path": "/v1/amadeus/conversations/{conversation_id}/files",
+      "operation_id": "files_list_v1_amadeus_conversations__conversation_id__files_get"
+    },
+    {
+      "service": "amadeus",
+      "method": "POST",
+      "path": "/v1/amadeus/conversations/{conversation_id}/files/open-folder",
+      "operation_id": "files_open_folder_v1_amadeus_conversations__conversation_id__files_open_folder_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "GET",
+      "path": "/v1/amadeus/conversations/{conversation_id}/files/{kind}/{name}",
+      "operation_id": "file_download_v1_amadeus_conversations__conversation_id__files__kind___name__get"
+    },
+    {
+      "service": "amadeus",
+      "method": "PUT",
+      "path": "/v1/amadeus/conversations/{conversation_id}/files/{kind}/{name}",
+      "operation_id": "file_write_v1_amadeus_conversations__conversation_id__files__kind___name__put"
+    },
+    {
+      "service": "amadeus",
+      "method": "POST",
+      "path": "/v1/amadeus/conversations/{conversation_id}/imports",
+      "operation_id": "import_file_v1_amadeus_conversations__conversation_id__imports_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "POST",
+      "path": "/v1/amadeus/conversations/{conversation_id}/messages",
+      "operation_id": "append_message_v1_amadeus_conversations__conversation_id__messages_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "POST",
+      "path": "/v1/amadeus/conversations/{conversation_id}/questions/{question_id}/answer",
+      "operation_id": "answer_question_v1_amadeus_conversations__conversation_id__questions__question_id__answer_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "GET",
+      "path": "/v1/amadeus/conversations/{conversation_id}/runs",
+      "operation_id": "list_runs_v1_amadeus_conversations__conversation_id__runs_get"
+    },
+    {
+      "service": "amadeus",
+      "method": "POST",
+      "path": "/v1/amadeus/conversations/{conversation_id}/runs",
+      "operation_id": "create_run_v1_amadeus_conversations__conversation_id__runs_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "GET",
+      "path": "/v1/amadeus/conversations/{conversation_id}/runs/{run_id}",
+      "operation_id": "get_run_v1_amadeus_conversations__conversation_id__runs__run_id__get"
+    },
+    {
+      "service": "amadeus",
+      "method": "POST",
+      "path": "/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/cancel",
+      "operation_id": "cancel_run_v1_amadeus_conversations__conversation_id__runs__run_id__cancel_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "POST",
+      "path": "/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/events",
+      "operation_id": "append_run_event_v1_amadeus_conversations__conversation_id__runs__run_id__events_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "POST",
+      "path": "/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/finish",
+      "operation_id": "finish_run_v1_amadeus_conversations__conversation_id__runs__run_id__finish_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "POST",
+      "path": "/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/heartbeat",
+      "operation_id": "heartbeat_run_v1_amadeus_conversations__conversation_id__runs__run_id__heartbeat_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "POST",
+      "path": "/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/pause-approval",
+      "operation_id": "pause_run_for_approval_v1_amadeus_conversations__conversation_id__runs__run_id__pause_approval_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "POST",
+      "path": "/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/question",
+      "operation_id": "create_question_v1_amadeus_conversations__conversation_id__runs__run_id__question_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "POST",
+      "path": "/v1/amadeus/conversations/{conversation_id}/skills/{skill_id}/load",
+      "operation_id": "skill_load_v1_amadeus_conversations__conversation_id__skills__skill_id__load_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "GET",
+      "path": "/v1/amadeus/conversations/{conversation_id}/skills/{skill_id}/{version}/files/{relative_path}",
+      "operation_id": "skill_file_read_v1_amadeus_conversations__conversation_id__skills__skill_id___version__files__relative_path__get"
+    },
+    {
+      "service": "amadeus",
+      "method": "POST",
+      "path": "/v1/amadeus/model-turn",
+      "operation_id": "model_turn_v1_amadeus_model_turn_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "POST",
+      "path": "/v1/amadeus/model-turn/stream",
+      "operation_id": "model_turn_stream_v1_amadeus_model_turn_stream_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "GET",
+      "path": "/v1/amadeus/operations",
+      "operation_id": "list_registered_operations_v1_amadeus_operations_get"
+    },
+    {
+      "service": "amadeus",
+      "method": "POST",
+      "path": "/v1/amadeus/operations/read",
+      "operation_id": "read_registered_operation_v1_amadeus_operations_read_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "GET",
+      "path": "/v1/amadeus/runs/active",
+      "operation_id": "active_run_v1_amadeus_runs_active_get"
+    },
+    {
+      "service": "amadeus",
+      "method": "GET",
+      "path": "/v1/amadeus/script-capability",
+      "operation_id": "script_capability_v1_amadeus_script_capability_get"
+    },
+    {
+      "service": "annotation",
+      "method": "POST",
+      "path": "/v1/audio-annotation/imports",
+      "operation_id": "import_project_v1_audio_annotation_imports_post"
+    },
+    {
+      "service": "annotation",
+      "method": "GET",
+      "path": "/v1/audio-annotation/projects",
+      "operation_id": "list_projects_v1_audio_annotation_projects_get"
+    },
+    {
+      "service": "annotation",
+      "method": "POST",
+      "path": "/v1/audio-annotation/projects",
+      "operation_id": "create_project_v1_audio_annotation_projects_post"
+    },
+    {
+      "service": "annotation",
+      "method": "DELETE",
+      "path": "/v1/audio-annotation/projects/{project_id}",
+      "operation_id": "delete_project_v1_audio_annotation_projects__project_id__delete"
+    },
+    {
+      "service": "annotation",
+      "method": "GET",
+      "path": "/v1/audio-annotation/projects/{project_id}",
+      "operation_id": "get_project_v1_audio_annotation_projects__project_id__get"
+    },
+    {
+      "service": "annotation",
+      "method": "PATCH",
+      "path": "/v1/audio-annotation/projects/{project_id}",
+      "operation_id": "patch_project_v1_audio_annotation_projects__project_id__patch"
+    },
+    {
+      "service": "annotation",
+      "method": "GET",
+      "path": "/v1/audio-annotation/projects/{project_id}/document",
+      "operation_id": "get_document_v1_audio_annotation_projects__project_id__document_get"
+    },
+    {
+      "service": "annotation",
+      "method": "PUT",
+      "path": "/v1/audio-annotation/projects/{project_id}/document",
+      "operation_id": "put_document_v1_audio_annotation_projects__project_id__document_put"
+    },
+    {
+      "service": "annotation",
+      "method": "POST",
+      "path": "/v1/audio-annotation/projects/{project_id}/document/operations",
+      "operation_id": "apply_annotation_operations_v1_audio_annotation_projects__project_id__document_operations_post"
+    },
+    {
+      "service": "annotation",
+      "method": "GET",
+      "path": "/v1/audio-annotation/projects/{project_id}/export",
+      "operation_id": "export_annotation_v1_audio_annotation_projects__project_id__export_get"
+    },
+    {
+      "service": "annotation",
+      "method": "POST",
+      "path": "/v1/audio-annotation/projects/{project_id}/segment-transcriptions",
+      "operation_id": "transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post"
+    },
+    {
+      "service": "annotation",
+      "method": "GET",
+      "path": "/v1/audio-annotation/projects/{project_id}/segments/{segment_id}/audio",
+      "operation_id": "download_segment_audio_v1_audio_annotation_projects__project_id__segments__segment_id__audio_get"
+    },
+    {
+      "service": "annotation",
+      "method": "POST",
+      "path": "/v1/audio-annotation/projects/{project_id}/segments/{segment_id}/transcribe-saved",
+      "operation_id": "transcribe_saved_segment_v1_audio_annotation_projects__project_id__segments__segment_id__transcribe_saved_post"
+    },
+    {
+      "service": "annotation",
+      "method": "GET",
+      "path": "/v1/audio-annotation/projects/{project_id}/waveform",
+      "operation_id": "get_waveform_v1_audio_annotation_projects__project_id__waveform_get"
+    },
+    {
+      "service": "annotation",
+      "method": "PUT",
+      "path": "/v1/audio-annotation/projects/{project_id}/waveform",
+      "operation_id": "put_waveform_v1_audio_annotation_projects__project_id__waveform_put"
+    },
+    {
+      "service": "annotation",
+      "method": "POST",
+      "path": "/v1/audio-annotation/transcription-imports",
+      "operation_id": "import_transcription_v1_audio_annotation_transcription_imports_post"
+    },
+    {
+      "service": "identity",
+      "method": "POST",
+      "path": "/v1/auth/change-password",
+      "operation_id": "change_current_password_v1_auth_change_password_post"
+    },
+    {
+      "service": "identity",
+      "method": "POST",
+      "path": "/v1/auth/login",
+      "operation_id": "login_v1_auth_login_post"
+    },
+    {
+      "service": "identity",
+      "method": "POST",
+      "path": "/v1/auth/logout",
+      "operation_id": "logout_v1_auth_logout_post"
+    },
+    {
+      "service": "identity",
+      "method": "GET",
+      "path": "/v1/auth/me",
+      "operation_id": "me_v1_auth_me_get"
+    },
+    {
+      "service": "identity",
+      "method": "POST",
+      "path": "/v1/auth/reauth",
+      "operation_id": "reauth_v1_auth_reauth_post"
+    },
+    {
+      "service": "identity",
+      "method": "POST",
+      "path": "/v1/auth/register",
+      "operation_id": "registration_v1_auth_register_post"
+    },
+    {
+      "service": "gateway",
+      "method": "GET",
+      "path": "/v1/automation/access",
+      "operation_id": "access_status_v1_automation_access_get"
+    },
+    {
+      "service": "gateway",
+      "method": "POST",
+      "path": "/v1/automation/access/actions",
+      "operation_id": "access_action_v1_automation_access_actions_post"
+    },
+    {
+      "service": "gateway",
+      "method": "GET",
+      "path": "/v1/automation/capabilities",
+      "operation_id": "capabilities_v1_automation_capabilities_get"
+    },
+    {
+      "service": "gateway",
+      "method": "GET",
+      "path": "/v1/automation/changes",
+      "operation_id": "changes_v1_automation_changes_get"
+    },
+    {
+      "service": "gateway",
+      "method": "POST",
+      "path": "/v1/automation/open",
+      "operation_id": "open_resource_v1_automation_open_post"
+    },
+    {
+      "service": "gateway",
+      "method": "GET",
+      "path": "/v1/automation/runtime",
+      "operation_id": "runtime_v1_automation_runtime_get"
+    },
+    {
+      "service": "agent-runtime",
+      "method": "GET",
+      "path": "/v1/code-agents",
+      "operation_id": "list_code_agents_v1_code_agents_get"
+    },
+    {
+      "service": "agent-runtime",
+      "method": "POST",
+      "path": "/v1/code-agents/detect",
+      "operation_id": "detect_code_agents_v1_code_agents_detect_post"
+    },
+    {
+      "service": "agent-runtime",
+      "method": "GET",
+      "path": "/v1/code-agents/grants",
+      "operation_id": "get_code_agent_grants_v1_code_agents_grants_get"
+    },
+    {
+      "service": "agent-runtime",
+      "method": "PUT",
+      "path": "/v1/code-agents/grants",
+      "operation_id": "put_code_agent_grants_v1_code_agents_grants_put"
+    },
+    {
+      "service": "creative",
+      "method": "POST",
+      "path": "/v1/creative-workshop/installations",
+      "operation_id": "install_v1_creative_workshop_installations_post"
+    },
+    {
+      "service": "creative",
+      "method": "POST",
+      "path": "/v1/creative-workshop/installations/preview",
+      "operation_id": "preview_install_v1_creative_workshop_installations_preview_post"
+    },
+    {
+      "service": "creative",
+      "method": "POST",
+      "path": "/v1/creative-workshop/installations/{installation_id}/stdio",
+      "operation_id": "configure_stdio_v1_creative_workshop_installations__installation_id__stdio_post"
+    },
+    {
+      "service": "creative",
+      "method": "GET",
+      "path": "/v1/creative-workshop/items",
+      "operation_id": "list_items_v1_creative_workshop_items_get"
+    },
+    {
+      "service": "creative",
+      "method": "POST",
+      "path": "/v1/creative-workshop/items",
+      "operation_id": "create_item_v1_creative_workshop_items_post"
+    },
+    {
+      "service": "creative",
+      "method": "POST",
+      "path": "/v1/creative-workshop/items/from-integration",
+      "operation_id": "import_item_v1_creative_workshop_items_from_integration_post"
+    },
+    {
+      "service": "creative",
+      "method": "GET",
+      "path": "/v1/creative-workshop/items/{item_id}",
+      "operation_id": "get_item_v1_creative_workshop_items__item_id__get"
+    },
+    {
+      "service": "creative",
+      "method": "PATCH",
+      "path": "/v1/creative-workshop/items/{item_id}",
+      "operation_id": "update_item_v1_creative_workshop_items__item_id__patch"
+    },
+    {
+      "service": "creative",
+      "method": "GET",
+      "path": "/v1/creative-workshop/items/{item_id}/cover",
+      "operation_id": "item_cover_v1_creative_workshop_items__item_id__cover_get"
+    },
+    {
+      "service": "creative",
+      "method": "POST",
+      "path": "/v1/creative-workshop/items/{item_id}/cover",
+      "operation_id": "upload_cover_v1_creative_workshop_items__item_id__cover_post"
+    },
+    {
+      "service": "creative",
+      "method": "POST",
+      "path": "/v1/creative-workshop/items/{item_id}/publish",
+      "operation_id": "publish_item_v1_creative_workshop_items__item_id__publish_post"
+    },
+    {
+      "service": "creative",
+      "method": "POST",
+      "path": "/v1/creative-workshop/items/{item_id}/skill-archive",
+      "operation_id": "upload_skill_v1_creative_workshop_items__item_id__skill_archive_post"
+    },
+    {
+      "service": "creative",
+      "method": "POST",
+      "path": "/v1/creative-workshop/items/{item_id}/withdraw",
+      "operation_id": "withdraw_item_v1_creative_workshop_items__item_id__withdraw_post"
+    },
+    {
+      "service": "creative",
+      "method": "GET",
+      "path": "/v1/creative-workshop/releases/{release_id}",
+      "operation_id": "get_release_v1_creative_workshop_releases__release_id__get"
+    },
+    {
+      "service": "creative",
+      "method": "GET",
+      "path": "/v1/creative-workshop/releases/{release_id}/cover",
+      "operation_id": "release_cover_v1_creative_workshop_releases__release_id__cover_get"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/demo-services/model/chat/completions",
+      "operation_id": "mock_completion_v1_demo_services_model_chat_completions_post"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/demo-services/tools/{tool}",
+      "operation_id": "example_tool_v1_demo_services_tools__tool__get"
+    },
+    {
+      "service": "director",
+      "method": "POST",
+      "path": "/v1/director-desk/library/files",
+      "operation_id": "upload_library_file_v1_director_desk_library_files_post"
+    },
+    {
+      "service": "director",
+      "method": "GET",
+      "path": "/v1/director-desk/library/files/{key}",
+      "operation_id": "download_library_file_v1_director_desk_library_files__key__get"
+    },
+    {
+      "service": "director",
+      "method": "GET",
+      "path": "/v1/director-desk/motions",
+      "operation_id": "list_motions_v1_director_desk_motions_get"
+    },
+    {
+      "service": "director",
+      "method": "DELETE",
+      "path": "/v1/director-desk/motions/{motion_key}",
+      "operation_id": "delete_motion_v1_director_desk_motions__motion_key__delete"
+    },
+    {
+      "service": "director",
+      "method": "GET",
+      "path": "/v1/director-desk/motions/{motion_key}",
+      "operation_id": "get_motion_v1_director_desk_motions__motion_key__get"
+    },
+    {
+      "service": "director",
+      "method": "PUT",
+      "path": "/v1/director-desk/motions/{motion_key}",
+      "operation_id": "save_motion_v1_director_desk_motions__motion_key__put"
+    },
+    {
+      "service": "director",
+      "method": "GET",
+      "path": "/v1/director-desk/projects",
+      "operation_id": "list_projects_v1_director_desk_projects_get"
+    },
+    {
+      "service": "director",
+      "method": "POST",
+      "path": "/v1/director-desk/projects",
+      "operation_id": "create_project_v1_director_desk_projects_post"
+    },
+    {
+      "service": "director",
+      "method": "DELETE",
+      "path": "/v1/director-desk/projects/{project_id}",
+      "operation_id": "delete_project_v1_director_desk_projects__project_id__delete"
+    },
+    {
+      "service": "director",
+      "method": "GET",
+      "path": "/v1/director-desk/projects/{project_id}",
+      "operation_id": "get_project_v1_director_desk_projects__project_id__get"
+    },
+    {
+      "service": "director",
+      "method": "PATCH",
+      "path": "/v1/director-desk/projects/{project_id}",
+      "operation_id": "patch_project_v1_director_desk_projects__project_id__patch"
+    },
+    {
+      "service": "director",
+      "method": "DELETE",
+      "path": "/v1/director-desk/projects/{project_id}/agent-session",
+      "operation_id": "release_agent_session_v1_director_desk_projects__project_id__agent_session_delete"
+    },
+    {
+      "service": "director",
+      "method": "POST",
+      "path": "/v1/director-desk/projects/{project_id}/agent-session",
+      "operation_id": "claim_agent_session_v1_director_desk_projects__project_id__agent_session_post"
+    },
+    {
+      "service": "director",
+      "method": "GET",
+      "path": "/v1/director-desk/projects/{project_id}/agent-session/calls",
+      "operation_id": "poll_agent_session_v1_director_desk_projects__project_id__agent_session_calls_get"
+    },
+    {
+      "service": "director",
+      "method": "POST",
+      "path": "/v1/director-desk/projects/{project_id}/agent-session/calls/{call_id}",
+      "operation_id": "complete_agent_call_v1_director_desk_projects__project_id__agent_session_calls__call_id__post"
+    },
+    {
+      "service": "director",
+      "method": "POST",
+      "path": "/v1/director-desk/projects/{project_id}/files",
+      "operation_id": "upload_project_file_v1_director_desk_projects__project_id__files_post"
+    },
+    {
+      "service": "director",
+      "method": "GET",
+      "path": "/v1/director-desk/projects/{project_id}/files/{key}",
+      "operation_id": "download_project_file_v1_director_desk_projects__project_id__files__key__get"
+    },
+    {
+      "service": "director",
+      "method": "POST",
+      "path": "/v1/director-desk/projects/{project_id}/tools",
+      "operation_id": "call_tool_v1_director_desk_projects__project_id__tools_post"
+    },
+    {
+      "service": "assets",
+      "method": "GET",
+      "path": "/v1/file-folders",
+      "operation_id": "list_file_folders_v1_file_folders_get"
+    },
+    {
+      "service": "assets",
+      "method": "POST",
+      "path": "/v1/file-folders",
+      "operation_id": "create_file_folder_v1_file_folders_post"
+    },
+    {
+      "service": "assets",
+      "method": "DELETE",
+      "path": "/v1/file-folders/{folder_id}",
+      "operation_id": "delete_file_folder_v1_file_folders__folder_id__delete"
+    },
+    {
+      "service": "assets",
+      "method": "PATCH",
+      "path": "/v1/file-folders/{folder_id}",
+      "operation_id": "patch_file_folder_v1_file_folders__folder_id__patch"
+    },
+    {
+      "service": "assets",
+      "method": "POST",
+      "path": "/v1/file-library/asset-imports",
+      "operation_id": "import_project_assets_to_library_v1_file_library_asset_imports_post"
+    },
+    {
+      "service": "assets",
+      "method": "POST",
+      "path": "/v1/file-library/folder-archive-imports",
+      "operation_id": "import_library_folder_archive_v1_file_library_folder_archive_imports_post"
+    },
+    {
+      "service": "assets",
+      "method": "POST",
+      "path": "/v1/file-library/folder-entry-imports",
+      "operation_id": "import_library_folder_entries_v1_file_library_folder_entry_imports_post"
+    },
+    {
+      "service": "assets",
+      "method": "GET",
+      "path": "/v1/file-library/folder-exports",
+      "operation_id": "export_library_folder_archive_v1_file_library_folder_exports_get"
+    },
+    {
+      "service": "assets",
+      "method": "GET",
+      "path": "/v1/file-storage/layout",
+      "operation_id": "storage_layout_status_v1_file_storage_layout_get"
+    },
+    {
+      "service": "assets",
+      "method": "POST",
+      "path": "/v1/file-storage/layout/migrate",
+      "operation_id": "migrate_storage_layout_v1_file_storage_layout_migrate_post"
+    },
+    {
+      "service": "assets",
+      "method": "POST",
+      "path": "/v1/file-storage/open-folder",
+      "operation_id": "reveal_library_folder_v1_file_storage_open_folder_post"
+    },
+    {
+      "service": "assets",
+      "method": "GET",
+      "path": "/v1/files",
+      "operation_id": "list_files_v1_files_get"
+    },
+    {
+      "service": "assets",
+      "method": "POST",
+      "path": "/v1/files",
+      "operation_id": "upload_file_v1_files_post"
+    },
+    {
+      "service": "assets",
+      "method": "POST",
+      "path": "/v1/files/svg/preview",
+      "operation_id": "preview_svg_v1_files_svg_preview_post"
+    },
+    {
+      "service": "assets",
+      "method": "DELETE",
+      "path": "/v1/files/{asset_id}",
+      "operation_id": "delete_file_v1_files__asset_id__delete"
+    },
+    {
+      "service": "assets",
+      "method": "PATCH",
+      "path": "/v1/files/{asset_id}",
+      "operation_id": "patch_file_v1_files__asset_id__patch"
+    },
+    {
+      "service": "assets",
+      "method": "GET",
+      "path": "/v1/files/{asset_id}/content",
+      "operation_id": "preview_file_v1_files__asset_id__content_get"
+    },
+    {
+      "service": "assets",
+      "method": "POST",
+      "path": "/v1/files/{asset_id}/crop",
+      "operation_id": "crop_file_image_v1_files__asset_id__crop_post"
+    },
+    {
+      "service": "assets",
+      "method": "GET",
+      "path": "/v1/files/{asset_id}/download",
+      "operation_id": "download_file_v1_files__asset_id__download_get"
+    },
+    {
+      "service": "assets",
+      "method": "POST",
+      "path": "/v1/files/{asset_id}/frames",
+      "operation_id": "extract_video_frames_v1_files__asset_id__frames_post"
+    },
+    {
+      "service": "assets",
+      "method": "GET",
+      "path": "/v1/files/{asset_id}/media-info",
+      "operation_id": "video_media_info_v1_files__asset_id__media_info_get"
+    },
+    {
+      "service": "assets",
+      "method": "GET",
+      "path": "/v1/files/{asset_id}/thumbnail",
+      "operation_id": "preview_thumbnail_v1_files__asset_id__thumbnail_get"
+    },
+    {
+      "service": "galgame",
+      "method": "GET",
+      "path": "/v1/galgame-workshop/projects",
+      "operation_id": "list_projects_v1_galgame_workshop_projects_get"
+    },
+    {
+      "service": "galgame",
+      "method": "POST",
+      "path": "/v1/galgame-workshop/projects",
+      "operation_id": "create_project_v1_galgame_workshop_projects_post"
+    },
+    {
+      "service": "galgame",
+      "method": "POST",
+      "path": "/v1/galgame-workshop/projects/snapshot-imports",
+      "operation_id": "import_project_snapshot_v1_galgame_workshop_projects_snapshot_imports_post"
+    },
+    {
+      "service": "galgame",
+      "method": "DELETE",
+      "path": "/v1/galgame-workshop/projects/{project_id}",
+      "operation_id": "delete_project_v1_galgame_workshop_projects__project_id__delete"
+    },
+    {
+      "service": "galgame",
+      "method": "GET",
+      "path": "/v1/galgame-workshop/projects/{project_id}",
+      "operation_id": "get_project_v1_galgame_workshop_projects__project_id__get"
+    },
+    {
+      "service": "galgame",
+      "method": "PATCH",
+      "path": "/v1/galgame-workshop/projects/{project_id}",
+      "operation_id": "patch_project_v1_galgame_workshop_projects__project_id__patch"
+    },
+    {
+      "service": "galgame",
+      "method": "POST",
+      "path": "/v1/galgame-workshop/projects/{project_id}/annotation-imports",
+      "operation_id": "create_annotation_import_v1_galgame_workshop_projects__project_id__annotation_imports_post"
+    },
+    {
+      "service": "galgame",
+      "method": "POST",
+      "path": "/v1/galgame-workshop/projects/{project_id}/annotation-imports/preview",
+      "operation_id": "preview_annotation_import_v1_galgame_workshop_projects__project_id__annotation_imports_preview_post"
+    },
+    {
+      "service": "galgame",
+      "method": "GET",
+      "path": "/v1/galgame-workshop/projects/{project_id}/annotation-imports/{import_id}",
+      "operation_id": "get_annotation_import_v1_galgame_workshop_projects__project_id__annotation_imports__import_id__get"
+    },
+    {
+      "service": "galgame",
+      "method": "GET",
+      "path": "/v1/galgame-workshop/projects/{project_id}/assets",
+      "operation_id": "list_project_assets_v1_galgame_workshop_projects__project_id__assets_get"
+    },
+    {
+      "service": "galgame",
+      "method": "POST",
+      "path": "/v1/galgame-workshop/projects/{project_id}/assets",
+      "operation_id": "upload_project_asset_v1_galgame_workshop_projects__project_id__assets_post"
+    },
+    {
+      "service": "galgame",
+      "method": "POST",
+      "path": "/v1/galgame-workshop/projects/{project_id}/assets/asr/match-dialogue",
+      "operation_id": "match_voice_to_dialogue_v1_galgame_workshop_projects__project_id__assets_asr_match_dialogue_post"
+    },
+    {
+      "service": "galgame",
+      "method": "GET",
+      "path": "/v1/galgame-workshop/projects/{project_id}/assets/asr/settings",
+      "operation_id": "get_asr_settings_v1_galgame_workshop_projects__project_id__assets_asr_settings_get"
+    },
+    {
+      "service": "galgame",
+      "method": "PATCH",
+      "path": "/v1/galgame-workshop/projects/{project_id}/assets/asr/settings",
+      "operation_id": "patch_asr_settings_v1_galgame_workshop_projects__project_id__assets_asr_settings_patch"
+    },
+    {
+      "service": "galgame",
+      "method": "GET",
+      "path": "/v1/galgame-workshop/projects/{project_id}/assets/asr/transcriptions",
+      "operation_id": "list_transcriptions_v1_galgame_workshop_projects__project_id__assets_asr_transcriptions_get"
+    },
+    {
+      "service": "galgame",
+      "method": "POST",
+      "path": "/v1/galgame-workshop/projects/{project_id}/assets/asr/transcriptions",
+      "operation_id": "create_transcriptions_v1_galgame_workshop_projects__project_id__assets_asr_transcriptions_post"
+    },
+    {
+      "service": "galgame",
+      "method": "POST",
+      "path": "/v1/galgame-workshop/projects/{project_id}/assets/batch",
+      "operation_id": "batch_upload_project_assets_v1_galgame_workshop_projects__project_id__assets_batch_post"
+    },
+    {
+      "service": "galgame",
+      "method": "POST",
+      "path": "/v1/galgame-workshop/projects/{project_id}/assets/import-preview",
+      "operation_id": "preview_project_asset_import_v1_galgame_workshop_projects__project_id__assets_import_preview_post"
+    },
+    {
+      "service": "galgame",
+      "method": "POST",
+      "path": "/v1/galgame-workshop/projects/{project_id}/assets/metadata-scan",
+      "operation_id": "scan_project_asset_metadata_v1_galgame_workshop_projects__project_id__assets_metadata_scan_post"
+    },
+    {
+      "service": "galgame",
+      "method": "GET",
+      "path": "/v1/galgame-workshop/projects/{project_id}/assets/overview",
+      "operation_id": "get_project_asset_overview_v1_galgame_workshop_projects__project_id__assets_overview_get"
+    },
+    {
+      "service": "galgame",
+      "method": "GET",
+      "path": "/v1/galgame-workshop/projects/{project_id}/assets/package-manifest",
+      "operation_id": "get_project_package_manifest_v1_galgame_workshop_projects__project_id__assets_package_manifest_get"
+    },
+    {
+      "service": "galgame",
+      "method": "POST",
+      "path": "/v1/galgame-workshop/projects/{project_id}/assets/repair",
+      "operation_id": "repair_project_asset_v1_galgame_workshop_projects__project_id__assets_repair_post"
+    },
+    {
+      "service": "galgame",
+      "method": "DELETE",
+      "path": "/v1/galgame-workshop/projects/{project_id}/assets/{asset_id}",
+      "operation_id": "delete_project_asset_v1_galgame_workshop_projects__project_id__assets__asset_id__delete"
+    },
+    {
+      "service": "galgame",
+      "method": "PATCH",
+      "path": "/v1/galgame-workshop/projects/{project_id}/assets/{asset_id}",
+      "operation_id": "patch_project_asset_v1_galgame_workshop_projects__project_id__assets__asset_id__patch"
+    },
+    {
+      "service": "galgame",
+      "method": "PATCH",
+      "path": "/v1/galgame-workshop/projects/{project_id}/assets/{asset_id}/transcript",
+      "operation_id": "patch_asset_transcript_v1_galgame_workshop_projects__project_id__assets__asset_id__transcript_patch"
+    },
+    {
+      "service": "galgame",
+      "method": "POST",
+      "path": "/v1/galgame-workshop/projects/{project_id}/open-folder",
+      "operation_id": "reveal_project_folder_v1_galgame_workshop_projects__project_id__open_folder_post"
+    },
+    {
+      "service": "galgame",
+      "method": "GET",
+      "path": "/v1/galgame-workshop/projects/{project_id}/snapshot",
+      "operation_id": "export_project_snapshot_v1_galgame_workshop_projects__project_id__snapshot_get"
+    },
+    {
+      "service": "galgame",
+      "method": "GET",
+      "path": "/v1/galgame-workshop/projects/{project_id}/story",
+      "operation_id": "get_story_v1_galgame_workshop_projects__project_id__story_get"
+    },
+    {
+      "service": "galgame",
+      "method": "PUT",
+      "path": "/v1/galgame-workshop/projects/{project_id}/story",
+      "operation_id": "put_story_v1_galgame_workshop_projects__project_id__story_put"
+    },
+    {
+      "service": "galgame",
+      "method": "PATCH",
+      "path": "/v1/galgame-workshop/projects/{project_id}/story/dialogue",
+      "operation_id": "patch_story_dialogue_v1_galgame_workshop_projects__project_id__story_dialogue_patch"
+    },
+    {
+      "service": "galgame",
+      "method": "PATCH",
+      "path": "/v1/galgame-workshop/projects/{project_id}/story/edits",
+      "operation_id": "patch_story_edits_v1_galgame_workshop_projects__project_id__story_edits_patch"
+    },
+    {
+      "service": "galgame",
+      "method": "POST",
+      "path": "/v1/galgame-workshop/projects/{project_id}/story/import",
+      "operation_id": "import_legacy_story_v1_galgame_workshop_projects__project_id__story_import_post"
+    },
+    {
+      "service": "galgame",
+      "method": "POST",
+      "path": "/v1/galgame-workshop/projects/{project_id}/story/operations",
+      "operation_id": "apply_story_operations_v1_galgame_workshop_projects__project_id__story_operations_post"
+    },
+    {
+      "service": "galgame",
+      "method": "GET",
+      "path": "/v1/galgame-workshop/projects/{project_id}/story/portrait-upgrade",
+      "operation_id": "preview_portrait_upgrade_v1_galgame_workshop_projects__project_id__story_portrait_upgrade_get"
+    },
+    {
+      "service": "galgame",
+      "method": "POST",
+      "path": "/v1/galgame-workshop/projects/{project_id}/story/portrait-upgrade",
+      "operation_id": "apply_portrait_upgrade_v1_galgame_workshop_projects__project_id__story_portrait_upgrade_post"
+    },
+    {
+      "service": "galgame",
+      "method": "GET",
+      "path": "/v1/galgame-workshop/projects/{project_id}/story/report",
+      "operation_id": "get_story_report_v1_galgame_workshop_projects__project_id__story_report_get"
+    },
+    {
+      "service": "galgame",
+      "method": "GET",
+      "path": "/v1/galgame-workshop/projects/{project_id}/story/snapshots",
+      "operation_id": "list_story_snapshots_v1_galgame_workshop_projects__project_id__story_snapshots_get"
+    },
+    {
+      "service": "galgame",
+      "method": "POST",
+      "path": "/v1/galgame-workshop/projects/{project_id}/story/snapshots/{snapshot_id}/restore",
+      "operation_id": "restore_story_snapshot_v1_galgame_workshop_projects__project_id__story_snapshots__snapshot_id__restore_post"
+    },
+    {
+      "service": "galgame",
+      "method": "PATCH",
+      "path": "/v1/galgame-workshop/projects/{project_id}/story/stage-expression",
+      "operation_id": "patch_story_stage_expression_v1_galgame_workshop_projects__project_id__story_stage_expression_patch"
+    },
+    {
+      "service": "galgame",
+      "method": "GET",
+      "path": "/v1/galgame-workshop/projects/{project_id}/video-editor-handoffs",
+      "operation_id": "list_handoffs_v1_galgame_workshop_projects__project_id__video_editor_handoffs_get"
+    },
+    {
+      "service": "galgame",
+      "method": "POST",
+      "path": "/v1/galgame-workshop/projects/{project_id}/video-editor-handoffs",
+      "operation_id": "create_handoff_v1_galgame_workshop_projects__project_id__video_editor_handoffs_post"
+    },
+    {
+      "service": "galgame",
+      "method": "GET",
+      "path": "/v1/galgame-workshop/projects/{project_id}/video-editor-handoffs/{task_id}",
+      "operation_id": "get_handoff_v1_galgame_workshop_projects__project_id__video_editor_handoffs__task_id__get"
+    },
+    {
+      "service": "galgame",
+      "method": "POST",
+      "path": "/v1/galgame-workshop/projects/{project_id}/video-editor-handoffs/{task_id}/cancel",
+      "operation_id": "cancel_handoff_v1_galgame_workshop_projects__project_id__video_editor_handoffs__task_id__cancel_post"
+    },
+    {
+      "service": "galgame",
+      "method": "GET",
+      "path": "/v1/galgame-workshop/projects/{project_id}/video-exports",
+      "operation_id": "list_video_exports_v1_galgame_workshop_projects__project_id__video_exports_get"
+    },
+    {
+      "service": "galgame",
+      "method": "POST",
+      "path": "/v1/galgame-workshop/projects/{project_id}/video-exports",
+      "operation_id": "create_video_export_v1_galgame_workshop_projects__project_id__video_exports_post"
+    },
+    {
+      "service": "galgame",
+      "method": "POST",
+      "path": "/v1/galgame-workshop/projects/{project_id}/video-exports/frame",
+      "operation_id": "exact_video_export_frame_v1_galgame_workshop_projects__project_id__video_exports_frame_post"
+    },
+    {
+      "service": "galgame",
+      "method": "POST",
+      "path": "/v1/galgame-workshop/projects/{project_id}/video-exports/preview",
+      "operation_id": "preview_video_export_v1_galgame_workshop_projects__project_id__video_exports_preview_post"
+    },
+    {
+      "service": "galgame",
+      "method": "GET",
+      "path": "/v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}",
+      "operation_id": "get_video_export_v1_galgame_workshop_projects__project_id__video_exports__export_id__get"
+    },
+    {
+      "service": "galgame",
+      "method": "POST",
+      "path": "/v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}/cancel",
+      "operation_id": "cancel_video_export_v1_galgame_workshop_projects__project_id__video_exports__export_id__cancel_post"
+    },
+    {
+      "service": "galgame",
+      "method": "GET",
+      "path": "/v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}/download",
+      "operation_id": "download_video_export_v1_galgame_workshop_projects__project_id__video_exports__export_id__download_get"
+    },
+    {
+      "service": "galgame",
+      "method": "POST",
+      "path": "/v1/galgame-workshop/story-migrations/run",
+      "operation_id": "run_story_migrations_v1_galgame_workshop_story_migrations_run_post"
+    },
+    {
+      "service": "galgame",
+      "method": "GET",
+      "path": "/v1/galgame-workshop/story-migrations/status",
+      "operation_id": "get_story_migration_status_v1_galgame_workshop_story_migrations_status_get"
+    },
+    {
+      "service": "integrations",
+      "method": "GET",
+      "path": "/v1/integrations/external-connections",
+      "operation_id": "list_connections_v1_integrations_external_connections_get"
+    },
+    {
+      "service": "integrations",
+      "method": "POST",
+      "path": "/v1/integrations/external-connections",
+      "operation_id": "create_connection_v1_integrations_external_connections_post"
+    },
+    {
+      "service": "integrations",
+      "method": "PATCH",
+      "path": "/v1/integrations/external-connections/{connection_id}",
+      "operation_id": "update_connection_v1_integrations_external_connections__connection_id__patch"
+    },
+    {
+      "service": "integrations",
+      "method": "POST",
+      "path": "/v1/integrations/external-connections/{connection_id}/check",
+      "operation_id": "check_connection_v1_integrations_external_connections__connection_id__check_post"
+    },
+    {
+      "service": "integrations",
+      "method": "POST",
+      "path": "/v1/integrations/external-connections/{connection_id}/target-check",
+      "operation_id": "check_target_v1_integrations_external_connections__connection_id__target_check_post"
+    },
+    {
+      "service": "integrations",
+      "method": "GET",
+      "path": "/v1/integrations/mcp",
+      "operation_id": "mcp_servers_v1_integrations_mcp_get"
+    },
+    {
+      "service": "integrations",
+      "method": "POST",
+      "path": "/v1/integrations/mcp",
+      "operation_id": "create_mcp_v1_integrations_mcp_post"
+    },
+    {
+      "service": "integrations",
+      "method": "DELETE",
+      "path": "/v1/integrations/mcp/{integration_id}",
+      "operation_id": "delete_mcp_v1_integrations_mcp__integration_id__delete"
+    },
+    {
+      "service": "integrations",
+      "method": "GET",
+      "path": "/v1/integrations/mcp/{integration_id}",
+      "operation_id": "mcp_server_v1_integrations_mcp__integration_id__get"
+    },
+    {
+      "service": "integrations",
+      "method": "PATCH",
+      "path": "/v1/integrations/mcp/{integration_id}",
+      "operation_id": "update_mcp_v1_integrations_mcp__integration_id__patch"
+    },
+    {
+      "service": "integrations",
+      "method": "GET",
+      "path": "/v1/integrations/mcp/{integration_id}/tools",
+      "operation_id": "mcp_tools_v1_integrations_mcp__integration_id__tools_get"
+    },
+    {
+      "service": "integrations",
+      "method": "POST",
+      "path": "/v1/integrations/mcp/{integration_id}/validate",
+      "operation_id": "validate_mcp_v1_integrations_mcp__integration_id__validate_post"
+    },
+    {
+      "service": "integrations",
+      "method": "GET",
+      "path": "/v1/integrations/skills",
+      "operation_id": "skills_v1_integrations_skills_get"
+    },
+    {
+      "service": "integrations",
+      "method": "POST",
+      "path": "/v1/integrations/skills",
+      "operation_id": "create_skill_v1_integrations_skills_post"
+    },
+    {
+      "service": "integrations",
+      "method": "DELETE",
+      "path": "/v1/integrations/skills/{skill_id}",
+      "operation_id": "delete_skill_v1_integrations_skills__skill_id__delete"
+    },
+    {
+      "service": "integrations",
+      "method": "GET",
+      "path": "/v1/integrations/skills/{skill_id}",
+      "operation_id": "skill_v1_integrations_skills__skill_id__get"
+    },
+    {
+      "service": "integrations",
+      "method": "PATCH",
+      "path": "/v1/integrations/skills/{skill_id}",
+      "operation_id": "update_skill_v1_integrations_skills__skill_id__patch"
+    },
+    {
+      "service": "integrations",
+      "method": "GET",
+      "path": "/v1/integrations/skills/{skill_id}/versions",
+      "operation_id": "skill_versions_v1_integrations_skills__skill_id__versions_get"
+    },
+    {
+      "service": "integrations",
+      "method": "POST",
+      "path": "/v1/integrations/skills/{skill_id}/versions",
+      "operation_id": "add_skill_version_v1_integrations_skills__skill_id__versions_post"
+    },
+    {
+      "service": "integrations",
+      "method": "GET",
+      "path": "/v1/integrations/skills/{skill_id}/versions/{version}/content",
+      "operation_id": "skill_version_content_v1_integrations_skills__skill_id__versions__version__content_get"
+    },
+    {
+      "service": "integrations",
+      "method": "GET",
+      "path": "/v1/integrations/skills/{skill_id}/versions/{version}/files",
+      "operation_id": "skill_version_files_v1_integrations_skills__skill_id__versions__version__files_get"
+    },
+    {
+      "service": "integrations",
+      "method": "GET",
+      "path": "/v1/integrations/skills/{skill_id}/versions/{version}/files/content",
+      "operation_id": "skill_version_file_content_v1_integrations_skills__skill_id__versions__version__files_content_get"
+    },
+    {
+      "service": "integrations",
+      "method": "GET",
+      "path": "/v1/integrations/skills/{skill_id}/versions/{version}/files/media",
+      "operation_id": "skill_version_file_media_v1_integrations_skills__skill_id__versions__version__files_media_get"
+    },
+    {
+      "service": "integrations",
+      "method": "GET",
+      "path": "/v1/integrations/skills/{skill_id}/versions/{version}/skill-md",
+      "operation_id": "skill_version_markdown_v1_integrations_skills__skill_id__versions__version__skill_md_get"
+    },
+    {
+      "service": "integrations",
+      "method": "GET",
+      "path": "/v1/integrations/tool-apis",
+      "operation_id": "tool_apis_v1_integrations_tool_apis_get"
+    },
+    {
+      "service": "integrations",
+      "method": "POST",
+      "path": "/v1/integrations/tool-apis",
+      "operation_id": "create_tool_api_v1_integrations_tool_apis_post"
+    },
+    {
+      "service": "integrations",
+      "method": "DELETE",
+      "path": "/v1/integrations/tool-apis/{integration_id}",
+      "operation_id": "delete_tool_api_v1_integrations_tool_apis__integration_id__delete"
+    },
+    {
+      "service": "integrations",
+      "method": "GET",
+      "path": "/v1/integrations/tool-apis/{integration_id}",
+      "operation_id": "tool_api_v1_integrations_tool_apis__integration_id__get"
+    },
+    {
+      "service": "integrations",
+      "method": "PATCH",
+      "path": "/v1/integrations/tool-apis/{integration_id}",
+      "operation_id": "update_tool_api_v1_integrations_tool_apis__integration_id__patch"
+    },
+    {
+      "service": "integrations",
+      "method": "POST",
+      "path": "/v1/integrations/tool-apis/{integration_id}/validate",
+      "operation_id": "validate_tool_api_v1_integrations_tool_apis__integration_id__validate_post"
+    },
+    {
+      "service": "interview",
+      "method": "GET",
+      "path": "/v1/interview-assistant/executor",
+      "operation_id": "get_interview_executor_v1_interview_assistant_executor_get"
+    },
+    {
+      "service": "interview",
+      "method": "GET",
+      "path": "/v1/interview-assistant/rooms",
+      "operation_id": "list_interview_rooms_v1_interview_assistant_rooms_get"
+    },
+    {
+      "service": "interview",
+      "method": "POST",
+      "path": "/v1/interview-assistant/rooms",
+      "operation_id": "create_interview_room_v1_interview_assistant_rooms_post"
+    },
+    {
+      "service": "interview",
+      "method": "DELETE",
+      "path": "/v1/interview-assistant/rooms/{room_id}",
+      "operation_id": "delete_interview_room_v1_interview_assistant_rooms__room_id__delete"
+    },
+    {
+      "service": "interview",
+      "method": "GET",
+      "path": "/v1/interview-assistant/rooms/{room_id}",
+      "operation_id": "get_interview_room_v1_interview_assistant_rooms__room_id__get"
+    },
+    {
+      "service": "interview",
+      "method": "POST",
+      "path": "/v1/interview-assistant/rooms/{room_id}/materials",
+      "operation_id": "upload_interview_material_v1_interview_assistant_rooms__room_id__materials_post"
+    },
+    {
+      "service": "interview",
+      "method": "GET",
+      "path": "/v1/interview-assistant/rooms/{room_id}/materials/{material_id}/download",
+      "operation_id": "download_interview_material_v1_interview_assistant_rooms__room_id__materials__material_id__download_get"
+    },
+    {
+      "service": "interview",
+      "method": "POST",
+      "path": "/v1/interview-assistant/rooms/{room_id}/preparations",
+      "operation_id": "prepare_interview_v1_interview_assistant_rooms__room_id__preparations_post"
+    },
+    {
+      "service": "interview",
+      "method": "GET",
+      "path": "/v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/bundle",
+      "operation_id": "get_interview_bundle_v1_interview_assistant_rooms__room_id__preparations__task_id__bundle_get"
+    },
+    {
+      "service": "interview",
+      "method": "POST",
+      "path": "/v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/cancel",
+      "operation_id": "cancel_interview_preparation_v1_interview_assistant_rooms__room_id__preparations__task_id__cancel_post"
+    },
+    {
+      "service": "interview",
+      "method": "GET",
+      "path": "/v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/events",
+      "operation_id": "get_interview_progress_v1_interview_assistant_rooms__room_id__preparations__task_id__events_get"
+    },
+    {
+      "service": "interview",
+      "method": "GET",
+      "path": "/v1/interview-assistant/rooms/{room_id}/preparations/{task_id}/export",
+      "operation_id": "export_interview_bundle_v1_interview_assistant_rooms__room_id__preparations__task_id__export_get"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/llm-call-logs",
+      "operation_id": "list_logs_v1_llm_call_logs_get"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/llm-call-logs/batch-delete",
+      "operation_id": "batch_delete_v1_llm_call_logs_batch_delete_post"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/llm-call-logs/stats",
+      "operation_id": "stats_v1_llm_call_logs_stats_get"
+    },
+    {
+      "service": "models",
+      "method": "DELETE",
+      "path": "/v1/llm-call-logs/{log_id}",
+      "operation_id": "delete_one_v1_llm_call_logs__log_id__delete"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/llm-call-logs/{log_id}",
+      "operation_id": "detail_v1_llm_call_logs__log_id__get"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/llm-call-logs/{log_id}/reproduction-bundle",
+      "operation_id": "reproduction_bundle_v1_llm_call_logs__log_id__reproduction_bundle_get"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/local-models",
+      "operation_id": "list_models_v1_local_models_get"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/local-models/attach",
+      "operation_id": "attach_model_v1_local_models_attach_post"
+    },
+    {
+      "service": "models",
+      "method": "PUT",
+      "path": "/v1/model-catalog/defaults",
+      "operation_id": "defaults_v1_model_catalog_defaults_put"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-categories",
+      "operation_id": "list_model_categories_v1_model_categories_get"
+    },
+    {
+      "service": "models",
+      "method": "DELETE",
+      "path": "/v1/model-entries/{model_id}",
+      "operation_id": "delete_model_v1_model_entries__model_id__delete"
+    },
+    {
+      "service": "models",
+      "method": "PATCH",
+      "path": "/v1/model-entries/{model_id}",
+      "operation_id": "update_model_v1_model_entries__model_id__patch"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-entries/{model_id}/test",
+      "operation_id": "run_model_test_v1_model_entries__model_id__test_post"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-inference/assets",
+      "operation_id": "upload_asset_v1_model_inference_assets_post"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-inference/assets/import",
+      "operation_id": "import_asset_v1_model_inference_assets_import_post"
+    },
+    {
+      "service": "models",
+      "method": "DELETE",
+      "path": "/v1/model-inference/assets/{asset_id}",
+      "operation_id": "delete_asset_v1_model_inference_assets__asset_id__delete"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-inference/options",
+      "operation_id": "model_options_v1_model_inference_options_get"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-inference/tasks",
+      "operation_id": "list_tasks_v1_model_inference_tasks_get"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-inference/tasks",
+      "operation_id": "create_task_v1_model_inference_tasks_post"
+    },
+    {
+      "service": "models",
+      "method": "DELETE",
+      "path": "/v1/model-inference/tasks/{task_id}",
+      "operation_id": "delete_task_v1_model_inference_tasks__task_id__delete"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-inference/tasks/{task_id}",
+      "operation_id": "get_task_v1_model_inference_tasks__task_id__get"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-inference/tasks/{task_id}/content",
+      "operation_id": "download_result_v1_model_inference_tasks__task_id__content_get"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-inference/tasks/{task_id}/retry-materialization",
+      "operation_id": "retry_materialization_v1_model_inference_tasks__task_id__retry_materialization_post"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-inference/tasks/{task_id}/save-to-library",
+      "operation_id": "save_result_v1_model_inference_tasks__task_id__save_to_library_post"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-inference/text",
+      "operation_id": "generate_text_v1_model_inference_text_post"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-inference/text/stream",
+      "operation_id": "stream_text_v1_model_inference_text_stream_post"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-providers",
+      "operation_id": "list_providers_v1_model_providers_get"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-providers",
+      "operation_id": "create_provider_v1_model_providers_post"
+    },
+    {
+      "service": "models",
+      "method": "DELETE",
+      "path": "/v1/model-providers/{provider_id}",
+      "operation_id": "delete_provider_v1_model_providers__provider_id__delete"
+    },
+    {
+      "service": "models",
+      "method": "PATCH",
+      "path": "/v1/model-providers/{provider_id}",
+      "operation_id": "update_provider_v1_model_providers__provider_id__patch"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-providers/{provider_id}/enabled",
+      "operation_id": "set_provider_enabled_v1_model_providers__provider_id__enabled_post"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-providers/{provider_id}/models",
+      "operation_id": "add_model_v1_model_providers__provider_id__models_post"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-suppliers",
+      "operation_id": "create_supplier_v1_model_suppliers_post"
+    },
+    {
+      "service": "models",
+      "method": "DELETE",
+      "path": "/v1/model-suppliers/{supplier_id}",
+      "operation_id": "delete_supplier_v1_model_suppliers__supplier_id__delete"
+    },
+    {
+      "service": "models",
+      "method": "PATCH",
+      "path": "/v1/model-suppliers/{supplier_id}",
+      "operation_id": "update_supplier_v1_model_suppliers__supplier_id__patch"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-test/conversations",
+      "operation_id": "list_conversations_v1_model_test_conversations_get"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-test/conversations",
+      "operation_id": "create_conversation_v1_model_test_conversations_post"
+    },
+    {
+      "service": "models",
+      "method": "DELETE",
+      "path": "/v1/model-test/conversations/{conversation_id}",
+      "operation_id": "delete_conversation_v1_model_test_conversations__conversation_id__delete"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-test/conversations/{conversation_id}",
+      "operation_id": "get_conversation_v1_model_test_conversations__conversation_id__get"
+    },
+    {
+      "service": "models",
+      "method": "PATCH",
+      "path": "/v1/model-test/conversations/{conversation_id}",
+      "operation_id": "patch_conversation_v1_model_test_conversations__conversation_id__patch"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-test/conversations/{conversation_id}/attachments",
+      "operation_id": "upload_attachments_v1_model_test_conversations__conversation_id__attachments_post"
+    },
+    {
+      "service": "models",
+      "method": "DELETE",
+      "path": "/v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}",
+      "operation_id": "delete_attachment_v1_model_test_conversations__conversation_id__attachments__attachment_id__delete"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}/content",
+      "operation_id": "attachment_content_v1_model_test_conversations__conversation_id__attachments__attachment_id__content_get"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-test/conversations/{conversation_id}/messages/stream",
+      "operation_id": "stream_message_v1_model_test_conversations__conversation_id__messages_stream_post"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-test/conversations/{conversation_id}/regenerate/stream",
+      "operation_id": "regenerate_message_v1_model_test_conversations__conversation_id__regenerate_stream_post"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-test/generation-assets",
+      "operation_id": "upload_generation_assets_v1_model_test_generation_assets_post"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-test/generation-assets/backfill",
+      "operation_id": "backfill_generation_assets_v1_model_test_generation_assets_backfill_post"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-test/generation-assets/backfill-status",
+      "operation_id": "generation_asset_backfill_status_v1_model_test_generation_assets_backfill_status_get"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-test/generation-assets/cleanup",
+      "operation_id": "cleanup_generation_assets_v1_model_test_generation_assets_cleanup_post"
+    },
+    {
+      "service": "models",
+      "method": "DELETE",
+      "path": "/v1/model-test/generation-assets/{asset_id}",
+      "operation_id": "delete_generation_asset_v1_model_test_generation_assets__asset_id__delete"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-test/generation-options",
+      "operation_id": "generation_options_v1_model_test_generation_options_get"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-test/generation-tasks",
+      "operation_id": "list_generation_tasks_v1_model_test_generation_tasks_get"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-test/generation-tasks",
+      "operation_id": "create_generation_task_v1_model_test_generation_tasks_post"
+    },
+    {
+      "service": "models",
+      "method": "DELETE",
+      "path": "/v1/model-test/generation-tasks/{task_id}",
+      "operation_id": "delete_generation_task_v1_model_test_generation_tasks__task_id__delete"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-test/generation-tasks/{task_id}",
+      "operation_id": "get_generation_task_v1_model_test_generation_tasks__task_id__get"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-test/generation-tasks/{task_id}/content",
+      "operation_id": "generation_content_v1_model_test_generation_tasks__task_id__content_get"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-test/generation-tasks/{task_id}/retry-materialization",
+      "operation_id": "retry_materialization_v1_model_test_generation_tasks__task_id__retry_materialization_post"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-test/realtime-options",
+      "operation_id": "realtime_options_v1_model_test_realtime_options_get"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-test/tools",
+      "operation_id": "list_tools_v1_model_test_tools_get"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-test/tools",
+      "operation_id": "create_tool_v1_model_test_tools_post"
+    },
+    {
+      "service": "models",
+      "method": "DELETE",
+      "path": "/v1/model-test/tools/{tool_id}",
+      "operation_id": "delete_tool_v1_model_test_tools__tool_id__delete"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-test/tools/{tool_id}",
+      "operation_id": "get_tool_v1_model_test_tools__tool_id__get"
+    },
+    {
+      "service": "models",
+      "method": "PATCH",
+      "path": "/v1/model-test/tools/{tool_id}",
+      "operation_id": "update_tool_v1_model_test_tools__tool_id__patch"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-test/tools/{tool_id}/execute",
+      "operation_id": "execute_tool_v1_model_test_tools__tool_id__execute_post"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-test/transcription-options",
+      "operation_id": "transcription_options_v1_model_test_transcription_options_get"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-test/transcription-tasks",
+      "operation_id": "list_transcription_tasks_v1_model_test_transcription_tasks_get"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-test/transcription-tasks",
+      "operation_id": "create_transcription_task_v1_model_test_transcription_tasks_post"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-test/transcription-tasks/upload",
+      "operation_id": "upload_transcription_task_v1_model_test_transcription_tasks_upload_post"
+    },
+    {
+      "service": "models",
+      "method": "DELETE",
+      "path": "/v1/model-test/transcription-tasks/{task_id}",
+      "operation_id": "delete_transcription_task_v1_model_test_transcription_tasks__task_id__delete"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-test/transcription-tasks/{task_id}",
+      "operation_id": "get_transcription_task_v1_model_test_transcription_tasks__task_id__get"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-test/transcription-tasks/{task_id}/input-content",
+      "operation_id": "transcription_input_content_v1_model_test_transcription_tasks__task_id__input_content_get"
+    },
+    {
+      "service": "motion",
+      "method": "GET",
+      "path": "/v1/motion-compositor/import-sources",
+      "operation_id": "import_sources_v1_motion_compositor_import_sources_get"
+    },
+    {
+      "service": "motion",
+      "method": "GET",
+      "path": "/v1/motion-compositor/projects",
+      "operation_id": "list_projects_v1_motion_compositor_projects_get"
+    },
+    {
+      "service": "motion",
+      "method": "POST",
+      "path": "/v1/motion-compositor/projects",
+      "operation_id": "create_project_v1_motion_compositor_projects_post"
+    },
+    {
+      "service": "motion",
+      "method": "POST",
+      "path": "/v1/motion-compositor/projects/snapshot-imports",
+      "operation_id": "import_snapshot_v1_motion_compositor_projects_snapshot_imports_post"
+    },
+    {
+      "service": "motion",
+      "method": "DELETE",
+      "path": "/v1/motion-compositor/projects/{project_id}",
+      "operation_id": "delete_project_v1_motion_compositor_projects__project_id__delete"
+    },
+    {
+      "service": "motion",
+      "method": "GET",
+      "path": "/v1/motion-compositor/projects/{project_id}",
+      "operation_id": "get_project_v1_motion_compositor_projects__project_id__get"
+    },
+    {
+      "service": "motion",
+      "method": "PATCH",
+      "path": "/v1/motion-compositor/projects/{project_id}",
+      "operation_id": "patch_project_v1_motion_compositor_projects__project_id__patch"
+    },
+    {
+      "service": "motion",
+      "method": "GET",
+      "path": "/v1/motion-compositor/projects/{project_id}/assets",
+      "operation_id": "list_assets_v1_motion_compositor_projects__project_id__assets_get"
+    },
+    {
+      "service": "motion",
+      "method": "POST",
+      "path": "/v1/motion-compositor/projects/{project_id}/assets",
+      "operation_id": "upload_asset_v1_motion_compositor_projects__project_id__assets_post"
+    },
+    {
+      "service": "motion",
+      "method": "POST",
+      "path": "/v1/motion-compositor/projects/{project_id}/assets/import",
+      "operation_id": "import_assets_v1_motion_compositor_projects__project_id__assets_import_post"
+    },
+    {
+      "service": "motion",
+      "method": "GET",
+      "path": "/v1/motion-compositor/projects/{project_id}/assets/{asset_id}/file",
+      "operation_id": "asset_file_v1_motion_compositor_projects__project_id__assets__asset_id__file_get"
+    },
+    {
+      "service": "motion",
+      "method": "GET",
+      "path": "/v1/motion-compositor/projects/{project_id}/document",
+      "operation_id": "get_document_v1_motion_compositor_projects__project_id__document_get"
+    },
+    {
+      "service": "motion",
+      "method": "POST",
+      "path": "/v1/motion-compositor/projects/{project_id}/document/operations",
+      "operation_id": "edit_document_v1_motion_compositor_projects__project_id__document_operations_post"
+    },
+    {
+      "service": "motion",
+      "method": "GET",
+      "path": "/v1/motion-compositor/projects/{project_id}/exports",
+      "operation_id": "list_exports_v1_motion_compositor_projects__project_id__exports_get"
+    },
+    {
+      "service": "motion",
+      "method": "POST",
+      "path": "/v1/motion-compositor/projects/{project_id}/exports",
+      "operation_id": "create_export_v1_motion_compositor_projects__project_id__exports_post"
+    },
+    {
+      "service": "motion",
+      "method": "GET",
+      "path": "/v1/motion-compositor/projects/{project_id}/exports/{task_id}",
+      "operation_id": "get_export_v1_motion_compositor_projects__project_id__exports__task_id__get"
+    },
+    {
+      "service": "motion",
+      "method": "POST",
+      "path": "/v1/motion-compositor/projects/{project_id}/exports/{task_id}/cancel",
+      "operation_id": "cancel_export_v1_motion_compositor_projects__project_id__exports__task_id__cancel_post"
+    },
+    {
+      "service": "motion",
+      "method": "GET",
+      "path": "/v1/motion-compositor/projects/{project_id}/exports/{task_id}/download/{format_name}",
+      "operation_id": "download_export_v1_motion_compositor_projects__project_id__exports__task_id__download__format_name__get"
+    },
+    {
+      "service": "motion",
+      "method": "POST",
+      "path": "/v1/motion-compositor/projects/{project_id}/exports/{task_id}/video-editor-handoffs",
+      "operation_id": "send_to_video_editor_v1_motion_compositor_projects__project_id__exports__task_id__video_editor_handoffs_post"
+    },
+    {
+      "service": "motion",
+      "method": "GET",
+      "path": "/v1/motion-compositor/projects/{project_id}/preview/frame",
+      "operation_id": "exact_frame_v1_motion_compositor_projects__project_id__preview_frame_get"
+    },
+    {
+      "service": "motion",
+      "method": "GET",
+      "path": "/v1/motion-compositor/projects/{project_id}/snapshot",
+      "operation_id": "export_snapshot_v1_motion_compositor_projects__project_id__snapshot_get"
+    },
+    {
+      "service": "identity",
+      "method": "GET",
+      "path": "/v1/platform/accounts",
+      "operation_id": "accounts_v1_platform_accounts_get"
+    },
+    {
+      "service": "identity",
+      "method": "POST",
+      "path": "/v1/platform/accounts",
+      "operation_id": "add_account_v1_platform_accounts_post"
+    },
+    {
+      "service": "identity",
+      "method": "PATCH",
+      "path": "/v1/platform/accounts/{user_id}",
+      "operation_id": "patch_account_v1_platform_accounts__user_id__patch"
+    },
+    {
+      "service": "identity",
+      "method": "POST",
+      "path": "/v1/platform/accounts/{user_id}/reset-password",
+      "operation_id": "reset_password_v1_platform_accounts__user_id__reset_password_post"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/platform/demo-services",
+      "operation_id": "services_v1_platform_demo_services_get"
+    },
+    {
+      "service": "models",
+      "method": "PUT",
+      "path": "/v1/platform/demo-services/{service_id}",
+      "operation_id": "configuration_v1_platform_demo_services__service_id__put"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/platform/demo-services/{service_id}/actions",
+      "operation_id": "action_v1_platform_demo_services__service_id__actions_post"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/platform/local-models/{model_id}/actions",
+      "operation_id": "model_action_v1_platform_local_models__model_id__actions_post"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/platform/model-service-templates/sync-jobs/{job_id}",
+      "operation_id": "job_v1_platform_model_service_templates_sync_jobs__job_id__get"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/platform/model-service-templates/sync-jobs/{job_id}/start",
+      "operation_id": "start_v1_platform_model_service_templates_sync_jobs__job_id__start_post"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/platform/model-service-templates/{role}",
+      "operation_id": "template_v1_platform_model_service_templates__role__get"
+    },
+    {
+      "service": "models",
+      "method": "PUT",
+      "path": "/v1/platform/model-service-templates/{role}",
+      "operation_id": "put_template_v1_platform_model_service_templates__role__put"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/platform/model-service-templates/{role}/preview",
+      "operation_id": "preview_v1_platform_model_service_templates__role__preview_post"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/platform/model-service-templates/{role}/sync-jobs",
+      "operation_id": "history_v1_platform_model_service_templates__role__sync_jobs_get"
+    },
+    {
+      "service": "identity",
+      "method": "GET",
+      "path": "/v1/platform/registration-invite-codes",
+      "operation_id": "invites_v1_platform_registration_invite_codes_get"
+    },
+    {
+      "service": "identity",
+      "method": "POST",
+      "path": "/v1/platform/registration-invite-codes",
+      "operation_id": "add_invite_v1_platform_registration_invite_codes_post"
+    },
+    {
+      "service": "identity",
+      "method": "PATCH",
+      "path": "/v1/platform/registration-invite-codes/{invite_id}",
+      "operation_id": "patch_invite_v1_platform_registration_invite_codes__invite_id__patch"
+    },
+    {
+      "service": "identity",
+      "method": "POST",
+      "path": "/v1/platform/registration-invite-codes/{invite_id}/actions",
+      "operation_id": "invite_action_v1_platform_registration_invite_codes__invite_id__actions_post"
+    },
+    {
+      "service": "identity",
+      "method": "GET",
+      "path": "/v1/platform/registration-invite-codes/{invite_id}/redemptions",
+      "operation_id": "redemptions_v1_platform_registration_invite_codes__invite_id__redemptions_get"
+    },
+    {
+      "service": "identity",
+      "method": "POST",
+      "path": "/v1/platform/registration-invite-codes/{invite_id}/secret",
+      "operation_id": "invite_secret_v1_platform_registration_invite_codes__invite_id__secret_post"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/platform/runtime-quotas",
+      "operation_id": "get_quotas_v1_platform_runtime_quotas_get"
+    },
+    {
+      "service": "models",
+      "method": "PATCH",
+      "path": "/v1/platform/runtime-quotas",
+      "operation_id": "patch_quotas_v1_platform_runtime_quotas_patch"
+    },
+    {
+      "service": "identity",
+      "method": "GET",
+      "path": "/v1/platform/security-events",
+      "operation_id": "audit_v1_platform_security_events_get"
+    },
+    {
+      "service": "presentation",
+      "method": "GET",
+      "path": "/v1/presentation-workshop/examples",
+      "operation_id": "list_examples_v1_presentation_workshop_examples_get"
+    },
+    {
+      "service": "presentation",
+      "method": "POST",
+      "path": "/v1/presentation-workshop/examples",
+      "operation_id": "create_example_v1_presentation_workshop_examples_post"
+    },
+    {
+      "service": "presentation",
+      "method": "DELETE",
+      "path": "/v1/presentation-workshop/examples/{example_id}",
+      "operation_id": "delete_example_v1_presentation_workshop_examples__example_id__delete"
+    },
+    {
+      "service": "presentation",
+      "method": "GET",
+      "path": "/v1/presentation-workshop/examples/{example_id}",
+      "operation_id": "get_example_v1_presentation_workshop_examples__example_id__get"
+    },
+    {
+      "service": "presentation",
+      "method": "PUT",
+      "path": "/v1/presentation-workshop/examples/{example_id}",
+      "operation_id": "put_example_v1_presentation_workshop_examples__example_id__put"
+    },
+    {
+      "service": "presentation",
+      "method": "POST",
+      "path": "/v1/presentation-workshop/examples/{example_id}/documents",
+      "operation_id": "create_from_example_v1_presentation_workshop_examples__example_id__documents_post"
+    },
+    {
+      "service": "presentation",
+      "method": "POST",
+      "path": "/v1/presentation-workshop/imports",
+      "operation_id": "create_import_v1_presentation_workshop_imports_post"
+    },
+    {
+      "service": "presentation",
+      "method": "POST",
+      "path": "/v1/presentation-workshop/imports/preview",
+      "operation_id": "preview_import_v1_presentation_workshop_imports_preview_post"
+    },
+    {
+      "service": "presentation",
+      "method": "POST",
+      "path": "/v1/presentation-workshop/library/import",
+      "operation_id": "import_template_bundle_v1_presentation_workshop_library_import_post"
+    },
+    {
+      "service": "presentation",
+      "method": "GET",
+      "path": "/v1/presentation-workshop/projects",
+      "operation_id": "list_projects_v1_presentation_workshop_projects_get"
+    },
+    {
+      "service": "presentation",
+      "method": "POST",
+      "path": "/v1/presentation-workshop/projects",
+      "operation_id": "create_project_v1_presentation_workshop_projects_post"
+    },
+    {
+      "service": "presentation",
+      "method": "DELETE",
+      "path": "/v1/presentation-workshop/projects/{project_id}",
+      "operation_id": "delete_project_v1_presentation_workshop_projects__project_id__delete"
+    },
+    {
+      "service": "presentation",
+      "method": "GET",
+      "path": "/v1/presentation-workshop/projects/{project_id}",
+      "operation_id": "get_project_v1_presentation_workshop_projects__project_id__get"
+    },
+    {
+      "service": "presentation",
+      "method": "PUT",
+      "path": "/v1/presentation-workshop/projects/{project_id}",
+      "operation_id": "put_project_v1_presentation_workshop_projects__project_id__put"
+    },
+    {
+      "service": "presentation",
+      "method": "POST",
+      "path": "/v1/presentation-workshop/projects/{project_id}/export",
+      "operation_id": "export_pptx_v1_presentation_workshop_projects__project_id__export_post"
+    },
+    {
+      "service": "presentation",
+      "method": "POST",
+      "path": "/v1/presentation-workshop/projects/{project_id}/export/preview",
+      "operation_id": "preview_export_v1_presentation_workshop_projects__project_id__export_preview_post"
+    },
+    {
+      "service": "presentation",
+      "method": "POST",
+      "path": "/v1/presentation-workshop/projects/{project_id}/export/{format}",
+      "operation_id": "export_file_v1_presentation_workshop_projects__project_id__export__format__post"
+    },
+    {
+      "service": "presentation",
+      "method": "POST",
+      "path": "/v1/presentation-workshop/projects/{project_id}/operations",
+      "operation_id": "apply_presentation_operations_v1_presentation_workshop_projects__project_id__operations_post"
+    },
+    {
+      "service": "presentation",
+      "method": "POST",
+      "path": "/v1/presentation-workshop/projects/{project_id}/template/apply",
+      "operation_id": "apply_template_change_v1_presentation_workshop_projects__project_id__template_apply_post"
+    },
+    {
+      "service": "presentation",
+      "method": "POST",
+      "path": "/v1/presentation-workshop/projects/{project_id}/template/preview",
+      "operation_id": "preview_template_change_v1_presentation_workshop_projects__project_id__template_preview_post"
+    },
+    {
+      "service": "presentation",
+      "method": "GET",
+      "path": "/v1/presentation-workshop/templates",
+      "operation_id": "list_templates_v1_presentation_workshop_templates_get"
+    },
+    {
+      "service": "presentation",
+      "method": "POST",
+      "path": "/v1/presentation-workshop/templates",
+      "operation_id": "create_template_v1_presentation_workshop_templates_post"
+    },
+    {
+      "service": "presentation",
+      "method": "DELETE",
+      "path": "/v1/presentation-workshop/templates/{template_id}",
+      "operation_id": "delete_template_v1_presentation_workshop_templates__template_id__delete"
+    },
+    {
+      "service": "presentation",
+      "method": "GET",
+      "path": "/v1/presentation-workshop/templates/{template_id}",
+      "operation_id": "get_template_v1_presentation_workshop_templates__template_id__get"
+    },
+    {
+      "service": "presentation",
+      "method": "PUT",
+      "path": "/v1/presentation-workshop/templates/{template_id}",
+      "operation_id": "put_template_v1_presentation_workshop_templates__template_id__put"
+    },
+    {
+      "service": "presentation",
+      "method": "POST",
+      "path": "/v1/presentation-workshop/templates/{template_id}/documents",
+      "operation_id": "create_from_template_v1_presentation_workshop_templates__template_id__documents_post"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/attachments",
+      "operation_id": "attachments_v1_thought_workshop_attachments_post"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/backup",
+      "operation_id": "backup_v1_thought_workshop_backup_get"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/community/favorites",
+      "operation_id": "favorites_v1_thought_workshop_community_favorites_get"
+    },
+    {
+      "service": "thought",
+      "method": "PUT",
+      "path": "/v1/thought-workshop/community/favorites/{namespace}/{resource_id}",
+      "operation_id": "favorite_v1_thought_workshop_community_favorites__namespace___resource_id__put"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/community/libraries/{library_id}/publication",
+      "operation_id": "config_v1_thought_workshop_community_libraries__library_id__publication_get"
+    },
+    {
+      "service": "thought",
+      "method": "PUT",
+      "path": "/v1/thought-workshop/community/libraries/{library_id}/publication",
+      "operation_id": "publish_v1_thought_workshop_community_libraries__library_id__publication_put"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/community/official-import",
+      "operation_id": "import_official_v1_thought_workshop_community_official_import_post"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/community/official-import/preview",
+      "operation_id": "import_preview_v1_thought_workshop_community_official_import_preview_get"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/community/official-import/{request_id}",
+      "operation_id": "import_receipt_v1_thought_workshop_community_official_import__request_id__get"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/community/official-links/{library_key}",
+      "operation_id": "legacy_link_v1_thought_workshop_community_official_links__library_key__get"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/community/publications",
+      "operation_id": "listing_v1_thought_workshop_community_publications_get"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/community/publications/{publication_id}",
+      "operation_id": "directory_v1_thought_workshop_community_publications__publication_id__get"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/community/publications/{publication_id}/assets/{asset_id}/content",
+      "operation_id": "asset_v1_thought_workshop_community_publications__publication_id__assets__asset_id__content_get"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/community/publications/{publication_id}/cover",
+      "operation_id": "cover_v1_thought_workshop_community_publications__publication_id__cover_get"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/community/publications/{publication_id}/export-snapshot",
+      "operation_id": "export_v1_thought_workshop_community_publications__publication_id__export_snapshot_get"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/community/publications/{publication_id}/management",
+      "operation_id": "management_v1_thought_workshop_community_publications__publication_id__management_get"
+    },
+    {
+      "service": "thought",
+      "method": "PUT",
+      "path": "/v1/thought-workshop/community/publications/{publication_id}/management",
+      "operation_id": "manage_v1_thought_workshop_community_publications__publication_id__management_put"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}",
+      "operation_id": "note_v1_thought_workshop_community_publications__publication_id__notes__note_id__get"
+    },
+    {
+      "service": "thought",
+      "method": "PUT",
+      "path": "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}",
+      "operation_id": "save_v1_thought_workshop_community_publications__publication_id__notes__note_id__put"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}/backlinks",
+      "operation_id": "backlinks_v1_thought_workshop_community_publications__publication_id__notes__note_id__backlinks_get"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}/multitable",
+      "operation_id": "structure_v1_thought_workshop_community_publications__publication_id__notes__note_id__multitable_get"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}/multitable/conversion-preview",
+      "operation_id": "conversion_v1_thought_workshop_community_publications__publication_id__notes__note_id__multitable_conversion_preview_post"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}/multitable/operations",
+      "operation_id": "operations_v1_thought_workshop_community_publications__publication_id__notes__note_id__multitable_operations_post"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}/multitable/tables/{table_id}/query",
+      "operation_id": "records_v1_thought_workshop_community_publications__publication_id__notes__note_id__multitable_tables__table_id__query_post"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}/uploads",
+      "operation_id": "upload_v1_thought_workshop_community_publications__publication_id__notes__note_id__uploads_post"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/community/publications/{publication_id}/permissions",
+      "operation_id": "settings_v1_thought_workshop_community_publications__publication_id__permissions_get"
+    },
+    {
+      "service": "thought",
+      "method": "PUT",
+      "path": "/v1/thought-workshop/community/publications/{publication_id}/permissions",
+      "operation_id": "permissions_v1_thought_workshop_community_publications__publication_id__permissions_put"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/community/publications/{publication_id}/references",
+      "operation_id": "references_v1_thought_workshop_community_publications__publication_id__references_post"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/images",
+      "operation_id": "upload_image_v1_thought_workshop_images_post"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/imports",
+      "operation_id": "imports_v1_thought_workshop_imports_post"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/knowledge-bases",
+      "operation_id": "knowledge_bases_v1_thought_workshop_knowledge_bases_get"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/knowledge-bases",
+      "operation_id": "create_knowledge_base_v1_thought_workshop_knowledge_bases_post"
+    },
+    {
+      "service": "thought",
+      "method": "DELETE",
+      "path": "/v1/thought-workshop/knowledge-bases/{project_id}",
+      "operation_id": "trash_knowledge_base_v1_thought_workshop_knowledge_bases__project_id__delete"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/knowledge-bases/{project_id}",
+      "operation_id": "knowledge_base_v1_thought_workshop_knowledge_bases__project_id__get"
+    },
+    {
+      "service": "thought",
+      "method": "PUT",
+      "path": "/v1/thought-workshop/knowledge-bases/{project_id}",
+      "operation_id": "update_knowledge_base_v1_thought_workshop_knowledge_bases__project_id__put"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/knowledge-bases/{project_id}/directory",
+      "operation_id": "directory_v1_thought_workshop_knowledge_bases__project_id__directory_get"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/knowledge-bases/{project_id}/documents",
+      "operation_id": "create_document_v1_thought_workshop_knowledge_bases__project_id__documents_post"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/knowledge-bases/{project_id}/export-snapshot",
+      "operation_id": "library_export_snapshot_v1_thought_workshop_knowledge_bases__project_id__export_snapshot_get"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/knowledge-bases/{project_id}/move",
+      "operation_id": "move_entry_v1_thought_workshop_knowledge_bases__project_id__move_post"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/knowledge-bases/{project_id}/restore",
+      "operation_id": "restore_knowledge_base_v1_thought_workshop_knowledge_bases__project_id__restore_post"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/link-preview",
+      "operation_id": "link_preview_v1_thought_workshop_link_preview_get"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/markdown/convert",
+      "operation_id": "convert_markdown_v1_thought_workshop_markdown_convert_post"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/models",
+      "operation_id": "writing_models_v1_thought_workshop_models_get"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/notes",
+      "operation_id": "list_notes_v1_thought_workshop_notes_get"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/notes",
+      "operation_id": "create_note_v1_thought_workshop_notes_post"
+    },
+    {
+      "service": "thought",
+      "method": "DELETE",
+      "path": "/v1/thought-workshop/notes/{note_id}",
+      "operation_id": "delete_note_v1_thought_workshop_notes__note_id__delete"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/notes/{note_id}",
+      "operation_id": "get_note_v1_thought_workshop_notes__note_id__get"
+    },
+    {
+      "service": "thought",
+      "method": "PUT",
+      "path": "/v1/thought-workshop/notes/{note_id}",
+      "operation_id": "put_note_v1_thought_workshop_notes__note_id__put"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/notes/{note_id}/assistant",
+      "operation_id": "assistant_v1_thought_workshop_notes__note_id__assistant_post"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/notes/{note_id}/backlinks",
+      "operation_id": "note_backlinks_v1_thought_workshop_notes__note_id__backlinks_get"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/notes/{note_id}/checkpoints",
+      "operation_id": "checkpoints_v1_thought_workshop_notes__note_id__checkpoints_get"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/notes/{note_id}/checkpoints",
+      "operation_id": "create_checkpoint_v1_thought_workshop_notes__note_id__checkpoints_post"
+    },
+    {
+      "service": "thought",
+      "method": "DELETE",
+      "path": "/v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}",
+      "operation_id": "delete_checkpoint_v1_thought_workshop_notes__note_id__checkpoints__checkpoint_id__delete"
+    },
+    {
+      "service": "thought",
+      "method": "PUT",
+      "path": "/v1/thought-workshop/notes/{note_id}/checkpoints/{checkpoint_id}",
+      "operation_id": "rename_checkpoint_v1_thought_workshop_notes__note_id__checkpoints__checkpoint_id__put"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/notes/{note_id}/copy-snapshot",
+      "operation_id": "copy_snapshot_v1_thought_workshop_notes__note_id__copy_snapshot_get"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/notes/{note_id}/duplicate",
+      "operation_id": "duplicate_document_v1_thought_workshop_notes__note_id__duplicate_post"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/notes/{note_id}/export",
+      "operation_id": "export_note_content_v1_thought_workshop_notes__note_id__export_get"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/notes/{note_id}/external-sync",
+      "operation_id": "state_v1_thought_workshop_notes__note_id__external_sync_get"
+    },
+    {
+      "service": "thought",
+      "method": "DELETE",
+      "path": "/v1/thought-workshop/notes/{note_id}/external-sync/binding",
+      "operation_id": "unbind_v1_thought_workshop_notes__note_id__external_sync_binding_delete"
+    },
+    {
+      "service": "thought",
+      "method": "PUT",
+      "path": "/v1/thought-workshop/notes/{note_id}/external-sync/binding",
+      "operation_id": "bind_v1_thought_workshop_notes__note_id__external_sync_binding_put"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/notes/{note_id}/external-sync/preview",
+      "operation_id": "preview_v1_thought_workshop_notes__note_id__external_sync_preview_post"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/notes/{note_id}/external-sync/tasks",
+      "operation_id": "submit_v1_thought_workshop_notes__note_id__external_sync_tasks_post"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}",
+      "operation_id": "task_v1_thought_workshop_notes__note_id__external_sync_tasks__task_id__get"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/notes/{note_id}/external-sync/tasks/{task_id}/reconcile",
+      "operation_id": "reconcile_v1_thought_workshop_notes__note_id__external_sync_tasks__task_id__reconcile_post"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/notes/{note_id}/history",
+      "operation_id": "note_history_v1_thought_workshop_notes__note_id__history_get"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/notes/{note_id}/history/{history_id}",
+      "operation_id": "note_history_detail_v1_thought_workshop_notes__note_id__history__history_id__get"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/notes/{note_id}/history/{history_id}/restore",
+      "operation_id": "restore_note_history_v1_thought_workshop_notes__note_id__history__history_id__restore_post"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/notes/{note_id}/multitable",
+      "operation_id": "structure_v1_thought_workshop_notes__note_id__multitable_get"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/notes/{note_id}/multitable/conversion-preview",
+      "operation_id": "conversion_v1_thought_workshop_notes__note_id__multitable_conversion_preview_post"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/notes/{note_id}/multitable/csv-preview",
+      "operation_id": "csv_preview_v1_thought_workshop_notes__note_id__multitable_csv_preview_post"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/notes/{note_id}/multitable/history",
+      "operation_id": "history_v1_thought_workshop_notes__note_id__multitable_history_get"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/notes/{note_id}/multitable/history/{revision}",
+      "operation_id": "detail_v1_thought_workshop_notes__note_id__multitable_history__revision__get"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/notes/{note_id}/multitable/history/{revision}/restore",
+      "operation_id": "restore_v1_thought_workshop_notes__note_id__multitable_history__revision__restore_post"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/notes/{note_id}/multitable/operations",
+      "operation_id": "operations_v1_thought_workshop_notes__note_id__multitable_operations_post"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-export",
+      "operation_id": "csv_export_v1_thought_workshop_notes__note_id__multitable_tables__table_id__csv_export_post"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/csv-import",
+      "operation_id": "csv_import_v1_thought_workshop_notes__note_id__multitable_tables__table_id__csv_import_post"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/notes/{note_id}/multitable/tables/{table_id}/query",
+      "operation_id": "records_v1_thought_workshop_notes__note_id__multitable_tables__table_id__query_post"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/notes/{note_id}/operations",
+      "operation_id": "apply_note_operations_v1_thought_workshop_notes__note_id__operations_post"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/notes/{note_id}/restore",
+      "operation_id": "restore_note_v1_thought_workshop_notes__note_id__restore_post"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/preferences/filters",
+      "operation_id": "saved_filters_v1_thought_workshop_preferences_filters_get"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/preferences/filters",
+      "operation_id": "save_filter_v1_thought_workshop_preferences_filters_post"
+    },
+    {
+      "service": "thought",
+      "method": "DELETE",
+      "path": "/v1/thought-workshop/preferences/filters/{filter_id}",
+      "operation_id": "delete_filter_v1_thought_workshop_preferences_filters__filter_id__delete"
+    },
+    {
+      "service": "thought",
+      "method": "PUT",
+      "path": "/v1/thought-workshop/preferences/filters/{filter_id}",
+      "operation_id": "put_filter_v1_thought_workshop_preferences_filters__filter_id__put"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/preferences/reading",
+      "operation_id": "reading_position_v1_thought_workshop_preferences_reading_get"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/preferences/reading",
+      "operation_id": "record_reading_v1_thought_workshop_preferences_reading_post"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/preferences/recent",
+      "operation_id": "recently_visited_v1_thought_workshop_preferences_recent_get"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/references/resolve",
+      "operation_id": "resolve_references_v1_thought_workshop_references_resolve_post"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/search",
+      "operation_id": "global_search_v1_thought_workshop_search_get"
+    },
+    {
+      "service": "thought",
+      "method": "GET",
+      "path": "/v1/thought-workshop/templates",
+      "operation_id": "templates_v1_thought_workshop_templates_get"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/templates",
+      "operation_id": "create_template_v1_thought_workshop_templates_post"
+    },
+    {
+      "service": "thought",
+      "method": "DELETE",
+      "path": "/v1/thought-workshop/templates/{template_id}",
+      "operation_id": "delete_template_v1_thought_workshop_templates__template_id__delete"
+    },
+    {
+      "service": "thought",
+      "method": "PUT",
+      "path": "/v1/thought-workshop/templates/{template_id}",
+      "operation_id": "put_template_v1_thought_workshop_templates__template_id__put"
+    },
+    {
+      "service": "thought",
+      "method": "POST",
+      "path": "/v1/thought-workshop/templates/{template_id}/apply",
+      "operation_id": "apply_template_v1_thought_workshop_templates__template_id__apply_post"
+    },
+    {
+      "service": "agent-runtime",
+      "method": "GET",
+      "path": "/v1/tool-navigation/codex-source",
+      "operation_id": "get_codex_source_v1_tool_navigation_codex_source_get"
+    },
+    {
+      "service": "agent-runtime",
+      "method": "PUT",
+      "path": "/v1/tool-navigation/codex-source",
+      "operation_id": "put_codex_source_v1_tool_navigation_codex_source_put"
+    },
+    {
+      "service": "agent-runtime",
+      "method": "POST",
+      "path": "/v1/tool-navigation/codex-source/restore",
+      "operation_id": "post_codex_source_restore_v1_tool_navigation_codex_source_restore_post"
+    },
+    {
+      "service": "tools",
+      "method": "GET",
+      "path": "/v1/tool-navigation/state",
+      "operation_id": "get_state_v1_tool_navigation_state_get"
+    },
+    {
+      "service": "tools",
+      "method": "GET",
+      "path": "/v1/tool-navigation/storage-usage",
+      "operation_id": "get_storage_usage_v1_tool_navigation_storage_usage_get"
+    },
+    {
+      "service": "tools",
+      "method": "POST",
+      "path": "/v1/tool-navigation/storage-usage/analyze",
+      "operation_id": "analyze_storage_directory_v1_tool_navigation_storage_usage_analyze_post"
+    },
+    {
+      "service": "tools",
+      "method": "POST",
+      "path": "/v1/tool-navigation/storage-usage/open-directory",
+      "operation_id": "open_directory_v1_tool_navigation_storage_usage_open_directory_post"
+    },
+    {
+      "service": "tools",
+      "method": "PATCH",
+      "path": "/v1/tool-navigation/tools/{tool_id}",
+      "operation_id": "set_favorite_v1_tool_navigation_tools__tool_id__patch"
+    },
+    {
+      "service": "tools",
+      "method": "POST",
+      "path": "/v1/tool-navigation/tools/{tool_id}/use",
+      "operation_id": "record_use_v1_tool_navigation_tools__tool_id__use_post"
+    },
+    {
+      "service": "tools",
+      "method": "GET",
+      "path": "/v1/tool-navigation/video-download/deps",
+      "operation_id": "get_video_download_deps_v1_tool_navigation_video_download_deps_get"
+    },
+    {
+      "service": "tools",
+      "method": "POST",
+      "path": "/v1/tool-navigation/video-download/jobs",
+      "operation_id": "post_video_download_job_v1_tool_navigation_video_download_jobs_post"
+    },
+    {
+      "service": "tools",
+      "method": "GET",
+      "path": "/v1/tool-navigation/video-download/jobs/{job_id}",
+      "operation_id": "get_video_download_job_v1_tool_navigation_video_download_jobs__job_id__get"
+    },
+    {
+      "service": "tools",
+      "method": "GET",
+      "path": "/v1/tool-navigation/video-download/jobs/{job_id}/file",
+      "operation_id": "download_video_download_file_v1_tool_navigation_video_download_jobs__job_id__file_get"
+    },
+    {
+      "service": "video",
+      "method": "GET",
+      "path": "/v1/video-editor/import-sources",
+      "operation_id": "import_sources_v1_video_editor_import_sources_get"
+    },
+    {
+      "service": "video",
+      "method": "GET",
+      "path": "/v1/video-editor/projects",
+      "operation_id": "list_projects_v1_video_editor_projects_get"
+    },
+    {
+      "service": "video",
+      "method": "POST",
+      "path": "/v1/video-editor/projects",
+      "operation_id": "create_project_v1_video_editor_projects_post"
+    },
+    {
+      "service": "video",
+      "method": "POST",
+      "path": "/v1/video-editor/projects/snapshot-imports",
+      "operation_id": "import_project_snapshot_v1_video_editor_projects_snapshot_imports_post"
+    },
+    {
+      "service": "video",
+      "method": "DELETE",
+      "path": "/v1/video-editor/projects/{project_id}",
+      "operation_id": "delete_project_v1_video_editor_projects__project_id__delete"
+    },
+    {
+      "service": "video",
+      "method": "GET",
+      "path": "/v1/video-editor/projects/{project_id}",
+      "operation_id": "get_project_v1_video_editor_projects__project_id__get"
+    },
+    {
+      "service": "video",
+      "method": "PATCH",
+      "path": "/v1/video-editor/projects/{project_id}",
+      "operation_id": "patch_project_v1_video_editor_projects__project_id__patch"
+    },
+    {
+      "service": "video",
+      "method": "GET",
+      "path": "/v1/video-editor/projects/{project_id}/asset-bakes/{task_id}",
+      "operation_id": "get_asset_bake_v1_video_editor_projects__project_id__asset_bakes__task_id__get"
+    },
+    {
+      "service": "video",
+      "method": "GET",
+      "path": "/v1/video-editor/projects/{project_id}/assets",
+      "operation_id": "list_assets_v1_video_editor_projects__project_id__assets_get"
+    },
+    {
+      "service": "video",
+      "method": "POST",
+      "path": "/v1/video-editor/projects/{project_id}/assets",
+      "operation_id": "upload_asset_v1_video_editor_projects__project_id__assets_post"
+    },
+    {
+      "service": "video",
+      "method": "POST",
+      "path": "/v1/video-editor/projects/{project_id}/assets/import",
+      "operation_id": "import_assets_v1_video_editor_projects__project_id__assets_import_post"
+    },
+    {
+      "service": "video",
+      "method": "DELETE",
+      "path": "/v1/video-editor/projects/{project_id}/assets/{asset_id}",
+      "operation_id": "delete_asset_v1_video_editor_projects__project_id__assets__asset_id__delete"
+    },
+    {
+      "service": "video",
+      "method": "PATCH",
+      "path": "/v1/video-editor/projects/{project_id}/assets/{asset_id}",
+      "operation_id": "patch_asset_v1_video_editor_projects__project_id__assets__asset_id__patch"
+    },
+    {
+      "service": "video",
+      "method": "POST",
+      "path": "/v1/video-editor/projects/{project_id}/assets/{asset_id}/bakes",
+      "operation_id": "create_asset_bake_v1_video_editor_projects__project_id__assets__asset_id__bakes_post"
+    },
+    {
+      "service": "video",
+      "method": "POST",
+      "path": "/v1/video-editor/projects/{project_id}/assets/{asset_id}/proxy/retry",
+      "operation_id": "retry_proxy_v1_video_editor_projects__project_id__assets__asset_id__proxy_retry_post"
+    },
+    {
+      "service": "video",
+      "method": "GET",
+      "path": "/v1/video-editor/projects/{project_id}/assets/{asset_id}/{variant}",
+      "operation_id": "asset_variant_v1_video_editor_projects__project_id__assets__asset_id___variant__get"
+    },
+    {
+      "service": "video",
+      "method": "POST",
+      "path": "/v1/video-editor/projects/{project_id}/audio-seams/candidates",
+      "operation_id": "audio_seam_candidates_v1_video_editor_projects__project_id__audio_seams_candidates_post"
+    },
+    {
+      "service": "video",
+      "method": "GET",
+      "path": "/v1/video-editor/projects/{project_id}/clip-merges",
+      "operation_id": "list_clip_merges_v1_video_editor_projects__project_id__clip_merges_get"
+    },
+    {
+      "service": "video",
+      "method": "POST",
+      "path": "/v1/video-editor/projects/{project_id}/clip-merges",
+      "operation_id": "create_clip_merge_v1_video_editor_projects__project_id__clip_merges_post"
+    },
+    {
+      "service": "video",
+      "method": "GET",
+      "path": "/v1/video-editor/projects/{project_id}/clip-merges/{task_id}",
+      "operation_id": "get_clip_merge_v1_video_editor_projects__project_id__clip_merges__task_id__get"
+    },
+    {
+      "service": "video",
+      "method": "POST",
+      "path": "/v1/video-editor/projects/{project_id}/clip-merges/{task_id}/cancel",
+      "operation_id": "cancel_clip_merge_v1_video_editor_projects__project_id__clip_merges__task_id__cancel_post"
+    },
+    {
+      "service": "video",
+      "method": "POST",
+      "path": "/v1/video-editor/projects/{project_id}/open-folder",
+      "operation_id": "reveal_project_folder_v1_video_editor_projects__project_id__open_folder_post"
+    },
+    {
+      "service": "video",
+      "method": "GET",
+      "path": "/v1/video-editor/projects/{project_id}/preview/frame",
+      "operation_id": "exact_frame_v1_video_editor_projects__project_id__preview_frame_get"
+    },
+    {
+      "service": "video",
+      "method": "GET",
+      "path": "/v1/video-editor/projects/{project_id}/renders",
+      "operation_id": "list_renders_v1_video_editor_projects__project_id__renders_get"
+    },
+    {
+      "service": "video",
+      "method": "POST",
+      "path": "/v1/video-editor/projects/{project_id}/renders",
+      "operation_id": "create_render_v1_video_editor_projects__project_id__renders_post"
+    },
+    {
+      "service": "video",
+      "method": "POST",
+      "path": "/v1/video-editor/projects/{project_id}/renders/preflight",
+      "operation_id": "render_preflight_v1_video_editor_projects__project_id__renders_preflight_post"
+    },
+    {
+      "service": "video",
+      "method": "DELETE",
+      "path": "/v1/video-editor/projects/{project_id}/renders/{task_id}",
+      "operation_id": "delete_render_v1_video_editor_projects__project_id__renders__task_id__delete"
+    },
+    {
+      "service": "video",
+      "method": "GET",
+      "path": "/v1/video-editor/projects/{project_id}/renders/{task_id}",
+      "operation_id": "get_render_v1_video_editor_projects__project_id__renders__task_id__get"
+    },
+    {
+      "service": "video",
+      "method": "POST",
+      "path": "/v1/video-editor/projects/{project_id}/renders/{task_id}/cancel",
+      "operation_id": "cancel_render_v1_video_editor_projects__project_id__renders__task_id__cancel_post"
+    },
+    {
+      "service": "video",
+      "method": "GET",
+      "path": "/v1/video-editor/projects/{project_id}/segment-exports",
+      "operation_id": "list_segment_exports_v1_video_editor_projects__project_id__segment_exports_get"
+    },
+    {
+      "service": "video",
+      "method": "POST",
+      "path": "/v1/video-editor/projects/{project_id}/segment-exports",
+      "operation_id": "create_segment_export_v1_video_editor_projects__project_id__segment_exports_post"
+    },
+    {
+      "service": "video",
+      "method": "GET",
+      "path": "/v1/video-editor/projects/{project_id}/segment-exports/{task_id}",
+      "operation_id": "get_segment_export_v1_video_editor_projects__project_id__segment_exports__task_id__get"
+    },
+    {
+      "service": "video",
+      "method": "POST",
+      "path": "/v1/video-editor/projects/{project_id}/segment-exports/{task_id}/cancel",
+      "operation_id": "cancel_segment_export_v1_video_editor_projects__project_id__segment_exports__task_id__cancel_post"
+    },
+    {
+      "service": "video",
+      "method": "GET",
+      "path": "/v1/video-editor/projects/{project_id}/segment-exports/{task_id}/download",
+      "operation_id": "download_segment_export_v1_video_editor_projects__project_id__segment_exports__task_id__download_get"
+    },
+    {
+      "service": "video",
+      "method": "GET",
+      "path": "/v1/video-editor/projects/{project_id}/snapshot",
+      "operation_id": "export_project_snapshot_v1_video_editor_projects__project_id__snapshot_get"
+    },
+    {
+      "service": "video",
+      "method": "GET",
+      "path": "/v1/video-editor/projects/{project_id}/text-clips/{clip_id}/layer",
+      "operation_id": "text_clip_layer_v1_video_editor_projects__project_id__text_clips__clip_id__layer_get"
+    },
+    {
+      "service": "video",
+      "method": "GET",
+      "path": "/v1/video-editor/projects/{project_id}/timeline",
+      "operation_id": "get_timeline_v1_video_editor_projects__project_id__timeline_get"
+    },
+    {
+      "service": "video",
+      "method": "POST",
+      "path": "/v1/video-editor/projects/{project_id}/timeline/operations",
+      "operation_id": "apply_timeline_operations_v1_video_editor_projects__project_id__timeline_operations_post"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/acceptance-templates",
+      "operation_id": "list_acceptance_templates_v1_visual_workshop_acceptance_templates_get"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/acceptance-templates",
+      "operation_id": "create_acceptance_template_v1_visual_workshop_acceptance_templates_post"
+    },
+    {
+      "service": "visual",
+      "method": "DELETE",
+      "path": "/v1/visual-workshop/acceptance-templates/{template_id}",
+      "operation_id": "delete_acceptance_template_v1_visual_workshop_acceptance_templates__template_id__delete"
+    },
+    {
+      "service": "visual",
+      "method": "PUT",
+      "path": "/v1/visual-workshop/acceptance-templates/{template_id}",
+      "operation_id": "update_acceptance_template_v1_visual_workshop_acceptance_templates__template_id__put"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/acceptance/catalog",
+      "operation_id": "acceptance_catalog_v1_visual_workshop_acceptance_catalog_get"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/generation-batches",
+      "operation_id": "list_generation_batches_v1_visual_workshop_generation_batches_get"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/generation-batches/{batch_id}",
+      "operation_id": "get_generation_batch_v1_visual_workshop_generation_batches__batch_id__get"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/generation-batches/{batch_id}/retry-composition",
+      "operation_id": "retry_image_composition_v1_visual_workshop_generation_batches__batch_id__retry_composition_post"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/generation-options",
+      "operation_id": "generation_options_v1_visual_workshop_generation_options_get"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/generation-tasks",
+      "operation_id": "list_generation_tasks_v1_visual_workshop_generation_tasks_get"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/generation-tasks/{task_id}",
+      "operation_id": "get_generation_task_v1_visual_workshop_generation_tasks__task_id__get"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/generation-tasks/{task_id}/cancel",
+      "operation_id": "cancel_generation_task_v1_visual_workshop_generation_tasks__task_id__cancel_post"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/generation-tasks/{task_id}/retry-materialization",
+      "operation_id": "retry_materialization_v1_visual_workshop_generation_tasks__task_id__retry_materialization_post"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/projects",
+      "operation_id": "list_projects_v1_visual_workshop_projects_get"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects",
+      "operation_id": "create_project_v1_visual_workshop_projects_post"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects/snapshot-imports",
+      "operation_id": "import_project_snapshot_v1_visual_workshop_projects_snapshot_imports_post"
+    },
+    {
+      "service": "visual",
+      "method": "DELETE",
+      "path": "/v1/visual-workshop/projects/{project_id}",
+      "operation_id": "delete_project_v1_visual_workshop_projects__project_id__delete"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/projects/{project_id}",
+      "operation_id": "get_project_v1_visual_workshop_projects__project_id__get"
+    },
+    {
+      "service": "visual",
+      "method": "PATCH",
+      "path": "/v1/visual-workshop/projects/{project_id}",
+      "operation_id": "patch_project_v1_visual_workshop_projects__project_id__patch"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/models",
+      "operation_id": "list_acceptance_models_v1_visual_workshop_projects__project_id__acceptance_models_get"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}",
+      "operation_id": "get_acceptance_repair_v1_visual_workshop_projects__project_id__acceptance_repair_drafts__draft_id__get"
+    },
+    {
+      "service": "visual",
+      "method": "PUT",
+      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}",
+      "operation_id": "save_acceptance_repair_v1_visual_workshop_projects__project_id__acceptance_repair_drafts__draft_id__put"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/runs",
+      "operation_id": "list_acceptance_runs_v1_visual_workshop_projects__project_id__acceptance_runs_get"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/runs",
+      "operation_id": "start_acceptance_runs_v1_visual_workshop_projects__project_id__acceptance_runs_post"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}",
+      "operation_id": "get_acceptance_run_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__get"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/cancel",
+      "operation_id": "cancel_acceptance_run_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__cancel_post"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/decisions",
+      "operation_id": "decide_acceptance_run_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__decisions_post"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/repair-drafts",
+      "operation_id": "create_acceptance_repair_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__repair_drafts_post"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/samples",
+      "operation_id": "sample_acceptance_video_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__samples_post"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/standard",
+      "operation_id": "get_acceptance_standard_v1_visual_workshop_projects__project_id__acceptance_standard_get"
+    },
+    {
+      "service": "visual",
+      "method": "PUT",
+      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/standard",
+      "operation_id": "save_acceptance_standard_v1_visual_workshop_projects__project_id__acceptance_standard_put"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/summary",
+      "operation_id": "acceptance_summary_v1_visual_workshop_projects__project_id__acceptance_summary_get"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects/{project_id}/asset-imports",
+      "operation_id": "import_assets_v1_visual_workshop_projects__project_id__asset_imports_post"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects/{project_id}/asset-references",
+      "operation_id": "create_asset_reference_v1_visual_workshop_projects__project_id__asset_references_post"
+    },
+    {
+      "service": "visual",
+      "method": "DELETE",
+      "path": "/v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}",
+      "operation_id": "delete_asset_reference_v1_visual_workshop_projects__project_id__asset_references__reference_id__delete"
+    },
+    {
+      "service": "visual",
+      "method": "PATCH",
+      "path": "/v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}",
+      "operation_id": "patch_asset_reference_v1_visual_workshop_projects__project_id__asset_references__reference_id__patch"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/projects/{project_id}/canvas",
+      "operation_id": "get_canvas_v1_visual_workshop_projects__project_id__canvas_get"
+    },
+    {
+      "service": "visual",
+      "method": "PUT",
+      "path": "/v1/visual-workshop/projects/{project_id}/canvas",
+      "operation_id": "put_canvas_v1_visual_workshop_projects__project_id__canvas_put"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects/{project_id}/canvas/operations",
+      "operation_id": "apply_canvas_operations_v1_visual_workshop_projects__project_id__canvas_operations_post"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/projects/{project_id}/conversations",
+      "operation_id": "list_conversations_v1_visual_workshop_projects__project_id__conversations_get"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects/{project_id}/conversations",
+      "operation_id": "create_conversation_v1_visual_workshop_projects__project_id__conversations_post"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/projects/{project_id}/conversations/models",
+      "operation_id": "list_models_v1_visual_workshop_projects__project_id__conversations_models_get"
+    },
+    {
+      "service": "visual",
+      "method": "DELETE",
+      "path": "/v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}",
+      "operation_id": "delete_conversation_v1_visual_workshop_projects__project_id__conversations__conversation_id__delete"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}",
+      "operation_id": "get_conversation_v1_visual_workshop_projects__project_id__conversations__conversation_id__get"
+    },
+    {
+      "service": "visual",
+      "method": "PATCH",
+      "path": "/v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}",
+      "operation_id": "patch_conversation_v1_visual_workshop_projects__project_id__conversations__conversation_id__patch"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/messages/stream",
+      "operation_id": "stream_message_v1_visual_workshop_projects__project_id__conversations__conversation_id__messages_stream_post"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/runs/{run_id}/approvals/{approval_id}",
+      "operation_id": "resolve_approval_v1_visual_workshop_projects__project_id__conversations__conversation_id__runs__run_id__approvals__approval_id__post"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects/{project_id}/generation-batches",
+      "operation_id": "create_generation_batch_v1_visual_workshop_projects__project_id__generation_batches_post"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects/{project_id}/generation-tasks",
+      "operation_id": "create_generation_task_v1_visual_workshop_projects__project_id__generation_tasks_post"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects/{project_id}/image-compositions",
+      "operation_id": "create_image_composition_v1_visual_workshop_projects__project_id__image_compositions_post"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects/{project_id}/node-uploads",
+      "operation_id": "upload_material_node_v1_visual_workshop_projects__project_id__node_uploads_post"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance",
+      "operation_id": "get_node_acceptance_v1_visual_workshop_projects__project_id__nodes__node_id__acceptance_get"
+    },
+    {
+      "service": "visual",
+      "method": "PUT",
+      "path": "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance",
+      "operation_id": "select_node_acceptance_v1_visual_workshop_projects__project_id__nodes__node_id__acceptance_put"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance/runs",
+      "operation_id": "start_node_acceptance_v1_visual_workshop_projects__project_id__nodes__node_id__acceptance_runs_post"
+    },
+    {
+      "service": "visual",
+      "method": "PUT",
+      "path": "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/final-output",
+      "operation_id": "set_node_final_output_v1_visual_workshop_projects__project_id__nodes__node_id__final_output_put"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/output-uploads",
+      "operation_id": "upload_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__output_uploads_post"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs",
+      "operation_id": "list_node_outputs_v1_visual_workshop_projects__project_id__nodes__node_id__outputs_get"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs",
+      "operation_id": "add_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__outputs_post"
+    },
+    {
+      "service": "visual",
+      "method": "DELETE",
+      "path": "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}",
+      "operation_id": "delete_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__outputs__output_id__delete"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}",
+      "operation_id": "get_node_output_v1_visual_workshop_projects__project_id__nodes__node_id__outputs__output_id__get"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects/{project_id}/open-folder",
+      "operation_id": "reveal_project_folder_v1_visual_workshop_projects__project_id__open_folder_post"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/projects/{project_id}/snapshot",
+      "operation_id": "export_project_snapshot_v1_visual_workshop_projects__project_id__snapshot_get"
+    }
+  ],
+  "tables": [
+    {
+      "table": "agent_workbench_sources",
+      "service": "agents",
+      "module": "app.apps.agent_workbench.models",
+      "model": "WorkbenchSource"
+    },
+    {
+      "table": "agent_workbench_sessions",
+      "service": "agents",
+      "module": "app.apps.agent_workbench.models",
+      "model": "WorkbenchSession"
+    },
+    {
+      "table": "agent_workbench_entries",
+      "service": "agents",
+      "module": "app.apps.agent_workbench.models",
+      "model": "WorkbenchEntry"
+    },
+    {
+      "table": "agent_workbench_checkpoints",
+      "service": "agents",
+      "module": "app.apps.agent_workbench.models",
+      "model": "WorkbenchCheckpoint"
+    },
+    {
+      "table": "agent_workbench_operations",
+      "service": "agents",
+      "module": "app.apps.agent_workbench.models",
+      "model": "WorkbenchOperation"
+    },
+    {
+      "table": "agent_workbench_changes",
+      "service": "agents",
+      "module": "app.apps.agent_workbench.models",
+      "model": "WorkbenchChange"
+    },
+    {
+      "table": "audio_annotation_projects",
+      "service": "annotation",
+      "module": "app.apps.audio_annotation.models",
+      "model": "AudioAnnotationProject"
+    },
+    {
+      "table": "audio_annotation_documents",
+      "service": "annotation",
+      "module": "app.apps.audio_annotation.models",
+      "model": "AudioAnnotationDocument"
+    },
+    {
+      "table": "audio_annotation_waveforms",
+      "service": "annotation",
+      "module": "app.apps.audio_annotation.models",
+      "model": "AudioAnnotationWaveform"
+    },
+    {
+      "table": "director_desk_user_motions",
+      "service": "director",
+      "module": "app.apps.director_desk.models",
+      "model": "DirectorDeskUserMotion"
+    },
+    {
+      "table": "director_desk_projects",
+      "service": "director",
+      "module": "app.apps.director_desk.models",
+      "model": "DirectorDeskProject"
+    },
+    {
+      "table": "galgame_workshop_projects",
+      "service": "galgame",
+      "module": "app.apps.galgame_workshop.models",
+      "model": "GalgameWorkshopProject"
+    },
+    {
+      "table": "galgame_story_documents",
+      "service": "galgame",
+      "module": "app.apps.galgame_workshop.models",
+      "model": "GalgameStoryDocument"
+    },
+    {
+      "table": "galgame_project_asset_references",
+      "service": "galgame",
+      "module": "app.apps.galgame_workshop.models",
+      "model": "GalgameProjectAssetReference"
+    },
+    {
+      "table": "galgame_asset_metadata",
+      "service": "galgame",
+      "module": "app.apps.galgame_workshop.models",
+      "model": "GalgameAssetMetadata"
+    },
+    {
+      "table": "galgame_asset_settings",
+      "service": "galgame",
+      "module": "app.apps.galgame_workshop.models",
+      "model": "GalgameAssetSettings"
+    },
+    {
+      "table": "galgame_asset_transcription_tasks",
+      "service": "galgame",
+      "module": "app.apps.galgame_workshop.models",
+      "model": "GalgameAssetTranscriptionTask"
+    },
+    {
+      "table": "galgame_story_snapshots",
+      "service": "galgame",
+      "module": "app.apps.galgame_workshop.models",
+      "model": "GalgameStorySnapshot"
+    },
+    {
+      "table": "galgame_annotation_import_tasks",
+      "service": "galgame",
+      "module": "app.apps.galgame_workshop.models",
+      "model": "GalgameAnnotationImportTask"
+    },
+    {
+      "table": "galgame_video_export_tasks",
+      "service": "galgame",
+      "module": "app.apps.galgame_workshop.models",
+      "model": "GalgameVideoExportTask"
+    },
+    {
+      "table": "galgame_video_editor_handoffs",
+      "service": "galgame",
+      "module": "app.apps.galgame_workshop.models",
+      "model": "GalgameVideoEditorHandoffTask"
+    },
+    {
+      "table": "interview_rooms",
+      "service": "interview",
+      "module": "app.apps.interview_assistant.models",
+      "model": "InterviewRoom"
+    },
+    {
+      "table": "interview_materials",
+      "service": "interview",
+      "module": "app.apps.interview_assistant.models",
+      "model": "InterviewMaterial"
+    },
+    {
+      "table": "interview_preparations",
+      "service": "interview",
+      "module": "app.apps.interview_assistant.models",
+      "model": "InterviewPreparation"
+    },
+    {
+      "table": "motion_compositor_projects",
+      "service": "motion",
+      "module": "app.apps.motion_compositor.models",
+      "model": "MotionProject"
+    },
+    {
+      "table": "motion_compositor_documents",
+      "service": "motion",
+      "module": "app.apps.motion_compositor.models",
+      "model": "MotionDocument"
+    },
+    {
+      "table": "motion_compositor_operation_batches",
+      "service": "motion",
+      "module": "app.apps.motion_compositor.models",
+      "model": "MotionOperationBatch"
+    },
+    {
+      "table": "motion_compositor_tasks",
+      "service": "motion",
+      "module": "app.apps.motion_compositor.models",
+      "model": "MotionTask"
+    },
+    {
+      "table": "presentation_projects",
+      "service": "presentation",
+      "module": "app.apps.presentation_workshop.models",
+      "model": "PresentationProject"
+    },
+    {
+      "table": "presentation_asset_references",
+      "service": "presentation",
+      "module": "app.apps.presentation_workshop.models",
+      "model": "PresentationAssetReference"
+    },
+    {
+      "table": "presentation_templates",
+      "service": "presentation",
+      "module": "app.apps.presentation_workshop.templates.models",
+      "model": "PresentationTemplate"
+    },
+    {
+      "table": "presentation_examples",
+      "service": "presentation",
+      "module": "app.apps.presentation_workshop.templates.models",
+      "model": "PresentationExample"
+    },
+    {
+      "table": "presentation_template_assets",
+      "service": "presentation",
+      "module": "app.apps.presentation_workshop.templates.models",
+      "model": "PresentationTemplateAsset"
+    },
+    {
+      "table": "presentation_example_assets",
+      "service": "presentation",
+      "module": "app.apps.presentation_workshop.templates.models",
+      "model": "PresentationExampleAsset"
+    },
+    {
+      "table": "thought_sync_bindings",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.external_sync.models",
+      "model": "ArticleSyncBinding"
+    },
+    {
+      "table": "thought_sync_tasks",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.external_sync.models",
+      "model": "ArticleSyncTask"
+    },
+    {
+      "table": "thought_sync_steps",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.external_sync.models",
+      "model": "ArticleSyncStep"
+    },
+    {
+      "table": "thought_sync_assets",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.external_sync.models",
+      "model": "ArticleSyncAsset"
+    },
+    {
+      "table": "thought_document_references",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.knowledge_tools.models",
+      "model": "ThoughtDocumentReference"
+    },
+    {
+      "table": "thought_templates",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.knowledge_tools.models",
+      "model": "ThoughtTemplate"
+    },
+    {
+      "table": "thought_template_assets",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.knowledge_tools.models",
+      "model": "ThoughtTemplateAsset"
+    },
+    {
+      "table": "thought_checkpoints",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.knowledge_tools.models",
+      "model": "ThoughtCheckpoint"
+    },
+    {
+      "table": "thought_saved_filters",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.knowledge_tools.models",
+      "model": "ThoughtSavedFilter"
+    },
+    {
+      "table": "thought_reading_states",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.knowledge_tools.models",
+      "model": "ThoughtReadingState"
+    },
+    {
+      "table": "thought_knowledge_bases",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.models",
+      "model": "ThoughtKnowledgeBase"
+    },
+    {
+      "table": "thought_notes",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.models",
+      "model": "ThoughtNote"
+    },
+    {
+      "table": "thought_note_assets",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.models",
+      "model": "ThoughtNoteAsset"
+    },
+    {
+      "table": "thought_note_history",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.models",
+      "model": "ThoughtNoteHistory"
+    },
+    {
+      "table": "thought_history_assets",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.models",
+      "model": "ThoughtHistoryAsset"
+    },
+    {
+      "table": "thought_data_tables",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.multitable.models",
+      "model": "DataTable"
+    },
+    {
+      "table": "thought_data_fields",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.multitable.models",
+      "model": "DataField"
+    },
+    {
+      "table": "thought_data_views",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.multitable.models",
+      "model": "DataView"
+    },
+    {
+      "table": "thought_data_records",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.multitable.models",
+      "model": "DataRecord"
+    },
+    {
+      "table": "thought_data_changes",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.multitable.models",
+      "model": "DataChange"
+    },
+    {
+      "table": "thought_data_assets",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.multitable.models",
+      "model": "DataAsset"
+    },
+    {
+      "table": "thought_publications",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.publication.models",
+      "model": "Publication"
+    },
+    {
+      "table": "thought_published_articles",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.publication.models",
+      "model": "PublishedArticle"
+    },
+    {
+      "table": "thought_article_members",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.publication.models",
+      "model": "ArticleMember"
+    },
+    {
+      "table": "thought_community_favorites",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.publication.models",
+      "model": "CommunityFavorite"
+    },
+    {
+      "table": "thought_community_uploads",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.publication.models",
+      "model": "CommunityUpload"
+    },
+    {
+      "table": "thought_official_sources",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.publication.models",
+      "model": "OfficialSource"
+    },
+    {
+      "table": "thought_official_import_receipts",
+      "service": "thought",
+      "module": "app.apps.thought_workshop.publication.models",
+      "model": "OfficialImportReceipt"
+    },
+    {
+      "table": "video_editor_projects",
+      "service": "video",
+      "module": "app.apps.video_editor.models",
+      "model": "VideoEditorProject"
+    },
+    {
+      "table": "video_editor_timelines",
+      "service": "video",
+      "module": "app.apps.video_editor.models",
+      "model": "VideoEditorTimeline"
+    },
+    {
+      "table": "video_editor_operation_batches",
+      "service": "video",
+      "module": "app.apps.video_editor.models",
+      "model": "VideoEditorOperationBatch"
+    },
+    {
+      "table": "video_editor_asset_metadata",
+      "service": "video",
+      "module": "app.apps.video_editor.models",
+      "model": "VideoEditorAssetMetadata"
+    },
+    {
+      "table": "video_editor_tasks",
+      "service": "video",
+      "module": "app.apps.video_editor.models",
+      "model": "VideoEditorTask"
+    },
+    {
+      "table": "visual_acceptance_templates",
+      "service": "visual",
+      "module": "app.apps.visual_workshop.acceptance.models",
+      "model": "AcceptanceTemplate"
+    },
+    {
+      "table": "visual_acceptance_standards",
+      "service": "visual",
+      "module": "app.apps.visual_workshop.acceptance.models",
+      "model": "AcceptanceStandard"
+    },
+    {
+      "table": "visual_acceptance_standard_versions",
+      "service": "visual",
+      "module": "app.apps.visual_workshop.acceptance.models",
+      "model": "AcceptanceStandardVersion"
+    },
+    {
+      "table": "visual_acceptance_runs",
+      "service": "visual",
+      "module": "app.apps.visual_workshop.acceptance.models",
+      "model": "AcceptanceRun"
+    },
+    {
+      "table": "visual_acceptance_asset_references",
+      "service": "visual",
+      "module": "app.apps.visual_workshop.acceptance.models",
+      "model": "AcceptanceAssetReference"
+    },
+    {
+      "table": "visual_node_acceptance_bindings",
+      "service": "visual",
+      "module": "app.apps.visual_workshop.acceptance.models",
+      "model": "NodeAcceptanceBinding"
+    },
+    {
+      "table": "visual_acceptance_repair_drafts",
+      "service": "visual",
+      "module": "app.apps.visual_workshop.acceptance.models",
+      "model": "AcceptanceRepairDraft"
+    },
+    {
+      "table": "visual_workshop_projects",
+      "service": "visual",
+      "module": "app.apps.visual_workshop.models",
+      "model": "VisualWorkshopProject"
+    },
+    {
+      "table": "visual_canvas_documents",
+      "service": "visual",
+      "module": "app.apps.visual_workshop.models",
+      "model": "VisualCanvasDocument"
+    },
+    {
+      "table": "visual_generation_tasks",
+      "service": "visual",
+      "module": "app.apps.visual_workshop.models",
+      "model": "VisualGenerationTask"
+    },
+    {
+      "table": "visual_generation_batches",
+      "service": "visual",
+      "module": "app.apps.visual_workshop.models",
+      "model": "VisualGenerationBatch"
+    },
+    {
+      "table": "visual_assistant_conversations",
+      "service": "visual",
+      "module": "app.apps.visual_workshop.models",
+      "model": "VisualAssistantConversation"
+    },
+    {
+      "table": "visual_assistant_messages",
+      "service": "visual",
+      "module": "app.apps.visual_workshop.models",
+      "model": "VisualAssistantMessage"
+    },
+    {
+      "table": "visual_assistant_message_assets",
+      "service": "visual",
+      "module": "app.apps.visual_workshop.models",
+      "model": "VisualAssistantMessageAsset"
+    },
+    {
+      "table": "visual_assistant_actions",
+      "service": "visual",
+      "module": "app.apps.visual_workshop.models",
+      "model": "VisualAssistantAction"
+    },
+    {
+      "table": "visual_node_outputs",
+      "service": "visual",
+      "module": "app.apps.visual_workshop.outputs.models",
+      "model": "VisualNodeOutput"
+    },
+    {
+      "table": "visual_asset_folders",
+      "service": "assets",
+      "module": "app.capabilities.asset_store.models",
+      "model": "VisualAssetFolder"
+    },
+    {
+      "table": "visual_assets",
+      "service": "assets",
+      "module": "app.capabilities.asset_store.models",
+      "model": "VisualAsset"
+    },
+    {
+      "table": "visual_project_asset_references",
+      "service": "visual",
+      "module": "app.capabilities.asset_store.models",
+      "model": "VisualProjectAssetReference"
+    },
+    {
+      "table": "account_storage_upgrade_roots",
+      "service": "assets",
+      "module": "app.capabilities.asset_store.upgrade_records",
+      "model": "AccountStorageUpgradeRoot"
+    },
+    {
+      "table": "amadeus_conversations",
+      "service": "amadeus",
+      "module": "app.console.amadeus.models",
+      "model": "AmadeusConversation"
+    },
+    {
+      "table": "amadeus_messages",
+      "service": "amadeus",
+      "module": "app.console.amadeus.models",
+      "model": "AmadeusMessage"
+    },
+    {
+      "table": "amadeus_actions",
+      "service": "amadeus",
+      "module": "app.console.amadeus.models",
+      "model": "AmadeusAction"
+    },
+    {
+      "table": "amadeus_runs",
+      "service": "amadeus",
+      "module": "app.console.amadeus.models",
+      "model": "AmadeusRun"
+    },
+    {
+      "table": "amadeus_questions",
+      "service": "amadeus",
+      "module": "app.console.amadeus.models",
+      "model": "AmadeusQuestion"
+    },
+    {
+      "table": "amadeus_run_events",
+      "service": "amadeus",
+      "module": "app.console.amadeus.models",
+      "model": "AmadeusRunEvent"
+    },
+    {
+      "table": "creative_items",
+      "service": "creative",
+      "module": "app.console.creative_workshop.models",
+      "model": "CreativeItem"
+    },
+    {
+      "table": "creative_releases",
+      "service": "creative",
+      "module": "app.console.creative_workshop.models",
+      "model": "CreativeRelease"
+    },
+    {
+      "table": "creative_installations",
+      "service": "creative",
+      "module": "app.console.creative_workshop.models",
+      "model": "CreativeInstallation"
+    },
+    {
+      "table": "users",
+      "service": "identity",
+      "module": "app.console.models.accounts",
+      "model": "User"
+    },
+    {
+      "table": "auth_sessions",
+      "service": "identity",
+      "module": "app.console.models.accounts",
+      "model": "AuthSession"
+    },
+    {
+      "table": "management_api_keys",
+      "service": "identity",
+      "module": "app.console.models.accounts",
+      "model": "ManagementApiKey"
+    },
+    {
+      "table": "security_audit_events",
+      "service": "identity",
+      "module": "app.console.models.accounts",
+      "model": "SecurityAuditEvent"
+    },
+    {
+      "table": "model_template_sync_jobs",
+      "service": "models",
+      "module": "app.console.models.model_templates",
+      "model": "ModelTemplateSyncJob"
+    },
+    {
+      "table": "model_template_sync_items",
+      "service": "models",
+      "module": "app.console.models.model_templates",
+      "model": "ModelTemplateSyncItem"
+    },
+    {
+      "table": "platform_settings",
+      "service": "identity",
+      "module": "app.console.models.platform_governance",
+      "model": "PlatformSetting"
+    },
+    {
+      "table": "registration_invite_codes",
+      "service": "identity",
+      "module": "app.console.models.platform_governance",
+      "model": "RegistrationInviteCode"
+    },
+    {
+      "table": "registration_redemptions",
+      "service": "identity",
+      "module": "app.console.models.platform_governance",
+      "model": "RegistrationRedemption"
+    },
+    {
+      "table": "runtime_admissions",
+      "service": "models",
+      "module": "app.console.models.runtime_admission",
+      "model": "RuntimeAdmission"
+    },
+    {
+      "table": "integration_external_connections",
+      "service": "integrations",
+      "module": "app.integrations.external.models",
+      "model": "ExternalConnection"
+    },
+    {
+      "table": "integration_tool_apis",
+      "service": "integrations",
+      "module": "app.integrations.models",
+      "model": "ToolApiIntegration"
+    },
+    {
+      "table": "integration_mcp_servers",
+      "service": "integrations",
+      "module": "app.integrations.models",
+      "model": "McpIntegration"
+    },
+    {
+      "table": "integration_mcp_tools",
+      "service": "integrations",
+      "module": "app.integrations.models",
+      "model": "McpDiscoveredTool"
+    },
+    {
+      "table": "integration_skills",
+      "service": "integrations",
+      "module": "app.integrations.models",
+      "model": "SkillIntegration"
+    },
+    {
+      "table": "integration_skill_versions",
+      "service": "integrations",
+      "module": "app.integrations.models",
+      "model": "SkillVersion"
+    },
+    {
+      "table": "integration_checks",
+      "service": "integrations",
+      "module": "app.integrations.models",
+      "model": "IntegrationCheck"
+    },
+    {
+      "table": "llm_call_logs",
+      "service": "models",
+      "module": "app.llm.models.call_log",
+      "model": "LlmCallLog"
+    },
+    {
+      "table": "local_model_installations",
+      "service": "models",
+      "module": "app.llm.models.local_models",
+      "model": "LocalModelInstallation"
+    },
+    {
+      "table": "local_model_operations",
+      "service": "models",
+      "module": "app.llm.models.local_models",
+      "model": "LocalModelOperation"
+    },
+    {
+      "table": "model_inference_tasks",
+      "service": "models",
+      "module": "app.llm.models.model_inference",
+      "model": "ModelInferenceTask"
+    },
+    {
+      "table": "model_inference_assets",
+      "service": "models",
+      "module": "app.llm.models.model_inference",
+      "model": "ModelInferenceAsset"
+    },
+    {
+      "table": "model_providers",
+      "service": "models",
+      "module": "app.llm.models.model_service",
+      "model": "ModelProvider"
+    },
+    {
+      "table": "model_entries",
+      "service": "models",
+      "module": "app.llm.models.model_service",
+      "model": "ModelEntry"
+    },
+    {
+      "table": "model_catalog_state",
+      "service": "models",
+      "module": "app.llm.models.model_service",
+      "model": "ModelCatalogState"
+    },
+    {
+      "table": "model_suppliers",
+      "service": "models",
+      "module": "app.llm.models.model_supplier",
+      "model": "ModelSupplier"
+    },
+    {
+      "table": "model_test_conversations",
+      "service": "models",
+      "module": "app.llm.models.model_test",
+      "model": "ModelTestConversation"
+    },
+    {
+      "table": "model_test_messages",
+      "service": "models",
+      "module": "app.llm.models.model_test",
+      "model": "ModelTestMessage"
+    },
+    {
+      "table": "model_test_attachments",
+      "service": "models",
+      "module": "app.llm.models.model_test",
+      "model": "ModelTestAttachment"
+    },
+    {
+      "table": "model_test_generation_tasks",
+      "service": "models",
+      "module": "app.llm.models.model_test",
+      "model": "ModelTestGenerationTask"
+    },
+    {
+      "table": "model_test_generation_assets",
+      "service": "models",
+      "module": "app.llm.models.model_test",
+      "model": "ModelTestGenerationAsset"
+    },
+    {
+      "table": "model_test_transcription_tasks",
+      "service": "models",
+      "module": "app.llm.models.model_test",
+      "model": "ModelTestTranscriptionTask"
+    },
+    {
+      "table": "model_test_tools",
+      "service": "models",
+      "module": "app.llm.models.model_test_tools",
+      "model": "ModelTestTool"
+    },
+    {
+      "table": "model_test_conversation_tool_bindings",
+      "service": "models",
+      "module": "app.llm.models.model_test_tools",
+      "model": "ModelTestConversationToolBinding"
+    },
+    {
+      "table": "model_test_tool_calls",
+      "service": "models",
+      "module": "app.llm.models.model_test_tools",
+      "model": "ModelTestToolCall"
+    },
+    {
+      "table": "project_operation_receipts",
+      "service": "local-receipts",
+      "module": "app.runtime.project_operations",
+      "model": "ProjectOperationReceipt"
+    },
+    {
+      "table": "tool_navigation_items",
+      "service": "tools",
+      "module": "app.tool_navigation.models",
+      "model": "ToolNavigationItem"
+    }
+  ],
+  "partitions": {
+    "platform_settings": {
+      "keys": {
+        "runtime_quotas": "models",
+        "code_agents": "agent-runtime"
+      },
+      "prefixes": {
+        "role_template:": "models",
+        "demo_service:": "models"
+      },
+      "unassigned": "reject"
+    },
+    "project_operation_receipts": "resource_kind"
+  },
+  "derived_tables": {
+    "agent_workbench_search": "agents"
+  }
+}

@@ -29,9 +29,9 @@ from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import VIDEO_EDITABLE_EXTENSIONS
 from app.capabilities.asset_store.storage import AssetStorage
-from app.orm import bind_owner, require_owner_id
 from app.runtime.config import Settings, get_settings
 from app.runtime.db import SessionLocal
+from app.runtime.ownership import bind_owner, require_owner_id
 from app.runtime.polling_runner import PollingTaskRunner
 from app.runtime.time import utc_now
 

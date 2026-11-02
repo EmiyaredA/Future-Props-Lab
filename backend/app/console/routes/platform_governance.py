@@ -7,7 +7,6 @@ from fastapi import APIRouter, HTTPException, Query, Request, Response
 from app.capabilities.identity.rate_limit import allow_attempt
 from app.console.governance.developer_docs import developer_documents
 from app.console.governance.platform_settings import write_setting
-from app.console.governance.project_certification import certify_project
 from app.console.governance.registration import (
     change_invite,
     create_invite,
@@ -159,5 +158,7 @@ async def certification(
     session: SessionDep,
     body: CertificationIn,
 ):
+    from app.console.governance.project_certification import certify_project
+
     principal = await _browser_auth(request, session)
     return await certify_project(session, principal, kind, project_id, body, client_ip(request))

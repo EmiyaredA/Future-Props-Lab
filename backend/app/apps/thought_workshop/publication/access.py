@@ -7,7 +7,7 @@ from sqlalchemy import select
 from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
 from app.console.models import User
-from app.orm import bind_owner
+from app.runtime.ownership import bind_owner
 
 from .models import ArticleMember, Publication, PublishedArticle
 

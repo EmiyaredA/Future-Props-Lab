@@ -92,6 +92,7 @@ async def login(request: Request, response: Response, session: SessionDep, body:
         user,
         auth_session,
         maintenance=getattr(request.app.state, "storage_upgrade_required", False),
+        check_storage=getattr(request.app.state, "service_id", None) != "identity",
     )
 
 

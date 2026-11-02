@@ -34,9 +34,9 @@ from app.llm.providers.realtime.contracts import RealtimeProviderUnavailableErro
 from app.llm.providers.realtime.senseaudio import SenseAudioRealtimeBridge
 from app.llm.realtime.catalog import RealtimeModelUnavailableError, resolve_realtime_model
 from app.llm.realtime.tool_calls import RealtimeToolExecutor, provider_tool_definitions
-from app.orm import bind_owner
 from app.runtime.db import SessionLocal
 from app.runtime.ids import new_id
+from app.runtime.ownership import bind_owner
 
 PERMISSION_RECHECK_SECONDS = 5
 
