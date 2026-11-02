@@ -724,3 +724,7 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 ### 角色工坊退役验收
 
 `web/e2e/retired-character-workshops.spec.ts` 覆盖首页内置动画、明暗主题、390/768/1600 宽度、减少动态效果及 Agent 工作台徽章。该首页展示不启动任何独立角色窗口，也不读取私人角色项目。
+
+### Models 拆分准备
+
+`llm/catalog/task_usage.py` 定义目录修改所需的显式任务占用接口。`legacy_usage.py` 仅用于迁移期单体，读取其原有任务表并显式限定账号；目录本体不再查询工坊内部表。独立 Models 必须注入自有执行记录的实现，缺少实现时拒绝相关写操作。提供方先验证归属再检查占用，其他账号 ID 仍返回不存在。

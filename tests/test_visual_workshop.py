@@ -917,6 +917,24 @@ async def test_visual_generation_options_creation_filters_and_active_provider_gu
         assert blocked.status_code == 409
         assert blocked.json()["code"] == "resource_busy"
 
+        blocked_model = await client.patch(
+            f"/v1/model-entries/{model.id}",
+            json={
+                "slug": model.slug,
+                "capabilities": model.capabilities,
+                "enabled": False,
+                "expected_catalog_revision": catalog["revision"],
+            },
+        )
+        assert blocked_model.status_code == 409, blocked_model.text
+        assert blocked_model.json()["code"] == "resource_busy"
+        blocked_delete = await client.delete(
+            f"/v1/model-entries/{model.id}",
+            params={"expected_catalog_revision": catalog["revision"]},
+        )
+        assert blocked_delete.status_code == 409, blocked_delete.text
+        assert blocked_delete.json()["code"] == "resource_busy"
+
         paid_test = await client.post(f"/v1/model-entries/{model.id}/test")
         assert paid_test.status_code == 409
 

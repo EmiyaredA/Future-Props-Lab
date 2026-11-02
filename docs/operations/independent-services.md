@@ -122,3 +122,10 @@ Assets 已接通独立 HTTP、浏览器、镜像及 Compose，并通过五服务
 这只是 Rendering 的媒体处理接口切片。确定性时间线导出、持久任务恢复、其余工坊与正式导入尚未完成；全部通过前继续使用原正式实例。
 
 网关运行日志通过 [Caddy 全局日志配置](https://caddyserver.com/docs/caddyfile/options#log)和 [filter](https://caddyserver.com/docs/caddyfile/directives/log#filter) 删除请求及响应头。默认敏感头规则不能覆盖自定义身份断言；SSE 取消和上游故障也不得把断言写进错误日志。实际容器验收检查错误日志中没有身份头和 JWT。
+
+
+### Rendering 批次最终验收
+
+代码提交 `c5b37431` 已同步远程。真实六服务最终运行 `fpl-isolated-agents-a14698a687` 通过：账号登录、原生跟随、独立重建与停止、40 MiB 上传、ZIP 导入、Range、视频／音频／PDF／中文文本预览、帧 ZIP 与宫格、SQLite 核验、门户停止后的新登录和响应式明暗页面。网关错误与取消流日志不再输出请求头或身份断言。手机与桌面截图已检查。
+
+该批完整后端 1934 项通过、4 项条件跳过；生产构建、契约及 SDK、格式、静态、官方导入包、Agent Note、受保护文档提交隔离和 Git LFS 检查通过。Web 原长用例按独立旅程调整后，标准单 worker 全量 283 个文件、1825 项通过，无未处理异常；保留原断言与超时。后续 Models 目录接口准备的隔离及兼容回归另有 73 项通过。正式实例与数据未切换。

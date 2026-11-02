@@ -648,7 +648,7 @@ test("moves voice profiles out of characters and marks edited dialogue as stale"
   expect(screen.getByText("你终于来了")).toBeInTheDocument();
 });
 
-test("adds and edits multi-character stage blocks with live edit preview", async () => {
+test("previews character placement and inherits it when adding dialogue", async () => {
   const user = userEvent.setup();
   vi.mocked(getGalgameStoryDocument).mockResolvedValueOnce({
     ...story,
@@ -724,7 +724,41 @@ test("adds and edits multi-character stage blocks with live edit preview", async
     },
     { timeout: 2000 },
   );
-  await user.click(screen.getByRole("button", { name: "卡片" }));
+});
+
+test("edits saved dialogue placement and removes all staged actors", async () => {
+  const user = userEvent.setup();
+  const stagedStory = structuredClone(story) as unknown as GalgameStoryDocument;
+  stagedStory.document.characters = [
+    { id: "hero", name: "调查员", description: "" },
+    { id: "partner", name: "助手", description: "" },
+  ];
+  stagedStory.document.chapters![0].fragments![0].blocks = [
+    {
+      id: "stage-one",
+      type: "showCharacter",
+      characterId: "hero",
+      distance: "medium",
+      positionId: "position-left",
+      transform: { brightness: 1.4 },
+    },
+    {
+      id: "dialogue-one",
+      type: "dialogue",
+      characterId: "hero",
+      text: "预设站位",
+      portrait: {
+        mode: "stage",
+        distance: "medium",
+        positionId: "position-left",
+        keepAfter: true,
+      },
+    },
+  ];
+  vi.mocked(getGalgameStoryDocument).mockResolvedValueOnce(stagedStory);
+  localStorage.setItem("future_props_galgame_editor_script_view", "blocks");
+  renderEditor();
+  await screen.findByText("纵向切片");
   await user.click(
     await screen.findByRole("button", { name: "人物呈现：中 · 左" }),
   );
@@ -769,4 +803,4 @@ test("adds and edits multi-character stage blocks with live edit preview", async
     },
     { timeout: 2000 },
   );
-}, 10_000);
+});
