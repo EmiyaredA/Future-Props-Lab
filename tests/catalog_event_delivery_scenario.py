@@ -21,8 +21,8 @@ from fpl_runtime.routing import RouteCatalog
 assert not any(name.startswith(("app.llm", "app.apps")) for name in sys.modules)
 assert "app.runtime.db" not in sys.modules
 
-from app.llm.catalog.seed import ensure_account_model_catalog  # noqa: E402
 from app.llm.models import ModelProvider  # noqa: E402
+from app.llm.schemas.model_templates import RoleModelTemplateIn  # noqa: E402
 from fpl_models.account_events import (  # noqa: E402
     CatalogEventClient,
     CatalogEventTransportError,
@@ -31,6 +31,7 @@ from fpl_models.account_events import (  # noqa: E402
 from fpl_models.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS  # noqa: E402
 from fpl_models.models import ACCOUNT_MODELS, MODELS, CatalogProvisioningReceipt  # noqa: E402
 from fpl_models.provisioning import CatalogProvisioning  # noqa: E402
+from fpl_models.templates import RoleTemplates, initialize_account_catalog  # noqa: E402
 from fpl_runtime.database import Database  # noqa: E402
 
 root = Path(os.environ["CATALOG_DELIVERY_TEST_ROOT"]).resolve()
@@ -57,6 +58,34 @@ identity = create_app(
 async def scenario():
     calls = []
     try:
+        async with models.sessions() as session:
+            for role in ("admin", "user"):
+                await RoleTemplates(session).save(
+                    role,
+                    RoleModelTemplateIn(
+                        expected_revision=0,
+                        value={
+                            "providers": [
+                                {
+                                    "template_key": "provider",
+                                    "name": role + " policy",
+                                    "kind": "openai",
+                                    "base_url": "https://provider.invalid/v1",
+                                    "api_key": "synthetic-" + role + "-policy-secret",
+                                    "models": [
+                                        {
+                                            "template_key": "model",
+                                            "slug": "fixture",
+                                            "capabilities": ["chat"],
+                                        }
+                                    ],
+                                }
+                            ],
+                            "defaults": {"chat": "model"},
+                        },
+                    ),
+                )
+            await session.commit()
         async with identity.router.lifespan_context(identity):
             async with identity.state.database.sessions() as session:
                 users = []
@@ -148,7 +177,7 @@ async def scenario():
 
                 async def initialize(session, owner, role):
                     calls.append((owner, role))
-                    await ensure_account_model_catalog(session, owner)
+                    await initialize_account_catalog(session, owner, role)
 
                 class LostAcknowledgments(httpx.AsyncBaseTransport):
                     before, after = True, True
@@ -201,7 +230,10 @@ async def scenario():
                     assert sorted(calls) == sorted([(users[0], "admin"), (users[1], "user")])
                     for owner in users[:2]:
                         async with models.sessions(info={"owner_user_id": owner}) as session:
-                            assert len(list(await session.scalars(select(ModelProvider)))) > 1
+                            providers = list(await session.scalars(select(ModelProvider)))
+                            assert len(providers) == 1
+                            expected = "admin policy" if owner == users[0] else "user policy"
+                            assert providers[0].name == expected
                     # Re-enable through the normal governance API;
                     # the retained event becomes visible again.
                     enabled = await admin.patch(

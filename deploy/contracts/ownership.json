@@ -4485,6 +4485,12 @@
       "service": "models",
       "module": "fpl_models.models",
       "model": "CatalogProvisioningReceipt"
+    },
+    {
+      "table": "model_role_templates",
+      "service": "models",
+      "module": "fpl_models.models",
+      "model": "RoleTemplate"
     }
   ],
   "partitions": {

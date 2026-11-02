@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, Integer, String
+from sqlalchemy import JSON, CheckConstraint, DateTime, Integer, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from app.llm.models import (
@@ -53,9 +53,20 @@ class CatalogProvisioningReceipt(ModelsBase):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
 
 
+class RoleTemplate(ModelsBase):
+    __tablename__ = "model_role_templates"
+    __table_args__ = (CheckConstraint("role IN ('admin', 'user')"),)
+    role: Mapped[str] = mapped_column(String(16), primary_key=True)
+    payload: Mapped[dict] = mapped_column(JSON)
+    revision: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
+
+
 MODELS = (
     AccountDefaults,
     CatalogProvisioningReceipt,
+    RoleTemplate,
     LlmCallLog,
     LocalModelInstallation,
     LocalModelOperation,
