@@ -21,7 +21,6 @@ LABELS = {
     "models": "模型目录",
     "logs": "调用日志",
     "testing": "模型测试",
-    "test_tools": "测试工具",
     "inference": "独立模型调用",
     "files": "文件管理",
     "integrations": "集成中心",

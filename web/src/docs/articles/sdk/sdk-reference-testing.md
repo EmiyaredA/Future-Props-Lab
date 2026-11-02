@@ -1,4 +1,4 @@
-<!-- docs: {"group": "api-modules", "category": "api", "order": 24, "title": "模型测试方法参考", "lead": "client.testing 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
+<!-- docs: {"group": "api-modules", "category": "api", "order": 23, "title": "模型测试方法参考", "lead": "client.testing 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
 
 # 模型测试方法参考
 
@@ -190,6 +190,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | --- | --- | --- | --- |
 | `conversation_id` | path | string | 是 |
 | `attachment_id` | path | string | 是 |
+| `size` | query | 128 / 320 / 640 / 1280 / null | 否 |
 
 **响应**：
 - `200` · `application/json` · `object`
@@ -285,6 +286,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | 参数 | 位置 | 类型 | 必填 |
 | --- | --- | --- | --- |
 | `task_id` | path | string | 是 |
+| `size` | query | 128 / 320 / 640 / 1280 / null | 否 |
 
 **响应**：
 - `200` · `application/json` · `object`
@@ -406,7 +408,6 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `body.system_prompt` | 请求体 | string / null | 否 |
 | `body.temperature` | 请求体 | number / null | 否 |
 | `body.title` | 请求体 | string / null | 否 |
-| `body.tool_ids` | 请求体 | array / null | 否 |
 
 **响应**：
 - `200` · `application/json` · `ModelTestConversationOut`
