@@ -17,7 +17,6 @@ import {
   Network,
   Plug,
   Server,
-  Wrench,
 } from "lucide-react";
 import type { ApplicationDefinition } from "@features/applications";
 import { TOOLS } from "@features/tools";
@@ -242,7 +241,7 @@ export function HomePage({
               <div className="home-test-draft">
                 <span>{modeCopy[mode]}</span>
                 <div>
-                  <span className="home-test-hint">参数与工具在测试台配置</span>
+                  <span className="home-test-hint">参数在测试台配置</span>
                   <button
                     aria-label={`进入${modes.find((item) => item.value === mode)?.label}测试`}
                     onClick={() => onNavigate(`/model-test?mode=${mode}`)}
@@ -253,36 +252,21 @@ export function HomePage({
               </div>
             </div>
           </div>
-          <div className="home-ai-secondary">
+          {canReadLogs && (
             <button
               className="home-panel home-mini-link"
-              onClick={() => onNavigate("/model-test-tools")}
+              onClick={() => onNavigate("/model-call-logs")}
             >
               <span className="home-copper-icon">
-                <Wrench aria-hidden />
+                <History aria-hidden />
               </span>
               <span>
-                <strong>测试工具</strong>
-                <small>配置模型可调用的工具</small>
+                <strong>调用日志</strong>
+                <small>用量、耗时与错误记录</small>
               </span>
               <ArrowRight aria-hidden />
             </button>
-            {canReadLogs && (
-              <button
-                className="home-panel home-mini-link"
-                onClick={() => onNavigate("/model-call-logs")}
-              >
-                <span className="home-copper-icon">
-                  <History aria-hidden />
-                </span>
-                <span>
-                  <strong>调用日志</strong>
-                  <small>用量、耗时与错误记录</small>
-                </span>
-                <ArrowRight aria-hidden />
-              </button>
-            )}
-          </div>
+          )}
         </section>
       </div>
       <nav className="home-jump home-panel" aria-label="首页资源导航">

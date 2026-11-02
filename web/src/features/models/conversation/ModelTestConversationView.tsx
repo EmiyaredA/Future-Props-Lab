@@ -21,7 +21,6 @@ import type {
   ModelTestAttachment,
   ModelTestMessage,
 } from "@features/models/api";
-import { ModelTestToolCallList } from "@features/models/conversation/ModelTestToolControls";
 import { useImagePreviewUrl } from "@platform/api/useImagePreviewUrl";
 import { errorPresentation } from "@features/models/conversation/modelTestPresentation";
 
@@ -193,7 +192,6 @@ export function MessageCard({
             ))}
           </div>
         ) : null}
-        <ModelTestToolCallList calls={message.tool_calls ?? []} />
         {message.role === "assistant" ? (
           content ? (
             <div className="markdown-body">

@@ -91,7 +91,6 @@ async def list_realtime_models(session: AsyncSession) -> RealtimeVoiceOptionsOut
                 output_sample_rate=VOICE_OUTPUT_SAMPLE_RATE,
                 commit_silence_ms=VOICE_COMMIT_SILENCE_MS,
                 supports_interruption=True,
-                supports_tools=True,
                 instructions_max_chars=VOICE_INSTRUCTIONS_MAX_CHARS,
                 greeting_max_chars=VOICE_GREETING_MAX_CHARS,
                 input_format="pcm_s16le",

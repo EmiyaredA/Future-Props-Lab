@@ -3376,7 +3376,6 @@ class ModelTestConversationOut(WireModel):
     system_prompt: str = Field(default=..., alias='system_prompt')
     temperature: float = Field(default=..., alias='temperature')
     title: str = Field(default=..., alias='title')
-    tools: list[ModelTestToolSummaryOut] | None = Field(default=None, alias='tools')
     updated_at: str = Field(default=..., alias='updated_at')
 
 class ModelTestConversationPatchIn(WireModel):
@@ -3386,7 +3385,6 @@ class ModelTestConversationPatchIn(WireModel):
     system_prompt: str | None = Field(default=None, alias='system_prompt')
     temperature: float | None = Field(default=None, alias='temperature')
     title: str | None = Field(default=None, alias='title')
-    tool_ids: list[str] | None = Field(default=None, alias='tool_ids')
 
 class ModelTestConversationSummaryOut(WireModel):
     created_at: str = Field(default=..., alias='created_at')
@@ -3486,7 +3484,6 @@ class ModelTestMessageOut(WireModel):
     model_slug: str = Field(default=..., alias='model_slug')
     role: Literal['user', 'assistant'] = Field(default=..., alias='role')
     status: Literal['pending', 'completed', 'error', 'cancelled', 'superseded'] = Field(default=..., alias='status')
-    tool_calls: list[ModelTestToolCallOut] | None = Field(default=None, alias='tool_calls')
     turn_id: str = Field(default=..., alias='turn_id')
 
 class ModelTestRegenerateIn(WireModel):
@@ -3496,97 +3493,6 @@ class ModelTestSendIn(WireModel):
     attachment_ids: list[str] | None = Field(default=None, alias='attachment_ids', max_length=5)
     content: str = Field(default='', alias='content', max_length=100000)
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
-
-class ModelTestToolCallOut(WireModel):
-    arguments: dict[str, Any] = Field(default=..., alias='arguments')
-    configured_delay_ms: int = Field(default=..., alias='configured_delay_ms')
-    conversation_id: str | None = Field(default=..., alias='conversation_id')
-    created_at: str = Field(default=..., alias='created_at')
-    duration_ms: int = Field(default=..., alias='duration_ms')
-    error_code: str = Field(default=..., alias='error_code')
-    error_message: str = Field(default=..., alias='error_message')
-    id: str = Field(default=..., alias='id')
-    message_id: str | None = Field(default=..., alias='message_id')
-    result: Any | None = Field(default=..., alias='result')
-    round_index: int = Field(default=..., alias='round_index')
-    run_id: str = Field(default=..., alias='run_id')
-    source: Literal['dry_run', 'model_test', 'realtime_voice'] = Field(default=..., alias='source')
-    status: Literal['proposed', 'running', 'completed', 'failed', 'cancelled'] = Field(default=..., alias='status')
-    success: bool | None = Field(default=..., alias='success')
-    tool_id: str | None = Field(default=..., alias='tool_id')
-    tool_name: str = Field(default=..., alias='tool_name')
-    tool_revision: int = Field(default=..., alias='tool_revision')
-    updated_at: str = Field(default=..., alias='updated_at')
-
-class ModelTestToolCatalogOut(WireModel):
-    items: list[ModelTestToolSummaryOut] = Field(default=..., alias='items')
-    overview: ModelTestToolOverviewOut = Field(default=..., alias='overview')
-
-class ModelTestToolCreateIn(WireModel):
-    delay_ms: int = Field(default=0, alias='delay_ms', ge=0.0, le=10000.0)
-    description: str = Field(default='', alias='description', max_length=1000)
-    enabled: bool = Field(default=True, alias='enabled')
-    error_code: str = Field(default='mock_failure', alias='error_code', max_length=120)
-    error_message: str = Field(default='模拟工具执行失败', alias='error_message', max_length=1000)
-    input_schema: dict[str, Any] | None = Field(default=None, alias='input_schema')
-    mock_kind: Literal['success', 'failure'] = Field(default='success', alias='mock_kind')
-    mock_result: Any | None = Field(default=None, alias='mock_result')
-    name: str = Field(default=..., alias='name', min_length=1, max_length=64)
-
-class ModelTestToolExecuteIn(WireModel):
-    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
-    input: dict[str, Any] | None = Field(default=None, alias='input')
-
-class ModelTestToolOut(WireModel):
-    bound_conversation_count: int = Field(default=0, alias='bound_conversation_count')
-    created_at: str = Field(default=..., alias='created_at')
-    delay_ms: int = Field(default=..., alias='delay_ms')
-    description: str = Field(default=..., alias='description')
-    enabled: bool = Field(default=..., alias='enabled')
-    error_code: str = Field(default=..., alias='error_code')
-    error_message: str = Field(default=..., alias='error_message')
-    id: str = Field(default=..., alias='id')
-    input_schema: dict[str, Any] = Field(default=..., alias='input_schema')
-    last_used_at: str | None = Field(default=..., alias='last_used_at')
-    mock_kind: Literal['success', 'failure'] = Field(default=..., alias='mock_kind')
-    mock_result: Any = Field(default=..., alias='mock_result')
-    name: str = Field(default=..., alias='name')
-    parameter_count: int = Field(default=..., alias='parameter_count')
-    recent_calls: list[ModelTestToolCallOut] | None = Field(default=None, alias='recent_calls')
-    revision: int = Field(default=..., alias='revision')
-    updated_at: str = Field(default=..., alias='updated_at')
-
-class ModelTestToolOverviewOut(WireModel):
-    enabled: int = Field(default=..., alias='enabled')
-    failure: int = Field(default=..., alias='failure')
-    recent: list[ModelTestToolSummaryOut] | None = Field(default=None, alias='recent')
-    today_runs: int = Field(default=..., alias='today_runs')
-    total: int = Field(default=..., alias='total')
-
-class ModelTestToolPatchIn(WireModel):
-    delay_ms: int = Field(default=0, alias='delay_ms', ge=0.0, le=10000.0)
-    description: str = Field(default='', alias='description', max_length=1000)
-    enabled: bool = Field(default=True, alias='enabled')
-    error_code: str = Field(default='mock_failure', alias='error_code', max_length=120)
-    error_message: str = Field(default='模拟工具执行失败', alias='error_message', max_length=1000)
-    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
-    input_schema: dict[str, Any] | None = Field(default=None, alias='input_schema')
-    mock_kind: Literal['success', 'failure'] = Field(default='success', alias='mock_kind')
-    mock_result: Any | None = Field(default=None, alias='mock_result')
-    name: str = Field(default=..., alias='name', min_length=1, max_length=64)
-
-class ModelTestToolSummaryOut(WireModel):
-    created_at: str = Field(default=..., alias='created_at')
-    delay_ms: int = Field(default=..., alias='delay_ms')
-    description: str = Field(default=..., alias='description')
-    enabled: bool = Field(default=..., alias='enabled')
-    id: str = Field(default=..., alias='id')
-    last_used_at: str | None = Field(default=..., alias='last_used_at')
-    mock_kind: Literal['success', 'failure'] = Field(default=..., alias='mock_kind')
-    name: str = Field(default=..., alias='name')
-    parameter_count: int = Field(default=..., alias='parameter_count')
-    revision: int = Field(default=..., alias='revision')
-    updated_at: str = Field(default=..., alias='updated_at')
 
 class ModelTestTranscriptionAudioInfoOut(WireModel):
     duration_ms: int | None = Field(default=None, alias='duration_ms')
@@ -4471,7 +4377,6 @@ class RealtimeVoiceModelOut(WireModel):
     provider_name: str = Field(default=..., alias='provider_name')
     slug: str = Field(default=..., alias='slug')
     supports_interruption: bool = Field(default=..., alias='supports_interruption')
-    supports_tools: bool = Field(default=..., alias='supports_tools')
     voices: list[RealtimeVoiceOptionOut] = Field(default=..., alias='voices')
 
 class RealtimeVoiceOptionOut(WireModel):
@@ -6974,14 +6879,6 @@ ModelTestImageGenerationIn.model_rebuild()
 ModelTestMessageOut.model_rebuild()
 ModelTestRegenerateIn.model_rebuild()
 ModelTestSendIn.model_rebuild()
-ModelTestToolCallOut.model_rebuild()
-ModelTestToolCatalogOut.model_rebuild()
-ModelTestToolCreateIn.model_rebuild()
-ModelTestToolExecuteIn.model_rebuild()
-ModelTestToolOut.model_rebuild()
-ModelTestToolOverviewOut.model_rebuild()
-ModelTestToolPatchIn.model_rebuild()
-ModelTestToolSummaryOut.model_rebuild()
 ModelTestTranscriptionAudioInfoOut.model_rebuild()
 ModelTestTranscriptionCreateIn.model_rebuild()
 ModelTestTranscriptionIntervalOut.model_rebuild()

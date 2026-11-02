@@ -37,14 +37,12 @@ class SenseAudioRealtimeBridge:
         instructions: str,
         greeting: str = "",
         voice: str,
-        tools: list[dict[str, Any]] | None = None,
         connector: Callable[..., Any] = connect,
     ) -> None:
         self.model = model
         self.instructions = instructions
         self.greeting = greeting
         self.voice = voice if voice in SENSEAUDIO_VOICE_IDS else ""
-        self.tools = list(tools or [])
         self.connector = connector
         self.outbound: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
         self.session_id = ""
@@ -134,7 +132,6 @@ class SenseAudioRealtimeBridge:
                 "format": "pcm_s16le",
                 "channel": 1,
             },
-            "tools": self.tools,
         }
         if self.voice:
             command["voice"] = self.voice
@@ -198,21 +195,6 @@ class SenseAudioRealtimeBridge:
         self._command_queue.put_nowait({"type": "cancel"})
         self.outbound.put_nowait({"type": "interrupt", "turn_id": active})
         return active
-
-    def submit_tool_result(
-        self,
-        call_id: str,
-        result: object | None,
-        error: dict[str, Any] | None,
-    ) -> None:
-        if self._closed.is_set():
-            return
-        command: dict[str, Any] = {"type": "tool.result", "call_id": call_id}
-        if error is not None:
-            command["error"] = error
-        else:
-            command["result"] = result
-        self._command_queue.put_nowait(command)
 
     async def _send_loop(self) -> None:
         next_audio_at = time.monotonic() + SENSEAUDIO_PCM_FRAME_SECONDS
@@ -343,30 +325,6 @@ class SenseAudioRealtimeBridge:
                     "turn_id": self._current_turn_id,
                     "code": "voice_transcription_failed",
                     "message": "本轮语音转写失败，请再说一次。",
-                }
-            )
-            return
-        if event_type == "tool.call":
-            self._assistant_turn_id = self._assistant_turn_id or self._current_turn_id or new_id()
-            self.outbound.put_nowait(
-                {
-                    "type": "tool_call",
-                    "turn_id": self._assistant_turn_id,
-                    "batch_id": str(event.get("batch_id") or ""),
-                    "call_id": str(event.get("call_id") or ""),
-                    "name": str(event.get("name") or ""),
-                    "arguments": event.get("arguments"),
-                    "timeout_ms": event.get("timeout_ms"),
-                }
-            )
-            return
-        if event_type == "tool.cancelled":
-            self.outbound.put_nowait(
-                {
-                    "type": "tool_cancelled",
-                    "turn_id": self._assistant_turn_id or self._current_turn_id,
-                    "call_id": str(event.get("call_id") or ""),
-                    "reason": str(event.get("reason") or "cancelled"),
                 }
             )
             return

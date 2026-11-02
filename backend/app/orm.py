@@ -158,8 +158,6 @@ from app.llm.models import (
     ModelTestConversation,
     ModelTestGenerationAsset,
     ModelTestGenerationTask,
-    ModelTestTool,
-    ModelTestToolCall,
     ModelTestTranscriptionTask,
 )
 from app.llm.models.model_inference import ModelInferenceAsset, ModelInferenceTask
@@ -321,8 +319,6 @@ TENANT_MODELS = (
     ModelTestGenerationTask,
     ModelTestGenerationAsset,
     ModelTestTranscriptionTask,
-    ModelTestTool,
-    ModelTestToolCall,
     ToolApiIntegration,
     McpIntegration,
     SkillIntegration,

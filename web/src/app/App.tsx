@@ -113,11 +113,6 @@ const ModelTestPage = lazy(() =>
     default: module.ModelTestPage,
   })),
 );
-const ModelTestToolsPage = lazy(() =>
-  import("@features/models/tools").then((module) => ({
-    default: module.ModelTestToolsPage,
-  })),
-);
 const ModelCallLogsPage = lazy(() =>
   import("@features/models/logs").then((module) => ({
     default: module.ModelCallLogsPage,
@@ -494,8 +489,7 @@ export default function App() {
 
   if (
     (!accountAllows(me, "content.write") && hasReadOnlyRoute(page)) ||
-    (!accountAllows(me, "configuration.manage") &&
-      ["model-service", "model-test-tools"].includes(page)) ||
+    (!accountAllows(me, "configuration.manage") && page === "model-service") ||
     (!accountAllows(me, "logs.read") && page === "model-call-logs")
   ) {
     return (
@@ -520,8 +514,6 @@ export default function App() {
                 navigate("model-test");
               }}
             />
-          ) : page === "model-test-tools" ? (
-            <ReadOnlyConfiguration tools />
           ) : (
             <ReadOnlyRoutes route={route} navigate={navigate} />
           )}
@@ -865,12 +857,6 @@ export default function App() {
               navigate("audio-annotation-editor", projectId)
             }
           />
-        ) : page === "model-test-tools" ? (
-          <ModelTestToolsPage
-            toolId={route.projectId}
-            onOpenTool={(toolId) => navigate("model-test-tools", toolId)}
-            onBack={() => navigate("model-test-tools")}
-          />
         ) : page === "code-agents" ? (
           <CodeAgentsRoute
             user={me.user}
@@ -902,11 +888,5 @@ export default function App() {
 const ManagementConsole = lazy(() =>
   import("@features/accounts/ManagementConsole").then((m) => ({
     default: m.ManagementConsole,
-  })),
-);
-
-const ReadOnlyConfiguration = lazy(() =>
-  import("@features/models/ReadOnlyConfiguration").then((m) => ({
-    default: m.ReadOnlyConfiguration,
   })),
 );

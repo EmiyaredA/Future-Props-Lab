@@ -2450,48 +2450,6 @@
     "verification": "named-operation-contract"
   },
   {
-    "http": "DELETE /v1/model-test/tools/{tool_id}",
-    "sdk": "client.test_tools.delete_tool",
-    "document": "/docs.html?page=sdk-reference-test-tools#delete-tool",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "GET /v1/model-test/tools",
-    "sdk": "client.test_tools.list_tools",
-    "document": "/docs.html?page=sdk-reference-test-tools#list-tools",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "GET /v1/model-test/tools/{tool_id}",
-    "sdk": "client.test_tools.get_tool",
-    "document": "/docs.html?page=sdk-reference-test-tools#get-tool",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "PATCH /v1/model-test/tools/{tool_id}",
-    "sdk": "client.test_tools.update_tool",
-    "document": "/docs.html?page=sdk-reference-test-tools#update-tool",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "POST /v1/model-test/tools",
-    "sdk": "client.test_tools.create_tool",
-    "document": "/docs.html?page=sdk-reference-test-tools#create-tool",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "POST /v1/model-test/tools/{tool_id}/execute",
-    "sdk": "client.test_tools.execute_tool",
-    "document": "/docs.html?page=sdk-reference-test-tools#execute-tool",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
     "http": "DELETE /v1/model-test/conversations/{conversation_id}",
     "sdk": "client.testing.delete_conversation",
     "document": "/docs.html?page=sdk-reference-testing#delete-conversation",

@@ -56,7 +56,6 @@ test("management pages remain readable at compact sizes", async ({
     "/files",
     "/tools",
     "/model-service",
-    "/model-test-tools",
     "/apps/video-editor",
     "/apps/presentation-workshop",
     "/apps/motion-compositor",

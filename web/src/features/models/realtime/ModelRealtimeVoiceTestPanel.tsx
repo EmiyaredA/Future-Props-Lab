@@ -3,11 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Waves } from "lucide-react";
 import {
-  getModelTestTools,
   getRealtimeVoiceOptions,
   type RealtimeVoiceModel,
 } from "@features/models/api";
-import { ModelTestToolSelector } from "@features/models/conversation/ModelTestToolControls";
 import { RealtimeVoiceConversation } from "@features/models/realtime/RealtimeVoiceConversation";
 import { useRealtimeVoiceCall } from "@features/models/realtime/useRealtimeVoiceCall";
 import {
@@ -145,10 +143,6 @@ export function ModelRealtimeVoiceTestPanel({
     queryKey: modelQueryKeys.realtimeOptions,
     queryFn: getRealtimeVoiceOptions,
   });
-  const toolsQuery = useQuery({
-    queryKey: modelQueryKeys.tools,
-    queryFn: getModelTestTools,
-  });
   const realtimeModels = optionsQuery.data?.models ?? [];
   const selectedModel = realtimeModels.find((model) => model.id === modelId);
   const [voice, setVoice] = useState("");
@@ -160,13 +154,7 @@ export function ModelRealtimeVoiceTestPanel({
     useState<CallParameters>(DEFAULT_PARAMETERS);
   const [elapsed, setElapsed] = useState(0);
   const call = useRealtimeVoiceCall();
-  const [selectedToolIds, setSelectedToolIds] = useState<string[]>(
-    () => call.state.toolIds,
-  );
   const active = !["idle", "ended", "error"].includes(call.state.status);
-  const selectedTools = (toolsQuery.data?.items ?? []).filter((tool) =>
-    selectedToolIds.includes(tool.id),
-  );
 
   useEffect(() => {
     if (!selectedModel) return;
@@ -271,11 +259,6 @@ export function ModelRealtimeVoiceTestPanel({
   const canStart =
     Boolean(selectedModel && voice) &&
     !optionsQuery.isLoading &&
-    !toolsQuery.isLoading &&
-    (!selectedToolIds.length ||
-      (Boolean(selectedModel?.supports_tools) &&
-        selectedTools.length === selectedToolIds.length &&
-        selectedTools.every((tool) => tool.enabled))) &&
     !parameterError;
   const start = () => {
     if (!selectedModel || !voice) return;
@@ -284,7 +267,6 @@ export function ModelRealtimeVoiceTestPanel({
       voice,
       instructions,
       greeting,
-      toolIds: selectedToolIds,
       vad: {
         positiveSpeechThreshold: parameters.positiveSpeechThreshold,
         negativeSpeechThreshold: parameters.negativeSpeechThreshold,
@@ -380,13 +362,6 @@ export function ModelRealtimeVoiceTestPanel({
               {selectedModel?.instructions_max_chars ?? 20_000}
             </small>
           </label>
-          <ModelTestToolSelector
-            selected={selectedTools}
-            supported={Boolean(selectedModel?.supports_tools)}
-            disabled={active || toolsQuery.isLoading}
-            pickerDescription="保存后将在下一次通话开始时使用工具的最新定义；通话中不能更改。"
-            onSave={async (toolIds) => setSelectedToolIds(toolIds)}
-          />
           {selectedModel ? (
             <>
               <section className="realtime-parameter-section">
@@ -542,7 +517,7 @@ export function ModelRealtimeVoiceTestPanel({
           elapsed={elapsed}
           canStart={canStart}
           modelLabel={selectedModel?.label ?? "未选择实时语音模型"}
-          loading={optionsQuery.isLoading || toolsQuery.isLoading}
+          loading={optionsQuery.isLoading}
           onStart={start}
         />
       </div>

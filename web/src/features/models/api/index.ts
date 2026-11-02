@@ -59,17 +59,6 @@ export type ModelTestLibraryFolder =
 export type RealtimeVoiceOptions =
   components["schemas"]["RealtimeVoiceOptionsOut"];
 export type RealtimeVoiceModel = components["schemas"]["RealtimeVoiceModelOut"];
-export type ModelTestTool = components["schemas"]["ModelTestToolOut"];
-export type ModelTestToolSummary =
-  components["schemas"]["ModelTestToolSummaryOut"];
-export type ModelTestToolCatalog =
-  components["schemas"]["ModelTestToolCatalogOut"];
-export type ModelTestToolCall = components["schemas"]["ModelTestToolCallOut"];
-export type ModelTestToolInput = Omit<
-  components["schemas"]["ModelTestToolCreateIn"],
-  never
->;
-
 export async function getCatalog(): Promise<Catalog> {
   return unwrap(await api.GET("/v1/model-providers"));
 }
@@ -242,59 +231,6 @@ export async function getModelTestConversations() {
   return unwrap(await api.GET("/v1/model-test/conversations"));
 }
 
-export async function getModelTestTools(): Promise<ModelTestToolCatalog> {
-  return unwrap(await api.GET("/v1/model-test/tools"));
-}
-
-export async function getModelTestTool(id: string): Promise<ModelTestTool> {
-  return unwrap(
-    await api.GET("/v1/model-test/tools/{tool_id}", {
-      params: { path: { tool_id: id } },
-    }),
-  );
-}
-
-export async function createModelTestTool(body: ModelTestToolInput) {
-  return unwrap(await api.POST("/v1/model-test/tools", { body }));
-}
-
-export async function updateModelTestTool(
-  id: string,
-  revision: number,
-  body: ModelTestToolInput,
-) {
-  return unwrap(
-    await api.PATCH("/v1/model-test/tools/{tool_id}", {
-      params: { path: { tool_id: id } },
-      body: { ...body, expected_revision: revision },
-    }),
-  );
-}
-
-export async function deleteModelTestTool(id: string, revision: number) {
-  return unwrap(
-    await api.DELETE("/v1/model-test/tools/{tool_id}", {
-      params: {
-        path: { tool_id: id },
-        query: { expected_revision: revision },
-      },
-    }),
-  );
-}
-
-export async function executeModelTestTool(
-  id: string,
-  revision: number,
-  input: Record<string, unknown>,
-) {
-  return unwrap(
-    await api.POST("/v1/model-test/tools/{tool_id}/execute", {
-      params: { path: { tool_id: id } },
-      body: { expected_revision: revision, input },
-    }),
-  );
-}
-
 export async function createModelTestConversation(modelId?: string) {
   return unwrap(
     await api.POST("/v1/model-test/conversations", {
@@ -319,7 +255,7 @@ export async function patchModelTestConversation(
       ModelTestConversation,
       "title" | "model_id" | "system_prompt" | "temperature" | "max_tokens"
     >
-  > & { tool_ids?: string[] },
+  >,
 ) {
   return unwrap(
     await api.PATCH("/v1/model-test/conversations/{conversation_id}", {
@@ -581,7 +517,7 @@ export async function getModelTestLibraryFolders() {
 }
 
 export type ModelStreamEvent = {
-  type: "start" | "delta" | "step" | "done" | "error";
+  type: "start" | "delta" | "done" | "error";
   schema_version: 2;
   sequence: number;
   payload: Record<string, unknown>;

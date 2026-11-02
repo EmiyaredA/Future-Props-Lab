@@ -240,8 +240,7 @@
     .tools-page,
     .integrations-page,
     .model-infrastructure-page,
-    .call-logs-page,
-    .test-tools-page
+    .call-logs-page
   ) {
   --page-gutter: clamp(14px, 1.6vw, 20px);
   --ui-control-height: 30px;
@@ -255,8 +254,7 @@
       .tools-page,
       .integrations-page,
       .model-infrastructure-page,
-      .call-logs-page,
-      .test-tools-page
+      .call-logs-page
     ) {
     --ui-control-height: 44px;
   }
@@ -268,7 +266,6 @@
       .integrations-page,
       .model-infrastructure-page,
       .call-logs-page,
-      .test-tools-page,
       .file-management-page,
       .creative-page
     )

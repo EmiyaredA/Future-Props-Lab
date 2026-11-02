@@ -91,8 +91,7 @@ test("renders integrations after tools and before the base model group", () => {
   expect(screen.getByRole("link", { name: "文档中心" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /模型测试/ }));
   expect(navigate).toHaveBeenCalledWith("model-test");
-  fireEvent.click(screen.getByRole("button", { name: /测试工具/ }));
-  expect(navigate).toHaveBeenCalledWith("model-test-tools");
+  expect(screen.queryByRole("button", { name: /测试工具/ })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: /模型调用日志/ }));
   expect(navigate).toHaveBeenCalledWith("model-call-logs");
   fireEvent.click(screen.getByRole("button", { name: "收起二级导航" }));
@@ -188,14 +187,9 @@ test("uses home as the default and parses deep application routes", () => {
   );
   expect(pathFor("video-editor-tasks")).toBe("/apps/video-editor/tasks");
   expect(pathFor("model-service")).toBe("/model-service");
-  expect(parseRoute("/model-test-tools/tool-1")).toEqual({
-    page: "model-test-tools",
-    projectId: "tool-1",
-  });
-  expect(pathFor("model-test-tools")).toBe("/model-test-tools");
-  expect(pathFor("model-test-tools", "tool-1")).toBe(
-    "/model-test-tools/tool-1",
-  );
+  expect(parseRoute("/model-test-tools")).toEqual({ page: "home" });
+  expect(parseRoute("/model-test-tools/tool-1")).toEqual({ page: "home" });
+  expect(parseRoute("/model-test")).toEqual({ page: "model-test" });
 });
 
 test("keeps tool navigation active on the video frame exporter", () => {

@@ -35,7 +35,6 @@ export type RealtimeVoiceStartOptions = {
   voice: string;
   instructions: string;
   greeting: string;
-  toolIds: string[];
   vad: VoiceVadSettings;
   microphone: MicrophoneProcessingSettings;
   playback: PlaybackBufferSettings;
@@ -156,7 +155,7 @@ export function useRealtimeVoiceCall() {
       await releaseReplay();
       await release();
       endingRef.current = false;
-      dispatch({ type: "prepare", toolIds: options.toolIds });
+      dispatch({ type: "prepare" });
       try {
         const context = await createVoiceAudioContext();
         contextRef.current = context;
@@ -236,7 +235,6 @@ export function useRealtimeVoiceCall() {
               voice: options.voice,
               instructions: options.instructions,
               greeting: options.greeting,
-              tool_ids: options.toolIds,
               client_vad: {
                 positive_speech_threshold: options.vad.positiveSpeechThreshold,
                 negative_speech_threshold: options.vad.negativeSpeechThreshold,

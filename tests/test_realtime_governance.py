@@ -31,7 +31,6 @@ async def test_realtime_downgrade_closes_provider_before_another_call(monkeypatc
 
     bridge = SimpleNamespace(
         outbound=asyncio.Queue(),
-        submit_tool_result=AsyncMock(),
         start=AsyncMock(),
         close=AsyncMock(),
         commit_input=Mock(),
@@ -42,7 +41,6 @@ async def test_realtime_downgrade_closes_provider_before_another_call(monkeypatc
     monkeypatch.setattr(
         realtime, "resolve_realtime_model", AsyncMock(return_value=SimpleNamespace(slug="test"))
     )
-    monkeypatch.setattr(realtime, "load_selected_tool_snapshots", AsyncMock(return_value=[]))
     socket = SimpleNamespace(receive_json=receive_json, send_json=AsyncMock())
     await asyncio.wait_for(
         realtime.run_realtime_model_test(

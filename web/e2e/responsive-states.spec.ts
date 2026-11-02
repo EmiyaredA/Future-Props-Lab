@@ -9,7 +9,6 @@ const remotePages = [
   "/apps/audio-annotation",
   "/model-service",
   "/model-call-logs",
-  "/model-test-tools",
   "/apps/thought-workshop",
   "/apps/visual-workshop",
   "/apps/visual-workshop/tasks",

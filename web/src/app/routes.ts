@@ -26,7 +26,6 @@ export type StudioPage =
   | "codex-model-source"
   | "storage-usage"
   | "model-test"
-  | "model-test-tools"
   | "code-agents"
   | "model-service"
   | "model-call-logs";
@@ -217,12 +216,7 @@ function parsePathRoute(pathname: string): AppRoute {
   if (pathname.startsWith("/tools/storage-usage"))
     return { page: "storage-usage" };
   if (pathname.startsWith("/tools")) return { page: "tools" };
-  const modelTestTool = pathname.match(/^\/model-test-tools\/([^/]+)\/?$/);
-  if (modelTestTool)
-    return { page: "model-test-tools", projectId: modelTestTool[1] };
-  if (pathname.startsWith("/model-test-tools"))
-    return { page: "model-test-tools" };
-  if (pathname.startsWith("/model-test")) return { page: "model-test" };
+  if (/^\/model-test(?:\/|$)/.test(pathname)) return { page: "model-test" };
   if (pathname.startsWith("/model-call-logs"))
     return { page: "model-call-logs" };
   if (pathname === "/code-agents") return { page: "code-agents" };
@@ -281,9 +275,6 @@ export function pathFor(
     "codex-model-source": "/tools/codex-model-source",
     "storage-usage": "/tools/storage-usage",
     "model-test": "/model-test",
-    "model-test-tools": projectId
-      ? `/model-test-tools/${encodeURIComponent(projectId)}`
-      : "/model-test-tools",
     "code-agents": "/code-agents",
     "model-service": "/model-service",
     "model-call-logs": "/model-call-logs",

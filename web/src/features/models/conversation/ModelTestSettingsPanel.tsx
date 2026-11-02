@@ -1,32 +1,23 @@
+import type { ModelTestConversation } from "@features/models/api";
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
 import { useEffect, useState, type CSSProperties } from "react";
 import { Info, RotateCcw, SlidersHorizontal } from "lucide-react";
-import type {
-  ModelTestConversation,
-  ModelTestToolSummary,
-} from "@features/models/api";
-import { ModelTestToolSelector } from "@features/models/conversation/ModelTestToolControls";
-
 export type ModelTestConversationPatch = Partial<
   Pick<
     ModelTestConversation,
     "title" | "model_id" | "system_prompt" | "temperature" | "max_tokens"
   >
-> & { tool_ids?: string[] };
+>;
 
 export function ModelTestSettingsPanel({
   open,
   conversation,
-  tools,
-  toolsSupported,
   disabled,
   onPatch,
   onClose,
 }: {
   open: boolean;
   conversation: ModelTestConversation | undefined;
-  tools: ModelTestToolSummary[];
-  toolsSupported: boolean;
   disabled: boolean;
   onPatch: (changes: ModelTestConversationPatch) => Promise<void>;
   onClose: () => void;
@@ -71,12 +62,6 @@ export function ModelTestSettingsPanel({
               }}
             />
           </label>
-          <ModelTestToolSelector
-            selected={tools}
-            supported={toolsSupported}
-            disabled={disabled}
-            onSave={async (toolIds) => onPatch({ tool_ids: toolIds })}
-          />
           <label className="parameter-field temperature-field">
             <span className="parameter-label">
               Temperature

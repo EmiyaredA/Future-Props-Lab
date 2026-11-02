@@ -49,7 +49,6 @@ class RealtimeVoiceModelOut(BaseModel):
     output_sample_rate: int
     commit_silence_ms: int
     supports_interruption: bool
-    supports_tools: bool
     instructions_max_chars: int
     greeting_max_chars: int
     input_format: str

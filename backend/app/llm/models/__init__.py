@@ -13,11 +13,6 @@ from app.llm.models.model_test import (
     ModelTestMessage,
     ModelTestTranscriptionTask,
 )
-from app.llm.models.model_test_tools import (
-    ModelTestConversationToolBinding,
-    ModelTestTool,
-    ModelTestToolCall,
-)
 
 __all__ = [
     "LlmCallLog",
@@ -31,11 +26,8 @@ __all__ = [
     "ModelSupplier",
     "ModelTestAttachment",
     "ModelTestConversation",
-    "ModelTestConversationToolBinding",
     "ModelTestGenerationAsset",
     "ModelTestGenerationTask",
     "ModelTestMessage",
-    "ModelTestTool",
-    "ModelTestToolCall",
     "ModelTestTranscriptionTask",
 ]

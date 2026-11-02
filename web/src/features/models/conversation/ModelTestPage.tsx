@@ -22,7 +22,6 @@ import {
 } from "@features/models/api";
 import type { SelectOption } from "@shared/ui/CustomSelect";
 import { ModelTestCapabilityPanel } from "@features/models/conversation/ModelTestCapabilityPanel";
-import { ModelTestToolWarnings } from "@features/models/conversation/ModelTestToolControls";
 import {
   ModelTestWorkspaceHeader,
   type ModelTestMode,
@@ -242,16 +241,12 @@ export function ModelTestPage({
     enabled: Boolean(activeId),
   });
   const conversation = detailQuery.data;
-  const conversationTools = conversation?.tools ?? [];
   const draftAttachments = conversation?.draft_attachments ?? [];
   const selectedModel = textModels.find(
     (model) => model.value === conversation?.model_id,
   );
   const selectedModelSupportsVision = Boolean(
     selectedModel?.capabilities.includes("vision"),
-  );
-  const selectedModelSupportsTools = Boolean(
-    selectedModel?.capabilities.includes("tools"),
   );
 
   useEffect(() => {
@@ -290,7 +285,7 @@ export function ModelTestPage({
         ModelTestConversation,
         "title" | "model_id" | "system_prompt" | "temperature" | "max_tokens"
       >
-    > & { tool_ids?: string[] },
+    >,
   ) => {
     if (!conversation || streamingId) return;
     setError("");
@@ -439,8 +434,6 @@ export function ModelTestPage({
             setStreamedContent(
               (current) => current + String(event.payload.text || ""),
             );
-          } else if (event.type === "step") {
-            void detailQuery.refetch();
           } else if (event.type === "error") {
             const raw = String(event.payload.message || "模型调用失败");
             const friendly = errorPresentation(raw);
@@ -516,10 +509,6 @@ export function ModelTestPage({
     !uploadingAttachments &&
     Boolean(input.trim() || draftAttachments.length) &&
     (!draftAttachments.length || selectedModelSupportsVision);
-  const toolsCompatible =
-    !conversationTools.length ||
-    (selectedModelSupportsTools &&
-      conversationTools.every((tool) => tool.enabled));
   const conversationItems = conversationsQuery.data?.items ?? [];
   const generationModel = availableModels.find(
     (model) => model.value === generationModelId,
@@ -738,10 +727,6 @@ export function ModelTestPage({
                     当前对话包含图片，请选择支持 vision 的模型。
                   </p>
                 ) : null}
-                <ModelTestToolWarnings
-                  selected={conversationTools}
-                  supported={selectedModelSupportsTools}
-                />
                 <div className="composer">
                   {draftAttachments.length || uploadingAttachments ? (
                     <div
@@ -846,7 +831,7 @@ export function ModelTestPage({
                     <button
                       className="send-button"
                       aria-label="发送"
-                      disabled={!canSend || !toolsCompatible}
+                      disabled={!canSend}
                       onClick={() => void run(false)}
                     >
                       <Send aria-hidden />
@@ -863,8 +848,6 @@ export function ModelTestPage({
         <ModelTestSettingsPanel
           open={mobilePanel === "settings"}
           conversation={conversation}
-          tools={conversationTools}
-          toolsSupported={selectedModelSupportsTools}
           disabled={Boolean(streamingId)}
           onPatch={patch}
           onClose={() => setMobilePanel(null)}

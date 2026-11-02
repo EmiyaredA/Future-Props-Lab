@@ -48,7 +48,7 @@ from app.llm.local_models.installer import Installer
 from app.llm.local_models.management import LocalModels
 from app.llm.local_models.runtime import LocalRuntime
 from app.llm.playground.generation_runner import ModelTestGenerationRunner
-from app.llm.playground.tool_stream import recover_interrupted_model_test_runs
+from app.llm.playground.recovery import recover_interrupted_model_test_runs
 from app.llm.playground.transcription_runner import ModelTestTranscriptionRunner
 from app.problem_details import (
     account_exception_handler,

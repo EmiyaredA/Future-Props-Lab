@@ -13,21 +13,6 @@ export type RealtimeVoiceTurn = {
   turnId: string;
   userTranscript: string;
   assistantTranscript: string;
-  toolCalls: RealtimeVoiceToolCall[];
-};
-
-export type RealtimeVoiceToolCall = {
-  id: string;
-  callId: string;
-  toolId: string | null;
-  toolName: string;
-  arguments: Record<string, unknown>;
-  status: "proposed" | "running" | "completed" | "failed" | "cancelled";
-  success: boolean | null;
-  result: unknown;
-  errorCode: string;
-  errorMessage: string;
-  durationMs: number;
 };
 
 export type RealtimeVoiceState = {
@@ -37,7 +22,6 @@ export type RealtimeVoiceState = {
   userTranscript: string;
   assistantTranscript: string;
   turns: RealtimeVoiceTurn[];
-  toolIds: string[];
   firstAudioLatencyMs: number | null;
   startedAt: number | null;
   userTurnStartedAt: number | null;
@@ -52,7 +36,6 @@ export const initialRealtimeVoiceState: RealtimeVoiceState = {
   userTranscript: "",
   assistantTranscript: "",
   turns: [],
-  toolIds: [],
   firstAudioLatencyMs: null,
   startedAt: null,
   userTurnStartedAt: null,
@@ -62,7 +45,7 @@ export const initialRealtimeVoiceState: RealtimeVoiceState = {
 
 type ServerEvent = Record<string, unknown> & { type: string };
 export type RealtimeVoiceAction =
-  | { type: "prepare"; toolIds: string[] }
+  | { type: "prepare" }
   | { type: "connecting" }
   | { type: "server"; event: ServerEvent; now: number }
   | { type: "local_error"; message: string; retryable?: boolean }
@@ -82,7 +65,6 @@ function updateTurn(
         turnId,
         userTranscript: "",
         assistantTranscript: "",
-        toolCalls: [],
         ...patch,
       },
     ];
@@ -105,7 +87,6 @@ export function realtimeVoiceReducer(
     return {
       ...initialRealtimeVoiceState,
       status: "preparing",
-      toolIds: action.toolIds,
     };
   }
   if (action.type === "connecting") return { ...state, status: "connecting" };
@@ -127,7 +108,6 @@ export function realtimeVoiceReducer(
         ...initialRealtimeVoiceState,
         status: "connected",
         startedAt: action.now,
-        toolIds: state.toolIds,
       };
     case "user_speech_started": {
       const nextTurnId = turnId ?? `user-${Math.round(action.now)}`;
@@ -240,43 +220,6 @@ export function realtimeVoiceReducer(
           (state.userTurnStartedAt == null
             ? null
             : Math.max(0, Math.round(action.now - state.userTurnStartedAt))),
-      };
-    }
-    case "tool_call_update": {
-      const toolTurnId =
-        turnId ?? state.activeAssistantTurnId ?? state.activeUserTurnId;
-      const existingTurn = turnById(state.turns, toolTurnId);
-      const callId = String(event.call_id || "");
-      const nextCall: RealtimeVoiceToolCall = {
-        id: String(event.id || callId),
-        callId,
-        toolId: String(event.tool_id || "") || null,
-        toolName: String(event.tool_name || "未命名工具"),
-        arguments:
-          event.arguments &&
-          typeof event.arguments === "object" &&
-          !Array.isArray(event.arguments)
-            ? (event.arguments as Record<string, unknown>)
-            : {},
-        status: String(
-          event.status || "running",
-        ) as RealtimeVoiceToolCall["status"],
-        success: typeof event.success === "boolean" ? event.success : null,
-        result: event.result ?? null,
-        errorCode: String(event.error_code || ""),
-        errorMessage: String(event.error_message || ""),
-        durationMs: Number(event.duration_ms || 0),
-      };
-      const calls = [
-        ...(existingTurn?.toolCalls ?? []).filter(
-          (call) => call.callId !== callId,
-        ),
-        nextCall,
-      ];
-      return {
-        ...state,
-        status: nextCall.status === "running" ? "thinking" : state.status,
-        turns: updateTurn(state.turns, toolTurnId, { toolCalls: calls }),
       };
     }
     case "turn_done":

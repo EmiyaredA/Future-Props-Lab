@@ -159,10 +159,9 @@ Future-Props-Lab/
   `llm/providers/` 是供应商协议差异的唯一实现边界，并反向实现 Harness
   定义的适配器契约。模型测试、诊断、REST/SSE 与 Web 消费端
   只依赖统一结果或事件，不根据供应商原始载荷控制运行行为；供应商管理界面展示配置属于例外。
-- `llm/playground/` 拥有模型测试会话、测试工具、调用快照与流式结算。测试工具只执行账号内的
-  确定性 Mock，不接入网络或外部系统；选择工具的文本会话复用 `capabilities/agents/harness/`，未选择工具的会话
-  继续使用原单轮流式路径。Web 的工具管理页面和对话工具控件归属 `features/models/tools/` 与
-  `features/models/conversation/`，不把工具逻辑堆入应用壳或通用 UI。
+- `llm/playground/` 拥有模型测试会话、图片上下文、调用快照与单轮流式结算；
+  `recovery.py` 在启动时取消遗留的 pending 回复并更新所属会话 revision，避免会话一直占用。
+  Web 的文字对话和参数控件归属 `features/models/conversation/`。
 - `llm/providers/realtime/` 只拥有供应商无关实时桥接契约与 SenseAudio 协议适配，
   `llm/realtime/` 负责账号模型解析、短会话日志结算和浏览器 WebSocket 编排；
   `web/src/platform/voice/` 负责 16 kHz 采集、Silero VAD、回声参考打断和 24 kHz 缓冲播放。
@@ -353,7 +352,7 @@ Skill 不可变版本保存在 `accounts/<user-id>/integrations/skills/<skill-id
 和文档。`r0019_project_storage_layout` 只增加存储版本；旧文件由受鉴权的显式迁移 API 校验并搬迁，
 schema migration 不执行文件 I/O。
 
-目录配置、模型测试会话、测试工具与生成任务、视觉工坊项目、含节点级生成草稿和动态连线的节点画布、项目对话、文件夹、文件和项目引用
+目录配置、模型测试会话与生成任务、视觉工坊项目、含节点级生成草稿和动态连线的节点画布、项目对话、文件夹、文件和项目引用
 使用 revision/CAS 防止静默覆盖；Galgame 工坊工程元数据与整份故事文档分别使用 revision/CAS，
 故事冲突保留服务器完整快照，完成态工程在故事修改后恢复草稿。Story 1.4 的角色、素材、国际化、
 时间轴、流程与表现层交叉校验由 `apps/galgame_workshop/schemas/story_validation.py` 的纯函数拥有；
@@ -377,9 +376,10 @@ Agent 是通用 Harness 的首个消费者：读取画布、素材和生成任�
 写工具复用视觉工坊校验与短事务，批量节点/连线变更只执行一次画布 CAS，生成任务与占位节点原子创建，
 且不与 `model_test_*` 数据混用。
 
-模型测试对话、测试工具、工具调用快照、图片附件及生成结果是独立的账号调试数据，不进入视觉
-工坊文件管理，也不参与 Bot 或业务编排。测试工具均按无副作用 read 类型自动执行；启动恢复会把遗留
-的 pending 模型回复和工具调用标记为 cancelled。`llm/call_logs/` 根据日志中已有的脱敏请求快照
+模型测试对话、图片附件及生成结果是独立的账号调试数据，不进入视觉
+工坊文件管理，也不参与 Bot 或业务编排。启动恢复会把遗留的 pending 模型回复标记为 cancelled。
+`0119_retire_model_test_tools` 删除已下线的 Mock 工具定义、会话绑定和专用调用记录三张表，
+保留对话、消息与已有模型调用日志。`llm/call_logs/` 根据日志中已有的脱敏请求快照
 按需生成不含凭证的临时复现 ZIP，不新增持久化副本；只有具备完整纯文本输入的供应商协议可导出。
 实时语音通话不建立持久化会话，转写和音频只在浏览器与连接内存中存在，调用日志
 仅保存时长、字符数、延迟、usage 与状态。当前工程包含单机账号和逻辑多账号，但仍刻意不包含

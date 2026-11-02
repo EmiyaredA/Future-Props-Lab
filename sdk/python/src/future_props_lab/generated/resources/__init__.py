@@ -23,7 +23,6 @@ from .motion_compositor import MotionCompositor, AsyncMotionCompositor
 from .presentation import Presentation, AsyncPresentation
 from .system import System, AsyncSystem
 from .templates import Templates, AsyncTemplates
-from .test_tools import TestTools, AsyncTestTools
 from .testing import Testing, AsyncTesting
 from .thought import Thought, AsyncThought
 from .tools import Tools, AsyncTools
@@ -31,8 +30,8 @@ from .video import Video, AsyncVideo
 from .visual import Visual, AsyncVisual
 from .visual_assistant import VisualAssistant, AsyncVisualAssistant
 
-RESOURCES = {'accounts': Accounts, 'admin': Admin, 'amadeus': Amadeus, 'annotation': Annotation, 'automation': Automation, 'code_agents': CodeAgents, 'creative_workshop': CreativeWorkshop, 'demo': Demo, 'demo_calls': DemoCalls, 'director': Director, 'files': Files, 'galgame': Galgame, 'generation': Generation, 'governance': Governance, 'inference': Inference, 'integrations': Integrations, 'interview': Interview, 'logs': Logs, 'models': Models, 'motion_compositor': MotionCompositor, 'presentation': Presentation, 'system': System, 'templates': Templates, 'test_tools': TestTools, 'testing': Testing, 'thought': Thought, 'tools': Tools, 'video': Video, 'visual': Visual, 'visual_assistant': VisualAssistant}
-ASYNC_RESOURCES = {'accounts': AsyncAccounts, 'admin': AsyncAdmin, 'amadeus': AsyncAmadeus, 'annotation': AsyncAnnotation, 'automation': AsyncAutomation, 'code_agents': AsyncCodeAgents, 'creative_workshop': AsyncCreativeWorkshop, 'demo': AsyncDemo, 'demo_calls': AsyncDemoCalls, 'director': AsyncDirector, 'files': AsyncFiles, 'galgame': AsyncGalgame, 'generation': AsyncGeneration, 'governance': AsyncGovernance, 'inference': AsyncInference, 'integrations': AsyncIntegrations, 'interview': AsyncInterview, 'logs': AsyncLogs, 'models': AsyncModels, 'motion_compositor': AsyncMotionCompositor, 'presentation': AsyncPresentation, 'system': AsyncSystem, 'templates': AsyncTemplates, 'test_tools': AsyncTestTools, 'testing': AsyncTesting, 'thought': AsyncThought, 'tools': AsyncTools, 'video': AsyncVideo, 'visual': AsyncVisual, 'visual_assistant': AsyncVisualAssistant}
+RESOURCES = {'accounts': Accounts, 'admin': Admin, 'amadeus': Amadeus, 'annotation': Annotation, 'automation': Automation, 'code_agents': CodeAgents, 'creative_workshop': CreativeWorkshop, 'demo': Demo, 'demo_calls': DemoCalls, 'director': Director, 'files': Files, 'galgame': Galgame, 'generation': Generation, 'governance': Governance, 'inference': Inference, 'integrations': Integrations, 'interview': Interview, 'logs': Logs, 'models': Models, 'motion_compositor': MotionCompositor, 'presentation': Presentation, 'system': System, 'templates': Templates, 'testing': Testing, 'thought': Thought, 'tools': Tools, 'video': Video, 'visual': Visual, 'visual_assistant': VisualAssistant}
+ASYNC_RESOURCES = {'accounts': AsyncAccounts, 'admin': AsyncAdmin, 'amadeus': AsyncAmadeus, 'annotation': AsyncAnnotation, 'automation': AsyncAutomation, 'code_agents': AsyncCodeAgents, 'creative_workshop': AsyncCreativeWorkshop, 'demo': AsyncDemo, 'demo_calls': AsyncDemoCalls, 'director': AsyncDirector, 'files': AsyncFiles, 'galgame': AsyncGalgame, 'generation': AsyncGeneration, 'governance': AsyncGovernance, 'inference': AsyncInference, 'integrations': AsyncIntegrations, 'interview': AsyncInterview, 'logs': AsyncLogs, 'models': AsyncModels, 'motion_compositor': AsyncMotionCompositor, 'presentation': AsyncPresentation, 'system': AsyncSystem, 'templates': AsyncTemplates, 'testing': AsyncTesting, 'thought': AsyncThought, 'tools': AsyncTools, 'video': AsyncVideo, 'visual': AsyncVisual, 'visual_assistant': AsyncVisualAssistant}
 
 class SyncResources:
     accounts: Accounts
@@ -58,7 +57,6 @@ class SyncResources:
     presentation: Presentation
     system: System
     templates: Templates
-    test_tools: TestTools
     testing: Testing
     thought: Thought
     tools: Tools
@@ -90,7 +88,6 @@ class AsyncResources:
     presentation: AsyncPresentation
     system: AsyncSystem
     templates: AsyncTemplates
-    test_tools: AsyncTestTools
     testing: AsyncTesting
     thought: AsyncThought
     tools: AsyncTools

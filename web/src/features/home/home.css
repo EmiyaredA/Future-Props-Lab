@@ -330,11 +330,6 @@
 .home-test-hint {
   font-size: 10px;
 }
-.home-ai-secondary {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
 .home-mini-link {
   display: flex;
   align-items: center;
@@ -600,9 +595,6 @@
   }
   .home-capability-tags small:last-child {
     display: none;
-  }
-  .home-ai-secondary {
-    gap: 8px;
   }
   .home-mini-link {
     flex-wrap: wrap;

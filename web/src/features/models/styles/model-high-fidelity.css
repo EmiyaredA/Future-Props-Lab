@@ -9,7 +9,6 @@
   margin-bottom: 14px;
 }
 .model-service-page .page-header h1::before,
-.test-tools-heading h1::before,
 .call-logs-page .page-header h1::before {
   content: "";
   display: inline-block;
@@ -21,7 +20,6 @@
   vertical-align: middle;
 }
 .model-service-page .page-header p,
-.test-tools-heading p,
 .call-logs-page .page-header p {
   max-width: 680px;
   font-size: 12px;
@@ -396,103 +394,6 @@
   border-radius: 8px;
 }
 
-.test-tools-page {
-  padding: 12px 30px 36px;
-}
-.test-tools-heading {
-  margin-bottom: 12px;
-  padding-bottom: 0;
-}
-.test-tools-heading h1 {
-  margin: 0 0 4px;
-  font-size: 24px;
-}
-.test-tool-button,
-.test-tool-detail-actions button,
-.test-tool-run-link,
-.test-tool-back {
-  min-height: 36px;
-  padding: 0 12px;
-  border-radius: 8px;
-  font-size: 11px;
-}
-.test-tools-filters {
-  margin: 0 0 12px;
-  gap: 8px;
-}
-.test-tools-filters label {
-  min-height: 36px;
-  padding: 0 10px;
-  border-radius: 8px;
-}
-.test-tools-filters [role="group"] {
-  padding: 3px;
-  border-radius: 8px;
-}
-.test-tools-filters [role="group"] button {
-  min-height: 28px;
-  padding: 0 11px;
-  font-size: 10px;
-}
-.test-tools-layout {
-  grid-template-columns: minmax(0, 1fr) 268px;
-  gap: 12px;
-}
-.test-tools-list {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-.test-tool-list-card,
-.test-tools-overview,
-.test-tool-card {
-  border-radius: 10px;
-  box-shadow: 0 8px 20px rgb(33 30 24 / 4%);
-}
-.test-tool-list-card {
-  min-height: 116px;
-  padding: 12px;
-  gap: 10px;
-}
-.test-tool-mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
-}
-.test-tool-run-link {
-  min-height: 30px;
-  padding: 0 8px;
-  color: var(--accent);
-  font-size: 10px;
-}
-.test-tools-overview {
-  padding: 14px;
-}
-.test-tool-metrics {
-  gap: 6px;
-  padding: 4px 0 12px;
-}
-.test-tool-metrics div {
-  padding: 9px 5px;
-  border-radius: 8px;
-}
-.test-tool-metrics strong {
-  font-size: 18px;
-}
-.test-tool-metrics span,
-.test-tools-overview > button small {
-  font-size: 9px;
-}
-.test-tools-overview > button {
-  gap: 7px;
-  padding: 8px 0;
-  font-size: 10px;
-}
-.test-tool-empty,
-.test-tool-loading {
-  min-height: 180px;
-  border-radius: 10px;
-}
-
 .call-logs-page .page-header h1 {
   font-size: 22px;
 }
@@ -538,12 +439,6 @@
   .mc-filters {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
   }
-  .test-tools-layout {
-    grid-template-columns: minmax(0, 1fr) 230px;
-  }
-  .test-tools-list {
-    grid-template-columns: 1fr;
-  }
 }
 @media (max-width: 760px) {
   .model-service-page {
@@ -555,9 +450,7 @@
   .mc-provider-card {
     min-height: 56px;
   }
-  .mc-filters,
-  .test-tools-filters,
-  .test-tools-layout {
+  .mc-filters {
     grid-template-columns: 1fr;
   }
   .mc-count {
@@ -592,18 +485,6 @@
   .model-test-header-actions {
     grid-column: 2;
     grid-row: 1;
-  }
-  .test-tools-page {
-    padding: 12px 14px 28px;
-  }
-  .test-tools-heading {
-    flex-direction: column;
-  }
-  .test-tools-heading .test-tool-button {
-    width: 100%;
-  }
-  .test-tools-overview {
-    order: -1;
   }
   .call-logs-page .stat-grid {
     grid-template-columns: 1fr 1fr;
