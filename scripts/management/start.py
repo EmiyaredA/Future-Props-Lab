@@ -23,10 +23,8 @@ def main():
         raise SystemExit("独立服务尚未配置，请先完成隔离构建与部署配置；不会迁移或接管旧数据库")
     import asyncio
 
+    from fpl_host.deployment_preflight import check_selected_databases
     from fpl_host.management import configuration, run_worker
-    from fpl_identity.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
-    from fpl_management.migrations.registry import MIGRATIONS as MANAGEMENT_MIGRATIONS
-    from fpl_runtime.migrations import check
 
     configured, control, transport, state = configuration(options.config)
     env = control.env
@@ -36,19 +34,9 @@ def main():
         configured["fpl_website_public_enabled"] = False
     with service_lock(state):
         # Acquire the host singleton before any Compose action, including a second npm start.
-        selected_migrations = [
-            ("IDENTITY", IDENTITY_MIGRATIONS),
-            ("MANAGEMENT", MANAGEMENT_MIGRATIONS),
-        ]
-        if environment.get("FPL_MODELS_IMAGE"):
-            from fpl_models.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
-
-            selected_migrations.append(("MODELS", MODELS_MIGRATIONS))
-        for identity, registry in selected_migrations:
-            database = Path(environment["FPL_" + identity + "_STATE"])
-            if not database.is_absolute():
-                database = ROOT / database
-            check(database / "service.db", identity.lower(), registry)
+        check_selected_databases(
+            environment, control.services, ROOT, only_management=options.only_management
+        )
         subprocess.run([*command, "config", "--quiet"], env=env, check=True, cwd=ROOT)
         if options.check:
             asyncio.run(transport.close())

@@ -100,6 +100,8 @@
 
 `backend/fpl_agents/` 装配独立工作台，拥有自有迁移、原生任务、来源订阅、投影回执、协调器与私有协议；复用工作台的阅读、搜索、CAS 和投影用例，不加载账号 ORM 或 Mac 解析器。`fpl_runtime/http_dependencies.py` 只消费签名身份；`change_stream.py` 使用显式实时授权与数据库会话，旧 `events.py` 保留单体身份适配。
 
+`fpl_host/deployment_preflight.py` 在主机启动或 `--check` 时，只读检查本次选中服务各自数据库的服务归属、迁移前缀与 checksum；仅管理端模式不要求未启动的业务服务。未知已配置服务及缺少状态目录时拒绝部署，不创建数据库或应用迁移。启动动作与管理 worker 在所有预检成功后才执行。
+
 `backend/fpl_host/` 是独立 Mac 原生采集 CLI，仅发起受认证回环请求，读取明确来源的原生会话及引用附件。`collector.py` 管理有界任务，`follow.py` 跟随原生日志或事件，`follow_journal.py` 持久化单帧确认状态，`receipts.py` 保存一次性操作意图与结果；不确定动作不重做，跟随仅按原任务、租约和服务端检查点继续。容器镜像不包含此包。
 
 `fpl_deployment/images.py` 构建可审计源码闭包，`gateway.py` 从操作归属生成监听器路由。`deploy/images/` 下 Identity、Agents、Gateway、Portal、Assets、Rendering、Management、Models 和 Integrations 各自保存依赖锁和镜像定义。`deploy/compose.yaml` 装配基础服务，`management.compose.yaml` 与显式选择才启用的 `models.compose.yaml`、`integrations.compose.yaml` 提供对应叠加清单；Models 只挂自有状态、最小配置和身份连接，使用单独外联网络请求供应商。`scripts/website/service_build.py` 和 `service_docker_smoke.py` 分别提供 CLI 构建与账号容器隔离验收，`agents_docker_smoke.py` 验证真实工作台容器和 Mac 原生采集器；`tests/gateway_assertion_probe.py` 只属于测试传输探针，不是工作台服务。运行及切换状态见[独立服务迁移](../operations/independent-services.md)。
