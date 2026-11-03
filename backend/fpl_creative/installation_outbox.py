@@ -19,6 +19,7 @@ from fpl_runtime.creative_integrations import CreativeInstallBatch
 from fpl_runtime.integration_intents import digest
 
 from .installation_records import CreativeInstallOperation
+from .skill_integrity import published_skill_tree
 
 
 class InstallIntentConflict(ValueError):
@@ -75,8 +76,49 @@ async def _validate_new_batch(session, request, batch):
 
 
 class InstallationOutbox:
-    def __init__(self, database):
+    def __init__(self, database, *, skill_root=None):
         self.database = database
+        self.skill_root = skill_root
+
+    async def _verify_skills(self, owner, request, batch):
+        skills = [part for part in batch.parts if part.kind == "skill"]
+        if not skills:
+            return {}
+        if self.skill_root is None:
+            raise InstallIntentConflict("Skill 发布文件核验尚未配置")
+        # Read immutable publication metadata first, then release the DB session
+        # before hashing potentially large files.
+        async with self.database.sessions(info={"owner_user_id": owner}) as session:
+            await _validate_new_batch(session, request, batch)
+            sources = []
+            for part in skills:
+                release = await session.get(CreativeRelease, part.release_id)
+                item = await session.get(CreativeItem, release.item_id)
+                sources.append((part, item.origin_owner_user_id, release.skill_path))
+        for part, source_owner, relative in sources:
+            try:
+                tree = await published_skill_tree(
+                    self.skill_root, source_owner, part.release_id, relative
+                )
+            except (OSError, ValueError) as exc:
+                raise InstallIntentConflict("Skill 发布文件无法核验") from exc
+            if tree != part.skill.tree_sha256:
+                raise InstallIntentConflict("Skill 安装文件与公开版本不匹配")
+        return {
+            part.release_id: (source_owner, relative) for part, source_owner, relative in sources
+        }
+
+    @staticmethod
+    async def _check_skill_sources(session, sources):
+        for release_id, (owner, path) in sources.items():
+            release = await session.get(CreativeRelease, release_id, populate_existing=True)
+            item = (
+                await session.get(CreativeItem, release.item_id, populate_existing=True)
+                if release
+                else None
+            )
+            if item is None or (item.origin_owner_user_id, release.skill_path) != (owner, path):
+                raise InstallIntentConflict("Skill 发布文件来源已变化")
 
     async def accept(
         self, owner: str, request: CreativeInstallPreviewIn, batch: CreativeInstallBatch
@@ -86,6 +128,16 @@ class InstallationOutbox:
         request_hash = digest(request.model_dump(mode="json"))
         batch_value = batch.model_dump(mode="json")
         checksum = digest(batch_value)
+        # A previously accepted batch must remain recoverable after withdrawal;
+        # only a new batch needs source file verification before its transaction.
+        async with self.database.sessions(info={"owner_user_id": owner}) as session:
+            previous = await session.scalar(
+                select(CreativeInstallOperation.operation_id).where(
+                    CreativeInstallOperation.owner_user_id == owner,
+                    CreativeInstallOperation.root_release_id == batch.root_release_id,
+                )
+            )
+        sources = await self._verify_skills(owner, request, batch) if previous is None else {}
         # SQLite serializes competing initial acceptance before checking the unique slot.
         # No external I/O is performed while holding this transaction.
         async with self.database.sessions(info={"owner_user_id": owner}) as session:
@@ -106,6 +158,9 @@ class InstallationOutbox:
                     raise InstallIntentConflict("原安装批次尚未解决，不能更改请求")
                 return existing
             await _validate_new_batch(session, request, batch)
+            if {part.release_id for part in batch.parts if part.kind == "skill"} != set(sources):
+                raise InstallIntentConflict("Skill 发布文件尚未核验")
+            await self._check_skill_sources(session, sources)
             row = CreativeInstallOperation(
                 operation_id=batch.operation_id,
                 owner_user_id=owner,
@@ -130,6 +185,10 @@ class InstallationOutbox:
             raise InstallIntentConflict("安装请求与批次不匹配")
         async with self.database.sessions(info={"owner_user_id": owner}) as session:
             await _validate_new_batch(session, request, batch)
+        sources = await self._verify_skills(owner, request, batch)
+        async with self.database.sessions(info={"owner_user_id": owner}) as session:
+            await _validate_new_batch(session, request, batch)
+            await self._check_skill_sources(session, sources)
 
     async def get(self, owner: str, root_release_id: str) -> InstallIntent | None:
         if not owner:

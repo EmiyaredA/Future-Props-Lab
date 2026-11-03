@@ -63,6 +63,9 @@ def creative_source_target(method, path):
 
 class CreativeSkillBlob(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    tree_sha256: str | None = Field(
+        default=None, pattern=r"^[a-f0-9]{64}$", exclude_if=lambda value: value is None
+    )
     sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     byte_size: int = Field(gt=0)
     file_count: int = Field(gt=0)

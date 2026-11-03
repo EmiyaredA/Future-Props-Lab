@@ -469,3 +469,75 @@ async def test_withdrawal_prevents_first_target_install_after_acceptance(tmp_pat
         assert (await outbox.get("alice", "release")).state == "pending"
     finally:
         await database.close()
+
+
+async def test_skill_batch_is_bound_to_the_published_release_tree(tmp_path):
+    from app.console.creative_workshop.models import CreativeItem, CreativeRelease
+    from fpl_runtime.creative_integrations import CreativeSkillBlob
+    from fpl_runtime.skill_tree import skill_tree_sha256
+
+    apply(tmp_path / "service.db", "creative", MIGRATIONS)
+    database = creative_database(tmp_path)
+    directory = tmp_path / "accounts/author/creative-workshop/skill-releases/release"
+    directory.mkdir(parents=True)
+    (directory / "SKILL.md").write_text("published contents")
+    tree = skill_tree_sha256(directory, max_files=10, max_bytes=1024)
+    manifest = {"name": "sample", "file_count": 1, "expanded_bytes": 18}
+    part = CreativeInstallPart(
+        release_id="release",
+        kind="skill",
+        title="Skill",
+        target_name="Skill",
+        summary="",
+        manifest=manifest,
+        skill=CreativeSkillBlob(
+            sha256="a" * 64, tree_sha256=tree, byte_size=32, file_count=1, expanded_bytes=18
+        ),
+    )
+    value = CreativeInstallBatch(operation_id=str(uuid4()), root_release_id="release", parts=[part])
+    request = CreativeInstallPreviewIn(release_id="release")
+    try:
+        async with database.sessions(info={"owner_user_id": "author"}) as session:
+            session.add(
+                CreativeItem(
+                    id="item",
+                    origin_owner_user_id="author",
+                    author_user_id="author",
+                    kind="skill",
+                    status="published",
+                )
+            )
+            await session.flush()
+            session.add(
+                CreativeRelease(
+                    id="release",
+                    item_id="item",
+                    version=1,
+                    title="Skill",
+                    manifest=manifest,
+                    skill_path="creative-workshop/skill-releases/release",
+                )
+            )
+            await session.commit()
+        with pytest.raises(InstallIntentConflict, match="尚未配置"):
+            await InstallationOutbox(database).accept("alice", request, value)
+        legacy = value.model_copy(deep=True)
+        legacy.parts[0].skill.tree_sha256 = None
+        assert "tree_sha256" not in legacy.model_dump(mode="json")["parts"][0]["skill"]
+        with pytest.raises(InstallIntentConflict, match="不匹配"):
+            await InstallationOutbox(database, skill_root=tmp_path).accept("alice", request, legacy)
+        forged = value.model_copy(deep=True)
+        forged.parts[0].skill.tree_sha256 = "f" * 64
+        outbox = InstallationOutbox(database, skill_root=tmp_path)
+        with pytest.raises(InstallIntentConflict, match="不匹配"):
+            await outbox.accept("alice", request, forged)
+        accepted = await outbox.accept("alice", request, value)
+        assert accepted.batch == value
+        await outbox.require_current("alice", request, value)
+        (directory / "SKILL.md").write_text("modified contents!")
+        with pytest.raises(InstallIntentConflict, match="不匹配"):
+            await outbox.require_current("alice", request, value)
+        # Recovery retains the original intent even if the source is no longer available.
+        assert (await outbox.accept("alice", request, value)).batch == value
+    finally:
+        await database.close()

@@ -62,6 +62,13 @@ def zip_bytes():
 def skill_part(data):
     with zipfile.ZipFile(io.BytesIO(data)) as archive:
         expanded = sum(item.file_size for item in archive.infolist())
+        digest = hashlib.sha256(b"fpl-skill-tree-v1\0")
+        for item in sorted(archive.infolist(), key=lambda value: value.filename.encode("utf-8")):
+            name = item.filename.encode("utf-8")
+            digest.update(len(name).to_bytes(4, "big"))
+            digest.update(name)
+            digest.update(item.file_size.to_bytes(8, "big"))
+            digest.update(hashlib.sha256(archive.read(item)).digest())
     return CreativeInstallPart(
         release_id="skill-release",
         kind="skill",
@@ -71,6 +78,7 @@ def skill_part(data):
         tags=["demo"],
         manifest={"name": "sample"},
         skill=CreativeSkillBlob(
+            tree_sha256=digest.hexdigest(),
             sha256=hashlib.sha256(data).hexdigest(),
             byte_size=len(data),
             file_count=2,
@@ -328,6 +336,20 @@ async def test_bad_or_cancelled_archive_never_commits(installation):
 
 
 @pytest.mark.asyncio
+async def test_published_tree_digest_rejects_different_unpacked_content(installation):
+    data = zip_bytes()
+    part = skill_part(data)
+    wrong = part.model_copy(
+        update={"skill": part.skill.model_copy(update={"tree_sha256": "f" * 64})}
+    )
+    value = batch([wrong])
+    with pytest.raises(HTTPException) as error:
+        await installation.use.install(value, {"skill-release": Incoming(data)}, granted(value))
+    assert error.value.status_code == 422
+    assert await installation.use.receipt(value, granted(value)) is None
+
+
+@pytest.mark.asyncio
 async def test_revocation_after_staging_stops_before_install_and_cleans_temporary_bytes(
     installation,
 ):
@@ -563,3 +585,28 @@ async def test_private_stdio_validation_never_echoes_environment(installation):
         )
     assert response.status_code == 422
     assert "private-value" not in response.text
+
+
+async def test_legacy_skill_receipt_replays_without_enabling_a_new_legacy_install(installation):
+    data = zip_bytes()
+    modern = batch([skill_part(data)])
+    result = await installation.use.install(
+        modern, {"skill-release": Incoming(data)}, granted(modern)
+    )
+    legacy = modern.model_copy(deep=True)
+    legacy.parts[0].skill.tree_sha256 = None
+    assert "tree_sha256" not in legacy.model_dump(mode="json")["parts"][0]["skill"]
+    async with installation.db.sessions(info={"owner_user_id": "alpha"}) as session:
+        row = await session.scalar(
+            select(CreativeInstallReceipt).where(
+                CreativeInstallReceipt.operation_id == legacy.operation_id
+            )
+        )
+        row.fingerprint = digest(legacy.model_dump(mode="json"))
+        await session.commit()
+    assert await installation.use.install(legacy, {}, granted(legacy)) == result
+    fresh = batch([legacy.parts[0]], "fresh-legacy")
+    with pytest.raises(HTTPException):
+        await installation.use.install(
+            fresh, {"skill-release": Incoming(data)}, granted(fresh, owner="beta")
+        )

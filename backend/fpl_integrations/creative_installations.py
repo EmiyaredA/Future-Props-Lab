@@ -31,6 +31,7 @@ from fpl_runtime.creative_integrations import (
     CreativeStdioConfiguration,
 )
 from fpl_runtime.integration_intents import digest
+from fpl_runtime.skill_tree import skill_tree_sha256
 
 from .creative_records import CreativeInstalledPart, CreativeInstallReceipt
 
@@ -374,6 +375,12 @@ class CreativeInstallations:
                     or value.sha256 != descriptor.sha256
                     or value.file_count != descriptor.file_count
                     or value.expanded_bytes != descriptor.expanded_bytes
+                    or skill_tree_sha256(
+                        value.directory,
+                        max_files=self.settings.fpl_skill_max_files,
+                        max_bytes=self.settings.fpl_skill_expanded_max_bytes,
+                    )
+                    != descriptor.tree_sha256
                 ):
                     raise HTTPException(422, "creative_skill_archive_mismatch")
             decision = await authorize()
