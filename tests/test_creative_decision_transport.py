@@ -2,10 +2,12 @@
 
 import base64
 import json
+from dataclasses import replace
 from uuid import uuid4
 
 import httpx
 import jwt
+import pytest
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi import FastAPI
@@ -17,10 +19,14 @@ from app.runtime.config import Settings
 from fpl_creative.decision_http import InstallDecisionEndpoint
 from fpl_creative.decision_http import router as decision_router
 from fpl_creative.fence_records import CreativeInstallFence
-from fpl_creative.install_authorization import IdentityInstallAuthorization
+from fpl_creative.install_authorization import IdentityInstallAuthorization, InstallSource
+from fpl_creative.install_batch import build_install_batch
 from fpl_creative.install_grants import InstallGrantAuthority
+from fpl_creative.install_target import HttpCreativeInstallTarget
+from fpl_creative.installation_coordinator import InstallationCoordinator
 from fpl_creative.installation_outbox import InstallationOutbox
 from fpl_creative.migrations.registry import MIGRATIONS as CREATIVE_MIGRATIONS
+from fpl_creative.skill_archive import CreativeSkillArchives, SkillArchivePacker
 from fpl_creative.storage import creative_database
 from fpl_integrations.creative_authority import CreativeHttpAuthority
 from fpl_integrations.creative_http import router as target_router
@@ -112,7 +118,7 @@ async def test_private_http_decision_binds_live_user_batch_peer_and_fence(tmp_pa
                 )
             )
             await session.commit()
-        outbox = InstallationOutbox(creative_db)
+        outbox = InstallationOutbox(creative_db, skill_root=creative_root)
         await outbox.accept("alice", CreativeInstallPreviewIn.model_validate_json(raw), value)
         source_app = FastAPI()
         source_app.include_router(decision_router)
@@ -128,6 +134,7 @@ async def test_private_http_decision_binds_live_user_batch_peer_and_fence(tmp_pa
         target.state.creative_authorization = CreativeHttpAuthority(
             creative_peer_credential=creative_peer,
             integrations_credential=integration_peer,
+            result_credential="r" * 48,
             transport=httpx.ASGITransport(app=source_app),
         )
         async with httpx.AsyncClient(
@@ -136,7 +143,7 @@ async def test_private_http_decision_binds_live_user_batch_peer_and_fence(tmp_pa
             path = "/_internal/v1/creative-integrations/"
             payload = {"batch": value.model_dump(mode="json"), "source": source}
             assert (await client.post(path + "receipt", json=payload)).status_code == 403
-            headers = {"Authorization": "Bearer " + creative_peer}
+            headers = {"Authorization": "Bearer " + creative_peer, "X-Fpl-Creative-Nonce": "a" * 32}
             bad = {
                 **payload,
                 "source": {
@@ -176,6 +183,7 @@ async def test_private_http_decision_binds_live_user_batch_peer_and_fence(tmp_pa
             target.state.creative_authorization = CreativeHttpAuthority(
                 creative_peer_credential=creative_peer,
                 integrations_credential=integration_peer,
+                result_credential="r" * 48,
                 transport=LostDecision(),
             )
             unknown = await client.post(
@@ -189,28 +197,186 @@ async def test_private_http_decision_binds_live_user_batch_peer_and_fence(tmp_pa
             target.state.creative_authorization = CreativeHttpAuthority(
                 creative_peer_credential=creative_peer,
                 integrations_credential=integration_peer,
+                result_credential="r" * 48,
                 transport=httpx.ASGITransport(app=source_app),
             )
-            installed = await client.post(
-                path + "install",
-                headers=headers,
-                data={"batch": value.model_dump_json(), "source": json.dumps(source)},
+            source_value = InstallSource(token, evidence, raw)
+            target_client = HttpCreativeInstallTarget(
+                creative_peer_credential=creative_peer,
+                result_credential="r" * 48,
+                transport=httpx.ASGITransport(app=target),
             )
-            assert installed.status_code == 200, installed.text
-            receipt = await client.post(path + "receipt", headers=headers, json=payload)
-            assert receipt.status_code == 200 and receipt.json() == installed.json()
-            cancelled = await client.post(path + "cancel", headers=headers, json=payload)
-            assert cancelled.status_code == 200 and cancelled.json() == {
-                "state": "committed",
-                "receipt": installed.json(),
-            }
+            coordinator = InstallationCoordinator(
+                outbox,
+                IdentityInstallAuthorization(public_key=key.public_key(), identity=live),
+                target_client,
+            )
+            installed = await coordinator.install(
+                source_value, CreativeInstallPreviewIn.model_validate_json(raw), value
+            )
+            signed_receipt = await target_client.receipt(source_value, value)
+            receipt = await target_client.verify_receipt(source_value, value, signed_receipt)
+            assert receipt["resources"] == installed.resources
+            with pytest.raises(ValueError):
+                await target_client.verify_receipt(
+                    source_value, value, replace(signed_receipt, body=b"{}")
+                )
+            with pytest.raises(ValueError):
+                await target_client.verify_receipt(
+                    source_value, value, replace(signed_receipt, nonce="b" * 32)
+                )
+            signed_cancel = await target_client.cancel(source_value, value)
+            cancelled = await target_client.verify_cancellation(source_value, value, signed_cancel)
+            assert cancelled["state"] == "committed"
+            assert (
+                await target_client.verify_receipt(source_value, value, cancelled["receipt"])
+                == receipt
+            )
             live.active = False
             assert (
                 await client.post(path + "receipt", headers=headers, json=payload)
             ).status_code == 403
             live.active = True
-            # A verified receipt is the only input that may settle this source operation.
-            await outbox.complete("alice", "release", receipt.json())
+            assert (await outbox.get("alice", "release")).state == "completed"
+            async with creative_db.sessions(info={"owner_user_id": "author"}) as session:
+                assert list(await session.scalars(select(CreativeInstallFence))) == []
+            async with creative_db.sessions(info={"owner_user_id": "author"}) as session:
+                session.add(
+                    CreativeItem(
+                        id="item-two",
+                        origin_owner_user_id="author",
+                        author_user_id="author",
+                        kind="tool_api",
+                        status="published",
+                    )
+                )
+                await session.flush()
+                session.add(
+                    CreativeRelease(
+                        id="release-two",
+                        item_id="item-two",
+                        version=1,
+                        title="Other",
+                        manifest=part.manifest,
+                    )
+                )
+                await session.commit()
+            raw_two = b'{"release_id":"release-two","names":{}}'
+            token_two = issue_context(
+                actor,
+                service="creative",
+                method="POST",
+                path=INSTALL_PATH,
+                private_key=key,
+                key_id="test",
+            )
+            claims_two = jwt.decode(
+                token_two,
+                key.public_key(),
+                algorithms=["EdDSA"],
+                issuer="fpl-identity",
+                audience="creative",
+            )
+            evidence_two = issue_install_evidence(
+                actor=actor,
+                request_id=claims_two["jti"],
+                raw=raw_two,
+                source_expiry=claims_two["exp"],
+                private_key=key,
+                key_id="test",
+            )
+            source_two = InstallSource(token_two, evidence_two, raw_two)
+            part_two = part.model_copy(
+                update={"release_id": "release-two", "title": "Other", "target_name": "Other"}
+            )
+            batch_two = CreativeInstallBatch(
+                operation_id=str(uuid4()), root_release_id="release-two", parts=[part_two]
+            )
+            request_two = CreativeInstallPreviewIn.model_validate_json(raw_two)
+            await outbox.accept("alice", request_two, batch_two)
+            await outbox.fence_for_install("alice", request_two, batch_two)
+            assert await coordinator.cancel(source_two, request_two) == {"state": "cancelled"}
+            assert (await outbox.get("alice", "release-two")).state == "cancelled"
+            async with creative_db.sessions(info={"owner_user_id": "author"}) as session:
+                assert list(await session.scalars(select(CreativeInstallFence))) == []
+            skill_dir = (
+                creative_root / "accounts/author/creative-workshop/skill-releases/skill-release"
+            )
+            skill_dir.mkdir(parents=True)
+            skill_content = b"---\nname: sample\ndescription: Public skill\n---\n# Skill\n"
+            (skill_dir / "SKILL.md").write_bytes(skill_content)
+            async with creative_db.sessions(info={"owner_user_id": "author"}) as session:
+                session.add(
+                    CreativeItem(
+                        id="skill-item",
+                        origin_owner_user_id="author",
+                        author_user_id="author",
+                        kind="skill",
+                        status="published",
+                    )
+                )
+                await session.flush()
+                session.add(
+                    CreativeRelease(
+                        id="skill-release",
+                        item_id="skill-item",
+                        version=1,
+                        title="Skill",
+                        manifest={
+                            "name": "sample",
+                            "description": "Public skill",
+                            "content_sha256": "a" * 64,
+                            "file_count": 1,
+                            "expanded_bytes": len(skill_content),
+                        },
+                        skill_path="creative-workshop/skill-releases/skill-release",
+                    )
+                )
+                await session.commit()
+            raw_skill = b'{"release_id":"skill-release","names":{}}'
+            token_skill = issue_context(
+                actor,
+                service="creative",
+                method="POST",
+                path=INSTALL_PATH,
+                private_key=key,
+                key_id="test",
+            )
+            claims_skill = jwt.decode(
+                token_skill,
+                key.public_key(),
+                algorithms=["EdDSA"],
+                issuer="fpl-identity",
+                audience="creative",
+            )
+            evidence_skill = issue_install_evidence(
+                actor=actor,
+                request_id=claims_skill["jti"],
+                raw=raw_skill,
+                source_expiry=claims_skill["exp"],
+                private_key=key,
+                key_id="test",
+            )
+            source_skill = InstallSource(token_skill, evidence_skill, raw_skill)
+            request_skill = CreativeInstallPreviewIn.model_validate_json(raw_skill)
+            packer = SkillArchivePacker(
+                root=creative_root,
+                max_files=settings.fpl_skill_max_files,
+                max_expanded_bytes=settings.fpl_skill_expanded_max_bytes,
+                max_archive_bytes=settings.fpl_skill_archive_max_bytes,
+            )
+            batch_skill = await build_install_batch(creative_db, packer, request_skill)
+            target_client.archives = CreativeSkillArchives(creative_db, packer)
+            installed_skill = await coordinator.install(source_skill, request_skill, batch_skill)
+            resource = installed_skill.resources[0]["resource_id"]
+            installed_path = (
+                settings.runtime_path
+                / "accounts/alice/integrations/skills"
+                / resource
+                / "v1/SKILL.md"
+            )
+            assert installed_path.read_bytes() == skill_content
+            assert (await outbox.get("alice", "skill-release")).state == "completed"
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=source_app), base_url="http://creative"
         ) as client:

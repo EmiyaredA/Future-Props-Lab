@@ -3,8 +3,10 @@
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import ValidationError
 from starlette.datastructures import UploadFile
+from starlette.responses import JSONResponse
 
 from fpl_runtime.creative_integrations import CreativeInstallBatch, CreativeStdioConfiguration
+from fpl_runtime.creative_results import CreativeResultAuthenticator
 from fpl_runtime.creative_source_evidence import strict_json
 from fpl_runtime.creative_transport import CreativeInstallSourceContext
 from fpl_runtime.integration_intents import digest
@@ -35,6 +37,22 @@ def authority(request, purpose, value, source=None):
     return check
 
 
+def result_response(request, action, batch, result, *, status=200):
+    response = JSONResponse(result, status_code=status, headers={"Cache-Control": "no-store"})
+    verifier = getattr(request.app.state, "creative_authorization", None)
+    signer = getattr(verifier, "result_authenticator", None)
+    if isinstance(signer, CreativeResultAuthenticator):
+        response.headers["X-Fpl-Creative-Result"] = signer.sign(
+            action=action,
+            operation=batch.operation_id,
+            fingerprint=digest(batch.model_dump(mode="json")),
+            nonce=request.headers.get("x-fpl-creative-nonce", ""),
+            status=status,
+            body=response.body,
+        )
+    return response
+
+
 async def payload(request, model):
     try:
         raw = strict_json(await request.body())
@@ -63,16 +81,19 @@ async def receipt(request: Request):
         value, authority(request, "receipt", value, source)
     )
     if result is None:
-        raise HTTPException(404, "creative_install_not_found")
-    return result
+        return result_response(
+            request, "receipt", value, {"detail": "creative_install_not_found"}, status=404
+        )
+    return result_response(request, "receipt", value, result)
 
 
 @router.post("/cancel")
 async def cancel(request: Request):
     value, source = await payload(request, CreativeInstallBatch)
-    return await request.app.state.creative_installations.cancel(
+    result = await request.app.state.creative_installations.cancel(
         value, authority(request, "cancel", value, source)
     )
+    return result_response(request, "cancel", value, result)
 
 
 @router.post("/install")
@@ -104,9 +125,10 @@ async def install(request: Request):
             if not isinstance(item, UploadFile) or key in archives:
                 raise HTTPException(422, "creative_install_archive_mismatch")
             archives[key] = item
-        return await request.app.state.creative_installations.install(
+        result = await request.app.state.creative_installations.install(
             value, archives, authority(request, "install", value, source)
         )
+        return result_response(request, "install", value, result)
 
 
 @router.post("/stdio")

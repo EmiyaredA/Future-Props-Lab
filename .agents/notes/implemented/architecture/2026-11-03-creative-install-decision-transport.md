@@ -20,7 +20,7 @@ The endpoint and target authority require explicit assembly. Neither has a produ
 
 ## Consequences
 
-This decision transport is not a complete installation flow. Creative still needs an authenticated target-result transport and Skill archive sender, production credential lifecycle, supervised gateway ingress and full service assembly. Private contexts and credentials must not be logged. Only a verified target receipt or cancellation may release a publication fence. The two peers' credentials must remain distinct from one another and all other service or ingress credentials when assembled.
+This decision transport is not a complete installation flow. Authenticated target-result transport and an isolated Skill archive sender are described in follow-up decisions; their production credential lifecycle, archive size and compatibility limits, supervised gateway ingress and full service assembly remain open. Private contexts and credentials must not be logged. Only a verified target receipt or cancellation may release a publication fence. The two peers' credentials must remain distinct from one another and all other service or ingress credentials when assembled.
 
 ## Verification
 
