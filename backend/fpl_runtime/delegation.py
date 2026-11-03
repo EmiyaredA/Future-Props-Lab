@@ -48,11 +48,42 @@ ASSET_PROJECT_READS = frozenset(
 )
 
 
+MODEL_LIBRARY_INPUT_READS = frozenset(
+    {
+        "/v1/model-inference/assets/import",
+        "/v1/model-test/transcription-tasks",
+    }
+)
+
+
+def model_library_input(grant):
+    if (
+        grant.caller == "models"
+        and grant.purpose == "models.library-input.read"
+        and grant.source_method == "POST"
+        and grant.source_path in MODEL_LIBRARY_INPUT_READS
+        and grant.target_service == "assets"
+        and grant.target_method == "GET"
+    ):
+        match = re.fullmatch(
+            r"/_internal/v1/model-library-inputs/([A-Za-z0-9_-]{1,128})", grant.target_path
+        )
+        return match[1] if match else None
+    return None
+
+
+def target_permission_path(grant):
+    asset_id = model_library_input(grant)
+    return "/v1/files/" + asset_id + "/content" if asset_id else grant.target_path
+
+
 def permitted(grant, catalog):
     original = catalog.match(grant.source_method, grant.source_path)
-    destination = catalog.match(grant.target_method, grant.target_path)
     if original is None or original.service != grant.caller:
         return False
+    if model_library_input(grant):
+        return True
+    destination = catalog.match(grant.target_method, grant.target_path)
     if destination is None or destination.service != grant.target_service:
         return False
     if _automation_lookup(grant):

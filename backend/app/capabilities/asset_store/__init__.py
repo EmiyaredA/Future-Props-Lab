@@ -9,7 +9,7 @@ _EXPORTS = MappingProxyType(
         "asset_out": ("app.capabilities.asset_store.assets", "asset_out"),
         "folder_out": ("app.capabilities.asset_store.assets", "folder_out"),
         "IncomingFile": ("app.capabilities.asset_store.incoming", "IncomingFile"),
-        "AssetError": ("app.capabilities.asset_store.library", "AssetError"),
+        "AssetError": ("app.capabilities.asset_store.errors", "AssetError"),
         "AssetLibrary": ("app.capabilities.asset_store.library", "AssetLibrary"),
         "download_filename": ("app.capabilities.asset_store.policy", "download_filename"),
         "ProjectFolderError": (

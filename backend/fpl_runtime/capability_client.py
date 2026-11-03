@@ -108,6 +108,32 @@ class CapabilityClient:
         except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
             raise CapabilityUnavailable("来源文件读取未确认") from exc
 
+    @asynccontextmanager
+    async def model_library_source(self, *, assertion, source_method, source_path, asset_id):
+        grant = RequestGrant(
+            self.service,
+            "models.library-input.read",
+            source_method,
+            source_path,
+            "assets",
+            "GET",
+            "/_internal/v1/model-library-inputs/" + asset_id,
+        )
+        token = await self._authorize(assertion, grant)
+        try:
+            async with self.client.stream(
+                "GET",
+                "http://assets:8080" + grant.target_path,
+                headers={"X-Fpl-Context": token, "Accept-Encoding": "identity"},
+            ) as response:
+                if response.status_code in {401, 403, 404, 422}:
+                    raise CapabilityDenied(response.status_code)
+                if response.status_code != 200:
+                    raise CapabilityUnavailable("文件库输入暂不可读")
+                yield response
+        except httpx.HTTPError as exc:
+            raise CapabilityUnavailable("文件库输入传输未确认") from exc
+
     async def _authorize(self, assertion, grant):
         if not permitted(grant, self.catalog):
             raise CapabilityDenied(403)

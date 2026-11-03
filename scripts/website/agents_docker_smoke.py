@@ -419,6 +419,7 @@ def exercise(
                 checks.append(status_fixture.check(client, compose, started, wait, history))
             if assets_image:
                 from assets_docker_checks import exercise_assets
+                from model_input_docker_checks import verify_model_library_inputs
 
                 checks.append(
                     exercise_assets(
@@ -431,6 +432,16 @@ def exercise(
                         wait=wait,
                         browser_check=browser_check,
                         password=password,
+                    )
+                )
+                checks.append(
+                    verify_model_library_inputs(
+                        client,
+                        unsafe,
+                        compose,
+                        gateway_token=gateway_token,
+                        model_token=models_token,
+                        agent_token=service_token,
                     )
                 )
             if rendering_image:

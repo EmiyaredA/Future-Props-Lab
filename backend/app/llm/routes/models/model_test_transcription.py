@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse
 
 from app.deps import OwnerDep, SessionDep
 from app.llm.http_credentials import CallCredentialDep
+from app.llm.library_inputs import library_inputs
 from app.llm.playground.transcription import (
     ModelTestTranscription,
     ModelTestTranscriptionError,
@@ -88,7 +89,9 @@ async def create_transcription_task(
     credential: CallCredentialDep,
 ) -> ModelTestTranscriptionTaskOut:
     try:
-        result = await _transcription(session, owner_user_id).create_from_library(
+        result = await ModelTestTranscription(
+            session, owner_user_id, library=library_inputs(request, session, owner_user_id)
+        ).create_from_library(
             body,
             admission=task_admission(request, session, "transcription"),
             credential=credential,

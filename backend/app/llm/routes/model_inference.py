@@ -12,6 +12,7 @@ from app.llm.inference.assets import InferenceAssets
 from app.llm.inference.catalog import options
 from app.llm.inference.tasks import InferenceTasks
 from app.llm.inference.text import events, prepare
+from app.llm.library_inputs import library_inputs
 from app.llm.routes.model_capacity import task_admission
 from app.llm.schemas.model_inference import (
     InferenceAssetImportIn,
@@ -113,8 +114,13 @@ async def upload_asset(
 
 
 @router.post("/assets/import", response_model=InferenceAssetOut)
-async def import_asset(body: InferenceAssetImportIn, session: SessionDep, owner_user_id: OwnerDep):
-    return await mapped(InferenceAssets(session, owner_user_id).import_library(body.asset_id))
+async def import_asset(
+    request: Request, body: InferenceAssetImportIn, session: SessionDep, owner_user_id: OwnerDep
+):
+    sources = library_inputs(request, session, owner_user_id)
+    return await mapped(
+        InferenceAssets(session, owner_user_id, library=sources).import_library(body.asset_id)
+    )
 
 
 @router.delete("/assets/{asset_id}", status_code=204)

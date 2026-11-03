@@ -1,3 +1,1 @@
-from app.llm.playground.service import ModelTestService
-
-__all__ = ["ModelTestService"]
+"""Model tests use explicit text, generation and transcription entry modules."""

@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.capabilities.identity.principal import StudioPrincipal
 from app.capabilities.identity.route_permissions import route_permission
 from fpl_runtime.claims import issue_context, verify_context
-from fpl_runtime.delegation import RequestGrant, permitted
+from fpl_runtime.delegation import RequestGrant, permitted, target_permission_path
 
 from .live import active_actor
 
@@ -61,7 +61,10 @@ async def authorize_delegation(app, body, credential):
         session_id=actor.session_id,
         api_key_id=actor.api_key_id,
     )
-    permission = route_permission(body.target_method, body.target_path)
+    source_permission = route_permission(body.source_method, body.source_path)
+    if source_permission is None or not principal.allows(source_permission):
+        raise HTTPException(403, "source_permission_denied")
+    permission = route_permission(body.target_method, target_permission_path(grant))
     if permission is None or not principal.allows(permission):
         raise HTTPException(403, "target_permission_denied")
     scope = (

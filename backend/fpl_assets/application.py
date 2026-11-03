@@ -33,6 +33,7 @@ from .reference_changes import ReferenceChanges
 from .retention_api import router as retention_router
 from .routes.files import router as files_router
 from .routes.layout import router as layout_router
+from .routes.library_inputs import router as library_inputs_router
 from .routes.project_links import router as links_router
 
 logger = logging.getLogger(__name__)
@@ -113,6 +114,7 @@ def create_app(
     for router in (files_router, layout_router, links_router):
         app.include_router(router, prefix="/v1")
     app.include_router(retention_router)
+    app.include_router(library_inputs_router)
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)

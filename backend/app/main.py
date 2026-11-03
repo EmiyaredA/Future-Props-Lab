@@ -59,6 +59,8 @@ from app.llm.catalog.http_bindings import CatalogBindings
 from app.llm.catalog.legacy_defaults import LegacyCatalogDefaults
 from app.llm.catalog.legacy_usage import LegacyCatalogTaskUsage
 from app.llm.inference.runner import InferenceRunner
+from app.llm.legacy_library_inputs import LegacyLibraryInputs
+from app.llm.library_inputs import LibraryInputBindings
 from app.llm.local_models.catalog import local_root
 from app.llm.local_models.installer import Installer
 from app.llm.local_models.management import LocalModels
@@ -160,6 +162,9 @@ app.state.model_catalog_bindings = CatalogBindings(
 )
 app.state.model_credential_reader = snapshot_from_principal
 app.state.model_admission = AdmissionBindings(acquire, release, attach, admit_generation_tasks)
+app.state.model_library_inputs = LibraryInputBindings(
+    for_request=lambda _request, session, owner: LegacyLibraryInputs(session, settings, owner)
+)
 app.state.workbench_native = LocalSourceAccess()
 app.state.account_creator = create_account
 app.state.account_storage_check = upgrade_pending

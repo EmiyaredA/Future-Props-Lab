@@ -2,16 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from app.capabilities.transcription.catalog_values import TranscriptionModel, TranscriptionProvider
 from app.capabilities.transcription.schemas import (
     ModelTestTranscriptionLanguageOptionOut,
     ModelTestTranscriptionParameterCapabilitiesOut,
     ModelTestTranscriptionParametersIn,
     ModelTestTranscriptionParametersOut,
 )
-from app.orm import CATALOG_MODELS
-
-ModelEntry = CATALOG_MODELS["entry"]
-ModelProvider = CATALOG_MODELS["provider"]
 
 OFFICIAL_LANGUAGES = (
     ("auto", "自动识别"),
@@ -66,7 +63,9 @@ class ParameterSupport:
     target_language: bool = False
 
 
-def parameter_support(model: ModelEntry, provider: ModelProvider) -> ParameterSupport:
+def parameter_support(
+    model: TranscriptionModel, provider: TranscriptionProvider
+) -> ParameterSupport:
     if provider.kind == "openai":
         return ParameterSupport()
     if provider.kind == "senseaudio_asr_pro":
@@ -119,7 +118,7 @@ def default_parameters(support: ParameterSupport) -> ModelTestTranscriptionParam
 
 
 def parameter_capabilities(
-    model: ModelEntry, provider: ModelProvider
+    model: TranscriptionModel, provider: TranscriptionProvider
 ) -> ModelTestTranscriptionParameterCapabilitiesOut:
     support = parameter_support(model, provider)
     return ModelTestTranscriptionParameterCapabilitiesOut(
@@ -147,8 +146,8 @@ def _optional_flag(value: bool | None, *, supported: bool, name: str, default: b
 
 def resolve_parameters(
     body: ModelTestTranscriptionParametersIn,
-    model: ModelEntry,
-    provider: ModelProvider,
+    model: TranscriptionModel,
+    provider: TranscriptionProvider,
 ) -> ModelTestTranscriptionParametersOut:
     support = parameter_support(model, provider)
     defaults = default_parameters(support)
