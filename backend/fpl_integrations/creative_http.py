@@ -48,7 +48,7 @@ async def preview(request: Request):
 async def receipt(request: Request):
     value = await payload(request, CreativeInstallBatch)
     result = await request.app.state.creative_installations.receipt(
-        value, authority(request, "install", value)
+        value, authority(request, "receipt", value)
     )
     if result is None:
         raise HTTPException(404, "creative_install_not_found")

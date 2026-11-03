@@ -30,6 +30,7 @@ class InstallIntentConflict(ValueError):
 class InstallIntent:
     batch: CreativeInstallBatch
     fingerprint: str
+    request_fingerprint: str
     state: str
     receipt: dict | None
 
@@ -42,7 +43,9 @@ def _intent(row):
         or digest(row.batch) != row.batch_fingerprint
     ):
         raise InstallIntentConflict("持久安装批次校验失败")
-    return InstallIntent(batch, row.batch_fingerprint, row.state, row.receipt)
+    return InstallIntent(
+        batch, row.batch_fingerprint, row.request_fingerprint, row.state, row.receipt
+    )
 
 
 async def _validate_new_batch(session, request, batch):

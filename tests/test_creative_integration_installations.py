@@ -264,12 +264,12 @@ async def test_same_batch_concurrency_has_one_owned_receipt(installation):
 async def test_preview_and_receipt_are_owner_scoped_and_revalidate_authority(installation):
     value = batch([tool()])
     assert (await installation.use.preview(value, granted(value, "preview")))["installable"]
-    assert await installation.use.receipt(value, granted(value)) is None
+    assert await installation.use.receipt(value, granted(value, "receipt")) is None
     first = await installation.use.install(value, {}, granted(value))
-    assert await installation.use.receipt(value, granted(value)) == first
+    assert await installation.use.receipt(value, granted(value, "receipt")) == first
     replay = await installation.use.preview(value, granted(value, "preview"))
     assert replay["parts"][0]["already_installed"]
-    assert await installation.use.receipt(value, granted(value, owner="beta")) is None
+    assert await installation.use.receipt(value, granted(value, "receipt", owner="beta")) is None
     calls = 0
 
     async def revoked():
@@ -317,7 +317,7 @@ async def test_lost_commit_response_preserves_files_and_reuses_target_receipt(
         / recovered["resources"][0]["resource_id"]
         / "v1/SKILL.md"
     ).is_file()
-    assert await installation.use.receipt(value, granted(value)) == recovered
+    assert await installation.use.receipt(value, granted(value, "receipt")) == recovered
 
 
 @pytest.mark.asyncio
@@ -330,7 +330,7 @@ async def test_bad_or_cancelled_archive_never_commits(installation):
     with pytest.raises(HTTPException) as error:
         await installation.use.install(value, {"skill-release": Incoming(data)}, granted(value))
     assert error.value.status_code == 422
-    assert await installation.use.receipt(value, granted(value)) is None
+    assert await installation.use.receipt(value, granted(value, "receipt")) is None
     root = installation.settings.runtime_path / "accounts/alpha/integrations/skills"
     assert not any(root.rglob("SKILL.md"))
 
@@ -346,7 +346,7 @@ async def test_published_tree_digest_rejects_different_unpacked_content(installa
     with pytest.raises(HTTPException) as error:
         await installation.use.install(value, {"skill-release": Incoming(data)}, granted(value))
     assert error.value.status_code == 422
-    assert await installation.use.receipt(value, granted(value)) is None
+    assert await installation.use.receipt(value, granted(value, "receipt")) is None
 
 
 @pytest.mark.asyncio
@@ -367,7 +367,7 @@ async def test_revocation_after_staging_stops_before_install_and_cleans_temporar
     with pytest.raises(HTTPException) as error:
         await installation.use.install(value, {"skill-release": Incoming(data)}, revoked)
     assert error.value.status_code == 403
-    assert await installation.use.receipt(value, granted(value)) is None
+    assert await installation.use.receipt(value, granted(value, "receipt")) is None
     root = installation.settings.runtime_path / "accounts/alpha/integrations/skills"
     assert not any(root.rglob("SKILL.md"))
 
@@ -387,7 +387,7 @@ async def test_deleted_resource_never_recreated_by_receipt_or_batch_replay(insta
         await session.commit()
     for operation in (
         lambda: installation.use.install(value, {}, granted(value)),
-        lambda: installation.use.receipt(value, granted(value)),
+        lambda: installation.use.receipt(value, granted(value, "receipt")),
         lambda: installation.use.preview(value, granted(value, "preview")),
     ):
         with pytest.raises(HTTPException) as error:
@@ -427,7 +427,7 @@ async def test_lost_commit_then_other_account_uses_name_cannot_change_original_r
     other = await installation.use.install(value, {}, granted(value, owner="beta"))
     recovered = await installation.use.install(value, {}, granted(value))
     assert recovered["resources"][0]["resource_id"] != other["resources"][0]["resource_id"]
-    assert await installation.use.receipt(value, granted(value)) == recovered
+    assert await installation.use.receipt(value, granted(value, "receipt")) == recovered
 
 
 @pytest.mark.asyncio
@@ -498,7 +498,7 @@ async def test_unknown_rollback_then_same_account_name_conflict_cleans_only_on_r
     with pytest.raises(HTTPException) as error:
         await installation.use.install(value, {"skill-release": Incoming(data)}, granted(value))
     assert error.value.detail["code"] == "creative_install_name_conflict"
-    assert await installation.use.receipt(value, granted(value)) is None
+    assert await installation.use.receipt(value, granted(value, "receipt")) is None
     # Startup reconciliation uses only the definitive target database state.
     await reconcile_skill_files(installation.db, installation.settings)
     assert not list(root.rglob("SKILL.md"))
@@ -610,3 +610,120 @@ async def test_legacy_skill_receipt_replays_without_enabling_a_new_legacy_instal
         await installation.use.install(
             fresh, {"skill-release": Incoming(data)}, granted(fresh, owner="beta")
         )
+
+
+async def test_receipt_grant_cannot_authorize_installation(installation):
+    value = batch([tool()])
+    with pytest.raises(HTTPException) as error:
+        await installation.use.install(value, {}, granted(value, "receipt"))
+    assert error.value.status_code == 403
+    assert await installation.use.receipt(value, granted(value, "receipt")) is None
+
+
+async def test_creative_source_grant_controls_real_target_and_receipt_recovery(
+    installation, tmp_path
+):
+    import jwt
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    from app.console.creative_workshop.models import CreativeItem, CreativeRelease
+    from app.console.creative_workshop.schemas import CreativeInstallPreviewIn
+    from fpl_creative.install_authorization import (
+        IdentityInstallAuthorization,
+        InstallAuthorizationDenied,
+        InstallSource,
+    )
+    from fpl_creative.install_grants import InstallGrantAuthority
+    from fpl_creative.installation_outbox import InstallationOutbox
+    from fpl_creative.migrations.registry import MIGRATIONS as CREATIVE_MIGRATIONS
+    from fpl_creative.storage import creative_database
+    from fpl_runtime.claims import Actor, issue_context
+    from fpl_runtime.creative_install_evidence import INSTALL_PATH, issue_install_evidence
+
+    class Live:
+        async def status(self, **_kwargs):
+            return True
+
+    root = tmp_path / "creative"
+    root.mkdir()
+    apply(root / "service.db", "creative", CREATIVE_MIGRATIONS)
+    db = creative_database(root)
+    key = Ed25519PrivateKey.generate()
+    actor = Actor(
+        "alpha", "user", "session", ("studio:write", "studio:private_read"), session_id="s"
+    )
+    token = issue_context(
+        actor, service="creative", method="POST", path=INSTALL_PATH, private_key=key, key_id="test"
+    )
+    claims = jwt.decode(
+        token, key.public_key(), algorithms=["EdDSA"], issuer="fpl-identity", audience="creative"
+    )
+    raw = b'{"release_id":"tool-release","names":{"tool-release":"My Tool"}}'
+    evidence = issue_install_evidence(
+        actor=actor,
+        request_id=claims["jti"],
+        raw=raw,
+        source_expiry=claims["exp"],
+        private_key=key,
+        key_id="test",
+    )
+    source = InstallSource(token, evidence, raw)
+    request = CreativeInstallPreviewIn.model_validate_json(raw)
+    part = tool()
+    value = CreativeInstallBatch(
+        operation_id=str(uuid5(NAMESPACE_URL, "source-grant")),
+        root_release_id="tool-release",
+        parts=[part],
+    )
+    try:
+        async with db.sessions(info={"owner_user_id": "author"}) as session:
+            session.add(
+                CreativeItem(
+                    id="item",
+                    origin_owner_user_id="author",
+                    author_user_id="author",
+                    kind="tool_api",
+                    status="published",
+                )
+            )
+            await session.flush()
+            session.add(
+                CreativeRelease(
+                    id="tool-release",
+                    item_id="item",
+                    version=1,
+                    title=part.title,
+                    summary=part.summary,
+                    tags=part.tags,
+                    manifest=part.manifest,
+                )
+            )
+            await session.commit()
+        outbox = InstallationOutbox(db)
+        await outbox.accept("alpha", request, value)
+        authority = InstallGrantAuthority(
+            outbox, IdentityInstallAuthorization(public_key=key.public_key(), identity=Live())
+        )
+        installed = await installation.use.install(
+            value, {}, lambda: authority.authorize("install", source, value)
+        )
+        async with db.sessions(info={"owner_user_id": "author"}) as session:
+            (await session.get(CreativeItem, "item")).status = "withdrawn"
+            await session.commit()
+        assert (
+            await installation.use.receipt(
+                value, lambda: authority.authorize("receipt", source, value)
+            )
+            == installed
+        )
+        with pytest.raises(InstallAuthorizationDenied):
+            await installation.use.install(
+                value, {}, lambda: authority.authorize("install", source, value)
+            )
+        with pytest.raises(HTTPException) as wrong:
+            await installation.use.install(
+                value, {}, lambda: authority.authorize("receipt", source, value)
+            )
+        assert wrong.value.status_code == 403
+    finally:
+        await db.close()

@@ -283,12 +283,12 @@ class CreativeInstallations:
         checksum = digest(batch.model_dump(mode="json"))
         decision = await authorize()
         owner = validate_grant(
-            decision, purpose="install", operation=batch.operation_id, fingerprint_value=checksum
+            decision, purpose="receipt", operation=batch.operation_id, fingerprint_value=checksum
         )
         previous = await self.prior(owner, batch.operation_id)
         validate_grant(
             decision,
-            purpose="install",
+            purpose="receipt",
             operation=batch.operation_id,
             fingerprint_value=checksum,
             owner=owner,
@@ -301,7 +301,7 @@ class CreativeInstallations:
             await self.require_receipt_resources(session, owner, previous.result)
         validate_grant(
             decision,
-            purpose="install",
+            purpose="receipt",
             operation=batch.operation_id,
             fingerprint_value=checksum,
             owner=owner,

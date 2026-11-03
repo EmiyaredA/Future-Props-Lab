@@ -541,3 +541,85 @@ async def test_skill_batch_is_bound_to_the_published_release_tree(tmp_path):
         assert (await outbox.accept("alice", request, value)).batch == value
     finally:
         await database.close()
+
+
+async def test_install_grant_binds_persisted_batch_and_rechecks_current_publication(tmp_path):
+    import jwt
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    from app.console.creative_workshop.models import CreativeItem
+    from fpl_creative.install_authorization import (
+        IdentityInstallAuthorization,
+        InstallAuthorizationDenied,
+        InstallSource,
+    )
+    from fpl_creative.install_grants import InstallGrantAuthority
+    from fpl_runtime.claims import Actor, issue_context
+    from fpl_runtime.creative_install_evidence import INSTALL_PATH, issue_install_evidence
+
+    class Live:
+        active = True
+
+        async def status(self, **_kwargs):
+            return self.active
+
+    apply(tmp_path / "service.db", "creative", MIGRATIONS)
+    database = creative_database(tmp_path)
+    key = Ed25519PrivateKey.generate()
+    actor = Actor(
+        "alice", "user", "session", ("studio:write", "studio:private_read"), session_id="s"
+    )
+    source_token = issue_context(
+        actor, service="creative", method="POST", path=INSTALL_PATH, private_key=key, key_id="test"
+    )
+    claims = jwt.decode(
+        source_token,
+        key.public_key(),
+        algorithms=["EdDSA"],
+        issuer="fpl-identity",
+        audience="creative",
+    )
+    raw = b'{"release_id":"release","names":{}}'
+    evidence = issue_install_evidence(
+        actor=actor,
+        request_id=claims["jti"],
+        raw=raw,
+        source_expiry=claims["exp"],
+        private_key=key,
+        key_id="test",
+    )
+    source = InstallSource(source_token, evidence, raw)
+    request = CreativeInstallPreviewIn.model_validate_json(raw)
+    value = batch()
+    live = Live()
+    try:
+        await seed_release(database)
+        outbox = InstallationOutbox(database)
+        authority = InstallGrantAuthority(
+            outbox, IdentityInstallAuthorization(public_key=key.public_key(), identity=live)
+        )
+        with pytest.raises(InstallAuthorizationDenied):
+            await authority.authorize("install", source, value)
+        await outbox.accept("alice", request, value)
+        decision = await authority.authorize("install", source, value)
+        assert decision.owner_user_id == "alice" and decision.fingerprint == digest(
+            value.model_dump(mode="json")
+        )
+        modified = value.model_copy(deep=True)
+        modified.parts[0].target_name = "forged"
+        with pytest.raises(InstallAuthorizationDenied):
+            await authority.authorize("install", source, modified)
+        async with database.sessions(info={"owner_user_id": "author"}) as session:
+            item = await session.get(CreativeItem, "item")
+            item.status = "withdrawn"
+            await session.commit()
+        with pytest.raises(InstallAuthorizationDenied):
+            await authority.authorize("install", source, value)
+        receipt_grant = await authority.authorize("receipt", source, value)
+        assert receipt_grant.operation_id == value.operation_id
+        assert receipt_grant.purpose == "receipt"
+        live.active = False
+        with pytest.raises(InstallAuthorizationDenied):
+            await authority.authorize("receipt", source, value)
+    finally:
+        await database.close()
