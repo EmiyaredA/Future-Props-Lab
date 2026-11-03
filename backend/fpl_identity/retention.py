@@ -80,7 +80,21 @@ class RetentionAuthorization:
                 and body.change.expected_resource_revision == -1
                 and initial_id
             )
-            if new_template or apply_template:
+            create_note = (
+                body.source_method == "POST"
+                and (
+                    body.source_path == "/v1/thought-workshop/notes"
+                    or re.fullmatch(
+                        r"/v1/thought-workshop/knowledge-bases/[A-Za-z0-9_-]+/documents",
+                        body.source_path,
+                    )
+                    is not None
+                )
+                and body.change.resource_kind == "note"
+                and body.change.expected_resource_revision == -1
+                and initial_id
+            )
+            if new_template or apply_template or create_note:
                 expected_kind = "template" if new_template else "note"
                 expected_id = body.change.resource_id
             elif direct:

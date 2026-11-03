@@ -68,7 +68,9 @@ class Directory(KnowledgeBases):
             )
         ).all()
 
-    async def create_note(self, project_id: str, body: KnowledgeNoteCreate):
+    async def create_note(
+        self, project_id: str, body: KnowledgeNoteCreate, *, note_id=None, commit=True
+    ):
         await self.reserve(project_id, body.expected_revision)
         await self.parent(project_id, body.parent_id)
         siblings = await self.siblings(project_id, body.parent_id)
@@ -80,21 +82,24 @@ class Directory(KnowledgeBases):
                 kind=body.kind,
             ),
             commit=False,
+            note_id=note_id,
         )
         row.position = max((r.position for r in siblings), default=-1) + 1
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
         return note_out(row)
 
-    async def create_content(self, body: ThoughtNoteCreate):
+    async def create_content(self, body: ThoughtNoteCreate, *, note_id=None, commit=True):
         candidate = ThoughtNoteIn(**body.model_dump(exclude={"expected_knowledge_revision"}))
         notes = Notes(self.session, self.owner_user_id, self.author_id)
         # Cross-service metadata is fetched before the project writer reservation.
         await notes.validate_refs(candidate)
         await self.reserve(body.knowledge_base_id, body.expected_knowledge_revision)
-        row = await notes.create(candidate, commit=False)
+        row = await notes.create(candidate, commit=False, note_id=note_id)
         siblings = await self.siblings(body.knowledge_base_id, body.parent_id)
         row.position = max((r.position for r in siblings), default=-1) + 1
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
         return note_out(row)
 
     async def move(self, project_id: str, body: ThoughtMoveIn) -> ThoughtDirectoryOut:

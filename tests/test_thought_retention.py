@@ -888,3 +888,52 @@ async def test_template_apply_preserves_committed_result_after_lost_ack(instance
         assert receipt.state == "commit" and receipt.change["resource_id"] == notes[0].id
     await ThoughtReferenceDelivery(db.sessions, remote).process_once()
     assert next(iter(remote.outcomes.values()))["state"] == "committed"
+
+
+async def test_note_create_aborts_if_knowledge_base_changes_during_prepare(instance):
+    from sqlalchemy import update
+
+    from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
+    from app.apps.thought_workshop.schemas.workshop import ThoughtNoteCreate
+    from app.runtime.revisions import RevisionConflictError
+    from fpl_thought.note_creation import create_note_with_references
+
+    db, remote, service = instance
+    async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+        session.add(
+            ThoughtKnowledgeBase(
+                id="book", owner_user_id="alpha", title="Book", home_note_id="home"
+            )
+        )
+        await session.commit()
+    original = remote.prepare
+
+    async def change_book(*, authority, change):
+        result = await original(authority=authority, change=change)
+        async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+            await session.execute(
+                update(ThoughtKnowledgeBase)
+                .where(ThoughtKnowledgeBase.id == "book")
+                .values(revision=1)
+            )
+            await session.commit()
+        return result
+
+    remote.prepare = change_book
+    async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+        with pytest.raises(RevisionConflictError):
+            await create_note_with_references(
+                session,
+                owner="alpha",
+                author_id=None,
+                body=ThoughtNoteCreate(knowledge_base_id="book", expected_knowledge_revision=0),
+                assertion="source",
+                source_method="POST",
+                source_path="/v1/thought-workshop/notes",
+                references=service,
+            )
+    async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+        assert not list(await session.scalars(select(ThoughtNote)))
+        assert (await session.scalar(select(ThoughtReferenceMutation))).state == "abort"
+    await ThoughtReferenceDelivery(db.sessions, remote).process_once()
+    assert next(iter(remote.outcomes.values()))["state"] == "aborted"

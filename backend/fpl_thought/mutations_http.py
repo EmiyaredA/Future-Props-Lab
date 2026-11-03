@@ -16,11 +16,13 @@ from app.apps.thought_workshop.multitable.schemas import BatchIn, BatchOut, CsvI
 from app.apps.thought_workshop.notes import Notes
 from app.apps.thought_workshop.schemas.knowledge import (
     KnowledgeBaseOut,
+    KnowledgeNoteCreate,
     ThoughtDirectoryOut,
     ThoughtMoveIn,
 )
 from app.apps.thought_workshop.schemas.operations import ThoughtOperationsIn
 from app.apps.thought_workshop.schemas.workshop import (
+    ThoughtNoteCreate,
     ThoughtNoteOut,
     ThoughtNotePut,
     ThoughtNoteTransitionIn,
@@ -31,6 +33,7 @@ from app.runtime.operation_receipts import OperationError
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
 
 from .multitable_retention import mutate_table_with_references
+from .note_creation import create_note_with_references
 from .note_retention import (
     apply_operations_with_references,
     purge_note_with_references,
@@ -67,6 +70,41 @@ async def guarded(operation):
         raise HTTPException(exc.status, "thought_retention_denied") from None
     except CapabilityUnavailable:
         raise HTTPException(503, "thought_retention_unavailable") from None
+
+
+@router.post("/notes", response_model=ThoughtNoteOut)
+async def create_note(
+    request: Request, body: ThoughtNoteCreate, session: SessionDep, principal: StudioAuth
+):
+    return await guarded(
+        create_note_with_references(
+            session,
+            owner=principal.user_id,
+            author_id=principal.user_id,
+            body=body,
+            **context(request),
+        )
+    )
+
+
+@router.post("/knowledge-bases/{project_id}/documents", response_model=ThoughtNoteOut)
+async def create_document(
+    request: Request,
+    project_id: str,
+    body: KnowledgeNoteCreate,
+    session: SessionDep,
+    principal: StudioAuth,
+):
+    return await guarded(
+        create_note_with_references(
+            session,
+            owner=principal.user_id,
+            author_id=principal.user_id,
+            project_id=project_id,
+            body=body,
+            **context(request),
+        )
+    )
 
 
 @router.put("/notes/{note_id}", response_model=ThoughtNoteOut)

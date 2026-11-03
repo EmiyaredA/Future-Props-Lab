@@ -345,6 +345,55 @@ async def scenario():
                             assert exc.status == 403
                         else:
                             raise AssertionError("Template apply authorized a non-creation change")
+                    for idx, path in enumerate(
+                        (
+                            "/v1/thought-workshop/notes",
+                            "/v1/thought-workshop/knowledge-bases/book/documents",
+                        )
+                    ):
+                        src = issue_context(
+                            actor,
+                            service="thought",
+                            method="POST",
+                            path=path,
+                            private_key=private,
+                            key_id="test",
+                        )
+                        legitimate = change(
+                            f"new-note-{idx}", resource_id="12345678-1234-4234-8234-123456789abc"
+                        )
+                        auth = await client.authorize(
+                            assertion=src, source_method="POST", source_path=path, change=legitimate
+                        )
+                        assert verify_retention(auth, public_key=private.public_key()).matches(
+                            legitimate
+                        )
+                        for forbidden in (
+                            change(
+                                f"note-kind-{idx}",
+                                resource_kind="template",
+                                resource_id=legitimate.resource_id,
+                            ),
+                            change(
+                                f"note-rev-{idx}",
+                                resource_id=legitimate.resource_id,
+                                expected_resource_revision=0,
+                            ),
+                            change(f"note-id-{idx}", resource_id="existing-note"),
+                        ):
+                            try:
+                                await client.authorize(
+                                    assertion=src,
+                                    source_method="POST",
+                                    source_path=path,
+                                    change=forbidden,
+                                )
+                            except CapabilityDenied as exc:
+                                assert exc.status == 403
+                            else:
+                                raise AssertionError(
+                                    "Note creation authorized a non-creation change"
+                                )
                     forged = issue_context(
                         replace(actor, user_id="different-owner"),
                         service="thought",
