@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f7f5f1" />
+    <title>创意工坊 · Future Props Lab</title>
+    <script>
+      try {
+        document.documentElement.dataset.theme =
+          localStorage.getItem("future_props_theme") === "dark"
+            ? "dark"
+            : "light";
+      } catch (_) {}
+    </script>
+  </head>
+  <body>
+    <div id="root">
+      <div role="status" style="padding: 48px; text-align: center">
+        正在打开 创意工坊…
+      </div>
+    </div>
+    <script type="module" src="/src/app/entries/creative.tsx"></script>
+  </body>
+</html>

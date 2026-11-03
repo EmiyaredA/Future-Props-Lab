@@ -6,6 +6,7 @@ from .versions.v0003 import SQL as SQL_0003
 from .versions.v0004 import SQL as SQL_0004
 from .versions.v0006 import SQL as SQL_0006
 from .versions.v0007 import SQL as SQL_0007
+from .versions.v0008 import SQL as SQL_0008
 
 MIGRATIONS = (
     Migration("0001_integration_catalogues", SQL_0001),
@@ -14,4 +15,5 @@ MIGRATIONS = (
     Migration("0004_external_closures", SQL_0004),
     Migration("0006_demo_installations", SQL_0006),
     Migration("0007_native_mcp", SQL_0007),
+    Migration("0008_creative_receipts", SQL_0008),
 )

@@ -40,6 +40,10 @@ from app.capabilities.asset_store.project_snapshots import cleanup_snapshot_stag
 from app.capabilities.asset_store.storage import AssetStorage
 from app.console.amadeus.execution import CodeAgentRuns
 from app.console.amadeus.runs import recover_interrupted_amadeus_runs
+from app.console.creative_workshop.legacy_archives import LegacyCreativeArchives
+from app.console.creative_workshop.legacy_authors import LegacyCreativeAuthors
+from app.console.creative_workshop.legacy_install import LegacyCreativeInstaller
+from app.console.creative_workshop.legacy_sources import LegacyCreativeSources
 from app.console.file_library.library_folder_archive import cleanup_library_folder_archive_staging
 from app.console.governance.database_auth import (
     authenticate_database_request,
@@ -62,7 +66,7 @@ from app.demo_runtime.runtime import mock_transport, tool_reply
 from app.integrations.external.catalog import ExternalConnections
 from app.integrations.http_bindings import IntegrationBindings
 from app.integrations.mcp import McpCatalog
-from app.integrations.skills import SkillCatalog
+from app.integrations.skills.catalog import SkillCatalog
 from app.integrations.tool_apis import ToolApiCatalog
 from app.llm.admission import AdmissionBindings
 from app.llm.call_logs.credentials import snapshot_from_principal
@@ -197,7 +201,14 @@ app.state.model_library_inputs = LibraryInputBindings(
 )
 
 SessionLocal.configure(
-    info={**SessionLocal.kw.get("info", {}), "thought_asset_metadata_factory": LegacyAssetMetadata}
+    info={
+        **SessionLocal.kw.get("info", {}),
+        "thought_asset_metadata_factory": LegacyAssetMetadata,
+        "creative_authors_factory": LegacyCreativeAuthors,
+        "creative_archives_factory": LegacyCreativeArchives,
+        "creative_sources_factory": LegacyCreativeSources,
+        "creative_installer_factory": LegacyCreativeInstaller,
+    }
 )
 
 app.state.thought_directory = DirectoryBindings(

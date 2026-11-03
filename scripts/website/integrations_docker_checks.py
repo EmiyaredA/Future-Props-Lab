@@ -9,6 +9,7 @@ import sys
 import time
 import zipfile
 from urllib.parse import urlsplit
+from uuid import uuid4
 
 import httpx
 
@@ -136,6 +137,15 @@ server.run(transport='stdio')
         if urlsplit(origin).hostname != "127.0.0.1" or urlsplit(origin).port in {3000, 9000, 9001}:
             raise ValueError("Integrations acceptance requires isolated loopback origin")
         wait(client, "/v1/integrations/mcp")
+        recovery_path = "/v1/integrations/validation-attempts"
+        pending = client.get(recovery_path, params={"offset": 0})
+        assert pending.status_code == 200, pending.text
+        assert isinstance(pending.json()["items"], list)
+        assert isinstance(pending.json()["has_more"], bool)
+        malformed = client.post(recovery_path + "/not-a-uuid/reconcile", headers=unsafe)
+        assert malformed.status_code == 422, malformed.text
+        missing = client.post(recovery_path + "/" + str(uuid4()) + "/reconcile", headers=unsafe)
+        assert missing.status_code == 404, missing.text
         created = client.post(
             "/v1/integrations/mcp",
             headers=unsafe,

@@ -5,6 +5,7 @@ from datetime import datetime
 from sqlalchemy import JSON, DateTime, ForeignKey, Index, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.apps.thought_workshop.foreign_keys import external_id
 from app.runtime.ids import new_id
 from app.runtime.orm_base import Base
 from app.runtime.time import utc_now
@@ -80,5 +81,5 @@ class DataAsset(Base):
         String(36), ForeignKey("thought_notes.id", ondelete="CASCADE"), primary_key=True
     )
     asset_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="RESTRICT"), primary_key=True
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="RESTRICT"), primary_key=True
     )

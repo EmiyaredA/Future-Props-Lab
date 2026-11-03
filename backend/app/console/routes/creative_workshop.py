@@ -3,8 +3,6 @@ from __future__ import annotations
 from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 
-from app.capabilities.asset_store.library import AssetError
-from app.capabilities.asset_store.thumbnails import ThumbnailSize
 from app.console.creative_workshop.catalog import CreativeCatalog, CreativeError
 from app.console.creative_workshop.files import CreativeFileError
 from app.console.creative_workshop.install import CreativeInstaller
@@ -23,13 +21,15 @@ from app.console.creative_workshop.schemas import (
 )
 from app.deps import SessionDep, StudioAuth
 from app.integrations.common import IntegrationValidationError
+from app.runtime.image_sizes import ThumbnailSize
+from app.runtime.raster import RasterPreviewError
 
 router = APIRouter(prefix="/creative-workshop", tags=["creative-workshop"])
 
 
 def _raise(exc: Exception) -> None:
-    if isinstance(exc, AssetError):
-        raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from exc
+    if isinstance(exc, RasterPreviewError):
+        raise HTTPException(422, {"code": exc.code, "message": str(exc)}) from exc
     if isinstance(exc, CreativeError):
         raise HTTPException(exc.status, {"code": exc.code, "message": exc.message}) from exc
     raise HTTPException(422, {"code": "invalid_upload", "message": str(exc)}) from exc
@@ -97,7 +97,7 @@ async def release_cover(
             media_type="image/webp",
             headers={"Cache-Control": "private, no-store"},
         )
-    except (CreativeError, AssetError) as exc:
+    except (CreativeError, RasterPreviewError) as exc:
         _raise(exc)
 
 
@@ -155,7 +155,7 @@ async def item_cover(
             media_type="image/webp",
             headers={"Cache-Control": "private, no-store"},
         )
-    except (CreativeError, AssetError) as exc:
+    except (CreativeError, RasterPreviewError) as exc:
         _raise(exc)
 
 

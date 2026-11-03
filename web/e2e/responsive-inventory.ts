@@ -69,6 +69,13 @@ export const responsiveOwners = {
 } satisfies Record<AppPage, "shell" | "editors" | "thought">;
 export const publicSurfaces = ["login", "account-settings", "docs"] as const;
 export const independentApplications = {
+  creative: [
+    "/creative-workshop",
+    "/creative-workshop/mine",
+    "/creative-workshop/new",
+    "/creative-workshop/edit/:id",
+    "/creative-workshop/item/:id",
+  ],
   models: ["/model-service", "/model-test", "/model-call-logs"],
   integrations: [
     "/integrations",

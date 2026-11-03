@@ -41,7 +41,7 @@
 - 安装后端与 Web 依赖：`npm run setup`。
 - 一键启动后端与 Web：`npm run dev`；单独启动使用 `npm run dev:backend`、
   `npm run dev:web`。
-- 当前分支 `npm start` 与 `website:service` 使用独立服务协调器，正式安装仍受全部服务与迁移门禁约束。迁移期单体恢复入口为 `npm run start:legacy` 与 `website:service:legacy`；构建旧网站资源为 `npm run build:studio`。
+- 当前分支 `npm start` 与 `website:service` 使用独立服务协调器，正式安装仍受全部服务与迁移门禁约束。迁移期单体恢复入口为 `npm run start:legacy` 与 `website:service:legacy`；构建旧网站资源为 `npm run build:studio`。 所选服务的数据库在任何 Compose 启动动作前通过 `fpl_host/deployment_preflight.py` 只读核对归属与全部迁移；只读管理模式无需检查未启动业务服务。
 - 开发使用 `.local/dev-runtime/` 和后端 9001，正式数据位于 `.runtime/`，自动测试不得读取正式数据。
 - 数据库迁移：`npm run db:migrate`；只检查迁移状态：`npm run db:migrate:check`。
 - OpenAPI 生成与 stale-check：`npm run contracts:generate`、`npm run contracts:check`。
@@ -74,6 +74,8 @@
 - Models 任务的原始签名请求、输入摘要与创建同事务存入 `0006_task_authorizations`；`execution_authority.py` 只接受明确的本服务创建操作，不凭服务密钥任意代理账号。出队前在数据库事务外复核 Identity，再在短写事务校验任务、账号、摘要与决定有效期；撤销导致尚未提交任务失败并结算，Identity 不可用只延后。供应商已提交的查询／落盘只结算原任务。`request_admission.py` 通过每请求绑定传入来源，不能用全局可变上下文。完整 Models 装配与其余执行／素材端口仍受切换门禁约束。
 - 模型输入文件通过 `llm/library_inputs.py` 的显式读取端口进入；恢复网站只在装配入口注入旧数据库适配器，独立 Models 使用 `fpl_models/library_inputs.py` 的 HTTP 文件流，不导入 Assets ORM 或存储路径。Assets 的私有输入接口仅开放已验证账号的文件库文件，拒绝所有项目专属范围；Identity 同时复核来源操作与目标读取权限。传输在写事务外完成并核验大小，取消撤回未提交输入，提交结果未决时保留文件。转录参数／能力只依赖 `capabilities/transcription/catalog_values.py` 的值协议，不加载全局 ORM；各模型测试模块显式导入，包初始化不得带入无关文字管线。
 - Models 生成参考和结果只访问自有文件；旧库引用通过显式恢复适配与正式回填 API 转换，独立服务不回退 Assets ORM。推理结果回存通过绑定同一原始任务请求和内容摘要的私有流式协议，Assets 将文件与不可变收据同事务保存；网络复制不得持有写事务，取消或提交响应未决不得删除可能已登记的字节。纯栅格预览使用 `runtime/raster.py`。
+- Thought 素材引用使用自有持久 outbox 和 Assets 准备／确认协议；笔记与模板的已接入操作把源结果与引用回执同事务保存。社区跨账号素材读取须由 Assets 逐次向 Thought 复核当前发布、角色、正文实际引用与版本，并复核 Identity Session；短期能力只覆盖单个素材，不得用于上传或私人文件库。独立 Thought HTTP 和全部写操作接线通过验收前不得启用服务切换。
+- `backend/fpl_creative/` 当前仅提供 Creative 自有表、迁移和账号写入边界；作者、来源、归档、安装通过显式端口注入，恢复站适配器不得成为独立服务回退。跨服务来源必须绑定真实原始请求内容与目标素材，安装须有不可变幂等回执；这些边界和完整装配通过验收之前不启用独立 Creative 服务。
 - `backend/fpl_integrations/` 独立装配工具、MCP、Skills 与外部连接，自有数据库不保留外部账号外键；原请求经 Identity 固定意图授权，Models 仅拥有目录安装协调和验证额度。未知远端动作不得重放。原生 stdio MCP 只能通过用途固定的 Mac worker 与本机登记的执行配置，不在容器继承主机环境或执行任意命令。独立构建、原生回执与完整容器验收通过前不切换正式实例。
 - 用户已确认管理端也采用独立服务和独立数据库，通过 Identity/Models 接口治理，不与业务服务共同写旧 SQLite。并行管理端任务的接口稳定后统一纳入部署。
 - 当前正式网站在多服务切换门禁通过前继续由现有入口运行；以下单体入口说明作为迁移期的恢复契约。新架构原生 Mac worker 主动连接受认证回环任务入口，容器不得挂载整个用户目录、个人 CLI 凭据或 Docker Socket。

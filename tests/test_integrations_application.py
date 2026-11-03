@@ -338,3 +338,38 @@ async def test_tool_validation_binds_actual_input_and_rejects_invalid_body(case)
     async with case.app.state.database.sessions(info={"owner_user_id": "alpha"}) as session:
         rows = list(await session.scalars(select(ValidationAttempt)))
         assert len(rows) == 1 and rows[0].status == "completed" and rows[0].released
+
+
+async def test_validation_recovery_routes_are_account_scoped_and_fail_closed(case):
+    from fpl_runtime.integration_intents import IntegrationScope
+
+    identity = str(uuid4())
+    scope = IntegrationScope(
+        kind="tool.validate",
+        task_id=uuid4(),
+        connection_id="visible-id",
+        connection_revision=1,
+        input_sha256="a" * 64,
+    )
+    async with case.app.state.database.sessions(info={"owner_user_id": "alpha"}) as session:
+        session.add(
+            ValidationAttempt(
+                id=identity,
+                owner_user_id="alpha",
+                scope=scope.model_dump(mode="json"),
+                status="unknown",
+            )
+        )
+        await session.commit()
+    path = "/v1/integrations/validation-attempts"
+    listed = await case.call("GET", path)
+    assert listed.status_code == 200, listed.text
+    assert listed.json()["items"][0]["id"] == identity
+    assert "input_sha256" not in listed.text and "authorization" not in listed.text
+    assert (await case.call("GET", path, owner="beta")).json()["items"] == []
+    review = path + "/" + identity + "/reconcile"
+    assert (await case.call("POST", review, owner="beta")).status_code == 404
+    pending = await case.call("POST", review, json={"confirmed": True})
+    assert pending.status_code == 409
+    assert pending.json()["code"] == "integration_validation_evidence_pending"
+    assert not case.port.changes

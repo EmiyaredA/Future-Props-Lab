@@ -118,7 +118,7 @@ class ReusableContent:
         current = TemplateOut.model_validate(await self.template(id))
         raise RevisionConflictError(expected, current.revision, current.model_dump(mode="json"))
 
-    async def update_template(self, id, body):
+    async def update_template(self, id, body, *, commit=True):
         row = await self.template(id)
         ids = await self.validate_template(body, row.document)
         result = await self.session.execute(
@@ -137,10 +137,11 @@ class ReusableContent:
         if result.rowcount != 1:
             await self.template_conflict(id, body.expected_revision)
         await self.template_refs(id, ids)
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
         return TemplateOut.model_validate(await self.template(id))
 
-    async def delete_template(self, id, expected):
+    async def delete_template(self, id, expected, *, commit=True):
         await self.template(id)
         result = await self.session.execute(
             delete(ThoughtTemplate).where(
@@ -151,7 +152,8 @@ class ReusableContent:
         )
         if result.rowcount != 1:
             await self.template_conflict(id, expected)
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
 
     async def apply_template(self, id, body):
         template = await self.template(id)

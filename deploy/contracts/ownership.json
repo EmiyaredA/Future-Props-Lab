@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "openapi_sha256": "18c2501e334f33d4d024bb2619833d956160fe24a50abcb4dbedd1d7e2fc7c45",
+  "openapi_sha256": "a2dd36b2daad7a62c0a27dd68d139ce56c5aac11dfce0cabb26e8a8a46707262",
   "operations": [
     {
       "service": "identity",
@@ -1429,6 +1429,18 @@
       "method": "POST",
       "path": "/v1/integrations/tool-apis/{integration_id}/validate",
       "operation_id": "validate_tool_api_v1_integrations_tool_apis__integration_id__validate_post"
+    },
+    {
+      "service": "integrations",
+      "method": "GET",
+      "path": "/v1/integrations/validation-attempts",
+      "operation_id": "validation_attempts_v1_integrations_validation_attempts_get"
+    },
+    {
+      "service": "integrations",
+      "method": "POST",
+      "path": "/v1/integrations/validation-attempts/{attempt_id}/reconcile",
+      "operation_id": "reconcile_validation_v1_integrations_validation_attempts__attempt_id__reconcile_post"
     },
     {
       "service": "interview",
@@ -4494,6 +4506,18 @@
       "model": "IntegrationIntent"
     },
     {
+      "table": "integration_creative_install_receipts",
+      "service": "integrations",
+      "module": "fpl_integrations.creative_records",
+      "model": "CreativeInstallReceipt"
+    },
+    {
+      "table": "integration_creative_installed_parts",
+      "service": "integrations",
+      "module": "fpl_integrations.creative_records",
+      "model": "CreativeInstalledPart"
+    },
+    {
       "table": "integration_demo_tool_installations",
       "service": "integrations",
       "module": "fpl_integrations.demo_records",
@@ -4624,6 +4648,12 @@
       "service": "models",
       "module": "fpl_models.native_records",
       "model": "NativeModelObservation"
+    },
+    {
+      "table": "thought_reference_mutations",
+      "service": "thought",
+      "module": "fpl_thought.retention_records",
+      "model": "ThoughtReferenceMutation"
     }
   ],
   "partitions": {

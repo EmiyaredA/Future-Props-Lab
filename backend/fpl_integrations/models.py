@@ -10,11 +10,14 @@ from app.integrations.models import (
     ToolApiIntegration,
 )
 
+from .creative_records import CreativeInstalledPart, CreativeInstallReceipt
 from .demo_records import DemoToolInstallation
 from .native_mcp_records import NativeMcpJob, NativeMcpObservation
 from .records import ExternalClosure, ExternalExecution, ExternalStepReceipt, ValidationAttempt
 
 MODELS = (
+    CreativeInstalledPart,
+    CreativeInstallReceipt,
     NativeMcpJob,
     NativeMcpObservation,
     DemoToolInstallation,

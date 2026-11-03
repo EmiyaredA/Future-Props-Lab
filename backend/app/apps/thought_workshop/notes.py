@@ -328,6 +328,7 @@ class Notes:
         expected_knowledge: int,
         *,
         cascade_children: bool = False,
+        commit: bool = True,
     ) -> ThoughtNoteOut:
         row = await self.get(note_id)
         if row.is_home:
@@ -351,7 +352,8 @@ class Notes:
             await forget(
                 self.session, owner_user_id=self.owner_user_id, kind="thought", resource_id=note_id
             )
-            await self.session.commit()
+            if commit:
+                await self.session.commit()
             return snapshot
         if action == "restore":
             result = await self.session.execute(

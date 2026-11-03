@@ -16,6 +16,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.apps.thought_workshop.foreign_keys import external_id
 from app.runtime.ids import new_id
 from app.runtime.orm_base import Base
 from app.runtime.time import utc_now
@@ -27,12 +28,12 @@ class ThoughtKnowledgeBase(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     owner_user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="CASCADE")
+        String(36), ForeignKey(external_id("users"), ondelete="CASCADE")
     )
     title: Mapped[str] = mapped_column(String(120))
     description: Mapped[str] = mapped_column(Text, default="")
     cover_asset_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="RESTRICT"), nullable=True
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="RESTRICT"), nullable=True
     )
     home_note_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     revision: Mapped[int] = mapped_column(Integer, default=0)
@@ -57,7 +58,7 @@ class ThoughtNote(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     owner_user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="CASCADE")
+        String(36), ForeignKey(external_id("users"), ondelete="CASCADE")
     )
     knowledge_base_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("thought_knowledge_bases.id", ondelete="CASCADE")
@@ -89,7 +90,7 @@ class ThoughtNoteAsset(Base):
         String(36), ForeignKey("thought_notes.id", ondelete="CASCADE"), primary_key=True
     )
     asset_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="RESTRICT"), primary_key=True
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="RESTRICT"), primary_key=True
     )
 
 
@@ -123,5 +124,5 @@ class ThoughtHistoryAsset(Base):
         String(36), ForeignKey("thought_note_history.id", ondelete="CASCADE"), primary_key=True
     )
     asset_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="RESTRICT"), primary_key=True
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="RESTRICT"), primary_key=True
     )

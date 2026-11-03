@@ -1,5 +1,8 @@
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { CustomSelect } from "@shared/ui/CustomSelect";
+import { useUnsavedNavigation } from "@shared/ui/useUnsavedNavigation";
+import type { Guard } from "@shared/ui/navigationGuards";
 import { useEffect, useState } from "react";
 import {
   getCreative,
@@ -20,10 +23,12 @@ export function Editor({
   itemId,
   canWrite,
   navigate,
+  registerNavigationGuard,
 }: {
   itemId?: string;
   canWrite: boolean;
   navigate: Nav;
+  registerNavigationGuard?: (guard: Guard | null) => void;
 }) {
   const { run: runTransfer, progress: activeTransferProgress } =
     useTransferProgress();
@@ -39,6 +44,27 @@ export function Editor({
   const [selected, setSelected] = useState<CreativeRelease[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const savedDraft = item && {
+    kind: item.kind,
+    title: item.title,
+    summary: item.summary,
+    description: item.description,
+    tags: item.tags,
+    cover_preset: item.cover_preset,
+    manifest: item.manifest,
+    components: item.components,
+  };
+  const unsaved = useUnsavedNavigation({
+    dirty: Boolean(
+      draft &&
+      savedDraft &&
+      JSON.stringify(draft) !== JSON.stringify(savedDraft),
+    ),
+    busy,
+    title: "草稿尚未保存",
+    description: "离开后未保存的修改将丢失。",
+    registerNavigationGuard,
+  });
   useEffect(() => {
     if (!itemId) return;
     let active = true;
@@ -130,6 +156,7 @@ export function Editor({
     );
   return (
     <>
+      {unsaved.dialog}
       <TransferFeedback progress={activeTransferProgress} />
 
       <div className="creative-section-heading">
@@ -273,31 +300,27 @@ export function Editor({
                 <div className="creative-inline">
                   <label>
                     方法
-                    <select
+                    <CustomSelect
+                      ariaLabel="方法"
                       value={String(draft.manifest.method || "GET")}
-                      onChange={(event) =>
-                        manifest({ method: event.target.value })
-                      }
-                    >
-                      {["GET", "POST", "PUT", "PATCH", "DELETE"].map(
-                        (value) => (
-                          <option key={value}>{value}</option>
-                        ),
+                      options={["GET", "POST", "PUT", "PATCH", "DELETE"].map(
+                        (value) => ({ value, label: value }),
                       )}
-                    </select>
+                      onChange={(value) => manifest({ method: value })}
+                    />
                   </label>
                   <label>
                     鉴权方式
-                    <select
+                    <CustomSelect
+                      ariaLabel="鉴权方式"
                       value={String(draft.manifest.auth_kind || "none")}
-                      onChange={(event) =>
-                        manifest({ auth_kind: event.target.value })
-                      }
-                    >
-                      <option value="none">无</option>
-                      <option value="bearer">Bearer（安装后配置）</option>
-                      <option value="api_key">API Key（安装后配置）</option>
-                    </select>
+                      options={[
+                        { value: "none", label: "无" },
+                        { value: "bearer", label: "Bearer（安装后配置）" },
+                        { value: "api_key", label: "API Key（安装后配置）" },
+                      ]}
+                      onChange={(value) => manifest({ auth_kind: value })}
+                    />
                   </label>
                 </div>
                 <label>
@@ -330,17 +353,19 @@ export function Editor({
                 <div className="creative-step">03 / MCP 配置</div>
                 <label>
                   连接类型
-                  <select
+                  <CustomSelect
+                    ariaLabel="连接类型"
                     value={String(
                       draft.manifest.transport || "streamable_http",
                     )}
-                    onChange={(event) =>
-                      change({ manifest: { transport: event.target.value } })
+                    options={[
+                      { value: "streamable_http", label: "HTTP MCP" },
+                      { value: "stdio", label: "stdio MCP" },
+                    ]}
+                    onChange={(value) =>
+                      change({ manifest: { transport: value } })
                     }
-                  >
-                    <option value="streamable_http">HTTP MCP</option>
-                    <option value="stdio">stdio MCP</option>
-                  </select>
+                  />
                 </label>
                 {draft.manifest.transport === "stdio" ? (
                   <label>

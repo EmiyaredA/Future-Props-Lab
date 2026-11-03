@@ -31,6 +31,7 @@ from .migrations.registry import MIGRATIONS
 from .models import MODELS
 from .reference_changes import ReferenceChanges
 from .retention_api import router as retention_router
+from .routes.community_assets import router as community_assets_router
 from .routes.files import router as files_router
 from .routes.layout import router as layout_router
 from .routes.library_inputs import router as library_inputs_router
@@ -68,6 +69,7 @@ def create_app(
     version="development",
     web_root=None,
     cleanup=True,
+    community_asset_checks=None,
 ):
     database = Database("assets", settings.runtime_path, models=MODELS)
     if settings.database_path != database.path:
@@ -94,6 +96,8 @@ def create_app(
                 task.cancel()
                 with contextlib.suppress(asyncio.CancelledError):
                     await task
+            if community_asset_checks is not None:
+                await community_asset_checks.close()
             await identity.close()
             await capabilities.close()
             await database.close()
@@ -110,6 +114,7 @@ def create_app(
     app.state.database, app.state.settings = database, settings
     app.state.identity, app.state.capabilities = identity, capabilities
     app.state.identity_public_key = public_key
+    app.state.community_asset_checks = community_asset_checks
     app.state.reference_changes = ReferenceChanges(database)
     app.state.layouts = StorageLayouts(database, settings)
     app.state.file_cleanup = cleaner
@@ -119,6 +124,7 @@ def create_app(
     app.include_router(library_inputs_router)
     app.include_router(library_outputs_router)
     app.include_router(thought_library_router)
+    app.include_router(community_assets_router)
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)

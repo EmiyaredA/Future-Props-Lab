@@ -1,3 +1,1 @@
-from app.integrations.skills.catalog import SkillCatalog
-
-__all__ = ["SkillCatalog"]
+"""Skill integration modules; import concrete capabilities explicitly."""

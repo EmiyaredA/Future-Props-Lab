@@ -11,13 +11,19 @@ from sqlalchemy import select, text
 
 from app.integrations.common import IntegrationNotStarted
 from app.integrations.models import McpIntegration, ToolApiIntegration
-from app.integrations.schemas import ToolApiValidateIn
+from app.integrations.schemas import (
+    ToolApiValidateIn,
+    ValidationAttemptListOut,
+    ValidationAttemptOut,
+    ValidationReconcileOut,
+)
 from app.runtime.polling_runner import PollingTaskRunner
 from app.runtime.time import utc_now
 from fpl_runtime.claims import HEADER
 from fpl_runtime.integration_client import IntegrationAuthorizationUnavailable
 from fpl_runtime.integration_intents import IntegrationScope, digest
 
+from .native_mcp_records import NativeMcpJob
 from .records import ValidationAttempt
 
 
@@ -221,6 +227,125 @@ class ValidationRecovery(PollingTaskRunner):
     def __init__(self, database, intents, capacity):
         super().__init__()
         self.database, self.intents, self.capacity = database, intents, capacity
+
+    async def list_pending(self, owner, *, offset=0):
+        async with self.database.sessions(info={"owner_user_id": owner}) as session:
+            rows = list(
+                await session.scalars(
+                    select(ValidationAttempt)
+                    .where(
+                        ValidationAttempt.owner_user_id == owner,
+                        ValidationAttempt.released.is_(False),
+                        ValidationAttempt.status.in_(["unknown", "completed", "not-started"]),
+                    )
+                    .order_by(ValidationAttempt.created_at, ValidationAttempt.id)
+                    .offset(offset)
+                    .limit(101)
+                )
+            )
+            return ValidationAttemptListOut(
+                has_more=len(rows) > 100,
+                items=[
+                    ValidationAttemptOut(
+                        id=row.id,
+                        kind=row.scope["kind"],
+                        connection_id=row.scope["connection_id"],
+                        status=row.status,
+                        released=row.released,
+                        created_at=row.created_at,
+                    )
+                    for row in rows[:100]
+                ],
+            )
+
+    async def reconcile(self, owner, attempt_id):
+        # A user assertion, an expired lease, or a timeout is not proof that an
+        # external action has stopped. Only a durable native terminal receipt or
+        # a pre-dispatch cancellation permits releasing the original capacity.
+        async with self.database.sessions(info={"owner_user_id": owner}) as session:
+            await session.execute(text("BEGIN IMMEDIATE"))
+            row = await session.get(ValidationAttempt, attempt_id)
+            if row is None or row.owner_user_id != owner:
+                raise HTTPException(
+                    404, {"code": "integration_validation_not_found", "message": "验证记录不存在"}
+                )
+            if row.status == "unknown":
+                job = await session.scalar(
+                    select(NativeMcpJob).where(
+                        NativeMcpJob.owner_user_id == owner,
+                        NativeMcpJob.request_id == attempt_id,
+                    )
+                )
+                if job is None or job.operation != "integrations.mcp-discover":
+                    raise HTTPException(
+                        409,
+                        {
+                            "code": "integration_validation_evidence_pending",
+                            "message": "尚未收到可信结束回执，额度继续保留",
+                        },
+                    )
+                expected = IntegrationScope.model_validate(row.scope)
+                # Only a receipt for this exact original input and connection
+                # can discharge its reservation; malformed evidence fails closed.
+                payload = job.payload
+                if (
+                    payload.get("intent_id") != attempt_id
+                    or payload.get("connection_id") != expected.connection_id
+                    or payload.get("connection_revision") != expected.connection_revision
+                    or payload.get("input_sha256") != expected.input_sha256
+                    or expected.kind != "mcp.validate"
+                ):
+                    raise HTTPException(
+                        409,
+                        {
+                            "code": "integration_validation_evidence_pending",
+                            "message": "尚未收到可信结束回执，额度继续保留",
+                        },
+                    )
+                no_dispatch = (
+                    job.status == "failed"
+                    and job.error_code in {"dispatch_cancelled", "authorization_revoked"}
+                    and not job.worker_id
+                )
+                terminal_receipt = job.status in {"completed", "failed"} and bool(
+                    job.outcome_sha256
+                )
+                if not (no_dispatch or terminal_receipt):
+                    raise HTTPException(
+                        409,
+                        {
+                            "code": "integration_validation_evidence_pending",
+                            "message": "尚未收到可信结束回执，额度继续保留",
+                        },
+                    )
+                row.status = "not-started" if no_dispatch else "completed"
+                row.updated_at = utc_now()
+            if row.status not in {"completed", "not-started"}:
+                raise HTTPException(
+                    409,
+                    {
+                        "code": "integration_validation_evidence_pending",
+                        "message": "尚未收到可信结束回执，额度继续保留",
+                    },
+                )
+            status, scope, released = row.status, row.scope, row.released
+            await session.commit()
+        if not released:
+            run = ValidationRun(
+                self.database,
+                self.intents,
+                self.capacity,
+                attempt_id,
+                owner,
+                IntegrationScope.model_validate(scope),
+            )
+            try:
+                await run.settle()
+            except IntegrationAuthorizationUnavailable:
+                # Persisted terminal evidence is retried by the normal outbox.
+                return ValidationReconcileOut(id=attempt_id, status=status, released=False)
+            released = True
+        return ValidationReconcileOut(id=attempt_id, status=status, released=released)
 
     async def recover(self):
         async with self.database.sessions(info={"allow_system_reads": True}) as session:

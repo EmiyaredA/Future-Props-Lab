@@ -356,6 +356,11 @@ export function ToolApiPanel({
       void refresh();
     },
     onError: (error) => setResult({ ok: false, text: message(error) }),
+    onSettled: () => {
+      void client.invalidateQueries({
+        queryKey: integrationKeys.validationAttemptsRoot,
+      });
+    },
   });
   const remove = useMutation({
     mutationFn: deleteToolApi,

@@ -15,12 +15,10 @@ class CreativeItem(Base):
     __tablename__ = "creative_items"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    origin_owner_user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
-    author_user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
+    # Account IDs are opaque to the independent service. The recovery
+    # database retains its original physical foreign keys in registered SQL.
+    origin_owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
+    author_user_id: Mapped[str] = mapped_column(String(36), index=True)
     kind: Mapped[str] = mapped_column(String(16))
     status: Mapped[str] = mapped_column(String(16), default="draft")
     title: Mapped[str] = mapped_column(String(120), default="")
@@ -64,14 +62,10 @@ class CreativeInstallation(Base):
     __table_args__ = (UniqueConstraint("owner_user_id", "release_id"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    owner_user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     release_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("creative_releases.id", ondelete="RESTRICT"), index=True
     )
-    installed_by_user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="RESTRICT")
-    )
+    installed_by_user_id: Mapped[str] = mapped_column(String(36))
     resources: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)

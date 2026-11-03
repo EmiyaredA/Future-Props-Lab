@@ -1,3 +1,4 @@
+import { ValidationRecoveryPanel } from "./ValidationRecoveryPanel";
 import { IntegrationInteractions } from "./IntegrationInteractions";
 import type { NavigationGuard } from "./interaction";
 import { useState } from "react";
@@ -41,6 +42,7 @@ export function IntegrationCenterPage({
           <h1>集成中心</h1>
           <p>统一管理工具 API、MCP 服务、Skill 与外部连接</p>
         </header>
+        {canManage ? <ValidationRecoveryPanel /> : null}
         <div className="integration-tabs" role="tablist" aria-label="集成类型">
           {INTEGRATION_TABS.map(([value, label], index) => (
             <button

@@ -58,7 +58,7 @@ def test_thought_models_and_writing_import_without_foreign_orm_or_global_db():
 import sys
 from fpl_thought.models import MODELS
 from app.apps.thought_workshop import assistant
-assert len(MODELS) == 29
+assert len(MODELS) == 30
 for name in ('app.orm', 'app.runtime.db', 'app.console.models.accounts',
              'app.llm.models', 'app.capabilities.asset_store.models'):
     assert name not in sys.modules, name
@@ -126,3 +126,44 @@ async def test_community_preserves_service_guard_and_request_directory(tmp_path)
             assert list(await session.scalars(select(ThoughtKnowledgeBase.id))) == ["book-beta"]
     finally:
         await database.close()
+
+
+def test_fresh_process_creates_owned_documents_without_loading_foreign_models(tmp_path):
+    root = Path(__file__).resolve().parents[1]
+    script = """
+import asyncio
+import sys
+from pathlib import Path
+from fpl_runtime.database import Database
+from fpl_runtime.migrations import apply
+from fpl_thought.migrations.registry import MIGRATIONS
+from fpl_thought.models import MODELS, ACCOUNT_MODELS
+from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
+
+async def run():
+    root = Path(sys.argv[1])
+    apply(root / "service.db", "thought", MIGRATIONS)
+    database = Database("thought", root, models=MODELS, account_models=ACCOUNT_MODELS)
+    async with database.sessions(info={"owner_user_id": "alpha"}) as session:
+        session.add(ThoughtKnowledgeBase(id="owned-book", owner_user_id="alpha", title="Owned"))
+        await session.flush()
+        session.add(ThoughtNote(
+            id="owned-note", owner_user_id="alpha", knowledge_base_id="owned-book",
+            title="Owned", document={"type": "doc", "content": []},
+            search_text="", kind="note"))
+        await session.commit()
+    await database.close()
+    for name in ("app.runtime.db", "app.orm", "app.console.models.accounts", "app.llm.models",
+                 "app.capabilities.asset_store.models"):
+        assert name not in sys.modules, name
+asyncio.run(run())
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", script, str(tmp_path)],
+        cwd=root,
+        env={**os.environ, "PYTHONPATH": str(root / "backend")},
+        capture_output=True,
+        text=True,
+        timeout=20,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

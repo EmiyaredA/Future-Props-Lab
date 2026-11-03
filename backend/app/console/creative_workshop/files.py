@@ -9,7 +9,6 @@ from uuid import uuid4
 from PIL import Image, UnidentifiedImageError
 
 from app.capabilities.asset_store.incoming import IncomingFile
-from app.integrations.skills.archive import SkillArchiveStorage
 from app.runtime.config import Settings, get_settings
 
 MAX_COVER_BYTES = 5 * 1024 * 1024
@@ -25,14 +24,20 @@ class CreativeFileError(ValueError):
     pass
 
 
-def _root(settings: Settings, owner_user_id: str) -> Path:
-    return settings.account_path(owner_user_id)
-
-
 def resolve_file(owner_user_id: str, relative: str, *, settings: Settings | None = None) -> Path:
-    root = _root(settings or get_settings(), owner_user_id)
-    path = (root / relative).resolve()
-    if not path.is_relative_to(root):
+    settings = settings or get_settings()
+    # Validate the account identifier without accepting account directory symlinks.
+    settings.account_path(owner_user_id)
+    root = settings.runtime_path
+    parts = ("accounts", owner_user_id, *Path(relative).parts)
+    if not relative or Path(relative).is_absolute() or any(part in {".", ".."} for part in parts):
+        raise CreativeFileError("文件路径无效")
+    path = root
+    for part in parts:
+        path = path / part
+        if path.is_symlink():
+            raise CreativeFileError("文件路径不能包含符号链接")
+    if not path.resolve().is_relative_to((root / "accounts" / owner_user_id).resolve()):
         raise CreativeFileError("文件路径无效")
     return path
 
@@ -69,10 +74,13 @@ async def save_cover(owner_user_id: str, upload: IncomingFile) -> str:
 
 
 async def save_skill_draft(
-    owner_user_id: str, item_id: str, upload: IncomingFile
+    owner_user_id: str, item_id: str, upload: IncomingFile, *, archive_parser
 ) -> tuple[str, dict]:
-    storage = SkillArchiveStorage(get_settings(), owner_user_id)
-    staged = await storage.stage(upload)
+    staged = await archive_parser.stage(owner_user_id, upload)
+    stage_root = resolve_file(owner_user_id, "creative-workshop/.staging")
+    stage = staged.directory
+    if stage.is_symlink() or not stage.resolve().is_relative_to(stage_root.resolve()):
+        raise CreativeFileError("Skill 暂存目录无效")
     relative = f"creative-workshop/skill-drafts/{item_id}/{uuid4().hex}"
     target = resolve_file(owner_user_id, relative)
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -95,13 +103,11 @@ def copy_skill_release(owner_user_id: str, source_relative: str, release_id: str
     if not (source / "SKILL.md").is_file():
         raise CreativeFileError("Skill 文件不可用")
     for path in source.rglob("*"):
+        if path.is_symlink():
+            raise CreativeFileError("Skill 不能包含符号链接")
         if not path.is_file():
             continue
-        if (
-            path.is_symlink()
-            or path.name.lower() in PRIVATE_FILE_NAMES
-            or path.suffix.lower() in {".pem", ".key"}
-        ):
+        if path.name.lower() in PRIVATE_FILE_NAMES or path.suffix.lower() in {".pem", ".key"}:
             raise CreativeFileError("Skill 包含私有凭据文件，不能公开")
         if path.stat().st_size <= 2 * 1024 * 1024 and PRIVATE_TEXT.search(path.read_bytes()):
             raise CreativeFileError("Skill 文件疑似包含密钥，请移除后重试")

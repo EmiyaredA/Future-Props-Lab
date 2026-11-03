@@ -1,7 +1,16 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { vi } from "vitest";
 import { CreativeWorkshopPage } from "@features/creative-workshop/CreativeWorkshopPage";
 import type { CreativeItem } from "@features/creative-workshop/api";
+import { NavigationProtection } from "@shared/ui/NavigationProtection";
+import { guardedNavigation } from "@app/entries/navigation";
+import type { Guard } from "@shared/ui/navigationGuards";
 
 const mocks = vi.hoisted(() => ({
   listCreative: vi.fn(),
@@ -123,4 +132,95 @@ test("editor saves a draft before preview and publishes the next version", async
   fireEvent.click(screen.getByRole("button", { name: "确认公开发布" }));
   expect(await screen.findByText("发布成功")).toBeInTheDocument();
   expect(mocks.publishCreative).toHaveBeenCalledWith("weather", 3);
+});
+
+test("Creative editor uses keyboard accessible choices and protects unsaved changes", async () => {
+  const leave = vi.fn();
+  render(
+    <NavigationProtection>
+      <CreativeWorkshopPage
+        mode="creative-workshop-editor"
+        itemId="weather"
+        canWrite
+        canInstall
+        navigate={() => guardedNavigation(leave)}
+      />
+    </NavigationProtection>,
+  );
+  await screen.findByDisplayValue("天气接口");
+  const method = screen.getByRole("combobox", { name: "方法" });
+  fireEvent.keyDown(method, { key: "ArrowDown" });
+  const list = await screen.findByRole("listbox", { name: "方法" });
+  fireEvent.keyDown(list, { key: "ArrowDown" });
+  fireEvent.keyDown(list, { key: "Enter" });
+  expect(method).toHaveTextContent("POST");
+  fireEvent.click(screen.getByRole("button", { name: /^我的创作$/ }));
+  expect(
+    await screen.findByRole("alertdialog", { name: "草稿尚未保存" }),
+  ).toBeVisible();
+  expect(leave).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "留在此页" }));
+  expect(leave).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: /^我的创作$/ }));
+  fireEvent.click(screen.getByRole("button", { name: "放弃填写并继续" }));
+  expect(leave).toHaveBeenCalledTimes(1);
+});
+
+test("recovery website also protects Creative drafts via its existing navigation guard", async () => {
+  let guard: Guard | null = null;
+  const register = (next: Guard | null) => {
+    guard = next;
+  };
+  const leave = vi.fn();
+  const view = render(
+    <CreativeWorkshopPage
+      mode="creative-workshop-editor"
+      itemId="weather"
+      canWrite
+      canInstall
+      navigate={vi.fn()}
+      registerNavigationGuard={register}
+    />,
+  );
+  fireEvent.change(await screen.findByDisplayValue("天气接口"), {
+    target: { value: "未保存" },
+  });
+  expect(guard).not.toBeNull();
+  act(() => {
+    expect(guard!(leave)).toBe(true);
+  });
+  expect(
+    await screen.findByRole("alertdialog", { name: "草稿尚未保存" }),
+  ).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "放弃填写并继续" }));
+  expect(leave).toHaveBeenCalledTimes(1);
+  view.unmount();
+  expect(guard).toBeNull();
+});
+
+test("independent context takes precedence over a legacy guard callback", async () => {
+  const legacyRegister = vi.fn();
+  const leave = vi.fn();
+  render(
+    <NavigationProtection>
+      <CreativeWorkshopPage
+        mode="creative-workshop-editor"
+        itemId="weather"
+        canWrite
+        canInstall
+        registerNavigationGuard={legacyRegister}
+        navigate={() => guardedNavigation(leave)}
+      />
+    </NavigationProtection>,
+  );
+  fireEvent.change(await screen.findByDisplayValue("天气接口"), {
+    target: { value: "未保存" },
+  });
+  expect(legacyRegister).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: /^我的创作$/ }));
+  expect(
+    await screen.findAllByRole("alertdialog", { name: "草稿尚未保存" }),
+  ).toHaveLength(1);
+  fireEvent.click(screen.getByRole("button", { name: "放弃填写并继续" }));
+  expect(leave).toHaveBeenCalledTimes(1);
 });

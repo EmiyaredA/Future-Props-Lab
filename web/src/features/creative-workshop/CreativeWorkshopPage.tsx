@@ -1,4 +1,6 @@
 import { LoadingState } from "@shared/ui/LoadingState";
+import { CustomSelect } from "@shared/ui/CustomSelect";
+import type { Guard } from "@shared/ui/navigationGuards";
 import { useEffect, useMemo, useState } from "react";
 import { fetchApiJson } from "@platform/api/client";
 import {
@@ -285,14 +287,21 @@ function NewItem({
         : importKind === "mcp"
           ? "mcp"
           : "skills";
+    let active = true;
+    setSources([]);
+    setSourceId("");
     fetchApiJson<{ items: { id: string; name: string }[] }>(
       `/v1/integrations/${path}`,
     )
       .then((result) => {
+        if (!active) return;
         setSources(result.items);
         setSourceId(result.items[0]?.id || "");
       })
-      .catch((cause) => setError(errorText(cause)));
+      .catch((cause) => active && setError(errorText(cause)));
+    return () => {
+      active = false;
+    };
   }, [canInstall, importKind]);
   const create = async (kind: CreativeKind) => {
     setBusy(true);
@@ -360,32 +369,24 @@ function NewItem({
             <p>只带入公开字段。凭据、密钥与本机环境配置不会发布。</p>
           </div>
           <div className="creative-import-form">
-            <select
-              aria-label="导入类型"
+            <CustomSelect
+              ariaLabel="导入类型"
               value={importKind}
-              onChange={(event) =>
-                setImportKind(event.target.value as CreativeKind)
-              }
-            >
-              {kinds
-                .filter((kind) => kind !== "bundle")
-                .map((kind) => (
-                  <option key={kind} value={kind}>
-                    {labels[kind]}
-                  </option>
-                ))}
-            </select>
-            <select
-              aria-label="选择集成"
+              options={kinds
+                .filter((value) => value !== "bundle")
+                .map((value) => ({ value, label: labels[value] }))}
+              onChange={(value) => setImportKind(value as CreativeKind)}
+            />
+            <CustomSelect
+              ariaLabel="选择集成"
               value={sourceId}
-              onChange={(event) => setSourceId(event.target.value)}
-            >
-              {sources.map((source) => (
-                <option key={source.id} value={source.id}>
-                  {source.name}
-                </option>
-              ))}
-            </select>
+              options={sources.map((source) => ({
+                value: source.id,
+                label: source.name,
+              }))}
+              onChange={setSourceId}
+              disabled={!sources.length}
+            />
             <button
               disabled={!sourceId || busy}
               onClick={async () => {
@@ -420,12 +421,14 @@ export function CreativeWorkshopPage({
   canWrite,
   canInstall,
   navigate,
+  registerNavigationGuard,
 }: {
   mode: Mode;
   itemId?: string;
   canWrite: boolean;
   canInstall: boolean;
   navigate: Nav;
+  registerNavigationGuard?: (guard: Guard | null) => void;
 }) {
   const title = useMemo(
     () => (mode === "creative-workshop" ? "创意广场" : "创意工坊"),
@@ -451,7 +454,12 @@ export function CreativeWorkshopPage({
         />
       )}
       {mode === "creative-workshop-editor" && (
-        <Editor itemId={itemId} canWrite={canWrite} navigate={navigate} />
+        <Editor
+          itemId={itemId}
+          canWrite={canWrite}
+          navigate={navigate}
+          registerNavigationGuard={registerNavigationGuard}
+        />
       )}
       {mode === "creative-workshop-detail" && (
         <Detail itemId={itemId} canInstall={canInstall} navigate={navigate} />

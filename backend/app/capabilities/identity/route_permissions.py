@@ -482,6 +482,8 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("POST", "/v1/visual-workshop/projects/{project_id}/generation-tasks"),
     ),
     "configuration.manage": (
+        ("GET", "/v1/integrations/validation-attempts"),
+        ("POST", "/v1/integrations/validation-attempts/{attempt_id}/reconcile"),
         ("GET", "/v1/automation/access"),
         ("POST", "/v1/automation/access/actions"),
         ("POST", "/v1/platform/local-models/{model_id}/actions"),

@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+from dataclasses import replace
 from pathlib import Path
 
 import httpx
@@ -22,7 +23,7 @@ from fpl_identity.application import create_app
 from fpl_identity.migrations.registry import MIGRATIONS
 from fpl_runtime.asset_references import PrepareReferenceChange
 from fpl_runtime.capability_client import CapabilityDenied
-from fpl_runtime.claims import HEADER, verify_context
+from fpl_runtime.claims import HEADER, issue_context, verify_context
 from fpl_runtime.database import Database
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
@@ -174,6 +175,164 @@ async def scenario():
                         source_path="/v1/thought-workshop/notes/owned-note",
                         change=value,
                     )
+                    for forbidden in (
+                        change("wrong-note", resource_id="another-note"),
+                        change("wrong-kind", resource_kind="template"),
+                    ):
+                        try:
+                            await client.authorize(
+                                assertion=assertion,
+                                source_method="PUT",
+                                source_path="/v1/thought-workshop/notes/owned-note",
+                                change=forbidden,
+                            )
+                        except CapabilityDenied as exc:
+                            assert exc.status == 403
+                        else:
+                            raise AssertionError("Different resource received retention authority")
+                    try:
+                        await client.authorize(
+                            assertion=assertion,
+                            source_method="PUT",
+                            source_path="/v1/thought-workshop/notes/another-note",
+                            change=change("wrong-path", resource_id="another-note"),
+                        )
+                    except CapabilityDenied as exc:
+                        assert exc.status == 401
+                    else:
+                        raise AssertionError("Original request assertion was rebound")
+                    try:
+                        await client.authorize(
+                            assertion=assertion,
+                            source_method="POST",
+                            source_path="/v1/thought-workshop/notes/owned-note/operations",
+                            change=change("wrong-method"),
+                        )
+                    except CapabilityDenied as exc:
+                        assert exc.status == 403
+                    else:
+                        raise AssertionError("Original PUT assertion authorized a POST")
+                    operations_path = "/v1/thought-workshop/notes/owned-note/operations"
+                    operations_assertion = issue_context(
+                        actor,
+                        service="thought",
+                        method="POST",
+                        path=operations_path,
+                        private_key=private,
+                        key_id="test",
+                    )
+                    for forbidden in (
+                        change("operations-same-note"),
+                        change("operations-other-note", resource_id="another-note"),
+                        change(
+                            "operations-template", resource_kind="template", resource_id="another"
+                        ),
+                    ):
+                        try:
+                            await client.authorize(
+                                assertion=operations_assertion,
+                                source_method="POST",
+                                source_path=operations_path,
+                                change=forbidden,
+                            )
+                        except CapabilityDenied as exc:
+                            assert exc.status == 403
+                        else:
+                            raise AssertionError(
+                                "Unregistered batch operation received retention authority"
+                            )
+                    forged = issue_context(
+                        replace(actor, user_id="different-owner"),
+                        service="thought",
+                        method="PUT",
+                        path="/v1/thought-workshop/notes/owned-note",
+                        private_key=private,
+                        key_id="test",
+                    )
+                    try:
+                        await client.authorize(
+                            assertion=forged,
+                            source_method="PUT",
+                            source_path="/v1/thought-workshop/notes/owned-note",
+                            change=change("wrong-actor"),
+                        )
+                    except CapabilityDenied as exc:
+                        assert exc.status == 401
+                    else:
+                        raise AssertionError("An unrelated account reused another session")
+                    create_template_path = "/v1/thought-workshop/templates"
+                    create_template_assertion = issue_context(
+                        actor,
+                        service="thought",
+                        method="POST",
+                        path=create_template_path,
+                        private_key=private,
+                        key_id="test",
+                    )
+                    try:
+                        await client.authorize(
+                            assertion=create_template_assertion,
+                            source_method="POST",
+                            source_path=create_template_path,
+                            change=change("wrong-create-kind"),
+                        )
+                    except CapabilityDenied as exc:
+                        assert exc.status == 403
+                    else:
+                        raise AssertionError("Template creation authorized non-template resource")
+                    try:
+                        await client.authorize(
+                            assertion=create_template_assertion,
+                            source_method="POST",
+                            source_path=create_template_path,
+                            change=change(
+                                "new-template", resource_kind="template", resource_id="fresh"
+                            ),
+                        )
+                    except CapabilityDenied as exc:
+                        assert exc.status == 403
+                    else:
+                        raise AssertionError("Unbound creation received retention authority")
+                    template_path = "/v1/thought-workshop/templates/owned-template"
+                    template_assertion = issue_context(
+                        actor,
+                        service="thought",
+                        method="PUT",
+                        path=template_path,
+                        private_key=private,
+                        key_id="test",
+                    )
+                    template_change = change(
+                        "template-correct", resource_kind="template", resource_id="owned-template"
+                    )
+                    template_authority = await client.authorize(
+                        assertion=template_assertion,
+                        source_method="PUT",
+                        source_path=template_path,
+                        change=template_change,
+                    )
+                    assert verify_retention(
+                        template_authority, public_key=private.public_key()
+                    ).matches(template_change)
+                    for forbidden in (
+                        change("template-wrong-id", resource_kind="template", resource_id="other"),
+                        change(
+                            "template-wrong-kind",
+                            resource_kind="note",
+                            resource_id="owned-template",
+                        ),
+                    ):
+                        try:
+                            await client.authorize(
+                                assertion=template_assertion,
+                                source_method="PUT",
+                                source_path=template_path,
+                                change=forbidden,
+                            )
+                        except CapabilityDenied as exc:
+                            assert exc.status == 403
+                        else:
+                            raise AssertionError("Template grant was bound to a different resource")
                     grant = verify_retention(authority, public_key=private.public_key())
                     assert grant.actor.user_id == owner_id and grant.matches(value)
                     for method, path in (("POST", "/v1/files"), ("GET", "/v1/files")):

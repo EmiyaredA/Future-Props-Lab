@@ -42,7 +42,10 @@ from app.runtime.project_operations import (
     ProjectOperationReceipt,
 )
 
+from .retention_records import ThoughtReferenceMutation
+
 MODELS = (
+    ThoughtReferenceMutation,
     ArticleSyncBinding,
     ArticleSyncTask,
     ArticleSyncStep,

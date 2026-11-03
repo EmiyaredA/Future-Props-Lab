@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import JSON, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.apps.thought_workshop.foreign_keys import external_id
 from app.runtime.ids import new_id
 from app.runtime.orm_base import Base
 from app.runtime.time import utc_now
@@ -22,7 +23,7 @@ class ThoughtTemplate(Base):
     __table_args__ = (Index("ix_thought_templates_account", "owner_user_id"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     owner_user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="CASCADE")
+        String(36), ForeignKey(external_id("users"), ondelete="CASCADE")
     )
     name: Mapped[str] = mapped_column(String(120))
     description: Mapped[str] = mapped_column(Text, default="")
@@ -43,7 +44,7 @@ class ThoughtTemplateAsset(Base):
         String(36), ForeignKey("thought_templates.id", ondelete="CASCADE"), primary_key=True
     )
     asset_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="RESTRICT"), primary_key=True
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="RESTRICT"), primary_key=True
     )
 
 
@@ -66,9 +67,11 @@ class ThoughtSavedFilter(Base):
     __table_args__ = (Index("ix_thought_filters_owner", "owner_user_id", "user_id"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     owner_user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="CASCADE")
+        String(36), ForeignKey(external_id("users"), ondelete="CASCADE")
     )
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"))
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey(external_id("users"), ondelete="CASCADE")
+    )
     name: Mapped[str] = mapped_column(String(120))
     criteria: Mapped[dict] = mapped_column(JSON)
     revision: Mapped[int] = mapped_column(Integer, default=0)
@@ -82,9 +85,11 @@ class ThoughtReadingState(Base):
     )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     owner_user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="CASCADE")
+        String(36), ForeignKey(external_id("users"), ondelete="CASCADE")
     )
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"))
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey(external_id("users"), ondelete="CASCADE")
+    )
     resource_id: Mapped[str] = mapped_column(String(200))
     title: Mapped[str] = mapped_column(String(240))
     position: Mapped[dict] = mapped_column(JSON, default=dict)

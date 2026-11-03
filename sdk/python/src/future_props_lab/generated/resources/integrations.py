@@ -131,6 +131,14 @@ class Integrations:
         'Validate Tool Api. POST /v1/integrations/tool-apis/{integration_id}/validate'
         return self._client._call('POST', '/v1/integrations/tool-apis/{integration_id}/validate', parameters=[('integration_id', 'path', integration_id)], body=body, media_type='application/json', response_type=models.ToolApiValidationOut)
 
+    def validation_attempts(self, *, offset: int | Unset = UNSET) -> models.ValidationAttemptListOut:
+        'Validation Attempts. GET /v1/integrations/validation-attempts'
+        return self._client._call('GET', '/v1/integrations/validation-attempts', parameters=[('offset', 'query', offset)], response_type=models.ValidationAttemptListOut)
+
+    def reconcile_validation(self, *, attempt_id: str) -> models.ValidationReconcileOut:
+        'Reconcile Validation. POST /v1/integrations/validation-attempts/{attempt_id}/reconcile'
+        return self._client._call('POST', '/v1/integrations/validation-attempts/{attempt_id}/reconcile', parameters=[('attempt_id', 'path', attempt_id)], response_type=models.ValidationReconcileOut)
+
 class AsyncIntegrations:
     def __init__(self, client):
         self._client = client
@@ -254,3 +262,11 @@ class AsyncIntegrations:
     async def validate_tool_api(self, *, integration_id: str, body: models.ToolApiValidateIn | dict) -> models.ToolApiValidationOut:
         'Validate Tool Api. POST /v1/integrations/tool-apis/{integration_id}/validate'
         return await self._client._call('POST', '/v1/integrations/tool-apis/{integration_id}/validate', parameters=[('integration_id', 'path', integration_id)], body=body, media_type='application/json', response_type=models.ToolApiValidationOut)
+
+    async def validation_attempts(self, *, offset: int | Unset = UNSET) -> models.ValidationAttemptListOut:
+        'Validation Attempts. GET /v1/integrations/validation-attempts'
+        return await self._client._call('GET', '/v1/integrations/validation-attempts', parameters=[('offset', 'query', offset)], response_type=models.ValidationAttemptListOut)
+
+    async def reconcile_validation(self, *, attempt_id: str) -> models.ValidationReconcileOut:
+        'Reconcile Validation. POST /v1/integrations/validation-attempts/{attempt_id}/reconcile'
+        return await self._client._call('POST', '/v1/integrations/validation-attempts/{attempt_id}/reconcile', parameters=[('attempt_id', 'path', attempt_id)], response_type=models.ValidationReconcileOut)

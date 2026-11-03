@@ -778,6 +778,7 @@ export default function App() {
             itemId={route.projectId}
             canWrite={accountAllows(me, "content.write")}
             canInstall={accountAllows(me, "configuration.manage")}
+            registerNavigationGuard={registerNavigationGuard}
             navigate={(next, id) => navigate(next, id)}
           />
         ) : page === "apps" ? (

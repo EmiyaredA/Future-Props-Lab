@@ -4,6 +4,7 @@ import io
 from pathlib import PurePosixPath
 from typing import Annotated
 from urllib.parse import quote
+from uuid import UUID
 
 from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import StreamingResponse
@@ -40,6 +41,8 @@ from app.integrations.schemas import (
     ToolApiUpdateIn,
     ToolApiValidateIn,
     ToolApiValidationOut,
+    ValidationAttemptListOut,
+    ValidationReconcileOut,
 )
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
@@ -63,6 +66,33 @@ def _raise_integration(exc: Exception) -> None:
     else:
         status, code = 422, "invalid_integration"
     raise HTTPException(status, detail={"code": code, "message": str(exc)}) from exc
+
+
+@router.get("/validation-attempts", response_model=ValidationAttemptListOut)
+async def validation_attempts(
+    request: Request,
+    principal: StudioAuth,
+    owner_user_id: OwnerDep,
+    offset: int = Query(0, ge=0),
+):
+    _owner(principal)
+    recovery = getattr(request.app.state, "integration_validation_recovery", None)
+    if recovery is None:
+        return ValidationAttemptListOut(items=[])
+    return await recovery.list_pending(owner_user_id, offset=offset)
+
+
+@router.post("/validation-attempts/{attempt_id}/reconcile", response_model=ValidationReconcileOut)
+async def reconcile_validation(
+    request: Request, principal: StudioAuth, owner_user_id: OwnerDep, attempt_id: UUID
+):
+    _owner(principal)
+    recovery = getattr(request.app.state, "integration_validation_recovery", None)
+    if recovery is None:
+        raise HTTPException(
+            404, {"code": "integration_validation_not_found", "message": "验证记录不存在"}
+        )
+    return await recovery.reconcile(owner_user_id, str(attempt_id))
 
 
 @router.get("/tool-apis", response_model=ToolApiCatalogOut)

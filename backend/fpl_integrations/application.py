@@ -18,8 +18,8 @@ from app.integrations.http_bindings import IntegrationBindings
 from app.integrations.mcp import McpCatalog
 from app.integrations.mcp.client import OfficialMcpDiscoveryClient
 from app.integrations.routes import router
-from app.integrations.skills import SkillCatalog
 from app.integrations.skills.archive import SkillArchiveStorage
+from app.integrations.skills.catalog import SkillCatalog
 from app.integrations.tool_apis import ToolApiCatalog
 from app.problem_details import (
     account_exception_handler,
@@ -152,6 +152,7 @@ def create_app(
     app.state.external_reads = ExternalReads(database, feishu_transport, cipher=cipher)
     app.state.external_steps = external_steps
     app.state.demo_tool_installations = DemoToolInstallations(database)
+    app.state.integration_validation_recovery = recovery
     app.state.supervisor = supervisor
 
     def demo_for(request):

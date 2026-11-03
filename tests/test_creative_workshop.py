@@ -21,8 +21,34 @@ from app.console.creative_workshop.schemas import (
     CreativeStdioSetupIn,
 )
 from app.console.models import User
-from app.integrations.models import McpIntegration, ToolApiIntegration
+from app.integrations.models import (
+    McpIntegration,
+    SkillIntegration,
+    SkillVersion,
+    ToolApiIntegration,
+)
 from app.runtime.db import SessionLocal
+
+
+@pytest.fixture(autouse=True)
+def creative_author_adapter():
+    from app.console.creative_workshop.legacy_archives import LegacyCreativeArchives
+    from app.console.creative_workshop.legacy_authors import LegacyCreativeAuthors
+    from app.console.creative_workshop.legacy_install import LegacyCreativeInstaller
+    from app.console.creative_workshop.legacy_sources import LegacyCreativeSources
+
+    previous = dict(SessionLocal.kw.get("info") or {})
+    SessionLocal.configure(
+        info={
+            **previous,
+            "creative_authors_factory": LegacyCreativeAuthors,
+            "creative_archives_factory": LegacyCreativeArchives,
+            "creative_sources_factory": LegacyCreativeSources,
+            "creative_installer_factory": LegacyCreativeInstaller,
+        }
+    )
+    yield
+    SessionLocal.configure(info=previous)
 
 
 def principal(user_id: str, _owner_user_id: str, _role: str = "admin") -> StudioPrincipal:
@@ -167,6 +193,7 @@ async def test_cross_workspace_public_catalog_and_atomic_install() -> None:
             ),
         )
         await author.publish(tool.id, changed.revision)
+        await session.refresh(row)
         assert row.url == "https://weather.example.com/api"
         old_release = await session.get(CreativeRelease, published.current_release_id)
         assert old_release and old_release.title == "Weather"
@@ -297,3 +324,279 @@ async def test_public_manifest_rejects_credentials_and_empty_bundle() -> None:
         )
         with pytest.raises(CreativeFileError):
             await author.publish(private_skill.id, private_skill.revision)
+
+
+@pytest.mark.asyncio
+async def test_cover_upload_rechecks_revision_after_file_staging(monkeypatch):
+    from sqlalchemy import update
+
+    from app.console.creative_workshop import catalog as module
+
+    owner = "creative-cover-cas"
+    async with SessionLocal() as session:
+        session.add(account_record(id=owner, name=owner))
+        await session.commit()
+        actor = principal(owner, owner)
+        item = await CreativeCatalog(session, actor).create(
+            CreativeDraftIn(kind="tool_api", title="cover", summary="test")
+        )
+        relative = "creative-workshop/covers/cas.webp"
+        target = resolve_file(owner, relative)
+
+        async def staged(_owner, _upload):
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(b"synthetic cover")
+            async with SessionLocal() as other:
+                await other.execute(
+                    update(CreativeItem)
+                    .where(CreativeItem.id == item.id)
+                    .values(revision=CreativeItem.revision + 1)
+                )
+                await other.commit()
+            return relative
+
+        monkeypatch.setattr(module, "save_cover", staged)
+        with pytest.raises(CreativeError) as error:
+            await CreativeCatalog(session, actor).upload_cover(item.id, item.revision, None)
+        assert error.value.code == "revision_conflict"
+        assert not target.exists()
+        refreshed = await session.get(CreativeItem, item.id)
+        assert refreshed.revision == item.revision + 1
+        assert refreshed.draft_cover_path == ""
+
+
+@pytest.mark.asyncio
+async def test_cover_commit_response_loss_preserves_committed_file(monkeypatch):
+    from app.console.creative_workshop import catalog as module
+
+    owner = "creative-cover-unknown"
+    async with SessionLocal() as session:
+        session.add(account_record(id=owner, name=owner))
+        await session.commit()
+        actor = principal(owner, owner)
+        item = await CreativeCatalog(session, actor).create(
+            CreativeDraftIn(kind="tool_api", title="cover", summary="test")
+        )
+        relative = "creative-workshop/covers/committed.webp"
+        target = resolve_file(owner, relative)
+
+        async def staged(_owner, _upload):
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(b"committed cover")
+            return relative
+
+        original_commit = session.commit
+
+        async def lost_ack():
+            await original_commit()
+            raise RuntimeError("synthetic response loss")
+
+        monkeypatch.setattr(module, "save_cover", staged)
+        monkeypatch.setattr(session, "commit", lost_ack)
+        with pytest.raises(RuntimeError, match="response loss"):
+            await CreativeCatalog(session, actor).upload_cover(item.id, item.revision, None)
+        assert target.read_bytes() == b"committed cover"
+    async with SessionLocal() as session:
+        row = await session.get(CreativeItem, item.id)
+        assert row.draft_cover_path == relative
+        assert row.revision == item.revision + 1
+
+
+def test_creative_files_reject_symlink_paths(tmp_path):
+    from types import SimpleNamespace
+
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    account = tmp_path / "accounts" / "owner"
+    account.mkdir(parents=True)
+    (account / "escape").symlink_to(outside, target_is_directory=True)
+    settings = SimpleNamespace(runtime_path=tmp_path, account_path=lambda _owner: account)
+    with pytest.raises(CreativeFileError, match="符号链接"):
+        resolve_file("owner", "escape/file.webp", settings=settings)
+    with pytest.raises(CreativeFileError, match="路径无效"):
+        resolve_file("owner", "../outside/file.webp", settings=settings)
+
+
+@pytest.mark.asyncio
+async def test_skill_upload_commit_response_loss_keeps_committed_archive(monkeypatch):
+    from app.console.creative_workshop import catalog as module
+
+    owner = "creative-skill-unknown"
+    async with SessionLocal() as session:
+        session.add(account_record(id=owner, name=owner))
+        await session.commit()
+        actor = principal(owner, owner)
+        item = await CreativeCatalog(session, actor).create(
+            CreativeDraftIn(kind="skill", title="Skill", summary="test")
+        )
+        relative = f"creative-workshop/skill-drafts/{item.id}/draft"
+        target = resolve_file(owner, relative)
+
+        async def staged(_owner, _item_id, _upload, *, archive_parser):
+            del archive_parser
+            target.mkdir(parents=True, exist_ok=True)
+            (target / "SKILL.md").write_text("# Synthetic Skill")
+            return relative, {"name": "synthetic", "content_sha256": "a" * 64}
+
+        original_commit = session.commit
+
+        async def lost_ack():
+            await original_commit()
+            raise RuntimeError("synthetic response loss")
+
+        monkeypatch.setattr(module, "save_skill_draft", staged)
+        monkeypatch.setattr(session, "commit", lost_ack)
+        with pytest.raises(RuntimeError, match="response loss"):
+            await CreativeCatalog(session, actor).upload_skill(item.id, item.revision, None)
+        assert (target / "SKILL.md").read_text() == "# Synthetic Skill"
+    async with SessionLocal() as session:
+        row = await session.get(CreativeItem, item.id)
+        assert row.draft_skill_path == relative and row.revision == item.revision + 1
+
+
+@pytest.mark.asyncio
+async def test_publish_commit_response_loss_preserves_published_archive(monkeypatch):
+    owner = "creative-publish-unknown"
+    async with SessionLocal() as session:
+        session.add(account_record(id=owner, name=owner))
+        await session.commit()
+        actor = principal(owner, owner)
+        item = await CreativeCatalog(session, actor).create(
+            CreativeDraftIn(kind="skill", title="Skill", summary="test")
+        )
+        relative = f"creative-workshop/skill-drafts/{item.id}/draft"
+        target = resolve_file(owner, relative)
+        target.mkdir(parents=True, exist_ok=True)
+        (target / "SKILL.md").write_text("# Synthetic Skill")
+        row = await session.get(CreativeItem, item.id)
+        row.draft_skill_path = relative
+        row.draft_manifest = {"name": "synthetic", "content_sha256": "a" * 64}
+        await session.commit()
+        original_commit = session.commit
+
+        async def lost_ack():
+            await original_commit()
+            raise RuntimeError("synthetic response loss")
+
+        monkeypatch.setattr(session, "commit", lost_ack)
+        with pytest.raises(RuntimeError, match="response loss"):
+            await CreativeCatalog(session, actor).publish(item.id, item.revision)
+    async with SessionLocal() as session:
+        row = await session.get(CreativeItem, item.id)
+        assert row.status == "published" and row.revision == item.revision + 1
+        release = await session.get(CreativeRelease, row.current_release_id)
+        assert (
+            resolve_file(owner, release.skill_path) / "SKILL.md"
+        ).read_text() == "# Synthetic Skill"
+
+
+@pytest.mark.asyncio
+async def test_import_skill_owns_snapshot_after_source_removed():
+    from app.runtime.config import get_settings
+
+    owner = "creative-skill-source"
+    async with SessionLocal() as session:
+        session.add(account_record(id=owner, name=owner))
+        await session.commit()
+        skill = SkillIntegration(
+            id="source-skill", owner_user_id=owner, name="Owned", description="demo"
+        )
+        session.add(skill)
+        await session.flush()
+        session.add(
+            SkillVersion(
+                skill_id=skill.id,
+                version="v1",
+                name="Owned",
+                storage_path="owned",
+                content_sha256="a" * 64,
+                file_count=1,
+                expanded_bytes=64,
+            )
+        )
+        await session.commit()
+        original = get_settings().account_skill_path(owner) / "source-skill" / "v1"
+        original.mkdir(parents=True, exist_ok=True)
+        (original / "SKILL.md").write_text("---\nname: owned\ndescription: demo\n---\n# Owned\n")
+        actor = principal(owner, owner)
+        result = await CreativeCatalog(session, actor).import_source("skill", "source-skill")
+        row = await session.get(CreativeItem, result.id)
+        assert row.draft_skill_path.startswith("creative-workshop/skill-drafts/")
+        copied = resolve_file(owner, row.draft_skill_path) / "SKILL.md"
+        assert copied.read_bytes() == (original / "SKILL.md").read_bytes()
+        shutil.rmtree(original)
+        published = await CreativeCatalog(session, actor).publish(result.id, result.revision)
+        assert published.status == "published"
+        assert copied.is_file()
+
+
+@pytest.mark.asyncio
+async def test_import_source_rejects_another_accounts_integration():
+    owner, foreign = "creative-source-owner", "creative-source-foreign"
+    async with SessionLocal() as session:
+        session.add_all(
+            [account_record(id=owner, name=owner), account_record(id=foreign, name=foreign)]
+        )
+        session.add(
+            ToolApiIntegration(
+                id="foreign-source",
+                owner_user_id=foreign,
+                name="Hidden",
+                method="GET",
+                url="https://example.com",
+            )
+        )
+        await session.commit()
+        with pytest.raises(CreativeError) as error:
+            await CreativeCatalog(session, principal(owner, owner)).import_source(
+                "tool_api", "foreign-source"
+            )
+        assert error.value.status == 404
+
+
+@pytest.mark.asyncio
+async def test_import_skill_rejects_bad_source_digest():
+    from app.console.creative_workshop.sources import CreativeSource
+
+    class Sources:
+        async def snapshot(self, *, owner, kind, source_id):
+            assert owner == "creative-source-digest" and kind == "skill" and source_id == "x"
+            return CreativeSource("Skill", "demo", {}, b"not the declared bytes", "a" * 64)
+
+    owner = "creative-source-digest"
+    async with SessionLocal() as session:
+        session.add(account_record(id=owner, name=owner))
+        await session.commit()
+        session.info["creative_sources"] = Sources()
+        with pytest.raises(CreativeError, match="摘要不匹配"):
+            await CreativeCatalog(session, principal(owner, owner)).import_source("skill", "x")
+        assert (
+            list(
+                (
+                    await session.scalars(
+                        select(CreativeItem).where(CreativeItem.origin_owner_user_id == owner)
+                    )
+                ).all()
+            )
+            == []
+        )
+
+
+def test_publish_skill_rejects_symlink_directory(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    from app.console.creative_workshop import files
+
+    account = tmp_path / "accounts" / "owner"
+    source = account / "creative-workshop" / "skill-drafts" / "draft"
+    source.mkdir(parents=True)
+    (source / "SKILL.md").write_text("# Synthetic")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "private.txt").write_text("not for publication")
+    (source / "linked-directory").symlink_to(outside, target_is_directory=True)
+    settings = SimpleNamespace(runtime_path=tmp_path, account_path=lambda _owner: account)
+    monkeypatch.setattr(files, "get_settings", lambda: settings)
+    with pytest.raises(CreativeFileError, match="符号链接"):
+        files.copy_skill_release("owner", "creative-workshop/skill-drafts/draft", "release")
+    assert not (account / "creative-workshop" / "skill-releases" / "release").exists()

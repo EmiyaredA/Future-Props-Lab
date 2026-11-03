@@ -5543,12 +5543,29 @@ class UpdateTransitionOperation(WireModel):
     transition_id: str = Field(default=..., alias='transitionId', min_length=1, max_length=64)
     type: Literal['updateTransition'] = Field(default=..., alias='type')
 
+class ValidationAttemptListOut(WireModel):
+    has_more: bool = Field(default=False, alias='has_more')
+    items: list[ValidationAttemptOut] = Field(default=..., alias='items')
+
+class ValidationAttemptOut(WireModel):
+    connection_id: str = Field(default=..., alias='connection_id')
+    created_at: datetime = Field(default=..., alias='created_at')
+    id: str = Field(default=..., alias='id')
+    kind: Literal['mcp.validate', 'tool.validate'] = Field(default=..., alias='kind')
+    released: bool = Field(default=..., alias='released')
+    status: Literal['unknown', 'completed', 'not-started'] = Field(default=..., alias='status')
+
 class ValidationError(WireModel):
     ctx: dict[str, Any] | None = Field(default=None, alias='ctx')
     input: Any | None = Field(default=None, alias='input')
     loc: list[str | int] = Field(default=..., alias='loc')
     msg: str = Field(default=..., alias='msg')
     type: str = Field(default=..., alias='type')
+
+class ValidationReconcileOut(WireModel):
+    id: str = Field(default=..., alias='id')
+    released: bool = Field(default=..., alias='released')
+    status: Literal['completed', 'not-started'] = Field(default=..., alias='status')
 
 class VideoCapabilitiesOut(WireModel):
     audio_only: bool = Field(default=False, alias='audio_only')
@@ -7240,7 +7257,10 @@ UpdateClipOperation.model_rebuild()
 UpdateSettingsOperation.model_rebuild()
 UpdateTrackOperation.model_rebuild()
 UpdateTransitionOperation.model_rebuild()
+ValidationAttemptListOut.model_rebuild()
+ValidationAttemptOut.model_rebuild()
 ValidationError.model_rebuild()
+ValidationReconcileOut.model_rebuild()
 VideoCapabilitiesOut.model_rebuild()
 VideoDownloadAssetOut.model_rebuild()
 VideoDownloadDepsOut.model_rebuild()

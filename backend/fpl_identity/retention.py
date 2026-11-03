@@ -1,5 +1,6 @@
 """Only an authorized original write can issue a bounded retention authority."""
 
+import re
 import secrets
 import time
 
@@ -34,6 +35,23 @@ class RetentionAuthorization:
             or route_permission(body.source_method, body.source_path) != "content.write"
         ):
             raise HTTPException(403, "retention_source_forbidden")
+        if body.caller == "thought":
+            # An original write is not by itself authority to change an arbitrary
+            # source resource. Admit only operations whose path binds the exact ID.
+            match = (
+                re.fullmatch(
+                    r"/v1/thought-workshop/(notes|templates)/([A-Za-z0-9_-]+)", body.source_path
+                )
+                if body.source_method in {"PUT", "DELETE"}
+                else None
+            )
+            if not match:
+                raise HTTPException(403, "retention_source_forbidden")
+            expected_kind = "note" if match.group(1) == "notes" else "template"
+            if body.change.resource_kind != expected_kind or body.change.resource_id != match.group(
+                2
+            ):
+                raise HTTPException(403, "retention_resource_mismatch")
         try:
             body.change.validate_service(body.caller)
             actor = verify_context(

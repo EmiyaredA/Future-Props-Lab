@@ -22,6 +22,9 @@ vi.mock("@features/integrations/api", async () => {
   >("@features/integrations/api");
   return {
     ...actual,
+    getValidationAttempts: vi
+      .fn()
+      .mockResolvedValue({ items: [], has_more: false }),
     getToolApis: vi.fn(),
     getMcpServers: vi.fn(),
     getSkills: vi.fn(),

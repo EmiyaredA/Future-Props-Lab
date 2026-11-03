@@ -3252,6 +3252,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/integrations/validation-attempts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Validation Attempts */
+        get: operations["validation_attempts_v1_integrations_validation_attempts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integrations/validation-attempts/{attempt_id}/reconcile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reconcile Validation */
+        post: operations["reconcile_validation_v1_integrations_validation_attempts__attempt_id__reconcile_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/interview-assistant/executor": {
         parameters: {
             query?: never;
@@ -21677,6 +21711,40 @@ export interface components {
              */
             type: "updateTransition";
         };
+        /** ValidationAttemptListOut */
+        ValidationAttemptListOut: {
+            /**
+             * Has More
+             * @default false
+             */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["ValidationAttemptOut"][];
+        };
+        /** ValidationAttemptOut */
+        ValidationAttemptOut: {
+            /** Connection Id */
+            connection_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "mcp.validate" | "tool.validate";
+            /** Released */
+            released: boolean;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "unknown" | "completed" | "not-started";
+        };
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -21689,6 +21757,18 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** ValidationReconcileOut */
+        ValidationReconcileOut: {
+            /** Id */
+            id: string;
+            /** Released */
+            released: boolean;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "completed" | "not-started";
         };
         /** VideoCapabilitiesOut */
         VideoCapabilitiesOut: {
@@ -31544,6 +31624,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ToolApiValidationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    validation_attempts_v1_integrations_validation_attempts_get: {
+        parameters: {
+            query?: {
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationAttemptListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reconcile_validation_v1_integrations_validation_attempts__attempt_id__reconcile_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attempt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationReconcileOut"];
                 };
             };
             /** @description Validation Error */

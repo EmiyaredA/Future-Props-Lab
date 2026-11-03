@@ -35508,6 +35508,75 @@
         "title": "UpdateTransitionOperation",
         "type": "object"
       },
+      "ValidationAttemptListOut": {
+        "properties": {
+          "has_more": {
+            "default": false,
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationAttemptOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "ValidationAttemptListOut",
+        "type": "object"
+      },
+      "ValidationAttemptOut": {
+        "properties": {
+          "connection_id": {
+            "title": "Connection Id",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "mcp.validate",
+              "tool.validate"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "released": {
+            "title": "Released",
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "unknown",
+              "completed",
+              "not-started"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "connection_id",
+          "status",
+          "released",
+          "created_at"
+        ],
+        "title": "ValidationAttemptOut",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -35546,6 +35615,33 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "ValidationReconcileOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "released": {
+            "title": "Released",
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "completed",
+              "not-started"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "released"
+        ],
+        "title": "ValidationReconcileOut",
         "type": "object"
       },
       "VideoCapabilitiesOut": {
@@ -53237,6 +53333,93 @@
           }
         },
         "summary": "Validate Tool Api",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/v1/integrations/validation-attempts": {
+      "get": {
+        "operationId": "validation_attempts_v1_integrations_validation_attempts_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationAttemptListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Validation Attempts",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/v1/integrations/validation-attempts/{attempt_id}/reconcile": {
+      "post": {
+        "operationId": "reconcile_validation_v1_integrations_validation_attempts__attempt_id__reconcile_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attempt_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Attempt Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReconcileOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reconcile Validation",
         "tags": [
           "integrations"
         ]

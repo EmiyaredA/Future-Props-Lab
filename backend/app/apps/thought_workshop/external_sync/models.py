@@ -13,6 +13,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.apps.thought_workshop.foreign_keys import external_id
 from app.runtime.ids import new_id
 from app.runtime.orm_base import Base
 from app.runtime.time import utc_now
@@ -23,13 +24,13 @@ class ArticleSyncBinding(Base):
     __table_args__ = (UniqueConstraint("note_id"), UniqueConstraint("target_key"))
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     owner_user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+        String(36), ForeignKey(external_id("users"), ondelete="CASCADE"), index=True
     )
     note_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("thought_notes.id", ondelete="CASCADE")
     )
     connection_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("integration_external_connections.id", ondelete="RESTRICT")
+        String(36), ForeignKey(external_id("integration_external_connections"), ondelete="RESTRICT")
     )
     document_id: Mapped[str] = mapped_column(String(200))
     target_key: Mapped[str] = mapped_column(String(240))
@@ -54,7 +55,7 @@ class ArticleSyncTask(Base):
     )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     owner_user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
+        String(36), ForeignKey(external_id("users"), ondelete="CASCADE"), index=True
     )
     note_id: Mapped[str] = mapped_column(String(36), index=True)
     binding_id: Mapped[str] = mapped_column(String(36))
@@ -92,5 +93,5 @@ class ArticleSyncAsset(Base):
         String(36), ForeignKey("thought_sync_tasks.id", ondelete="CASCADE"), primary_key=True
     )
     asset_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="RESTRICT"), primary_key=True
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="RESTRICT"), primary_key=True
     )

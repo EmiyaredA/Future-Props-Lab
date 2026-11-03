@@ -86,7 +86,11 @@
 
 `llm/admission.py` 定义不可变的额度申请、释放、任务保留与派生任务接纳绑定；模型 HTTP 与实时语音从自己的 ASGI 应用取得它，恢复网站显式安装原治理实现。`llm/inference/receipts.py` 只依赖 Models 任务记录，负责账号限定的请求回执与摘要冲突校验，避免为重放检查导入素材能力。独立账本、队列和跨服务任务授权仍须单独实现，缺少绑定不允许回退单体数据库。
 
+`backend/fpl_creative/` 当前拥有 Creative 三张自有表的独立迁移和账号写入会话边界；公开阅读不授予其他账号写入权。`console/creative_workshop/` 通过显式作者、来源、归档和安装端口解耦旧站依赖，恢复网站只在装配入口注入旧适配器。上传和发布使用 CAS，提交结果未知时保留文件。独立浏览器入口可单独构建；目标安装、认证授权与完整服务装配尚未就绪，不视为可部署。
+
 `backend/fpl_integrations/` 拥有独立工具、MCP、Skills、外部连接 HTTP 装配、自有迁移和执行回执。`fpl_runtime/integration_intents.py` / `integration_client.py` 将来源账号请求、资源与输入摘要绑定到 Identity 固定执行意图；Models 自有验证额度和演示安装回执保留跨服务幂等，不读取 Integrations 数据库。飞书同步由私有固定步骤协议执行，未知供应商响应不能自动重放。Skills 文件按本服务已提交记录恢复。`native_mcp.py` / `native_http.py` 对接主动连接的 Mac MCP worker，容器不持有主机命令、个人环境或目录。`deploy/integrations.compose.yaml` 只挂载所属状态、只读配置与用途限定凭据，外联使用单独网络；是否启用由 TOML 中明确选定的镜像决定。完整容器、原生与浏览器验收仍为正式切换前置条件。
+
+`fpl_thought/retention.py` 使用自有 outbox 持久保存素材引用准备、源事务结果与确认状态；`note_retention.py`、`template_retention.py` 将已接入的笔记和模板操作绑定自身 CAS 与引用回执。`fpl_runtime/community_assets.py`、`fpl_identity/community_assets.py`、`fpl_thought/community_evidence.py` 和 `fpl_assets/community_assets.py` 提供单素材社区读取：Identity签发短期用途限定授权，Assets 每次读取都要求 Thought 在独立会话复核当前发布、浏览者权限、正文引用与资源版本，并重新检查浏览者 Session。该私有读取协议尚未完成 Thought HTTP 及部署装配，不开放社区上传；其他写操作仍需逐项接通 retention。
 
 `backend/fpl_thought/` 拥有 Thought 自有表清单、仅保留自有外键的独立迁移与写作 HTTP 适配，目前还不提供完整部署入口。`fpl_runtime/writing.py` 是绑定笔记、请求内容摘要和原始账号操作的私有写作协议；`fpl_models/writing.py` 负责 Models 自有选择、流式调用、日志和配额。Thought 的 `writing.py` 与 `legacy_writing.py` 分别定义显式模型端口和恢复网站适配器，业务写作不直接加载模型 ORM 或全局数据库。
 
