@@ -20,7 +20,7 @@ Thought has an owner-scoped staged intent and retains its bounded, digest-checke
 
 ## Consequences
 
-These are isolated private primitives, not an activated public upload flow. The Thought upload HTTP adapter and automatic remote replay worker are not assembled; interrupted local pre-intent staging and confirmed local copies are reconciled at locked startup. The request-bound network transfer and local confirmation are available as an explicit service operation but are not mounted as a public endpoint. The current browser upload request has no stable client request ID, so a browser retry after a lost response cannot be promised duplicate-free. Unresolved or unrecognized intents are preserved; no time-based cleanup is performed. Community cross-account uploads require a separate authorization and remain closed. Existing data and migrations are not applied to a real deployment by these tests.
+The incomplete independent Thought application now mounts the public upload adapter described in [the upload retry decision](2026-11-03-thought-upload-idempotent-http.md); automatic remote replay and production service assembly remain absent. Interrupted local pre-intent staging and confirmed local copies are reconciled at locked startup. Unresolved or unrecognized intents are preserved; no time-based cleanup is performed. Community cross-account uploads require separate authorization and remain closed. Existing data and migrations are not applied to a real deployment by these tests.
 
 ## Verification
 

@@ -11,17 +11,17 @@ class Thought:
     def __init__(self, client):
         self._client = client
 
-    def attachments(self, *, body: models.Body_attachments_v1_thought_workshop_attachments_post | dict, files: dict | list | None = None) -> models.ThoughtAttachmentOut:
+    def attachments(self, *, idempotency_key: str | None | Unset = UNSET, body: models.Body_attachments_v1_thought_workshop_attachments_post | dict, files: dict | list | None = None) -> models.ThoughtAttachmentOut:
         'Attachments. POST /v1/thought-workshop/attachments'
-        return self._client._call('POST', '/v1/thought-workshop/attachments', parameters=[], body=body, media_type='multipart/form-data', files=files, response_type=models.ThoughtAttachmentOut)
+        return self._client._call('POST', '/v1/thought-workshop/attachments', parameters=[('Idempotency-Key', 'header', idempotency_key)], body=body, media_type='multipart/form-data', files=files, response_type=models.ThoughtAttachmentOut)
 
     def backup(self, *, knowledge_base_id: str | None | Unset = UNSET) -> Any:
         'Backup. GET /v1/thought-workshop/backup'
         return self._client._call('GET', '/v1/thought-workshop/backup', parameters=[('knowledge_base_id', 'query', knowledge_base_id)], response_type=Any)
 
-    def upload_image(self, *, body: models.Body_upload_image_v1_thought_workshop_images_post | dict, files: dict | list | None = None) -> models.ThoughtImageOut:
+    def upload_image(self, *, idempotency_key: str | None | Unset = UNSET, body: models.Body_upload_image_v1_thought_workshop_images_post | dict, files: dict | list | None = None) -> models.ThoughtImageOut:
         'Upload Image. POST /v1/thought-workshop/images'
-        return self._client._call('POST', '/v1/thought-workshop/images', parameters=[], body=body, media_type='multipart/form-data', files=files, response_type=models.ThoughtImageOut)
+        return self._client._call('POST', '/v1/thought-workshop/images', parameters=[('Idempotency-Key', 'header', idempotency_key)], body=body, media_type='multipart/form-data', files=files, response_type=models.ThoughtImageOut)
 
     def imports(self, *, knowledge_base_id: str | None | Unset = UNSET, expected_revision: int | None | Unset = UNSET, body: models.Body_imports_v1_thought_workshop_imports_post | dict, files: dict | list | None = None) -> models.ThoughtImportOut:
         'Imports. POST /v1/thought-workshop/imports'
@@ -283,17 +283,17 @@ class AsyncThought:
     def __init__(self, client):
         self._client = client
 
-    async def attachments(self, *, body: models.Body_attachments_v1_thought_workshop_attachments_post | dict, files: dict | list | None = None) -> models.ThoughtAttachmentOut:
+    async def attachments(self, *, idempotency_key: str | None | Unset = UNSET, body: models.Body_attachments_v1_thought_workshop_attachments_post | dict, files: dict | list | None = None) -> models.ThoughtAttachmentOut:
         'Attachments. POST /v1/thought-workshop/attachments'
-        return await self._client._call('POST', '/v1/thought-workshop/attachments', parameters=[], body=body, media_type='multipart/form-data', files=files, response_type=models.ThoughtAttachmentOut)
+        return await self._client._call('POST', '/v1/thought-workshop/attachments', parameters=[('Idempotency-Key', 'header', idempotency_key)], body=body, media_type='multipart/form-data', files=files, response_type=models.ThoughtAttachmentOut)
 
     async def backup(self, *, knowledge_base_id: str | None | Unset = UNSET) -> Any:
         'Backup. GET /v1/thought-workshop/backup'
         return await self._client._call('GET', '/v1/thought-workshop/backup', parameters=[('knowledge_base_id', 'query', knowledge_base_id)], response_type=Any)
 
-    async def upload_image(self, *, body: models.Body_upload_image_v1_thought_workshop_images_post | dict, files: dict | list | None = None) -> models.ThoughtImageOut:
+    async def upload_image(self, *, idempotency_key: str | None | Unset = UNSET, body: models.Body_upload_image_v1_thought_workshop_images_post | dict, files: dict | list | None = None) -> models.ThoughtImageOut:
         'Upload Image. POST /v1/thought-workshop/images'
-        return await self._client._call('POST', '/v1/thought-workshop/images', parameters=[], body=body, media_type='multipart/form-data', files=files, response_type=models.ThoughtImageOut)
+        return await self._client._call('POST', '/v1/thought-workshop/images', parameters=[('Idempotency-Key', 'header', idempotency_key)], body=body, media_type='multipart/form-data', files=files, response_type=models.ThoughtImageOut)
 
     async def imports(self, *, knowledge_base_id: str | None | Unset = UNSET, expected_revision: int | None | Unset = UNSET, body: models.Body_imports_v1_thought_workshop_imports_post | dict, files: dict | list | None = None) -> models.ThoughtImportOut:
         'Imports. POST /v1/thought-workshop/imports'

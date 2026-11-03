@@ -60832,6 +60832,29 @@
     "/v1/thought-workshop/attachments": {
       "post": {
         "operationId": "attachments_v1_thought_workshop_attachments_post",
+        "parameters": [
+          {
+            "description": "独立 Thought 服务用于上传重试；恢复网站暂不去重。",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9_-]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "独立 Thought 服务用于上传重试；恢复网站暂不去重。",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -62407,6 +62430,29 @@
     "/v1/thought-workshop/images": {
       "post": {
         "operationId": "upload_image_v1_thought_workshop_images_post",
+        "parameters": [
+          {
+            "description": "独立 Thought 服务用于上传重试；恢复网站暂不去重。",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9_-]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "独立 Thought 服务用于上传重试；恢复网站暂不去重。",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "multipart/form-data": {

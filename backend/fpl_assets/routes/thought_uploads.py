@@ -21,7 +21,10 @@ from .library_outputs import OutputStream
 router = APIRouter(include_in_schema=False)
 
 
-@router.post("/_internal/v1/thought-library/uploads/{kind}/{request_id}/{descriptor_sha256}")
+@router.api_route(
+    "/_internal/v1/thought-library/uploads/{kind}/{request_id}/{descriptor_sha256}",
+    methods=["GET", "POST"],
+)
 async def upload(request: Request, kind: str, request_id: str, descriptor_sha256: str):
     if request.headers.get("origin") or request.headers.get("cookie"):
         raise HTTPException(403, "private_thought_upload_required")
@@ -33,7 +36,7 @@ async def upload(request: Request, kind: str, request_id: str, descriptor_sha256
         actor = verify_context(
             request.headers.get(HEADER, ""),
             service="assets",
-            method="POST",
+            method=request.method,
             path=request.url.path,
             public_key=request.app.state.identity_public_key,
         )
@@ -47,7 +50,11 @@ async def upload(request: Request, kind: str, request_id: str, descriptor_sha256
         description = ThoughtUploadDescription.from_header(
             request.headers.get("X-Fpl-Upload-Descriptor", "")
         )
-        length = int(request.headers.get("content-length", "-1"))
+        length = (
+            int(request.headers.get("content-length", "-1"))
+            if request.method == "POST"
+            else description.byte_size
+        )
     except (ValueError, TypeError, binascii.Error, json.JSONDecodeError):
         raise HTTPException(422, "invalid_upload_descriptor") from None
     if (
@@ -69,17 +76,26 @@ async def upload(request: Request, kind: str, request_id: str, descriptor_sha256
 
     async def active():
         return await request.app.state.identity.status(
-            assertion=request.headers.get(HEADER, ""), method="POST", path=request.url.path
+            assertion=request.headers.get(HEADER, ""), method=request.method, path=request.url.path
         )
 
     async with request.app.state.database.sessions(
         info={"owner_user_id": actor.user_id}
     ) as session:
-        result = await ThoughtUploads(
-            session, request.app.state.settings, actor.user_id, active=active
-        ).store(request_id, description, OutputStream(request, description))
+        uploads = ThoughtUploads(session, request.app.state.settings, actor.user_id, active=active)
+        if request.method == "POST":
+            result = await uploads.store(
+                request_id, description, OutputStream(request, description)
+            )
+        else:
+            await uploads.authorize()
+            result = await uploads.receipt(request_id, description)
+            if result is None:
+                raise HTTPException(404, "thought_upload_receipt_not_found")
+            await uploads.authorize()
     response = JSONResponse(result.model_dump(mode="json"), headers={"Cache-Control": "no-store"})
     response.headers["X-Fpl-Upload-Receipt"] = signer.sign(
+        method=request.method,
         owner=actor.user_id,
         request_id=request_id,
         fingerprint=description.fingerprint,

@@ -20,7 +20,7 @@ A missing signer, absent or forged signature, stale nonce, wrong account, timeou
 
 ## Consequences
 
-The signing key is an explicit private service-assembly input and must be unique from every service and ingress credential in a future deployment. The Assets route returns 503 without it. Thought's public upload HTTP adapter, browser-stable request identity, authenticated remote replay and complete independent service assembly remain unimplemented; no public upload entry is enabled by this change. A retained source file is never deleted merely because a response timed out.
+The signing key is an explicit private service-assembly input and must be unique from every service and ingress credential in a future deployment. The Assets route returns 503 without it. The incomplete independent Thought application now mounts a public upload adapter and uses authenticated receipt queries on retry, as described in [the upload retry decision](2026-11-03-thought-upload-idempotent-http.md). Automatic remote replay and complete independent service assembly remain unimplemented. A retained source file is never deleted merely because a response timed out.
 
 ## Verification
 

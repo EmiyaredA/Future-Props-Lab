@@ -118,11 +118,12 @@ def test_upload_grant_binds_source_endpoint_kind_request_and_digest():
         target_path=PREFIX + "/uploads/image/operation/" + "a" * 64,
     )
     assert permitted(RequestGrant(**values), CATALOG)
+    assert permitted(RequestGrant(**{**values, "target_method": "GET"}), CATALOG)
     assert target_permission_path(RequestGrant(**values)) == "/v1/files"
     for patch in (
         {"source_path": "/v1/thought-workshop/attachments"},
         {"source_method": "GET"},
-        {"target_method": "GET"},
+        {"target_method": "DELETE"},
         {"target_path": PREFIX + "/uploads/attachment/operation/" + "a" * 64},
         {"target_path": PREFIX + "/uploads/image/operation/not-a-digest"},
         {"target_path": PREFIX + "/uploads/image/../" + "a" * 64},

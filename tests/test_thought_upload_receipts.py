@@ -6,6 +6,7 @@ import io
 import pytest
 from sqlalchemy import select
 from starlette.datastructures import UploadFile
+from tests.test_community_asset_protocol import scenario  # noqa: F401
 
 from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.models import VisualAsset
@@ -180,7 +181,7 @@ def test_upload_delegation_matches_kind_caller_method_id_and_digest_exactly():
         replace(grant, caller="models"),
         replace(grant, purpose="thought.library.read"),
         replace(grant, source_method="PUT"),
-        replace(grant, target_method="GET"),
+        replace(grant, target_method="DELETE"),
         replace(grant, target_service="thought"),
         replace(grant, source_path="/v1/thought-workshop/attachments"),
         replace(grant, source_path="/v1/thought-workshop/community/publications/pub/uploads"),
@@ -335,6 +336,7 @@ async def test_staged_transport_delegates_exact_upload_and_preserves_unknown_res
             response.headers["X-Fpl-Upload-Receipt"] = ThoughtUploadReceiptAuthenticator(
                 "u" * 48
             ).sign(
+                method="POST",
                 owner="alpha",
                 request_id="one",
                 fingerprint=desc.fingerprint,
@@ -490,6 +492,7 @@ def test_upload_receipt_signature_binds_response_and_exact_request():
 
     signer = ThoughtUploadReceiptAuthenticator("u" * 48)
     binding = dict(
+        method="POST",
         owner="alpha",
         request_id="one",
         fingerprint="a" * 64,
@@ -499,6 +502,7 @@ def test_upload_receipt_signature_binds_response_and_exact_request():
     signature = signer.sign(**binding)
     signer.verify(signature, **binding)
     for changed in (
+        {"method": "GET"},
         {"owner": "beta"},
         {"request_id": "other"},
         {"fingerprint": "c" * 64},
@@ -573,3 +577,178 @@ async def test_confirmed_upload_metadata_is_replayable_and_legacy_receipts_enric
                 )
     finally:
         await db.close()
+
+
+async def test_public_upload_retries_are_owner_scoped_and_use_authenticated_assets(scenario):  # noqa: F811
+    import httpx
+    from tests.test_community_asset_protocol import (
+        ASSETS_SECRET,
+        CATALOG,
+        GATEWAY_SECRET,
+        PASSWORD,
+        PEER_SECRET,
+        THOUGHT_SECRET,
+    )
+
+    from fpl_runtime.claims import HEADER
+    from fpl_runtime.identity_client import LiveAuthorization
+    from fpl_runtime.retention_client import RetentionClient
+    from fpl_thought.application import create_app as create_thought
+
+    case = scenario
+    assets_live = LiveAuthorization(service="assets", credential=ASSETS_SECRET, transport=case.mesh)
+    case.assets.state.identity = assets_live
+    app = create_thought(
+        state_root=case.db.root,
+        catalog=CATALOG,
+        public_key=case.key.public_key(),
+        credential=THOUGHT_SECRET,
+        identity=LiveAuthorization(
+            service="thought", credential=THOUGHT_SECRET, transport=case.mesh
+        ),
+        retention_client=RetentionClient(
+            service="thought", credential=THOUGHT_SECRET, transport=case.mesh
+        ),
+        assets_peer_credential=PEER_SECRET,
+        transport=case.mesh,
+        run_worker=False,
+        upload_receipt_credential="u" * 48,
+    )
+
+    async def assertion(browser, path):
+        result = await browser.get(
+            "/_internal/v1/authorize",
+            headers={
+                "X-Fpl-Target-Service": "thought",
+                "X-Fpl-Request-Method": "POST",
+                "X-Fpl-Request-Uri": path,
+                "X-CSRF-Token": browser.cookies["fpl_csrf"],
+                "Origin": "http://127.0.0.1:19000",
+            },
+        )
+        assert result.status_code == 204, result.text
+        return result.headers[HEADER]
+
+    try:
+        async with app.router.lifespan_context(app):
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app), base_url="http://thought"
+            ) as client:
+                path = "/v1/thought-workshop/images"
+                token = await assertion(case.browser, path)
+                headers = {HEADER: token, "Idempotency-Key": "same-request"}
+                first = await client.post(
+                    path, headers=headers, files={"upload": ("file.png", CONTENT, "image/png")}
+                )
+                assert first.status_code == 200, first.text
+                retry = await client.post(
+                    path, headers=headers, files={"upload": ("file.png", CONTENT, "image/png")}
+                )
+                assert retry.status_code == 200 and retry.json() == first.json()
+                conflict = await client.post(
+                    path,
+                    headers=headers,
+                    files={"upload": ("file.png", CONTENT + b"x", "image/png")},
+                )
+                assert conflict.status_code == 409
+                async with case.assets.state.database.sessions(
+                    info={"owner_user_id": case.viewer}
+                ) as session:
+                    assets = list(await session.scalars(select(VisualAsset)))
+                    assert len(assets) == 1 and assets[0].id == first.json()["asset_id"]
+                async with httpx.AsyncClient(
+                    transport=httpx.ASGITransport(app=case.identity),
+                    base_url="http://127.0.0.1:19000",
+                    headers={
+                        "X-Fpl-Gateway": GATEWAY_SECRET,
+                        "X-Fpl-Ingress": "local",
+                        "X-Fpl-Client-Ip": "127.0.0.1",
+                    },
+                ) as owner:
+                    login = await owner.post(
+                        "/v1/auth/login", json={"username": "source-owner", "password": PASSWORD}
+                    )
+                    assert login.status_code == 200
+                    owner_token = await assertion(owner, path)
+                    separate = await client.post(
+                        path,
+                        headers={HEADER: owner_token, "Idempotency-Key": "same-request"},
+                        files={"upload": ("file.png", CONTENT, "image/png")},
+                    )
+                    assert (
+                        separate.status_code == 200
+                        and separate.json()["asset_id"] != first.json()["asset_id"]
+                    )
+                asset_path = "/v1/files/" + first.json()["asset_id"]
+                deletion_authority = await case.browser.get(
+                    "/_internal/v1/authorize",
+                    headers={
+                        "X-Fpl-Target-Service": "assets",
+                        "X-Fpl-Request-Method": "DELETE",
+                        "X-Fpl-Request-Uri": asset_path,
+                        "X-CSRF-Token": case.browser.cookies["fpl_csrf"],
+                        "Origin": "http://127.0.0.1:19000",
+                    },
+                )
+                assert deletion_authority.status_code == 204
+                async with httpx.AsyncClient(
+                    transport=case.mesh, base_url="http://assets"
+                ) as assets_client:
+                    deleted = await assets_client.delete(
+                        asset_path,
+                        headers={HEADER: deletion_authority.headers[HEADER]},
+                        params={"expected_revision": 0},
+                    )
+                    assert deleted.status_code == 200, deleted.text
+                stale_retry = await client.post(
+                    path, headers=headers, files={"upload": ("file.png", CONTENT, "image/png")}
+                )
+                assert stale_retry.status_code == 409, stale_retry.text
+                path = "/v1/thought-workshop/attachments"
+                token = await assertion(case.browser, path)
+                headers = {HEADER: token, "Idempotency-Key": "attachment-request"}
+                attachment = await client.post(
+                    path, headers=headers, files={"upload": ("note.txt", b"hello", "text/plain")}
+                )
+                assert attachment.status_code == 200, attachment.text
+                assert (
+                    attachment.json()["filename"] == "note.txt"
+                    and attachment.json()["byte_size"] == 5
+                )
+                retry = await client.post(
+                    path, headers=headers, files={"upload": ("note.txt", b"hello", "text/plain")}
+                )
+                assert retry.status_code == 200 and retry.json() == attachment.json()
+                del app.state.thought_upload_configuration
+                assert (
+                    await client.post(
+                        path,
+                        headers=headers,
+                        files={"upload": ("note.txt", b"hello", "text/plain")},
+                    )
+                ).status_code == 503
+    finally:
+        await assets_live.close()
+
+
+def test_independent_upload_operations_match_public_contract():
+    import json
+    from pathlib import Path
+
+    from fastapi import FastAPI
+
+    from fpl_thought.upload_http import router
+
+    app = FastAPI()
+    app.include_router(router, prefix="/v1")
+    actual = app.openapi()
+    expected = json.loads(
+        (Path(__file__).resolve().parents[1] / "web/src/generated/openapi.json").read_text()
+    )
+    for path in ("/v1/thought-workshop/images", "/v1/thought-workshop/attachments"):
+        assert actual["paths"][path]["post"] == expected["paths"][path]["post"]
+        ref = actual["paths"][path]["post"]["requestBody"]["content"]["multipart/form-data"][
+            "schema"
+        ]["$ref"]
+        name = ref.rsplit("/", 1)[-1]
+        assert actual["components"]["schemas"][name] == expected["components"]["schemas"][name]

@@ -28,6 +28,8 @@ from .models import ACCOUNT_MODELS, MODELS
 from .mutations_http import router as mutations_router
 from .reads_http import router as reads_router
 from .retention import ThoughtReferenceDelivery, ThoughtReferences
+from .upload_http import UploadConfiguration
+from .upload_http import router as upload_router
 from .upload_recovery import recover_upload_staging
 
 
@@ -42,6 +44,8 @@ def create_app(
     assets_peer_credential,
     transport=None,
     run_worker=True,
+    upload_receipt_credential=None,
+    upload_maximum_bytes=200 * 1024 * 1024,
 ):
     if not isinstance(credential, str) or len(credential) < 32:
         raise ValueError("Thought 需要专属身份凭据")
@@ -51,6 +55,14 @@ def create_app(
         or credential == assets_peer_credential
     ):
         raise ValueError("Thought 社区证据需要独立 Assets 对等凭据")
+    if type(upload_maximum_bytes) is not int or upload_maximum_bytes < 1:
+        raise ValueError("Thought 上传大小限制无效")
+    if upload_receipt_credential is not None:
+        from fpl_runtime.thought_uploads import ThoughtUploadReceiptAuthenticator
+
+        ThoughtUploadReceiptAuthenticator(upload_receipt_credential)
+        if upload_receipt_credential in {credential, assets_peer_credential}:
+            raise ValueError("Thought 上传回执凭据必须独立")
     database = Database("thought", state_root, models=MODELS, account_models=ACCOUNT_MODELS)
     references = ThoughtReferences(database.sessions, retention_client, public_key=public_key)
     delivery = ThoughtReferenceDelivery(database.sessions, retention_client)
@@ -94,6 +106,15 @@ def create_app(
     app.state.service_id = "thought"
     app.state.database, app.state.identity = database, identity
     app.state.thought_references, app.state.community_files = references, files
+    if upload_receipt_credential is not None:
+        app.state.thought_upload_configuration = UploadConfiguration(
+            root=state_root,
+            credential=credential,
+            receipt_credential=upload_receipt_credential,
+            catalog=catalog,
+            transport=transport,
+            maximum_bytes=upload_maximum_bytes,
+        )
     app.state.assets_community_peer_token = assets_peer_credential
     app.state.community_evidence = CommunityEvidenceVerifier(
         database,
@@ -120,6 +141,7 @@ def create_app(
     )
     app.include_router(reads_router, prefix="/v1")
     app.include_router(mutations_router, prefix="/v1")
+    app.include_router(upload_router, prefix="/v1")
     app.include_router(community_files_router, prefix="/v1")
     app.include_router(community_reads_router, prefix="/v1")
     app.include_router(evidence_router)

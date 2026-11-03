@@ -67,7 +67,8 @@ it("maps pending attachment position through edits, uploads sequentially, and su
 });
 it("keeps failures retryable and discards completions after leaving a note", async () => {
   let finish!: (value: typeof uploaded) => void;
-  vi.spyOn(api, "uploadAttachment")
+  const upload = vi
+    .spyOn(api, "uploadAttachment")
     .mockRejectedValueOnce(new Error("文件超过上限"))
     .mockImplementationOnce(
       () =>
@@ -88,6 +89,11 @@ it("keeps failures retryable and discards completions after leaving a note", asy
     false,
   );
   act(() => result.current.retry(result.current.entries[0].id));
+  await waitFor(() => expect(upload).toHaveBeenCalledTimes(2));
+  expect(upload.mock.calls[0][1]?.requestId).toBeTruthy();
+  expect(upload.mock.calls[1][1]?.requestId).toBe(
+    upload.mock.calls[0][1]?.requestId,
+  );
   unmount();
   await act(async () => finish(uploaded));
   expect(editor.getJSON().content?.some((n) => n.type === "attachment")).toBe(
@@ -136,4 +142,24 @@ it("recognizes backups without expanding asset contents", async () => {
     }),
   } as File;
   expect(await isBackup(source)).toBe(true);
+});
+
+it("sends the upload request identifier as an idempotency header", async () => {
+  const { api: client } = await import("@platform/api/client");
+  const narrowClient = client as unknown as {
+    POST: (...args: unknown[]) => Promise<unknown>;
+  };
+  const post = vi.spyOn(narrowClient, "POST").mockResolvedValue({
+    data: { asset_id: "image-id" },
+    response: new Response(null, { status: 200 }),
+  });
+  await api.uploadImage(new File(["image"], "image.png"), {
+    requestId: "stable-upload-id",
+  });
+  expect(post).toHaveBeenCalledWith(
+    "/v1/thought-workshop/images",
+    expect.objectContaining({
+      headers: { "Idempotency-Key": "stable-upload-id" },
+    }),
+  );
 });

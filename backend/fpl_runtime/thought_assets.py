@@ -73,7 +73,7 @@ def upload_grant(grant):
         and grant.purpose == "thought.library.upload"
         and grant.source_method == "POST"
         and grant.target_service == "assets"
-        and grant.target_method == "POST"
+        and grant.target_method in {"GET", "POST"}
     ):
         return False
     kind = {

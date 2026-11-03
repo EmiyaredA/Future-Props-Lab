@@ -1,6 +1,6 @@
 from typing import Literal
 
-from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, File, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import ValidationError
 from starlette.background import BackgroundTask
@@ -188,7 +188,19 @@ async def restore_note(
 
 
 @router.post("/images", response_model=ThoughtImageOut)
-async def upload_image(session: SessionDep, owner_user_id: OwnerDep, upload: UploadFile = File()):
+async def upload_image(
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    upload: UploadFile = File(),
+    _idempotency_key: str | None = Header(
+        default=None,
+        alias="Idempotency-Key",
+        min_length=1,
+        max_length=128,
+        pattern=r"^[A-Za-z0-9_-]+$",
+        description="独立 Thought 服务用于上传重试；恢复网站暂不去重。",
+    ),
+):
     row = await call(
         AssetLibrary(session, get_settings()).store_upload(
             upload,
@@ -270,7 +282,19 @@ async def imports(
 
 
 @router.post("/attachments", response_model=ThoughtAttachmentOut)
-async def attachments(session: SessionDep, owner_user_id: OwnerDep, upload: UploadFile = File(...)):
+async def attachments(
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    upload: UploadFile = File(...),
+    _idempotency_key: str | None = Header(
+        default=None,
+        alias="Idempotency-Key",
+        min_length=1,
+        max_length=128,
+        pattern=r"^[A-Za-z0-9_-]+$",
+        description="独立 Thought 服务用于上传重试；恢复网站暂不去重。",
+    ),
+):
     return await call(upload_attachment(session, get_settings(), owner_user_id, upload))
 
 

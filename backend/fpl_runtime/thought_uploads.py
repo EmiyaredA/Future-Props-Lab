@@ -66,7 +66,7 @@ def upload_path(kind, request_id, fingerprint):
 
 def is_upload_target(method, path):
     return (
-        method == "POST"
+        method in {"GET", "POST"}
         and isinstance(path, str)
         and bool(
             re.fullmatch(
@@ -85,11 +85,12 @@ class ThoughtUploadReceiptAuthenticator:
             raise ValueError("Thought upload receipt credential is invalid")
         self._secret = secret.encode("ascii")
 
-    def sign(self, *, owner, request_id, fingerprint, nonce, body):
+    def sign(self, *, method, owner, request_id, fingerprint, nonce, body):
         import hmac
 
         if (
-            not isinstance(owner, str)
+            method not in {"GET", "POST"}
+            or not isinstance(owner, str)
             or not re.fullmatch(r"[A-Za-z0-9_-]{1,36}", owner)
             or not isinstance(nonce, str)
             or not re.fullmatch(r"[a-f0-9]{32}", nonce)
@@ -100,6 +101,7 @@ class ThoughtUploadReceiptAuthenticator:
         payload = json.dumps(
             {
                 "version": 1,
+                "method": method,
                 "owner": owner,
                 "request_id": request_id,
                 "fingerprint": fingerprint,

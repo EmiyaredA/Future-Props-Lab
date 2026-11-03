@@ -36640,7 +36640,10 @@ export interface operations {
     attachments_v1_thought_workshop_attachments_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description 独立 Thought 服务用于上传重试；恢复网站暂不去重。 */
+                "Idempotency-Key"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -37564,7 +37567,10 @@ export interface operations {
     upload_image_v1_thought_workshop_images_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description 独立 Thought 服务用于上传重试；恢复网站暂不去重。 */
+                "Idempotency-Key"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
