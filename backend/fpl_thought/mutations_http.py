@@ -6,7 +6,7 @@ from app.apps.thought_workshop.directory import Directory
 from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.http_bindings import SessionDep
 from app.apps.thought_workshop.knowledge import KnowledgeBases
-from app.apps.thought_workshop.knowledge_tools.schemas import TemplateOut, TemplatePut
+from app.apps.thought_workshop.knowledge_tools.schemas import TemplateIn, TemplateOut, TemplatePut
 from app.apps.thought_workshop.multitable.schemas import BatchIn, BatchOut, CsvIn, RestoreIn
 from app.apps.thought_workshop.notes import Notes
 from app.apps.thought_workshop.schemas.knowledge import (
@@ -32,7 +32,7 @@ from .note_retention import (
     restore_history_with_references,
     save_note_with_references,
 )
-from .template_retention import mutate_template_with_references
+from .template_retention import create_template_with_references, mutate_template_with_references
 
 router = APIRouter(prefix="/thought-workshop", tags=["thought-workshop"])
 
@@ -150,6 +150,15 @@ async def delete_note(
             expected_knowledge_revision=expected_knowledge_revision,
             **context(request),
         )
+    )
+
+
+@router.post("/templates", response_model=TemplateOut)
+async def create_template(
+    request: Request, body: TemplateIn, session: SessionDep, owner_user_id: OwnerDep
+):
+    return await guarded(
+        create_template_with_references(session, owner=owner_user_id, body=body, **context(request))
     )
 
 

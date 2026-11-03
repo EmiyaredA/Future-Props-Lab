@@ -3,6 +3,7 @@
 from uuid import uuid4
 
 from app.apps.thought_workshop.knowledge_tools.reuse import ReusableContent
+from app.runtime.ids import new_id
 from fpl_runtime.asset_references import PrepareReferenceChange
 
 
@@ -59,6 +60,45 @@ async def mutate_template_with_references(
         await references.record(
             session, prepared, resource_revision=expected + 1, deleted=body is None
         )
+        commit_started = True
+        await session.commit()
+        return result
+    except BaseException:
+        if not commit_started:
+            await session.rollback()
+            await references.abort_after_rollback(session, prepared)
+        raise
+
+
+async def create_template_with_references(
+    session, *, owner, body, assertion, source_method, source_path, references
+):
+    if source_method != "POST" or source_path != "/v1/thought-workshop/templates":
+        raise ValueError("模板创建必须绑定原请求")
+    if session.info.get("owner_user_id") != owner:
+        raise ValueError("模板创建缺少账号上下文")
+    content = ReusableContent(session, owner)
+    assets = await content.validate_template(body)
+    template_id = new_id()
+    await session.rollback()
+    change = PrepareReferenceChange(
+        request_id=uuid4().hex,
+        resource_kind="template",
+        resource_id=template_id,
+        expected_resource_revision=-1,
+        asset_ids=sorted(assets),
+    )
+    prepared = await references.prepare(
+        owner=owner,
+        assertion=assertion,
+        source_method=source_method,
+        source_path=source_path,
+        change=change,
+    )
+    commit_started = False
+    try:
+        result = await content.create_template(body, template_id=template_id, commit=False)
+        await references.record(session, prepared, resource_revision=result.revision)
         commit_started = True
         await session.commit()
         return result

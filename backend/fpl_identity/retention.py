@@ -56,7 +56,20 @@ class RetentionAuthorization:
                 if body.source_method == "POST"
                 else None
             )
-            if direct:
+            new_template = (
+                body.source_method == "POST"
+                and body.source_path == "/v1/thought-workshop/templates"
+                and body.change.resource_kind == "template"
+                and body.change.expected_resource_revision == -1
+                and re.fullmatch(
+                    r"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}",
+                    body.change.resource_id,
+                )
+                is not None
+            )
+            if new_template:
+                expected_kind, expected_id = "template", body.change.resource_id
+            elif direct:
                 expected_kind = "note" if direct.group(1) == "notes" else "template"
                 expected_id = direct.group(2)
             elif note_operation:

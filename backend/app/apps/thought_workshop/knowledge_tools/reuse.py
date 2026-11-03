@@ -104,13 +104,16 @@ class ReusableContent:
         )
         self.session.add_all(ThoughtTemplateAsset(template_id=id, asset_id=asset) for asset in ids)
 
-    async def create_template(self, body):
+    async def create_template(self, body, *, template_id=None, commit=True):
         ids = await self.validate_template(body)
-        row = ThoughtTemplate(owner_user_id=self.owner_user_id, **body.model_dump())
+        row = ThoughtTemplate(
+            id=template_id or new_id(), owner_user_id=self.owner_user_id, **body.model_dump()
+        )
         self.session.add(row)
         await self.session.flush()
         await self.template_refs(row.id, ids)
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
         return TemplateOut.model_validate(row)
 
     async def template_conflict(self, id, expected):

@@ -255,6 +255,55 @@ async def scenario():
                                 assert exc.status == 403
                             else:
                                 raise AssertionError("Note operation authorized another resource")
+                    # A creation authority can initialize only a new template projection.
+                    create_path = "/v1/thought-workshop/templates"
+                    create_assertion = issue_context(
+                        actor,
+                        service="thought",
+                        method="POST",
+                        path=create_path,
+                        private_key=private,
+                        key_id="test",
+                    )
+                    fresh = change(
+                        "new-template",
+                        resource_kind="template",
+                        resource_id="12345678-1234-4234-8234-123456789abc",
+                    )
+                    fresh_authority = await client.authorize(
+                        assertion=create_assertion,
+                        source_method="POST",
+                        source_path=create_path,
+                        change=fresh,
+                    )
+                    assert verify_retention(
+                        fresh_authority, public_key=private.public_key()
+                    ).matches(fresh)
+                    for forbidden in (
+                        change("wrong-kind", resource_kind="note", resource_id=fresh.resource_id),
+                        change(
+                            "wrong-revision",
+                            resource_kind="template",
+                            resource_id=fresh.resource_id,
+                            expected_resource_revision=0,
+                        ),
+                        change(
+                            "wrong-id", resource_kind="template", resource_id="existing-template"
+                        ),
+                    ):
+                        try:
+                            await client.authorize(
+                                assertion=create_assertion,
+                                source_method="POST",
+                                source_path=create_path,
+                                change=forbidden,
+                            )
+                        except CapabilityDenied as exc:
+                            assert exc.status == 403
+                        else:
+                            raise AssertionError(
+                                "Template creation authorized a non-creation change"
+                            )
                     forged = issue_context(
                         replace(actor, user_id="different-owner"),
                         service="thought",

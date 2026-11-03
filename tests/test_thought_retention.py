@@ -326,6 +326,83 @@ async def test_concurrent_note_change_aborts_only_its_prepared_intent(instance):
     assert next(iter(remote.outcomes.values()))["state"] == "aborted"
 
 
+async def test_template_creation_commits_its_initial_asset_pins(instance):
+    from app.apps.thought_workshop.asset_metadata import LibraryAsset
+    from app.apps.thought_workshop.knowledge_tools.models import ThoughtTemplate
+    from app.apps.thought_workshop.knowledge_tools.schemas import TemplateIn
+    from fpl_thought.template_retention import create_template_with_references
+
+    db, remote, service = instance
+
+    class Metadata:
+        async def describe(self, ids):
+            return {
+                asset: LibraryAsset(asset, asset + ".png", "image/png", "image", 8, 1)
+                for asset in ids
+            }
+
+    body = TemplateIn(
+        name="New",
+        document={"type": "doc", "content": [{"type": "image", "attrs": {"assetId": "new"}}]},
+    )
+    async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+        session.info["thought_asset_metadata_factory"] = lambda _session, _owner: Metadata()
+        result = await create_template_with_references(
+            session,
+            owner="alpha",
+            body=body,
+            assertion="source",
+            source_method="POST",
+            source_path="/v1/thought-workshop/templates",
+            references=service,
+        )
+        assert result.revision == 0
+    async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+        assert (await session.get(ThoughtTemplate, result.id)).name == "New"
+        receipt = await session.scalar(select(ThoughtReferenceMutation))
+        assert receipt.state == "commit" and receipt.resource_revision == 0
+        assert receipt.change["resource_id"] == result.id
+        assert receipt.change["expected_resource_revision"] == -1
+        assert receipt.change["asset_ids"] == ["new"]
+    await ThoughtReferenceDelivery(db.sessions, remote).process_once()
+    assert next(iter(remote.outcomes.values()))["revision"] == 0
+
+
+async def test_template_creation_rolls_back_if_source_write_fails(instance, monkeypatch):
+    from app.apps.thought_workshop.knowledge_tools.models import ThoughtTemplate
+    from app.apps.thought_workshop.knowledge_tools.reuse import ReusableContent
+    from app.apps.thought_workshop.knowledge_tools.schemas import TemplateIn
+    from fpl_thought.template_retention import create_template_with_references
+
+    db, remote, service = instance
+
+    original = ReusableContent.create_template
+
+    async def fail(*args, **kwargs):
+        await original(*args, **kwargs)
+        raise RuntimeError("source write failed")
+
+    monkeypatch.setattr(ReusableContent, "create_template", fail)
+    async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+        with pytest.raises(RuntimeError):
+            await create_template_with_references(
+                session,
+                owner="alpha",
+                body=TemplateIn(
+                    name="New", document={"type": "doc", "content": [{"type": "paragraph"}]}
+                ),
+                assertion="source",
+                source_method="POST",
+                source_path="/v1/thought-workshop/templates",
+                references=service,
+            )
+    async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+        assert not list(await session.scalars(select(ThoughtTemplate)))
+        assert (await session.scalar(select(ThoughtReferenceMutation))).state == "abort"
+    await ThoughtReferenceDelivery(db.sessions, remote).process_once()
+    assert next(iter(remote.outcomes.values()))["state"] == "aborted"
+
+
 async def test_template_update_and_delete_record_exact_asset_pins(instance):
     from app.apps.thought_workshop.asset_metadata import LibraryAsset
     from app.apps.thought_workshop.knowledge_tools.models import ThoughtTemplate
