@@ -521,10 +521,17 @@ async def test_private_http_fails_closed_and_binds_verified_batch(installation):
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         blocked = await client.post(path + "preview", json=value.model_dump(mode="json"))
         assert blocked.status_code == 503
+        blocked_cancel = await client.post(path + "cancel", json=value.model_dump(mode="json"))
+        assert blocked_cancel.status_code == 503
 
         class TestAuthority:
             async def grant(self, *, request, purpose, operation_id, fingerprint):
-                assert request.url.path in {path + "preview", path + "install", path + "receipt"}
+                assert request.url.path in {
+                    path + "preview",
+                    path + "install",
+                    path + "receipt",
+                    path + "cancel",
+                }
                 assert isinstance(operation_id, str) and isinstance(fingerprint, str)
                 return CreativeOperationGrant(
                     "alpha",
@@ -546,6 +553,11 @@ async def test_private_http_fails_closed_and_binds_verified_batch(installation):
         assert result.status_code == 200, result.text
         receipt = await client.post(path + "receipt", json=value.model_dump(mode="json"))
         assert receipt.json() == result.json()
+        cancel = await client.post(path + "cancel", json=value.model_dump(mode="json"))
+        assert cancel.status_code == 200 and cancel.json() == {
+            "state": "committed",
+            "receipt": result.json(),
+        }
         corrupted = batch([tool(), skill_part(data)], "another-operation")
         denied = await client.post(
             path + "install",
@@ -735,3 +747,156 @@ async def test_creative_source_grant_controls_real_target_and_receipt_recovery(
         assert wrong.value.status_code == 403
     finally:
         await db.close()
+
+
+async def test_cancel_tombstone_prevents_late_install_and_is_account_scoped(installation):
+    value = batch([tool()])
+    with pytest.raises(HTTPException) as denied:
+        await installation.use.cancel(value, granted(value, "receipt"))
+    assert denied.value.status_code == 403
+    cancelled = await installation.use.cancel(value, granted(value, "cancel"))
+    assert cancelled == {
+        "state": "cancelled",
+        "operation_id": value.operation_id,
+        "fingerprint": digest(value.model_dump(mode="json")),
+    }
+    assert await installation.use.cancel(value, granted(value, "cancel")) == cancelled
+    with pytest.raises(HTTPException) as error:
+        await installation.use.install(value, {}, granted(value))
+    assert error.value.status_code == 409
+    changed = batch([tool("Changed")])
+    with pytest.raises(HTTPException) as error:
+        await installation.use.cancel(changed, granted(changed, "cancel"))
+    assert error.value.status_code == 409
+    other = await installation.use.install(value, {}, granted(value, owner="beta"))
+    assert other["resources"][0]["resource_id"]
+    result = await installation.use.cancel(value, granted(value, "cancel", owner="beta"))
+    assert result == {"state": "committed", "receipt": other}
+
+
+async def test_cancel_and_install_cannot_both_commit(installation):
+    import asyncio
+
+    value = batch([tool()])
+
+    async def install():
+        try:
+            return await installation.use.install(value, {}, granted(value))
+        except HTTPException as error:
+            assert error.status_code == 409
+            return None
+
+    installed, cancelled = await asyncio.gather(
+        install(), installation.use.cancel(value, granted(value, "cancel"))
+    )
+    if cancelled["state"] == "cancelled":
+        assert installed is None
+        with pytest.raises(HTTPException):
+            await installation.use.install(value, {}, granted(value))
+    else:
+        assert cancelled == {"state": "committed", "receipt": installed}
+        assert installed is not None
+
+
+async def test_verified_target_cancellation_releases_source_fence_and_blocks_late_commit(
+    installation, tmp_path
+):
+    from sqlalchemy import select, update
+
+    from app.console.creative_workshop.models import CreativeItem, CreativeRelease
+    from app.console.creative_workshop.schemas import CreativeInstallPreviewIn
+    from fpl_creative.fence_records import CreativeInstallFence
+    from fpl_creative.installation_outbox import InstallationOutbox, InstallIntentConflict
+    from fpl_creative.migrations.registry import MIGRATIONS as CREATIVE_MIGRATIONS
+    from fpl_creative.storage import creative_database
+
+    root = tmp_path / "creative-cancel"
+    root.mkdir()
+    apply(root / "service.db", "creative", CREATIVE_MIGRATIONS)
+    db = creative_database(root)
+    part = tool()
+    value = CreativeInstallBatch(
+        operation_id=str(uuid5(NAMESPACE_URL, "cancel-bridge")),
+        root_release_id=part.release_id,
+        parts=[part],
+    )
+    request = CreativeInstallPreviewIn(
+        release_id=part.release_id, names={part.release_id: part.target_name}
+    )
+    try:
+        async with db.sessions(info={"owner_user_id": "author"}) as session:
+            session.add(
+                CreativeItem(
+                    id="item",
+                    origin_owner_user_id="author",
+                    author_user_id="author",
+                    kind="tool_api",
+                    status="published",
+                )
+            )
+            await session.flush()
+            session.add(
+                CreativeRelease(
+                    id=part.release_id,
+                    item_id="item",
+                    version=1,
+                    title=part.title,
+                    summary=part.summary,
+                    tags=part.tags,
+                    manifest=part.manifest,
+                )
+            )
+            await session.commit()
+        outbox = InstallationOutbox(db)
+        await outbox.accept("alpha", request, value)
+        await outbox.fence_for_install("alpha", request, value)
+        proof = await installation.use.cancel(value, granted(value, "cancel"))
+        with pytest.raises(InstallIntentConflict):
+            await outbox.cancel("alpha", part.release_id, {**proof, "fingerprint": "f" * 64})
+        async with db.sessions(info={"owner_user_id": "author"}) as session:
+            assert list(await session.scalars(select(CreativeInstallFence)))
+            changed = await session.execute(
+                update(CreativeItem).where(CreativeItem.id == "item").values(status="withdrawn")
+            )
+            assert changed.rowcount == 0
+            await session.rollback()
+        await outbox.cancel("alpha", part.release_id, proof)
+        await db.close()
+        db = creative_database(root)
+        outbox = InstallationOutbox(db)
+        await outbox.cancel("alpha", part.release_id, proof)
+        assert (await outbox.get("alpha", part.release_id)).state == "cancelled"
+        with pytest.raises(InstallIntentConflict):
+            await outbox.fence_for_install("alpha", request, value)
+        with pytest.raises(HTTPException) as error:
+            await installation.use.install(value, {}, granted(value))
+        assert error.value.status_code == 409
+        async with db.sessions(info={"owner_user_id": "author"}) as session:
+            assert list(await session.scalars(select(CreativeInstallFence))) == []
+            changed = await session.execute(
+                update(CreativeItem).where(CreativeItem.id == "item").values(status="withdrawn")
+            )
+            assert changed.rowcount == 1
+            await session.commit()
+    finally:
+        await db.close()
+
+
+async def test_target_cancellation_survives_restart(installation, tmp_path):
+    value = batch([tool()])
+    cancelled = await installation.use.cancel(value, granted(value, "cancel"))
+    await installation.db.close()
+    restarted = Database(
+        "integrations",
+        tmp_path,
+        models=MODELS,
+        account_models=tuple(model for model in MODELS if hasattr(model, "owner_user_id")),
+    )
+    try:
+        use = CreativeInstallations(restarted, installation.settings)
+        assert await use.cancel(value, granted(value, "cancel")) == cancelled
+        with pytest.raises(HTTPException) as error:
+            await use.install(value, {}, granted(value))
+        assert error.value.status_code == 409
+    finally:
+        await restarted.close()

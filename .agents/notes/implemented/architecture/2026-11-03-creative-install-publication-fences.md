@@ -20,7 +20,7 @@ A fence has no expiry. The source installation settlement validates the trusted 
 
 ## Consequences
 
-This is a source-side consistency primitive, not a completed deployable service. It only protects writes using the independent Creative session and requires a trusted target client to authenticate receipts. Production Creative routes, gateway ingress, target-to-source transport and a safe cancellation protocol for definitively aborted target work remain unimplemented. A failure before target commitment can leave publication withdrawal blocked until an exact retry produces a trusted receipt; no automatic or manual timeout release is provided. The source process and target must not bypass this boundary or the original outbox.
+This is a source-side consistency primitive, not a completed deployable service. It only protects writes using the independent Creative session and requires a trusted target client to authenticate receipts. Production Creative routes, gateway ingress and target-to-source transport remain unimplemented. The target tombstone cancellation protocol is described in [the follow-up decision](2026-11-03-creative-install-cancellation.md), but its authenticated transport and user interaction are not yet wired. Until then a failure before target commitment can leave publication withdrawal blocked; no timeout release is provided. The source process and target must not bypass this boundary or the original outbox.
 
 ## Verification
 

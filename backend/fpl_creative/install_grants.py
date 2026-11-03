@@ -25,11 +25,13 @@ class InstallGrantAuthority:
 
     async def authorize(
         self,
-        action: Literal["install", "receipt"],
+        action: Literal["install", "receipt", "cancel"],
         source: InstallSource,
         batch: CreativeInstallBatch,
     ) -> CreativeOperationGrant:
-        if action not in {"install", "receipt"} or not isinstance(batch, CreativeInstallBatch):
+        if action not in {"install", "receipt", "cancel"} or not isinstance(
+            batch, CreativeInstallBatch
+        ):
             raise InstallAuthorizationDenied("安装操作无效")
         try:
             request = CreativeInstallPreviewIn.model_validate_json(source.raw_body)

@@ -10,7 +10,11 @@ from app.integrations.models import (
     ToolApiIntegration,
 )
 
-from .creative_records import CreativeInstalledPart, CreativeInstallReceipt
+from .creative_records import (
+    CreativeInstallCancellation,
+    CreativeInstalledPart,
+    CreativeInstallReceipt,
+)
 from .demo_records import DemoToolInstallation
 from .native_mcp_records import NativeMcpJob, NativeMcpObservation
 from .records import ExternalClosure, ExternalExecution, ExternalStepReceipt, ValidationAttempt
@@ -18,6 +22,7 @@ from .records import ExternalClosure, ExternalExecution, ExternalStepReceipt, Va
 MODELS = (
     CreativeInstalledPart,
     CreativeInstallReceipt,
+    CreativeInstallCancellation,
     NativeMcpJob,
     NativeMcpObservation,
     DemoToolInstallation,

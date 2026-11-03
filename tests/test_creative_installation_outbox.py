@@ -602,6 +602,8 @@ async def test_install_grant_binds_persisted_batch_and_rechecks_current_publicat
             await authority.authorize("install", source, value)
         await outbox.accept("alice", request, value)
         decision = await authority.authorize("install", source, value)
+        cancel_grant = await authority.authorize("cancel", source, value)
+        assert cancel_grant.purpose == "cancel"
         assert decision.owner_user_id == "alice" and decision.fingerprint == digest(
             value.model_dump(mode="json")
         )
@@ -898,5 +900,150 @@ async def test_catalog_withdraw_is_blocked_by_fence_until_receipt(tmp_path):
         ) as session:
             result = await CreativeCatalog(session, principal).withdraw("item", 0)
             assert result.status == "withdrawn" and result.revision == 1
+    finally:
+        await db.close()
+
+
+async def test_cancel_coordinator_keeps_fence_until_authenticated_target_result(tmp_path):
+    from sqlalchemy import select
+
+    from fpl_creative.fence_records import CreativeInstallFence
+    from fpl_creative.installation_coordinator import InstallationCoordinator
+
+    class Authorization:
+        async def require(self, _source, _request):
+            return "alice"
+
+    class Target:
+        calls = 0
+
+        async def cancel(self, _source, selected):
+            self.calls += 1
+            proof = {
+                "state": "cancelled",
+                "operation_id": selected.operation_id,
+                "fingerprint": digest(selected.model_dump(mode="json")),
+            }
+            if self.calls == 1:
+                raise TimeoutError("target response lost")
+            return proof
+
+        async def verify_cancellation(self, _source, _batch, response):
+            return response
+
+    apply(tmp_path / "service.db", "creative", MIGRATIONS)
+    db = creative_database(tmp_path)
+    request, value = CreativeInstallPreviewIn(release_id="release"), batch()
+    try:
+        await seed_release(db)
+        outbox = InstallationOutbox(db)
+        await outbox.accept("alice", request, value)
+        await outbox.fence_for_install("alice", request, value)
+        target = Target()
+        coordinator = InstallationCoordinator(outbox, Authorization(), target)
+        with pytest.raises(TimeoutError):
+            await coordinator.cancel(object(), request)
+        async with db.sessions(info={"owner_user_id": "author"}) as session:
+            assert list(await session.scalars(select(CreativeInstallFence)))
+        assert (await outbox.get("alice", "release")).state == "pending"
+        assert await coordinator.cancel(object(), request) == {"state": "cancelled"}
+        assert await coordinator.cancel(object(), request) == {"state": "cancelled"}
+        assert target.calls == 2
+        async with db.sessions(info={"owner_user_id": "author"}) as session:
+            assert list(await session.scalars(select(CreativeInstallFence))) == []
+    finally:
+        await db.close()
+
+
+async def test_cancel_coordinator_settles_when_target_already_committed(tmp_path):
+    from fpl_creative.installation_coordinator import InstallationCoordinator
+
+    class Authorization:
+        async def require(self, _source, _request):
+            return "alice"
+
+    class Target:
+        async def cancel(self, _source, selected):
+            return {
+                "state": "committed",
+                "receipt": {
+                    "operation_id": selected.operation_id,
+                    "root_release_id": "release",
+                    "resources": [
+                        {
+                            "release_id": "release",
+                            "kind": "tool_api",
+                            "name": "Tool",
+                            "resource_id": "tool",
+                            "state": "disabled",
+                        }
+                    ],
+                },
+            }
+
+        async def verify_cancellation(self, _source, _batch, response):
+            return response
+
+        async def verify_receipt(self, _source, _batch, response):
+            return response
+
+    apply(tmp_path / "service.db", "creative", MIGRATIONS)
+    db = creative_database(tmp_path)
+    request, value = CreativeInstallPreviewIn(release_id="release"), batch()
+    try:
+        await seed_release(db)
+        outbox = InstallationOutbox(db)
+        await outbox.accept("alice", request, value)
+        await outbox.fence_for_install("alice", request, value)
+        coordinator = InstallationCoordinator(outbox, Authorization(), Target())
+        result = await coordinator.cancel(object(), request)
+        assert result["state"] == "committed" and result["installation"]["release_id"] == "release"
+        assert (await outbox.get("alice", "release")).state == "completed"
+        assert await coordinator.cancel(object(), request) == result
+    finally:
+        await db.close()
+
+
+async def test_lost_source_cancellation_commit_replays_without_releasing_wrong_fence(
+    tmp_path, monkeypatch
+):
+    from sqlalchemy import select
+
+    from fpl_creative.fence_records import CreativeInstallFence
+
+    apply(tmp_path / "service.db", "creative", MIGRATIONS)
+    db = creative_database(tmp_path)
+    request, value = CreativeInstallPreviewIn(release_id="release"), batch()
+    try:
+        await seed_release(db)
+        outbox = InstallationOutbox(db)
+        intent = await outbox.accept("alice", request, value)
+        await outbox.fence_for_install("alice", request, value)
+        proof = {
+            "state": "cancelled",
+            "operation_id": value.operation_id,
+            "fingerprint": intent.fingerprint,
+        }
+        factory = db.sessions
+
+        def lose_commit(**options):
+            session = factory(**options)
+            original = session.commit
+
+            async def lost():
+                await original()
+                raise RuntimeError("lost cancellation response")
+
+            session.commit = lost
+            return session
+
+        monkeypatch.setattr(db, "sessions", lose_commit)
+        with pytest.raises(RuntimeError, match="lost cancellation response"):
+            await outbox.cancel("alice", "release", proof)
+        monkeypatch.setattr(db, "sessions", factory)
+        assert (await outbox.get("alice", "release")).state == "cancelled"
+        await outbox.cancel("alice", "release", proof)
+        async with db.sessions(info={"owner_user_id": "author"}) as session:
+            assert list(await session.scalars(select(CreativeInstallFence))) == []
     finally:
         await db.close()

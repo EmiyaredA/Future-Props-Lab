@@ -8,6 +8,7 @@ from typing import Protocol
 
 from app.console.creative_workshop.schemas import CreativeInstallOut, CreativeInstallPreviewIn
 from fpl_runtime.creative_integrations import CreativeInstallBatch
+from fpl_runtime.integration_intents import digest
 
 from .installation_outbox import InstallationOutbox, InstallIntentConflict
 
@@ -33,6 +34,16 @@ class AuthorizedInstallTarget(Protocol):
         """
         ...
 
+    async def cancel(self, source_authorization: object, batch: CreativeInstallBatch) -> object:
+        """Atomically prevent a new target commit or return an already committed receipt."""
+        ...
+
+    async def verify_cancellation(
+        self, source_authorization: object, batch: CreativeInstallBatch, response: object
+    ) -> dict:
+        """Authenticate and bind the target's cancellation result to this batch."""
+        ...
+
     async def verify_receipt(
         self, source_authorization: object, batch: CreativeInstallBatch, response: object
     ) -> dict:
@@ -48,6 +59,40 @@ class InstallationCoordinator:
         target: AuthorizedInstallTarget,
     ):
         self.outbox, self.authorization, self.target = outbox, authorization, target
+
+    async def cancel(self, source_authorization: object, request: CreativeInstallPreviewIn) -> dict:
+        """Release publication fences only after a verified target cancellation result."""
+        owner = await self.authorization.require(source_authorization, request)
+        if not isinstance(owner, str) or not owner:
+            raise InstallIntentConflict("取消授权未绑定账号")
+        intent = await self.outbox.get(owner, request.release_id)
+        if intent is None or intent.request_fingerprint != digest(request.model_dump(mode="json")):
+            raise InstallIntentConflict("安装批次不存在或与请求不匹配")
+        if intent.state == "cancelled":
+            return {"state": "cancelled"}
+        if intent.state == "completed":
+            result = await self.outbox.complete(owner, request.release_id, intent.receipt)
+            return {"state": "committed", "installation": result.model_dump(mode="json")}
+        if intent.state != "pending":
+            raise InstallIntentConflict("安装批次状态无效")
+        response = await self.target.cancel(source_authorization, intent.batch)
+        verified = await self.target.verify_cancellation(
+            source_authorization, intent.batch, response
+        )
+        if await self.authorization.require(source_authorization, request) != owner:
+            raise InstallIntentConflict("取消授权账号已变化")
+        if not isinstance(verified, dict):
+            raise InstallIntentConflict("取消回执无效")
+        if verified.get("state") == "cancelled":
+            await self.outbox.cancel(owner, request.release_id, verified)
+            return {"state": "cancelled"}
+        if verified.get("state") == "committed" and set(verified) == {"state", "receipt"}:
+            receipt = await self.target.verify_receipt(
+                source_authorization, intent.batch, verified["receipt"]
+            )
+            result = await self.outbox.complete(owner, request.release_id, receipt)
+            return {"state": "committed", "installation": result.model_dump(mode="json")}
+        raise InstallIntentConflict("取消回执无效")
 
     async def resume(
         self, source_authorization: object, request: CreativeInstallPreviewIn

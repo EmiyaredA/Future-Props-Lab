@@ -8,7 +8,7 @@ An installation target must not rely solely on a caller-provided batch. It needs
 
 ## Decision
 
-Creative's install grant authority revalidates the original Identity and gateway request evidence, locates the current account's existing durable outbox intent, and compares both the complete batch and the fingerprint of the original request. An install grant additionally checks current publication and Skill source integrity, then revalidates the actor after any file work. A receipt grant skips the current-publication check but still requires the matching account, original request and existing batch. Grants expire within five seconds and no later than either source assertion or gateway evidence.
+Creative's install grant authority revalidates the original Identity and gateway request evidence, locates the current account's existing durable outbox intent, and compares both the complete batch and the fingerprint of the original request. An install grant additionally checks current publication and Skill source integrity, then revalidates the actor after any file work. A receipt or cancellation grant skips the current-publication check but still requires the matching account, original request and existing batch. Cancellation has its own purpose and cannot authorize installation; its target tombstone protocol is described in [the cancellation decision](2026-11-03-creative-install-cancellation.md). Grants expire within five seconds and no later than either source assertion or gateway evidence.
 
 Integrations validates `receipt` and `install` as separate purposes. A receipt grant cannot authorize installation even if a matching resource already exists. The direct grant boundary is an internal use case; it is not a deployed cross-service transport.
 

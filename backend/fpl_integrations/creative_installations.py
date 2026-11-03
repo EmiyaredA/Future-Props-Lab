@@ -33,7 +33,11 @@ from fpl_runtime.creative_integrations import (
 from fpl_runtime.integration_intents import digest
 from fpl_runtime.skill_tree import skill_tree_sha256
 
-from .creative_records import CreativeInstalledPart, CreativeInstallReceipt
+from .creative_records import (
+    CreativeInstallCancellation,
+    CreativeInstalledPart,
+    CreativeInstallReceipt,
+)
 
 Authorize = Callable[[], Awaitable[CreativeOperationGrant]]
 
@@ -308,6 +312,72 @@ class CreativeInstallations:
         )
         return dict(previous.result)
 
+    async def cancel(self, batch: CreativeInstallBatch, authorize: Authorize):
+        """Atomically prohibit future installation or return the already committed receipt."""
+        checksum = digest(batch.model_dump(mode="json"))
+        decision = await authorize()
+        owner = validate_grant(
+            decision, purpose="cancel", operation=batch.operation_id, fingerprint_value=checksum
+        )
+        async with self.database.sessions(info={"owner_user_id": owner}) as session:
+            await session.execute(text("BEGIN IMMEDIATE"))
+            validate_grant(
+                decision,
+                purpose="cancel",
+                operation=batch.operation_id,
+                fingerprint_value=checksum,
+                owner=owner,
+            )
+            prior = await session.scalar(
+                select(CreativeInstallReceipt).where(
+                    CreativeInstallReceipt.owner_user_id == owner,
+                    CreativeInstallReceipt.operation_id == batch.operation_id,
+                )
+            )
+            if prior is not None:
+                if prior.fingerprint != checksum:
+                    raise conflict("creative_install_operation_conflict")
+                await self.require_receipt_resources(session, owner, prior.result)
+                validate_grant(
+                    decision,
+                    purpose="cancel",
+                    operation=batch.operation_id,
+                    fingerprint_value=checksum,
+                    owner=owner,
+                )
+                return {"state": "committed", "receipt": dict(prior.result)}
+            cancelled = await session.scalar(
+                select(CreativeInstallCancellation).where(
+                    CreativeInstallCancellation.owner_user_id == owner,
+                    CreativeInstallCancellation.operation_id == batch.operation_id,
+                )
+            )
+            if cancelled is not None and cancelled.fingerprint != checksum:
+                raise conflict("creative_install_operation_conflict")
+            if cancelled is None:
+                session.add(
+                    CreativeInstallCancellation(
+                        id=new_id(),
+                        owner_user_id=owner,
+                        operation_id=batch.operation_id,
+                        fingerprint=checksum,
+                    )
+                )
+                await session.flush()
+            validate_grant(
+                decision,
+                purpose="cancel",
+                operation=batch.operation_id,
+                fingerprint_value=checksum,
+                owner=owner,
+            )
+            await session.commit()
+            return {
+                "state": "cancelled",
+                "operation_id": batch.operation_id,
+                "fingerprint": checksum,
+            }
+
     async def install(
         self,
         batch: CreativeInstallBatch,
@@ -340,6 +410,17 @@ class CreativeInstallations:
                 owner=owner,
             )
             return dict(prior.result)
+        # Avoid unpacking a cancelled upload; the writer transaction rechecks
+        # this tombstone because cancellation may race the staging work.
+        async with self.database.sessions(info={"owner_user_id": owner}) as session:
+            cancelled = await session.scalar(
+                select(CreativeInstallCancellation).where(
+                    CreativeInstallCancellation.owner_user_id == owner,
+                    CreativeInstallCancellation.operation_id == batch.operation_id,
+                )
+            )
+            if cancelled is not None:
+                raise conflict("creative_install_cancelled")
         kinds = {part.release_id for part in batch.parts if part.kind == "skill"}
         if set(archives) - kinds:
             raise HTTPException(422, "creative_install_archive_mismatch")
@@ -395,6 +476,14 @@ class CreativeInstallations:
                 await session.execute(text("BEGIN IMMEDIATE"))
                 if int(time.time()) >= decision.expires_at:
                     raise HTTPException(403, "creative_install_authorization_expired")
+                cancelled = await session.scalar(
+                    select(CreativeInstallCancellation).where(
+                        CreativeInstallCancellation.owner_user_id == owner,
+                        CreativeInstallCancellation.operation_id == batch.operation_id,
+                    )
+                )
+                if cancelled is not None:
+                    raise conflict("creative_install_cancelled")
                 previous = await session.scalar(
                     select(CreativeInstallReceipt).where(
                         CreativeInstallReceipt.owner_user_id == owner,

@@ -2,7 +2,7 @@
 
 from app.console.creative_workshop.models import CreativeInstallation, CreativeItem, CreativeRelease
 
-from .fence_records import CreativeInstallFence
+from .fence_records import CreativeInstallCancellation, CreativeInstallFence
 from .installation_records import CreativeInstallOperation
 
 MODELS = (
@@ -11,6 +11,7 @@ MODELS = (
     CreativeInstallation,
     CreativeInstallOperation,
     CreativeInstallFence,
+    CreativeInstallCancellation,
 )
 # Items are intentionally publicly queryable after publication; writes must use
 # explicit origin-owner checks in Creative use cases. Installations remain private.

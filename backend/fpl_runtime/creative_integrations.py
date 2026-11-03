@@ -120,7 +120,7 @@ class CreativeOperationGrant:
     """A short-lived Identity decision for one actor, action and exact input digest."""
 
     owner_user_id: str
-    purpose: Literal["install", "receipt", "setup", "preview"]
+    purpose: Literal["install", "receipt", "cancel", "setup", "preview"]
     operation_id: str
     fingerprint: str
     expires_at: int

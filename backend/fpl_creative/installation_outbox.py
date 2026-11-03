@@ -5,7 +5,7 @@ Creative-owned bytes. This is a storage primitive, not an authorization port.
 Uncertain target outcomes remain pending and must reuse the persisted batch.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from sqlalchemy import delete, select, text
 
@@ -18,7 +18,7 @@ from app.console.creative_workshop.schemas import CreativeInstallOut, CreativeIn
 from fpl_runtime.creative_integrations import CreativeInstallBatch
 from fpl_runtime.integration_intents import digest
 
-from .fence_records import CreativeInstallFence
+from .fence_records import CreativeInstallCancellation, CreativeInstallFence
 from .installation_records import CreativeInstallOperation
 from .skill_integrity import published_skill_tree
 
@@ -153,6 +153,8 @@ class InstallationOutbox:
                 )
             )
             if row is not None:
+                if await session.get(CreativeInstallCancellation, row.operation_id) is not None:
+                    raise InstallIntentConflict("安装操作已取消")
                 existing = _intent(row)
                 previous = existing.batch.model_dump(mode="json")
                 previous.pop("operation_id")
@@ -210,6 +212,8 @@ class InstallationOutbox:
             row = await session.get(CreativeInstallOperation, batch.operation_id)
             if row is None or row.owner_user_id != owner or row.state != "pending":
                 raise InstallIntentConflict("待执行安装意图不存在")
+            if await session.get(CreativeInstallCancellation, row.operation_id) is not None:
+                raise InstallIntentConflict("安装操作已取消")
             intent = _intent(row)
             if intent.batch != batch or intent.request_fingerprint != digest(
                 request.model_dump(mode="json")
@@ -250,7 +254,55 @@ class InstallationOutbox:
                     CreativeInstallOperation.root_release_id == root_release_id,
                 )
             )
-            return _intent(row) if row is not None else None
+            if row is None:
+                return None
+            intent = _intent(row)
+            if await session.get(CreativeInstallCancellation, row.operation_id) is not None:
+                return replace(intent, state="cancelled")
+            return intent
+
+    async def cancel(self, owner: str, root_release_id: str, proof: dict) -> None:
+        """Commit only a target-authenticated cancellation proof and release fences.
+
+        The caller must authenticate the target's result before passing it here.
+        A timeout or a not-found response is never a cancellation proof.
+        """
+        if not owner or not isinstance(proof, dict):
+            raise ValueError("取消回执无效")
+        async with self.database.sessions(info={"owner_user_id": owner}) as session:
+            await session.execute(text("BEGIN IMMEDIATE"))
+            row = await session.scalar(
+                select(CreativeInstallOperation).where(
+                    CreativeInstallOperation.owner_user_id == owner,
+                    CreativeInstallOperation.root_release_id == root_release_id,
+                )
+            )
+            if row is None:
+                raise InstallIntentConflict("安装批次不存在")
+            intent = _intent(row)
+            if proof != {
+                "state": "cancelled",
+                "operation_id": row.operation_id,
+                "fingerprint": intent.fingerprint,
+            }:
+                raise InstallIntentConflict("取消回执与安装批次不匹配")
+            if row.state != "pending":
+                raise InstallIntentConflict("已完成的安装不能取消")
+            existing = await session.get(CreativeInstallCancellation, row.operation_id)
+            if existing is not None and existing.fingerprint != intent.fingerprint:
+                raise InstallIntentConflict("取消回执与已有记录不一致")
+            if existing is None:
+                session.add(
+                    CreativeInstallCancellation(
+                        operation_id=row.operation_id, fingerprint=intent.fingerprint
+                    )
+                )
+            await session.execute(
+                delete(CreativeInstallFence).where(
+                    CreativeInstallFence.operation_id == row.operation_id
+                )
+            )
+            await session.commit()
 
     async def complete(self, owner: str, root_release_id: str, receipt: dict) -> CreativeInstallOut:
         """Atomically record an authenticated target receipt and source installations.
@@ -270,6 +322,8 @@ class InstallationOutbox:
             )
             if row is None:
                 raise InstallIntentConflict("安装批次不存在")
+            if await session.get(CreativeInstallCancellation, row.operation_id) is not None:
+                raise InstallIntentConflict("安装操作已取消")
             intent = _intent(row)
             if set(receipt) != {"operation_id", "root_release_id", "resources"} or (
                 receipt["operation_id"] != intent.batch.operation_id

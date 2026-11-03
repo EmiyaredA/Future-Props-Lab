@@ -55,6 +55,14 @@ async def receipt(request: Request):
     return result
 
 
+@router.post("/cancel")
+async def cancel(request: Request):
+    value = await payload(request, CreativeInstallBatch)
+    return await request.app.state.creative_installations.cancel(
+        value, authority(request, "cancel", value)
+    )
+
+
 @router.post("/install")
 async def install(request: Request):
     async with request.form(max_files=50, max_fields=1, max_part_size=1024 * 1024) as form:

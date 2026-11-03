@@ -4482,6 +4482,12 @@
       "model": "CreativeInstallFence"
     },
     {
+      "table": "creative_install_cancellations",
+      "service": "creative",
+      "module": "fpl_creative.fence_records",
+      "model": "CreativeInstallCancellation"
+    },
+    {
       "table": "creative_install_operations",
       "service": "creative",
       "module": "fpl_creative.installation_records",
@@ -4534,6 +4540,12 @@
       "service": "integrations",
       "module": "fpl_integrations.creative_records",
       "model": "CreativeInstalledPart"
+    },
+    {
+      "table": "integration_creative_install_cancellations",
+      "service": "integrations",
+      "module": "fpl_integrations.creative_records",
+      "model": "CreativeInstallCancellation"
     },
     {
       "table": "integration_demo_tool_installations",
