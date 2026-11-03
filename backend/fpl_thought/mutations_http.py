@@ -2,15 +2,23 @@
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 
+from app.apps.thought_workshop.directory import Directory
 from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.http_bindings import SessionDep
+from app.apps.thought_workshop.knowledge import KnowledgeBases
 from app.apps.thought_workshop.knowledge_tools.schemas import TemplateOut, TemplatePut
 from app.apps.thought_workshop.multitable.schemas import BatchIn, BatchOut, CsvIn, RestoreIn
 from app.apps.thought_workshop.notes import Notes
+from app.apps.thought_workshop.schemas.knowledge import (
+    KnowledgeBaseOut,
+    ThoughtDirectoryOut,
+    ThoughtMoveIn,
+)
 from app.apps.thought_workshop.schemas.operations import ThoughtOperationsIn
 from app.apps.thought_workshop.schemas.workshop import (
     ThoughtNoteOut,
     ThoughtNotePut,
+    ThoughtNoteTransitionIn,
     ThoughtRevisionIn,
 )
 from app.deps import OwnerDep, StudioAuth
@@ -240,3 +248,42 @@ async def table_csv_import(
             **context(request),
         )
     )
+
+
+@router.post("/notes/{note_id}/restore", response_model=ThoughtNoteOut)
+async def restore_trashed_note(
+    note_id: str, body: ThoughtNoteTransitionIn, session: SessionDep, owner_user_id: OwnerDep
+):
+    return await guarded(
+        Notes(session, owner_user_id).transition(
+            note_id, body.expected_revision, "restore", body.expected_knowledge_revision
+        )
+    )
+
+
+@router.delete("/knowledge-bases/{project_id}", response_model=KnowledgeBaseOut)
+async def trash_knowledge_base(
+    project_id: str,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    expected_revision: int = Query(ge=0),
+):
+    return await guarded(
+        KnowledgeBases(session, owner_user_id).transition(project_id, expected_revision, False)
+    )
+
+
+@router.post("/knowledge-bases/{project_id}/restore", response_model=KnowledgeBaseOut)
+async def restore_knowledge_base(
+    project_id: str, body: ThoughtRevisionIn, session: SessionDep, owner_user_id: OwnerDep
+):
+    return await guarded(
+        KnowledgeBases(session, owner_user_id).transition(project_id, body.expected_revision, True)
+    )
+
+
+@router.post("/knowledge-bases/{project_id}/move", response_model=ThoughtDirectoryOut)
+async def move_entry(
+    project_id: str, body: ThoughtMoveIn, session: SessionDep, owner_user_id: OwnerDep
+):
+    return await guarded(Directory(session, owner_user_id).move(project_id, body))

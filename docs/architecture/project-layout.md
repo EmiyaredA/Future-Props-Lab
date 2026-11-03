@@ -94,7 +94,7 @@
 
 `fpl_creative/installation_outbox.py` 和 `installation_coordinator.py` 保存按账号及版本绑定的安装意图，并通过显式目标端口核对回执后结算；`fpl_integrations/creative_http.py` 默认拒绝缺少可信授权的内部请求。`fpl_gateway/creative_bridge.py` 提供请求体绑定与私有 Unix socket 基础原语，但尚未挂载或接入生产生命周期，完整证据验证和安装传输仍是开放门禁。
 
-`fpl_thought/upload_intents.py` 与 `fpl_assets/thought_uploads.py` 提供按账号绑定的私有上传回执，Identity 只为指定来源和目标签发上传委托。该协议已通过隔离服务测试，公开上传入口及恢复 worker 尚未接入。独立 Thought 的部分 HTTP 装配与 retention worker 已存在，但 `/ready` 始终返回 503，直至素材引用迁移及剩余业务能力完成。
+`fpl_thought/upload_intents.py` 与 `fpl_assets/thought_uploads.py` 提供按账号绑定的私有上传回执，Identity 只为指定来源和目标签发上传委托。`upload_transport.py` 为已暂存上传逐请求换取绑定摘要的 Identity 委托并流式传输，来源服务仅在收到有效回执后确认并清理暂存。该协议已通过隔离服务测试，公开上传入口及恢复 worker 尚未接入。独立 Thought 的部分 HTTP 装配已包括目录移动、文档恢复和知识库回收／恢复，并保留现有版本控制及撤回发布规则；retention worker 已存在，但 `/ready` 始终返回 503，直至素材引用迁移及剩余业务能力完成。
 
 `backend/fpl_thought/` 拥有 Thought 自有表清单、仅保留自有外键的独立迁移与写作 HTTP 适配，目前还不提供完整部署入口。`fpl_runtime/writing.py` 是绑定笔记、请求内容摘要和原始账号操作的私有写作协议；`fpl_models/writing.py` 负责 Models 自有选择、流式调用、日志和配额。Thought 的 `writing.py` 与 `legacy_writing.py` 分别定义显式模型端口和恢复网站适配器，业务写作不直接加载模型 ORM 或全局数据库。
 

@@ -1,6 +1,7 @@
 """Durable staged upload intents; ambiguous remote outcomes keep their source bytes."""
 
 import hashlib
+import os
 import re
 from dataclasses import asdict
 from pathlib import Path
@@ -59,12 +60,12 @@ async def stage_upload(
             raise ValueError("上传暂存文件不能是符号链接")
         digest, size = hashlib.sha256(), 0
         try:
-            output = path.open("xb")
+            descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+            output = os.fdopen(descriptor, "wb")
         except FileExistsError:
             raise ThoughtError("上传暂存结果尚未确认", 409, "upload_staging_pending") from None
         created = True
         with output:
-            path.chmod(0o600)
             while chunk := await incoming.read(1024 * 1024):
                 size += len(chunk)
                 if size > description.byte_size:
@@ -110,6 +111,8 @@ async def confirm_upload(session, *, root, owner, request_id, description, asset
         if row.result != {"asset_id": asset_id}:
             raise ThoughtError("上传回执不一致", 409, "upload_receipt_conflict")
         await session.rollback()
+        if not path.is_symlink():
+            path.unlink(missing_ok=True)
         return
     if row.state != "staged":
         raise ThoughtError("上传意图状态无效", 409, "upload_state_conflict")
@@ -118,3 +121,50 @@ async def confirm_upload(session, *, root, owner, request_id, description, asset
     # Never remove bytes before the local confirmed receipt is durable.
     if not path.is_symlink():
         path.unlink(missing_ok=True)
+
+
+async def deliver_staged_upload(
+    session,
+    *,
+    root,
+    owner,
+    request_id,
+    description,
+    assertion,
+    source_path,
+    credential,
+    catalog,
+    transport=None,
+):
+    """Transfer a durable staged intent and confirm only a validated Assets receipt."""
+    from .upload_transport import send_staged_upload
+
+    if session.info.get("owner_user_id") != owner:
+        raise ValueError("上传意图缺少账号上下文")
+    row = await session.get(ThoughtUploadIntent, (owner, request_id))
+    if row is None or row.descriptor_sha256 != description.fingerprint:
+        raise ThoughtError("上传意图不存在", 404, "not_found")
+    if row.state != "staged":
+        raise ThoughtError("上传意图状态无效", 409, "upload_state_conflict")
+    path = stage_path(root, owner, request_id, description.fingerprint)
+    # Network transfer must not hold a transaction or share mutable session state.
+    await session.rollback()
+    result = await send_staged_upload(
+        path=path,
+        description=description,
+        request_id=request_id,
+        assertion=assertion,
+        source_path=source_path,
+        credential=credential,
+        catalog=catalog,
+        transport=transport,
+    )
+    await confirm_upload(
+        session,
+        root=root,
+        owner=owner,
+        request_id=request_id,
+        description=description,
+        asset_id=result.id,
+    )
+    return result

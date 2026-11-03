@@ -201,6 +201,7 @@ async def test_thought_staging_preserves_bytes_until_confirmed_receipt(tmp_path,
             incoming=incoming(),
         )
         assert result.state == "staged" and path.read_bytes() == CONTENT
+        assert path.stat().st_mode & 0o777 == 0o600
     async with db.sessions(info={"owner_user_id": "beta"}) as session:
         assert await session.get(ThoughtUploadIntent, ("alpha", "one")) is None
     async with db.sessions(info={"owner_user_id": "alpha"}) as session:
@@ -233,6 +234,7 @@ async def test_thought_staging_preserves_bytes_until_confirmed_receipt(tmp_path,
             description=desc,
             asset_id="asset",
         )
+        assert not path.exists()
     await db.close()
 
 
@@ -260,3 +262,124 @@ async def test_failed_staging_does_not_publish_intent_or_keep_partial_bytes(tmp_
         assert not path.exists()
         assert await session.get(ThoughtUploadIntent, ("alpha", "one")) is None
     await db.close()
+
+
+async def test_staged_transport_delegates_exact_upload_and_preserves_unknown_result(tmp_path):
+    import httpx
+
+    from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
+    from fpl_runtime.routing import RouteCatalog
+    from fpl_runtime.thought_uploads import upload_path
+    from fpl_thought.upload_transport import send_staged_upload
+
+    desc = description()
+    staged = tmp_path / "staged"
+    staged.write_bytes(CONTENT)
+    calls = []
+    failure = False
+    target = upload_path("image", "one", desc.fingerprint)
+
+    async def handle(request):
+        calls.append(request)
+        if request.url.host == "identity":
+            import json
+
+            grant = json.loads(request.content)
+            assert grant["source_path"] == "/v1/thought-workshop/images"
+            assert grant["target_path"] == target
+            assert grant["assertion"] == "signed-source"
+            return httpx.Response(200, json={"assertion": "delegated"})
+        assert request.url.path == target
+        assert request.headers["x-fpl-context"] == "delegated"
+        assert "cookie" not in request.headers and "authorization" not in request.headers
+        assert await request.aread() == CONTENT
+        if failure:
+            raise httpx.ReadTimeout("lost response", request=request)
+        return httpx.Response(
+            200,
+            json={
+                "id": "asset",
+                "project_id": None,
+                "folder_id": None,
+                "original_filename": "image.png",
+                "display_name": "image.png",
+                "media_kind": "image",
+                "mime_type": "image/png",
+                "byte_size": len(CONTENT),
+                "revision": 0,
+                "created_at": "2026-01-01",
+                "updated_at": "2026-01-01",
+                "source": "library",
+                "is_reference": False,
+                "reference_id": None,
+            },
+        )
+
+    options = dict(
+        path=staged,
+        description=desc,
+        request_id="one",
+        assertion="signed-source",
+        source_path="/v1/thought-workshop/images",
+        credential="c" * 48,
+        catalog=RouteCatalog.read(
+            __import__("pathlib").Path(__file__).resolve().parents[1]
+            / "deploy/contracts/ownership.json"
+        ),
+        transport=httpx.MockTransport(handle),
+    )
+    receipt = await send_staged_upload(**options)
+    assert receipt.id == "asset"
+    assert len(calls) == 2 and staged.read_bytes() == CONTENT
+    failure = True
+    with pytest.raises(CapabilityUnavailable):
+        await send_staged_upload(**options)
+    assert len(calls) == 4 and staged.read_bytes() == CONTENT
+    with pytest.raises(CapabilityDenied):
+        await send_staged_upload(**{**options, "source_path": "/v1/thought-workshop/attachments"})
+    assert len(calls) == 4
+
+
+async def test_delivery_timeout_keeps_intent_and_source_for_exact_replay(tmp_path, monkeypatch):
+    from fpl_runtime.capability_client import CapabilityUnavailable
+    from fpl_thought import upload_transport
+    from fpl_thought.migrations.registry import MIGRATIONS as THOUGHT_MIGRATIONS
+    from fpl_thought.models import ACCOUNT_MODELS
+    from fpl_thought.models import MODELS as THOUGHT_MODELS
+    from fpl_thought.upload_intents import deliver_staged_upload, stage_path, stage_upload
+    from fpl_thought.upload_records import ThoughtUploadIntent
+
+    async def timeout(**_kwargs):
+        raise CapabilityUnavailable("response lost")
+
+    monkeypatch.setattr(upload_transport, "send_staged_upload", timeout)
+    apply(tmp_path / "service.db", "thought", THOUGHT_MIGRATIONS)
+    db = Database("thought", tmp_path, models=THOUGHT_MODELS, account_models=ACCOUNT_MODELS)
+    desc = description()
+    try:
+        async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+            await stage_upload(
+                session,
+                root=tmp_path,
+                owner="alpha",
+                request_id="one",
+                description=desc,
+                incoming=incoming(),
+            )
+            with pytest.raises(CapabilityUnavailable):
+                await deliver_staged_upload(
+                    session,
+                    root=tmp_path,
+                    owner="alpha",
+                    request_id="one",
+                    description=desc,
+                    assertion="source",
+                    source_path="/v1/thought-workshop/images",
+                    credential="test",
+                    catalog=None,
+                )
+            row = await session.get(ThoughtUploadIntent, ("alpha", "one"))
+            assert row.state == "staged" and row.result is None
+            assert stage_path(tmp_path, "alpha", "one", desc.fingerprint).read_bytes() == CONTENT
+    finally:
+        await db.close()

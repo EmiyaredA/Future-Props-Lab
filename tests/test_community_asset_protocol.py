@@ -830,7 +830,7 @@ async def test_note_batch_http_with_real_identity_and_assets_retention(scenario)
     await live.close()
 
 
-async def test_thought_upload_delegates_real_session_to_owned_assets_only(scenario):
+async def test_thought_upload_delegates_real_session_to_owned_assets_only(scenario, tmp_path):
     import hashlib
 
     from fpl_runtime.delegation import RequestGrant
@@ -872,6 +872,53 @@ async def test_thought_upload_delegates_real_session_to_owned_assets_only(scenar
         assert upload.status_code == 200, upload.text
         retry = await client.post("http://assets" + target, headers=headers, content=content)
         assert retry.status_code == 200 and retry.json()["id"] == upload.json()["id"]
+        from fpl_runtime.capability_client import CapabilityDenied
+        from fpl_thought.upload_transport import send_staged_upload
+
+        staged = tmp_path / "thought-upload"
+        staged.write_bytes(content)
+        options = dict(
+            path=staged,
+            description=desc,
+            request_id="test-request",
+            assertion=source.headers[HEADER],
+            source_path=source_path,
+            credential=THOUGHT_SECRET,
+            catalog=CATALOG,
+            transport=case.mesh,
+        )
+        result = await send_staged_upload(**options)
+        assert result.id == upload.json()["id"]
+        assert staged.read_bytes() == content
+        from fpl_thought.upload_intents import deliver_staged_upload, stage_path, stage_upload
+        from fpl_thought.upload_records import ThoughtUploadIntent
+
+        async with case.db.sessions(info={"owner_user_id": case.viewer}) as session:
+            await stage_upload(
+                session,
+                root=tmp_path,
+                owner=case.viewer,
+                request_id="test-request",
+                description=desc,
+                incoming=UploadFile(io.BytesIO(content), filename="viewer.png"),
+            )
+            staged_copy = stage_path(tmp_path, case.viewer, "test-request", desc.fingerprint)
+            assert staged_copy.read_bytes() == content
+            delivery = await deliver_staged_upload(
+                session,
+                root=tmp_path,
+                owner=case.viewer,
+                request_id="test-request",
+                description=desc,
+                assertion=source.headers[HEADER],
+                source_path=source_path,
+                credential=THOUGHT_SECRET,
+                catalog=CATALOG,
+                transport=case.mesh,
+            )
+            assert delivery.id == result.id and not staged_copy.exists()
+            row = await session.get(ThoughtUploadIntent, (case.viewer, "test-request"))
+            assert row.state == "confirmed" and row.result == {"asset_id": result.id}
         forbidden = await client.post(
             "http://identity/_internal/v1/authorization/delegate",
             headers={"Authorization": "Bearer " + THOUGHT_SECRET},
@@ -890,9 +937,122 @@ async def test_thought_upload_delegates_real_session_to_owned_assets_only(scenar
         assert (
             await client.post("http://assets" + target, headers=headers, content=content)
         ).status_code == 401
+        with pytest.raises(CapabilityDenied):
+            await send_staged_upload(**options)
+        assert staged.read_bytes() == content
     async with case.assets.state.database.sessions(info={"owner_user_id": case.viewer}) as session:
         row = await session.get(VisualAsset, upload.json()["id"])
         assert row.owner_user_id == case.viewer
     async with case.assets.state.database.sessions(info={"owner_user_id": case.owner}) as session:
         assert await session.get(VisualAsset, row.id) is None
     await live.close()
+
+
+async def test_thought_directory_mutations_use_owned_revisions_and_withdraw(scenario):
+    from fpl_runtime.retention_client import RetentionClient
+    from fpl_thought.application import create_app as create_thought
+
+    case = scenario
+    app = create_thought(
+        state_root=case.db.root,
+        catalog=CATALOG,
+        public_key=case.key.public_key(),
+        credential=THOUGHT_SECRET,
+        identity=LiveAuthorization(
+            service="thought", credential=THOUGHT_SECRET, transport=case.mesh
+        ),
+        retention_client=RetentionClient(
+            service="thought", credential=THOUGHT_SECRET, transport=case.mesh
+        ),
+        assets_peer_credential=PEER_SECRET,
+        transport=case.mesh,
+        run_worker=False,
+    )
+    headers = {
+        "X-Fpl-Gateway": GATEWAY_SECRET,
+        "X-Fpl-Ingress": "local",
+        "X-Fpl-Client-Ip": "127.0.0.1",
+    }
+    async with app.router.lifespan_context(app):
+        async with case.db.sessions(info={"owner_user_id": case.owner}) as session:
+            session.add(
+                ThoughtNote(
+                    id="home",
+                    owner_user_id=case.owner,
+                    knowledge_base_id="book",
+                    title="Home",
+                    is_home=True,
+                    kind="note",
+                    document={"type": "doc", "content": []},
+                    search_text="",
+                )
+            )
+            book = await session.get(ThoughtKnowledgeBase, "book")
+            book.home_note_id = "home"
+            await session.commit()
+        async with (
+            httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=case.identity),
+                base_url="http://127.0.0.1:19000",
+                headers=headers,
+            ) as owner,
+            httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app), base_url="http://thought"
+            ) as thought,
+        ):
+            assert (
+                await owner.post(
+                    "/v1/auth/login", json={"username": "source-owner", "password": PASSWORD}
+                )
+            ).status_code == 200
+
+            async def call(browser, method, path, **kwargs):
+                token = await browser.get(
+                    "/_internal/v1/authorize",
+                    headers={
+                        "X-Fpl-Target-Service": "thought",
+                        "X-Fpl-Request-Method": method,
+                        "X-Fpl-Request-Uri": path,
+                        "X-CSRF-Token": browser.cookies["fpl_csrf"],
+                        "Origin": "http://127.0.0.1:19000",
+                    },
+                )
+                assert token.status_code == 204, token.text
+                return await thought.request(
+                    method, path, headers={HEADER: token.headers[HEADER]}, **kwargs
+                )
+
+            path = "/v1/thought-workshop/knowledge-bases/book"
+            assert (
+                await call(case.browser, "DELETE", path, params={"expected_revision": 0})
+            ).status_code == 404
+            trash = await call(owner, "DELETE", path, params={"expected_revision": 0})
+            assert trash.status_code == 200, trash.text
+            assert trash.json()["deleted_at"] is not None and trash.json()["revision"] == 1
+            async with case.db.sessions(info={"owner_user_id": case.owner}) as session:
+                assert not (await session.get(Publication, "pub")).active
+            stale = await call(owner, "POST", path + "/restore", json={"expected_revision": 0})
+            assert stale.status_code == 409
+            restored = await call(owner, "POST", path + "/restore", json={"expected_revision": 1})
+            assert restored.status_code == 200 and restored.json()["deleted_at"] is None
+            move = await call(
+                owner, "POST", path + "/move", json={"expected_revision": 2, "item_id": "note"}
+            )
+            assert move.status_code == 200, move.text
+            assert move.json()["knowledge_base"]["revision"] == 3
+            note_path = "/v1/thought-workshop/notes/note"
+            note_trash = await call(
+                owner,
+                "DELETE",
+                note_path,
+                params={"expected_revision": 1, "expected_knowledge_revision": 3},
+            )
+            assert note_trash.status_code == 200, note_trash.text
+            restored_note = await call(
+                owner,
+                "POST",
+                note_path + "/restore",
+                json={"expected_revision": 2, "expected_knowledge_revision": 4},
+            )
+            assert restored_note.status_code == 200, restored_note.text
+            assert restored_note.json()["deleted_at"] is None
