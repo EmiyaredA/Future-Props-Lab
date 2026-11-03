@@ -3,16 +3,16 @@ from pathlib import Path
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 
-from app.capabilities.asset_store.assets import VisualAssets
 from app.capabilities.transcription import max_transcription_input_bytes
 from app.llm.credential_snapshot import CredentialSnapshot
-from app.llm.inference.assets import InferenceAssets, LocalInput, root
+from app.llm.inference.assets import InferenceAssets, root
 from app.llm.inference.catalog import get_model, normalize_parameters
 from app.llm.inference.receipts import replay_task
 from app.llm.models.model_inference import ModelInferenceAsset, ModelInferenceTask
 from app.llm.providers.local_qwen import MAX_REFERENCE_BYTES, inspect_reference
 from app.llm.providers.seedance_references import SeedanceReference, validate_seedance_references
 from app.llm.schemas.model_inference import InferenceTaskOut, InferenceTasksOut
+from app.llm.task_outcomes import confirmed_terminal
 from app.runtime.config import get_settings
 from app.runtime.operation_receipts import OperationError, fingerprint
 from app.runtime.revisions import RevisionConflictError
@@ -34,8 +34,10 @@ def task_out(row):
 
 
 class InferenceTasks:
-    def __init__(self, session, owner_user_id):
+    def __init__(self, session, owner_user_id, *, library_outputs=None, native_retention=None):
         self.session, self.owner_user_id = session, owner_user_id
+        self.library_outputs = library_outputs
+        self.native_retention = native_retention
 
     async def row(self, task_id):
         row = await self.session.scalar(
@@ -199,8 +201,10 @@ class InferenceTasks:
 
     async def delete(self, task_id, expected):
         row = await self.row(task_id)
-        if row.status in ACTIVE:
-            raise OperationError("进行中的任务不能删除", "task_busy", 409)
+        if not confirmed_terminal(row):
+            raise OperationError("任务尚未确认结算，不能删除", "task_busy", 409)
+        if self.session.info.get("service_id") == "models" and self.native_retention is None:
+            raise OperationError("原生结果清理接口未装配", "native_retention_unavailable", 503)
         paths = (
             [root(self.owner_user_id) / "outputs" / row.result_storage_key]
             if row.result_storage_key
@@ -221,17 +225,17 @@ class InferenceTasks:
             await self.session.rollback()
             current = await self.get(task_id)
             raise RevisionConflictError(expected, current.revision, current.model_dump(mode="json"))
+        if self.native_retention is not None:
+            await self.native_retention.retire(self.session, self.owner_user_id, task_id)
         await self.session.commit()
         for path in paths:
             path.unlink(missing_ok=True)
+        if self.native_retention is not None:
+            await self.native_retention.cleanup_task(self.owner_user_id, task_id)
 
     async def save_to_library(self, task_id):
         path, filename, mime_type = await self.content(task_id)
-        source = LocalInput(path, filename, mime_type)
         await self.session.rollback()
-        try:
-            return await VisualAssets(
-                self.session, get_settings(), owner_user_id=self.owner_user_id
-            ).upload(source, project_id=None, folder_id=None)
-        finally:
-            await source.close()
+        if self.library_outputs is None:
+            raise OperationError("模型结果保存接口未装配", "model_library_outputs_unavailable", 503)
+        return await self.library_outputs.save(task_id, path, filename, mime_type)

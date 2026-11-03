@@ -356,6 +356,9 @@ async def scenario():
                 "registration_invite_codes",
                 "registration_redemptions",
                 "identity_account_events",
+                "identity_model_audit_receipts",
+                "identity_model_audit_intents",
+                "identity_integration_intents",
                 "_fpl_service_schema",
             }, names
     assert "app.main" not in sys.modules and "app.orm" not in sys.modules

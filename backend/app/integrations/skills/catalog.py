@@ -52,10 +52,10 @@ def _version_out(row: SkillVersion) -> SkillVersionOut:
 
 
 class SkillCatalog:
-    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str, *, storage=None) -> None:
         self.session = session
         self.owner_user_id = require_owner_id(owner_user_id, subject="Skill catalog")
-        self.storage = SkillArchiveStorage(get_settings(), self.owner_user_id)
+        self.storage = storage or SkillArchiveStorage(get_settings(), self.owner_user_id)
 
     async def _get(self, skill_id: str) -> SkillIntegration:
         row = await self.session.get(SkillIntegration, skill_id)
@@ -156,24 +156,22 @@ class SkillCatalog:
         )
         self.session.add(row)
         destination: Path | None = None
+        committing = False
         try:
             await self.session.flush()
             destination = self.storage.place(staged, row.id, "v1")
             self.session.add(self._version_row(row.id, "v1", staged, destination))
+            committing = True
             await self.session.commit()
-        except IntegrityError as exc:
+        except BaseException as exc:
             await self.session.rollback()
-            if destination:
-                shutil.rmtree(destination.parent, ignore_errors=True)
-            else:
-                shutil.rmtree(staged.directory, ignore_errors=True)
-            raise DuplicateIntegrationError("Skill 名称已存在") from exc
-        except Exception:
-            await self.session.rollback()
-            if destination:
-                shutil.rmtree(destination.parent, ignore_errors=True)
-            else:
-                shutil.rmtree(staged.directory, ignore_errors=True)
+            if not committing:
+                if destination:
+                    shutil.rmtree(destination.parent, ignore_errors=True)
+                else:
+                    shutil.rmtree(staged.directory, ignore_errors=True)
+            if isinstance(exc, IntegrityError):
+                raise DuplicateIntegrationError("Skill 名称已存在") from exc
             raise
         return await self.get(row.id)
 
@@ -203,8 +201,11 @@ class SkillCatalog:
             )
         next_number = int(current.latest_version[1:]) + 1
         version = f"v{next_number}"
+        current_name = current.name
+        self.session.expunge(current)
+        await self.session.rollback()
         staged = await self.storage.stage(upload)
-        if staged.name != current.name:
+        if staged.name != current_name:
             shutil.rmtree(staged.directory, ignore_errors=True)
             raise IntegrationValidationError("新版本 SKILL.md 的 name 必须与 Skill 一致")
         result = await self.session.execute(
@@ -230,23 +231,21 @@ class SkillCatalog:
                 expected_revision, latest.revision, latest_out.model_dump(mode="json")
             )
         destination: Path | None = None
+        committing = False
         try:
             destination = self.storage.place(staged, skill_id, version)
             self.session.add(self._version_row(skill_id, version, staged, destination))
+            committing = True
             await self.session.commit()
-        except IntegrityError as exc:
+        except BaseException as exc:
             await self.session.rollback()
-            if destination:
-                shutil.rmtree(destination, ignore_errors=True)
-            else:
-                shutil.rmtree(staged.directory, ignore_errors=True)
-            raise DuplicateIntegrationError("Skill 版本已存在") from exc
-        except Exception:
-            await self.session.rollback()
-            if destination:
-                shutil.rmtree(destination, ignore_errors=True)
-            else:
-                shutil.rmtree(staged.directory, ignore_errors=True)
+            if not committing:
+                if destination:
+                    shutil.rmtree(destination, ignore_errors=True)
+                else:
+                    shutil.rmtree(staged.directory, ignore_errors=True)
+            if isinstance(exc, IntegrityError):
+                raise DuplicateIntegrationError("Skill 版本已存在") from exc
             raise
         return await self.get(skill_id)
 
@@ -296,30 +295,23 @@ class SkillCatalog:
             raise RevisionConflictError(
                 expected_revision, current.revision, snapshot.model_dump(mode="json")
             )
-        staged = self.storage.stage_delete(skill_id)
-        try:
-            result = await self.session.execute(
-                delete(SkillIntegration).where(
-                    SkillIntegration.id == skill_id,
-                    SkillIntegration.revision == expected_revision,
-                )
+        result = await self.session.execute(
+            delete(SkillIntegration).where(
+                SkillIntegration.id == skill_id,
+                SkillIntegration.revision == expected_revision,
             )
-            if result.rowcount != 1:
-                await self.session.rollback()
-                self.storage.restore_delete(staged)
-                latest = await self._get(skill_id)
-                latest_out = await self._out(latest)
-                raise RevisionConflictError(
-                    expected_revision,
-                    latest.revision,
-                    latest_out.model_dump(mode="json"),
-                )
-            await self.session.commit()
-        except Exception:
+        )
+        if result.rowcount != 1:
             await self.session.rollback()
-            self.storage.restore_delete(staged)
-            raise
-        self.storage.purge_delete(staged)
+            latest = await self._get(skill_id)
+            latest_out = await self._out(latest)
+            raise RevisionConflictError(
+                expected_revision, latest.revision, latest_out.model_dump(mode="json")
+            )
+        # Never move or delete files before the database deletion is confirmed.
+        # A lost commit reply leaves an orphan for owned startup reconciliation.
+        await self.session.commit()
+        self.storage.purge_delete(self.storage.stage_delete(skill_id))
 
     async def version_zip(self, skill_id: str, version: str) -> tuple[str, bytes]:
         root = await self._version_root(skill_id, version)

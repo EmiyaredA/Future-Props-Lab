@@ -88,7 +88,7 @@ async def install(session, principal, service_id, expected_catalog_revision, cli
         )
     if exists:
         raise AccountError("demo_service_already_installed")
-    revision = await legacy_catalog(session)._bump(expected_catalog_revision)
+    revision = await legacy_catalog(session).advance_revision(expected_catalog_revision)
     if service_id == "mock_model":
         provider = ModelProvider(
             owner_user_id=principal.owner_user_id,

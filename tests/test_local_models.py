@@ -71,7 +71,6 @@ def test_worker_writes_wav_to_extensionless_asset_key(monkeypatch, capsys):
 async def manager(tmp_path, monkeypatch):
     monkeypatch.setattr("app.llm.local_models.management.compatible", lambda: True)
     monkeypatch.setattr("app.llm.local_models.catalog.compatible", lambda: True)
-    monkeypatch.setattr("app.llm.catalog.service.compatible", lambda: True)
     installer = Installer(tmp_path / "local-models")
     runtime = LocalRuntime(installer)
     manager = LocalModels(SessionLocal, installer, runtime)

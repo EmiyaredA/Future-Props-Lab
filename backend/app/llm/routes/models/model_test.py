@@ -5,7 +5,6 @@ from typing import Annotated
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 
-from app.capabilities.asset_store.thumbnails import ThumbnailSize
 from app.deps import OwnerDep, SessionDep
 from app.llm.catalog.service import ResourceNotFoundError
 from app.llm.http_credentials import CallCredentialDep
@@ -17,6 +16,7 @@ from app.llm.playground.service import (
     RegenerateUnavailableError,
 )
 from app.llm.playground.stream import generation_events
+from app.llm.provider_transports import provider_options
 from app.llm.schemas.model_test import (
     ModelTestAttachmentListOut,
     ModelTestConversationCreateIn,
@@ -26,7 +26,9 @@ from app.llm.schemas.model_test import (
     ModelTestRegenerateIn,
     ModelTestSendIn,
 )
+from app.llm.stream_access import stream_access
 from app.runtime.config import get_settings
+from app.runtime.image_sizes import ThumbnailSize
 
 router = APIRouter(prefix="/model-test/conversations", tags=["model-test"])
 
@@ -182,7 +184,12 @@ async def stream_message(
     ) as exc:
         raise _translate(exc) from None
     return StreamingResponse(
-        generation_events(prepared, session_factory=request.app.state.database.sessions),
+        generation_events(
+            prepared,
+            session_factory=request.app.state.database.sessions,
+            check_access=stream_access(request),
+            transport_options=provider_options(request, prepared.base_url),
+        ),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
@@ -210,7 +217,12 @@ async def regenerate_message(
     ) as exc:
         raise _translate(exc) from None
     return StreamingResponse(
-        generation_events(prepared, session_factory=request.app.state.database.sessions),
+        generation_events(
+            prepared,
+            session_factory=request.app.state.database.sessions,
+            check_access=stream_access(request),
+            transport_options=provider_options(request, prepared.base_url),
+        ),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

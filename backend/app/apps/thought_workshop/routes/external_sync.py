@@ -14,7 +14,8 @@ from app.apps.thought_workshop.external_sync.schemas import (
     ArticleSyncTaskOut,
 )
 from app.apps.thought_workshop.external_sync.use_cases import ArticleSync
-from app.deps import OwnerDep, SessionDep, StudioAuth
+from app.apps.thought_workshop.http_bindings import SessionDep
+from app.deps import OwnerDep, StudioAuth
 from app.integrations.external.contracts import ExternalError
 
 router = APIRouter(

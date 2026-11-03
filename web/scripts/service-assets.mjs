@@ -3,7 +3,21 @@ import { imageVariants as variants } from "../src/shared/lib/imageVariants.ts";
 import { fileURLToPath } from "node:url";
 
 export const serviceAssets = {
+  integrations: ["brand/brand-mark.png", "brand/favicon.png"],
   assets: ["brand/brand-mark.png", "brand/favicon.png"],
+  models: [
+    "brand/brand-mark.png",
+    "brand/favicon.png",
+    "providers/qwen-logo.svg",
+    "providers/deepseek-logo.svg",
+    "providers/senseaudio-logo.svg",
+    ...fs
+      .readdirSync(
+        fileURLToPath(new URL("../public/voice-vad/", import.meta.url)),
+      )
+      .filter((name) => /\.(?:onnx|wasm|js)$/.test(name))
+      .map((name) => "voice-vad/" + name),
+  ],
   management: ["brand/brand-mark.png", "brand/favicon.png"],
   portal: [
     "brand/brand-mark.png",
@@ -38,9 +52,14 @@ export const serviceAssets = {
 };
 
 // Repo-owned generated paths are fixed inputs to each independent program build.
-serviceAssets.portal.push(...serviceAssets.agents.filter(name => name.startsWith("providers/")));
+serviceAssets.portal.push(
+  ...serviceAssets.agents.filter((name) => name.startsWith("providers/")),
+);
 for (const [service, originals] of Object.entries(serviceAssets)) {
-  const related = originals.flatMap(name => Object.values(variants["/" + name] || {})
-    .map(value => value.replace(/^\//, "")));
+  const related = originals.flatMap((name) =>
+    Object.values(variants["/" + name] || {}).map((value) =>
+      value.replace(/^\//, ""),
+    ),
+  );
   serviceAssets[service] = [...new Set([...originals, ...related])].sort();
 }

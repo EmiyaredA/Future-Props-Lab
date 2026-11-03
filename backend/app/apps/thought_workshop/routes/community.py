@@ -4,6 +4,7 @@ from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 
 from app.apps.thought_workshop.errors import ThoughtError
+from app.apps.thought_workshop.http_bindings import CommunitySessionDep as SessionDep
 from app.apps.thought_workshop.knowledge_tools.schemas import ResolveReferences
 from app.apps.thought_workshop.publication.imports import (
     LegacyTarget,
@@ -35,7 +36,7 @@ from app.apps.thought_workshop.publication.use_cases import Community
 from app.apps.thought_workshop.schemas.workshop import ThoughtAttachmentOut, ThoughtImportOut
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.thumbnails import ThumbnailSize
-from app.deps import PublicStudioAuth, SessionDep
+from app.deps import PublicStudioAuth
 
 router = APIRouter(prefix="/community", tags=["knowledge-community"])
 

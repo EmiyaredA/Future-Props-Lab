@@ -5,6 +5,7 @@ from pathlib import Path
 from sqlalchemy import Text, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.apps.thought_workshop.asset_metadata import metadata
 from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.external_sync import ensure_can_purge
 from app.apps.thought_workshop.history import CONTENT_FIELDS, History
@@ -30,7 +31,6 @@ from app.apps.thought_workshop.schemas.workshop import (
     ThoughtNotePut,
     ThoughtNoteSummary,
 )
-from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
 from app.runtime.operation_receipts import forget
 from app.runtime.revisions import RevisionConflictError
@@ -161,20 +161,7 @@ class Notes:
         images = image_ids(body.document)
         body.schema_version = 3
         if ids:
-            rows = (
-                await self.session.scalars(
-                    select(VisualAsset).where(
-                        VisualAsset.id.in_(ids),
-                        VisualAsset.owner_user_id == self.owner_user_id,
-                        VisualAsset.project_id.is_(None),
-                        VisualAsset.galgame_project_id.is_(None),
-                        VisualAsset.video_editor_project_id.is_(None),
-                    )
-                )
-            ).all()
-            if {r.id for r in rows} != ids:
-                raise ThoughtError("文件不存在或不属于当前账号的公共文件", 404, "not_found")
-            assets = {row.id: row for row in rows}
+            assets = await metadata(self.session, self.owner_user_id).describe(ids)
             if any(assets[key].media_kind != "image" for key in images):
                 raise ThoughtError("图片引用必须为图片文件")
             for node in attachment_nodes(body.document):

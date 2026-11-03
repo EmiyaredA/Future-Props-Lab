@@ -21,19 +21,6 @@ def main():
     environment = values.get("fpl_deployment_environment", {})
     if not environment or "FPL_MANAGEMENT_IMAGE" not in environment:
         raise SystemExit("独立服务尚未配置，请先完成隔离构建与部署配置；不会迁移或接管旧数据库")
-    compose = Path(values["fpl_deployment_compose_file"])
-    if not compose.is_absolute():
-        compose = ROOT / compose
-    command = [
-        "docker",
-        "compose",
-        "--file",
-        str(compose),
-        "--file",
-        str(ROOT / "deploy/management.compose.yaml"),
-        "--project-name",
-        values["fpl_deployment_project_name"],
-    ]
     import asyncio
 
     from fpl_host.management import configuration, run_worker
@@ -43,15 +30,21 @@ def main():
 
     configured, control, transport, state = configuration(options.config)
     env = control.env
+    command = control.prefix
     if options.only_management:
         configured["fpl_management_host_auto_start"] = False
         configured["fpl_website_public_enabled"] = False
     with service_lock(state):
         # Acquire the host singleton before any Compose action, including a second npm start.
-        for identity, registry in (
+        selected_migrations = [
             ("IDENTITY", IDENTITY_MIGRATIONS),
             ("MANAGEMENT", MANAGEMENT_MIGRATIONS),
-        ):
+        ]
+        if environment.get("FPL_MODELS_IMAGE"):
+            from fpl_models.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
+
+            selected_migrations.append(("MODELS", MODELS_MIGRATIONS))
+        for identity, registry in selected_migrations:
             database = Path(environment["FPL_" + identity + "_STATE"])
             if not database.is_absolute():
                 database = ROOT / database
@@ -68,14 +61,15 @@ def main():
             check=True,
             cwd=ROOT,
         )
-        models = subprocess.run(
-            [*command, "up", "--detach", "--no-deps", "models"],
-            env=env,
-            check=False,
-            cwd=ROOT,
-        )
-        if models.returncode:
-            print("Models 启动失败；管理端继续运行，模型治理暂不可用", file=sys.stderr)
+        if environment.get("FPL_MODELS_IMAGE"):
+            models = subprocess.run(
+                [*command, "up", "--detach", "--no-deps", "models"],
+                env=env,
+                check=False,
+                cwd=ROOT,
+            )
+            if models.returncode:
+                print("Models 启动失败；管理端继续运行，模型治理暂不可用", file=sys.stderr)
         asyncio.run(run_worker(configured, control, transport, state))
 
 

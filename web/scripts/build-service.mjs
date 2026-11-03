@@ -13,7 +13,16 @@ const repo = path.resolve(
 );
 const web = path.join(repo, "web");
 const service = process.argv[2];
-if (!["agents", "portal", "assets", "management"].includes(service))
+if (
+  ![
+    "agents",
+    "portal",
+    "assets",
+    "management",
+    "models",
+    "integrations",
+  ].includes(service)
+)
   throw new Error("This service has no independent browser entry yet");
 const digest = (value) => createHash("sha256").update(value).digest("hex");
 function walk(directory, prefix = "") {
@@ -45,11 +54,18 @@ sources.push(
   "web/vite.config.ts",
   "web/" + service + ".html",
 );
+const apiHash = execFileSync(
+  "uv",
+  ["run", "python", "scripts/website/web_contract.py", service],
+  { cwd: repo, encoding: "utf8" },
+).trim();
 const id = digest(
   sources
     .sort()
     .map((name) => name + ":" + digest(fs.readFileSync(path.join(repo, name))))
-    .join("\n"),
+    .join("\n") +
+    "\napi:" +
+    apiHash,
 ).slice(0, 20);
 const output = path.join(repo, ".local/service-web", service, id);
 execFileSync("git", ["check-ignore", "--quiet", output], { cwd: repo });
@@ -125,11 +141,7 @@ for (const name of walk(output)) {
   }
 }
 files.sort((a, b) => a.path.localeCompare(b.path));
-const apiHash = execFileSync(
-  "uv",
-  ["run", "python", "scripts/website/web_contract.py", service],
-  { cwd: repo, encoding: "utf8" },
-).trim();
+
 const manifest = {
   api_sha256: apiHash,
   version: 1,

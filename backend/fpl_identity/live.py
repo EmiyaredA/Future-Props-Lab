@@ -11,6 +11,7 @@ from app.capabilities.identity.permissions import role_permissions, role_scopes
 from app.console.models.accounts import AuthSession, ManagementApiKey, User
 from app.runtime.time import utc_now
 from fpl_runtime.claims import verify_context
+from fpl_runtime.model_outputs import is_model_output_path
 
 router = APIRouter()
 
@@ -66,7 +67,26 @@ async def live(request: Request, body: LiveRequest):
     if expected is None or not secrets.compare_digest(credential, expected):
         raise HTTPException(403, "service_credential_required")
     operation = request.app.state.service_catalog.match(body.method, body.path)
-    if operation is None or operation.service != body.service:
+    private_output = (
+        body.service == "assets" and body.method == "POST" and is_model_output_path(body.path)
+    )
+    from fpl_runtime.external_sync import close_target, read_target
+    from fpl_runtime.writing import writing_target
+
+    private_writing = (
+        body.service == "models" and writing_target(body.method, body.path) is not None
+    )
+    socket = (
+        request.app.state.service_catalog.match_socket(body.path) if body.method == "GET" else None
+    )
+    if socket is not None:
+        operation = socket
+    private_external = body.service == "integrations" and bool(
+        read_target(body.method, body.path) or close_target(body.method, body.path)
+    )
+    if not (private_output or private_writing or private_external) and (
+        operation is None or operation.service != body.service
+    ):
         raise HTTPException(403, "invalid_service_target")
     try:
         actor = verify_context(

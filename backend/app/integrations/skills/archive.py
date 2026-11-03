@@ -32,7 +32,15 @@ class StagedSkillArchive:
 class SkillArchiveStorage:
     def __init__(self, settings: Settings, owner_user_id: str) -> None:
         self.settings = settings
-        self.root = settings.account_skill_path(owner_user_id)
+        if (
+            not owner_user_id
+            or Path(owner_user_id).name != owner_user_id
+            or owner_user_id in {".", ".."}
+        ):
+            raise ValueError("Skill storage requires an account ID")
+        self.root = settings.runtime_path / "accounts" / owner_user_id / "integrations" / "skills"
+        if self.root.resolve() != self.root:
+            raise ValueError("Skill storage cannot follow symbolic links")
 
     async def stage(self, upload: IncomingFile) -> StagedSkillArchive:
         self.root.mkdir(parents=True, exist_ok=True)

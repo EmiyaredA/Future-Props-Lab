@@ -6,6 +6,12 @@ from .versions.v0003 import SQL as SQL_0003
 from .versions.v0004 import SQL as SQL_0004
 from .versions.v0005 import SQL as SQL_0005
 from .versions.v0006 import SQL as SQL_0006
+from .versions.v0007 import SQL as SQL_0007
+from .versions.v0008 import SQL as SQL_0008
+from .versions.v0009 import SQL as SQL_0009
+from .versions.v0010 import SQL as SQL_0010
+from .versions.v0011 import SQL as SQL_0011
+from .versions.v0012 import SQL as SQL_0012
 
 MIGRATIONS = (
     Migration("0001_account_defaults", SQL_0001),
@@ -14,4 +20,10 @@ MIGRATIONS = (
     Migration("0004_role_templates", SQL_0004),
     Migration("0005_quota_policy", SQL_0005),
     Migration("0006_task_authorizations", SQL_0006),
+    Migration("0007_governance", SQL_0007),
+    Migration("0008_native_models", SQL_0008),
+    Migration("0009_audit_delivery", SQL_0009),
+    Migration("0010_integration_capacity", SQL_0010),
+    Migration("0011_demo_installations", SQL_0011),
+    Migration("0012_native_result_retention", SQL_0012),
 )

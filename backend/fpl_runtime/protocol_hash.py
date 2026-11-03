@@ -31,6 +31,13 @@ def public_contract(schema, service, catalog):
         definitions[name] = schema["components"]["schemas"][name]
         references(definitions[name])
     value = {"operations": operations, "schemas": definitions}
+    sockets = [
+        {"path": item.path, "permission": item.permission}
+        for item in catalog.websockets
+        if item.service == service
+    ]
+    if sockets:
+        value["websockets"] = sockets
     return hashlib.sha256(
         json.dumps(
             value,

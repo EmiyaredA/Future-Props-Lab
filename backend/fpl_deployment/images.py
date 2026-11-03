@@ -8,6 +8,8 @@ from importlib.util import resolve_name
 from pathlib import Path
 
 ENTRY_POINTS = {
+    "integrations": "fpl_integrations.__main__",
+    "models": "fpl_models.__main__",
     "rendering": "fpl_rendering.__main__",
     "assets": "fpl_assets.__main__",
     "management": "fpl_management.__main__",
@@ -26,6 +28,8 @@ PROJECT_PACKAGES = (
     "fpl_assets",
     "fpl_rendering",
     "fpl_models",
+    "fpl_thought",
+    "fpl_integrations",
     "fpl_runtime",
     "fpl_config",
     "fpl_host",
@@ -169,6 +173,48 @@ def source_closure(root: Path, service):
             )
         ):
             raise ValueError(f"Portal 镜像包含越界依赖：{name}")
+        if service == "integrations" and any(
+            name == prefix or name.startswith(prefix + ".")
+            for prefix in (
+                "app.main",
+                "app.api",
+                "app.orm",
+                "app.runtime.db",
+                "app.apps",
+                "app.llm",
+                "app.console",
+                "app.demo_runtime.runtime",
+                "app.capabilities.asset_store.models",
+                "app.capabilities.asset_store.assets",
+                "app.capabilities.asset_store.storage",
+                "app.capabilities.asset_store.library",
+                "fpl_models",
+                "fpl_assets",
+                "fpl_identity",
+                "fpl_host",
+            )
+        ):
+            raise ValueError(f"Integrations 镜像包含越界依赖：{name}")
+        if service == "models" and any(
+            name == prefix or name.startswith(prefix + ".")
+            for prefix in (
+                "app.main",
+                "app.api",
+                "app.orm",
+                "app.runtime.db",
+                "app.apps",
+                "app.console.governance",
+                "app.console.models",
+                "app.demo_runtime.runtime",
+                "app.capabilities.asset_store.models",
+                "app.capabilities.asset_store.assets",
+                "app.capabilities.asset_store.storage",
+                "fpl_assets",
+                "fpl_identity",
+                "fpl_host",
+            )
+        ):
+            raise ValueError(f"Models 镜像包含越界依赖：{name}")
         path = module_file(root, name)
         if path is None:
             continue
@@ -232,6 +278,9 @@ def prepare_image(root: Path, service: str, *, web_release=None):
         payloads["deploy/contracts/openapi.json"] = (
             root / "web/src/generated/openapi.json"
         ).read_bytes()
+    if service == "models":
+        manifest = "backend/app/llm/local_models/manifest.json"
+        payloads[manifest] = (root / manifest).read_bytes()
     if service == "rendering":
         font = "backend/app/capabilities/media_rendering/assets/NotoSansSC-Regular.ttf"
         body = (root / font).read_bytes()
@@ -248,7 +297,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
                     raise ValueError("文档源码不能是符号链接或位于仓库之外")
                 payloads[path.relative_to(root).as_posix()] = path.read_bytes()
     web_build = None
-    if service in {"agents", "portal", "assets", "management"}:
+    if service in {"agents", "portal", "assets", "management", "models", "integrations"}:
         if web_release is None:
             payloads["web/.api-only"] = b"No browser program in this API acceptance image.\n"
         else:

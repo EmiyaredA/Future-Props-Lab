@@ -155,6 +155,10 @@ class ReusableContent:
 
     async def apply_template(self, id, body):
         template = await self.template(id)
+        ids = file_ids(template.document)
+        if template.multitable:
+            ids |= asset_ids(Snapshot.model_validate(template.multitable))
+        await resolve_assets(self.session, self.owner_user_id, ids)
         guarded = await self.session.execute(
             update(ThoughtTemplate)
             .where(
@@ -258,6 +262,10 @@ class ReusableContent:
                     knowledge_revision=project.revision, revisions=current
                 ).model_dump(),
             )
+        table_data = await export_tables(self.session, source)
+        ids = archive_assets(table_data)
+        ids.update(asset for row in source for asset in file_ids(row.document))
+        await resolve_assets(self.session, self.owner_user_id, ids)
         guard = await self.session.execute(
             update(ThoughtKnowledgeBase)
             .where(
@@ -291,7 +299,6 @@ class ReusableContent:
         mapping = {row.id: new_id() for row in source}
         siblings = await directory.siblings(body.knowledge_base_id, body.parent_id)
         position = max((n.position for n in siblings), default=-1) + 1
-        table_data = await export_tables(self.session, source)
         table_mapping = entity_mapping(table_data)
         created = []
         for row in source:

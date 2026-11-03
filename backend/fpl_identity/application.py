@@ -24,13 +24,19 @@ from app.runtime.config import get_settings
 from fpl_runtime.database import Database
 from fpl_runtime.migrations import check
 
+from .account_directory import router as account_directory_router
 from .accounts import create_account
 from .authorization import router as authorization_router
 from .catalog_events import router as catalog_events_router
 from .delegation import router as delegation_router
+from .integration_intent_http import router as integration_intent_router
+from .integration_intents import IntegrationIntents
 from .live import router as live_router
 from .migrations.registry import MIGRATIONS
-from .models import AccountEvent
+from .model_audit import ModelAuditInbox
+from .model_audit_http import router as model_audit_router
+from .model_governance import router as model_governance_router
+from .models import AccountEvent, IntegrationIntent, ModelAuditDelivery, ModelAuditIntent
 from .retention_api import router as retention_router
 from .transport import GatewayTransport
 
@@ -42,6 +48,9 @@ MODELS = (
     RegistrationInviteCode,
     RegistrationRedemption,
     AccountEvent,
+    ModelAuditDelivery,
+    ModelAuditIntent,
+    IntegrationIntent,
 )
 
 
@@ -82,6 +91,10 @@ def create_app(
     )
     app.state.service_id = "identity"
     app.state.database = database
+    app.state.integration_intents = IntegrationIntents(
+        database, private_key.public_key(), catalog, private_key=private_key, key_id=key_id
+    )
+    app.state.model_audit_inbox = ModelAuditInbox(database, private_key.public_key(), catalog)
     app.state.studio_http_auth = authenticate_database_request
     app.state.account_creator = create_account
 
@@ -117,7 +130,11 @@ def create_app(
     app.include_router(catalog_events_router)
     app.include_router(live_router, include_in_schema=False)
     app.include_router(delegation_router, include_in_schema=False)
+    app.include_router(account_directory_router)
     app.include_router(retention_router)
+    app.include_router(model_governance_router)
+    app.include_router(model_audit_router)
+    app.include_router(integration_intent_router)
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)

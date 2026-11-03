@@ -7,8 +7,9 @@ from starlette.background import BackgroundTask
 
 from app.apps.thought_workshop.content_exports import convert, export_note
 from app.apps.thought_workshop.errors import ThoughtError
+from app.apps.thought_workshop.http_bindings import SessionDep
 from app.apps.thought_workshop.schemas.conversion import ThoughtMarkdownIn, ThoughtMarkdownOut
-from app.deps import OwnerDep, SessionDep
+from app.deps import OwnerDep
 
 router = APIRouter(prefix="/thought-workshop", tags=["thought-workshop"])
 

@@ -12,7 +12,7 @@ class ThoughtDocumentReference(Base):
     __tablename__ = "thought_document_references"
     __table_args__ = (Index("ix_thought_reference_target", "target_id"),)
     note_id: Mapped[str] = mapped_column(
-        ForeignKey("thought_notes.id", ondelete="CASCADE"), primary_key=True
+        String(36), ForeignKey("thought_notes.id", ondelete="CASCADE"), primary_key=True
     )
     target_id: Mapped[str] = mapped_column(String(36), primary_key=True)
 
@@ -21,7 +21,9 @@ class ThoughtTemplate(Base):
     __tablename__ = "thought_templates"
     __table_args__ = (Index("ix_thought_templates_account", "owner_user_id"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE")
+    )
     name: Mapped[str] = mapped_column(String(120))
     description: Mapped[str] = mapped_column(Text, default="")
     document: Mapped[dict] = mapped_column(JSON)
@@ -38,19 +40,21 @@ class ThoughtTemplateAsset(Base):
     __tablename__ = "thought_template_assets"
     __table_args__ = (Index("ix_thought_template_assets_asset", "asset_id"),)
     template_id: Mapped[str] = mapped_column(
-        ForeignKey("thought_templates.id", ondelete="CASCADE"), primary_key=True
+        String(36), ForeignKey("thought_templates.id", ondelete="CASCADE"), primary_key=True
     )
     asset_id: Mapped[str] = mapped_column(
-        ForeignKey("visual_assets.id", ondelete="RESTRICT"), primary_key=True
+        String(36), ForeignKey("visual_assets.id", ondelete="RESTRICT"), primary_key=True
     )
 
 
 class ThoughtCheckpoint(Base):
     __tablename__ = "thought_checkpoints"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    note_id: Mapped[str] = mapped_column(ForeignKey("thought_notes.id", ondelete="CASCADE"))
+    note_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("thought_notes.id", ondelete="CASCADE")
+    )
     history_id: Mapped[str] = mapped_column(
-        ForeignKey("thought_note_history.id", ondelete="CASCADE")
+        String(36), ForeignKey("thought_note_history.id", ondelete="CASCADE")
     )
     name: Mapped[str] = mapped_column(String(120))
     revision: Mapped[int] = mapped_column(Integer, default=0)
@@ -61,8 +65,10 @@ class ThoughtSavedFilter(Base):
     __tablename__ = "thought_saved_filters"
     __table_args__ = (Index("ix_thought_filters_owner", "owner_user_id", "user_id"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE")
+    )
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"))
     name: Mapped[str] = mapped_column(String(120))
     criteria: Mapped[dict] = mapped_column(JSON)
     revision: Mapped[int] = mapped_column(Integer, default=0)
@@ -75,8 +81,10 @@ class ThoughtReadingState(Base):
         Index("ix_thought_reading_owner", "owner_user_id", "user_id", "visited_at"),
     )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE")
+    )
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"))
     resource_id: Mapped[str] = mapped_column(String(200))
     title: Mapped[str] = mapped_column(String(240))
     position: Mapped[dict] = mapped_column(JSON, default=dict)

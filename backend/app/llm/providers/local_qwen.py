@@ -58,5 +58,9 @@ async def synthesize(runtime, sessions, task, source, output):
             await require_ready(session, task.model_slug)
 
     payload = {key: task.payload[key] for key in ("text", "language", "reference_text")}
-    payload.update(reference_path=str(Path(source).resolve()), output_path=str(output.resolve()))
+    payload.update(
+        task_id=task.task_id,
+        reference_path=str(Path(source).resolve()),
+        output_path=str(output.resolve()),
+    )
     return await runtime.synthesize(task.model_slug, payload, validate)

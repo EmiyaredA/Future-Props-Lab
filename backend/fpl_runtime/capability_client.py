@@ -55,7 +55,7 @@ class CapabilityClient:
             "GET",
             "/v1/management/service-status",
         )
-        token = await self._authorize(assertion, grant)
+        token = await self.authorize_request(assertion, grant)
         try:
             response = await self.client.get(
                 "http://management:8080" + grant.target_path,
@@ -93,7 +93,7 @@ class CapabilityClient:
             "GET",
             "/v1/files/" + asset_id + "/content",
         )
-        token = await self._authorize(assertion, grant)
+        token = await self.authorize_request(assertion, grant)
         try:
             async with self.client.stream(
                 "GET",
@@ -119,7 +119,7 @@ class CapabilityClient:
             "GET",
             "/_internal/v1/model-library-inputs/" + asset_id,
         )
-        token = await self._authorize(assertion, grant)
+        token = await self.authorize_request(assertion, grant)
         try:
             async with self.client.stream(
                 "GET",
@@ -134,8 +134,43 @@ class CapabilityClient:
         except httpx.HTTPError as exc:
             raise CapabilityUnavailable("文件库输入传输未确认") from exc
 
-    async def _authorize(self, assertion, grant):
-        if not permitted(grant, self.catalog):
+    async def model_library_output(
+        self, *, assertion, source_method, source_path, task_id, description, content
+    ):
+        from .model_outputs import model_output_path
+
+        grant = RequestGrant(
+            self.service,
+            "models.library-output.write",
+            source_method,
+            source_path,
+            "assets",
+            "POST",
+            model_output_path(task_id, description.fingerprint),
+        )
+        token = await self.authorize_request(assertion, grant)
+        try:
+            response = await self.client.post(
+                "http://assets:8080" + grant.target_path,
+                headers={
+                    "X-Fpl-Context": token,
+                    "X-Fpl-Output-Descriptor": description.header(),
+                    "Content-Type": "application/octet-stream",
+                    "Content-Length": str(description.byte_size),
+                },
+                content=content,
+                timeout=httpx.Timeout(600, connect=5),
+            )
+            if response.status_code in {401, 403, 404, 409, 413, 422}:
+                raise CapabilityDenied(response.status_code)
+            if response.status_code != 200:
+                raise CapabilityUnavailable("模型结果保存未确认")
+            return response.json()
+        except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+            raise CapabilityUnavailable("模型结果保存未确认") from exc
+
+    async def authorize_request(self, assertion, grant):
+        if grant.caller != self.service or not permitted(grant, self.catalog):
             raise CapabilityDenied(403)
         try:
             delegated = await self.client.post(
@@ -155,7 +190,7 @@ class CapabilityClient:
             raise CapabilityUnavailable("跨服务授权未确认") from exc
 
     async def _exists(self, assertion, grant):
-        token = await self._authorize(assertion, grant)
+        token = await self.authorize_request(assertion, grant)
         try:
             async with self.client.stream(
                 "GET",

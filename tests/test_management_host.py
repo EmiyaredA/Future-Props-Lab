@@ -362,3 +362,51 @@ async def test_business_start_failure_preserves_running_services(tmp_path):
     assert (await managed.supervise())["application"]["phase"] == "failed"
     assert any("--no-deps" in command and "--wait" in command for command in calls)
     assert not any("kill" in command or "stop" in command for command in calls)
+
+
+def test_models_overlay_is_only_selected_by_explicit_deployment_config(tmp_path, monkeypatch):
+    monkeypatch.setenv("FPL_MODELS_IMAGE", "untrusted-shell-value")
+    models = tmp_path / "models.compose.yaml"
+    models.write_text("services: {}\n")
+    implicit = control(tmp_path, lambda *_args, **_kwargs: None)
+    assert str(models) not in implicit.prefix
+    selected = DeploymentControl(
+        compose_file=implicit.compose_file,
+        project_name="isolated-test",
+        services=["portal"],
+        environment={"FPL_MODELS_IMAGE": "fpl/models:verified"},
+        tunnels={},
+    )
+    assert selected.prefix.count(str(models)) == 1
+    models.unlink()
+    with pytest.raises(ValueError, match="缺少匹配"):
+        DeploymentControl(
+            compose_file=implicit.compose_file,
+            project_name="isolated-test",
+            services=["portal"],
+            environment={"FPL_MODELS_IMAGE": "fpl/models:verified"},
+            tunnels={},
+        )
+
+
+def test_integrations_overlay_requires_explicit_config_and_rejects_symlinks(tmp_path, monkeypatch):
+    monkeypatch.setenv("FPL_INTEGRATIONS_IMAGE", "untrusted-shell-value")
+    overlay = tmp_path / "integrations.compose.yaml"
+    overlay.write_text("services: {}\n")
+    implicit = control(tmp_path, lambda *_args, **_kwargs: None)
+    assert str(overlay) not in implicit.prefix
+    options = dict(
+        compose_file=implicit.compose_file,
+        project_name="isolated-test",
+        services=["integrations"],
+        environment={"FPL_INTEGRATIONS_IMAGE": "fpl/integrations:verified"},
+        tunnels={},
+    )
+    selected = DeploymentControl(**options)
+    assert selected.prefix.count(str(overlay)) == 1
+    overlay.unlink()
+    with pytest.raises(ValueError, match="缺少匹配"):
+        DeploymentControl(**options)
+    overlay.symlink_to(implicit.compose_file)
+    with pytest.raises(ValueError, match="缺少匹配"):
+        DeploymentControl(**options)

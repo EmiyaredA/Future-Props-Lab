@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 
 from app.apps.thought_workshop.errors import ThoughtError
+from app.apps.thought_workshop.http_bindings import SessionDep
 from app.apps.thought_workshop.knowledge_tools.checkpoints import Checkpoints
 from app.apps.thought_workshop.knowledge_tools.export_snapshot import export_snapshot
 from app.apps.thought_workshop.knowledge_tools.preferences import Preferences
@@ -30,7 +31,7 @@ from app.apps.thought_workshop.knowledge_tools.schemas import (
 )
 from app.apps.thought_workshop.knowledge_tools.search import search
 from app.apps.thought_workshop.schemas.workshop import ThoughtNoteOut, ThoughtNoteSummary
-from app.deps import OwnerDep, SessionDep, StudioAuth
+from app.deps import OwnerDep, StudioAuth
 
 router = APIRouter()
 

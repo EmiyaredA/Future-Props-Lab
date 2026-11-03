@@ -35,6 +35,15 @@ async def authorize(request: Request):
     except UnicodeDecodeError:
         raise HTTPException(400, "invalid_request_target") from None
     operation = request.app.state.service_catalog.match(method, path)
+    socket = None
+    protocol = request.headers.get("x-fpl-request-protocol", "")
+    if protocol:
+        if protocol != "websocket" or method != "GET" or management:
+            raise HTTPException(403, "invalid_request_protocol")
+        socket = request.app.state.service_catalog.match_socket(path)
+        if socket is None:
+            raise HTTPException(404, "unknown_socket_operation")
+        operation = socket
     if operation is None:
         raise HTTPException(404, "unknown_operation")
     if operation.service != service or service == "identity":
@@ -66,20 +75,27 @@ async def authorize(request: Request):
         "state": {"session_policy": MANAGEMENT_SESSION if management else STUDIO_SESSION},
     }
     forwarded = Request(scope)
-    permission = route_permission(method, path)
+    permission = socket.permission if socket else route_permission(method, path)
     if permission is None:
         raise HTTPException(403, "unmapped_account_operation")
     authorization = request.headers.get("authorization", "")
     if authorization.lower().startswith("bearer ") and not automation_allowed(method, path):
         raise HTTPException(403, "automation_operation_forbidden")
     required = (
-        "studio:private_read"
+        "studio:read"
+        if permission == "community.access"
+        else "studio:private_read"
         if permission in {"content.read", "logs.read", "diagnostics.model", "docs.developer"}
         else "studio:write"
     )
     async with request.app.state.database.sessions() as session:
         principal = await authenticate_studio_request(forwarded, session, required_scope=required)
-        if not principal.allows(permission):
+        if socket is not None and principal.auth_kind != "session":
+            raise HTTPException(403, "browser_session_required")
+        if permission == "community.access":
+            if principal.auth_kind != "session":
+                raise HTTPException(403, "browser_session_required")
+        elif not principal.allows(permission):
             raise HTTPException(403, "insufficient_permission")
         actor = Actor(
             user_id=principal.user_id,

@@ -20,7 +20,12 @@ from app.apps.galgame_workshop.video.video_export_runner import GalgameVideoExpo
 from app.apps.galgame_workshop.video.video_handoff_runner import GalgameVideoEditorHandoffRunner
 from app.apps.interview_assistant.runner import InterviewPreparationRunner
 from app.apps.motion_compositor.runner import MotionExportRunner
+from app.apps.thought_workshop.account_directory import DirectoryBindings
 from app.apps.thought_workshop.external_sync.runner import ArticleSyncRunner
+from app.apps.thought_workshop.legacy_accounts import LegacyAccountDirectory
+from app.apps.thought_workshop.legacy_asset_metadata import LegacyAssetMetadata
+from app.apps.thought_workshop.legacy_writing import LegacyWritingModels
+from app.apps.thought_workshop.writing import WritingBindings
 from app.apps.video_editor.runner import VideoEditorRunner
 from app.apps.visual_workshop.acceptance.runner import AcceptanceRunner
 from app.apps.visual_workshop.assistant import recover_interrupted_visual_assistant_runs
@@ -53,6 +58,12 @@ from app.console.governance.provisioning import create_account
 from app.console.governance.runtime_quotas import acquire, attach, recover_admissions, release
 from app.console.governance.service import AccountError
 from app.console.governance.visual_acceptance_access import acceptance_actor_allowed
+from app.demo_runtime.runtime import mock_transport, tool_reply
+from app.integrations.external.catalog import ExternalConnections
+from app.integrations.http_bindings import IntegrationBindings
+from app.integrations.mcp import McpCatalog
+from app.integrations.skills import SkillCatalog
+from app.integrations.tool_apis import ToolApiCatalog
 from app.llm.admission import AdmissionBindings
 from app.llm.call_logs.credentials import snapshot_from_principal
 from app.llm.catalog.http_bindings import CatalogBindings
@@ -60,14 +71,18 @@ from app.llm.catalog.legacy_defaults import LegacyCatalogDefaults
 from app.llm.catalog.legacy_usage import LegacyCatalogTaskUsage
 from app.llm.inference.runner import InferenceRunner
 from app.llm.legacy_library_inputs import LegacyLibraryInputs
+from app.llm.legacy_library_outputs import LegacyLibraryOutputs
 from app.llm.library_inputs import LibraryInputBindings
+from app.llm.library_outputs import LibraryOutputBindings
 from app.llm.local_models.catalog import local_root
 from app.llm.local_models.installer import Installer
 from app.llm.local_models.management import LocalModels
 from app.llm.local_models.runtime import LocalRuntime
 from app.llm.playground.generation_runner import ModelTestGenerationRunner
+from app.llm.playground.legacy_generation_references import LegacyGenerationReferences
 from app.llm.playground.recovery import recover_interrupted_model_test_runs
 from app.llm.playground.transcription_runner import ModelTestTranscriptionRunner
+from app.llm.provider_transports import ProviderTransports
 from app.problem_details import (
     account_exception_handler,
     http_exception_handler,
@@ -123,7 +138,9 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
                 claim_admission=claim_visual_capacity, queue_candidates=visual_queue_candidates
             ),
             AcceptanceRunner(actor_allowed=acceptance_actor_allowed),
-            ModelTestGenerationRunner(SessionLocal),
+            ModelTestGenerationRunner(
+                SessionLocal, legacy_references=app.state.model_generation_legacy_references
+            ),
             InferenceRunner(SessionLocal, local_runtime=local_runtime),
             ModelTestTranscriptionRunner(SessionLocal),
             GalgameAsrRunner(),
@@ -156,14 +173,38 @@ app = FastAPI(
 app.state.database = SimpleNamespace(sessions=SessionLocal)
 app.state.studio_http_auth = authenticate_database_request
 app.state.studio_socket_auth = authenticate_database_websocket
+app.state.integration_bindings = IntegrationBindings(
+    tool_apis=lambda _request, session, owner: ToolApiCatalog(
+        session, owner, demo_tools=tool_reply
+    ),
+    mcp=lambda _request, session, owner: McpCatalog(session, owner),
+    skills=lambda _request, session, owner: SkillCatalog(session, owner),
+    external=lambda _request, session, owner: ExternalConnections(session, owner),
+)
 app.state.model_catalog_bindings = CatalogBindings(
     defaults=LegacyCatalogDefaults,
     task_usage=LegacyCatalogTaskUsage,
 )
 app.state.model_credential_reader = snapshot_from_principal
 app.state.model_admission = AdmissionBindings(acquire, release, attach, admit_generation_tasks)
+app.state.model_provider_transports = ProviderTransports(resolve=mock_transport)
+app.state.model_library_outputs = LibraryOutputBindings(
+    for_request=lambda _request, session, owner: LegacyLibraryOutputs(session, settings, owner)
+)
+app.state.model_generation_legacy_references = LegacyGenerationReferences(get_settings())
 app.state.model_library_inputs = LibraryInputBindings(
     for_request=lambda _request, session, owner: LegacyLibraryInputs(session, settings, owner)
+)
+
+SessionLocal.configure(
+    info={**SessionLocal.kw.get("info", {}), "thought_asset_metadata_factory": LegacyAssetMetadata}
+)
+
+app.state.thought_directory = DirectoryBindings(
+    for_request=lambda _request, session, _principal: LegacyAccountDirectory(session)
+)
+app.state.thought_writing = WritingBindings(
+    for_request=lambda _request, owner: LegacyWritingModels(SessionLocal, owner)
 )
 app.state.workbench_native = LocalSourceAccess()
 app.state.account_creator = create_account

@@ -5,7 +5,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import httpx
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.capabilities.transcription import (
@@ -21,6 +21,7 @@ from app.llm.models import (
 )
 from app.llm.providers.transcription import transcribe_model_audio
 from app.llm.schemas.model_test import ModelTestTranscriptionResultDetailOut
+from app.llm.task_outcomes import TaskClaimRejected
 from app.runtime.config import Settings, get_settings
 from app.runtime.credentials import decrypt_secret
 from app.runtime.polling_runner import PollingTaskRunner
@@ -36,11 +37,15 @@ class ModelTestTranscriptionRunner(PollingTaskRunner):
         session_factory: async_sessionmaker[AsyncSession],
         settings: Settings | None = None,
         transport: httpx.AsyncBaseTransport | None = None,
+        *,
+        prepare_claim=None,
+        terminal_settlement=None,
     ) -> None:
         super().__init__()
         self.session_factory = session_factory
         self.settings = settings or get_settings()
         self.transport = transport
+        self.prepare_claim, self.terminal_settlement = prepare_claim, terminal_settlement
 
     async def _load_task(
         self, session: AsyncSession, task_id: str
@@ -69,7 +74,7 @@ class ModelTestTranscriptionRunner(PollingTaskRunner):
                     row.completed_at = utc_now()
                     row.updated_at = row.completed_at
                     row.revision += 1
-                    self._add_log(session, row)
+                    await self._on_terminal(session, row)
                 await session.commit()
 
     async def process_once(self) -> None:
@@ -154,7 +159,7 @@ class ModelTestTranscriptionRunner(PollingTaskRunner):
                 row.completed_at = utc_now()
                 row.updated_at = row.completed_at
                 row.revision += 1
-                self._add_log(session, row)
+                await self._on_terminal(session, row)
                 await session.commit()
         except asyncio.CancelledError:
             raise
@@ -164,10 +169,28 @@ class ModelTestTranscriptionRunner(PollingTaskRunner):
     async def _prepare(
         self, task_id: str
     ) -> tuple[str, str, str, str, str, Path, str, int, str, dict[str, object]] | None:
+        prepared = await self.prepare_claim(task_id) if self.prepare_claim else None
+        if self.prepare_claim is not None and prepared is None:
+            return None
         async with self.session_factory() as session:
+            if prepared is not None:
+                await session.execute(text("BEGIN IMMEDIATE"))
             row = await self._load_task(session, task_id)
             if row is None or row.status != "queued":
                 return None
+            if prepared is not None:
+                try:
+                    allowed = await prepared(session, row)
+                except TaskClaimRejected as exc:
+                    row.status, row.error_message = "failed", str(exc)[:4000]
+                    row.completed_at = utc_now()
+                    row.updated_at = row.completed_at
+                    row.revision += 1
+                    await self._on_terminal(session, row)
+                    await session.commit()
+                    return None
+                if not allowed:
+                    return None
             model = await session.get(ModelEntry, row.model_id) if row.model_id else None
             provider = (
                 await session.get(ModelProvider, row.provider_id) if row.provider_id else None
@@ -223,8 +246,13 @@ class ModelTestTranscriptionRunner(PollingTaskRunner):
             row.completed_at = utc_now()
             row.updated_at = row.completed_at
             row.revision += 1
-            self._add_log(session, row)
+            await self._on_terminal(session, row)
             await session.commit()
+
+    async def _on_terminal(self, session, row):
+        self._add_log(session, row)
+        if self.terminal_settlement:
+            await self.terminal_settlement(session)
 
     def _add_log(self, session: AsyncSession, row: ModelTestTranscriptionTask) -> None:
         if row.log_id:

@@ -8,7 +8,7 @@ from app.llm.catalog.default_storage import CatalogDefaults
 from app.llm.catalog.metadata import categories_for_provider
 from app.llm.catalog.supplier_records import get_supplier, list_suppliers
 from app.llm.catalog.task_usage import CatalogTaskUsage
-from app.llm.local_models.catalog import compatible, definition, require_ready
+from app.llm.local_models.catalog import definition, host_compatible, require_ready
 from app.llm.models import (
     ModelCatalogState,
     ModelEntry,
@@ -153,6 +153,7 @@ class ModelCatalogService:
         installations = {
             item.id: item for item in await self.session.scalars(select(LocalModelInstallation))
         }
+        platform_compatible = await host_compatible(self.session)
         grouped: dict[str, list[ModelEntry]] = {}
         for entry in entries:
             grouped.setdefault(entry.provider_id, []).append(entry)
@@ -164,7 +165,7 @@ class ModelCatalogService:
                     installation = installations.get(model.slug)
                     model.availability = (
                         "unsupported_platform"
-                        if not compatible()
+                        if not platform_compatible
                         else "not_installed"
                         if not installation or installation.status != "installed"
                         else "stopped"
@@ -203,7 +204,7 @@ class ModelCatalogService:
         current = await self.catalog()
         return RevisionConflictError(expected, current.revision, current.model_dump(mode="json"))
 
-    async def _bump(self, expected: int) -> int:
+    async def advance_revision(self, expected: int) -> int:
         result = await self.session.execute(
             update(ModelCatalogState)
             .where(
@@ -229,7 +230,7 @@ class ModelCatalogService:
         return row
 
     async def create_provider(self, body: ProviderIn) -> tuple[int, ProviderOut]:
-        revision = await self._bump(body.expected_catalog_revision)
+        revision = await self.advance_revision(body.expected_catalog_revision)
         await self._validate_supplier(body.supplier_id)
         count = int((await self.session.execute(select(func.count(ModelProvider.id)))).scalar_one())
         row = ModelProvider(
@@ -249,7 +250,7 @@ class ModelCatalogService:
         return revision, result
 
     async def update_provider(self, provider_id: str, body: ProviderIn) -> tuple[int, ProviderOut]:
-        revision = await self._bump(body.expected_catalog_revision)
+        revision = await self.advance_revision(body.expected_catalog_revision)
         row = await self.get_provider(provider_id)
         if "supplier_id" in body.model_fields_set:
             if row.origin == "role_template" and body.supplier_id != row.supplier_id:
@@ -315,7 +316,7 @@ class ModelCatalogService:
     async def delete_provider(self, provider_id: str, expected: int) -> int:
         if await self._provider_has_active_tasks(provider_id):
             raise CatalogResourceBusyError("供应商仍有进行中的任务")
-        revision = await self._bump(expected)
+        revision = await self.advance_revision(expected)
         row = await self.get_provider(provider_id)
         if row.origin == "role_template":
             raise CatalogResourceBusyError("模板管理项不能在账号删除")
@@ -327,7 +328,7 @@ class ModelCatalogService:
         provider = await self.get_provider(provider_id)
         if provider.origin == "role_template":
             raise CatalogResourceBusyError("请在全局模板添加模型，或创建自建连接")
-        revision = await self._bump(body.expected_catalog_revision)
+        revision = await self.advance_revision(body.expected_catalog_revision)
         count = int(
             (
                 await self.session.execute(
@@ -364,7 +365,7 @@ class ModelCatalogService:
             owner_user_id=self._owner_user_id(), model_id=model_id
         ):
             raise CatalogResourceBusyError("模型仍有进行中的任务，暂不能停用模型")
-        revision = await self._bump(body.expected_catalog_revision)
+        revision = await self.advance_revision(body.expected_catalog_revision)
         if row.origin == "role_template" and any(
             [
                 body.slug.strip() != row.slug,
@@ -398,7 +399,7 @@ class ModelCatalogService:
             owner_user_id=self._owner_user_id(), model_id=model_id
         ):
             raise CatalogResourceBusyError("模型仍有进行中的任务")
-        revision = await self._bump(expected)
+        revision = await self.advance_revision(expected)
         await self.session.execute(delete(ModelEntry).where(ModelEntry.id == model_id))
         await self.session.commit()
         return revision
@@ -413,7 +414,7 @@ class ModelCatalogService:
     async def attach_local_model(self, body):
         model = definition(body.model_id)
         await require_ready(self.session, body.model_id)
-        await self._bump(body.expected_catalog_revision)
+        await self.advance_revision(body.expected_catalog_revision)
         owner_user_id = self._owner_user_id()
         provider = await self.session.scalar(
             select(ModelProvider)

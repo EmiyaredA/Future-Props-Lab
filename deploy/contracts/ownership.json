@@ -3597,6 +3597,13 @@
       "operation_id": "export_project_snapshot_v1_visual_workshop_projects__project_id__snapshot_get"
     }
   ],
+  "websockets": [
+    {
+      "service": "models",
+      "path": "/v1/model-test/realtime",
+      "permission": "models.use"
+    }
+  ],
   "tables": [
     {
       "table": "agent_workbench_sources",
@@ -4445,6 +4452,12 @@
       "model": "VisualProjectFileLink"
     },
     {
+      "table": "asset_model_output_receipts",
+      "service": "assets",
+      "module": "fpl_assets.models",
+      "model": "ModelLibraryOutputReceipt"
+    },
+    {
       "table": "gateway_change_cursors",
       "service": "gateway",
       "module": "fpl_gateway.models",
@@ -4463,6 +4476,66 @@
       "model": "AccountEvent"
     },
     {
+      "table": "identity_model_audit_receipts",
+      "service": "identity",
+      "module": "fpl_identity.models",
+      "model": "ModelAuditDelivery"
+    },
+    {
+      "table": "identity_model_audit_intents",
+      "service": "identity",
+      "module": "fpl_identity.models",
+      "model": "ModelAuditIntent"
+    },
+    {
+      "table": "identity_integration_intents",
+      "service": "identity",
+      "module": "fpl_identity.models",
+      "model": "IntegrationIntent"
+    },
+    {
+      "table": "integration_demo_tool_installations",
+      "service": "integrations",
+      "module": "fpl_integrations.demo_records",
+      "model": "DemoToolInstallation"
+    },
+    {
+      "table": "integration_native_mcp_jobs",
+      "service": "integrations",
+      "module": "fpl_integrations.native_mcp_records",
+      "model": "NativeMcpJob"
+    },
+    {
+      "table": "integration_native_mcp_observations",
+      "service": "integrations",
+      "module": "fpl_integrations.native_mcp_records",
+      "model": "NativeMcpObservation"
+    },
+    {
+      "table": "integration_validation_attempts",
+      "service": "integrations",
+      "module": "fpl_integrations.records",
+      "model": "ValidationAttempt"
+    },
+    {
+      "table": "integration_external_executions",
+      "service": "integrations",
+      "module": "fpl_integrations.records",
+      "model": "ExternalExecution"
+    },
+    {
+      "table": "integration_external_step_receipts",
+      "service": "integrations",
+      "module": "fpl_integrations.records",
+      "model": "ExternalStepReceipt"
+    },
+    {
+      "table": "integration_external_closures",
+      "service": "integrations",
+      "module": "fpl_integrations.records",
+      "model": "ExternalClosure"
+    },
+    {
       "table": "management_native_jobs",
       "service": "management",
       "module": "fpl_management.models",
@@ -4473,6 +4546,18 @@
       "service": "management",
       "module": "fpl_management.models",
       "model": "HostSnapshot"
+    },
+    {
+      "table": "model_demo_installations",
+      "service": "models",
+      "module": "fpl_models.demo_install_records",
+      "model": "DemoInstallation"
+    },
+    {
+      "table": "model_integration_capacity",
+      "service": "models",
+      "module": "fpl_models.integration_records",
+      "model": "IntegrationCapacity"
     },
     {
       "table": "model_account_defaults",
@@ -4503,6 +4588,42 @@
       "service": "models",
       "module": "fpl_models.models",
       "model": "TaskAuthorization"
+    },
+    {
+      "table": "model_demo_settings",
+      "service": "models",
+      "module": "fpl_models.models",
+      "model": "DemoSetting"
+    },
+    {
+      "table": "model_governance_audit",
+      "service": "models",
+      "module": "fpl_models.models",
+      "model": "GovernanceAudit"
+    },
+    {
+      "table": "model_template_sync_authority",
+      "service": "models",
+      "module": "fpl_models.models",
+      "model": "TemplateSyncAuthority"
+    },
+    {
+      "table": "model_native_jobs",
+      "service": "models",
+      "module": "fpl_models.native_records",
+      "model": "NativeModelJob"
+    },
+    {
+      "table": "model_native_proofs",
+      "service": "models",
+      "module": "fpl_models.native_records",
+      "model": "NativeModelProof"
+    },
+    {
+      "table": "model_native_observations",
+      "service": "models",
+      "module": "fpl_models.native_records",
+      "model": "NativeModelObservation"
     }
   ],
   "partitions": {

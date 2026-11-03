@@ -28,7 +28,7 @@ class ModelSupplierService(ModelCatalogService):
             raise ManagedSupplierError("该协议类型由平台模板管理，请在管理中台修改")
 
     async def create_supplier(self, body: ModelSupplierIn) -> tuple[int, ModelSupplierOut]:
-        revision = await self._bump(body.expected_catalog_revision)
+        revision = await self.advance_revision(body.expected_catalog_revision)
         count = await self.session.scalar(
             select(func.count(ModelSupplier.id)).where(
                 ModelSupplier.owner_user_id == self._owner_user_id()
@@ -46,7 +46,7 @@ class ModelSupplierService(ModelCatalogService):
     async def update_supplier(
         self, supplier_id: str, body: ModelSupplierIn
     ) -> tuple[int, ModelSupplierOut]:
-        revision = await self._bump(body.expected_catalog_revision)
+        revision = await self.advance_revision(body.expected_catalog_revision)
         row = await self._supplier(supplier_id)
         self._writable(row)
         row.name = body.name
@@ -55,7 +55,7 @@ class ModelSupplierService(ModelCatalogService):
         return revision, result
 
     async def delete_supplier(self, supplier_id: str, expected: int) -> int:
-        revision = await self._bump(expected)
+        revision = await self.advance_revision(expected)
         row = await self._supplier(supplier_id)
         self._writable(row)
         count = await self.session.scalar(

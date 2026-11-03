@@ -19,8 +19,18 @@ class Operation:
         return re.compile("^" + re.sub(r"\\\{[^}]+\\\}", "[^/]+", re.escape(self.path)) + "$")
 
 
+@dataclass(frozen=True)
+class SocketOperation:
+    service: str
+    path: str
+    permission: str
+
+
+SOCKET_OPERATIONS = (SocketOperation("models", "/v1/model-test/realtime", "models.use"),)
+
+
 class RouteCatalog:
-    def __init__(self, operations):
+    def __init__(self, operations, *, websockets=()):
         self.operations = tuple(operations)
         self.exact = {}
         self.parameterized = []
@@ -40,12 +50,32 @@ class RouteCatalog:
             if "{" in operation.path:
                 self.parameterized.append((operation, operation.pattern()))
 
+        self.websockets = tuple(websockets)
+        self.socket_paths = {}
+        for operation in self.websockets:
+            service_by_id(operation.service)
+            if (
+                not operation.path.startswith("/v1/")
+                or any(char in operation.path for char in "{}?#")
+                or not operation.permission
+                or operation.path in self.socket_paths
+                or self.match("GET", operation.path) is not None
+            ):
+                raise ValueError("WebSocket 归属路径无效、重复或与 HTTP 操作冲突")
+            self.socket_paths[operation.path] = operation
+
     @classmethod
     def read(cls, path: Path):
         document = json.loads(path.read_text())
         if document.get("version") != 1:
             raise ValueError("路由清单版本不兼容")
-        return cls(Operation(**item) for item in document["operations"])
+        return cls(
+            (Operation(**item) for item in document["operations"]),
+            websockets=(SocketOperation(**item) for item in document.get("websockets", [])),
+        )
+
+    def match_socket(self, path):
+        return self.socket_paths.get(path)
 
     def match(self, method, path):
         if exact := self.exact.get((method.upper(), path)):

@@ -13,6 +13,8 @@ from app.llm.inference.catalog import options
 from app.llm.inference.tasks import InferenceTasks
 from app.llm.inference.text import events, prepare
 from app.llm.library_inputs import library_inputs
+from app.llm.library_outputs import library_outputs
+from app.llm.provider_transports import provider_options
 from app.llm.routes.model_capacity import task_admission
 from app.llm.schemas.model_inference import (
     InferenceAssetImportIn,
@@ -26,6 +28,7 @@ from app.llm.schemas.model_inference import (
     InferenceTextIn,
     InferenceTextOut,
 )
+from app.llm.stream_access import stream_access
 
 router = APIRouter(prefix="/model-inference", tags=["model-inference"])
 
@@ -51,6 +54,8 @@ async def generate_text(
             args,
             credential=credential,
             session_factory=request.app.state.database.sessions,
+            check_access=stream_access(request),
+            **provider_options(request, args["base_url"]),
         )
     ) as stream:
         async for event in stream:
@@ -95,6 +100,8 @@ async def stream_text(
                 args,
                 credential=credential,
                 session_factory=request.app.state.database.sessions,
+                check_access=stream_access(request),
+                **provider_options(request, args["base_url"]),
             )
         ) as source:
             async for event in source:
@@ -177,8 +184,11 @@ async def download_result(task_id: str, session: SessionDep, owner_user_id: Owne
 
 
 @router.post("/tasks/{task_id}/save-to-library", response_model=VisualAssetOut)
-async def save_result(task_id: str, session: SessionDep, owner_user_id: OwnerDep):
-    return await mapped(InferenceTasks(session, owner_user_id).save_to_library(task_id))
+async def save_result(task_id: str, request: Request, session: SessionDep, owner_user_id: OwnerDep):
+    outputs = library_outputs(request, session, owner_user_id)
+    return await mapped(
+        InferenceTasks(session, owner_user_id, library_outputs=outputs).save_to_library(task_id)
+    )
 
 
 @router.post("/tasks/{task_id}/retry-materialization", response_model=InferenceTaskOut)
@@ -199,8 +209,15 @@ async def retry_materialization(
 @router.delete("/tasks/{task_id}", status_code=204)
 async def delete_task(
     task_id: str,
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     expected_revision: int = Query(ge=0),
 ):
-    await mapped(InferenceTasks(session, owner_user_id).delete(task_id, expected_revision))
+    await mapped(
+        InferenceTasks(
+            session,
+            owner_user_id,
+            native_retention=getattr(request.app.state, "native_model_retention", None),
+        ).delete(task_id, expected_revision)
+    )

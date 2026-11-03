@@ -11,6 +11,7 @@ from uuid import uuid4
 
 from app.capabilities.agents.harness.contracts import AgentMessage, ImageInput, ToolCall, ToolSpec
 from app.console.amadeus.schemas import ModelTurnIn
+from app.demo_runtime.runtime import mock_transport
 from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.inference.catalog import get_model
 from app.llm.models import LlmCallLog
@@ -93,6 +94,7 @@ async def stream_model_turn(
         kind=provider_kind,
         base_url=provider.base_url,
         api_key=decrypt_secret(provider.api_key_ciphertext),
+        transport=mock_transport(provider.base_url),
     )
     image_groups = _message_images(body.messages)
     messages = [

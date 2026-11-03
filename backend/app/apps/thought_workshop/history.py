@@ -6,6 +6,7 @@ from datetime import UTC
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.apps.thought_workshop.account_directory import author as find_author
 from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.models import ThoughtHistoryAsset, ThoughtNote, ThoughtNoteHistory
 from app.apps.thought_workshop.schemas.document import file_ids
@@ -15,7 +16,6 @@ from app.apps.thought_workshop.schemas.history import (
     ThoughtHistorySnapshot,
     ThoughtHistorySummary,
 )
-from app.console.models.accounts import User
 
 CONTENT_FIELDS = ("title", "document", "schema_version", "tags")
 
@@ -31,7 +31,7 @@ class History:
         self.session = session
 
     async def append(self, note: ThoughtNote, author_id: str | None, source: str):
-        author = await self.session.get(User, author_id) if author_id else None
+        author = await find_author(self.session, author_id)
         row = ThoughtNoteHistory(
             note_id=note.id,
             revision=note.revision,

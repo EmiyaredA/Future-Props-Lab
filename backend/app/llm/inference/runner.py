@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+from contextlib import nullcontext
 from dataclasses import asdict
 from uuid import uuid4
 
@@ -23,6 +24,7 @@ from app.llm.models import LlmCallLog
 from app.llm.models.model_inference import ModelInferenceAsset, ModelInferenceTask
 from app.llm.providers.local_qwen import synthesize
 from app.llm.providers.transcription import transcribe_model_audio
+from app.llm.task_outcomes import NativeSubmissionUncertain
 from app.runtime.config import get_settings
 from app.runtime.polling_runner import PollingTaskRunner
 from app.runtime.time import utc_now
@@ -54,10 +56,22 @@ def add_log(session, row):
 class InferenceRunner(PollingTaskRunner):
     runner_name = "model-inference"
 
-    def __init__(self, session_factory, transport=None, local_runtime=None, *, settings=None):
+    def __init__(
+        self,
+        session_factory,
+        transport=None,
+        local_runtime=None,
+        *,
+        settings=None,
+        prepare_claim=None,
+        terminal_settlement=None,
+        synthesis_scope=None,
+    ):
         super().__init__()
         self.session_factory, self.transport = session_factory, transport
         self.local_runtime = local_runtime
+        self.synthesis_scope = synthesis_scope or nullcontext
+        self.terminal_settlement = terminal_settlement
         self.settings = settings or get_settings()
         self.storage = InferenceStorage(self.settings)
         self.store = GenerationTaskStore(
@@ -66,6 +80,8 @@ class InferenceRunner(PollingTaskRunner):
             active_statuses=ACTIVE,
             task_subject="independent model task",
             terminal_hook=add_log,
+            prepare_claim=prepare_claim,
+            terminal_settlement=terminal_settlement,
         )
         self.driver = GenerationTaskDriver(
             store=self.store,
@@ -264,6 +280,8 @@ class InferenceRunner(PollingTaskRunner):
             else:
                 row.log_id = None
                 add_log(session, row)
+            if self.terminal_settlement:
+                await self.terminal_settlement(session)
             await session.commit()
             return True
 
@@ -303,7 +321,14 @@ class InferenceRunner(PollingTaskRunner):
             await self.store.fail(task_id, safe_generation_error(exc))
 
     async def synthesize(self, task_id):
+        # The owning native broker must retain foreground settlement authority
+        # until finish (including an uncertain commit) has completely returned.
+        with self.synthesis_scope(task_id):
+            return await self._synthesize(task_id)
+
+    async def _synthesize(self, task_id):
         output = None
+        settling = False
         try:
             task = await self.store.claim(task_id)
             if task is None or task.status != "queued":
@@ -323,13 +348,22 @@ class InferenceRunner(PollingTaskRunner):
                 or output.stat().st_size > self.settings.fpl_visual_asset_max_bytes
             ):
                 raise ValueError("本地语音输出无效或超过大小限制")
+            settling = True
             if not await self.finish(
                 task_id, key, f"{task_id}.wav", "audio/wav", output.stat().st_size, result
             ):
                 output.unlink(missing_ok=True)
         except asyncio.CancelledError:
             raise
+        except NativeSubmissionUncertain:
+            # The broker owns the immutable job and receipt. Keep the original
+            # submitting task and reservation until reconciliation confirms it.
+            return
         except Exception as exc:
+            if settling:
+                # Commit may have completed. Preserve these bytes and let the
+                # original native receipt reconcile the outcome, never resubmit.
+                return
             if output:
                 output.unlink(missing_ok=True)
             await self.store.fail(task_id, safe_generation_error(exc))

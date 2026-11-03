@@ -106,6 +106,7 @@ class OfficialMcpDiscoveryClient:
                 headers=headers,
                 timeout=timeout,
                 follow_redirects=False,
+                trust_env=False,
             ) as http_client:
                 async with Client(
                     streamable_http_client(safe_url, http_client=http_client)
@@ -147,6 +148,7 @@ class OfficialMcpDiscoveryClient:
                 headers=headers,
                 timeout=httpx2.Timeout(30.0, connect=10.0),
                 follow_redirects=False,
+                trust_env=False,
             ) as http_client:
                 async with Client(
                     streamable_http_client(safe_url, http_client=http_client)

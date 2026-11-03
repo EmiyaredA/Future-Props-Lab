@@ -1,13 +1,15 @@
 """Install a separately managed Python environment; no dependency on system Python/uv."""
 
 import asyncio
+import hashlib
 import os
 import shutil
 import tarfile
 from uuid import uuid4
 
 from app.llm.local_models import downloads
-from app.llm.local_models.catalog import HERE, manifest
+from app.llm.local_models.files import owned_path
+from app.llm.local_models.manifest import HERE, manifest
 
 
 async def command(*args, timeout=900, env=None):
@@ -65,13 +67,50 @@ class Installer:
     def __init__(self, root):
         self.root = root
         self.lock = asyncio.Lock()
+        self._verification_cache = {}
 
     @property
     def python(self):
         return self.root / "environments" / "v1" / "venv" / "bin" / "python"
 
     def model_path(self, model_id):
-        return self.root / "models" / model_id
+        return owned_path(self.root, "models", model_id)
+
+    def is_installed(self, model):
+        try:
+            executable = owned_path(
+                self.root, "environments", "v1", "venv", "bin", "python", allow_leaf_symlink=True
+            )
+            marker = owned_path(self.root, "environments", "v1", "ready")
+            model_root = self.model_path(model["id"])
+            if (
+                not executable.is_file()
+                or not marker.is_file()
+                or marker.read_text().strip() != "1"
+            ):
+                return False
+            for item in model["files"]:
+                path = owned_path(model_root, item["path"])
+                if not path.is_file() or path.stat().st_size != item["size"]:
+                    return False
+                metadata = path.stat()
+                stamp = (metadata.st_dev, metadata.st_ino, metadata.st_size, metadata.st_mtime_ns)
+                cached = self._verification_cache.get(path)
+                if cached != (stamp, item["sha256"]):
+                    with path.open("rb") as source:
+                        checksum = hashlib.file_digest(source, "sha256").hexdigest()
+                    after = path.stat()
+                    if checksum != item["sha256"] or stamp != (
+                        after.st_dev,
+                        after.st_ino,
+                        after.st_size,
+                        after.st_mtime_ns,
+                    ):
+                        return False
+                    self._verification_cache[path] = (stamp, checksum)
+            return True
+        except (OSError, ValueError):
+            return False
 
     async def install(self, model, report, *, repair=False):
         async with self.lock:
@@ -79,7 +118,15 @@ class Installer:
             self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
             if shutil.disk_usage(self.root).free < size * 2 + 2 * 1024**3:
                 raise ValueError("磁盘空间不足，请释放空间后重试")
-            env_root = self.python.parents[2]
+            env_root = owned_path(self.root, "environments", "v1")
+            for relative in (
+                "downloads",
+                "environments/v1/uv",
+                "environments/v1/python",
+                "environments/v1/venv",
+                "staging/" + model["id"],
+            ):
+                owned_path(self.root, relative)
             if repair:
                 for item in model["files"]:
                     path = self.model_path(model["id"]) / item["path"]
@@ -108,8 +155,10 @@ class Installer:
                             destination = env_root / kind
                             if not destination.exists():
                                 await asyncio.to_thread(extract, archive, destination)
-                        uv = env_root / "uv" / "uv-aarch64-apple-darwin" / "uv"
-                        py = env_root / "python" / "python" / "bin" / "python3"
+                        uv = owned_path(env_root, "uv", "uv-aarch64-apple-darwin", "uv")
+                        py = owned_path(
+                            env_root, "python", "python", "bin", "python3", allow_leaf_symlink=True
+                        )
                         install_env = worker_environment()
                         install_env.update(
                             UV_CACHE_DIR=str(self.root / "downloads" / "uv-cache"),
@@ -152,7 +201,7 @@ class Installer:
                         await report(100)
                         repaired = True
                         return
-                    staging = self.root / "staging" / model["id"]
+                    staging = owned_path(self.root, "staging", model["id"])
                     completed = 0
                     for item in model["files"]:
 

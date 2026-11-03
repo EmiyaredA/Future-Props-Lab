@@ -209,7 +209,7 @@ async def test_amadeus_tool_api_execute_checks_revision_schema_and_connection(
         return 200, "application/json", '{"answer":"ok"}'
 
     monkeypatch.setattr(catalog, "_get", get_mock)
-    monkeypatch.setattr(tool_catalog, "_out", lambda _row: snapshot)
+    monkeypatch.setattr(catalog, "_out", lambda _row: snapshot)
     monkeypatch.setattr(tool_catalog, "_invoke", invoke_mock)
     with pytest.raises(ValueError, match="配置已变更"):
         await catalog.execute("tool", {"q": "hello"}, 1)

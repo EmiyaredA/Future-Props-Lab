@@ -62,6 +62,16 @@ class DeploymentControl:
         overlay = self.compose_file.parent / "management.compose.yaml"
         if overlay.is_file():
             self.prefix.extend(["--file", str(overlay)])
+        if environment.get("FPL_MODELS_IMAGE"):
+            model_overlay = self.compose_file.parent / "models.compose.yaml"
+            if not model_overlay.is_file() or model_overlay.is_symlink():
+                raise ValueError("已选择 Models 镜像但缺少匹配的服务部署清单")
+            self.prefix.extend(["--file", str(model_overlay)])
+        if environment.get("FPL_INTEGRATIONS_IMAGE"):
+            integration_overlay = self.compose_file.parent / "integrations.compose.yaml"
+            if not integration_overlay.is_file() or integration_overlay.is_symlink():
+                raise ValueError("已选择 Integrations 镜像但缺少匹配的服务部署清单")
+            self.prefix.extend(["--file", str(integration_overlay)])
         self.prefix.extend(["--project-name", project_name])
         self.services, self.env = tuple(services), {**os.environ, **environment}
         self.env["COMPOSE_DISABLE_ENV_FILE"] = "true"

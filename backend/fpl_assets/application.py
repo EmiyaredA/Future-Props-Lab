@@ -34,7 +34,9 @@ from .retention_api import router as retention_router
 from .routes.files import router as files_router
 from .routes.layout import router as layout_router
 from .routes.library_inputs import router as library_inputs_router
+from .routes.library_outputs import router as library_outputs_router
 from .routes.project_links import router as links_router
+from .routes.thought_library import router as thought_library_router
 
 logger = logging.getLogger(__name__)
 
@@ -115,6 +117,8 @@ def create_app(
         app.include_router(router, prefix="/v1")
     app.include_router(retention_router)
     app.include_router(library_inputs_router)
+    app.include_router(library_outputs_router)
+    app.include_router(thought_library_router)
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
@@ -140,7 +144,10 @@ def create_app(
             raise ValueError("素材页面与服务契约不匹配")
         attach_web(app, release, pages=("/files", "/files/"))
     app.add_middleware(SignedIdentity, service="assets", public_key=public_key, catalog=catalog)
-    app.add_middleware(RequestLimit, prefix="/_internal/", maximum=2 * 1024 * 1024)
+    app.add_middleware(RequestLimit, prefix="/_internal/v1/retention/", maximum=2 * 1024 * 1024)
+    app.add_middleware(
+        RequestLimit, prefix="/_internal/v1/thought-library/metadata/", maximum=2 * 1024 * 1024
+    )
     app.add_middleware(PrivateResponses)
 
     @app.get("/health")

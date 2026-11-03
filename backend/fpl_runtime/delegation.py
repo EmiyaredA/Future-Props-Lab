@@ -72,7 +72,46 @@ def model_library_input(grant):
     return None
 
 
+def model_library_output(grant):
+    if (
+        grant.caller == "models"
+        and grant.purpose == "models.library-output.write"
+        and grant.source_method == "POST"
+        and grant.target_service == "assets"
+        and grant.target_method == "POST"
+    ):
+        source = re.fullmatch(
+            r"/v1/model-inference/tasks/([A-Za-z0-9_-]{1,128})/save-to-library",
+            grant.source_path,
+        )
+        target = re.fullmatch(
+            r"/_internal/v1/model-library-outputs/([A-Za-z0-9_-]{1,128})/[0-9a-f]{64}",
+            grant.target_path,
+        )
+        return bool(source and target and source[1] == target[1])
+    return False
+
+
 def target_permission_path(grant):
+    from .account_directory import directory_path
+    from .external_sync import close_grant, read_grant
+    from .thought_assets import asset_grant
+    from .writing import writing_grant, writing_target
+
+    if (
+        grant.caller == "thought"
+        and grant.purpose == "thought.accounts.read"
+        and directory_path(grant.target_method, grant.target_path)
+    ):
+        return "/v1/thought-workshop/notes"
+    if read_grant(grant) or close_grant(grant):
+        return "/v1/integrations/external-connections"
+    if writing_grant(grant):
+        return writing_target(grant.target_method, grant.target_path)
+    if asset_grant(grant):
+        return "/v1/files"
+    if model_library_output(grant):
+        return "/v1/files"
     asset_id = model_library_input(grant)
     return "/v1/files/" + asset_id + "/content" if asset_id else grant.target_path
 
@@ -81,7 +120,18 @@ def permitted(grant, catalog):
     original = catalog.match(grant.source_method, grant.source_path)
     if original is None or original.service != grant.caller:
         return False
-    if model_library_input(grant):
+    from .account_directory import directory_grant
+    from .external_sync import close_grant, read_grant
+    from .thought_assets import asset_grant
+    from .writing import writing_grant
+
+    if directory_grant(grant, catalog):
+        return True
+    if writing_grant(grant) or read_grant(grant) or close_grant(grant):
+        return True
+    if asset_grant(grant):
+        return True
+    if model_library_input(grant) or model_library_output(grant):
         return True
     destination = catalog.match(grant.target_method, grant.target_path)
     if destination is None or destination.service != grant.target_service:

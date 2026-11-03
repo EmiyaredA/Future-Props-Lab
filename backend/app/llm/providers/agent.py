@@ -17,7 +17,6 @@ from app.capabilities.agents.harness.contracts import (
     ToolSpec,
     Usage,
 )
-from app.demo_runtime.runtime import mock_transport
 from app.llm.providers.chat_completions import (
     OPENAI_CHAT_KINDS,
     chat_base_url,
@@ -51,7 +50,7 @@ class HttpAgentAdapter:
         self.kind = kind
         self.base_url = require_safe_provider_base_url(base_url)
         self.api_key = api_key
-        self.transport = mock_transport(base_url, transport)
+        self.transport = transport
 
     def _openai_messages(self, system: str, messages: list[AgentMessage]) -> list[dict[str, Any]]:
         out: list[dict[str, Any]] = []

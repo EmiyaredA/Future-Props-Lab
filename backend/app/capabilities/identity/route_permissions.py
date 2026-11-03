@@ -593,6 +593,18 @@ OPERATIONS["community.access"] += (
 )
 
 OPERATIONS["configuration.manage"] += (
+    ("POST", "/v1/account/demo-services/{service_id}/install"),
+    ("GET", "/v1/platform/runtime-quotas"),
+    ("PATCH", "/v1/platform/runtime-quotas"),
+    ("GET", "/v1/platform/demo-services"),
+    ("PUT", "/v1/platform/demo-services/{service_id}"),
+    ("POST", "/v1/platform/demo-services/{service_id}/actions"),
+    ("GET", "/v1/platform/model-service-templates/{role}"),
+    ("PUT", "/v1/platform/model-service-templates/{role}"),
+    ("POST", "/v1/platform/model-service-templates/{role}/preview"),
+    ("GET", "/v1/platform/model-service-templates/sync-jobs/{job_id}"),
+    ("POST", "/v1/platform/model-service-templates/sync-jobs/{job_id}/start"),
+    ("GET", "/v1/platform/model-service-templates/{role}/sync-jobs"),
     ("GET", "/v1/integrations/external-connections"),
     ("POST", "/v1/integrations/external-connections"),
     ("PATCH", "/v1/integrations/external-connections/{connection_id}"),
@@ -643,6 +655,10 @@ OPERATIONS["configuration.manage"] += (
     ("GET", "/v1/management/access/{target}"),
     ("POST", "/v1/management/access/{target}/actions"),
     ("GET", "/v1/management/jobs/{job_id}"),
+)
+
+OPERATIONS["projects.certify"] = (
+    ("PATCH", "/v1/account/project-certification/{kind}/{project_id}"),
 )
 
 ROUTE_PERMISSIONS = {

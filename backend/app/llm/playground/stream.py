@@ -12,6 +12,7 @@ from sqlalchemy import update
 from app.llm.models import LlmCallLog, ModelTestConversation, ModelTestMessage
 from app.llm.playground.service import PreparedGeneration, message_out
 from app.llm.providers.streaming import stream_text_completion
+from app.runtime.authorized_stream import authorized_stream
 from app.runtime.credentials import decrypt_secret
 from app.runtime.ownership import bind_owner
 from app.runtime.time import utc_now
@@ -102,7 +103,7 @@ async def _settle(
 
 
 async def generation_events(
-    prepared: PreparedGeneration, *, session_factory
+    prepared: PreparedGeneration, *, session_factory, transport_options=None, check_access=None
 ) -> AsyncIterator[bytes]:
     sequence = 0
     trace_id = str(uuid4())
@@ -129,7 +130,7 @@ async def generation_events(
     sequence += 1
     try:
         key = decrypt_secret(prepared.api_key_ciphertext) if prepared.api_key_ciphertext else ""
-        async for chunk in stream_text_completion(
+        source = stream_text_completion(
             kind=prepared.provider_kind,
             base_url=prepared.base_url,
             api_key=key,
@@ -138,7 +139,9 @@ async def generation_events(
             messages=prepared.messages,
             temperature=prepared.temperature,
             max_tokens=prepared.max_tokens,
-        ):
+            **(transport_options or {}),
+        )
+        async for chunk in authorized_stream(source, check_access):
             prompt_tokens = chunk.prompt_tokens or prompt_tokens
             completion_tokens = chunk.completion_tokens or completion_tokens
             total_tokens = chunk.total_tokens or total_tokens

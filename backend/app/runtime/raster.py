@@ -49,3 +49,11 @@ class RasterPreviews:
                     await task
                 raise
         return target
+
+
+_previews = RasterPreviews()
+
+
+async def derived_thumbnail(source: Path, target: Path, size: int) -> Path:
+    """Resize an already authorized file using this process's bounded decoder."""
+    return await _previews.render(source, target, size)

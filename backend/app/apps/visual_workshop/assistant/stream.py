@@ -26,6 +26,7 @@ from app.apps.visual_workshop.models import (
     VisualAssistantMessage,
 )
 from app.capabilities.agents.harness import AgentEvent, AgentHarness, AgentMessage, RunStatus
+from app.demo_runtime.runtime import mock_transport
 from app.llm.models import (
     LlmCallLog,
 )
@@ -41,6 +42,7 @@ def build_model_adapter(prepared: PreparedAssistantGeneration, api_key: str) -> 
         kind=prepared.provider_kind,
         base_url=prepared.base_url,
         api_key=api_key,
+        transport=mock_transport(prepared.base_url),
     )
 
 

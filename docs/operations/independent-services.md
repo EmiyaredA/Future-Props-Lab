@@ -22,9 +22,9 @@ npm run services:build:web -- agents
 npm run services:build -- agents --build --web-release .local/service-web/agents/BUILD_ID
 ```
 
-当前独立镜像入口包含 Identity、Gateway、Agents、Portal、Assets、Rendering 与 Management；其他服务的独立构建会明确拒绝。Gateway 包含 Caddy 与独立控制面，互相监督并持有自己的数据锁。构建器计算可审计源码闭包并拒绝单体入口、全部 ORM、工坊与模型内部依赖。镜像不复制整个后端，不打包配置、密钥、运行数据或仓库。Identity 自有锁文件固定所需依赖；版本由实际输入内容决定。
+当前独立镜像入口包含 Identity、Gateway、Agents、Portal、Assets、Rendering、Management、Models 与 Integrations；其他服务的独立构建会明确拒绝。Gateway 包含 Caddy 与独立控制面，互相监督并持有自己的数据锁。构建器计算可审计源码闭包并拒绝单体入口、全部 ORM、工坊与模型内部依赖。镜像不复制整个后端，不打包配置、密钥、运行数据或仓库。Identity 自有锁文件固定所需依赖；版本由实际输入内容决定。
 
-`deploy/compose.yaml` 目前装配 Identity、Agents、Portal、Assets、Rendering 和 Gateway，`deploy/management.compose.yaml` 提供独立管理端叠加清单。启动只使用已构建镜像，不自动构建或迁移。数据库初始化必须通过所属镜像显式执行 `migrate`；已有数据库迁移历史不符时启动失败。`create-admin` 只接受标准输入 JSON，并且仅用于没有账号的新安装；已有正式账号应从受控导入保留。
+`deploy/compose.yaml` 目前装配 Identity、Agents、Portal、Assets、Rendering 和 Gateway，`deploy/management.compose.yaml` 提供独立管理端叠加清单；Models 与 Integrations 分别使用显式选择的 `deploy/models.compose.yaml` 和 `deploy/integrations.compose.yaml`。启动只使用已构建镜像，不自动构建或迁移。数据库初始化必须通过所属镜像显式执行 `migrate`；已有数据库迁移历史不符时启动失败。`create-admin` 只接受标准输入 JSON，并且仅用于没有账号的新安装；已有正式账号应从受控导入保留。
 
 ## Docker 隔离验收
 
@@ -159,3 +159,23 @@ Identity 的账号目录事件已具备 Models 专用的私有轮询／确认接
 
 
 模型库输入批次已通过后端全量 2130 项（4 项条件跳过）、静态与格式、公共／独立契约和 SDK 检查。七服务容器与浏览器验收 `fpl-isolated-agents-ad03015969` 覆盖 Identity 到 Assets 的私有文件流、用途与路径绑定、中文文件名和原始字节，同时验证原生采集、素材与渲染、独立重建、门户停止后的新登录和响应式页面。此记录只证明该素材读取切片，不代表完整 Models 或全部业务服务已装配，也未切换正式数据。
+
+
+### Models 结果与私有参考
+
+生成参考与模型结果的消费者已不再直接查询 Assets ORM；恢复网站仍通过显式适配读取旧引用。正式转移前需在旧站调用 `generation-assets/backfill-status`／`generation-assets/backfill`，确认所有需要保留的历史参考已转换成 Models 自有文件；活动任务须先安全结束。独立服务不会在缺少转换时尝试跨库读取。
+
+独立结果保存使用固定来源 `POST /v1/model-inference/tasks/{task_id}/save-to-library` 与绑定描述摘要的私有 Assets 流式目标。两端均不返回存储路径；Assets 校验长度和内容 SHA256，接收后再次核验身份，在短事务中保存文件及收据。对同一结果的重复保存返回同一文件；文件已删除时返回冲突，不默默重建。提交响应丢失时保留本地结果并重试原回执，不再次调用供应商。新协议、回填错误映射、旧兼容入口和生成文件提交保护的定向测试已通过，最终容器与整体验收由集成批次统一执行。
+
+
+### Models、Integrations 与 Thought 边界批次
+
+Models 已独立装配目录与治理、初始化事件、任务执行与配额、审计回执、文本与实时语音。私有输入按原账号和用途读取 Assets；生成参考只保存本服务字节。推理结果回存使用同一任务和内容摘要的幂等素材回执。Mac worker 通过租约传输参考与结果，不挂载容器库；完成回执前串行提交最新模型观测，避免旧观测覆盖安装成功。输出描述使用 `X-Model-Output-Descriptor`，网关继续删除全部外部 `X-Fpl-*` 身份头。
+
+Integrations 已独立装配工具、MCP、Skills 和外部连接。Identity 固定意图绑定原请求、账号、资源和输入摘要；Models 保留共享验证额度与演示安装协调。stdio MCP 由 Mac worker 使用本机显式登记的完整命令与参数执行，环境键需另行登记，不继承个人 HOME、PATH 或工作目录。执行前持久化意图，回复丢失只重交付原回执；中断结果未知时不重新派发。Skills 文件按本服务已提交的记录恢复。未知验证的公开核对入口仍待完成，不能据此认定全部恢复能力已交付。
+
+Thought 的自有 schema、账号目录、受限写作模型端口、素材元数据和 Markdown/HTML 导出字节端口已经隔离；恢复网站显式注入旧适配器。修改与模板复用在写事务前预取素材快照，失败或过期拒绝写入。飞书同步继续通过用户显式同步请求调用已有外部连接，图片读取使用同一素材端口。完整 Thought 服务尚缺持久素材保留编排、上传/归档的跨服务回执和社区源账号素材授权，当前不提供完整部署入口。
+
+真实九容器与 Chromium 验收 `fpl-isolated-agents-e308095503` 的 17 项综合检查通过：Models 页面、HTTP/SSE、实时语音撤权、原生安装与语音、Models 重启后重复回存只执行一次；Integrations 的真实 stdio 发现、共享额度结算、独立重启与 Skills 字节持久化；以及既有账号、工作台、素材、渲染、门户停止后的新登录和程序版本隔离。Models 三页与 Integrations 四页覆盖 390／768／1600px、明暗主题，手机聊天区填满可用宽度。依赖镜像在真实容器中执行导入检查，避免本机依赖掩盖漏包。
+
+全部数据为隔离生成的账号、文件、媒体和模型合成实现，容器已回收；真实供应商与 Qwen/MLX 权重没有调用。正式网站、配置及数据库未切换。其余服务和正式数据转移仍按上面的切换门禁推进，当前源码不能直接安装接管正式数据。

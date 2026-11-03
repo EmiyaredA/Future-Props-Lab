@@ -116,6 +116,20 @@ class VisualProjectFileLink(ReferenceBase):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
 
 
+class ModelLibraryOutputReceipt(ReferenceBase):
+    """A source result is copied once; response loss cannot duplicate library content."""
+
+    __tablename__ = "asset_model_output_receipts"
+    __table_args__ = (UniqueConstraint("owner_user_id", "source_task_id", "descriptor_sha256"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
+    source_task_id: Mapped[str] = mapped_column(String(128))
+    descriptor_sha256: Mapped[str] = mapped_column(String(64))
+    content_sha256: Mapped[str] = mapped_column(String(64))
+    result: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
 MODELS = (
     VisualAssetFolder,
     VisualAsset,
@@ -126,4 +140,5 @@ MODELS = (
     ReferenceIntent,
     PreparedAssetPin,
     VisualProjectFileLink,
+    ModelLibraryOutputReceipt,
 )

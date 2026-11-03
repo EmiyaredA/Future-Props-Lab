@@ -10,6 +10,7 @@ from app.llm.inference.catalog import get_model
 from app.llm.models import LlmCallLog
 from app.llm.providers.streaming import ChatMessageInput, stream_text_completion
 from app.llm.schemas.model_inference import InferenceTextEvent, InferenceTextOut
+from app.runtime.authorized_stream import authorized_stream
 from app.runtime.credentials import decrypt_secret
 from app.runtime.operation_receipts import OperationError
 from app.runtime.ownership import bind_owner
@@ -60,6 +61,7 @@ async def events(
     *,
     session_factory,
     transport=None,
+    check_access=None,
     credential: CredentialSnapshot | None = None,
 ):
     started, log_id = monotonic(), str(uuid4())
@@ -68,7 +70,8 @@ async def events(
     snap = credential or CredentialSnapshot()
     try:
         yield InferenceTextEvent(type="start", log_id=log_id)
-        async for delta in stream_text_completion(**args, transport=transport):
+        source = stream_text_completion(**args, transport=transport)
+        async for delta in authorized_stream(source, check_access):
             if delta.text:
                 text += delta.text
                 yield InferenceTextEvent(type="delta", text=delta.text)

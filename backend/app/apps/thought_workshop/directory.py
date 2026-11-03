@@ -86,10 +86,12 @@ class Directory(KnowledgeBases):
         return note_out(row)
 
     async def create_content(self, body: ThoughtNoteCreate):
+        candidate = ThoughtNoteIn(**body.model_dump(exclude={"expected_knowledge_revision"}))
+        notes = Notes(self.session, self.owner_user_id, self.author_id)
+        # Cross-service metadata is fetched before the project writer reservation.
+        await notes.validate_refs(candidate)
         await self.reserve(body.knowledge_base_id, body.expected_knowledge_revision)
-        row = await Notes(self.session, self.owner_user_id, self.author_id).create(
-            ThoughtNoteIn(**body.model_dump(exclude={"expected_knowledge_revision"})), commit=False
-        )
+        row = await notes.create(candidate, commit=False)
         siblings = await self.siblings(body.knowledge_base_id, body.parent_id)
         row.position = max((r.position for r in siblings), default=-1) + 1
         await self.session.commit()

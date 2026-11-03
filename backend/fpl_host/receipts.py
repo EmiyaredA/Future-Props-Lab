@@ -28,13 +28,22 @@ def command_digest(lease):
 
 
 class ReceiptStore:
-    def __init__(self, root: Path, *, readonly_operations=()):
+    def __init__(self, root: Path, *, readonly_operations=(), retain_acknowledged_payload=True):
         if root.is_symlink():
             raise ValueError("原生回执目录不能是符号链接")
         root.mkdir(parents=True, exist_ok=True, mode=0o700)
         root.chmod(0o700)
         self.root = root.resolve()
         self.readonly_operations = frozenset(readonly_operations)
+        self.retain_acknowledged_payload = retain_acknowledged_payload
+        if not retain_acknowledged_payload:
+            for path in sorted(self.root.glob("*.json")):
+                if path.is_symlink():
+                    raise ValueError("原生回执不能是符号链接")
+                document = json.loads(path.read_text())
+                if document.get("acknowledged") and document["lease"].get("payload"):
+                    document["lease"]["payload"] = {}
+                    self.publish(path, document)
 
     def _path(self, lease):
         return self.root / (str(lease.job_id) + ".json")
@@ -115,4 +124,6 @@ class ReceiptStore:
         if document["lease"]["lease_id"] != str(lease.lease_id):
             raise ValueError("回执租约不一致")
         document["acknowledged"] = True
+        if not self.retain_acknowledged_payload:
+            document["lease"]["payload"] = {}
         self.publish(path, document)

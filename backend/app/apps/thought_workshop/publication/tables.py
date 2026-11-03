@@ -1,7 +1,6 @@
 """Independent table grants, with explicit parent checks for embedded views."""
 
 from sqlalchemy import select, text
-from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.apps.thought_workshop.knowledge_tools.references import reference_ids
 from app.apps.thought_workshop.models import ThoughtNote
@@ -12,6 +11,7 @@ from .access import article, bind_source, missing, publication
 from .catalog import visible
 from .models import CommunityUpload, Publication
 from .mutations import begin_write
+from .sessions import source_sessions
 
 
 class TableAccess:
@@ -59,7 +59,6 @@ class TableAccess:
         return await use_case.records(note_id, table_id, body)
 
     async def apply(self, pub_id, note_id, body, parent_id):
-        await begin_write(self.session)
         use_case, pub, role = await self.access(pub_id, note_id, parent_id, write=True)
         current = await snapshot(self.session, note_id)
         allowed_assets = asset_ids(current) | set(
@@ -71,8 +70,35 @@ class TableAccess:
             )
         )
         rows, _ = await visible(self.session, self.principal, pub)
+
+        async def before_write(before, after):
+            nonlocal pub, role
+            # Network account validation has finished; serialize local grants with this mutation.
+            await begin_write(self.session)
+            _, pub, role = await self.access(pub_id, note_id, parent_id, write=True)
+            current_rows, _ = await visible(self.session, self.principal, pub)
+
+            def note_refs(state):
+                return {
+                    id
+                    for table in state.tables
+                    for field in table.fields
+                    if field.type == "note"
+                    for record in state.records.get(table.id, [])
+                    for id in record.values.get(field.id, []) or []
+                }
+
+            if not (note_refs(after) - note_refs(before)) <= {
+                note.id for note, _, _ in current_rows
+            }:
+                raise missing()
+
         result = await use_case.apply(
-            note_id, body, allowed_assets=allowed_assets, allowed_notes={n.id for n, _, _ in rows}
+            note_id,
+            body,
+            allowed_assets=allowed_assets,
+            allowed_notes={n.id for n, _, _ in rows},
+            before_write=before_write,
         )
         result.structure.role = role
         result.structure.can_edit = role in {"edit", "manage"}
@@ -85,7 +111,7 @@ class CommunityTables:
     """Each browser operation binds the source only inside its own session."""
 
     def __init__(self, request_session, principal):
-        self.sessions = async_sessionmaker(request_session.bind, expire_on_commit=False)
+        self.sessions = source_sessions(request_session)
         self.principal = principal
 
     async def run(self, method, *args):

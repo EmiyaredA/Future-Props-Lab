@@ -3,10 +3,11 @@
 import ast
 import hashlib
 import json
+from dataclasses import asdict
 from pathlib import Path
 
 from fpl_runtime.catalog import service_by_id
-from fpl_runtime.routing import Operation, RouteCatalog
+from fpl_runtime.routing import SOCKET_OPERATIONS, Operation, RouteCatalog
 
 APP_OWNERS = {
     "agent_workbench": "agents",
@@ -96,6 +97,10 @@ def operation_owner(path):
 
 
 def table_owner(module, table):
+    if module.startswith("fpl_integrations."):
+        return "integrations"
+    if module.startswith("fpl_thought."):
+        return "thought"
     if module.startswith("fpl_models."):
         return "models"
     if module.startswith("fpl_management."):
@@ -141,6 +146,8 @@ def model_tables(root):
         + list((root / "backend/fpl_gateway").rglob("*.py"))
         + list((root / "backend/fpl_assets").rglob("*.py"))
         + list((root / "backend/fpl_models").rglob("*.py"))
+        + list((root / "backend/fpl_integrations").rglob("*.py"))
+        + list((root / "backend/fpl_thought").rglob("*.py"))
     ):
         tree = ast.parse(path.read_text())
         module = ".".join(path.relative_to(root / "backend").with_suffix("").parts)
@@ -194,6 +201,7 @@ def document(root):
             json.dumps(schema, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest(),
         "operations": operations,
+        "websockets": [asdict(operation) for operation in SOCKET_OPERATIONS],
         "tables": tables,
         "partitions": {
             "platform_settings": {

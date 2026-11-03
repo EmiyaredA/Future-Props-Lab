@@ -75,7 +75,12 @@ class LocalModels:
                     row.revision += 1
             await session.commit()
 
-    async def action(self, model_id, body):
+    async def action(self, model_id, body, *, authorization=None):
+        if authorization is not None and (
+            authorization.method != "POST"
+            or authorization.path != "/v1/platform/local-models/" + model_id + "/actions"
+        ):
+            raise OperationError("本地模型操作来源不匹配", "invalid_native_action", 403)
         model = definition(model_id)
         fingerprint = hashlib.sha256(
             json.dumps(body.model_dump(), sort_keys=True).encode()

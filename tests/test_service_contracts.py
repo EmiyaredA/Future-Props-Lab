@@ -95,3 +95,106 @@ def test_manifest_does_not_include_credentials_or_runtime_paths():
 )
 def test_account_and_host_capability_prefixes_preserve_business_ownership(path, service):
     assert operation_owner(path) == service
+
+
+def test_websocket_ownership_is_explicit_and_never_a_fake_http_operation():
+    from fpl_runtime.routing import SOCKET_OPERATIONS, SocketOperation
+
+    catalog = RouteCatalog.read(ROOT / "deploy/contracts/ownership.json")
+    socket = catalog.match_socket("/v1/model-test/realtime")
+    assert socket == SocketOperation("models", "/v1/model-test/realtime", "models.use")
+    assert tuple(catalog.websockets) == SOCKET_OPERATIONS
+    assert catalog.match("GET", socket.path) is None
+    assert catalog.match_socket(socket.path + "/unknown") is None
+    with pytest.raises(ValueError, match="WebSocket"):
+        RouteCatalog([], websockets=[socket, socket])
+    with pytest.raises(ValueError, match="WebSocket"):
+        RouteCatalog([Operation("models", "GET", socket.path, "not-a-socket")], websockets=[socket])
+    schema = json.loads((ROOT / "web/src/generated/openapi.json").read_text())
+    assert socket.path not in schema["paths"]
+
+
+def test_gateway_matches_real_socket_upgrade_and_strips_forged_protocol_headers():
+    from fpl_deployment.gateway import render_gateway
+
+    catalog = RouteCatalog.read(ROOT / "deploy/contracts/ownership.json")
+    options = dict(
+        gateway_token="g" * 48,
+        local_origin="http://127.0.0.1:19000",
+        public_origin="https://studio.example.test",
+    )
+    rendered = render_gateway(catalog, **options)
+    for ingress in ("local", "public"):
+        matcher = "@" + ingress + "_socket_0"
+        assert (
+            matcher
+            + " {\n      method GET\n      path /v1/model-test/realtime"
+            + "\n      header Upgrade websocket"
+            in rendered
+        )
+    assert rendered.count("request_header X-Fpl-Request-Protocol websocket") == 2
+    assert rendered.count("header_up -Upgrade") == 2
+    assert rendered.count("header_up -Connection") == 2
+    assert rendered.count("header_up -Sec-WebSocket-*") == 2
+    assert "request_header X-Fpl-Request-Protocol http" not in rendered
+    assert rendered.index("request_header -X-Fpl-*") < rendered.index(
+        "request_header X-Fpl-Request-Protocol websocket"
+    )
+    management = render_gateway(catalog, **options, audience="management")
+    assert "_socket_" not in management
+    assert "/v1/model-test/realtime" not in management
+
+
+def test_socket_contract_change_invalidates_only_its_own_program():
+    from fpl_runtime.protocol_hash import public_contract
+    from fpl_runtime.routing import SocketOperation
+
+    schema = {"paths": {}, "components": {"schemas": {}}}
+    plain = RouteCatalog([])
+    sockets = RouteCatalog(
+        [], websockets=[SocketOperation("models", "/v1/model-test/realtime", "models.use")]
+    )
+    assert public_contract(schema, "models", plain) != public_contract(schema, "models", sockets)
+    assert public_contract(schema, "agents", plain) == public_contract(schema, "agents", sockets)
+
+
+def test_every_cross_service_http_operation_has_an_identity_permission_policy():
+    from app.capabilities.identity.route_permissions import route_permission
+
+    catalog = RouteCatalog.read(ROOT / "deploy/contracts/ownership.json")
+    missing = [
+        (operation.method, operation.path)
+        for operation in catalog.operations
+        if operation.service != "identity"
+        and route_permission(operation.method, operation.path) is None
+    ]
+    assert missing == []
+    assert (
+        route_permission("POST", "/v1/account/demo-services/mock_model/install")
+        == "configuration.manage"
+    )
+    assert (
+        route_permission("PATCH", "/v1/account/project-certification/visual/owned")
+        == "projects.certify"
+    )
+
+
+def test_integrations_native_lane_is_loopback_only_and_strips_identity_headers():
+    from fpl_deployment.gateway import render_gateway
+
+    rendered = render_gateway(
+        RouteCatalog.read(ROOT / "deploy/contracts/ownership.json"),
+        gateway_token="g" * 48,
+        local_origin="http://127.0.0.1:19000",
+        public_origin="https://studio.example.test",
+        native_tokens={"integrations": "i" * 48},
+    )
+    native = rendered.split("http://:29090 {", 1)[1]
+    assert '@host expression {http.request.hostport} != "127.0.0.1:29090"' in native
+    assert "@browser header Origin *" in native
+    assert "request_header -X-Fpl-*" in native
+    assert "request_header -Cookie" in native
+    assert "handle /integrations/_native/*" in native
+    assert "uri strip_prefix /integrations" in native
+    assert 'request_header X-Fpl-Native-Ingress "' + "i" * 48 + '"' in native
+    assert "reverse_proxy integrations:8080" in native

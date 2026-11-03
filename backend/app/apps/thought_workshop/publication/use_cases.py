@@ -1,7 +1,6 @@
 """Public entry point: each community operation owns an independent session."""
 
 from sqlalchemy import delete, select, text
-from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.apps.thought_workshop.directory import Directory
 from app.apps.thought_workshop.errors import ThoughtError
@@ -11,11 +10,12 @@ from . import assets, catalog, content, mutations
 from .access import bind_source, publication, require_source_manager
 from .models import CommunityFavorite, OfficialSource
 from .schemas import CommunityManagement, FavoritesOut
+from .sessions import source_sessions
 
 
 class Community:
     def __init__(self, request_session, principal):
-        self.sessions = async_sessionmaker(request_session.bind, expire_on_commit=False)
+        self.sessions = source_sessions(request_session)
         self.principal = principal
 
     async def run(self, operation, *args):

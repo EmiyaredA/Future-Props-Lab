@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import asyncio
 from datetime import timedelta
 
 import httpx
 from sqlalchemy import delete, select, update
 
+from app.apps.thought_workshop.asset_metadata import read_bytes
 from app.apps.thought_workshop.content_exports import resolve_assets
 from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
-from app.capabilities.asset_store.storage import AssetStorage
 from app.integrations.external.blocks import feishu_tree
 from app.integrations.external.catalog import ExternalConnections
 from app.integrations.external.contracts import ExternalError, ImageSource
@@ -18,7 +17,6 @@ from app.integrations.external.feishu_verification import (
     verify_delete,
     verify_image,
 )
-from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.ownership import bind_owner
 from app.runtime.polling_runner import PollingTaskRunner
@@ -194,9 +192,13 @@ class ArticleSyncRunner(PollingTaskRunner):
                         task = await self.context(session, task_id)
                         assets = await resolve_assets(session, task.owner_user_id, {asset_id})
                         asset = assets[asset_id]
-                        path = AssetStorage(get_settings()).path_for(asset)
-                        filename, mime = asset.original_filename, asset.mime_type
-                    data = await asyncio.to_thread(path.read_bytes)
+                        filename, mime, owner = (
+                            asset.original_filename,
+                            asset.mime_type,
+                            task.owner_user_id,
+                        )
+                        await session.rollback()
+                        data = await read_bytes(session, owner, asset)
                     step = await self.begin_step(task_id, "upload_image")
                     wrote = True
                     token = await client.upload_image(

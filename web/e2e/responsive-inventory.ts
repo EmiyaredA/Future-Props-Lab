@@ -69,6 +69,13 @@ export const responsiveOwners = {
 } satisfies Record<AppPage, "shell" | "editors" | "thought">;
 export const publicSurfaces = ["login", "account-settings", "docs"] as const;
 export const independentApplications = {
+  models: ["/model-service", "/model-test", "/model-call-logs"],
+  integrations: [
+    "/integrations",
+    "/integrations/mcp",
+    "/integrations/skills",
+    "/integrations/external-connections",
+  ],
   assets: ["/files"],
   portal: ["/", "/home", "/apps", "/docs.html"],
   agents: ["/agents", "/agents/sources", "/agents/sessions/:id"],

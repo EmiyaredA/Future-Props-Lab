@@ -26,11 +26,13 @@ class ThoughtKnowledgeBase(Base):
     __table_args__ = (Index("ix_thought_knowledge_bases_account", "owner_user_id"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE")
+    )
     title: Mapped[str] = mapped_column(String(120))
     description: Mapped[str] = mapped_column(Text, default="")
     cover_asset_id: Mapped[str | None] = mapped_column(
-        ForeignKey("visual_assets.id", ondelete="RESTRICT"), nullable=True
+        String(36), ForeignKey("visual_assets.id", ondelete="RESTRICT"), nullable=True
     )
     home_note_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     revision: Mapped[int] = mapped_column(Integer, default=0)
@@ -54,12 +56,14 @@ class ThoughtNote(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE")
+    )
     knowledge_base_id: Mapped[str] = mapped_column(
-        ForeignKey("thought_knowledge_bases.id", ondelete="CASCADE")
+        String(36), ForeignKey("thought_knowledge_bases.id", ondelete="CASCADE")
     )
     parent_id: Mapped[str | None] = mapped_column(
-        ForeignKey("thought_notes.id", ondelete="SET NULL"), nullable=True
+        String(36), ForeignKey("thought_notes.id", ondelete="SET NULL"), nullable=True
     )
     position: Mapped[int] = mapped_column(Integer, default=0)
     is_home: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -82,10 +86,10 @@ class ThoughtNoteAsset(Base):
     __table_args__ = (Index("ix_thought_note_assets_asset", "asset_id"),)
 
     note_id: Mapped[str] = mapped_column(
-        ForeignKey("thought_notes.id", ondelete="CASCADE"), primary_key=True
+        String(36), ForeignKey("thought_notes.id", ondelete="CASCADE"), primary_key=True
     )
     asset_id: Mapped[str] = mapped_column(
-        ForeignKey("visual_assets.id", ondelete="RESTRICT"), primary_key=True
+        String(36), ForeignKey("visual_assets.id", ondelete="RESTRICT"), primary_key=True
     )
 
 
@@ -97,7 +101,9 @@ class ThoughtNoteHistory(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    note_id: Mapped[str] = mapped_column(ForeignKey("thought_notes.id", ondelete="CASCADE"))
+    note_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("thought_notes.id", ondelete="CASCADE")
+    )
     revision: Mapped[int] = mapped_column(Integer)
     title: Mapped[str] = mapped_column(String(240))
     document: Mapped[dict] = mapped_column(JSON)
@@ -114,8 +120,8 @@ class ThoughtHistoryAsset(Base):
     __table_args__ = (Index("ix_thought_history_assets_asset", "asset_id"),)
 
     history_id: Mapped[str] = mapped_column(
-        ForeignKey("thought_note_history.id", ondelete="CASCADE"), primary_key=True
+        String(36), ForeignKey("thought_note_history.id", ondelete="CASCADE"), primary_key=True
     )
     asset_id: Mapped[str] = mapped_column(
-        ForeignKey("visual_assets.id", ondelete="RESTRICT"), primary_key=True
+        String(36), ForeignKey("visual_assets.id", ondelete="RESTRICT"), primary_key=True
     )

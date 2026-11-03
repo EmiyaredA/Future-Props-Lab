@@ -116,7 +116,7 @@ async def test_catalog_reads_only_explicit_account_defaults_and_preserves_cas_sn
         view = await service.catalog()
         assert view.default_model_ids == {"chat": "model"}
         with pytest.raises(RevisionConflictError) as error:
-            await service._bump(99)
+            await service.advance_revision(99)
         assert error.value.snapshot["default_model_ids"] == {"chat": "model"}
         assert error.value.snapshot["revision"] == 0
         assert defaults.owners == ["alpha", "alpha"]

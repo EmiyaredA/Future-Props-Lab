@@ -10,7 +10,7 @@ async def update_defaults(session, owner_user_id, body, *, defaults_store):
     catalog = ModelCatalogService(session, defaults_store=defaults_store)
     if catalog._owner_user_id() != owner_user_id:
         raise ValueError("默认模型归属与账号上下文不匹配")
-    await catalog._bump(body.expected_revision)
+    await catalog.advance_revision(body.expected_revision)
     rows = (
         await session.execute(
             select(ModelEntry, ModelProvider)

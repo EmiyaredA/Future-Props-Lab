@@ -3,8 +3,8 @@
 import asyncio
 import json
 
-from app.llm.local_models.catalog import HERE
 from app.llm.local_models.installer import worker_environment
+from app.llm.local_models.manifest import HERE
 
 
 class LocalRuntime:

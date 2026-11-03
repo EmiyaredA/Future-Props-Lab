@@ -115,3 +115,28 @@ async def isolated_cli_allocation_policy():
         if snapshot:
             session.add(PlatformSetting(id="code_agents", **snapshot))
         await session.commit()
+
+
+@pytest.fixture(autouse=True)
+def explicit_thought_identity_adapter():
+    """Direct legacy storage tests opt into the same explicit local Identity port."""
+    if "app.main" not in sys.modules:
+        yield
+        return
+    from app.apps.thought_workshop.legacy_accounts import LegacyAccountDirectory
+    from app.runtime.db import SessionLocal
+
+    previous = dict(SessionLocal.kw.get("info") or {})
+    from app.apps.thought_workshop.legacy_asset_metadata import LegacyAssetMetadata
+
+    SessionLocal.configure(
+        info={
+            **previous,
+            "thought_directory_factory": LegacyAccountDirectory,
+            "thought_asset_metadata_factory": LegacyAssetMetadata,
+        }
+    )
+    try:
+        yield
+    finally:
+        SessionLocal.configure(info=previous)

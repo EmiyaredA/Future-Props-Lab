@@ -33,6 +33,8 @@ def exercise(
     assets_image=None,
     rendering_image=None,
     management_image=None,
+    models_image=None,
+    integrations_image=None,
     gateway_image="caddy@sha256:36c24ad91a7ff7bc4c87fe22bfa8df3c4b18da0773d73fc12ee2c52b98c0bb7e",
 ):
     project = "fpl-isolated-agents-" + secrets.token_hex(5)
@@ -49,17 +51,36 @@ def exercise(
     rendering_token = secrets.token_urlsafe(48)
     gateway_service_token = secrets.token_urlsafe(48)
     models_token = secrets.token_urlsafe(48)
+    models_ingress, models_worker = secrets.token_urlsafe(48), secrets.token_urlsafe(48)
     password = secrets.token_urlsafe(32) + "-Aa9!"
     key = Ed25519PrivateKey.generate()
     origin = f"http://127.0.0.1:{local_port}"
     native_base = f"http://127.0.0.1:{native_port}"
+    if models_image and not (management_image and assets_image and rendering_image):
+        raise ValueError("Models acceptance requires independent Management, Assets and Rendering")
+    integration_fixture = None
+    if integrations_image:
+        if not models_image:
+            raise ValueError("Integrations acceptance requires independent Models")
+        from integrations_docker_checks import IntegrationsFixture
+
+        integration_fixture = IntegrationsFixture(root, ROOT, native_base)
     config = (
         '[storage]\ndatabase_path = "/state/service.db"\n[security]\nsecrets_key = '
         + json.dumps(Fernet.generate_key().decode())
         + f'\n[website]\nport = {local_port}\n[remote_web]\norigin = "https://studio.example.test"\n'
     )
+    if models_image:
+        (root / "models").mkdir(mode=0o700)
     material = {
         "identity.toml": config.encode(),
+        "models.toml": config.encode(),
+        "models-client.json": json.dumps({"credential": models_token}).encode(),
+        "models-native-ingress": models_ingress.encode(),
+        "models-workers.json": json.dumps({"fixture-models": models_worker}).encode(),
+        "models-connection.json": json.dumps(
+            {"base_url": native_base + "/models", "credential": models_worker}
+        ).encode(),
         "agents.toml": config.encode(),
         "rendering.toml": b'[storage]\ndatabase_path = "/state/service.db"\n',
         "rendering-client.json": json.dumps({"credential": rendering_token}).encode(),
@@ -101,7 +122,11 @@ def exercise(
             gateway_token=gateway_token,
             local_origin=origin,
             public_origin="https://studio.example.test",
-            native_tokens={"agents": lane_token},
+            native_tokens={
+                "agents": lane_token,
+                **({"models": models_ingress} if models_image else {}),
+                **({"integrations": integration_fixture.ingress} if integration_fixture else {}),
+            },
             native_port=native_port,
             control=control,
         ).encode(),
@@ -173,6 +198,20 @@ def exercise(
             "FPL_NATIVE_PORT": str(native_port),
         }
     )
+    if models_image:
+        environment.update(
+            {
+                "FPL_MODELS_IMAGE": models_image,
+                "FPL_MODELS_STATE": str(root / "models"),
+                "FPL_MODELS_CONFIG": str(root / "models.toml"),
+                "FPL_MODELS_IDENTITY_CLIENT": str(root / "models-client.json"),
+                "FPL_MODELS_NATIVE_INGRESS": str(root / "models-native-ingress"),
+                "FPL_MODELS_WORKERS": str(root / "models-workers.json"),
+            }
+        )
+    if integration_fixture:
+        environment["FPL_INTEGRATIONS_IMAGE"] = integrations_image
+        integration_fixture.prepare(material, environment)
     status_fixture = None
     if management_image:
         if not control or not portal_image:
@@ -195,6 +234,10 @@ def exercise(
         "--file",
         str(ROOT / "deploy/compose.yaml"),
     ]
+    if models_image:
+        prefix.extend(["--file", str(ROOT / "deploy/models.compose.yaml")])
+    if integrations_image:
+        prefix.extend(["--file", str(ROOT / "deploy/integrations.compose.yaml")])
     if management_image:
         prefix.extend(["--file", str(ROOT / "deploy/management.compose.yaml")])
 
@@ -219,6 +262,9 @@ def exercise(
             rendering_token,
             gateway_service_token,
             models_token,
+            models_ingress,
+            models_worker,
+            *(integration_fixture.secrets if integration_fixture else ()),
         ):
             output = output.replace(secret, "[redacted]")
         with (root / "commands.log").open("a") as log:
@@ -248,7 +294,8 @@ def exercise(
             time.sleep(0.2)
         raise RuntimeError("Wait failed: " + path + " (" + last + ")")
 
-    collector = None
+    collector, native_worker = None, None
+    native_model_log = (root / "native-model-worker.log").open("w")
     collector_log = (root / "collector.log").open("w")
     checks = []
     try:
@@ -272,6 +319,10 @@ def exercise(
             compose("run", "--rm", "--no-deps", "portal", "migrate")
         if management_image:
             compose("run", "--rm", "--no-deps", "management", "migrate")
+        if models_image:
+            compose("run", "--rm", "--no-deps", "models", "migrate")
+        if integrations_image:
+            compose("run", "--rm", "--no-deps", "integrations", "migrate")
         compose(
             "up",
             "--detach",
@@ -283,6 +334,8 @@ def exercise(
             *(("assets",) if assets_image else ()),
             *(("rendering",) if rendering_image else ()),
             *(("management",) if management_image else ()),
+            *(("models",) if models_image else ()),
+            *(("integrations",) if integrations_image else ()),
         )
         collector = subprocess.Popen(
             [
@@ -300,6 +353,28 @@ def exercise(
             stdout=collector_log,
             stderr=subprocess.STDOUT,
         )
+        if models_image:
+            native_worker = subprocess.Popen(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts/website/models_native_fixture.py"),
+                    "--connection",
+                    str(root / "models-connection.json"),
+                    "--state-root",
+                    str(root / "native-model-state"),
+                ],
+                cwd=ROOT,
+                env={
+                    "PATH": os.environ.get("PATH", ""),
+                    "PYTHONPATH": str(ROOT / "backend"),
+                    "PYTHONUNBUFFERED": "1",
+                    "PYTHONDONTWRITEBYTECODE": "1",
+                },
+                stdout=native_model_log,
+                stderr=subprocess.STDOUT,
+            )
+        if integration_fixture:
+            integration_fixture.start()
         with httpx.Client(base_url=origin, trust_env=False, timeout=45) as client:
             wait(client, "/ready")
             login = client.post(
@@ -313,9 +388,10 @@ def exercise(
             owner = login.json()["user"]["id"]
             from catalog_event_docker_checks import verify_private_catalog
 
-            verify_private_catalog(
-                compose, model_token=models_token, agent_token=service_token, owner=owner
-            )
+            if not models_image:
+                verify_private_catalog(
+                    compose, model_token=models_token, agent_token=service_token, owner=owner
+                )
             assert client.get("/_internal/v1/model-catalog/events").status_code == 404
             checks.append("Identity catalogue events remain private to the Models subscriber")
             unsafe = {"Origin": origin, "X-CSRF-Token": client.cookies.get("fpl_csrf", "")}
@@ -332,6 +408,24 @@ def exercise(
                 assert response.status_code == 403
             if control:
                 assert client.get("/v1/automation/runtime").json() == {"local_browser": True}
+            if models_image:
+                from models_docker_checks import verify_models
+
+                checks.append(
+                    verify_models(
+                        client=client,
+                        unsafe=unsafe,
+                        compose=compose,
+                        started=started,
+                        wait=wait,
+                        root=root,
+                        repo=ROOT,
+                        origin=origin,
+                        password=password,
+                        management_origin=f"http://127.0.0.1:{status_fixture.local_port}",
+                        browser_check=browser_check,
+                    )
+                )
             source_body = {
                 "agent_id": "codex",
                 "label": "Isolated native source",
@@ -415,6 +509,24 @@ def exercise(
             checks.append(
                 "independent Agents replacement preserves data, Identity, Gateway and native follow"
             )
+            if models_image:
+                from native_models_docker_checks import exercise_native_models
+
+                checks.append(
+                    exercise_native_models(
+                        client=client,
+                        unsafe=unsafe,
+                        wait=wait,
+                        compose=compose,
+                        management_origin=f"http://127.0.0.1:{status_fixture.local_port}",
+                        password=password,
+                        root=root,
+                    )
+                )
+            if integration_fixture:
+                checks.append(
+                    integration_fixture.check(client, unsafe, compose, wait, browser_check)
+                )
             if status_fixture:
                 checks.append(status_fixture.check(client, compose, started, wait, history))
             if assets_image:
@@ -469,6 +581,7 @@ def exercise(
                         "gateway",
                         *(("assets",) if assets_image else ()),
                         *(("rendering",) if rendering_image else ()),
+                        *(("models",) if models_image else ()),
                     )
                 }
                 if browser_check:
@@ -499,6 +612,9 @@ def exercise(
                 assert client.get("/").status_code == 502
                 assert all(started(service) == stamp for service, stamp in stable.items())
                 assert client.get(history).status_code == 200
+                if models_image:
+                    assert client.get("/v1/model-providers").status_code == 200
+                    assert client.get("/model-service").status_code == 200
                 if assets_image:
                     assert client.get("/v1/files").status_code == 200
                 checks.append(
@@ -517,6 +633,8 @@ def exercise(
                 assert fresh.get(path).json()["items"][0]["id"] == session_id
                 if assets_image:
                     assert fresh.get("/v1/files").status_code == 200
+                if models_image:
+                    assert fresh.get("/v1/model-providers").status_code == 200
             checks.append("fresh browser login and workbench reads need no Portal process")
             if browser_check:
                 page = client.get("/agents")
@@ -606,6 +724,8 @@ def exercise(
         (root / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
         print(json.dumps(report, ensure_ascii=False))
     finally:
+        if integration_fixture:
+            integration_fixture.close()
         if status_fixture:
             status_fixture.close()
         if collector is not None:
@@ -616,6 +736,14 @@ def exercise(
                 collector.kill()
                 collector.wait(timeout=5)
         collector_log.close()
+        if native_worker is not None:
+            native_worker.terminate()
+            try:
+                native_worker.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                native_worker.kill()
+                native_worker.wait(timeout=5)
+        native_model_log.close()
         compose(
             "logs",
             "--no-color",
@@ -627,6 +755,9 @@ def exercise(
             "portal",
             "assets",
             "rendering",
+            *(("models",) if models_image else ()),
+            *(("management",) if management_image else ()),
+            *(("integrations",) if integrations_image else ()),
             check=False,
         )
         compose("down", "--remove-orphans", check=False)
@@ -643,6 +774,8 @@ if __name__ == "__main__":
     parser.add_argument("--assets-image")
     parser.add_argument("--rendering-image")
     parser.add_argument("--management-image")
+    parser.add_argument("--models-image")
+    parser.add_argument("--integrations-image")
     parser.add_argument(
         "--gateway-image",
         default="caddy@sha256:36c24ad91a7ff7bc4c87fe22bfa8df3c4b18da0773d73fc12ee2c52b98c0bb7e",
@@ -659,4 +792,6 @@ if __name__ == "__main__":
         assets_image=args.assets_image,
         rendering_image=args.rendering_image,
         management_image=args.management_image,
+        models_image=args.models_image,
+        integrations_image=args.integrations_image,
     )

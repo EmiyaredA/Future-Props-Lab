@@ -1,8 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from app.deps import OwnerDep, SessionDep, StudioAuth
+from app.integrations.http_bindings import external_catalog
 
-from .catalog import ExternalConnections
 from .contracts import ExternalError
 from .schemas import (
     ExternalConnectionInput,
@@ -27,22 +27,26 @@ async def call(principal, operation):
 
 
 @router.get("", response_model=ExternalConnectionList)
-async def list_connections(principal: StudioAuth, session: SessionDep, owner_user_id: OwnerDep):
-    return await call(principal, ExternalConnections(session, owner_user_id).list())
+async def list_connections(
+    request: Request, principal: StudioAuth, session: SessionDep, owner_user_id: OwnerDep
+):
+    return await call(principal, external_catalog(request, session, owner_user_id).list())
 
 
 @router.post("", response_model=ExternalConnectionOut, status_code=201)
 async def create_connection(
+    request: Request,
     body: ExternalConnectionInput,
     principal: StudioAuth,
     session: SessionDep,
     owner_user_id: OwnerDep,
 ):
-    return await call(principal, ExternalConnections(session, owner_user_id).save(body))
+    return await call(principal, external_catalog(request, session, owner_user_id).save(body))
 
 
 @router.patch("/{connection_id}", response_model=ExternalConnectionOut)
 async def update_connection(
+    request: Request,
     connection_id: str,
     body: ExternalConnectionUpdate,
     principal: StudioAuth,
@@ -50,19 +54,26 @@ async def update_connection(
     owner_user_id: OwnerDep,
 ):
     return await call(
-        principal, ExternalConnections(session, owner_user_id).save(body, connection_id)
+        principal, external_catalog(request, session, owner_user_id).save(body, connection_id)
     )
 
 
 @router.post("/{connection_id}/check", response_model=ExternalConnectionOut)
 async def check_connection(
-    connection_id: str, principal: StudioAuth, session: SessionDep, owner_user_id: OwnerDep
+    request: Request,
+    connection_id: str,
+    principal: StudioAuth,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
 ):
-    return await call(principal, ExternalConnections(session, owner_user_id).check(connection_id))
+    return await call(
+        principal, external_catalog(request, session, owner_user_id).check(connection_id)
+    )
 
 
 @router.post("/{connection_id}/target-check", response_model=ExternalTargetOut)
 async def check_target(
+    request: Request,
     connection_id: str,
     body: ExternalTargetInput,
     principal: StudioAuth,
@@ -70,5 +81,5 @@ async def check_target(
     owner_user_id: OwnerDep,
 ):
     return await call(
-        principal, ExternalConnections(session, owner_user_id).target(connection_id, body.url)
+        principal, external_catalog(request, session, owner_user_id).target(connection_id, body.url)
     )

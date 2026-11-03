@@ -142,6 +142,47 @@ def render_gateway(
                 "    }",
             ]
         )
+        if audience == "studio":
+            for index, operation in enumerate(catalog.websockets):
+                name = f"{ingress}_socket_{index}"
+                lines.extend(
+                    [
+                        f"    @{name} {{",
+                        "      method GET",
+                        f"      path {operation.path}",
+                        "      header Upgrade websocket",
+                        "    }",
+                        f"    handle @{name} {{",
+                        "      route {",
+                        "        header >Cache-Control no-store",
+                        f"        request_header X-Fpl-Gateway {quoted(gateway_token)}",
+                        f"        request_header X-Fpl-Ingress {ingress}",
+                        "        request_header X-Fpl-Client-Ip {remote_host}",
+                        f"        request_header X-Fpl-Target-Service {operation.service}",
+                        "        request_header X-Fpl-Request-Method GET",
+                        "        request_header X-Fpl-Request-Uri {uri}",
+                        "        request_header X-Fpl-Request-Protocol websocket",
+                        "        forward_auth identity:8080 {",
+                        "          uri /_internal/v1/authorize",
+                        "          header_up -Upgrade",
+                        "          header_up -Connection",
+                        "          header_up -Sec-WebSocket-*",
+                        "          copy_headers X-Fpl-Context",
+                        "        }",
+                        f"        reverse_proxy {upstream(operation.service)} {{",
+                        "          flush_interval -1",
+                        "          header_up -Cookie",
+                        "          header_up -Authorization",
+                        "          header_up -X-Fpl-Gateway",
+                        "          header_up -X-Fpl-Target-Service",
+                        "          header_up -X-Fpl-Request-*",
+                        "          header_up -X-Fpl-Ingress",
+                        "          header_up -X-Fpl-Client-Ip",
+                        "        }",
+                        "      }",
+                        "    }",
+                    ]
+                )
         for index, ((service, method), operations) in enumerate(sorted(groups.items())):
             name = f"{ingress}_api_{index}"
             paths = "|".join(op.pattern().pattern[1:-1] for op in operations)
@@ -243,9 +284,12 @@ def render_gateway(
             ]
         )
         for service, token in sorted(native_tokens.items()):
-            if service not in {"agents", "management"} or not re.fullmatch(
-                r"[A-Za-z0-9_-]{32,256}", token
-            ):
+            if service not in {
+                "agents",
+                "management",
+                "models",
+                "integrations",
+            } or not re.fullmatch(r"[A-Za-z0-9_-]{32,256}", token):
                 raise ValueError("原生通道服务或凭据无效")
             result.extend(
                 [

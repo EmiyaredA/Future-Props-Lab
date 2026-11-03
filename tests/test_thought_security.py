@@ -9,7 +9,9 @@ from sqlalchemy import select
 from tests.test_account_system import create_test_account, login_and_change_password, unsafe_headers
 from tests.thought_helpers import delete_note
 
-from app.apps.thought_workshop.assistant import PreparedWriting, writing_events
+from app.apps.thought_workshop.assistant import PreparedWriting
+from app.apps.thought_workshop.legacy_writing import ProviderSelection, writing_events
+from app.apps.thought_workshop.writing import WritingModel
 from app.llm.models import LlmCallLog
 from app.llm.providers.streaming import TextDelta
 from app.main import app
@@ -76,10 +78,11 @@ def prepared() -> PreparedWriting:
         "test-user",
         str(uuid4()),
         0,
-        "openai",
-        "https://example.com",
-        "",
-        "mock-model",
+        WritingModel(
+            "model-id",
+            "mock-model",
+            ProviderSelection("openai", "https://example.com", "", "mock-model"),
+        ),
         "summary",
         "",
         "只用于确定性测试",
@@ -92,9 +95,11 @@ async def test_assistant_stream_and_logs_use_normalized_events(monkeypatch):
         yield TextDelta(text="摘要")
         yield TextDelta(text="内容", prompt_tokens=8, completion_tokens=2, total_tokens=10)
 
-    monkeypatch.setattr("app.apps.thought_workshop.assistant.stream_text_completion", fake)
+    monkeypatch.setattr("app.apps.thought_workshop.legacy_writing.stream_text_completion", fake)
     request = prepared()
-    result = b"".join([chunk async for chunk in writing_events(request)]).decode()
+    result = b"".join(
+        [chunk async for chunk in writing_events(request, sessions=SessionLocal)]
+    ).decode()
     assert '"type": "delta"' in result and '"type": "complete"' in result
     async with SessionLocal() as session:
         logs = (
@@ -113,8 +118,10 @@ async def test_assistant_error_is_redacted_and_cancellation_settles(monkeypatch)
         raise RuntimeError("secret-provider-token")
         yield TextDelta()
 
-    monkeypatch.setattr("app.apps.thought_workshop.assistant.stream_text_completion", broken)
-    output = b"".join([chunk async for chunk in writing_events(prepared())]).decode()
+    monkeypatch.setattr("app.apps.thought_workshop.legacy_writing.stream_text_completion", broken)
+    output = b"".join(
+        [chunk async for chunk in writing_events(prepared(), sessions=SessionLocal)]
+    ).decode()
     assert '"type": "error"' in output and "secret-provider-token" not in output
     entered = asyncio.Event()
 
@@ -123,11 +130,11 @@ async def test_assistant_error_is_redacted_and_cancellation_settles(monkeypatch)
         await asyncio.Event().wait()
         yield TextDelta()
 
-    monkeypatch.setattr("app.apps.thought_workshop.assistant.stream_text_completion", pending)
+    monkeypatch.setattr("app.apps.thought_workshop.legacy_writing.stream_text_completion", pending)
     request = prepared()
 
     async def consume():
-        return [chunk async for chunk in writing_events(request)]
+        return [chunk async for chunk in writing_events(request, sessions=SessionLocal)]
 
     task = asyncio.create_task(consume())
     await entered.wait()

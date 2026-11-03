@@ -3,7 +3,7 @@
 from datetime import datetime
 
 from sqlalchemy import JSON, CheckConstraint, DateTime, Integer, String
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.llm.models import (
     LlmCallLog,
@@ -25,11 +25,13 @@ from app.llm.models import (
     ModelTestTranscriptionTask,
     RuntimeAdmission,
 )
+from app.runtime.ids import new_id
 from app.runtime.time import utc_now
 
-
-class ModelsBase(DeclarativeBase):
-    pass
+from .demo_install_records import DemoInstallation
+from .integration_records import IntegrationCapacity
+from .native_records import NATIVE_MODELS
+from .orm import ModelsBase
 
 
 class AccountDefaults(ModelsBase):
@@ -85,7 +87,41 @@ class TaskAuthorization(ModelsBase):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
 
 
+class DemoSetting(ModelsBase):
+    __tablename__ = "model_demo_settings"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    payload: Mapped[dict] = mapped_column(JSON)
+    revision: Mapped[int] = mapped_column(Integer)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
+class GovernanceAudit(ModelsBase):
+    __tablename__ = "model_governance_audit"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    actor_user_id: Mapped[str] = mapped_column(String(36))
+    event_type: Mapped[str] = mapped_column(String(100))
+    detail: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    source_fingerprint: Mapped[str] = mapped_column(String(64), default="")
+    parent_intent_id: Mapped[str] = mapped_column(String(36), default="")
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class TemplateSyncAuthority(ModelsBase):
+    __tablename__ = "model_template_sync_authority"
+    job_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    source_path: Mapped[str] = mapped_column(String(4096))
+    assertion: Mapped[str] = mapped_column(String(8192))
+    audit_intent_id: Mapped[str] = mapped_column(String(36), default="")
+
+
 MODELS = (
+    *NATIVE_MODELS,
+    DemoInstallation,
+    IntegrationCapacity,
+    DemoSetting,
+    GovernanceAudit,
+    TemplateSyncAuthority,
     AccountDefaults,
     CatalogProvisioningReceipt,
     RoleTemplate,
@@ -111,4 +147,11 @@ MODELS = (
     RuntimeAdmission,
 )
 
-ACCOUNT_MODELS = tuple(model for model in MODELS if hasattr(model, "owner_user_id"))
+# TemplateSyncItem is a platform operation receipt; owner_user_id identifies
+# its target, not ownership of private catalogue contents. Only admin use cases
+# access these records; each catalogue read/write still binds its actual owner.
+ACCOUNT_MODELS = tuple(
+    model
+    for model in MODELS
+    if hasattr(model, "owner_user_id") and model is not ModelTemplateSyncItem
+)

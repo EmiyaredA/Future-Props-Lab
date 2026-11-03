@@ -246,7 +246,7 @@ async def test_member_can_view_but_cannot_manage_integrations() -> None:
         bind_owner(session, "test-user")
         return StudioPrincipal(
             platform_role="admin",
-            user_id="user",
+            user_id="test-user",
             must_change_password=False,
             auth_kind="session",
             scopes=frozenset({"studio:read"}),

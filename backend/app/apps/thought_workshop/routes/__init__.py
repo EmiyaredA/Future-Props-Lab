@@ -1,6 +1,6 @@
 from typing import Literal
 
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import ValidationError
 from starlette.background import BackgroundTask
@@ -8,6 +8,7 @@ from starlette.background import BackgroundTask
 from app.apps.thought_workshop.assistant import models, prepare, writing_events
 from app.apps.thought_workshop.attachments import upload_attachment
 from app.apps.thought_workshop.directory import Directory
+from app.apps.thought_workshop.http_bindings import SessionDep
 from app.apps.thought_workshop.knowledge import KnowledgeBases
 from app.apps.thought_workshop.link_preview import preview_link
 from app.apps.thought_workshop.notes import Notes, ThoughtError, note_out
@@ -39,10 +40,11 @@ from app.apps.thought_workshop.schemas.workshop import (
     ThoughtNoteTransitionIn,
     ThoughtRevisionIn,
 )
+from app.apps.thought_workshop.writing import writing_models as get_writing_models
 from app.capabilities.asset_store.library import AssetError, AssetLibrary
 from app.capabilities.asset_store.project_snapshots import ProjectSnapshotError
-from app.deps import OwnerDep, SessionDep, StudioAuth
-from app.llm.call_logs.credentials import snapshot_from_principal
+from app.deps import OwnerDep, StudioAuth
+from app.llm.http_credentials import CallCredentialDep
 from app.runtime.config import get_settings
 from app.runtime.operation_receipts import OperationError
 
@@ -198,8 +200,8 @@ async def upload_image(session: SessionDep, owner_user_id: OwnerDep, upload: Upl
 
 
 @router.get("/models", response_model=list[ThoughtModelOut])
-async def writing_models(session: SessionDep, owner_user_id: OwnerDep):
-    return await models(Notes(session, owner_user_id))
+async def writing_models(request: Request, owner_user_id: OwnerDep):
+    return await models(get_writing_models(request, owner_user_id))
 
 
 @router.post(
@@ -215,14 +217,17 @@ async def assistant(
     body: ThoughtAssistantIn,
     session: SessionDep,
     owner_user_id: OwnerDep,
-    principal: StudioAuth,
+    credential: CallCredentialDep,
+    request: Request,
 ):
-    credential = await snapshot_from_principal(session, principal)
+    writing = get_writing_models(request, owner_user_id)
     prepared = await call(
-        prepare(Notes(session, owner_user_id), note_id, body, credential=credential)
+        prepare(
+            Notes(session, owner_user_id), note_id, body, writing=writing, credential=credential
+        )
     )
     return StreamingResponse(
-        writing_events(prepared),
+        writing_events(prepared, writing),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

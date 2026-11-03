@@ -13,7 +13,7 @@ class ProjectOperationReceipt(Base):
     __tablename__ = "project_operation_receipts"
 
     owner_user_id: Mapped[str] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
     )
     resource_kind: Mapped[str] = mapped_column(String(40), primary_key=True)
     resource_id: Mapped[str] = mapped_column(String(64), primary_key=True)

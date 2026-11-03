@@ -1,15 +1,17 @@
 from sqlalchemy import delete, select, text
 
+from app.apps.thought_workshop.account_directory import profiles
 from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.knowledge import KnowledgeBases
 from app.apps.thought_workshop.models import ThoughtNote
 from app.capabilities.identity.passwords import normalize_username
-from app.console.models import User
+from app.runtime.ownership import bind_owner
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import utc_now
 
 from .access import (
     article,
+    bind_source,
     can_certify,
     current_actor,
     members,
@@ -88,20 +90,30 @@ async def settings(session, principal, pub_id, note_ids):
     return result
 
 
-async def apply_settings(session, pub, setting, *, new=False):
-    if len({m.username.strip().casefold() for m in setting.members}) != len(setting.members):
-        raise ThoughtError("同一成员不能重复授权", 422, "duplicate_member")
-    users = []
-    for member in setting.members:
-        user = await session.scalar(
-            select(User).where(
-                User.username_normalized == normalize_username(member.username),
-                User.status == "active",
-            )
-        )
-        if user is None:
-            raise ThoughtError("成员账号不存在或不可用", 422, "member_not_found")
-        users.append((user.id, member.role))
+async def resolve_member_settings(session, settings):
+    normalized = set()
+    for setting in settings:
+        names = [member.username.strip().casefold() for member in setting.members]
+        if len(set(names)) != len(names):
+            raise ThoughtError("同一成员不能重复授权", 422, "duplicate_member")
+        try:
+            normalized.update(normalize_username(member.username) for member in setting.members)
+        except ValueError:
+            raise ThoughtError("成员账号不存在或不可用", 422, "member_not_found") from None
+    users = {user.username.lower(): user for user in await profiles(session, usernames=normalized)}
+    result = {}
+    for setting in settings:
+        members = []
+        for member in setting.members:
+            user = users.get(normalize_username(member.username))
+            if user is None or not user.active:
+                raise ThoughtError("成员账号不存在或不可用", 422, "member_not_found")
+            members.append((user.id, member.role))
+        result[setting.note_id] = members
+    return result
+
+
+async def apply_settings(session, pub, setting, users, *, new=False):
     current = await session.get(PublishedArticle, (pub.id, setting.note_id))
     if current is None:
         if not new or setting.expected_revision != 0:
@@ -131,6 +143,10 @@ async def apply_settings(session, pub, setting, *, new=False):
 
 async def publish(session, principal, library_id, body, owner_user_id=None):
     owner_user_id = owner_user_id or principal.owner_user_id
+    # Account lookup is completed before the source writer lock is acquired.
+    await require_source_manager(session, principal, owner_user_id)
+    await KnowledgeBases(session, owner_user_id).get(library_id)
+    member_users = await resolve_member_settings(session, body.articles)
     await begin_write(session)
     principal = await current_actor(session, principal)
     await require_source_manager(session, principal, owner_user_id)
@@ -156,6 +172,7 @@ async def publish(session, principal, library_id, body, owner_user_id=None):
         if set(body.editable_platform_roles) != set(pub.editable_platform_roles if pub else []):
             raise ThoughtError("只有平台管理员可以设置角色编辑授权", 403, "role_grant_forbidden")
     if pub is None:
+        bind_owner(session, owner_user_id)
         if body.expected_revision != 0:
             raise ThoughtError("发布配置版本已变化", 409, "revision_conflict")
         pub = Publication(
@@ -182,6 +199,7 @@ async def publish(session, principal, library_id, body, owner_user_id=None):
     pub.cover_asset_id = source.cover_asset_id
     pub.revision += 1
     pub.updated_at = utc_now()
+    bind_source(session, pub)
     await session.flush()
     for setting in body.articles:
         note = await session.scalar(
@@ -194,20 +212,25 @@ async def publish(session, principal, library_id, body, owner_user_id=None):
         )
         if note is None:
             raise missing()
-        await apply_settings(session, pub, setting, new=True)
+        await apply_settings(session, pub, setting, member_users[setting.note_id], new=True)
     await session.commit()
     return await config(session, principal, library_id, owner_user_id)
 
 
 async def permissions(session, principal, pub_id, body):
+    pub = await publication(session, pub_id)
+    for setting in body.articles:
+        await article(session, principal, pub, setting.note_id, level="manage", inactive=True)
+    member_users = await resolve_member_settings(session, body.articles)
     await begin_write(session)
     pub = await publication(session, pub_id)
     if len({a.note_id for a in body.articles}) != len(body.articles):
         raise ThoughtError("文章不能重复", 422, "duplicate_article")
     for setting in body.articles:
         await article(session, principal, pub, setting.note_id, level="manage", inactive=True)
+    bind_source(session, pub)
     for setting in body.articles:
-        await apply_settings(session, pub, setting)
+        await apply_settings(session, pub, setting, member_users[setting.note_id])
     pub.updated_at = utc_now()
     result = []
     for setting in body.articles:

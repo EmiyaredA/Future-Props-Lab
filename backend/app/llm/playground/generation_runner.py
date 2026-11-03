@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import os
 from datetime import timedelta
 from pathlib import Path
@@ -9,8 +10,6 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
 from app.llm.credential_snapshot import snapshot_from_row
 from app.llm.generation_runtime import (
     GenerationMaterializationError,
@@ -58,12 +57,17 @@ class ModelTestGenerationRunner(PollingTaskRunner):
         settings: Settings | None = None,
         download_transport: httpx.AsyncBaseTransport | None = None,
         temporary_media_transport: httpx.AsyncBaseTransport | None = None,
+        *,
+        legacy_references=None,
+        prepare_claim=None,
+        terminal_settlement=None,
     ) -> None:
         super().__init__()
         self.zealman_monitor = ZealmanLiveMonitor()
         self.session_factory = session_factory
         self.settings = settings or get_settings()
-        self.storage = AssetStorage(self.settings)
+        self.legacy_references = legacy_references
+        self.terminal_settlement = terminal_settlement
         self.download_transport = download_transport
         self.temporary_media_transport = temporary_media_transport
         self.task_store = GenerationTaskStore(
@@ -72,6 +76,8 @@ class ModelTestGenerationRunner(PollingTaskRunner):
             active_statuses=ACTIVE_GENERATION_STATUSES,
             task_subject="model generation task",
             terminal_hook=self._add_log,
+            prepare_claim=prepare_claim,
+            terminal_settlement=terminal_settlement,
         )
         self.task_driver = GenerationTaskDriver(
             store=self.task_store,
@@ -234,10 +240,9 @@ class ModelTestGenerationRunner(PollingTaskRunner):
             )
             if has_private:
                 raise ValueError("参考素材已不存在或类型不匹配")
-            legacy = await session.get(VisualAsset, asset_id)
-            if legacy is None or legacy.media_kind != expected_kind:
-                raise ValueError("参考素材已不存在或类型不匹配")
-            return self.storage.path_for(legacy), legacy.mime_type
+            if self.legacy_references is None:
+                raise ValueError("历史参考素材尚未转移到模型服务")
+            return await self.legacy_references.path(session, task, asset_id, expected_kind)
 
     async def _temporary_asset_url(self, task_id: str, asset_id: str, expected_kind: str) -> str:
         try:
@@ -300,6 +305,7 @@ class ModelTestGenerationRunner(PollingTaskRunner):
         storage_key = uuid4().hex
         temp_path = temp_dir / storage_key
         final_path = root / storage_key
+        committing = False
         try:
             size, media_kind, mime_type, extension = await self._download(result_url, temp_path)
             os.replace(temp_path, final_path)
@@ -321,8 +327,19 @@ class ModelTestGenerationRunner(PollingTaskRunner):
                 task.updated_at = task.completed_at
                 task.revision += 1
                 self._add_log(session, task)
+                if self.terminal_settlement:
+                    await self.terminal_settlement(session)
+                committing = True
                 await session.commit()
+        except asyncio.CancelledError:
+            temp_path.unlink(missing_ok=True)
+            if not committing:
+                final_path.unlink(missing_ok=True)
+            raise
         except Exception as exc:
             temp_path.unlink(missing_ok=True)
-            final_path.unlink(missing_ok=True)
+            if not committing:
+                final_path.unlink(missing_ok=True)
+            # An uncertain commit may already reference final_path; owned recovery
+            # must establish the outcome before deleting those bytes.
             await self._fail(task_id, _safe_error(exc), result_url=result_url)

@@ -22,10 +22,10 @@ class DelegationRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     caller: str = Field(min_length=1, max_length=64)
     purpose: str = Field(min_length=1, max_length=100)
-    source_method: Literal["GET", "POST", "PATCH", "DELETE"]
+    source_method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"]
     source_path: str = Field(max_length=4096)
     target_service: str = Field(max_length=64)
-    target_method: Literal["GET"]
+    target_method: Literal["GET", "POST"]
     target_path: str = Field(max_length=4096)
     assertion: str = Field(min_length=1, max_length=8192)
 
@@ -62,7 +62,16 @@ async def authorize_delegation(app, body, credential):
         api_key_id=actor.api_key_id,
     )
     source_permission = route_permission(body.source_method, body.source_path)
-    if source_permission is None or not principal.allows(source_permission):
+    community_directory = (
+        source_permission == "community.access"
+        and body.caller == "thought"
+        and body.purpose == "thought.accounts.read"
+        and principal.auth_kind == "session"
+        and principal.permits("studio:read")
+    )
+    if not community_directory and (
+        source_permission is None or not principal.allows(source_permission)
+    ):
         raise HTTPException(403, "source_permission_denied")
     permission = route_permission(body.target_method, target_permission_path(grant))
     if permission is None or not principal.allows(permission):
