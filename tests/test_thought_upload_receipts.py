@@ -507,3 +507,69 @@ def test_upload_receipt_signature_binds_response_and_exact_request():
     ):
         with pytest.raises(ValueError):
             signer.verify(signature, **(binding | changed))
+
+
+async def test_confirmed_upload_metadata_is_replayable_and_legacy_receipts_enrich_safely(tmp_path):
+    from app.apps.thought_workshop.errors import ThoughtError
+    from fpl_thought.migrations.registry import MIGRATIONS as THOUGHT_MIGRATIONS
+    from fpl_thought.models import ACCOUNT_MODELS
+    from fpl_thought.models import MODELS as THOUGHT_MODELS
+    from fpl_thought.upload_intents import confirm_upload, stage_upload
+    from fpl_thought.upload_records import ThoughtUploadIntent
+
+    apply(tmp_path / "service.db", "thought", THOUGHT_MIGRATIONS)
+    db = Database("thought", tmp_path, models=THOUGHT_MODELS, account_models=ACCOUNT_MODELS)
+    desc = description()
+    metadata = {"filename": "image.png", "mime_type": "image/png", "byte_size": len(CONTENT)}
+    try:
+        async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+            await stage_upload(
+                session,
+                root=tmp_path,
+                owner="alpha",
+                request_id="one",
+                description=desc,
+                incoming=incoming(),
+            )
+            await confirm_upload(
+                session,
+                root=tmp_path,
+                owner="alpha",
+                request_id="one",
+                description=desc,
+                asset_id="asset",
+            )
+        async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+            await confirm_upload(
+                session,
+                root=tmp_path,
+                owner="alpha",
+                request_id="one",
+                description=desc,
+                asset_id="asset",
+                receipt=metadata,
+            )
+            row = await session.get(ThoughtUploadIntent, ("alpha", "one"))
+            assert row.result == {"asset_id": "asset", **metadata}
+            await session.rollback()
+            await confirm_upload(
+                session,
+                root=tmp_path,
+                owner="alpha",
+                request_id="one",
+                description=desc,
+                asset_id="asset",
+                receipt=metadata,
+            )
+            with pytest.raises(ThoughtError, match="回执不一致"):
+                await confirm_upload(
+                    session,
+                    root=tmp_path,
+                    owner="alpha",
+                    request_id="one",
+                    description=desc,
+                    asset_id="asset",
+                    receipt={**metadata, "mime_type": "image/jpeg"},
+                )
+    finally:
+        await db.close()

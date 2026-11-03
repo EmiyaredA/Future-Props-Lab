@@ -95,11 +95,24 @@ async def stage_upload(
         await incoming.close()
 
 
-async def confirm_upload(session, *, root, owner, request_id, description, asset_id):
+async def confirm_upload(session, *, root, owner, request_id, description, asset_id, receipt=None):
     if session.info.get("owner_user_id") != owner:
         raise ValueError("上传意图缺少账号上下文")
     if not isinstance(asset_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", asset_id):
         raise ValueError("上传回执素材标识无效")
+    result = {"asset_id": asset_id}
+    if receipt is not None:
+        if (
+            not isinstance(receipt, dict)
+            or set(receipt) != {"filename", "mime_type", "byte_size"}
+            or receipt["filename"] != description.filename
+            or not isinstance(receipt["mime_type"], str)
+            or not 1 <= len(receipt["mime_type"]) <= 255
+            or type(receipt["byte_size"]) is not int
+            or receipt["byte_size"] != description.byte_size
+        ):
+            raise ValueError("上传回执文件描述无效")
+        result.update(receipt)
     path = stage_path(root, owner, request_id, description.fingerprint)
     if session.in_transaction():
         raise ValueError("确认上传需要独立事务")
@@ -108,15 +121,23 @@ async def confirm_upload(session, *, root, owner, request_id, description, asset
     if row is None or row.descriptor_sha256 != description.fingerprint:
         raise ThoughtError("上传意图不存在", 404, "not_found")
     if row.state == "confirmed":
-        if row.result != {"asset_id": asset_id}:
+        existing = row.result
+        if not isinstance(existing, dict) or existing.get("asset_id") != asset_id:
             raise ThoughtError("上传回执不一致", 409, "upload_receipt_conflict")
-        await session.rollback()
+        if receipt is not None and existing != result:
+            if existing != {"asset_id": asset_id}:
+                raise ThoughtError("上传回执不一致", 409, "upload_receipt_conflict")
+            # Legacy ID-only receipts can be enriched only by an authenticated Assets reply.
+            row.result, row.updated_at = result, utc_now()
+            await session.commit()
+        else:
+            await session.rollback()
         if not path.is_symlink():
             path.unlink(missing_ok=True)
         return
     if row.state != "staged":
         raise ThoughtError("上传意图状态无效", 409, "upload_state_conflict")
-    row.state, row.result, row.updated_at = "confirmed", {"asset_id": asset_id}, utc_now()
+    row.state, row.result, row.updated_at = "confirmed", result, utc_now()
     await session.commit()
     # Never remove bytes before the local confirmed receipt is durable.
     if not path.is_symlink():
@@ -169,5 +190,10 @@ async def deliver_staged_upload(
         request_id=request_id,
         description=description,
         asset_id=result.id,
+        receipt={
+            "filename": result.original_filename,
+            "mime_type": result.mime_type,
+            "byte_size": result.byte_size,
+        },
     )
     return result

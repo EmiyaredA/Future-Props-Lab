@@ -926,7 +926,12 @@ async def test_thought_upload_delegates_real_session_to_owned_assets_only(scenar
             )
             assert delivery.id == result.id and not staged_copy.exists()
             row = await session.get(ThoughtUploadIntent, (case.viewer, "test-request"))
-            assert row.state == "confirmed" and row.result == {"asset_id": result.id}
+            assert row.state == "confirmed" and row.result == {
+                "asset_id": result.id,
+                "filename": result.original_filename,
+                "mime_type": result.mime_type,
+                "byte_size": result.byte_size,
+            }
         forbidden = await client.post(
             "http://identity/_internal/v1/authorization/delegate",
             headers={"Authorization": "Bearer " + THOUGHT_SECRET},
