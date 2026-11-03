@@ -116,6 +116,7 @@ async def scenario(tmp_path, monkeypatch):
         capabilities=Noop(),
         cleanup=False,
         community_asset_checks=checks,
+        thought_upload_result_key="u" * 48,
     )
     mesh.apps.update(identity=identity, assets=assets, thought=thought)
     async with identity.router.lifespan_context(identity), assets.router.lifespan_context(assets):
@@ -867,7 +868,11 @@ async def test_thought_upload_delegates_real_session_to_owned_assets_only(scenar
         )
         assert delegation.status_code == 200, delegation.text
         token = delegation.json()["assertion"]
-        headers = {HEADER: token, "X-Fpl-Upload-Descriptor": desc.header()}
+        headers = {
+            HEADER: token,
+            "X-Fpl-Upload-Descriptor": desc.header(),
+            "X-Fpl-Upload-Nonce": "a" * 32,
+        }
         upload = await client.post("http://assets" + target, headers=headers, content=content)
         assert upload.status_code == 200, upload.text
         retry = await client.post("http://assets" + target, headers=headers, content=content)
@@ -884,6 +889,8 @@ async def test_thought_upload_delegates_real_session_to_owned_assets_only(scenar
             assertion=source.headers[HEADER],
             source_path=source_path,
             credential=THOUGHT_SECRET,
+            receipt_credential="u" * 48,
+            owner=case.viewer,
             catalog=CATALOG,
             transport=case.mesh,
         )
@@ -913,6 +920,7 @@ async def test_thought_upload_delegates_real_session_to_owned_assets_only(scenar
                 assertion=source.headers[HEADER],
                 source_path=source_path,
                 credential=THOUGHT_SECRET,
+                receipt_credential="u" * 48,
                 catalog=CATALOG,
                 transport=case.mesh,
             )

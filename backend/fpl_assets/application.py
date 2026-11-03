@@ -71,6 +71,7 @@ def create_app(
     web_root=None,
     cleanup=True,
     community_asset_checks=None,
+    thought_upload_result_key=None,
 ):
     database = Database("assets", settings.runtime_path, models=MODELS)
     if settings.database_path != database.path:
@@ -116,6 +117,12 @@ def create_app(
     app.state.identity, app.state.capabilities = identity, capabilities
     app.state.identity_public_key = public_key
     app.state.community_asset_checks = community_asset_checks
+    if thought_upload_result_key is not None:
+        from fpl_runtime.thought_uploads import ThoughtUploadReceiptAuthenticator
+
+        app.state.thought_upload_results = ThoughtUploadReceiptAuthenticator(
+            thought_upload_result_key
+        )
     app.state.reference_changes = ReferenceChanges(database)
     app.state.layouts = StorageLayouts(database, settings)
     app.state.file_cleanup = cleaner

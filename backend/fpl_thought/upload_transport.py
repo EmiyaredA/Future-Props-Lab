@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+import secrets
 import stat
 
 import httpx
@@ -10,15 +11,37 @@ from pydantic import ValidationError
 from app.capabilities.asset_store.schemas.files import VisualAssetOut
 from fpl_runtime.capability_client import CapabilityClient, CapabilityDenied, CapabilityUnavailable
 from fpl_runtime.delegation import RequestGrant
-from fpl_runtime.thought_uploads import ThoughtUploadDescription, upload_path
+from fpl_runtime.thought_uploads import (
+    ThoughtUploadDescription,
+    ThoughtUploadReceiptAuthenticator,
+    upload_path,
+)
 
 
 async def send_staged_upload(
-    *, path, description, request_id, assertion, source_path, credential, catalog, transport=None
+    *,
+    path,
+    description,
+    request_id,
+    owner,
+    assertion,
+    source_path,
+    credential,
+    receipt_credential,
+    catalog,
+    transport=None,
 ):
     """Send once; any uncertain response leaves the caller's intent and bytes intact."""
     if not isinstance(description, ThoughtUploadDescription):
         raise ValueError("上传描述无效")
+    if (
+        not isinstance(credential, str)
+        or not isinstance(receipt_credential, str)
+        or credential == receipt_credential
+    ):
+        raise ValueError("Thought upload credentials must be distinct")
+    authenticator = ThoughtUploadReceiptAuthenticator(receipt_credential)
+    nonce = secrets.token_hex(16)
     target = upload_path(description.kind, request_id, description.fingerprint)
     grant = RequestGrant(
         "thought", "thought.library.upload", "POST", source_path, "assets", "POST", target
@@ -45,6 +68,7 @@ async def send_staged_upload(
                     headers={
                         "X-Fpl-Context": token,
                         "X-Fpl-Upload-Descriptor": description.header(),
+                        "X-Fpl-Upload-Nonce": nonce,
                         "Content-Type": "application/octet-stream",
                         "Content-Length": str(description.byte_size),
                     },
@@ -55,11 +79,20 @@ async def send_staged_upload(
                         raise CapabilityDenied(response.status_code)
                     if response.status_code != 200:
                         raise CapabilityUnavailable("上传结果未确认")
+                    signature = response.headers.get("x-fpl-upload-receipt", "")
                     data = bytearray()
                     async for chunk in response.aiter_bytes():
                         data.extend(chunk)
                         if len(data) > 64 * 1024:
                             raise CapabilityUnavailable("上传回执过大")
+            authenticator.verify(
+                signature,
+                owner=owner,
+                request_id=request_id,
+                fingerprint=description.fingerprint,
+                nonce=nonce,
+                body=bytes(data),
+            )
             receipt = VisualAssetOut.model_validate_json(data)
             if (
                 receipt.source != "library"

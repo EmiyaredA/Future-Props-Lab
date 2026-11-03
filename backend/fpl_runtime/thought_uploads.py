@@ -75,3 +75,47 @@ def is_upload_target(method, path):
             )
         )
     )
+
+
+class ThoughtUploadReceiptAuthenticator:
+    """Authenticate one account's result and bind it to a fresh request nonce."""
+
+    def __init__(self, secret):
+        if not isinstance(secret, str) or not secret.isascii() or len(secret) < 32:
+            raise ValueError("Thought upload receipt credential is invalid")
+        self._secret = secret.encode("ascii")
+
+    def sign(self, *, owner, request_id, fingerprint, nonce, body):
+        import hmac
+
+        if (
+            not isinstance(owner, str)
+            or not re.fullmatch(r"[A-Za-z0-9_-]{1,36}", owner)
+            or not isinstance(nonce, str)
+            or not re.fullmatch(r"[a-f0-9]{32}", nonce)
+            or not isinstance(body, bytes)
+        ):
+            raise ValueError("Thought upload receipt binding is invalid")
+        upload_path("image", request_id, fingerprint)
+        payload = json.dumps(
+            {
+                "version": 1,
+                "owner": owner,
+                "request_id": request_id,
+                "fingerprint": fingerprint,
+                "nonce": nonce,
+                "body_sha256": hashlib.sha256(body).hexdigest(),
+            },
+            sort_keys=True,
+            ensure_ascii=True,
+            separators=(",", ":"),
+        ).encode("ascii")
+        return hmac.new(self._secret, payload, hashlib.sha256).hexdigest()
+
+    def verify(self, signature, **binding):
+        import hmac
+
+        if not isinstance(signature, str) or not re.fullmatch(r"[a-f0-9]{64}", signature):
+            raise ValueError("Thought upload receipt signature is invalid")
+        if not hmac.compare_digest(signature, self.sign(**binding)):
+            raise ValueError("Thought upload receipt signature does not match")

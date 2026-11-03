@@ -110,6 +110,7 @@ async def test_private_upload_route_binds_owner_descriptor_and_request(store):
         identity=Live(),
         capabilities=Live(),
         cleanup=False,
+        thought_upload_result_key="u" * 48,
     )
     desc = description()
     path = upload_path("image", "one", desc.fingerprint)
@@ -119,7 +120,11 @@ async def test_private_upload_route_binds_owner_descriptor_and_request(store):
     token = issue_context(
         actor, service="assets", method="POST", path=path, private_key=key, key_id="test"
     )
-    headers = {HEADER: token, "X-Fpl-Upload-Descriptor": desc.header()}
+    headers = {
+        HEADER: token,
+        "X-Fpl-Upload-Descriptor": desc.header(),
+        "X-Fpl-Upload-Nonce": "a" * 32,
+    }
     async with app.router.lifespan_context(app):
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://assets"
@@ -128,6 +133,12 @@ async def test_private_upload_route_binds_owner_descriptor_and_request(store):
                 path, headers={**headers, "Origin": "http://browser"}, content=CONTENT
             )
             assert bad.status_code == 403
+            signer = app.state.thought_upload_results
+            del app.state.thought_upload_results
+            assert (await c.post(path, headers=headers, content=CONTENT)).status_code == 503
+            app.state.thought_upload_results = signer
+            no_nonce = {key: value for key, value in headers.items() if key != "X-Fpl-Upload-Nonce"}
+            assert (await c.post(path, headers=no_nonce, content=CONTENT)).status_code == 422
             first = await c.post(path, headers=headers, content=CONTENT)
             assert first.status_code == 200, first.text
             replay = await c.post(path, headers=headers, content=CONTENT)
@@ -264,7 +275,9 @@ async def test_failed_staging_does_not_publish_intent_or_keep_partial_bytes(tmp_
     await db.close()
 
 
-async def test_staged_transport_delegates_exact_upload_and_preserves_unknown_result(tmp_path):
+async def test_staged_transport_delegates_exact_upload_and_preserves_unknown_result(
+    tmp_path, monkeypatch
+):
     import httpx
 
     from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
@@ -277,6 +290,8 @@ async def test_staged_transport_delegates_exact_upload_and_preserves_unknown_res
     staged.write_bytes(CONTENT)
     calls = []
     failure = False
+    signature_mode = "valid"
+    monkeypatch.setattr("fpl_thought.upload_transport.secrets.token_hex", lambda _n: "b" * 32)
     target = upload_path("image", "one", desc.fingerprint)
 
     async def handle(request):
@@ -295,7 +310,7 @@ async def test_staged_transport_delegates_exact_upload_and_preserves_unknown_res
         assert await request.aread() == CONTENT
         if failure:
             raise httpx.ReadTimeout("lost response", request=request)
-        return httpx.Response(
+        response = httpx.Response(
             200,
             json={
                 "id": "asset",
@@ -314,14 +329,31 @@ async def test_staged_transport_delegates_exact_upload_and_preserves_unknown_res
                 "reference_id": None,
             },
         )
+        from fpl_runtime.thought_uploads import ThoughtUploadReceiptAuthenticator
+
+        if signature_mode != "missing":
+            response.headers["X-Fpl-Upload-Receipt"] = ThoughtUploadReceiptAuthenticator(
+                "u" * 48
+            ).sign(
+                owner="alpha",
+                request_id="one",
+                fingerprint=desc.fingerprint,
+                nonce=(
+                    "a" * 32 if signature_mode == "stale" else request.headers["x-fpl-upload-nonce"]
+                ),
+                body=response.content,
+            )
+        return response
 
     options = dict(
         path=staged,
         description=desc,
         request_id="one",
+        owner="alpha",
         assertion="signed-source",
         source_path="/v1/thought-workshop/images",
         credential="c" * 48,
+        receipt_credential="u" * 48,
         catalog=RouteCatalog.read(
             __import__("pathlib").Path(__file__).resolve().parents[1]
             / "deploy/contracts/ownership.json"
@@ -331,13 +363,25 @@ async def test_staged_transport_delegates_exact_upload_and_preserves_unknown_res
     receipt = await send_staged_upload(**options)
     assert receipt.id == "asset"
     assert len(calls) == 2 and staged.read_bytes() == CONTENT
+    signature_mode = "missing"
+    with pytest.raises(CapabilityUnavailable):
+        await send_staged_upload(**options)
+    assert staged.read_bytes() == CONTENT
+    signature_mode = "stale"
+    with pytest.raises(CapabilityUnavailable):
+        await send_staged_upload(**options)
+    assert staged.read_bytes() == CONTENT
+    signature_mode = "valid"
+    with pytest.raises(CapabilityUnavailable):
+        await send_staged_upload(**{**options, "owner": "beta"})
+    assert staged.read_bytes() == CONTENT
     failure = True
     with pytest.raises(CapabilityUnavailable):
         await send_staged_upload(**options)
-    assert len(calls) == 4 and staged.read_bytes() == CONTENT
+    assert len(calls) == 10 and staged.read_bytes() == CONTENT
     with pytest.raises(CapabilityDenied):
         await send_staged_upload(**{**options, "source_path": "/v1/thought-workshop/attachments"})
-    assert len(calls) == 4
+    assert len(calls) == 10
 
 
 async def test_delivery_timeout_keeps_intent_and_source_for_exact_replay(tmp_path, monkeypatch):
@@ -376,6 +420,7 @@ async def test_delivery_timeout_keeps_intent_and_source_for_exact_replay(tmp_pat
                     assertion="source",
                     source_path="/v1/thought-workshop/images",
                     credential="test",
+                    receipt_credential="u" * 48,
                     catalog=None,
                 )
             row = await session.get(ThoughtUploadIntent, ("alpha", "one"))
@@ -438,3 +483,27 @@ async def test_restart_recovers_only_confirmed_and_provably_uncommitted_staging(
         assert (tmp_path / "upload-staging" / "alpha" / "link.upload").is_symlink()
     finally:
         await db.close()
+
+
+def test_upload_receipt_signature_binds_response_and_exact_request():
+    from fpl_runtime.thought_uploads import ThoughtUploadReceiptAuthenticator
+
+    signer = ThoughtUploadReceiptAuthenticator("u" * 48)
+    binding = dict(
+        owner="alpha",
+        request_id="one",
+        fingerprint="a" * 64,
+        nonce="b" * 32,
+        body=b'{"id":"asset"}',
+    )
+    signature = signer.sign(**binding)
+    signer.verify(signature, **binding)
+    for changed in (
+        {"owner": "beta"},
+        {"request_id": "other"},
+        {"fingerprint": "c" * 64},
+        {"nonce": "d" * 32},
+        {"body": b'{"id":"other"}'},
+    ):
+        with pytest.raises(ValueError):
+            signer.verify(signature, **(binding | changed))

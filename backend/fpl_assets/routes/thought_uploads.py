@@ -5,10 +5,15 @@ import json
 
 import jwt
 from fastapi import APIRouter, HTTPException, Request
+from starlette.responses import JSONResponse
 
 from app.capabilities.identity.permissions import effective_permissions
 from fpl_runtime.claims import HEADER, verify_context
-from fpl_runtime.thought_uploads import ThoughtUploadDescription, upload_path
+from fpl_runtime.thought_uploads import (
+    ThoughtUploadDescription,
+    ThoughtUploadReceiptAuthenticator,
+    upload_path,
+)
 
 from ..thought_uploads import ThoughtUploads
 from .library_outputs import OutputStream
@@ -53,6 +58,14 @@ async def upload(request: Request, kind: str, request_id: str, descriptor_sha256
         raise HTTPException(422, "upload_descriptor_mismatch")
     if description.byte_size > request.app.state.settings.fpl_visual_asset_max_bytes:
         raise HTTPException(413, "upload_too_large")
+    signer = getattr(request.app.state, "thought_upload_results", None)
+    if not isinstance(signer, ThoughtUploadReceiptAuthenticator):
+        raise HTTPException(503, "thought_upload_receipt_authentication_unavailable")
+    nonce = request.headers.get("x-fpl-upload-nonce", "")
+    import re
+
+    if not re.fullmatch(r"[a-f0-9]{32}", nonce):
+        raise HTTPException(422, "invalid_upload_nonce")
 
     async def active():
         return await request.app.state.identity.status(
@@ -62,6 +75,15 @@ async def upload(request: Request, kind: str, request_id: str, descriptor_sha256
     async with request.app.state.database.sessions(
         info={"owner_user_id": actor.user_id}
     ) as session:
-        return await ThoughtUploads(
+        result = await ThoughtUploads(
             session, request.app.state.settings, actor.user_id, active=active
         ).store(request_id, description, OutputStream(request, description))
+    response = JSONResponse(result.model_dump(mode="json"), headers={"Cache-Control": "no-store"})
+    response.headers["X-Fpl-Upload-Receipt"] = signer.sign(
+        owner=actor.user_id,
+        request_id=request_id,
+        fingerprint=description.fingerprint,
+        nonce=nonce,
+        body=response.body,
+    )
+    return response

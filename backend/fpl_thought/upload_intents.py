@@ -133,6 +133,7 @@ async def deliver_staged_upload(
     assertion,
     source_path,
     credential,
+    receipt_credential,
     catalog,
     transport=None,
 ):
@@ -153,9 +154,11 @@ async def deliver_staged_upload(
         path=path,
         description=description,
         request_id=request_id,
+        owner=owner,
         assertion=assertion,
         source_path=source_path,
         credential=credential,
+        receipt_credential=receipt_credential,
         catalog=catalog,
         transport=transport,
     )
