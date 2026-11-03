@@ -72,7 +72,8 @@ def validate_grant(grant, *, purpose, operation, fingerprint_value, owner=None):
     now = int(time.time())
     if (
         not isinstance(grant, CreativeOperationGrant)
-        or not grant.owner_user_id
+        or not isinstance(grant.owner_user_id, str)
+        or not 1 <= len(grant.owner_user_id) <= 100
         or grant.purpose != purpose
         or grant.operation_id != operation
         or grant.fingerprint != fingerprint_value

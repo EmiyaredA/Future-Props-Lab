@@ -5,12 +5,14 @@ from pydantic import ValidationError
 from starlette.datastructures import UploadFile
 
 from fpl_runtime.creative_integrations import CreativeInstallBatch, CreativeStdioConfiguration
+from fpl_runtime.creative_source_evidence import strict_json
+from fpl_runtime.creative_transport import CreativeInstallSourceContext
 from fpl_runtime.integration_intents import digest
 
 router = APIRouter(prefix="/_internal/v1/creative-integrations", include_in_schema=False)
 
 
-def authority(request, purpose, value):
+def authority(request, purpose, value, source=None):
     # This dependency must independently validate the Identity-signed original
     # request and its binding to this exact destination payload. It must not turn
     # a caller-supplied digest into an authorization decision.
@@ -22,7 +24,12 @@ def authority(request, purpose, value):
 
     async def check():
         return await verifier.grant(
-            request=request, purpose=purpose, operation_id=operation, fingerprint=checksum
+            request=request,
+            purpose=purpose,
+            operation_id=operation,
+            fingerprint=checksum,
+            value=value,
+            source=source,
         )
 
     return check
@@ -30,25 +37,30 @@ def authority(request, purpose, value):
 
 async def payload(request, model):
     try:
-        return model.model_validate_json(await request.body())
-    except (ValidationError, ValueError):
+        raw = strict_json(await request.body())
+        if isinstance(raw, dict) and set(raw) == {"batch", "source"}:
+            return model.model_validate(raw["batch"]), CreativeInstallSourceContext.model_validate(
+                raw["source"]
+            )
+        return model.model_validate(raw), None
+    except (ValidationError, ValueError, TypeError):
         # Never echo stdio environment values in validation responses.
         raise HTTPException(422, "creative_request_invalid") from None
 
 
 @router.post("/preview")
 async def preview(request: Request):
-    value = await payload(request, CreativeInstallBatch)
+    value, source = await payload(request, CreativeInstallBatch)
     return await request.app.state.creative_installations.preview(
-        value, authority(request, "preview", value)
+        value, authority(request, "preview", value, source)
     )
 
 
 @router.post("/receipt")
 async def receipt(request: Request):
-    value = await payload(request, CreativeInstallBatch)
+    value, source = await payload(request, CreativeInstallBatch)
     result = await request.app.state.creative_installations.receipt(
-        value, authority(request, "receipt", value)
+        value, authority(request, "receipt", value, source)
     )
     if result is None:
         raise HTTPException(404, "creative_install_not_found")
@@ -57,15 +69,15 @@ async def receipt(request: Request):
 
 @router.post("/cancel")
 async def cancel(request: Request):
-    value = await payload(request, CreativeInstallBatch)
+    value, source = await payload(request, CreativeInstallBatch)
     return await request.app.state.creative_installations.cancel(
-        value, authority(request, "cancel", value)
+        value, authority(request, "cancel", value, source)
     )
 
 
 @router.post("/install")
 async def install(request: Request):
-    async with request.form(max_files=50, max_fields=1, max_part_size=1024 * 1024) as form:
+    async with request.form(max_files=50, max_fields=2, max_part_size=1024 * 1024) as form:
         entries = form.multi_items()
         batches = [value for key, value in entries if key == "batch"]
         if len(batches) != 1 or not isinstance(batches[0], str):
@@ -74,23 +86,34 @@ async def install(request: Request):
             value = CreativeInstallBatch.model_validate_json(batches[0])
         except ValidationError:
             raise HTTPException(422, "creative_request_invalid") from None
+        contexts = [value for key, value in entries if key == "source"]
+        if len(contexts) > 1 or (contexts and not isinstance(contexts[0], str)):
+            raise HTTPException(422, "creative_request_invalid")
+        try:
+            source = (
+                CreativeInstallSourceContext.model_validate(strict_json(contexts[0].encode()))
+                if contexts
+                else None
+            )
+        except (ValidationError, ValueError, TypeError):
+            raise HTTPException(422, "creative_request_invalid") from None
         archives = {}
         for key, item in entries:
-            if key == "batch":
+            if key in {"batch", "source"}:
                 continue
             if not isinstance(item, UploadFile) or key in archives:
                 raise HTTPException(422, "creative_install_archive_mismatch")
             archives[key] = item
         return await request.app.state.creative_installations.install(
-            value, archives, authority(request, "install", value)
+            value, archives, authority(request, "install", value, source)
         )
 
 
 @router.post("/stdio")
 async def stdio(request: Request):
-    value = await payload(request, CreativeStdioConfiguration)
+    value, source = await payload(request, CreativeStdioConfiguration)
     return await request.app.state.creative_installations.configure_stdio(
-        value, authority(request, "setup", value)
+        value, authority(request, "setup", value, source)
     )
 
 

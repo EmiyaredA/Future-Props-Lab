@@ -524,8 +524,10 @@ async def test_private_http_fails_closed_and_binds_verified_batch(installation):
         blocked_cancel = await client.post(path + "cancel", json=value.model_dump(mode="json"))
         assert blocked_cancel.status_code == 503
 
+        authorized_value = value
+
         class TestAuthority:
-            async def grant(self, *, request, purpose, operation_id, fingerprint):
+            async def grant(self, *, request, purpose, operation_id, fingerprint, value, source):
                 assert request.url.path in {
                     path + "preview",
                     path + "install",
@@ -533,11 +535,12 @@ async def test_private_http_fails_closed_and_binds_verified_batch(installation):
                     path + "cancel",
                 }
                 assert isinstance(operation_id, str) and isinstance(fingerprint, str)
+                assert isinstance(value, CreativeInstallBatch) and source is None
                 return CreativeOperationGrant(
                     "alpha",
                     purpose,
-                    value.operation_id,
-                    digest(value.model_dump(mode="json")),
+                    authorized_value.operation_id,
+                    digest(authorized_value.model_dump(mode="json")),
                     int(time.time()) + 5,
                 )
 
