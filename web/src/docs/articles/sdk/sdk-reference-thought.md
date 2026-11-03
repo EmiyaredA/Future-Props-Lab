@@ -709,6 +709,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 | 参数 | 位置 | 类型 | 必填 |
 | --- | --- | --- | --- |
+| `Idempotency-Key` | header | string / null | 否 |
 | `body` | multipart/form-data | Body_attachments_v1_thought_workshop_attachments_post | 是 |
 | `body.upload` | 请求体 | string | 是 |
 
@@ -731,6 +732,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 | 参数 | 位置 | 类型 | 必填 |
 | --- | --- | --- | --- |
+| `Idempotency-Key` | header | string / null | 否 |
 | `body` | multipart/form-data | Body_upload_image_v1_thought_workshop_images_post | 是 |
 | `body.upload` | 请求体 | string | 是 |
 
