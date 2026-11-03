@@ -609,6 +609,28 @@ async def test_install_grant_binds_persisted_batch_and_rechecks_current_publicat
         modified.parts[0].target_name = "forged"
         with pytest.raises(InstallAuthorizationDenied):
             await authority.authorize("install", source, modified)
+        from fpl_runtime.database import ServiceStorageError
+
+        async with database.sessions(info={"owner_user_id": "author"}) as session:
+            item = await session.get(CreativeItem, "item")
+            item.status = "withdrawn"
+            with pytest.raises(ServiceStorageError, match="安装结果未确认"):
+                await session.commit()
+            await session.rollback()
+        receipt = {
+            "operation_id": value.operation_id,
+            "root_release_id": "release",
+            "resources": [
+                {
+                    "release_id": "release",
+                    "kind": "tool_api",
+                    "name": "Tool",
+                    "resource_id": "tool",
+                    "state": "disabled",
+                }
+            ],
+        }
+        await outbox.complete("alice", "release", receipt)
         async with database.sessions(info={"owner_user_id": "author"}) as session:
             item = await session.get(CreativeItem, "item")
             item.status = "withdrawn"
@@ -623,3 +645,258 @@ async def test_install_grant_binds_persisted_batch_and_rechecks_current_publicat
             await authority.authorize("receipt", source, value)
     finally:
         await database.close()
+
+
+async def test_fences_survive_restart_and_release_only_with_valid_receipt(tmp_path):
+    from sqlalchemy import select, update
+
+    from app.console.creative_workshop.models import CreativeItem, CreativeRelease
+    from fpl_creative.fence_records import CreativeInstallFence
+
+    apply(tmp_path / "service.db", "creative", MIGRATIONS)
+    database = creative_database(tmp_path)
+    await seed_release(database)
+    request = CreativeInstallPreviewIn(release_id="release")
+    value = batch()
+    outbox = InstallationOutbox(database)
+    await outbox.accept("alice", request, value)
+    await outbox.fence_for_install("alice", request, value)
+    await outbox.fence_for_install("alice", request, value)
+    await database.close()
+    database = creative_database(tmp_path)
+    try:
+        outbox = InstallationOutbox(database)
+        async with database.sessions(info={"owner_user_id": "author"}) as session:
+            fences = list(await session.scalars(select(CreativeInstallFence)))
+            assert [(f.operation_id, f.item_id) for f in fences] == [(value.operation_id, "item")]
+            blocked = await session.execute(
+                update(CreativeItem).where(CreativeItem.id == "item").values(status="withdrawn")
+            )
+            assert blocked.rowcount == 0
+            for field, replacement in (("kind", "skill"), ("current_release_id", "other")):
+                changed = await session.execute(
+                    update(CreativeItem)
+                    .where(CreativeItem.id == "item")
+                    .values({field: replacement})
+                )
+                assert changed.rowcount == 0
+            blocked_release = await session.execute(
+                update(CreativeRelease)
+                .where(CreativeRelease.id == "release")
+                .values(title="Changed")
+            )
+            assert blocked_release.rowcount == 0
+            await session.rollback()
+        with pytest.raises(InstallIntentConflict):
+            await outbox.complete("alice", "release", {"operation_id": "wrong"})
+        with pytest.raises(InstallIntentConflict):
+            await outbox.fence_for_install("bob", request, value)
+        async with database.sessions(info={"owner_user_id": "author"}) as session:
+            assert len(list(await session.scalars(select(CreativeInstallFence)))) == 1
+        receipt = {
+            "operation_id": value.operation_id,
+            "root_release_id": "release",
+            "resources": [
+                {
+                    "release_id": "release",
+                    "kind": "tool_api",
+                    "name": "Tool",
+                    "resource_id": "tool",
+                    "state": "disabled",
+                }
+            ],
+        }
+        await outbox.complete("alice", "release", receipt)
+        async with database.sessions(info={"owner_user_id": "author"}) as session:
+            assert list(await session.scalars(select(CreativeInstallFence))) == []
+            changed = await session.execute(
+                update(CreativeItem).where(CreativeItem.id == "item").values(status="withdrawn")
+            )
+            assert changed.rowcount == 1
+            await session.commit()
+        assert (await outbox.complete("alice", "release", receipt)).release_id == "release"
+    finally:
+        await database.close()
+
+
+async def test_withdraw_and_fence_reservation_cannot_both_win(tmp_path):
+    from sqlalchemy import update
+
+    from app.console.creative_workshop.models import CreativeItem
+
+    apply(tmp_path / "service.db", "creative", MIGRATIONS)
+    database = creative_database(tmp_path)
+    try:
+        await seed_release(database)
+        outbox = InstallationOutbox(database)
+        request, value = CreativeInstallPreviewIn(release_id="release"), batch()
+        await outbox.accept("alice", request, value)
+
+        async def reserve():
+            try:
+                await outbox.fence_for_install("alice", request, value)
+                return True
+            except InstallIntentConflict:
+                return False
+
+        async def withdraw():
+            async with database.sessions(info={"owner_user_id": "author"}) as session:
+                changed = await session.execute(
+                    update(CreativeItem).where(CreativeItem.id == "item").values(status="withdrawn")
+                )
+                await session.commit()
+                return changed.rowcount == 1
+
+        fenced, withdrawn = await asyncio.gather(reserve(), withdraw())
+        assert fenced != withdrawn
+    finally:
+        await database.close()
+
+
+async def test_bundle_fences_root_and_every_component_until_settlement(tmp_path):
+    from sqlalchemy import select, update
+
+    from app.console.creative_workshop.models import CreativeItem, CreativeRelease
+    from fpl_creative.fence_records import CreativeInstallFence
+
+    apply(tmp_path / "service.db", "creative", MIGRATIONS)
+    db = creative_database(tmp_path)
+    try:
+        async with db.sessions(info={"owner_user_id": "author"}) as session:
+            for item_id, kind in (
+                ("bundle", "bundle"),
+                ("item-a", "tool_api"),
+                ("item-b", "tool_api"),
+            ):
+                session.add(
+                    CreativeItem(
+                        id=item_id,
+                        origin_owner_user_id="author",
+                        author_user_id="author",
+                        kind=kind,
+                        status="published",
+                    )
+                )
+            await session.flush()
+            session.add(
+                CreativeRelease(
+                    id="root", item_id="bundle", version=1, title="Bundle", components=["a", "b"]
+                )
+            )
+            for release_id, item_id in (("a", "item-a"), ("b", "item-b")):
+                session.add(
+                    CreativeRelease(
+                        id=release_id,
+                        item_id=item_id,
+                        version=1,
+                        title=release_id,
+                        manifest={"method": "GET", "url": "https://example.test"},
+                    )
+                )
+            await session.commit()
+        parts = [
+            CreativeInstallPart(
+                release_id=release_id,
+                kind="tool_api",
+                title=release_id,
+                target_name=release_id,
+                summary="",
+                manifest={"method": "GET", "url": "https://example.test"},
+            )
+            for release_id in ("a", "b")
+        ]
+        value = CreativeInstallBatch(operation_id=str(uuid4()), root_release_id="root", parts=parts)
+        request = CreativeInstallPreviewIn(release_id="root")
+        outbox = InstallationOutbox(db)
+        await outbox.accept("alice", request, value)
+        await outbox.fence_for_install("alice", request, value)
+        async with db.sessions(info={"owner_user_id": "author"}) as session:
+            assert set(await session.scalars(select(CreativeInstallFence.item_id))) == {
+                "bundle",
+                "item-a",
+                "item-b",
+            }
+            changed = await session.execute(
+                update(CreativeItem)
+                .where(CreativeItem.id.in_(["bundle", "item-a", "item-b"]))
+                .values(status="withdrawn")
+            )
+            assert changed.rowcount == 0
+            await session.rollback()
+        receipt = {
+            "operation_id": value.operation_id,
+            "root_release_id": "root",
+            "resources": [
+                {
+                    "release_id": part.release_id,
+                    "kind": "tool_api",
+                    "name": part.title,
+                    "resource_id": "resource-" + part.release_id,
+                    "state": "disabled",
+                }
+                for part in parts
+            ],
+        }
+        await outbox.complete("alice", "root", receipt)
+        async with db.sessions(info={"owner_user_id": "author"}) as session:
+            changed = await session.execute(
+                update(CreativeItem)
+                .where(CreativeItem.id.in_(["bundle", "item-a", "item-b"]))
+                .values(status="withdrawn")
+            )
+            assert changed.rowcount == 3
+            await session.commit()
+    finally:
+        await db.close()
+
+
+async def test_catalog_withdraw_is_blocked_by_fence_until_receipt(tmp_path):
+    from app.capabilities.identity.principal import StudioPrincipal
+    from app.console.creative_workshop.catalog import CreativeCatalog, CreativeError
+
+    class Authors:
+        async def name(self, **_kwargs):
+            return "Author"
+
+    apply(tmp_path / "service.db", "creative", MIGRATIONS)
+    db = creative_database(tmp_path)
+    request, value = CreativeInstallPreviewIn(release_id="release"), batch()
+    principal = StudioPrincipal(
+        platform_role="user",
+        user_id="author",
+        must_change_password=False,
+        auth_kind="session",
+        scopes=frozenset({"studio:read", "studio:private_read", "studio:write"}),
+    )
+    try:
+        await seed_release(db)
+        outbox = InstallationOutbox(db)
+        await outbox.accept("alice", request, value)
+        await outbox.fence_for_install("alice", request, value)
+        async with db.sessions(
+            info={"owner_user_id": "author", "creative_authors": Authors()}
+        ) as session:
+            with pytest.raises(CreativeError) as error:
+                await CreativeCatalog(session, principal).withdraw("item", 0)
+            assert error.value.status == 409
+        receipt = {
+            "operation_id": value.operation_id,
+            "root_release_id": "release",
+            "resources": [
+                {
+                    "release_id": "release",
+                    "kind": "tool_api",
+                    "name": "Tool",
+                    "resource_id": "tool",
+                    "state": "disabled",
+                }
+            ],
+        }
+        await outbox.complete("alice", "release", receipt)
+        async with db.sessions(
+            info={"owner_user_id": "author", "creative_authors": Authors()}
+        ) as session:
+            result = await CreativeCatalog(session, principal).withdraw("item", 0)
+            assert result.status == "withdrawn" and result.revision == 1
+    finally:
+        await db.close()

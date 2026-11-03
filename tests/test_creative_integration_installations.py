@@ -707,6 +707,14 @@ async def test_creative_source_grant_controls_real_target_and_receipt_recovery(
         installed = await installation.use.install(
             value, {}, lambda: authority.authorize("install", source, value)
         )
+        from fpl_runtime.database import ServiceStorageError
+
+        async with db.sessions(info={"owner_user_id": "author"}) as session:
+            (await session.get(CreativeItem, "item")).status = "withdrawn"
+            with pytest.raises(ServiceStorageError, match="安装结果未确认"):
+                await session.commit()
+            await session.rollback()
+        await outbox.complete("alpha", "tool-release", installed)
         async with db.sessions(info={"owner_user_id": "author"}) as session:
             (await session.get(CreativeItem, "item")).status = "withdrawn"
             await session.commit()

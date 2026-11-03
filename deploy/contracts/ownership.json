@@ -4476,6 +4476,12 @@
       "model": "ThoughtUploadReceipt"
     },
     {
+      "table": "creative_install_fences",
+      "service": "creative",
+      "module": "fpl_creative.fence_records",
+      "model": "CreativeInstallFence"
+    },
+    {
       "table": "creative_install_operations",
       "service": "creative",
       "module": "fpl_creative.installation_records",

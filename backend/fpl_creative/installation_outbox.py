@@ -7,7 +7,7 @@ Uncertain target outcomes remain pending and must reuse the persisted batch.
 
 from dataclasses import dataclass
 
-from sqlalchemy import select, text
+from sqlalchemy import delete, select, text
 
 from app.console.creative_workshop.models import (
     CreativeInstallation,
@@ -18,6 +18,7 @@ from app.console.creative_workshop.schemas import CreativeInstallOut, CreativeIn
 from fpl_runtime.creative_integrations import CreativeInstallBatch
 from fpl_runtime.integration_intents import digest
 
+from .fence_records import CreativeInstallFence
 from .installation_records import CreativeInstallOperation
 from .skill_integrity import published_skill_tree
 
@@ -193,6 +194,52 @@ class InstallationOutbox:
             await _validate_new_batch(session, request, batch)
             await self._check_skill_sources(session, sources)
 
+    async def fence_for_install(
+        self, owner: str, request: CreativeInstallPreviewIn, batch: CreativeInstallBatch
+    ) -> None:
+        """Fence every published item before the target may attempt installation.
+
+        Fences never expire. Only a verified target receipt can release them; an
+        unknown target outcome remains fenced across process restarts.
+        """
+        if not owner or request.release_id != batch.root_release_id:
+            raise InstallIntentConflict("安装请求与批次不匹配")
+        sources = await self._verify_skills(owner, request, batch)
+        async with self.database.sessions(info={"owner_user_id": owner}) as session:
+            await session.execute(text("BEGIN IMMEDIATE"))
+            row = await session.get(CreativeInstallOperation, batch.operation_id)
+            if row is None or row.owner_user_id != owner or row.state != "pending":
+                raise InstallIntentConflict("待执行安装意图不存在")
+            intent = _intent(row)
+            if intent.batch != batch or intent.request_fingerprint != digest(
+                request.model_dump(mode="json")
+            ):
+                raise InstallIntentConflict("安装批次与原请求不匹配")
+            await _validate_new_batch(session, request, batch)
+            await self._check_skill_sources(session, sources)
+            release_ids = {batch.root_release_id, *(part.release_id for part in batch.parts)}
+            item_ids = set()
+            for release_id in release_ids:
+                release = await session.get(CreativeRelease, release_id)
+                if release is None:
+                    raise InstallIntentConflict("公开能力版本不存在")
+                item_ids.add(release.item_id)
+            existing = set(
+                await session.scalars(
+                    select(CreativeInstallFence.item_id).where(
+                        CreativeInstallFence.operation_id == batch.operation_id
+                    )
+                )
+            )
+            if existing and existing != item_ids:
+                raise InstallIntentConflict("安装围栏与批次不匹配")
+            if not existing:
+                session.add_all(
+                    CreativeInstallFence(operation_id=batch.operation_id, item_id=item_id)
+                    for item_id in sorted(item_ids)
+                )
+            await session.commit()
+
     async def get(self, owner: str, root_release_id: str) -> InstallIntent | None:
         if not owner:
             raise ValueError("安装查询缺少账号")
@@ -281,6 +328,11 @@ class InstallationOutbox:
                     raise InstallIntentConflict("已有安装记录与目标回执不一致")
                 if release_id == root_release_id:
                     root = installation
+            await session.execute(
+                delete(CreativeInstallFence).where(
+                    CreativeInstallFence.operation_id == row.operation_id
+                )
+            )
             row.state = "completed"
             row.receipt = receipt
             result = CreativeInstallOut(

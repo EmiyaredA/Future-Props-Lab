@@ -45,7 +45,7 @@ class InstallGrantAuthority:
             raise InstallAuthorizationDenied("安装批次与原始请求不匹配")
         if action == "install":
             try:
-                await self.outbox.require_current(owner, request, batch)
+                await self.outbox.fence_for_install(owner, request, batch)
             except InstallIntentConflict:
                 raise InstallAuthorizationDenied("公开版本已变化或不可用") from None
         # Hashing a Skill tree can take time; never extend the original authorization.

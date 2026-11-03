@@ -5,6 +5,7 @@ from sqlalchemy import event, exists, inspect, select
 from app.console.creative_workshop.models import CreativeItem, CreativeRelease
 from fpl_runtime.database import Database, ServiceSession, ServiceStorageError
 
+from .fence_records import CreativeInstallFence
 from .models import ACCOUNT_MODELS, MODELS
 
 
@@ -39,7 +40,24 @@ def scope_public_writes(state):
             raise ServiceStorageError("不能修改创作或版本的归属")
     if model is CreativeItem:
         state.statement = state.statement.where(CreativeItem.origin_owner_user_id == owner)
+        if state.is_delete or (
+            state.is_update and fields.intersection({"status", "current_release_id", "kind"})
+        ):
+            state.statement = state.statement.where(
+                ~exists(
+                    select(CreativeInstallFence.item_id).where(
+                        CreativeInstallFence.item_id == CreativeItem.id
+                    )
+                )
+            )
     else:
+        state.statement = state.statement.where(
+            ~exists(
+                select(CreativeInstallFence.item_id).where(
+                    CreativeInstallFence.item_id == CreativeRelease.item_id
+                )
+            )
+        )
         state.statement = state.statement.where(
             exists(
                 select(CreativeItem.id).where(
@@ -62,6 +80,24 @@ def protect_public_roots(session, _context, _instances):
         if isinstance(row, CreativeItem):
             attributes = inspect(row).attrs
             if (
+                row not in session.new
+                and (
+                    row in session.deleted
+                    or attributes.status.history.has_changes()
+                    or attributes.current_release_id.history.has_changes()
+                    or attributes.kind.history.has_changes()
+                )
+                and session.connection()
+                .execute(
+                    select(CreativeInstallFence.item_id).where(
+                        CreativeInstallFence.item_id == row.id
+                    )
+                )
+                .first()
+                is not None
+            ):
+                raise ServiceStorageError("安装结果未确认，暂不能修改发布状态")
+            if (
                 row.origin_owner_user_id != owner
                 or (
                     row not in session.new and attributes.origin_owner_user_id.history.has_changes()
@@ -71,6 +107,18 @@ def protect_public_roots(session, _context, _instances):
             ):
                 raise ServiceStorageError("不能修改其他账号的创作归属")
             continue
+        if (
+            row not in session.new
+            and session.connection()
+            .execute(
+                select(CreativeInstallFence.item_id).where(
+                    CreativeInstallFence.item_id == row.item_id
+                )
+            )
+            .first()
+            is not None
+        ):
+            raise ServiceStorageError("安装结果未确认，暂不能修改公开版本")
         pending_parent = next(
             (
                 item
