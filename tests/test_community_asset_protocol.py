@@ -1056,3 +1056,34 @@ async def test_thought_directory_mutations_use_owned_revisions_and_withdraw(scen
             )
             assert restored_note.status_code == 200, restored_note.text
             assert restored_note.json()["deleted_at"] is None
+
+
+async def test_thought_lifespan_recovers_pre_intent_upload_under_service_lock(scenario):
+    from fpl_runtime.locking import service_lock
+    from fpl_runtime.retention_client import RetentionClient
+    from fpl_thought.application import create_app as create_thought
+    from fpl_thought.upload_intents import stage_path
+
+    case = scenario
+    orphan = stage_path(case.db.root, case.viewer, "interrupted", "a" * 64)
+    orphan.write_bytes(b"partial upload")
+    app = create_thought(
+        state_root=case.db.root,
+        catalog=CATALOG,
+        public_key=case.key.public_key(),
+        credential=THOUGHT_SECRET,
+        identity=LiveAuthorization(
+            service="thought", credential=THOUGHT_SECRET, transport=case.mesh
+        ),
+        retention_client=RetentionClient(
+            service="thought", credential=THOUGHT_SECRET, transport=case.mesh
+        ),
+        assets_peer_credential=PEER_SECRET,
+        transport=case.mesh,
+        run_worker=False,
+    )
+    async with app.router.lifespan_context(app):
+        assert not orphan.exists()
+        with pytest.raises(RuntimeError, match="另一个实例"):
+            with service_lock(case.db.root):
+                pass

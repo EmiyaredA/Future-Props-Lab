@@ -28,6 +28,7 @@ from .models import ACCOUNT_MODELS, MODELS
 from .mutations_http import router as mutations_router
 from .reads_http import router as reads_router
 from .retention import ThoughtReferenceDelivery, ThoughtReferences
+from .upload_recovery import recover_upload_staging
 
 
 def create_app(
@@ -72,6 +73,7 @@ def create_app(
         with service_lock(state_root):
             try:
                 check(database.path, "thought", MIGRATIONS)
+                await recover_upload_staging(state_root, database.sessions)
                 if run_worker:
                     await delivery.start()
                 yield

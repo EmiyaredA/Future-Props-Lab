@@ -383,3 +383,58 @@ async def test_delivery_timeout_keeps_intent_and_source_for_exact_replay(tmp_pat
             assert stage_path(tmp_path, "alpha", "one", desc.fingerprint).read_bytes() == CONTENT
     finally:
         await db.close()
+
+
+async def test_restart_recovers_only_confirmed_and_provably_uncommitted_staging(tmp_path):
+    from dataclasses import asdict
+
+    from fpl_runtime.locking import service_lock
+    from fpl_thought.migrations.registry import MIGRATIONS as THOUGHT_MIGRATIONS
+    from fpl_thought.models import ACCOUNT_MODELS
+    from fpl_thought.models import MODELS as THOUGHT_MODELS
+    from fpl_thought.upload_intents import stage_path
+    from fpl_thought.upload_records import ThoughtUploadIntent
+    from fpl_thought.upload_recovery import recover_upload_staging
+
+    apply(tmp_path / "service.db", "thought", THOUGHT_MIGRATIONS)
+    db = Database("thought", tmp_path, models=THOUGHT_MODELS, account_models=ACCOUNT_MODELS)
+    desc = description()
+    files = {}
+    try:
+        for request_id in ("confirmed", "staged", "orphan", "unknown"):
+            path = stage_path(tmp_path, "alpha", request_id, desc.fingerprint)
+            path.write_bytes(CONTENT)
+            files[request_id] = path
+        async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+            for request_id, state, result in (
+                ("confirmed", "confirmed", {"asset_id": "asset"}),
+                ("staged", "staged", None),
+                ("unknown", "unexpected", None),
+            ):
+                session.add(
+                    ThoughtUploadIntent(
+                        owner_user_id="alpha",
+                        request_id=request_id,
+                        descriptor_sha256=desc.fingerprint,
+                        descriptor=asdict(desc),
+                        state=state,
+                        result=result,
+                    )
+                )
+            await session.commit()
+        outsider = tmp_path / "outside"
+        outsider.mkdir()
+        (outsider / "orphan.upload").write_bytes(b"outside")
+        (tmp_path / "upload-staging" / "beta").symlink_to(outsider, target_is_directory=True)
+        (tmp_path / "upload-staging" / "alpha" / "link.upload").symlink_to(
+            outsider / "orphan.upload"
+        )
+        with service_lock(tmp_path):
+            await recover_upload_staging(tmp_path, db.sessions)
+            await recover_upload_staging(tmp_path, db.sessions)
+        assert not files["confirmed"].exists() and not files["orphan"].exists()
+        assert files["staged"].read_bytes() == files["unknown"].read_bytes() == CONTENT
+        assert (outsider / "orphan.upload").read_bytes() == b"outside"
+        assert (tmp_path / "upload-staging" / "alpha" / "link.upload").is_symlink()
+    finally:
+        await db.close()
