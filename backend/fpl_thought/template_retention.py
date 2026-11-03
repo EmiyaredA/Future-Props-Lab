@@ -2,7 +2,11 @@
 
 from uuid import uuid4
 
+from app.apps.thought_workshop.content_exports import resolve_assets
 from app.apps.thought_workshop.knowledge_tools.reuse import ReusableContent
+from app.apps.thought_workshop.multitable.schemas import Snapshot
+from app.apps.thought_workshop.multitable.storage import asset_ids
+from app.apps.thought_workshop.schemas.document import file_ids
 from app.runtime.ids import new_id
 from fpl_runtime.asset_references import PrepareReferenceChange
 
@@ -98,6 +102,63 @@ async def create_template_with_references(
     commit_started = False
     try:
         result = await content.create_template(body, template_id=template_id, commit=False)
+        await references.record(session, prepared, resource_revision=result.revision)
+        commit_started = True
+        await session.commit()
+        return result
+    except BaseException:
+        if not commit_started:
+            await session.rollback()
+            await references.abort_after_rollback(session, prepared)
+        raise
+
+
+async def apply_template_with_references(
+    session,
+    *,
+    owner,
+    author_id,
+    template_id,
+    body,
+    assertion,
+    source_method,
+    source_path,
+    references,
+):
+    if (
+        source_method != "POST"
+        or source_path != f"/v1/thought-workshop/templates/{template_id}/apply"
+    ):
+        raise ValueError("应用模板必须绑定原请求")
+    if session.info.get("owner_user_id") != owner:
+        raise ValueError("应用模板缺少账号上下文")
+    content = ReusableContent(session, owner, author_id)
+    template = await content.template(template_id)
+    if template.revision != body.expected_revision:
+        await content.template_conflict(template_id, body.expected_revision)
+    assets = file_ids(template.document)
+    if template.multitable:
+        assets |= asset_ids(Snapshot.model_validate(template.multitable))
+    await resolve_assets(session, owner, assets)
+    note_id = new_id()
+    await session.rollback()
+    change = PrepareReferenceChange(
+        request_id=uuid4().hex,
+        resource_kind="note",
+        resource_id=note_id,
+        expected_resource_revision=-1,
+        asset_ids=sorted(assets),
+    )
+    prepared = await references.prepare(
+        owner=owner,
+        assertion=assertion,
+        source_method=source_method,
+        source_path=source_path,
+        change=change,
+    )
+    commit_started = False
+    try:
+        result = await content.apply_template(template_id, body, note_id=note_id, commit=False)
         await references.record(session, prepared, resource_revision=result.revision)
         commit_started = True
         await session.commit()

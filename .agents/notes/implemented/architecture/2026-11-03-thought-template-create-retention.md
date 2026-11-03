@@ -18,7 +18,7 @@ The independent Thought template creation endpoint validates the template and it
 
 ## Consequences
 
-New templates made through the incomplete independent Thought application have an initial projection. Existing templates still need a separately verified historical projection before their independent updates can proceed. Template application, data transfer, service deployment and readiness remain separate work; no production data is migrated here. The legacy application keeps its existing transaction behavior.
+New templates made through the incomplete independent Thought application have an initial projection. Existing templates still need a separately verified historical projection before their independent updates can proceed. Template application is covered by [a separate decision](2026-11-03-thought-template-apply-retention.md); data transfer, service deployment and readiness remain separate work; no production data is migrated here. The legacy application keeps its existing transaction behavior.
 
 ## Verification
 

@@ -779,3 +779,112 @@ async def test_multitable_updates_and_restore_keep_historical_attachments(instan
         assert all(
             row.change["asset_ids"] == ["new", "old"] for row in rows if row.resource_revision > 1
         )
+
+
+async def test_template_apply_aborts_when_template_changes_after_prepare(instance):
+    from sqlalchemy import update
+
+    from app.apps.thought_workshop.knowledge_tools.models import ThoughtTemplate
+    from app.apps.thought_workshop.knowledge_tools.schemas import TemplateApply
+    from app.apps.thought_workshop.models import ThoughtNote
+    from app.runtime.revisions import RevisionConflictError
+    from fpl_thought.template_retention import apply_template_with_references
+
+    db, remote, service = instance
+    async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+        session.add(
+            ThoughtTemplate(
+                id="template",
+                owner_user_id="alpha",
+                name="Before",
+                document={"type": "doc", "content": [{"type": "paragraph"}]},
+            )
+        )
+        await session.commit()
+    initial_prepare = remote.prepare
+
+    async def change_template(*, authority, change):
+        result = await initial_prepare(authority=authority, change=change)
+        async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+            await session.execute(
+                update(ThoughtTemplate).where(ThoughtTemplate.id == "template").values(revision=1)
+            )
+            await session.commit()
+        return result
+
+    remote.prepare = change_template
+    async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+        with pytest.raises(RevisionConflictError):
+            await apply_template_with_references(
+                session,
+                owner="alpha",
+                author_id="alpha",
+                template_id="template",
+                body=TemplateApply(
+                    knowledge_base_id="book",
+                    title="New",
+                    expected_revision=0,
+                    expected_knowledge_revision=0,
+                ),
+                assertion="source",
+                source_method="POST",
+                source_path="/v1/thought-workshop/templates/template/apply",
+                references=service,
+            )
+    async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+        assert not list(await session.scalars(select(ThoughtNote)))
+        assert (await session.scalar(select(ThoughtReferenceMutation))).state == "abort"
+    await ThoughtReferenceDelivery(db.sessions, remote).process_once()
+    assert next(iter(remote.outcomes.values()))["state"] == "aborted"
+
+
+async def test_template_apply_preserves_committed_result_after_lost_ack(instance, monkeypatch):
+    from app.apps.thought_workshop.knowledge_tools.models import ThoughtTemplate
+    from app.apps.thought_workshop.knowledge_tools.schemas import TemplateApply
+    from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
+    from fpl_thought.template_retention import apply_template_with_references
+
+    db, remote, service = instance
+    async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+        session.add(ThoughtKnowledgeBase(id="book", owner_user_id="alpha", title="Book"))
+        session.add(
+            ThoughtTemplate(
+                id="template",
+                owner_user_id="alpha",
+                name="Template",
+                document={"type": "doc", "content": [{"type": "paragraph"}]},
+            )
+        )
+        await session.commit()
+    async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+        real_commit = session.commit
+
+        async def commit_then_lose_response():
+            await real_commit()
+            raise ConnectionError("commit response lost")
+
+        monkeypatch.setattr(session, "commit", commit_then_lose_response)
+        with pytest.raises(ConnectionError):
+            await apply_template_with_references(
+                session,
+                owner="alpha",
+                author_id=None,
+                template_id="template",
+                body=TemplateApply(
+                    knowledge_base_id="book",
+                    title="New",
+                    expected_revision=0,
+                    expected_knowledge_revision=0,
+                ),
+                assertion="source",
+                source_method="POST",
+                source_path="/v1/thought-workshop/templates/template/apply",
+                references=service,
+            )
+    async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+        notes = list(await session.scalars(select(ThoughtNote)))
+        receipt = await session.scalar(select(ThoughtReferenceMutation))
+        assert len(notes) == 1 and notes[0].title == "New"
+        assert receipt.state == "commit" and receipt.change["resource_id"] == notes[0].id
+    await ThoughtReferenceDelivery(db.sessions, remote).process_once()
+    assert next(iter(remote.outcomes.values()))["state"] == "committed"

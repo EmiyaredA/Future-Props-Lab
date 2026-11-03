@@ -304,6 +304,47 @@ async def scenario():
                             raise AssertionError(
                                 "Template creation authorized a non-creation change"
                             )
+                    apply_path = "/v1/thought-workshop/templates/example/apply"
+                    apply_assertion = issue_context(
+                        actor,
+                        service="thought",
+                        method="POST",
+                        path=apply_path,
+                        private_key=private,
+                        key_id="test",
+                    )
+                    new_note = change(
+                        "new-note", resource_id="12345678-1234-4234-8234-123456789abc"
+                    )
+                    auth = await client.authorize(
+                        assertion=apply_assertion,
+                        source_method="POST",
+                        source_path=apply_path,
+                        change=new_note,
+                    )
+                    assert verify_retention(auth, public_key=private.public_key()).matches(new_note)
+                    for forbidden in (
+                        change(
+                            "apply-kind", resource_kind="template", resource_id=new_note.resource_id
+                        ),
+                        change(
+                            "apply-version",
+                            resource_id=new_note.resource_id,
+                            expected_resource_revision=0,
+                        ),
+                        change("apply-id", resource_id="existing-note"),
+                    ):
+                        try:
+                            await client.authorize(
+                                assertion=apply_assertion,
+                                source_method="POST",
+                                source_path=apply_path,
+                                change=forbidden,
+                            )
+                        except CapabilityDenied as exc:
+                            assert exc.status == 403
+                        else:
+                            raise AssertionError("Template apply authorized a non-creation change")
                     forged = issue_context(
                         replace(actor, user_id="different-owner"),
                         service="thought",

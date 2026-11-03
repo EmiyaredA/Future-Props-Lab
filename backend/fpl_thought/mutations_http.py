@@ -6,7 +6,12 @@ from app.apps.thought_workshop.directory import Directory
 from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.http_bindings import SessionDep
 from app.apps.thought_workshop.knowledge import KnowledgeBases
-from app.apps.thought_workshop.knowledge_tools.schemas import TemplateIn, TemplateOut, TemplatePut
+from app.apps.thought_workshop.knowledge_tools.schemas import (
+    TemplateApply,
+    TemplateIn,
+    TemplateOut,
+    TemplatePut,
+)
 from app.apps.thought_workshop.multitable.schemas import BatchIn, BatchOut, CsvIn, RestoreIn
 from app.apps.thought_workshop.notes import Notes
 from app.apps.thought_workshop.schemas.knowledge import (
@@ -32,7 +37,11 @@ from .note_retention import (
     restore_history_with_references,
     save_note_with_references,
 )
-from .template_retention import create_template_with_references, mutate_template_with_references
+from .template_retention import (
+    apply_template_with_references,
+    create_template_with_references,
+    mutate_template_with_references,
+)
 
 router = APIRouter(prefix="/thought-workshop", tags=["thought-workshop"])
 
@@ -159,6 +168,26 @@ async def create_template(
 ):
     return await guarded(
         create_template_with_references(session, owner=owner_user_id, body=body, **context(request))
+    )
+
+
+@router.post("/templates/{template_id}/apply", response_model=ThoughtNoteOut)
+async def apply_template(
+    request: Request,
+    template_id: str,
+    body: TemplateApply,
+    session: SessionDep,
+    principal: StudioAuth,
+):
+    return await guarded(
+        apply_template_with_references(
+            session,
+            owner=principal.user_id,
+            author_id=principal.user_id,
+            template_id=template_id,
+            body=body,
+            **context(request),
+        )
     )
 
 

@@ -158,7 +158,7 @@ class ReusableContent:
         if commit:
             await self.session.commit()
 
-    async def apply_template(self, id, body):
+    async def apply_template(self, id, body, *, note_id=None, commit=True):
         template = await self.template(id)
         ids = file_ids(template.document)
         if template.multitable:
@@ -190,6 +190,7 @@ class ReusableContent:
             ),
             commit=False,
             importing=True,
+            note_id=note_id,
         )
         if template.multitable:
             old = await snapshot(self.session, row.id)
@@ -221,7 +222,8 @@ class ReusableContent:
             + 1
         )
         await History(self.session).append(row, self.author_id, "create")
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
         return note_out(row)
 
     async def copy_source(self, id, subtree):
