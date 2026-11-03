@@ -19,6 +19,7 @@ from fpl_identity.application import create_app
 from fpl_identity.migrations.registry import MIGRATIONS
 from fpl_identity.models import AccountEvent
 from fpl_runtime.claims import HEADER, issue_context, verify_context
+from fpl_runtime.creative_install_evidence import INSTALL_PATH, verify_install_evidence
 from fpl_runtime.creative_source_evidence import SOURCE_PATH, verify_source_evidence
 from fpl_runtime.migrations import apply
 from fpl_runtime.routing import RouteCatalog
@@ -45,6 +46,7 @@ app = create_app(
     service_credentials={
         "agents": "agents-test-service-credential-123456",
         "gateway": "gateway-test-service-credential-123456",
+        "creative": "creative-test-service-credential-123456",
         "assets": "assets-test-service-credential-123456",
     },
 )
@@ -387,6 +389,102 @@ async def scenario():
             app.state.identity_options["service_credentials"]["assets"] = (
                 "assets-test-service-credential-123456"
             )
+            install_source = await client.get(
+                "/_internal/v1/authorize",
+                headers={
+                    **unsafe,
+                    "X-Fpl-Target-Service": "creative",
+                    "X-Fpl-Request-Method": "POST",
+                    "X-Fpl-Request-Uri": INSTALL_PATH,
+                },
+            )
+            assert install_source.status_code == 204
+            install_token = install_source.headers[HEADER]
+            install_raw = b'{"release_id":"release-1","names":{"release-1":"Local name"}}'
+            install_path = "/_internal/v1/authorization/creative-install-evidence"
+            install_body = {
+                "assertion": install_token,
+                "body_base64": base64.b64encode(install_raw).decode(),
+            }
+            install_evidence = await client.post(
+                install_path, headers=evidence_headers, json=install_body
+            )
+            assert install_evidence.status_code == 200, install_evidence.text
+            claims = jwt.decode(
+                install_token,
+                private.public_key(),
+                algorithms=["EdDSA"],
+                issuer="fpl-identity",
+                audience="creative",
+            )
+            install_expected = dict(
+                public_key=private.public_key(),
+                owner_user_id=owner,
+                request_id=claims["jti"],
+                body_sha256=hashlib.sha256(install_raw).hexdigest(),
+                release_id="release-1",
+            )
+            assert (
+                verify_install_evidence(
+                    install_evidence.json()["evidence"], **install_expected
+                ).owner_user_id
+                == owner
+            )
+            from app.console.creative_workshop.schemas import CreativeInstallPreviewIn
+            from fpl_creative.install_authorization import (
+                IdentityInstallAuthorization,
+                InstallAuthorizationDenied,
+                InstallSource,
+            )
+            from fpl_runtime.identity_client import LiveAuthorization
+
+            live_creative = LiveAuthorization(
+                service="creative",
+                credential="creative-test-service-credential-123456",
+                transport=transport,
+            )
+            authorizer = IdentityInstallAuthorization(
+                public_key=private.public_key(), identity=live_creative
+            )
+            install_source_value = InstallSource(
+                install_token, install_evidence.json()["evidence"], install_raw
+            )
+            install_request = CreativeInstallPreviewIn.model_validate_json(install_raw)
+            assert await authorizer.require(install_source_value, install_request) == owner
+            for bad in (
+                {"owner_user_id": "other"},
+                {"request_id": "other"},
+                {"body_sha256": "0" * 64},
+                {"release_id": "other"},
+            ):
+                try:
+                    verify_install_evidence(
+                        install_evidence.json()["evidence"], **(install_expected | bad)
+                    )
+                    raise AssertionError("mismatched install evidence accepted")
+                except jwt.InvalidTokenError:
+                    pass
+            for raw_bad in (
+                b'{"release_id":"one","release_id":"two"}',
+                b'{"release_id":"one","names":{"one":3}}',
+                b'{"release_id":"one","extra":true}',
+            ):
+                response = await client.post(
+                    install_path,
+                    headers=evidence_headers,
+                    json={**install_body, "body_base64": base64.b64encode(raw_bad).decode()},
+                )
+                assert response.status_code == 400
+            assert (
+                await client.post(
+                    install_path,
+                    headers=evidence_headers,
+                    json={**install_body, "assertion": source_token},
+                )
+            ).status_code == 400
+            assert (
+                await client.post(install_path, headers=live_headers, json=install_body)
+            ).status_code == 403
             expired_actor = verify_context(
                 source_token,
                 service="creative",
@@ -451,6 +549,15 @@ async def scenario():
             assert (
                 await client.post(evidence_path, headers=evidence_headers, json=evidence_body)
             ).status_code == 401
+            assert (
+                await client.post(install_path, headers=evidence_headers, json=install_body)
+            ).status_code == 401
+            try:
+                await authorizer.require(install_source_value, install_request)
+                raise AssertionError("revoked installation authorized")
+            except InstallAuthorizationDenied:
+                pass
+            await live_creative.close()
             revoked_delegation = await client.post(
                 "/_internal/v1/authorization/delegate",
                 headers=delegation_headers,

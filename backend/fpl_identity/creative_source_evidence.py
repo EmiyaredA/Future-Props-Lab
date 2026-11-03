@@ -1,4 +1,4 @@
-"""Issue source-import evidence only to the independently credentialed gateway."""
+"""Issue Creative request evidence only to the independently credentialed gateway."""
 
 import base64
 import binascii
@@ -12,6 +12,7 @@ from starlette.responses import JSONResponse
 from app.capabilities.identity.permissions import role_permissions
 from app.capabilities.identity.route_permissions import route_permission
 from fpl_runtime.claims import verify_context
+from fpl_runtime.creative_install_evidence import INSTALL_PATH, issue_install_evidence
 from fpl_runtime.creative_source_evidence import SOURCE_PATH, issue_source_evidence, strict_json
 
 from .live import active_actor
@@ -20,7 +21,11 @@ router = APIRouter(include_in_schema=False)
 
 
 @router.post("/_internal/v1/authorization/creative-source-evidence")
+@router.post("/_internal/v1/authorization/creative-install-evidence")
 async def creative_source_evidence(request: Request):
+    install = request.url.path.endswith("/creative-install-evidence")
+    source_path = INSTALL_PATH if install else SOURCE_PATH
+    issue_evidence = issue_install_evidence if install else issue_source_evidence
     options = request.app.state.identity_options
     credentials = options["service_credentials"]
     expected = credentials.get("gateway")
@@ -55,7 +60,7 @@ async def creative_source_evidence(request: Request):
         raw = base64.b64decode(encoded, validate=True)
         key = options["private_key"].public_key()
         actor = verify_context(
-            assertion, service="creative", method="POST", path=SOURCE_PATH, public_key=key
+            assertion, service="creative", method="POST", path=source_path, public_key=key
         )
         source = jwt.decode(
             assertion,
@@ -67,7 +72,7 @@ async def creative_source_evidence(request: Request):
         )
         if source["exp"] <= int(time.time()):
             raise ValueError("expired")
-        permission = route_permission("POST", SOURCE_PATH)
+        permission = route_permission("POST", source_path)
         if (
             permission is None
             or permission not in role_permissions(actor.platform_role)
@@ -77,7 +82,7 @@ async def creative_source_evidence(request: Request):
         async with request.app.state.database.sessions() as session:
             if not await active_actor(session, actor):
                 raise HTTPException(401, "creative_source_authorization_revoked")
-        evidence = issue_source_evidence(
+        evidence = issue_evidence(
             actor=actor,
             request_id=source["jti"],
             raw=raw,

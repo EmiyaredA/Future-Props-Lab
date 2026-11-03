@@ -1,4 +1,4 @@
-"""A fixed, fail-closed bridge for attesting one original Creative import body.
+"""A fail-closed bridge attesting original Creative import and install bodies.
 
 This ASGI app must only be served on a container-private Unix socket. It is not
 mounted on the public Gateway application and does not authorize installation.
@@ -14,6 +14,11 @@ from fastapi import FastAPI, HTTPException, Request
 from starlette.responses import Response
 
 from fpl_runtime.claims import HEADER, verify_context
+from fpl_runtime.creative_install_evidence import (
+    INSTALL_PATH,
+    install_fields,
+    verify_install_evidence,
+)
 from fpl_runtime.creative_source_evidence import (
     MAX_BODY,
     SOURCE_PATH,
@@ -22,6 +27,8 @@ from fpl_runtime.creative_source_evidence import (
 )
 
 BRIDGE_PATH = "/_bridge/creative/source-import"
+INSTALL_BRIDGE_PATH = "/_bridge/creative/install"
+INSTALL_EVIDENCE_PATH = "/_internal/v1/authorization/creative-install-evidence"
 EVIDENCE_PATH = "/_internal/v1/authorization/creative-source-evidence"
 
 
@@ -39,7 +46,14 @@ def create_creative_bridge(*, public_key, gateway_credential, ingress_secret, tr
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 
     @app.post(BRIDGE_PATH, include_in_schema=False)
+    @app.post(INSTALL_BRIDGE_PATH, include_in_schema=False)
     async def import_source(request: Request):
+        install = request.url.path == INSTALL_BRIDGE_PATH
+        source_path = INSTALL_PATH if install else SOURCE_PATH
+        evidence_path = INSTALL_EVIDENCE_PATH if install else EVIDENCE_PATH
+        outcome_code = (
+            "creative_install_outcome_unknown" if install else "creative_import_outcome_unknown"
+        )
         supplied = request.headers.get("x-fpl-bridge-ingress", "")
         if not supplied.isascii() or not secrets.compare_digest(supplied, ingress_secret):
             raise HTTPException(403, "creative_bridge_ingress_required")
@@ -59,7 +73,7 @@ def create_creative_bridge(*, public_key, gateway_credential, ingress_secret, tr
                 assertion,
                 service="creative",
                 method="POST",
-                path=SOURCE_PATH,
+                path=source_path,
                 public_key=public_key,
             )
             claims = jwt.decode(
@@ -79,7 +93,10 @@ def create_creative_bridge(*, public_key, gateway_credential, ingress_secret, tr
                 raise HTTPException(413, "creative_bridge_request_too_large")
         raw = bytes(body)
         try:
-            kind, source_id = source_fields(raw)
+            if install:
+                release_id = install_fields(raw)
+            else:
+                kind, source_id = source_fields(raw)
         except (ValueError, TypeError, UnicodeError):
             raise HTTPException(422, "creative_bridge_request_invalid") from None
         # Separate clients per request and upstream prevent an upstream Set-Cookie
@@ -89,7 +106,7 @@ def create_creative_bridge(*, public_key, gateway_credential, ingress_secret, tr
                 transport=transport, trust_env=False, follow_redirects=False, timeout=10
             ) as identity:
                 response = await identity.post(
-                    "http://identity:8080" + EVIDENCE_PATH,
+                    "http://identity:8080" + evidence_path,
                     headers={"Authorization": "Bearer " + gateway_credential},
                     json={
                         "assertion": assertion,
@@ -102,22 +119,25 @@ def create_creative_bridge(*, public_key, gateway_credential, ingress_secret, tr
                     )
                 response.raise_for_status()
                 evidence = response.json()["evidence"]
-                verify_source_evidence(
-                    evidence,
+                expected = dict(
                     public_key=public_key,
                     owner_user_id=actor.user_id,
                     request_id=claims["jti"],
                     body_sha256=hashlib.sha256(raw).hexdigest(),
-                    kind=kind,
-                    source_id=source_id,
                 )
+                if install:
+                    verify_install_evidence(evidence, release_id=release_id, **expected)
+                else:
+                    verify_source_evidence(evidence, kind=kind, source_id=source_id, **expected)
         except HTTPException:
             raise
         except (httpx.HTTPError, ValueError, KeyError, TypeError, jwt.InvalidTokenError):
             raise HTTPException(503, "creative_bridge_authorization_unavailable") from None
         headers = {
             HEADER: assertion,
-            "X-Fpl-Creative-Source-Evidence": evidence,
+            (
+                "X-Fpl-Creative-Install-Evidence" if install else "X-Fpl-Creative-Source-Evidence"
+            ): evidence,
             "Content-Type": "application/json",
         }
         for name in ("x-application-id", "x-application-build"):
@@ -129,18 +149,18 @@ def create_creative_bridge(*, public_key, gateway_credential, ingress_secret, tr
                 transport=transport, trust_env=False, follow_redirects=False, timeout=10
             ) as creative:
                 async with creative.stream(
-                    "POST", "http://creative:8080" + SOURCE_PATH, headers=headers, content=raw
+                    "POST", "http://creative:8080" + source_path, headers=headers, content=raw
                 ) as result:
                     content = bytearray()
                     async for chunk in result.aiter_bytes():
                         content.extend(chunk)
                         if len(content) > 2 * 1024 * 1024:
-                            raise HTTPException(503, {"code": "creative_import_outcome_unknown"})
+                            raise HTTPException(503, {"code": outcome_code})
                     status = result.status_code
                     media_type = result.headers.get("content-type", "application/json")
         except httpx.HTTPError:
             # Once forwarded, a lost reply cannot establish that creation failed.
-            raise HTTPException(503, {"code": "creative_import_outcome_unknown"}) from None
+            raise HTTPException(503, {"code": outcome_code}) from None
         return Response(
             content=bytes(content),
             status_code=status,

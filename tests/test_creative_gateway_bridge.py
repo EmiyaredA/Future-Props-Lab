@@ -379,3 +379,75 @@ def test_private_credentials_require_owner_only_regular_files(tmp_path):
     alias.symlink_to(credential)
     with pytest.raises(ValueError, match="symlink"):
         private_text(alias)
+
+
+async def test_install_bridge_attests_original_body_and_reports_ambiguous_commit():
+    import json
+
+    import jwt
+
+    from fpl_gateway.creative_bridge import INSTALL_BRIDGE_PATH, INSTALL_EVIDENCE_PATH
+    from fpl_runtime.creative_install_evidence import INSTALL_PATH, issue_install_evidence
+
+    key = Ed25519PrivateKey.generate()
+    actor = Actor("alpha", "user", "session", ("studio:write",), session_id="session")
+    token = issue_context(
+        actor, service="creative", method="POST", path=INSTALL_PATH, private_key=key, key_id="test"
+    )
+    claims = jwt.decode(
+        token, key.public_key(), algorithms=["EdDSA"], issuer="fpl-identity", audience="creative"
+    )
+    raw = b'{ "release_id": "release", "names": {"release": "My Tool"} }'
+    seen = []
+    timeout = False
+
+    async def destination(request):
+        seen.append(request.url.host)
+        if request.url.host == "identity":
+            assert request.url.path == INSTALL_EVIDENCE_PATH
+            payload = json.loads(request.content)
+            assert payload["assertion"] == token and base64.b64decode(payload["body_base64"]) == raw
+            evidence = issue_install_evidence(
+                actor=actor,
+                request_id=claims["jti"],
+                raw=raw,
+                source_expiry=claims["exp"],
+                private_key=key,
+                key_id="test",
+            )
+            return httpx.Response(200, json={"evidence": evidence})
+        assert request.url.path == INSTALL_PATH and request.content == raw
+        assert "cookie" not in request.headers and "authorization" not in request.headers
+        assert request.headers["x-fpl-creative-install-evidence"] != "forged"
+        if timeout:
+            raise httpx.ReadTimeout("response lost", request=request)
+        return httpx.Response(201, json={"id": "installed"})
+
+    app = create_creative_bridge(
+        public_key=key.public_key(),
+        gateway_credential="g" * 48,
+        ingress_secret="i" * 48,
+        transport=httpx.MockTransport(destination),
+    )
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://bridge"
+    ) as client:
+        headers = {
+            **request_headers(token),
+            "Cookie": "session=secret",
+            "X-Fpl-Creative-Install-Evidence": "forged",
+        }
+        first = await client.post(INSTALL_BRIDGE_PATH, headers=headers, content=raw)
+        assert first.status_code == 201 and seen == ["identity", "creative"]
+        timeout = True
+        lost = await client.post(INSTALL_BRIDGE_PATH, headers=headers, content=raw)
+        assert (
+            lost.status_code == 503
+            and lost.json()["detail"]["code"] == "creative_install_outcome_unknown"
+        )
+        assert seen == ["identity", "creative", "identity", "creative"]
+        duplicate = b'{"release_id":"one","release_id":"two"}'
+        assert (
+            await client.post(INSTALL_BRIDGE_PATH, headers=headers, content=duplicate)
+        ).status_code == 422
+        assert len(seen) == 4
