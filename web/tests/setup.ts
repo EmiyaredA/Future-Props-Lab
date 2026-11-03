@@ -5,6 +5,11 @@ import { cleanup } from "@testing-library/react";
 
 configure({ asyncUtilTimeout: 5000 });
 
+// jsdom has no media engine. Keep defaults non-mocked so resetAllMocks in a
+// feature test cannot erase playback support; media tests install their spies.
+HTMLMediaElement.prototype.play = () => Promise.resolve();
+HTMLMediaElement.prototype.pause = () => {};
+
 beforeEach(() => {
   if (!window.matchMedia) {
     window.matchMedia = (query) => ({

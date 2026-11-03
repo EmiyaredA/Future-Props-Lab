@@ -1,3 +1,4 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import type {
@@ -7,7 +8,7 @@ import type {
 } from "./libraryStaging";
 import { useEffect, useId, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Check, Folder, LoaderCircle, Search, X } from "lucide-react";
+import { Check, Folder, Search, X } from "lucide-react";
 import {
   getFiles,
   getFolders,
@@ -484,7 +485,7 @@ export function LibraryUploadStagingDialog({
           >
             {pending ? (
               <>
-                <LoaderCircle className="spin" aria-hidden /> 处理中…
+                <LoadingScene /> 处理中…
               </>
             ) : (
               `确认添加（${items.length}）`

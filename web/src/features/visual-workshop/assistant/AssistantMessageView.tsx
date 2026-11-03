@@ -1,3 +1,4 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import {
   isValidElement,
   type ComponentPropsWithoutRef,
@@ -8,7 +9,6 @@ import {
   Check,
   ChevronDown,
   Copy,
-  LoaderCircle,
   RefreshCw,
   UserRound,
   Wrench,
@@ -101,7 +101,7 @@ function AssistantActions({
                   {action.status === "completed" ? (
                     <Check aria-hidden />
                   ) : action.status === "running" ? (
-                    <LoaderCircle className="spinning" aria-hidden />
+                    <LoadingScene />
                   ) : action.status === "failed" ||
                     action.status === "rejected" ||
                     action.status === "cancelled" ? (
@@ -160,11 +160,7 @@ function AssistantActions({
               disabled={approvalBusy}
               onClick={() => onResolve("approve")}
             >
-              {approvalBusy ? (
-                <LoaderCircle className="spinning" aria-hidden />
-              ) : (
-                <Check aria-hidden />
-              )}
+              {approvalBusy ? <LoadingScene /> : <Check aria-hidden />}
               确认执行
             </button>
           </div>

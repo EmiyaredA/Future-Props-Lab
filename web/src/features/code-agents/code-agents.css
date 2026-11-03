@@ -43,7 +43,6 @@
 .code-agent-console {
   display: grid;
   grid-template-columns: 196px minmax(0, 1fr);
-  max-width: 1120px;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface);
@@ -503,14 +502,6 @@
 .code-agent-roster-item:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
-}
-.code-agent-spinning {
-  animation: code-agent-spin 1s linear infinite;
-}
-@keyframes code-agent-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .code-agent-spinning {

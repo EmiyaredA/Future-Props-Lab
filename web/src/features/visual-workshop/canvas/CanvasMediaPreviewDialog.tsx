@@ -1,3 +1,4 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { taskActivity } from "../generation/generationActivityModel";
@@ -21,7 +22,6 @@ import {
   Crop,
   Download,
   Image,
-  LoaderCircle,
   Music,
   Video,
   X,
@@ -228,7 +228,7 @@ function AssetPreview({
   if (!url)
     return (
       <div className="canvas-media-dialog-state">
-        <LoaderCircle className="spinning" aria-hidden /> 正在加载预览…
+        <LoadingState label="正在加载预览…" />
       </div>
     );
   if (kind === "image")
@@ -320,9 +320,7 @@ function HistoryPreview({ task }: { task: GenerationTask }) {
         <video src={url} muted preload="metadata" />
       ) : null}
       {!url || task.kind === "audio" ? <Icon aria-hidden /> : null}
-      {ACTIVE_STATUSES.has(task.status) ? (
-        <LoaderCircle className="spinning" aria-hidden />
-      ) : null}
+      {ACTIVE_STATUSES.has(task.status) ? <LoadingScene /> : null}
       {task.status === "failed" ? <AlertTriangle aria-hidden /> : null}
     </span>
   );
@@ -606,7 +604,7 @@ export function CanvasMediaPreviewDialog({
                         className={`canvas-media-task-status ${selectedTask.status}`}
                       >
                         {ACTIVE_STATUSES.has(selectedTask.status) && (
-                          <GenerationSpinner size={12} />
+                          <GenerationSpinner />
                         )}
                         {taskActivity(selectedTask)?.label ??
                           STATUS_LABELS[selectedTask.status]}
@@ -785,8 +783,7 @@ export function CanvasMediaPreviewDialog({
                 ))}
                 {history.isLoading ? (
                   <span className="canvas-media-history-loading">
-                    <LoaderCircle className="spinning" aria-hidden />
-                    读取历史…
+                    <LoadingState label="读取历史…" />
                   </span>
                 ) : null}
                 {history.hasNextPage ? (

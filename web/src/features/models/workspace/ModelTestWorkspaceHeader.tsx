@@ -7,6 +7,7 @@ import {
   Video,
 } from "lucide-react";
 import { CustomSelect, type SelectOption } from "@shared/ui/CustomSelect";
+import "./model-test-header.css";
 
 export type ModelTestMode =
   "chat" | "image" | "video" | "speech" | "synthesis" | "realtime_voice";

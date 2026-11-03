@@ -1,6 +1,6 @@
 # 本地与公网访问
 
-Mac 后台服务提供网站，本机入口默认 `http://127.0.0.1:9000`。用户级 LaunchAgent 在登录后运行；关闭浏览器不影响服务和后台任务。正式数据与模型保存在项目 `.runtime/`，私人凭据位于 `backend/config.toml` 与 `backend/web-access/credentials/`。
+Mac 后台服务统一管理热加载前端与后端，本机入口固定 `http://127.0.0.1:3000`，后端固定 `127.0.0.1:9001`。用户级 LaunchAgent 在登录后运行，与 `npm start` / `npm run dev` 使用同一启动器；关闭浏览器不影响服务和后台任务。现有账号、数据与模型保存在项目 `.runtime/`，私人凭据位于 `backend/config.toml` 与 `backend/web-access/credentials/`。
 
 ## 操作与结果
 
@@ -15,7 +15,9 @@ Mac 后台服务提供网站，本机入口默认 `http://127.0.0.1:9000`。用�
 
 `npm run build:studio` 生成 `.local/studio-release/`，包含 build.json、逐文件 SHA256 清单与 gzip/Brotli 文件。相邻 remote-control 项目拥有发布工具和 Caddy 模板。先发布同一产物，再切换 Mac 后端，最后开启公网。云端不存储数据库、素材或供应商密钥。
 
-公网回环监听默认 28081，关闭其 lifespan，复用本机业务进程。Host、Origin、CSRF、账号权限均校验；Cookie 按公网 HTTPS 设置 Secure。主机管理依据真实监听入口判定，伪造转发头或本机 Host 不会获得权限。
+本机通过 `[website].web_root` 使用 `.local/studio-published/<build-id>/` 中经清单核验的发布快照，避免日常构建覆盖公网版本。发布新版本后按停机备份流程切换配置。
+
+公网回环监听默认 28081，关闭其 lifespan，复用本机业务进程；后端代码重载会同时影响公网 API，公网前端仍按构建发布更新，不暴露 Vite。Host、Origin、CSRF、账号权限均校验；Cookie 按公网 HTTPS 设置 Secure。主机管理依据真实监听入口判定，伪造转发头或本机 Host 不会获得权限。
 
 ## 自动化与故障恢复
 

@@ -285,9 +285,6 @@
   width: 14px;
   height: 14px;
 }
-.annotation-transcribe-segment .spinning {
-  animation: annotation-spin 0.8s linear infinite;
-}
 .annotation-transcription-language-controls {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -325,11 +322,6 @@
   font-size: 9px;
   line-height: 1.45;
   overflow-wrap: anywhere;
-}
-@keyframes annotation-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 .annotation-language-help {
   margin: 7px 10px 10px;

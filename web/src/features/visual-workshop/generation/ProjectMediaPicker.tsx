@@ -1,3 +1,4 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
@@ -18,7 +19,6 @@ import {
   Download,
   FolderOpen,
   Image,
-  LoaderCircle,
   Music,
   Upload,
   Video,
@@ -133,11 +133,7 @@ function GenerationMediaPreviewDialog({
               disabled={download.isPending}
               onClick={() => download.mutate()}
             >
-              {download.isPending ? (
-                <LoaderCircle className="spinning" aria-hidden />
-              ) : (
-                <Download aria-hidden />
-              )}
+              {download.isPending ? null : <Download aria-hidden />}
               {download.isPending ? (
                 <LoadingState variant="inline" label="下载中…" />
               ) : (
@@ -162,8 +158,7 @@ function GenerationMediaPreviewDialog({
         <div className={`generation-media-preview-stage ${file.media_kind}`}>
           {!source && !failed ? (
             <span className="generation-media-preview-state">
-              <LoaderCircle className="spinning" aria-hidden />
-              正在加载预览…
+              <LoadingState label="正在加载预览…" />
             </span>
           ) : null}
           {failed ? (
@@ -461,18 +456,14 @@ export function ProjectMediaPicker({
       onClick={() => setSourceMenuOpen((current) => !current)}
     >
       {upload.isPending ? (
-        <LoaderCircle className="spinning" aria-hidden />
+        <LoadingScene />
       ) : minimal ? (
         <UploadIcon aria-hidden />
       ) : (
         <Upload aria-hidden />
       )}
       <span className={minimal ? "sr-only" : undefined}>
-        {upload.isPending ? (
-          <LoadingState variant="inline" label="上传中" />
-        ) : (
-          "上传"
-        )}
+        {upload.isPending ? "上传中" : "上传"}
       </span>
     </button>
   );
@@ -565,9 +556,12 @@ export function ProjectMediaPicker({
       />
       {loading ? (
         <span className="generation-picker-state">
-          <LoaderCircle className="spinning" aria-hidden />
-          {minimal ? null : (
-            <LoadingState variant="inline" label="正在读取项目素材…" />
+          {minimal ? (
+            <span role="status" aria-label="正在读取项目素材…">
+              <LoadingScene />
+            </span>
+          ) : (
+            <LoadingState label="正在读取项目素材…" />
           )}
         </span>
       ) : (

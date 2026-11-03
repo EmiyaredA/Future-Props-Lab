@@ -1,6 +1,7 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { ProgressBar } from "@shared/ui/LoadingState";
 import { useEffect, useState } from "react";
-import { LoaderCircle } from "lucide-react";
+
 import {
   executionDetails,
   samplingPercent,
@@ -8,14 +9,8 @@ import {
 import type { GenerationActivity as Activity } from "./generationActivityModel";
 import "./generation-activity.css";
 
-export function GenerationSpinner({ size = 16 }: { size?: number }) {
-  return (
-    <LoaderCircle
-      size={size}
-      className="visual-generation-spinner"
-      aria-hidden
-    />
-  );
+export function GenerationSpinner() {
+  return <LoadingScene />;
 }
 
 export function GenerationActivity({

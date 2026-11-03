@@ -5,7 +5,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
-  LoaderCircle,
   X,
   ZoomIn,
   ZoomOut,
@@ -13,6 +12,7 @@ import {
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import { fetchApiBlob } from "@platform/api/client";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { getFilePreview, type ManagedFile } from "./api";
 import { fileQueryKeys } from "./queryKeys";
 import { FileMediaPlayer } from "./FileMediaPlayer";
@@ -81,12 +81,8 @@ function PreviewContent({
           </button>
         </div>
       ) : loading ? (
-        <div className="file-content-state" role="status">
-          <LoaderCircle className="spin" aria-hidden />
-          正在加载预览…
-          {blob.progress && (
-            <small>{Math.ceil(blob.progress.loaded / 1024)} KB 已加载</small>
-          )}
+        <div className="file-content-state">
+          <LoadingState label="正在加载预览…" progress={blob.progress} />
         </div>
       ) : kind === "unsupported" ? (
         <div className="file-content-state">

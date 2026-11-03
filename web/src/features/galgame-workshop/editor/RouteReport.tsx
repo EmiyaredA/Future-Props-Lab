@@ -1,3 +1,4 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useId, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
@@ -180,11 +181,7 @@ function QueryState({
 }) {
   return (
     <div className="galgame-report-query-state">
-      {error ? (
-        <CircleAlert aria-hidden />
-      ) : (
-        <RefreshCcw className="spinning" aria-hidden />
-      )}
+      {error ? <CircleAlert aria-hidden /> : null}
       <strong>
         {error ? (
           "线路报告暂时无法读取"
@@ -242,7 +239,9 @@ export function RouteReportInspector({
           <small>{status.copy}</small>
         </span>
         {refreshing ? (
-          <RefreshCcw className="spinning" aria-label="检查中" />
+          <span role="status" aria-label="检查中">
+            <LoadingScene />
+          </span>
         ) : null}
       </div>
       <div className="galgame-inspector-metrics">
@@ -330,7 +329,7 @@ export function RouteReportInspector({
       </p>
       <div className="galgame-report-actions">
         <button type="button" disabled={refreshing} onClick={onRefresh}>
-          <RefreshCcw className={refreshing ? "spinning" : ""} aria-hidden />
+          <>{refreshing ? <LoadingScene /> : <RefreshCcw aria-hidden />}</>
           {refreshing ? "检查中…" : "重新检查"}
         </button>
         <button type="button" className="primary" onClick={onOpen}>
@@ -581,10 +580,7 @@ export function RouteReportDialog({
           </span>
           <div>
             <button type="button" disabled={refreshing} onClick={onRefresh}>
-              <RefreshCcw
-                className={refreshing ? "spinning" : ""}
-                aria-hidden
-              />
+              <>{refreshing ? <LoadingScene /> : <RefreshCcw aria-hidden />}</>
               {refreshing ? "检查中…" : "重新检查"}
             </button>
             <button type="button" className="primary" onClick={onClose}>

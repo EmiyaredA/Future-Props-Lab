@@ -1,9 +1,10 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { useRef, useState } from "react";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { ProgressBar } from "@shared/ui/LoadingState";
-import { Download, Film, LoaderCircle } from "lucide-react";
+import { Download, Film } from "lucide-react";
 import {
   downloadGalgameVideoExport,
   type GalgameVideoExportTask,
@@ -70,7 +71,7 @@ export function ActiveVideoExportStatus({
     >
       {submitting ? (
         <>
-          <LoaderCircle className="spinning" aria-hidden />
+          <LoadingScene />
           <span>
             <strong>正在创建导出任务</strong>
             <small>正在冻结当前 Story 与导出设置…</small>
@@ -79,7 +80,7 @@ export function ActiveVideoExportStatus({
       ) : task ? (
         <>
           {["queued", "running"].includes(task.status) ? (
-            <LoaderCircle className="spinning" aria-hidden />
+            <LoadingScene />
           ) : null}
           <span>
             <strong>
@@ -132,11 +133,7 @@ export function VideoExportStartButton({
       aria-disabled={!ready || submitting}
       onClick={onClick}
     >
-      {submitting || checking ? (
-        <LoaderCircle className="spinning" aria-hidden />
-      ) : (
-        <Film aria-hidden />
-      )}
+      {submitting ? <LoadingScene /> : checking ? null : <Film aria-hidden />}
       {submitting ? (
         "正在创建导出任务…"
       ) : checking ? (
@@ -215,7 +212,6 @@ export function VideoExportHistory({
           role="status"
           aria-live="polite"
         >
-          <LoaderCircle className="spinning" aria-hidden />
           <span>
             <LoadingState label="正在加载导出记录" variant="inline" />
             <small>任务较多或正在导出时可能需要稍等片刻…</small>
@@ -246,7 +242,7 @@ export function VideoExportHistory({
                 >
                   {cancelling ? (
                     <>
-                      <LoaderCircle className="spinning" aria-hidden />
+                      <LoadingScene />
                       取消中…
                     </>
                   ) : (

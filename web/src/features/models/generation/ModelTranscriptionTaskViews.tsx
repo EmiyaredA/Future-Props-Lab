@@ -6,12 +6,12 @@ import {
   FileAudio2,
   Folder,
   FolderOpen,
-  LoaderCircle,
   Pause,
   Play,
   Search,
   X,
 } from "lucide-react";
+import { LoadingState } from "@shared/ui/LoadingState";
 import {
   buildTranscriptionFile,
   safeFileBase,
@@ -343,7 +343,7 @@ export function LibraryPicker({
           })}
           {filesQuery.isLoading || foldersQuery.isLoading ? (
             <div className="transcription-library-empty">
-              <LoaderCircle className="spinning" aria-hidden /> 正在加载
+              <LoadingState label="正在加载" />
             </div>
           ) : !childFolders.length && !filesQuery.data?.items.length ? (
             <div className="transcription-library-empty">这里没有音频文件</div>

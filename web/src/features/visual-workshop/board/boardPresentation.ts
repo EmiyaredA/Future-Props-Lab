@@ -3,7 +3,7 @@ import {
   CircleDashed,
   FileText,
   Image,
-  LoaderCircle,
+  Gauge,
   Music,
   Sparkles,
   Video,
@@ -12,7 +12,7 @@ import {
 export const statusIcons = {
   待准备: CircleDashed,
   可生成: Sparkles,
-  生成中: LoaderCircle,
+  生成中: Gauge,
   已完成: CheckCircle2,
 };
 export const typeIcons = {

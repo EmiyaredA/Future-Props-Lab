@@ -1,3 +1,4 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { LoadingState } from "@shared/ui/LoadingState";
 import type { CSSProperties } from "react";
 import {
@@ -136,10 +137,13 @@ export function AssetOverviewView({
               disabled={refresh.isPending}
               onClick={() => refresh.mutate()}
             >
-              <RefreshCcw
-                className={refresh.isPending ? "spinning" : ""}
-                aria-hidden
-              />
+              <>
+                {refresh.isPending ? (
+                  <LoadingScene />
+                ) : (
+                  <RefreshCcw aria-hidden />
+                )}
+              </>
             </button>
             <button
               type="button"
@@ -291,10 +295,13 @@ export function AssetOverviewView({
               disabled={refresh.isPending}
               onClick={() => refresh.mutate()}
             >
-              <RefreshCcw
-                className={refresh.isPending ? "spinning" : ""}
-                aria-hidden
-              />
+              <>
+                {refresh.isPending ? (
+                  <LoadingScene />
+                ) : (
+                  <RefreshCcw aria-hidden />
+                )}
+              </>
             </button>
             <button
               type="button"

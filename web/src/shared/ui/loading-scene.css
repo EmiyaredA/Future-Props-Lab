@@ -1,0 +1,384 @@
+.fpl-loading-scene {
+  --loading-amber: #b66c25;
+  --loading-glow: #e9a049;
+  position: relative;
+  display: inline-block;
+  width: 128px;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  flex: none;
+  color: var(--loading-amber);
+  isolation: isolate;
+  vertical-align: middle;
+}
+[data-theme="dark"] .fpl-loading-scene {
+  --loading-amber: #e6a14f;
+  --loading-glow: #f4ac51;
+}
+.fpl-loading-scene--page {
+  width: min(320px, 78vw);
+  height: auto;
+  aspect-ratio: 1;
+}
+.fpl-loading-scene--inline {
+  width: 32px;
+  height: 32px;
+}
+.fpl-loading-halo {
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse,
+    color-mix(in srgb, var(--loading-glow) 10%, transparent),
+    transparent 69%
+  );
+  z-index: -1;
+  pointer-events: none;
+}
+.fpl-loading-dial {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.fpl-dial-base {
+  opacity: 0.53;
+}
+.fpl-dial-sweep,
+.fpl-dial-tracers {
+  transform-origin: 160px 160px;
+  animation: fpl-dial-rotate 8s linear infinite;
+  filter: drop-shadow(
+    0 0 3px color-mix(in srgb, var(--loading-glow) 50%, transparent)
+  );
+}
+.fpl-dial-tracers {
+  animation-duration: 14s;
+  animation-direction: reverse;
+}
+.fpl-dial-scan {
+  animation: fpl-dial-scan 4s ease-in-out infinite;
+}
+.fpl-dial-speed {
+  animation: fpl-dial-speed 1.2s ease-out infinite;
+}
+.fpl-scene-runner {
+  position: absolute;
+  left: 50%;
+  top: 47%;
+  width: 33.75%;
+  height: 45%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+.fpl-scene-runner .fpl-loading-character {
+  width: 100%;
+  height: 100%;
+}
+.fpl-loading-scene--page .fpl-scene-runner {
+  width: 33.75%;
+  height: 45%;
+}
+.fpl-loading-character {
+  position: relative;
+  display: inline-block;
+  flex: none;
+}
+.fpl-loading-character img,
+.fpl-loading-character video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.fpl-loading-character video {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+}
+.fpl-loading-character[data-playing="true"] img {
+  visibility: hidden;
+}
+.fpl-loading-character[data-playing="true"] video {
+  visibility: visible;
+}
+.fpl-scene-prop {
+  position: absolute;
+  width: 19%;
+  height: 19%;
+  display: block;
+  z-index: 3;
+  pointer-events: none;
+}
+.fpl-scene-prop img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  animation: fpl-prop-float 3.6s ease-in-out infinite;
+  filter: drop-shadow(0 3px 4px #00000012);
+}
+[data-theme="dark"] .fpl-scene-prop img {
+  filter: drop-shadow(0 0 1px #ffdda94d) drop-shadow(0 3px 4px #00000028);
+}
+.fpl-scene-prop--phonewave {
+  left: 7%;
+  top: 7%;
+  width: 25%;
+  height: 25%;
+}
+.fpl-scene-prop--pocket-watch {
+  right: 9%;
+  top: 6%;
+  width: 20%;
+  height: 23%;
+}
+.fpl-scene-prop--metal-upa {
+  right: 5%;
+  top: 65.4%;
+  width: 12%;
+  height: 13.2%;
+}
+.fpl-scene-prop--divergence-meter {
+  left: 35%;
+  bottom: 1%;
+  width: 30%;
+  height: 22%;
+}
+.fpl-scene-prop--flip-phone {
+  left: 10%;
+  bottom: 5%;
+  width: 16%;
+  height: 26%;
+}
+.fpl-scene-prop--gel-banana {
+  left: 0;
+  top: 39%;
+  width: 21%;
+  height: 21%;
+}
+.fpl-scene-prop:nth-of-type(2n) img {
+  animation-delay: -0.9s;
+}
+.fpl-scene-prop:nth-of-type(3n) img {
+  animation-delay: -2.1s;
+}
+.fpl-loading-scene--inline .fpl-scene-runner {
+  top: 50%;
+  width: 65.625%;
+  height: 87.5%;
+}
+.fpl-loading-scene--inline .fpl-dial-tracers,
+.fpl-loading-scene--inline .fpl-dial-scan,
+.fpl-loading-scene--inline .fpl-dial-speed {
+  display: none;
+}
+.fpl-loading-scene--inline .fpl-dial-base {
+  opacity: 0.3;
+}
+.fpl-loading-scene--inline .fpl-dial-sweep {
+  filter: none;
+}
+.fpl-loading-scene[data-paused="true"] *,
+.fpl-loading-scene[data-paused="true"] {
+  animation-play-state: paused !important;
+}
+@keyframes fpl-dial-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes fpl-dial-scan {
+  0%,
+  100% {
+    opacity: 0.08;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+@keyframes fpl-dial-speed {
+  from {
+    opacity: 0.6;
+    transform: translateX(5px);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-5px);
+  }
+}
+@keyframes fpl-prop-float {
+  0%,
+  100% {
+    transform: translateY(1px) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-3px) rotate(1deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fpl-loading-scene *,
+  .fpl-loading-scene {
+    animation: none !important;
+  }
+  .fpl-dial-speed,
+  .fpl-dial-scan {
+    display: none;
+  }
+}
+/* Loading art keeps its proportions inside controls that normally size SVG icons. */
+.fpl-loading-scene > .fpl-loading-dial {
+  width: 100%;
+  height: 100%;
+}
+.fpl-loading-scene .fpl-loading-character > img,
+.fpl-loading-scene .fpl-loading-character > video {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+}
+button:has(> .fpl-loading-scene),
+button:has(> .fpl-loading--inline) {
+  min-height: 40px;
+  height: auto;
+}
+/* The energy layers stay behind the original character and independent props. */
+.fpl-loading-halo {
+  background: radial-gradient(
+    ellipse,
+    color-mix(in srgb, var(--loading-glow) 17%, transparent),
+    transparent 70%
+  );
+  animation: fpl-halo-breathe 3.6s ease-in-out infinite;
+}
+.fpl-loading-radar {
+  position: absolute;
+  inset: 10%;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg 290deg,
+    color-mix(in srgb, var(--loading-glow) 2%, transparent) 305deg,
+    color-mix(in srgb, var(--loading-glow) 14%, transparent) 357deg,
+    transparent 360deg
+  );
+  mask-image: radial-gradient(
+    circle,
+    transparent 14%,
+    #000 72%,
+    transparent 73%
+  );
+  animation: fpl-radar-turn 8s linear infinite;
+  pointer-events: none;
+}
+.fpl-dial-sweep {
+  filter: drop-shadow(0 0 2px var(--loading-glow))
+    drop-shadow(
+      0 0 5px color-mix(in srgb, var(--loading-glow) 55%, transparent)
+    );
+}
+.fpl-dial-energy,
+.fpl-dial-particles {
+  transform-origin: 160px 160px;
+  animation: fpl-dial-rotate 22s linear infinite reverse;
+}
+.fpl-dial-energy {
+  opacity: 0.48;
+}
+.fpl-dial-particles {
+  animation-duration: 17s;
+  filter: drop-shadow(0 0 2px var(--loading-glow));
+}
+.fpl-dial-tracers {
+  filter: drop-shadow(0 0 3px var(--loading-glow))
+    drop-shadow(0 0 6px var(--loading-glow));
+}
+.fpl-scene-prop::before {
+  content: "";
+  position: absolute;
+  inset: 15%;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse,
+    color-mix(in srgb, var(--loading-glow) 13%, transparent),
+    transparent 70%
+  );
+  filter: blur(3px);
+  animation: fpl-halo-breathe 4s ease-in-out infinite;
+  z-index: -1;
+}
+.fpl-loading-scene--inline .fpl-loading-radar,
+.fpl-loading-scene--inline .fpl-dial-energy,
+.fpl-loading-scene--inline .fpl-dial-particles {
+  display: none;
+}
+@keyframes fpl-radar-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes fpl-halo-breathe {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fpl-loading-radar {
+    display: none;
+  }
+  .fpl-loading-halo {
+    opacity: 0.6;
+  }
+}
+.fpl-dial-base {
+  opacity: 0.72;
+}
+.fpl-dial-comet {
+  transform-origin: 160px 160px;
+  animation: fpl-dial-rotate 9s linear infinite;
+  filter: drop-shadow(0 0 2px var(--loading-glow))
+    drop-shadow(0 0 5px var(--loading-glow));
+}
+.fpl-loading-scene--inline .fpl-dial-comet {
+  display: none;
+}
+
+.fpl-scene-prop--dr-pepper {
+  right: 0;
+  top: 31%;
+  width: 13%;
+  height: 27%;
+}
+
+.fpl-scene-prop--time-machine {
+  left: 37%;
+  top: -3%;
+  width: 26%;
+  height: 26%;
+}
+.fpl-loading-scene .fpl-scene-prop > img {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+}
+.fpl-loading-character > picture {
+  display: contents;
+}
+.fpl-loading-scene .fpl-loading-character > picture > img {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+}

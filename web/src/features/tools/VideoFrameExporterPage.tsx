@@ -371,7 +371,7 @@ export function VideoFrameExporterPage({ onBack }: { onBack: () => void }) {
                 {!ready ? (
                   <LoadingState
                     label="正在准备视频…"
-                    variant="inline"
+                    variant="region"
                     className="video-frame-loading"
                   />
                 ) : null}

@@ -409,14 +409,6 @@
   color: var(--text-strong);
   font-size: 18px;
 }
-.lm-spinner {
-  animation: lm-spin 1s linear infinite;
-}
-@keyframes lm-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   .lm-spinner {
     animation: none;

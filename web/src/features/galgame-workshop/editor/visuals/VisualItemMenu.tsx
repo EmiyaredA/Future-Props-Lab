@@ -9,7 +9,6 @@ import {
   Download,
   Eye,
   FolderOpen,
-  LoaderCircle,
   Pencil,
   Trash2,
   Undo2,
@@ -145,11 +144,7 @@ export function VisualItemMenu({ model }: { model: VisualWorkspaceViewModel }) {
                 title={menuFileId ? undefined : "当前资源没有可下载的图片。"}
                 onClick={() => void downloadImage()}
               >
-                {downloadingFileId ? (
-                  <LoaderCircle aria-hidden />
-                ) : (
-                  <Download aria-hidden />
-                )}
+                {downloadingFileId ? null : <Download aria-hidden />}
                 {downloadingFileId ? (
                   <LoadingState variant="inline" label="下载中…" />
                 ) : (

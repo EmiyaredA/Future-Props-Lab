@@ -8,6 +8,7 @@ export function useModelCompactPanels(
   const [panel, setPanel] = useState("result");
   return {
     panel,
+    setPanel,
     tabs: (
       <CompactPanelTabs
         label="测试工作区面板"

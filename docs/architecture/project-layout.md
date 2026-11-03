@@ -22,6 +22,8 @@
 `shared/ui/LoadingState`、`ResponsiveImage`、`ImagePreview` 负责无业务归属的反馈与显示，不持有业务任务状态。
 `shared/lib/imageSources` 负责预览 URL，`imageVariants.ts` 由脚本生成。
 
+`shared/ui/LoadingScene` 拥有整页、区域与行内的同源琥珀仪表视觉；`LoadingCharacter` 拥有人物播放、暂停、静态回退及动态效果偏好，二者不持有业务状态。`web/public/brand/loading/` 保存仪表 SVG、八张道具 WebP、红莉栖小跑透明视频与首帧；二进制资产由 Git LFS 和生产资源 SHA-256 检查维护。`app/bootLoading.ts` 在 React 挂载前控制同源 HTML 加载场景并在成功或失败时清理。
+
 `capabilities/asset_store/thumbnails.py` 拥有受限解码、方向校正、透明 WebP 与原子落盘；身份、社区和创作用例先授权后调用。
 `scripts/generate_image_variants.py` 生成 `web/public/brand/thumbnails/` 下的摘要命名静态派生图和清单，构建执行过期检查。
 接口、入口清单与验收约定见 [`../reference/loading-and-images.md`](../reference/loading-and-images.md)。
@@ -30,7 +32,7 @@
 
 `runtime/website.py` 拥有可信本机 socket、SPA 静态托管和来源校验；`runtime/remote_web.py` 拥有公网 Host／Origin、浏览器 Session／受控 API Key 和缓存边界。`capabilities/web_access/` 拥有公网回环监听器、专用 SSH 重连和状态；附加 lifespan 关闭，不重复初始化数据库或 Runner。
 
-`scripts/website/serve.py` 在导入数据库前检查配置和迁移、持有目标与原桌面数据锁；`service.py` 管理用户级 LaunchAgent，`development.py` 隔离开发配置、密钥与数据库，`install_client.py` 核验原客户端授权并安装用户级 fpl 命令，`configure.py` 在停机快照约束下发布网站配置，`data_transfer.py` 拥有停机快照、SHA256、只读 SQLite 核验和文件发布回滚，`cleanup.py` 只清理受控缓存与有正式关联副本的临时媒体。相邻独立工具入口供 Amadeus／面试准备子进程调用，不启动主应用。
+`scripts/website/serve.py` 在导入数据库前检查配置和迁移、持有目标与原桌面数据锁；`application.py` 在每个重载 worker 导入数据库前复查迁移，并装配网站与公网生命周期；`service.py` 管理同一个用户级 LaunchAgent，`development.py` 持有单例启动锁、沿用现有 TOML 和数据、按后端就绪顺序启动固定 9001/3000 热加载前后端并统一清理进程，`install_client.py` 核验原客户端授权并安装用户级 fpl 命令，`configure.py` 在停机快照约束下发布网站配置，`data_transfer.py` 拥有停机快照、SHA256、只读 SQLite 核验和文件发布回滚，`cleanup.py` 只清理受控缓存与有正式关联副本的临时媒体。相邻独立工具入口供 Amadeus／面试准备子进程调用，不启动主应用。
 
 `console/governance/automation.py` 校验资源归属并返回网站路径；`automation_operations.json` 维护 SDK／MCP 白名单，`automation_access.py` 将其编译为本机／公网共用的入口策略；`console/routes/automation.py` 负责发现和本机管理员访问控制。`sdk/python/src/future_props_lab/website.py` 保存受保护客户端连接，`cli.py` 提供 fpl。
 

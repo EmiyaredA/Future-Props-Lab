@@ -453,3 +453,146 @@ test("captures current workspace core entry smoke views", async ({ page }) => {
     }
   }
 });
+
+async function installDensityData(page: Page) {
+  await installFixedData(page);
+  await page.route("**/v1/model-providers", (route) =>
+    route.fulfill({
+      json: {
+        ...catalog,
+        providers: [
+          ...catalog.providers,
+          {
+            id: "tts",
+            name: "本地语音",
+            kind: "local_qwen_tts",
+            enabled: true,
+            models: [
+              {
+                id: "tts-1",
+                slug: "qwen3-tts",
+                label: "Qwen3-TTS 超长模型名称与版本说明布局验收",
+                enabled: true,
+                availability: "ready",
+                capabilities: ["speech_synthesis"],
+                categories: ["speech_synthesis"],
+              },
+            ],
+          },
+        ],
+      },
+    }),
+  );
+  await page.route("**/v1/model-inference/options", (route) =>
+    route.fulfill({
+      json: {
+        items: [
+          {
+            id: "tts-1",
+            modalities: ["speech_synthesis"],
+            parameters: {
+              speech_synthesis: {
+                languages: ["Chinese", "English"],
+                max_text_length: 2000,
+              },
+            },
+          },
+        ],
+      },
+    }),
+  );
+  await page.route("**/v1/model-inference/tasks", (route) =>
+    route.fulfill({ json: { items: [] } }),
+  );
+  await page.route("**/v1/model-test/conversations/**", (route) =>
+    route.fulfill({ json: conversation }),
+  );
+}
+
+test("model test density across six modes and viewport sizes", async ({
+  page,
+}, info) => {
+  test.setTimeout(180000);
+  await installDensityData(page);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/model-test");
+  for (const width of [390, 768, 1024, 1280, 1600, 1920]) {
+    await page.setViewportSize({ width, height: 1000 });
+    for (const theme of ["light", "dark"] as const) {
+      await setTheme(page, theme);
+      for (const [mode, label] of [
+        ["chat", "文本对话"],
+        ["image", "图像生成"],
+        ["video", "视频生成"],
+        ["synthesis", "语音合成"],
+        ["speech", "语音识别"],
+        ["realtime", "实时语音"],
+      ]) {
+        const tab = page.getByRole("tab", { name: label, exact: true });
+        await tab.click();
+        await expect(tab).toHaveAttribute("aria-selected", "true");
+        await expect(tab).toHaveCSS("font-size", "12px");
+        const header = page.locator(".model-test-workspace-header");
+        await expect(
+          header.getByRole("combobox", { name: "测试模型" }),
+        ).toHaveCSS("font-size", "12px");
+        expect(
+          await header.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+          `${mode} ${width}`,
+        ).toBe(true);
+        if (mode === "synthesis") {
+          await expect(
+            page.getByRole("heading", { name: "模型测试", exact: true }),
+          ).toBeVisible();
+          if (width <= 1200)
+            await page
+              .getByRole("button", { name: "参数与资源", exact: true })
+              .click();
+          await expect(
+            page.locator(".speech-composer .speech-heading h2"),
+          ).toHaveCSS("font-size", "14px");
+          await expect(page.locator(".speech-writing textarea")).toHaveCSS(
+            "font-size",
+            "13px",
+          );
+          await page
+            .locator(".speech-writing textarea")
+            .fill("用于检查长文稿与标点换行的文本。".repeat(20));
+          expect(
+            await page
+              .locator(".speech-workbench")
+              .evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+          ).toBe(true);
+        }
+        await page.screenshot({
+          path: info.outputPath(`${mode}-${theme}-${width}.png`),
+          animations: "disabled",
+        });
+      }
+    }
+  }
+  expect(errors).toEqual([]);
+});
+
+test.describe("model test density touch controls", () => {
+  test.use({ hasTouch: true, viewport: { width: 390, height: 844 } });
+  test("tabs and speech actions keep touch target heights", async ({
+    page,
+  }) => {
+    await installDensityData(page);
+    await page.goto("/model-test");
+    await page.getByRole("tab", { name: "语音合成", exact: true }).click();
+    await page.getByRole("button", { name: "参数与资源", exact: true }).click();
+    const small = await page
+      .locator(
+        ".model-test-mode-tabs button, .speech-reference-actions button, .speech-generate, .speech-editor-footer .custom-select-trigger",
+      )
+      .evaluateAll((nodes) =>
+        nodes
+          .filter((el) => el.getBoundingClientRect().height < 44)
+          .map((el) => el.textContent),
+      );
+    expect(small).toEqual([]);
+  });
+});

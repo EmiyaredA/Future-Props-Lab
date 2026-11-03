@@ -22,6 +22,10 @@
 .mc-view-toolbar > .mc-tabs {
   border: 0;
 }
+:root[data-theme="dark"] .mc-view-toolbar > .mc-add-model,
+:root[data-theme="dark"] .mc-view-toolbar > .mc-add-model:hover:not(:disabled) {
+  color: #000;
+}
 .mc-tabs button {
   border: 0;
   border-bottom: 3px solid transparent;

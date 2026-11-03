@@ -20,7 +20,7 @@ def definition(root=ROOT):
         "Label": LABEL,
         "ProgramArguments": [
             str(python),
-            str(root / "scripts/website/serve.py"),
+            str(root / "scripts/website/development.py"),
         ],
         "WorkingDirectory": str(root),
         "RunAtLoad": True,
@@ -53,19 +53,31 @@ def main():
                 "python",
                 str(ROOT / "scripts/website/serve.py"),
                 "--check",
+                "--reload",
             ],
             cwd=ROOT,
             check=True,
         )
         if target.exists():
-            raise SystemExit("网站服务已经安装；请使用 start/stop 管理")
+            installed = plistlib.loads(target.read_bytes())
+            if installed.get("WorkingDirectory") != str(ROOT):
+                raise SystemExit("同名服务属于其他目录，拒绝覆盖")
+            loaded = subprocess.run(["launchctl", "print", service], capture_output=True)
+            if loaded.returncode == 0:
+                raise SystemExit("请先停止现有服务，再 install 更新统一启动入口")
         target.parent.mkdir(parents=True, exist_ok=True)
         (ROOT / ".runtime/logs").mkdir(parents=True, exist_ok=True, mode=0o700)
-        with target.open("xb") as file:
+        with target.open("wb") as file:
             plistlib.dump(definition(), file)
         target.chmod(0o600)
         subprocess.run(["launchctl", "bootstrap", domain, str(target)], check=True)
     elif args.action == "start":
+        if (
+            not target.exists()
+            or plistlib.loads(target.read_bytes()).get("ProgramArguments")
+            != definition()["ProgramArguments"]
+        ):
+            raise SystemExit("请先停止旧服务并运行 install 更新统一启动入口")
         loaded = subprocess.run(["launchctl", "print", service], capture_output=True)
         if loaded.returncode == 0:
             subprocess.run(["launchctl", "kickstart", service], check=True)

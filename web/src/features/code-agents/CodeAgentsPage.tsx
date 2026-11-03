@@ -1,3 +1,4 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
@@ -41,11 +42,13 @@ export function CodeAgentsPage({
       disabled={detect.isPending || agents.isFetching}
       onClick={() => detect.mutate()}
     >
-      <RefreshCw
-        size={14}
-        aria-hidden
-        className={detect.isPending ? "code-agent-spinning" : undefined}
-      />
+      <>
+        {detect.isPending ? (
+          <LoadingScene />
+        ) : (
+          <RefreshCw size={14} aria-hidden />
+        )}
+      </>
       {detect.isPending ? "检测中…" : "重新检测"}
     </button>
   );

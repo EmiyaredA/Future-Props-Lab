@@ -399,16 +399,6 @@
   color: white;
 }
 
-.spinning {
-  animation: workshop-spin 1s linear infinite;
-}
-
-@keyframes workshop-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .project-assistant-panel {
   --assistant-width: 418px;
   position: absolute;

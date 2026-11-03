@@ -391,16 +391,6 @@
   line-height: 1.55;
 }
 
-.video-download-spin {
-  animation: video-download-spin 0.9s linear infinite;
-}
-
-@keyframes video-download-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .video-download-result dl,
 .video-download-status dl {
   margin: 0;

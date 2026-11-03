@@ -177,7 +177,7 @@ test("生成状态保持紧凑，转圈覆盖各入口，终态恢复生成操�
   await expect(card.getByText(/采样 8\/10 步/)).toBeVisible();
   expect(
     await card
-      .locator(".visual-generation-spinner")
+      .locator(".fpl-loading-scene--inline")
       .evaluate((element) => getComputedStyle(element).animationName),
   ).toBe("visual-generation-spin");
   await card.getByRole("button", { name: /打开任务/ }).click();

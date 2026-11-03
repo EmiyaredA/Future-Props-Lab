@@ -168,17 +168,26 @@ test("only intersecting rows request blobs, visibility loss and picker close abo
   await openPicker();
   expect(fetchBlob).not.toHaveBeenCalled();
   const intersect = (index: number, visible: boolean) =>
-    act(() =>
-      observers[index].callback(
+    act(() => {
+      const row = screen.getByRole("listitem", {
+        name: index === 0 ? "角色基准" : "动作参考",
+      });
+      const observer = observers.find((entry) => entry.target === row)!;
+      observer.callback(
         [
           {
             isIntersecting: visible,
-            target: observers[index].target,
-          } as IntersectionObserverEntry,
+            target: row,
+            boundingClientRect: row.getBoundingClientRect(),
+            intersectionRatio: visible ? 1 : 0,
+            intersectionRect: row.getBoundingClientRect(),
+            rootBounds: null,
+            time: performance.now(),
+          },
         ],
         {} as IntersectionObserver,
-      ),
-    );
+      );
+    });
   intersect(0, true);
   await screen.findByText("图片 · PNG");
   expect(fetchBlob).toHaveBeenCalledTimes(1);

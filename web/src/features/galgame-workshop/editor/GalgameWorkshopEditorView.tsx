@@ -103,7 +103,6 @@ export function GalgameWorkshopEditorView({
   if (model.status === "loading")
     return (
       <div className="workshop-state galgame-editor-state">
-        <RefreshCcw className="spinning" aria-hidden />
         <LoadingState label="正在打开剧本编辑器" variant="inline" />
       </div>
     );

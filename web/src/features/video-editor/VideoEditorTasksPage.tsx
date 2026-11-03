@@ -1,3 +1,4 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { ProgressBar } from "@shared/ui/LoadingState";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { useState } from "react";
@@ -14,7 +15,6 @@ import {
   Download,
   Film,
   Layers3,
-  LoaderCircle,
   RefreshCcw,
   Search,
   Trash2,
@@ -36,7 +36,7 @@ import "./video-editor-tasks.css";
 
 const statuses = {
   queued: { label: "排队中", icon: Clock3 },
-  running: { label: "处理中", icon: LoaderCircle },
+  running: { label: "处理中", icon: LoadingScene },
   completed: { label: "已完成", icon: Check },
   failed: { label: "失败", icon: CircleAlert },
   cancelled: { label: "已取消", icon: X },
@@ -188,10 +188,7 @@ export function VideoEditorTasksPage({
               disabled={refreshing}
               onClick={() => void refresh()}
             >
-              <RefreshCcw
-                className={refreshing ? "spinning" : undefined}
-                aria-hidden
-              />{" "}
+              <>{refreshing ? null : <RefreshCcw aria-hidden />}</>{" "}
               {refreshing ? (
                 <LoadingState variant="inline" label="刷新中…" />
               ) : (

@@ -1,6 +1,7 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { FileText, LoaderCircle } from "lucide-react";
+import { FileText } from "lucide-react";
 import { useVisibleApiBlobUrl } from "@platform/api/useVisibleApiBlobUrl";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { getFilePreview, type ManagedFile } from "./api";
@@ -42,7 +43,7 @@ export function FileThumbnail({ file }: { file: ManagedFile }) {
           />
         ) : (
           <span className="file-thumbnail-message">
-            <LoaderCircle className="spin" aria-hidden />
+            <LoadingScene />
             {loading ? "加载预览…" : "等待预览"}
           </span>
         )

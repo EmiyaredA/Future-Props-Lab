@@ -1,3 +1,4 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
@@ -11,7 +12,6 @@ import {
   ArrowDown,
   ArrowUp,
   Download,
-  LoaderCircle,
   FilePlus2,
   FolderInput,
   Image,
@@ -203,11 +203,7 @@ export function VideoEditorAssetRow({
             title={download.isPending ? "正在下载…" : "下载原素材"}
             onClick={() => download.mutate()}
           >
-            {download.isPending ? (
-              <LoaderCircle className="ve-asset-download-pending" aria-hidden />
-            ) : (
-              <Download aria-hidden />
-            )}
+            {download.isPending ? <LoadingScene /> : <Download aria-hidden />}
           </button>
           <button
             type="button"

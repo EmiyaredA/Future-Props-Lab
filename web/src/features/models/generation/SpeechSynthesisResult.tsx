@@ -1,10 +1,10 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useRef, useState } from "react";
 import {
   CheckCircle2,
   Download,
   FolderPlus,
-  LoaderCircle,
   Pause,
   Play,
   TriangleAlert,
@@ -87,7 +87,7 @@ export function SpeechSynthesisResult({
         ) : failed ? (
           <TriangleAlert size={17} aria-hidden />
         ) : (
-          <LoaderCircle size={17} className="speech-spinner" aria-hidden />
+          <LoadingScene />
         )}
         {speechTaskStatus(task.status)}
       </div>
@@ -151,11 +151,7 @@ export function SpeechSynthesisResult({
               }}
             >
               {audio.loading ? (
-                <LoaderCircle
-                  size={24}
-                  className="speech-spinner"
-                  aria-hidden
-                />
+                <LoadingScene />
               ) : playing ? (
                 <Pause size={24} aria-hidden />
               ) : (

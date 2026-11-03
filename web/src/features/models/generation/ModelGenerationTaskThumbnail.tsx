@@ -1,8 +1,9 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { statusLabel } from "./modelGenerationOptions";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { useEffect, useRef, useState } from "react";
-import { Image, LoaderCircle, Video } from "lucide-react";
+import { Image, Video } from "lucide-react";
 import {
   getModelTestGenerationResult,
   type ModelTestGenerationTask,
@@ -57,7 +58,7 @@ export function TaskThumbnail({ task }: { task: ModelTestGenerationTask }) {
 
   const fallback =
     task.status === "completed" && task.result_available && !failed ? (
-      <LoaderCircle className="spinning" aria-hidden />
+      <LoadingScene />
     ) : task.kind === "image" ? (
       <Image aria-hidden />
     ) : (

@@ -1,5 +1,6 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { useEffect, useState } from "react";
-import { LoaderCircle, Mic2, Trash2 } from "lucide-react";
+import { Mic2, Trash2 } from "lucide-react";
 import {
   ANNOTATION_LANGUAGES,
   languageColor,
@@ -384,7 +385,7 @@ export function LanguageAnnotationEditor({
                 }
               >
                 {transcription.pending ? (
-                  <LoaderCircle className="spinning" aria-hidden />
+                  <LoadingScene />
                 ) : (
                   <Mic2 aria-hidden />
                 )}

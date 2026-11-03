@@ -223,6 +223,7 @@ test("groups the required inputs, localizes language and expands the transcript 
 test("submitting adds the task to the result column and retains text while consuming the input", async () => {
   mount();
   const user = await prepareDraft();
+  fireEvent.click(screen.getByText("参数与资源"));
   await user.click(screen.getByRole("button", { name: "生成语音" }));
   await waitFor(() =>
     expect(speechApi.createSpeechTask).toHaveBeenCalledWith(
@@ -233,8 +234,15 @@ test("submitting adds the task to the result column and retains text while consu
       "这是录音实际说的内容",
     ),
   );
-  expect(await screen.findByText("正在生成")).toBeInTheDocument();
+  expect(
+    await within(
+      screen.getByRole("article", { name: "选中的生成结果" }),
+    ).findByText("正在生成"),
+  ).toBeInTheDocument();
   expect(screen.getByLabelText("目标文字")).toHaveValue("这是需要生成的文稿");
+  expect(
+    screen.getByRole("heading", { name: "模型测试" }).closest("section"),
+  ).toHaveAttribute("data-compact-panel", "result");
   expect(screen.getByLabelText("录音对应文字")).toHaveValue(
     "这是录音实际说的内容",
   );
@@ -405,7 +413,9 @@ test("failed tasks have an understandable status without playback actions", asyn
     }),
   ];
   mount();
-  await screen.findByText("生成失败");
+  await within(
+    await screen.findByRole("article", { name: "选中的生成结果" }),
+  ).findByText("生成失败");
   expect(screen.getByText("参考录音无法解码")).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "播放语音" })).toBeNull();
 });

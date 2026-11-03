@@ -6,7 +6,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ExternalLink,
   FileImage,
-  LoaderCircle,
   RefreshCcw,
   RotateCcw,
   TriangleAlert,
@@ -228,7 +227,6 @@ export function VisualWorkshopTasksPage({
       ) : null}
       {tasks.isLoading ? (
         <div className="workshop-state">
-          <LoaderCircle className="spinning" aria-hidden />
           <LoadingState label="正在读取生成任务" variant="inline" />
         </div>
       ) : tasks.isError ? (
@@ -247,7 +245,7 @@ export function VisualWorkshopTasksPage({
                   <div>
                     <span className={`generation-task-status ${task.status}`}>
                       {ACTIVE_STATUSES.has(task.status) && (
-                        <GenerationSpinner size={12} />
+                        <GenerationSpinner />
                       )}
                       {taskActivity(task)?.label ?? STATUS_LABELS[task.status]}
                     </span>

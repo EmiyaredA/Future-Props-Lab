@@ -1,10 +1,11 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { useEffect, useMemo, useRef, useState } from "react";
 import "@features/models/models.css";
 import { modelQueryKeys } from "@features/models/queryKeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { LoaderCircle, Paperclip, Send, Square, Trash2, X } from "lucide-react";
+import { Paperclip, Send, Square, Trash2, X } from "lucide-react";
 import {
   createModelTestConversation,
   deleteModelTestAttachment,
@@ -755,7 +756,7 @@ export function ModelTestPage({
                             }
                           >
                             {removingAttachmentId === attachment.id ? (
-                              <LoaderCircle aria-hidden />
+                              <LoadingScene />
                             ) : (
                               <X aria-hidden />
                             )}
@@ -764,7 +765,7 @@ export function ModelTestPage({
                       ))}
                       {uploadingAttachments ? (
                         <div className="attachment-uploading" role="status">
-                          <LoaderCircle aria-hidden /> 上传中
+                          <LoadingScene /> 上传中
                         </div>
                       ) : null}
                     </div>
@@ -801,7 +802,7 @@ export function ModelTestPage({
                     onClick={() => fileInputRef.current?.click()}
                   >
                     {uploadingAttachments ? (
-                      <LoaderCircle aria-hidden />
+                      <LoadingScene />
                     ) : (
                       <Paperclip aria-hidden />
                     )}

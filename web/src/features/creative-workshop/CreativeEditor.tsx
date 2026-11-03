@@ -1,5 +1,6 @@
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useState } from "react";
 import {
   getCreative,
@@ -118,7 +119,7 @@ export function Editor({
     return (
       <p className="creative-empty">
         <TransferFeedback progress={activeTransferProgress} />
-        {error || "正在加载草稿…"}
+        {error || <LoadingState label="正在加载草稿…" />}
       </p>
     );
   if (!canWrite)

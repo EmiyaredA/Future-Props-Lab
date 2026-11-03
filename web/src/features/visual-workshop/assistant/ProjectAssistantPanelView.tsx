@@ -1,9 +1,9 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { LoadingState } from "@shared/ui/LoadingState";
 import type { CSSProperties } from "react";
 import {
   Check,
   History,
-  LoaderCircle,
   MessageSquareText,
   Paperclip,
   PanelRightClose,
@@ -233,7 +233,7 @@ export function ProjectAssistantPanelView({
       <div className="project-assistant-scroll" ref={scrollRef}>
         {detailQuery.isLoading || createMutation.isPending ? (
           <div className="project-assistant-loading">
-            <LoaderCircle aria-hidden /> 正在打开对话…
+            <LoadingState label="正在打开对话…" />
           </div>
         ) : messages.length ? (
           messages.map((message) => (
@@ -382,11 +382,7 @@ export function ProjectAssistantPanelView({
                 }
                 onClick={() => fileInput.current?.click()}
               >
-                {uploading ? (
-                  <LoaderCircle className="spinning" aria-hidden />
-                ) : (
-                  <Upload aria-hidden />
-                )}
+                {uploading ? <LoadingScene /> : <Upload aria-hidden />}
               </button>
               <button
                 type="button"

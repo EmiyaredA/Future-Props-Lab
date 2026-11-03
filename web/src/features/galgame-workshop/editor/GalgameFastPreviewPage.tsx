@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { LoadingState } from "@shared/ui/LoadingState";
 import {
   getGalgameStoryDocument,
   patchGalgameStoryDialogue,
@@ -54,6 +55,7 @@ export function GalgameFastPreviewPage({ projectId }: { projectId: string }) {
     >(),
   );
   const [notice, setNotice] = useState("正在等待编辑器快照…");
+  const [loadFailed, setLoadFailed] = useState(false);
   const sessionId = new URLSearchParams(window.location.search).get("session");
 
   useEffect(() => {
@@ -74,7 +76,10 @@ export function GalgameFastPreviewPage({ projectId }: { projectId: string }) {
         setSession(nextSession);
         setNotice("编辑器未连接，正在预演服务器已保存版本");
       } catch {
-        if (active) setNotice("无法取得编辑器快照或服务器版本");
+        if (active) {
+          setLoadFailed(true);
+          setNotice("无法取得编辑器快照或服务器版本");
+        }
       }
     };
     if (sessionId && typeof BroadcastChannel !== "undefined") {
@@ -128,7 +133,14 @@ export function GalgameFastPreviewPage({ projectId }: { projectId: string }) {
     };
   }, [projectId, sessionId]);
 
-  if (!session) return <div className="page-loading">{notice}</div>;
+  if (!session)
+    return loadFailed ? (
+      <div className="page-loading" role="alert">
+        {notice}
+      </div>
+    ) : (
+      <LoadingState label={notice} variant="page" className="page-loading" />
+    );
   const applyDialogueEdit = async (edit: FastPreviewDialogueEdit) => {
     if (channelRef.current) {
       const requestId = crypto.randomUUID();

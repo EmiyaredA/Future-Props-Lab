@@ -1,3 +1,4 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -5,7 +6,6 @@ import {
   FileText,
   Folder,
   Image,
-  LoaderCircle,
   Play,
   Upload,
   Video,
@@ -116,11 +116,7 @@ export function HomeFiles({
               disabled={upload.isPending}
               onClick={() => input.current?.click()}
             >
-              {upload.isPending ? (
-                <LoaderCircle className="spin" aria-hidden />
-              ) : (
-                <Upload aria-hidden />
-              )}
+              {upload.isPending ? <LoadingScene /> : <Upload aria-hidden />}
               {upload.isPending ? "正在上传…" : "上传文件"}
             </button>
           </>

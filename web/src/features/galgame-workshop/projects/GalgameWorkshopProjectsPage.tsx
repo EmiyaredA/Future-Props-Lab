@@ -131,7 +131,6 @@ export function GalgameWorkshopProjectsPage({
       ) : null}
       {projectsQuery.isLoading ? (
         <div className="workshop-state">
-          <RefreshCcw className="spinning" aria-hidden />
           <LoadingState label="正在读取工程" variant="inline" />
         </div>
       ) : projectsQuery.isError ? (

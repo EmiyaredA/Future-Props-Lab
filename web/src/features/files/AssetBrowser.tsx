@@ -1,3 +1,4 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { FileBrowserLocation } from "./FileBrowserLocation";
 import { FileLibraryActions } from "./FileLibraryActions";
 import { LoadingState } from "@shared/ui/LoadingState";
@@ -19,7 +20,6 @@ import {
   Folders,
   Grid2X2,
   List,
-  LoaderCircle,
   Plus,
   Search,
   Upload,
@@ -347,7 +347,7 @@ export function AssetBrowser({
                           }}
                         >
                           {upload.isPending ? (
-                            <LoaderCircle className="spin" aria-hidden />
+                            <LoadingScene />
                           ) : (
                             <Upload aria-hidden />
                           )}
@@ -644,7 +644,7 @@ export function AssetBrowser({
                 role={item.status === "error" ? "alert" : undefined}
               >
                 {item.status === "uploading" || item.status === "queued" ? (
-                  <LoaderCircle className="spin" aria-hidden />
+                  <LoadingScene />
                 ) : item.status === "success" ? (
                   <CheckCircle2 aria-hidden />
                 ) : (
@@ -691,11 +691,7 @@ export function AssetBrowser({
                 onClick={() => fileInput.current?.click()}
               >
                 <span className="file-upload-card-icon">
-                  {upload.isPending ? (
-                    <LoaderCircle className="spin" aria-hidden />
-                  ) : (
-                    <Upload aria-hidden />
-                  )}
+                  {upload.isPending ? <LoadingScene /> : <Upload aria-hidden />}
                 </span>
                 <span className="file-upload-card-copy">
                   <strong>

@@ -1,6 +1,7 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { lazy, Suspense } from "react";
-import { Film, LoaderCircle } from "lucide-react";
+import { Film } from "lucide-react";
 import type { GalgameStoryProject } from "@features/galgame-workshop/api";
 import type { SegmentPreviewSelection } from "@features/galgame-workshop/editor/EditorSegmentPreviewDialog";
 import { videoExportLanguageOptions } from "@features/galgame-workshop/editor/videoExportLanguage";
@@ -55,7 +56,7 @@ export function GalgameEditorVideoExportDialog({
                 variant="inline"
               />
             </span>
-            <LoaderCircle className="spinning" aria-hidden />
+            <LoadingScene />
           </section>
         </div>
       }

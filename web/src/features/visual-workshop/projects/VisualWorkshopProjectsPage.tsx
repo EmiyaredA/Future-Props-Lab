@@ -149,7 +149,6 @@ export function VisualWorkshopProjectsPage({
       ) : null}
       {projectsQuery.isLoading ? (
         <div className="workshop-state">
-          <RefreshCcw className="spinning" aria-hidden />
           <LoadingState label="正在读取项目" variant="inline" />
         </div>
       ) : projectsQuery.isError ? (

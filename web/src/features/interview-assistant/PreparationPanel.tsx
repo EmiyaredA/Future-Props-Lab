@@ -1,3 +1,4 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
@@ -7,7 +8,6 @@ import {
   ArrowRight,
   Download,
   FolderOpen,
-  LoaderCircle,
   RefreshCw,
   Square,
   Trash2,
@@ -146,7 +146,7 @@ export function PreparationPanel({
           aria-live="polite"
         >
           <div className="section-title">
-            {activeTask(task) && <LoaderCircle className="spin" size={18} />}
+            {activeTask(task) && <LoadingScene />}
             <h2>{task.message}</h2>
             <Badge tone={task.status === "succeeded" ? "success" : ""}>
               {statusLabel[task.status]}

@@ -200,3 +200,60 @@ async def test_api_key_automation_keeps_allowlist_and_reports_account_scoped_cha
         assert (await client.get("/v1/automation/access")).status_code == 403
         assert (await client.get("/v1/platform/accounts")).status_code == 403
         assert (await client.get("/v1/amadeus/conversations")).status_code == 403
+
+
+async def test_hot_frontend_proxy_keeps_session_csrf_and_socket_permissions(website, monkeypatch):
+    from app.runtime.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "cors_origins", "http://127.0.0.1:3000")
+    app = FastAPI()
+    app.exception_handlers.update(main_app.exception_handlers)
+    app.include_router(api_router)
+    app.state.automation_changes = {}
+    app.add_middleware(WebsiteTransport, local_port=9001, frontend_origin="http://127.0.0.1:3000")
+    # Vite rewrites Host to the API target and preserves the browser's Origin.
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app),
+        base_url="http://127.0.0.1:9001",
+        cookies=website.local.cookies,
+        headers={
+            "Origin": "http://127.0.0.1:3000",
+            "X-CSRF-Token": website.local.cookies["fpl_csrf"],
+        },
+    ) as client:
+        result = await client.get("/v1/automation/runtime")
+        assert result.status_code == 200, result.text
+        assert result.json() == {"local_browser": True}
+        result = await client.post(
+            "/v1/automation/open", json={"kind": "visual", "resource_id": "missing"}
+        )
+        assert result.status_code == 404, result.text
+        assert (
+            await client.post(
+                "/v1/automation/open",
+                json={"kind": "visual", "resource_id": "missing"},
+                headers={"X-CSRF-Token": "wrong"},
+            )
+        ).status_code == 403
+        for headers in [
+            {"Origin": "http://evil.invalid"},
+            {"Host": "127.0.0.1:3000"},
+            {"Host": "evil.invalid", "X-Forwarded-Host": "127.0.0.1:9001"},
+        ]:
+            assert (await client.get("/v1/automation/runtime", headers=headers)).status_code == 403
+    public = await public_client(website)
+    try:
+        result = await public.get(
+            "/v1/automation/runtime", headers={"Origin": "http://127.0.0.1:3000"}
+        )
+        assert result.status_code == 200
+        assert result.json() == {"local_browser": False}
+        assert (
+            await public.post(
+                "/v1/automation/access/actions",
+                json={"action": "public_start"},
+                headers={"Origin": "http://127.0.0.1:3000"},
+            )
+        ).status_code == 403
+    finally:
+        await public.aclose()

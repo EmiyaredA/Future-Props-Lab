@@ -21,4 +21,7 @@ web/public/brand/interview-assistant-mark.png filter=lfs diff=lfs merge=lfs -tex
 web/public/presentation-templates/*.png filter=lfs diff=lfs merge=lfs -text
 web/public/brand/home/*.png filter=lfs diff=lfs merge=lfs -text
 web/public/brand/home/*.webm filter=lfs diff=lfs merge=lfs -text
+web/public/brand/loading/*.png filter=lfs diff=lfs merge=lfs -text
+web/public/brand/loading/*.webm filter=lfs diff=lfs merge=lfs -text
 web/public/brand/thumbnails/*.webp filter=lfs diff=lfs merge=lfs -text
+web/public/brand/loading/*.webp filter=lfs diff=lfs merge=lfs -text

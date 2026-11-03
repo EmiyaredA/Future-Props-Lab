@@ -175,7 +175,7 @@ export function OutputHistory({
         </div>
         {activity && (
           <span className="board-state-badge is-running">
-            <GenerationSpinner size={12} />
+            <GenerationSpinner />
             {activity.label}
           </span>
         )}
@@ -217,7 +217,7 @@ export function OutputHistory({
               className="board-generating-placeholder"
               aria-label="等待生成画面"
             >
-              <GenerationSpinner size={24} />
+              <GenerationSpinner />
               <span>等待生成画面</span>
             </div>
           ) : (
