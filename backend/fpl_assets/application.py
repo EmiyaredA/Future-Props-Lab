@@ -38,6 +38,7 @@ from .routes.library_inputs import router as library_inputs_router
 from .routes.library_outputs import router as library_outputs_router
 from .routes.project_links import router as links_router
 from .routes.thought_library import router as thought_library_router
+from .routes.thought_uploads import router as thought_uploads_router
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +125,7 @@ def create_app(
     app.include_router(library_inputs_router)
     app.include_router(library_outputs_router)
     app.include_router(thought_library_router)
+    app.include_router(thought_uploads_router)
     app.include_router(community_assets_router)
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)

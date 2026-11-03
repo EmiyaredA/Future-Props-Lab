@@ -3,9 +3,8 @@ from datetime import datetime
 from sqlalchemy import JSON, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.apps.thought_workshop.foreign_keys import external_id
 from app.runtime.ids import new_id
-from app.runtime.orm_base import Base
+from app.runtime.orm_base import Base, external_id
 from app.runtime.time import utc_now
 
 

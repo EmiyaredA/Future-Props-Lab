@@ -64,3 +64,25 @@ def asset_grant(grant):
             and re.fullmatch(PREFIX + r"/content/" + ID + r"/[0-9]{1,20}", grant.target_path)
         )
     )
+
+
+def upload_grant(grant):
+    """Authorize only an upload kind matching its original Thought endpoint."""
+    if not (
+        grant.caller == "thought"
+        and grant.purpose == "thought.library.upload"
+        and grant.source_method == "POST"
+        and grant.target_service == "assets"
+        and grant.target_method == "POST"
+    ):
+        return False
+    kind = {
+        "/v1/thought-workshop/images": "image",
+        "/v1/thought-workshop/attachments": "attachment",
+    }.get(grant.source_path)
+    return bool(
+        kind
+        and re.fullmatch(
+            PREFIX + r"/uploads/" + kind + r"/" + ID + r"/[0-9a-f]{64}", grant.target_path
+        )
+    )

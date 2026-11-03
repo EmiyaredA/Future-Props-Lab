@@ -209,38 +209,52 @@ async def scenario():
                             change=change("wrong-method"),
                         )
                     except CapabilityDenied as exc:
-                        assert exc.status == 403
+                        assert exc.status == 401
                     else:
                         raise AssertionError("Original PUT assertion authorized a POST")
                     operations_path = "/v1/thought-workshop/notes/owned-note/operations"
-                    operations_assertion = issue_context(
-                        actor,
-                        service="thought",
-                        method="POST",
-                        path=operations_path,
-                        private_key=private,
-                        key_id="test",
+                    supported_paths = (
+                        operations_path,
+                        "/v1/thought-workshop/notes/owned-note/history/old/restore",
+                        "/v1/thought-workshop/notes/owned-note/multitable/operations",
+                        "/v1/thought-workshop/notes/owned-note/multitable/history/2/restore",
+                        "/v1/thought-workshop/notes/owned-note/multitable/tables/table/csv-import",
                     )
-                    for forbidden in (
-                        change("operations-same-note"),
-                        change("operations-other-note", resource_id="another-note"),
-                        change(
-                            "operations-template", resource_kind="template", resource_id="another"
-                        ),
-                    ):
-                        try:
-                            await client.authorize(
-                                assertion=operations_assertion,
-                                source_method="POST",
-                                source_path=operations_path,
-                                change=forbidden,
-                            )
-                        except CapabilityDenied as exc:
-                            assert exc.status == 403
-                        else:
-                            raise AssertionError(
-                                "Unregistered batch operation received retention authority"
-                            )
+                    for index, path in enumerate(supported_paths):
+                        source = issue_context(
+                            actor,
+                            service="thought",
+                            method="POST",
+                            path=path,
+                            private_key=private,
+                            key_id="test",
+                        )
+                        exact = change(f"operations-exact-{index}")
+                        operation_authority = await client.authorize(
+                            assertion=source, source_method="POST", source_path=path, change=exact
+                        )
+                        assert verify_retention(
+                            operation_authority, public_key=private.public_key()
+                        ).matches(exact)
+                        for forbidden in (
+                            change(f"operations-other-{index}", resource_id="another-note"),
+                            change(
+                                f"operations-template-{index}",
+                                resource_kind="template",
+                                resource_id="another",
+                            ),
+                        ):
+                            try:
+                                await client.authorize(
+                                    assertion=source,
+                                    source_method="POST",
+                                    source_path=path,
+                                    change=forbidden,
+                                )
+                            except CapabilityDenied as exc:
+                                assert exc.status == 403
+                            else:
+                                raise AssertionError("Note operation authorized another resource")
                     forged = issue_context(
                         replace(actor, user_id="different-owner"),
                         service="thought",

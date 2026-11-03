@@ -29,6 +29,7 @@ from .accounts import create_account
 from .authorization import router as authorization_router
 from .catalog_events import router as catalog_events_router
 from .community_assets import router as community_assets_router
+from .creative_source_evidence import router as creative_source_evidence_router
 from .delegation import router as delegation_router
 from .integration_intent_http import router as integration_intent_router
 from .integration_intents import IntegrationIntents
@@ -131,6 +132,7 @@ def create_app(
     app.include_router(catalog_events_router)
     app.include_router(live_router, include_in_schema=False)
     app.include_router(delegation_router, include_in_schema=False)
+    app.include_router(creative_source_evidence_router)
     app.include_router(account_directory_router)
     app.include_router(community_assets_router)
     app.include_router(retention_router)

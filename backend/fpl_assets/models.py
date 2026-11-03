@@ -130,6 +130,19 @@ class ModelLibraryOutputReceipt(ReferenceBase):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
 
 
+class ThoughtUploadReceipt(ReferenceBase):
+    """A source request has one durable result, including after response loss."""
+
+    __tablename__ = "asset_thought_upload_receipts"
+    __table_args__ = (UniqueConstraint("owner_user_id", "request_id"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
+    request_id: Mapped[str] = mapped_column(String(128))
+    descriptor_sha256: Mapped[str] = mapped_column(String(64))
+    result: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
 MODELS = (
     VisualAssetFolder,
     VisualAsset,
@@ -141,4 +154,5 @@ MODELS = (
     PreparedAssetPin,
     VisualProjectFileLink,
     ModelLibraryOutputReceipt,
+    ThoughtUploadReceipt,
 )

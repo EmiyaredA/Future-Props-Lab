@@ -95,7 +95,7 @@ def model_library_output(grant):
 def target_permission_path(grant):
     from .account_directory import directory_path
     from .external_sync import close_grant, read_grant
-    from .thought_assets import asset_grant
+    from .thought_assets import asset_grant, upload_grant
     from .writing import writing_grant, writing_target
 
     if (
@@ -108,7 +108,7 @@ def target_permission_path(grant):
         return "/v1/integrations/external-connections"
     if writing_grant(grant):
         return writing_target(grant.target_method, grant.target_path)
-    if asset_grant(grant):
+    if asset_grant(grant) or upload_grant(grant):
         return "/v1/files"
     if model_library_output(grant):
         return "/v1/files"
@@ -122,14 +122,14 @@ def permitted(grant, catalog):
         return False
     from .account_directory import directory_grant
     from .external_sync import close_grant, read_grant
-    from .thought_assets import asset_grant
+    from .thought_assets import asset_grant, upload_grant
     from .writing import writing_grant
 
     if directory_grant(grant, catalog):
         return True
     if writing_grant(grant) or read_grant(grant) or close_grant(grant):
         return True
-    if asset_grant(grant):
+    if asset_grant(grant) or upload_grant(grant):
         return True
     if model_library_input(grant) or model_library_output(grant):
         return True

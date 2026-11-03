@@ -37,6 +37,9 @@ from fpl_runtime.integration_client import IntegrationAuthorizationUnavailable
 from fpl_runtime.migrations import check
 from fpl_runtime.request_limit import RequestLimit
 
+from .creative_http import CreativeRequestLimit
+from .creative_http import router as creative_router
+from .creative_installations import CreativeInstallations
 from .demo_http import router as demo_install_router
 from .demo_tools import DemoToolInstallations
 from .external_http import router as external_sync_router
@@ -152,6 +155,7 @@ def create_app(
     app.state.external_reads = ExternalReads(database, feishu_transport, cipher=cipher)
     app.state.external_steps = external_steps
     app.state.demo_tool_installations = DemoToolInstallations(database)
+    app.state.creative_installations = CreativeInstallations(database, settings)
     app.state.integration_validation_recovery = recovery
     app.state.supervisor = supervisor
 
@@ -203,6 +207,7 @@ def create_app(
     )
     app.include_router(external_sync_router)
     app.include_router(demo_install_router)
+    app.include_router(creative_router)
     app.include_router(external_router, prefix="/v1", dependencies=[Depends(require_studio_auth)])
     for error, handler in (
         (HTTPException, http_exception_handler),
@@ -230,6 +235,7 @@ def create_app(
     app.add_middleware(
         RequestLimit, prefix="/_internal/v1/external-sync/", maximum=32 * 1024 * 1024
     )
+    app.add_middleware(CreativeRequestLimit)
     expected = {
         (op.method, op.path): op.operation_id
         for op in catalog.operations

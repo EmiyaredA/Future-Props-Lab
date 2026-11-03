@@ -8,7 +8,7 @@ import httpx
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi import FastAPI
-from sqlalchemy import delete, update
+from sqlalchemy import delete, select, update
 from starlette.datastructures import UploadFile
 
 from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
@@ -18,6 +18,7 @@ from app.apps.thought_workshop.publication.models import (
     PublishedArticle,
 )
 from app.capabilities.asset_store.library import AssetLibrary
+from app.capabilities.asset_store.models import VisualAsset
 from fpl_assets.application import create_app as create_assets
 from fpl_assets.community_assets import CommunityAssetChecks
 from fpl_assets.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
@@ -497,3 +498,401 @@ async def test_public_asset_url_without_note_id_resolves_current_multitable_atta
         )
         await session.commit()
     assert (await read(case, token)).status_code == 404
+
+
+async def test_browser_route_streams_through_three_services_and_rechecks_revocation(scenario):
+    from app.apps.thought_workshop.account_directory import DirectoryBindings
+    from fpl_runtime.authentication import SignedIdentity
+    from fpl_thought.account_directory import HttpAccountDirectory
+    from fpl_thought.community_http import CommunityFiles, router
+
+    case = scenario
+    app = FastAPI()
+    app.state.database = case.db
+    app.state.community_files = CommunityFiles(
+        credential=THOUGHT_SECRET, public_key=case.key.public_key(), transport=case.mesh
+    )
+
+    def directory_for(principal, assertion, method, path):
+        return HttpAccountDirectory(
+            principal=principal,
+            assertion=assertion,
+            source_method=method,
+            source_path=path,
+            credential=THOUGHT_SECRET,
+            catalog=CATALOG,
+            transport=case.mesh,
+        )
+
+    app.state.thought_directory = DirectoryBindings(
+        lambda request, _session, principal: directory_for(
+            principal, request.state.service_assertion, request.method, request.url.path
+        )
+    )
+    case.thought.state.community_evidence.directory_factory = lambda principal, source: (
+        directory_for(principal, source.source_assertion, source.source_method, source.source_path)
+    )
+    app.include_router(router, prefix="/v1")
+    app.add_middleware(
+        SignedIdentity, service="thought", public_key=case.key.public_key(), catalog=CATALOG
+    )
+    path = f"/v1/thought-workshop/community/publications/pub/assets/{case.asset}/content"
+    authorized = await case.browser.get(
+        "/_internal/v1/authorize",
+        headers={
+            "X-Fpl-Target-Service": "thought",
+            "X-Fpl-Request-Method": "GET",
+            "X-Fpl-Request-Uri": path,
+        },
+    )
+    assert authorized.status_code == 204
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://thought"
+    ) as browser:
+        response = await browser.get(path, headers={HEADER: authorized.headers[HEADER]})
+        assert response.status_code == 200, response.text
+        assert response.content == b"\x89PNG\r\n\x1a\nvisible image bytes"
+        assert response.headers["cache-control"] == "no-store"
+        async with case.db.sessions(info={"owner_user_id": case.owner}) as session:
+            await session.execute(delete(ArticleMember).where(ArticleMember.user_id == case.viewer))
+            await session.commit()
+        assert (
+            await browser.get(path, headers={HEADER: authorized.headers[HEADER]})
+        ).status_code == 404
+    await app.state.community_files.close()
+
+
+async def test_note_batch_http_with_real_identity_and_assets_retention(scenario):
+    from fpl_assets.references import AssetReferences
+    from fpl_runtime.asset_references import ReferenceUpdate
+    from fpl_runtime.retention_client import RetentionClient
+    from fpl_thought.application import create_app as create_thought
+    from fpl_thought.retention import ThoughtReferenceDelivery
+    from fpl_thought.retention_records import ThoughtReferenceMutation
+
+    case = scenario
+    await AssetReferences(case.assets.state.database).replace(
+        owner=case.owner,
+        service="thought",
+        update=ReferenceUpdate(
+            request_id="initial-projection",
+            resource_kind="note",
+            resource_id="note",
+            resource_revision=0,
+            expected_revision=0,
+            asset_ids=[case.asset],
+        ),
+    )
+    live = LiveAuthorization(service="assets", credential=ASSETS_SECRET, transport=case.mesh)
+    case.assets.state.identity = live
+    client = RetentionClient(service="thought", credential=THOUGHT_SECRET, transport=case.mesh)
+    app = create_thought(
+        state_root=case.db.root,
+        catalog=CATALOG,
+        public_key=case.key.public_key(),
+        credential=THOUGHT_SECRET,
+        identity=LiveAuthorization(
+            service="thought", credential=THOUGHT_SECRET, transport=case.mesh
+        ),
+        retention_client=client,
+        assets_peer_credential=PEER_SECRET,
+        transport=case.mesh,
+        run_worker=False,
+    )
+    path = "/v1/thought-workshop/notes/note/operations"
+    headers = {
+        "X-Fpl-Gateway": GATEWAY_SECRET,
+        "X-Fpl-Ingress": "local",
+        "X-Fpl-Client-Ip": "127.0.0.1",
+    }
+    async with app.router.lifespan_context(app):
+        async with case.db.sessions(info={"owner_user_id": case.owner}) as session:
+            session.add(
+                ThoughtNote(
+                    id="table",
+                    owner_user_id=case.owner,
+                    knowledge_base_id="book",
+                    title="Table",
+                    kind="multitable",
+                    document={"type": "doc", "content": []},
+                    search_text="",
+                )
+            )
+            await session.flush()
+            session.add(
+                PublishedArticle(publication_id="pub", note_id="table", visibility="private")
+            )
+            session.add(
+                ArticleMember(
+                    publication_id="pub", note_id="table", user_id=case.viewer, role="read"
+                )
+            )
+            await session.commit()
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=case.identity),
+            base_url="http://127.0.0.1:19000",
+            headers=headers,
+        ) as owner:
+            login = await owner.post(
+                "/v1/auth/login", json={"username": "source-owner", "password": PASSWORD}
+            )
+            assert login.status_code == 200
+            auth = await owner.get(
+                "/_internal/v1/authorize",
+                headers={
+                    "X-Fpl-Target-Service": "thought",
+                    "X-Fpl-Request-Method": "POST",
+                    "X-Fpl-Request-Uri": path,
+                    "X-CSRF-Token": owner.cookies["fpl_csrf"],
+                    "Origin": "http://127.0.0.1:19000",
+                },
+            )
+            assert auth.status_code == 204
+            read_path = "/v1/thought-workshop/notes/note"
+            read_headers = {
+                "X-Fpl-Target-Service": "thought",
+                "X-Fpl-Request-Method": "GET",
+                "X-Fpl-Request-Uri": read_path,
+            }
+            owner_read = await owner.get("/_internal/v1/authorize", headers=read_headers)
+            viewer_read = await case.browser.get("/_internal/v1/authorize", headers=read_headers)
+            assert owner_read.status_code == viewer_read.status_code == 204
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app), base_url="http://thought"
+            ) as reader:
+                assert (
+                    await reader.get(read_path, headers={HEADER: owner_read.headers[HEADER]})
+                ).status_code == 200
+                assert (
+                    await reader.get(read_path, headers={HEADER: viewer_read.headers[HEADER]})
+                ).status_code == 404
+                table_path = "/v1/thought-workshop/notes/table/multitable"
+                table_headers = {
+                    "X-Fpl-Target-Service": "thought",
+                    "X-Fpl-Request-Method": "GET",
+                    "X-Fpl-Request-Uri": table_path,
+                }
+                table_owner = await owner.get("/_internal/v1/authorize", headers=table_headers)
+                table_viewer = await case.browser.get(
+                    "/_internal/v1/authorize", headers=table_headers
+                )
+                assert table_owner.status_code == table_viewer.status_code == 204
+                assert (
+                    await reader.get(table_path, headers={HEADER: table_owner.headers[HEADER]})
+                ).status_code == 200
+                assert (
+                    await reader.get(table_path, headers={HEADER: table_viewer.headers[HEADER]})
+                ).status_code == 404
+                await AssetReferences(case.assets.state.database).replace(
+                    owner=case.owner,
+                    service="thought",
+                    update=ReferenceUpdate(
+                        request_id="table-initial",
+                        resource_kind="note",
+                        resource_id="table",
+                        resource_revision=0,
+                        expected_revision=0,
+                        asset_ids=[],
+                    ),
+                )
+                table_mutation_path = table_path + "/operations"
+                table_auth = await owner.get(
+                    "/_internal/v1/authorize",
+                    headers={
+                        "X-Fpl-Target-Service": "thought",
+                        "X-Fpl-Request-Method": "POST",
+                        "X-Fpl-Request-Uri": table_mutation_path,
+                        "X-CSRF-Token": owner.cookies["fpl_csrf"],
+                        "Origin": "http://127.0.0.1:19000",
+                    },
+                )
+                assert table_auth.status_code == 204
+                table_body = {
+                    "expected_revision": 0,
+                    "operations": [
+                        {
+                            "op": "table.put",
+                            "table": {
+                                "id": "t",
+                                "name": "Table",
+                                "position": 0,
+                                "fields": [
+                                    {"id": "name", "name": "Name", "type": "text", "position": 0},
+                                    {
+                                        "id": "f",
+                                        "name": "File",
+                                        "type": "attachment",
+                                        "position": 1,
+                                    },
+                                ],
+                                "views": [{"id": "v", "name": "Grid", "position": 0}],
+                            },
+                        },
+                        {
+                            "op": "records.put",
+                            "table_id": "t",
+                            "records": [{"id": "r", "position": 0, "values": {"f": [case.asset]}}],
+                        },
+                    ],
+                }
+                table_write = await reader.post(
+                    table_mutation_path,
+                    headers={HEADER: table_auth.headers[HEADER]},
+                    json=table_body,
+                )
+                assert table_write.status_code == 200, table_write.text
+                assert table_write.json()["structure"]["revision"] == 1
+                community_table_path = (
+                    "/v1/thought-workshop/community/publications/pub/notes/table/multitable"
+                )
+                community_table_auth = await case.browser.get(
+                    "/_internal/v1/authorize",
+                    headers={
+                        "X-Fpl-Target-Service": "thought",
+                        "X-Fpl-Request-Method": "GET",
+                        "X-Fpl-Request-Uri": community_table_path,
+                    },
+                )
+                assert community_table_auth.status_code == 204
+                community_table = await reader.get(
+                    community_table_path, headers={HEADER: community_table_auth.headers[HEADER]}
+                )
+                assert community_table.status_code == 200, community_table.text
+                assert community_table.json()["role"] == "read"
+                community_path = "/v1/thought-workshop/community/publications/pub/notes/note"
+                community_auth = await case.browser.get(
+                    "/_internal/v1/authorize",
+                    headers={
+                        "X-Fpl-Target-Service": "thought",
+                        "X-Fpl-Request-Method": "GET",
+                        "X-Fpl-Request-Uri": community_path,
+                    },
+                )
+                assert community_auth.status_code == 204
+                community = await reader.get(
+                    community_path, headers={HEADER: community_auth.headers[HEADER]}
+                )
+                assert community.status_code == 200, community.text
+                asset_path = (
+                    f"/v1/thought-workshop/community/publications/pub/assets/{case.asset}/content"
+                )
+                asset_auth = await case.browser.get(
+                    "/_internal/v1/authorize",
+                    headers={
+                        "X-Fpl-Target-Service": "thought",
+                        "X-Fpl-Request-Method": "GET",
+                        "X-Fpl-Request-Uri": asset_path,
+                    },
+                )
+                assert asset_auth.status_code == 204
+                case.mesh.apps["thought"] = app
+                asset = await reader.get(asset_path, headers={HEADER: asset_auth.headers[HEADER]})
+                assert asset.status_code == 200, asset.text
+                assert asset.content == b"\x89PNG\r\n\x1a\nvisible image bytes"
+                async with case.db.sessions(info={"owner_user_id": case.owner}) as session:
+                    await session.execute(
+                        delete(ArticleMember).where(ArticleMember.user_id == case.viewer)
+                    )
+                    await session.commit()
+                assert (
+                    await reader.get(asset_path, headers={HEADER: asset_auth.headers[HEADER]})
+                ).status_code == 404
+            request = {
+                "expected_revision": 0,
+                "request_id": "batch-1",
+                "operations": [{"action": "insert", "path": [1], "value": {"type": "paragraph"}}],
+            }
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app), base_url="http://thought"
+            ) as browser:
+                first = await browser.post(
+                    path, headers={HEADER: auth.headers[HEADER]}, json=request
+                )
+                assert first.status_code == 200, first.text
+                assert first.json()["revision"] == 1
+                retry = await browser.post(
+                    path, headers={HEADER: auth.headers[HEADER]}, json=request
+                )
+                assert retry.status_code == 200 and retry.json() == first.json()
+        async with case.db.sessions(info={"owner_user_id": case.owner}) as session:
+            outcomes = list(await session.scalars(select(ThoughtReferenceMutation)))
+            assert len(outcomes) == 2
+            assert all(
+                outcome.state == "commit" and outcome.change["asset_ids"] == [case.asset]
+                for outcome in outcomes
+            )
+        await ThoughtReferenceDelivery(case.db.sessions, client).process_once()
+        async with case.db.sessions(info={"owner_user_id": case.owner}) as session:
+            assert all(
+                row.state == "delivered"
+                for row in await session.scalars(select(ThoughtReferenceMutation))
+            )
+    await live.close()
+
+
+async def test_thought_upload_delegates_real_session_to_owned_assets_only(scenario):
+    import hashlib
+
+    from fpl_runtime.delegation import RequestGrant
+    from fpl_runtime.thought_uploads import ThoughtUploadDescription, upload_path
+
+    case = scenario
+    live = LiveAuthorization(service="assets", credential=ASSETS_SECRET, transport=case.mesh)
+    case.assets.state.identity = live
+    source_path = "/v1/thought-workshop/images"
+    source = await case.browser.get(
+        "/_internal/v1/authorize",
+        headers={
+            "X-Fpl-Target-Service": "thought",
+            "X-Fpl-Request-Method": "POST",
+            "X-Fpl-Request-Uri": source_path,
+            "X-CSRF-Token": case.csrf,
+            "Origin": "http://127.0.0.1:19000",
+        },
+    )
+    assert source.status_code == 204
+    content = b"\x89PNG\r\n\x1a\nprivate upload"
+    desc = ThoughtUploadDescription(
+        "image", "viewer.png", "image/png", len(content), hashlib.sha256(content).hexdigest()
+    )
+    target = upload_path("image", "test-request", desc.fingerprint)
+    grant = RequestGrant(
+        "thought", "thought.library.upload", "POST", source_path, "assets", "POST", target
+    )
+    async with httpx.AsyncClient(transport=case.mesh) as client:
+        delegation = await client.post(
+            "http://identity/_internal/v1/authorization/delegate",
+            headers={"Authorization": "Bearer " + THOUGHT_SECRET},
+            json={**asdict(grant), "assertion": source.headers[HEADER]},
+        )
+        assert delegation.status_code == 200, delegation.text
+        token = delegation.json()["assertion"]
+        headers = {HEADER: token, "X-Fpl-Upload-Descriptor": desc.header()}
+        upload = await client.post("http://assets" + target, headers=headers, content=content)
+        assert upload.status_code == 200, upload.text
+        retry = await client.post("http://assets" + target, headers=headers, content=content)
+        assert retry.status_code == 200 and retry.json()["id"] == upload.json()["id"]
+        forbidden = await client.post(
+            "http://identity/_internal/v1/authorization/delegate",
+            headers={"Authorization": "Bearer " + THOUGHT_SECRET},
+            json={
+                **asdict(grant),
+                "source_path": "/v1/thought-workshop/attachments",
+                "assertion": source.headers[HEADER],
+            },
+        )
+        assert forbidden.status_code == 403
+        logout = await case.browser.post(
+            "/v1/auth/logout",
+            headers={"X-CSRF-Token": case.csrf, "Origin": "http://127.0.0.1:19000"},
+        )
+        assert logout.status_code == 204
+        assert (
+            await client.post("http://assets" + target, headers=headers, content=content)
+        ).status_code == 401
+    async with case.assets.state.database.sessions(info={"owner_user_id": case.viewer}) as session:
+        row = await session.get(VisualAsset, upload.json()["id"])
+        assert row.owner_user_id == case.viewer
+    async with case.assets.state.database.sessions(info={"owner_user_id": case.owner}) as session:
+        assert await session.get(VisualAsset, row.id) is None
+    await live.close()

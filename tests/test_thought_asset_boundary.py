@@ -107,6 +107,37 @@ def test_fixed_grant_rejects_wrong_source_purpose_and_destination():
     assert query.digest != AssetQuery(asset_ids=["beta-file"]).digest
 
 
+def test_upload_grant_binds_source_endpoint_kind_request_and_digest():
+    values = dict(
+        caller="thought",
+        purpose="thought.library.upload",
+        source_method="POST",
+        source_path="/v1/thought-workshop/images",
+        target_service="assets",
+        target_method="POST",
+        target_path=PREFIX + "/uploads/image/operation/" + "a" * 64,
+    )
+    assert permitted(RequestGrant(**values), CATALOG)
+    assert target_permission_path(RequestGrant(**values)) == "/v1/files"
+    for patch in (
+        {"source_path": "/v1/thought-workshop/attachments"},
+        {"source_method": "GET"},
+        {"target_method": "GET"},
+        {"target_path": PREFIX + "/uploads/attachment/operation/" + "a" * 64},
+        {"target_path": PREFIX + "/uploads/image/operation/not-a-digest"},
+        {"target_path": PREFIX + "/uploads/image/../" + "a" * 64},
+        {"caller": "models"},
+        {"purpose": "thought.library.read"},
+    ):
+        assert not permitted(RequestGrant(**{**values, **patch}), CATALOG)
+    attachment = {
+        **values,
+        "source_path": "/v1/thought-workshop/attachments",
+        "target_path": PREFIX + "/uploads/attachment/operation/" + "b" * 64,
+    }
+    assert permitted(RequestGrant(**attachment), CATALOG)
+
+
 async def test_metadata_is_private_owner_bound_and_digest_bound(instance):
     _app, client, key, asset_id = instance
     query = AssetQuery(asset_ids=[asset_id])

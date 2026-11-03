@@ -21,6 +21,10 @@ def test_all_public_operations_and_tables_have_reviewable_owners():
     assert len(SERVICES) == 23
     assert len(data["operations"]) > 590
     assert len(data["tables"]) > 100
+    assert any(
+        t["table"] == "creative_install_operations" and t["service"] == "creative"
+        for t in data["tables"]
+    )
     assert (
         next(o["service"] for o in data["operations"] if o["path"] == "/v1/auth/login")
         == "identity"

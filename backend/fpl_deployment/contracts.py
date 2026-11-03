@@ -97,6 +97,8 @@ def operation_owner(path):
 
 
 def table_owner(module, table):
+    if module.startswith("fpl_creative."):
+        return "creative"
     if module.startswith("fpl_integrations."):
         return "integrations"
     if module.startswith("fpl_thought."):
@@ -147,6 +149,7 @@ def model_tables(root):
         + list((root / "backend/fpl_assets").rglob("*.py"))
         + list((root / "backend/fpl_models").rglob("*.py"))
         + list((root / "backend/fpl_integrations").rglob("*.py"))
+        + list((root / "backend/fpl_creative").rglob("*.py"))
         + list((root / "backend/fpl_thought").rglob("*.py"))
     ):
         tree = ast.parse(path.read_text())

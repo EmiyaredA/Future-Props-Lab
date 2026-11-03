@@ -6,7 +6,7 @@ from app.apps.thought_workshop.directory import Directory
 from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.models import ThoughtNote
 
-from . import assets, catalog, content, mutations
+from . import catalog, content, mutations
 from .access import bind_source, publication, require_source_manager
 from .models import CommunityFavorite, OfficialSource
 from .schemas import CommunityManagement, FavoritesOut
@@ -68,9 +68,13 @@ class Community:
         return await self.run(mutations.permissions, id, body)
 
     async def asset(self, id, asset, note=None, size=None):
+        from . import assets
+
         return await self.run(assets.content, id, asset, note, False, size)
 
     async def cover(self, id, size=None):
+        from . import assets
+
         async with self.sessions() as session:
             await session.execute(text("BEGIN"))
             pub = await publication(session, id)
@@ -79,6 +83,8 @@ class Community:
             )
 
     async def upload(self, id, note, incoming):
+        from . import assets
+
         return await self.run(assets.upload, id, note, incoming)
 
     async def backlinks(self, id, note, offset, limit):

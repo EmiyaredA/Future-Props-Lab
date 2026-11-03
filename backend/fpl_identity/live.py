@@ -71,6 +71,7 @@ async def live(request: Request, body: LiveRequest):
         body.service == "assets" and body.method == "POST" and is_model_output_path(body.path)
     )
     from fpl_runtime.external_sync import close_target, read_target
+    from fpl_runtime.thought_uploads import is_upload_target
     from fpl_runtime.writing import writing_target
 
     private_writing = (
@@ -84,7 +85,8 @@ async def live(request: Request, body: LiveRequest):
     private_external = body.service == "integrations" and bool(
         read_target(body.method, body.path) or close_target(body.method, body.path)
     )
-    if not (private_output or private_writing or private_external) and (
+    private_thought_upload = body.service == "assets" and is_upload_target(body.method, body.path)
+    if not (private_output or private_writing or private_external or private_thought_upload) and (
         operation is None or operation.service != body.service
     ):
         raise HTTPException(403, "invalid_service_target")

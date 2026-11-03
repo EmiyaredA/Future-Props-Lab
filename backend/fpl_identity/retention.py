@@ -38,19 +38,32 @@ class RetentionAuthorization:
         if body.caller == "thought":
             # An original write is not by itself authority to change an arbitrary
             # source resource. Admit only operations whose path binds the exact ID.
-            match = (
+            direct = (
                 re.fullmatch(
                     r"/v1/thought-workshop/(notes|templates)/([A-Za-z0-9_-]+)", body.source_path
                 )
                 if body.source_method in {"PUT", "DELETE"}
                 else None
             )
-            if not match:
+            note_operation = (
+                re.fullmatch(
+                    r"/v1/thought-workshop/notes/([A-Za-z0-9_-]+)/"
+                    r"(?:operations|history/[A-Za-z0-9_-]+/restore|multitable/operations|"
+                    r"multitable/history/[0-9]+/restore|"
+                    r"multitable/tables/[A-Za-z0-9_-]+/csv-import)",
+                    body.source_path,
+                )
+                if body.source_method == "POST"
+                else None
+            )
+            if direct:
+                expected_kind = "note" if direct.group(1) == "notes" else "template"
+                expected_id = direct.group(2)
+            elif note_operation:
+                expected_kind, expected_id = "note", note_operation.group(1)
+            else:
                 raise HTTPException(403, "retention_source_forbidden")
-            expected_kind = "note" if match.group(1) == "notes" else "template"
-            if body.change.resource_kind != expected_kind or body.change.resource_id != match.group(
-                2
-            ):
+            if body.change.resource_kind != expected_kind or body.change.resource_id != expected_id:
                 raise HTTPException(403, "retention_resource_mismatch")
         try:
             body.change.validate_service(body.caller)

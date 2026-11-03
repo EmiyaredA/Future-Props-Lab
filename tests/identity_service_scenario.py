@@ -1,11 +1,16 @@
 """Fresh-process integration scenario for the account-only ASGI application."""
 
 import asyncio
+import base64
+import hashlib
 import os
 import sys
+import time
+from dataclasses import replace
 from pathlib import Path
 
 import httpx
+import jwt
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import select
 
@@ -13,7 +18,8 @@ from fpl_identity.accounts import create_account
 from fpl_identity.application import create_app
 from fpl_identity.migrations.registry import MIGRATIONS
 from fpl_identity.models import AccountEvent
-from fpl_runtime.claims import HEADER, verify_context
+from fpl_runtime.claims import HEADER, issue_context, verify_context
+from fpl_runtime.creative_source_evidence import SOURCE_PATH, verify_source_evidence
 from fpl_runtime.migrations import apply
 from fpl_runtime.routing import RouteCatalog
 
@@ -293,8 +299,158 @@ async def scenario():
             async with app.state.database.sessions() as session:
                 events = list(await session.scalars(select(AccountEvent)))
                 assert len(events) == 2
+            creative_source = await client.get(
+                "/_internal/v1/authorize",
+                headers={
+                    **unsafe,
+                    "X-Fpl-Target-Service": "creative",
+                    "X-Fpl-Request-Method": "POST",
+                    "X-Fpl-Request-Uri": SOURCE_PATH,
+                },
+            )
+            assert creative_source.status_code == 204, creative_source.text
+            source_token = creative_source.headers[HEADER]
+            raw = b'{"kind":"skill","source_id":"owned-id"}'
+            evidence_path = "/_internal/v1/authorization/creative-source-evidence"
+            evidence_body = {
+                "assertion": source_token,
+                "body_base64": base64.b64encode(raw).decode(),
+            }
+            evidence_headers = {"Authorization": "Bearer gateway-test-service-credential-123456"}
+            minted = await client.post(evidence_path, headers=evidence_headers, json=evidence_body)
+            assert minted.status_code == 200, minted.text
+            token = minted.json()["evidence"]
+            source_claims = jwt.decode(
+                source_token,
+                private.public_key(),
+                algorithms=["EdDSA"],
+                issuer="fpl-identity",
+                audience="creative",
+            )
+            expected = dict(
+                public_key=private.public_key(),
+                owner_user_id=owner,
+                request_id=source_claims["jti"],
+                body_sha256=hashlib.sha256(raw).hexdigest(),
+                kind="skill",
+                source_id="owned-id",
+            )
+            assert verify_source_evidence(token, **expected).owner_user_id == owner
+            # Reuse remains valid only for the identical scope until expiry.
+            assert verify_source_evidence(token, **expected).request_id == source_claims["jti"]
+            for change in (
+                {"owner_user_id": "other"},
+                {"kind": "mcp"},
+                {"source_id": "other"},
+                {"body_sha256": "0" * 64},
+                {"request_id": "other"},
+            ):
+                try:
+                    verify_source_evidence(token, **(expected | change))
+                    raise AssertionError("mismatched evidence accepted")
+                except jwt.InvalidTokenError:
+                    pass
+            try:
+                verify_source_evidence(token + "x", **expected)
+                raise AssertionError("tampered evidence accepted")
+            except jwt.InvalidTokenError:
+                pass
+            assert (
+                await client.post(evidence_path, headers=live_headers, json=evidence_body)
+            ).status_code == 403
+            for bad in (
+                b'{"kind":"skill","kind":"mcp","source_id":"x"}',
+                b'{"kind":"skill","source_id":"x","extra":1}',
+                b'{"kind":"bundle","source_id":"x"}',
+                b"\xff",
+                b"x" * 16385,
+            ):
+                response = await client.post(
+                    evidence_path,
+                    headers=evidence_headers,
+                    json={**evidence_body, "body_base64": base64.b64encode(bad).decode()},
+                )
+                assert response.status_code == 400
+                assert response.json()["detail"] == "creative_evidence_request_invalid"
+            assert (
+                await client.post(
+                    evidence_path,
+                    headers=evidence_headers,
+                    json={**evidence_body, "assertion": source_token + "x"},
+                )
+            ).status_code == 400
+            original_gateway = app.state.identity_options["service_credentials"]["gateway"]
+            app.state.identity_options["service_credentials"]["assets"] = original_gateway
+            assert (
+                await client.post(evidence_path, headers=evidence_headers, json=evidence_body)
+            ).status_code == 403
+            app.state.identity_options["service_credentials"]["assets"] = (
+                "assets-test-service-credential-123456"
+            )
+            expired_actor = verify_context(
+                source_token,
+                service="creative",
+                method="POST",
+                path=SOURCE_PATH,
+                public_key=private.public_key(),
+            )
+            expired_token = issue_context(
+                expired_actor,
+                service="creative",
+                method="POST",
+                path=SOURCE_PATH,
+                private_key=private,
+                key_id="identity-1",
+                now=int(time.time()) - 30,
+            )
+            assert (
+                await client.post(
+                    evidence_path,
+                    headers=evidence_headers,
+                    json={**evidence_body, "assertion": expired_token},
+                )
+            ).status_code == 400
+            write_key = await client.post(
+                "/v1/account/api-keys",
+                headers=unsafe,
+                json={"name": "Creative evidence", "scopes": ["studio:write"]},
+            )
+            assert write_key.status_code == 201
+            key_info = write_key.json()["api_key"]
+            key_actor = replace(
+                expired_actor,
+                auth_kind="management_api_key",
+                session_id=None,
+                api_key_id=key_info["id"],
+                local=False,
+                scopes=("studio:write", "studio:read", "studio:private_read"),
+            )
+            key_token = issue_context(
+                key_actor,
+                service="creative",
+                method="POST",
+                path=SOURCE_PATH,
+                private_key=private,
+                key_id="identity-1",
+            )
+            key_body = {**evidence_body, "assertion": key_token}
+            assert (
+                await client.post(evidence_path, headers=evidence_headers, json=key_body)
+            ).status_code == 200
+            key_revoked = await client.post(
+                "/v1/account/api-keys/" + key_info["id"] + "/revoke",
+                headers=unsafe,
+                json={"expected_revision": key_info["revision"]},
+            )
+            assert key_revoked.status_code == 200
+            assert (
+                await client.post(evidence_path, headers=evidence_headers, json=key_body)
+            ).status_code == 401
             logout = await client.post("/v1/auth/logout", headers=unsafe)
             assert logout.status_code == 204, logout.text
+            assert (
+                await client.post(evidence_path, headers=evidence_headers, json=evidence_body)
+            ).status_code == 401
             revoked_delegation = await client.post(
                 "/_internal/v1/authorization/delegate",
                 headers=delegation_headers,

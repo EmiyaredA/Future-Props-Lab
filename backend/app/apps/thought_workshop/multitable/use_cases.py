@@ -195,7 +195,9 @@ class Multitable:
         if introduced - members.keys():
             raise ThoughtError("只能选择当前账号的成员", 422, "invalid_member")
 
-    async def commit(self, n, expected, before, after, *, checkpoint=False, before_write=None):
+    async def commit(
+        self, n, expected, before, after, *, checkpoint=False, before_write=None, after_write=None
+    ):
         validate_snapshot(after)
         await self.validate_people(before, after)
         await self.validate_refs(after, before)
@@ -227,6 +229,8 @@ class Multitable:
             .values(updated_at=utc_now())
         )
         await touch_note(self.session, n.id)
+        if after_write is not None:
+            await after_write(n.revision)
         await self.session.commit()
         return BatchOut(structure=await self.structure(n.id))
 
@@ -239,6 +243,7 @@ class Multitable:
         allowed_assets=None,
         allowed_notes=None,
         before_write=None,
+        after_write=None,
     ):
         n = await self.note(note_id)
         before = await snapshot(self.session, note_id)
@@ -300,6 +305,7 @@ class Multitable:
             after,
             checkpoint=checkpoint,
             before_write=before_write,
+            after_write=after_write,
         )
         result.records = changed
         return result
@@ -322,8 +328,16 @@ class Multitable:
             raise ThoughtError("表格历史不存在", 404, "not_found")
         return await historical(self.session, note_id, revision)
 
-    async def restore(self, note_id, revision, expected):
+    async def restore(self, note_id, revision, expected, *, before_write=None, after_write=None):
         n = await self.note(note_id)
         before = await snapshot(self.session, note_id)
         after = await self.history_snapshot(note_id, revision)
-        return await self.commit(n, expected, before, after, checkpoint=True)
+        return await self.commit(
+            n,
+            expected,
+            before,
+            after,
+            checkpoint=True,
+            before_write=before_write,
+            after_write=after_write,
+        )

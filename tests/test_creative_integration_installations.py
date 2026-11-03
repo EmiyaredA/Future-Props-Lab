@@ -480,3 +480,86 @@ async def test_unknown_rollback_then_same_account_name_conflict_cleans_only_on_r
     # Startup reconciliation uses only the definitive target database state.
     await reconcile_skill_files(installation.db, installation.settings)
     assert not list(root.rglob("SKILL.md"))
+
+
+@pytest.mark.asyncio
+async def test_private_http_fails_closed_and_binds_verified_batch(installation):
+    import httpx
+    from fastapi import FastAPI
+
+    from fpl_integrations.creative_http import CreativeRequestLimit, router
+
+    app = FastAPI()
+    app.include_router(router)
+    app.add_middleware(CreativeRequestLimit, maximum=1024 * 1024)
+    app.state.creative_installations = installation.use
+    transport = httpx.ASGITransport(app=app)
+    value = batch([tool(), skill_part(zip_bytes())])
+    path = "/_internal/v1/creative-integrations/"
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        blocked = await client.post(path + "preview", json=value.model_dump(mode="json"))
+        assert blocked.status_code == 503
+
+        class TestAuthority:
+            async def grant(self, *, request, purpose, operation_id, fingerprint):
+                assert request.url.path in {path + "preview", path + "install", path + "receipt"}
+                assert isinstance(operation_id, str) and isinstance(fingerprint, str)
+                return CreativeOperationGrant(
+                    "alpha",
+                    purpose,
+                    value.operation_id,
+                    digest(value.model_dump(mode="json")),
+                    int(time.time()) + 5,
+                )
+
+        app.state.creative_authorization = TestAuthority()
+        result = await client.post(path + "preview", json=value.model_dump(mode="json"))
+        assert result.status_code == 200 and result.json()["installable"]
+        data = zip_bytes()
+        result = await client.post(
+            path + "install",
+            data={"batch": value.model_dump_json()},
+            files={"skill-release": ("archive.zip", data, "application/zip")},
+        )
+        assert result.status_code == 200, result.text
+        receipt = await client.post(path + "receipt", json=value.model_dump(mode="json"))
+        assert receipt.json() == result.json()
+        corrupted = batch([tool(), skill_part(data)], "another-operation")
+        denied = await client.post(
+            path + "install",
+            data={"batch": corrupted.model_dump_json()},
+            files={"other-release": ("archive.zip", data, "application/zip")},
+        )
+        # A valid grant for a different batch cannot authorize this request.
+        assert denied.status_code == 403
+
+        class OtherAccount(TestAuthority):
+            async def grant(self, **kwargs):
+                return replace(await super().grant(**kwargs), owner_user_id="beta")
+
+        app.state.creative_authorization = OtherAccount()
+        missing = await client.post(path + "receipt", json=value.model_dump(mode="json"))
+        assert missing.status_code == 404
+        oversized = await client.post(path + "preview", content=b"x" * (1024 * 1024 + 1))
+        assert oversized.status_code == 413
+
+
+@pytest.mark.asyncio
+async def test_private_stdio_validation_never_echoes_environment(installation):
+    import httpx
+    from fastapi import FastAPI
+
+    from fpl_integrations.creative_http import router
+
+    app = FastAPI()
+    app.include_router(router)
+    app.state.creative_installations = installation.use
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.post(
+            "/_internal/v1/creative-integrations/stdio",
+            json={"release_id": "r", "command": "", "environment": {"TOKEN": "private-value"}},
+        )
+    assert response.status_code == 422
+    assert "private-value" not in response.text

@@ -58,7 +58,7 @@ def test_thought_models_and_writing_import_without_foreign_orm_or_global_db():
 import sys
 from fpl_thought.models import MODELS
 from app.apps.thought_workshop import assistant
-assert len(MODELS) == 30
+assert len(MODELS) == 31
 for name in ('app.orm', 'app.runtime.db', 'app.console.models.accounts',
              'app.llm.models', 'app.capabilities.asset_store.models'):
     assert name not in sys.modules, name
@@ -167,3 +167,107 @@ asyncio.run(run())
         timeout=20,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_fresh_process_commits_note_batch_and_receipt_without_foreign_models(tmp_path):
+    root = Path(__file__).resolve().parents[1]
+    script = """
+import asyncio
+import sys
+from pathlib import Path
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from sqlalchemy import select
+from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
+from app.apps.thought_workshop.schemas.operations import ThoughtOperationsIn
+from app.runtime.project_operations import ProjectOperationReceipt
+from fpl_runtime.claims import Actor
+from fpl_runtime.database import Database
+from fpl_runtime.migrations import apply
+from fpl_runtime.retention_authority import issue_retention
+from fpl_thought.migrations.registry import MIGRATIONS
+from fpl_thought.models import ACCOUNT_MODELS, MODELS
+from fpl_thought.note_retention import apply_operations_with_references
+from fpl_thought.retention import ThoughtReferences
+from fpl_thought.retention_records import ThoughtReferenceMutation
+
+class Remote:
+    def __init__(self, key): self.key = key
+    async def authorize(self, *, change, **kwargs):
+        actor = Actor("alpha", "user", "session", ("studio:write",), session_id="s")
+        return issue_retention(actor, caller="thought", change=change,
+                               private_key=self.key, key_id="k")
+    async def prepare(self, **kwargs): return {"intent_id": "intent", "state": "prepared"}
+
+async def run():
+    root = Path(sys.argv[1]); apply(root / "service.db", "thought", MIGRATIONS)
+    database = Database("thought", root, models=MODELS, account_models=ACCOUNT_MODELS)
+    key = Ed25519PrivateKey.generate()
+    references = ThoughtReferences(database.sessions, Remote(key), public_key=key.public_key())
+    async with database.sessions(info={"owner_user_id": "alpha"}) as session:
+        session.add(ThoughtKnowledgeBase(id="book", owner_user_id="alpha", title="Book"))
+        await session.flush()
+        session.add(ThoughtNote(id="note", owner_user_id="alpha", knowledge_base_id="book",
+            title="Note", document={"type": "doc", "content": []}, search_text="", kind="note"))
+        await session.commit()
+        body = ThoughtOperationsIn(expected_revision=0, request_id="one", operations=[
+            {"action": "insert", "path": [0], "value": {"type": "paragraph"}}])
+        result = await apply_operations_with_references(session, owner="alpha", author_id=None,
+            note_id="note", body=body, assertion="source", source_method="POST",
+            source_path="/v1/thought-workshop/notes/note/operations", references=references)
+        assert result.revision == 1
+        assert (await session.scalar(select(ProjectOperationReceipt))).request_id == "one"
+        assert (await session.scalar(select(ThoughtReferenceMutation))).state == "commit"
+    await database.close()
+    for name in ("app.runtime.db", "app.orm", "app.console.models.accounts", "app.llm.models",
+                 "app.capabilities.asset_store.models"):
+        assert name not in sys.modules, name
+asyncio.run(run())
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", script, str(tmp_path)],
+        cwd=root,
+        env={**os.environ, "PYTHONPATH": str(root / "backend")},
+        capture_output=True,
+        text=True,
+        timeout=20,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+async def test_incomplete_thought_assembly_locks_storage_and_cannot_report_ready(tmp_path):
+    import httpx
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    from fpl_runtime.locking import service_lock
+    from fpl_runtime.routing import RouteCatalog
+    from fpl_thought.application import create_app
+    from fpl_thought.migrations.registry import MIGRATIONS
+
+    class Client:
+        async def close(self):
+            pass
+
+    apply(tmp_path / "service.db", "thought", MIGRATIONS)
+    root = Path(__file__).resolve().parents[1]
+    app = create_app(
+        state_root=tmp_path,
+        catalog=RouteCatalog.read(root / "deploy/contracts/ownership.json"),
+        public_key=Ed25519PrivateKey.generate().public_key(),
+        credential="thought-service-credential-" * 2,
+        identity=Client(),
+        retention_client=Client(),
+        assets_peer_credential="assets-peer-credential-" * 2,
+        run_worker=False,
+    )
+    async with app.router.lifespan_context(app):
+        with pytest.raises(RuntimeError, match="另一个实例"):
+            with service_lock(tmp_path):
+                pass
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as c:
+            assert (await c.get("/health")).status_code == 200
+            assert (await c.get("/ready")).status_code == 503
+            assert (await c.put("/v1/thought-workshop/notes/note", json={})).status_code == 401
+    with service_lock(tmp_path):
+        pass

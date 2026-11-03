@@ -22,6 +22,7 @@ async def save_note_with_references(
     source_method,
     source_path,
     references,
+    _restoring=False,
 ):
     """Prepare exact current/history pins, save the note, and record the outcome atomically.
 
@@ -29,7 +30,15 @@ async def save_note_with_references(
     read transaction.  The metadata adapter must have cached validation for the
     current request before any remote prepare or write reservation occurs.
     """
-    if source_method != "PUT" or source_path != f"/v1/thought-workshop/notes/{note_id}":
+    if _restoring:
+        import re
+
+        prefix = re.escape(f"/v1/thought-workshop/notes/{note_id}/history/")
+        if source_method != "POST" or not re.fullmatch(prefix + r"[^/]+/restore", source_path):
+            raise ValueError("历史恢复必须绑定原笔记请求")
+    if not _restoring and (
+        source_method != "PUT" or source_path != f"/v1/thought-workshop/notes/{note_id}"
+    ):
         raise ValueError("笔记引用修改必须绑定原笔记保存请求")
     if session.info.get("owner_user_id") != owner:
         raise ValueError("笔记引用修改缺少账号上下文")
@@ -57,7 +66,7 @@ async def save_note_with_references(
     )
     commit_started = False
     try:
-        result = await notes.put(note_id, body, commit=False)
+        result = await notes.put(note_id, body, restoring=_restoring, commit=False)
         await references.record(session, prepared, resource_revision=result.revision)
         commit_started = True
         await session.commit()
@@ -128,3 +137,112 @@ async def purge_note_with_references(
             await session.rollback()
             await references.abort_after_rollback(session, prepared)
         raise
+
+
+async def apply_operations_with_references(
+    session, *, owner, author_id, note_id, body, assertion, source_method, source_path, references
+):
+    """Persist the operation receipt and reference decision in the same note transaction."""
+    from app.apps.thought_workshop.notes import note_out
+    from app.apps.thought_workshop.operations import transform
+    from app.apps.thought_workshop.schemas.workshop import ThoughtNoteOut
+    from app.runtime.operation_receipts import record, replay
+    from app.runtime.revisions import RevisionConflictError
+
+    if source_method != "POST" or source_path != f"/v1/thought-workshop/notes/{note_id}/operations":
+        raise ValueError("笔记操作必须绑定原笔记请求")
+    if session.info.get("owner_user_id") != owner:
+        raise ValueError("笔记引用修改缺少账号上下文")
+    notes = Notes(session, owner, author_id)
+    current = note_out(await notes.get(note_id))
+    key = dict(owner_user_id=owner, kind="thought", resource_id=note_id, body=body)
+    saved = await replay(session, **key)
+    if saved is not None:
+        return ThoughtNoteOut.model_validate(saved)
+    if current.revision != body.expected_revision:
+        raise RevisionConflictError(
+            body.expected_revision, current.revision, current.model_dump(mode="json")
+        )
+    candidate = transform(current, body)
+    await validate_targets(session, owner, candidate.document, current.document)
+    await notes.validate_refs(candidate)
+    pins = await note_pin_ids(session, owner, note_id, file_ids(candidate.document))
+    await session.rollback()
+    change = PrepareReferenceChange(
+        request_id=uuid4().hex,
+        resource_kind="note",
+        resource_id=note_id,
+        expected_resource_revision=body.expected_revision,
+        asset_ids=sorted(pins),
+    )
+    prepared = await references.prepare(
+        owner=owner,
+        assertion=assertion,
+        source_method=source_method,
+        source_path=source_path,
+        change=change,
+    )
+    commit_started = False
+    try:
+        result = await notes.put(note_id, candidate, commit=False)
+        record(session, **key, result=result)
+        await references.record(session, prepared, resource_revision=result.revision)
+        commit_started = True
+        await session.commit()
+        return result
+    except BaseException as exc:
+        if not commit_started:
+            await session.rollback()
+            await references.abort_after_rollback(session, prepared)
+            if isinstance(exc, RevisionConflictError):
+                saved = await replay(session, **key)
+                if saved is not None:
+                    return ThoughtNoteOut.model_validate(saved)
+        raise
+
+
+async def restore_history_with_references(
+    session,
+    *,
+    owner,
+    author_id,
+    note_id,
+    history_id,
+    expected_revision,
+    assertion,
+    source_method,
+    source_path,
+    references,
+):
+    from app.apps.thought_workshop.history import CONTENT_FIELDS, History
+    from app.apps.thought_workshop.schemas.workshop import ThoughtNoteIn, ThoughtNotePut
+
+    if source_method != "POST" or source_path != (
+        f"/v1/thought-workshop/notes/{note_id}/history/{history_id}/restore"
+    ):
+        raise ValueError("历史恢复必须绑定原笔记请求")
+    if session.info.get("owner_user_id") != owner:
+        raise ValueError("笔记引用修改缺少账号上下文")
+    current = await Notes(session, owner, author_id).get(note_id)
+    selected = await History(session).get(note_id, history_id)
+    body = ThoughtNotePut(
+        **{
+            key: getattr(current, key)
+            for key in ThoughtNoteIn.model_fields
+            if key not in CONTENT_FIELDS
+        },
+        **{key: getattr(selected, key) for key in CONTENT_FIELDS},
+        expected_revision=expected_revision,
+    )
+    return await save_note_with_references(
+        session,
+        owner=owner,
+        author_id=author_id,
+        note_id=note_id,
+        body=body,
+        assertion=assertion,
+        source_method=source_method,
+        source_path=source_path,
+        references=references,
+        _restoring=True,
+    )

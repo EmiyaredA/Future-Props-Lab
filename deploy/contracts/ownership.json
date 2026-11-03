@@ -4470,6 +4470,18 @@
       "model": "ModelLibraryOutputReceipt"
     },
     {
+      "table": "asset_thought_upload_receipts",
+      "service": "assets",
+      "module": "fpl_assets.models",
+      "model": "ThoughtUploadReceipt"
+    },
+    {
+      "table": "creative_install_operations",
+      "service": "creative",
+      "module": "fpl_creative.installation_records",
+      "model": "CreativeInstallOperation"
+    },
+    {
       "table": "gateway_change_cursors",
       "service": "gateway",
       "module": "fpl_gateway.models",
@@ -4654,6 +4666,12 @@
       "service": "thought",
       "module": "fpl_thought.retention_records",
       "model": "ThoughtReferenceMutation"
+    },
+    {
+      "table": "thought_upload_intents",
+      "service": "thought",
+      "module": "fpl_thought.upload_records",
+      "model": "ThoughtUploadIntent"
     }
   ],
   "partitions": {

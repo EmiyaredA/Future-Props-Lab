@@ -43,9 +43,11 @@ from app.runtime.project_operations import (
 )
 
 from .retention_records import ThoughtReferenceMutation
+from .upload_records import ThoughtUploadIntent
 
 MODELS = (
     ThoughtReferenceMutation,
+    ThoughtUploadIntent,
     ArticleSyncBinding,
     ArticleSyncTask,
     ArticleSyncStep,

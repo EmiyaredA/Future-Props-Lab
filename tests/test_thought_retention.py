@@ -431,3 +431,274 @@ async def test_permanent_note_purge_releases_pins_only_with_committed_deletion(i
         assert receipt.resource_revision == 1 and receipt.change["asset_ids"] == []
     await ThoughtReferenceDelivery(db.sessions, remote).process_once()
     assert next(iter(remote.outcomes.values()))["deleted"] is True
+
+
+async def test_note_operations_commit_receipt_and_pins_together_and_replay(instance):
+    from app.apps.thought_workshop.asset_metadata import LibraryAsset
+    from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
+    from app.apps.thought_workshop.schemas.operations import ThoughtOperationsIn
+    from app.runtime.operation_receipts import OperationError
+    from app.runtime.project_operations import ProjectOperationReceipt
+    from fpl_thought.note_retention import apply_operations_with_references
+
+    db, remote, service = instance
+    async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+        session.add(ThoughtKnowledgeBase(id="book", owner_user_id="alpha", title="Book"))
+        await session.flush()
+        session.add(
+            ThoughtNote(
+                id="note-a",
+                owner_user_id="alpha",
+                knowledge_base_id="book",
+                title="Note",
+                kind="note",
+                search_text="",
+                document={
+                    "type": "doc",
+                    "content": [{"type": "image", "attrs": {"assetId": "old"}}],
+                },
+            )
+        )
+        await session.commit()
+
+    class Metadata:
+        async def describe(self, ids):
+            return {
+                asset: LibraryAsset(asset, asset + ".png", "image/png", "image", 8, 1)
+                for asset in ids
+            }
+
+    body = ThoughtOperationsIn(
+        expected_revision=0,
+        request_id="operation-1",
+        operations=[
+            {
+                "action": "replace",
+                "path": [0],
+                "value": {"type": "image", "attrs": {"assetId": "new"}},
+            }
+        ],
+    )
+    args = dict(
+        owner="alpha",
+        author_id=None,
+        note_id="note-a",
+        body=body,
+        assertion="source",
+        source_method="POST",
+        source_path="/v1/thought-workshop/notes/note-a/operations",
+        references=service,
+    )
+    async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+        session.info["thought_asset_metadata_factory"] = lambda _session, _owner: Metadata()
+        result = await apply_operations_with_references(session, **args)
+        assert result.revision == 1
+        replay = await apply_operations_with_references(session, **args)
+        assert replay == result and len(remote.prepared) == 1
+        with pytest.raises(OperationError):
+            await apply_operations_with_references(
+                session, **{**args, "body": body.model_copy(update={"expected_revision": 1})}
+            )
+    async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+        note = await session.get(ThoughtNote, "note-a")
+        receipt = await session.scalar(select(ProjectOperationReceipt))
+        outcome = await session.scalar(select(ThoughtReferenceMutation))
+        assert note.revision == 1 and note.document["content"][0]["attrs"]["assetId"] == "new"
+        assert receipt.request_id == "operation-1" and outcome.state == "commit"
+        assert outcome.change["asset_ids"] == ["new", "old"]
+    await ThoughtReferenceDelivery(db.sessions, remote).process_once()
+    assert next(iter(remote.outcomes.values()))["revision"] == 1
+
+
+async def test_history_restore_keeps_old_and_current_files_and_records_restore(instance):
+    from app.apps.thought_workshop.asset_metadata import LibraryAsset
+    from app.apps.thought_workshop.history import History
+    from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
+    from app.apps.thought_workshop.schemas.workshop import ThoughtNotePut
+    from fpl_thought.note_retention import (
+        restore_history_with_references,
+        save_note_with_references,
+    )
+
+    db, _remote, service = instance
+    old = {"type": "doc", "content": [{"type": "image", "attrs": {"assetId": "old"}}]}
+    new = {"type": "doc", "content": [{"type": "image", "attrs": {"assetId": "new"}}]}
+    async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+        session.add(ThoughtKnowledgeBase(id="book", owner_user_id="alpha", title="Book"))
+        await session.flush()
+        note = ThoughtNote(
+            id="note-a",
+            owner_user_id="alpha",
+            knowledge_base_id="book",
+            title="Original",
+            kind="note",
+            document=old,
+            search_text="",
+        )
+        session.add(note)
+        await session.flush()
+        history = await History(session).append(note, None, "create")
+        history_id = history.id
+        await session.commit()
+
+    class Metadata:
+        async def describe(self, ids):
+            return {
+                asset: LibraryAsset(asset, asset + ".png", "image/png", "image", 8, 1)
+                for asset in ids
+            }
+
+    async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+        session.info["thought_asset_metadata_factory"] = lambda _session, _owner: Metadata()
+        await save_note_with_references(
+            session,
+            owner="alpha",
+            author_id=None,
+            note_id="note-a",
+            body=ThoughtNotePut(
+                knowledge_base_id="book", title="Updated", document=new, expected_revision=0
+            ),
+            assertion="source",
+            source_method="PUT",
+            source_path="/v1/thought-workshop/notes/note-a",
+            references=service,
+        )
+        result = await restore_history_with_references(
+            session,
+            owner="alpha",
+            author_id=None,
+            note_id="note-a",
+            history_id=history_id,
+            expected_revision=1,
+            assertion="source",
+            source_method="POST",
+            source_path=f"/v1/thought-workshop/notes/note-a/history/{history_id}/restore",
+            references=service,
+        )
+        assert result.revision == 2 and result.document == old
+    async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+        outcomes = list(await session.scalars(select(ThoughtReferenceMutation)))
+        assert len(outcomes) == 2
+        assert all(
+            row.state == "commit" and row.change["asset_ids"] == ["new", "old"] for row in outcomes
+        )
+
+
+async def test_multitable_updates_and_restore_keep_historical_attachments(instance, monkeypatch):
+    from app.apps.thought_workshop.asset_metadata import LibraryAsset
+    from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
+    from app.apps.thought_workshop.multitable.schemas import BatchIn, CsvIn
+    from fpl_thought.multitable_retention import mutate_table_with_references
+
+    db, _remote, service = instance
+    async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+        session.add(ThoughtKnowledgeBase(id="book", owner_user_id="alpha", title="Book"))
+        await session.flush()
+        session.add(
+            ThoughtNote(
+                id="note-a",
+                owner_user_id="alpha",
+                knowledge_base_id="book",
+                title="Table",
+                kind="multitable",
+                document={"type": "doc", "content": []},
+                search_text="",
+            )
+        )
+        await session.commit()
+
+    class Metadata:
+        async def describe(self, ids):
+            return {
+                asset: LibraryAsset(asset, asset + ".png", "image/png", "image", 8, 1)
+                for asset in ids
+            }
+
+    table = {
+        "id": "t",
+        "name": "Table",
+        "position": 0,
+        "fields": [
+            {"id": "name", "name": "Name", "type": "text", "position": 0},
+            {"id": "f", "name": "File", "type": "attachment", "position": 1},
+        ],
+        "views": [{"id": "v", "name": "Grid", "position": 0}],
+    }
+
+    def batch(revision, asset, *, create=False):
+        ops = [{"op": "table.put", "table": table}] if create else []
+        ops.append(
+            {
+                "op": "records.put",
+                "table_id": "t",
+                "records": [{"id": "r", "position": 0, "values": {"f": [asset]}}],
+            }
+        )
+        return BatchIn(expected_revision=revision, operations=ops)
+
+    prefix = "/v1/thought-workshop/notes/note-a/multitable"
+    async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+        session.info["thought_asset_metadata_factory"] = lambda _session, _owner: Metadata()
+        common = dict(
+            owner="alpha",
+            author_id=None,
+            note_id="note-a",
+            assertion="source",
+            source_method="POST",
+            references=service,
+        )
+        first = await mutate_table_with_references(
+            session,
+            **common,
+            expected_revision=0,
+            source_path=prefix + "/operations",
+            body=batch(0, "old", create=True),
+        )
+        assert first.structure.revision == 1
+        second = await mutate_table_with_references(
+            session,
+            **common,
+            expected_revision=1,
+            source_path=prefix + "/operations",
+            body=batch(1, "new"),
+        )
+        assert second.structure.revision == 2
+        restored = await mutate_table_with_references(
+            session,
+            **common,
+            expected_revision=2,
+            source_path=prefix + "/history/1/restore",
+            history_revision=1,
+        )
+        assert restored.structure.revision == 3
+        imported = await mutate_table_with_references(
+            session,
+            **common,
+            expected_revision=3,
+            table_id="t",
+            source_path=prefix + "/tables/t/csv-import",
+            body=CsvIn(expected_revision=3, csv="Name\nNew row\n", mapping=["name"]),
+        )
+        assert imported.structure.revision == 4
+        real_commit = session.commit
+
+        async def lost_reply():
+            await real_commit()
+            raise RuntimeError("lost source commit response")
+
+        monkeypatch.setattr(session, "commit", lost_reply)
+        with pytest.raises(RuntimeError, match="lost source commit response"):
+            await mutate_table_with_references(
+                session,
+                **common,
+                expected_revision=4,
+                source_path=prefix + "/operations",
+                body=batch(4, "new"),
+            )
+    async with db.sessions(info={"owner_user_id": "alpha"}) as session:
+        rows = list(await session.scalars(select(ThoughtReferenceMutation)))
+        assert sorted(row.resource_revision for row in rows) == [1, 2, 3, 4, 5]
+        assert all(row.state == "commit" for row in rows)
+        assert all(
+            row.change["asset_ids"] == ["new", "old"] for row in rows if row.resource_revision > 1
+        )
