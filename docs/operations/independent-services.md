@@ -436,7 +436,7 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 
 独立镜像装配文稿列表、新建、读取、CAS 保存、删除和编辑批次六项发布操作。叠加 `deploy/presentation.compose.yaml`，提供独立状态目录、Identity 公钥和 Presentation 服务凭据，显式执行 `presentation migrate` 后启动。启动比对已装配的公开操作及其 schema。
 
-编辑时 Identity 对素材查询摘要和指定版本的 SVG 原件签发限定授权。Assets 只允许访问同一账号的普通文件库。素材先由 Assets 准备保留，文稿及结果在同一事务提交，后台使用持久回执交付确认。生产就绪门禁继续跟踪模板、示例、导入导出、浏览器入口和历史迁移。
+编辑时 Identity 对素材查询摘要和指定版本的 SVG 原件签发限定授权。Assets 只允许访问同一账号的普通文件库。素材先由 Assets 准备保留，文稿及结果在同一事务提交，后台使用持久回执交付确认。隔离运行证据按文稿、模板、导入导出、浏览器和历史迁移分别记录。
 
 四容器隔离验收 `fpl-presentation-api-8a59c2ddbf` 通过 Gateway 验证 SVG 上传与规范化摘要、文稿保存、素材删除保护、容器重启、原编辑回执重放、删除后的素材释放以及回环公网入口的认证。该批次使用 API 镜像 `fpl/presentation:643627c8951ef323c5b1`。
 
@@ -451,3 +451,8 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 演示工坊的 26 项发布操作均已装配。部署叠加文件为 Presentation 与 Assets 挂载同一份独立的 `FPL_PRESENTATION_ARCHIVE_KEY`。PPTX 和原生包嵌入素材先私有暂存，源事务提交决议后才发布，收到准确回执后才开放项目。已拥有的素材引用在封存时受保护。JSON 文稿沿用现有素材及普通文稿引用事务。历史迁移和全站切换继续使用独立门禁。
 
 隔离运行 `fpl-presentation-import-f141f81f9a` 用镜像 `fpl/presentation:4b3faf0faa941f0a81a7` 通过四容器及 Chromium，覆盖原生包和 JSON 往返、复制素材 SHA256、编辑回执、模板保存、旧浏览器版本拒绝及回环公网入口。
+
+
+演示工坊的历史转移先导入同一计划下的 Assets 元数据和文件。随后启动独立回环 `presentation migration-export`、`presentation migration-import` 与 `assets migration-import`，使用 `uv run python -m scripts.website.migrate_presentation --plan <计划> --source <旧站快照维护地址> --target <Presentation 维护地址> --assets-target <Assets 维护地址>`。源仅打开封存的只读快照。迁移保存原始文档 JSON、标识、版本、时间戳与编辑回执，按三类资源重建并读回素材引用。关系导入要求同一轮原件 SHA256 回执，源引用不一致、缺失文件、账号越界或回执冲突会阻止核验。
+
+隔离旧站快照演练使用普通业务 API 建立原文稿、模板、示例、原件和含 Unicode 请求标识的编辑回执。导入和重放核对源与目的摘要，验证 Assets 维护进程重启后续跑，恢复旧站后核对原文稿修订及文件字节。

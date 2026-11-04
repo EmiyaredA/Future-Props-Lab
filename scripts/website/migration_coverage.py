@@ -11,6 +11,8 @@ from fpl_director.migration_records import DATASETS as DIRECTOR
 from fpl_identity.credential_migration import DATASETS as IDENTITY
 from fpl_models.catalog_migration import DATASETS as MODELS
 from fpl_models.settings_migration import DEFAULT_PREFIX, POLICIES
+from fpl_presentation.migration_operations import DATASET as PRESENTATION_RECEIPTS
+from fpl_presentation.migration_records import DATASETS as PRESENTATION
 from fpl_remote.preference_migration import DATASET as REMOTE
 from fpl_runtime.migration_apps import SourceSnapshot
 from fpl_runtime.migration_batches import MigrationPlan
@@ -22,10 +24,13 @@ ROOT = Path(__file__).resolve().parents[2]
 TRANSFER = {
     **{
         dataset.model.__tablename__: dataset.name
-        for dataset in (*IDENTITY, *ASSETS, *DIRECTOR, *MODELS)
+        for dataset in (*IDENTITY, *ASSETS, *DIRECTOR, *MODELS, *PRESENTATION)
     },
     "cloud_desktop_preferences": REMOTE,
     "tool_navigation_items": TOOLS,
+    "presentation_asset_references": "presentation.project-references",
+    "presentation_template_assets": "presentation.template-references",
+    "presentation_example_assets": "presentation.example-references",
 }
 
 
@@ -70,6 +75,15 @@ def platform_partitions(database, partition):
     return result, pending
 
 
+def operation_partitions(database):
+    counts = dict(
+        database.execute(
+            "SELECT resource_kind, count(*) FROM project_operation_receipts GROUP BY resource_kind"
+        )
+    )
+    return counts, sum(count for kind, count in counts.items() if kind != "presentation")
+
+
 def coverage(snapshot, catalog):
     snapshot.check()
     owners = registered_owners(catalog)
@@ -92,6 +106,8 @@ def coverage(snapshot, catalog):
                 if name == "platform_settings"
                 else None
             )
+            if name == "project_operation_receipts":
+                partition = operation_partitions(database)
             if partition is not None and count:
                 status = "transfer_pending" if partition[1] else "dataset_registered"
             elif name in TRANSFER:
@@ -112,6 +128,8 @@ def coverage(snapshot, catalog):
                 item["dataset"] = TRANSFER[name]
             if partition is not None:
                 item["partitions"], item["pending_records"] = partition
+                if name == "project_operation_receipts":
+                    item["datasets"] = {"presentation": PRESENTATION_RECEIPTS}
             output.append(item)
     snapshot.check()
     pending = [

@@ -22,18 +22,22 @@ from scripts.website.migrate_identity import CREDENTIALS
 from scripts.website.migrate_identity_avatars import transfer_avatars
 from scripts.website.migrate_model_catalog import CATALOG as MODEL_CATALOG
 from scripts.website.migrate_model_catalog import POLICIES as MODEL_POLICIES
+from scripts.website.migrate_presentation import PRESENTATION_RECORDS, PRESENTATION_REFERENCES
 from scripts.website.migrate_remote_preferences import PREFERENCES
 from scripts.website.migrate_tools_navigation import NAVIGATION
 from scripts.website.migration_coverage import inspect_bundle
 from scripts.website.migration_transfer import pages, transfer
+from tests.presentation_helpers import element, sample_document
 from tests.test_tools_navigation_migration import available_ports, listener
 
+from app.apps.presentation_workshop.templates.schema import TemplateDefinition
 from fpl_assets.migration_blobs import BLOBS as ASSET_BLOBS
 from fpl_assets.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
 from fpl_director.migration_files import FILES as DIRECTOR_FILES
 from fpl_director.migrations.registry import MIGRATIONS as DIRECTOR_MIGRATIONS
 from fpl_identity.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
 from fpl_models.migrations.registry import MIGRATIONS as MODEL_MIGRATIONS
+from fpl_presentation.migrations.registry import MIGRATIONS as PRESENTATION_MIGRATIONS
 from fpl_remote.migrations.registry import MIGRATIONS as REMOTE_MIGRATIONS
 from fpl_runtime.migration_batches import MigrationPlan
 from fpl_runtime.migrations import apply
@@ -44,6 +48,7 @@ PASSWORD = "Isolated-rollback-credential-2026!"
 REVISION = "3" * 40
 AVATAR = "/v1/account/profile/avatar"
 TOOLS = "/v1/tool-navigation/state"
+PRESENTATION = "/v1/presentation-workshop"
 
 
 def configuration(path, *, database, key, port, web):
@@ -120,6 +125,12 @@ def migrate_rehearsal(snapshot_db, parent, account, manifest_sha256):
     assert indexed["visual_asset_folders"]["record_count"] == 2
     assert indexed["users"]["dataset"] == "identity.accounts"
     assert indexed["director_desk_projects"]["dataset"] == "director.projects"
+    assert indexed["presentation_projects"]["dataset"] == "presentation.projects"
+    receipts = indexed["project_operation_receipts"]
+    assert receipts["partitions"]["presentation"] == 2
+    assert receipts["pending_records"] == receipts["record_count"] - 2
+    assert receipts["status"] == "transfer_pending"
+    assert indexed["presentation_template_assets"]["dataset"] == "presentation.template-references"
     assert indexed["agent_workbench_search"]["status"] == "rebuild_pending"
     assert indexed["model_catalog_state"]["dataset"] == "models.catalog-state"
     assert "interview_rooms" in report["pending_tables"]
@@ -132,6 +143,7 @@ def migrate_rehearsal(snapshot_db, parent, account, manifest_sha256):
         ("tools", TOOLS_MIGRATIONS, (NAVIGATION,)),
         ("remote", REMOTE_MIGRATIONS, (PREFERENCES,)),
         ("director", DIRECTOR_MIGRATIONS, DIRECTOR_RECORDS),
+        ("presentation", PRESENTATION_MIGRATIONS, PRESENTATION_RECORDS),
     ):
         root = parent / f"independent-{service}"
         apply(root / "service.db", service, migrations)
@@ -221,10 +233,10 @@ def migrate_rehearsal(snapshot_db, parent, account, manifest_sha256):
                 assert rejected.status_code == 409
                 assert rejected.json()["code"] == "migration_model_credential_unreadable"
             if service == "assets":
-                assert [report["record_count"] for report in reports] == [2, 1]
+                assert [report["record_count"] for report in reports] == [2, 2]
                 headers = {"X-Fpl-Migration-Token": plan.token.get_secret_value()}
                 original = client.get(f"{source}{ASSET_BLOBS}/{account}", headers=headers).json()
-                assert len(original) == 1
+                assert len(original) == 2
                 entry = original[0]
                 route = f"{ASSET_BLOBS}/{account}/{entry['id']}/{entry['sha256']}"
                 wrong = client.put(destination + route, headers=headers, content=b"invalid")
@@ -234,7 +246,7 @@ def migrate_rehearsal(snapshot_db, parent, account, manifest_sha256):
                     == []
                 )
                 migrated = transfer_asset_blobs(client, plan, source, destination)
-                assert migrated["record_count"] == 1
+                assert migrated["record_count"] == 2
                 assert transfer_asset_blobs(client, plan, source, destination) == migrated
                 different_digest = route.rsplit("/", 1)[0] + "/" + "0" * 64
                 changed = client.put(
@@ -267,6 +279,120 @@ def migrate_rehearsal(snapshot_db, parent, account, manifest_sha256):
                     orphan.rmdir()
                     orphan.parent.rmdir()
                     orphan.parent.parent.rmdir()
+
+            if service == "presentation":
+                assert [item["record_count"] for item in reports] == [1, 1, 1, 2]
+                verify_presentation_references(client, parent, path, plan, source, account)
+
+
+def verify_presentation_references(client, parent, plan_path, plan, source, account):
+    port, _ = available_ports()
+    projects, templates, _ = PRESENTATION_REFERENCES
+    with listener(
+        client,
+        port,
+        "migration-import",
+        plan_path,
+        "--state-root",
+        parent / "independent-assets",
+        module="fpl_assets",
+        prefix=projects.prefix,
+    ) as assets:
+        headers = {"X-Fpl-Migration-Token": plan.token.get_secret_value()}
+        before = next(pages(client, source, headers, plan, UUID(account), projects))
+        assert len(before.batch.records[0].asset_ids) == 1
+        swapped = client.post(
+            assets + templates.prefix + "/batches",
+            headers={**headers, "X-Fpl-Migration-SHA256": before.sha256},
+            json=before.batch.model_dump(mode="json"),
+        )
+        assert swapped.status_code == 409
+        missing = before.batch.records[0].model_copy(update={"asset_ids": ["missing"]})
+        tampered = before.batch.model_copy(update={"records": (missing,)})
+        rejected = client.post(
+            assets + projects.prefix + "/batches",
+            headers={**headers, "X-Fpl-Migration-SHA256": tampered.digest},
+            json=tampered.model_dump(mode="json"),
+        )
+        assert rejected.json()["code"] == "migration_reference_asset_unavailable"
+        first = transfer(client, plan, source, assets, projects)
+    port, _ = available_ports()
+    with listener(
+        client,
+        port,
+        "migration-import",
+        plan_path,
+        "--state-root",
+        parent / "independent-assets",
+        module="fpl_assets",
+        prefix=projects.prefix,
+    ) as assets:
+        records = [
+            transfer(client, plan, source, assets, dataset) for dataset in PRESENTATION_REFERENCES
+        ]
+        assert records[0] == first
+        assert [record["record_count"] for record in records] == [1, 1, 1]
+        assert records == [
+            transfer(client, plan, source, assets, dataset) for dataset in PRESENTATION_REFERENCES
+        ]
+
+
+def create_presentation_history(client, safe, image):
+    asset = client.post(
+        "/v1/files", headers=safe, files={"upload": ("presentation.png", image, "image/png")}
+    )
+    assert asset.status_code == 200, asset.text
+    identity = asset.json()["id"]
+    definition = TemplateDefinition().model_dump()
+    definition["fixed"] = [
+        {
+            "id": "logo",
+            "kind": "image",
+            "asset_id": identity,
+            "x": 1100,
+            "y": 32,
+            "width": 116,
+            "height": 40,
+        }
+    ]
+    document = sample_document().model_dump(mode="json")
+    bundle = client.post(
+        PRESENTATION + "/library/import",
+        headers=safe,
+        json={
+            "template": {"title": "Retained template", "definition": definition},
+            "example": {"title": "Retained example", "document": document},
+        },
+    )
+    assert bundle.status_code == 200, bundle.text
+    document["slides"][0]["elements"].append(
+        element("image", id="migrated-image", asset_id=identity)
+    )
+    project = client.post(
+        PRESENTATION + "/projects",
+        headers=safe,
+        json={"title": "Retained deck", "document": document},
+    )
+    assert project.status_code == 200, project.text
+    url = PRESENTATION + "/projects/" + project.json()["id"]
+    final = None
+    for revision, request_id in enumerate(("恢复操作", "migrated-operation")):
+        edit = {
+            "request_id": request_id,
+            "expected_revision": revision,
+            "operations": [
+                {
+                    "entity": "element",
+                    "action": "update",
+                    "id": "migrated-image",
+                    "parent_id": "slide-one",
+                    "value": {"x": 100 + revision},
+                }
+            ],
+        }
+        final = client.post(url + "/operations", headers=safe, json=edit)
+        assert final.status_code == 200, final.text
+    return url, final.json(), f"/v1/files/{identity}/content"
 
 
 def test_stopped_site_reopens_from_verified_runtime_and_original_config(tmp_path):
@@ -470,6 +596,9 @@ def test_stopped_site_reopens_from_verified_runtime_and_original_config(tmp_path
         motion_path = f"{director}/motions/user-motion:model-{motion_hash}:0"
         motion = {"motion": {"name": "Retained motion"}, "resource": {"file": motion_hash}}
         assert client.put(motion_path, headers=safe, json=motion).status_code == 200
+        presentation_path, retained_deck, presentation_asset = create_presentation_history(
+            client, safe, image
+        )
         cookies = dict(client.cookies)
 
     proof = legacy_snapshot.create(runtime, config, snapshot, REVISION)
@@ -528,6 +657,8 @@ def test_stopped_site_reopens_from_verified_runtime_and_original_config(tmp_path
             demo.json()["revision"],
             demo.json()["value"],
         )
+        assert restored.get(presentation_path).json() == retained_deck
+        assert restored.get(presentation_asset).content == image
         assert restored.get(scene_path).json() == saved.json()
         assert restored.get(f"{scene_path}/files/{scene_hash}").content == scene_bytes
         assert restored.get(motion_path).json() == motion

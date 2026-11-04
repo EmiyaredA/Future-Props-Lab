@@ -4871,6 +4871,12 @@
       "model": "PresentationImportBatch"
     },
     {
+      "table": "presentation_migration_receipts",
+      "service": "presentation",
+      "module": "fpl_presentation.models",
+      "model": "PresentationMigrationReceipt"
+    },
+    {
       "table": "remote_desktop_import_receipts",
       "service": "remote",
       "module": "fpl_remote.models",

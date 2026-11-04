@@ -6,8 +6,10 @@ from fpl_runtime.migration_apps import export_app, import_app, mount_dataset
 
 from .migration_blobs import BLOBS, mount_blobs
 from .migration_models import AssetImportReceipt
+from .migration_presentation import mount_presentation_references
 from .migration_records import DATASETS, export_page, import_batch, inventory
 from .migrations.registry import MIGRATIONS
+from .models import AssetReferencePin, AssetReferenceSet
 
 PREFIX = "/v1/migration/assets"
 TRANSPORT = {"streaming_prefix": BLOBS + "/"}
@@ -37,7 +39,13 @@ def create_export_app(*, plan, source_path):
 
 
 def create_import_app(*, plan, state_root):
-    models = (*[dataset.model for dataset in DATASETS], AssetImportReceipt)
+    models = (
+        *[dataset.model for dataset in DATASETS],
+        AssetImportReceipt,
+        AssetReferenceSet,
+        AssetReferencePin,
+    )
     app, database = import_app(plan, state_root, "assets", models, MIGRATIONS, **TRANSPORT)
     mount_blobs(app, plan, database.sessions, root=database.root)
+    mount_presentation_references(app, plan, database.sessions)
     return mount_records(app, plan, database.sessions)

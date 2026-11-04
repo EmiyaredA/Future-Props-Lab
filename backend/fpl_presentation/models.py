@@ -12,6 +12,7 @@ from app.apps.presentation_workshop.templates.models import (
 )
 from app.runtime.project_operations import ProjectOperationReceipt
 from app.runtime.time import utc_now
+from fpl_runtime.migration_receipts import ImportReceiptFields
 from fpl_runtime.reference_records import ReferenceMutationFields
 
 
@@ -33,6 +34,10 @@ class PresentationImportBatch(PresentationRetentionBase):
     result: Mapped[dict | None] = mapped_column(JSON)
     state: Mapped[str] = mapped_column(String(16), default="staging")
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
+class PresentationMigrationReceipt(ImportReceiptFields, PresentationRetentionBase):
+    __tablename__ = "presentation_migration_receipts"
 
 
 MODELS = (
