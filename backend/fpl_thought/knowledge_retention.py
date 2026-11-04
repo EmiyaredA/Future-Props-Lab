@@ -1,10 +1,11 @@
-"""Create a document project and its home note with initial Assets projections."""
+"""Preserve Assets projections when creating or updating document projects."""
 
 from uuid import uuid4
 
 from app.apps.thought_workshop.knowledge import KnowledgeBases
-from app.apps.thought_workshop.schemas.knowledge import KnowledgeBaseIn
+from app.apps.thought_workshop.schemas.knowledge import KnowledgeBaseIn, KnowledgeBasePut
 from app.runtime.ids import new_id
+from app.runtime.revisions import RevisionConflictError
 from fpl_runtime.asset_references import PrepareReferenceChange
 
 
@@ -75,4 +76,59 @@ async def create_knowledge_base_with_references(
             await session.rollback()
             for reference in prepared:
                 await references.abort_after_rollback(session, reference)
+        raise
+
+
+async def update_knowledge_base_with_references(
+    session,
+    *,
+    owner,
+    project_id,
+    body: KnowledgeBasePut,
+    assertion,
+    source_method,
+    source_path,
+    references,
+):
+    if (
+        source_method != "PUT"
+        or source_path != f"/v1/thought-workshop/knowledge-bases/{project_id}"
+    ):
+        raise ValueError("更新知识库必须绑定原请求")
+    if session.info.get("owner_user_id") != owner:
+        raise ValueError("更新知识库缺少账号上下文")
+
+    bases = KnowledgeBases(session, owner)
+    current = await bases.get(project_id)
+    expected = body.expected_revision
+    if current.revision != expected:
+        snapshot = await bases.output(current)
+        raise RevisionConflictError(expected, snapshot.revision, snapshot.model_dump(mode="json"))
+    await bases.cover(body.cover_asset_id)
+    await session.rollback()
+
+    prepared = await references.prepare(
+        owner=owner,
+        assertion=assertion,
+        source_method=source_method,
+        source_path=source_path,
+        change=PrepareReferenceChange(
+            request_id=uuid4().hex,
+            resource_kind="knowledge-base",
+            resource_id=project_id,
+            expected_resource_revision=expected,
+            asset_ids=[body.cover_asset_id] if body.cover_asset_id else [],
+        ),
+    )
+    commit_started = False
+    try:
+        result = await bases.put(project_id, body, commit=False, cover_validated=True)
+        await references.record(session, prepared, resource_revision=result.revision)
+        commit_started = True
+        await session.commit()
+        return result
+    except BaseException:
+        if not commit_started:
+            await session.rollback()
+            await references.abort_after_rollback(session, prepared)
         raise

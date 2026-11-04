@@ -45,6 +45,13 @@ class RetentionAuthorization:
                 if body.source_method in {"PUT", "DELETE"}
                 else None
             )
+            knowledge_update = (
+                re.fullmatch(
+                    r"/v1/thought-workshop/knowledge-bases/([A-Za-z0-9_-]+)", body.source_path
+                )
+                if body.source_method == "PUT" and body.change.expected_resource_revision >= 0
+                else None
+            )
             note_operation = (
                 re.fullmatch(
                     r"/v1/thought-workshop/notes/([A-Za-z0-9_-]+)/"
@@ -113,6 +120,8 @@ class RetentionAuthorization:
             elif direct:
                 expected_kind = "note" if direct.group(1) == "notes" else "template"
                 expected_id = direct.group(2)
+            elif knowledge_update:
+                expected_kind, expected_id = "knowledge-base", knowledge_update.group(1)
             elif note_operation:
                 expected_kind, expected_id = "note", note_operation.group(1)
             else:

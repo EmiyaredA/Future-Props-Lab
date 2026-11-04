@@ -133,12 +133,21 @@ class KnowledgeBases:
             await self.session.commit()
         return await self.output(await self.get(row.id))
 
-    async def put(self, project_id: str, body: KnowledgeBasePut) -> KnowledgeBaseOut:
-        await self.cover(body.cover_asset_id)
+    async def put(
+        self,
+        project_id: str,
+        body: KnowledgeBasePut,
+        *,
+        commit: bool = True,
+        cover_validated: bool = False,
+    ) -> KnowledgeBaseOut:
+        if not cover_validated:
+            await self.cover(body.cover_asset_id)
         row = await self.reserve(project_id, body.expected_revision)
         for key, value in body.model_dump(exclude={"expected_revision"}).items():
             setattr(row, key, value)
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
         return await self.output(await self.get(project_id))
 
     async def transition(self, project_id: str, expected: int, restore: bool) -> KnowledgeBaseOut:

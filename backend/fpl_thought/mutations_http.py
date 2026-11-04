@@ -17,6 +17,7 @@ from app.apps.thought_workshop.notes import Notes
 from app.apps.thought_workshop.schemas.knowledge import (
     KnowledgeBaseIn,
     KnowledgeBaseOut,
+    KnowledgeBasePut,
     KnowledgeNoteCreate,
     ThoughtDirectoryOut,
     ThoughtMoveIn,
@@ -33,7 +34,10 @@ from app.deps import OwnerDep, StudioAuth
 from app.runtime.operation_receipts import OperationError
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
 
-from .knowledge_creation import create_knowledge_base_with_references
+from .knowledge_retention import (
+    create_knowledge_base_with_references,
+    update_knowledge_base_with_references,
+)
 from .multitable_retention import mutate_table_with_references
 from .note_creation import create_note_with_references
 from .note_retention import (
@@ -353,6 +357,21 @@ async def restore_trashed_note(
     return await guarded(
         Notes(session, owner_user_id).transition(
             note_id, body.expected_revision, "restore", body.expected_knowledge_revision
+        )
+    )
+
+
+@router.put("/knowledge-bases/{project_id}", response_model=KnowledgeBaseOut)
+async def update_knowledge_base(
+    request: Request,
+    project_id: str,
+    body: KnowledgeBasePut,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+):
+    return await guarded(
+        update_knowledge_base_with_references(
+            session, owner=owner_user_id, project_id=project_id, body=body, **context(request)
         )
     )
 

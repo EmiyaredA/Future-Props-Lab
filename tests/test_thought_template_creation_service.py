@@ -54,12 +54,12 @@ async def test_create_template_pins_same_account_assets_over_http(scenario):  # 
         },
     }
 
-    async def context(browser, source_path=path):
+    async def context(browser, source_path=path, method="POST"):
         response = await browser.get(
             "/_internal/v1/authorize",
             headers={
                 "X-Fpl-Target-Service": "thought",
-                "X-Fpl-Request-Method": "POST",
+                "X-Fpl-Request-Method": method,
                 "X-Fpl-Request-Uri": source_path,
                 "X-CSRF-Token": browser.cookies["fpl_csrf"],
                 "Origin": "http://127.0.0.1:19000",
@@ -196,6 +196,35 @@ async def test_create_template_pins_same_account_assets_over_http(scenario):  # 
                 )
                 assert knowledge.status_code == 200, knowledge.text
                 knowledge = knowledge.json()
+                update_path = f"{knowledge_path}/{knowledge['id']}"
+                add_path = f"{update_path}/documents"
+                added = await client.post(
+                    add_path,
+                    headers=await context(owner, add_path),
+                    json={"title": "New document", "expected_revision": 0},
+                )
+                assert added.status_code == 200, added.text
+                update_body = {"title": "Cover removed", "expected_revision": 1}
+                denied = await client.put(
+                    update_path,
+                    headers=await context(case.browser, update_path, "PUT"),
+                    json=update_body,
+                )
+                assert denied.status_code == 404, denied.text
+                updated = await client.put(
+                    update_path,
+                    headers=await context(owner, update_path, "PUT"),
+                    json=update_body,
+                )
+                assert updated.status_code == 200, updated.text
+                assert updated.json()["cover_asset_id"] is None
+                assert updated.json()["revision"] == 2
+                stale = await client.put(
+                    update_path,
+                    headers=await context(owner, update_path, "PUT"),
+                    json=update_body,
+                )
+                assert stale.status_code == 409, stale.text
             from fpl_thought.retention import ThoughtReferenceDelivery
 
             await ThoughtReferenceDelivery(
@@ -271,7 +300,7 @@ async def test_create_template_pins_same_account_assets_over_http(scenario):  # 
                         AssetReferenceSet.resource_id == knowledge["id"],
                     )
                 )
-                assert cover_ref is not None and cover_ref.resource_revision == 0
+                assert cover_ref is not None and cover_ref.resource_revision == 2
                 cover_pins = list(
                     await session.scalars(
                         select(AssetReferencePin).where(
@@ -279,7 +308,7 @@ async def test_create_template_pins_same_account_assets_over_http(scenario):  # 
                         )
                     )
                 )
-                assert [pin.asset_id for pin in cover_pins] == [case.asset]
+                assert not cover_pins
                 home_ref = await session.scalar(
                     select(AssetReferenceSet).where(
                         AssetReferenceSet.resource_kind == "note",
@@ -351,7 +380,7 @@ def test_note_creation_operations_match_public_contract():
         assert app.openapi()["paths"][path]["post"] == expected["paths"][path]["post"]
 
 
-def test_knowledge_base_creation_matches_public_contract():
+def test_knowledge_base_mutations_match_public_contract():
     import json
     from pathlib import Path
 
@@ -366,3 +395,5 @@ def test_knowledge_base_creation_matches_public_contract():
     )
     path = "/v1/thought-workshop/knowledge-bases"
     assert app.openapi()["paths"][path]["post"] == expected["paths"][path]["post"]
+    path += "/{project_id}"
+    assert app.openapi()["paths"][path]["put"] == expected["paths"][path]["put"]
