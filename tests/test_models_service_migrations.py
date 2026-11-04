@@ -7,6 +7,7 @@ from sqlalchemy import select
 
 from app.llm.models import ModelInferenceTask, ModelTestTranscriptionTask, RuntimeAdmission
 from db.migrations import apply_migrations
+from fpl_models.catalog_migration import ModelsImportReceipt
 from fpl_models.migrations.registry import MIGRATIONS
 from fpl_models.models import ACCOUNT_MODELS, MODELS
 from fpl_runtime.database import Database
@@ -24,7 +25,10 @@ def test_models_migration_appends_owned_tables_without_external_schemas(tmp_path
     with sqlite3.connect(f"file:{path}?mode=ro", uri=True) as db:
         assert db.execute("SELECT * FROM _fpl_service_schema ORDER BY position").fetchone() == first
         tables = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-        assert tables == {model.__tablename__ for model in MODELS} | {"_fpl_service_schema"}
+        assert tables == {model.__tablename__ for model in (*MODELS, ModelsImportReceipt)} | {
+            "_fpl_service_schema"
+        }
+        assert ModelsImportReceipt not in MODELS
         assert not {
             "users",
             "visual_assets",
