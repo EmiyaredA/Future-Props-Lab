@@ -21,6 +21,10 @@ from app.apps.galgame_workshop.story.edit_values import (
 )
 from app.apps.galgame_workshop.story.migration_inventory import normalize_legacy_import
 from app.apps.galgame_workshop.story.operation_values import transform
+from app.apps.galgame_workshop.story.portrait_values import (
+    preview_portraits,
+    upgraded_portrait_values,
+)
 from app.apps.galgame_workshop.story.reference_index import sync_asset_references
 from app.runtime.ids import new_id
 from app.runtime.operation_receipts import record, replay
@@ -130,6 +134,31 @@ class StoryWrites:
             path=f"{PREFIX}/{project_id}/story/import",
         )
 
+    async def preview_portrait_upgrade(self, project_id):
+        return await preview_portraits(self.session, await self.projects.story(project_id))
+
+    async def apply_portrait_upgrade(self, project_id, expected_revision):
+        story = await self.current_story(project_id, expected_revision)
+        preview = await preview_portraits(self.session, story)
+        try:
+            document = normalize_story_document(upgraded_portrait_values(story.document, preview))
+        except GalgameStoryDocumentInvalidError as exc:
+            raise story_error(str(exc)) from exc
+        snapshot = GalgameStorySnapshot(
+            project_id=project_id,
+            story_revision=story.revision,
+            reason="portrait-size-upgrade",
+            document=story.document.model_dump(mode="json", by_alias=True),
+        )
+        return await self._save(
+            project_id,
+            expected_revision=expected_revision,
+            document=document,
+            method="POST",
+            path=f"{PREFIX}/{project_id}/story/portrait-upgrade",
+            snapshot=snapshot,
+        )
+
     async def repair_asset(self, project_id, body, document):
         return await self._save(
             project_id,
@@ -234,7 +263,15 @@ class StoryWrites:
         )
 
     async def _save(
-        self, project_id, *, expected_revision, document, method, path, record_operation=None
+        self,
+        project_id,
+        *,
+        expected_revision,
+        document,
+        method,
+        path,
+        record_operation=None,
+        snapshot=None,
     ):
         files = {asset.file_id for asset in document.assets}
         snapshots = await self.session.scalars(
@@ -250,6 +287,10 @@ class StoryWrites:
             }
         except GalgameStoryDocumentInvalidError as exc:
             raise story_error(str(exc)) from exc
+        if snapshot is not None:
+            historic.update(
+                asset.file_id for asset in normalize_story_document(snapshot.document).assets
+            )
         await self.session.rollback()
         prepared = await self._prepare(
             project_id,
@@ -287,6 +328,8 @@ class StoryWrites:
                 project.status = "draft"
                 project.revision += 1
                 project.updated_at = now
+            if snapshot is not None:
+                self.session.add(snapshot)
             await sync_asset_references(self.session, project_id, files)
             return story_out(row, document)
 

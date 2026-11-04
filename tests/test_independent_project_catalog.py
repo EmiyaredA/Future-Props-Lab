@@ -208,6 +208,7 @@ async def test_projects_create_owned_defaults_and_keep_the_published_contract(
                 .where(
                     AssetReferenceSet.service_id == "galgame",
                     AssetReferenceSet.resource_kind == "story",
+                    AssetReferenceSet.resource_id == record["id"],
                 )
             )
             assert set(pins) == {asset_id, replacement_id, voice_id}
@@ -1010,3 +1011,79 @@ async def verify_galgame_asset_repair(case, request, path, voice_id):
     stale = await request("POST", repair, json=request_body)
     assert stale.status_code == 409 and stale.json()["current"] == repaired
     return replacement.id
+
+
+async def verify_galgame_portrait_upgrade(case, app, request, prefix):
+    created = await request("POST", prefix, json={"title": "Portrait fixture"})
+    assert created.status_code == 200, created.text
+    project_id = created.json()["id"]
+    story_path = f"{prefix}/{project_id}/story"
+    async with case.assets.state.database.sessions(info={"owner_user_id": case.viewer}) as db:
+        file = await AssetLibrary(db, case.assets.state.settings).store_upload(
+            UploadFile(io.BytesIO(b"\x89PNG\r\n\x1a\nportrait"), filename="actor.png"),
+            owner_user_id=case.viewer,
+            galgame_project_id=project_id,
+        )
+    async with app.state.database.sessions(info={"owner_user_id": case.viewer}) as db:
+        db.add(
+            GalgameAssetMetadata(
+                asset_id=file.id,
+                project_id=project_id,
+                category="character",
+                virtual_path="character/actor.png",
+                width=200,
+                height=540,
+            )
+        )
+        await db.commit()
+    document = (await request("GET", story_path)).json()["document"]
+    document["assets"] = [
+        {
+            "id": "actor",
+            "fileId": file.id,
+            "role": "characterPortrait",
+            "type": "image",
+            "status": "ready",
+        }
+    ]
+    document["characters"] = [
+        {
+            "id": "actor",
+            "name": "Actor",
+            "expressions": [
+                {
+                    "id": "neutral",
+                    "label": "Neutral",
+                    "assetId": "actor",
+                    "heightPercent": 80.0,
+                }
+            ],
+        }
+    ]
+    response = await request("PUT", story_path, json={"expected_revision": 0, "document": document})
+    assert response.status_code == 200, response.text
+    path = story_path + "/portrait-upgrade"
+    preview = await request("GET", path)
+    assert preview.status_code == 200, preview.text
+    item = preview.json()["items"][0]
+    assert item["currentHeightPercent"] == 80.0
+    target = item["targetHeightPercent"]
+    assert target == round(
+        540 / response.json()["document"]["settings"]["canvas"]["height"] * 100, 4
+    )
+    applied = await request("POST", path, json={"expectedStoryRevision": 1})
+    assert applied.status_code == 200, applied.text
+    assert applied.json()["revision"] == 2
+    assert applied.json()["document"]["characters"][0]["expressions"][0]["heightPercent"] == target
+    stale = await request("POST", path, json={"expectedStoryRevision": 1})
+    assert stale.status_code == 409 and stale.json()["current"] == applied.json()
+    snapshots = (await request("GET", story_path + "/snapshots")).json()
+    assert len(snapshots) == 1
+    assert snapshots[0]["storyRevision"] == 1 and snapshots[0]["reason"] == "portrait-size-upgrade"
+    restored = await request(
+        "POST",
+        f"{story_path}/snapshots/{snapshots[0]['id']}/restore",
+        json={"expectedStoryRevision": 2},
+    )
+    assert restored.status_code == 200, restored.text
+    assert restored.json()["document"] == response.json()["document"]

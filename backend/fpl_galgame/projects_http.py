@@ -11,6 +11,8 @@ from app.apps.galgame_workshop.errors import (
 )
 from app.apps.galgame_workshop.schemas import (
     GalgameMissingAssetRepairIn,
+    GalgamePortraitUpgradeApplyIn,
+    GalgamePortraitUpgradePreviewOut,
     GalgameStoryDialoguePatchIn,
     GalgameStoryDialoguePatchOut,
     GalgameStoryDocumentOut,
@@ -243,3 +245,26 @@ async def repair_project_asset(
         )
     except AssetError as exc:
         raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
+
+
+@router.get("/{project_id}/story/portrait-upgrade", response_model=GalgamePortraitUpgradePreviewOut)
+async def preview_portrait_upgrade(
+    session: SessionDep,
+    project_id: str,
+    request: Request,
+    owner_user_id: OwnerDep,
+) -> GalgamePortraitUpgradePreviewOut:
+    return await story_writes(request, session, owner_user_id).preview_portrait_upgrade(project_id)
+
+
+@router.post("/{project_id}/story/portrait-upgrade", response_model=GalgameStoryDocumentOut)
+async def apply_portrait_upgrade(
+    session: SessionDep,
+    project_id: str,
+    body: GalgamePortraitUpgradeApplyIn,
+    request: Request,
+    owner_user_id: OwnerDep,
+) -> GalgameStoryDocumentOut:
+    return await story_writes(request, session, owner_user_id).apply_portrait_upgrade(
+        project_id, body.expected_story_revision
+    )
