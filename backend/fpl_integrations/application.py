@@ -101,6 +101,7 @@ def create_app(
     tool_transport=None,
     feishu_transport=None,
     demo_tools=None,
+    creative_authorization=None,
     version="development",
     web_root=None,
     run_tasks=True,
@@ -156,6 +157,7 @@ def create_app(
     app.state.external_steps = external_steps
     app.state.demo_tool_installations = DemoToolInstallations(database)
     app.state.creative_installations = CreativeInstallations(database, settings)
+    app.state.creative_authorization = creative_authorization
     app.state.integration_validation_recovery = recovery
     app.state.supervisor = supervisor
 

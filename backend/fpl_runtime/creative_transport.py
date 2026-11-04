@@ -9,6 +9,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from .creative_integrations import CreativeInstallBatch
 from .creative_source_evidence import MAX_BODY
 
+CREATIVE_SOCKET_DIR = "/run/fpl-bridge"
+
 
 class CreativeInstallSourceContext(BaseModel):
     model_config = ConfigDict(extra="forbid")

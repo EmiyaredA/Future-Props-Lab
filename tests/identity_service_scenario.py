@@ -60,6 +60,79 @@ headers = {
 password = "Identity-Test-Password-2026!"
 
 
+async def creative_catalog(browser, unsafe, owner):
+    from fpl_creative.application import create_app as create_creative
+    from fpl_creative.migrations.registry import MIGRATIONS as CREATIVE_MIGRATIONS
+    from fpl_runtime.creative_authors import ITEM, PATH
+
+    root = state.parent / "creative"
+    credential = "creative-test-service-credential-123456"
+    apply(root / "service.db", "creative", CREATIVE_MIGRATIONS)
+    creative = create_creative(
+        state_root=root,
+        catalog=catalog,
+        public_key=private.public_key(),
+        credential=credential,
+        transport=transport,
+    )
+
+    async def assertion(method, path):
+        response = await browser.get(
+            "/_internal/v1/authorize",
+            headers={
+                **unsafe,
+                "X-Fpl-Target-Service": "creative",
+                "X-Fpl-Request-Method": method,
+                "X-Fpl-Request-Uri": path,
+            },
+        )
+        assert response.status_code == 204, response.text
+        return response.headers[HEADER]
+
+    async with (
+        creative.router.lifespan_context(creative),
+        httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=creative), base_url="http://creative"
+        ) as client,
+    ):
+        draft = {"kind": "tool_api", "title": "Test tool"}
+        assert (await client.post(ITEM, json=draft)).status_code == 401
+        response = await client.post(
+            ITEM, json=draft, headers={HEADER: await assertion("POST", ITEM)}
+        )
+        assert response.status_code == 201, response.text
+        item = response.json()
+        assert item["author_user_id"] == owner
+        assert item["author_name"] == "Identity Admin"
+        item_path = ITEM + "/" + item["id"]
+        token = await assertion("GET", item_path)
+        assert (await client.get(item_path, headers={HEADER: token})).status_code == 404
+        draft_response = await client.get(
+            item_path, params={"draft": True}, headers={HEADER: token}
+        )
+        assert draft_response.status_code == 200, draft_response.text
+        assert draft_response.json()["author_name"] == "Identity Admin"
+        assert (await client.get("/ready")).status_code == 503
+
+    lookup = {
+        "assertion": token,
+        "source_method": "GET",
+        "source_path": item_path,
+        "item_id": "other-item",
+        "author_id": owner,
+    }
+    async with httpx.AsyncClient(transport=transport, base_url="http://identity") as peer:
+        peer_headers = {"Authorization": "Bearer " + credential}
+        assert (await peer.post(PATH, json=lookup)).status_code == 403
+        assert (await peer.post(PATH, json=lookup, headers=peer_headers)).status_code == 403
+        lookup["item_id"] = item["id"]
+        assert (
+            await peer.post(PATH, json=lookup, headers={**peer_headers, "Cookie": "x=y"})
+        ).status_code == 403
+        response = await peer.post(PATH, json=lookup, headers=peer_headers)
+        assert response.json() == {"name": "Identity Admin"}, response.text
+
+
 async def scenario():
     async with app.router.lifespan_context(app):
         async with app.state.database.sessions() as session:
@@ -85,6 +158,7 @@ async def scenario():
             assert (await client.get("/v1/platform/accounts")).status_code == 404
             csrf = client.cookies.get("fpl_csrf")
             unsafe = {"X-CSRF-Token": csrf, "Origin": "http://127.0.0.1:19000"}
+            await creative_catalog(client, unsafe, owner)
             rejected = await client.post("/v1/auth/logout")
             assert rejected.status_code == 403
             assert (await client.get("/v1/not-a-real-operation")).status_code == 404

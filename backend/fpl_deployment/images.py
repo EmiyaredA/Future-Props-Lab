@@ -9,6 +9,7 @@ from pathlib import Path
 
 ENTRY_POINTS = {
     "integrations": "fpl_integrations.__main__",
+    "creative": "fpl_creative.__main__",
     "models": "fpl_models.__main__",
     "rendering": "fpl_rendering.__main__",
     "assets": "fpl_assets.__main__",
@@ -30,6 +31,7 @@ PROJECT_PACKAGES = (
     "fpl_models",
     "fpl_thought",
     "fpl_integrations",
+    "fpl_creative",
     "fpl_runtime",
     "fpl_config",
     "fpl_host",
@@ -195,6 +197,23 @@ def source_closure(root: Path, service):
             )
         ):
             raise ValueError(f"Integrations 镜像包含越界依赖：{name}")
+        if service == "creative" and any(
+            name == prefix or name.startswith(prefix + ".")
+            for prefix in (
+                "app.main",
+                "app.api",
+                "app.orm",
+                "app.runtime.db",
+                "app.apps",
+                "app.llm",
+                "app.console.models",
+                "app.integrations.models",
+                "fpl_identity",
+                "fpl_integrations",
+                "fpl_host",
+            )
+        ):
+            raise ValueError(f"Creative 镜像包含越界依赖：{name}")
         if service == "models" and any(
             name == prefix or name.startswith(prefix + ".")
             for prefix in (
@@ -274,7 +293,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
     if service in {"identity", "gateway"}:
         manifest = "backend/app/console/governance/automation_operations.json"
         payloads[manifest] = (root / manifest).read_bytes()
-    if service == "gateway":
+    if service in {"creative", "gateway"}:
         payloads["deploy/contracts/openapi.json"] = (
             root / "web/src/generated/openapi.json"
         ).read_bytes()
@@ -297,7 +316,15 @@ def prepare_image(root: Path, service: str, *, web_release=None):
                     raise ValueError("文档源码不能是符号链接或位于仓库之外")
                 payloads[path.relative_to(root).as_posix()] = path.read_bytes()
     web_build = None
-    if service in {"agents", "portal", "assets", "management", "models", "integrations"}:
+    if service in {
+        "agents",
+        "portal",
+        "assets",
+        "management",
+        "models",
+        "integrations",
+        "creative",
+    }:
         if web_release is None:
             payloads["web/.api-only"] = b"No browser program in this API acceptance image.\n"
         else:

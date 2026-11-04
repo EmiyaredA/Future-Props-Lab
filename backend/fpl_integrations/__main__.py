@@ -22,6 +22,7 @@ def parser():
     result.add_argument("--web-root", type=Path, default=Path("/app/web"))
     result.add_argument("--native-ingress", type=Path, default=Path("/run/fpl/native-ingress"))
     result.add_argument("--workers", type=Path, default=Path("/run/fpl/workers.json"))
+    result.add_argument("--creative-install-credentials", type=Path)
     result.add_argument("--port", type=int, default=8080)
     return result
 
@@ -75,6 +76,22 @@ def run(options):
             raise ValueError("Integrations 身份服务连接配置无效")
         catalog = RouteCatalog.read(options.catalog)
         credential = connection["credential"]
+        creative_authorization = None
+        if options.creative_install_credentials is not None:
+            from fpl_runtime.creative_peer_config import CreativeInstallCredentials
+
+            from .creative_authority import CreativeHttpAuthority
+
+            peer, target, result = CreativeInstallCredentials.read(
+                options.creative_install_credentials
+            )
+            if credential in {peer, target, result}:
+                raise ValueError("Creative 安装凭据必须与 Integrations 身份凭据独立")
+            creative_authorization = CreativeHttpAuthority(
+                creative_peer_credential=peer,
+                integrations_credential=target,
+                result_credential=result,
+            )
         has_web = (options.web_root / "build.json").is_file()
         if not has_web and not (options.web_root / ".api-only").is_file():
             raise ValueError("Integrations 缺少已安装的浏览器程序")
@@ -86,6 +103,7 @@ def run(options):
             identity=LiveAuthorization(service="integrations", credential=credential),
             intents=intents,
             capacity=ValidationCapacityClient(intents),
+            creative_authorization=creative_authorization,
             native_ingress=options.native_ingress.read_text().strip(),
             native_workers=json.loads(options.workers.read_text()),
             web_root=options.web_root if has_web else None,

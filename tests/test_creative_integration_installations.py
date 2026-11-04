@@ -7,6 +7,7 @@ import json
 import time
 import zipfile
 from dataclasses import replace
+from pathlib import Path
 from types import SimpleNamespace
 from uuid import NAMESPACE_URL, uuid4, uuid5
 
@@ -750,6 +751,124 @@ async def test_creative_source_grant_controls_real_target_and_receipt_recovery(
         assert wrong.value.status_code == 403
     finally:
         await db.close()
+
+
+async def test_independent_install_http_recovers_a_lost_target_reply(installation, tmp_path):
+    import httpx
+    import jwt
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from fastapi import FastAPI
+
+    from app.console.creative_workshop.models import CreativeItem, CreativeRelease
+    from fpl_creative.application import create_app
+    from fpl_creative.migrations.registry import MIGRATIONS as CREATIVE_MIGRATIONS
+    from fpl_integrations.creative_authority import CreativeHttpAuthority
+    from fpl_integrations.creative_http import router
+    from fpl_runtime.claims import HEADER, Actor, issue_context
+    from fpl_runtime.creative_install_evidence import INSTALL_PATH, issue_install_evidence
+    from fpl_runtime.routing import RouteCatalog
+
+    key = Ed25519PrivateKey.generate()
+    peer, target, result = ("source-" * 8, "target-" * 8, "result-" * 8)
+    installs = 0
+    services = {}
+
+    async def dispatch(request):
+        nonlocal installs
+        if request.url.host == "identity":
+            return httpx.Response(200, json={"active": True})
+        response = await services[request.url.host].handle_async_request(request)
+        if request.url.path == "/_internal/v1/creative-integrations/install":
+            installs += 1
+            if installs == 1:
+                assert response.status_code == 200
+                await response.aclose()
+                raise httpx.ReadError("reply lost", request=request)
+        return response
+
+    transport = httpx.MockTransport(dispatch)
+    root = tmp_path / "creative"
+    apply(root / "service.db", "creative", CREATIVE_MIGRATIONS)
+    catalog = RouteCatalog.read(Path("deploy/contracts/ownership.json"))
+    creative = create_app(
+        state_root=root,
+        catalog=catalog,
+        public_key=key.public_key(),
+        credential="identity-" * 8,
+        transport=transport,
+        install_credentials=(peer, target, result),
+    )
+    integrations = FastAPI()
+    integrations.include_router(router)
+    integrations.state.creative_installations = installation.use
+    integrations.state.creative_authorization = CreativeHttpAuthority(
+        creative_peer_credential=peer,
+        integrations_credential=target,
+        result_credential=result,
+        transport=transport,
+    )
+    services["creative"] = httpx.ASGITransport(app=creative)
+    services["integrations"] = httpx.ASGITransport(app=integrations)
+    actor = Actor(
+        "alpha", "user", "session", ("studio:write", "studio:private_read"), session_id="s"
+    )
+    token = issue_context(
+        actor, service="creative", method="POST", path=INSTALL_PATH, private_key=key, key_id="test"
+    )
+    claims = jwt.decode(
+        token, key.public_key(), algorithms=["EdDSA"], issuer="fpl-identity", audience="creative"
+    )
+    part = tool()
+    raw = b'{"release_id":"tool-release","names":{"tool-release":"My Tool"}}'
+    evidence = issue_install_evidence(
+        actor=actor,
+        request_id=claims["jti"],
+        raw=raw,
+        source_expiry=claims["exp"],
+        private_key=key,
+        key_id="test",
+    )
+    headers = {HEADER: token, "Content-Type": "application/json"}
+
+    async with (
+        creative.router.lifespan_context(creative),
+        httpx.AsyncClient(transport=services["creative"], base_url="http://creative") as browser,
+    ):
+        async with creative.state.database.sessions(info={"owner_user_id": "author"}) as session:
+            session.add(
+                CreativeItem(
+                    id="item",
+                    origin_owner_user_id="author",
+                    author_user_id="author",
+                    kind="tool_api",
+                    status="published",
+                )
+            )
+            await session.flush()
+            session.add(
+                CreativeRelease(
+                    id=part.release_id,
+                    item_id="item",
+                    version=1,
+                    title=part.title,
+                    summary=part.summary,
+                    tags=part.tags,
+                    manifest=part.manifest,
+                )
+            )
+            await session.commit()
+        assert (await browser.post(INSTALL_PATH, content=raw, headers=headers)).status_code == 403
+        headers["X-Fpl-Creative-Install-Evidence"] = evidence
+        assert (
+            await browser.post(INSTALL_PATH, content=raw + b" ", headers=headers)
+        ).status_code == 403
+        unknown = await browser.post(INSTALL_PATH, content=raw, headers=headers)
+        assert unknown.status_code == 503, unknown.text
+        recovered = await browser.post(INSTALL_PATH, content=raw, headers=headers)
+        assert recovered.status_code == 201, recovered.text
+        repeated = await browser.post(INSTALL_PATH, content=raw, headers=headers)
+        assert repeated.json() == recovered.json()
+        assert installs == 1
 
 
 async def test_cancel_tombstone_prevents_late_install_and_is_account_scoped(installation):

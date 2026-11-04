@@ -6,6 +6,13 @@ from collections import defaultdict
 from urllib.parse import urlsplit
 
 from fpl_runtime.catalog import SERVICES
+from fpl_runtime.creative_install_evidence import INSTALL_PATH
+from fpl_runtime.creative_source_evidence import SOURCE_PATH
+from fpl_runtime.creative_transport import CREATIVE_SOCKET_DIR
+
+INTERNAL_MATCH = (
+    "    @internal path /_internal /_internal/* /_native /_native/* /_bridge /_bridge/*"
+)
 
 
 def quoted(value):
@@ -27,6 +34,7 @@ def render_gateway(
     native_port=29090,
     control=False,
     audience="studio",
+    creative_ingress=None,
 ):
     if audience not in {"studio", "management"}:
         raise ValueError("Unknown gateway audience")
@@ -43,6 +51,16 @@ def render_gateway(
         raise ValueError("网关来源必须是精确的本机 HTTP 与公网 HTTPS 来源")
     if not re.fullmatch(r"[A-Za-z0-9_-]{32,256}", gateway_token):
         raise ValueError("网关凭据格式无效")
+    if creative_ingress is not None and (
+        audience != "studio"
+        or creative_ingress == gateway_token
+        or not re.fullmatch(r"[A-Za-z0-9_-]{32,256}", creative_ingress)
+    ):
+        raise ValueError("Creative 中介凭据格式无效")
+    bridge_routes = {
+        SOURCE_PATH: "/_bridge/creative/source-import",
+        INSTALL_PATH: "/_bridge/creative/install",
+    }
 
     def upstream(service):
         return (
@@ -80,7 +98,10 @@ def render_gateway(
             continue
         if audience == "management" and operation.path == "/v1/auth/register":
             continue
-        groups[(operation.service, operation.method)].append(operation)
+        if creative_ingress and operation.method == "POST" and operation.path in bridge_routes:
+            groups[("creative", "POST", bridge_routes[operation.path])].append(operation)
+        else:
+            groups[(operation.service, operation.method, "")].append(operation)
     result = [
         "{",
         "  admin off",
@@ -116,12 +137,12 @@ def render_gateway(
             '      header Content-Type "application/json"',
             '      respond "{\\"status\\":\\"ok\\",\\"service\\":\\"gateway\\"}" 200',
             "    }",
-            "    @internal path /_internal /_internal/* /_native /_native/*",
+            INTERNAL_MATCH,
             "    respond @internal 404",
         ]
         if control:
             start = lines.index("    @probe path /health /ready")
-            stop = lines.index("    @internal path /_internal /_internal/* /_native /_native/*")
+            stop = lines.index(INTERNAL_MATCH)
             lines[start:stop] = [
                 "    @probe path /health /ready /build.json",
                 "    handle @probe {",
@@ -183,7 +204,9 @@ def render_gateway(
                         "    }",
                     ]
                 )
-        for index, ((service, method), operations) in enumerate(sorted(groups.items())):
+        for index, ((service, method, bridge_path), operations) in enumerate(
+            sorted(groups.items())
+        ):
             name = f"{ingress}_api_{index}"
             paths = "|".join(op.pattern().pattern[1:-1] for op in operations)
             lines.extend(
@@ -212,12 +235,19 @@ def render_gateway(
                         "        }",
                     ]
                 )
+            if bridge_path:
+                lines.append(f"        rewrite * {bridge_path}")
+            destination = (
+                f"unix/{CREATIVE_SOCKET_DIR}/creative.sock" if bridge_path else upstream(service)
+            )
             lines.extend(
                 [
-                    f"        reverse_proxy {upstream(service)} {{",
+                    f"        reverse_proxy {destination} {{",
                     "          flush_interval -1",
                 ]
             )
+            if bridge_path:
+                lines.append(f"          header_up X-Fpl-Bridge-Ingress {quoted(creative_ingress)}")
             if service != "identity":
                 lines.extend(
                     [

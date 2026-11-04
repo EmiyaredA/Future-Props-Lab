@@ -88,7 +88,7 @@
 
 `llm/admission.py` 定义不可变的额度申请、释放、任务保留与派生任务接纳绑定；模型 HTTP 与实时语音从自己的 ASGI 应用取得它，恢复网站显式安装原治理实现。`llm/inference/receipts.py` 只依赖 Models 任务记录，负责账号限定的请求回执与摘要冲突校验，避免为重放检查导入素材能力。独立账本、队列和跨服务任务授权仍须单独实现，缺少绑定不允许回退单体数据库。
 
-`backend/fpl_creative/` 拥有 Creative 自有表和安装操作 outbox 的独立迁移及账号写入会话边界；公开阅读不授予其他账号写入权。`console/creative_workshop/` 通过显式作者、来源、归档和安装端口解耦旧站依赖，恢复网站只在装配入口注入旧适配器。上传和发布使用 CAS，提交结果未知时保留文件。独立 Creative 会话从其自有状态目录解析封面及 Skill 草稿与发布文件，复用显式指定根目录和限制的 Skill 暂存校验。独立浏览器入口可单独构建；目标安装、认证授权与完整服务装配尚未就绪，不视为可部署。
+`backend/fpl_creative/` 拥有 Creative 自有表、安装 outbox、文件和独立应用。公开目录复用旧站 HTTP 契约，账号写入继续由 CAS 和持久回执保护。独立应用按签名请求从 Identity 查询作者显示名，只读取 Creative 自有目录中的封面及 Skill 文件。镜像和浏览器入口可独立构建，`deploy/creative.compose.yaml` 提供隔离验收装配。来源导入、安装预览、stdio 配置和历史迁移仍是上线门禁。
 
 `backend/fpl_integrations/` 拥有独立工具、MCP、Skills、外部连接 HTTP 装配、自有迁移和执行回执。`fpl_runtime/integration_intents.py` / `integration_client.py` 将来源账号请求、资源与输入摘要绑定到 Identity 固定执行意图；Models 自有验证额度和演示安装回执保留跨服务幂等，不读取 Integrations 数据库。飞书同步由私有固定步骤协议执行，未知供应商响应不能自动重放。Skills 文件按本服务已提交记录恢复。`native_mcp.py` / `native_http.py` 对接主动连接的 Mac MCP worker，容器不持有主机命令、个人环境或目录。`deploy/integrations.compose.yaml` 只挂载所属状态、只读配置与用途限定凭据，外联使用单独网络；是否启用由 TOML 中明确选定的镜像决定。完整容器、原生与浏览器验收仍为正式切换前置条件。
 
@@ -114,7 +114,7 @@
 
 `backend/fpl_host/` 是独立 Mac 原生采集 CLI，仅发起受认证回环请求，读取明确来源的原生会话及引用附件。`collector.py` 管理有界任务，`follow.py` 跟随原生日志或事件，`follow_journal.py` 持久化单帧确认状态，`receipts.py` 保存一次性操作意图与结果；不确定动作不重做，跟随仅按原任务、租约和服务端检查点继续。容器镜像不包含此包。
 
-`fpl_gateway/creative_bridge.py` 是尚未挂载的 Creative 来源请求体证据中介：验证专用入口凭据与原 Creative 断言，逐请求隔离 HTTP 客户端，要求 Identity 对精确原始字节签发短期证据并校验后原样转发；提交结果未知不自动重试。它不开放安装。启用前还须容器内专用 Unix socket 与凭据、接收方验签及持久导入回执和发布版本证明，不得作为现有 TCP 网关的直接公开路由。
+`fpl_gateway/creative_bridge.py` 为 Creative 来源导入与安装提交提供请求体证据。启用隔离验收配置后，Caddy 先向 Identity 授权原始操作，再通过容器内专用 Unix socket 交给中介。中介验证入口凭据与原断言，要求 Identity 为精确原始字节签发短期证据，验签后原样转发。Creative 安装提交通过 `installation_http.py` 复用持久批次、发布围栏和受保护的 Integrations 回执。来源导入的接收端及其持久回执仍未接通。
 
 `fpl_deployment/images.py` 构建可审计源码闭包，`gateway.py` 从操作归属生成监听器路由。`deploy/images/` 下 Identity、Agents、Gateway、Portal、Assets、Rendering、Management、Models 和 Integrations 各自保存依赖锁和镜像定义。`deploy/compose.yaml` 装配基础服务，`management.compose.yaml` 与显式选择才启用的 `models.compose.yaml`、`integrations.compose.yaml` 提供对应叠加清单；Models 只挂自有状态、最小配置和身份连接，使用单独外联网络请求供应商。`scripts/website/service_build.py` 和 `service_docker_smoke.py` 分别提供 CLI 构建与账号容器隔离验收，`agents_docker_smoke.py` 验证真实工作台容器和 Mac 原生采集器；`tests/gateway_assertion_probe.py` 只属于测试传输探针，不是工作台服务。运行及切换状态见[独立服务迁移](../operations/independent-services.md)。
 

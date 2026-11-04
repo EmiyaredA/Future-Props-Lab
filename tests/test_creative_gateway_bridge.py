@@ -1,4 +1,4 @@
-"""The unmounted bridge binds exactly the original bytes and strips browser credentials."""
+"""The private bridge binds the original bytes and strips browser credentials."""
 
 import base64
 import hashlib
@@ -327,6 +327,30 @@ async def test_oversized_creative_reply_reports_unknown_without_retry():
     assert response.status_code == 503
     assert response.json()["detail"]["code"] == "creative_import_outcome_unknown"
     assert seen == ["identity", "creative"]
+
+
+def test_bridge_serves_uds_and_cleans_up_its_socket():
+    import tempfile
+    from pathlib import Path
+
+    from fpl_gateway.bridge_listener import serve_creative_bridge
+
+    with tempfile.TemporaryDirectory(prefix="fpl-bridge-", dir="/tmp") as temporary:
+        root = Path(temporary)
+        ingress = root / "ingress"
+        ingress.write_text("i" * 48)
+        ingress.chmod(0o600)
+        with serve_creative_bridge(
+            directory=root,
+            public_key=Ed25519PrivateKey.generate().public_key(),
+            gateway_credential="g" * 48,
+            ingress_file=ingress,
+        ):
+            path = root / "creative.sock"
+            with httpx.Client(transport=httpx.HTTPTransport(uds=str(path))) as client:
+                response = client.post("http://bridge" + BRIDGE_PATH)
+                assert response.status_code == 403
+        assert not path.exists()
 
 
 def test_private_socket_is_owner_only_and_rejects_existing_paths():

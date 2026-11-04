@@ -25,6 +25,7 @@ from app.runtime.image_sizes import ThumbnailSize
 from app.runtime.raster import RasterPreviewError
 
 router = APIRouter(prefix="/creative-workshop", tags=["creative-workshop"])
+catalog_router = APIRouter()
 
 
 def _raise(exc: Exception) -> None:
@@ -35,7 +36,7 @@ def _raise(exc: Exception) -> None:
     raise HTTPException(422, {"code": "invalid_upload", "message": str(exc)}) from exc
 
 
-@router.get("/items", response_model=CreativePageOut)
+@catalog_router.get("/items", response_model=CreativePageOut)
 async def list_items(
     session: SessionDep,
     principal: StudioAuth,
@@ -57,7 +58,7 @@ async def list_items(
         _raise(exc)
 
 
-@router.post("/items", response_model=CreativeItemOut, status_code=201)
+@catalog_router.post("/items", response_model=CreativeItemOut, status_code=201)
 async def create_item(
     session: SessionDep, principal: StudioAuth, body: CreativeDraftIn
 ) -> CreativeItemOut:
@@ -77,7 +78,7 @@ async def import_item(
         _raise(exc)
 
 
-@router.get("/releases/{release_id}", response_model=CreativeReleaseOut)
+@catalog_router.get("/releases/{release_id}", response_model=CreativeReleaseOut)
 async def get_release(
     session: SessionDep, principal: StudioAuth, release_id: str
 ) -> CreativeReleaseOut:
@@ -87,7 +88,7 @@ async def get_release(
         _raise(exc)
 
 
-@router.get("/releases/{release_id}/cover")
+@catalog_router.get("/releases/{release_id}/cover")
 async def release_cover(
     session: SessionDep, principal: StudioAuth, release_id: str, size: ThumbnailSize | None = None
 ) -> FileResponse:
@@ -101,7 +102,7 @@ async def release_cover(
         _raise(exc)
 
 
-@router.get("/items/{item_id}", response_model=CreativeItemOut)
+@catalog_router.get("/items/{item_id}", response_model=CreativeItemOut)
 async def get_item(
     session: SessionDep, principal: StudioAuth, item_id: str, draft: bool = False
 ) -> CreativeItemOut:
@@ -111,7 +112,7 @@ async def get_item(
         _raise(exc)
 
 
-@router.patch("/items/{item_id}", response_model=CreativeItemOut)
+@catalog_router.patch("/items/{item_id}", response_model=CreativeItemOut)
 async def update_item(
     session: SessionDep, principal: StudioAuth, item_id: str, body: CreativeDraftUpdateIn
 ) -> CreativeItemOut:
@@ -121,7 +122,7 @@ async def update_item(
         _raise(exc)
 
 
-@router.post("/items/{item_id}/publish", response_model=CreativeItemOut)
+@catalog_router.post("/items/{item_id}/publish", response_model=CreativeItemOut)
 async def publish_item(
     session: SessionDep, principal: StudioAuth, item_id: str, body: CreativeRevisionIn
 ) -> CreativeItemOut:
@@ -131,7 +132,7 @@ async def publish_item(
         _raise(exc)
 
 
-@router.post("/items/{item_id}/withdraw", response_model=CreativeItemOut)
+@catalog_router.post("/items/{item_id}/withdraw", response_model=CreativeItemOut)
 async def withdraw_item(
     session: SessionDep, principal: StudioAuth, item_id: str, body: CreativeRevisionIn
 ) -> CreativeItemOut:
@@ -141,7 +142,7 @@ async def withdraw_item(
         _raise(exc)
 
 
-@router.get("/items/{item_id}/cover")
+@catalog_router.get("/items/{item_id}/cover")
 async def item_cover(
     session: SessionDep,
     principal: StudioAuth,
@@ -159,7 +160,7 @@ async def item_cover(
         _raise(exc)
 
 
-@router.post("/items/{item_id}/cover", response_model=CreativeItemOut)
+@catalog_router.post("/items/{item_id}/cover", response_model=CreativeItemOut)
 async def upload_cover(
     session: SessionDep,
     principal: StudioAuth,
@@ -175,7 +176,7 @@ async def upload_cover(
         _raise(exc)
 
 
-@router.post("/items/{item_id}/skill-archive", response_model=CreativeItemOut)
+@catalog_router.post("/items/{item_id}/skill-archive", response_model=CreativeItemOut)
 async def upload_skill(
     session: SessionDep,
     principal: StudioAuth,
@@ -222,3 +223,6 @@ async def configure_stdio(
         return await CreativeInstaller(session, principal).configure_stdio(installation_id, body)
     except CreativeError as exc:
         _raise(exc)
+
+
+router.include_router(catalog_router)

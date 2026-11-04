@@ -118,6 +118,29 @@ def test_websocket_ownership_is_explicit_and_never_a_fake_http_operation():
     assert socket.path not in schema["paths"]
 
 
+def test_gateway_sends_creative_posts_through_the_private_socket_after_authorization():
+    from fpl_deployment.gateway import render_gateway
+
+    catalog = RouteCatalog.read(ROOT / "deploy/contracts/ownership.json")
+    rendered = render_gateway(
+        catalog,
+        gateway_token="g" * 48,
+        local_origin="http://127.0.0.1:19000",
+        public_origin="https://studio.example.test",
+        creative_ingress="i" * 48,
+    )
+    assert rendered.count("reverse_proxy unix//run/fpl-bridge/creative.sock") == 4
+    assert rendered.count("rewrite * /_bridge/creative/source-import") == 2
+    assert rendered.count("rewrite * /_bridge/creative/install") == 2
+    for block in rendered.split("    handle @"):
+        if "rewrite * /_bridge" in block:
+            assert block.index("forward_auth identity:8080") < block.index("rewrite *")
+            assert "header_up -Cookie" in block
+            assert "header_up -Authorization" in block
+            assert "header_up X-Fpl-Bridge-Ingress" in block
+    assert "/_bridge /_bridge/*" in rendered
+
+
 def test_gateway_matches_real_socket_upgrade_and_strips_forged_protocol_headers():
     from fpl_deployment.gateway import render_gateway
 

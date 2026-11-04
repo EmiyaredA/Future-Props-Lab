@@ -7,6 +7,7 @@ import signal
 import subprocess
 import sys
 import threading
+from contextlib import nullcontext
 from pathlib import Path
 
 from fpl_runtime.locking import service_lock
@@ -21,6 +22,7 @@ def parser():
     result.add_argument("--public-key", type=Path, default=Path("/run/fpl/identity-public.pem"))
     result.add_argument("--identity-token", type=Path, default=Path("/run/fpl/identity-token"))
     result.add_argument("--publishers", type=Path, default=Path("/run/fpl/publishers.json"))
+    result.add_argument("--creative-bridge-ingress", type=Path)
     result.add_argument(
         "--catalog", type=Path, default=Path("/app/deploy/contracts/ownership.json")
     )
@@ -55,11 +57,13 @@ def run(options):
         from fpl_runtime.routing import RouteCatalog
 
         from .application import create_app
+        from .bridge_listener import serve_creative_bridge
 
         public = load_pem_public_key(options.public_key.read_bytes())
         if not isinstance(public, Ed25519PublicKey):
             raise ValueError("Identity 公钥类型无效")
         catalog = RouteCatalog.read(options.catalog)
+        credential = options.identity_token.read_text().strip()
         app = create_app(
             state_root=state,
             catalog=catalog,
@@ -70,7 +74,7 @@ def run(options):
             ),
             capabilities=CapabilityClient(
                 service="gateway",
-                credential=options.identity_token.read_text().strip(),
+                credential=credential,
                 catalog=catalog,
             ),
             publishers=json.loads(options.publishers.read_text()),
@@ -88,30 +92,46 @@ def run(options):
             check=True,
             stdout=subprocess.DEVNULL,
         )
-        child = subprocess.Popen(
-            ["/usr/bin/caddy", "run", "--config", str(options.caddyfile), "--adapter", "caddyfile"]
-        )
-        stopping = threading.Event()
+        bridge = nullcontext(None)
+        if options.creative_bridge_ingress is not None:
+            from fpl_runtime.creative_transport import CREATIVE_SOCKET_DIR
 
-        def observe_caddy():
-            child.wait()
-            if not stopping.is_set():
-                os.kill(os.getpid(), signal.SIGTERM)
-
-        threading.Thread(target=observe_caddy, daemon=True).start()
-        try:
-            uvicorn.run(
-                app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False
+            bridge = serve_creative_bridge(
+                directory=CREATIVE_SOCKET_DIR,
+                public_key=public,
+                gateway_credential=credential,
+                ingress_file=options.creative_bridge_ingress,
             )
-        finally:
-            stopping.set()
-            if child.poll() is None:
-                child.terminate()
-                try:
-                    child.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    child.kill()
-                    child.wait(timeout=5)
+        with bridge as bridge_worker:
+            serve_caddy(options, app, uvicorn, bridge_worker)
+
+
+def serve_caddy(options, app, uvicorn, bridge_worker):
+    child = subprocess.Popen(
+        ["/usr/bin/caddy", "run", "--config", str(options.caddyfile), "--adapter", "caddyfile"]
+    )
+    stopping = threading.Event()
+
+    def observe():
+        while not stopping.wait(0.2):
+            if child.poll() is not None or (
+                bridge_worker is not None and not bridge_worker.is_alive()
+            ):
+                os.kill(os.getpid(), signal.SIGTERM)
+                return
+
+    threading.Thread(target=observe, daemon=True).start()
+    try:
+        uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)
+    finally:
+        stopping.set()
+        if child.poll() is None:
+            child.terminate()
+            try:
+                child.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                child.kill()
+                child.wait(timeout=5)
 
 
 if __name__ == "__main__":
