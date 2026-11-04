@@ -84,6 +84,11 @@ def _galgame_file_source(body):
 
 def _galgame_story_source(body):
     change = body.change
+    if change.galgame_project_removal:
+        return (
+            body.source_method == "DELETE"
+            and body.source_path == f"/v1/galgame-workshop/projects/{change.resource_id}"
+        )
     if change.expected_resource_revision == -1:
         return _create_projection(body, "/v1/galgame-workshop/projects")
     story_path = f"/v1/galgame-workshop/projects/{change.resource_id}/story"

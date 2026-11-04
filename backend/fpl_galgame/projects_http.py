@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
 from pydantic import ValidationError
 
 from app.apps.galgame_workshop.errors import (
@@ -45,6 +45,7 @@ from fpl_runtime.reference_runtime import reference_lifespan
 
 from .asset_read_routes import read_assets
 from .asset_repair import repair_asset
+from .project_deletion import ProjectDeletion
 from .projects import Projects
 from .story_writes import PREFIX, StoryWrites
 
@@ -268,3 +269,15 @@ async def apply_portrait_upgrade(
     return await story_writes(request, session, owner_user_id).apply_portrait_upgrade(
         project_id, body.expected_story_revision
     )
+
+
+@router.delete("/{project_id}")
+async def delete_project(
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    project_id: str,
+    request: Request,
+    expected_revision: int = Query(ge=0),
+) -> dict[str, bool]:
+    await ProjectDeletion(request, session, owner_user_id).delete(project_id, expected_revision)
+    return {"deleted": True}

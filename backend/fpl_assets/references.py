@@ -189,7 +189,7 @@ async def protect_references(session, asset_ids):
 async def protect_pending_removals(session, asset_ids):
     if not asset_ids:
         return
-    reserved = await session.scalar(
+    file_removal = (
         select(PreparedAssetPin.asset_id)
         .join(ReferenceIntent, ReferenceIntent.id == PreparedAssetPin.intent_id)
         .join(AssetReferenceSet, AssetReferenceSet.id == ReferenceIntent.reference_set_id)
@@ -199,7 +199,19 @@ async def protect_pending_removals(session, asset_ids):
             ReferenceIntent.state == "prepared",
             PreparedAssetPin.asset_id.in_(asset_ids),
         )
-        .limit(1)
     )
+    project_removal = (
+        select(VisualAsset.id)
+        .join(AssetReferenceSet, AssetReferenceSet.resource_id == VisualAsset.galgame_project_id)
+        .join(ReferenceIntent, ReferenceIntent.reference_set_id == AssetReferenceSet.id)
+        .where(
+            VisualAsset.id.in_(asset_ids),
+            AssetReferenceSet.service_id == "galgame",
+            AssetReferenceSet.resource_kind == "story",
+            ReferenceIntent.state == "prepared",
+            ReferenceIntent.prepared_result["galgame_project_removal"].as_boolean().is_(True),
+        )
+    )
+    reserved = await session.scalar(file_removal.union_all(project_removal).limit(1))
     if reserved is not None:
         raise AssetError("素材正在删除", code="reference_mutations_pending", status=409)

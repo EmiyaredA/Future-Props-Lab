@@ -6,15 +6,19 @@ from uuid import uuid4
 
 import httpx
 from PIL import Image
+from starlette.datastructures import UploadFile
 from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario  # noqa: F401
 from tests.test_creative_project_certification import CREDENTIALS
 from tests.test_independent_project_catalog import authorize
 
+from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.storage import AssetStorage
 from fpl_assets.galgame_upload_recovery import recover_uploads
 from fpl_assets.models import GalgameUploadStage
+from fpl_assets.references import AssetReferences
 from fpl_galgame.application import create_app
 from fpl_galgame.migrations.registry import MIGRATIONS
+from fpl_runtime.asset_references import ReferenceUpdate
 from fpl_runtime.galgame_upload import PREFIX
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
@@ -165,6 +169,7 @@ async def test_upload_batch_failure_and_recovery_preserve_paths_and_exact_origin
             return await send(http, method, path, **kwargs)
 
         await verify_metadata_edits(authorized, transport, base, items)
+        await verify_project_removal(case, restarted, authorized, http, transport, base, image)
 
 
 async def verify_orphan_recovery(case, project, data):
@@ -256,3 +261,79 @@ async def verify_metadata_edits(request, transport, base, items):
     remaining = await request("GET", base)
     assert remaining.status_code == 200
     assert original["id"] not in {item["id"] for item in remaining.json()["items"]}
+
+
+async def verify_project_removal(case, app, request, http, transport, assets_path, image):
+    project = assets_path.removesuffix("/assets")
+    story_path = project + "/story"
+    story = (await request("GET", story_path)).json()
+    retained = story["document"]["assets"][0]["fileId"]
+    assets = case.assets.state
+    async with assets.database.sessions(info={"owner_user_id": case.viewer}) as db:
+        library_file = await AssetLibrary(db, assets.settings).store_upload(
+            UploadFile(io.BytesIO(image), filename="library.png"), owner_user_id=case.viewer
+        )
+    story["document"]["assets"].append(
+        {
+            "id": "library",
+            "fileId": library_file.id,
+            "type": "image",
+            "role": "sceneLayer",
+            "status": "ready",
+        }
+    )
+    saved = await request(
+        "PUT",
+        story_path,
+        json={
+            "expected_revision": story["revision"],
+            "document": story["document"],
+        },
+    )
+    assert saved.status_code == 200, saved.text
+    stale = await request("DELETE", project, params={"expected_revision": 99})
+    assert stale.status_code == 409 and stale.json()["current"]["revision"] == 0
+    reference = AssetReferences(assets.database)
+    await reference.replace(
+        owner=case.viewer,
+        service="presentation",
+        update=ReferenceUpdate(
+            request_id="foreign-pin",
+            resource_kind="project",
+            resource_id="test-presentation",
+            resource_revision=0,
+            expected_revision=0,
+            asset_ids=[retained],
+        ),
+    )
+    protected = await request("DELETE", project, params={"expected_revision": 0})
+    assert protected.status_code == 409 and protected.json()["code"] == "asset_in_use", (
+        protected.text
+    )
+    await reference.replace(
+        owner=case.viewer,
+        service="presentation",
+        update=ReferenceUpdate(
+            request_id="release-foreign-pin",
+            resource_kind="project",
+            resource_id="test-presentation",
+            resource_revision=1,
+            expected_revision=1,
+            asset_ids=[],
+        ),
+    )
+    transport.drop_edit_commit = True
+    lost = await request("DELETE", project, params={"expected_revision": 0})
+    assert lost.status_code == 503 and lost.json()["code"] == "project_deletion_unconfirmed", (
+        lost.text
+    )
+    await app.state.reference_delivery.process_once()
+    assert (await request("GET", project)).status_code == 404
+    for file_id, status in ((retained, 404), (library_file.id, 200)):
+        path = f"/v1/files/{file_id}/download"
+        reply = await http.get(
+            "http://assets:8080" + path, headers=await authorize(case, "assets", "GET", path)
+        )
+        assert reply.status_code == status, reply.text
+        if status == 200:
+            assert reply.content == image

@@ -1,6 +1,7 @@
 """Versioned retention messages shared by Assets and its authorized consumers."""
 
 from types import MappingProxyType
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -94,6 +95,7 @@ class PrepareReferenceChange(BaseModel):
     video_file_rename: VideoFileRename | None = None
     video_file_removal: VideoFileRemoval | None = None
     galgame_file_mutation: GalgameFileMutation | None = None
+    galgame_project_removal: Literal[True] | None = None
 
     @model_validator(mode="after")
     def check_project_file_change(self):
@@ -117,6 +119,14 @@ class PrepareReferenceChange(BaseModel):
                 raise ValueError("项目素材变更范围无效")
         elif self.video_file_rename is not None or self.video_file_removal is not None or galgame:
             raise ValueError("素材范围仅适用于项目原件变更")
+        if self.galgame_project_removal and (
+            self.resource_kind != "story"
+            or self.expected_resource_revision < 0
+            or self.asset_ids
+            or self.metadata_asset_ids is not None
+            or self.carried_asset_ids is not None
+        ):
+            raise ValueError("Galgame 项目删除范围无效")
         return self
 
     @field_validator("asset_ids", "metadata_asset_ids", "carried_asset_ids")
@@ -131,3 +141,5 @@ class PrepareReferenceChange(BaseModel):
             (service == "galgame") != (self.galgame_file_mutation is not None)
         ):
             raise ValueError("素材变更命令与所属服务不符")
+        if self.galgame_project_removal and service != "galgame":
+            raise ValueError("项目删除命令与所属服务不符")

@@ -18,6 +18,7 @@ from fpl_runtime.thought_assets import AssetDescription
 
 from . import galgame_file_changes, video_file_changes
 from .canvas_retention import canvas_files
+from .galgame_project_removal import check_removal_fence, prepare_project_removal
 from .models import AssetReferencePin, AssetReferenceSet, PreparedAssetPin, ReferenceIntent
 from .references import protect_pending_removals
 from .scoped_project_files import PROJECT_FILE_COLUMNS, files_for_removal, remove_files
@@ -120,6 +121,12 @@ class ReferenceChanges:
                     ReferenceIntent.state == "prepared",
                 )
             )
+            if service == "galgame" and change.resource_kind == "story":
+                await check_removal_fence(session, row.id)
+                if change.galgame_project_removal:
+                    if active or row.resource_revision != change.expected_resource_revision:
+                        raise failure("project_references_pending", "项目引用尚未结算")
+                    await prepare_project_removal(session, row)
             if active >= 128:
                 raise failure("reference_mutations_pending", "请先恢复未完成的引用变更")
             if service in PROJECT_FILE_COLUMNS and change.resource_kind == "project":
@@ -211,6 +218,8 @@ class ReferenceChanges:
             result = {"intent_id": identifier, "state": "prepared", "revision": row.revision}
             if file_change:
                 result.update(handler.command(change))
+            if change.galgame_project_removal:
+                result["galgame_project_removal"] = True
             if describe_canvas:
                 result["unavailable_asset_ids"] = sorted(unavailable)
             if community is not None or describe_story or describe_canvas:
@@ -275,10 +284,14 @@ class ReferenceChanges:
             if resource_revision <= intent.expected_resource_revision:
                 raise failure("invalid_resource_revision", "源提交必须推进资源版本", 422)
             row = await session.get(AssetReferenceSet, intent.reference_set_id)
+            galgame_removal = bool(intent.prepared_result.get("galgame_project_removal"))
             if (
                 service == "galgame"
                 and row.resource_kind == "story"
-                and (deleted or resource_revision != intent.expected_resource_revision + 1)
+                and (
+                    deleted != galgame_removal
+                    or resource_revision != intent.expected_resource_revision + 1
+                )
             ):
                 raise failure("invalid_resource_revision", "故事引用回执必须与保存版本一致", 422)
             scoped_project = service in PROJECT_FILE_COLUMNS and row.resource_kind == "project"
@@ -335,7 +348,7 @@ class ReferenceChanges:
                 if file_change:
                     handler = galgame_file_changes if service == "galgame" else video_file_changes
                     await handler.commit(session, owner, row, intent, resource_revision, deleted)
-                if scoped_project and deleted:
+                if (scoped_project or galgame_removal) and deleted:
                     await remove_files(session, service, row.resource_id)
                 row.resource_revision = resource_revision
                 row.deleted = deleted
