@@ -7,6 +7,23 @@ import stat
 from uuid import uuid4
 
 
+def checked_path(root, *parts):
+    path = root.resolve()
+    for part in parts:
+        if (
+            not isinstance(part, str)
+            or not part
+            or part in {".", ".."}
+            or "/" in part
+            or "\\" in part
+        ):
+            raise ValueError("迁移文件路径片段无效")
+        path /= part
+        if path.is_symlink():
+            raise ValueError("迁移文件路径不能包含符号链接")
+    return path
+
+
 def inventory_directory(path):
     if path.is_symlink() or (path.exists() and not path.is_dir()):
         raise ValueError("迁移目录必须为真实目录")

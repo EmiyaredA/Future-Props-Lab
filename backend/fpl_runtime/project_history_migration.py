@@ -1,5 +1,6 @@
 """Move project and child records through the owner's typed maintenance transport."""
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from functools import partial
 from uuid import uuid5
@@ -27,6 +28,7 @@ class ProjectDataset:
     project: type | None = None
     owns_record: bool = True
     page_size: int = 1
+    projection: Callable | None = None
 
     @property
     def suffix(self):
@@ -126,6 +128,10 @@ async def ingest(sessions, dataset, receipt_model, batch):
             if dataset.owns_record:
                 values["owner_user_id"] = owner
             session.add(dataset.model(**values))
+            if dataset.projection is not None:
+                linked = dataset.projection(owner, record)
+                if linked is not None:
+                    session.add(linked)
         record_receipt(session, receipt_model, receipt)
         try:
             await session.commit()

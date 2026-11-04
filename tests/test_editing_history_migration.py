@@ -1,33 +1,48 @@
 """Move real compatibility-site editing history and rehearse its sealed rollback."""
 
+import asyncio
 import json
 import os
 import subprocess
 import sys
-from contextlib import ExitStack
+import time
+from contextlib import AsyncExitStack, ExitStack
 from io import BytesIO
 from uuid import UUID, uuid4
 
 import httpx
 from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from PIL import Image
 from scripts.website import legacy_snapshot
 from scripts.website.migrate_assets import ASSET_RECORDS, transfer_asset_blobs
 from scripts.website.migrate_editing_history import (
     ASSET_SCOPES,
     MOTION,
+    MOTION_OUTPUTS,
     VIDEO,
+    VIDEO_VARIANTS,
+    transfer_artifacts,
     transfer_history,
     verify_originals,
 )
 from scripts.website.migration_transfer import pages, transfer
+from tests.test_community_asset_protocol import CATALOG, Mesh
 from tests.test_tools_navigation_migration import available_ports, listener
 from tests.test_website_legacy_snapshot import PASSWORD, REVISION, ROOT, configuration, website
 
 from fpl_assets.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
+from fpl_motion.application import create_app as create_motion
 from fpl_motion.migrations.registry import MIGRATIONS as MOTION_MIGRATIONS
+from fpl_rendering.application import create_app as create_rendering
+from fpl_rendering.migrations.registry import MIGRATIONS as RENDERING_MIGRATIONS
+from fpl_rendering.settings import RenderingSettings
+from fpl_runtime.capability_client import CapabilityClient
+from fpl_runtime.claims import HEADER, Actor, issue_context
+from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migration_batches import MigrationPlan
 from fpl_runtime.migrations import apply
+from fpl_video.application import create_app as create_video
 from fpl_video.migrations.registry import MIGRATIONS as VIDEO_MIGRATIONS
 
 MOTION_PROJECTS = "/v1/motion-compositor/projects"
@@ -82,7 +97,39 @@ def create_editor_history(client, origin, image):
             ],
         },
     )
-    return owner, (motion_path, video_path), (motion_doc, video_doc), originals
+    export = post(
+        motion_path + "/exports",
+        json={
+            "requestId": "retained-motion-output",
+            "expectedRevision": motion_doc["revision"],
+            "formats": ["mp4", "png-sequence"],
+            "startFrame": 0,
+            "endFrame": 2,
+        },
+    )
+    for _ in range(160):
+        outcome = client.get(motion_path + "/exports/" + export["id"]).json()
+        if outcome["status"] in ("completed", "failed", "cancelled"):
+            break
+        time.sleep(0.1)
+    assert outcome["status"] == "completed", outcome
+    video_assets = client.get(video_path + "/assets").json()["items"]
+    for _ in range(100):
+        if video_assets[0]["processingStatus"] in ("ready", "failed"):
+            break
+        time.sleep(0.1)
+        video_assets = client.get(video_path + "/assets").json()["items"]
+    assert video_assets[0]["processingStatus"] == "ready", video_assets
+    routes = {
+        "motion": tuple(outcome["outputs"].values()),
+        "video": (video_assets[0]["thumbnailUrl"],),
+    }
+    outputs = {
+        service: [(url, client.get(url).content) for url in urls]
+        for service, urls in routes.items()
+    }
+    assert all(raw for files in outputs.values() for _url, raw in files)
+    return owner, (motion_path, video_path), (motion_doc, video_doc), originals, outputs
 
 
 def test_editing_history_scopes_and_sealed_rollback(tmp_path):
@@ -115,7 +162,7 @@ def test_editing_history_scopes_and_sealed_rollback(tmp_path):
     Image.new("RGB", (4, 5), "#aabbcc").save(source, format="PNG")
     image = source.getvalue()
     with website(config, original_port) as (client, origin):
-        owner, paths, documents, originals = create_editor_history(client, origin, image)
+        owner, paths, documents, originals, outputs = create_editor_history(client, origin, image)
         cookies = dict(client.cookies)
 
     snapshot = tmp_path / "snapshot"
@@ -191,7 +238,7 @@ def test_editing_history_scopes_and_sealed_rollback(tmp_path):
         verify_originals(client, plan, assets_source, assets_target)
 
         for service, spec, expected in (
-            ("motion", MOTION, (1, 1, 1, 0)),
+            ("motion", MOTION, (1, 1, 1, 1)),
             ("video", VIDEO, (1, 1, 1, 1, 1)),
         ):
             reports = transfer_history(client, plan, *endpoints[service], spec)
@@ -201,6 +248,44 @@ def test_editing_history_scopes_and_sealed_rollback(tmp_path):
         assert scopes["record_count"] == 2
         assert transfer(client, plan, assets_source, assets_target, ASSET_SCOPES) == scopes
 
+        rendering_port, _ = available_ports()
+        rendering_root = tmp_path / "rendering"
+        apply(rendering_root / "service.db", "rendering", RENDERING_MIGRATIONS)
+        destination = stack.enter_context(
+            listener(
+                client,
+                rendering_port,
+                "migration-import",
+                plan_path,
+                "--state-root",
+                rendering_root,
+                module="fpl_rendering",
+                prefix=MOTION_OUTPUTS.prefix,
+            )
+        )
+        motion_source = endpoints["motion"][0]
+        transfer(client, plan, motion_source, destination, MOTION_OUTPUTS)
+        first = next(
+            pages(client, motion_source, headers, plan, owner, MOTION_OUTPUTS)
+        ).batch.records[0]
+        item = first.files[0]
+        file_path = f"{MOTION_OUTPUTS.prefix}/files/{owner}/{first.id}/{item.key}/{item.sha256}"
+        assert (
+            client.put(destination + file_path, headers=headers, content=b"partial").status_code
+            == 409
+        )
+        assert client.head(destination + file_path, headers=headers).status_code == 409
+        for service, dataset, count in (
+            ("motion", MOTION_OUTPUTS, 2),
+            ("video", VIDEO_VARIANTS, 1),
+        ):
+            reports = transfer_artifacts(client, plan, endpoints[service][0], destination, dataset)
+            assert reports[0]["record_count"] == 1 and reports[1]["record_count"] == count
+            assert reports == transfer_artifacts(
+                client, plan, endpoints[service][0], destination, dataset
+            )
+
+    asyncio.run(check_independent_outputs(tmp_path, str(owner), outputs))
     target = tmp_path / "restored"
     assert legacy_snapshot.restore(snapshot, target, REVISION, proof["manifest_sha256"]) == proof
     launch = configuration(
@@ -217,3 +302,74 @@ def test_editing_history_scopes_and_sealed_rollback(tmp_path):
         assert client.get(paths[1] + "/timeline").json() == documents[1]
         for asset in originals:
             assert client.get("/v1/files/" + asset["id"] + "/download").content == image
+
+
+async def check_independent_outputs(root, owner, outputs):
+    key = Ed25519PrivateKey.generate()
+    peer = "isolated-editing-runtime-" * 2
+    media = "isolated-media-runtime-" * 2
+    mesh = Mesh()
+    render = create_rendering(
+        settings=RenderingSettings(root / "rendering/service.db"),
+        public_key=key.public_key(),
+        catalog=CATALOG,
+        identity=LiveAuthorization(service="rendering", credential=peer, transport=mesh),
+        capabilities=CapabilityClient(
+            service="rendering", credential=peer, catalog=CATALOG, transport=mesh
+        ),
+        run_worker=False,
+        export_key=peer,
+        video_media_key=media,
+        video_originals_key="isolated-originals-runtime-" * 2,
+    )
+    mesh.apps["rendering"] = render
+    apps = {
+        "motion": create_motion(
+            state_root=root / "motion",
+            catalog=CATALOG,
+            public_key=key.public_key(),
+            credential="isolated-motion-runtime-" * 2,
+            export_key=peer,
+            transport=mesh,
+            run_worker=False,
+        ),
+        "video": create_video(
+            state_root=root / "video",
+            catalog=CATALOG,
+            public_key=key.public_key(),
+            credential="isolated-video-runtime-" * 2,
+            media_key=media,
+            schema_path=ROOT / "web/src/generated/openapi.json",
+            transport=mesh,
+            run_worker=False,
+        ),
+    }
+    async with AsyncExitStack() as stack:
+        await stack.enter_async_context(render.router.lifespan_context(render))
+        for service, app in apps.items():
+            await stack.enter_async_context(app.router.lifespan_context(app))
+            client = await stack.enter_async_context(
+                httpx.AsyncClient(
+                    transport=httpx.ASGITransport(app=app), base_url=f"http://{service}"
+                )
+            )
+            for path, expected in outputs[service]:
+                context = issue_context(
+                    Actor(
+                        owner,
+                        "user",
+                        "session",
+                        ("studio:read", "studio:private_read"),
+                        session_id=owner,
+                    ),
+                    service=service,
+                    method="GET",
+                    path=path,
+                    private_key=key,
+                    key_id="isolated",
+                )
+                received = await client.get(path, headers={HEADER: context})
+                assert received.status_code == 200, received.text
+                assert received.content == expected
+                partial = await client.get(path, headers={HEADER: context, "Range": "bytes=0-7"})
+                assert partial.status_code == 206 and partial.content == expected[:8]

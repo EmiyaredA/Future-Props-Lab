@@ -12,12 +12,7 @@ from PIL import Image
 
 from .motion_document import MotionComposition
 from .motion_frames import MotionFrameRenderer
-
-OUTPUT_NAMES = {
-    "mp4": "composition.mp4",
-    "mov4444": "composition-alpha.mov",
-    "png-sequence": "frames-alpha.zip",
-}
+from .motion_output_formats import OUTPUT_NAMES
 
 
 def encode_video(frames: Path, output: Path, fps: int, format_name: str) -> None:

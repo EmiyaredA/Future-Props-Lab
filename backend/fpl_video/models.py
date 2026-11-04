@@ -38,6 +38,7 @@ class VideoMediaDispatch(VideoServiceBase):
     owner_user_id: Mapped[str] = mapped_column(String(36))
     project_id: Mapped[str] = mapped_column(String(36))
     asset_id: Mapped[str] = mapped_column(String(36))
+    historical: Mapped[bool] = mapped_column(Boolean, default=False)
     checked_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
 
 

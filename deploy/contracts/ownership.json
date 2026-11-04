@@ -4973,6 +4973,18 @@
       "model": "VideoExportJob"
     },
     {
+      "table": "rendering_history_manifests",
+      "service": "rendering",
+      "module": "fpl_rendering.models",
+      "model": "RenderingHistoryManifest"
+    },
+    {
+      "table": "rendering_migration_receipts",
+      "service": "rendering",
+      "module": "fpl_rendering.models",
+      "model": "RenderingMigrationReceipt"
+    },
+    {
       "table": "thought_archive_imports",
       "service": "thought",
       "module": "fpl_thought.archive_records",

@@ -69,13 +69,15 @@ async def derivative(session, owner, project, asset, variant):
         raise VideoEditorNotFoundError("派生素材尚未生成")
     binding = await session.scalar(
         select(VideoMediaDispatch)
-        .join(VideoEditorTask, VideoEditorTask.id == VideoMediaDispatch.task_id)
+        .outerjoin(VideoEditorTask, VideoEditorTask.id == VideoMediaDispatch.task_id)
         .where(
             VideoMediaDispatch.asset_id == asset,
             VideoMediaDispatch.project_id == project,
-            VideoEditorTask.status == "completed",
+            (VideoEditorTask.status == "completed") | VideoMediaDispatch.historical.is_(True),
         )
-        .order_by(VideoEditorTask.created_at.desc(), VideoEditorTask.id)
+        .order_by(
+            VideoMediaDispatch.historical, VideoEditorTask.created_at.desc(), VideoEditorTask.id
+        )
         .limit(1)
     )
     if binding is None:

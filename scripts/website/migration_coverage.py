@@ -31,7 +31,7 @@ TRANSFER = {
     **{
         dataset.model.__tablename__: dataset.name
         for dataset in (*MOTION, *VIDEO)
-        if dataset.suffix not in {"media", "tasks"}
+        if dataset.name != "video.tasks"
     },
     "cloud_desktop_preferences": REMOTE,
     "tool_navigation_items": TOOLS,

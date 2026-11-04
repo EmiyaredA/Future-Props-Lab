@@ -12,7 +12,7 @@ from fpl_runtime.locking import service_lock
 
 def parser():
     result = argparse.ArgumentParser(description="FPL Rendering")
-    result.add_argument("command", choices=("serve", "migrate"))
+    result.add_argument("command", choices=("serve", "migrate", "migration-import"))
     result.add_argument("--config", type=Path, default=Path("/run/fpl/config.toml"))
     result.add_argument("--state-root", type=Path, default=Path("/state"))
     result.add_argument("--connection", type=Path, default=Path("/run/fpl/identity-client.json"))
@@ -26,6 +26,7 @@ def parser():
         "--video-originals-key", type=Path, default=Path("/run/fpl/video-originals-key")
     )
     result.add_argument("--port", type=int, default=8080)
+    result.add_argument("--migration-plan", type=Path)
     return result
 
 
@@ -35,6 +36,24 @@ def run(options):
     from .migrations.registry import MIGRATIONS
     from .settings import load_settings
 
+    if options.command == "migration-import":
+        import uvicorn
+
+        from fpl_runtime.migration_batches import MigrationPlan
+
+        from .migration_artifacts import create_import_app
+
+        if options.migration_plan is None:
+            raise ValueError("历史渲染导入需要迁移计划")
+        try:
+            plan = MigrationPlan.read(options.migration_plan)
+        except (OSError, ValueError):
+            raise ValueError("迁移计划无法读取或格式无效") from None
+        app = create_import_app(plan=plan, state_root=options.state_root)
+        uvicorn.run(app, host="127.0.0.1", port=options.port, proxy_headers=False, access_log=False)
+        return
+    if options.migration_plan is not None:
+        raise ValueError("迁移计划仅用于历史渲染导入")
     if not options.config.is_file():
         raise ValueError("缺少只读 Rendering 配置")
     settings = load_settings(options.config)

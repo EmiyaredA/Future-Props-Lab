@@ -12,6 +12,7 @@ from app.apps.motion_compositor.models import (
 )
 from app.apps.motion_compositor.schemas import ExportCreateIn, OperationBatchIn
 from app.capabilities.media_rendering.motion_document import MotionComposition
+from fpl_runtime.editing_artifacts import motion_render_id
 from fpl_runtime.migration_batches import MigrationBatch, MigrationPage
 from fpl_runtime.project_history_migration import ProjectDataset
 from fpl_runtime.project_history_records import (
@@ -20,6 +21,8 @@ from fpl_runtime.project_history_records import (
     ProjectRecord,
     TaskRecord,
 )
+
+from .models import MotionExportBinding
 
 
 class MotionDocumentRecord(DocumentRecord):
@@ -77,6 +80,19 @@ class Tasks(MigrationBatch[MotionTaskRecord]):
     dataset: Literal["motion.tasks"]
 
 
+def completed_binding(owner, task):
+    if task.status != "completed":
+        return None
+    return MotionExportBinding(
+        task_id=task.id,
+        owner_user_id=owner,
+        remote_id=motion_render_id(task.id),
+        request_path="",
+        assertion="",
+        frozen_request={},
+    )
+
+
 DATASETS = (
     ProjectDataset(
         "motion.projects", MotionProject, ProjectRecord, Projects, MigrationPage[Projects]
@@ -106,5 +122,6 @@ DATASETS = (
         Tasks,
         MigrationPage[Tasks],
         project=MotionProject,
+        projection=completed_binding,
     ),
 )

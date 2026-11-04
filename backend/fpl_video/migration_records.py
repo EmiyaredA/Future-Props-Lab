@@ -14,6 +14,7 @@ from app.apps.video_editor.models import (
 )
 from app.apps.video_editor.schemas import VideoEditorDefaultEffects, VideoEditorTimelineBatchIn
 from app.capabilities.media_rendering.timeline_document import parse_timeline_document
+from fpl_runtime.editing_artifacts import video_media_id
 from fpl_runtime.migration_batches import MigrationBatch, MigrationPage
 from fpl_runtime.project_history_migration import ProjectDataset
 from fpl_runtime.project_history_records import (
@@ -24,6 +25,8 @@ from fpl_runtime.project_history_records import (
     ProjectRecord,
     TaskRecord,
 )
+
+from .models import VideoMediaDispatch
 
 
 class VideoProjectRecord(ProjectRecord):
@@ -114,6 +117,18 @@ class Tasks(MigrationBatch[VideoTaskRecord]):
     dataset: Literal["video.tasks"]
 
 
+def historical_media(owner, record):
+    if not (record.proxy_filename or record.thumbnail_filename or record.waveform_filename):
+        return None
+    return VideoMediaDispatch(
+        task_id=video_media_id(record.asset_id),
+        owner_user_id=owner,
+        project_id=record.project_id,
+        asset_id=record.asset_id,
+        historical=True,
+    )
+
+
 DATASETS = (
     ProjectDataset(
         "video.projects", VideoEditorProject, VideoProjectRecord, Projects, MigrationPage[Projects]
@@ -137,6 +152,7 @@ DATASETS = (
         key="asset_id",
         project=VideoEditorProject,
         owns_record=False,
+        projection=historical_media,
     ),
     ProjectDataset(
         "video.operations",

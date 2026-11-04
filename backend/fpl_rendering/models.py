@@ -6,6 +6,7 @@ from sqlalchemy import JSON, Boolean, DateTime, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from app.runtime.time import utc_now
+from fpl_runtime.migration_receipts import ImportReceiptFields
 
 
 class RenderingBase(DeclarativeBase):
@@ -61,3 +62,16 @@ class VideoExportJob(RenderingBase):
     error: Mapped[str | None] = mapped_column(Text)
     cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
+class RenderingHistoryManifest(RenderingBase):
+    __tablename__ = "rendering_history_manifests"
+
+    owner_user_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    dataset: Mapped[str] = mapped_column(String(64), primary_key=True)
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    manifest: Mapped[dict] = mapped_column(JSON)
+
+
+class RenderingMigrationReceipt(ImportReceiptFields, RenderingBase):
+    __tablename__ = "rendering_migration_receipts"

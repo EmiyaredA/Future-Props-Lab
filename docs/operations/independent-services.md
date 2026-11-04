@@ -516,6 +516,6 @@ Motion 的 MP4 与 ProRes 4444 可交接到同账号的现有或新建剪辑项�
 
 ### 剪辑与特效历史记录
 
-按既有 Assets 流程先传输记录与原件。Video、Motion 分别运行 `migration-export` 和 `migration-import`，使用同一受保护迁移计划、明确的快照及各自隔离目标目录。将这四个回环地址及 Assets 两个回环地址传给 `uv run python -m scripts.website.migrate_editing_history`。命令先比对原件清单，再导入项目、文稿、编辑回执、素材元数据与任务记录，最后恢复匹配账号与原件集合的项目文件范围。缺失根项目、跨账号记录、文件摘要差异或记录重叠会阻止通过。
+按既有 Assets 流程先传输记录与原件。Video、Motion 分别运行 `migration-export` 和 `migration-import`，使用同一受保护迁移计划、明确的快照及各自隔离目标目录。另外为 Rendering 显式执行迁移并启动 `migration-import`。将四个项目维护地址、两个 Assets 回环地址和 `--rendering-target` 传给 `uv run python -m scripts.website.migrate_editing_history`。命令先比对原件清单，再导入项目、文稿、编辑回执、素材元数据与任务记录，最后恢复匹配账号与原件集合的项目文件范围。缺失根项目、跨账号记录、文件摘要差异或记录重叠会阻止通过。
 
-剪辑和特效的历史派生文件、成片和下载关系由后续迁移步骤处理。当前隔离验收在真实兼容站写入合成项目与素材，校验批次重放与 SHA256，再从封存快照恢复会话、原件和两个文稿。
+Rendering 逐文件恢复 Motion 成片及 Video 代理、缩略图和波形，原任务下载与预览 URL 保留。整组全部确认才登记历史渲染回执。源侧活跃的非媒体任务或无法归属的渲染文件会阻止通过。Video 历史成片和分段 ZIP 的结果关联仍由迁移门禁跟踪。当前隔离验收在真实兼容站写入合成项目与素材，校验批次重放与 SHA256，再从封存快照恢复会话、原件和两个文稿。

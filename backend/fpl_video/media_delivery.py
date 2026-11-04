@@ -63,9 +63,11 @@ class MediaDelivery(PollingTaskRunner):
                         & (VideoEditorAssetMetadata.project_id == VideoMediaDispatch.project_id),
                     )
                     .where(
-                        VideoEditorTask.id.is_(None)
-                        | VideoEditorAssetMetadata.asset_id.is_(None)
-                        | VideoEditorTask.status.in_(ACTIVE)
+                        VideoEditorAssetMetadata.asset_id.is_(None)
+                        | (
+                            VideoMediaDispatch.historical.is_(False)
+                            & (VideoEditorTask.id.is_(None) | VideoEditorTask.status.in_(ACTIVE))
+                        )
                     )
                     .order_by(VideoMediaDispatch.checked_at, VideoMediaDispatch.task_id)
                     .limit(1)
