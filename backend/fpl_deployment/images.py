@@ -8,10 +8,12 @@ from importlib.util import resolve_name
 from pathlib import Path
 
 PROJECT_OWNERS = frozenset({"visual", "galgame"})
+OWNED_HTTP_IMAGES = PROJECT_OWNERS | {"tools"}
 
 ENTRY_POINTS = {
     "visual": "fpl_visual.__main__",
     "galgame": "fpl_galgame.__main__",
+    "tools": "fpl_tools.__main__",
     "integrations": "fpl_integrations.__main__",
     "thought": "fpl_thought.__main__",
     "creative": "fpl_creative.__main__",
@@ -37,6 +39,7 @@ PROJECT_PACKAGES = (
     "fpl_thought",
     "fpl_visual",
     "fpl_galgame",
+    "fpl_tools",
     "fpl_integrations",
     "fpl_creative",
     "fpl_runtime",
@@ -264,6 +267,24 @@ def source_closure(root: Path, service):
             )
         ):
             raise ValueError(f"Models 镜像包含越界依赖：{name}")
+        if service == "tools" and any(
+            name == prefix or name.startswith(prefix + ".")
+            for prefix in (
+                "app.main",
+                "app.api",
+                "app.orm",
+                "app.runtime.db",
+                "app.apps",
+                "app.llm",
+                "app.console",
+                "app.capabilities.asset_store.models",
+                "app.capabilities.asset_store.storage",
+                "fpl_assets",
+                "fpl_identity",
+                "fpl_host",
+            )
+        ):
+            raise ValueError(f"Tools 镜像包含越界依赖：{name}")
         if service in PROJECT_OWNERS:
             other = "galgame" if service == "visual" else "visual"
             forbidden = (
@@ -324,7 +345,7 @@ def source_closure(root: Path, service):
 def prepare_image(root: Path, service: str, *, web_release=None):
     sources = source_closure(root, service)
     definition = (
-        root / "deploy/images" / ("project-owner" if service in PROJECT_OWNERS else service)
+        root / "deploy/images" / ("owned-http" if service in OWNED_HTTP_IMAGES else service)
     )
     generated = subprocess.run(
         [
@@ -352,7 +373,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
             ).read_bytes(),
         }
     )
-    if service in PROJECT_OWNERS:
+    if service in OWNED_HTTP_IMAGES:
         payloads["service-entry.py"] = (
             f"from {ENTRY_POINTS[service]} import main\n\nmain()\n"
         ).encode()

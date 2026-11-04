@@ -248,3 +248,8 @@ Galgame 的新项目创建和公开 Story 保存需要同一私网中的 Identit
 隔离运行 `fpl-visual-operations-4dffc38f1e` 验证了画布操作批次和恢复后的重放。相同请求返回原画布版本与输出 ID，不同请求复用同一请求 ID 时返回 409。
 
 隔离运行 `fpl-visual-outputs-00df9bfc63` 验证了节点输出的分页、详情和恢复后同一版本读回。
+
+
+### Tools 导航状态
+
+`npm run services:build -- tools --build` 构建 Tools 镜像。`deploy/tools.compose.yaml` 使用独立的 `FPL_TOOLS_STATE` 与只读 Identity 公钥。隔离运行 `fpl-tools-owner-8f178e9894` 经 Gateway 验证了收藏、使用计数及容器重启后的持久化。宿主目录、视频下载、历史迁移和浏览器入口仍纳入 Tools 完整就绪门禁。

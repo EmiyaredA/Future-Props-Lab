@@ -1,5 +1,5 @@
 [project]
-name = "future-props-lab-project-owner-image"
+name = "future-props-lab-owned-http-image"
 version = "0.1.0"
 requires-python = ">=3.11,<3.12"
 dependencies = [

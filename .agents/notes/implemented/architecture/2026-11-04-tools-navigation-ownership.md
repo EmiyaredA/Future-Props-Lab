@@ -1,0 +1,27 @@
+# Agent Note: Run account tool navigation in its owning service
+
+Status: implemented
+
+## Problem
+
+Tool favorites and recent use are private account state. The compatibility site previously wrote them in the central SQLite database. The separate Tools process must preserve ordering and exact usage counts under concurrent writes.
+
+## Decision
+
+The published navigation router runs under a destination-bound Identity assertion and opens the Tools database only. Both deployments use the same account-checked ORM model. An immediate SQLite transaction serializes lookup and update of the account and tool key. A favorite change preserves the counter and a usage update preserves the favorite. The Tools image copies only its source closure and mounts its state and Identity public key.
+
+## Alternatives considered
+
+- Using a monolith database session from the Tools process would bypass service ownership.
+- Splitting favorites from usage would duplicate the account and tool key and complicate a consistent listing.
+- Allowing unrestricted SQLAlchemy bulk inserts in the shared service session would bypass its owner checks.
+
+## Consequences
+
+The navigation API has an installed isolated image. The download executor, native file-manager action, browser entry and historic import are required for Tools readiness. Public readiness remains gated until those paths pass.
+
+## Verification
+
+Isolated HTTP tests cover signed authorization, concurrent increments, persistence across app restart, account separation and exact published operation shapes. The existing compatibility route and architecture tests continue to cover the original entry point.
+
+An installed three-container run exercises navigation through Gateway, then restarts only Tools and reads back the exact favorite and usage state.

@@ -144,7 +144,7 @@ wheels = [
 ]
 
 [[package]]
-name = "future-props-lab-project-owner-image"
+name = "future-props-lab-owned-http-image"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

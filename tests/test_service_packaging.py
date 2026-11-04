@@ -288,3 +288,20 @@ def test_project_owner_images_and_compose_mounts_are_isolated(service, other):
     assert f"FPL_{service.upper()}_IDENTITY_TOKEN" in credential["source"]
     assert credential["read_only"] and key["read_only"]
     assert all(not mount["bind"]["create_host_path"] for mount in unit["volumes"])
+
+
+def test_tools_image_only_packages_owned_navigation_and_safe_mounts():
+    closure = source_closure(ROOT, "tools")
+    assert "fpl_tools.application" in closure and "app.tool_navigation.models" in closure
+    assert not any(
+        name.startswith(("app.apps.", "app.console.", "fpl_host", "fpl_assets", "fpl_identity"))
+        or name in {"app.main", "app.orm", "app.runtime.db"}
+        for name in closure
+    )
+    tools = yaml.safe_load((ROOT / "deploy/tools.compose.yaml").read_text())["services"]["tools"]
+    assert tools["read_only"] and tools["networks"] == ["private"] and "ports" not in tools
+    assert set(mount["target"] for mount in tools["volumes"]) == {
+        "/state",
+        "/run/fpl/identity-public.pem",
+    }
+    assert all(not mount["bind"]["create_host_path"] for mount in tools["volumes"])
