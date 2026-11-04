@@ -1,5 +1,9 @@
 """Template creation crosses real isolated Identity and Assets services."""
 
+import json
+from io import BytesIO
+from zipfile import ZipFile
+
 import httpx
 from sqlalchemy import select
 from tests.test_community_asset_protocol import (
@@ -237,6 +241,31 @@ async def test_create_template_pins_same_account_assets_over_http(scenario):  # 
                 )
                 assert snapshot.status_code == 200, snapshot.text
                 assert snapshot.json()["asset_ids"] == [case.asset]
+                backup_path = "/v1/thought-workshop/backup"
+                backed_up = await client.get(
+                    backup_path,
+                    headers=await context(owner, backup_path, "GET"),
+                    params={"knowledge_base_id": knowledge["id"]},
+                )
+                assert backed_up.status_code == 200, backed_up.text
+                with ZipFile(BytesIO(backed_up.content)) as archive:
+                    manifest = json.loads(archive.read("manifest.json"))
+                    assert manifest["version"] == 9
+                    assert {n["id"] for n in manifest["notes"]} == {
+                        knowledge["home_note_id"],
+                        added.json()["id"],
+                    }
+                    assert archive.read("assets/" + case.asset) == (
+                        b"\x89PNG\r\n\x1a\nvisible image bytes"
+                    )
+                favorite_path = "/v1/thought-workshop/community/favorites/official/example"
+                favorite = await client.put(
+                    favorite_path,
+                    headers=await context(owner, favorite_path, "PUT"),
+                    json={"favorite": True},
+                )
+                assert favorite.status_code == 200, favorite.text
+                assert favorite.json()["resource_ids"] == ["official/example"]
                 update_body = {"title": "Cover removed", "expected_revision": 1}
                 denied = await client.put(
                     update_path,
@@ -452,3 +481,48 @@ def test_account_owned_knowledge_tools_match_public_contract():
     for path, methods in operations.items():
         for method, operation in methods.items():
             assert operation == expected["paths"][path][method]
+
+
+def test_independent_thought_mounts_shared_routes_with_public_contract(tmp_path):
+    from pathlib import Path
+
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    app = create_app(
+        state_root=tmp_path,
+        catalog=CATALOG,
+        public_key=Ed25519PrivateKey.generate().public_key(),
+        credential=THOUGHT_SECRET,
+        identity=None,
+        retention_client=None,
+        assets_peer_credential=PEER_SECRET,
+        run_worker=False,
+    )
+    contract = json.loads(
+        (Path(__file__).resolve().parents[1] / "web/src/generated/openapi.json").read_text()
+    )["paths"]
+    actual = app.openapi()["paths"]
+    for method, path in (
+        ("get", "/backup"),
+        ("get", "/link-preview"),
+        ("get", "/models"),
+        ("post", "/notes/{note_id}/assistant"),
+        ("post", "/notes/{note_id}/multitable/conversion-preview"),
+        ("post", "/notes/{note_id}/multitable/csv-preview"),
+        ("post", "/notes/{note_id}/multitable/tables/{table_id}/csv-export"),
+        ("get", "/notes/{note_id}/external-sync"),
+        ("delete", "/notes/{note_id}/external-sync/binding"),
+        ("get", "/notes/{note_id}/external-sync/tasks/{task_id}"),
+        ("put", "/community/favorites/{namespace}/{resource_id}"),
+        ("get", "/community/official-import/preview"),
+        ("get", "/community/official-import/{request_id}"),
+        ("get", "/community/official-links/{library_key}"),
+        ("get", "/community/publications/{publication_id}/management"),
+        ("post", "/community/publications/{publication_id}/references"),
+        (
+            "post",
+            "/community/publications/{publication_id}/notes/{note_id}/multitable/conversion-preview",
+        ),
+    ):
+        path = "/v1/thought-workshop" + path
+        assert actual[path][method] == contract[path][method], (method, path)

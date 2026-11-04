@@ -1,11 +1,10 @@
 from typing import Literal
 
-from fastapi import APIRouter, File, Header, HTTPException, Query, Request, UploadFile
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi import APIRouter, File, Header, HTTPException, Query, UploadFile
+from fastapi.responses import FileResponse
 from pydantic import ValidationError
 from starlette.background import BackgroundTask
 
-from app.apps.thought_workshop.assistant import models, prepare, writing_events
 from app.apps.thought_workshop.attachments import upload_attachment
 from app.apps.thought_workshop.directory import Directory
 from app.apps.thought_workshop.http_bindings import SessionDep
@@ -27,12 +26,9 @@ from app.apps.thought_workshop.schemas.knowledge import (
 from app.apps.thought_workshop.schemas.link_preview import ThoughtLinkPreview
 from app.apps.thought_workshop.schemas.operations import ThoughtOperationsIn
 from app.apps.thought_workshop.schemas.workshop import (
-    ThoughtAssistantEvent,
-    ThoughtAssistantIn,
     ThoughtAttachmentOut,
     ThoughtImageOut,
     ThoughtImportOut,
-    ThoughtModelOut,
     ThoughtNoteCreate,
     ThoughtNoteList,
     ThoughtNoteOut,
@@ -40,11 +36,10 @@ from app.apps.thought_workshop.schemas.workshop import (
     ThoughtNoteTransitionIn,
     ThoughtRevisionIn,
 )
-from app.apps.thought_workshop.writing import writing_models as get_writing_models
+from app.apps.thought_workshop.writing_http import router as writing_router
 from app.capabilities.asset_store.library import AssetError, AssetLibrary
 from app.capabilities.asset_store.project_snapshots import ProjectSnapshotError
 from app.deps import OwnerDep, StudioAuth
-from app.llm.http_credentials import CallCredentialDep
 from app.runtime.config import get_settings
 from app.runtime.operation_receipts import OperationError
 
@@ -211,40 +206,6 @@ async def upload_image(
     return ThoughtImageOut(asset_id=row.id)
 
 
-@router.get("/models", response_model=list[ThoughtModelOut])
-async def writing_models(request: Request, owner_user_id: OwnerDep):
-    return await models(get_writing_models(request, owner_user_id))
-
-
-@router.post(
-    "/notes/{note_id}/assistant",
-    responses={
-        200: {
-            "content": {"text/event-stream": {"schema": ThoughtAssistantEvent.model_json_schema()}}
-        }
-    },
-)
-async def assistant(
-    note_id: str,
-    body: ThoughtAssistantIn,
-    session: SessionDep,
-    owner_user_id: OwnerDep,
-    credential: CallCredentialDep,
-    request: Request,
-):
-    writing = get_writing_models(request, owner_user_id)
-    prepared = await call(
-        prepare(
-            Notes(session, owner_user_id), note_id, body, writing=writing, credential=credential
-        )
-    )
-    return StreamingResponse(
-        writing_events(prepared, writing),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-    )
-
-
 @router.get("/backup", response_class=FileResponse)
 async def backup(
     session: SessionDep, owner_user_id: OwnerDep, knowledge_base_id: str | None = None
@@ -373,3 +334,5 @@ async def move_entry(
 router.include_router(knowledge_tools_router)
 
 router.include_router(multitable_router)
+
+router.include_router(writing_router)

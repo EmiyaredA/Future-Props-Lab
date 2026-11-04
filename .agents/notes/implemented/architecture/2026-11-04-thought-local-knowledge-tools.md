@@ -19,6 +19,10 @@ The account-owned knowledge tool routes live in a shared router. Both assemblies
 
 Independent Thought gains search, backlinks, reference resolution, copy preflight, checkpoints, preferences and library snapshots. A separate shared router exposes Markdown conversion and document export using the same metadata and download port. These user exports keep their existing format. Full historical migration still requires its own verified transfer.
 
+Additional shared routers expose table queries, model writing, community metadata, favorites and official package preflight, plus account-owned external synchronization records. Remote synchronization operations remain separately mounted. Account ZIP backup collects the manifest under a Thought database snapshot, ends the transaction, then downloads the exact asset versions into bounded staging before writing the ZIP.
+
 ## Verification
 
 Every shared operation is compared with the public OpenAPI contract. The isolated HTTP scenario searches and exports a newly created document, converts Markdown, and exports an owned knowledge base with its cover reference using Identity and Assets.
+
+The isolated scenario checks that account backups contain both the manifest and the exact asset bytes obtained through Assets. Contract parity covers the newly shared operations, including the external synchronization task record.

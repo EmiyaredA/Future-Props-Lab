@@ -1,5 +1,5 @@
 import httpx
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException
 
 from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.external_sync.schemas import (
@@ -9,7 +9,6 @@ from app.apps.thought_workshop.external_sync.schemas import (
     ArticleSyncPreview,
     ArticleSyncReconcile,
     ArticleSyncReconcileOut,
-    ArticleSyncState,
     ArticleSyncSubmit,
     ArticleSyncTaskOut,
 )
@@ -39,11 +38,6 @@ async def call(operation):
         raise HTTPException(502, "连接飞书失败，请稍后重新预览或核对任务") from None
 
 
-@router.get("", response_model=ArticleSyncState)
-async def state(note_id: str, principal: StudioAuth, session: SessionDep, owner_user_id: OwnerDep):
-    return await call(use_case(session, owner_user_id, principal).state(note_id))
-
-
 @router.put("/binding", response_model=ArticleBindingOut)
 async def bind(
     note_id: str,
@@ -53,17 +47,6 @@ async def bind(
     owner_user_id: OwnerDep,
 ):
     return await call(use_case(session, owner_user_id, principal).bind(note_id, body))
-
-
-@router.delete("/binding", status_code=204)
-async def unbind(
-    note_id: str,
-    principal: StudioAuth,
-    session: SessionDep,
-    owner_user_id: OwnerDep,
-    expected_revision: int = Query(ge=0),
-):
-    await call(use_case(session, owner_user_id, principal).unbind(note_id, expected_revision))
 
 
 @router.post("/preview", response_model=ArticleSyncPreview)
@@ -86,17 +69,6 @@ async def submit(
     owner_user_id: OwnerDep,
 ):
     return await call(use_case(session, owner_user_id, principal).submit(note_id, body))
-
-
-@router.get("/tasks/{task_id}", response_model=ArticleSyncTaskOut)
-async def task(
-    note_id: str,
-    task_id: str,
-    principal: StudioAuth,
-    session: SessionDep,
-    owner_user_id: OwnerDep,
-):
-    return await call(use_case(session, owner_user_id, principal).detail(note_id, task_id))
 
 
 @router.post("/tasks/{task_id}/reconcile", response_model=ArticleSyncReconcileOut)

@@ -19,33 +19,29 @@ from app.apps.thought_workshop.archive_structure import (
     convert_v3_folders_to_notes,
     validate_structure,
 )
+from app.apps.thought_workshop.backup_manifest import FORMAT, collect_backup
 from app.apps.thought_workshop.history_archive import (
-    export_history,
     import_history,
     validate_history,
 )
 from app.apps.thought_workshop.knowledge import KnowledgeBases
 from app.apps.thought_workshop.knowledge_tools.archive import (
-    export_tools,
     import_tools,
     validate_tools,
 )
 from app.apps.thought_workshop.knowledge_tools.references import remap_references
 from app.apps.thought_workshop.legacy_import import convert_legacy_backup
-from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
+from app.apps.thought_workshop.models import ThoughtKnowledgeBase
 from app.apps.thought_workshop.multitable.archive import (
-    archive_assets,
     entity_mapping,
-    export_tables,
     import_tables,
     remap_embeds,
 )
 from app.apps.thought_workshop.multitable.archive import (
     validate_archive as validate_tables,
 )
-from app.apps.thought_workshop.notes import Notes, ThoughtError, note_out
+from app.apps.thought_workshop.notes import Notes, ThoughtError
 from app.apps.thought_workshop.schemas.canvas import remap_canvas
-from app.apps.thought_workshop.schemas.document import file_ids
 from app.apps.thought_workshop.schemas.workshop import ThoughtImportOut, ThoughtNoteIn
 from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.library import AssetLibrary
@@ -54,8 +50,6 @@ from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
 from app.capabilities.asset_store.project_snapshots import _validate_member
 from app.capabilities.asset_store.storage import AssetStorage
 from app.runtime.config import Settings
-
-FORMAT = "thought-workshop-backup"
 
 
 def archive_times(record: dict) -> None:
@@ -83,40 +77,7 @@ def remap_images(node: dict, mapping: dict[str, str]) -> None:
 async def export_backup(
     notes: Notes, settings: Settings, knowledge_base_id: str | None = None
 ) -> Path:
-    knowledge = KnowledgeBases(notes.session, notes.owner_user_id)
-    projects = (
-        [await knowledge.output(await knowledge.get(knowledge_base_id, include_deleted=True))]
-        if knowledge_base_id
-        else [*await knowledge.list(), *await knowledge.list(trash=True)]
-    )
-    project_ids = [p.id for p in projects]
-    rows = (
-        await notes.session.scalars(
-            select(ThoughtNote)
-            .where(
-                ThoughtNote.owner_user_id == notes.owner_user_id,
-                ThoughtNote.knowledge_base_id.in_(project_ids),
-            )
-            .order_by(ThoughtNote.id)
-        )
-    ).all()
-    documents = [note_out(row).model_dump(mode="json") for row in rows]
-    history = await export_history(notes.session, [row.id for row in rows])
-    tools = await export_tools(
-        notes.session, notes.owner_user_id, [row.id for row in rows], knowledge_base_id is None
-    )
-    multitables = await export_tables(notes.session, rows)
-    ids = archive_assets(multitables)
-    ids.update(asset_id for doc in documents for asset_id in file_ids(doc["document"]))
-    ids.update(asset_id for record in history for asset_id in file_ids(record["document"]))
-    ids.update(asset for template in tools["templates"] for asset in file_ids(template["document"]))
-    ids.update(
-        asset
-        for template in tools["templates"]
-        if template.get("multitable")
-        for asset in archive_assets({"template": {"state": template["multitable"]}})
-    )
-    ids.update(p.cover_asset_id for p in projects if p.cover_asset_id)
+    payload, ids = await collect_backup(notes, knowledge_base_id)
     assets = (
         (
             await notes.session.scalars(
@@ -133,20 +94,10 @@ async def export_backup(
         raise ThoughtError("备份引用的文件不存在")
     storage = AssetStorage(settings)
     sources = [(r.id, storage.path_for(r), r.original_filename, r.mime_type) for r in assets]
-    payload = {
-        "format": FORMAT,
-        "version": 9,
-        "multitables": multitables,
-        **tools,
-        "history": history,
-        "knowledge_bases": [r.model_dump(mode="json") for r in projects],
-        "folders": [],
-        "notes": documents,
-        "assets": [
-            {"id": rid, "path": f"assets/{rid}", "filename": name, "content_type": mime}
-            for rid, _, name, mime in sources
-        ],
-    }
+    payload["assets"] = [
+        {"id": rid, "path": f"assets/{rid}", "filename": name, "content_type": mime}
+        for rid, _, name, mime in sources
+    ]
     await notes.session.rollback()
 
     def write():

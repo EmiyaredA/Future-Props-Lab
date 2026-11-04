@@ -8,6 +8,7 @@ from app.apps.interview_assistant.routes import router as interview_assistant_ro
 from app.apps.motion_compositor.routes import router as motion_compositor_router
 from app.apps.presentation_workshop.routes import router as presentation_workshop_router
 from app.apps.thought_workshop import content_exports_http as thought_conversion
+from app.apps.thought_workshop.external_sync.records_http import router as sync_records_router
 from app.apps.thought_workshop.routes import router as thought_workshop_router
 from app.apps.thought_workshop.routes.community import router as community_router
 from app.apps.thought_workshop.routes.community_tables import router as community_tables_router
@@ -61,6 +62,7 @@ api_router.include_router(local_models_router, dependencies=[Depends(require_stu
 api_router.include_router(interview_assistant_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(external_connections_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(article_sync_router, dependencies=[Depends(require_studio_auth)])
+api_router.include_router(sync_records_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(amadeus_router, dependencies=[Depends(require_amadeus_session)])
 api_router.include_router(automation_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(accounts_router)

@@ -9,7 +9,12 @@ from sqlalchemy import text
 from app.apps.thought_workshop.account_directory import DirectoryBindings
 from app.apps.thought_workshop.asset_metadata import AssetMetadataBindings
 from app.apps.thought_workshop.content_exports_http import router as content_exports_router
+from app.apps.thought_workshop.external_sync.records_http import router as sync_records_router
 from app.apps.thought_workshop.knowledge_tools.http import router as knowledge_tools_router
+from app.apps.thought_workshop.multitable.query_http import router as table_query_router
+from app.apps.thought_workshop.publication.http import router as community_metadata_router
+from app.apps.thought_workshop.writing import WritingBindings
+from app.apps.thought_workshop.writing_http import router as writing_router
 from app.problem_details import revision_conflict_handler
 from app.runtime.revisions import RevisionConflictError
 from fpl_runtime.authentication import SignedIdentity
@@ -20,6 +25,8 @@ from fpl_runtime.request_limit import RequestLimit
 
 from .account_directory import HttpAccountDirectory
 from .asset_metadata import HttpAssetMetadata
+from .backup import BackupLimits
+from .backup_http import router as backup_router
 from .community_evidence import CommunityEvidenceVerifier
 from .community_evidence import router as evidence_router
 from .community_http import CommunityFiles
@@ -33,6 +40,7 @@ from .retention import ThoughtReferenceDelivery, ThoughtReferences
 from .upload_http import UploadConfiguration
 from .upload_http import router as upload_router
 from .upload_recovery import recover_upload_staging
+from .writing_models import HttpWritingModels
 
 
 def create_app(
@@ -48,6 +56,7 @@ def create_app(
     run_worker=True,
     upload_receipt_credential=None,
     upload_maximum_bytes=200 * 1024 * 1024,
+    backup_limits=BackupLimits(),
 ):
     if not isinstance(credential, str) or len(credential) < 32:
         raise ValueError("Thought 需要专属身份凭据")
@@ -81,6 +90,23 @@ def create_app(
             transport=transport,
         )
 
+    def asset_metadata(request, _session, _principal):
+        path = request.url.path
+        limits = (
+            {"maximum_bytes": backup_limits.maximum_bytes}
+            if path == "/v1/thought-workshop/backup"
+            else {}
+        )
+        return HttpAssetMetadata(
+            assertion=request.state.service_assertion,
+            source_method=request.method,
+            source_path=path,
+            credential=credential,
+            catalog=catalog,
+            transport=transport,
+            **limits,
+        )
+
     @asynccontextmanager
     async def lifespan(_app):
         # Recovery may resolve undecided prepares only while no older process can commit.
@@ -107,6 +133,7 @@ def create_app(
     )
     app.state.service_id = "thought"
     app.state.database, app.state.identity = database, identity
+    app.state.thought_backup_limits = backup_limits
     app.state.thought_references, app.state.community_files = references, files
     if upload_receipt_credential is not None:
         app.state.thought_upload_configuration = UploadConfiguration(
@@ -131,8 +158,9 @@ def create_app(
             principal, request.state.service_assertion, request.method, request.url.path
         )
     )
-    app.state.thought_assets = AssetMetadataBindings(
-        lambda request, _session, _principal: HttpAssetMetadata(
+    app.state.thought_assets = AssetMetadataBindings(asset_metadata)
+    app.state.thought_writing = WritingBindings(
+        lambda request, _owner: HttpWritingModels(
             assertion=request.state.service_assertion,
             source_method=request.method,
             source_path=request.url.path,
@@ -142,7 +170,15 @@ def create_app(
         )
     )
     app.include_router(reads_router, prefix="/v1")
+    app.include_router(backup_router, prefix="/v1")
     app.include_router(content_exports_router, prefix="/v1")
+    app.include_router(sync_records_router, prefix="/v1")
+    app.include_router(writing_router, prefix="/v1/thought-workshop", tags=["thought-workshop"])
+    app.include_router(
+        table_query_router,
+        prefix="/v1/thought-workshop/notes/{note_id}/multitable",
+        tags=["thought-workshop", "thought-multitable"],
+    )
     app.include_router(
         knowledge_tools_router, prefix="/v1/thought-workshop", tags=["thought-workshop"]
     )
@@ -150,6 +186,11 @@ def create_app(
     app.include_router(upload_router, prefix="/v1")
     app.include_router(community_files_router, prefix="/v1")
     app.include_router(community_reads_router, prefix="/v1")
+    app.include_router(
+        community_metadata_router,
+        prefix="/v1/thought-workshop/community",
+        tags=["knowledge-community"],
+    )
     app.include_router(evidence_router)
     app.add_exception_handler(RevisionConflictError, revision_conflict_handler)
     app.add_middleware(SignedIdentity, service="thought", public_key=public_key, catalog=catalog)

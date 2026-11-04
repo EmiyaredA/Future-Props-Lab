@@ -9,6 +9,7 @@ from app.apps.thought_workshop.http_bindings import SessionDep
 from app.apps.thought_workshop.knowledge import KnowledgeBases
 from app.apps.thought_workshop.knowledge_tools.reuse import ReusableContent
 from app.apps.thought_workshop.knowledge_tools.schemas import TemplateOut
+from app.apps.thought_workshop.link_preview import preview_link
 from app.apps.thought_workshop.multitable.schemas import (
     ChangeSummary,
     QueryIn,
@@ -20,12 +21,18 @@ from app.apps.thought_workshop.multitable.use_cases import Multitable
 from app.apps.thought_workshop.notes import Notes, note_out
 from app.apps.thought_workshop.schemas.history import ThoughtHistoryDetail, ThoughtHistoryList
 from app.apps.thought_workshop.schemas.knowledge import KnowledgeBaseOut, ThoughtDirectoryOut
+from app.apps.thought_workshop.schemas.link_preview import ThoughtLinkPreview
 from app.apps.thought_workshop.schemas.workshop import ThoughtNoteList, ThoughtNoteOut
 from app.deps import OwnerDep, StudioAuth
 
 from .mutations_http import guarded
 
 router = APIRouter(prefix="/thought-workshop", tags=["thought-workshop"])
+
+
+@router.get("/link-preview", response_model=ThoughtLinkPreview)
+async def link_preview(_owner_user_id: OwnerDep, url: str = Query(min_length=1, max_length=8192)):
+    return await preview_link(url)
 
 
 @router.get("/notes", response_model=ThoughtNoteList)

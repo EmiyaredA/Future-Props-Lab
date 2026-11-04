@@ -3,7 +3,13 @@
 from fastapi import APIRouter, Query
 
 from app.apps.thought_workshop.http_bindings import CommunitySessionDep
-from app.apps.thought_workshop.multitable.schemas import QueryIn, RecordPage, Structure
+from app.apps.thought_workshop.multitable.schemas import (
+    ConversionIn,
+    ConversionOut,
+    QueryIn,
+    RecordPage,
+    Structure,
+)
 from app.apps.thought_workshop.publication.schemas import (
     ArticleConfig,
     CommunityArticle,
@@ -122,5 +128,24 @@ async def table_records(
     return await guarded(
         CommunityTables(session, principal).records(
             publication_id, note_id, table_id, body, parent_note_id
+        )
+    )
+
+
+@router.post(
+    "/publications/{publication_id}/notes/{note_id}/multitable/conversion-preview",
+    response_model=ConversionOut,
+)
+async def conversion(
+    publication_id: str,
+    note_id: str,
+    body: ConversionIn,
+    session: CommunitySessionDep,
+    principal: PublicStudioAuth,
+    parent_note_id: str | None = None,
+):
+    return await guarded(
+        CommunityTables(session, principal).conversion(
+            publication_id, note_id, body, parent_note_id
         )
     )
