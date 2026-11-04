@@ -13,12 +13,12 @@ from app.apps.video_editor.models import (
     VideoEditorTimeline,
 )
 from app.apps.video_editor.projects import VideoEditorProjects
-from app.apps.video_editor.rendering import task_out
 from app.apps.video_editor.schemas import (
     VideoEditorAssetBakeCreateIn,
     VideoEditorDefaultEffects,
     VideoEditorTaskOut,
 )
+from app.apps.video_editor.task_reads import task_out
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import utc_now
 

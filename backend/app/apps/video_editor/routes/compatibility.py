@@ -28,7 +28,6 @@ from app.apps.video_editor.schemas import (
     VideoEditorRenderPreviewIn,
     VideoEditorRenderPreviewOut,
     VideoEditorSegmentExportCreateIn,
-    VideoEditorTaskListOut,
     VideoEditorTaskOut,
 )
 from app.apps.video_editor.schemas.clip_merge import VideoEditorClipMergeCreateIn
@@ -48,6 +47,7 @@ from app.runtime.config import get_settings
 
 from .errors import _error as _public_error
 from .projects import router as projects_router
+from .tasks import router as tasks_router
 from .timeline import router as timeline_router
 
 router = APIRouter(prefix="/video-editor", tags=["video-editor"])
@@ -205,16 +205,6 @@ async def create_asset_bake(
         raise _error(exc) from None
 
 
-@router.get("/projects/{project_id}/asset-bakes/{task_id}", response_model=VideoEditorTaskOut)
-async def get_asset_bake(
-    session: SessionDep, owner_user_id: OwnerDep, project_id: str, task_id: str
-) -> VideoEditorTaskOut:
-    try:
-        return await VideoEditorAssetBakes(session, owner_user_id).get(project_id, task_id)
-    except VideoEditorNotFoundError as exc:
-        raise _error(exc) from None
-
-
 @router.delete("/projects/{project_id}/assets/{asset_id}")
 async def delete_asset(
     session: SessionDep, owner_user_id: OwnerDep, project_id: str, asset_id: str
@@ -341,26 +331,6 @@ async def create_render(
         raise _error(exc) from None
 
 
-@router.get("/projects/{project_id}/renders", response_model=VideoEditorTaskListOut)
-async def list_renders(
-    session: SessionDep, owner_user_id: OwnerDep, project_id: str
-) -> VideoEditorTaskListOut:
-    try:
-        return await VideoEditorRenders(session, owner_user_id).list(project_id)
-    except VideoEditorNotFoundError as exc:
-        raise _error(exc) from None
-
-
-@router.get("/projects/{project_id}/renders/{task_id}", response_model=VideoEditorTaskOut)
-async def get_render(
-    session: SessionDep, owner_user_id: OwnerDep, project_id: str, task_id: str
-) -> VideoEditorTaskOut:
-    try:
-        return await VideoEditorRenders(session, owner_user_id).get(project_id, task_id)
-    except VideoEditorNotFoundError as exc:
-        raise _error(exc) from None
-
-
 @router.post("/projects/{project_id}/renders/{task_id}/cancel", response_model=VideoEditorTaskOut)
 async def cancel_render(
     session: SessionDep, owner_user_id: OwnerDep, project_id: str, task_id: str
@@ -398,29 +368,6 @@ async def create_segment_export(
     try:
         return await VideoEditorSegmentExports(session, owner_user_id).create(project_id, body)
     except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
-        raise _error(exc) from None
-
-
-@router.get("/projects/{project_id}/segment-exports", response_model=VideoEditorTaskListOut)
-async def list_segment_exports(
-    session: SessionDep, owner_user_id: OwnerDep, project_id: str
-) -> VideoEditorTaskListOut:
-    try:
-        return await VideoEditorSegmentExports(session, owner_user_id).list(project_id)
-    except VideoEditorNotFoundError as exc:
-        raise _error(exc) from None
-
-
-@router.get(
-    "/projects/{project_id}/segment-exports/{task_id}",
-    response_model=VideoEditorTaskOut,
-)
-async def get_segment_export(
-    session: SessionDep, owner_user_id: OwnerDep, project_id: str, task_id: str
-) -> VideoEditorTaskOut:
-    try:
-        return await VideoEditorSegmentExports(session, owner_user_id).get(project_id, task_id)
-    except VideoEditorNotFoundError as exc:
         raise _error(exc) from None
 
 
@@ -470,26 +417,6 @@ async def create_clip_merge(
         raise _error(exc) from None
 
 
-@router.get("/projects/{project_id}/clip-merges", response_model=VideoEditorTaskListOut)
-async def list_clip_merges(
-    session: SessionDep, owner_user_id: OwnerDep, project_id: str
-) -> VideoEditorTaskListOut:
-    try:
-        return await VideoEditorClipMerges(session, owner_user_id).list(project_id)
-    except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
-        raise _error(exc) from None
-
-
-@router.get("/projects/{project_id}/clip-merges/{task_id}", response_model=VideoEditorTaskOut)
-async def get_clip_merge(
-    session: SessionDep, owner_user_id: OwnerDep, project_id: str, task_id: str
-) -> VideoEditorTaskOut:
-    try:
-        return await VideoEditorClipMerges(session, owner_user_id).get(project_id, task_id)
-    except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
-        raise _error(exc) from None
-
-
 @router.post(
     "/projects/{project_id}/clip-merges/{task_id}/cancel", response_model=VideoEditorTaskOut
 )
@@ -504,3 +431,4 @@ async def cancel_clip_merge(
 
 router.include_router(projects_router)
 router.include_router(timeline_router)
+router.include_router(tasks_router)

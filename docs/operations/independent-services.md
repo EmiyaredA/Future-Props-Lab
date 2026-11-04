@@ -487,3 +487,5 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 剪辑素材目录、原件上传与复制接入独立 Assets。Video 先持久登记请求，再通过绑定原件摘要或源文件集合的授权调用 Assets。Assets 同时提交原件和回执。Video 收到回执后登记素材元数据和一项处理任务，未知结果可在重启后按原路径查询。四容器运行 `fpl-video-files-8e4daa17a5` 使用 `fpl/video:39e5742f198c9f5aafcd`，验证上传、复制、时间轴引用、重启和删除后保留账号库原件。剪辑代理、音频波形和导出处理仍由就绪门禁跟踪。
 
 剪辑代理、缩略图和波形由 Rendering 生成并持有。启用 `deploy/video.compose.yaml` 时，`FPL_VIDEO_MEDIA_KEY` 只挂载给 Video 和 Rendering，`FPL_VIDEO_ORIGINALS_KEY` 只挂载给 Rendering 和 Assets，两者使用独立凭据。部署时显式运行三者的迁移。Video 从同一任务回执恢复处理状态。预览派生文件经原有 URL 鉴权并支持 206 读取。五容器验收 `fpl-video-derivatives-6c8723c94b` 验证图片、音频、重启、重新生成和删除。隔离故障测试验证丢失入队响应后恢复原任务和跨账号拒绝。
+
+运行 `npm run services:build:web -- video`，把返回的目录交给 `npm run services:build -- video --build --web-release`。独立程序包含原项目列表、任务列表和剪辑深链接。剪辑任务查询使用账号及项目归属，继续按渲染、分段和合并分类。五容器 Chromium 验收 `fpl-video-browser-99dadd330d` 使用浏览器版本 `656cd6bec9d069f15fc5`，验证 390/768/1440px、真实文字片段保存、任务页、回环公网入口和过期程序版本拒绝。渲染任务创建、工程包、成片交接和历史迁移继续由就绪门禁跟踪。

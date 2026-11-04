@@ -10,13 +10,13 @@ from app.apps.video_editor.models import (
     VideoEditorTimeline,
 )
 from app.apps.video_editor.projects import VideoEditorProjects
-from app.apps.video_editor.rendering import task_out
 from app.apps.video_editor.schemas import (
     VideoEditorSegmentExportCreateIn,
     VideoEditorTaskListOut,
     VideoEditorTaskOut,
     parse_timeline_document,
 )
+from app.apps.video_editor.task_reads import task_out
 from app.apps.visual_workshop.models import (
     VisualCanvasDocument,
     VisualWorkshopProject,

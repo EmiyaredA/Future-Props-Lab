@@ -28,6 +28,7 @@ def main():
     )
     parser.add_argument("--schema", type=Path, default=Path("/app/deploy/contracts/openapi.json"))
     parser.add_argument("--identity-token", type=Path, default=Path("/run/fpl/identity-token"))
+    parser.add_argument("--web-root", type=Path, default=Path("/app/web"))
     parser.add_argument("--media-key", type=Path, default=Path("/run/fpl/video-media-key"))
     parser.add_argument("--port", type=int, default=8080)
     options = parser.parse_args()
@@ -61,6 +62,7 @@ def main():
         schema_path=options.schema,
         credential=credential,
         media_key=media_key,
+        web_root=None if (options.web_root / ".api-only").is_file() else options.web_root,
     )
     uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)
 

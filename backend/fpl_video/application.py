@@ -17,6 +17,7 @@ from app.apps.video_editor.models import (
     VideoEditorTimeline,
 )
 from app.apps.video_editor.routes.projects import router as project_router
+from app.apps.video_editor.routes.tasks import router as tasks_router
 from app.apps.video_editor.routes.timeline import router as timeline_router
 from app.deps import db_session, require_studio_auth
 from app.problem_details import (
@@ -35,6 +36,7 @@ from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.reference_runtime import install_reference_runtime, reference_lifespan
 from fpl_runtime.routing import RouteCatalog
 from fpl_runtime.video_processing import video_peer
+from fpl_runtime.web import attach_web, load_release
 
 from .asset_intake import AssetIntakes
 from .media_delivery import MediaDelivery
@@ -45,6 +47,15 @@ from .project_layouts import ProjectLayouts
 from .timeline_media import TimelineMedia
 
 SERVICE = "video"
+WEB_ROOT = "/apps/video-editor"
+PAGES = (
+    WEB_ROOT,
+    WEB_ROOT + "/",
+    WEB_ROOT + "/tasks",
+    WEB_ROOT + "/tasks/",
+    WEB_ROOT + "/projects/{project_id}/editor",
+    WEB_ROOT + "/projects/{project_id}/editor/",
+)
 SOURCE = "/v1/video-editor"
 PROJECTS = SOURCE + "/projects"
 PROJECT = PROJECTS + "/{project_id}"
@@ -55,6 +66,13 @@ OPERATIONS = {
     ("PATCH", PROJECT),
     ("DELETE", PROJECT),
     ("GET", PROJECT + "/timeline"),
+    ("GET", PROJECT + "/asset-bakes/{task_id}"),
+    ("GET", PROJECT + "/renders"),
+    ("GET", PROJECT + "/renders/{task_id}"),
+    ("GET", PROJECT + "/segment-exports"),
+    ("GET", PROJECT + "/segment-exports/{task_id}"),
+    ("GET", PROJECT + "/clip-merges"),
+    ("GET", PROJECT + "/clip-merges/{task_id}"),
     ("POST", PROJECT + "/timeline/operations"),
     ("GET", SOURCE + "/import-sources"),
     ("GET", PROJECT + "/assets"),
@@ -75,6 +93,7 @@ def create_app(
     transport=None,
     run_worker=True,
     media_key=None,
+    web_root=None,
 ):
     database = Database(
         SERVICE,
@@ -157,7 +176,7 @@ def create_app(
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(OperationalError, storage_operational_error_handler)
     app.add_exception_handler(RevisionConflictError, revision_conflict_handler)
-    for router in (project_router, timeline_router, media_router):
+    for router in (project_router, timeline_router, media_router, tasks_router):
         app.include_router(
             router,
             prefix=SOURCE,
@@ -174,13 +193,19 @@ def create_app(
     mounted = {
         (method.upper(), path) for path, methods in schema["paths"].items() for method in methods
     }
+    published = json.loads(schema_path.read_text())
     if (
         mounted != OPERATIONS
         or {(operation.method, operation.path) for operation in expected.operations} != OPERATIONS
         or public_contract(schema, SERVICE, expected)
-        != public_contract(json.loads(schema_path.read_text()), SERVICE, expected)
+        != public_contract(published, SERVICE, expected)
     ):
         raise ValueError("视频剪辑项目接口与发布契约不匹配")
+    if web_root is not None:
+        release = load_release(web_root, SERVICE)
+        if release.api_sha256 != public_contract(published, SERVICE, catalog):
+            raise ValueError("视频剪辑浏览器程序与 API 契约不匹配")
+        attach_web(app, release, pages=PAGES)
 
     @app.get("/health")
     async def health():

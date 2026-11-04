@@ -23,30 +23,14 @@ from app.apps.video_editor.schemas import (
     VideoEditorTaskOut,
     parse_timeline_document,
 )
+from app.apps.video_editor.task_reads import task_out
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.media_rendering.evaluator import timeline_duration_us, visual_gaps
 from app.capabilities.media_rendering.presets import RENDER_PRESETS
 from app.runtime.revisions import RevisionConflictError, require_revision_write
-from app.runtime.time import iso_utc, utc_now
+from app.runtime.time import utc_now
 
 PRESETS = RENDER_PRESETS
-
-
-def task_out(row: VideoEditorTask) -> VideoEditorTaskOut:
-    return VideoEditorTaskOut(
-        id=row.id,
-        projectId=row.project_id,
-        requestId=row.request_id,
-        kind=row.kind,
-        status=row.status,
-        progress=row.progress,
-        outputAssetId=row.output_asset_id,
-        error=row.error,
-        resultDetail=row.result_detail or {},
-        revision=row.revision,
-        createdAt=iso_utc(row.created_at),
-        updatedAt=iso_utc(row.updated_at),
-    )
 
 
 class VideoEditorRenders:
