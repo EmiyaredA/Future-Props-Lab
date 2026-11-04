@@ -18,8 +18,10 @@ Keep bounded ZIP extraction in Thought and share only the safe member predicate 
 
 ## Consequences
 
-The account archive route still requires an Assets-owned staged batch and confirmed publication outcome before independent deployment can expose it. The compatibility importer continues to save its assets and imported content in a shared transaction.
+Assets keeps archive bytes outside the visible library in a batch bound to the source checksum and per-file descriptors. Sealing validates the complete file list and initial projections. A confirmed commit publishes both together in Assets. A confirmed abort records a terminal decision and queues staged bytes for cleanup. The independent account archive route still needs signed transport and a durable source outcome before it can use this storage workflow. The compatibility importer continues to save its assets and imported content in a shared transaction.
 
 ## Verification
 
 Archive round-trip and malformed ZIP tests cover legacy compatibility. Projection tests cover removed attachments and skipped source home pages. The independent official import verifies prepared references and replay against the actual Identity and Assets services.
+
+Assets tests cover concurrent duplicate file staging, cross-account denial, changed bytes, abort cleanup and a lost settlement acknowledgement followed by a reopened service connection and replay. The migration upgrade test verifies the preceding Assets schema still upgrades with existing data.

@@ -15,10 +15,11 @@ from .models import ModelLibraryOutputReceipt
 
 
 class VerifiedOutput:
-    def __init__(self, incoming, description):
+    def __init__(self, incoming, description, *, changed=None):
         self.incoming, self.description = incoming, description
         self.filename, self.content_type = description.filename, description.mime_type
         self.received, self.digest = 0, hashlib.sha256()
+        self.changed = changed
 
     async def read(self, size=-1):
         chunk = await self.incoming.read(size)
@@ -33,7 +34,9 @@ class VerifiedOutput:
                 or self.digest.hexdigest() != self.description.content_sha256
             )
         ):
-            raise AssetError("模型结果摘要或长度不匹配", code="output_changed", status=422)
+            raise self.changed or AssetError(
+                "模型结果摘要或长度不匹配", code="output_changed", status=422
+            )
         return chunk
 
     async def close(self):
