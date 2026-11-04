@@ -159,6 +159,7 @@ async def test_projects_create_owned_defaults_and_keep_the_published_contract(
             )
             await verify_galgame_files(case, app, request, path, asset_id)
             voice_id = await verify_voice_match(case, app, request, path)
+            replacement_id = await verify_galgame_asset_repair(case, request, path, voice_id)
         assert (await request("GET", path)).json() == record
         async with app.state.database.sessions(info={"owner_user_id": case.owner}) as session:
             session.add(
@@ -209,7 +210,7 @@ async def test_projects_create_owned_defaults_and_keep_the_published_contract(
                     AssetReferenceSet.resource_kind == "story",
                 )
             )
-            assert set(pins) == {asset_id, voice_id}
+            assert set(pins) == {asset_id, replacement_id, voice_id}
 
 
 async def verify_visual_canvas(case, app, request, path):
@@ -967,3 +968,45 @@ async def verify_visual_output_writes(case, request, path, previous_asset, previ
     assert removed.json()["nodes"][0]["final_output_id"] == previous_output
     assert removed.json()["nodes"][0]["output_sequence"] == 2
     assert (await request("GET", removal)).status_code == 404
+
+
+async def verify_galgame_asset_repair(case, request, path, voice_id):
+    story_path = path + "/story"
+    original = (await request("GET", story_path)).json()
+    repair = path + "/assets/repair"
+    body = {
+        "expectedStoryRevision": original["revision"],
+        "storyAssetId": "fixture-image",
+        "replacementFileId": case.asset,
+    }
+    response = await request("POST", repair, json=body)
+    assert response.status_code == 404 and response.json()["code"] == "not_found"
+    response = await request("POST", repair, json={**body, "replacementFileId": voice_id})
+    assert response.status_code == 422 and response.json()["code"] == "media_kind_mismatch"
+    async with case.assets.state.database.sessions(info={"owner_user_id": case.viewer}) as db:
+        library = AssetLibrary(db, case.assets.state.settings)
+        other = await library.store_upload(
+            UploadFile(io.BytesIO(b"\x89PNG\r\n\x1a\nother project"), filename="other.png"),
+            owner_user_id=case.viewer,
+            galgame_project_id="other-project",
+        )
+        assert (
+            await request("POST", repair, json={**body, "replacementFileId": other.id})
+        ).status_code == 404
+        replacement = await library.store_upload(
+            UploadFile(io.BytesIO(b"\x89PNG\r\n\x1a\nreplacement"), filename="repair.png"),
+            owner_user_id=case.viewer,
+        )
+    request_body = {**body, "replacementFileId": replacement.id}
+    missing = await request("POST", repair, json={**request_body, "storyAssetId": "unknown"})
+    assert missing.status_code == 404 and missing.json()["code"] == "story_asset_not_found"
+    assert (await request("GET", story_path)).json() == original
+    response = await request("POST", repair, json=request_body)
+    assert response.status_code == 200, response.text
+    repaired = response.json()
+    assert repaired["revision"] == original["revision"] + 1
+    item = next(item for item in repaired["document"]["assets"] if item["id"] == "fixture-image")
+    assert item["fileId"] == replacement.id
+    stale = await request("POST", repair, json=request_body)
+    assert stale.status_code == 409 and stale.json()["current"] == repaired
+    return replacement.id

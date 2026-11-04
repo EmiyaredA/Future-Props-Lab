@@ -37,15 +37,20 @@ async def files(session, settings, project_id, query):
     owner = session.info["owner_user_id"]
     statement = select(VisualAsset).where(VisualAsset.owner_user_id == owner)
     owned = VisualAsset.galgame_project_id == project_id
+    library = (
+        VisualAsset.project_id.is_(None)
+        & VisualAsset.galgame_project_id.is_(None)
+        & VisualAsset.video_editor_project_id.is_(None)
+        & VisualAsset.motion_compositor_project_id.is_(None)
+    )
     scope = owned
-    if query.asset_ids:
+    if query.replacement:
+        scope = or_(owned, library)
+    elif query.asset_ids:
         retained = _retained_story_files(owner, project_id)
         scope = or_(
             owned,
-            VisualAsset.id.in_(query.asset_ids)
-            & VisualAsset.id.in_(retained)
-            & VisualAsset.project_id.is_(None)
-            & VisualAsset.galgame_project_id.is_(None),
+            VisualAsset.id.in_(query.asset_ids) & VisualAsset.id.in_(retained) & library,
         )
     statement = statement.where(scope)
     if query.project_file_id is not None:

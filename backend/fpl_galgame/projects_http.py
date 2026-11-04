@@ -10,6 +10,7 @@ from app.apps.galgame_workshop.errors import (
     GalgameStoryNotReadyError,
 )
 from app.apps.galgame_workshop.schemas import (
+    GalgameMissingAssetRepairIn,
     GalgameStoryDialoguePatchIn,
     GalgameStoryDialoguePatchOut,
     GalgameStoryDocumentOut,
@@ -29,6 +30,7 @@ from app.apps.galgame_workshop.story.migration_inventory import (
     MAX_STORY_IMPORT_BYTES,
     decode_legacy_story,
 )
+from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.schemas.project_snapshots import ProjectFolderOpenOut
 from app.runtime.operation_receipts import OperationError
 from fpl_runtime.http_dependencies import OwnerDep, SessionDep, StudioAuth
@@ -40,6 +42,7 @@ from fpl_runtime.project_reveal_http import (
 from fpl_runtime.reference_runtime import reference_lifespan
 
 from .asset_read_routes import read_assets
+from .asset_repair import repair_asset
 from .projects import Projects
 from .story_writes import PREFIX, StoryWrites
 
@@ -221,3 +224,22 @@ async def patch_project(
                 "report": exc.report.model_dump(mode="json"),
             },
         ) from None
+
+
+@router.post("/{project_id}/assets/repair", response_model=GalgameStoryDocumentOut)
+async def repair_project_asset(
+    session: SessionDep,
+    project_id: str,
+    body: GalgameMissingAssetRepairIn,
+    request: Request,
+    owner_user_id: OwnerDep,
+) -> GalgameStoryDocumentOut:
+    try:
+        return await repair_asset(
+            read_assets(request, session, owner_user_id),
+            story_writes(request, session, owner_user_id),
+            project_id,
+            body,
+        )
+    except AssetError as exc:
+        raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None

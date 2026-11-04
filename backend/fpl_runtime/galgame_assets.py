@@ -16,10 +16,13 @@ MAX_QUERY_BYTES = 2 * 1024 * 1024
 class GalgameAssetQuery(LibraryAssetQuery):
     search: str = Field(default="", max_length=255)
     newest_first: bool = False
+    replacement: bool = False
     project_file_id: str | None = Field(default=None, pattern="^" + ID + "$")
 
     @model_validator(mode="after")
     def exact_file_only(self):
+        if self.replacement and self.project_file_id is None:
+            raise ValueError("补链查询必须指定一个文件")
         if self.project_file_id is not None and (self.asset_ids or self.search):
             raise ValueError("单项查询不能读取其他文件")
         return self
@@ -27,7 +30,8 @@ class GalgameAssetQuery(LibraryAssetQuery):
     def path(self, project_id):
         if not re.fullmatch(ID, project_id):
             raise ValueError("Galgame 项目标识无效")
-        suffix = f"/one/{self.project_file_id}" if self.project_file_id else ""
+        mode = "replacement" if self.replacement else "one"
+        suffix = f"/{mode}/{self.project_file_id}" if self.project_file_id else ""
         return f"{PREFIX}/{project_id}{suffix}/{self.digest}"
 
 
@@ -40,7 +44,10 @@ class GalgameAssetFile(LibraryAssetDescription):
 
 def asset_query_target(method, path):
     if method == "POST":
-        return re.fullmatch(rf"{PREFIX}/({ID})(?:/one/(?P<asset>{ID}))?/([a-f0-9]{{64}})", path)
+        return re.fullmatch(
+            rf"{PREFIX}/({ID})(?:/(?P<mode>one|replacement)/(?P<asset>{ID}))?/([a-f0-9]{{64}})",
+            path,
+        )
     return None
 
 
@@ -52,6 +59,8 @@ def galgame_asset_grant(grant):
         return False
     project = f"{SOURCE}/{target[1]}"
     asset_id = target["asset"]
+    if target["mode"] == "replacement":
+        return (grant.source_method, grant.source_path) == ("POST", project + "/assets/repair")
     if asset_id:
         return grant.source_method == "PATCH" and grant.source_path == (
             f"{project}/assets/{asset_id}/transcript"

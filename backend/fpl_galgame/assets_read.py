@@ -44,7 +44,14 @@ class ProjectAssetReads(GalgameAssetAnalysisMixin):
         )
 
     async def asset_records(
-        self, project_id, referenced, *, newest_first, search="", project_file_id=None
+        self,
+        project_id,
+        referenced,
+        *,
+        newest_first,
+        search="",
+        project_file_id=None,
+        replacement=False,
     ):
         metadata = {
             row.asset_id: row
@@ -57,6 +64,7 @@ class ProjectAssetReads(GalgameAssetAnalysisMixin):
             search=search,
             newest_first=newest_first,
             project_file_id=project_file_id,
+            replacement=replacement,
         )
         path = query.path(project_id)
         grant = RequestGrant(

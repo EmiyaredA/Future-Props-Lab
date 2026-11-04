@@ -130,6 +130,15 @@ class StoryWrites:
             path=f"{PREFIX}/{project_id}/story/import",
         )
 
+    async def repair_asset(self, project_id, body, document):
+        return await self._save(
+            project_id,
+            expected_revision=body.expected_story_revision,
+            document=document,
+            method="POST",
+            path=f"{PREFIX}/{project_id}/assets/repair",
+        )
+
     async def save_voice_matches(self, project_id, body):
         return await self._save(
             project_id,

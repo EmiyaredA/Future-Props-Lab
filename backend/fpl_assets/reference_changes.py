@@ -142,6 +142,12 @@ class ReferenceChanges:
                 present = {asset.id for asset in candidates}
                 if present != requested:
                     raise failure("not_found", "部分素材不存在", 404)
+                if any(
+                    asset.motion_compositor_project_id is not None
+                    or asset.video_editor_project_id is not None
+                    for asset in candidates
+                ):
+                    raise failure("story_galgame_asset_scope", "不能引用其他工坊的私有素材", 422)
                 if any(asset.project_id is not None for asset in candidates):
                     raise failure("story_visual_asset_scope", "不能引用视觉工坊的私有素材", 422)
                 if any(

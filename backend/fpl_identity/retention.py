@@ -83,6 +83,7 @@ def _galgame_story_source(body):
         return body.source_path in {
             story_path + "/operations",
             story_path + "/import",
+            f"/v1/galgame-workshop/projects/{change.resource_id}/assets/repair",
             f"/v1/galgame-workshop/projects/{change.resource_id}/assets/asr/match-dialogue",
         } or bool(
             re.fullmatch(
