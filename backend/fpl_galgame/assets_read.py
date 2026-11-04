@@ -38,12 +38,14 @@ class ProjectAssetReads(GalgameAssetAnalysisMixin):
 
     async def list(self, project_id, *, query):
         await self._project(project_id)
-        records = await self._asset_records(project_id, (), newest_first=True, search=query)
+        records = await self.asset_records(project_id, (), newest_first=True, search=query)
         return GalgameProjectAssetListOut(
             items=[galgame_asset_out(row, meta) for row, meta in records]
         )
 
-    async def _asset_records(self, project_id, referenced, *, newest_first, search=""):
+    async def asset_records(
+        self, project_id, referenced, *, newest_first, search="", project_file_id=None
+    ):
         metadata = {
             row.asset_id: row
             for row in await self.session.scalars(
@@ -51,7 +53,10 @@ class ProjectAssetReads(GalgameAssetAnalysisMixin):
             )
         }
         query = GalgameAssetQuery(
-            asset_ids=sorted(referenced), search=search, newest_first=newest_first
+            asset_ids=sorted(referenced),
+            search=search,
+            newest_first=newest_first,
+            project_file_id=project_file_id,
         )
         path = query.path(project_id)
         grant = RequestGrant(
@@ -82,7 +87,7 @@ class ProjectAssetReads(GalgameAssetAnalysisMixin):
         story = await self.projects.story(project_id)
         document = story.document
         report = build_route_report(project_id, story.revision, document)
-        records = await self._asset_records(
+        records = await self.asset_records(
             project_id, {asset.file_id for asset in document.assets}, newest_first=False
         )
         files = {row.id: row for row, _ in records}

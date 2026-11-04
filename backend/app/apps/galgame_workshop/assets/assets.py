@@ -72,7 +72,7 @@ class GalgameProjectAssets(GalgameAssetAnalysisMixin):
         await self.session.refresh(metadata)
         return metadata
 
-    async def _asset_records(self, project_id, referenced, *, newest_first):
+    async def asset_records(self, project_id, referenced, *, newest_first):
         query = select(VisualAsset, GalgameAssetMetadata).outerjoin(
             GalgameAssetMetadata, GalgameAssetMetadata.asset_id == VisualAsset.id
         )

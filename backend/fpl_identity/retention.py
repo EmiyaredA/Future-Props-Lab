@@ -71,7 +71,11 @@ def _galgame_story_source(body):
     if not story_metadata(body.caller, change):
         return False
     if body.source_method == "POST":
-        return body.source_path in {story_path + "/operations", story_path + "/import"} or bool(
+        return body.source_path in {
+            story_path + "/operations",
+            story_path + "/import",
+            f"/v1/galgame-workshop/projects/{change.resource_id}/assets/asr/match-dialogue",
+        } or bool(
             re.fullmatch(
                 re.escape(story_path) + r"/snapshots/[A-Za-z0-9_-]{1,128}/restore", body.source_path
             )

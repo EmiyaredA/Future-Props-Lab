@@ -130,6 +130,15 @@ class StoryWrites:
             path=f"{PREFIX}/{project_id}/story/import",
         )
 
+    async def save_voice_matches(self, project_id, body):
+        return await self._save(
+            project_id,
+            expected_revision=body.expected_revision,
+            document=body.document,
+            method="POST",
+            path=f"{PREFIX}/{project_id}/assets/asr/match-dialogue",
+        )
+
     async def patch_edits(self, project_id, body):
         story, _ = await self._patch(project_id, body, "edits", apply_edits)
         return story

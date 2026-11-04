@@ -79,7 +79,7 @@ class GalgameAssetAnalysisMixin:
         referenced_file_ids = (
             {asset.file_id for asset in document.assets} if document is not None else set()
         )
-        rows_with_metadata = await self._asset_records(
+        rows_with_metadata = await self.asset_records(
             project_id, referenced_file_ids, newest_first=True
         )
         rows = [row for row, _metadata in rows_with_metadata]
@@ -422,7 +422,7 @@ class GalgameAssetAnalysisMixin:
         story_row = await self.session.get(GalgameStoryDocument, project_id)
         document = normalize_story_document(story_row.document) if story_row else None
         referenced = {asset.file_id for asset in document.assets} if document else set()
-        rows_with_metadata = await self._asset_records(project_id, referenced, newest_first=False)
+        rows_with_metadata = await self.asset_records(project_id, referenced, newest_first=False)
         references_by_file = (
             self._story_references_by_file(document) if document is not None else {}
         )

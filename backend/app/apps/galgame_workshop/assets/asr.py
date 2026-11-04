@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import asyncio
-import re
-import unicodedata
-from difflib import SequenceMatcher
 
 import httpx
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.apps.galgame_workshop.assets.asr_records import AsrRecords, _task_out
+from app.apps.galgame_workshop.assets.transcript_records import write_transcript
+from app.apps.galgame_workshop.assets.voice_matching import match_dialogue
 from app.apps.galgame_workshop.models import (
     GalgameAssetMetadata,
     GalgameAssetSettings,
@@ -21,7 +20,6 @@ from app.apps.galgame_workshop.schemas import (
     GalgameTranscriptionTaskListOut,
     GalgameTranscriptPatchIn,
     GalgameVoiceMatchIn,
-    GalgameVoiceMatchItem,
     GalgameVoiceMatchOut,
 )
 from app.apps.galgame_workshop.story.story import GalgameStoryDocuments
@@ -43,7 +41,6 @@ from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal
 from app.runtime.ownership import bind_owner
 from app.runtime.polling_runner import PollingTaskRunner
-from app.runtime.revisions import RevisionConflictError
 from app.runtime.task_admission import TaskAdmission
 from app.runtime.time import utc_now
 
@@ -121,39 +118,7 @@ class GalgameAsrService(AsrRecords):
             or asset.media_kind != "audio"
         ):
             raise AssetError("语音素材不存在", code="not_found", status=404)
-        result = await self.session.execute(
-            update(GalgameAssetMetadata)
-            .where(
-                GalgameAssetMetadata.asset_id == asset_id,
-                GalgameAssetMetadata.transcript_revision == body.expected_revision,
-            )
-            .values(
-                transcript=body.text.strip(),
-                transcript_language=body.language or metadata.transcript_language,
-                transcript_status="ready",
-                transcript_source="manual",
-                transcript_revision=body.expected_revision + 1,
-                transcript_segments=[],
-                updated_at=utc_now(),
-            )
-        )
-        if result.rowcount != 1:
-            await self.session.rollback()
-            current = await self.session.get(GalgameAssetMetadata, asset_id)
-            raise RevisionConflictError(
-                body.expected_revision,
-                current.transcript_revision if current else 0,
-                {"assetId": asset_id, "transcript": current.transcript if current else None},
-            )
-        await self.session.commit()
-        await self.session.refresh(metadata)
-        return {
-            "assetId": asset_id,
-            "transcript": metadata.transcript,
-            "language": metadata.transcript_language,
-            "source": metadata.transcript_source,
-            "revision": metadata.transcript_revision,
-        }
+        return await write_transcript(self.session, metadata, asset_id, body)
 
     async def match_dialogue(
         self, project_id: str, body: GalgameVoiceMatchIn
@@ -171,63 +136,7 @@ class GalgameAsrService(AsrRecords):
         if body.asset_ids is not None:
             query = query.where(VisualAsset.id.in_(body.asset_ids))
         voice_rows = (await self.session.execute(query.order_by(VisualAsset.display_name))).all()
-        payload = story.document.model_dump(mode="json", by_alias=True)
-        dialogue_blocks: list[tuple[dict[str, object], str]] = []
-        for chapter in payload["chapters"]:
-            for fragment in chapter["fragments"]:
-                for block in fragment["blocks"]:
-                    if block.get("type") == "dialogue" and str(block.get("text", "")).strip():
-                        dialogue_blocks.append((block, str(block["text"])))
-        story_asset_by_file = {
-            asset["fileId"]: asset for asset in payload["assets"] if asset["type"] == "audio"
-        }
-        requested_block_ids = set(body.block_ids) if body.block_ids is not None else None
-        candidates: list[tuple[float, str, str, dict[str, object], VisualAsset]] = []
-        for asset, metadata in voice_rows:
-            normalized_transcript = _normalized_text(metadata.transcript or "")
-            if not normalized_transcript:
-                continue
-            for block, text in dialogue_blocks:
-                if requested_block_ids is not None and str(block["id"]) not in requested_block_ids:
-                    continue
-                similarity = SequenceMatcher(
-                    None, normalized_transcript, _normalized_text(text)
-                ).ratio()
-                if similarity >= body.minimum_similarity:
-                    candidates.append(
-                        (-similarity, asset.display_name.casefold(), str(block["id"]), block, asset)
-                    )
-        candidates.sort(key=lambda item: (item[0], item[1], item[2]))
-        used_assets: set[str] = set()
-        used_blocks: set[str] = set()
-        matches: list[GalgameVoiceMatchItem] = []
-        for negative_similarity, _filename, block_id, block, asset in candidates:
-            if asset.id in used_assets or block_id in used_blocks:
-                continue
-            story_asset = story_asset_by_file.get(asset.id)
-            if story_asset is None:
-                story_asset = {
-                    "id": f"voice-{asset.id}",
-                    "type": "audio",
-                    "role": "voiceLine",
-                    "label": asset.display_name,
-                    "fileId": asset.id,
-                    "status": "ready",
-                }
-                payload["assets"].append(story_asset)
-                story_asset_by_file[asset.id] = story_asset
-            elif story_asset.get("role") != "voiceLine":
-                continue
-            block["voiceAssetId"] = story_asset["id"]
-            used_assets.add(asset.id)
-            used_blocks.add(block_id)
-            matches.append(
-                GalgameVoiceMatchItem(
-                    assetId=asset.id,
-                    blockId=block_id,
-                    similarity=round(-negative_similarity, 6),
-                )
-            )
+        payload, matches, unmatched = match_dialogue(story.document, voice_rows, body)
         saved = await GalgameStoryDocuments(self.session).put(
             project_id,
             GalgameStoryDocumentPutIn.model_validate(
@@ -240,15 +149,8 @@ class GalgameAsrService(AsrRecords):
         return GalgameVoiceMatchOut(
             storyRevision=saved.revision,
             matches=matches,
-            unmatchedAssetIds=[
-                asset.id for asset, _metadata in voice_rows if asset.id not in used_assets
-            ],
+            unmatchedAssetIds=unmatched,
         )
-
-
-def _normalized_text(value: str) -> str:
-    normalized = unicodedata.normalize("NFKC", value).casefold()
-    return re.sub(r"[\W_]+", "", normalized, flags=re.UNICODE)
 
 
 class GalgameAsrRunner(PollingTaskRunner):

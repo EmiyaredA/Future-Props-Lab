@@ -10,6 +10,9 @@ from app.apps.galgame_workshop.schemas import (
     GalgameAsrSettingsOut,
     GalgameAsrSettingsPatchIn,
     GalgameTranscriptionTaskListOut,
+    GalgameTranscriptPatchIn,
+    GalgameVoiceMatchIn,
+    GalgameVoiceMatchOut,
 )
 from app.capabilities.asset_store.errors import AssetError
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
@@ -19,6 +22,10 @@ from fpl_runtime.galgame_asr import PREFIX, PURPOSE, AsrModelStatus
 from fpl_runtime.galgame_assets import SOURCE
 from fpl_runtime.http_dependencies import OwnerDep, SessionDep
 from fpl_runtime.library_assets import ID
+
+from .asset_read_routes import read_assets
+from .story_writes import StoryWrites
+from .voice_matches import match_voice, patch_transcript
 
 router = APIRouter(prefix=SOURCE, tags=["galgame-workshop"])
 
@@ -97,3 +104,34 @@ async def list_transcriptions(
         return await asr_records(request, session).list_tasks(project_id)
     except AssetError as exc:
         raise _asset_error(exc) from None
+
+
+@router.patch("/{project_id}/assets/{asset_id}/transcript")
+async def patch_asset_transcript(
+    request: Request,
+    session: SessionDep,
+    project_id: str,
+    asset_id: str,
+    body: GalgameTranscriptPatchIn,
+    owner: OwnerDep,
+) -> object:
+    try:
+        return await patch_transcript(
+            read_assets(request, session, owner), project_id, asset_id, body
+        )
+    except AssetError as exc:
+        raise _asset_error(exc) from None
+
+
+@router.post("/{project_id}/assets/asr/match-dialogue", response_model=GalgameVoiceMatchOut)
+async def match_voice_to_dialogue(
+    request: Request,
+    session: SessionDep,
+    project_id: str,
+    body: GalgameVoiceMatchIn,
+    owner: OwnerDep,
+) -> GalgameVoiceMatchOut:
+    writes = StoryWrites(
+        session, owner, request.app.state.reference_mutations, request.state.service_assertion
+    )
+    return await match_voice(read_assets(request, session, owner), writes, project_id, body)

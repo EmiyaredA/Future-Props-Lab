@@ -48,6 +48,8 @@ async def files(session, settings, project_id, query):
             & VisualAsset.galgame_project_id.is_(None),
         )
     statement = statement.where(scope)
+    if query.project_file_id is not None:
+        statement = statement.where(VisualAsset.id == query.project_file_id)
     if query.search:
         statement = statement.where(VisualAsset.display_name.ilike(f"%{query.search}%"))
     if query.newest_first:

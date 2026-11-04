@@ -2,6 +2,7 @@
 
 import io
 import json
+import wave
 from pathlib import Path
 
 import httpx
@@ -157,6 +158,7 @@ async def test_projects_create_owned_defaults_and_keep_the_published_contract(
                 case, app, request, path, document.json()["document"]
             )
             await verify_galgame_files(case, app, request, path, asset_id)
+            voice_id = await verify_voice_match(case, app, request, path)
         assert (await request("GET", path)).json() == record
         async with app.state.database.sessions(info={"owner_user_id": case.owner}) as session:
             session.add(
@@ -207,7 +209,7 @@ async def test_projects_create_owned_defaults_and_keep_the_published_contract(
                     AssetReferenceSet.resource_kind == "story",
                 )
             )
-            assert list(pins) == [asset_id]
+            assert set(pins) == {asset_id, voice_id}
 
 
 async def verify_visual_canvas(case, app, request, path):
@@ -808,3 +810,65 @@ async def verify_galgame_files(case, app, request, path, story_asset):
     assert (
         await request("GET", path.replace(project_id, "missing") + "/assets")
     ).status_code == 404
+
+
+async def verify_voice_match(case, app, request, path):
+    project_id = path.rsplit("/", 1)[1]
+    content = io.BytesIO()
+    with wave.open(content, "wb") as audio:
+        audio.setparams((1, 2, 8000, 0, "NONE", "not compressed"))
+        audio.writeframes(b"\x00" * 1600)
+    async with case.assets.state.database.sessions(info={"owner_user_id": case.viewer}) as db:
+        asset = await AssetLibrary(db, case.assets.state.settings).store_upload(
+            UploadFile(io.BytesIO(content.getvalue()), filename="voice.wav"),
+            owner_user_id=case.viewer,
+            galgame_project_id=project_id,
+        )
+    async with app.state.database.sessions(info={"owner_user_id": case.viewer}) as db:
+        db.add(
+            GalgameAssetMetadata(
+                asset_id=asset.id,
+                project_id=project_id,
+                category="voice",
+                virtual_path="voice/voice.wav",
+                duration_ms=100,
+            )
+        )
+        await db.commit()
+    transcript = f"{path}/assets/{asset.id}/transcript"
+    text = {"expectedRevision": 0, "text": "  Initial  ", "language": "zh"}
+    foreign = await request("PATCH", transcript.replace(asset.id, case.asset), json=text)
+    assert foreign.status_code == 404
+    written = await request("PATCH", transcript, json=text)
+    assert written.status_code == 200, written.text
+    assert written.json() == {
+        "assetId": asset.id,
+        "transcript": "Initial",
+        "language": "zh",
+        "source": "manual",
+        "revision": 1,
+    }
+    conflict = await request("PATCH", transcript, json={**text, "text": "Stale"})
+    assert conflict.status_code == 409 and conflict.json()["current"]["transcript"] == "Initial"
+    story = await request("GET", path + "/story")
+    body = {
+        "expectedStoryRevision": story.json()["revision"],
+        "assetIds": [asset.id],
+        "blockIds": ["line"],
+    }
+    matched = await request("POST", path + "/assets/asr/match-dialogue", json=body)
+    assert matched.status_code == 200, matched.text
+    assert matched.json()["matches"] == [
+        {"assetId": asset.id, "blockId": "line", "similarity": 1.0}
+    ]
+    saved = await request("GET", path + "/story")
+    assert (
+        saved.json()["revision"] == matched.json()["storyRevision"] == story.json()["revision"] + 1
+    )
+    scene = saved.json()["document"]["chapters"][0]["fragments"][0]
+    assert scene["blocks"][0]["voiceAssetId"] == f"voice-{asset.id}"
+    stale = await request("POST", path + "/assets/asr/match-dialogue", json=body)
+    assert (
+        stale.status_code == 409 and stale.json()["current"]["revision"] == saved.json()["revision"]
+    )
+    return asset.id

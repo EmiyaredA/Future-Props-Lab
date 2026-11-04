@@ -18,12 +18,17 @@ router = APIRouter(include_in_schema=False)
 
 
 @router.post(PREFIX + "/{project_id}/{digest}", response_model=list[GalgameAssetFile])
+@router.post(
+    PREFIX + "/{project_id}/one/{asset_id}/{digest}", response_model=list[GalgameAssetFile]
+)
 async def read_galgame_files(
     request: Request, project_id: str, digest: str, body: GalgameAssetQuery
 ):
     path = request.url.path
+    scope = asset_query_target("POST", path)
     if (
-        not asset_query_target("POST", path)
+        scope is None
+        or scope["asset"] != body.project_file_id
         or "cookie" in request.headers
         or "origin" in request.headers
         or body.digest != digest
