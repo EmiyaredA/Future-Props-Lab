@@ -242,6 +242,27 @@ class VideoFileWriteReceipt(ReferenceBase):
     result: Mapped[list] = mapped_column(JSON)
 
 
+class GalgameUploadReceipt(ReferenceBase):
+    __tablename__ = "asset_galgame_upload_receipts"
+
+    owner_user_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    request_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    project_id: Mapped[str] = mapped_column(String(36))
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    result: Mapped[list] = mapped_column(JSON)
+
+
+class GalgameUploadStage(ReferenceBase):
+    __tablename__ = "asset_galgame_upload_stages"
+
+    owner_user_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    request_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    project_id: Mapped[str] = mapped_column(String(36))
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    storage_keys: Mapped[list] = mapped_column(JSON)
+    state: Mapped[str] = mapped_column(String(16), default="open")
+
+
 class MotionArchiveBatch(ReferenceBase):
     """One archive's immutable source descriptor and publication decision."""
 
@@ -363,6 +384,8 @@ MODELS = (
     PresentationArchiveFile,
     MotionFileWriteReceipt,
     VideoFileWriteReceipt,
+    GalgameUploadReceipt,
+    GalgameUploadStage,
     MotionArchiveBatch,
     MotionArchiveFile,
     VideoArchiveBatch,

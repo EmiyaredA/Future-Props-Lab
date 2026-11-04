@@ -66,7 +66,7 @@ async def write_archive(request, project_id, scope, assets, title, document, tar
                 ):
                     raise ValueError("unexpected snapshot source response")
                 total = int(response.headers["Content-Length"])
-                framed = FramedInputs(response)
+                framed = FramedInputs(response.aiter_bytes(chunk_size=1024 * 1024))
                 for asset, entry in zip(assets, entries, strict=True):
                     size = SIZE.unpack(await framed.read(SIZE.size))[0]
                     if size != asset.byte_size:

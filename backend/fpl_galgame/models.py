@@ -1,7 +1,9 @@
 """Owned Galgame ORM roots, with no foreign model imports."""
 
-from sqlalchemy import Index
-from sqlalchemy.orm import DeclarativeBase
+from datetime import datetime
+
+from sqlalchemy import JSON, DateTime, ForeignKey, Index, String, Text
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from app.apps.galgame_workshop.models import (
     GalgameAnnotationImportTask,
@@ -16,6 +18,7 @@ from app.apps.galgame_workshop.models import (
     GalgameWorkshopProject,
 )
 from app.runtime.project_operations import ProjectOperationReceipt
+from app.runtime.time import utc_now
 from fpl_runtime.certification_owner import CertificationReceiptFields, CertificationRecordsBase
 from fpl_runtime.migration_receipts import ImportReceiptFields
 from fpl_runtime.reference_records import ReferenceMutationFields
@@ -40,8 +43,30 @@ class GalgameMigrationReceipt(ImportReceiptFields, StoryRetentionBase):
     __tablename__ = "galgame_migration_receipts"
 
 
+class GalgameUploadIntake(StoryRetentionBase):
+    __tablename__ = "galgame_upload_intakes"
+    __table_args__ = (
+        Index("ix_galgame_upload_intakes_pending", "state", "checked_at"),
+        Index("ix_galgame_upload_intakes_project", "owner_user_id", "project_id", "state"),
+    )
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    owner_user_id: Mapped[str] = mapped_column(String(36))
+    project_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey(GalgameWorkshopProject.__table__.c.id, ondelete="CASCADE")
+    )
+    target_path: Mapped[str] = mapped_column(String(512))
+    assertion: Mapped[str] = mapped_column(Text, default="")
+    category: Mapped[str] = mapped_column(String(32))
+    planned: Mapped[list] = mapped_column(JSON)
+    manifest: Mapped[dict] = mapped_column(JSON)
+    state: Mapped[str] = mapped_column(String(16), default="reserved")
+    checked_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
 MODELS = (
     GalgameMigrationReceipt,
+    GalgameUploadIntake,
     GalgameWorkshopProject,
     GalgameStoryDocument,
     GalgameProjectAssetReference,

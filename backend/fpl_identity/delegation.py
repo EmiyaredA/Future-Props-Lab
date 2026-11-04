@@ -15,6 +15,7 @@ from fpl_runtime.community_uploads import upload_grant as community_upload_grant
 from fpl_runtime.delegation import RequestGrant, permitted, target_permission_path
 from fpl_runtime.galgame_assets import export_download_grant, galgame_asset_grant
 from fpl_runtime.galgame_render import capacity_grant
+from fpl_runtime.galgame_upload import upload_grant as galgame_upload_grant
 from fpl_runtime.motion_exports import render_grant as motion_export_grant
 from fpl_runtime.motion_preview import motion_preview_grant
 from fpl_runtime.motion_snapshot import motion_snapshot_grant
@@ -110,7 +111,9 @@ async def authorize_delegation(app, body, credential):
         )
         else (
             "content.write"
-            if motion_export_grant(grant) or segment_target_grant(grant)
+            if motion_export_grant(grant)
+            or segment_target_grant(grant)
+            or galgame_upload_grant(grant)
             else route_permission(body.target_method, target_permission_path(grant))
         )
     )

@@ -22,6 +22,7 @@ from fpl_runtime.galgame_asr import asr_model_target
 from fpl_runtime.galgame_assets import asset_query_target as galgame_file_query_target
 from fpl_runtime.galgame_assets import export_download_target
 from fpl_runtime.galgame_render import capacity_target
+from fpl_runtime.galgame_upload import upload_target as galgame_upload_target
 from fpl_runtime.model_outputs import is_model_output_path
 from fpl_runtime.motion_exports import render_target
 from fpl_runtime.project_reveal import reveal_target
@@ -139,6 +140,7 @@ async def live(request: Request, body: LiveRequest):
     )
     private_thought_upload = body.service == "assets" and (
         is_upload_target(body.method, body.path)
+        or galgame_upload_target(body.method, body.path)
         or archive_target(body.method, body.path)
         or presentation_archive_target(body.method, body.path)
         or motion_asset_write_target(body.method, body.path)

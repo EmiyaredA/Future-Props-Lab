@@ -167,7 +167,7 @@ class SnapshotExports:
                 ):
                     raise ValueError("unexpected video snapshot response")
                 total = int(response.headers["Content-Length"])
-                framed = FramedInputs(response)
+                framed = FramedInputs(response.aiter_bytes(chunk_size=1024 * 1024))
                 output = []
                 for index, asset in enumerate(assets):
                     size = SIZE.unpack(await framed.read(SIZE.size))[0]

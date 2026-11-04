@@ -31,7 +31,7 @@ router = APIRouter(include_in_schema=False)
 
 
 async def unpack(response, root, scope, maximum, total):
-    framed = FramedInputs(response)
+    framed = FramedInputs(response.aiter_bytes(chunk_size=1024 * 1024))
     paths = {}
     for source in scope.files:
         size = SIZE.unpack(await framed.read(SIZE.size))[0]

@@ -17,6 +17,8 @@ from .models import MODELS, GalgameCertificationReceipt, GalgameStoryReferenceMu
 from .projects_http import router as project_router
 from .story_migration_http import router as story_migration_router
 from .task_http import router as task_router
+from .upload_http import router as upload_router
+from .upload_intakes import UploadIntakes
 
 PAGES = (
     "/apps/galgame-workshop",
@@ -62,6 +64,7 @@ def create_app(
     app.include_router(project_router)
     app.include_router(asset_read_router)
     app.include_router(task_router)
+    app.include_router(upload_router)
     app.include_router(asr_router)
     app.include_router(story_migration_router)
     app.state.capabilities = CapabilityClient(
@@ -74,12 +77,19 @@ def create_app(
         ):
             raise ValueError("Galgame 浏览器版本与发布契约不匹配")
         attach_web(app, release, pages=PAGES)
+    uploads = UploadIntakes(app.state.database.sessions, app.state.capabilities)
+    app.state.upload_intakes = uploads
     lifespan = app.router.lifespan_context
 
     @asynccontextmanager
     async def with_capability_client(instance):
         async with app.state.capabilities.client, lifespan(instance):
-            yield
+            try:
+                if run_worker:
+                    await uploads.start()
+                yield
+            finally:
+                await uploads.stop()
 
     app.router.lifespan_context = with_capability_client
     return app

@@ -34,12 +34,35 @@ from app.apps.galgame_workshop.schemas import (
 from app.apps.galgame_workshop.story.document_values import normalize_story_document
 
 
+def plan_uploads(filenames, category, existing_paths):
+    directory = CATEGORY_DIRECTORIES[category]
+    used = {
+        PurePosixPath(path).name.casefold()
+        for path in existing_paths
+        if PurePosixPath(path).parent.as_posix() == directory
+    }
+    items: list[GalgameAssetImportPreviewItem] = []
+    for raw_name in filenames:
+        normalized, reasons = normalize_import_filename(raw_name)
+        final_name, renamed_for_duplicate = _deduplicated_name(normalized, used)
+        if renamed_for_duplicate:
+            reasons.append("同名文件已追加序号")
+        items.append(
+            GalgameAssetImportPreviewItem(
+                originalName=raw_name,
+                finalName=final_name,
+                virtualPath=f"{directory}/{final_name}",
+                reasons=reasons,
+            )
+        )
+    return GalgameAssetImportPreviewOut(items=items)
+
+
 class GalgameAssetAnalysisMixin:
     async def import_preview(
         self, project_id: str, filenames: list[str], category: str
     ) -> GalgameAssetImportPreviewOut:
         await self._project(project_id)
-        directory = CATEGORY_DIRECTORIES[category]
         existing_paths = list(
             (
                 await self.session.execute(
@@ -51,26 +74,7 @@ class GalgameAssetAnalysisMixin:
             .scalars()
             .all()
         )
-        used = {
-            PurePosixPath(path).name.casefold()
-            for path in existing_paths
-            if PurePosixPath(path).parent.as_posix() == directory
-        }
-        items: list[GalgameAssetImportPreviewItem] = []
-        for raw_name in filenames:
-            normalized, reasons = normalize_import_filename(raw_name)
-            final_name, renamed_for_duplicate = _deduplicated_name(normalized, used)
-            if renamed_for_duplicate:
-                reasons.append("同名文件已追加序号")
-            items.append(
-                GalgameAssetImportPreviewItem(
-                    originalName=raw_name,
-                    finalName=final_name,
-                    virtualPath=f"{directory}/{final_name}",
-                    reasons=reasons,
-                )
-            )
-        return GalgameAssetImportPreviewOut(items=items)
+        return plan_uploads(filenames, category, existing_paths)
 
     async def overview(self, project_id: str) -> GalgameAssetOverviewOut:
         await self._project(project_id)

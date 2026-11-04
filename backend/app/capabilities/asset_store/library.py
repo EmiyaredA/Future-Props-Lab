@@ -45,6 +45,7 @@ class AssetLibrary:
         max_bytes: int | None = None,
         commit: bool = True,
         defer_persistence: bool = False,
+        reserved_storage_key: str | None = None,
     ) -> VisualAsset:
         """Validate and stage a managed upload.
 
@@ -71,7 +72,7 @@ class AssetLibrary:
         if not resolved_display:
             raise AssetError("显示名称不能为空", code="invalid_display_name")
 
-        storage_key = uuid4().hex
+        storage_key = reserved_storage_key or uuid4().hex
         temp_path, final_path = self.storage.prepare_write(
             storage_key,
             visual_project_id=visual_project_id,

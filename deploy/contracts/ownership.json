@@ -4625,6 +4625,18 @@
       "model": "VideoFileWriteReceipt"
     },
     {
+      "table": "asset_galgame_upload_receipts",
+      "service": "assets",
+      "module": "fpl_assets.models",
+      "model": "GalgameUploadReceipt"
+    },
+    {
+      "table": "asset_galgame_upload_stages",
+      "service": "assets",
+      "module": "fpl_assets.models",
+      "model": "GalgameUploadStage"
+    },
+    {
       "table": "asset_motion_archive_batches",
       "service": "assets",
       "module": "fpl_assets.models",
@@ -4701,6 +4713,12 @@
       "service": "galgame",
       "module": "fpl_galgame.models",
       "model": "GalgameMigrationReceipt"
+    },
+    {
+      "table": "galgame_upload_intakes",
+      "service": "galgame",
+      "module": "fpl_galgame.models",
+      "model": "GalgameUploadIntake"
     },
     {
       "table": "gateway_change_cursors",

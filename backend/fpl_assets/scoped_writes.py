@@ -25,6 +25,9 @@ class ScopedFileWrites:
         self.library = AssetLibrary(session, settings)
         self.storage = AssetStorage(settings)
 
+    async def require_writable(self):
+        await check_writable(self.session, self.service, self.project)
+
     async def prior(self):
         row = await self.session.get(self.receipt_model, (self.owner, self.request_id))
         if row is None:
@@ -96,7 +99,7 @@ class ScopedFileWrites:
             await self.active()
             previous = await self.prior()
             if previous is None:
-                await check_writable(self.session, self.service, self.project)
+                await self.require_writable()
             await self.session.rollback()
             if previous is not None:
                 if verify_previous is not None:
@@ -110,7 +113,7 @@ class ScopedFileWrites:
             if previous is not None:
                 await self.session.rollback()
                 return previous
-            await check_writable(self.session, self.service, self.project)
+            await self.require_writable()
             self.session.add_all(row for row, _ in staged)
             await self.session.flush()
             result = [self.record(self.project, row) for row, _ in staged]

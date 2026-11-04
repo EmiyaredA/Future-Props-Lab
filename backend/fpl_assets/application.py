@@ -32,6 +32,7 @@ from fpl_runtime.visual_assistant import ASSET_PREFIX as CONVERSATION_FILES
 from fpl_runtime.visual_assistant import MAX_QUERY_BYTES as MAX_CONVERSATION_QUERY_BYTES
 
 from .deletions import FileCleanup
+from .galgame_upload_recovery import recover_uploads
 from .layout import StorageLayouts
 from .migrations.registry import MIGRATIONS
 from .models import MODELS
@@ -42,6 +43,7 @@ from .routes.community_assets import router as community_assets_router
 from .routes.community_uploads import router as community_uploads_router
 from .routes.files import router as files_router
 from .routes.galgame_assets import router as galgame_assets_router
+from .routes.galgame_upload import router as galgame_upload_router
 from .routes.layout import router as layout_router
 from .routes.library_inputs import router as library_inputs_router
 from .routes.library_outputs import router as library_outputs_router
@@ -123,6 +125,7 @@ def create_app(
     async def lifespan(_app):
         check(database.path, "assets", MIGRATIONS)
         cleanup_bundles(settings)
+        await recover_uploads(database, settings)
         task = asyncio.create_task(maintain()) if cleanup else None
         try:
             yield
@@ -204,6 +207,7 @@ def create_app(
         RequestLimit, prefix=CONVERSATION_FILES, maximum=MAX_CONVERSATION_QUERY_BYTES
     )
     app.include_router(galgame_assets_router)
+    app.include_router(galgame_upload_router)
     app.add_middleware(RequestLimit, prefix=GALGAME_FILES, maximum=MAX_GALGAME_QUERY_BYTES)
     app.include_router(library_inputs_router)
     app.include_router(library_outputs_router)

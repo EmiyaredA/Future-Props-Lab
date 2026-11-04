@@ -10,8 +10,8 @@ SIZE = Struct(">Q")
 
 
 class FramedInputs:
-    def __init__(self, response):
-        self.chunks = response.aiter_bytes(chunk_size=1024 * 1024).__aiter__()
+    def __init__(self, chunks):
+        self.chunks = aiter(chunks)
         self.buffer = bytearray()
         self.received = 0
 
