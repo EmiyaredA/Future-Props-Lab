@@ -17,6 +17,7 @@ from app.apps.galgame_workshop.models import (
 )
 from app.runtime.project_operations import ProjectOperationReceipt
 from fpl_runtime.certification_owner import CertificationReceiptFields, CertificationRecordsBase
+from fpl_runtime.migration_receipts import ImportReceiptFields
 from fpl_runtime.reference_records import ReferenceMutationFields
 
 
@@ -35,7 +36,12 @@ class GalgameStoryReferenceMutation(ReferenceMutationFields, StoryRetentionBase)
     __tablename__ = "galgame_story_reference_mutations"
 
 
+class GalgameMigrationReceipt(ImportReceiptFields, StoryRetentionBase):
+    __tablename__ = "galgame_migration_receipts"
+
+
 MODELS = (
+    GalgameMigrationReceipt,
     GalgameWorkshopProject,
     GalgameStoryDocument,
     GalgameProjectAssetReference,

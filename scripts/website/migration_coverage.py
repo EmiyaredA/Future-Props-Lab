@@ -8,6 +8,7 @@ from pathlib import Path
 
 from fpl_assets.migration_records import DATASETS as ASSETS
 from fpl_director.migration_records import DATASETS as DIRECTOR
+from fpl_galgame.migration_records import DATASETS as GALGAME
 from fpl_identity.credential_migration import DATASETS as IDENTITY
 from fpl_models.catalog_migration import DATASETS as MODELS
 from fpl_models.settings_migration import DEFAULT_PREFIX, POLICIES
@@ -28,7 +29,7 @@ TRANSFER = {
         dataset.model.__tablename__: dataset.name
         for dataset in (*IDENTITY, *ASSETS, *DIRECTOR, *MODELS, *PRESENTATION)
     },
-    **{dataset.model.__tablename__: dataset.name for dataset in (*MOTION, *VIDEO)},
+    **{dataset.model.__tablename__: dataset.name for dataset in (*MOTION, *VIDEO, *GALGAME)},
     "cloud_desktop_preferences": REMOTE,
     "tool_navigation_items": TOOLS,
     "presentation_asset_references": "presentation.project-references",

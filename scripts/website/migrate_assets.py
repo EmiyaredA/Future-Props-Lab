@@ -73,5 +73,16 @@ def transfer_asset_blobs(client, plan, source, target):
     }
 
 
+def verify_originals(client, plan, source, target):
+    headers = {"X-Fpl-Migration-Token": plan.token.get_secret_value()}
+    for address in (source, target):
+        client.get(address + BLOBS, headers=headers).raise_for_status()
+    for owner in sorted(plan.owner_ids):
+        if manifest(client, source, owner, headers, complete=True) != manifest(
+            client, target, owner, headers, complete=True
+        ):
+            raise ValueError("素材原件迁移未核验")
+
+
 if __name__ == "__main__":
     run_cli(__doc__, ASSET_RECORDS, followup=transfer_asset_blobs)

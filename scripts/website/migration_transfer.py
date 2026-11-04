@@ -23,6 +23,15 @@ class DatasetTransfer:
     page_size: int = MAX_RECORDS
 
 
+def project_datasets(prefix, entries):
+    return tuple(
+        DatasetTransfer(
+            item.name, f"{prefix}/{item.suffix}", item.page, item.key, page_size=item.page_size
+        )
+        for item in entries
+    )
+
+
 def loopback(value):
     try:
         address = urlsplit(value)

@@ -7,7 +7,6 @@ from pathlib import Path
 
 import httpx
 
-from fpl_assets.migration_blobs import BLOBS
 from fpl_assets.migration_editing_scopes import DATASET, PREFIX, ProjectScopePage
 from fpl_assets.migration_video_outputs import DATASET as OUTPUT_DATASET
 from fpl_assets.migration_video_outputs import PREFIX as OUTPUT_PREFIX
@@ -31,21 +30,11 @@ from fpl_runtime.migration_batches import BatchReceipt, MigrationPlan
 from fpl_video.migration_application import PREFIX as VIDEO_PREFIX
 from fpl_video.migration_records import DATASETS as VIDEO_DATASETS
 
-from .migrate_assets import manifest
-from .migration_transfer import DatasetTransfer, loopback, pages, transfer
+from .migrate_assets import verify_originals as verify_originals
+from .migration_transfer import DatasetTransfer, loopback, pages, project_datasets, transfer
 
-
-def datasets(prefix, entries):
-    return tuple(
-        DatasetTransfer(
-            item.name, f"{prefix}/{item.suffix}", item.page, item.key, page_size=item.page_size
-        )
-        for item in entries
-    )
-
-
-MOTION = datasets(MOTION_PREFIX, MOTION_DATASETS)
-VIDEO = datasets(VIDEO_PREFIX, VIDEO_DATASETS)
+MOTION = project_datasets(MOTION_PREFIX, MOTION_DATASETS)
+VIDEO = project_datasets(VIDEO_PREFIX, VIDEO_DATASETS)
 ASSET_SCOPES = DatasetTransfer(DATASET, PREFIX, ProjectScopePage, "id")
 VIDEO_OUTPUTS = DatasetTransfer(OUTPUT_DATASET, OUTPUT_PREFIX, LegacyOutputPage, "id", page_size=1)
 MOTION_OUTPUTS = DatasetTransfer(
@@ -54,17 +43,6 @@ MOTION_OUTPUTS = DatasetTransfer(
 VIDEO_VARIANTS = DatasetTransfer(
     VIDEO_DATASET, VIDEO_ARTIFACT_PREFIX, VideoDerivativePage, "id", page_size=1
 )
-
-
-def verify_originals(client, plan, source, target):
-    headers = {"X-Fpl-Migration-Token": plan.token.get_secret_value()}
-    for address in (source, target):
-        client.get(address + BLOBS, headers=headers).raise_for_status()
-    for owner in sorted(plan.owner_ids):
-        if manifest(client, source, owner, headers, complete=True) != manifest(
-            client, target, owner, headers, complete=True
-        ):
-            raise ValueError("剪辑与特效项目原件迁移未核验")
 
 
 def transfer_history(client, plan, source, target, spec):

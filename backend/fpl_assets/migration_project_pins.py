@@ -1,14 +1,21 @@
-"""Restore verified Presentation reference sets after the account library transfer."""
+"""Restore verified project pins after the owner file transfer."""
 
 from functools import partial
 from uuid import uuid5
 
 from fastapi import HTTPException
-from sqlalchemy import func, select, text
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.exc import IntegrityError
 
 from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.ids import new_id
+from fpl_runtime.galgame_migration import (
+    PINS_DATASET,
+    PINS_PATH,
+    StoryPinBatch,
+    StoryPinPage,
+    StoryPins,
+)
 from fpl_runtime.migration_apps import mount_dataset
 from fpl_runtime.migration_receipts import batch_receipt, has_receipt, record_receipt
 from fpl_runtime.presentation_migration import (
@@ -18,22 +25,28 @@ from fpl_runtime.presentation_migration import (
     ProjectionBatch,
     ProjectionPage,
 )
+from fpl_runtime.project_history_migration import CURSOR
 
 from .migration_blobs import DATASET as ASSET_BLOBS
 from .migration_models import AssetImportReceipt
 from .models import AssetReferencePin, AssetReferenceSet
 
-SERVICE = "presentation"
+LIBRARY = (
+    VisualAsset.project_id.is_(None)
+    & VisualAsset.galgame_project_id.is_(None)
+    & VisualAsset.video_editor_project_id.is_(None)
+    & VisualAsset.motion_compositor_project_id.is_(None)
+)
 
 
-async def inventory(sessions, plan, kind):
+async def inventory(sessions, plan, service, kind):
     async with sessions(info={"allow_system_reads": True}) as db:
         counts = dict(
             (
                 await db.execute(
                     select(AssetReferenceSet.owner_user_id, func.count())
                     .where(
-                        AssetReferenceSet.service_id == SERVICE,
+                        AssetReferenceSet.service_id == service,
                         AssetReferenceSet.resource_kind == kind,
                     )
                     .group_by(AssetReferenceSet.owner_user_id)
@@ -45,13 +58,15 @@ async def inventory(sessions, plan, kind):
     return {"record_count": sum(counts.values())}
 
 
-async def page(sessions, plan, dataset, kind, owner, after):
+async def page(
+    sessions, plan, dataset, service, kind, record_type, batch_type, page_type, owner, after
+):
     async with sessions(info={"owner_user_id": str(owner)}) as db:
         rows = list(
             await db.scalars(
                 select(AssetReferenceSet)
                 .where(
-                    AssetReferenceSet.service_id == SERVICE,
+                    AssetReferenceSet.service_id == service,
                     AssetReferenceSet.resource_kind == kind,
                     AssetReferenceSet.resource_id > (after or ""),
                 )
@@ -71,9 +86,9 @@ async def page(sessions, plan, dataset, kind, owner, after):
                 )
             )
             records.append(
-                Projection(id=row.resource_id, revision=row.resource_revision, asset_ids=assets)
+                record_type(id=row.resource_id, revision=row.resource_revision, asset_ids=assets)
             )
-    batch = ProjectionBatch(
+    batch = batch_type(
         run_id=plan.run_id,
         source_revision=plan.source_revision,
         source_database_sha256=plan.source_database_sha256,
@@ -82,13 +97,13 @@ async def page(sessions, plan, dataset, kind, owner, after):
         batch_id=uuid5(plan.run_id, f"{dataset}/{owner}/{after or ''}"),
         records=tuple(records),
     )
-    return ProjectionPage(
+    return page_type(
         batch=batch, sha256=batch.digest, next_cursor=records[-1].id if len(rows) > 1 else None
     )
 
 
-async def ingest(sessions, kind, batch):
-    if REFERENCE_DATASETS[batch.dataset] != kind:
+async def ingest(sessions, dataset, service, kind, batch):
+    if batch.dataset != dataset:
         raise HTTPException(409, {"code": "migration_reference_dataset_mismatch"})
     owner = str(batch.owner_id)
     receipt = batch_receipt(batch)
@@ -97,14 +112,17 @@ async def ingest(sessions, kind, batch):
         if await has_receipt(db, AssetImportReceipt, receipt):
             return receipt
         for record in batch.records:
+            allowed = (
+                or_(LIBRARY, VisualAsset.galgame_project_id == record.id)
+                if service == "galgame"
+                else LIBRARY
+            )
             present = set(
                 await db.scalars(
                     select(VisualAsset.id).where(
                         VisualAsset.id.in_(record.asset_ids),
-                        VisualAsset.project_id.is_(None),
-                        VisualAsset.galgame_project_id.is_(None),
-                        VisualAsset.video_editor_project_id.is_(None),
-                        VisualAsset.motion_compositor_project_id.is_(None),
+                        allowed,
+                        VisualAsset.owner_user_id == owner,
                         VisualAsset.media_kind.in_(("image", "audio", "video")),
                     )
                 )
@@ -130,7 +148,7 @@ async def ingest(sessions, kind, batch):
                 AssetReferenceSet(
                     id=identity,
                     owner_user_id=owner,
-                    service_id=SERVICE,
+                    service_id=service,
                     resource_kind=kind,
                     resource_id=record.id,
                     resource_revision=record.revision,
@@ -149,16 +167,63 @@ async def ingest(sessions, kind, batch):
     return receipt
 
 
+def mount_project_pins(
+    app,
+    plan,
+    sessions,
+    *,
+    prefix,
+    dataset,
+    service,
+    kind,
+    cursor,
+    record_type,
+    batch_type,
+    page_type,
+):
+    mount_dataset(
+        app,
+        prefix=prefix,
+        plan=plan,
+        cursor_pattern=cursor,
+        batch_model=batch_type,
+        page_model=page_type,
+        inventory=partial(inventory, sessions, plan, service, kind),
+        page=partial(
+            page, sessions, plan, dataset, service, kind, record_type, batch_type, page_type
+        ),
+        ingest=partial(ingest, sessions, dataset, service, kind),
+    )
+
+
 def mount_presentation_references(app, plan, sessions):
     for dataset, kind in REFERENCE_DATASETS.items():
-        mount_dataset(
+        mount_project_pins(
             app,
+            plan,
+            sessions,
             prefix="/v1/migration/presentation/" + dataset.split(".")[1],
-            plan=plan,
-            cursor_pattern=ID,
-            batch_model=ProjectionBatch,
-            page_model=ProjectionPage,
-            inventory=partial(inventory, sessions, plan, kind),
-            page=partial(page, sessions, plan, dataset, kind),
-            ingest=partial(ingest, sessions, kind),
+            dataset=dataset,
+            service="presentation",
+            kind=kind,
+            cursor=ID,
+            record_type=Projection,
+            batch_type=ProjectionBatch,
+            page_type=ProjectionPage,
         )
+
+
+def mount_galgame_references(app, plan, sessions):
+    mount_project_pins(
+        app,
+        plan,
+        sessions,
+        prefix=PINS_PATH,
+        dataset=PINS_DATASET,
+        service="galgame",
+        kind="story",
+        cursor=CURSOR,
+        record_type=StoryPins,
+        batch_type=StoryPinBatch,
+        page_type=StoryPinPage,
+    )

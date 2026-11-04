@@ -4697,6 +4697,12 @@
       "model": "GalgameStoryReferenceMutation"
     },
     {
+      "table": "galgame_migration_receipts",
+      "service": "galgame",
+      "module": "fpl_galgame.models",
+      "model": "GalgameMigrationReceipt"
+    },
+    {
       "table": "gateway_change_cursors",
       "service": "gateway",
       "module": "fpl_gateway.models",

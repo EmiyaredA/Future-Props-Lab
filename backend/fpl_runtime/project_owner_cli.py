@@ -12,9 +12,15 @@ from .migrations import apply
 from .routing import RouteCatalog
 
 
-def run_project_owner(service, migrations, create_app):
+def run_project_owner(service, migrations, create_app, *, maintenance=None):
     parser = argparse.ArgumentParser(description=f"FPL {service} project owner")
-    parser.add_argument("command", choices=("serve", "migrate"))
+    commands = ("serve", "migrate")
+    if maintenance is not None:
+        from .project_history_migration import add_maintenance_options
+
+        commands += ("migration-export", "migration-import")
+        add_maintenance_options(parser)
+    parser.add_argument("command", choices=commands)
     parser.add_argument("--state-root", type=Path, default=Path("/state"))
     parser.add_argument("--public-key", type=Path, default=Path("/run/fpl/identity-public.pem"))
     parser.add_argument("--identity-token", type=Path, default=Path("/run/fpl/identity-token"))
@@ -23,6 +29,11 @@ def run_project_owner(service, migrations, create_app):
     )
     parser.add_argument("--port", type=int, default=8080)
     options = parser.parse_args()
+    if maintenance is not None:
+        from .project_history_migration import handle_maintenance
+
+        if handle_maintenance(parser, options, *maintenance):
+            return
     if options.command == "migrate":
         with service_lock(options.state_root):
             apply(options.state_root / "service.db", service, migrations)

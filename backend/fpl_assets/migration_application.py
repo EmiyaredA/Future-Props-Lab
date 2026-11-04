@@ -7,7 +7,7 @@ from fpl_runtime.migration_apps import export_app, import_app, mount_dataset
 from .migration_blobs import BLOBS, mount_blobs
 from .migration_editing_scopes import mount_project_scopes
 from .migration_models import MIGRATION_MODELS
-from .migration_presentation import mount_presentation_references
+from .migration_project_pins import mount_galgame_references, mount_presentation_references
 from .migration_records import DATASETS, export_page, import_batch, inventory
 from .migration_video_outputs import mount_video_outputs
 from .migrations.registry import MIGRATIONS
@@ -57,5 +57,6 @@ def create_import_app(*, plan, state_root):
     app, database = import_app(plan, state_root, "assets", models, MIGRATIONS, **TRANSPORT)
     mount_blobs(app, plan, database.sessions, root=database.root)
     mount_presentation_references(app, plan, database.sessions)
+    mount_galgame_references(app, plan, database.sessions)
     mount_video_outputs(app, plan, database.sessions, database.root)
     return mount_records(app, plan, database.sessions)

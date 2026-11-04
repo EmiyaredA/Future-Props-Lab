@@ -21,7 +21,14 @@ def deployed_application(**settings):
 
 
 def main():
-    run_project_owner("galgame", MIGRATIONS, deployed_application)
+    from .migration_application import create_export_app, create_import_app
+
+    run_project_owner(
+        "galgame",
+        MIGRATIONS,
+        deployed_application,
+        maintenance=(create_export_app, create_import_app),
+    )
 
 
 if __name__ == "__main__":
