@@ -16,7 +16,7 @@ from fpl_runtime.asset_references import VIDEO_FILE_CHANGES, PrepareReferenceCha
 from fpl_runtime.retention_authority import canvas_metadata, change_digest, story_metadata
 from fpl_runtime.thought_assets import AssetDescription
 
-from . import video_file_changes
+from . import galgame_file_changes, video_file_changes
 from .canvas_retention import canvas_files
 from .models import AssetReferencePin, AssetReferenceSet, PreparedAssetPin, ReferenceIntent
 from .references import protect_pending_removals
@@ -204,12 +204,13 @@ class ReferenceChanges:
             if not describe_canvas and present != requested:
                 raise failure("not_found", "部分素材不存在", 404)
             if file_change:
-                present.add(await video_file_changes.prepare(session, owner, row, change))
+                handler = galgame_file_changes if service == "galgame" else video_file_changes
+                present.add(await handler.prepare(session, owner, row, change))
             identifier = new_id()
             row.revision += 1
             result = {"intent_id": identifier, "state": "prepared", "revision": row.revision}
             if file_change:
-                result.update(video_file_changes.command(change))
+                result.update(handler.command(change))
             if describe_canvas:
                 result["unavailable_asset_ids"] = sorted(unavailable)
             if community is not None or describe_story or describe_canvas:
@@ -332,9 +333,8 @@ class ReferenceChanges:
                     ]
                 )
                 if file_change:
-                    await video_file_changes.commit(
-                        session, owner, row, intent, resource_revision, deleted
-                    )
+                    handler = galgame_file_changes if service == "galgame" else video_file_changes
+                    await handler.commit(session, owner, row, intent, resource_revision, deleted)
                 if scoped_project and deleted:
                     await remove_files(session, service, row.resource_id)
                 row.resource_revision = resource_revision

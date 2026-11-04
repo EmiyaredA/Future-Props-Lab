@@ -27,6 +27,7 @@ class DropAcknowledgement(httpx.AsyncBaseTransport):
         self.mesh = mesh
         self.drop_next = False
         self.dropped = False
+        self.drop_edit_commit = False
 
     async def handle_async_request(self, request):
         response = await self.mesh.handle_async_request(request)
@@ -39,6 +40,16 @@ class DropAcknowledgement(httpx.AsyncBaseTransport):
             self.drop_next, self.dropped = False, True
             await response.aclose()
             raise httpx.ReadError("synthetic lost Galgame upload receipt", request=request)
+        if (
+            self.drop_edit_commit
+            and request.url.host == "assets"
+            and request.method == "POST"
+            and request.url.path.endswith("/commit")
+            and response.status_code == 200
+        ):
+            self.drop_edit_commit = False
+            await response.aclose()
+            raise httpx.ReadError("synthetic lost Galgame file mutation receipt", request=request)
         return response
 
 
@@ -150,6 +161,11 @@ async def test_upload_batch_failure_and_recovery_preserve_paths_and_exact_origin
             )
             assert blob.status_code == 200 and blob.content == image
 
+        async def authorized(method, path, **kwargs):
+            return await send(http, method, path, **kwargs)
+
+        await verify_metadata_edits(authorized, transport, base, items)
+
 
 async def verify_orphan_recovery(case, project, data):
     key, identity = uuid4().hex, uuid4().hex
@@ -179,3 +195,64 @@ async def verify_orphan_recovery(case, project, data):
     async with database.sessions(info={"owner_user_id": case.viewer}) as session:
         saved = await session.get(GalgameUploadStage, (case.viewer, identity))
         assert saved.state == "aborted" and saved.storage_keys == []
+
+
+async def verify_metadata_edits(request, transport, base, items):
+    by_path = {item["virtualPath"]: item for item in items}
+    original = by_path["backgrounds/same.png"]
+    path = f"{base}/{original['id']}"
+    collision = await request(
+        "PATCH",
+        path,
+        json={
+            "expectedRevision": 0,
+            "virtualPath": "backgrounds/same-2.png",
+        },
+    )
+    assert collision.status_code == 409 and collision.json()["code"] == "virtual_path_conflict"
+    patch = {
+        "expectedRevision": 0,
+        "displayName": "Renamed",
+        "category": "cg",
+        "packagingPolicy": "exclude",
+    }
+    transport.drop_edit_commit = True
+    lost = await request("PATCH", path, json=patch)
+    assert lost.status_code == 503 and lost.json()["code"] == "asset_update_unconfirmed", lost.text
+    stale = await request("PATCH", path, json=patch)
+    assert stale.status_code == 409, stale.text
+    current = stale.json()["current"]
+    assert current["display_name"] == "Renamed" and current["revision"] == 1
+    assert current["virtualPath"] == "cg/Renamed.png"
+    assert current["packagingPolicy"] == "exclude"
+    assert current["checksumSha256"] == original["checksumSha256"]
+    story_path = base.removesuffix("/assets") + "/story"
+    stored = (await request("GET", story_path)).json()
+    pinned = by_path["backgrounds/same-2.png"]
+    stored["document"]["assets"] = [
+        {
+            "id": "scene",
+            "type": "image",
+            "role": "sceneLayer",
+            "status": "ready",
+            "fileId": pinned["id"],
+        }
+    ]
+    saved = await request(
+        "PUT",
+        story_path,
+        json={
+            "expected_revision": stored["revision"],
+            "document": stored["document"],
+        },
+    )
+    assert saved.status_code == 200, saved.text
+    protected = await request("DELETE", f"{base}/{pinned['id']}", params={"expected_revision": 0})
+    assert protected.status_code == 409 and protected.json()["code"] == "asset_in_use", (
+        protected.text
+    )
+    removed = await request("DELETE", path, params={"expected_revision": 1})
+    assert removed.status_code == 200 and removed.json() == {"deleted": True}, removed.text
+    remaining = await request("GET", base)
+    assert remaining.status_code == 200
+    assert original["id"] not in {item["id"] for item in remaining.json()["items"]}

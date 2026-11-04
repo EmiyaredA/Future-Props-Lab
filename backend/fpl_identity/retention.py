@@ -72,6 +72,16 @@ def _visual_canvas_source(body):
     )
 
 
+def _galgame_file_source(body):
+    change = body.change
+    scope = change.galgame_file_mutation
+    if scope is None:
+        return False
+    path = f"/v1/galgame-workshop/projects/{scope.project_id}/assets/{change.resource_id}"
+    method = "PATCH" if change.resource_kind == "file-name" else "DELETE"
+    return body.source_path == path and body.source_method == method
+
+
 def _galgame_story_source(body):
     change = body.change
     if change.expected_resource_revision == -1:
@@ -253,7 +263,8 @@ class RetentionAuthorization:
         ):
             raise HTTPException(403, "retention_resource_mismatch")
         if body.caller == "galgame" and not (
-            body.change.resource_kind == "story" and _galgame_story_source(body)
+            (body.change.resource_kind == "story" and _galgame_story_source(body))
+            or _galgame_file_source(body)
         ):
             raise HTTPException(403, "retention_resource_mismatch")
         if body.caller in {"motion", "video"} and not _project_file_scope_source(

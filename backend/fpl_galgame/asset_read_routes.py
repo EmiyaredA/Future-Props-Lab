@@ -1,6 +1,6 @@
 """Published scoped Galgame asset catalog and manifest routes."""
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from app.apps.galgame_workshop.schemas import (
     GalgameAssetImportPreviewIn,
@@ -8,11 +8,15 @@ from app.apps.galgame_workshop.schemas import (
     GalgameAssetOverviewOut,
     GalgamePackageManifestOut,
     GalgameProjectAssetListOut,
+    GalgameProjectAssetOut,
+    GalgameProjectAssetPatchIn,
     GalgameStoryRouteReportOut,
 )
+from app.capabilities.asset_store.errors import AssetError
 from fpl_runtime.galgame_assets import SOURCE
 from fpl_runtime.http_dependencies import OwnerDep, SessionDep
 
+from .asset_edits import AssetEdits
 from .asset_scan import scan_metadata
 from .assets_read import ProjectAssetReads
 
@@ -92,3 +96,42 @@ async def scan_project_asset_metadata(
     request: Request,
 ) -> GalgameProjectAssetListOut:
     return await scan_metadata(read_assets(request, session, owner_user_id), project_id)
+
+
+@router.patch("/{project_id}/assets/{asset_id}", response_model=GalgameProjectAssetOut)
+async def patch_project_asset(
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    project_id: str,
+    asset_id: str,
+    body: GalgameProjectAssetPatchIn,
+    request: Request,
+) -> GalgameProjectAssetOut:
+    try:
+        return await AssetEdits(
+            request, read_assets(request, session, owner_user_id), owner_user_id
+        ).patch(project_id, asset_id, body)
+    except AssetError as exc:
+        raise HTTPException(
+            exc.status, {"code": exc.code, "message": str(exc), **exc.detail}
+        ) from None
+
+
+@router.delete("/{project_id}/assets/{asset_id}")
+async def delete_project_asset(
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    project_id: str,
+    asset_id: str,
+    request: Request,
+    expected_revision: int = Query(ge=0),
+) -> dict[str, bool]:
+    try:
+        await AssetEdits(
+            request, read_assets(request, session, owner_user_id), owner_user_id
+        ).delete(project_id, asset_id, expected_revision)
+    except AssetError as exc:
+        raise HTTPException(
+            exc.status, {"code": exc.code, "message": str(exc), **exc.detail}
+        ) from None
+    return {"deleted": True}

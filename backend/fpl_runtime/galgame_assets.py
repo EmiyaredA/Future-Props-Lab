@@ -84,9 +84,12 @@ def galgame_asset_grant(grant):
     if target["mode"] == "replacement":
         return (grant.source_method, grant.source_path) == ("POST", project + "/assets/repair")
     if asset_id:
-        return grant.source_method == "PATCH" and grant.source_path == (
-            f"{project}/assets/{asset_id}/transcript"
-        )
+        file = f"{project}/assets/{asset_id}"
+        return (grant.source_method, grant.source_path) in {
+            ("PATCH", file),
+            ("PATCH", file + "/transcript"),
+            ("DELETE", file),
+        }
     return (grant.source_method, grant.source_path) in {
         ("GET", project + "/assets"),
         ("GET", project + "/assets/overview"),

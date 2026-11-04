@@ -8,6 +8,7 @@ from typing import Protocol
 
 from app.apps.galgame_workshop.models import GalgameAssetMetadata
 from app.apps.galgame_workshop.schemas import GalgameProjectAssetOut
+from app.capabilities.asset_store.errors import AssetError
 from app.runtime.time import iso_utc
 
 CATEGORY_DIRECTORIES = {
@@ -105,3 +106,27 @@ def _deduplicated_name(name: str, used: set[str]) -> tuple[str, bool]:
         index += 1
     used.add(candidate.casefold())
     return candidate, candidate != name
+
+
+def asset_edit_values(row, metadata, body):
+    display_name = (body.display_name or row.display_name).strip()
+    if not display_name:
+        raise AssetError("显示名称不能为空", code="invalid_display_name")
+    current_category = metadata.category if metadata else _default_category(row)
+    category = body.category or current_category
+    if body.virtual_path is not None:
+        virtual_path = body.virtual_path.replace("\\", "/").strip().strip("/")
+    else:
+        current_path = metadata.virtual_path if metadata else _default_virtual_path(row)
+        suffix = Path(row.original_filename).suffix.lower()
+        filename = f"{display_name}{suffix}"
+        directory = (
+            CATEGORY_DIRECTORIES[category]
+            if body.category is not None
+            else PurePosixPath(current_path).parent.as_posix()
+        )
+        virtual_path = f"{directory}/{filename}"
+    path = PurePosixPath(virtual_path)
+    if path.is_absolute() or ".." in path.parts or len(path.parts) < 2:
+        raise AssetError("虚拟路径必须是安全的项目相对路径", code="invalid_virtual_path")
+    return display_name, category, virtual_path

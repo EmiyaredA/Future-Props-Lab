@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 
 from sqlalchemy import delete, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.galgame_workshop.assets.asset_analysis import GalgameAssetAnalysisMixin
 from app.apps.galgame_workshop.assets.asset_support import (
-    CATEGORY_DIRECTORIES,
     _default_category,
     _default_virtual_path,
+    asset_edit_values,
     galgame_asset_out,
 )
 from app.apps.galgame_workshop.errors import GalgameWorkshopProjectNotFoundError
@@ -178,22 +178,7 @@ class GalgameProjectAssets(GalgameAssetAnalysisMixin):
                 category=_default_category(row),
                 virtual_path=_default_virtual_path(row),
             )
-        display_name = (body.display_name or row.display_name).strip()
-        category = body.category or metadata.category
-        if body.virtual_path is not None:
-            virtual_path = body.virtual_path.replace("\\", "/").strip().strip("/")
-        else:
-            suffix = Path(row.original_filename).suffix.lower()
-            filename = f"{display_name}{suffix}"
-            directory = (
-                CATEGORY_DIRECTORIES[category]
-                if body.category is not None
-                else PurePosixPath(metadata.virtual_path).parent.as_posix()
-            )
-            virtual_path = f"{directory}/{filename}"
-        path = PurePosixPath(virtual_path)
-        if path.is_absolute() or ".." in path.parts or len(path.parts) < 2:
-            raise AssetError("虚拟路径必须是安全的项目相对路径", code="invalid_virtual_path")
+        display_name, category, virtual_path = asset_edit_values(row, metadata, body)
         collision = await self.session.scalar(
             select(GalgameAssetMetadata.asset_id)
             .where(

@@ -4,7 +4,8 @@ from types import MappingProxyType
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-VIDEO_FILE_CHANGES = frozenset({"file-name", "file-removal"})
+PROJECT_FILE_CHANGES = frozenset({"file-name", "file-removal"})
+VIDEO_FILE_CHANGES = PROJECT_FILE_CHANGES
 
 RESOURCE_KINDS = MappingProxyType(
     {
@@ -14,7 +15,7 @@ RESOURCE_KINDS = MappingProxyType(
         "thought": frozenset(
             {"note", "history", "template", "publication", "knowledge-base", "sync"}
         ),
-        "galgame": frozenset({"project", "story", "history", "export"}),
+        "galgame": frozenset({"project", "story", "history", "export"}) | PROJECT_FILE_CHANGES,
         "video": frozenset({"project", "history", "export"}) | VIDEO_FILE_CHANGES,
         "motion": frozenset({"project", "history", "export"}),
         "presentation": frozenset({"project", "history", "template", "example", "export"}),
@@ -72,6 +73,12 @@ class VideoFileRemoval(BaseModel):
     )
 
 
+class GalgameFileMutation(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    project_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,128}$")
+    display_name: str | None = Field(default=None, min_length=1, max_length=255)
+
+
 class PrepareReferenceChange(BaseModel):
     """A source mutation retains prospective files until its local outcome is known."""
 
@@ -86,13 +93,19 @@ class PrepareReferenceChange(BaseModel):
     carried_asset_ids: list[str] | None = Field(default=None, max_length=10000)
     video_file_rename: VideoFileRename | None = None
     video_file_removal: VideoFileRemoval | None = None
+    galgame_file_mutation: GalgameFileMutation | None = None
 
     @model_validator(mode="after")
-    def check_video_file_change(self):
+    def check_project_file_change(self):
         valid = {
             "file-name": self.video_file_rename is not None and self.video_file_removal is None,
             "file-removal": self.video_file_removal is not None and self.video_file_rename is None,
         }
+        galgame = self.galgame_file_mutation
+        if galgame is not None:
+            if self.video_file_rename is not None or self.video_file_removal is not None:
+                raise ValueError("文件变更范围冲突")
+            valid = {"file-name": True, "file-removal": galgame.display_name is None}
         if self.resource_kind in valid:
             if (
                 not valid[self.resource_kind]
@@ -101,9 +114,9 @@ class PrepareReferenceChange(BaseModel):
                 or self.metadata_asset_ids is not None
                 or self.carried_asset_ids is not None
             ):
-                raise ValueError("剪辑素材变更范围无效")
-        elif self.video_file_rename is not None or self.video_file_removal is not None:
-            raise ValueError("素材范围仅适用于剪辑原件变更")
+                raise ValueError("项目素材变更范围无效")
+        elif self.video_file_rename is not None or self.video_file_removal is not None or galgame:
+            raise ValueError("素材范围仅适用于项目原件变更")
         return self
 
     @field_validator("asset_ids", "metadata_asset_ids", "carried_asset_ids")
@@ -114,3 +127,7 @@ class PrepareReferenceChange(BaseModel):
     def validate_service(self, service):
         if self.resource_kind not in RESOURCE_KINDS.get(service, ()):
             raise ValueError("调用方不能管理此类素材引用")
+        if self.resource_kind in PROJECT_FILE_CHANGES and (
+            (service == "galgame") != (self.galgame_file_mutation is not None)
+        ):
+            raise ValueError("素材变更命令与所属服务不符")

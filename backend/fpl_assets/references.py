@@ -194,7 +194,7 @@ async def protect_pending_removals(session, asset_ids):
         .join(ReferenceIntent, ReferenceIntent.id == PreparedAssetPin.intent_id)
         .join(AssetReferenceSet, AssetReferenceSet.id == ReferenceIntent.reference_set_id)
         .where(
-            AssetReferenceSet.service_id == "video",
+            AssetReferenceSet.service_id.in_(("galgame", "video")),
             AssetReferenceSet.resource_kind == "file-removal",
             ReferenceIntent.state == "prepared",
             PreparedAssetPin.asset_id.in_(asset_ids),
