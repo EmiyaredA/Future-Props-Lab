@@ -241,20 +241,18 @@ async def test_cli_defaults_for_active_accounts_and_preserves_owner_boundary():
 
 @pytest.mark.usefixtures("configured")
 async def test_cli_host_paths_and_enable_require_local_admin(monkeypatch):
-    from app.console.routes import code_agents
-
     admin, *_ = await client_account(admin=True)
     regular, *_ = await client_account()
     enabled = []
 
-    async def enable(agent_id):
+    async def enable(_request, agent_id):
         enabled.append(agent_id)
 
     async def local(scope, receive, send):
         scope["state"] = {"website_local": True}
         await app(scope, receive, send)
 
-    monkeypatch.setattr(code_agents, "enable_connection", enable)
+    monkeypatch.setattr(app.state, "code_agent_enable", enable)
     async with aclosing(admin), aclosing(regular):
         public_catalog = (await admin.get("/v1/code-agents")).json()
         assert not public_catalog["can_enable"]

@@ -316,6 +316,7 @@ def render_gateway(
         for service, token in sorted(native_tokens.items()):
             if service not in {
                 "agents",
+                "agent-runtime",
                 "management",
                 "models",
                 "integrations",

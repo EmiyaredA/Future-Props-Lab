@@ -49,6 +49,8 @@ from app.console.creative_workshop.legacy_authors import LegacyCreativeAuthors
 from app.console.creative_workshop.legacy_install import LegacyCreativeInstaller
 from app.console.creative_workshop.legacy_sources import LegacyCreativeSources
 from app.console.file_library.library_folder_archive import cleanup_library_folder_archive_staging
+from app.console.governance.code_agent_connections import enable_connection
+from app.console.governance.code_agents import catalog as code_agent_catalog
 from app.console.governance.database_auth import (
     authenticate_database_request,
     authenticate_database_websocket,
@@ -184,6 +186,10 @@ app = FastAPI(
 )
 app.state.database = SimpleNamespace(sessions=SessionLocal)
 app.state.director_editor = DirectorEditorSessions(SessionLocal)
+app.state.code_agent_catalog = lambda _request, *, can_enable: code_agent_catalog(
+    can_enable=can_enable
+)
+app.state.code_agent_enable = lambda _request, agent_id: enable_connection(agent_id)
 app.state.studio_http_auth = authenticate_database_request
 app.state.studio_socket_auth = authenticate_database_websocket
 app.state.integration_bindings = IntegrationBindings(

@@ -1,5 +1,1 @@
-"""Bounded native CLI execution; application-specific media and reports stay with callers."""
-
-from .process import CliError, execute, probe
-
-__all__ = ["CliError", "execute", "probe"]
+"""Bounded native CLI execution and shared connection contracts."""

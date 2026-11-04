@@ -25,6 +25,7 @@ if (
     "thought",
     "tools",
     "director",
+    "agent-runtime",
   ].includes(service)
 )
   throw new Error("This service has no independent browser entry yet");

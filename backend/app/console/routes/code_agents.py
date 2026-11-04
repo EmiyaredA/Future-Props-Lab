@@ -1,11 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from app.capabilities.agents.cli.catalog import AgentId
-from app.console.governance.code_agent_connections import enable_connection
-from app.console.governance.code_agents import (
-    CatalogOut,
-    catalog,
-)
+from app.capabilities.agents.cli.contracts import CatalogOut
+from app.capabilities.agents.cli.definitions import AgentId
 from app.deps import StudioAuth, require_recent_reauthentication
 from app.runtime.website import require_local_browser
 
@@ -31,8 +27,8 @@ router = APIRouter(
 
 @router.get("", response_model=CatalogOut)
 async def list_code_agents(request: Request, principal: StudioAuth):
-    return await catalog(
-        can_enable=can_manage_connections(request, principal),
+    return await request.app.state.code_agent_catalog(
+        request, can_enable=can_manage_connections(request, principal)
     )
 
 
@@ -47,4 +43,4 @@ async def enable_code_agent(agent_id: AgentId, request: Request, principal: Stud
     if not can_manage_connections(request, principal):
         raise HTTPException(403, {"code": "platform_admin_required"})
     require_recent_reauthentication(principal)
-    await enable_connection(agent_id)
+    await request.app.state.code_agent_enable(request, agent_id)

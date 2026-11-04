@@ -83,6 +83,7 @@ export const independentApplications = {
     "/integrations/external-connections",
   ],
   assets: ["/files"],
+  "agent-runtime": ["/code-agents"],
   director: ["/apps/director-desk", "/apps/director-desk/projects/:id"],
   tools: ["/tools", "/tools/video-frame-exporter", "/tools/video-downloader"],
   portal: ["/", "/home", "/apps", "/docs.html"],

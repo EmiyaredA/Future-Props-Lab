@@ -41,6 +41,7 @@ export default defineConfig(async (environment) => {
       "thought",
       "tools",
       "director",
+      "agent-runtime",
     ].includes(service) ||
     !build ||
     !/^[a-f0-9]{20}$/.test(build)
@@ -71,6 +72,7 @@ export default defineConfig(async (environment) => {
             | "thought"
             | "tools"
             | "director"
+            | "agent-runtime"
         ],
       ),
     ],

@@ -9,6 +9,15 @@ export const serviceAssets = {
     "brand/thought-workshop-mark.png",
   ],
   creative: ["brand/brand-mark.png", "brand/favicon.png"],
+  "agent-runtime": [
+    "brand/brand-mark.png",
+    "brand/favicon.png",
+    "providers/codex-logo.svg",
+    "providers/claudecode-logo.svg",
+    "providers/opencode-logo.svg",
+    "providers/deepseek-logo.svg",
+    "providers/pi-logo.svg",
+  ],
   director: [
     "brand/brand-mark.png",
     "brand/favicon.png",

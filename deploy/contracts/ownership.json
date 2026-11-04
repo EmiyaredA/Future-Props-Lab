@@ -4487,6 +4487,12 @@
       "model": "ToolNavigationItem"
     },
     {
+      "table": "agent_runtime_connection_jobs",
+      "service": "agent-runtime",
+      "module": "fpl_agent_runtime.models",
+      "model": "ConnectionJob"
+    },
+    {
       "table": "agent_native_jobs",
       "service": "agents",
       "module": "fpl_agents.models",

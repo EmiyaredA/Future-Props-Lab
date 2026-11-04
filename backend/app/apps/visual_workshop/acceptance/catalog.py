@@ -4,8 +4,8 @@ import os
 
 from sqlalchemy import select
 
-from app.capabilities.agents.cli import probe
 from app.capabilities.agents.cli.catalog import DEFINITIONS, connection
+from app.capabilities.agents.cli.process import probe
 from app.console.governance.code_agents import authorized
 from app.llm.models import ModelEntry, ModelProvider
 from app.llm.providers.chat_completions import TEXT_PROVIDER_KINDS

@@ -309,3 +309,11 @@ Identity 传输工具随后核验并迁移同一快照中 `profiles/` 下的账�
 主线 `5f16f360` 新增的云控浏览页面仍由 Portal 提供。TOTP 与解锁凭据归 Identity，桌面状态、连接和 WebSocket 归已登记的 Remote 能力，工作台聊天与执行归 Agents。编程智能体目录、检测和本机启用归 Agent Runtime。归属清单现在同时登记页面根和各 TOML 字段的所有者。旧 `/remote` 占位页已从清单撤去，保留正式 `/cloud-control` 入口。
 
 合并后的兼容应用继续执行云控权限、可信入口、密码重验和已配置的桌面或项目限制。独立 Remote 的一次性 WebSocket 凭据转交、Agents 执行、既有 TOTP 数据迁移与配置投影仍需接线和隔离验证。独立 Identity 已装配 TOTP 验证与自有 schema。Agents 已装配自有聊天记录、SSE 和重启恢复；新执行与审批写入仍由独立服务就绪门禁拦截。独立网关继续移除业务上游请求中的浏览器 Cookie，桌面专用凭据须单独限定用途与目标。
+
+### Agent Runtime 独立连接目录
+
+运行 `npm run services:build:web -- agent-runtime`，用返回的 `--web-release` 构建 Agent Runtime 镜像。叠加 `deploy/agent-runtime.compose.yaml` 并配置自有状态目录、Identity 公钥和私有原生配置。Gateway 的回环原生入口使用单独 Agent Runtime 通道凭据，Identity 登记不同的服务凭据。容器只持有原生任务及回执。
+
+Mac worker 从 `uv run python -m fpl_host.agent_connections_worker` 启动，显式传入专用回环 `--bridge`、当前用户独占的 `--worker-token`、`--state-root` 及部署 `--config`。编程智能体目录、重新检测和启用沿用发布契约。本机管理员近期密码验证后可启用已安装及已登录的连接。写入前再次检查原会话，回执丢失后重放原结果。公开访问看不到可执行文件路径，也不能启用 CLI。项目和对话的原生执行能力仍是正式就绪门禁。
+
+三容器运行 `fpl-agent-runtime-browser-64ccdf16ce` 验证了 Mac 回环、隔离 TOML 写入和 Chromium 390px 浏览器启用流程。模拟 CLI 返回固定版本与模型，无须真实供应商凭据。定向测试覆盖公网路径遮蔽、写入前撤权及丢失回执后的恢复。
