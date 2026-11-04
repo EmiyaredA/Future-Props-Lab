@@ -4,6 +4,7 @@ from fastapi import APIRouter, Request
 
 from app.apps.visual_workshop.generation import VisualGeneration
 from app.apps.visual_workshop.generation_common import GenerationError
+from app.apps.visual_workshop.generation_routes import generation_error
 from app.apps.visual_workshop.schemas.generation import (
     GenerationBatchOut,
     ImageCompositionCreateIn,
@@ -16,8 +17,6 @@ from app.apps.visual_workshop.schemas.workshop import (
 )
 from app.deps import SessionDep
 from app.llm.routes.model_capacity import task_admission
-
-from .generation_records import generation_error
 
 router = APIRouter(prefix="/visual-workshop", tags=["visual-generation"])
 

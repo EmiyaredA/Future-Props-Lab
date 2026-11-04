@@ -407,7 +407,6 @@ def source_closure(root: Path, service):
                 "app.main",
                 "app.api",
                 "app.orm",
-                "app.deps",
                 "app.runtime.db",
                 f"app.apps.{other}_workshop",
                 "app.capabilities.asset_store.models",
@@ -419,11 +418,14 @@ def source_closure(root: Path, service):
                 "fpl_host",
                 f"fpl_{other}",
             )
+            if service != "visual":
+                forbidden += ("app.deps",)
             llm_contract = name in {
                 "app.llm",
                 "app.llm.schemas",
                 "app.llm.task_execution",
             } or name.startswith("app.llm.schemas.")
+            llm_contract |= service == "visual" and name == "app.llm.generation_state"
             if (
                 name.startswith("app.llm.")
                 and not llm_contract

@@ -11,7 +11,13 @@ class Base(DeclarativeBase):
 _external_metadata = MetaData()
 _external_tables = {
     name: Table(name, _external_metadata, Column("id", String(36), primary_key=True))
-    for name in ("users", "visual_assets", "integration_external_connections")
+    for name in (
+        "users",
+        "visual_assets",
+        "integration_external_connections",
+        "model_entries",
+        "model_providers",
+    )
 }
 
 

@@ -6,8 +6,8 @@ import httpx
 from fastapi import Depends
 
 from app.apps.visual_workshop.acceptance.standard_routes import router as standard_router
+from app.apps.visual_workshop.generation_routes import router as generation_records_router
 from app.apps.visual_workshop.models import VisualWorkshopProject
-from app.apps.visual_workshop.routes.generation_records import router as generation_records_router
 from app.deps import require_studio_auth
 from fpl_runtime.certification_service import create_certification_app
 from fpl_runtime.identity_client import LiveAuthorization

@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-from app.llm.schemas.model_service import ProviderKind
+from app.llm.schemas.provider_types import ProviderKind
 
 MediaKind = Literal["image", "video", "audio", "text"]
 Verdict = Literal["passed", "failed", "pending", "not_applicable"]

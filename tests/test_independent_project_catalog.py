@@ -13,7 +13,11 @@ from tests.test_creative_project_certification import CREDENTIALS, ORIGIN, PROJE
 
 from app.apps.galgame_workshop.models import GalgameStorySnapshot
 from app.apps.visual_workshop.acceptance.models import AcceptanceTemplate
-from app.apps.visual_workshop.models import VisualGenerationBatch, VisualGenerationTask
+from app.apps.visual_workshop.models import (
+    VisualGenerationBatch,
+    VisualGenerationTask,
+    VisualWorkshopProject,
+)
 from app.capabilities.asset_store.library import AssetLibrary
 from fpl_assets.models import AssetReferencePin, AssetReferenceSet
 from fpl_galgame.models import GalgameStoryReferenceMutation
@@ -452,12 +456,15 @@ async def verify_visual_records(case, app, request, project_id):
             )
         await session.commit()
     async with app.state.database.sessions(info={"owner_user_id": case.owner}) as session:
+        other_id = "foreign-visual-record-project"
+        session.add(VisualWorkshopProject(id=other_id, title="Private", kind="canvas"))
+        await session.flush()
         session.add_all(
             [
                 AcceptanceTemplate(id="foreign-template", title="Private preset", document={}),
                 VisualGenerationTask(
                     id="foreign-task",
-                    project_id=project_id,
+                    project_id=other_id,
                     provider_kind="volcengine_image",
                     provider_name="Example",
                     model_slug="test-image",
