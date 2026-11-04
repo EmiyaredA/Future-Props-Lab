@@ -16,7 +16,7 @@ from app.capabilities.asset_store.library import AssetLibrary
 from fpl_assets.models import AssetReferencePin, AssetReferenceSet
 from fpl_galgame.models import GalgameStoryReferenceMutation
 from fpl_runtime.asset_references import PrepareReferenceChange
-from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
+from fpl_runtime.capability_client import CapabilityClient, CapabilityDenied, CapabilityUnavailable
 from fpl_runtime.claims import HEADER
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
@@ -74,7 +74,7 @@ async def test_projects_create_owned_defaults_and_keep_the_published_contract(
         public_key=case.key.public_key(),
         catalog=CATALOG,
         credential=CREDENTIALS[kind],
-        transport=transport,
+        transport=transport if kind == "galgame" else case.mesh,
         run_worker=False,
     )
     app = factory(**options)
@@ -82,6 +82,10 @@ async def test_projects_create_owned_defaults_and_keep_the_published_contract(
     case.identity.state.identity_options["service_credentials"].update(CREDENTIALS)
     asset_live = LiveAuthorization(service="assets", credential=ASSETS_SECRET, transport=case.mesh)
     case.assets.state.identity = asset_live
+    asset_capabilities = CapabilityClient(
+        service="assets", credential=ASSETS_SECRET, catalog=CATALOG, transport=case.mesh
+    )
+    case.assets.state.capabilities = asset_capabilities
     public = json.loads((ROOT / "web/src/generated/openapi.json").read_text())["paths"]
     for path, operations in app.openapi()["paths"].items():
         if path.startswith("/v1/"):
@@ -91,6 +95,7 @@ async def test_projects_create_owned_defaults_and_keep_the_published_contract(
     suffix = "canvas" if kind == "visual" else "story"
     async with (
         asset_live.client,
+        asset_capabilities.client,
         app.router.lifespan_context(app),
         httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url=f"http://{kind}"
@@ -116,6 +121,7 @@ async def test_projects_create_owned_defaults_and_keep_the_published_contract(
         if kind == "visual":
             assert document.json()["nodes"] == []
             assert document.json()["categories"]
+            await verify_visual_canvas(case, app, request, path)
             changed = await request(
                 "PATCH", path, json={"title": "Changed", "expected_revision": 0}
             )
@@ -178,6 +184,65 @@ async def test_projects_create_owned_defaults_and_keep_the_published_contract(
                 )
             )
             assert list(pins) == [asset_id]
+
+
+async def verify_visual_canvas(case, app, request, path):
+    async with case.assets.state.database.sessions(info={"owner_user_id": case.viewer}) as session:
+        asset = await AssetLibrary(session, case.assets.state.settings).store_upload(
+            UploadFile(io.BytesIO(b"\x89PNG\r\n\x1a\nvisual PNG"), filename="canvas.png"),
+            owner_user_id=case.viewer,
+        )
+    node = {
+        "id": "node",
+        "kind": "image",
+        "title": "Picture",
+        "position": {"x": 0, "y": 0},
+        "asset_id": case.asset,
+    }
+    canvas = path + "/canvas"
+    outside = await request("PUT", canvas, json={"expected_revision": 0, "nodes": [node]})
+    assert outside.status_code == 422 and outside.json()["code"] == "asset_not_found"
+    node["asset_id"] = asset.id
+    unlinked = await request("PUT", canvas, json={"expected_revision": 0, "nodes": [node]})
+    assert unlinked.status_code == 422 and unlinked.json()["code"] == "scope_mismatch"
+    links = path + "/asset-references"
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=case.assets), base_url="http://assets"
+    ) as assets:
+        placed = await assets.post(
+            links,
+            headers=await authorize(case, "assets", "POST", links),
+            json={"asset_id": asset.id},
+        )
+        assert placed.status_code == 200, placed.text
+        first = await request("PUT", canvas, json={"expected_revision": 0, "nodes": [node]})
+        assert first.status_code == 200, first.text
+        output = first.json()["nodes"][0]["final_output_id"]
+        assert first.json()["revision"] == 1 and output
+        link = placed.json()
+        placed_path = f"{links}/{link['reference_id']}"
+        deleted = await assets.delete(
+            placed_path,
+            headers=await authorize(case, "assets", "DELETE", placed_path),
+            params={"expected_revision": link["revision"]},
+        )
+        assert deleted.status_code == 200, deleted.text
+    second = await request("PUT", canvas, json={"expected_revision": 1, "nodes": [node]})
+    assert second.status_code == 200, second.text
+    assert second.json()["revision"] == 2
+    assert second.json()["nodes"][0]["final_output_id"] == output
+    await app.state.reference_delivery.process_once()
+    async with case.assets.state.database.sessions(info={"owner_user_id": case.viewer}) as session:
+        pins = await session.scalars(
+            select(AssetReferencePin.asset_id)
+            .join(AssetReferenceSet, AssetReferenceSet.id == AssetReferencePin.reference_set_id)
+            .where(
+                AssetReferenceSet.service_id == "visual",
+                AssetReferenceSet.resource_kind == "canvas",
+                AssetReferenceSet.resource_revision == 2,
+            )
+        )
+        assert list(pins) == [asset.id]
 
 
 async def verify_galgame_story(case, app, request, path, document):

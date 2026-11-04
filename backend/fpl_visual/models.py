@@ -1,6 +1,7 @@
 """Owned Visual ORM roots, with no foreign model imports."""
 
 from sqlalchemy import Index
+from sqlalchemy.orm import DeclarativeBase
 
 from app.apps.visual_workshop.acceptance.models import (
     AcceptanceAssetReference,
@@ -28,6 +29,7 @@ from app.apps.visual_workshop.outputs.models import (
     VisualNodeOutput,
 )
 from fpl_runtime.certification_owner import CertificationReceiptFields, CertificationRecordsBase
+from fpl_runtime.reference_records import ReferenceMutationFields
 
 
 class VisualCertificationReceipt(CertificationReceiptFields, CertificationRecordsBase):
@@ -35,6 +37,14 @@ class VisualCertificationReceipt(CertificationReceiptFields, CertificationRecord
     __table_args__ = (
         Index("ix_visual_certification_receipts_pending", "audit_event_id", "created_at"),
     )
+
+
+class CanvasRetentionBase(DeclarativeBase):
+    pass
+
+
+class VisualCanvasReferenceMutation(ReferenceMutationFields, CanvasRetentionBase):
+    __tablename__ = "visual_canvas_reference_mutations"
 
 
 MODELS = (
@@ -56,4 +66,5 @@ MODELS = (
     VisualAssistantAction,
     VisualNodeOutput,
     VisualCertificationReceipt,
+    VisualCanvasReferenceMutation,
 )

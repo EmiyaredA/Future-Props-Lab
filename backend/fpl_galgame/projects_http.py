@@ -1,7 +1,5 @@
 """Published project and initial Story operations for the Galgame owner."""
 
-from contextlib import asynccontextmanager
-
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import ValidationError
 
@@ -23,29 +21,17 @@ from app.apps.galgame_workshop.schemas.operations import GalgameOperationsIn
 from app.runtime.operation_receipts import OperationError
 from fpl_runtime.http_dependencies import OwnerDep, SessionDep
 from fpl_runtime.project_errors import ProjectResourceError
+from fpl_runtime.reference_runtime import reference_lifespan
 
 from .projects import Projects
 from .story_writes import PREFIX, StoryWrites
 
-
-@asynccontextmanager
-async def lifespan(app):
-    delivery = app.state.reference_delivery
-    try:
-        if app.state.run_reference_worker:
-            await delivery.start()
-        yield
-    finally:
-        await delivery.stop()
-        await app.state.retention_client.close()
-
-
-router = APIRouter(prefix=PREFIX, tags=["galgame-workshop"], lifespan=lifespan)
+router = APIRouter(prefix=PREFIX, tags=["galgame-workshop"], lifespan=reference_lifespan)
 
 
 def story_writes(request, session, owner):
     return StoryWrites(
-        session, owner, request.app.state.story_references, request.state.service_assertion
+        session, owner, request.app.state.reference_mutations, request.state.service_assertion
     )
 
 

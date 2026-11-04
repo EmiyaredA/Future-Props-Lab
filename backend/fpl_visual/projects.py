@@ -33,14 +33,14 @@ class Projects:
     async def get(self, project_id):
         return project_out(await self.row(project_id))
 
-    async def create(self, body):
-        row = VisualWorkshopProject(owner_user_id=self.owner, title=body.title, kind=body.kind)
+    async def create(self, body, *, project_id):
+        row = VisualWorkshopProject(
+            id=project_id, owner_user_id=self.owner, title=body.title, kind=body.kind
+        )
         self.session.add(row)
         await self.session.flush()
         self.session.add(VisualCanvasDocument(project_id=row.id))
-        result = project_out(row)
-        await self.session.commit()
-        return result
+        return project_out(row)
 
     async def patch(self, project_id, body):
         await self.row(project_id)
@@ -61,9 +61,12 @@ class Projects:
         await self.session.commit()
         return result
 
-    async def canvas(self, project_id):
+    async def canvas_row(self, project_id):
         await self.row(project_id)
         canvas = await self.session.get(VisualCanvasDocument, project_id)
         if canvas is None:
             raise ProjectResourceError("项目画布不存在", "canvas_not_found")
-        return canvas_out(canvas)
+        return canvas
+
+    async def canvas(self, project_id):
+        return canvas_out(await self.canvas_row(project_id))

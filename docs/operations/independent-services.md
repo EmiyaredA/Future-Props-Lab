@@ -242,3 +242,5 @@ Galgame 的新项目创建和公开 Story 保存需要同一私网中的 Identit
 隔离运行 `fpl-galgame-story-5bc33bf854` 在上述认证链路加装 Assets。经网关上传 PNG、保存故事、拒绝旧版本写入并下载原文件。恢复同版本隔离快照后，Story 版本为 1，下载文件 SHA256 为 `60660146a85c7cdfadc827f774e968bce1b63c1b68aa42c40d435c1e7f379cf9`。这是新服务自身的恢复验收，正式历史迁移和旧站回滚演练仍待完成。
 
 隔离运行 `fpl-galgame-operations-6698b8bf25` 额外验证了 Story 操作批次。相同请求在正常执行后和快照恢复后都返回原版本，同一请求 ID 改用不同正文返回 409。
+
+隔离运行 `fpl-visual-canvas-11f5f07889` 在同一七服务链路验证 Visual 画布。未放置的文件被拒绝，关联后可保存，移除原放置后再保存仍保留同一输出 ID。恢复隔离快照后读回相同画布版本、节点输出和素材字节。Visual 的新项目创建和画布保存依赖同一私网的 Identity 与 Assets。

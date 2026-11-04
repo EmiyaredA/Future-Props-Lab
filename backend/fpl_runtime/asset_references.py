@@ -6,7 +6,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 RESOURCE_KINDS = MappingProxyType(
     {
-        "visual": frozenset({"project", "conversation", "acceptance", "output", "history"}),
+        "visual": frozenset(
+            {"project", "canvas", "conversation", "acceptance", "output", "history"}
+        ),
         "thought": frozenset(
             {"note", "history", "template", "publication", "knowledge-base", "sync"}
         ),
@@ -64,7 +66,9 @@ class PrepareReferenceChange(BaseModel):
     asset_ids: list[str] = Field(max_length=10000)
     metadata_asset_ids: list[str] | None = Field(default=None, max_length=10000)
 
-    @field_validator("asset_ids", "metadata_asset_ids")
+    carried_asset_ids: list[str] | None = Field(default=None, max_length=10000)
+
+    @field_validator("asset_ids", "metadata_asset_ids", "carried_asset_ids")
     @classmethod
     def canonical_assets(cls, values):
         return ReferenceUpdate.canonical_assets(values) if values is not None else None

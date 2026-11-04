@@ -4702,6 +4702,12 @@
       "service": "visual",
       "module": "fpl_visual.models",
       "model": "VisualCertificationReceipt"
+    },
+    {
+      "table": "visual_canvas_reference_mutations",
+      "service": "visual",
+      "module": "fpl_visual.models",
+      "model": "VisualCanvasReferenceMutation"
     }
   ],
   "partitions": {

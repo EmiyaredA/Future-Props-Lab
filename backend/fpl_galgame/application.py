@@ -2,9 +2,7 @@
 
 from app.apps.galgame_workshop.models import GalgameWorkshopProject
 from fpl_runtime.certification_service import create_certification_app
-from fpl_runtime.project_errors import ProjectResourceError
-from fpl_runtime.reference_mutations import ReferenceDelivery, ReferenceMutations
-from fpl_runtime.retention_client import RetentionClient
+from fpl_runtime.reference_runtime import install_reference_runtime
 
 from .migrations.registry import MIGRATIONS
 from .models import MODELS, GalgameCertificationReceipt, GalgameStoryReferenceMutation
@@ -25,20 +23,14 @@ def create_app(*, state_root, public_key, credential, catalog, transport=None, r
         transport=transport,
         run_worker=run_worker,
     )
-    sessions = app.state.database.sessions
-    client = RetentionClient(service="galgame", credential=credential, transport=transport)
-    app.state.retention_client = client
-    app.state.run_reference_worker = run_worker
-    app.state.story_references = ReferenceMutations(
-        sessions,
-        client,
+    install_reference_runtime(
+        app,
         service="galgame",
         model=GalgameStoryReferenceMutation,
         public_key=public_key,
-        failure=lambda message, status, code: ProjectResourceError(message, code, status),
-    )
-    app.state.reference_delivery = ReferenceDelivery(
-        sessions, client, service="galgame", model=GalgameStoryReferenceMutation
+        credential=credential,
+        transport=transport,
+        run_worker=run_worker,
     )
     app.include_router(project_router)
     return app

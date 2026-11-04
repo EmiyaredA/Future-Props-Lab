@@ -57,6 +57,7 @@ class CommunityRetentionScope(BaseModel):
             change.resource_kind == "note"
             and change.resource_id == self.note_id
             and change.expected_resource_revision == self.note_revision
+            and change.carried_asset_ids is None
             and change.metadata_asset_ids is not None
             and set(change.metadata_asset_ids).issubset(change.asset_ids)
         )
@@ -68,6 +69,17 @@ def story_metadata(caller, change):
         and change.resource_kind == "story"
         and change.metadata_asset_ids is not None
         and set(change.metadata_asset_ids).issubset(change.asset_ids)
+    )
+
+
+def canvas_metadata(caller, change):
+    return (
+        caller == "visual"
+        and change.resource_kind == "canvas"
+        and change.metadata_asset_ids is not None
+        and change.carried_asset_ids is not None
+        and set(change.metadata_asset_ids).issubset(change.asset_ids)
+        and set(change.carried_asset_ids).issubset(change.asset_ids)
     )
 
 
@@ -122,7 +134,11 @@ class RetentionAuthority:
             and (
                 self.community.matches_change(change)
                 if self.community is not None
-                else change.metadata_asset_ids is None or story_metadata(self.caller, change)
+                else (
+                    change.carried_asset_ids is None
+                    and (change.metadata_asset_ids is None or story_metadata(self.caller, change))
+                    or canvas_metadata(self.caller, change)
+                )
             )
         )
 

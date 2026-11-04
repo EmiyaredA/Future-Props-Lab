@@ -10,7 +10,12 @@ from fastapi import HTTPException
 from app.capabilities.identity.principal import StudioPrincipal
 from app.capabilities.identity.route_permissions import route_permission
 from fpl_runtime.claims import verify_context
-from fpl_runtime.retention_authority import issue_retention, story_metadata, verify_retention
+from fpl_runtime.retention_authority import (
+    canvas_metadata,
+    issue_retention,
+    story_metadata,
+    verify_retention,
+)
 
 from .live import active_actor
 
@@ -21,20 +26,39 @@ def require_credential(options, service, credential):
         raise HTTPException(403, "service_credential_required")
 
 
+_GENERATED_PROJECT_ID = re.compile(
+    r"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+)
+
+
+def _create_projection(body, path):
+    change = body.change
+    return (
+        body.source_method == "POST"
+        and body.source_path == path
+        and _GENERATED_PROJECT_ID.fullmatch(change.resource_id) is not None
+        and not change.asset_ids
+        and change.metadata_asset_ids is None
+        and change.carried_asset_ids is None
+    )
+
+
+def _visual_canvas_source(body):
+    change = body.change
+    path = "/v1/visual-workshop/projects"
+    if change.expected_resource_revision == -1:
+        return _create_projection(body, path)
+    return (
+        body.source_method == "PUT"
+        and body.source_path == f"{path}/{change.resource_id}/canvas"
+        and canvas_metadata(body.caller, change)
+    )
+
+
 def _galgame_story_source(body):
     change = body.change
     if change.expected_resource_revision == -1:
-        return (
-            body.source_method == "POST"
-            and body.source_path == "/v1/galgame-workshop/projects"
-            and re.fullmatch(
-                r"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}",
-                change.resource_id,
-            )
-            is not None
-            and not change.asset_ids
-            and change.metadata_asset_ids is None
-        )
+        return _create_projection(body, "/v1/galgame-workshop/projects")
     story_path = f"/v1/galgame-workshop/projects/{change.resource_id}/story"
     if not story_metadata(body.caller, change):
         return False
@@ -81,7 +105,14 @@ class RetentionAuthorization:
         if (
             community is None
             and body.change.metadata_asset_ids is not None
-            and not story_metadata(body.caller, body.change)
+            and not (
+                story_metadata(body.caller, body.change)
+                or canvas_metadata(body.caller, body.change)
+            )
+        ):
+            raise HTTPException(403, "retention_metadata_scope_required")
+        if body.change.carried_asset_ids is not None and not canvas_metadata(
+            body.caller, body.change
         ):
             raise HTTPException(403, "retention_metadata_scope_required")
         if community is not None and (
@@ -99,6 +130,12 @@ class RetentionAuthorization:
             or route_permission(body.source_method, body.source_path) != expected_permission
         ):
             raise HTTPException(403, "retention_source_forbidden")
+        if (
+            body.caller == "visual"
+            and body.change.resource_kind == "canvas"
+            and not _visual_canvas_source(body)
+        ):
+            raise HTTPException(403, "retention_resource_mismatch")
         if body.caller == "galgame" and not (
             body.change.resource_kind == "story" and _galgame_story_source(body)
         ):

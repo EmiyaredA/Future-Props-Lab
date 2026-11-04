@@ -21,6 +21,7 @@ class PreparedReferences:
     change_sha256: str
     asset_intent_id: str
     metadata: tuple[AssetDescription, ...] = ()
+    unavailable_asset_ids: frozenset[str] = frozenset()
 
 
 class ReferenceMutations:
@@ -94,12 +95,25 @@ class ReferenceMutations:
         ):
             raise self.failure("素材引用准备未确认", 503, "retention_unconfirmed")
         metadata = ()
+        unavailable = frozenset()
         if change.metadata_asset_ids is not None:
             try:
                 metadata = tuple(
                     AssetDescription.model_validate(value) for value in result["metadata"]
                 )
-                if [asset.id for asset in metadata] != change.metadata_asset_ids:
+                if change.carried_asset_ids is not None:
+                    ids = result["unavailable_asset_ids"]
+                    if not isinstance(ids, list) or not all(
+                        isinstance(value, str) for value in ids
+                    ):
+                        raise ValueError("invalid unavailable asset receipt")
+                    unavailable = frozenset(ids)
+                    if len(unavailable) != len(ids) or not unavailable.issubset(
+                        change.carried_asset_ids
+                    ):
+                        raise ValueError("unexpected unavailable asset")
+                expected = sorted(set(change.metadata_asset_ids) - unavailable)
+                if [asset.id for asset in metadata] != expected:
                     raise ValueError("metadata receipt mismatch")
             except (KeyError, ValueError, TypeError, ValidationError):
                 raise self.failure("素材元数据回执未确认", 503, "retention_unconfirmed") from None
@@ -115,7 +129,9 @@ class ReferenceMutations:
                 .values(asset_intent_id=identity, state="prepared", updated_at=utc_now())
             )
             await session.commit()
-        return PreparedReferences(owner, change.request_id, fingerprint, identity, metadata)
+        return PreparedReferences(
+            owner, change.request_id, fingerprint, identity, metadata, unavailable
+        )
 
     async def record(self, source_session, prepared, *, resource_revision, deleted=False):
         if source_session.info.get("owner_user_id") != prepared.owner:
@@ -241,6 +257,7 @@ class ReferenceDelivery(PollingTaskRunner):
                     (409, "reference_mutations_pending"),
                     (422, "story_visual_asset_scope"),
                     (422, "story_galgame_asset_scope"),
+                    (422, "canvas_asset_scope"),
                 }
                 if exc.status not in {401, 403} and not refused:
                     raise

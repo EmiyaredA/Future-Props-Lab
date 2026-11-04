@@ -1,19 +1,29 @@
 """Published project and initial canvas operations for the Visual owner."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Request
 
+from app.apps.visual_workshop.canvas_documents import VisualCanvasError
 from app.apps.visual_workshop.schemas.workshop import (
     VisualCanvasDocumentOut,
+    VisualCanvasDocumentPutIn,
     VisualWorkshopProjectCreateIn,
     VisualWorkshopProjectListOut,
     VisualWorkshopProjectOut,
     VisualWorkshopProjectPatchIn,
 )
 from fpl_runtime.http_dependencies import OwnerDep, SessionDep
+from fpl_runtime.reference_runtime import reference_lifespan
 
+from .canvas_writes import PREFIX, CanvasWrites
 from .projects import Projects
 
-router = APIRouter(prefix="/v1/visual-workshop/projects", tags=["visual-workshop"])
+router = APIRouter(prefix=PREFIX, tags=["visual-workshop"], lifespan=reference_lifespan)
+
+
+def canvas_writes(request, session, owner):
+    return CanvasWrites(
+        session, owner, request.app.state.reference_mutations, request.state.service_assertion
+    )
 
 
 @router.get("", response_model=VisualWorkshopProjectListOut)
@@ -23,9 +33,12 @@ async def list_projects(session: SessionDep, owner_user_id: OwnerDep):
 
 @router.post("", response_model=VisualWorkshopProjectOut)
 async def create_project(
-    session: SessionDep, owner_user_id: OwnerDep, body: VisualWorkshopProjectCreateIn
+    request: Request,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    body: VisualWorkshopProjectCreateIn,
 ):
-    return await Projects(session, owner_user_id).create(body)
+    return await canvas_writes(request, session, owner_user_id).create_project(body)
 
 
 @router.get("/{project_id}", response_model=VisualWorkshopProjectOut)
@@ -46,3 +59,17 @@ async def patch_project(
 @router.get("/{project_id}/canvas", response_model=VisualCanvasDocumentOut)
 async def get_canvas(session: SessionDep, owner_user_id: OwnerDep, project_id: str):
     return await Projects(session, owner_user_id).canvas(project_id)
+
+
+@router.put("/{project_id}/canvas", response_model=VisualCanvasDocumentOut)
+async def put_canvas(
+    request: Request,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    project_id: str,
+    body: VisualCanvasDocumentPutIn,
+):
+    try:
+        return await canvas_writes(request, session, owner_user_id).put(project_id, body)
+    except VisualCanvasError as exc:
+        raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None

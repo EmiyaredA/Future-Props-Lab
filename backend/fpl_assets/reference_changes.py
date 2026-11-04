@@ -12,9 +12,10 @@ from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.ids import new_id
 from fpl_runtime.asset_references import PrepareReferenceChange
-from fpl_runtime.retention_authority import change_digest, story_metadata
+from fpl_runtime.retention_authority import canvas_metadata, change_digest, story_metadata
 from fpl_runtime.thought_assets import AssetDescription
 
+from .canvas_retention import canvas_files
 from .models import AssetReferencePin, AssetReferenceSet, PreparedAssetPin, ReferenceIntent
 
 
@@ -118,6 +119,8 @@ class ReferenceChanges:
                 raise failure("reference_mutations_pending", "请先恢复未完成的引用变更")
             requested = set(change.asset_ids)
             describe_story = story_metadata(service, change)
+            describe_canvas = canvas_metadata(service, change)
+            unavailable = set()
             present = set()
             if requested and describe_story:
                 candidates = list(
@@ -135,20 +138,32 @@ class ReferenceChanges:
                     raise failure(
                         "story_galgame_asset_scope", "不能引用其他 Galgame 工程的私有素材", 422
                     )
+            elif requested and describe_canvas:
+                present, known = await canvas_files(session, row, change)
+                unavailable = requested - present
+                forbidden = unavailable - set(change.carried_asset_ids)
+                if forbidden & known:
+                    raise failure("canvas_asset_scope", "节点素材不属于当前项目", 422)
+                if forbidden:
+                    raise failure("not_found", "部分素材不存在", 404)
             elif requested:
                 present = set(
                     await session.scalars(
                         select(VisualAsset.id).where(VisualAsset.id.in_(requested))
                     )
                 )
-            if present != requested:
+            if not describe_canvas and present != requested:
                 raise failure("not_found", "部分素材不存在", 404)
             identifier = new_id()
             row.revision += 1
             result = {"intent_id": identifier, "state": "prepared", "revision": row.revision}
-            if community is not None or describe_story:
+            if describe_canvas:
+                result["unavailable_asset_ids"] = sorted(unavailable)
+            if community is not None or describe_story or describe_canvas:
                 assets = await session.scalars(
-                    select(VisualAsset).where(VisualAsset.id.in_(change.metadata_asset_ids))
+                    select(VisualAsset).where(
+                        VisualAsset.id.in_(set(change.metadata_asset_ids) - unavailable)
+                    )
                 )
                 result["metadata"] = [
                     AssetDescription.model_validate(asset, from_attributes=True).model_dump()
@@ -169,7 +184,7 @@ class ReferenceChanges:
             session.add_all(
                 [
                     PreparedAssetPin(intent_id=identifier, asset_id=asset_id, owner_user_id=owner)
-                    for asset_id in change.asset_ids
+                    for asset_id in sorted(present)
                 ]
             )
             await session.commit()
