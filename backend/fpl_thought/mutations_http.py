@@ -15,6 +15,7 @@ from app.apps.thought_workshop.knowledge_tools.schemas import (
 from app.apps.thought_workshop.multitable.schemas import BatchIn, BatchOut, CsvIn, RestoreIn
 from app.apps.thought_workshop.notes import Notes
 from app.apps.thought_workshop.schemas.knowledge import (
+    KnowledgeBaseIn,
     KnowledgeBaseOut,
     KnowledgeNoteCreate,
     ThoughtDirectoryOut,
@@ -32,6 +33,7 @@ from app.deps import OwnerDep, StudioAuth
 from app.runtime.operation_receipts import OperationError
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
 
+from .knowledge_creation import create_knowledge_base_with_references
 from .multitable_retention import mutate_table_with_references
 from .note_creation import create_note_with_references
 from .note_retention import (
@@ -58,6 +60,24 @@ def context(request):
         source_method=request.method,
         source_path=request.url.path,
         references=references,
+    )
+
+
+@router.post("/knowledge-bases", response_model=KnowledgeBaseOut)
+async def create_knowledge_base(
+    request: Request,
+    body: KnowledgeBaseIn,
+    session: SessionDep,
+    principal: StudioAuth,
+):
+    return await guarded(
+        create_knowledge_base_with_references(
+            session,
+            owner=principal.user_id,
+            author_id=principal.user_id,
+            body=body,
+            **context(request),
+        )
     )
 
 

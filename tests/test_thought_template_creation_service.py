@@ -181,6 +181,21 @@ async def test_create_template_pins_same_account_assets_over_http(scenario):  # 
                     json={"title": "Blank", "expected_revision": 3},
                 )
                 assert document.status_code == 200, document.text
+                knowledge_path = "/v1/thought-workshop/knowledge-bases"
+                knowledge_body = {"title": "Covered book", "cover_asset_id": case.asset}
+                denied = await client.post(
+                    knowledge_path,
+                    headers=await context(case.browser, knowledge_path),
+                    json=knowledge_body,
+                )
+                assert denied.status_code == 404
+                knowledge = await client.post(
+                    knowledge_path,
+                    headers=await context(owner, knowledge_path),
+                    json=knowledge_body,
+                )
+                assert knowledge.status_code == 200, knowledge.text
+                knowledge = knowledge.json()
             from fpl_thought.retention import ThoughtReferenceDelivery
 
             await ThoughtReferenceDelivery(
@@ -250,6 +265,35 @@ async def test_create_template_pins_same_account_assets_over_http(scenario):  # 
                         )
                     )
                     assert [pin.asset_id for pin in created_pins] == expected
+                cover_ref = await session.scalar(
+                    select(AssetReferenceSet).where(
+                        AssetReferenceSet.resource_kind == "knowledge-base",
+                        AssetReferenceSet.resource_id == knowledge["id"],
+                    )
+                )
+                assert cover_ref is not None and cover_ref.resource_revision == 0
+                cover_pins = list(
+                    await session.scalars(
+                        select(AssetReferencePin).where(
+                            AssetReferencePin.reference_set_id == cover_ref.id
+                        )
+                    )
+                )
+                assert [pin.asset_id for pin in cover_pins] == [case.asset]
+                home_ref = await session.scalar(
+                    select(AssetReferenceSet).where(
+                        AssetReferenceSet.resource_kind == "note",
+                        AssetReferenceSet.resource_id == knowledge["home_note_id"],
+                    )
+                )
+                assert home_ref is not None and home_ref.resource_revision == 0
+                assert not list(
+                    await session.scalars(
+                        select(AssetReferencePin).where(
+                            AssetReferencePin.reference_set_id == home_ref.id
+                        )
+                    )
+                )
 
 
 def test_template_creation_operation_matches_public_contract():
@@ -305,3 +349,20 @@ def test_note_creation_operations_match_public_contract():
         "/v1/thought-workshop/knowledge-bases/{project_id}/documents",
     ):
         assert app.openapi()["paths"][path]["post"] == expected["paths"][path]["post"]
+
+
+def test_knowledge_base_creation_matches_public_contract():
+    import json
+    from pathlib import Path
+
+    from fastapi import FastAPI
+
+    from fpl_thought.mutations_http import router
+
+    app = FastAPI()
+    app.include_router(router, prefix="/v1")
+    expected = json.loads(
+        (Path(__file__).resolve().parents[1] / "web/src/generated/openapi.json").read_text()
+    )
+    path = "/v1/thought-workshop/knowledge-bases"
+    assert app.openapi()["paths"][path]["post"] == expected["paths"][path]["post"]

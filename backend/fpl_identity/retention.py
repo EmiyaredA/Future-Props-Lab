@@ -70,6 +70,13 @@ class RetentionAuthorization:
                 and body.change.expected_resource_revision == -1
                 and initial_id
             )
+            create_knowledge_base = (
+                body.source_method == "POST"
+                and body.source_path == "/v1/thought-workshop/knowledge-bases"
+                and body.change.resource_kind in {"knowledge-base", "note"}
+                and body.change.expected_resource_revision == -1
+                and initial_id
+            )
             apply_template = (
                 body.source_method == "POST"
                 and re.fullmatch(
@@ -94,8 +101,14 @@ class RetentionAuthorization:
                 and body.change.expected_resource_revision == -1
                 and initial_id
             )
-            if new_template or apply_template or create_note:
-                expected_kind = "template" if new_template else "note"
+            if new_template or apply_template or create_note or create_knowledge_base:
+                expected_kind = (
+                    "template"
+                    if new_template
+                    else body.change.resource_kind
+                    if create_knowledge_base
+                    else "note"
+                )
                 expected_id = body.change.resource_id
             elif direct:
                 expected_kind = "note" if direct.group(1) == "notes" else "template"

@@ -99,12 +99,26 @@ class KnowledgeBases:
             raise RevisionConflictError(expected, current.revision, current.model_dump(mode="json"))
         return await self.get(project_id, include_deleted=include_deleted)
 
-    async def create(self, body: KnowledgeBaseIn) -> KnowledgeBaseOut:
-        await self.cover(body.cover_asset_id)
-        row = ThoughtKnowledgeBase(owner_user_id=self.owner_user_id, **body.model_dump())
+    async def create(
+        self,
+        body: KnowledgeBaseIn,
+        *,
+        project_id: str | None = None,
+        home_note_id: str | None = None,
+        commit: bool = True,
+        cover_validated: bool = False,
+    ) -> KnowledgeBaseOut:
+        if not cover_validated:
+            await self.cover(body.cover_asset_id)
+        row = ThoughtKnowledgeBase(
+            id=project_id,
+            owner_user_id=self.owner_user_id,
+            **body.model_dump(),
+        )
         self.session.add(row)
         await self.session.flush()
         home = ThoughtNote(
+            id=home_note_id,
             owner_user_id=self.owner_user_id,
             knowledge_base_id=row.id,
             is_home=True,
@@ -115,7 +129,8 @@ class KnowledgeBases:
         await self.session.flush()
         row.home_note_id = home.id
         await History(self.session).append(home, self.author_id, "create")
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
         return await self.output(await self.get(row.id))
 
     async def put(self, project_id: str, body: KnowledgeBasePut) -> KnowledgeBaseOut:
