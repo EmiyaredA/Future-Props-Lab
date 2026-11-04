@@ -7,7 +7,7 @@ from .annotation_assets import audio_asset_grant
 from .annotation_task_sources import task_read_grant, task_upload_grant
 from .annotation_transcription import segment_grant
 from .galgame_asr import asr_model_grant
-from .galgame_assets import galgame_asset_grant
+from .galgame_assets import export_download_grant, galgame_asset_grant
 from .motion_assets import motion_asset_grant, motion_asset_write_grant
 from .motion_exports import render_grant as motion_export_grant
 from .motion_preview import motion_preview_grant
@@ -203,6 +203,7 @@ def permitted(grant, catalog):
         return True
     if (
         galgame_asset_grant(grant)
+        or export_download_grant(grant)
         or visual_catalog_grant(grant)
         or assistant_grant(grant)
         or asr_model_grant(grant)

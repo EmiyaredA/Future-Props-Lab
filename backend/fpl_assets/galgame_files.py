@@ -3,6 +3,7 @@
 from anyio import to_thread
 from sqlalchemy import or_, select
 
+from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.media_metadata import inspect_media_file
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
@@ -92,3 +93,20 @@ async def files(session, settings, project_id, query):
             )
         )
     return result
+
+
+async def export_file(session, settings, project_id, asset_id):
+    await check_project_scope(session, "galgame", project_id)
+    row = await session.scalar(
+        select(VisualAsset).where(
+            VisualAsset.id == asset_id,
+            VisualAsset.galgame_project_id == project_id,
+            VisualAsset.media_kind == "video",
+        )
+    )
+    if row is None:
+        raise AssetError("导出视频已被删除", code="not_found", status=404)
+    path = AssetStorage(settings).path_for(row)
+    if path.is_symlink() or not path.is_file():
+        raise AssetError("导出视频文件不存在", code="not_found", status=404)
+    return row, path

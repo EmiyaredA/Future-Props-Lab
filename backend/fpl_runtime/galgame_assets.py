@@ -95,3 +95,27 @@ def galgame_asset_grant(grant):
         ("PATCH", project),
         ("POST", project + "/assets/asr/match-dialogue"),
     }
+
+
+EXPORT_DOWNLOAD_PURPOSE = "galgame.video-export.download"
+
+
+def export_download_target(method, path):
+    if method == "GET":
+        return re.fullmatch(rf"{PREFIX}/({ID})/exports/({ID})/files/({ID})", path)
+    return None
+
+
+def export_download_grant(grant):
+    if (grant.caller, grant.purpose, grant.target_service, grant.source_method) != (
+        "galgame",
+        EXPORT_DOWNLOAD_PURPOSE,
+        "assets",
+        "GET",
+    ):
+        return False
+    target = export_download_target(grant.target_method, grant.target_path)
+    if target is None:
+        return False
+    project_id, export_id, _ = target.groups()
+    return grant.source_path == f"{SOURCE}/{project_id}/video-exports/{export_id}/download"

@@ -20,6 +20,7 @@ from fpl_runtime.annotation_transcription import target as annotation_transcript
 from fpl_runtime.claims import verify_context
 from fpl_runtime.galgame_asr import asr_model_target
 from fpl_runtime.galgame_assets import asset_query_target as galgame_file_query_target
+from fpl_runtime.galgame_assets import export_download_target
 from fpl_runtime.model_outputs import is_model_output_path
 from fpl_runtime.motion_exports import render_target
 from fpl_runtime.project_reveal import reveal_target
@@ -160,6 +161,7 @@ async def live(request: Request, body: LiveRequest):
         or reveal_target(body.method, body.path, body.service)
         or (body.service == "assets" and galgame_file_query_target(body.method, body.path))
         or (body.service == "assets" and attachment_target(body.method, body.path))
+        or (body.service == "assets" and export_download_target(body.method, body.path))
         or (body.service == "assets" and segment_bundle_target(body.method, body.path))
         or (body.service == "video" and handoff_target(body.method, body.path))
     ) and (operation is None or operation.service != body.service):
