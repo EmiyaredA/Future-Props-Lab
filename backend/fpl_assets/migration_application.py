@@ -6,7 +6,7 @@ from fpl_runtime.migration_apps import export_app, import_app, mount_dataset
 
 from .migration_blobs import BLOBS, mount_blobs
 from .migration_editing_scopes import mount_project_scopes
-from .migration_models import AssetImportReceipt
+from .migration_models import MIGRATION_MODELS
 from .migration_presentation import mount_presentation_references
 from .migration_records import DATASETS, export_page, import_batch, inventory
 from .migration_video_outputs import mount_video_outputs
@@ -14,7 +14,6 @@ from .migrations.registry import MIGRATIONS
 from .models import (
     AssetReferencePin,
     AssetReferenceSet,
-    AssetVideoOutputHistory,
     VideoFileWriteReceipt,
 )
 
@@ -50,10 +49,9 @@ def create_export_app(*, plan, source_path):
 def create_import_app(*, plan, state_root):
     models = (
         *[dataset.model for dataset in DATASETS],
-        AssetImportReceipt,
+        *MIGRATION_MODELS,
         AssetReferenceSet,
         AssetReferencePin,
-        AssetVideoOutputHistory,
         VideoFileWriteReceipt,
     )
     app, database = import_app(plan, state_root, "assets", models, MIGRATIONS, **TRANSPORT)

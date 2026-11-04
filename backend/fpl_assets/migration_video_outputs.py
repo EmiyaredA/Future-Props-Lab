@@ -21,8 +21,8 @@ from fpl_runtime.project_history_records import Identifier
 from fpl_runtime.video_segments import PublishedSegment, segment_receipt_id
 
 from .migration_blobs import AssetBlobs
-from .migration_models import AssetImportReceipt
-from .models import AssetVideoOutputHistory, VideoFileWriteReceipt
+from .migration_models import AssetImportReceipt, AssetVideoOutputHistory
+from .models import VideoFileWriteReceipt
 from .video_files import record as file_record
 
 DATASET = "assets.video-output-receipts"

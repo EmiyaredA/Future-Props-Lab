@@ -345,15 +345,6 @@ class VideoSegmentHandoffFile(ReferenceBase):
     metadata_snapshot: Mapped[dict] = mapped_column(JSON)
 
 
-class AssetVideoOutputHistory(ReferenceBase):
-    """Original task IDs for migration receipts reconstructed from legacy assets."""
-
-    __tablename__ = "asset_video_output_history"
-    owner_user_id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    record: Mapped[dict] = mapped_column(JSON)
-
-
 MODELS = (
     VisualAssetFolder,
     VisualAsset,

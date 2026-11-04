@@ -16,3 +16,15 @@ class AssetImportReceipt(AssetMaintenanceBase):
     owner_user_id: Mapped[str] = mapped_column(String(36), primary_key=True)
     batch_id: Mapped[str] = mapped_column(String(36), primary_key=True)
     receipt: Mapped[dict] = mapped_column(JSON)
+
+
+class AssetVideoOutputHistory(AssetMaintenanceBase):
+    """Original task IDs for migration receipts reconstructed from legacy assets."""
+
+    __tablename__ = "asset_video_output_history"
+    owner_user_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    record: Mapped[dict] = mapped_column(JSON)
+
+
+MIGRATION_MODELS = (AssetImportReceipt, AssetVideoOutputHistory)

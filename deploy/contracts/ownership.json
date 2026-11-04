@@ -4529,6 +4529,12 @@
       "model": "AssetImportReceipt"
     },
     {
+      "table": "asset_video_output_history",
+      "service": "assets",
+      "module": "fpl_assets.migration_models",
+      "model": "AssetVideoOutputHistory"
+    },
+    {
       "table": "asset_reference_sets",
       "service": "assets",
       "module": "fpl_assets.models",
@@ -4653,12 +4659,6 @@
       "service": "assets",
       "module": "fpl_assets.models",
       "model": "VideoSegmentHandoffFile"
-    },
-    {
-      "table": "asset_video_output_history",
-      "service": "assets",
-      "module": "fpl_assets.models",
-      "model": "AssetVideoOutputHistory"
     },
     {
       "table": "creative_install_fences",
