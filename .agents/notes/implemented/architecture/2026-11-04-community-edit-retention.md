@@ -25,3 +25,5 @@ A permission change before the source write produces an abort outcome. The exist
 The isolated HTTP scenario grants and revokes an editor role, verifies that the source owner retains the resulting note and asset references, rejects a hidden file, and checks the original revision when permission is revoked after remote preparation.
 
 Community table batches use the same owner-scoped receipts. The source rechecks both the embedded parent and target article permissions, and validates table entity IDs while holding the write lock. Isolated HTTP tests cover direct and embedded editing, attachment removal with retained history, and revocation during preparation.
+
+Community attachment staging shares the private file batch storage and settlement path. Identity delegates only the exact browser upload operation. The peer proof binds the source owner and published article separately from the live editor, and the receipt binds the staged file and sealed manifest to the request. The isolated protocol test rejects mismatched source routes and unsigned proofs and confirms that repeated staging leaves the attachment out of both public libraries.

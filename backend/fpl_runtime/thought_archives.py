@@ -108,7 +108,9 @@ class ArchiveAuthenticator:
         import hmac
         import re
 
-        if use not in {"receipt", "decision"} or not re.fullmatch(r"[a-f0-9]{32}", nonce):
+        if use not in {"receipt", "decision", "community-stage"} or not re.fullmatch(
+            r"[a-f0-9]{32}", nonce
+        ):
             raise ValueError("归档签名绑定无效")
         payload = json.dumps(
             [use, path, owner, nonce, hashlib.sha256(body).hexdigest()],

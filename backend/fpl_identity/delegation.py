@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.capabilities.identity.principal import StudioPrincipal
 from app.capabilities.identity.route_permissions import route_permission
 from fpl_runtime.claims import issue_context, verify_context
+from fpl_runtime.community_uploads import upload_grant as community_upload_grant
 from fpl_runtime.delegation import RequestGrant, permitted, target_permission_path
 
 from .live import active_actor
@@ -69,18 +70,28 @@ async def authorize_delegation(app, body, credential):
         and principal.auth_kind == "session"
         and principal.permits("studio:read")
     )
-    if not community_directory and (
+    community_upload = community_upload_grant(grant)
+    if community_upload and (
+        source_permission != "community.access"
+        or principal.auth_kind != "session"
+        or not principal.permits("studio:read")
+    ):
+        raise HTTPException(403, "community_session_required")
+    if not (community_directory or community_upload) and (
         source_permission is None or not principal.allows(source_permission)
     ):
         raise HTTPException(403, "source_permission_denied")
     permission = route_permission(body.target_method, target_permission_path(grant))
-    if permission is None or not principal.allows(permission):
+    if permission is None or (
+        permission != "community.access" if community_upload else not principal.allows(permission)
+    ):
         raise HTTPException(403, "target_permission_denied")
-    scope = (
-        "studio:private_read"
-        if permission in {"content.read", "logs.read", "diagnostics.model", "docs.developer"}
-        else "studio:write"
-    )
+    if community_upload:
+        scope = "studio:read"
+    elif permission in {"content.read", "logs.read", "diagnostics.model", "docs.developer"}:
+        scope = "studio:private_read"
+    else:
+        scope = "studio:write"
     if not principal.permits(scope):
         raise HTTPException(403, "target_scope_denied")
     return issue_context(

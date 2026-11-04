@@ -75,6 +75,7 @@ async def live(request: Request, body: LiveRequest):
     private_output = (
         body.service == "assets" and body.method == "POST" and is_model_output_path(body.path)
     )
+    from fpl_runtime.community_uploads import upload_target as community_upload_target
     from fpl_runtime.creative_preview import preview_target
     from fpl_runtime.creative_source_evidence import source_transfer_target
     from fpl_runtime.creative_stdio import stdio_target
@@ -99,7 +100,9 @@ async def live(request: Request, body: LiveRequest):
         or stdio_target(body.method, body.path)
     )
     private_thought_upload = body.service == "assets" and (
-        is_upload_target(body.method, body.path) or archive_target(body.method, body.path)
+        is_upload_target(body.method, body.path)
+        or archive_target(body.method, body.path)
+        or community_upload_target(body.method, body.path)
     )
     if not (private_output or private_writing or private_external or private_thought_upload) and (
         operation is None or operation.service != body.service

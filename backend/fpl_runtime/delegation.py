@@ -94,6 +94,7 @@ def model_library_output(grant):
 
 def target_permission_path(grant):
     from .account_directory import directory_path
+    from .community_uploads import upload_grant as community_upload_grant
     from .creative_preview import preview_grant
     from .creative_source_evidence import source_transfer_grant
     from .creative_stdio import stdio_grant
@@ -116,6 +117,8 @@ def target_permission_path(grant):
         return "/v1/integrations/mcp"
     if writing_grant(grant):
         return writing_target(grant.target_method, grant.target_path)
+    if community_upload_grant(grant):
+        return grant.source_path
     if asset_grant(grant) or upload_grant(grant) or archive_grant(grant):
         return "/v1/files"
     if model_library_output(grant):
@@ -129,6 +132,7 @@ def permitted(grant, catalog):
     if original is None or original.service != grant.caller:
         return False
     from .account_directory import directory_grant
+    from .community_uploads import upload_grant as community_upload_grant
     from .creative_preview import preview_grant
     from .creative_source_evidence import source_transfer_grant
     from .creative_stdio import stdio_grant
@@ -143,7 +147,12 @@ def permitted(grant, catalog):
         return True
     if writing_grant(grant) or read_grant(grant) or close_grant(grant):
         return True
-    if asset_grant(grant) or upload_grant(grant) or archive_grant(grant):
+    if (
+        asset_grant(grant)
+        or upload_grant(grant)
+        or archive_grant(grant)
+        or community_upload_grant(grant)
+    ):
         return True
     if model_library_input(grant) or model_library_output(grant):
         return True

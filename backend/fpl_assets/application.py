@@ -32,6 +32,7 @@ from .models import MODELS
 from .reference_changes import ReferenceChanges
 from .retention_api import router as retention_router
 from .routes.community_assets import router as community_assets_router
+from .routes.community_uploads import router as community_uploads_router
 from .routes.files import router as files_router
 from .routes.layout import router as layout_router
 from .routes.library_inputs import router as library_inputs_router
@@ -138,6 +139,7 @@ def create_app(
     app.include_router(thought_uploads_router)
     app.include_router(thought_archives_router)
     app.include_router(community_assets_router)
+    app.include_router(community_uploads_router)
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
