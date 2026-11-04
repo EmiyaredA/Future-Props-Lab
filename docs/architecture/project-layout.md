@@ -57,6 +57,8 @@
 
 `settings.py` 只接受存储路径与三项文件限制，不加载 `.env` 或加密密钥。项目验证通过绑定原请求的 `assets.visual-project.read` 委托，只能从五个已登记文件操作读取 Visual 项目；不会传递原 Cookie 或完整客户端凭据。`application.py` 装配 21 个既有公开操作和私有引用协议，拥有文件清理生命周期；`__main__.py` 在加载 ORM 前解析最小配置、验证目录、取得独占锁并检查显式迁移。公开协议哈希与聚合契约一致。镜像与独立 `/files` 页面已经接通，完整容器验收和业务引用调用方仍是正式切换门禁。
 
+`backend/fpl_presentation/` 装配独立演示文稿项目 API、迁移和持久引用结果。共享文稿用例在 `app/apps/presentation_workshop/`，兼容装配注入原文件库，独立装配以 `fpl_runtime/presentation_assets.py` 的签名契约向 Assets 读取素材描述和指定版本的 SVG。项目 CAS、编辑回执与素材引用结果在文稿服务的一次事务内提交。
+
 `backend/fpl_rendering/` 当前承接五个兼容媒体接口，不加载素材或工坊 ORM。`inputs.py` 通过受限的 `rendering.source.read` 委托读取同一素材的 HTTP 内容，以账号隔离的暂存目录接收并校验类型、revision、大小；Assets 内容响应显式声明这些描述头。`previews.py` 拥有有界缩略、裁剪、取帧及宫格输出，完成响应前再次验证账号授权；身份服务故障返回 503，撤销返回 401。它只挂载自己的状态目录和最小配置。现阶段迁移注册表只标识服务归属；确定性时间线任务队列、跨应用导出及正式数据转移仍未完成。
 
 `backend/fpl_models/` 拥有独立模型服务的 HTTP、任务 Runner、目录初始化和持久化边界；`models.py` 显式列出默认选择和全部 Models 自有 ORM，`ACCOUNT_MODELS` 只标记拥有账号归属的根记录。`0001_account_defaults` 保持原样，追加的 `0002_model_capabilities` 创建目录、日志、模型测试／推理、本地模型与治理记录，不创建账号、素材或工坊表。账号、源素材和外部排队任务 ID 是不透明引用；仅保留自有表外键。旧单体数据库继续由原 SQL 迁移维护，已有外键与级联不因 ORM 的服务边界描述而被改写。`application.py` 与 `__main__.py` 装配自有 HTTP、配额、任务授权、模板同步、确定性演示和实时语音；独立页面与镜像可用于隔离验收。Mac 原生模型通过受认证租约与 worker 显式执行；当前九容器确定性验收通过，真实 Qwen 权重／MLX、其余应用服务和正式数据导入仍受切换门禁约束。

@@ -12,6 +12,7 @@ OWNED_HTTP_IMAGES = PROJECT_OWNERS | {"tools", "director", "agent-runtime", "rem
 
 ENTRY_POINTS = {
     "annotation": "fpl_annotation.__main__",
+    "presentation": "fpl_presentation.__main__",
     "visual": "fpl_visual.__main__",
     "galgame": "fpl_galgame.__main__",
     "tools": "fpl_tools.__main__",
@@ -40,6 +41,7 @@ PROJECT_PACKAGES = (
     "fpl_portal",
     "fpl_assets",
     "fpl_annotation",
+    "fpl_presentation",
     "fpl_rendering",
     "fpl_models",
     "fpl_thought",
@@ -316,6 +318,21 @@ def source_closure(root: Path, service):
             or name in {"app.console.cloud_control.access", "app.console.cloud_control.desktop"}
         ):
             raise ValueError(f"Remote 镜像包含越界依赖：{name}")
+        if service == "presentation" and (
+            name in {"app.main", "app.api", "app.orm", "app.runtime.db"}
+            or name.startswith(("app.console", "app.llm", "fpl_assets", "fpl_identity", "fpl_host"))
+            or (
+                name.startswith("app.apps.")
+                and not name.startswith("app.apps.presentation_workshop")
+            )
+            or name
+            in {
+                "app.apps.presentation_workshop.legacy_project_assets",
+                "app.capabilities.asset_store.models",
+                "app.capabilities.asset_store.storage",
+            }
+        ):
+            raise ValueError(f"Presentation 镜像包含越界依赖：{name}")
         if service == "annotation" and (
             name in {"app.main", "app.api", "app.orm", "app.runtime.db"}
             or name.startswith(("app.console", "app.llm", "fpl_assets", "fpl_identity", "fpl_host"))
@@ -451,6 +468,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
         "director",
         "interview",
         "annotation",
+        "presentation",
         "agent-runtime",
         "remote",
     }:
@@ -504,7 +522,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
             payloads["web/build.json"] = (release.root / "build.json").read_bytes()
             for name in release.files:
                 payloads["web/" + name] = (release.root / name).read_bytes()
-    elif service in PROJECT_OWNERS or service == "remote":
+    elif service in PROJECT_OWNERS or service in {"remote", "presentation"}:
         payloads["web/.api-only"] = b"No browser program in this API acceptance image.\n"
     hashes = {
         name: hashlib.sha256(content).hexdigest() for name, content in sorted(payloads.items())

@@ -4847,6 +4847,12 @@
       "model": "NativeModelObservation"
     },
     {
+      "table": "presentation_reference_mutations",
+      "service": "presentation",
+      "module": "fpl_presentation.models",
+      "model": "PresentationReferenceMutation"
+    },
+    {
       "table": "remote_desktop_import_receipts",
       "service": "remote",
       "module": "fpl_remote.models",

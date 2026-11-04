@@ -6,7 +6,9 @@ from app.apps.director_desk.routes import router as director_desk_router
 from app.apps.galgame_workshop.routes import router as galgame_workshop_router
 from app.apps.interview_assistant.routes import router as interview_assistant_router
 from app.apps.motion_compositor.routes import router as motion_compositor_router
-from app.apps.presentation_workshop.routes import router as presentation_workshop_router
+from app.apps.presentation_workshop.routes.compatibility import (
+    router as presentation_workshop_router,
+)
 from app.apps.thought_workshop import content_exports_http as thought_conversion
 from app.apps.thought_workshop.external_sync.records_http import router as sync_records_router
 from app.apps.thought_workshop.routes import router as thought_workshop_router

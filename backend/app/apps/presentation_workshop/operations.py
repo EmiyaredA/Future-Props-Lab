@@ -95,10 +95,11 @@ async def apply_operations(session, owner_user_id, project_id, body):
         )
     candidate = transform(current, body)
     try:
-        result = await projects.put(project_id, candidate, commit=False)
-        record(session, **key, result=result)
-        await session.commit()
-        return result
+        return await projects.put(
+            project_id,
+            candidate,
+            record_operation=lambda result: record(session, **key, result=result),
+        )
     except RevisionConflictError:
         saved = await replay(session, **key)
         if saved is not None:

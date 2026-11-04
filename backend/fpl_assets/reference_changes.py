@@ -156,6 +156,19 @@ class ReferenceChanges:
                 if asset.byte_size > MAX_AUDIO_BYTES:
                     raise failure("audio_too_large", "音频不能超过 100 MiB", 413)
                 present = {asset.id}
+            elif requested and service == "presentation":
+                present = set(
+                    await session.scalars(
+                        select(VisualAsset.id).where(
+                            VisualAsset.id.in_(requested),
+                            VisualAsset.project_id.is_(None),
+                            VisualAsset.galgame_project_id.is_(None),
+                            VisualAsset.video_editor_project_id.is_(None),
+                            VisualAsset.motion_compositor_project_id.is_(None),
+                            VisualAsset.media_kind.in_(("image", "audio", "video")),
+                        )
+                    )
+                )
             elif requested and describe_canvas:
                 present, known = await canvas_files(session, row, change)
                 unavailable = requested - present

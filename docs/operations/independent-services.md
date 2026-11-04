@@ -430,3 +430,12 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 上传片段和已保存片段均由 Models 使用自己的模型目录、供应商凭据和调用日志执行。Annotation 校验项目和时间范围，Identity 签名绑定输入元数据及 WAV 摘要，Models 复核授权后才提交供应商。相同尝试返回原回执，未确认的旧尝试不会再次发起。定向联调使用确定性供应商夹具验证两条入口和回执，真实供应商验收仍由正式门禁跟踪。
 
 已完成的 Models 任务可以导入音频标注。原音频仍在账号库时沿用该素材。需要复制时，先校验音频时长和识别结果，再经 Assets 保存原件及持久回执。重复导入可创建独立标注项目，原件按任务和摘要复用。若项目写入中断，已保存原件会留在账号库供同任务恢复使用。
+
+
+### Presentation 文稿边界
+
+独立镜像装配文稿列表、新建、读取、CAS 保存、删除和编辑批次六项发布操作。叠加 `deploy/presentation.compose.yaml`，提供独立状态目录、Identity 公钥和 Presentation 服务凭据，显式执行 `presentation migrate` 后启动。启动比对已装配的公开操作及其 schema。
+
+编辑时 Identity 对素材查询摘要和指定版本的 SVG 原件签发限定授权。Assets 只允许访问同一账号的普通文件库。素材先由 Assets 准备保留，文稿及结果在同一事务提交，后台使用持久回执交付确认。生产就绪门禁继续跟踪模板、示例、导入导出、浏览器入口和历史迁移。
+
+四容器隔离验收 `fpl-presentation-api-8a59c2ddbf` 通过 Gateway 验证 SVG 上传与规范化摘要、文稿保存、素材删除保护、容器重启、原编辑回执重放、删除后的素材释放以及回环公网入口的认证。该批次使用 API 镜像 `fpl/presentation:643627c8951ef323c5b1`。
