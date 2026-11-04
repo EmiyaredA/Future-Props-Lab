@@ -189,6 +189,27 @@ async def test_create_template_pins_same_account_assets_over_http(scenario):  # 
                     json={"title": "Blank", "expected_revision": 3},
                 )
                 assert document.status_code == 200, document.text
+                copy_path = f"/v1/thought-workshop/notes/{table_note['id']}/duplicate"
+                copy_body = {
+                    "knowledge_base_id": "book",
+                    "source_knowledge_revision": 4,
+                    "expected_knowledge_revision": 4,
+                    "expected_revisions": {table_note["id"]: table_note["revision"]},
+                }
+                denied = await client.post(
+                    copy_path, headers=await context(case.browser, copy_path), json=copy_body
+                )
+                assert denied.status_code == 404, denied.text
+                copied = await client.post(
+                    copy_path, headers=await context(owner, copy_path), json=copy_body
+                )
+                assert copied.status_code == 200, copied.text
+                copy_id = copied.json()["root_id"]
+                assert copied.json()["note_ids"] == [copy_id] and copy_id != table_note["id"]
+                stale = await client.post(
+                    copy_path, headers=await context(owner, copy_path), json=copy_body
+                )
+                assert stale.status_code == 409, stale.text
                 knowledge_path = "/v1/thought-workshop/knowledge-bases"
                 knowledge_body = {"title": "Covered book", "cover_asset_id": case.asset}
                 denied = await client.post(
@@ -447,6 +468,15 @@ async def test_create_template_pins_same_account_assets_over_http(scenario):  # 
                     )
                 )
                 assert [pin.asset_id for pin in table_pins] == [case.asset]
+                copy_pin = await session.scalar(
+                    select(AssetReferencePin.asset_id)
+                    .join(AssetReferenceSet)
+                    .where(
+                        AssetReferenceSet.resource_kind == "note",
+                        AssetReferenceSet.resource_id == copy_id,
+                    )
+                )
+                assert copy_pin == case.asset
                 for item, expected in ((direct.json(), [case.asset]), (document.json(), [])):
                     created_ref = await session.scalar(
                         select(AssetReferenceSet).where(
@@ -614,6 +644,7 @@ def test_independent_thought_mounts_shared_routes_with_public_contract(tmp_path)
         ("get", "/link-preview"),
         ("get", "/models"),
         ("post", "/notes/{note_id}/assistant"),
+        ("post", "/notes/{note_id}/duplicate"),
         ("post", "/notes/{note_id}/multitable/conversion-preview"),
         ("post", "/notes/{note_id}/multitable/csv-preview"),
         ("post", "/notes/{note_id}/multitable/tables/{table_id}/csv-export"),

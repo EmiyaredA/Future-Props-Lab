@@ -118,6 +118,11 @@ class RetentionAuthorization:
                         body.source_path,
                     )
                     is not None
+                    or re.fullmatch(
+                        r"/v1/thought-workshop/notes/[A-Za-z0-9_-]+/duplicate",
+                        body.source_path,
+                    )
+                    is not None
                 )
                 and body.change.resource_kind == "note"
                 and body.change.expected_resource_revision == -1

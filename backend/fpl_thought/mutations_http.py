@@ -7,6 +7,8 @@ from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.http_bindings import SessionDep
 from app.apps.thought_workshop.knowledge import KnowledgeBases
 from app.apps.thought_workshop.knowledge_tools.schemas import (
+    DuplicateIn,
+    DuplicateOut,
     TemplateApply,
     TemplateIn,
     TemplateOut,
@@ -34,6 +36,7 @@ from app.deps import OwnerDep, StudioAuth
 from app.runtime.operation_receipts import OperationError
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
 
+from .duplicate_retention import duplicate_with_references
 from .knowledge_retention import (
     create_knowledge_base_with_references,
     update_knowledge_base_with_references,
@@ -105,6 +108,22 @@ async def create_note(
             session,
             owner=principal.user_id,
             author_id=principal.user_id,
+            body=body,
+            **context(request),
+        )
+    )
+
+
+@router.post("/notes/{note_id}/duplicate", response_model=DuplicateOut)
+async def duplicate_document(
+    note_id: str, body: DuplicateIn, session: SessionDep, principal: StudioAuth, request: Request
+):
+    return await guarded(
+        duplicate_with_references(
+            session,
+            owner=principal.user_id,
+            author_id=principal.user_id,
+            note_id=note_id,
             body=body,
             **context(request),
         )

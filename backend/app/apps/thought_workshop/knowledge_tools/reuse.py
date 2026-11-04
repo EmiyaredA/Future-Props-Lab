@@ -258,7 +258,7 @@ class ReusableContent:
             knowledge_revision=project.revision, revisions={row.id: row.revision for row in rows}
         )
 
-    async def duplicate(self, id, body):
+    async def duplicate(self, id, body, *, prepare=None, commit=True):
         project, source = await self.copy_source(id, body.subtree)
         current = {row.id: row.revision for row in source}
         if current != body.expected_revisions or project.revision != body.source_knowledge_revision:
@@ -270,13 +270,40 @@ class ReusableContent:
                 ).model_dump(),
             )
         table_data = await export_tables(self.session, source)
-        ids = archive_assets(table_data)
-        ids.update(asset for row in source for asset in file_ids(row.document))
-        await resolve_assets(self.session, self.owner_user_id, ids)
+        project_id = project.id
+        mapping = {row.id: new_id() for row in source}
+        table_mapping = entity_mapping(table_data)
+        copies = {}
+        for row in source:
+            document = remap_references(row.document, mapping)
+            remap_embeds(document, table_mapping)
+            copies[row.id] = (
+                ThoughtNoteIn(
+                    knowledge_base_id=body.knowledge_base_id,
+                    parent_id=body.parent_id if row.id == id else mapping[row.parent_id],
+                    title=row.title[:230] + "（副本）" if row.id == id else row.title,
+                    kind=row.kind,
+                    document=document,
+                    tags=list(row.tags),
+                    schema_version=3,
+                ),
+                row.position,
+            )
+        table_assets = {
+            note_id: archive_assets({note_id: table}) for note_id, table in table_data.items()
+        }
+        pins = {
+            mapping[note_id]: file_ids(candidate.document) | table_assets.get(note_id, set())
+            for note_id, (candidate, _) in copies.items()
+        }
+        if prepare is not None:
+            await self.session.rollback()
+            await prepare(pins)
+        await resolve_assets(self.session, self.owner_user_id, set().union(*pins.values()))
         guard = await self.session.execute(
             update(ThoughtKnowledgeBase)
             .where(
-                ThoughtKnowledgeBase.id == project.id,
+                ThoughtKnowledgeBase.id == project_id,
                 ThoughtKnowledgeBase.owner_user_id == self.owner_user_id,
                 ThoughtKnowledgeBase.revision == body.source_knowledge_revision,
             )
@@ -288,47 +315,35 @@ class ReusableContent:
             raise RevisionConflictError(
                 body.source_knowledge_revision, latest.knowledge_revision, latest.model_dump()
             )
-        for row in source:
+        for note_id, revision in current.items():
             guarded = await self.session.execute(
                 update(ThoughtNote)
                 .where(
-                    ThoughtNote.id == row.id,
+                    ThoughtNote.id == note_id,
                     ThoughtNote.owner_user_id == self.owner_user_id,
-                    ThoughtNote.revision == current[row.id],
+                    ThoughtNote.revision == revision,
                 )
                 .values(revision=ThoughtNote.revision)
             )
             if guarded.rowcount != 1:
-                await Notes(self.session, self.owner_user_id).conflict(row.id, current[row.id])
+                await Notes(self.session, self.owner_user_id).conflict(note_id, revision)
         directory = Directory(self.session, self.owner_user_id, self.author_id)
         await directory.reserve(body.knowledge_base_id, body.expected_knowledge_revision)
         await directory.parent(body.knowledge_base_id, body.parent_id)
-        mapping = {row.id: new_id() for row in source}
         siblings = await directory.siblings(body.knowledge_base_id, body.parent_id)
         position = max((n.position for n in siblings), default=-1) + 1
-        table_mapping = entity_mapping(table_data)
         created = []
-        for row in source:
-            document = remap_references(row.document, mapping)
-            remap_embeds(document, table_mapping)
+        for note_id, (candidate, original_position) in copies.items():
             new = await Notes(self.session, self.owner_user_id, self.author_id).create(
-                ThoughtNoteIn(
-                    knowledge_base_id=body.knowledge_base_id,
-                    parent_id=body.parent_id if row.id == id else mapping[row.parent_id],
-                    title=row.title[:230] + "（副本）" if row.id == id else row.title,
-                    kind=row.kind,
-                    document=document,
-                    tags=list(row.tags),
-                    schema_version=3,
-                ),
+                candidate,
                 commit=False,
                 importing=True,
-                note_id=mapping[row.id],
+                note_id=mapping[note_id],
             )
-            new.position = position if row.id == id else row.position
+            new.position = position if note_id == id else original_position
             await History(self.session).append(new, self.author_id, "create")
             created.append(new.id)
-        asset_mapping = {id: id for id in archive_assets(table_data)}
+        asset_mapping = {asset: asset for ids in table_assets.values() for asset in ids}
         # Retain references to documents outside the copied subtree in this account.
         refs = dict(mapping)
         for value in table_data.values():
@@ -339,7 +354,8 @@ class ReusableContent:
                             for target in r["values"].get(f["id"], []) or []:
                                 refs.setdefault(target, target)
         await import_tables(self.session, table_data, refs, asset_mapping, table_mapping)
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
         return DuplicateOut(
             root_id=mapping[id], note_ids=created, knowledge_base_id=body.knowledge_base_id
         )
