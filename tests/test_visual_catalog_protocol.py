@@ -45,6 +45,7 @@ from fpl_runtime.database import Database
 from fpl_runtime.delegation import RequestGrant
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
+from fpl_runtime.motion_preview import FrameFile
 from fpl_runtime.thought_archives import ArchiveAuthenticator
 from fpl_runtime.visual_acceptance_assets import PURPOSE as ACCEPTANCE_ASSETS_PURPOSE
 from fpl_runtime.visual_acceptance_assets import AcceptanceAssetQuery
@@ -58,8 +59,9 @@ from fpl_runtime.visual_catalog import (
     GENERATION_TARGET,
     PURPOSE,
 )
+from fpl_runtime.visual_generation import ASSET_PURPOSE as GENERATION_ASSETS_PURPOSE
 from fpl_runtime.visual_generation import MODEL_PURPOSE as GENERATION_MODEL_PURPOSE
-from fpl_runtime.visual_generation import ModelSelection
+from fpl_runtime.visual_generation import GenerationAssetQuery, GenerationFileScope, ModelSelection
 from fpl_runtime.visual_snapshot import ARCHIVE_DOMAIN, ARCHIVE_PREFIX, SnapshotAssetQuery
 from fpl_runtime.visual_snapshot import ASSET_PURPOSE as SNAPSHOT_ASSET_PURPOSE
 
@@ -491,6 +493,58 @@ async def verify_node_context(case, visual, http, model_id, transport):
         png.getvalue(),
     )
     await verify_snapshot_import(send, prefix, snapshot, model_id, transport)
+    await verify_generation_inputs(case, visual, http, root, project, image, png.getvalue())
+
+
+async def verify_generation_inputs(case, visual, http, root, project, image, data):
+    source = root + "/generation-tasks"
+    actor = (await authorize(case, "visual", "POST", source))[HEADER]
+
+    async def fetch(scope, *, signed_scope=None):
+        signed_path = (signed_scope or scope).path(project, "fixture-task")
+        token = await visual.state.capabilities.authorize_request(
+            actor,
+            RequestGrant(
+                "visual",
+                GENERATION_ASSETS_PURPOSE,
+                "POST",
+                source,
+                "assets",
+                "POST",
+                signed_path,
+            ),
+        )
+        return await http.post(
+            "http://assets" + signed_path,
+            headers={HEADER: token},
+            json=scope.model_dump(mode="json"),
+        )
+
+    metadata = GenerationAssetQuery(asset_ids=[image])
+    result = await fetch(metadata)
+    assert result.status_code == 200, result.text
+    file = result.json()["items"][0]
+    assert file["id"] == image and file["byte_size"] == len(data)
+    assert "storage_key" not in file
+    scope = GenerationFileScope(files=(FrameFile(id=image, revision=file["revision"]),))
+    original = await fetch(scope)
+    assert original.status_code == 200 and original.content[8:] == data
+    wrong = GenerationFileScope(files=(FrameFile(id=image, revision=file["revision"] + 1),))
+    assert (await fetch(wrong)).status_code == 409
+    assert (await fetch(wrong, signed_scope=scope)).status_code == 403
+    with pytest.raises(CapabilityDenied):
+        await visual.state.capabilities.authorize_request(
+            actor,
+            RequestGrant(
+                "visual",
+                GENERATION_ASSETS_PURPOSE,
+                "POST",
+                source,
+                "assets",
+                "POST",
+                metadata.path("another-project", "fixture-task"),
+            ),
+        )
 
 
 async def verify_snapshot(

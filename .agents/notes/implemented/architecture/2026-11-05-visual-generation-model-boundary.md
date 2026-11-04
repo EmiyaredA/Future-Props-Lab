@@ -8,7 +8,7 @@ Visual provider validation and request assembly lived with the compatible Visual
 
 ## Decision
 
-Move model eligibility, provider parameter validation and request assembly to the existing LLM capability. The compatible site binds explicit media callbacks to those functions. Independent Models issues a credential-free selection response after an exact Identity grant and an owner-bound model lookup. It retains provider credentials and its upload configuration values.
+Move model eligibility, provider parameter validation and request assembly to the existing LLM capability. The compatible site binds explicit media callbacks to those functions. Independent Models issues a credential-free selection response after an exact Identity grant and an owner-bound model lookup. It retains provider credentials and its upload configuration values. Assets serves exact project and task metadata and framed originals under a separate Models-use grant. The signed target binds each requested revision and identifies the owning project.
 
 ## Alternatives considered
 
@@ -16,8 +16,8 @@ Duplicating provider-specific parameters in the independent service would cause 
 
 ## Consequences
 
-The compatible site's provider behavior and public schemas remain in place. The new Models lookup is private. Independent task admission, original staging and result settlement are separate work.
+The compatible site's provider behavior and public schemas remain in place. The new Models lookup is private. Independent task admission, durable original staging in Models and result settlement are separate work.
 
 ## Verification
 
-Focused regressions cover queue and provider behavior, including Zealman, model selection without credentials, changed digest denial, foreign-account denial, architecture and image dependency boundaries.
+Focused regressions cover queue and provider behavior, including Zealman, model selection without credentials, changed digest denial, foreign-account denial, architecture and image dependency boundaries. The private Assets tests read exact original bytes and reject stale revisions, modified digest bodies and cross-project grants.

@@ -5,8 +5,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from .library_assets import ID
-from .motion_preview import DIGEST, sha256
+from .library_assets import ID, LibraryAssetDescription, LibraryAssetQuery
+from .motion_preview import DIGEST, FrameFile, FrameScope, sha256
 
 MODEL = "/_internal/v1/visual-generation/models"
 MODEL_PURPOSE = "visual.generation-model.read"
@@ -61,3 +61,43 @@ def visual_generation_model_grant(grant):
         and generation_source(grant.source_method, grant.source_path)
         and model_target(grant.target_method, grant.target_path)
     )
+
+
+ASSETS = "/_internal/v1/visual-generation/assets"
+ASSET_PURPOSE = "visual.generation-assets.read"
+MAX_REFERENCES = 64
+
+
+class GenerationAssetQuery(LibraryAssetQuery):
+    asset_ids: list[str] = Field(min_length=1, max_length=MAX_REFERENCES)
+
+    def path(self, project, task):
+        return f"{ASSETS}/{project}/{task}/metadata/{self.digest}"
+
+
+class GenerationFileScope(FrameScope):
+    files: tuple[FrameFile, ...] = Field(min_length=1, max_length=MAX_REFERENCES)
+
+    def path(self, project, task):
+        return f"{ASSETS}/{project}/{task}/originals/{self.digest}"
+
+
+class GenerationAssets(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    items: list[LibraryAssetDescription] = Field(max_length=MAX_REFERENCES)
+    max_video_bytes: int = Field(ge=1, strict=True)
+
+
+def generation_asset_target(method, path):
+    return method == "POST" and re.fullmatch(
+        rf"{ASSETS}/({ID})/({ID})/(metadata|originals)/({DIGEST})", path
+    )
+
+
+def visual_generation_asset_grant(grant):
+    if (grant.caller, grant.purpose, grant.target_service) != ("visual", ASSET_PURPOSE, "assets"):
+        return False
+    source = generation_source(grant.source_method, grant.source_path)
+    target = generation_asset_target(grant.target_method, grant.target_path)
+    return bool(source and target and source[1] == target[1])

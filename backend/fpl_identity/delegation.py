@@ -36,7 +36,10 @@ from fpl_runtime.visual_acceptance_assets import acceptance_asset_grant
 from fpl_runtime.visual_assistant import assistant_grant
 from fpl_runtime.visual_catalog import acceptance_agent_grant, visual_catalog_grant
 from fpl_runtime.visual_composition import composition_grant
-from fpl_runtime.visual_generation import visual_generation_model_grant
+from fpl_runtime.visual_generation import (
+    visual_generation_asset_grant,
+    visual_generation_model_grant,
+)
 from fpl_runtime.visual_snapshot import archive_grant as visual_archive_grant
 from fpl_runtime.visual_snapshot import snapshot_grant as visual_snapshot_grant
 
@@ -145,7 +148,11 @@ async def authorize_delegation(app, body, credential):
             or galgame_handoff_grant(grant)
             else (
                 "models.use"
-                if asr_job_grant(grant) or visual_generation_model_grant(grant)
+                if (
+                    asr_job_grant(grant)
+                    or visual_generation_model_grant(grant)
+                    or visual_generation_asset_grant(grant)
+                )
                 else route_permission(body.target_method, target_permission_path(grant))
             )
         )

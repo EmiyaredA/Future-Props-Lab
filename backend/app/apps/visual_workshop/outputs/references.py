@@ -1,8 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.visual_workshop.models import VisualCanvasDocument
-from app.apps.visual_workshop.outputs.history import OutputError
 from app.apps.visual_workshop.outputs.models import VisualNodeOutput
+from app.apps.visual_workshop.outputs.queries import OutputError
 from app.llm.schemas.generation_tasks import (
     AudioGenerationTaskCreateIn,
     ImageGenerationTaskCreateIn,

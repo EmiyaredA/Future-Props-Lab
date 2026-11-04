@@ -55,6 +55,7 @@ from fpl_runtime.visual_assistant import attachment_target
 from fpl_runtime.visual_catalog import AGENT_ACCEPTANCE_TARGET
 from fpl_runtime.visual_catalog import catalog_target as visual_catalog_target
 from fpl_runtime.visual_composition import grid_asset_target, grid_render_target
+from fpl_runtime.visual_generation import generation_asset_target
 from fpl_runtime.visual_generation import model_target as visual_generation_model_target
 from fpl_runtime.visual_snapshot import archive_target as visual_archive_target
 from fpl_runtime.visual_snapshot import asset_target as visual_snapshot_asset_target
@@ -212,6 +213,7 @@ async def live(request: Request, body: LiveRequest):
         or (body.service == "assets" and attachment_target(body.method, body.path))
         or (body.service == "assets" and acceptance_asset_target(body.method, body.path))
         or (body.service == "assets" and visual_snapshot_asset_target(body.method, body.path))
+        or (body.service == "assets" and generation_asset_target(body.method, body.path))
         or (body.service == "assets" and export_download_target(body.method, body.path))
         or (body.service == "assets" and galgame_annotation_audio_target(body.method, body.path))
         or (body.service == "annotation" and annotation_target(body.method, body.path))
