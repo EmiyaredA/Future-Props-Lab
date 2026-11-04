@@ -22,12 +22,14 @@ from app.runtime.revisions import RevisionConflictError
 from fpl_runtime.authentication import SignedIdentity
 from fpl_runtime.capability_client import CapabilityClient
 from fpl_runtime.database import Database
+from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.locking import service_lock
 from fpl_runtime.migrations import check
 from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.reference_runtime import install_reference_runtime, reference_lifespan
 from fpl_runtime.web import attach_web, load_release
 
+from .galgame_source_http import router as galgame_source_router
 from .migrations.registry import MIGRATIONS
 from .models import MODELS, AnnotationReferenceMutation
 from .sources import Inputs, ProjectReferences
@@ -57,6 +59,7 @@ def create_app(
     capabilities = CapabilityClient(
         service=SERVICE, credential=credential, catalog=catalog, transport=transport
     )
+    identity = LiveAuthorization(service=SERVICE, credential=credential, transport=transport)
     staging = database.root / ".staging"
 
     @asynccontextmanager
@@ -70,6 +73,7 @@ def create_app(
                 async with reference_lifespan(app):
                     yield
             finally:
+                await identity.close()
                 await capabilities.close()
                 await database.close()
 
@@ -77,6 +81,7 @@ def create_app(
         title="FPL Annotation", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan
     )
     app.state.database = database
+    app.state.identity, app.state.identity_public_key = identity, public_key
     install_reference_runtime(
         app,
         service=SERVICE,
@@ -111,6 +116,7 @@ def create_app(
     app.add_exception_handler(OperationalError, storage_operational_error_handler)
     app.add_exception_handler(RevisionConflictError, revision_conflict_handler)
     app.add_exception_handler(AudioAnnotationError, annotation_error)
+    app.include_router(galgame_source_router)
     app.include_router(router, prefix="/v1", dependencies=[Depends(require_studio_auth)])
     if schema_path is not None:
         expected = public_contract(json.loads(schema_path.read_text()), SERVICE, catalog)

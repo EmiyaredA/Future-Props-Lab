@@ -3,6 +3,8 @@
 from fastapi import APIRouter, Request
 
 from app.apps.galgame_workshop.schemas import (
+    GalgameAnnotationImportIn,
+    GalgameAnnotationImportPreviewOut,
     GalgameAnnotationImportTaskOut,
     GalgameVideoEditorHandoffTaskListOut,
     GalgameVideoEditorHandoffTaskOut,
@@ -14,12 +16,28 @@ from app.apps.galgame_workshop.schemas import (
 from fpl_runtime.galgame_assets import SOURCE
 from fpl_runtime.http_dependencies import OwnerDep, SessionDep
 
+from .annotation_preview import annotation_preview
 from .asset_read_routes import read_assets
 from .export_download import download_export
 from .export_preflight import export_preview
 from .task_records import TaskRecords
 
 router = APIRouter(prefix=SOURCE, tags=["galgame-workshop"])
+
+
+@router.post(
+    "/{project_id}/annotation-imports/preview", response_model=GalgameAnnotationImportPreviewOut
+)
+async def preview_annotation_import(
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    project_id: str,
+    body: GalgameAnnotationImportIn,
+    request: Request,
+) -> GalgameAnnotationImportPreviewOut:
+    return await annotation_preview(
+        request, read_assets(request, session, owner_user_id), project_id, body
+    )
 
 
 @router.get(

@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse
 from app.capabilities.asset_store.policy import download_filename
 from app.capabilities.identity.permissions import effective_permissions
 from fpl_runtime.claims import HEADER, verify_context
+from fpl_runtime.galgame_annotation_source import AUDIO_PATH, AudioDigest, audio_target
 from fpl_runtime.galgame_assets import (
     PREFIX,
     GalgameAssetFile,
@@ -15,6 +16,7 @@ from fpl_runtime.galgame_assets import (
     export_download_target,
 )
 
+from ..galgame_audio_digest import read_digest
 from ..galgame_files import export_file, files
 
 router = APIRouter(include_in_schema=False)
@@ -89,3 +91,13 @@ async def download_galgame_export(request: Request, project_id: str, asset_id: s
         filename=download_filename(asset.display_name, asset.original_filename),
         headers={"Cache-Control": "private, no-store"},
     )
+
+
+@router.get(AUDIO_PATH + "/{project_id}/{annotation_id}/{asset_id}", response_model=AudioDigest)
+async def annotation_audio_digest(request: Request, asset_id: str):
+    if not audio_target("GET", request.url.path):
+        raise HTTPException(403, "galgame_annotation_audio_grant_required")
+    actor = await verified_actor(request)
+    state = request.app.state
+    async with state.database.sessions(info={"owner_user_id": actor.user_id}) as session:
+        return await read_digest(session, state.settings, asset_id)

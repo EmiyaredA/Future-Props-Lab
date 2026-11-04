@@ -18,6 +18,8 @@ from app.runtime.time import utc_now
 from fpl_runtime.annotation_task_sources import upload_target as annotation_upload_target
 from fpl_runtime.annotation_transcription import target as annotation_transcription_target
 from fpl_runtime.claims import verify_context
+from fpl_runtime.galgame_annotation_source import annotation_target
+from fpl_runtime.galgame_annotation_source import audio_target as galgame_annotation_audio_target
 from fpl_runtime.galgame_asr import asr_model_target
 from fpl_runtime.galgame_assets import asset_query_target as galgame_file_query_target
 from fpl_runtime.galgame_assets import export_download_target
@@ -166,6 +168,8 @@ async def live(request: Request, body: LiveRequest):
         or (body.service == "assets" and galgame_file_query_target(body.method, body.path))
         or (body.service == "assets" and attachment_target(body.method, body.path))
         or (body.service == "assets" and export_download_target(body.method, body.path))
+        or (body.service == "assets" and galgame_annotation_audio_target(body.method, body.path))
+        or (body.service == "annotation" and annotation_target(body.method, body.path))
         or (body.service == "assets" and segment_bundle_target(body.method, body.path))
         or (body.service == "video" and handoff_target(body.method, body.path))
     ) and (operation is None or operation.service != body.service):

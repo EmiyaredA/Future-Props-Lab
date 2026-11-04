@@ -82,7 +82,11 @@ def galgame_asset_grant(grant):
             project + "/assets/metadata-scan",
         )
     if target["mode"] == "replacement":
-        return (grant.source_method, grant.source_path) == ("POST", project + "/assets/repair")
+        return grant.source_method == "POST" and grant.source_path in {
+            project + "/assets/repair",
+            project + "/annotation-imports/preview",
+            project + "/annotation-imports",
+        }
     if asset_id:
         file = f"{project}/assets/{asset_id}"
         return (grant.source_method, grant.source_path) in {

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from .annotation_assets import audio_asset_grant
 from .annotation_task_sources import task_read_grant, task_upload_grant
 from .annotation_transcription import segment_grant
+from .galgame_annotation_source import source_grant as galgame_annotation_grant
 from .galgame_asr import asr_model_grant
 from .galgame_assets import export_download_grant, galgame_asset_grant
 from .galgame_render import capacity_grant
@@ -207,6 +208,7 @@ def permitted(grant, catalog):
         galgame_asset_grant(grant)
         or export_download_grant(grant)
         or capacity_grant(grant)
+        or galgame_annotation_grant(grant)
         or galgame_upload_grant(grant)
         or visual_catalog_grant(grant)
         or assistant_grant(grant)
