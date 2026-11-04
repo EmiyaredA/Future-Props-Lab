@@ -26,6 +26,13 @@ from fpl_runtime.presentation_migration import (
     ProjectionPage,
 )
 from fpl_runtime.project_history_migration import CURSOR
+from fpl_runtime.visual_migration import (
+    CANVAS_PINS_DATASET,
+    CANVAS_PINS_PATH,
+    CanvasPinBatch,
+    CanvasPinPage,
+    CanvasPins,
+)
 
 from .migration_blobs import DATASET as ASSET_BLOBS
 from .migration_models import AssetImportReceipt
@@ -37,6 +44,11 @@ LIBRARY = (
     & VisualAsset.video_editor_project_id.is_(None)
     & VisualAsset.motion_compositor_project_id.is_(None)
 )
+
+PROJECT_SCOPES = {
+    "galgame": VisualAsset.galgame_project_id,
+    "visual": VisualAsset.project_id,
+}
 
 
 async def inventory(sessions, plan, service, kind):
@@ -112,11 +124,8 @@ async def ingest(sessions, dataset, service, kind, batch):
         if await has_receipt(db, AssetImportReceipt, receipt):
             return receipt
         for record in batch.records:
-            allowed = (
-                or_(LIBRARY, VisualAsset.galgame_project_id == record.id)
-                if service == "galgame"
-                else LIBRARY
-            )
+            scope = PROJECT_SCOPES.get(service)
+            allowed = LIBRARY if scope is None else or_(LIBRARY, scope == record.id)
             present = set(
                 await db.scalars(
                     select(VisualAsset.id).where(
@@ -226,4 +235,20 @@ def mount_galgame_references(app, plan, sessions):
         record_type=StoryPins,
         batch_type=StoryPinBatch,
         page_type=StoryPinPage,
+    )
+
+
+def mount_visual_canvas_pins(app, plan, sessions):
+    mount_project_pins(
+        app,
+        plan,
+        sessions,
+        prefix=CANVAS_PINS_PATH,
+        dataset=CANVAS_PINS_DATASET,
+        service="visual",
+        kind="canvas",
+        cursor=CURSOR,
+        record_type=CanvasPins,
+        batch_type=CanvasPinBatch,
+        page_type=CanvasPinPage,
     )

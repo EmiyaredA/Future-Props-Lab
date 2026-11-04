@@ -20,6 +20,7 @@ from fpl_runtime.migration_apps import SourceSnapshot
 from fpl_runtime.migration_batches import MigrationPlan
 from fpl_tools.navigation_migration import DATASET as TOOLS
 from fpl_video.migration_records import DATASETS as VIDEO
+from fpl_visual.migration_records import DATASETS as VISUAL
 
 from .legacy_snapshot import CONFIG, DATABASE, MANIFEST, RUNTIME, digest, directory, private_config
 
@@ -29,9 +30,13 @@ TRANSFER = {
         dataset.model.__tablename__: dataset.name
         for dataset in (*IDENTITY, *ASSETS, *DIRECTOR, *MODELS, *PRESENTATION)
     },
-    **{dataset.model.__tablename__: dataset.name for dataset in (*MOTION, *VIDEO, *GALGAME)},
+    **{
+        dataset.model.__tablename__: dataset.name
+        for dataset in (*MOTION, *VIDEO, *GALGAME, *VISUAL)
+    },
     "cloud_desktop_preferences": REMOTE,
     "tool_navigation_items": TOOLS,
+    "visual_project_asset_references": "assets.visual-links",
     "presentation_asset_references": "presentation.project-references",
     "presentation_template_assets": "presentation.template-references",
     "presentation_example_assets": "presentation.example-references",

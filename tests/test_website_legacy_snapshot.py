@@ -233,7 +233,11 @@ def migrate_rehearsal(snapshot_db, parent, account, manifest_sha256):
                 assert rejected.status_code == 409
                 assert rejected.json()["code"] == "migration_model_credential_unreadable"
             if service == "assets":
-                assert [report["record_count"] for report in reports] == [2, 2]
+                assert {report["dataset"]: report["record_count"] for report in reports} == {
+                    "assets.folders": 2,
+                    "assets.files": 2,
+                    "assets.visual-links": 0,
+                }
                 headers = {"X-Fpl-Migration-Token": plan.token.get_secret_value()}
                 original = client.get(f"{source}{ASSET_BLOBS}/{account}", headers=headers).json()
                 assert len(original) == 2

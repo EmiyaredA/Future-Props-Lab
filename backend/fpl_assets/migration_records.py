@@ -7,13 +7,15 @@ from uuid import uuid5
 
 from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
-from sqlalchemy import func, select, text
+from sqlalchemy import column, func, or_, select, table, text
 from sqlalchemy.exc import IntegrityError
 
+from app.capabilities.asset_store.asset_scope import is_library_asset
 from app.capabilities.asset_store.models import VisualAsset, VisualAssetFolder
 from fpl_runtime.migration_batches import MAX_RECORDS, BatchReceipt, MigrationBatch, MigrationPage
 
 from .migration_models import AssetImportReceipt
+from .models import VisualProjectFileLink
 
 ID = r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}"
 AssetID = Annotated[str, Field(pattern=f"^{ID}$")]
@@ -76,12 +78,30 @@ class AssetRecord(Record):
         return self
 
 
+class ProjectLinkRecord(Record):
+    project_id: AssetID
+    asset_id: AssetID
+    folder_id: AssetID | None
+    display_name: str = Field(max_length=255)
+
+
+LEGACY_VISUAL_LINKS = table(
+    "visual_project_asset_references",
+    *[column(item.name, item.type) for item in VisualProjectFileLink.__table__.columns],
+)
+LEGACY_VISUAL_PROJECTS = table("visual_workshop_projects", column("id"), column("owner_user_id"))
+
+
 class Folders(MigrationBatch[FolderRecord]):
     dataset: Literal["assets.folders"]
 
 
 class Files(MigrationBatch[AssetRecord]):
     dataset: Literal["assets.files"]
+
+
+class ProjectLinks(MigrationBatch[ProjectLinkRecord]):
+    dataset: Literal["assets.visual-links"]
 
 
 @dataclass(frozen=True)
@@ -93,6 +113,7 @@ class Dataset:
     page: type[MigrationPage]
     key: str
     cursor: str
+    source_table: object | None = None
 
 
 DATASETS = (
@@ -108,6 +129,16 @@ DATASETS = (
     Dataset(
         "assets.files", VisualAsset, AssetRecord, Files, MigrationPage[Files], "id", ASSET_CURSOR
     ),
+    Dataset(
+        "assets.visual-links",
+        VisualProjectFileLink,
+        ProjectLinkRecord,
+        ProjectLinks,
+        MigrationPage[ProjectLinks],
+        "id",
+        ASSET_CURSOR,
+        source_table=LEGACY_VISUAL_LINKS,
+    ),
 )
 
 
@@ -115,16 +146,21 @@ def invalid(code="migration_asset_record_invalid"):
     return HTTPException(409, {"code": code})
 
 
-async def inventory(sessions, plan, dataset):
-    model = dataset.model
+async def inventory(sessions, plan, dataset, *, legacy=False):
+    source = dataset.source_table if legacy else None
+    owner = source.c.owner_user_id if source is not None else dataset.model.owner_user_id
     async with sessions(info={"allow_system_reads": True}) as db:
-        counts = dict(
-            (
-                await db.execute(
-                    select(model.owner_user_id, func.count()).group_by(model.owner_user_id)
-                )
-            ).all()
-        )
+        if source is not None:
+            project = LEGACY_VISUAL_PROJECTS.c
+            conflicts = await db.scalar(
+                select(func.count())
+                .select_from(source)
+                .outerjoin(LEGACY_VISUAL_PROJECTS, source.c.project_id == project.id)
+                .where(or_(project.id.is_(None), project.owner_user_id != owner))
+            )
+            if conflicts:
+                raise invalid("migration_visual_link_owner_conflict")
+        counts = dict((await db.execute(select(owner, func.count()).group_by(owner))).all())
     if set(counts) - {str(owner) for owner in plan.owner_ids}:
         raise invalid("migration_owner_unassigned")
     return {"record_count": sum(counts.values())}
@@ -155,7 +191,18 @@ def ordered_folders(rows):
     return sorted((f"{depths[row.id]:05d}:{row.id}", depths[row.id], row.id) for row in rows)
 
 
-async def page_records(db, owner, dataset, after):
+async def page_records(db, owner, dataset, after, *, legacy=False):
+    if legacy and dataset.source_table is not None:
+        table = dataset.source_table
+        rows = (
+            await db.execute(
+                select(*(table.c[field] for field in dataset.record.model_fields))
+                .where(table.c.owner_user_id == str(owner), table.c.id > (after or ""))
+                .order_by(table.c.id)
+                .limit(MAX_RECORDS + 1)
+            )
+        ).mappings()
+        return [dataset.record.model_validate(row) for row in rows]
     model = dataset.model
     query = select(model).where(model.owner_user_id == str(owner))
     if model is VisualAssetFolder:
@@ -179,13 +226,13 @@ async def page_records(db, owner, dataset, after):
     values = await db.scalars(
         query.where(model.id > (after or "")).order_by(model.id).limit(MAX_RECORDS + 1)
     )
-    return [AssetRecord.model_validate(row, from_attributes=True) for row in values]
+    return [dataset.record.model_validate(row, from_attributes=True) for row in values]
 
 
-async def export_page(sessions, plan, dataset, owner, after):
+async def export_page(sessions, plan, dataset, owner, after, *, legacy=False):
     try:
         async with sessions(info={"owner_user_id": str(owner)}) as db:
-            records = await page_records(db, owner, dataset, after)
+            records = await page_records(db, owner, dataset, after, legacy=legacy)
     except ValidationError:
         raise invalid() from None
     batch = dataset.batch(
@@ -222,6 +269,10 @@ async def validate_and_add(db, owner, dataset, records):
                 raise invalid("migration_folder_parent_conflict")
             if folders and local_depths.get(parent_id, -1) + 1 != record.depth:
                 raise invalid("migration_folder_parent_conflict")
+        if isinstance(record, ProjectLinkRecord):
+            asset = await db.get(VisualAsset, record.asset_id)
+            if asset is None or not is_library_asset(asset):
+                raise invalid("migration_visual_link_asset_conflict")
         values = record.model_dump(exclude={"depth", "cursor"} if folders else None)
         db.add(dataset.model(owner_user_id=owner, **values))
         if folders:

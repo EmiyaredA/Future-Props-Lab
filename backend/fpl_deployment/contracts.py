@@ -144,10 +144,12 @@ def table_owner(module, table):
     if module.startswith("fpl_agents."):
         return "agents"
     parts = module.split(".")
+    if table == "visual_project_asset_references":
+        return "assets"
     if module.startswith("app.apps."):
         return APP_OWNERS[parts[2]]
     if module.startswith("app.capabilities.asset_store"):
-        return "visual" if table == "visual_project_asset_references" else "assets"
+        return "assets"
     if module.startswith("app.llm."):
         return "models"
     if module.startswith("app.integrations."):

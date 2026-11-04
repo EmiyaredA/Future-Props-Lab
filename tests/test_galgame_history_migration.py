@@ -87,15 +87,15 @@ def seed_project(client, origin):
     return owner, path, current.json(), blob, f"/v1/files/{asset['id']}/download"
 
 
-def open_peers(stack, client, root, snapshot, plan_path):
+def open_peers(stack, client, root, snapshot, plan_path, *, service, migrations, records):
     peers = {}
-    for service, migrations, dataset in (
-        ("galgame", GALGAME_MIGRATIONS, RECORDS[0]),
+    for name, registry, dataset in (
+        (service, migrations, records[0]),
         ("assets", ASSET_MIGRATIONS, ASSET_RECORDS[0]),
     ):
         source, target = available_ports()
-        state_root = root / service
-        apply(state_root / "service.db", service, migrations)
+        state_root = root / name
+        apply(state_root / "service.db", name, registry)
         addresses = []
         for mode, port, args in (
             ("export", source, ("--legacy-db", snapshot)),
@@ -109,13 +109,13 @@ def open_peers(stack, client, root, snapshot, plan_path):
                         f"migration-{mode}",
                         plan_path,
                         *args,
-                        module=f"fpl_{service}",
+                        module=f"fpl_{name}",
                         prefix=dataset.prefix,
                     )
                 )
             )
-        peers[service] = addresses
-    return (*peers["galgame"], *peers["assets"])
+        peers[name] = addresses
+    return (*peers[service], *peers["assets"])
 
 
 def test_galgame_history_preserves_revision_metadata_and_original_rollback(tmp_path):
@@ -166,7 +166,16 @@ def test_galgame_history_preserves_revision_metadata_and_original_rollback(tmp_p
         )
     )
     with httpx.Client(timeout=20, trust_env=False) as client, ExitStack() as stack:
-        peers = open_peers(stack, client, tmp_path, source_db, plan_path)
+        peers = open_peers(
+            stack,
+            client,
+            tmp_path,
+            source_db,
+            plan_path,
+            service="galgame",
+            migrations=GALGAME_MIGRATIONS,
+            records=RECORDS,
+        )
         game_source, _, asset_source, asset_target = peers
         headers = {"X-Fpl-Migration-Token": plan.token.get_secret_value()}
         original = next(pages(client, game_source, headers, plan, owner, PINS))

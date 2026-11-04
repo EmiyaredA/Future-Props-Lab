@@ -4134,7 +4134,7 @@
     },
     {
       "table": "visual_project_asset_references",
-      "service": "visual",
+      "service": "assets",
       "module": "app.apps.visual_workshop.asset_references.models",
       "model": "VisualProjectAssetReference"
     },
@@ -5103,6 +5103,12 @@
       "service": "visual",
       "module": "fpl_visual.models",
       "model": "VisualSegmentHandoff"
+    },
+    {
+      "table": "visual_migration_receipts",
+      "service": "visual",
+      "module": "fpl_visual.models",
+      "model": "VisualMigrationReceipt"
     }
   ],
   "pages": [

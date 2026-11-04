@@ -49,7 +49,7 @@
 
 `fpl_runtime/retention_authority.py` 定义仅能准备和结算一次素材引用修改的签名授权，绑定调用服务、账号、请求 ID 与完整修改摘要；它不能作为公共 API、素材读取或任意后台任务凭据。Identity 的 `retention.py` / `retention_api.py` 从有效的原始业务写请求签发授权，并在新准备前重新检查账号与 Session/API Key。Assets 的 `retention_api.py` 只接受该授权，同一意图的结果确认可以在浏览器注销后完成；新准备拒绝失效或到期授权。`fpl_runtime/retention_client.py` 不自动改请求 ID、不跟随跳转，超时保留未决意图；源应用仍需将授权、修改与回执按其事务流程持久化。
 
-`fpl_assets/project_links.py` 拥有文件库素材在 Visual 项目内的名称、文件夹位置及 CAS；`VisualProjectFileLink` 与追加迁移 `0003_project_file_links` 只引用 Assets 自有素材和文件夹，源项目 ID 不透明。删除项目素材文件夹在同一数据库级联移除这些位置记录，保留库中原件；删除被引用的原件会拒绝。现有 Visual 素材导入和引用 URL 由 Assets 承接，路径、操作 ID 和响应保持不变。旧单体的 `VisualProjectAssetReference` 仅用于兼容和正式导出，后续业务转移必须保留其 ID 与 revision；新 Visual 服务不得加载这张表。内容预览、缩略图、媒体裁剪、取帧和媒体信息路径归 Rendering，本机打开文件夹归 Tools，账号、SDK 白名单与公开路径不变。
+`fpl_assets/project_links.py` 拥有文件库素材在 Visual 项目内的名称、文件夹位置及 CAS；`VisualProjectFileLink` 与追加迁移 `0003_project_file_links` 只引用 Assets 自有素材和文件夹，源项目 ID 不透明。删除项目素材文件夹在同一数据库级联移除这些位置记录，保留库中原件；删除被引用的原件会拒绝。现有 Visual 素材导入和引用 URL 由 Assets 承接，路径、操作 ID 和响应保持不变。旧单体的 `VisualProjectAssetReference` 仅用于兼容和封存导出。Assets 迁移保留 ID、目录与 revision，Visual 迁移在确认其独立库的兼容表为空后移除该表。内容预览、缩略图、媒体裁剪、取帧和媒体信息路径归 Rendering，本机打开文件夹归 Tools，账号、SDK 白名单与公开路径不变。
 
 `layout.py` 仅整理自有旧格式文件，复制、大小及 SHA256 核验后通过 CAS 更新存储版本；不处理其他服务项目目录，不覆盖异内容目标，不删除源文件。中断可核验已经落盘的相同副本后完成登记。共享上传和 Assets 复制在数据库提交已经开始后遇到故障会保留文件，提交未知时不按回滚删除可能已提交的原件。
 
@@ -149,6 +149,8 @@ Agents 的 `execution_http.py` 读取自有聊天记录并逐次复核 SSE 授�
 `fpl_deployment/images.py` 构建可审计源码闭包，`gateway.py` 从操作归属生成监听器路由。`deploy/images/` 下 Identity、Agents、Gateway、Portal、Assets、Rendering、Management、Models、Integrations、Thought 和 Creative 各自保存依赖锁和镜像定义。Visual、Galgame、Tools、Director、Agent Runtime 与 Remote 共用 `deploy/images/owned-http/` 的依赖锁和镜像定义，镜像构建各自检查源码闭包。`deploy/compose.yaml` 装配基础服务，`management.compose.yaml` 与显式选择才启用的 `models.compose.yaml`、`integrations.compose.yaml`、`thought.compose.yaml` 提供对应叠加清单。Creative 与项目所有者的隔离认证验收另用 `creative.compose.yaml`、`project-owners.compose.yaml`。Models 只挂自有状态、最小配置和身份连接，使用单独外联网络请求供应商。`scripts/website/service_build.py` 和 `service_docker_smoke.py` 分别提供 CLI 构建与账号容器隔离验收，`agents_docker_smoke.py` 验证真实工作台容器和 Mac 原生采集器；`tests/gateway_assertion_probe.py` 只属于测试传输探针，不是工作台服务。运行及切换状态见[独立服务迁移](../operations/independent-services.md)。 `backend/fpl_tools/` 独立装配账号收藏和最近使用 API，使用自有数据与身份公钥。`deploy/tools.compose.yaml` 提供隔离启动，`web/src/app/entries/tools.tsx` 构建工具目录和两条深链接，`fpl_tools/host.py` 管理本机文件库目录任务与回执。`fpl_host/tools_worker.py` 从专用回环入口领取有效租约，只在配置的 Assets 根目录下解析当前账号的文件库。视频下载依赖探测复用回环 worker，公开入口隐去可执行文件路径。`videos.py` 保存下载任务，`video_files.py` 核对字节摘要并保存交付回执，`video_library.py` 通过限定授权把文件流交给 Assets。Mac 下载中间文件由 `fpl_host/tools_video.py` 管理。 `fpl_runtime/migration_batches.py` 定义迁移运行计划、规范化摘要和账号回执；Tools 的 `navigation_migration.py` 拥有历史导航数据集，`migration_application.py` 装配独立回环维护入口。由 `scripts/website/migrate_tools_navigation.py` 传输并双向核验批次。
 
 Galgame 的历史导出与导入由 `fpl_galgame/migration_application.py` 装配。旧 Story 当前索引与快照引用由源侧核对，Assets 校验已导入的文件回执后建立引用投影。批次编排与读回位于 `scripts/website/migrate_galgame_history.py`。
+
+Visual 的 Canvas、工程与历史输出由 `fpl_visual/migration_application.py` 导出及导入。Canvas 文件保留集合包含当前节点及旧输出，Assets 逐文件校验回执后提交。库内放置通过 Assets 维护入口保留原名称、目录、标识和版本。
 
 Visual 助手的对话、消息和操作记录由 `fpl_visual/conversations.py` 查询。模型选项由 Models 提供账号投影，附件元数据由 Assets 按项目、对话、精确 ID 和保留引用核验。新建及删除对话与素材引用回执共用 Visual 数据事务。
 

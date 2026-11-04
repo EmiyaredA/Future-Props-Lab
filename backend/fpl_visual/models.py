@@ -14,9 +14,6 @@ from app.apps.visual_workshop.acceptance.models import (
     AcceptanceTemplate,
     NodeAcceptanceBinding,
 )
-from app.apps.visual_workshop.asset_references.models import (
-    VisualProjectAssetReference,
-)
 from app.apps.visual_workshop.models import (
     VisualAssistantAction,
     VisualAssistantConversation,
@@ -33,6 +30,7 @@ from app.apps.visual_workshop.outputs.models import (
 from app.runtime.project_operations import ProjectOperationReceipt
 from app.runtime.time import utc_now
 from fpl_runtime.certification_owner import CertificationReceiptFields, CertificationRecordsBase
+from fpl_runtime.migration_receipts import ImportReceiptFields
 from fpl_runtime.reference_records import ReferenceMutationFields
 
 
@@ -67,7 +65,12 @@ class VisualSegmentHandoff(CanvasRetentionBase):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
 
 
+class VisualMigrationReceipt(ImportReceiptFields, CanvasRetentionBase):
+    __tablename__ = "visual_migration_receipts"
+
+
 MODELS = (
+    VisualMigrationReceipt,
     AcceptanceTemplate,
     AcceptanceStandard,
     AcceptanceStandardVersion,
@@ -75,7 +78,6 @@ MODELS = (
     AcceptanceAssetReference,
     NodeAcceptanceBinding,
     AcceptanceRepairDraft,
-    VisualProjectAssetReference,
     VisualWorkshopProject,
     VisualCanvasDocument,
     VisualGenerationTask,
