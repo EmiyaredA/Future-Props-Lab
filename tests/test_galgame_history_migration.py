@@ -1,5 +1,6 @@
 """Rehearse an isolated Galgame transfer from the real compatibility website."""
 
+import asyncio
 import json
 import os
 import subprocess
@@ -16,9 +17,11 @@ from scripts.website import legacy_snapshot
 from scripts.website.migrate_assets import ASSET_RECORDS, transfer_asset_blobs
 from scripts.website.migrate_galgame_history import PINS, RECORDS, migrate
 from scripts.website.migration_transfer import pages, transfer
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from tests.test_tools_navigation_migration import available_ports, listener
 from tests.test_website_legacy_snapshot import PASSWORD, REVISION, ROOT, configuration, website
 
+from app.apps.galgame_workshop.models import GalgameVideoEditorHandoffTask, GalgameVideoExportTask
 from fpl_assets.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
 from fpl_galgame.migrations.registry import MIGRATIONS as GALGAME_MIGRATIONS
 from fpl_runtime.migration_batches import MigrationPlan
@@ -84,7 +87,59 @@ def seed_project(client, origin):
         json={"expectedRevision": 0, "concurrency": 3},
     )
     assert settings.status_code == 200, settings.text
-    return owner, path, current.json(), blob, f"/v1/files/{asset['id']}/download"
+    histories = client.get(path + "/story/snapshots").json()
+    assert len(histories) == 1
+    video = client.post(
+        "/v1/video-editor/projects", headers=safe, json={"title": "Original handoff"}
+    )
+    assert video.status_code == 200, video.text
+    return (
+        owner,
+        path,
+        current.json(),
+        blob,
+        f"/v1/files/{asset['id']}/download",
+        histories[0],
+        video.json()["id"],
+    )
+
+
+async def seed_job_rows(database, owner, project_id, snapshot, video_id):
+    # Use the isolated legacy database to simulate saved worker outcomes.
+    engine = create_async_engine(f"sqlite+aiosqlite:///{database}")
+    try:
+        async with async_sessionmaker(engine)() as db:
+            common = {
+                "owner_user_id": str(owner),
+                "project_id": project_id,
+                "snapshot_id": snapshot["id"],
+                "story_revision": snapshot["storyRevision"],
+                "request_payload": {"preset": "720p30"},
+            }
+            db.add_all(
+                [
+                    GalgameVideoExportTask(
+                        request_id="retained-export",
+                        status="failed",
+                        progress=45,
+                        error="interrupted render",
+                        revision=4,
+                        **common,
+                    ),
+                    GalgameVideoEditorHandoffTask(
+                        request_id="retained-handoff",
+                        status="completed",
+                        progress=100,
+                        output_project_id=video_id,
+                        result_detail={"trackCount": 3},
+                        revision=8,
+                        **common,
+                    ),
+                ]
+            )
+            await db.commit()
+    finally:
+        await engine.dispose()
 
 
 def open_peers(stack, client, root, snapshot, plan_path, *, service, migrations, records):
@@ -144,7 +199,18 @@ def test_galgame_history_preserves_revision_metadata_and_original_rollback(tmp_p
         timeout=30,
     )
     with website(config, source_port) as (client, origin):
-        owner, path, story, png, content_path = seed_project(client, origin)
+        owner, path, story, png, content_path, saved_snapshot, video_id = seed_project(
+            client, origin
+        )
+    asyncio.run(
+        seed_job_rows(
+            runtime / legacy_snapshot.DATABASE,
+            owner,
+            path.rsplit("/", 1)[-1],
+            saved_snapshot,
+            video_id,
+        )
+    )
     snapshot = tmp_path / "snapshot"
     proof = legacy_snapshot.create(runtime, config, snapshot, REVISION)
     source_db = snapshot / ".runtime" / legacy_snapshot.DATABASE
@@ -176,7 +242,7 @@ def test_galgame_history_preserves_revision_metadata_and_original_rollback(tmp_p
             migrations=GALGAME_MIGRATIONS,
             records=RECORDS,
         )
-        game_source, _, asset_source, asset_target = peers
+        game_source, game_target, asset_source, asset_target = peers
         headers = {"X-Fpl-Migration-Token": plan.token.get_secret_value()}
         original = next(pages(client, game_source, headers, plan, owner, PINS))
         # The original only remains in an older Story snapshot.
@@ -194,6 +260,9 @@ def test_galgame_history_preserves_revision_metadata_and_original_rollback(tmp_p
         with pytest.raises((ValueError, httpx.HTTPStatusError)):
             migrate(client, plan, *peers)
         assert transfer_asset_blobs(client, plan, asset_source, asset_target)["record_count"] == 1
+        # Resume a partial attempt that already committed its project and Story batches.
+        for dataset in RECORDS[:2]:
+            transfer(client, plan, game_source, game_target, dataset)
         report = migrate(client, plan, *peers)
         assert report == migrate(client, plan, *peers)
         assert {row["dataset"]: row["record_count"] for row in report} == {
@@ -203,8 +272,16 @@ def test_galgame_history_preserves_revision_metadata_and_original_rollback(tmp_p
             "galgame.asset-links": 0,
             "galgame.asset-metadata": 1,
             "galgame.asset-settings": 1,
+            "galgame.asr-jobs": 0,
+            "galgame.annotation-jobs": 0,
+            "galgame.video-exports": 1,
+            "galgame.video-handoffs": 1,
             "galgame.story-pins": 1,
         }
+        handoffs = next(pages(client, game_target, headers, plan, owner, RECORDS[-1]))
+        row = handoffs.batch.records[0]
+        assert row.output_project_id == video_id and row.revision == 8
+        assert row.snapshot_id == saved_snapshot["id"]
     recovered = tmp_path / "recovered"
     legacy_snapshot.restore(snapshot, recovered, REVISION, proof["manifest_sha256"])
     recovered_config = recovered / "backend/acceptance-config.toml"

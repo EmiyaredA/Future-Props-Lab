@@ -29,6 +29,7 @@ class ProjectDataset:
     owns_record: bool = True
     page_size: int = 1
     projection: Callable | None = None
+    validate: Callable | None = None
 
     @property
     def suffix(self):
@@ -91,6 +92,9 @@ async def read_page(sessions, plan, dataset, owner, after):
                 dataset.record.model_validate(row, from_attributes=True)
                 for row in rows[: dataset.page_size]
             )
+            if dataset.validate is not None:
+                for record in records:
+                    await dataset.validate(session, record)
     except ValidationError:
         raise blocked("migration_project_history_invalid") from None
     batch = dataset.batch(
@@ -124,6 +128,8 @@ async def ingest(sessions, dataset, receipt_model, batch):
                 project = await session.get(dataset.project, record.project_id)
                 if project is None or project.owner_user_id != owner:
                     raise blocked("migration_project_owner_conflict")
+            if dataset.validate is not None:
+                await dataset.validate(session, record)
             values = record.model_dump()
             if dataset.owns_record:
                 values["owner_user_id"] = owner

@@ -12,7 +12,7 @@ from fpl_runtime.galgame_migration import PINS_DATASET, PINS_PATH, StoryPinPage
 from fpl_runtime.migration_batches import MigrationPlan
 
 from .migrate_assets import verify_originals
-from .migration_transfer import DatasetTransfer, loopback, project_datasets, transfer
+from .migration_transfer import DatasetTransfer, inventory, loopback, project_datasets, transfer
 
 RECORDS = project_datasets(PREFIX, DATASETS)
 PINS = DatasetTransfer(PINS_DATASET, PINS_PATH, StoryPinPage, "id", page_size=1)
@@ -20,6 +20,8 @@ PINS = DatasetTransfer(PINS_DATASET, PINS_PATH, StoryPinPage, "id", page_size=1)
 
 def migrate(client, plan, galgame_source, galgame_target, assets_source, assets_target):
     verify_originals(client, plan, assets_source, assets_target)
+    headers = {"X-Fpl-Migration-Token": plan.token.get_secret_value()}
+    inventory(client, galgame_source, headers, PINS)
     results = [transfer(client, plan, galgame_source, galgame_target, item) for item in RECORDS]
     pins = transfer(client, plan, galgame_source, assets_target, PINS)
     if any(report["record_count"] != pins["record_count"] for report in results[:2]):

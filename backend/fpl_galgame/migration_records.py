@@ -24,6 +24,8 @@ from fpl_runtime.project_history_records import (
     ProjectRecord,
 )
 
+from .migration_jobs import JOB_DATASETS
+
 
 def valid_story(document):
     try:
@@ -167,4 +169,5 @@ DATASETS = (
         key="project_id",
         owns_record=False,
     ),
+    *JOB_DATASETS,
 )

@@ -2,7 +2,7 @@
 
 from uuid import uuid5
 
-from sqlalchemy import column, func, or_, select, table
+from sqlalchemy import func, or_, select
 
 from app.apps.galgame_workshop.models import (
     GalgameAssetMetadata,
@@ -15,15 +15,13 @@ from app.apps.galgame_workshop.story.document_values import normalize_story_docu
 from fpl_runtime.galgame_migration import PINS_DATASET, StoryPinBatch, StoryPinPage, StoryPins
 from fpl_runtime.project_history_migration import blocked, inventory
 
+from .migration_jobs import LEGACY_ASSETS, verify_legacy_job_links
 from .migration_records import DATASETS
-
-LEGACY_ASSETS = table(
-    "visual_assets", column("id"), column("owner_user_id"), column("galgame_project_id")
-)
 
 
 async def inventory_pins(sessions, plan):
     async with sessions() as db:
+        await verify_legacy_job_links(db)
         invalid_metadata = await db.scalar(
             select(func.count())
             .select_from(GalgameAssetMetadata)
