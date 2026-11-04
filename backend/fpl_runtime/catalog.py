@@ -37,7 +37,7 @@ SERVICES = (
         "visual",
         "视觉创作工坊",
         ("/apps/visual-workshop",),
-        ("assets", "models", "rendering", "tools"),
+        ("identity", "assets", "models", "rendering", "tools", "agent-runtime"),
     ),
     Service(
         "thought",

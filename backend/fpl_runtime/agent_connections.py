@@ -3,15 +3,16 @@
 import re
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.capabilities.agents.cli.definitions import AgentId
+from app.capabilities.agents.cli.definitions import DEFINITIONS, AgentId
 
 CATALOG = "code_agents.catalog"
 DETECT = "code_agents.detect"
 ENABLE = "code_agents.enable"
-OPERATIONS = frozenset((CATALOG, DETECT, ENABLE))
-READ_OPERATIONS = frozenset((CATALOG, DETECT))
+ACCEPTANCE = "code_agents.visual_acceptance"
+READ_OPERATIONS = frozenset((CATALOG, DETECT, ACCEPTANCE))
+OPERATIONS = READ_OPERATIONS | {ENABLE}
 PREFIX = "/v1/code-agents"
 
 
@@ -19,6 +20,34 @@ class CatalogRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     show_paths: bool = False
+
+
+class AcceptanceProbe(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    probe: bool
+
+
+class AcceptanceAgentStatus(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    id: AgentId
+    available: bool
+    message: str = Field(max_length=300)
+
+
+class AcceptanceAgentCatalog(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[AcceptanceAgentStatus] = Field(
+        min_length=len(DEFINITIONS), max_length=len(DEFINITIONS)
+    )
+
+    @model_validator(mode="after")
+    def fixed_connections(self):
+        if tuple(item.id for item in self.items) != tuple(DEFINITIONS):
+            raise ValueError("Agent 验收回执与固定连接范围不符")
+        return self
 
 
 class EnableRequest(BaseModel):

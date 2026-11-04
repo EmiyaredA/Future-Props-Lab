@@ -34,7 +34,7 @@ from .video_segments import bundle_grant as segment_bundle_grant
 from .video_snapshot import archive_grant as video_archive_grant
 from .video_snapshot import snapshot_grant as video_snapshot_grant
 from .visual_assistant import assistant_grant
-from .visual_catalog import visual_catalog_grant
+from .visual_catalog import acceptance_agent_grant, visual_catalog_grant
 
 
 @dataclass(frozen=True)
@@ -129,6 +129,7 @@ def target_permission_path(grant):
         or reveal_grant(grant)
         or segment_bundle_grant(grant)
         or visual_catalog_grant(grant)
+        or acceptance_agent_grant(grant)
         or asr_model_grant(grant)
     ):
         return grant.source_path
@@ -223,6 +224,7 @@ def permitted(grant, catalog):
         or galgame_upload_grant(grant)
         or galgame_archive_grant(grant)
         or visual_catalog_grant(grant)
+        or acceptance_agent_grant(grant)
         or assistant_grant(grant)
         or asr_model_grant(grant)
         or asr_job_grant(grant)

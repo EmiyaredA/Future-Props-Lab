@@ -203,7 +203,6 @@ def model_tables(root):
 CONFIG_GROUP_OWNERS = {
     "agent_workbench": "agents",
     "code_agents": "agent-runtime",
-    "visual_acceptance": "visual",
     "interview_codex": "interview",
     "management": "management",
     "deployment": "management",
@@ -216,6 +215,14 @@ CONFIG_GROUP_OWNERS = {
     "integrations": "integrations",
 }
 CONFIG_FIELD_OWNERS = {
+    "visual_acceptance": {
+        "model_owner_user_id": "models",
+        "model_id": "models",
+        "codex_executable": "agent-runtime",
+        "codex_user_ids": "agent-runtime",
+        "claude_executable": "agent-runtime",
+        "claude_user_ids": "agent-runtime",
+    },
     "cloud_control": {
         "enabled": "identity",
         "public_enabled": "identity",

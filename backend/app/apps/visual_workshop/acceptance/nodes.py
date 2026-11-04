@@ -11,7 +11,7 @@ from app.runtime.config import get_settings
 from app.runtime.ids import new_id
 from app.runtime.revisions import RevisionConflictError
 
-from .catalog import SCHEMES, connection_signature, fixed_model, scheme_status
+from .catalog import connection_signature, fixed_model, scheme_status
 from .context import fingerprint, resolve_context
 from .models import (
     AcceptanceAssetReference,
@@ -23,6 +23,7 @@ from .node_schemas import AcceptanceSummaryItem, AcceptanceSummaryOut, NodeAccep
 from .project_access import AcceptanceError, project
 from .record_revisions import cas
 from .runs import Runs, run_out
+from .schemes import SCHEMES
 
 
 class NodeAcceptance:

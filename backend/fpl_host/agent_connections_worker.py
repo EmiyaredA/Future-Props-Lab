@@ -11,9 +11,13 @@ import httpx
 from fastapi import HTTPException
 
 from fpl_runtime.agent_connections import (
+    ACCEPTANCE,
     ENABLE,
     OPERATIONS,
     READ_OPERATIONS,
+    AcceptanceAgentCatalog,
+    AcceptanceAgentStatus,
+    AcceptanceProbe,
     CatalogRequest,
     EnableRequest,
     EnableResult,
@@ -28,9 +32,10 @@ logger = logging.getLogger(__name__)
 
 
 class ConnectionWorker:
-    def __init__(self, transport, state_root, *, catalog, enable):
+    def __init__(self, transport, state_root, *, catalog, enable, acceptance_status=None):
         self.transport = transport
         self.catalog, self.enable = catalog, enable
+        self.acceptance_status = acceptance_status
         self.receipts = ReceiptStore(
             state_root / "receipts",
             readonly_operations=READ_OPERATIONS,
@@ -47,6 +52,8 @@ class ConnectionWorker:
             raise ProtocolConflict("CLI 租约超出原生能力")
         if lease.operation == ENABLE:
             EnableRequest.model_validate(lease.payload)
+        elif lease.operation == ACCEPTANCE:
+            AcceptanceProbe.model_validate(lease.payload)
         else:
             CatalogRequest.model_validate(lease.payload)
         try:
@@ -62,6 +69,11 @@ class ConnectionWorker:
             await asyncio.wrap_future(check)
 
         async def action(operation, payload):
+            if operation == ACCEPTANCE:
+                query = AcceptanceProbe.model_validate(payload)
+                if self.acceptance_status is None:
+                    raise ProtocolConflict("CLI 验收探测不可用")
+                return (await self.acceptance_status(probe=query.probe)).model_dump()
             if operation in READ_OPERATIONS:
                 query = CatalogRequest.model_validate(payload)
                 return (await self.catalog(can_enable=query.show_paths)).model_dump()
@@ -122,6 +134,28 @@ class ConnectionWorker:
             await self.transport.close()
 
 
+async def visual_acceptance_status(*, probe):
+    from app.capabilities.agents.cli.catalog import DEFINITIONS, connection, inspect_executable
+    from app.runtime.config import get_cloud_settings
+
+    settings = get_cloud_settings()
+
+    async def check(agent):
+        _enabled, path, _error = connection(settings, agent)
+        if not path:
+            available, message = False, "此账号尚未获准使用该固定 Agent 连接"
+        elif not probe:
+            available, message = True, "已配置"
+        else:
+            result = await inspect_executable(agent, path)
+            available, message = result["available"], result["message"]
+        return AcceptanceAgentStatus(id=agent, available=available, message=message)
+
+    return AcceptanceAgentCatalog(
+        items=list(await asyncio.gather(*(check(agent) for agent in DEFINITIONS)))
+    )
+
+
 async def serve(args, credential):
     from app.console.governance.code_agent_connections import enable_connection
     from app.console.governance.code_agents import catalog
@@ -129,7 +163,13 @@ async def serve(args, credential):
     transport = NativeTransport(
         base_url=args.bridge, credential=credential, service="agent-runtime"
     )
-    worker = ConnectionWorker(transport, args.state_root, catalog=catalog, enable=enable_connection)
+    worker = ConnectionWorker(
+        transport,
+        args.state_root,
+        catalog=catalog,
+        enable=enable_connection,
+        acceptance_status=visual_acceptance_status,
+    )
     await worker.run()
 
 

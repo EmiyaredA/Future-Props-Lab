@@ -99,7 +99,7 @@ async def import_acceptance(
         if value.get("format_version", 1) not in {1, 2}:
             raise ValueError("未知验收快照版本")
         seen_nodes = set()
-        from .catalog import SCHEMES
+        from .schemes import SCHEMES
 
         for binding in value.get("bindings", []):
             node_id = node_ids[binding["node_id"]]

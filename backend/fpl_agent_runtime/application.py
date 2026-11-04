@@ -24,6 +24,7 @@ from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.request_limit import RequestLimit
 from fpl_runtime.web import attach_web, load_release
 
+from .acceptance_http import router as acceptance_router
 from .host import ConnectionHost
 from .migrations.registry import MIGRATIONS
 from .models import ConnectionJob
@@ -71,11 +72,13 @@ def create_app(
         lifespan=lifespan,
     )
     app.state.database = database
+    app.state.identity_public_key = public_key
     app.state.connections = host
     app.state.code_agent_catalog = host.catalog
     app.state.code_agent_enable = host.enable
     app.include_router(router, prefix="/v1")
     app.include_router(native_router)
+    app.include_router(acceptance_router)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(OperationalError, storage_operational_error_handler)

@@ -40,6 +40,11 @@ class AcceptanceModelOut(BaseModel):
     provider_kind: ProviderKind
 
 
+class FixedAcceptanceModelOut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    model: AcceptanceModelOut | None
+
+
 class AcceptanceModelListOut(BaseModel):
     items: list[AcceptanceModelOut]
 

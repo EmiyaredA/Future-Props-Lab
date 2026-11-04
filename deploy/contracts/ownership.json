@@ -5330,12 +5330,12 @@
       "pi_executable": "agent-runtime"
     },
     "visual_acceptance": {
-      "model_owner_user_id": "visual",
-      "model_id": "visual",
-      "codex_executable": "visual",
-      "codex_user_ids": "visual",
-      "claude_executable": "visual",
-      "claude_user_ids": "visual"
+      "model_owner_user_id": "models",
+      "model_id": "models",
+      "codex_executable": "agent-runtime",
+      "codex_user_ids": "agent-runtime",
+      "claude_executable": "agent-runtime",
+      "claude_user_ids": "agent-runtime"
     },
     "interview_codex": {
       "enabled": "interview",

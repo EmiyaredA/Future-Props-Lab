@@ -1,5 +1,6 @@
 """Keep Visual discovery credential-free and scoped to the live account."""
 
+import asyncio
 import io
 from types import SimpleNamespace
 
@@ -7,6 +8,7 @@ import httpx
 import pytest
 from fastapi import FastAPI, UploadFile
 from sqlalchemy import select
+from tests.test_agent_runtime_service import IDENTITY_TOKEN, INGRESS, TOKEN, NativeBridge
 from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario  # noqa: F401
 from tests.test_creative_project_certification import CREDENTIALS, PROJECTS
 from tests.test_independent_project_catalog import authorize
@@ -18,11 +20,20 @@ from app.apps.visual_workshop.models import (
 )
 from app.capabilities.asset_store.library import AssetLibrary
 from app.llm.models import ModelEntry, ModelProvider
+from fpl_agent_runtime.application import create_app as create_agent_runtime
+from fpl_agent_runtime.migrations.registry import MIGRATIONS as AGENT_RUNTIME_MIGRATIONS
 from fpl_assets.models import AssetReferencePin, AssetReferenceSet
 from fpl_assets.references import AssetReferences
+from fpl_host.agent_connections_worker import ConnectionWorker
+from fpl_host.transport import NativeTransport
 from fpl_models.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
 from fpl_models.models import ACCOUNT_MODELS, MODELS
 from fpl_models.visual_catalog_http import router
+from fpl_runtime.agent_connections import (
+    AcceptanceAgentCatalog,
+    AcceptanceAgentStatus,
+    ConnectionOptions,
+)
 from fpl_runtime.asset_references import ReferenceUpdate
 from fpl_runtime.capability_client import CapabilityDenied
 from fpl_runtime.claims import HEADER
@@ -33,6 +44,9 @@ from fpl_runtime.migrations import apply
 from fpl_runtime.visual_assistant import ASSET_PURPOSE, AttachmentQuery
 from fpl_runtime.visual_catalog import (
     ACCEPTANCE_TARGET,
+    AGENT_ACCEPTANCE_PURPOSE,
+    AGENT_ACCEPTANCE_TARGET,
+    FIXED_ACCEPTANCE_TARGET,
     GENERATION_SOURCE,
     GENERATION_TARGET,
     PURPOSE,
@@ -156,6 +170,7 @@ async def test_visual_catalog_delegates_exact_paths_and_excludes_other_accounts(
                 headers={HEADER: token, "Origin": "https://browser.test"},
             )
         ).status_code == 403
+        await verify_fixed_acceptance(case, visual, http, models, database, tmp_path)
         await verify_conversations(case, visual, http)
         logged_out = await case.browser.post(
             "/v1/auth/logout",
@@ -166,6 +181,90 @@ async def test_visual_catalog_delegates_exact_paths_and_excludes_other_accounts(
             await http.get(private + GENERATION_TARGET, headers={HEADER: token})
         ).status_code == 401
     await database.close()
+
+
+async def verify_fixed_acceptance(case, visual, http, models, database, root):
+    source = "/v1/visual-workshop/acceptance/catalog"
+    async with database.sessions(info={"owner_user_id": case.viewer}) as session:
+        model = await session.scalar(select(ModelEntry).where(ModelEntry.slug == "vision-own"))
+        identity = model.id
+    models.state.settings.fpl_acceptance_model_owner_user_id = case.viewer
+    models.state.settings.fpl_acceptance_model_id = identity
+    case.identity.state.identity_options["service_credentials"]["agent-runtime"] = IDENTITY_TOKEN
+    state = root / "agent-runtime"
+    apply(state / "service.db", "agent-runtime", AGENT_RUNTIME_MIGRATIONS)
+    agent_runtime = create_agent_runtime(
+        state_root=state,
+        public_key=case.key.public_key(),
+        catalog=CATALOG,
+        transport=case.mesh,
+        options=ConnectionOptions(
+            identity_credential=IDENTITY_TOKEN, ingress=INGRESS, workers={"mac": TOKEN}
+        ),
+    )
+    case.mesh.apps["agent-runtime"] = agent_runtime
+    transport = NativeTransport(
+        service="agent-runtime",
+        base_url="http://127.0.0.1:19091/agent-runtime",
+        credential=TOKEN,
+        transport=NativeBridge(agent_runtime),
+    )
+    probes = []
+
+    async def fixed(*, probe):
+        probes.append(probe)
+        return AcceptanceAgentCatalog(
+            items=[
+                AcceptanceAgentStatus(
+                    id=identity,
+                    available=identity == "codex",
+                    message="已连接" if identity == "codex" else "未配置",
+                )
+                for identity in ("codex", "claude-code", "opencode", "dsh", "pi")
+            ]
+        )
+
+    worker = ConnectionWorker(
+        transport, root / "host", catalog=None, enable=None, acceptance_status=fixed
+    )
+    try:
+        async with agent_runtime.router.lifespan_context(agent_runtime):
+            headers = await authorize(case, "visual", "GET", source)
+            requested = asyncio.create_task(http.get(source, headers=headers))
+            await worker.poll_once()
+            result = await asyncio.wait_for(requested, 8)
+            assert result.status_code == 200, result.text
+            assert probes == [True]
+            items = result.json()["items"][0]["schemes"]
+            assert len(items) == 6
+            assert {item["id"] for item in items if item["available"]} == {
+                "motion-transfer:api",
+                "motion-transfer:codex",
+            }
+            assert items[0]["model_slug"] == "vision-own"
+            assert "credential" not in result.text and "executable" not in result.text
+            agent_url = "http://agent-runtime:8080" + AGENT_ACCEPTANCE_TARGET
+            assert (await http.get(agent_url, headers=headers)).status_code == 401
+            unrelated = await authorize(case, "visual", "GET", GENERATION_SOURCE)
+            for purpose, target_service, target in (
+                (PURPOSE, "models", FIXED_ACCEPTANCE_TARGET),
+                (AGENT_ACCEPTANCE_PURPOSE, "agent-runtime", AGENT_ACCEPTANCE_TARGET),
+            ):
+                with pytest.raises(CapabilityDenied):
+                    await visual.state.capabilities.authorize_request(
+                        unrelated[HEADER],
+                        RequestGrant(
+                            "visual",
+                            purpose,
+                            "GET",
+                            GENERATION_SOURCE,
+                            target_service,
+                            "GET",
+                            target,
+                        ),
+                    )
+    finally:
+        await transport.close()
 
 
 async def verify_conversations(case, visual, http):

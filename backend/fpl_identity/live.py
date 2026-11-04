@@ -51,6 +51,7 @@ from fpl_runtime.video_handoff import handoff_target
 from fpl_runtime.video_segments import bundle_target as segment_bundle_target
 from fpl_runtime.video_snapshot import archive_target as video_archive_target
 from fpl_runtime.visual_assistant import attachment_target
+from fpl_runtime.visual_catalog import AGENT_ACCEPTANCE_TARGET
 from fpl_runtime.visual_catalog import catalog_target as visual_catalog_target
 
 router = APIRouter()
@@ -182,6 +183,8 @@ async def live(request: Request, body: LiveRequest):
     )
     if not (
         private_output
+        or (body.service, body.method, body.path)
+        == ("agent-runtime", "GET", AGENT_ACCEPTANCE_TARGET)
         or private_models
         or private_external
         or private_thought_upload

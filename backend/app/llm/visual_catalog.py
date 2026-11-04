@@ -98,7 +98,8 @@ async def generation_options(session, *, upload_configured) -> GenerationOptions
     )
 
 
-async def review_models(session, owner_user_id):
+async def review_models(session, owner_user_id, *, model_id=None):
+    selection = () if model_id is None else (ModelEntry.id == model_id,)
     rows = (
         await session.execute(
             select(ModelEntry, ModelProvider)
@@ -109,6 +110,7 @@ async def review_models(session, owner_user_id):
                 ModelEntry.enabled.is_(True),
                 ModelProvider.enabled.is_(True),
                 ModelProvider.kind.in_(TEXT_PROVIDER_KINDS),
+                *selection,
             )
         )
     ).all()
@@ -123,13 +125,27 @@ async def review_models(session, owner_user_id):
 async def acceptance_models(session, owner_user_id) -> AcceptanceModelListOut:
     return AcceptanceModelListOut(
         items=[
-            AcceptanceModelOut(
-                id=model.id,
-                label=model.label or model.slug,
-                slug=model.slug,
-                provider_name=provider.name,
-                provider_kind=provider.kind,
-            )
+            acceptance_model_out(model, provider)
             for model, provider in await review_models(session, owner_user_id)
         ]
+    )
+
+
+async def fixed_acceptance_model(session, owner_user_id, settings):
+    if (
+        settings.fpl_acceptance_model_owner_user_id != owner_user_id
+        or not settings.fpl_acceptance_model_id
+    ):
+        return None
+    rows = await review_models(session, owner_user_id, model_id=settings.fpl_acceptance_model_id)
+    return next(iter(rows), None)
+
+
+def acceptance_model_out(model, provider):
+    return AcceptanceModelOut(
+        id=model.id,
+        label=model.label or model.slug,
+        slug=model.slug,
+        provider_name=provider.name,
+        provider_kind=provider.kind,
     )

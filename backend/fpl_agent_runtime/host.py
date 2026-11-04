@@ -11,17 +11,20 @@ from app.capabilities.agents.cli.contracts import AgentOut, CatalogOut
 from app.capabilities.agents.cli.definitions import DEFINITIONS
 from app.runtime.time import utc_now
 from fpl_runtime.agent_connections import (
+    ACCEPTANCE,
     CATALOG,
     DETECT,
     ENABLE,
     OPERATIONS,
     PREFIX,
+    AcceptanceAgentCatalog,
     CatalogRequest,
     EnableRequest,
     EnableResult,
 )
 from fpl_runtime.native_protocol import NativeOutcome
 from fpl_runtime.native_queue import NativeQueue, NativeQueueError
+from fpl_runtime.visual_catalog import AGENT_ACCEPTANCE_TARGET
 
 from .models import ConnectionJob
 
@@ -29,6 +32,8 @@ WINDOW_SECONDS = 40
 
 
 def route_for(operation, payload):
+    if operation == ACCEPTANCE:
+        return "GET", AGENT_ACCEPTANCE_TARGET
     if operation == CATALOG:
         return "GET", PREFIX
     if operation == DETECT:
@@ -80,6 +85,10 @@ class ConnectionHost:
         method, path = route_for(operation, payload)
         if (method, path) != (request.method, request.url.path):
             raise HTTPException(403, "native_operation_forbidden")
+        return await self.run_bound(owner, assertion, operation, payload)
+
+    async def run_bound(self, owner, assertion, operation, payload):
+        method, path = route_for(operation, payload)
         status = await self._status(assertion, method, path)
         if status is None:
             raise unavailable()
@@ -180,6 +189,8 @@ class ConnectionHost:
             try:
                 if lease.operation == ENABLE:
                     data = EnableResult.model_validate(outcome.result)
+                elif lease.operation == ACCEPTANCE:
+                    data = AcceptanceAgentCatalog.model_validate(outcome.result)
                 else:
                     data = CatalogOut.model_validate(outcome.result)
                     if tuple(item.id for item in data.items) != tuple(DEFINITIONS):
