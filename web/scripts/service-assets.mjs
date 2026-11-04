@@ -18,6 +18,11 @@ export const serviceAssets = {
     "providers/deepseek-logo.svg",
     "providers/pi-logo.svg",
   ],
+  annotation: [
+    "brand/brand-mark.png",
+    "brand/favicon.png",
+    "brand/audio-annotation-mark.png",
+  ],
   interview: [
     "brand/brand-mark.png",
     "brand/favicon.png",

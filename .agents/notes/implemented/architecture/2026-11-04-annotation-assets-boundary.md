@@ -17,8 +17,10 @@ Identity delegates individual metadata query digests and byte reads at one file 
 
 ## Consequences
 
-Library metadata shape and query normalization are shared with the existing Thought protocol. Annotation receives the display name it needs for the project list. The independent project application still needs to consume these ports and settle its local writes.
+Library metadata shape and query normalization are shared with the existing Thought protocol. Annotation receives the display name it needs for the project list. The independent project application consumes these ports and stores its source outcome atomically with the project. It uses a private state-directory spool for the bounded original and derived PCM. Compatibility binds the original file and model use cases. The independent Models execution and historical migration remain cutover requirements.
 
 ## Verification
 
 The isolated Identity and Assets fixture confirms scoped delegation, changed queries and versions, rejected browser and cross-account access, and deletion protection before and after the reference is committed. It releases the reference using a signed request for the exact project.
+
+The installed four-container run exercises a real WAV upload, clip generation, stale browser version rejection, process restart and the responsive project and editor entry points.

@@ -16,6 +16,8 @@ from app.api import api_router
 from app.apps.agent_workbench.execution.runner import WorkbenchRuns
 from app.apps.agent_workbench.execution.storage import interrupt_all as interrupt_workbench_runs
 from app.apps.agent_workbench.sync.runner import WorkbenchSyncRunner
+from app.apps.audio_annotation.legacy_sources import LegacyAnnotationSources
+from app.apps.audio_annotation.transcription import legacy_transcribe
 from app.apps.director_desk.agent_session import DirectorEditorSessions
 from app.apps.galgame_workshop.assets.annotation_import_runner import GalgameAnnotationImportRunner
 from app.apps.galgame_workshop.assets.asr import GalgameAsrRunner
@@ -221,6 +223,8 @@ SessionLocal.configure(
         **SessionLocal.kw.get("info", {}),
         "thought_asset_metadata_factory": LegacyAssetMetadata,
         "interview_executor_status": executor_status,
+        "annotation_sources": LegacyAnnotationSources,
+        "annotation_transcribe": legacy_transcribe,
         "creative_authors_factory": LegacyCreativeAuthors,
         "creative_archives_factory": LegacyCreativeArchives,
         "creative_sources_factory": LegacyCreativeSources,

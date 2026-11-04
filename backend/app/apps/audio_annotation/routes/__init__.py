@@ -25,9 +25,8 @@ from app.apps.audio_annotation.schemas.operations import (
     AnnotationOperationsIn,
     SavedSegmentTranscriptionIn,
 )
-from app.apps.audio_annotation.transcription import AudioAnnotationTranscription
+from app.apps.audio_annotation.transcription_port import transcribe
 from app.deps import OwnerDep, SessionDep, StudioAuth
-from app.llm.call_logs.credentials import snapshot_from_principal
 from app.runtime.operation_receipts import OperationError
 
 router = APIRouter(prefix="/audio-annotation", tags=["audio-annotation"])
@@ -224,8 +223,8 @@ async def transcribe_segment(
     target_language_tag: Annotated[str | None, Form(max_length=35)] = None,
 ) -> AudioAnnotationSegmentTranscriptionOut:
     try:
-        credential = await snapshot_from_principal(session, principal)
-        return await AudioAnnotationTranscription(session).transcribe(
+        return await transcribe(
+            session,
             project_id,
             upload=upload,
             model_id=model_id,
@@ -234,7 +233,7 @@ async def transcribe_segment(
             end_ms=end_ms,
             language_tag=language_tag,
             target_language_tag=target_language_tag,
-            credential=credential,
+            principal=principal,
         )
     except AudioAnnotationError as exc:
         raise _error(exc) from None

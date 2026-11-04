@@ -57,7 +57,7 @@ def audio_asset_grant(grant):
             or clip
             or (method == "GET" and path == f"{SOURCE}/projects")
             or (method == "GET" and re.fullmatch(_PROJECT + "(?:/export)?", path))
-            or (method == "PATCH" and re.fullmatch(_PROJECT, path))
+            or (method in {"PATCH", "DELETE"} and re.fullmatch(_PROJECT, path))
         )
     return bool(
         (create or clip)

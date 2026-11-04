@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 
 from app.apps.audio_annotation.projects import AudioAnnotationError, AudioAnnotationProjects
-from app.apps.audio_annotation.transcription import AudioAnnotationTranscription
+from app.apps.audio_annotation.transcription_port import transcribe
 from app.capabilities.media_rendering.audio_clip import extract_wav
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import iso_utc, utc_now
@@ -75,9 +75,15 @@ async def clip(session, project_id, segment_id, expected_revision):
     if segment is None:
         raise AudioAnnotationError("片段不存在", code="not_found", status=404)
     asset = await projects._asset(project.asset_id)
-    source = projects.storage.path_for(asset)
+    async with projects.sources.open(asset) as source:
+        return await clip_source(session, source, segment)
+
+
+async def clip_source(session, source, segment):
     await session.rollback()
-    with tempfile.TemporaryDirectory(prefix="annotation-clip-") as directory:
+    with tempfile.TemporaryDirectory(
+        prefix="annotation-clip-", dir=session.info.get("annotation_staging")
+    ) as directory:
         target = Path(directory) / "clip.wav"
         try:
             await extract_wav(source, target, segment.start_ms, segment.end_ms)
@@ -113,7 +119,8 @@ async def transcribe_saved(session, project_id, segment_id, body):
     content, segment = await clip(session, project_id, segment_id, body.expected_revision)
     upload = ClipInput(content)
     try:
-        return await AudioAnnotationTranscription(session).transcribe(
+        return await transcribe(
+            session,
             project_id,
             upload=upload,
             model_id=body.model_id,

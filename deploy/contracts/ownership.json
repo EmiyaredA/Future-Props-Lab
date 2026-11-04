@@ -4517,6 +4517,12 @@
       "model": "NativeWorkerSeen"
     },
     {
+      "table": "annotation_reference_mutations",
+      "service": "annotation",
+      "module": "fpl_annotation.models",
+      "model": "AnnotationReferenceMutation"
+    },
+    {
       "table": "asset_reference_sets",
       "service": "assets",
       "module": "fpl_assets.models",

@@ -101,6 +101,8 @@ def operation_owner(path):
 
 
 def table_owner(module, table):
+    if module.startswith("fpl_annotation."):
+        return "annotation"
     if module.startswith("fpl_interview."):
         return "interview"
     if module.startswith("fpl_director."):

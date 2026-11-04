@@ -1100,10 +1100,10 @@ async def test_transcription_import_reports_missing_source_and_cleans_failed_cop
         files_before = set(library_root.iterdir()) if library_root.exists() else set()
         original_duration = AudioAnnotationProjects._duration
 
-        def fail_after_copy(self: AudioAnnotationProjects, asset) -> int:
+        async def fail_after_copy(self: AudioAnnotationProjects, asset) -> int:
             if asset.original_filename == "cleanup-copy.wav":
                 raise AudioAnnotationError("模拟项目创建失败", code="simulated_failure")
-            return original_duration(self, asset)
+            return await original_duration(self, asset)
 
         monkeypatch.setattr(AudioAnnotationProjects, "_duration", fail_after_copy)
         failed = await client.post(

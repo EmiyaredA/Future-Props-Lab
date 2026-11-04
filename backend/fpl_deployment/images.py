@@ -11,6 +11,7 @@ PROJECT_OWNERS = frozenset({"visual", "galgame"})
 OWNED_HTTP_IMAGES = PROJECT_OWNERS | {"tools", "director", "agent-runtime", "remote", "interview"}
 
 ENTRY_POINTS = {
+    "annotation": "fpl_annotation.__main__",
     "visual": "fpl_visual.__main__",
     "galgame": "fpl_galgame.__main__",
     "tools": "fpl_tools.__main__",
@@ -38,6 +39,7 @@ PROJECT_PACKAGES = (
     "fpl_gateway",
     "fpl_portal",
     "fpl_assets",
+    "fpl_annotation",
     "fpl_rendering",
     "fpl_models",
     "fpl_thought",
@@ -314,6 +316,19 @@ def source_closure(root: Path, service):
             or name in {"app.console.cloud_control.access", "app.console.cloud_control.desktop"}
         ):
             raise ValueError(f"Remote 镜像包含越界依赖：{name}")
+        if service == "annotation" and (
+            name in {"app.main", "app.api", "app.orm", "app.runtime.db"}
+            or name.startswith(("app.console", "app.llm", "fpl_assets", "fpl_identity", "fpl_host"))
+            or (name.startswith("app.apps.") and not name.startswith("app.apps.audio_annotation"))
+            or name
+            in {
+                "app.apps.audio_annotation.legacy_sources",
+                "app.apps.audio_annotation.transcription",
+                "app.capabilities.asset_store.models",
+                "app.capabilities.asset_store.storage",
+            }
+        ):
+            raise ValueError(f"Annotation 镜像包含越界依赖：{name}")
         if service == "interview" and (
             name in {"app.main", "app.api", "app.orm", "app.runtime.db"}
             or name.startswith(("app.console", "app.llm", "fpl_assets", "fpl_identity", "fpl_host"))
@@ -435,6 +450,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
         "tools",
         "director",
         "interview",
+        "annotation",
         "agent-runtime",
         "remote",
     }:
@@ -475,6 +491,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
         "tools",
         "director",
         "interview",
+        "annotation",
         "agent-runtime",
     }:
         if web_release is None:

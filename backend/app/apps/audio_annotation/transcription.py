@@ -20,6 +20,7 @@ from app.capabilities.transcription import (
     safe_transcription_error,
 )
 from app.capabilities.transcription.schemas import ModelTestTranscriptionParametersIn
+from app.llm.call_logs.credentials import snapshot_from_principal
 from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
 from app.llm.providers.transcription import TranscriptionResult, transcribe_model_audio
@@ -281,3 +282,10 @@ class AudioAnnotationTranscription:
             )
         finally:
             await upload.close()
+
+
+async def legacy_transcribe(session, project_id, *, principal=None, **kwargs):
+    credential = await snapshot_from_principal(session, principal) if principal else None
+    return await AudioAnnotationTranscription(session).transcribe(
+        project_id, credential=credential, **kwargs
+    )
