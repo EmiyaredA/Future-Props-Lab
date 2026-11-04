@@ -11,6 +11,7 @@ from fpl_runtime.motion_assets import MOTION_EXTENSIONS
 from .library_outputs import VerifiedOutput
 from .models import MotionFileWriteReceipt
 from .motion_files import file_record
+from .motion_lifecycle import check_writable
 
 
 class MotionFileWrites:
@@ -88,6 +89,8 @@ class MotionFileWrites:
         try:
             await self.active()
             previous = await self.prior()
+            if previous is None:
+                await check_writable(self.session, self.project)
             await self.session.rollback()
             if previous is not None:
                 if verify_previous is not None:
@@ -101,6 +104,7 @@ class MotionFileWrites:
             if previous is not None:
                 await self.session.rollback()
                 return previous
+            await check_writable(self.session, self.project)
             self.session.add_all(row for row, _ in staged)
             await self.session.flush()
             result = [file_record(self.project, row) for row, _ in staged]

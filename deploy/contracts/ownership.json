@@ -4865,6 +4865,12 @@
       "model": "NativeModelObservation"
     },
     {
+      "table": "motion_reference_mutations",
+      "service": "motion",
+      "module": "fpl_motion.models",
+      "model": "MotionReferenceMutation"
+    },
+    {
       "table": "presentation_reference_mutations",
       "service": "presentation",
       "module": "fpl_presentation.models",

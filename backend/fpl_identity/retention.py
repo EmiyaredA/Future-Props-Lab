@@ -12,6 +12,7 @@ from app.capabilities.identity.route_permissions import route_permission
 from fpl_runtime.annotation_assets import PROJECT_CREATION
 from fpl_runtime.annotation_assets import SOURCE as ANNOTATION
 from fpl_runtime.claims import verify_context
+from fpl_runtime.motion_assets import SOURCE as MOTION
 from fpl_runtime.presentation_archives import IMPORT as PRESENTATION_IMPORT
 from fpl_runtime.presentation_assets import BUNDLE as PRESENTATION_BUNDLE
 from fpl_runtime.presentation_assets import LIBRARY as PRESENTATION_LIBRARY
@@ -100,6 +101,20 @@ def _annotation_source(body):
         and body.source_path == f"{ANNOTATION}/projects/{change.resource_id}"
         and not change.asset_ids
     )
+
+
+def _motion_source(body):
+    change = body.change
+    if change.resource_kind != "project" or change.asset_ids:
+        return False
+    projects = MOTION + "/projects"
+    if change.expected_resource_revision == -1:
+        return (
+            body.source_method == "POST"
+            and body.source_path == projects
+            and _GENERATED_PROJECT_ID.fullmatch(change.resource_id) is not None
+        )
+    return body.source_method == "DELETE" and body.source_path == f"{projects}/{change.resource_id}"
 
 
 def _presentation_source(body):
@@ -199,6 +214,8 @@ class RetentionAuthorization:
         if body.caller == "galgame" and not (
             body.change.resource_kind == "story" and _galgame_story_source(body)
         ):
+            raise HTTPException(403, "retention_resource_mismatch")
+        if body.caller == "motion" and not _motion_source(body):
             raise HTTPException(403, "retention_resource_mismatch")
         if body.caller == "presentation" and not _presentation_source(body):
             raise HTTPException(403, "retention_resource_mismatch")

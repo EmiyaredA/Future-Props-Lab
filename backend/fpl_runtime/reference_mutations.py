@@ -269,6 +269,7 @@ class ReferenceDelivery(PollingTaskRunner):
                     (409, "reference_projection_required"),
                     (409, "resource_revision_conflict"),
                     (409, "reference_mutations_pending"),
+                    (409, "asset_in_use"),
                     (422, "story_visual_asset_scope"),
                     (422, "story_galgame_asset_scope"),
                     (422, "canvas_asset_scope"),

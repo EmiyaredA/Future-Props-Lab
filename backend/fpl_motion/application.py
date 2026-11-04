@@ -26,10 +26,12 @@ from fpl_runtime.locking import service_lock
 from fpl_runtime.migrations import check
 from fpl_runtime.motion_assets import SOURCE
 from fpl_runtime.protocol_hash import public_contract
+from fpl_runtime.reference_runtime import install_reference_runtime, reference_lifespan
 from fpl_runtime.routing import RouteCatalog
 
 from .file_routes import router as file_router
 from .migrations.registry import MIGRATIONS
+from .models import MotionReferenceMutation
 from .resources import ProjectResources
 
 SERVICE = "motion"
@@ -40,6 +42,7 @@ OPERATIONS = {
     ("POST", PROJECTS),
     ("GET", PROJECT),
     ("PATCH", PROJECT),
+    ("DELETE", PROJECT),
     ("GET", PROJECT + "/document"),
     ("GET", SOURCE + "/import-sources"),
     ("GET", PROJECT + "/assets"),
@@ -50,20 +53,32 @@ OPERATIONS = {
 }
 
 
-def create_app(*, state_root, catalog, public_key, credential, schema_path=None, transport=None):
+def create_app(
+    *,
+    state_root,
+    catalog,
+    public_key,
+    credential,
+    schema_path=None,
+    transport=None,
+    run_worker=True,
+):
     database = Database(
-        SERVICE, state_root, models=(MotionProject, MotionDocument, MotionOperationBatch)
+        SERVICE,
+        state_root,
+        models=(MotionProject, MotionDocument, MotionOperationBatch, MotionReferenceMutation),
     )
     capabilities = CapabilityClient(
         service=SERVICE, credential=credential, catalog=catalog, transport=transport
     )
 
     @asynccontextmanager
-    async def lifespan(_app):
+    async def lifespan(app):
         with service_lock(database.root):
             try:
                 check(database.path, SERVICE, MIGRATIONS)
-                yield
+                async with reference_lifespan(app):
+                    yield
             finally:
                 await capabilities.close()
                 await database.close()
@@ -73,11 +88,20 @@ def create_app(*, state_root, catalog, public_key, credential, schema_path=None,
     )
     app.state.database = database
     app.state.motion_capabilities = capabilities
+    install_reference_runtime(
+        app,
+        service=SERVICE,
+        model=MotionReferenceMutation,
+        public_key=public_key,
+        credential=credential,
+        transport=transport,
+        run_worker=run_worker,
+    )
 
     async def request_session(connection: HTTPConnection):
         async with database.sessions() as session:
             session.info["motion_project_resources"] = lambda db, _owner: ProjectResources(
-                connection, db, capabilities
+                connection, db, capabilities, app.state.reference_mutations
             )
             yield session
 

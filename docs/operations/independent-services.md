@@ -465,3 +465,5 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 隔离运行 `fpl-motion-api-4ff09339f8` 使用镜像 `fpl/motion:5a541d36b4ec4d87ff3c`，经四容器 Gateway 验证旧修订拒绝、原回执重放、非本项目素材拒绝和回环公网认证。
 
 特效制作工坊的五项素材操作也经独立接线。上传绑定原件大小和 SHA256，复制绑定源文件集合，Assets 将文件记录和回执一起提交。隔离运行 `fpl-motion-media-9847b25f1d` 使用 `fpl/motion:2b4f4592fa8a6f4469e8`，经四容器验证上传、复制、206 分段下载、完整字节和文稿引用。
+
+特效项目删除先对项目文件写入加栅栏，再以项目修订删除文稿及回执。Assets 收到持久删除结果后才删除项目文件记录并排队清理原件。测试注入并发上传和结算回执丢失。隔离运行 `fpl-motion-delete-432fa9328a` 验证了真实 Gateway 删除及账号库原件保留。

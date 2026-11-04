@@ -28,7 +28,7 @@ class LegacyProjectResources:
             owner_user_id=self.owner_user_id,
         )
 
-    def delete_layout(self, identity):
+    def delete_layout(self, identity, _revision):
         return deleting_project_layout(
             self.session,
             self.storage,

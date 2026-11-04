@@ -1,25 +1,65 @@
 """Use owned transactions and signed project file metadata during document saves."""
 
 from contextlib import asynccontextmanager
+from uuid import uuid4
 
 import httpx
 
-from app.apps.motion_compositor.projects import MotionInvalid, MotionUnavailable
+from app.apps.motion_compositor.projects import MotionInvalid, MotionNotFound, MotionUnavailable
+from fpl_runtime.asset_references import PrepareReferenceChange
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
 from fpl_runtime.delegation import RequestGrant
 from fpl_runtime.motion_assets import MAX_IDS, PURPOSE, MotionAsset, MotionAssetQuery
+from fpl_runtime.project_errors import ProjectResourceError
 
 
 class ProjectResources:
-    def __init__(self, connection, session, capabilities):
+    def __init__(self, connection, session, capabilities, coordinator):
         self.connection, self.session, self.capabilities = connection, session, capabilities
+        self.coordinator = coordinator
+
+    def create_layout(self, project_id):
+        return self.change_layout(project_id, -1, deleted=False)
+
+    def delete_layout(self, project_id, expected):
+        return self.change_layout(project_id, expected, deleted=True)
+
+    async def prepare_layout(self, project_id, expected):
+        try:
+            return await self.coordinator.prepare(
+                owner=self.session.info["owner_user_id"],
+                assertion=self.connection.state.service_assertion,
+                source_method=self.connection.method,
+                source_path=self.connection.url.path,
+                change=PrepareReferenceChange(
+                    request_id=uuid4().hex,
+                    resource_kind="project",
+                    resource_id=project_id,
+                    expected_resource_revision=expected,
+                    asset_ids=[],
+                ),
+            )
+        except CapabilityDenied as exc:
+            if exc.status == 404:
+                raise MotionNotFound("特效项目不存在") from exc
+            if exc.code == "asset_in_use":
+                raise MotionInvalid("项目素材仍被其他资源引用") from exc
+            raise MotionUnavailable("项目素材保留结果暂不可用") from exc
+        except (CapabilityUnavailable, ProjectResourceError) as exc:
+            raise MotionUnavailable("项目素材保留结果未确认") from exc
 
     @asynccontextmanager
-    async def create_layout(self, _identity):
+    async def change_layout(self, project_id, expected, *, deleted):
+        await self.session.rollback()
+        prepared = await self.prepare_layout(project_id, expected)
         try:
             yield
+            await self.coordinator.record(
+                self.session, prepared, resource_revision=expected + 1, deleted=deleted
+            )
         except BaseException:
             await self.session.rollback()
+            await self.coordinator.abort_after_rollback(self.session, prepared)
             raise
         await self.session.commit()
 

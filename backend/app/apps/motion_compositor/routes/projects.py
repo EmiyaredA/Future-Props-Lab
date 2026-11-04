@@ -1,6 +1,6 @@
 """Published project and document operations with service-local transactions."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from app.deps import OwnerDep, SessionDep
 
@@ -27,7 +27,10 @@ async def list_projects(session: SessionDep, owner_user_id: OwnerDep) -> Project
 async def create_project(
     session: SessionDep, owner_user_id: OwnerDep, body: ProjectCreateIn
 ) -> ProjectOut:
-    return await MotionProjects(session, owner_user_id).create(body)
+    try:
+        return await MotionProjects(session, owner_user_id).create(body)
+    except (MotionNotFound, MotionUnavailable, MotionInvalid) as exc:
+        raise _error(exc) from None
 
 
 @router.get("/projects/{project_id}", response_model=ProjectOut)
@@ -66,3 +69,17 @@ async def edit_document(
         return await MotionProjects(session, owner_user_id).apply(project_id, body)
     except (MotionInvalid, MotionNotFound, MotionUnavailable) as exc:
         raise _error(exc) from None
+
+
+@router.delete("/projects/{project_id}")
+async def delete_project(
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    project_id: str,
+    expected_revision: int = Query(alias="expectedRevision", ge=0),
+) -> dict[str, bool]:
+    try:
+        await MotionProjects(session, owner_user_id).delete(project_id, expected_revision)
+    except (MotionNotFound, MotionUnavailable, MotionInvalid) as exc:
+        raise _error(exc) from None
+    return {"deleted": True}

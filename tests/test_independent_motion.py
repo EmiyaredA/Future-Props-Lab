@@ -5,6 +5,7 @@ from pathlib import Path
 from uuid import UUID
 
 import httpx
+import pytest
 from PIL import Image
 from starlette.datastructures import Headers, UploadFile
 from tests.test_community_asset_protocol import (  # noqa: F401
@@ -19,6 +20,8 @@ from app.capabilities.asset_store.library import AssetLibrary
 from fpl_motion import file_routes
 from fpl_motion.application import PROJECTS, create_app
 from fpl_motion.migrations.registry import MIGRATIONS
+from fpl_motion.resources import ProjectResources
+from fpl_runtime.capability_client import CapabilityUnavailable
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
 
@@ -35,8 +38,11 @@ async def test_motion_project_metadata_checks_exact_project_and_owner(
     state = tmp_path / "motion"
     apply(state / "service.db", "motion", MIGRATIONS)
     case.identity.state.identity_options["service_credentials"]["motion"] = TOKEN
-    live = LiveAuthorization(service="assets", credential=ASSETS_SECRET, transport=case.mesh)
-    case.assets.state.identity = live
+
+    def assets_authority():
+        live = LiveAuthorization(service="assets", credential=ASSETS_SECRET, transport=case.mesh)
+        case.assets.state.identity = live
+        return live.client
 
     def app():
         return create_app(
@@ -46,6 +52,7 @@ async def test_motion_project_metadata_checks_exact_project_and_owner(
             credential=TOKEN,
             schema_path=ROOT / "web/src/generated/openapi.json",
             transport=case.mesh,
+            run_worker=False,
         )
 
     async def call(client, method, path, **kwargs):
@@ -69,7 +76,7 @@ async def test_motion_project_metadata_checks_exact_project_and_owner(
 
     first = app()
     async with (
-        live.client,
+        assets_authority(),
         first.router.lifespan_context(first),
         httpx.AsyncClient(
             transport=httpx.ASGITransport(app=first), base_url="http://motion"
@@ -151,9 +158,11 @@ async def test_motion_project_metadata_checks_exact_project_and_owner(
         )
         assert rename.status_code == 200, rename.text
         assert rename.json()["revision"] == 1
+        await first.state.reference_delivery.process_once()
 
     restarted = app()
     async with (
+        assets_authority(),
         restarted.router.lifespan_context(restarted),
         httpx.AsyncClient(
             transport=httpx.ASGITransport(app=restarted), base_url="http://motion"
@@ -172,3 +181,49 @@ async def test_motion_project_metadata_checks_exact_project_and_owner(
         case.csrf = case.browser.cookies["fpl_csrf"]
         assert (await call(api, "GET", project)).status_code == 404
         assert (await call(api, "GET", PROJECTS)).json()["items"] == []
+        login = await case.browser.post(
+            "/v1/auth/login", json={"username": "viewing-user", "password": PASSWORD}
+        )
+        assert login.status_code == 200
+        case.csrf = case.browser.cookies["fpl_csrf"]
+        stale_delete = await call(api, "DELETE", project, params={"expectedRevision": 0})
+        assert stale_delete.status_code == 409
+        prepare = ProjectResources.prepare_layout
+
+        async def attempt_late_upload(resources, identity, revision):
+            result = await prepare(resources, identity, revision)
+            blocked = await call(api, "POST", project + "/assets", files=upload_body)
+            assert blocked.status_code == 409, blocked.text
+            assert blocked.json()["code"] == "motion_project_deletion_pending"
+            return result
+
+        with monkeypatch.context() as fault:
+            fault.setattr(ProjectResources, "prepare_layout", attempt_late_upload)
+            removed = await call(api, "DELETE", project, params={"expectedRevision": 1})
+        assert removed.status_code == 200, removed.text
+        assert (await call(api, "GET", project)).status_code == 404
+
+        settle = restarted.state.retention_client.commit
+
+        async def lost_reply(**outcome):
+            await settle(**outcome)
+            raise CapabilityUnavailable("simulated Motion deletion settlement loss")
+
+        with monkeypatch.context() as fault:
+            fault.setattr(restarted.state.retention_client, "commit", lost_reply)
+            with pytest.raises(CapabilityUnavailable, match="settlement loss"):
+                await restarted.state.reference_delivery.process_once()
+
+    recovered = app()
+    async with (
+        assets_authority(),
+        recovered.router.lifespan_context(recovered),
+        httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=recovered), base_url="http://motion"
+        ) as api,
+    ):
+        await recovered.state.reference_delivery.process_once()
+        candidates = await call(api, "GET", "/v1/motion-compositor/import-sources")
+        assert [item["id"] for item in candidates.json()["items"]] == [foreign]
+        assert await case.assets.state.file_cleanup.run_once() == 2
+        assert (await call(api, "GET", project)).status_code == 404

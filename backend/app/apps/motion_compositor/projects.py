@@ -15,6 +15,7 @@ from app.apps.motion_compositor.schemas import (
     ProjectPatchIn,
 )
 from app.capabilities.media_rendering.motion_document import MotionComposition
+from app.runtime.ids import new_id
 from app.runtime.project_records import (
     delete_revisioned_project,
     load_owned_project,
@@ -206,10 +207,10 @@ class MotionProjects:
         return project_out(await self.row(project_id))
 
     async def create(self, body: ProjectCreateIn) -> ProjectOut:
-        row = MotionProject(owner_user_id=self.owner_user_id, title=body.title)
-        self.session.add(row)
-        await self.session.flush()
+        row = MotionProject(id=new_id(), owner_user_id=self.owner_user_id, title=body.title)
         async with self.resources.create_layout(row.id):
+            self.session.add(row)
+            await self.session.flush()
             self.session.add(
                 MotionDocument(
                     project_id=row.id,
@@ -238,8 +239,12 @@ class MotionProjects:
         return await self.get(project_id)
 
     async def delete(self, project_id: str, expected_revision: int) -> None:
-        await self.row(project_id)
-        async with self.resources.delete_layout(project_id):
+        current = await self.row(project_id)
+        if current.revision != expected_revision:
+            raise RevisionConflictError(
+                expected_revision, current.revision, project_out(current).model_dump(mode="json")
+            )
+        async with self.resources.delete_layout(project_id, expected_revision):
             await delete_revisioned_project(
                 self.session,
                 MotionProject,
