@@ -9,6 +9,7 @@ from pathlib import Path
 from fpl_assets.migration_records import DATASETS as ASSETS
 from fpl_director.migration_records import DATASETS as DIRECTOR
 from fpl_identity.credential_migration import DATASETS as IDENTITY
+from fpl_models.catalog_migration import DATASETS as MODELS
 from fpl_remote.preference_migration import DATASET as REMOTE
 from fpl_runtime.migration_apps import SourceSnapshot
 from fpl_runtime.migration_batches import MigrationPlan
@@ -18,7 +19,10 @@ from .legacy_snapshot import CONFIG, DATABASE, MANIFEST, RUNTIME, digest, direct
 
 ROOT = Path(__file__).resolve().parents[2]
 TRANSFER = {
-    **{dataset.model.__tablename__: dataset.name for dataset in (*IDENTITY, *ASSETS, *DIRECTOR)},
+    **{
+        dataset.model.__tablename__: dataset.name
+        for dataset in (*IDENTITY, *ASSETS, *DIRECTOR, *MODELS)
+    },
     "cloud_desktop_preferences": REMOTE,
     "tool_navigation_items": TOOLS,
 }

@@ -4757,6 +4757,12 @@
       "model": "HostSnapshot"
     },
     {
+      "table": "models_import_receipts",
+      "service": "models",
+      "module": "fpl_models.catalog_migration",
+      "model": "ModelsImportReceipt"
+    },
+    {
       "table": "model_demo_installations",
       "service": "models",
       "module": "fpl_models.demo_install_records",

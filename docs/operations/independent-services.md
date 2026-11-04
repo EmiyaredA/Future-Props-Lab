@@ -309,7 +309,7 @@ uv run python -m scripts.website.migrate_identity --plan "$plan" \
   --source http://127.0.0.1:19563 --target http://127.0.0.1:19564
 ```
 
-目标先按同版本显式初始化 schema，且处于停止状态。导入会拒绝缺少账号、账号冲突或摘要变化。隔离验收经独立 Identity 登录及授权入口验证原 Studio 会话、原管理密钥、已撤销密钥与另一账号密码。TOTP 验证保留原加密密钥和已使用验证码计数，解锁记录必须对应同一账号的已导入会话。邀请码与安全审计使用迁移运行的独立分区，保留已删除邀请码、原加密密钥下可读取的密文、核销历史以及无账号的失败事件。核销记录按原账号导入，核对每份邀请码的累计核销次数。模型目录仍属于后续迁移数据集。只有所有数据集、文件与跨服务关系校验通过后才能恢复网站写入。
+目标先按同版本显式初始化 schema，且处于停止状态。导入会拒绝缺少账号、账号冲突或摘要变化。隔离验收经独立 Identity 登录及授权入口验证原 Studio 会话、原管理密钥、已撤销密钥与另一账号密码。TOTP 验证保留原加密密钥和已使用验证码计数，解锁记录必须对应同一账号的已导入会话。邀请码与安全审计使用迁移运行的独立分区，保留已删除邀请码、原加密密钥下可读取的密文、核销历史以及无账号的失败事件。核销记录按原账号导入，核对每份邀请码的累计核销次数。Models 目录在账号迁移后单独处理。只有所有数据集、文件与跨服务关系校验通过后才能恢复网站写入。
 
 Identity 传输工具随后核验并迁移同一快照中 `profiles/` 下的账号原头像。每个文件的账号路径、媒体类型和 SHA256 必须与账号记录一致。未登记的原件、符号链接、缺失或摘要不符都会停止验收。目标在写入同目录树内的私有暂存后，原子发布原件并同步目录。重放核对已存在文件的字节，再返回同一结果。暂存文件保留在快照中，生成的预览由账号资料入口按需重建。
 
@@ -318,6 +318,21 @@ Identity 传输工具随后核验并迁移同一快照中 `profiles/` 下的账�
 先运行 `npm run services:build:web -- director`，把返回目录作为 `--web-release` 传给 `npm run services:build -- director --build`。叠加 `deploy/director.compose.yaml` 并配置 `FPL_DIRECTOR_IMAGE`、`FPL_DIRECTOR_STATE` 和 Identity 公钥。在隔离空卷上显式运行 `director migrate` 后启动。Director 自己持有项目、动作库、文件和编辑器会话。服务重启后，浏览器重新建立编辑会话。
 
 三容器验收 `fpl-director-browser-65f3dcb78d` 验证了 390px 项目列表、WebGL 编辑器深链接和初始化保存、旧程序版本写入拒绝、回环公网监听的匿名保护，以及 Director 容器重启后原文件读回。浏览器版本为 `c6ba2149dd0e285ed7bc`，镜像为 `fpl/director:f4c0e8bde89255b83a46`。导演台项目和动作文件已有隔离迁移验收，服务保留正式历史数据和整站就绪门禁。
+
+### Models 历史目录与凭据
+
+目录按供应商分组、供应商、模型和账号目录修订的顺序导入。每个模型只能指向已导入的本账号供应商。保持原 ID、版本、能力配置和密文。目标维护进程用原配置的加密密钥验证每份供应商密文，错误密钥会阻止导入。维护配置由当前用户独占，包含目标数据库绝对路径及原密钥。
+
+```sh
+uv run python -m fpl_models migration-export --migration-plan "$plan" \
+  --legacy-db "$snapshot/future-props.db" --port 19571
+uv run python -m fpl_models migration-import --migration-plan "$plan" \
+  --state-root "$models_state" --config "$models_config" --port 19572
+uv run python -m scripts.website.migrate_model_catalog --plan "$plan" \
+  --source http://127.0.0.1:19571 --target http://127.0.0.1:19572
+```
+
+隔离演练保留了来源供应商关系和密文，验证原回执及错误密钥拒绝，并从恢复后的旧站读回同一份目录。账号默认值、平台模型配置、调用和任务历史、原件及索引仍需独立核验。
 
 ### 封存来源覆盖检查
 

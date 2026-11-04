@@ -20,10 +20,11 @@ from scripts.website.migrate_assets import ASSET_RECORDS, transfer_asset_blobs
 from scripts.website.migrate_director import DIRECTOR_RECORDS, transfer_director_files
 from scripts.website.migrate_identity import CREDENTIALS
 from scripts.website.migrate_identity_avatars import transfer_avatars
+from scripts.website.migrate_model_catalog import CATALOG as MODEL_CATALOG
 from scripts.website.migrate_remote_preferences import PREFERENCES
 from scripts.website.migrate_tools_navigation import NAVIGATION
 from scripts.website.migration_coverage import inspect_bundle
-from scripts.website.migration_transfer import transfer
+from scripts.website.migration_transfer import pages, transfer
 from tests.test_tools_navigation_migration import available_ports, listener
 
 from fpl_assets.migration_blobs import BLOBS as ASSET_BLOBS
@@ -31,6 +32,7 @@ from fpl_assets.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
 from fpl_director.migration_files import FILES as DIRECTOR_FILES
 from fpl_director.migrations.registry import MIGRATIONS as DIRECTOR_MIGRATIONS
 from fpl_identity.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
+from fpl_models.migrations.registry import MIGRATIONS as MODEL_MIGRATIONS
 from fpl_remote.migrations.registry import MIGRATIONS as REMOTE_MIGRATIONS
 from fpl_runtime.migration_batches import MigrationPlan
 from fpl_runtime.migrations import apply
@@ -118,12 +120,14 @@ def migrate_rehearsal(snapshot_db, parent, account, manifest_sha256):
     assert indexed["users"]["dataset"] == "identity.accounts"
     assert indexed["director_desk_projects"]["dataset"] == "director.projects"
     assert indexed["agent_workbench_search"]["status"] == "rebuild_pending"
-    assert "model_catalog_state" in report["pending_tables"]
+    assert indexed["model_catalog_state"]["dataset"] == "models.catalog-state"
+    assert "interview_rooms" in report["pending_tables"]
     with pytest.raises(ValueError, match="清单摘要"):
         inspect_bundle(snapshot_db.parent.parent, plan=plan, manifest_sha256="0" * 64, catalog={})
     for service, migrations, datasets in (
         ("identity", IDENTITY_MIGRATIONS, CREDENTIALS),
         ("assets", ASSET_MIGRATIONS, ASSET_RECORDS),
+        ("models", MODEL_MIGRATIONS, MODEL_CATALOG),
         ("tools", TOOLS_MIGRATIONS, (NAVIGATION,)),
         ("remote", REMOTE_MIGRATIONS, (PREFERENCES,)),
         ("director", DIRECTOR_MIGRATIONS, DIRECTOR_RECORDS),
@@ -132,6 +136,21 @@ def migrate_rehearsal(snapshot_db, parent, account, manifest_sha256):
         apply(root / "service.db", service, migrations)
         source_port, target_port = available_ports()
         settings = {"module": f"fpl_{service}", "prefix": datasets[0].prefix}
+        flags = ()
+        if service == "models":
+            config_file = parent / "models-maintenance.toml"
+            key = tomllib.loads((snapshot_db.parent.parent / legacy_snapshot.CONFIG).read_text())[
+                "security"
+            ]["secrets_key"]
+            config_file.touch(mode=0o600)
+            config_file.write_text(
+                "[storage]\ndatabase_path = "
+                + json.dumps(str(root / "service.db"))
+                + "\n[security]\nsecrets_key = "
+                + json.dumps(key)
+                + "\n"
+            )
+            flags = ("--config", config_file)
         with (
             httpx.Client(timeout=5, trust_env=False) as client,
             listener(
@@ -150,16 +169,55 @@ def migrate_rehearsal(snapshot_db, parent, account, manifest_sha256):
                 path,
                 "--state-root",
                 root,
+                *flags,
                 **settings,
             ) as destination,
         ):
             reports = [transfer(client, plan, source, destination, item) for item in datasets]
-            assert reports[0]["record_count"] == (2 if service == "assets" else 1)
+            if service == "models":
+                assert all(report["record_count"] >= 1 for report in reports)
+            else:
+                assert reports[0]["record_count"] == (2 if service == "assets" else 1)
             assert reports == [
                 transfer(client, plan, source, destination, item) for item in datasets
             ]
             if service == "identity":
                 assert transfer_avatars(client, plan, source, destination)["record_count"] == 1
+            if service == "models":
+                wrong = parent / "wrong-model-key"
+                apply(wrong / "service.db", "models", MODEL_MIGRATIONS)
+                wrong_config = parent / "models-wrong-key.toml"
+                wrong_config.touch(mode=0o600)
+                wrong_config.write_text(
+                    "[storage]\ndatabase_path = "
+                    + json.dumps(str(wrong / "service.db"))
+                    + "\n[security]\nsecrets_key = "
+                    + json.dumps(Fernet.generate_key().decode())
+                    + "\n"
+                )
+                extra_port, _ = available_ports()
+                headers = {"X-Fpl-Migration-Token": plan.token.get_secret_value()}
+                providers = datasets[1]
+                original = next(pages(client, source, headers, plan, UUID(account), providers))
+                assert any(row.api_key_ciphertext for row in original.batch.records)
+                with listener(
+                    client,
+                    extra_port,
+                    "migration-import",
+                    path,
+                    "--state-root",
+                    wrong,
+                    "--config",
+                    wrong_config,
+                    **settings,
+                ) as bad_target:
+                    rejected = client.post(
+                        bad_target + providers.prefix + "/batches",
+                        headers={**headers, "X-Fpl-Migration-SHA256": original.sha256},
+                        json=original.batch.model_dump(mode="json"),
+                    )
+                assert rejected.status_code == 409
+                assert rejected.json()["code"] == "migration_model_credential_unreadable"
             if service == "assets":
                 assert [report["record_count"] for report in reports] == [2, 1]
                 headers = {"X-Fpl-Migration-Token": plan.token.get_secret_value()}
@@ -273,6 +331,45 @@ def test_stopped_site_reopens_from_verified_runtime_and_original_config(tmp_path
         assert client.patch(tool, headers=safe, json={"is_favorite": True}).status_code == 200
         assert client.post(tool + "/use", headers=safe).status_code == 200
         state = client.get(TOOLS).json()
+        room = client.post(
+            "/v1/interview-assistant/rooms",
+            headers=safe,
+            json={"request_id": "coverage-room", "title": "Pending historical room"},
+        )
+        assert room.status_code == 201, room.text
+        catalog = client.get("/v1/model-providers").json()
+        supplier = client.post(
+            "/v1/model-suppliers",
+            headers=safe,
+            json={"name": "Retained supplier", "expected_catalog_revision": catalog["revision"]},
+        )
+        assert supplier.status_code == 200, supplier.text
+        providers = "/v1/model-providers"
+        provider = client.post(
+            providers,
+            headers=safe,
+            json={
+                "expected_catalog_revision": supplier.json()["revision"],
+                "supplier_id": supplier.json()["supplier"]["id"],
+                "name": "Retained Models provider",
+                "kind": "openai",
+                "base_url": "https://provider.example.test/v1",
+                "api_key": "fixture-model-credential",
+            },
+        )
+        assert provider.status_code == 200, provider.text
+        created_model = client.post(
+            f"{providers}/{provider.json()['provider']['id']}/models",
+            headers=safe,
+            json={
+                "expected_catalog_revision": provider.json()["revision"],
+                "slug": "isolated-model",
+                "label": "Retained model",
+                "capabilities": ["chat"],
+            },
+        )
+        assert created_model.status_code == 200, created_model.text
+        catalog_before = client.get(providers).json()
         root_folder = client.post(
             "/v1/file-folders", headers=safe, json={"name": "Retained", "scope": "library"}
         )
@@ -371,6 +468,7 @@ def test_stopped_site_reopens_from_verified_runtime_and_original_config(tmp_path
         response = restored.get(AVATAR)
         assert response.status_code == 200 and response.content == image
         assert restored.get(asset_path).content == asset_body
+        assert restored.get(providers).json() == catalog_before
         assert restored.get(scene_path).json() == saved.json()
         assert restored.get(f"{scene_path}/files/{scene_hash}").content == scene_bytes
         assert restored.get(motion_path).json() == motion

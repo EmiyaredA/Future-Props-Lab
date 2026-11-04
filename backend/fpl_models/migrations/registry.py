@@ -13,6 +13,7 @@ from .versions.v0010 import SQL as SQL_0010
 from .versions.v0011 import SQL as SQL_0011
 from .versions.v0012 import SQL as SQL_0012
 from .versions.v0013 import SQL as SQL_0013
+from .versions.v0014 import SQL as SQL_0014
 
 MIGRATIONS = (
     Migration("0001_account_defaults", SQL_0001),
@@ -28,4 +29,5 @@ MIGRATIONS = (
     Migration("0011_demo_installations", SQL_0011),
     Migration("0012_native_result_retention", SQL_0012),
     Migration("0013_annotation_transcription_receipts", SQL_0013),
+    Migration("0014_models_import_receipts", SQL_0014),
 )

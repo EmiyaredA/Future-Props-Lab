@@ -21,4 +21,4 @@ Coverage verifies registration and source counts. Migration receipts, restored b
 
 ## Verification
 
-The real isolated compatibility snapshot shows registered account, Assets and Director datasets. The test confirms that a populated model catalog and an outstanding search index still appear as pending, and that an altered manifest seal is refused.
+The real isolated compatibility snapshot shows registered account, Assets and Director datasets. The test confirms that populated interview history and an outstanding search index still appear as pending, and that an altered manifest seal is refused.

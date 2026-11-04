@@ -11,7 +11,9 @@ from fpl_runtime.locking import service_lock
 
 def parser():
     result = argparse.ArgumentParser(description="FPL Models")
-    result.add_argument("command", choices=("serve", "migrate"))
+    result.add_argument(
+        "command", choices=("serve", "migrate", "migration-export", "migration-import")
+    )
     result.add_argument("--config", type=Path, default=Path("/run/fpl/config.toml"))
     result.add_argument("--state-root", type=Path, default=Path("/state"))
     result.add_argument("--public-key", type=Path, default=Path("/run/fpl/identity-public.pem"))
@@ -23,10 +25,54 @@ def parser():
     result.add_argument("--native-ingress", type=Path, default=Path("/run/fpl/native-ingress"))
     result.add_argument("--workers", type=Path, default=Path("/run/fpl/workers.json"))
     result.add_argument("--port", type=int, default=8080)
+    result.add_argument("--migration-plan", type=Path)
+    result.add_argument("--legacy-db", type=Path)
     return result
 
 
+def maintenance(options):
+    import stat
+
+    import uvicorn
+
+    from fpl_config import read_config
+    from fpl_runtime.migration_batches import MigrationPlan
+
+    from .migration_application import create_export_app, create_import_app
+
+    if options.migration_plan is None or (
+        (options.command == "migration-export") != (options.legacy_db is not None)
+    ):
+        raise ValueError("维护入口需要迁移计划，仅导出入口接受源快照")
+    try:
+        plan = MigrationPlan.read(options.migration_plan)
+    except (OSError, ValueError):
+        raise ValueError("迁移计划无法读取或格式无效") from None
+    if options.legacy_db is not None:
+        app = create_export_app(plan=plan, source_path=options.legacy_db)
+    else:
+        try:
+            info = options.config.lstat()
+            if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o077:
+                raise ValueError
+            settings = read_config(options.config)
+            expected = options.state_root.resolve() / "service.db"
+            if Path(settings["fpl_database_path"]).resolve() != expected:
+                raise ValueError
+            app = create_import_app(
+                plan=plan, state_root=options.state_root, secret_key=settings["fpl_secrets_key"]
+            )
+        except (OSError, ValueError, KeyError, TypeError):
+            raise ValueError("Models 迁移需要目标自有数据库及原加密密钥的私有配置") from None
+    uvicorn.run(app, host="127.0.0.1", port=options.port, proxy_headers=False, access_log=False)
+
+
 def run(options):
+    if options.command.startswith("migration-"):
+        maintenance(options)
+        return
+    if options.migration_plan is not None or options.legacy_db is not None:
+        raise ValueError("迁移计划与源快照仅用于维护入口")
     if not options.config.is_file():
         raise ValueError("缺少只读 Models 配置")
     os.environ["FPL_CONFIG_FILE"] = str(options.config.resolve())
