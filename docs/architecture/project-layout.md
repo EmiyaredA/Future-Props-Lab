@@ -104,6 +104,8 @@
 
 `fpl_thought/duplicate_retention.py` 为复制的每个文档准备独立投影，保留多维表历史中的素材。复制结果和投影结果共用源事务。`archive_import.py` 拥有备份和官方包共用的清单校验、标识重映射及入库。`fpl_thought/official_projections.py` 为内置官方包创建初始投影，导入回执、来源映射和投影结果一同提交。
 
+`fpl_thought/sync_submit.py` 在排队前固定预览、远端版本和图片摘要，`sync_artifacts.py` 暂存任务私有图片副本。`sync_runner.py` 通过 Identity 的持久任务授权在 Integrations 执行逐步写入，进程退出时把运行中的任务置为待核对。`sync_reconcile.py` 使用只读步骤回执及远端快照核对已确认写入，或显式关闭任务以阻止迟到写入。供应商连接、远端步骤记录和关闭回执留在 Integrations。
+
 `fpl_runtime/routing.py` 分别维护 HTTP 操作与固定 WebSocket 归属。实时语音只接受实际 Upgrade 握手，网关清除外部身份头后标记协议并交 Identity 复核；管理网关不开放该入口。`protocol_hash.py` 只将本服务的 Socket 契约纳入版本，公开 OpenAPI 不伪造普通 GET 操作。
 
 `fpl_runtime/migrations.py` 在只读预检中核验已应用历史的位置、服务、版本和 checksum，使用转义 URI 保留真实路径字符。显式迁移接受有效历史前缀，启动检查要求完整注册表；打开目标连接后先重复校验，再设置 WAL 或创建表。错误归属与漂移库保持原状，不自动修复或接管未登记旧库。

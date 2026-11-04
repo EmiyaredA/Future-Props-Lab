@@ -49,6 +49,32 @@ class ExternalSteps:
         self.cipher = cipher
         self.database, self.transport = database, transport
 
+    async def progress(self, actor, scope, intent_id):
+        async with self.database.sessions(info={"owner_user_id": actor.user_id}) as session:
+            row = await session.get(ExternalExecution, str(scope.task_id))
+            if row is None:
+                return {"status": "missing"}
+            if row.intent_id != str(intent_id) or row.input_sha256 != scope.input_sha256:
+                raise ExternalError("同步任务授权不一致", 409, "task_authority_changed")
+            return {"status": row.status, "checkpoint": row.checkpoint}
+
+    async def step_proof(self, actor, scope, intent_id, body):
+        async with self.database.sessions(info={"owner_user_id": actor.user_id}) as session:
+            task = await session.get(ExternalExecution, str(scope.task_id))
+            if task is None:
+                return {"status": "missing"}
+            if task.intent_id != str(intent_id) or task.input_sha256 != scope.input_sha256:
+                raise ExternalError("同步任务授权不一致", 409, "task_authority_changed")
+            receipt = await session.get(ExternalStepReceipt, str(body.step_id))
+            if receipt is None or receipt.task_id != task.task_id:
+                return {"status": "missing"}
+            if receipt.fingerprint != body.request_sha256:
+                raise ExternalError("同步步骤摘要不一致", 409, "step_conflict")
+            return {
+                "status": receipt.status,
+                "result": receipt.result if receipt.status == "confirmed" else {},
+            }
+
     async def snapshot(self, actor, scope, intent_id, body):
         if body.task_payload.fingerprint() != scope.input_sha256:
             raise ExternalError("同步正文摘要不一致", 403, "scope_mismatch")

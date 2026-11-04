@@ -34,6 +34,7 @@ from app.runtime.revisions import RevisionConflictError
 from fpl_runtime.authentication import SignedIdentity
 from fpl_runtime.creative_stdio import PRIVATE_STDIO
 from fpl_runtime.database import Database
+from fpl_runtime.external_sync import MAX_EXTERNAL_STEP_BYTES
 from fpl_runtime.integration_client import IntegrationAuthorizationUnavailable
 from fpl_runtime.migrations import check
 from fpl_runtime.request_limit import RequestLimit
@@ -242,7 +243,7 @@ def create_app(
 
     app.add_exception_handler(ExternalError, external_failure)
     app.add_middleware(
-        RequestLimit, prefix="/_internal/v1/external-sync/", maximum=32 * 1024 * 1024
+        RequestLimit, prefix="/_internal/v1/external-sync/", maximum=MAX_EXTERNAL_STEP_BYTES
     )
     app.add_middleware(CreativeRequestLimit)
     app.add_middleware(RequestLimit, prefix=PRIVATE_STDIO, maximum=256 * 1024)

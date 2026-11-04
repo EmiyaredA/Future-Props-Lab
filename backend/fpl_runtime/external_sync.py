@@ -10,6 +10,7 @@ from .integration_intents import digest
 
 ID = r"[A-Za-z0-9_-]{1,100}"
 DOC = r"[A-Za-z0-9]{1,200}"
+MAX_EXTERNAL_STEP_BYTES = 32 * 1024 * 1024
 
 
 class ExternalAsset(BaseModel):
@@ -48,6 +49,7 @@ class ExternalRead(BaseModel):
         "binding_target",
         "read",
         "can_write",
+        "checkpoint",
     ]
     connection_revision: int | None = Field(default=None, ge=0)
     url: str = Field(default="", max_length=2048)
@@ -101,6 +103,48 @@ class ExternalDocumentSnapshot(BaseModel):
     root_ids: list[str]
     fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
     text: str
+
+
+class ExternalCheckpoint(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    remote: ExternalDocumentSnapshot
+    appended: bool = False
+    images: dict[str, str] = Field(default_factory=dict)
+    tokens: dict[str, str] = Field(default_factory=dict)
+    replaced: list[str] = Field(default_factory=list)
+    deleted: bool = False
+
+
+class ExternalProgress(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    status: Literal["missing", "active", "unknown", "closed"]
+    checkpoint: ExternalCheckpoint | None = None
+
+    @model_validator(mode="after")
+    def require_checkpoint(self):
+        if (self.status == "missing") != (self.checkpoint is None):
+            raise ValueError("远端同步进度无效")
+        return self
+
+
+class ExternalStepEvidence(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    step_id: UUID
+    request_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+    def fingerprint(self):
+        return digest(self.model_dump(mode="json"))
+
+    def task_path(self, intent_id):
+        return (
+            f"/_internal/v1/external-sync/tasks/{UUID(str(intent_id))}/reads/{self.fingerprint()}"
+        )
+
+
+class ExternalStepProof(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    status: Literal["missing", "running", "unknown", "confirmed"]
+    result: dict = Field(default_factory=dict)
 
 
 def read_grant(grant):

@@ -1,6 +1,9 @@
 """Thought binds a document through the real Identity and Integrations HTTP contracts."""
 
+from uuid import uuid4
+
 import httpx
+import pytest
 from cryptography.fernet import Fernet
 from tests.test_community_asset_protocol import (
     CATALOG,
@@ -17,15 +20,18 @@ from fpl_integrations.application import create_app as create_integrations
 from fpl_integrations.migrations.registry import MIGRATIONS
 from fpl_runtime.claims import HEADER
 from fpl_runtime.identity_client import LiveAuthorization
+from fpl_runtime.integration_client import IntegrationIntentClient
 from fpl_runtime.migrations import apply
 from fpl_runtime.retention_client import RetentionClient
 from fpl_thought.application import create_app as create_thought
 from test_external_article_sync import FakeFeishu
 
 
-async def test_binding_reads_only_the_actors_integration_and_rechecks_revision(
+@pytest.mark.parametrize("failure", [None, "lost_receipt", "unknown_remote"])
+async def test_independent_sync_is_account_scoped_and_recovers_only_confirmed_steps(
     scenario,  # noqa: F811
     tmp_path,
+    failure,
 ):
     case = scenario
     remote = FakeFeishu()
@@ -45,7 +51,9 @@ async def test_binding_reads_only_the_actors_integration_and_rechecks_revision(
         identity=LiveAuthorization(
             service="integrations", credential=credential, transport=case.mesh
         ),
-        intents=Noop(),
+        intents=IntegrationIntentClient(
+            service="integrations", credential=credential, transport=case.mesh
+        ),
         capacity=Noop(),
         feishu_transport=remote.transport,
         run_tasks=False,
@@ -153,3 +161,78 @@ async def test_binding_reads_only_the_actors_integration_and_rechecks_revision(
         assert preview.json()["preview_id"] and preview.json()["remote_text"] == "远端原正文"
         assert preview.json()["first_sync"] is True
         assert remote.writes == []
+        path = sync + "/tasks"
+        confirmation = {
+            "preview_id": preview.json()["preview_id"],
+            "operation_id": str(uuid4()),
+            "confirm_replace": True,
+        }
+        accepted = await thought_api.post(
+            path, headers=await authorize(owner, "thought", "POST", path), json=confirmation
+        )
+        assert accepted.status_code == 202, accepted.text
+        assert accepted.json()["status"] == "queued"
+        replay = await thought_api.post(
+            path, headers=await authorize(owner, "thought", "POST", path), json=confirmation
+        )
+        assert replay.json() == accepted.json()
+        detail_path = path + "/" + accepted.json()["id"]
+        reconcile_path = detail_path + "/reconcile"
+        runner = thought.state.thought_sync_runner
+
+        async def detail():
+            return await thought_api.get(
+                detail_path, headers=await authorize(owner, "thought", "GET", detail_path)
+            )
+
+        if failure == "lost_receipt":
+            execute = integrations.state.external_steps.execute
+
+            async def lose_first_confirmed_receipt(*args, **kwargs):
+                result = await execute(*args, **kwargs)
+                if remote.writes == ["append"]:
+                    raise httpx.ReadError("synthetic response loss after commit")
+                return result
+
+            integrations.state.external_steps.execute = lose_first_confirmed_receipt
+        elif failure == "unknown_remote":
+            remote.timeout_after_append = True
+
+        await runner.process_once()
+        if failure:
+            interrupted = await detail()
+            assert interrupted.json()["status"] == "needs_review", interrupted.text
+            assert remote.writes == ["append"]
+            await runner.recover()
+            denied = await thought_api.post(
+                reconcile_path,
+                headers=await authorize(case.browser, "thought", "POST", reconcile_path),
+                json={"acknowledge_partial": True},
+            )
+            assert denied.status_code == 404, denied.text
+            reviewed = await thought_api.post(
+                reconcile_path,
+                headers=await authorize(owner, "thought", "POST", reconcile_path),
+                json={},
+            )
+            assert reviewed.status_code == 200, reviewed.text
+            assert reviewed.json()["can_resume"] is (failure == "lost_receipt")
+            if failure == "unknown_remote":
+                closed = await thought_api.post(
+                    reconcile_path,
+                    headers=await authorize(owner, "thought", "POST", reconcile_path),
+                    json={"acknowledge_partial": True},
+                )
+                assert closed.status_code == 200, closed.text
+                assert closed.json()["task"]["status"] == "failed"
+                await runner.process_once()
+                assert remote.writes == ["append"]
+                assert list(thought.state.thought_sync_artifacts.root.iterdir()) == []
+                return
+            await runner.process_once()
+        finished = await detail()
+        assert finished.status_code == 200, finished.text
+        assert finished.json()["status"] == "succeeded", finished.text
+        assert [step["status"] for step in finished.json()["steps"]] == ["confirmed"] * 4
+        assert remote.writes == ["append", "upload", "image", "delete"]
+        assert list(thought.state.thought_sync_artifacts.root.iterdir()) == []

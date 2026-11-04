@@ -9,7 +9,12 @@ from fastapi import APIRouter, HTTPException, Request
 from app.capabilities.identity.permissions import effective_permissions
 from app.integrations.external.contracts import ExternalError
 from fpl_runtime.claims import HEADER, verify_context
-from fpl_runtime.external_sync import ExternalClose, ExternalRead, ExternalStep
+from fpl_runtime.external_sync import (
+    ExternalClose,
+    ExternalRead,
+    ExternalStep,
+    ExternalStepEvidence,
+)
 from fpl_runtime.integration_client import IntegrationAuthorizationUnavailable
 
 router = APIRouter(prefix="/_internal/v1/external-sync", include_in_schema=False)
@@ -70,11 +75,17 @@ async def read(
 
 
 @router.post("/tasks/{intent_id}/reads/{fingerprint}")
-async def task_read(request: Request, intent_id: UUID, fingerprint: str, body: ExternalRead):
+async def task_read(
+    request: Request, intent_id: UUID, fingerprint: str, body: ExternalRead | ExternalStepEvidence
+):
     actor = source(request)
     if fingerprint != body.fingerprint() or body.task_path(intent_id) != request.url.path:
         raise HTTPException(422, "external_sync_input_mismatch")
     scope = await intent_check(request, intent_id, actor)
+    if isinstance(body, ExternalStepEvidence):
+        return await request.app.state.external_steps.step_proof(actor, scope, intent_id, body)
+    if body.op == "checkpoint" and body.connection_revision is None:
+        return await request.app.state.external_steps.progress(actor, scope, intent_id)
     return await request.app.state.external_reads.execute(
         actor.user_id,
         scope.connection_id,

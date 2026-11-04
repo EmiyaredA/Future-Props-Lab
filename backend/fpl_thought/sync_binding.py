@@ -1,8 +1,5 @@
 """Keep external binding operations on Integrations' request-scoped read port."""
 
-import json
-
-import httpx
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -15,13 +12,26 @@ from app.apps.thought_workshop.external_sync.schemas import (
     ArticleBindingOut,
     ArticlePreviewInput,
     ArticleSyncPreview,
+    ArticleSyncReconcile,
+    ArticleSyncReconcileOut,
+    ArticleSyncSubmit,
+    ArticleSyncTaskOut,
 )
 from app.apps.thought_workshop.http_bindings import SessionDep
 from app.deps import OwnerDep, StudioAuth
 from app.integrations.external.contracts import ExternalError, RemoteDocument
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
 from fpl_runtime.delegation import RequestGrant
-from fpl_runtime.external_sync import ExternalBindingTarget, ExternalDocumentSnapshot, ExternalRead
+from fpl_runtime.external_sync import (
+    ExternalBindingTarget,
+    ExternalClose,
+    ExternalDocumentSnapshot,
+    ExternalRead,
+)
+
+from .sync_reconcile import reconcile_task
+from .sync_submit import submit_task
+from .sync_transport import MAX_SNAPSHOT, OBJECT, post_sync
 
 router = APIRouter(
     prefix="/thought-workshop/notes/{note_id}/external-sync", tags=["thought-workshop"]
@@ -53,14 +63,19 @@ class BindingReads:
         self.revision = None
 
     async def execute(self, connection, body, output, *, maximum_bytes=32 * 1024):
-        request = self.request
         try:
             path = body.path(self.note_id, connection)
         except ValueError:
             raise ExternalError("同步连接不存在", 404, "not_found") from None
+        return await self.forward(
+            path, "thought.external-sync.read", body, output, maximum_bytes=maximum_bytes
+        )
+
+    async def forward(self, path, purpose, body, output, *, maximum_bytes=32 * 1024):
+        request = self.request
         grant = RequestGrant(
             "thought",
-            "thought.external-sync.read",
+            purpose,
             request.method,
             request.url.path,
             "integrations",
@@ -69,33 +84,24 @@ class BindingReads:
         )
         try:
             token = await self.client.authorize_request(request.state.service_assertion, grant)
-            async with self.client.client.stream(
-                "POST",
-                "http://integrations:8080" + path,
-                headers={"X-Fpl-Context": token},
-                json=body.model_dump(mode="json"),
-            ) as response:
-                payload = bytearray()
-                async for chunk in response.aiter_bytes():
-                    payload.extend(chunk)
-                    if len(payload) > maximum_bytes:
-                        raise ValueError("external target response too large")
-                if response.status_code in {401, 403, 404, 409, 422, 502, 503}:
-                    error = json.loads(payload)
-                    raise ExternalError(
-                        str(error.get("detail") or "同步连接读取失败"),
-                        response.status_code,
-                        str(error.get("code") or "external_connection_error"),
-                    )
-                if response.status_code != 200:
-                    raise ValueError("external target response invalid")
-                return output.model_validate_json(payload)
         except CapabilityDenied as exc:
             raise ExternalError("同步连接授权已失效", exc.status, "authorization_revoked") from None
-        except (CapabilityUnavailable, httpx.HTTPError, ValueError, AttributeError):
+        except CapabilityUnavailable:
             raise ExternalError(
                 "同步连接暂不可用", 503, "external_connection_unavailable"
             ) from None
+        return await post_sync(
+            self.client.client, path, token, body, output, maximum_bytes=maximum_bytes
+        )
+
+    async def close_task(self, task_id):
+        try:
+            body = ExternalClose(note_id=self.note_id, task_id=task_id)
+        except ValueError:
+            raise ExternalError("同步任务不存在", 404, "not_found") from None
+        result = await self.forward(body.path(), "thought.external-sync.close", body, OBJECT)
+        if result != {"closed": True}:
+            raise ExternalError("远端关闭回执无效", 503, "external_close_unconfirmed")
 
     async def get(self, connection):
         result = await self.execute(connection, ExternalRead(op="get"), ConnectionVersion)
@@ -129,7 +135,7 @@ class BindingReads:
             connection,
             ExternalRead(op="read", document_id=document_id, connection_revision=revision),
             ExternalDocumentSnapshot,
-            maximum_bytes=32 * 1024 * 1024,
+            maximum_bytes=MAX_SNAPSHOT,
         )
         remote = RemoteDocument(
             value.document_id, value.title, value.revision, value.blocks, value.root_ids
@@ -185,6 +191,50 @@ async def preview(
             ArticleSyncRecords(session, owner_user_id, principal),
             BindingReads(request, note_id).preview_target,
             note_id,
+            body,
+        )
+    except (ExternalError, ThoughtError) as exc:
+        raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
+
+
+@router.post("/tasks", response_model=ArticleSyncTaskOut, status_code=202)
+async def submit(
+    note_id: str,
+    body: ArticleSyncSubmit,
+    principal: StudioAuth,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    request: Request,
+):
+    try:
+        return await submit_task(
+            ArticleSyncRecords(session, owner_user_id, principal),
+            BindingReads(request, note_id),
+            request,
+            note_id,
+            body,
+        )
+    except (ExternalError, ThoughtError) as exc:
+        raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
+
+
+@router.post("/tasks/{task_id}/reconcile", response_model=ArticleSyncReconcileOut)
+async def reconcile(
+    note_id: str,
+    task_id: str,
+    body: ArticleSyncReconcile,
+    principal: StudioAuth,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    request: Request,
+):
+    try:
+        return await reconcile_task(
+            ArticleSyncRecords(session, owner_user_id, principal),
+            BindingReads(request, note_id),
+            request.app.state,
+            note_id,
+            task_id,
             body,
         )
     except (ExternalError, ThoughtError) as exc:

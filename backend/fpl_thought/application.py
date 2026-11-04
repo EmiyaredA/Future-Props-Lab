@@ -20,6 +20,7 @@ from app.runtime.revisions import RevisionConflictError
 from fpl_runtime.authentication import SignedIdentity
 from fpl_runtime.capability_client import CapabilityClient
 from fpl_runtime.database import Database
+from fpl_runtime.integration_client import IntegrationIntentClient
 from fpl_runtime.locking import service_lock
 from fpl_runtime.migrations import check
 from fpl_runtime.request_limit import RequestLimit
@@ -39,7 +40,10 @@ from .mutations_http import router as mutations_router
 from .publication_http import router as publication_router
 from .reads_http import router as reads_router
 from .retention import ThoughtReferenceDelivery, ThoughtReferences
+from .sync_artifacts import SyncArtifacts
 from .sync_binding import router as sync_binding_router
+from .sync_runner import SyncRunner
+from .sync_transport import TaskSyncTransport
 from .upload_http import UploadConfiguration
 from .upload_http import router as upload_router
 from .upload_recovery import recover_upload_staging
@@ -84,6 +88,12 @@ def create_app(
     sync_reads = CapabilityClient(
         service="thought", credential=credential, catalog=catalog, transport=transport
     )
+    sync_intents = IntegrationIntentClient(
+        service="thought", credential=credential, transport=transport
+    )
+    sync_artifacts = SyncArtifacts(state_root)
+    sync_transport = TaskSyncTransport(sync_reads, sync_intents)
+    sync_runner = SyncRunner(database.sessions, sync_transport, sync_artifacts)
 
     def directory(principal, assertion, method, path):
         return HttpAccountDirectory(
@@ -122,11 +132,14 @@ def create_app(
                 await recover_upload_staging(state_root, database.sessions)
                 if run_worker:
                     await delivery.start()
+                    await sync_runner.start()
                 yield
             finally:
+                await sync_runner.stop()
                 await delivery.stop()
                 await files.close()
                 await sync_reads.close()
+                await sync_intents.close()
                 await retention_client.close()
                 await identity.close()
                 await database.close()
@@ -143,6 +156,10 @@ def create_app(
     app.state.thought_backup_limits = backup_limits
     app.state.thought_references, app.state.community_files = references, files
     app.state.thought_sync_reads = sync_reads
+    app.state.thought_sync_intents = sync_intents
+    app.state.thought_sync_artifacts = sync_artifacts
+    app.state.thought_sync_transport = sync_transport
+    app.state.thought_sync_runner = sync_runner
     if upload_receipt_credential is not None:
         app.state.thought_upload_configuration = UploadConfiguration(
             root=state_root,

@@ -29,6 +29,8 @@ A published cover has its own reference set keyed by publication ID. Thought der
 
 ## Verification
 
+Accepted external sync stores an immutable task intent, frozen content and verified private image copies before enqueueing. Integrations retains the execution and step receipts. After response loss Thought consults the read-only proof and verifies the actual remote snapshot before continuing. A missing or unknown provider result requires explicit close before a new preview. A revoked original intent cannot resume. The isolated Identity, Thought, Assets and Integrations tests exercise the normal four-step image path, a lost response after commit and an unknown provider outcome without duplicate append.
+
 External sync preview now reads Feishu through Integrations with the original account and binding scope. Thought captures article and table projections in a read snapshot, performs remote reads outside that transaction and rechecks the note and binding before persisting the preview. The independent binding and preview journey, the compatibility sync suite and the architecture checks pass in the 99-test targeted run.
 
 Independent document duplication reserves one Assets projection per destination note, including retained table history. Source and destination revisions are checked again before the copy transaction. The cross-service test checks account isolation, stale revisions and the copied table's pin.
