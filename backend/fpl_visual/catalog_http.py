@@ -22,7 +22,7 @@ acceptance = APIRouter(tags=["visual-workshop"])
 
 
 async def lookup(request, target, schema):
-    client = request.app.state.model_catalog_client
+    client = request.app.state.capabilities
     grant = RequestGrant("visual", PURPOSE, "GET", request.url.path, "models", "GET", target)
     try:
         token = await client.authorize_request(request.state.service_assertion, grant)

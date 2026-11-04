@@ -24,7 +24,7 @@ from app.tool_navigation.video_download_errors import VideoDownloadError
 from fpl_runtime.claims import HEADER, verify_context
 from fpl_runtime.http_dependencies import StudioAuth
 from fpl_runtime.native_protocol import NativeLease, NativeOutcome
-from fpl_runtime.project_reveal import PROJECT_REVEAL, TOOLS_PREFIX, reveal_target
+from fpl_runtime.project_reveal import APPLICATION_OPERATIONS, TOOLS_PREFIX, reveal_target
 from fpl_runtime.tools_native import OPEN_PATH, VIDEO_DEPS_PATH
 from fpl_runtime.tools_video import (
     DOWNLOAD_VIDEO,
@@ -107,8 +107,8 @@ async def reveal_library_folder(request: Request, principal: StudioAuth):
     return ProjectFolderOpenOut()
 
 
-@public.post(TOOLS_PREFIX + "/video-editor/{project_id}", include_in_schema=False)
-async def reveal_project_folder(request: Request, project_id: str):
+@public.post(TOOLS_PREFIX + "/{application_id}/{project_id}", include_in_schema=False)
+async def reveal_project_folder(request: Request, application_id: str, project_id: str):
     path = request.url.path
     if (
         not reveal_target("POST", path, "tools")
@@ -136,7 +136,7 @@ async def reveal_project_folder(request: Request, project_id: str):
     ):
         raise HTTPException(403, "local_access_required")
     await request.app.state.tools_host.open_folder(
-        actor.user_id, assertion, PROJECT_REVEAL, {"project_id": project_id}
+        actor.user_id, assertion, APPLICATION_OPERATIONS[application_id], {"project_id": project_id}
     )
     return ProjectFolderOpenOut()
 

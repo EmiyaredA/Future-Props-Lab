@@ -1,4 +1,4 @@
-"""A local browser may reveal only its verified Video project directory."""
+"""A local browser may reveal only its verified project directory."""
 
 import asyncio
 from dataclasses import replace
@@ -6,10 +6,12 @@ from pathlib import Path
 from uuid import uuid4
 
 import httpx
+import pytest
 from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario  # noqa: F401
+from tests.test_creative_project_certification import PROJECTS as PROJECT_OWNERS
 from tests.test_independent_project_catalog import authorize
 
-from fpl_host.tools_worker import ToolsWorker, reveal_video_project
+from fpl_host.tools_worker import ToolsWorker, reveal_video_project, reveal_workshop_project
 from fpl_host.transport import NativeTransport
 from fpl_runtime.claims import HEADER, issue_context, verify_context
 from fpl_runtime.identity_client import LiveAuthorization
@@ -18,14 +20,22 @@ from fpl_runtime.project_reveal import TOOLS_PREFIX
 from fpl_runtime.tools_native import ToolsNativeOptions
 from fpl_tools.application import create_app as create_tools
 from fpl_tools.migrations.registry import MIGRATIONS as TOOLS_MIGRATIONS
-from fpl_video.application import PROJECTS
 from fpl_video.application import create_app as create_video
 from fpl_video.migrations.registry import MIGRATIONS as VIDEO_MIGRATIONS
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-async def test_video_reveal_requires_local_owner_and_scoped_worker_receipt(scenario, tmp_path):  # noqa: F811
+@pytest.mark.parametrize(
+    "service,application",
+    [("video", "video-editor"), ("visual", "visual-workshop"), ("galgame", "galgame-workshop")],
+)
+async def test_project_reveal_requires_local_owner_and_scoped_worker_receipt(
+    scenario,  # noqa: F811
+    tmp_path,
+    service,
+    application,
+):
     case = scenario
     options = ToolsNativeOptions(
         identity_credential="identity-tools-" * 4,
@@ -33,10 +43,20 @@ async def test_video_reveal_requires_local_owner_and_scoped_worker_receipt(scena
         workers={"isolated-worker": "native-worker-" * 4},
     )
     credentials = case.identity.state.identity_options["service_credentials"]
-    credentials.update(tools=options.identity_credential, video="identity-video-" * 4)
-    tools_root, video_root = tmp_path / "tools", tmp_path / "video"
+    credentials.update(tools=options.identity_credential)
+    credentials[service] = f"identity-{service}-" * 4
+    tools_root, project_root = tmp_path / "tools", tmp_path / service
+    factory, migrations, extra = (
+        create_video,
+        VIDEO_MIGRATIONS,
+        {"schema_path": ROOT / "web/src/generated/openapi.json"},
+    )
+    if service != "video":
+        factory, migrations, _, _ = PROJECT_OWNERS[service]
+        extra = {}
     apply(tools_root / "service.db", "tools", TOOLS_MIGRATIONS)
-    apply(video_root / "service.db", "video", VIDEO_MIGRATIONS)
+    apply(project_root / "service.db", service, migrations)
+    projects = f"/v1/{application}/projects"
     assets_identity = LiveAuthorization(
         service="assets", credential=ASSETS_SECRET, transport=case.mesh
     )
@@ -49,16 +69,17 @@ async def test_video_reveal_requires_local_owner_and_scoped_worker_receipt(scena
         native_options=options,
         identity_transport=case.mesh,
     )
-    video = create_video(
-        state_root=video_root,
+    app = factory(
+        state_root=project_root,
         catalog=CATALOG,
         public_key=case.key.public_key(),
-        schema_path=ROOT / "web/src/generated/openapi.json",
-        credential=credentials["video"],
+        credential=credentials[service],
+        **extra,
         transport=case.mesh,
         run_worker=False,
     )
     case.mesh.apps["tools"] = tools
+    case.mesh.apps[service] = app
     calls = []
     tools_api = httpx.ASGITransport(app=tools)
     lost = False
@@ -79,6 +100,11 @@ async def test_video_reveal_requires_local_owner_and_scoped_worker_receipt(scena
             root, owner, project, launch=lambda args, **_: calls.append(args)
         )
 
+    def open_workshop(root, owner, application, project):
+        return reveal_workshop_project(
+            root, owner, application, project, launch=lambda args, **_: calls.append(args)
+        )
+
     transport = NativeTransport(
         service="tools",
         base_url="http://127.0.0.1:19090/tools",
@@ -87,26 +113,37 @@ async def test_video_reveal_requires_local_owner_and_scoped_worker_receipt(scena
     )
 
     def worker():
-        return ToolsWorker(transport, assets_root, tmp_path / "worker", reveal_project=open_project)
+        return ToolsWorker(
+            transport,
+            assets_root,
+            tmp_path / "worker",
+            reveal_project=open_project,
+            reveal_workshop=open_workshop,
+        )
 
     async with (
         transport.client,
         tools.router.lifespan_context(tools),
-        video.router.lifespan_context(video),
-        httpx.AsyncClient(transport=httpx.ASGITransport(app=video), base_url="http://video") as api,
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://" + service
+        ) as api,
     ):
         created = await api.post(
-            PROJECTS,
-            headers=await authorize(case, "video", "POST", PROJECTS),
-            json={"title": "Owned native reveal"},
+            projects,
+            headers=await authorize(case, service, "POST", projects),
+            json={
+                "title": "Owned native reveal",
+                **({"kind": "canvas"} if service == "visual" else {}),
+            },
         )
         assert created.status_code == 200, created.text
         project = created.json()["id"]
-        path = f"{PROJECTS}/{project}/open-folder"
-        headers = await authorize(case, "video", "POST", path)
+        path = f"{projects}/{project}/open-folder"
+        headers = await authorize(case, service, "POST", path)
         actor = verify_context(
             headers[HEADER],
-            service="video",
+            service=service,
             method="POST",
             path=path,
             public_key=case.key.public_key(),
@@ -117,7 +154,7 @@ async def test_video_reveal_requires_local_owner_and_scoped_worker_receipt(scena
             return {
                 HEADER: issue_context(
                     replace(actor, **values),
-                    service="video",
+                    service=service,
                     method="POST",
                     path=path,
                     private_key=case.key,
@@ -129,7 +166,7 @@ async def test_video_reveal_requires_local_owner_and_scoped_worker_receipt(scena
         assert (await api.post(path, headers=signed(user_id=case.owner))).status_code == 404
         async with httpx.AsyncClient(transport=tools_api, base_url="http://tools") as private:
             assert (
-                await private.post(TOOLS_PREFIX + f"/video-editor/{project}", headers=headers)
+                await private.post(TOOLS_PREFIX + f"/{application}/{project}", headers=headers)
             ).status_code == 401
         first = worker()
         opening = asyncio.create_task(api.post(path, headers=headers))
@@ -148,20 +185,30 @@ async def test_video_reveal_requires_local_owner_and_scoped_worker_receipt(scena
             / "accounts"
             / case.viewer
             / "applications"
-            / "video-editor"
+            / application
             / "projects"
             / project
         )
         assert calls == [["/usr/bin/open", str(folder)]]
-        assert {entry.name for entry in folder.iterdir()} == {"assets", "derived", "exports"}
+        subfolders = (
+            {"assets", "generated"} if service == "visual" else {"assets", "derived", "exports"}
+        )
+        assert {entry.name for entry in folder.iterdir()} == subfolders
 
         stray = folder.with_name(str(uuid4()))
         stray.symlink_to(folder, target_is_directory=True)
-        assert open_project(assets_root, case.viewer, stray.name) == {
+        assert open_workshop(assets_root, case.viewer, application, stray.name) == {
             "error": "project_folder_missing"
         }
         (folder / "assets").rmdir()
         (folder / "assets").symlink_to(tmp_path, target_is_directory=True)
         assert (await api.post(path, headers=headers)).status_code == 409
+        assert len(calls) == 1
+        (folder / "assets").unlink()
+        relocated = folder.with_name(str(uuid4()))
+        folder.rename(relocated)
+        folder.symlink_to(relocated, target_is_directory=True)
+        assert (await api.post(path, headers=headers)).status_code == 409
+        assert not (relocated / "assets").exists()
         assert len(calls) == 1
     await assets_identity.close()

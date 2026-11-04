@@ -13,8 +13,13 @@ from app.apps.visual_workshop.schemas.workshop import (
     VisualWorkshopProjectOut,
     VisualWorkshopProjectPatchIn,
 )
+from app.capabilities.asset_store.schemas.project_snapshots import ProjectFolderOpenOut
 from app.runtime.operation_receipts import OperationError
-from fpl_runtime.http_dependencies import OwnerDep, SessionDep
+from fpl_runtime.http_dependencies import OwnerDep, SessionDep, StudioAuth
+from fpl_runtime.project_reveal_http import (
+    open_verified_project_folder,
+    require_local_project_request,
+)
 from fpl_runtime.reference_runtime import reference_lifespan
 
 from .canvas_writes import PREFIX, CanvasWrites
@@ -96,3 +101,12 @@ async def apply_canvas_operations(
         raise HTTPException(
             422, {"code": "invalid_operation_result", "errors": exc.errors(include_context=False)}
         ) from None
+
+
+@router.post("/{project_id}/open-folder", response_model=ProjectFolderOpenOut)
+async def reveal_project_folder(
+    request: Request, principal: StudioAuth, session: SessionDep, project_id: str
+) -> ProjectFolderOpenOut:
+    require_local_project_request(request, principal)
+    await Projects(session, principal.user_id).row(project_id)
+    return await open_verified_project_folder(request, session, "visual-workshop", project_id)

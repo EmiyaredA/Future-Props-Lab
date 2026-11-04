@@ -5,7 +5,7 @@ from types import MappingProxyType
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
-from .project_reveal import PROJECT_REVEAL, TOOLS_PREFIX
+from .project_reveal import REVEAL_APPLICATIONS, TOOLS_PREFIX
 from .tools_video import DOWNLOAD_VIDEO, VIDEO_JOB_PATH
 
 OPEN_PATH = "/v1/file-storage/open-folder"
@@ -17,7 +17,10 @@ VIDEO_DEPS_PATH = "/v1/tool-navigation/video-download/deps"
 HOST_OPERATIONS = MappingProxyType(
     {
         OPEN_LIBRARY: ("POST", OPEN_PATH),
-        PROJECT_REVEAL: ("POST", TOOLS_PREFIX + "/video-editor/{project_id}"),
+        **{
+            operation: ("POST", TOOLS_PREFIX + f"/{application}/{{project_id}}")
+            for operation, application in REVEAL_APPLICATIONS.items()
+        },
         PROBE_VIDEO: ("GET", VIDEO_DEPS_PATH),
         PROBE_VIDEO_SUBMIT: ("POST", VIDEO_JOB_PATH),
         DOWNLOAD_VIDEO: ("POST", VIDEO_JOB_PATH),

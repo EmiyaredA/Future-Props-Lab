@@ -17,7 +17,7 @@ from app.tool_navigation.video_download_dependencies import probe_deps
 from app.tool_navigation.video_download_errors import VideoDownloadError
 from fpl_runtime.locking import service_lock
 from fpl_runtime.native_protocol import NativeLease, NativeOutcome
-from fpl_runtime.project_reveal import PROJECT_REVEAL, reveal_payload
+from fpl_runtime.project_reveal import PROJECT_REVEAL, REVEAL_APPLICATIONS, reveal_payload
 from fpl_runtime.tools_native import HOST_OPERATIONS, OPEN_LIBRARY, VIDEO_PROBES
 from fpl_runtime.tools_video import (
     DOWNLOAD_VIDEO,
@@ -64,15 +64,21 @@ def reveal_library(root, owner, *, launch=subprocess.Popen):
     return reveal(root, owner, ("library", "assets"), "library_folder_missing", launch=launch)
 
 
-def reveal_video_project(root, owner, project_id, *, launch=subprocess.Popen):
+def reveal_workshop_project(root, owner, application, project_id, *, launch=subprocess.Popen):
+    if application not in REVEAL_APPLICATIONS.values():
+        return {"error": "project_folder_missing"}
     scope = reveal_payload({"project_id": project_id})
     return reveal(
         root,
         owner,
-        ("applications", "video-editor", "projects", scope["project_id"]),
+        ("applications", application, "projects", scope["project_id"]),
         "project_folder_missing",
         launch=launch,
     )
+
+
+def reveal_video_project(root, owner, project_id, *, launch=subprocess.Popen):
+    return reveal_workshop_project(root, owner, "video-editor", project_id, launch=launch)
 
 
 class ToolsWorker:
@@ -84,6 +90,7 @@ class ToolsWorker:
         *,
         reveal=reveal_library,
         reveal_project=reveal_video_project,
+        reveal_workshop=reveal_workshop_project,
         dependencies=probe_deps,
         downloader=None,
     ):
@@ -91,7 +98,7 @@ class ToolsWorker:
             raise ValueError("Tools worker 必须指定真实的 Assets 状态目录")
         self.assets_root = assets_root.resolve()
         self.transport, self.reveal = transport, reveal
-        self.reveal_project = reveal_project
+        self.reveal_project, self.reveal_workshop = reveal_project, reveal_workshop
         self.dependencies = dependencies
         self.videos = VideoWorkspace(state_root, **({"download": downloader} if downloader else {}))
         self.receipts = ReceiptStore(
@@ -186,16 +193,16 @@ class ToolsWorker:
 
     async def execute(self, lease):
         if lease.operation not in HOST_OPERATIONS or (
-            lease.operation not in {DOWNLOAD_VIDEO, PROJECT_REVEAL} and lease.payload
+            lease.operation not in {DOWNLOAD_VIDEO, *REVEAL_APPLICATIONS} and lease.payload
         ):
             raise ProtocolConflict("Tools 租约超出原生能力")
         if lease.operation == DOWNLOAD_VIDEO:
             VideoDownloadInput.model_validate(lease.payload)
-        elif lease.operation == PROJECT_REVEAL:
+        elif lease.operation in REVEAL_APPLICATIONS:
             try:
                 reveal_payload(lease.payload)
             except ValueError as exc:
-                raise ProtocolConflict("剪辑文件夹租约范围无效") from exc
+                raise ProtocolConflict("项目文件夹租约范围无效") from exc
         try:
             result = await self.transport.post(
                 "authorize", {"lease": lease.model_dump(mode="json")}
@@ -213,6 +220,13 @@ class ToolsWorker:
             if operation == PROJECT_REVEAL:
                 return self.reveal_project(
                     self.assets_root, lease.owner_user_id, lease.payload["project_id"]
+                )
+            if operation in REVEAL_APPLICATIONS:
+                return self.reveal_workshop(
+                    self.assets_root,
+                    lease.owner_user_id,
+                    REVEAL_APPLICATIONS[operation],
+                    lease.payload["project_id"],
                 )
             if operation in VIDEO_PROBES:
                 return self.dependencies().model_dump(mode="json")

@@ -85,7 +85,7 @@ def create_app(
     app.include_router(outputs_router)
     app.include_router(generation_catalog_router)
     app.include_router(acceptance_catalog_router)
-    app.state.model_catalog_client = CapabilityClient(
+    app.state.capabilities = CapabilityClient(
         service="visual", credential=credential, catalog=catalog, transport=transport
     )
     app.include_router(standard_router, prefix="/v1")
@@ -110,11 +110,11 @@ def create_app(
     lifespan = app.router.lifespan_context
 
     @asynccontextmanager
-    async def with_model_catalog(instance):
-        async with app.state.model_catalog_client.client, lifespan(instance):
+    async def with_capability_client(instance):
+        async with app.state.capabilities.client, lifespan(instance):
             yield
 
-    app.router.lifespan_context = with_model_catalog
+    app.router.lifespan_context = with_capability_client
     return app
 
 

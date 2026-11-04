@@ -34,7 +34,10 @@ SERVICES = (
         "remote", "远程桌面", dependencies=("identity",), host_capabilities=("remote_desktop",)
     ),
     Service(
-        "visual", "视觉创作工坊", ("/apps/visual-workshop",), ("assets", "models", "rendering")
+        "visual",
+        "视觉创作工坊",
+        ("/apps/visual-workshop",),
+        ("assets", "models", "rendering", "tools"),
     ),
     Service(
         "thought",
@@ -43,7 +46,10 @@ SERVICES = (
         ("identity", "assets", "models", "integrations"),
     ),
     Service(
-        "galgame", "Galgame 工坊", ("/apps/galgame-workshop",), ("assets", "models", "rendering")
+        "galgame",
+        "Galgame 工坊",
+        ("/apps/galgame-workshop",),
+        ("assets", "models", "rendering", "tools"),
     ),
     Service(
         "video",

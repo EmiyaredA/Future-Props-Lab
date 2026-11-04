@@ -1,6 +1,9 @@
 """Independent Galgame application with owner-side certification."""
 
+from contextlib import asynccontextmanager
+
 from app.apps.galgame_workshop.models import GalgameWorkshopProject
+from fpl_runtime.capability_client import CapabilityClient
 from fpl_runtime.certification_service import create_certification_app
 from fpl_runtime.reference_runtime import install_reference_runtime
 
@@ -33,4 +36,15 @@ def create_app(*, state_root, public_key, credential, catalog, transport=None, r
         run_worker=run_worker,
     )
     app.include_router(project_router)
+    app.state.capabilities = CapabilityClient(
+        service="galgame", credential=credential, catalog=catalog, transport=transport
+    )
+    lifespan = app.router.lifespan_context
+
+    @asynccontextmanager
+    async def with_capability_client(instance):
+        async with app.state.capabilities.client, lifespan(instance):
+            yield
+
+    app.router.lifespan_context = with_capability_client
     return app

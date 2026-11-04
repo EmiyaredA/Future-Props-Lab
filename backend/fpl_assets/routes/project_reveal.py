@@ -12,8 +12,8 @@ from ..project_reveal import prepare_layout
 router = APIRouter(include_in_schema=False)
 
 
-@router.post(ASSETS_PREFIX + "/video-editor/{project_id}")
-async def prepare(request: Request, project_id: str):
+@router.post(ASSETS_PREFIX + "/{application_id}/{project_id}")
+async def prepare(request: Request, application_id: str, project_id: str):
     state, path = request.app.state, request.url.path
     if (
         not reveal_target("POST", path, "assets")
@@ -41,5 +41,5 @@ async def prepare(request: Request, project_id: str):
         raise HTTPException(503, "identity_unavailable")
     if not active:
         raise HTTPException(403, "authorization_revoked")
-    await prepare_layout(state.database, state.settings, actor.user_id, project_id)
+    await prepare_layout(state.database, state.settings, actor.user_id, application_id, project_id)
     return {"ready": True}

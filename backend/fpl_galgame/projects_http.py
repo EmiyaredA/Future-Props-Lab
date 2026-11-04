@@ -18,9 +18,14 @@ from app.apps.galgame_workshop.schemas import (
     GalgameWorkshopProjectOut,
 )
 from app.apps.galgame_workshop.schemas.operations import GalgameOperationsIn
+from app.capabilities.asset_store.schemas.project_snapshots import ProjectFolderOpenOut
 from app.runtime.operation_receipts import OperationError
-from fpl_runtime.http_dependencies import OwnerDep, SessionDep
+from fpl_runtime.http_dependencies import OwnerDep, SessionDep, StudioAuth
 from fpl_runtime.project_errors import ProjectResourceError
+from fpl_runtime.project_reveal_http import (
+    open_verified_project_folder,
+    require_local_project_request,
+)
 from fpl_runtime.reference_runtime import reference_lifespan
 
 from .projects import Projects
@@ -152,3 +157,12 @@ async def restore_story_snapshot(
     return await story_writes(request, session, owner_user_id).restore_snapshot(
         project_id, snapshot_id, body.expected_story_revision
     )
+
+
+@router.post("/{project_id}/open-folder", response_model=ProjectFolderOpenOut)
+async def reveal_project_folder(
+    request: Request, principal: StudioAuth, session: SessionDep, project_id: str
+) -> ProjectFolderOpenOut:
+    require_local_project_request(request, principal)
+    await Projects(session, principal.user_id).row(project_id)
+    return await open_verified_project_folder(request, session, "galgame-workshop", project_id)

@@ -115,7 +115,7 @@ async def test_visual_catalog_delegates_exact_paths_and_excludes_other_accounts(
         grant = RequestGrant(
             "visual", PURPOSE, "GET", GENERATION_SOURCE, "models", "GET", GENERATION_TARGET
         )
-        token = await visual.state.model_catalog_client.authorize_request(options[HEADER], grant)
+        token = await visual.state.capabilities.authorize_request(options[HEADER], grant)
         private = "http://models:8080"
         assert (await http.get(private + GENERATION_TARGET, headers=options)).status_code == 401
         assert (
