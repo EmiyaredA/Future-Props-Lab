@@ -35,10 +35,17 @@ def _galgame_story_source(body):
             and not change.asset_ids
             and change.metadata_asset_ids is None
         )
-    return (
-        body.source_method == "PUT"
-        and body.source_path == f"/v1/galgame-workshop/projects/{change.resource_id}/story"
-        and story_metadata(body.caller, change)
+    story_path = f"/v1/galgame-workshop/projects/{change.resource_id}/story"
+    if not story_metadata(body.caller, change):
+        return False
+    return (body.source_method == "PUT" and body.source_path == story_path) or (
+        body.source_method == "PATCH"
+        and body.source_path
+        in {
+            story_path + "/edits",
+            story_path + "/dialogue",
+            story_path + "/stage-expression",
+        }
     )
 
 

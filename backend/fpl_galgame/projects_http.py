@@ -5,8 +5,13 @@ from contextlib import asynccontextmanager
 from fastapi import APIRouter, Request
 
 from app.apps.galgame_workshop.schemas import (
+    GalgameStoryDialoguePatchIn,
+    GalgameStoryDialoguePatchOut,
     GalgameStoryDocumentOut,
     GalgameStoryDocumentPutIn,
+    GalgameStoryEditsPatchIn,
+    GalgameStoryStageExpressionPatchIn,
+    GalgameStoryStageExpressionPatchOut,
     GalgameWorkshopProjectCreateIn,
     GalgameWorkshopProjectListOut,
     GalgameWorkshopProjectOut,
@@ -72,3 +77,40 @@ async def put_story(
     body: GalgameStoryDocumentPutIn,
 ):
     return await story_writes(request, session, owner_user_id).put(project_id, body)
+
+
+@router.patch("/{project_id}/story/edits", response_model=GalgameStoryDocumentOut)
+async def patch_story_edits(
+    request: Request,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    project_id: str,
+    body: GalgameStoryEditsPatchIn,
+):
+    return await story_writes(request, session, owner_user_id).patch_edits(project_id, body)
+
+
+@router.patch("/{project_id}/story/dialogue", response_model=GalgameStoryDialoguePatchOut)
+async def patch_story_dialogue(
+    request: Request,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    project_id: str,
+    body: GalgameStoryDialoguePatchIn,
+):
+    return await story_writes(request, session, owner_user_id).patch_dialogue(project_id, body)
+
+
+@router.patch(
+    "/{project_id}/story/stage-expression", response_model=GalgameStoryStageExpressionPatchOut
+)
+async def patch_story_stage_expression(
+    request: Request,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    project_id: str,
+    body: GalgameStoryStageExpressionPatchIn,
+):
+    return await story_writes(request, session, owner_user_id).patch_stage_expression(
+        project_id, body
+    )

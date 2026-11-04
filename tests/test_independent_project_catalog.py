@@ -181,6 +181,11 @@ async def test_projects_create_owned_defaults_and_keep_the_published_contract(
 
 async def verify_galgame_story(case, app, request, path, document):
     story_path = path + "/story"
+    document["characters"] = [{"id": "writer", "name": "Writer"}]
+    document["chapters"][0]["fragments"][0]["blocks"] = [
+        {"id": "line", "type": "dialogue", "characterId": "writer", "text": "Initial"},
+        {"id": "stage", "type": "showCharacter", "characterId": "writer"},
+    ]
     image = {
         "id": "fixture-image",
         "type": "image",
@@ -230,4 +235,22 @@ async def verify_galgame_story(case, app, request, path, document):
 
     with pytest.raises(CapabilityUnavailable):
         await app.state.reference_delivery.process_once()
+    dialogue = {"fragmentId": "main", "blockId": "line", "text": "Changed"}
+    stage = {"fragmentId": "main", "blockId": "stage", "characterId": "writer"}
+    for revision, endpoint, payload in (
+        (1, "dialogue", dialogue),
+        (2, "stage-expression", stage),
+    ):
+        edited = await request(
+            "PATCH", f"{story_path}/{endpoint}", json={"expected_revision": revision, **payload}
+        )
+        assert edited.status_code == 200, edited.text
+        assert edited.json()["revision"] == revision + 1 and "document" not in edited.json()
+    edit = {"type": "dialogue", **dialogue, "text": "Batch"}
+    batch = await request(
+        "PATCH", story_path + "/edits", json={"expected_revision": 3, "edits": [edit]}
+    )
+    assert batch.status_code == 200, batch.text
+    assert batch.json()["revision"] == 4 and batch.json()["document"]["assets"] == [image]
+    assert batch.json()["document"]["chapters"][0]["fragments"][0]["blocks"][0]["text"] == "Batch"
     return image["fileId"]

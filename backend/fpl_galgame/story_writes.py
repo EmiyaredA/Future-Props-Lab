@@ -6,8 +6,17 @@ from sqlalchemy import select, text
 
 from app.apps.galgame_workshop.errors import GalgameStoryDocumentInvalidError
 from app.apps.galgame_workshop.models import GalgameStoryDocument, GalgameStorySnapshot
+from app.apps.galgame_workshop.schemas import (
+    GalgameStoryDialoguePatchOut,
+    GalgameStoryStageExpressionPatchOut,
+)
 from app.apps.galgame_workshop.story.asset_values import validate_story_asset_media
 from app.apps.galgame_workshop.story.document_values import normalize_story_document, story_out
+from app.apps.galgame_workshop.story.edit_values import (
+    apply_dialogue,
+    apply_edits,
+    apply_stage_expression,
+)
 from app.apps.galgame_workshop.story.reference_index import sync_asset_references
 from app.runtime.ids import new_id
 from app.runtime.revisions import RevisionConflictError
@@ -96,11 +105,62 @@ class StoryWrites:
 
         return await self._commit(prepared, apply)
 
-    async def put(self, project_id, body):
+    async def current_story(self, project_id, expected_revision):
         current = await self.projects.story(project_id)
-        if current.revision != body.expected_revision:
-            raise conflict(body.expected_revision, current)
-        files = {asset.file_id for asset in body.document.assets}
+        if current.revision != expected_revision:
+            raise conflict(expected_revision, current)
+        return current
+
+    async def put(self, project_id, body):
+        await self.current_story(project_id, body.expected_revision)
+        return await self._save(
+            project_id,
+            expected_revision=body.expected_revision,
+            document=body.document,
+            method="PUT",
+            path=f"{PREFIX}/{project_id}/story",
+        )
+
+    async def patch_edits(self, project_id, body):
+        story, _ = await self._patch(project_id, body, "edits", apply_edits)
+        return story
+
+    async def patch_dialogue(self, project_id, body):
+        story, block = await self._patch(project_id, body, "dialogue", apply_dialogue)
+        return GalgameStoryDialoguePatchOut(
+            project_id=project_id, revision=story.revision, updated_at=story.updated_at, block=block
+        )
+
+    async def patch_stage_expression(self, project_id, body):
+        story, block = await self._patch(
+            project_id, body, "stage-expression", apply_stage_expression
+        )
+        return GalgameStoryStageExpressionPatchOut(
+            project_id=project_id, revision=story.revision, updated_at=story.updated_at, block=block
+        )
+
+    async def _patch(self, project_id, body, segment, apply_edit):
+        current = await self.current_story(project_id, body.expected_revision)
+        payload = current.document.model_dump(mode="json", by_alias=True)
+        try:
+            edited = apply_edit(payload, body)
+            if segment == "edits":
+                document = edited
+            else:
+                document = normalize_story_document(payload)
+        except GalgameStoryDocumentInvalidError as exc:
+            raise story_error(str(exc)) from exc
+        story = await self._save(
+            project_id,
+            expected_revision=body.expected_revision,
+            document=document,
+            method="PATCH",
+            path=f"{PREFIX}/{project_id}/story/{segment}",
+        )
+        return story, edited
+
+    async def _save(self, project_id, *, expected_revision, document, method, path):
+        files = {asset.file_id for asset in document.assets}
         snapshots = await self.session.scalars(
             select(GalgameStorySnapshot.document).where(
                 GalgameStorySnapshot.project_id == project_id
@@ -117,9 +177,9 @@ class StoryWrites:
         await self.session.rollback()
         prepared = await self._prepare(
             project_id,
-            expected=body.expected_revision,
-            method="PUT",
-            path=f"{PREFIX}/{project_id}/story",
+            expected=expected_revision,
+            method=method,
+            path=path,
             files=files | historic,
             metadata=sorted(files),
         )
@@ -127,7 +187,7 @@ class StoryWrites:
         async def apply():
             descriptions = {item.id: item for item in prepared.metadata}
             try:
-                for asset in body.document.assets:
+                for asset in document.assets:
                     description = descriptions[asset.file_id]
                     validate_story_asset_media(
                         asset.type, description.media_kind, description.mime_type
@@ -139,12 +199,12 @@ class StoryWrites:
             row = await self.session.get(GalgameStoryDocument, project_id)
             if row is None:
                 raise ProjectResourceError("故事文档不存在")
-            if row.revision != body.expected_revision:
+            if row.revision != expected_revision:
                 raise conflict(
-                    body.expected_revision, story_out(row, normalize_story_document(row.document))
+                    expected_revision, story_out(row, normalize_story_document(row.document))
                 )
             now = utc_now()
-            row.document = body.document.model_dump(mode="json", by_alias=True)
+            row.document = document.model_dump(mode="json", by_alias=True)
             row.revision += 1
             row.updated_at = now
             if project.status == "completed":
@@ -152,6 +212,6 @@ class StoryWrites:
                 project.revision += 1
                 project.updated_at = now
             await sync_asset_references(self.session, project_id, files)
-            return story_out(row, body.document)
+            return story_out(row, document)
 
         return await self._commit(prepared, apply)

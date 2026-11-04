@@ -20,10 +20,10 @@ The common preparation and delivery implementation lives in `fpl_runtime`. Thoug
 
 ## Consequences
 
-Galgame project creation and Story writes require the private Identity and Assets endpoints. Historic Story revisions need their reference projection built and checked during historical import. The Story editor's remaining mutations must use the same protocol before public readiness can pass.
+Galgame project creation and Story writes require the private Identity and Assets endpoints. Historic Story revisions need their reference projection built and checked during historical import. Dialogue, stage-expression and batch edits reuse the compatibility transformation and persist through the same revision and reference ledger. The editor's remaining operations are still required for readiness.
 
 ## Verification
 
-The isolated service test exercises public creation and Story save against real Identity and Assets routes. It covers asset ownership, exact source binding, revision conflict, lost commit acknowledgement and projection confirmation after Galgame restarts. Existing Thought retention, public Galgame and legacy story workflow tests cover the shared implementation and the compatibility path.
+The isolated service test exercises public creation and Story save against real Identity and Assets routes. It covers asset ownership, exact source binding, revision conflict, lost commit acknowledgement and projection confirmation after Galgame restarts. It also advances through the three partial-edit endpoints while preserving the retained asset and the published response shapes. Existing Thought retention, public Galgame and legacy story workflow tests cover the shared implementation and the compatibility path.
 
 Installed verification adds Assets to the six-service certification stack. It uploads a PNG, saves the Story, downloads the exact bytes and verifies the same Story and file after an offline snapshot restore. The image execution checks that the local file lookup can be inserted without loading Assets ORM metadata.
