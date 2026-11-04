@@ -4,6 +4,7 @@ from functools import partial
 
 from fpl_runtime.migration_apps import export_app, import_app, mount_dataset
 
+from .avatar_migration import mount_avatars
 from .credential_migration import DATASETS, UUID_PATTERN, export_page, import_batch, inventory
 from .migrations.registry import MIGRATIONS
 from .models import IdentityImportReceipt
@@ -30,10 +31,12 @@ def _mount(app, plan, sessions, *, source=None, database=None):
 
 def create_export_app(*, plan, source_path):
     app, sessions, source = export_app(plan, source_path)
+    mount_avatars(app, plan, sessions, source.path.parent / "profiles", source=source)
     return _mount(app, plan, sessions, source=source)
 
 
 def create_import_app(*, plan, state_root):
     models = (*[dataset.model for dataset in DATASETS], IdentityImportReceipt)
     app, database = import_app(plan, state_root, "identity", models, MIGRATIONS, account_models=())
+    mount_avatars(app, plan, database.sessions, database.root / "profiles")
     return _mount(app, plan, database.sessions, database=database)

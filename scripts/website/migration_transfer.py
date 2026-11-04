@@ -132,7 +132,7 @@ def transfer(client, plan, source, target, dataset):
     }
 
 
-def run_cli(description, datasets):
+def run_cli(description, datasets, *, followup=None):
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--plan", required=True, type=Path)
     parser.add_argument("--source", required=True, type=loopback)
@@ -148,6 +148,8 @@ def run_cli(description, datasets):
                 transfer(client, plan, options.source, options.target, dataset)
                 for dataset in datasets
             ]
+            if followup is not None:
+                report.append(followup(client, plan, options.source, options.target))
     except httpx.HTTPStatusError as exc:
         parser.exit(1, f"迁移请求失败（HTTP {exc.response.status_code}）\n")
     except httpx.RequestError:

@@ -14,7 +14,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import undefer
 
 from app.capabilities.identity.passwords import normalize_username
-from app.console.governance.profile import CONTENT_TYPES
 from app.console.models.accounts import AuthSession, ManagementApiKey, User
 from fpl_runtime.migration_batches import (
     MAX_RECORDS,
@@ -23,10 +22,11 @@ from fpl_runtime.migration_batches import (
     MigrationPage,
 )
 
+from .avatar_files import DIGEST_PATTERN, avatar_filename
 from .models import IdentityImportReceipt
 
 UUID_PATTERN = r"^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$"
-Digest = Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+Digest = Annotated[str, Field(pattern=DIGEST_PATTERN)]
 
 
 class IdentityRecord(BaseModel):
@@ -61,15 +61,9 @@ class AccountRecord(IdentityRecord):
             raise ValueError("账号邮件索引不一致")
         if self.is_platform_admin != (self.platform_role == "admin"):
             raise ValueError("管理员标记与账号角色不一致")
-        if self.avatar_relative_path:
-            suffix = CONTENT_TYPES.get(self.avatar_content_type)
-            expected = f"{self.id}/{self.avatar_content_sha256}{suffix}"
-            if (
-                suffix is None
-                or not self.avatar_content_sha256
-                or self.avatar_relative_path != expected
-            ):
-                raise ValueError("头像归属路径或摘要无效")
+        avatar_filename(
+            self.id, self.avatar_relative_path, self.avatar_content_type, self.avatar_content_sha256
+        )
         try:
             extract_parameters(self.password_hash)
         except (InvalidHashError, ValueError):

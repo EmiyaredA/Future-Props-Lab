@@ -3,14 +3,18 @@
 import hashlib
 import json
 from datetime import timedelta
+from io import BytesIO
 from uuid import UUID, uuid4
 
 import httpx
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from PIL import Image
 from scripts.website.migrate_identity import CREDENTIALS
+from scripts.website.migrate_identity_avatars import transfer_avatars
 from scripts.website.migration_transfer import pages, transfer
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from starlette.datastructures import Headers, UploadFile
 from tests.test_community_asset_protocol import CATALOG, GATEWAY_SECRET, PASSWORD
 from tests.test_tools_navigation_migration import available_ports, listener
 
@@ -18,11 +22,13 @@ from app.capabilities.identity.permissions import role_scopes
 from app.capabilities.identity.principal import StudioPrincipal
 from app.capabilities.identity.security import CSRF_COOKIE, SESSION_COOKIE
 from app.console.governance.account_creation import create_account
+from app.console.governance.profile import apply_avatar, stage_avatar
 from app.console.governance.service import complete_login, create_api_key
 from app.runtime.config import get_settings
 from app.runtime.time import utc_now
 from db.migrations import apply_migrations
 from fpl_identity.application import create_app
+from fpl_identity.avatar_migration import AVATAR_PATH, DIGEST_HEADER
 from fpl_identity.migrations.registry import MIGRATIONS
 from fpl_runtime.claims import HEADER, verify_context
 from fpl_runtime.migration_batches import MigrationPlan
@@ -90,14 +96,35 @@ async def make_legacy(path):
             await session.refresh(owner)
             await session.refresh(other)
             await session.refresh(key)
-            return owner.id, other.id, raw, csrf, key.id, raw_key, raw_revoked
+            avatar = BytesIO()
+            Image.new("RGB", (5, 5), "blue").save(avatar, format="PNG")
+            original = avatar.getvalue()
+            avatar.seek(0)
+            staged = await stage_avatar(
+                UploadFile(
+                    avatar, filename="avatar.png", headers=Headers({"Content-Type": "image/png"})
+                )
+            )
+            owner = await apply_avatar(
+                session,
+                user_id=owner.id,
+                staged=staged,
+                expected_revision=owner.revision,
+                client_ip="",
+            )
+            return owner.id, other.id, raw, csrf, key.id, raw_key, raw_revoked, original
     finally:
         await engine.dispose()
 
 
 async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, monkeypatch):
     legacy = tmp_path / "legacy.db"
-    owner, other, token, csrf, key_id, raw_key, revoked_key = await make_legacy(legacy)
+    monkeypatch.setenv("FPL_DATABASE_PATH", str(legacy))
+    get_settings.cache_clear()
+    try:
+        owner, other, token, csrf, key_id, raw_key, revoked_key, avatar = await make_legacy(legacy)
+    finally:
+        get_settings.cache_clear()
     digest = hashlib.sha256(legacy.read_bytes()).hexdigest()
     plan = MigrationPlan(
         run_id=uuid4(),
@@ -148,6 +175,28 @@ async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, mon
         assert [report["record_count"] for report in reports] == [2, 1, 2]
         assert reports == [transfer(client, plan, source, dest, dataset) for dataset in CREDENTIALS]
 
+        avatar_path = f"{AVATAR_PATH}/{owner}"
+        expected = hashlib.sha256(avatar).hexdigest()
+        corrupt = client.put(
+            dest + avatar_path,
+            headers={**headers, DIGEST_HEADER: expected, "Content-Type": "image/png"},
+            content=b"wrong bytes",
+        )
+        assert corrupt.status_code == 422
+        unknown = client.get(f"{source}{AVATAR_PATH}/{uuid4()}", headers=headers)
+        assert unknown.status_code == 409
+        # A process may have stopped after staging bytes and before publication.
+        staging = target / "profiles/.staging"
+        staging.mkdir(parents=True)
+        (staging / ".import-interrupted").write_bytes(b"partial stage")
+        report = transfer_avatars(client, plan, source, dest)
+        assert report["record_count"] == 1 and report["byte_count"] == len(avatar)
+        assert transfer_avatars(client, plan, source, dest) == report
+        unexpected = legacy.parent / "profiles" / owner / "unassigned.png"
+        unexpected.write_bytes(avatar)
+        assert client.get(f"{source}{AVATAR_PATH}/inventory", headers=headers).status_code == 409
+        unexpected.unlink()
+
     assert hashlib.sha256(legacy.read_bytes()).hexdigest() == digest
     monkeypatch.setenv("FPL_DATABASE_PATH", str(target / "service.db"))
     get_settings.cache_clear()
@@ -175,6 +224,9 @@ async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, mon
             assert me.status_code == 200
             assert me.json()["user"]["id"] == owner
             assert "cloud-control.access" in me.json()["permission_keys"]
+            profile_avatar = await api.get("/v1/account/profile/avatar")
+            assert profile_avatar.status_code == 200
+            assert profile_avatar.content == avatar
             retained = await api.get("/v1/account/api-keys")
             assert retained.status_code == 200
             assert {entry["name"] for entry in retained.json()} == {"Retained key", "Revoked key"}
@@ -213,5 +265,6 @@ async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, mon
             profile = await api.get("/v1/auth/me")
             assert "cloud-control.access" not in profile.json()["permission_keys"]
             assert (await api.get("/v1/account/api-keys")).json() == []
+            assert (await api.get("/v1/account/profile/avatar")).status_code == 404
     finally:
         get_settings.cache_clear()

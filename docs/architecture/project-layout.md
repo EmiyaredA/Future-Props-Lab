@@ -38,7 +38,7 @@
 
 `fpl_runtime/delegation.py` 限定调用方、来源操作、用途和目标地址；`capability_client.py` 使用原请求断言换取目标签名，不传递完整浏览器凭据。Identity 的 `delegation.py` 复核原账号会话并拒绝注销后的委托。`protocol_hash.py` 计算单服务公开操作及可达 schema 的契约哈希；`web.py` 核验程序清单、静态资源与对应服务契约，并阻止本应用旧页面写入。
 
-`backend/fpl_identity/` 装配独立账号 ASGI 应用、账号事件、显式维护入口及自有 `migrations/`；不加载门户、工坊或模型 ORM。`console/governance/account_creation.py` 接受显式事务初始化回调，旧 `provisioning.py` 仅承担单体目录初始化适配；账号与注册路由使用装配时注入的用例。 `credential_migration.py` 拥有历史账号、Studio 会话和 Management API Key 批次。
+`backend/fpl_identity/` 装配独立账号 ASGI 应用、账号事件、显式维护入口及自有 `migrations/`；不加载门户、工坊或模型 ORM。`console/governance/account_creation.py` 接受显式事务初始化回调，旧 `provisioning.py` 仅承担单体目录初始化适配；账号与注册路由使用装配时注入的用例。 `credential_migration.py` 拥有历史账号、Studio 会话和 Management API Key 批次，`avatar_migration.py` 与 `avatar_files.py` 校验并恢复原头像文件。
 `fpl_runtime/migration_apps.py` 装配独立回环维护进程，`scripts/website/migration_transfer.py` 负责传输与读回核验。
 
 `backend/fpl_portal/` 装配独立门户与文档 API，仅拥有服务迁移标识，不持有账号或工坊数据，不启动其他 Runner。启动只读取经过分组校验的存储配置和 Identity 公钥；多余配置字段会拒绝，门户没有解密用途，不取得 FPL 加密密钥。开发者文档在构建时按现有允许列表封装，通过原浏览器 Session 与固定 `docs.developer` 权限读取；HTTP 路径、操作 ID、标签和 schema 保持兼容。
