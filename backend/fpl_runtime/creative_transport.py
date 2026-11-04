@@ -12,7 +12,7 @@ from .creative_source_evidence import MAX_BODY
 CREATIVE_SOCKET_DIR = "/run/fpl-bridge"
 
 
-class CreativeInstallSourceContext(BaseModel):
+class CreativeAttestedRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     assertion: str = Field(min_length=1, max_length=8192, repr=False)
     evidence: str = Field(min_length=1, max_length=8192, repr=False)
@@ -36,5 +36,5 @@ class CreativeInstallSourceContext(BaseModel):
 class CreativeDecisionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     action: Literal["install", "receipt", "cancel"]
-    source: CreativeInstallSourceContext
+    source: CreativeAttestedRequest
     batch: CreativeInstallBatch

@@ -29,10 +29,25 @@ class RetentionAuthorization:
     async def issue(self, body, credential):
         require_credential(self.options, body.caller, credential)
         operation = self.state.service_catalog.match(body.source_method, body.source_path)
+        publication_source = (
+            re.fullmatch(
+                r"/v1/thought-workshop/community/(libraries|publications)/([A-Za-z0-9_-]+)/"
+                r"(publication|management)",
+                body.source_path,
+            )
+            if body.caller == "thought" and body.source_method == "PUT"
+            else None
+        )
+        if publication_source and (publication_source[1], publication_source[3]) not in {
+            ("libraries", "publication"),
+            ("publications", "management"),
+        }:
+            publication_source = None
+        expected_permission = "community.access" if publication_source else "content.write"
         if (
             operation is None
             or operation.service != body.caller
-            or route_permission(body.source_method, body.source_path) != "content.write"
+            or route_permission(body.source_method, body.source_path) != expected_permission
         ):
             raise HTTPException(403, "retention_source_forbidden")
         if body.caller == "thought":
@@ -108,7 +123,21 @@ class RetentionAuthorization:
                 and body.change.expected_resource_revision == -1
                 and initial_id
             )
-            if new_template or apply_template or create_note or create_knowledge_base:
+            if publication_source:
+                # The library operation resolves its publication in Thought's owned registry.
+                # The management operation already carries the exact publication in its path.
+                expected_kind = "publication"
+                expected_id = (
+                    publication_source[2]
+                    if publication_source[1] == "publications"
+                    else body.change.resource_id
+                )
+                initial = body.change.expected_resource_revision == -1
+                if len(body.change.asset_ids) > 1 or (
+                    initial and (publication_source[1] != "libraries" or not initial_id)
+                ):
+                    raise HTTPException(403, "retention_resource_mismatch")
+            elif new_template or apply_template or create_note or create_knowledge_base:
                 expected_kind = (
                     "template"
                     if new_template
@@ -146,7 +175,12 @@ class RetentionAuthorization:
             auth_kind=actor.auth_kind,
             scopes=frozenset(actor.scopes),
         )
-        if not principal.allows("content.write") or not principal.permits("studio:write"):
+        permitted = (
+            actor.auth_kind == "session" and principal.permits("studio:read")
+            if publication_source
+            else principal.allows("content.write") and principal.permits("studio:write")
+        )
+        if not permitted:
             raise HTTPException(403, "retention_source_forbidden")
         async with self.state.database.sessions() as session:
             if not await active_actor(session, actor):

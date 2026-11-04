@@ -10,7 +10,7 @@ from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailabl
 from fpl_runtime.creative_integrations import CreativeInstallBatch
 from fpl_runtime.creative_results import CreativeResultAuthenticator
 from fpl_runtime.creative_source_evidence import strict_json
-from fpl_runtime.creative_transport import CreativeInstallSourceContext
+from fpl_runtime.creative_transport import CreativeAttestedRequest
 from fpl_runtime.integration_intents import digest
 
 from .install_authorization import InstallSource
@@ -48,7 +48,7 @@ class HttpCreativeInstallTarget:
     def context(self, source):
         if not isinstance(source, InstallSource):
             raise ValueError("Creative install source is invalid")
-        return CreativeInstallSourceContext(
+        return CreativeAttestedRequest(
             assertion=source.assertion,
             evidence=source.evidence,
             body_base64=base64.b64encode(source.raw_body).decode("ascii"),

@@ -5,6 +5,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from sqlalchemy import func, or_, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.incoming import IncomingFile
@@ -586,10 +587,14 @@ class CreativeCatalog:
         await self.session.commit()
         return await self.get(item_id, draft=True)
 
-    async def import_source(self, kind: str, source_id: str) -> CreativeItemOut:
+    async def import_source(
+        self, kind: str, source_id: str, *, request_item_id: str | None = None
+    ) -> CreativeItemOut:
         self._can_write()
         if not self.principal.allows("configuration.manage"):
             raise CreativeError("需要集成管理权限", 403, "permission_denied")
+        if request_item_id and await self.session.get(CreativeItem, request_item_id) is not None:
+            return await self.get(request_item_id, draft=True)
         try:
             snapshot = await sources(self.session).snapshot(
                 owner=self.principal.owner_user_id, kind=kind, source_id=source_id
@@ -607,7 +612,7 @@ class CreativeCatalog:
             or len(archive) > (self.file_settings or get_settings()).fpl_skill_archive_max_bytes
         ):
             raise CreativeError("创作来源数据无效")
-        item_id = new_id()
+        item_id = request_item_id or new_id()
         owner = self.principal.owner_user_id
         await self.session.rollback()
         skill_path, manifest = "", dict(snapshot.manifest)
@@ -635,12 +640,18 @@ class CreativeCatalog:
             await self.session.flush()
             commit_started = True
             await self.session.commit()
-        except BaseException:
+        except BaseException as exc:
             await self.session.rollback()
             if skill_path and not commit_started:
                 shutil.rmtree(
                     resolve_file(owner, skill_path, settings=self.file_settings), ignore_errors=True
                 )
+            if (
+                isinstance(exc, IntegrityError)
+                and request_item_id
+                and await self.session.get(CreativeItem, request_item_id) is not None
+            ):
+                return await self.get(request_item_id, draft=True)
             raise
         await self.session.refresh(item)
         return await self._out(item, use_draft=True)

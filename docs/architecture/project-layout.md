@@ -88,17 +88,19 @@
 
 `llm/admission.py` 定义不可变的额度申请、释放、任务保留与派生任务接纳绑定；模型 HTTP 与实时语音从自己的 ASGI 应用取得它，恢复网站显式安装原治理实现。`llm/inference/receipts.py` 只依赖 Models 任务记录，负责账号限定的请求回执与摘要冲突校验，避免为重放检查导入素材能力。独立账本、队列和跨服务任务授权仍须单独实现，缺少绑定不允许回退单体数据库。
 
-`backend/fpl_creative/` 拥有 Creative 自有表、安装 outbox、文件和独立应用。公开目录复用旧站 HTTP 契约，账号写入继续由 CAS 和持久回执保护。独立应用按签名请求从 Identity 查询作者显示名，只读取 Creative 自有目录中的封面及 Skill 文件。镜像和浏览器入口可独立构建，`deploy/creative.compose.yaml` 提供隔离验收装配。来源导入、安装预览、stdio 配置和历史迁移仍是上线门禁。
+`backend/fpl_creative/` 拥有 Creative 自有表、安装 outbox、文件和独立应用。公开目录复用旧站 HTTP 契约，账号写入继续由 CAS 和持久回执保护。独立应用按签名请求从 Identity 查询作者显示名，只读取 Creative 自有目录中的封面及 Skill 文件。`source_http.py` 根据网关签发的请求体证据，经 Integrations 的 `creative_sources_http.py` 读取同账号快照并核对 Skill 归档摘要。`preview_http.py` 通过按批次摘要绑定的授权查验目标名称与已安装状态。镜像和浏览器入口可独立构建，`deploy/creative.compose.yaml` 提供隔离验收装配。stdio 配置和历史迁移仍是上线门禁。
 
 `backend/fpl_integrations/` 拥有独立工具、MCP、Skills、外部连接 HTTP 装配、自有迁移和执行回执。`fpl_runtime/integration_intents.py` / `integration_client.py` 将来源账号请求、资源与输入摘要绑定到 Identity 固定执行意图；Models 自有验证额度和演示安装回执保留跨服务幂等，不读取 Integrations 数据库。飞书同步由私有固定步骤协议执行，未知供应商响应不能自动重放。Skills 文件按本服务已提交记录恢复。`native_mcp.py` / `native_http.py` 对接主动连接的 Mac MCP worker，容器不持有主机命令、个人环境或目录。`deploy/integrations.compose.yaml` 只挂载所属状态、只读配置与用途限定凭据，外联使用单独网络；是否启用由 TOML 中明确选定的镜像决定。完整容器、原生与浏览器验收仍为正式切换前置条件。
 
 `fpl_thought/retention.py` 使用自有 outbox 持久保存素材引用准备、源事务结果与确认状态；`note_retention.py`、`template_retention.py`、`knowledge_retention.py` 将已接入的笔记、模板和知识库创建绑定自身 CAS 与引用回执。知识库创建在提交项目前，分别保护封面和自动首页的初始引用投影；更新知识库时，封面的替换或移除与知识库 CAS 和引用回执一起提交。`fpl_runtime/community_assets.py`、`fpl_identity/community_assets.py`、`fpl_thought/community_evidence.py` 和 `fpl_assets/community_assets.py` 提供单素材社区读取：Identity签发短期用途限定授权，Assets 每次读取都要求 Thought 在独立会话复核当前发布、浏览者权限、正文引用与资源版本，并重新检查浏览者 Session。独立 Thought 的部分社区读取与素材验证已经装配；社区写入及完整部署仍未就绪。新建文档、知识库、笔记批处理、历史恢复、模板创建与应用及多维表批处理、历史恢复和 CSV 导入已接入 retention，其他写操作仍需逐项接通。
 
-`fpl_creative/installation_outbox.py` 和 `installation_coordinator.py` 保存按账号及版本绑定的安装意图，并通过显式目标端口核对回执后结算；Skill 使用 `fpl_runtime/skill_tree.py` 的文件树摘要绑定发布目录和目标解压内容，保留原 ZIP 摘要作为传输校验，历史无树摘要的回执仍可恢复；`fpl_creative/install_grants.py` 核对原请求、已持久化批次及当前发布状态，区分安装与撤回后的回执查询；`fpl_integrations/creative_http.py` 默认拒绝缺少可信授权的内部请求。`0003_install_fences` 在目标安装前保护根发布及组件，未知结果不按超时释放；可信回执与围栏释放在源服务同一事务完成。Creative 独立会话保护发布状态与版本写入；Creative 与 Integrations 的追加取消回执表在目标库持久阻止迟到安装，源端只在验证目标取消回执后释放围栏；实际服务接线、可安全重新发起的交互和目标授权传输仍待完成。`fpl_gateway/creative_bridge.py` 为来源导入与安装提供请求体绑定及私有 Unix socket 基础原语；`fpl_creative/install_authorization.py` 复核安装正文、账号权限与实时会话。中介尚未挂载或接入生产生命周期，`fpl_creative/decision_http.py` 和 `fpl_integrations/creative_authority.py` 提供受独立凭据保护的精确批次决定传输，但尚未装配到生产；`fpl_runtime/creative_results.py` 与 `fpl_creative/install_target.py` 对目标回执及不存在响应使用独立密钥和逐请求随机数认证；`fpl_creative/skill_archive.py` 和 `install_batch.py` 提供发布目录的固定格式打包与安装批次，但大归档兼容、跨版本重试、生产装配和安装部署仍是开放门禁。
+`fpl_creative/installation_outbox.py` 和 `installation_coordinator.py` 保存按账号及版本绑定的安装意图。安装前保护根发布及组件，目标结果未知时保留围栏。Creative 与 Integrations 分别保存取消回执及阻止迟到提交的状态，源端只在验证签名回执后释放围栏。`decision_http.py` 与 `creative_authority.py` 通过独立对等凭据绑定原请求、持久批次和发布状态。`fpl_runtime/creative_results.py` 与 `install_target.py` 对目标回执及不存在响应使用独立密钥和逐请求随机数认证。`skill_archive.py` 和 `install_batch.py` 绑定固定格式归档和文件树摘要，保留对历史无树摘要回执的恢复。`install_authorization.py` 在提交和结算时复核原始请求体与当前身份授权。
 
 `fpl_thought/upload_intents.py` 与 `fpl_assets/thought_uploads.py` 提供按账号绑定的私有上传回执，Identity 只为指定来源和目标签发上传委托。`upload_transport.py` 为已暂存上传逐请求换取绑定摘要的 Identity 委托并流式传输，来源服务仅在收到按账号、文件摘要和随机数认证的有效回执后确认并清理暂存；Assets 未配置独立回执密钥时拒绝该私有上传。`upload_recovery.py` 在启动独占锁内仅清理已确认副本和无持久意图的中断暂存；未决意图继续保留。该协议已通过隔离服务测试；独立 Thought 已装配公开上传入口，远端自动重放 worker 尚未接入，恢复网站暂不按重试标识去重。独立 Thought 的部分 HTTP 装配已包括目录移动、文档恢复和知识库回收／恢复，并保留现有版本控制及撤回发布规则；retention worker 已存在，但 `/ready` 始终返回 503，直至素材引用迁移及剩余业务能力完成。
 
 `backend/fpl_thought/` 拥有 Thought 自有表清单、仅保留自有外键的独立迁移与写作 HTTP 适配，目前还不提供完整部署入口。`web/src/app/entries/thought.tsx` 提供可独立构建的浏览器入口，与兼容站共用 Thought 模块的知识库、社区和旧链接路由。搜索、引用解析、反向链接、复制预检、检查点、阅读偏好、表格查询、社区收藏、社区管理元数据、官方包预检、同步绑定及任务记录查询共用 HTTP 装配。模型写作通过 `fpl_runtime/writing.py` 绑定笔记、请求摘要和原账号操作，由 `fpl_models/writing.py` 管理模型选择、流式调用、日志及配额。账户备份复用 `backup_manifest.py` 的现有归档格式，`fpl_thought/backup.py` 读取 Thought 一致快照并在结束读事务后按素材版本下载、核对大小及生成归档。素材引用变更通过独立的引用准备与回执提交。
+
+`fpl_thought/sync_binding.py` 通过按文章、连接和请求摘要绑定的授权查询 Integrations。Thought 保留同步绑定和修订控制，Integrations 持有连接凭据和远程访问。`publication_retention.py` 将公开封面绑定到发布记录，源知识库替换封面时保留已发布素材。发布写入和回执状态共用事务，历史发布在切换前须建立经核验的初始引用。
 
 `fpl_runtime/routing.py` 分别维护 HTTP 操作与固定 WebSocket 归属。实时语音只接受实际 Upgrade 握手，网关清除外部身份头后标记协议并交 Identity 复核；管理网关不开放该入口。`protocol_hash.py` 只将本服务的 Socket 契约纳入版本，公开 OpenAPI 不伪造普通 GET 操作。
 
@@ -114,7 +116,7 @@
 
 `backend/fpl_host/` 是独立 Mac 原生采集 CLI，仅发起受认证回环请求，读取明确来源的原生会话及引用附件。`collector.py` 管理有界任务，`follow.py` 跟随原生日志或事件，`follow_journal.py` 持久化单帧确认状态，`receipts.py` 保存一次性操作意图与结果；不确定动作不重做，跟随仅按原任务、租约和服务端检查点继续。容器镜像不包含此包。
 
-`fpl_gateway/creative_bridge.py` 为 Creative 来源导入与安装提交提供请求体证据。启用隔离验收配置后，Caddy 先向 Identity 授权原始操作，再通过容器内专用 Unix socket 交给中介。中介验证入口凭据与原断言，要求 Identity 为精确原始字节签发短期证据，验签后原样转发。Creative 安装提交通过 `installation_http.py` 复用持久批次、发布围栏和受保护的 Integrations 回执。来源导入的接收端及其持久回执仍未接通。
+`fpl_gateway/creative_bridge.py` 为 Creative 来源导入与安装提交提供请求体证据。启用隔离验收配置后，Caddy 先向 Identity 授权原始操作，再通过容器内专用 Unix socket 交给中介。中介验证入口凭据与原断言，要求 Identity 为精确原始字节签发短期证据，验签后原样转发。Creative 安装提交通过 `installation_http.py` 复用持久批次、发布围栏和受保护的 Integrations 回执。重复收到同一份已证明的来源导入请求时，Creative 重新使用已落盘的草稿 ID。
 
 `fpl_deployment/images.py` 构建可审计源码闭包，`gateway.py` 从操作归属生成监听器路由。`deploy/images/` 下 Identity、Agents、Gateway、Portal、Assets、Rendering、Management、Models 和 Integrations 各自保存依赖锁和镜像定义。`deploy/compose.yaml` 装配基础服务，`management.compose.yaml` 与显式选择才启用的 `models.compose.yaml`、`integrations.compose.yaml` 提供对应叠加清单；Models 只挂自有状态、最小配置和身份连接，使用单独外联网络请求供应商。`scripts/website/service_build.py` 和 `service_docker_smoke.py` 分别提供 CLI 构建与账号容器隔离验收，`agents_docker_smoke.py` 验证真实工作台容器和 Mac 原生采集器；`tests/gateway_assertion_probe.py` 只属于测试传输探针，不是工作台服务。运行及切换状态见[独立服务迁移](../operations/independent-services.md)。
 

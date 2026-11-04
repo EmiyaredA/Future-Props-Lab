@@ -21,6 +21,7 @@ from fpl_runtime.claims import HEADER
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.retention_client import RetentionClient
 from fpl_thought.application import create_app
+from fpl_thought.retention import ThoughtReferenceDelivery
 
 
 async def test_create_template_pins_same_account_assets_over_http(scenario):  # noqa: F811
@@ -305,6 +306,28 @@ async def test_create_template_pins_same_account_assets_over_http(scenario):  # 
                     json=update_permissions,
                 )
                 assert conflict.status_code == 409, conflict.text
+                publish_path = (
+                    f"/v1/thought-workshop/community/libraries/{knowledge['id']}/publication"
+                )
+                publication_input = {
+                    "title": "Published book",
+                    "expected_revision": 0,
+                    "articles": [{"note_id": added.json()["id"], "expected_revision": 0}],
+                }
+                outsider = await client.put(
+                    publish_path,
+                    headers=await context(case.browser, publish_path, "PUT"),
+                    json=publication_input,
+                )
+                assert outsider.status_code == 404, outsider.text
+                published = await client.put(
+                    publish_path,
+                    headers=await context(owner, publish_path, "PUT"),
+                    json=publication_input,
+                )
+                assert published.status_code == 200, published.text
+                publication = published.json()["publication"]
+                assert publication["cover_url"]
                 update_body = {"title": "Cover removed", "expected_revision": 1}
                 denied = await client.put(
                     update_path,
@@ -326,7 +349,41 @@ async def test_create_template_pins_same_account_assets_over_http(scenario):  # 
                     json=update_body,
                 )
                 assert stale.status_code == 409, stale.text
-            from fpl_thought.retention import ThoughtReferenceDelivery
+                delivery = ThoughtReferenceDelivery(
+                    app.state.database.sessions, app.state.thought_references.client
+                )
+                await delivery.process_once()
+                async with case.assets.state.database.sessions(
+                    info={"owner_user_id": case.owner}
+                ) as asset_session:
+                    published_pin = await asset_session.scalar(
+                        select(AssetReferencePin.asset_id)
+                        .join(AssetReferenceSet)
+                        .where(
+                            AssetReferenceSet.resource_kind == "publication",
+                            AssetReferenceSet.resource_id == publication["id"],
+                        )
+                    )
+                    assert published_pin == case.asset
+                manage_path = (
+                    f"/v1/thought-workshop/community/publications/{publication['id']}/management"
+                )
+                managed = await client.put(
+                    manage_path,
+                    headers=await context(owner, manage_path, "PUT"),
+                    json={
+                        **publication_input,
+                        "expected_revision": publication["revision"],
+                        "articles": [
+                            {
+                                "note_id": added.json()["id"],
+                                "expected_revision": 1,
+                            }
+                        ],
+                    },
+                )
+                assert managed.status_code == 200, managed.text
+                assert managed.json()["publication"]["cover_url"] is None
 
             await ThoughtReferenceDelivery(
                 app.state.database.sessions, app.state.thought_references.client
@@ -349,6 +406,17 @@ async def test_create_template_pins_same_account_assets_over_http(scenario):  # 
                     )
                 )
                 assert [pin.asset_id for pin in pins] == [case.asset]
+                assert (
+                    await session.scalar(
+                        select(AssetReferencePin.asset_id)
+                        .join(AssetReferenceSet)
+                        .where(
+                            AssetReferenceSet.resource_kind == "publication",
+                            AssetReferenceSet.resource_id == publication["id"],
+                        )
+                    )
+                    is None
+                )
                 note_ref = await session.scalar(
                     select(AssetReferenceSet).where(
                         AssetReferenceSet.resource_kind == "note",
@@ -558,6 +626,8 @@ def test_independent_thought_mounts_shared_routes_with_public_contract(tmp_path)
         ("get", "/community/official-import/{request_id}"),
         ("get", "/community/official-links/{library_key}"),
         ("get", "/community/publications/{publication_id}/management"),
+        ("put", "/community/publications/{publication_id}/management"),
+        ("put", "/community/libraries/{library_id}/publication"),
         ("put", "/community/publications/{publication_id}/permissions"),
         ("post", "/community/publications/{publication_id}/references"),
         (

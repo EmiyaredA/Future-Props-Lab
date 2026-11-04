@@ -256,6 +256,7 @@ class CreativeInstallations:
                 for kind, model in models.items()
             }
             parts = []
+            requested = set()
             for part in batch.parts:
                 prior = existing.get(part.release_id)
                 if prior and prior.fingerprint != fingerprint(part):
@@ -263,9 +264,9 @@ class CreativeInstallations:
                 if prior:
                     await self.require_part_resource(session, owner, prior.result)
                 folded = part.target_name.casefold()
-                conflict_found = prior is None and folded in names[part.kind]
-                if prior is None:
-                    names[part.kind].add(folded)
+                name = part.kind, folded
+                conflict_found = name in requested or (prior is None and folded in names[part.kind])
+                requested.add(name)
                 parts.append(
                     {
                         "release_id": part.release_id,

@@ -75,6 +75,8 @@ async def live(request: Request, body: LiveRequest):
     private_output = (
         body.service == "assets" and body.method == "POST" and is_model_output_path(body.path)
     )
+    from fpl_runtime.creative_preview import preview_target
+    from fpl_runtime.creative_source_evidence import source_transfer_target
     from fpl_runtime.external_sync import close_target, read_target
     from fpl_runtime.thought_uploads import is_upload_target
     from fpl_runtime.writing import writing_target
@@ -88,7 +90,10 @@ async def live(request: Request, body: LiveRequest):
     if socket is not None:
         operation = socket
     private_external = body.service == "integrations" and bool(
-        read_target(body.method, body.path) or close_target(body.method, body.path)
+        read_target(body.method, body.path)
+        or close_target(body.method, body.path)
+        or preview_target(body.method, body.path)
+        or source_transfer_target(body.method, body.path)
     )
     private_thought_upload = body.service == "assets" and is_upload_target(body.method, body.path)
     if not (private_output or private_writing or private_external or private_thought_upload) and (

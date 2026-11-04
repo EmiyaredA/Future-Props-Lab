@@ -40,6 +40,8 @@ from fpl_runtime.request_limit import RequestLimit
 from .creative_http import CreativeRequestLimit
 from .creative_http import router as creative_router
 from .creative_installations import CreativeInstallations
+from .creative_preview_http import router as creative_preview_router
+from .creative_sources_http import router as creative_sources_router
 from .demo_http import router as demo_install_router
 from .demo_tools import DemoToolInstallations
 from .external_http import router as external_sync_router
@@ -158,6 +160,8 @@ def create_app(
     app.state.demo_tool_installations = DemoToolInstallations(database)
     app.state.creative_installations = CreativeInstallations(database, settings)
     app.state.creative_authorization = creative_authorization
+    app.include_router(creative_preview_router)
+    app.include_router(creative_sources_router)
     app.state.integration_validation_recovery = recovery
     app.state.supervisor = supervisor
 
@@ -238,6 +242,7 @@ def create_app(
         RequestLimit, prefix="/_internal/v1/external-sync/", maximum=32 * 1024 * 1024
     )
     app.add_middleware(CreativeRequestLimit)
+    app.add_middleware(RequestLimit, prefix="/_internal/v1/creative-sources/", maximum=40 * 1024)
     expected = {
         (op.method, op.path): op.operation_id
         for op in catalog.operations

@@ -5,6 +5,7 @@ from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.knowledge import KnowledgeBases
 from app.apps.thought_workshop.models import ThoughtNote
 from app.capabilities.identity.passwords import normalize_username
+from app.runtime.ids import new_id
 from app.runtime.ownership import bind_owner
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import utc_now
@@ -141,7 +142,7 @@ async def apply_settings(session, pub, setting, users, *, new=False):
     )
 
 
-async def publish(session, principal, library_id, body, owner_user_id=None):
+async def publish(session, principal, library_id, body, owner_user_id=None, *, retained=None):
     owner_user_id = owner_user_id or principal.owner_user_id
     # Account lookup is completed before the source writer lock is acquired.
     await require_source_manager(session, principal, owner_user_id)
@@ -157,6 +158,8 @@ async def publish(session, principal, library_id, body, owner_user_id=None):
             Publication.owner_user_id == owner_user_id,
         )
     )
+    if retained is not None:
+        retained.verify(source, pub)
     if pub:
         # Older clients omit new flags; preserve the current configuration on updates.
         body = body.model_copy(
@@ -176,6 +179,7 @@ async def publish(session, principal, library_id, body, owner_user_id=None):
         if body.expected_revision != 0:
             raise ThoughtError("发布配置版本已变化", 409, "revision_conflict")
         pub = Publication(
+            id=retained.publication_id if retained is not None else new_id(),
             owner_user_id=owner_user_id,
             knowledge_base_id=library_id,
             publisher_id=principal.user_id,
@@ -213,6 +217,8 @@ async def publish(session, principal, library_id, body, owner_user_id=None):
         if note is None:
             raise missing()
         await apply_settings(session, pub, setting, member_users[setting.note_id], new=True)
+    if retained is not None:
+        await retained.record(session, pub)
     await session.commit()
     return await config(session, principal, library_id, owner_user_id)
 

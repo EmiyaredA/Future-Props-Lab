@@ -8,10 +8,30 @@ from dataclasses import dataclass
 
 import jwt
 
+from .claims import verify_context
+
 SOURCE_PATH = "/v1/creative-workshop/items/from-integration"
+SOURCE_TRANSFER = "/_internal/v1/creative-sources/"
 PURPOSE = "creative.integration-source.read"
 AUDIENCE = "creative-source-evidence"
 MAX_BODY = 16 * 1024
+
+
+def source_transfer_target(method, path):
+    return method == "POST" and re.fullmatch(
+        SOURCE_TRANSFER + r"(tool_api|mcp|skill)/[A-Za-z0-9_-]{1,100}/[a-f0-9]{64}", path
+    )
+
+
+def source_transfer_grant(grant):
+    return (
+        grant.caller == "creative"
+        and grant.purpose == PURPOSE
+        and grant.source_method == "POST"
+        and grant.source_path == SOURCE_PATH
+        and grant.target_service == "integrations"
+        and source_transfer_target(grant.target_method, grant.target_path)
+    )
 
 
 def _object(pairs):
@@ -45,6 +65,31 @@ def source_fields(raw):
     ):
         raise ValueError("invalid source fields")
     return kind, source_id
+
+
+def verify_source_request(assertion, evidence, raw, *, public_key):
+    kind, source_id = source_fields(raw)
+    actor = verify_context(
+        assertion, service="creative", method="POST", path=SOURCE_PATH, public_key=public_key
+    )
+    original = jwt.decode(
+        assertion,
+        public_key,
+        algorithms=["EdDSA"],
+        issuer="fpl-identity",
+        audience="creative",
+        options={"require": ["jti"]},
+    )
+    proof = verify_source_evidence(
+        evidence,
+        public_key=public_key,
+        owner_user_id=actor.user_id,
+        request_id=original["jti"],
+        body_sha256=hashlib.sha256(raw).hexdigest(),
+        kind=kind,
+        source_id=source_id,
+    )
+    return actor, proof
 
 
 @dataclass(frozen=True)

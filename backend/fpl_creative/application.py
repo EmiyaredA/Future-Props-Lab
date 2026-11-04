@@ -12,7 +12,9 @@ from app.console.routes.creative_workshop import catalog_router
 from app.deps import db_session
 from app.problem_details import http_exception_handler, validation_exception_handler
 from fpl_runtime.authentication import SignedIdentity
+from fpl_runtime.capability_client import CapabilityClient
 from fpl_runtime.creative_install_evidence import INSTALL_PATH, MAX_BODY
+from fpl_runtime.creative_source_evidence import SOURCE_PATH
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.locking import service_lock
 from fpl_runtime.migrations import check
@@ -28,7 +30,9 @@ from .installation_coordinator import InstallationCoordinator
 from .installation_http import router as installation_router
 from .installation_outbox import InstallationOutbox
 from .migrations.registry import MIGRATIONS
+from .preview_http import router as preview_router
 from .skill_archive import CreativeSkillArchives, SkillArchivePacker
+from .source_http import router as source_router
 from .storage import creative_database
 
 
@@ -48,6 +52,9 @@ def create_app(
         raise ValueError("Creative 需要专属身份凭据")
     database = creative_database(state_root)
     identity = LiveAuthorization(service="creative", credential=credential, transport=transport)
+    capabilities = CapabilityClient(
+        service="creative", credential=credential, catalog=catalog, transport=transport
+    )
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -57,6 +64,7 @@ def create_app(
                 yield
             finally:
                 await identity.close()
+                await capabilities.close()
                 await database.close()
 
     app = FastAPI(
@@ -68,6 +76,8 @@ def create_app(
         openapi_url=None,
     )
     app.state.service_id, app.state.database = "creative", database
+    app.state.identity, app.state.identity_public_key = identity, public_key
+    app.state.creative_capabilities = capabilities
 
     async def request_session(request: Request):
         assertion = request.state.service_assertion
@@ -89,6 +99,8 @@ def create_app(
 
     app.dependency_overrides[db_session] = request_session
     app.include_router(catalog_router, prefix="/v1/creative-workshop", tags=["creative-workshop"])
+    app.include_router(source_router, tags=["creative-workshop"])
+    app.add_middleware(RequestLimit, prefix=SOURCE_PATH, maximum=MAX_BODY)
     if install_credentials is not None:
         peer, integrations, result = install_credentials
         credentials = (credential, peer, integrations, result)
@@ -119,6 +131,7 @@ def create_app(
         )
         app.include_router(decision_router)
         app.include_router(installation_router, tags=["creative-workshop"])
+        app.include_router(preview_router, tags=["creative-workshop"])
         app.add_middleware(RequestLimit, prefix=INSTALL_PATH, maximum=MAX_BODY)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
@@ -153,7 +166,7 @@ def create_app(
     async def ready():
         async with database.sessions() as session:
             await session.execute(text("SELECT 1"))
-        # Source import, installation preview/setup, and migration are still gated.
+        # Stdio setup and historical migration are still gated.
         raise HTTPException(503, "creative_assembly_incomplete")
 
     return app

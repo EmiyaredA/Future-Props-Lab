@@ -8,7 +8,7 @@ from starlette.responses import JSONResponse
 from fpl_runtime.creative_integrations import CreativeInstallBatch, CreativeStdioConfiguration
 from fpl_runtime.creative_results import CreativeResultAuthenticator
 from fpl_runtime.creative_source_evidence import strict_json
-from fpl_runtime.creative_transport import CreativeInstallSourceContext
+from fpl_runtime.creative_transport import CreativeAttestedRequest
 from fpl_runtime.integration_intents import digest
 
 router = APIRouter(prefix="/_internal/v1/creative-integrations", include_in_schema=False)
@@ -57,7 +57,7 @@ async def payload(request, model):
     try:
         raw = strict_json(await request.body())
         if isinstance(raw, dict) and set(raw) == {"batch", "source"}:
-            return model.model_validate(raw["batch"]), CreativeInstallSourceContext.model_validate(
+            return model.model_validate(raw["batch"]), CreativeAttestedRequest.model_validate(
                 raw["source"]
             )
         return model.model_validate(raw), None
@@ -112,7 +112,7 @@ async def install(request: Request):
             raise HTTPException(422, "creative_request_invalid")
         try:
             source = (
-                CreativeInstallSourceContext.model_validate(strict_json(contexts[0].encode()))
+                CreativeAttestedRequest.model_validate(strict_json(contexts[0].encode()))
                 if contexts
                 else None
             )

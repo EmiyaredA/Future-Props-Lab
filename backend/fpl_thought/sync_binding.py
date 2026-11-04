@@ -43,7 +43,10 @@ class BindingReads:
 
     async def execute(self, connection, body, output):
         request = self.request
-        path = body.path(self.note_id, connection)
+        try:
+            path = body.path(self.note_id, connection)
+        except ValueError:
+            raise ExternalError("同步连接不存在", 404, "not_found") from None
         grant = RequestGrant(
             "thought",
             "thought.external-sync.read",

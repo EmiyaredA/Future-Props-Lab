@@ -871,6 +871,51 @@ async def test_independent_install_http_recovers_a_lost_target_reply(installatio
         assert installs == 1
 
 
+async def test_bound_preview_checks_exact_batch_and_live_account_without_writes(installation):
+    import httpx
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from fastapi import FastAPI
+
+    from app.capabilities.identity.permissions import role_scopes
+    from fpl_integrations.creative_preview_http import router
+    from fpl_runtime.claims import HEADER, Actor, issue_context
+    from fpl_runtime.creative_preview import preview_path
+
+    class Authorization:
+        active = True
+
+        async def status(self, **_values):
+            return self.active
+
+    key = Ed25519PrivateKey.generate()
+    app = FastAPI()
+    app.state.identity_public_key = key.public_key()
+    app.state.identity = Authorization()
+    app.state.creative_installations = installation.use
+    app.include_router(router)
+    value = batch([tool()])
+    path = preview_path(value)
+    actor = Actor("alpha", "user", "session", tuple(role_scopes("user")), session_id="s")
+    token = issue_context(
+        actor, service="integrations", method="POST", path=path, private_key=key, key_id="test"
+    )
+    body = value.model_dump(mode="json")
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://integrations"
+    ) as client:
+        assert (await client.post(path, json=body)).status_code == 401
+        other = batch([tool("Different")]).model_dump(mode="json")
+        denied = await client.post(path, json=other, headers={HEADER: token})
+        assert denied.status_code == 403, denied.text
+        response = await client.post(path, json=body, headers={HEADER: token})
+        assert response.status_code == 200, response.text
+        assert response.json()["installable"] is True
+        app.state.identity.active = False
+        assert (await client.post(path, json=body, headers={HEADER: token})).status_code == 403
+    async with installation.db.sessions(info={"owner_user_id": "alpha"}) as session:
+        assert not list(await session.scalars(select(ToolApiIntegration)))
+
+
 async def test_cancel_tombstone_prevents_late_install_and_is_account_scoped(installation):
     value = batch([tool()])
     with pytest.raises(HTTPException) as denied:

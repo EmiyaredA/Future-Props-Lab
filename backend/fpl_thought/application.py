@@ -36,6 +36,7 @@ from .community_reads import router as community_reads_router
 from .migrations.registry import MIGRATIONS
 from .models import ACCOUNT_MODELS, MODELS
 from .mutations_http import router as mutations_router
+from .publication_http import router as publication_router
 from .reads_http import router as reads_router
 from .retention import ThoughtReferenceDelivery, ThoughtReferences
 from .sync_binding import router as sync_binding_router
@@ -194,6 +195,7 @@ def create_app(
     app.include_router(upload_router, prefix="/v1")
     app.include_router(community_files_router, prefix="/v1")
     app.include_router(community_reads_router, prefix="/v1")
+    app.include_router(publication_router, prefix="/v1")
     app.include_router(
         community_metadata_router,
         prefix="/v1/thought-workshop/community",

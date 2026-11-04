@@ -68,12 +68,29 @@ async def creative_catalog(browser, unsafe, owner):
     root = state.parent / "creative"
     credential = "creative-test-service-credential-123456"
     apply(root / "service.db", "creative", CREATIVE_MIGRATIONS)
+    source_reads = []
+
+    async def mesh(request):
+        if request.url.host != "integrations":
+            return await transport.handle_async_request(request)
+        source_reads.append(request.url.path)
+        return httpx.Response(
+            200,
+            json={
+                "title": "Imported tool",
+                "summary": "Test only",
+                "manifest": {"method": "GET", "url": "https://example.test/api"},
+                "skill_archive": None,
+                "skill_sha256": "",
+            },
+        )
+
     creative = create_creative(
         state_root=root,
         catalog=catalog,
         public_key=private.public_key(),
         credential=credential,
-        transport=transport,
+        transport=httpx.MockTransport(mesh),
     )
 
     async def assertion(method, path):
@@ -113,6 +130,35 @@ async def creative_catalog(browser, unsafe, owner):
         assert draft_response.status_code == 200, draft_response.text
         assert draft_response.json()["author_name"] == "Identity Admin"
         assert (await client.get("/ready")).status_code == 503
+        source_token = await assertion("POST", SOURCE_PATH)
+        source_body = b'{"kind":"tool_api","source_id":"tool"}'
+        attested = await client.post(
+            SOURCE_PATH,
+            headers={HEADER: source_token, "Content-Type": "application/json"},
+            content=source_body,
+        )
+        assert attested.status_code == 403, attested.text
+        async with httpx.AsyncClient(transport=transport, base_url="http://identity") as gateway:
+            evidence = await gateway.post(
+                "/_internal/v1/authorization/creative-source-evidence",
+                headers={"Authorization": "Bearer gateway-test-service-credential-123456"},
+                json={
+                    "assertion": source_token,
+                    "body_base64": base64.b64encode(source_body).decode(),
+                },
+            )
+        assert evidence.status_code == 200, evidence.text
+        source_headers = {
+            HEADER: source_token,
+            "X-Fpl-Creative-Source-Evidence": evidence.json()["evidence"],
+            "Content-Type": "application/json",
+        }
+        altered = await client.post(SOURCE_PATH, content=source_body + b" ", headers=source_headers)
+        assert altered.status_code == 403, altered.text
+        first = await client.post(SOURCE_PATH, content=source_body, headers=source_headers)
+        assert first.status_code == 201, first.text
+        repeated = await client.post(SOURCE_PATH, content=source_body, headers=source_headers)
+        assert repeated.json() == first.json() and len(source_reads) == 1
 
     lookup = {
         "assertion": token,

@@ -28,7 +28,12 @@ SERVICES = (
     Service(
         "visual", "视觉创作工坊", ("/apps/visual-workshop",), ("assets", "models", "rendering")
     ),
-    Service("thought", "思绪工坊", ("/apps/thought-workshop",), ("assets", "integrations")),
+    Service(
+        "thought",
+        "思绪工坊",
+        ("/apps/thought-workshop",),
+        ("identity", "assets", "models", "integrations"),
+    ),
     Service(
         "galgame", "Galgame 工坊", ("/apps/galgame-workshop",), ("assets", "models", "rendering")
     ),
@@ -42,7 +47,7 @@ SERVICES = (
     ),
     Service("director", "导演台", ("/apps/director-desk",), ("assets", "rendering")),
     Service("interview", "面试助手", ("/apps/interview-assistant",), ("assets", "agent-runtime")),
-    Service("creative", "创意工坊", ("/creative-workshop",), ("assets",)),
+    Service("creative", "创意工坊", ("/creative-workshop",), ("identity", "integrations")),
     Service("assets", "文件与素材", ("/files",)),
     Service(
         "models",

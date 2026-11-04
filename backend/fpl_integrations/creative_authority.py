@@ -9,7 +9,7 @@ from fastapi import HTTPException
 from fpl_runtime.creative_integrations import CreativeInstallBatch, CreativeOperationGrant
 from fpl_runtime.creative_results import CreativeResultAuthenticator
 from fpl_runtime.creative_source_evidence import strict_json
-from fpl_runtime.creative_transport import CreativeDecisionRequest, CreativeInstallSourceContext
+from fpl_runtime.creative_transport import CreativeAttestedRequest, CreativeDecisionRequest
 from fpl_runtime.integration_intents import digest
 
 from .creative_installations import validate_grant
@@ -54,7 +54,7 @@ class CreativeHttpAuthority:
         if (
             purpose not in {"install", "receipt", "cancel"}
             or not isinstance(value, CreativeInstallBatch)
-            or not isinstance(source, CreativeInstallSourceContext)
+            or not isinstance(source, CreativeAttestedRequest)
             or operation_id != value.operation_id
             or fingerprint != digest(value.model_dump(mode="json"))
         ):
