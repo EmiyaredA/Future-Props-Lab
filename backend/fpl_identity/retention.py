@@ -23,6 +23,7 @@ from fpl_runtime.retention_authority import (
     story_metadata,
     verify_retention,
 )
+from fpl_runtime.video_assets import SOURCE as VIDEO
 
 from .live import active_actor
 
@@ -103,11 +104,11 @@ def _annotation_source(body):
     )
 
 
-def _motion_source(body):
+def _project_file_scope_source(body, prefix):
     change = body.change
     if change.resource_kind != "project" or change.asset_ids:
         return False
-    projects = MOTION + "/projects"
+    projects = prefix + "/projects"
     if change.expected_resource_revision == -1:
         return (
             body.source_method == "POST"
@@ -215,7 +216,9 @@ class RetentionAuthorization:
             body.change.resource_kind == "story" and _galgame_story_source(body)
         ):
             raise HTTPException(403, "retention_resource_mismatch")
-        if body.caller == "motion" and not _motion_source(body):
+        if body.caller in {"motion", "video"} and not _project_file_scope_source(
+            body, MOTION if body.caller == "motion" else VIDEO
+        ):
             raise HTTPException(403, "retention_resource_mismatch")
         if body.caller == "presentation" and not _presentation_source(body):
             raise HTTPException(403, "retention_resource_mismatch")

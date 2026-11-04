@@ -32,9 +32,12 @@ from fpl_runtime.database import Database
 from fpl_runtime.locking import service_lock
 from fpl_runtime.migrations import check
 from fpl_runtime.protocol_hash import public_contract
+from fpl_runtime.reference_runtime import install_reference_runtime, reference_lifespan
 from fpl_runtime.routing import RouteCatalog
 
 from .migrations.registry import MIGRATIONS
+from .models import VideoReferenceMutation
+from .project_layouts import ProjectLayouts
 from .timeline_media import TimelineMedia
 
 SERVICE = "video"
@@ -46,27 +49,15 @@ OPERATIONS = {
     ("POST", PROJECTS),
     ("GET", PROJECT),
     ("PATCH", PROJECT),
+    ("DELETE", PROJECT),
     ("GET", PROJECT + "/timeline"),
     ("POST", PROJECT + "/timeline/operations"),
 }
 
 
-class ProjectLayouts:
-    def __init__(self, session, _owner):
-        self.session = session
-
-    @asynccontextmanager
-    async def create_layout(self, _project_id):
-        # Assets owns any future media layout. An empty project needs only its timeline.
-        try:
-            yield
-            await self.session.commit()
-        except BaseException:
-            await self.session.rollback()
-            raise
-
-
-def create_app(*, state_root, catalog, public_key, schema_path, credential=None, transport=None):
+def create_app(
+    *, state_root, catalog, public_key, schema_path, credential, transport=None, run_worker=True
+):
     database = Database(
         SERVICE,
         state_root,
@@ -76,14 +67,11 @@ def create_app(*, state_root, catalog, public_key, schema_path, credential=None,
             VideoEditorOperationBatch,
             VideoEditorAssetMetadata,
             VideoEditorTask,
+            VideoReferenceMutation,
         ),
     )
-    capabilities = (
-        CapabilityClient(
-            service=SERVICE, credential=credential, catalog=catalog, transport=transport
-        )
-        if credential is not None
-        else None
+    capabilities = CapabilityClient(
+        service=SERVICE, credential=credential, catalog=catalog, transport=transport
     )
 
     @asynccontextmanager
@@ -91,24 +79,36 @@ def create_app(*, state_root, catalog, public_key, schema_path, credential=None,
         with service_lock(database.root):
             check(database.path, SERVICE, MIGRATIONS)
             try:
-                yield
+                async with reference_lifespan(_app):
+                    yield
             finally:
-                if capabilities is not None:
-                    await capabilities.close()
+                await capabilities.close()
                 await database.close()
 
     app = FastAPI(
         title="FPL Video Editor", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan
     )
     app.state.database = database
+    install_reference_runtime(
+        app,
+        service=SERVICE,
+        model=VideoReferenceMutation,
+        public_key=public_key,
+        credential=credential,
+        transport=transport,
+        run_worker=run_worker,
+    )
 
     async def request_session(connection: HTTPConnection):
+        def project_layouts(session, owner):
+            return ProjectLayouts(connection, session, owner, app)
+
         def timeline_assets(session, owner):
             return TimelineMedia(connection, session, owner, capabilities)
 
         async with database.sessions(
             info={
-                "video_project_layouts": ProjectLayouts,
+                "video_project_layouts": project_layouts,
                 "video_timeline_assets": timeline_assets,
             }
         ) as session:

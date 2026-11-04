@@ -1,8 +1,12 @@
 """Public Video project metadata and timeline reads."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
-from app.apps.video_editor.errors import VideoEditorNotFoundError
+from app.apps.video_editor.errors import (
+    VideoEditorNotFoundError,
+    VideoEditorUnavailableError,
+    VideoEditorValidationError,
+)
 from app.apps.video_editor.projects import VideoEditorProjects
 from app.apps.video_editor.schemas import (
     VideoEditorProjectCreateIn,
@@ -28,7 +32,14 @@ async def list_projects(session: SessionDep, owner_user_id: OwnerDep) -> VideoEd
 async def create_project(
     session: SessionDep, owner_user_id: OwnerDep, body: VideoEditorProjectCreateIn
 ) -> VideoEditorProjectOut:
-    return await VideoEditorProjects(session, owner_user_id).create(body)
+    try:
+        return await VideoEditorProjects(session, owner_user_id).create(body)
+    except (
+        VideoEditorNotFoundError,
+        VideoEditorUnavailableError,
+        VideoEditorValidationError,
+    ) as exc:
+        raise _error(exc) from None
 
 
 @router.get("/projects/{project_id}", response_model=VideoEditorProjectOut)
@@ -62,3 +73,21 @@ async def get_timeline(
         return await VideoTimelineRead(session, owner_user_id).get(project_id)
     except VideoEditorNotFoundError as exc:
         raise _error(exc) from None
+
+
+@router.delete("/projects/{project_id}")
+async def delete_project(
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    project_id: str,
+    expected_revision: int = Query(ge=0),
+) -> dict[str, bool]:
+    try:
+        await VideoEditorProjects(session, owner_user_id).delete(project_id, expected_revision)
+    except (
+        VideoEditorNotFoundError,
+        VideoEditorUnavailableError,
+        VideoEditorValidationError,
+    ) as exc:
+        raise _error(exc) from None
+    return {"deleted": True}

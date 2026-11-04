@@ -120,20 +120,6 @@ async def reveal_project_folder(
     return ProjectFolderOpenOut()
 
 
-@router.delete("/projects/{project_id}")
-async def delete_project(
-    session: SessionDep,
-    owner_user_id: OwnerDep,
-    project_id: str,
-    expected_revision: int = Query(ge=0),
-) -> dict[str, bool]:
-    try:
-        await VideoEditorProjects(session, owner_user_id).delete(project_id, expected_revision)
-    except VideoEditorNotFoundError as exc:
-        raise _error(exc) from None
-    return {"deleted": True}
-
-
 @router.get("/import-sources", response_model=VideoEditorAvailableAssetListOut)
 async def import_sources(
     session: SessionDep, owner_user_id: OwnerDep

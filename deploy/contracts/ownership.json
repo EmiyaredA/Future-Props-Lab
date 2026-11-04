@@ -4967,6 +4967,12 @@
       "model": "ToolsNavigationImportReceipt"
     },
     {
+      "table": "video_reference_mutations",
+      "service": "video",
+      "module": "fpl_video.models",
+      "model": "VideoReferenceMutation"
+    },
+    {
       "table": "visual_certification_receipts",
       "service": "visual",
       "module": "fpl_visual.models",

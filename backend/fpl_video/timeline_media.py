@@ -21,8 +21,6 @@ class TimelineMedia:
     async def describe(self, project_id, ids):
         if self.cache and self.cache.keys() >= ids:
             return {identity: self.cache[identity] for identity in ids}
-        if self.capabilities is None:
-            raise VideoEditorUnavailableError("剪辑素材验证暂不可用")
         await self.session.rollback()
         ids = sorted(ids)
         originals = {}

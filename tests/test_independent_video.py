@@ -4,16 +4,21 @@ from io import BytesIO
 from pathlib import Path
 
 import httpx
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+import pytest
 from PIL import Image
 from starlette.datastructures import Headers, UploadFile
-from tests.test_community_asset_protocol import scenario  # noqa: F401
+from tests.test_community_asset_protocol import ASSETS_SECRET, scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 
 from app.apps.video_editor.models import VideoEditorAssetMetadata
+from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.library import AssetLibrary
+from app.capabilities.asset_store.models import VisualAsset
+from fpl_assets.scoped_project_files import check_writable
 from fpl_deployment.images import source_closure
+from fpl_runtime.capability_client import CapabilityUnavailable
 from fpl_runtime.claims import HEADER, Actor, issue_context
+from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
 from fpl_runtime.routing import RouteCatalog
 from fpl_video.application import PROJECTS, create_app
@@ -31,8 +36,15 @@ def test_video_image_excludes_compatibility_layout_and_foreign_orm():
     assert "app.runtime.db" not in closure
 
 
-async def test_video_owned_projects_and_timeline_survive_restart(tmp_path):
-    key = Ed25519PrivateKey.generate()
+async def test_video_owned_projects_and_timeline_survive_restart(scenario, tmp_path):  # noqa: F811
+    case = scenario
+    key = case.key
+    credential = "isolated-video-layout-test-credential"
+    case.identity.state.identity_options["service_credentials"]["video"] = credential
+    assets_identity = LiveAuthorization(
+        service="assets", credential=ASSETS_SECRET, transport=case.mesh
+    )
+    case.assets.state.identity = assets_identity
     catalog = RouteCatalog.read(ROOT / "deploy/contracts/ownership.json")
     apply(tmp_path / "service.db", "video", MIGRATIONS)
 
@@ -42,9 +54,15 @@ async def test_video_owned_projects_and_timeline_survive_restart(tmp_path):
             catalog=catalog,
             public_key=key.public_key(),
             schema_path=ROOT / "web/src/generated/openapi.json",
+            credential=credential,
+            transport=case.mesh,
+            run_worker=False,
         )
 
     async def call(api, method, path, *, owner="alpha", **kwargs):
+        if owner == "alpha":
+            headers = await authorize(case, "video", method, path)
+            return await api.request(method, path, headers=headers, **kwargs)
         token = issue_context(
             Actor(
                 owner,
@@ -91,14 +109,27 @@ async def test_video_owned_projects_and_timeline_survive_restart(tmp_path):
     ):
         assert (await call(api, "GET", PROJECTS)).json()["items"] == [patched.json()]
         assert (await call(api, "GET", project + "/timeline")).json() == original
+        assert (
+            await call(api, "DELETE", project, owner="beta", params={"expected_revision": 1})
+        ).status_code == 404
+        stale = await call(api, "DELETE", project, params={"expected_revision": 0})
+        assert stale.status_code == 409
+        removed = await call(api, "DELETE", project, params={"expected_revision": 1})
+        assert removed.status_code == 200, removed.text
+        assert (await call(api, "GET", project + "/timeline")).status_code == 404
+    await assets_identity.close()
 
 
-async def test_timeline_edits_check_actual_signed_asset_scope(scenario, tmp_path):  # noqa: F811
+async def test_timeline_edits_check_actual_signed_asset_scope(scenario, tmp_path, monkeypatch):  # noqa: F811
     case = scenario
     credential = "isolated-video-timeline-test-credential"
     case.identity.state.identity_options["service_credentials"]["video"] = credential
     state = tmp_path / "video"
     apply(state / "service.db", "video", MIGRATIONS)
+    assets_identity = LiveAuthorization(
+        service="assets", credential=ASSETS_SECRET, transport=case.mesh
+    )
+    case.assets.state.identity = assets_identity
     app = create_app(
         state_root=state,
         catalog=RouteCatalog.read(ROOT / "deploy/contracts/ownership.json"),
@@ -106,6 +137,7 @@ async def test_timeline_edits_check_actual_signed_asset_scope(scenario, tmp_path
         schema_path=ROOT / "web/src/generated/openapi.json",
         credential=credential,
         transport=case.mesh,
+        run_worker=False,
     )
 
     async def send(api, method, path, **kwargs):
@@ -129,6 +161,7 @@ async def test_timeline_edits_check_actual_signed_asset_scope(scenario, tmp_path
             return row.id
 
     async with (
+        assets_identity.client,
         app.router.lifespan_context(app),
         httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://video") as api,
     ):
@@ -185,3 +218,32 @@ async def test_timeline_edits_check_actual_signed_asset_scope(scenario, tmp_path
         assert replayed.json() == edited.json()
         stale = {**payload(attached), "requestId": "different-edit-id"}
         assert (await send(api, "POST", target, json=stale)).status_code == 409
+
+        delivery = app.state.reference_delivery
+        commit = delivery.client.commit
+        requested = False
+
+        async def lost_reply(**arguments):
+            nonlocal requested
+            if arguments["deleted"]:
+                requested = True
+                raise CapabilityUnavailable("isolated transport interrupted")
+            return await commit(**arguments)
+
+        project_path = PROJECTS + "/" + project
+        with monkeypatch.context() as fault:
+            fault.setattr(delivery.client, "commit", lost_reply)
+            deleted = await send(api, "DELETE", project_path, params={"expected_revision": 0})
+        assert deleted.status_code == 200 and requested, deleted.text
+        assert (await send(api, "GET", project_path)).status_code == 404
+        async with case.assets.state.database.sessions(info={"owner_user_id": case.viewer}) as db:
+            assert await db.get(VisualAsset, attached) is not None
+            with pytest.raises(AssetError) as pending:
+                await check_writable(db, "video", project)
+            assert pending.value.code == "video_project_deletion_pending"
+        await delivery.process_once()
+        async with case.assets.state.database.sessions(info={"owner_user_id": case.viewer}) as db:
+            assert await db.get(VisualAsset, attached) is None
+            assert await db.get(VisualAsset, wrong_scope) is not None
+        async with case.assets.state.database.sessions(info={"owner_user_id": case.owner}) as db:
+            assert await db.get(VisualAsset, foreign) is not None

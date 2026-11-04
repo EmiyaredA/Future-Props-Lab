@@ -103,6 +103,8 @@ def operation_owner(path):
 def table_owner(module, table):
     if module.startswith("fpl_rendering."):
         return "rendering"
+    if module.startswith("fpl_video."):
+        return "video"
     if module.startswith("fpl_motion."):
         return "motion"
     if module.startswith("fpl_presentation."):

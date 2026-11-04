@@ -18,7 +18,7 @@ from fpl_runtime.thought_assets import AssetDescription
 
 from .canvas_retention import canvas_files
 from .models import AssetReferencePin, AssetReferenceSet, PreparedAssetPin, ReferenceIntent
-from .motion_lifecycle import files_for_removal, remove_files
+from .scoped_project_files import PROJECT_FILE_COLUMNS, files_for_removal, remove_files
 
 
 def failure(code, message, status=409):
@@ -119,13 +119,13 @@ class ReferenceChanges:
             )
             if active >= 128:
                 raise failure("reference_mutations_pending", "请先恢复未完成的引用变更")
-            if service == "motion" and change.resource_kind == "project":
+            if service in PROJECT_FILE_COLUMNS and change.resource_kind == "project":
                 if change.asset_ids:
                     raise failure(
-                        "invalid_motion_project_reference", "特效项目范围不能指定素材", 422
+                        f"invalid_{service}_project_reference", "项目范围不能指定素材", 422
                     )
                 if change.expected_resource_revision >= 0:
-                    await files_for_removal(session, change.resource_id)
+                    await files_for_removal(session, service, change.resource_id)
             requested = set(change.asset_ids)
             describe_story = story_metadata(service, change)
             describe_canvas = canvas_metadata(service, change)
@@ -266,12 +266,12 @@ class ReferenceChanges:
                 and (deleted or resource_revision != intent.expected_resource_revision + 1)
             ):
                 raise failure("invalid_resource_revision", "故事引用回执必须与保存版本一致", 422)
-            motion_project = service == "motion" and row.resource_kind == "project"
-            if motion_project and (
+            scoped_project = service in PROJECT_FILE_COLUMNS and row.resource_kind == "project"
+            if scoped_project and (
                 deleted != (intent.expected_resource_revision >= 0)
                 or resource_revision != intent.expected_resource_revision + 1
             ):
-                raise failure("invalid_resource_revision", "特效项目结果与原操作不符", 422)
+                raise failure("invalid_resource_revision", "项目结果与原操作不符", 422)
             desired = set(
                 (
                     await session.scalars(
@@ -314,8 +314,8 @@ class ReferenceChanges:
                         for asset_id in sorted(desired)
                     ]
                 )
-                if motion_project and deleted:
-                    await remove_files(session, row.resource_id)
+                if scoped_project and deleted:
+                    await remove_files(session, service, row.resource_id)
                 row.resource_revision = resource_revision
                 row.deleted = deleted
                 state = "committed"
