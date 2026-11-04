@@ -21,4 +21,6 @@ Both launch paths are available for isolated verification. Existing ordinary-acc
 
 ## Verification
 
+The [cutover checklist](../../../../docs/operations/independent-services.md#同条件性能对照) also gates the release on a matched monolith and candidate latency comparison. Functional smoke tests do not measure the cost of additional authorization or service hops. Capture raw samples on equivalent isolated data so a detected regression can be attributed and rechecked.
+
 The service catalog is generated from the merged public contract. The isolated Agents scenario exercises an ordinary-account denial and the existing administrator collection and read paths.
