@@ -110,7 +110,7 @@ from app.problem_details import (
     validation_exception_handler,
 )
 from app.runtime.config import get_settings
-from app.runtime.db import SessionLocal, engine
+from app.runtime.db import SessionLocal, close_website_database
 from app.runtime.polling_runner import RunnerSupervisor
 from app.runtime.revisions import RevisionConflictError
 from db.migrations import apply_migrations
@@ -129,7 +129,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
         try:
             yield
         finally:
-            await engine.dispose()
+            await close_website_database()
         return
     cleanup_snapshot_staging(settings)
     cleanup_library_folder_archive_staging(settings)
@@ -183,7 +183,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
         await supervisor.stop()
         await local_models.close()
         lifespan_app.state.runner_supervisor = None
-        await engine.dispose()
+        await close_website_database()
 
 
 app = FastAPI(
