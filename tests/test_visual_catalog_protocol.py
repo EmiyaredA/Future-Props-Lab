@@ -35,12 +35,14 @@ from fpl_runtime.agent_connections import (
     ConnectionOptions,
 )
 from fpl_runtime.asset_references import ReferenceUpdate
-from fpl_runtime.capability_client import CapabilityDenied
+from fpl_runtime.capability_client import CapabilityClient, CapabilityDenied
 from fpl_runtime.claims import HEADER
 from fpl_runtime.database import Database
 from fpl_runtime.delegation import RequestGrant
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
+from fpl_runtime.visual_acceptance_assets import PURPOSE as ACCEPTANCE_ASSETS_PURPOSE
+from fpl_runtime.visual_acceptance_assets import AcceptanceAssetQuery
 from fpl_runtime.visual_assistant import ASSET_PURPOSE, AttachmentQuery
 from fpl_runtime.visual_catalog import (
     ACCEPTANCE_TARGET,
@@ -171,6 +173,7 @@ async def test_visual_catalog_delegates_exact_paths_and_excludes_other_accounts(
             )
         ).status_code == 403
         await verify_fixed_acceptance(case, visual, http, models, database, tmp_path)
+        await verify_node_context(case, visual, http)
         await verify_conversations(case, visual, http)
         logged_out = await case.browser.post(
             "/v1/auth/logout",
@@ -265,6 +268,114 @@ async def verify_fixed_acceptance(case, visual, http, models, database, root):
                     )
     finally:
         await transport.close()
+
+
+async def verify_node_context(case, visual, http):
+    case.assets.state.capabilities = CapabilityClient(
+        service="assets", credential=ASSETS_SECRET, catalog=CATALOG, transport=case.mesh
+    )
+
+    async def send(method, path, *, service="visual", **kwargs):
+        headers = await authorize(case, service, method, path)
+        return await http.request(method, f"http://{service}" + path, headers=headers, **kwargs)
+
+    prefix = "/v1/visual-workshop/projects"
+    created = await send("POST", prefix, json={"title": "Acceptance project", "kind": "canvas"})
+    assert created.status_code == 200, created.text
+    project = created.json()["id"]
+    root = prefix + "/" + project
+    await visual.state.reference_delivery.process_once()
+
+    async def upload(filename, data, content_type):
+        reply = await send(
+            "POST",
+            "/v1/files",
+            service="assets",
+            data={"project_id": project},
+            files={"upload": (filename, data, content_type)},
+        )
+        assert reply.status_code == 200, reply.text
+        return reply.json()["id"]
+
+    from PIL import Image
+
+    png = io.BytesIO()
+    Image.new("RGB", (3, 4), "blue").save(png, "PNG")
+    image = await upload("character.png", png.getvalue(), "image/png")
+    motion = await upload(
+        "motion.mp4", bytes.fromhex("0000001866747970") + b"mp42synthetic", "video/mp4"
+    )
+    output = await upload(
+        "output.mp4", bytes.fromhex("0000001866747970") + b"mp42result", "video/mp4"
+    )
+    saved = await send(
+        "PUT",
+        root + "/canvas",
+        json={
+            "expected_revision": 0,
+            "nodes": [
+                {
+                    "id": "review",
+                    "kind": "video",
+                    "title": "Review",
+                    "position": {"x": 0, "y": 0},
+                    "generation_draft": {
+                        "prompt": "Match the motion",
+                        "reference_asset_ids": [image],
+                        "video_asset_ids": [motion],
+                        "duration": 3,
+                        "ratio": "16:9",
+                        "resolution": "720p",
+                    },
+                }
+            ],
+        },
+    )
+    assert saved.status_code == 200, saved.text
+    await visual.state.reference_delivery.process_once()
+    created_output = await send(
+        "POST",
+        root + "/nodes/review/outputs",
+        json={"expected_revision": 1, "asset_id": output},
+    )
+    assert created_output.status_code == 200, created_output.text
+    path = root + "/nodes/review/acceptance"
+    current = await send("GET", path)
+    assert current.status_code == 200, current.text
+    assert current.json()["revision"] == 0
+    selection = {"expected_revision": 0, "scheme_id": "motion-transfer:api"}
+    chosen = await send("PUT", path, json=selection)
+    assert chosen.status_code == 200, chosen.text
+    result = chosen.json()
+    assert result["revision"] == 1 and result["canvas_revision"] == 2
+    assert result["issues"] == [] and result["prompt"] == "Match the motion"
+    assert {entry["role"]: entry["asset_id"] for entry in result["inputs"]} == {
+        "character": image,
+        "motion": motion,
+        "output": output,
+    }
+    assert (await send("GET", path)).json() == result
+    stale = await send("PUT", path, json=selection)
+    assert stale.status_code == 409 and stale.json()["current"] == result
+    summary = await send("GET", root + "/acceptance/summary")
+    assert summary.status_code == 200, summary.text
+    assert summary.json()["items"][0]["state"] == "uninspected"
+    assert (await send("GET", path, params={"output_id": "unknown"})).status_code == 404
+    query = AcceptanceAssetQuery(asset_ids=[image])
+    original = (await authorize(case, "visual", "GET", path))[HEADER]
+    with pytest.raises(CapabilityDenied):
+        await visual.state.capabilities.authorize_request(
+            original,
+            RequestGrant(
+                "visual",
+                ACCEPTANCE_ASSETS_PURPOSE,
+                "GET",
+                path,
+                "assets",
+                "POST",
+                query.path("foreign"),
+            ),
+        )
 
 
 async def verify_conversations(case, visual, http):

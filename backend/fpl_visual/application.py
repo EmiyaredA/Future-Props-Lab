@@ -20,6 +20,7 @@ from fpl_runtime.request_limit import RequestLimit
 from fpl_runtime.video_segment_handoff import VISUAL_HANDOFFS, asset_peer, visual_peer
 from fpl_runtime.web import attach_web, load_release
 
+from .acceptance_nodes_http import router as acceptance_nodes_router
 from .acceptance_options import router as acceptance_options_router
 from .assistant_http import router as assistant_router
 from .catalog_http import acceptance as acceptance_catalog_router
@@ -90,6 +91,7 @@ def create_app(
     app.include_router(generation_catalog_router)
     app.include_router(acceptance_catalog_router)
     app.include_router(acceptance_options_router)
+    app.include_router(acceptance_nodes_router)
     app.state.capabilities = CapabilityClient(
         service="visual", credential=credential, catalog=catalog, transport=transport
     )

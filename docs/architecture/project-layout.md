@@ -162,7 +162,7 @@ Agents 的 `execution_http.py` 读取自有聊天记录并逐次复核 SSE 授�
 
 Galgame 的历史导出与导入由 `fpl_galgame/migration_application.py` 装配。旧 Story 当前索引与快照引用由源侧核对，Assets 校验已导入的文件回执后建立引用投影。批次编排与读回位于 `scripts/website/migrate_galgame_history.py`。
 
-Visual 的公开验收目录由 `fpl_visual/acceptance_options.py` 装配。固定视觉模型由 Models 核对账号与配置，Mac 上的五种 CLI 由 Agent Runtime 的只读租约探测。Identity 限定授权来源，目录响应只包含可用状态和展示字段。
+Visual 的公开验收目录由 `fpl_visual/acceptance_options.py` 装配。固定视觉模型由 Models 核对账号与配置，Mac 上的五种 CLI 由 Agent Runtime 的只读租约探测。Identity 限定授权来源，目录响应只包含可用状态和展示字段。 节点验收资料由 `acceptance/context_values.py` 从所属画布和生成记录计算，并从 Assets 读取精确的工程素材投影。方案绑定在 Visual 中按版本更新，项目汇总复用相同的资料指纹。
 
 Visual 的 Canvas、工程与历史输出由 `fpl_visual/migration_application.py` 导出及导入。 Visual 与 Galgame 复用 `fpl_runtime/edit_receipt_migration.py`，在 Canvas 或 Story 导入后分账号保留历史操作回执和原响应。迁移阻止跨归属、缺少源文档或回执版本超出当前文档的记录。Canvas 文件保留集合包含当前节点及旧输出，Assets 逐文件校验回执后提交。库内放置通过 Assets 维护入口保留原名称、目录、标识和版本。 Visual 的 `migration_generation.py` 逐账号保留历史生成任务和批次，核对画布或输出的任务来源与批次成员归属。
 

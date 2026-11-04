@@ -58,37 +58,48 @@ async def agents(request, *, probe):
         return {}
 
 
-async def available_schemes(request, *, probe=True):
-    model_result, agent_results = await asyncio.gather(
-        lookup(request, FIXED_ACCEPTANCE_TARGET, FixedAcceptanceModelOut),
-        agents(request, probe=probe),
+async def fixed_model(request):
+    result = await lookup(request, FIXED_ACCEPTANCE_TARGET, FixedAcceptanceModelOut)
+    return result.model
+
+
+def model_scheme(model):
+    identity = "motion-transfer:api"
+    return scheme_out(
+        identity,
+        model is not None,
+        "已配置" if model is not None else "尚未配置本空间可用的固定视觉模型",
+        label=f"{model.label} · {model.provider_name}"
+        if model is not None
+        else SCHEMES[identity][0],
+        slug=model.slug if model is not None else "",
+        provider_kind=model.provider_kind if model is not None else "",
     )
-    model = model_result.model
-    schemes = []
-    for identity, (title, kind) in SCHEMES.items():
-        if kind == "model_api":
-            schemes.append(
-                scheme_out(
-                    identity,
-                    model is not None,
-                    "已配置" if model is not None else "尚未配置本空间可用的固定视觉模型",
-                    label=f"{model.label} · {model.provider_name}" if model is not None else title,
-                    slug=model.slug if model is not None else "",
-                    provider_kind=model.provider_kind if model is not None else "",
-                )
-            )
-            continue
-        agent = identity.removeprefix("motion-transfer:")
-        status = agent_results.get(agent)
-        schemes.append(
-            scheme_out(
-                identity,
-                status.available if status is not None else False,
-                status.message if status is not None else "本机 CLI 执行器不可用",
-                label=DEFINITIONS[agent].name,
-            )
-        )
-    return schemes
+
+
+def agent_scheme(identity, agent_results):
+    agent = identity.removeprefix("motion-transfer:")
+    status = agent_results.get(agent)
+    return scheme_out(
+        identity,
+        status.available if status is not None else False,
+        status.message if status is not None else "本机 CLI 执行器不可用",
+        label=DEFINITIONS[agent].name,
+    )
+
+
+async def available_schemes(request, *, probe=True):
+    model, agent_results = await asyncio.gather(fixed_model(request), agents(request, probe=probe))
+    return [
+        model_scheme(model) if kind == "model_api" else agent_scheme(identity, agent_results)
+        for identity, (_title, kind) in SCHEMES.items()
+    ]
+
+
+async def selected_scheme(request, identity, *, probe):
+    if identity == "motion-transfer:api":
+        return model_scheme(await fixed_model(request))
+    return agent_scheme(identity, await agents(request, probe=probe))
 
 
 @router.get(SOURCE, response_model=NodeAcceptanceCatalogOut)

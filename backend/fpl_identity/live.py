@@ -50,6 +50,7 @@ from fpl_runtime.video_frames import target as video_frame_target
 from fpl_runtime.video_handoff import handoff_target
 from fpl_runtime.video_segments import bundle_target as segment_bundle_target
 from fpl_runtime.video_snapshot import archive_target as video_archive_target
+from fpl_runtime.visual_acceptance_assets import acceptance_asset_target
 from fpl_runtime.visual_assistant import attachment_target
 from fpl_runtime.visual_catalog import AGENT_ACCEPTANCE_TARGET
 from fpl_runtime.visual_catalog import catalog_target as visual_catalog_target
@@ -197,6 +198,7 @@ async def live(request: Request, body: LiveRequest):
         or (body.service == "assets" and galgame_frame_inputs_target(body.method, body.path))
         or (body.service == "assets" and galgame_export_inputs_target(body.method, body.path))
         or (body.service == "assets" and attachment_target(body.method, body.path))
+        or (body.service == "assets" and acceptance_asset_target(body.method, body.path))
         or (body.service == "assets" and export_download_target(body.method, body.path))
         or (body.service == "assets" and galgame_annotation_audio_target(body.method, body.path))
         or (body.service == "annotation" and annotation_target(body.method, body.path))
