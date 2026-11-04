@@ -509,6 +509,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
         "presentation",
         "motion",
         "video",
+        "visual",
         "agent-runtime",
         "remote",
     }:
@@ -553,6 +554,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
         "presentation",
         "motion",
         "video",
+        "visual",
         "agent-runtime",
     }:
         if web_release is None:

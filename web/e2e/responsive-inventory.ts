@@ -96,6 +96,12 @@ export const independentApplications = {
     "/apps/video-editor/tasks",
     "/apps/video-editor/projects/:id/editor",
   ],
+  visual: [
+    "/apps/visual-workshop",
+    "/apps/visual-workshop/tasks",
+    "/apps/visual-workshop/projects/:id/canvas",
+    "/apps/visual-workshop/projects/:id/assets",
+  ],
   motion: [
     "/apps/motion-compositor",
     "/apps/motion-compositor/projects/:id/editor",

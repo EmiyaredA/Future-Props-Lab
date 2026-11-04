@@ -30,6 +30,7 @@ if (
     "presentation",
     "motion",
     "video",
+    "visual",
     "agent-runtime",
   ].includes(service)
 )

@@ -28,6 +28,11 @@ export const serviceAssets = {
     "brand/favicon.png",
     "brand/video-editor-mark.png",
   ],
+  visual: [
+    "brand/brand-mark.png",
+    "brand/favicon.png",
+    "brand/visual-workshop-mark.png",
+  ],
   motion: [
     "brand/brand-mark.png",
     "brand/favicon.png",

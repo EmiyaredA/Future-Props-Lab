@@ -522,3 +522,9 @@ Rendering 逐文件恢复 Motion 成片及 Video 代理、缩略图和波形，�
 
 
 Motion 与 Video 启动检查覆盖归属清单中的 21 和 38 项操作。七容器 Chromium 运行 `fpl-editing-ready-8cd7665342` 验证两项本地就绪探针、发布浏览器版本、真实成片与 Visual 交接。整站依赖、正式来源和维护窗口继续由全站切换门禁核验。
+
+### 视觉创作工坊的浏览器版本与模型目录
+
+用 `npm run services:build:web -- visual` 构建项目、画布、素材和任务入口。将清单返回的目录传给 `npm run services:build -- visual --build --web-release`，并使用 `deploy/project-owners.compose.yaml` 中的 Visual 状态卷和身份凭据。安装时核验程序文件与 Visual 的发布 API 摘要。旧程序的写请求返回 409。
+
+模型选项和验收模型通过 Identity 将原请求委派给 Models。Models 在自己的账号库筛选可用条目，只返回界面所需字段。五容器隔离运行 `fpl-visual-browser-9163104183` 在 Chromium 验证四个入口、390／768／1440 宽度、画布保存和过期浏览器版本拒绝，并在重启后核验项目与模型目录。剩余公开操作和正式历史导入继续由 Visual 就绪门禁跟踪。
