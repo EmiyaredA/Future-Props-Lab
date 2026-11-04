@@ -46,6 +46,8 @@ class AssetReferences:
         """
         update = update.model_copy(deep=True)
         update.validate_service(service)
+        if update.resource_kind == "file-name":
+            raise AssetError("素材改名须通过源操作提交", code="invalid_reference_kind", status=422)
         payload = update.model_dump(mode="json")
         digest = hashlib.sha256(
             json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()

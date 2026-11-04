@@ -16,6 +16,7 @@ from fpl_runtime.asset_references import PrepareReferenceChange
 from fpl_runtime.retention_authority import canvas_metadata, change_digest, story_metadata
 from fpl_runtime.thought_assets import AssetDescription
 
+from . import video_file_names
 from .canvas_retention import canvas_files
 from .models import AssetReferencePin, AssetReferenceSet, PreparedAssetPin, ReferenceIntent
 from .scoped_project_files import PROJECT_FILE_COLUMNS, files_for_removal, remove_files
@@ -90,8 +91,9 @@ class ReferenceChanges:
                     AssetReferenceSet.resource_id == change.resource_id,
                 )
             )
+            rename = change.video_file_rename
             if row is None:
-                if change.expected_resource_revision != -1:
+                if change.expected_resource_revision != -1 and rename is None:
                     raise failure("reference_projection_required", "请先导入或核验已保存资源的引用")
                 row = AssetReferenceSet(
                     id=new_id(),
@@ -193,9 +195,13 @@ class ReferenceChanges:
                 )
             if not describe_canvas and present != requested:
                 raise failure("not_found", "部分素材不存在", 404)
+            if rename is not None:
+                present.add(await video_file_names.prepare(session, owner, row, change))
             identifier = new_id()
             row.revision += 1
             result = {"intent_id": identifier, "state": "prepared", "revision": row.revision}
+            if rename is not None:
+                result["video_file_rename"] = rename.model_dump(mode="json")
             if describe_canvas:
                 result["unavailable_asset_ids"] = sorted(unavailable)
             if community is not None or describe_story or describe_canvas:
@@ -281,6 +287,9 @@ class ReferenceChanges:
                     )
                 ).all()
             )
+            rename = row.resource_kind == "file-name"
+            if rename:
+                desired.clear()
             if deleted and desired:
                 raise failure("invalid_deleted_reference", "删除资源的最终引用必须为空", 422)
             if intent.state == "superseded" and resource_revision >= row.resource_revision:
@@ -314,6 +323,10 @@ class ReferenceChanges:
                         for asset_id in sorted(desired)
                     ]
                 )
+                if rename:
+                    await video_file_names.commit(
+                        session, owner, row, intent, resource_revision, deleted
+                    )
                 if scoped_project and deleted:
                     await remove_files(session, service, row.resource_id)
                 row.resource_revision = resource_revision

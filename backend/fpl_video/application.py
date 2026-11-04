@@ -116,6 +116,7 @@ OPERATIONS = {
     ("GET", PROJECT + "/assets"),
     ("POST", PROJECT + "/assets"),
     ("POST", PROJECT + "/assets/import"),
+    ("PATCH", PROJECT + "/assets/{asset_id}"),
     ("POST", PROJECT + "/assets/{asset_id}/proxy/retry"),
     ("GET", PROJECT + "/assets/{asset_id}/{variant}"),
 }

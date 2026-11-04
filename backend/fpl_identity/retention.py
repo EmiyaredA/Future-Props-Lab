@@ -107,6 +107,9 @@ def _annotation_source(body):
 
 def _project_file_scope_source(body, prefix):
     change = body.change
+    if prefix == VIDEO and (rename := change.video_file_rename) is not None:
+        path = f"{prefix}/projects/{rename.project_id}/assets/{change.resource_id}"
+        return body.source_method == "PATCH" and body.source_path == path
     if change.resource_kind != "project" or change.asset_ids:
         return False
     projects = prefix + "/projects"

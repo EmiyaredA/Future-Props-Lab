@@ -501,3 +501,5 @@ Motion 的 MP4 与 ProRes 4444 可交接到同账号的现有或新建剪辑项�
 视频剪辑工程包沿用 `future-props-project-snapshot` 清单和项目 JSON。导出只包含项目原件及时间轴仍引用的成片，Assets 按原件修订传输。部署需将独立 `FPL_VIDEO_ARCHIVE_KEY` 只读挂载到 Video 和 Assets。导入核对 ZIP 与各原件摘要，Assets 确认后才发布副本并重映射时间轴。五容器 Chromium 运行 `fpl-video-snapshot-3f7566d8c1` 验证包内摘要和导入前后精确帧一致，隔离故障测试验证确认丢失时仅发布一次。
 
 打开剪辑项目文件夹使用 Tools 原生回环入口，需同时加载 `deploy/tools.compose.yaml` 和 `deploy/tools-native.compose.yaml`，并将 Mac worker 指向同一 Assets 状态根目录。Video 先核验账号项目，Assets 只创建该项目的固定目录，再由 Tools 下发限时打开任务。五容器隔离运行 `fpl-video-reveal-860cb58a82` 验证本机浏览器 Session 与公网管理员拒绝。测试适配器记录了唯一的 Finder 启动参数，故障测试另核验丢失确认后只重发回执。
+
+剪辑素材改名使用 Assets 的原件保留回执，剪辑默认效果与预期修订在 Video 提交。四容器 `fpl-video-media-edits-fb1afe1de2` 验证素材重命名、旧修订拒绝、服务重启后的状态和原件 SHA256。隔离故障测试分别验证准备和确认的响应丢失。

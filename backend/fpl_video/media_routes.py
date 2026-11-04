@@ -20,6 +20,7 @@ from app.apps.video_editor.schemas import (
     VideoEditorAssetImportIn,
     VideoEditorAssetListOut,
     VideoEditorAssetOut,
+    VideoEditorAssetPatchIn,
     VideoEditorAvailableAssetListOut,
 )
 from app.capabilities.asset_store.errors import AssetError
@@ -27,6 +28,7 @@ from app.deps import OwnerDep, SessionDep
 from fpl_runtime.model_outputs import ModelOutputDescription
 from fpl_runtime.video_assets import VideoCopyQuery
 
+from .media_edits import MediaEdits
 from .media_reads import MediaReads
 from .media_variants import derivative, retry
 
@@ -129,6 +131,26 @@ async def import_assets(
     except ValueError:
         raise _error(VideoEditorValidationError("有素材不可导入", code="invalid_asset")) from None
     except (VideoEditorNotFoundError, VideoEditorUnavailableError, AssetError) as exc:
+        raise _error(exc) from None
+
+
+@router.patch(FILES + "/{asset_id}", response_model=VideoEditorAssetOut)
+async def patch_asset(
+    request: Request,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    project_id: str,
+    asset_id: str,
+    body: VideoEditorAssetPatchIn,
+) -> VideoEditorAssetOut:
+    try:
+        return await MediaEdits(request, session, owner_user_id).patch(project_id, asset_id, body)
+    except (
+        VideoEditorNotFoundError,
+        VideoEditorUnavailableError,
+        VideoEditorValidationError,
+        AssetError,
+    ) as exc:
         raise _error(exc) from None
 
 

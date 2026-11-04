@@ -177,6 +177,13 @@ class ReferenceMutations:
         await session.commit()
         return result
 
+    async def abandon_preparation(self, source_session, owner, change):
+        """Mark an uncertain preparation when the source write has never started."""
+        await self.abort_after_rollback(
+            source_session,
+            PreparedReferences(owner, change.request_id, change_digest(change), ""),
+        )
+
     async def abort_after_rollback(self, source_session, prepared):
         if source_session.info.get("owner_user_id") != prepared.owner:
             raise self.failure("引用结果缺少匹配的账号上下文", 403, "retention_owner_mismatch")
