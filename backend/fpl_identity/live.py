@@ -54,6 +54,8 @@ from fpl_runtime.visual_acceptance_assets import acceptance_asset_target
 from fpl_runtime.visual_assistant import attachment_target
 from fpl_runtime.visual_catalog import AGENT_ACCEPTANCE_TARGET
 from fpl_runtime.visual_catalog import catalog_target as visual_catalog_target
+from fpl_runtime.visual_snapshot import asset_target as visual_snapshot_asset_target
+from fpl_runtime.visual_snapshot import model_target as visual_snapshot_model_target
 
 router = APIRouter()
 
@@ -143,6 +145,7 @@ async def live(request: Request, body: LiveRequest):
         writing_target(body.method, body.path) is not None
         or annotation_transcription_target(body.method, body.path) is not None
         or visual_catalog_target(body.method, body.path)
+        or visual_snapshot_model_target(body.method, body.path)
         or asr_model_target(body.method, body.path)
         or galgame_asr_catalog_target(body.method, body.path)
         or galgame_asr_execution_target(body.method, body.path)
@@ -199,6 +202,7 @@ async def live(request: Request, body: LiveRequest):
         or (body.service == "assets" and galgame_export_inputs_target(body.method, body.path))
         or (body.service == "assets" and attachment_target(body.method, body.path))
         or (body.service == "assets" and acceptance_asset_target(body.method, body.path))
+        or (body.service == "assets" and visual_snapshot_asset_target(body.method, body.path))
         or (body.service == "assets" and export_download_target(body.method, body.path))
         or (body.service == "assets" and galgame_annotation_audio_target(body.method, body.path))
         or (body.service == "annotation" and annotation_target(body.method, body.path))

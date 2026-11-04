@@ -56,7 +56,7 @@ async def export_acceptance(session, project_id):
     refs.update(
         value
         for item in (standard.draft if standard else {}).get("criteria", [])
-        for value in item["reference_asset_ids"]
+        for value in item.get("reference_asset_ids", [])
     )
     return {
         "format_version": 2,

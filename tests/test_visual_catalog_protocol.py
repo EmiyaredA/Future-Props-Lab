@@ -1,8 +1,11 @@
 """Keep Visual discovery credential-free and scoped to the live account."""
 
 import asyncio
+import hashlib
 import io
+import json
 from types import SimpleNamespace
+from zipfile import ZipFile
 
 import httpx
 import pytest
@@ -53,6 +56,8 @@ from fpl_runtime.visual_catalog import (
     GENERATION_TARGET,
     PURPOSE,
 )
+from fpl_runtime.visual_snapshot import ASSET_PURPOSE as SNAPSHOT_ASSET_PURPOSE
+from fpl_runtime.visual_snapshot import SnapshotAssetQuery
 
 
 async def seed_catalog(database, owner, suffix):
@@ -173,7 +178,7 @@ async def test_visual_catalog_delegates_exact_paths_and_excludes_other_accounts(
             )
         ).status_code == 403
         await verify_fixed_acceptance(case, visual, http, models, database, tmp_path)
-        await verify_node_context(case, visual, http)
+        await verify_node_context(case, visual, http, entries[0]["id"])
         await verify_conversations(case, visual, http)
         logged_out = await case.browser.post(
             "/v1/auth/logout",
@@ -270,7 +275,7 @@ async def verify_fixed_acceptance(case, visual, http, models, database, root):
         await transport.close()
 
 
-async def verify_node_context(case, visual, http):
+async def verify_node_context(case, visual, http, model_id):
     case.assets.state.capabilities = CapabilityClient(
         service="assets", credential=ASSETS_SECRET, catalog=CATALOG, transport=case.mesh
     )
@@ -308,6 +313,40 @@ async def verify_node_context(case, visual, http):
     output = await upload(
         "output.mp4", bytes.fromhex("0000001866747970") + b"mp42result", "video/mp4"
     )
+    folder = await send(
+        "POST",
+        "/v1/file-folders",
+        service="assets",
+        json={"scope": "project", "project_id": project, "name": "素材"},
+    )
+    assert folder.status_code == 200, folder.text
+    nested = await send(
+        "POST",
+        "/v1/file-folders",
+        service="assets",
+        json={
+            "scope": "project",
+            "project_id": project,
+            "name": "细节",
+            "parent_id": folder.json()["id"],
+        },
+    )
+    assert nested.status_code == 200, nested.text
+    shared = await send(
+        "POST",
+        "/v1/files",
+        service="assets",
+        files={"upload": ("shared.png", png.getvalue(), "image/png")},
+    )
+    assert shared.status_code == 200, shared.text
+    shared_id = shared.json()["id"]
+    placed = await send(
+        "POST",
+        root + "/asset-references",
+        service="assets",
+        json={"asset_id": shared_id, "folder_id": nested.json()["id"]},
+    )
+    assert placed.status_code == 200, placed.text
     saved = await send(
         "PUT",
         root + "/canvas",
@@ -321,7 +360,8 @@ async def verify_node_context(case, visual, http):
                     "position": {"x": 0, "y": 0},
                     "generation_draft": {
                         "prompt": "Match the motion",
-                        "reference_asset_ids": [image],
+                        "model_id": model_id,
+                        "reference_asset_ids": [image, shared_id],
                         "video_asset_ids": [motion],
                         "duration": 3,
                         "ratio": "16:9",
@@ -349,10 +389,11 @@ async def verify_node_context(case, visual, http):
     result = chosen.json()
     assert result["revision"] == 1 and result["canvas_revision"] == 2
     assert result["issues"] == [] and result["prompt"] == "Match the motion"
-    assert {entry["role"]: entry["asset_id"] for entry in result["inputs"]} == {
-        "character": image,
-        "motion": motion,
-        "output": output,
+    assert {(entry["role"], entry["asset_id"]) for entry in result["inputs"]} == {
+        ("character", image),
+        ("character", shared_id),
+        ("motion", motion),
+        ("output", output),
     }
     assert (await send("GET", path)).json() == result
     stale = await send("PUT", path, json=selection)
@@ -374,6 +415,76 @@ async def verify_node_context(case, visual, http):
                 "assets",
                 "POST",
                 query.path("foreign"),
+            ),
+        )
+
+    await verify_snapshot(
+        case,
+        visual,
+        send,
+        root,
+        shared_id,
+        nested.json(),
+        image,
+        motion,
+        output,
+        (await send("GET", root + "/nodes/review/outputs")).json(),
+        model_id,
+        png.getvalue(),
+    )
+
+
+async def verify_snapshot(
+    case, visual, send, root, shared, folder, image, motion, output, history, model_id, png
+):
+    source = root + "/snapshot"
+    response = await send("GET", source)
+    assert response.status_code == 200, response.text
+    assert response.headers["content-type"] == "application/zip"
+    assert "no-store" in response.headers["cache-control"]
+    with ZipFile(io.BytesIO(response.content)) as archive:
+        manifest = json.loads(archive.read("manifest.json"))
+        payload = json.loads(archive.read("project.json"))
+        assert "credential-stays-in-models" not in json.dumps(payload)
+        assert payload["model_references"] == {
+            model_id: {"provider_kind": "openai", "model_slug": "vision-own"}
+        }
+        assert payload["acceptance"]["bindings"] == [
+            {"node_id": "review", "scheme_id": "motion-transfer:api"}
+        ]
+        assert payload["outputs"][0]["asset_id"] == output
+        assert payload["outputs"][0]["id"] in json.dumps(history)
+        assert {item["id"]: item["folder_id"] for item in payload["assets"]}[shared] == folder["id"]
+        assert {item["id"]: item["parent_id"] for item in payload["folders"]} == {
+            folder["id"]: folder["parent_id"],
+            folder["parent_id"]: None,
+        }
+        assert {item["source_id"] for item in manifest["assets"]} == {
+            shared,
+            image,
+            motion,
+            output,
+        }
+        for item in manifest["assets"]:
+            original = archive.read(item["path"])
+            assert hashlib.sha256(original).hexdigest() == item["sha256"]
+            if item["source_id"] in {shared, image}:
+                assert original == png
+    foreign = "/v1/visual-workshop/projects/foreign/snapshot"
+    assert (await send("GET", foreign)).status_code == 404
+    original = (await authorize(case, "visual", "GET", source))[HEADER]
+    scope = SnapshotAssetQuery(asset_ids=[image], excluded_generated=[])
+    with pytest.raises(CapabilityDenied):
+        await visual.state.capabilities.authorize_request(
+            original,
+            RequestGrant(
+                "visual",
+                SNAPSHOT_ASSET_PURPOSE,
+                "GET",
+                source,
+                "assets",
+                "POST",
+                scope.path("foreign"),
             ),
         )
 

@@ -35,6 +35,7 @@ from fpl_runtime.video_snapshot import snapshot_grant as video_snapshot_grant
 from fpl_runtime.visual_acceptance_assets import acceptance_asset_grant
 from fpl_runtime.visual_assistant import assistant_grant
 from fpl_runtime.visual_catalog import acceptance_agent_grant, visual_catalog_grant
+from fpl_runtime.visual_snapshot import snapshot_grant as visual_snapshot_grant
 
 from .live import active_actor
 
@@ -113,6 +114,7 @@ async def authorize_delegation(app, body, credential):
             or acceptance_asset_grant(grant)
             or acceptance_agent_grant(grant)
             or visual_catalog_grant(grant)
+            or visual_snapshot_grant(grant)
             or galgame_asset_grant(grant)
             or (asr_job_grant(grant) and grant.purpose != PURPOSE_EXECUTION)
             or snapshot_files_grant(grant)

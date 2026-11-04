@@ -1,6 +1,6 @@
 """Serve Visual's account-scoped catalog lookups without transferring credentials."""
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 
 from app.llm.assistant_catalog import assistant_models
 from app.llm.schemas.visual_catalog import (
@@ -14,9 +14,11 @@ from app.llm.visual_catalog import (
     acceptance_models,
     fixed_acceptance_model,
     generation_options,
+    snapshot_model_labels,
 )
 from fpl_runtime.visual_assistant import MODEL_TARGET
 from fpl_runtime.visual_catalog import ACCEPTANCE_TARGET, FIXED_ACCEPTANCE_TARGET, GENERATION_TARGET
+from fpl_runtime.visual_snapshot import MODELS, ModelIdentity, SnapshotModels
 
 from .catalog_reads import owned_catalog
 
@@ -50,3 +52,11 @@ async def read_fixed_acceptance_model(request: Request):
         return FixedAcceptanceModelOut(
             model=acceptance_model_out(*pair) if pair is not None else None
         )
+
+
+@router.post(MODELS + "/{digest}", response_model=dict[str, ModelIdentity])
+async def read_snapshot_model_labels(request: Request, digest: str, body: SnapshotModels):
+    if body.digest != digest:
+        raise HTTPException(403, "visual_snapshot_model_query_changed")
+    async with owned_catalog(request, purpose="visual_snapshot_models") as (actor, session):
+        return await snapshot_model_labels(session, actor.user_id, body.model_ids)

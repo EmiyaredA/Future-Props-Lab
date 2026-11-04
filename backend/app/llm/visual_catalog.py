@@ -149,3 +149,19 @@ def acceptance_model_out(model, provider):
         provider_name=provider.name,
         provider_kind=provider.kind,
     )
+
+
+async def snapshot_model_labels(session, owner_user_id, model_ids):
+    rows = (
+        await session.execute(
+            select(ModelEntry.id, ModelProvider.kind, ModelEntry.slug)
+            .join(ModelProvider, ModelProvider.id == ModelEntry.provider_id)
+            .where(
+                ModelEntry.owner_user_id == owner_user_id,
+                ModelProvider.owner_user_id == owner_user_id,
+                ModelEntry.id.in_(model_ids),
+            )
+            .order_by(ModelEntry.id)
+        )
+    ).all()
+    return {identity: {"provider_kind": kind, "model_slug": slug} for identity, kind, slug in rows}

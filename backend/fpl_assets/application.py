@@ -31,6 +31,8 @@ from fpl_runtime.video_segment_handoff import asset_peer as visual_segment_peer
 from fpl_runtime.visual_acceptance_assets import PREFIX as VISUAL_ACCEPTANCE_FILES
 from fpl_runtime.visual_assistant import ASSET_PREFIX as CONVERSATION_FILES
 from fpl_runtime.visual_assistant import MAX_QUERY_BYTES as MAX_CONVERSATION_QUERY_BYTES
+from fpl_runtime.visual_snapshot import ASSETS as VISUAL_SNAPSHOT_FILES
+from fpl_runtime.visual_snapshot import MAX_QUERY_BYTES as MAX_VISUAL_SNAPSHOT_QUERY_BYTES
 
 from .deletions import FileCleanup
 from .galgame_upload_recovery import recover_uploads
@@ -69,6 +71,7 @@ from .routes.video_segment_handoffs import router as video_segment_handoffs_rout
 from .routes.video_segment_outputs import router as video_segment_outputs_router
 from .routes.visual_acceptance import router as visual_acceptance_router
 from .routes.visual_assistant import router as conversation_assets_router
+from .routes.visual_snapshot import router as visual_snapshot_router
 from .routes.visual_upload import router as visual_upload_router
 from .video_segment_bundles import cleanup_bundles
 from .video_segment_handoffs import SegmentHandoffFiles
@@ -219,6 +222,10 @@ def create_app(
     app.include_router(project_reveal_router)
     app.include_router(conversation_assets_router)
     app.include_router(visual_acceptance_router)
+    app.include_router(visual_snapshot_router)
+    app.add_middleware(
+        RequestLimit, prefix=VISUAL_SNAPSHOT_FILES, maximum=MAX_VISUAL_SNAPSHOT_QUERY_BYTES
+    )
     app.add_middleware(RequestLimit, prefix=VISUAL_ACCEPTANCE_FILES, maximum=64 * 1024)
     app.add_middleware(
         RequestLimit, prefix=CONVERSATION_FILES, maximum=MAX_CONVERSATION_QUERY_BYTES

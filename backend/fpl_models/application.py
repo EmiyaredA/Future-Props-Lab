@@ -51,6 +51,9 @@ from app.runtime.revisions import RevisionConflictError
 from fpl_runtime.authentication import SignedIdentity
 from fpl_runtime.database import Database
 from fpl_runtime.migrations import check
+from fpl_runtime.request_limit import RequestLimit
+from fpl_runtime.visual_snapshot import MAX_QUERY_BYTES as MAX_VISUAL_SNAPSHOT_QUERY_BYTES
+from fpl_runtime.visual_snapshot import MODELS as VISUAL_SNAPSHOT_MODELS
 
 from .account_events import CatalogProvisioningRunner
 from .admission import ModelAdmission, settle
@@ -313,6 +316,9 @@ def create_app(
     app.include_router(writing_router)
     app.include_router(annotation_transcription_router)
     app.include_router(visual_catalog_router)
+    app.add_middleware(
+        RequestLimit, prefix=VISUAL_SNAPSHOT_MODELS, maximum=MAX_VISUAL_SNAPSHOT_QUERY_BYTES
+    )
     app.include_router(galgame_asr_router)
     app.include_router(galgame_transcription_router)
     if (native_ingress_token is None) != (workers is None):

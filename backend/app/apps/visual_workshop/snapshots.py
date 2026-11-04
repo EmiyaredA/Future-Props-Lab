@@ -22,6 +22,7 @@ from app.apps.visual_workshop.schemas.workshop import (
     VisualWorkshopProjectCreateIn,
     default_material_categories,
 )
+from app.apps.visual_workshop.snapshot_values import canvas_asset_ids
 from app.capabilities.asset_store import (
     AssetStorage,
     ExportedProjectSnapshot,
@@ -141,26 +142,6 @@ def _validated_folders(value: object) -> list[dict[str, str | None]]:
             emitted.add(str(item["id"]))
             remaining.pop(str(item["id"]))
     return ordered
-
-
-def _canvas_asset_ids(nodes: list[dict]) -> set[str]:
-    result: set[str] = set()
-    for node in nodes:
-        if not isinstance(node, dict):
-            continue
-        if node.get("asset_id"):
-            result.add(str(node["asset_id"]))
-        draft = node.get("generation_draft")
-        if not isinstance(draft, dict):
-            continue
-        for key in ("reference_asset_id", "first_frame_asset_id", "last_frame_asset_id"):
-            if draft.get(key):
-                result.add(str(draft[key]))
-        for key in ("reference_asset_ids", "audio_asset_ids", "video_asset_ids"):
-            values = draft.get(key)
-            if isinstance(values, list):
-                result.update(str(value) for value in values if value)
-    return result
 
 
 async def _model_references(
@@ -339,7 +320,7 @@ class VisualWorkshopProjectSnapshots:
             if output["node_id"] in node_ids
         ]
         acceptance, acceptance_assets = await export_acceptance(self.session, project_id)
-        used_ids = _canvas_asset_ids(nodes) | acceptance_assets
+        used_ids = canvas_asset_ids(nodes) | acceptance_assets
         for output in outputs:
             if output.get("inspection_asset_id"):
                 used_ids.add(output["inspection_asset_id"])

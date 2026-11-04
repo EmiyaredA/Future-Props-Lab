@@ -6,8 +6,8 @@ from datetime import datetime
 from pydantic import ValidationError
 from sqlalchemy import select
 
-from app.apps.visual_workshop.outputs.history import output_out
 from app.apps.visual_workshop.outputs.models import VisualNodeOutput
+from app.apps.visual_workshop.outputs.queries import output_out
 from app.apps.visual_workshop.outputs.schemas import VisualNodeOutputOut
 from app.capabilities.asset_store import ProjectSnapshotError
 from app.runtime.ids import new_id

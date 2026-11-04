@@ -57,7 +57,13 @@ async def project_pins(session, project):
             .order_by(AcceptanceAssetReference.asset_id)
         )
     )
-    return CanvasPins(id=project.id, revision=0, asset_ids=asset_ids)
+    if standard is not None:
+        asset_ids.extend(
+            identity
+            for criterion in standard.draft.get("criteria", [])
+            for identity in criterion.get("reference_asset_ids", [])
+        )
+    return CanvasPins(id=project.id, revision=0, asset_ids=sorted(set(asset_ids)))
 
 
 async def export_acceptance_pins(sessions, plan, owner, after):

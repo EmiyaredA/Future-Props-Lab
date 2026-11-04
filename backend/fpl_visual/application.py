@@ -1,5 +1,6 @@
 """Independent Visual application with owner-side certification."""
 
+import asyncio
 import json
 from contextlib import asynccontextmanager
 
@@ -10,6 +11,7 @@ from app.apps.visual_workshop.acceptance.review_routes import router as review_r
 from app.apps.visual_workshop.acceptance.standard_routes import router as standard_router
 from app.apps.visual_workshop.generation_routes import router as generation_records_router
 from app.apps.visual_workshop.models import VisualWorkshopProject
+from app.capabilities.asset_store.project_snapshots import cleanup_snapshot_staging
 from app.deps import require_studio_auth
 from fpl_runtime.capability_client import CapabilityClient
 from fpl_runtime.certification_service import create_certification_app
@@ -33,6 +35,8 @@ from .repair_routes import router as repair_router
 from .segment_handoff_routes import router as segment_handoff_router
 from .segment_handoffs import SegmentHandoffs
 from .segment_target_routes import router as segment_target_router
+from .snapshot_exports import SnapshotSettings
+from .snapshot_http import router as snapshot_router
 
 PAGES = (
     "/apps/visual-workshop",
@@ -86,12 +90,16 @@ def create_app(
         run_worker=run_worker,
     )
     app.include_router(project_router)
+    app.include_router(snapshot_router)
     app.include_router(outputs_router)
     app.include_router(assistant_router)
     app.include_router(generation_catalog_router)
     app.include_router(acceptance_catalog_router)
     app.include_router(acceptance_options_router)
     app.include_router(acceptance_nodes_router)
+    app.state.snapshot_authorization = LiveAuthorization(
+        service="visual", credential=credential, transport=transport
+    )
     app.state.capabilities = CapabilityClient(
         service="visual", credential=credential, catalog=catalog, transport=transport
     )
@@ -119,7 +127,14 @@ def create_app(
 
     @asynccontextmanager
     async def with_capability_client(instance):
-        async with app.state.capabilities.client, lifespan(instance):
+        async with (
+            app.state.capabilities.client,
+            app.state.snapshot_authorization.client,
+            lifespan(instance),
+        ):
+            await asyncio.to_thread(
+                cleanup_snapshot_staging, SnapshotSettings(app.state.database.root, 1, 1)
+            )
             yield
 
     app.router.lifespan_context = with_capability_client
