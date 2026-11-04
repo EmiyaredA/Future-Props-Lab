@@ -12,6 +12,7 @@ from fpl_runtime.motion_preview import sha256
 from fpl_runtime.video_exports import EXPORTS, VIDEO_WORK, VideoExportReceipt
 
 from .models import VideoMediaDispatch, VideoRenderDispatch
+from .segment_results import settle_segments
 
 RENDERING = "http://rendering:8080"
 ACTIVE = ("queued", "running")
@@ -138,6 +139,8 @@ class RenderDelivery(PollingTaskRunner):
             if receipt.status not in ACTIVE:
                 task.finished_at = now
                 current.settled, current.frozen = True, {}
+            if receipt.segments:
+                await settle_segments(session, task, receipt.segments)
             if receipt.output is not None:
                 asset = receipt.output
                 metadata = await session.get(VideoEditorAssetMetadata, asset.id)

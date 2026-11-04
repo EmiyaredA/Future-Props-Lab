@@ -17,6 +17,7 @@ from fpl_runtime.video_exports import (
     MAX_EXPORT_REQUEST_BYTES,
     VIDEO_WORK,
     VideoImageBakeRequest,
+    VideoSegmentRequest,
 )
 from fpl_runtime.video_processing import valid_id
 
@@ -37,6 +38,8 @@ def peer_scope(request, task_id):
 
 
 def validate_scope(frozen):
+    if isinstance(frozen, VideoSegmentRequest):
+        return  # The typed request already binds its ordered outputs and exact originals.
     if isinstance(frozen, VideoImageBakeRequest):
         if not VideoEditorChromaKey.model_validate(frozen.image_bake).enabled:
             raise ValueError("invalid image bake")

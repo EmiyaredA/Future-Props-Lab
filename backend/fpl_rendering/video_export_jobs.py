@@ -33,13 +33,16 @@ from fpl_runtime.video_exports import (
     VIDEO_WORK,
     VideoExportReceipt,
     VideoImageBakeRequest,
+    VideoSegmentRequest,
 )
+from fpl_runtime.video_segments import SegmentBatchManifest
 
 from .models import VideoExportJob, VideoMediaJob
 from .storage import sync_directory, sync_files
 from .video_export_variants import install_variants, seal_variants
 from .video_originals import download_original
 from .video_outputs import VideoOutputs
+from .video_segment_work import SegmentOutputs, encode_group
 
 
 class VideoExports(PollingTaskRunner):
@@ -51,6 +54,7 @@ class VideoExports(PollingTaskRunner):
         self.database, self.settings, self.identity = database, settings, identity
         self.client, self.originals = client, originals
         self.outputs = VideoOutputs(client, outputs)
+        self.segment_outputs = SegmentOutputs(client, outputs)
 
     def session(self, owner):
         return self.database.sessions(info={"owner_user_id": owner})
@@ -69,13 +73,16 @@ class VideoExports(PollingTaskRunner):
     @staticmethod
     def receipt(job):
         published = job.status == "completed"
+        group = published and "segments" in job.sealed_output
+        single = published and not group
         return VideoExportReceipt(
             status="running" if job.status == "publishing" else job.status,
             progress=job.progress,
             probe=job.probe,
-            fingerprint=job.sealed_output["content_sha256"] if published else None,
-            output=job.result if published else None,
-            variants=job.sealed_output.get("variants", {}) if published else {},
+            fingerprint=job.sealed_output["content_sha256"] if single else None,
+            output=job.result if single else None,
+            segments=job.result["segments"] if group else [],
+            variants=job.sealed_output.get("variants", {}) if single else {},
             error=job.error,
         )
 
@@ -232,19 +239,25 @@ class VideoExports(PollingTaskRunner):
                 originals = staging / "inputs"
                 originals.mkdir()
                 sources = await self.inputs(job, request, originals)
-                output, mime, probe, variants = await self.prepare_output(
-                    job, request, folder, staging, sources
-                )
-                descriptor = await run_sync(
-                    ModelOutputDescription.from_file, output, request.filename, mime
-                )
-                if not await self.authorized(job):
-                    raise RenderCancelled("剪辑成片已取消")
                 target = folder / "sealed"
                 if target.exists():
                     await run_sync(rmtree, target)
                 target.mkdir()
-                output.rename(target / output.name)
+                if isinstance(request, VideoSegmentRequest):
+                    manifest, probes = await encode_group(self, job, request, sources, target)
+                    probe = {"segments": probes}
+                    sealed = {"segments": manifest.model_dump(mode="json")}
+                else:
+                    output, mime, probe, variants = await self.prepare_output(
+                        job, request, folder, staging, sources
+                    )
+                    descriptor = await run_sync(
+                        ModelOutputDescription.from_file, output, request.filename, mime
+                    )
+                    output.rename(target / output.name)
+                    sealed = {**asdict(descriptor), "variants": variants}
+                if not await self.authorized(job):
+                    raise RenderCancelled("剪辑成片已取消")
                 await run_sync(sync_files, target)
                 for parent in (folder, folder.parent, folder.parent.parent):
                     await run_sync(sync_directory, parent)
@@ -254,7 +267,7 @@ class VideoExports(PollingTaskRunner):
                     status="publishing",
                     progress=98,
                     probe=probe,
-                    sealed_output={**asdict(descriptor), "variants": variants},
+                    sealed_output=sealed,
                 ):
                     raise RenderCancelled("剪辑成片已取消")
         except RenderCancelled:
@@ -289,51 +302,75 @@ class VideoExports(PollingTaskRunner):
         )
         return output, mime, probe, variants
 
+    async def deliver_artifact(self, job, lookup, send):
+        response = await lookup()
+        if response.status_code == 404:
+            if not await self.authorized(job):
+                await self.set_state(job, "publishing", status="cancelled", progress=0)
+                return None
+            response = await send()
+        if response.status_code == 401:
+            await self.set_state(job, "publishing", status="cancelled", progress=0)
+            return None
+        if response.status_code in {403, 404, 409, 413, 422}:
+            await self.set_state(job, "publishing", status="failed", error="成片原件发布被拒绝")
+            return None
+        response.raise_for_status()
+        return response
+
     async def publish(self, job):
         folder = self.folder(job.owner_user_id, job.id)
         sealed = dict(job.sealed_output)
+        try:
+            if "segments" in sealed:
+                await self.publish_group(job, folder, sealed)
+            else:
+                await self.publish_single(job, folder, sealed)
+        except (httpx.HTTPError, ValueError, KeyError) as exc:
+            raise CapabilityUnavailable("剪辑成片发布回执尚未确认") from exc
+        await run_sync(lambda: rmtree(folder, ignore_errors=True))
+
+    async def publish_single(self, job, folder, sealed):
         variants = sealed.pop("variants", {})
         descriptor = ModelOutputDescription(**sealed)
         suffix = Path(descriptor.filename).suffix
         request_id = UUID(job.id).hex
-        try:
-            response = await self.outputs.lookup(
-                job.owner_user_id, job.project_id, request_id, descriptor
-            )
-            if response.status_code == 404:
-                if not await self.authorized(job):
-                    await self.set_state(job, "publishing", status="cancelled", progress=0)
-                    await run_sync(lambda: rmtree(folder, ignore_errors=True))
-                    return
-                response = await self.outputs.publish(
-                    job.owner_user_id,
-                    job.project_id,
-                    request_id,
-                    descriptor,
-                    folder / "sealed" / ("movie" + suffix),
-                )
-            if response.status_code == 401:
-                await self.set_state(job, "publishing", status="cancelled", progress=0)
-                await run_sync(lambda: rmtree(folder, ignore_errors=True))
-                return
-            if response.status_code in {403, 404, 409, 413, 422}:
-                await self.set_state(job, "publishing", status="failed", error="成片原件发布被拒绝")
-                await run_sync(lambda: rmtree(folder, ignore_errors=True))
-                return
-            response.raise_for_status()
-            result = VideoAsset.model_validate(response.json())
-            if (
-                result.byte_size != descriptor.byte_size
-                or result.original_filename != descriptor.filename
-                or result.media_kind != descriptor.mime_type.split("/", 1)[0]
-            ):
-                raise ValueError("剪辑成片回执不符")
-        except (httpx.HTTPError, ValueError) as exc:
-            raise CapabilityUnavailable("剪辑成片发布回执尚未确认") from exc
+        scope = (job.owner_user_id, job.project_id, request_id, descriptor)
+        response = await self.deliver_artifact(
+            job,
+            lambda: self.outputs.lookup(*scope),
+            lambda: self.outputs.publish(*scope, folder / "sealed" / ("movie" + suffix)),
+        )
+        if response is None:
+            return
+        result = VideoAsset.model_validate(response.json())
+        if (
+            result.byte_size != descriptor.byte_size
+            or result.original_filename != descriptor.filename
+            or result.media_kind != descriptor.mime_type.split("/", 1)[0]
+        ):
+            raise ValueError("剪辑成片回执不符")
         if variants:
             await install_variants(self.settings, job, folder, variants)
         await self.complete(job, result, variants, descriptor.content_sha256)
-        await run_sync(lambda: rmtree(folder, ignore_errors=True))
+
+    async def publish_group(self, job, folder, sealed):
+        manifest = SegmentBatchManifest.model_validate(sealed["segments"])
+        response = await self.deliver_artifact(
+            job,
+            lambda: self.segment_outputs.lookup(job, manifest),
+            lambda: self.segment_outputs.publish(job, manifest, folder / "sealed"),
+        )
+        if response is None:
+            return
+        results = self.segment_outputs.result(response, manifest, job.probe["segments"])
+        await self.set_state(
+            job,
+            "publishing",
+            status="completed",
+            progress=100,
+            result={"segments": [result.model_dump(mode="json") for result in results]},
+        )
 
     async def complete(self, job, result, variants, fingerprint):
         async with self.session(job.owner_user_id) as session:

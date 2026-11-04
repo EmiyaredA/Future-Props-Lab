@@ -72,6 +72,7 @@ from .project_layouts import ProjectLayouts
 from .project_reveal_routes import router as reveal_router
 from .render_delivery import RenderDelivery
 from .render_routes import router as render_router
+from .segment_routes import router as segment_router
 from .snapshot_exports import SnapshotSettings
 from .snapshot_imports import SnapshotDelivery, SnapshotImports
 from .snapshot_routes import router as snapshot_router
@@ -112,6 +113,9 @@ OPERATIONS = {
     ("GET", PROJECT + "/renders/{task_id}"),
     ("DELETE", PROJECT + "/renders/{task_id}"),
     ("GET", PROJECT + "/segment-exports"),
+    ("POST", PROJECT + "/segment-exports"),
+    ("POST", PROJECT + "/segment-exports/{task_id}/cancel"),
+    ("GET", PROJECT + "/segment-exports/{task_id}/download"),
     ("GET", PROJECT + "/segment-exports/{task_id}"),
     ("GET", PROJECT + "/clip-merges"),
     ("POST", PROJECT + "/clip-merges"),
@@ -292,6 +296,7 @@ def create_app(
         render_router,
         clip_merge_router,
         bake_router,
+        segment_router,
         snapshot_router,
         reveal_router,
     ):

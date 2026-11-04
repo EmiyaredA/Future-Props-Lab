@@ -8,6 +8,7 @@ from .library_assets import ID
 from .motion_preview import DIGEST
 from .timed_peer import TimedPeer
 from .video_assets import VideoAsset
+from .video_segments import PublishedSegment
 
 EXPORTS = "/_internal/v1/video-export-jobs"
 OUTPUTS = "/_internal/v1/video-render-outputs"
@@ -70,7 +71,49 @@ class VideoImageBakeRequest(BaseModel):
         return self
 
 
-VIDEO_WORK = TypeAdapter(VideoExportRequest | VideoImageBakeRequest)
+class SegmentEncodeInput(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    asset_id: str = Field(pattern="^" + ID + "$")
+    filename: str = Field(min_length=5, max_length=255)
+    source_in_us: int = Field(ge=0, strict=True)
+    duration_us: int = Field(gt=0, strict=True)
+    playback_rate: float = Field(ge=0.25, le=4)
+    resolution: Literal["source", "720p", "1080p"]
+    fps: Literal["source", 30, 60]
+    quality: Literal["high", "balanced", "small"]
+    audio_mode: Literal["keep", "mute"]
+
+    @model_validator(mode="after")
+    def verify_name(self):
+        from pathlib import Path
+
+        if (
+            Path(self.filename).name != self.filename
+            or "\\" in self.filename
+            or not self.filename.endswith(".mp4")
+            or any(ord(char) < 32 for char in self.filename)
+        ):
+            raise ValueError("分段文件名无效")
+        return self
+
+
+class VideoSegmentRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    segments: tuple[SegmentEncodeInput, ...] = Field(min_length=1, max_length=100)
+    files: tuple[ExportInput, ...] = Field(min_length=1, max_length=100)
+
+    @model_validator(mode="after")
+    def verify_sources(self):
+        if [file.id for file in self.files] != sorted({item.asset_id for item in self.segments}):
+            raise ValueError("分段原件范围不符")
+        return self
+
+
+class RenderedSegment(PublishedSegment):
+    probe: dict = Field(min_length=1)
+
+
+VIDEO_WORK = TypeAdapter(VideoExportRequest | VideoImageBakeRequest | VideoSegmentRequest)
 
 
 class VideoExportReceipt(BaseModel):
@@ -83,19 +126,29 @@ class VideoExportReceipt(BaseModel):
     variants: dict[Literal["proxy", "thumbnail", "waveform"], str | None] = Field(
         default_factory=dict
     )
+    segments: list[RenderedSegment] = Field(default_factory=list, max_length=100)
     error: str | None = None
 
     @model_validator(mode="after")
     def validate_result(self):
         if self.status == "completed":
+            single = self.output is not None and self.fingerprint is not None and bool(self.probe)
+            group = bool(self.segments)
             if (
-                self.output is None
-                or self.fingerprint is None
-                or not self.probe
+                single == group
+                or (
+                    group
+                    and (self.output is not None or self.fingerprint is not None or self.variants)
+                )
                 or self.progress != 100
             ):
                 raise ValueError("剪辑成片回执不完整")
-        elif self.output is not None or self.fingerprint is not None or self.variants:
+        elif (
+            self.output is not None
+            or self.fingerprint is not None
+            or self.variants
+            or self.segments
+        ):
             raise ValueError("未完成任务不能提供成片")
         return self
 

@@ -18,6 +18,7 @@ from .video_assets import video_asset_grant, video_write_grant
 from .video_audio import audio_grant
 from .video_frames import frame_grant as video_frame_grant
 from .video_handoff import handoff_grant
+from .video_segments import bundle_grant as segment_bundle_grant
 from .video_snapshot import archive_grant as video_archive_grant
 from .video_snapshot import snapshot_grant as video_snapshot_grant
 
@@ -109,7 +110,7 @@ def model_library_output(grant):
 
 
 def target_permission_path(grant):
-    if handoff_grant(grant) or reveal_grant(grant):
+    if handoff_grant(grant) or reveal_grant(grant) or segment_bundle_grant(grant):
         return grant.source_path
     from .account_directory import directory_path
     from .community_uploads import upload_grant as community_upload_grant
@@ -183,6 +184,7 @@ def permitted(grant, catalog):
         or video_frame_grant(grant)
         or handoff_grant(grant)
         or reveal_grant(grant)
+        or segment_bundle_grant(grant)
         or audio_grant(grant)
         or video_snapshot_grant(grant)
     ):
