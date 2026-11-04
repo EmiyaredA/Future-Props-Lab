@@ -1,6 +1,11 @@
 """Galgame project and story reads from the owning account database."""
 
-from app.apps.galgame_workshop.errors import GalgameStoryDocumentInvalidError
+from sqlalchemy import text
+
+from app.apps.galgame_workshop.errors import (
+    GalgameStoryDocumentInvalidError,
+    GalgameStoryNotReadyError,
+)
 from app.apps.galgame_workshop.models import GalgameStoryDocument, GalgameWorkshopProject
 from app.apps.galgame_workshop.project_values import project_out
 from app.apps.galgame_workshop.schemas.base import GalgameWorkshopProjectListOut
@@ -10,7 +15,12 @@ from app.apps.galgame_workshop.story.document_values import (
     story_out,
 )
 from app.apps.galgame_workshop.story.snapshots import list_snapshots
-from app.runtime.project_records import list_owned_projects, load_owned_project
+from app.runtime.project_records import (
+    list_owned_projects,
+    load_owned_project,
+    patch_revisioned_project,
+)
+from app.runtime.time import utc_now
 from fpl_runtime.project_errors import ProjectResourceError
 
 
@@ -33,6 +43,37 @@ class Projects:
 
     async def get(self, project_id):
         return project_out(await self.row(project_id))
+
+    async def patch(self, project_id, body, *, readiness):
+        await self.row(project_id)
+        if body.status == "completed":
+            report = await readiness(project_id)
+            if not report.ready:
+                raise GalgameStoryNotReadyError(report)
+            await self.session.rollback()
+            await self.session.execute(text("BEGIN IMMEDIATE"))
+            story = await self.story(project_id)
+            if story.revision != report.story_revision:
+                raise ProjectResourceError(
+                    "故事版本已变化，请重新检查后保存", "story_revision_changed", 409
+                )
+        values = {
+            **body.model_dump(exclude={"expected_revision"}, exclude_none=True),
+            "revision": body.expected_revision + 1,
+            "updated_at": utc_now(),
+        }
+        await patch_revisioned_project(
+            self.session,
+            GalgameWorkshopProject,
+            project_id,
+            self.owner,
+            expected_revision=body.expected_revision,
+            values=values,
+            load_current=lambda: self.get(project_id),
+        )
+        updated = await self.get(project_id)
+        await self.session.commit()
+        return updated
 
     async def create(self, body, *, project_id):
         row = GalgameWorkshopProject(id=project_id, owner_user_id=self.owner, title=body.title)

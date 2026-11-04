@@ -8,6 +8,7 @@ from app.apps.galgame_workshop.schemas import (
     GalgameAssetOverviewOut,
     GalgamePackageManifestOut,
     GalgameProjectAssetListOut,
+    GalgameStoryRouteReportOut,
 )
 from fpl_runtime.galgame_assets import SOURCE
 from fpl_runtime.http_dependencies import OwnerDep, SessionDep
@@ -23,6 +24,7 @@ def read_assets(request, session, owner):
         owner,
         request.app.state.capabilities,
         request.state.service_assertion,
+        request.method,
         request.url.path,
     )
 
@@ -69,3 +71,13 @@ async def get_project_package_manifest(
     project_id: str,
 ) -> GalgamePackageManifestOut:
     return await read_assets(request, session, owner_user_id).package_manifest(project_id)
+
+
+@router.get("/{project_id}/story/report", response_model=GalgameStoryRouteReportOut)
+async def get_story_report(
+    request: Request,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    project_id: str,
+) -> GalgameStoryRouteReportOut:
+    return await read_assets(request, session, owner_user_id).report(project_id)

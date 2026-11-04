@@ -6,8 +6,15 @@ from sqlalchemy import select
 
 from app.apps.galgame_workshop.assets.asset_analysis import GalgameAssetAnalysisMixin
 from app.apps.galgame_workshop.assets.asset_support import galgame_asset_out
+from app.apps.galgame_workshop.errors import GalgameStoryDocumentInvalidError
 from app.apps.galgame_workshop.models import GalgameAssetMetadata
 from app.apps.galgame_workshop.schemas import GalgameProjectAssetListOut
+from app.apps.galgame_workshop.story.asset_values import validate_story_asset_media
+from app.apps.galgame_workshop.story.readiness_values import (
+    complete_readiness,
+    invalid_asset_reference,
+)
+from app.apps.galgame_workshop.story.route_report import build_route_report
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
 from fpl_runtime.claims import HEADER
 from fpl_runtime.delegation import RequestGrant
@@ -20,9 +27,10 @@ FILES = TypeAdapter(list[GalgameAssetFile])
 
 
 class ProjectAssetReads(GalgameAssetAnalysisMixin):
-    def __init__(self, session, owner, capabilities, assertion, source_path):
+    def __init__(self, session, owner, capabilities, assertion, source_method, source_path):
         self.session = session
         self.projects = Projects(session, owner)
+        self.source_method = source_method
         self.capabilities, self.assertion, self.source_path = capabilities, assertion, source_path
 
     async def _project(self, project_id):
@@ -46,7 +54,9 @@ class ProjectAssetReads(GalgameAssetAnalysisMixin):
             asset_ids=sorted(referenced), search=search, newest_first=newest_first
         )
         path = query.path(project_id)
-        grant = RequestGrant("galgame", PURPOSE, "GET", self.source_path, "assets", "POST", path)
+        grant = RequestGrant(
+            "galgame", PURPOSE, self.source_method, self.source_path, "assets", "POST", path
+        )
         try:
             token = await self.capabilities.authorize_request(self.assertion, grant)
             reply = await self.capabilities.client.post(
@@ -67,6 +77,33 @@ class ProjectAssetReads(GalgameAssetAnalysisMixin):
                 "项目素材暂不可读", "project_assets_unavailable", 503
             ) from exc
         return [(row, metadata.get(row.id)) for row in rows]
+
+    async def report(self, project_id):
+        story = await self.projects.story(project_id)
+        document = story.document
+        report = build_route_report(project_id, story.revision, document)
+        records = await self._asset_records(
+            project_id, {asset.file_id for asset in document.assets}, newest_first=False
+        )
+        files = {row.id: row for row, _ in records}
+        try:
+            for asset in document.assets:
+                row = files.get(asset.file_id)
+                if row is None:
+                    raise GalgameStoryDocumentInvalidError("故事素材引用的文件不存在")
+                validate_story_asset_media(asset.type, row.media_kind, row.mime_type)
+        except GalgameStoryDocumentInvalidError as exc:
+            return invalid_asset_reference(report, str(exc))
+        manifest = self._package_manifest_from(
+            document, records, self._story_references_by_file(document)
+        )
+        return complete_readiness(
+            report,
+            document,
+            missing_ids={row.id for row, _ in records if not row.exists},
+            durations={row.id: metadata.duration_ms for row, metadata in records if metadata},
+            manifest=manifest,
+        )
 
     def _file_exists(self, row):
         return row.exists

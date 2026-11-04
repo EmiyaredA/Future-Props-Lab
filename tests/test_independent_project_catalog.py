@@ -697,6 +697,40 @@ async def verify_galgame_formats(case, app, request, projects):
     assert current.json()["revision"] == 2
     assert current.json()["document"] == original["document"]
 
+    project_path = f"{projects}/{project}"
+    renamed = await request(
+        "PATCH", project_path, json={"expected_revision": 0, "title": "Verified title"}
+    )
+    assert renamed.status_code == 200 and renamed.json()["revision"] == 1
+    stale_title = await request(
+        "PATCH", project_path, json={"expected_revision": 0, "title": "Stale title"}
+    )
+    assert stale_title.status_code == 409 and stale_title.json()["current"] == renamed.json()
+
+    story = current.json()["document"]
+    main = story["chapters"][0]["fragments"][0]
+    main["blocks"] = [{"id": "reenter", "type": "returnToEntry"}]
+    loop = await request("PUT", path, json={"expected_revision": 2, "document": story})
+    assert loop.status_code == 200, loop.text
+    report = await request("GET", path + "/report")
+    assert report.status_code == 200 and not report.json()["ready"], report.text
+    completion = {"expected_revision": 1, "status": "completed"}
+    refused = await request("PATCH", project_path, json=completion)
+    assert refused.status_code == 422 and refused.json()["code"] == "story_not_ready"
+    assert refused.json()["report"] == report.json()
+    main["blocks"] = [{"id": "ending", "type": "endChapter"}]
+    repaired = await request("PUT", path, json={"expected_revision": 3, "document": story})
+    assert repaired.status_code == 200, repaired.text
+    validated = await request("GET", path + "/report")
+    assert validated.status_code == 200 and validated.json()["ready"], validated.text
+    completed = await request("PATCH", project_path, json=completion)
+    assert completed.status_code == 200, completed.text
+    assert completed.json()["status"] == "completed" and completed.json()["revision"] == 2
+    edited = await request("PUT", path, json={"expected_revision": 4, "document": story})
+    assert edited.status_code == 200, edited.text
+    reopened = await request("GET", project_path)
+    assert reopened.json()["status"] == "draft" and reopened.json()["revision"] == 3
+
 
 async def verify_galgame_files(case, app, request, path, story_asset):
     project_id = path.rsplit("/", 1)[1]

@@ -37,15 +37,16 @@ def asset_query_target(method, path):
 
 
 def galgame_asset_grant(grant):
-    if (grant.caller, grant.purpose, grant.source_method, grant.target_service) != (
-        "galgame",
-        PURPOSE,
-        "GET",
-        "assets",
-    ):
+    if (grant.caller, grant.purpose, grant.target_service) != ("galgame", PURPOSE, "assets"):
         return False
     target = asset_query_target(grant.target_method, grant.target_path)
     if target is None:
         return False
-    base = f"{SOURCE}/{target[1]}/assets"
-    return grant.source_path in {base, base + "/overview", base + "/package-manifest"}
+    project = f"{SOURCE}/{target[1]}"
+    return (grant.source_method, grant.source_path) in {
+        ("GET", project + "/assets"),
+        ("GET", project + "/assets/overview"),
+        ("GET", project + "/assets/package-manifest"),
+        ("GET", project + "/story/report"),
+        ("PATCH", project),
+    }

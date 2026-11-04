@@ -5,7 +5,10 @@ from typing import Annotated
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from pydantic import ValidationError
 
-from app.apps.galgame_workshop.errors import GalgameStoryDocumentInvalidError
+from app.apps.galgame_workshop.errors import (
+    GalgameStoryDocumentInvalidError,
+    GalgameStoryNotReadyError,
+)
 from app.apps.galgame_workshop.schemas import (
     GalgameStoryDialoguePatchIn,
     GalgameStoryDialoguePatchOut,
@@ -19,6 +22,7 @@ from app.apps.galgame_workshop.schemas import (
     GalgameWorkshopProjectCreateIn,
     GalgameWorkshopProjectListOut,
     GalgameWorkshopProjectOut,
+    GalgameWorkshopProjectPatchIn,
 )
 from app.apps.galgame_workshop.schemas.operations import GalgameOperationsIn
 from app.apps.galgame_workshop.story.migration_inventory import (
@@ -35,6 +39,7 @@ from fpl_runtime.project_reveal_http import (
 )
 from fpl_runtime.reference_runtime import reference_lifespan
 
+from .asset_read_routes import read_assets
 from .projects import Projects
 from .story_writes import PREFIX, StoryWrites
 
@@ -193,3 +198,26 @@ async def import_legacy_story(
         raise HTTPException(422, {"code": "invalid_story_document", "message": str(exc)}) from None
     finally:
         await file.close()
+
+
+@router.patch("/{project_id}", response_model=GalgameWorkshopProjectOut)
+async def patch_project(
+    request: Request,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    project_id: str,
+    body: GalgameWorkshopProjectPatchIn,
+) -> GalgameWorkshopProjectOut:
+    try:
+        return await Projects(session, owner_user_id).patch(
+            project_id, body, readiness=read_assets(request, session, owner_user_id).report
+        )
+    except GalgameStoryNotReadyError as exc:
+        raise HTTPException(
+            422,
+            {
+                "code": "story_not_ready",
+                "message": str(exc),
+                "report": exc.report.model_dump(mode="json"),
+            },
+        ) from None
