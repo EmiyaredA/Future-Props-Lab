@@ -310,6 +310,12 @@ class AddTransitionOperation(WireModel):
     transition: VideoEditorTimelineTransition = Field(default=..., alias='transition')
     type: Literal['addTransition'] = Field(default=..., alias='type')
 
+class AgentChoice(WireModel):
+    available: bool = Field(default=..., alias='available')
+    id: Literal['codex', 'claude-code', 'opencode', 'dsh', 'pi'] = Field(default=..., alias='id')
+    label: str = Field(default=..., alias='label')
+    status: str = Field(default=..., alias='status')
+
 class AgentOut(WireModel):
     available: bool = Field(default=..., alias='available')
     enabled: bool = Field(default=..., alias='enabled')
@@ -371,6 +377,16 @@ class ApiKeyOut(WireModel):
     revision: int = Field(default=..., alias='revision')
     revoked_at: datetime | None = Field(default=..., alias='revoked_at')
     scopes: list[str] = Field(default=..., alias='scopes')
+
+class ApprovalDecision(WireModel):
+    approved: bool = Field(default=..., alias='approved')
+
+class ApprovalOut(WireModel):
+    id: str = Field(default=..., alias='id')
+    kind: Literal['write', 'command'] = Field(default=..., alias='kind')
+    preview: str = Field(default=..., alias='preview')
+    status: str = Field(default=..., alias='status')
+    title: str = Field(default=..., alias='title')
 
 class ArticleBindingInput(WireModel):
     connection_id: str = Field(default=..., alias='connection_id')
@@ -854,6 +870,7 @@ class CallLogStatsOut(WireModel):
     total_tokens_today: int = Field(default=..., alias='total_tokens_today', repr=False)
 
 class CatalogOut(WireModel):
+    can_enable: bool = Field(default=False, alias='can_enable')
     items: list[AgentOut] = Field(default=..., alias='items')
 
 class CertificationIn(WireModel):
@@ -874,6 +891,23 @@ class ChangeSummary(WireModel):
     created_at: datetime = Field(default=..., alias='created_at')
     id: str = Field(default=..., alias='id')
     revision: int = Field(default=..., alias='revision')
+
+class ChatCreate(WireModel):
+    agent_id: Literal['codex', 'claude-code', 'opencode', 'dsh', 'pi'] = Field(default=..., alias='agent_id')
+    project_id: str = Field(default=..., alias='project_id', min_length=1, max_length=80)
+
+class ChatDetail(WireModel):
+    agent_id: Literal['codex', 'claude-code', 'opencode', 'dsh', 'pi'] = Field(default=..., alias='agent_id')
+    created_at: int = Field(default=..., alias='created_at')
+    id: str = Field(default=..., alias='id')
+    project_id: str = Field(default=..., alias='project_id')
+    turns: list[TurnOut] = Field(default=..., alias='turns')
+
+class ChatOut(WireModel):
+    agent_id: Literal['codex', 'claude-code', 'opencode', 'dsh', 'pi'] = Field(default=..., alias='agent_id')
+    created_at: int = Field(default=..., alias='created_at')
+    id: str = Field(default=..., alias='id')
+    project_id: str = Field(default=..., alias='project_id')
 
 class CheckpointIn(WireModel):
     expected_note_revision: int = Field(default=..., alias='expected_note_revision', ge=0.0)
@@ -901,6 +935,34 @@ class ClipMergeOperation(WireModel):
     new_clip_id: str = Field(default=..., alias='newClipId', min_length=1, max_length=64)
     task_id: str = Field(default=..., alias='taskId', min_length=1, max_length=64)
     type: Literal['applyClipMerge', 'undoClipMerge'] = Field(default=..., alias='type')
+
+class CloudSetup(WireModel):
+    enabled: bool = Field(default=..., alias='enabled')
+    enrolled: bool = Field(default=..., alias='enrolled')
+    guacd_ready: bool = Field(default=..., alias='guacd_ready')
+    host_label: str = Field(default=..., alias='host_label')
+    projects: list[SetupProject] = Field(default=..., alias='projects')
+    public_desktop_vnc_only: bool = Field(default=..., alias='public_desktop_vnc_only')
+    public_enabled: bool = Field(default=..., alias='public_enabled')
+    revision: str = Field(default=..., alias='revision')
+    screen_sharing_ready: bool | None = Field(default=..., alias='screen_sharing_ready')
+
+class CloudSetupUpdate(WireModel):
+    host_label: str = Field(default=..., alias='host_label', min_length=1, max_length=80)
+    projects: list[str] = Field(default=..., alias='projects', max_length=80)
+    public_enabled: bool = Field(default=..., alias='public_enabled')
+    revision: str = Field(default=..., alias='revision')
+
+class CloudStatus(WireModel):
+    desktop_authorized: bool = Field(default=..., alias='desktop_authorized')
+    desktop_configured: bool = Field(default=..., alias='desktop_configured')
+    enabled: bool = Field(default=..., alias='enabled')
+    enrolled: bool = Field(default=..., alias='enrolled')
+    host_label: str = Field(default=..., alias='host_label')
+    idle_minutes: int = Field(default=..., alias='idle_minutes')
+    idle_revision: int = Field(default=..., alias='idle_revision')
+    local: bool = Field(default=..., alias='local')
+    unlocked_until: int = Field(default=..., alias='unlocked_until')
 
 class ColorRule(WireModel):
     color: str = Field(default='#7c89c9', alias='color')
@@ -1190,6 +1252,9 @@ class DemoServiceOut(WireModel):
     state: str = Field(default=..., alias='state')
     value: DemoConfig = Field(default=..., alias='value')
 
+class DesktopLogin(WireModel):
+    password: str = Field(default=..., alias='password', repr=False, min_length=1, max_length=128)
+
 class DeveloperDocumentOut(WireModel):
     group: str = Field(default=..., alias='group')
     id: str = Field(default=..., alias='id')
@@ -1300,6 +1365,14 @@ class EndpointStatus(WireModel):
     last_checked_at: str = Field(default='', alias='last_checked_at')
     phase: Literal['off', 'starting', 'ready', 'connecting', 'reconnecting', 'failed'] = Field(default='off', alias='phase')
     url: str = Field(default='', alias='url')
+
+class Enrollment(WireModel):
+    secret: str = Field(default=..., alias='secret', repr=False)
+
+class ExecutionCatalog(WireModel):
+    agents: list[AgentChoice] = Field(default=..., alias='agents')
+    enabled: bool = Field(default=..., alias='enabled')
+    projects: list[ProjectChoice] = Field(default=..., alias='projects')
 
 class Experience(WireModel):
     evidence: list[InputReference] = Field(default=..., alias='evidence')
@@ -2784,23 +2857,6 @@ class GenerationTaskOut(WireModel):
     status: Literal['queued', 'submitting', 'pending', 'processing', 'completed', 'failed', 'cancelled'] = Field(default=..., alias='status')
     updated_at: str = Field(default=..., alias='updated_at')
 
-class Grant(WireModel):
-    agent_id: Literal['codex', 'claude-code', 'opencode', 'dsh', 'pi'] = Field(default=..., alias='agent_id')
-    purpose: Literal['amadeus', 'visual_acceptance', 'interview_preparation'] = Field(default=..., alias='purpose')
-    user_id: str = Field(default=..., alias='user_id', min_length=1, max_length=36)
-
-class GrantUpdate(WireModel):
-    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
-    grants: list[Grant] = Field(default=..., alias='grants', max_length=1000)
-    managed: list[str] = Field(default=..., alias='managed', max_length=15)
-
-class GrantsOut(WireModel):
-    accounts: list[dict[str, str]] = Field(default=..., alias='accounts')
-    grants: list[Grant] = Field(default=..., alias='grants')
-    legacy: list[Grant] = Field(default=..., alias='legacy')
-    managed: list[str] = Field(default=..., alias='managed')
-    revision: int = Field(default=..., alias='revision')
-
 class HTTPValidationError(WireModel):
     detail: list[ValidationError] | None = Field(default=None, alias='detail')
 
@@ -2812,6 +2868,10 @@ class HandoffIn(WireModel):
 class HandoffOut(WireModel):
     asset_id: str = Field(default=..., alias='assetId')
     project_id: str = Field(default=..., alias='projectId')
+
+class IdlePreference(WireModel):
+    idle_minutes: int = Field(default=..., alias='idle_minutes', ge=5.0, le=120.0)
+    revision: int = Field(default=..., alias='revision', ge=0.0)
 
 class ImageCompositionCreateIn(WireModel):
     expected_canvas_revision: int = Field(default=..., alias='expected_canvas_revision', ge=0.0)
@@ -4195,6 +4255,10 @@ class PresentationTransition(WireModel):
     duration: int = Field(default=600, alias='duration', ge=50.0, le=10000.0)
     effect: Literal['none', 'fade', 'slideX', 'slideY', 'slideX3D', 'slideY3D', 'rotate', 'scaleX', 'scaleY', 'scale', 'scaleReverse', 'random'] = Field(default='none', alias='effect')
 
+class ProjectChoice(WireModel):
+    id: str = Field(default=..., alias='id')
+    label: str = Field(default=..., alias='label')
+
 class ProjectCreateIn(WireModel):
     aspect: Literal['16:9', '9:16', '1:1'] = Field(default='16:9', alias='aspect')
     fps: Literal[30, 60] = Field(default=30, alias='fps')
@@ -4736,6 +4800,11 @@ class SetTransitionOperation(WireModel):
     edge: Literal['in', 'out'] = Field(default=..., alias='edge')
     transition: VideoEditorTransition | None = Field(default=None, alias='transition')
     type: Literal['setTransition'] = Field(default=..., alias='type')
+
+class SetupProject(WireModel):
+    label: str = Field(default=..., alias='label')
+    root: str = Field(default=..., alias='root')
+    selected: bool = Field(default=..., alias='selected')
 
 class SkillCatalogOut(WireModel):
     draft_count: int = Field(default=..., alias='draft_count')
@@ -5408,6 +5477,20 @@ class TrimClipOperation(WireModel):
     timeline_start_us: int = Field(default=..., alias='timelineStartUs', ge=0.0)
     type: Literal['trimClip'] = Field(default=..., alias='type')
 
+class TurnCreate(WireModel):
+    request_id: str = Field(default=..., alias='request_id', min_length=1, max_length=80)
+    text: str = Field(default=..., alias='text', min_length=1, max_length=16000)
+
+class TurnOut(WireModel):
+    answer: str = Field(default=..., alias='answer')
+    approvals: list[ApprovalOut] = Field(default=..., alias='approvals')
+    error: str | None = Field(default=..., alias='error')
+    id: str = Field(default=..., alias='id')
+    position: int = Field(default=..., alias='position')
+    prompt: str = Field(default=..., alias='prompt')
+    revision: int = Field(default=..., alias='revision')
+    status: str = Field(default=..., alias='status')
+
 class UpdateClipOperation(WireModel):
     clip_id: str = Field(default=..., alias='clipId')
     patch: dict[str, Any] = Field(default=..., alias='patch')
@@ -5433,6 +5516,10 @@ class ValidationError(WireModel):
     loc: list[str | int] = Field(default=..., alias='loc')
     msg: str = Field(default=..., alias='msg')
     type: str = Field(default=..., alias='type')
+
+class VerificationCode(WireModel):
+    code: str = Field(default=..., alias='code')
+    desktop: bool = Field(default=False, alias='desktop')
 
 class VideoCapabilitiesOut(WireModel):
     audio_only: bool = Field(default=False, alias='audio_only')
@@ -6369,6 +6456,7 @@ ActionOut.model_rebuild()
 AddClipOperation.model_rebuild()
 AddTrackOperation.model_rebuild()
 AddTransitionOperation.model_rebuild()
+AgentChoice.model_rebuild()
 AgentOut.model_rebuild()
 AlignAudioSeamOperation.model_rebuild()
 AnnotationEntityOperation.model_rebuild()
@@ -6378,6 +6466,8 @@ AnnotationSplitOperation.model_rebuild()
 ApiKeyCreateIn.model_rebuild()
 ApiKeyCreatedOut.model_rebuild()
 ApiKeyOut.model_rebuild()
+ApprovalDecision.model_rebuild()
+ApprovalOut.model_rebuild()
 ArticleBindingInput.model_rebuild()
 ArticleBindingOut.model_rebuild()
 ArticleConfig.model_rebuild()
@@ -6466,11 +6556,17 @@ CertificationIn.model_rebuild()
 CertificationOut.model_rebuild()
 ChangePasswordIn.model_rebuild()
 ChangeSummary.model_rebuild()
+ChatCreate.model_rebuild()
+ChatDetail.model_rebuild()
+ChatOut.model_rebuild()
 CheckpointIn.model_rebuild()
 CheckpointOut.model_rebuild()
 CheckpointPut.model_rebuild()
 ClipIdOperation.model_rebuild()
 ClipMergeOperation.model_rebuild()
+CloudSetup.model_rebuild()
+CloudSetupUpdate.model_rebuild()
+CloudStatus.model_rebuild()
 ColorRule.model_rebuild()
 CommunityArticle.model_rebuild()
 CommunityDirectory.model_rebuild()
@@ -6513,6 +6609,7 @@ DemoInstallIn.model_rebuild()
 DemoInstallOut.model_rebuild()
 DemoLog.model_rebuild()
 DemoServiceOut.model_rebuild()
+DesktopLogin.model_rebuild()
 DeveloperDocumentOut.model_rebuild()
 DeveloperDocumentsOut.model_rebuild()
 DirectorAgentCallComplete.model_rebuild()
@@ -6536,6 +6633,8 @@ DuplicateIn.model_rebuild()
 DuplicateOut.model_rebuild()
 DuplicateSnapshot.model_rebuild()
 EndpointStatus.model_rebuild()
+Enrollment.model_rebuild()
+ExecutionCatalog.model_rebuild()
 Experience.model_rebuild()
 ExportCreateIn.model_rebuild()
 ExportListOut.model_rebuild()
@@ -6737,12 +6836,10 @@ GenerationOptionsOut.model_rebuild()
 GenerationQueueLimits.model_rebuild()
 GenerationTaskListOut.model_rebuild()
 GenerationTaskOut.model_rebuild()
-Grant.model_rebuild()
-GrantUpdate.model_rebuild()
-GrantsOut.model_rebuild()
 HTTPValidationError.model_rebuild()
 HandoffIn.model_rebuild()
 HandoffOut.model_rebuild()
+IdlePreference.model_rebuild()
 ImageCompositionCreateIn.model_rebuild()
 ImageCompositionItemIn.model_rebuild()
 ImageCropIn.model_rebuild()
@@ -6924,6 +7021,7 @@ PresentationTemplateOut.model_rebuild()
 PresentationTemplatePut.model_rebuild()
 PresentationTextLayout.model_rebuild()
 PresentationTransition.model_rebuild()
+ProjectChoice.model_rebuild()
 ProjectCreateIn.model_rebuild()
 ProjectFolderOpenOut.model_rebuild()
 ProjectListOut.model_rebuild()
@@ -7010,6 +7108,7 @@ SetAssetOrganizationOperation.model_rebuild()
 SetAudioTransitionOperation.model_rebuild()
 SetClipSpeedOperation.model_rebuild()
 SetTransitionOperation.model_rebuild()
+SetupProject.model_rebuild()
 SkillCatalogOut.model_rebuild()
 SkillFileListOut.model_rebuild()
 SkillFileOut.model_rebuild()
@@ -7097,11 +7196,14 @@ ToolFavoriteIn.model_rebuild()
 ToolNavigationItemOut.model_rebuild()
 ToolNavigationStateOut.model_rebuild()
 TrimClipOperation.model_rebuild()
+TurnCreate.model_rebuild()
+TurnOut.model_rebuild()
 UpdateClipOperation.model_rebuild()
 UpdateSettingsOperation.model_rebuild()
 UpdateTrackOperation.model_rebuild()
 UpdateTransitionOperation.model_rebuild()
 ValidationError.model_rebuild()
+VerificationCode.model_rebuild()
 VideoCapabilitiesOut.model_rebuild()
 VideoDownloadAssetOut.model_rebuild()
 VideoDownloadDepsOut.model_rebuild()

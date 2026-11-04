@@ -19,13 +19,9 @@ class CodeAgents:
         'Detect Code Agents. POST /v1/code-agents/detect'
         return self._client._call('POST', '/v1/code-agents/detect', parameters=[], response_type=models.CatalogOut)
 
-    def get_code_agent_grants(self) -> models.GrantsOut:
-        'Get Code Agent Grants. GET /v1/code-agents/grants'
-        return self._client._call('GET', '/v1/code-agents/grants', parameters=[], response_type=models.GrantsOut)
-
-    def put_code_agent_grants(self, *, body: models.GrantUpdate | dict) -> models.GrantsOut:
-        'Put Code Agent Grants. PUT /v1/code-agents/grants'
-        return self._client._call('PUT', '/v1/code-agents/grants', parameters=[], body=body, media_type='application/json', response_type=models.GrantsOut)
+    def enable_code_agent(self, *, agent_id: Literal['codex', 'claude-code', 'opencode', 'dsh', 'pi']) -> Any:
+        'Enable Code Agent. POST /v1/code-agents/{agent_id}/enable'
+        return self._client._call('POST', '/v1/code-agents/{agent_id}/enable', parameters=[('agent_id', 'path', agent_id)], response_type=Any)
 
 class AsyncCodeAgents:
     def __init__(self, client):
@@ -39,10 +35,6 @@ class AsyncCodeAgents:
         'Detect Code Agents. POST /v1/code-agents/detect'
         return await self._client._call('POST', '/v1/code-agents/detect', parameters=[], response_type=models.CatalogOut)
 
-    async def get_code_agent_grants(self) -> models.GrantsOut:
-        'Get Code Agent Grants. GET /v1/code-agents/grants'
-        return await self._client._call('GET', '/v1/code-agents/grants', parameters=[], response_type=models.GrantsOut)
-
-    async def put_code_agent_grants(self, *, body: models.GrantUpdate | dict) -> models.GrantsOut:
-        'Put Code Agent Grants. PUT /v1/code-agents/grants'
-        return await self._client._call('PUT', '/v1/code-agents/grants', parameters=[], body=body, media_type='application/json', response_type=models.GrantsOut)
+    async def enable_code_agent(self, *, agent_id: Literal['codex', 'claude-code', 'opencode', 'dsh', 'pi']) -> Any:
+        'Enable Code Agent. POST /v1/code-agents/{agent_id}/enable'
+        return await self._client._call('POST', '/v1/code-agents/{agent_id}/enable', parameters=[('agent_id', 'path', agent_id)], response_type=Any)

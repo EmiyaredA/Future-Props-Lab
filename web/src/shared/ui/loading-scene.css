@@ -17,7 +17,7 @@
   --loading-glow: #f4ac51;
 }
 .fpl-loading-scene--page {
-  width: min(320px, 78vw);
+  width: min(320px, 78vw, 58dvh);
   height: auto;
   aspect-ratio: 1;
 }

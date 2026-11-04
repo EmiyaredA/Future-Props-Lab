@@ -1,17 +1,13 @@
 """Run-scoped MCP tool bridge; browser credentials stay only in this parent process."""
 
 import asyncio
-import json
-import os
 import secrets
-import sys
-import tempfile
 from pathlib import Path
 
 import httpx
 from jsonschema import ValidationError, validate
 
-from app.capabilities.agents.cli.conversation import recorded_result
+from app.capabilities.agents.cli.tool_relay import ToolRelay
 from app.console.amadeus.conversations import Conversations
 from app.console.amadeus.files import list_files, read_file_bytes
 from app.console.amadeus.fpl_operations import call_operation, operation_catalog
@@ -21,7 +17,6 @@ from app.console.amadeus.schemas import ActionIn, QuestionIn
 from app.console.amadeus.skills import read_skill_file
 from app.console.governance.code_agents import resolve
 from app.orm import bind_owner
-from app.runtime.config import REPO_ROOT
 from app.runtime.operation_receipts import OperationError
 
 
@@ -119,16 +114,12 @@ TOOLS = [
 ]
 
 
-class ToolBridge:
+class ToolBridge(ToolRelay):
     def __init__(self, app, headers, principal, run, sessions, emit):
         self.app, self.headers, self.principal = app, headers, principal
         self.run, self.sessions, self.emit = run, sessions, emit
         self.paused = asyncio.Event()
-        self.server = None
-        self.directory = None
-        self.token = secrets.token_urlsafe(32)
-        self.closed = False
-        self.connections = set()
+        super().__init__(TOOLS, self.call, emit)
 
     async def api(self, path):
         async with httpx.AsyncClient(
@@ -281,85 +272,3 @@ class ToolBridge:
             await Runs(session, self.principal).pause_for_approval(row.conversation_id, row.id)
             self.paused.set()
             return {"waiting_approval": action.model_dump(mode="json")}
-
-    async def start(self):
-        # The short socket directory is an unconfigurable, process-owned system temporary.
-        self.directory = tempfile.TemporaryDirectory(prefix="fpl-tools-")
-        os.chmod(self.directory.name, 0o700)
-        socket_path = str(Path(self.directory.name) / "s")
-
-        async def handle(reader, writer):
-            self.connections.add(writer)
-            try:
-                data = json.loads(await asyncio.wait_for(reader.readline(), 10))
-                if self.closed or not secrets.compare_digest(data.get("token", ""), self.token):
-                    raise ValueError("invalid task token")
-                call_id = secrets.token_hex(12)
-                await self.emit(
-                    "tool_call",
-                    {
-                        "tool_call_id": call_id,
-                        "tool_name": data["name"],
-                        "arguments": data.get("arguments", {}),
-                    },
-                )
-                result = await self.call(data["name"], data.get("arguments", {}))
-                response = {"result": result}
-                await self.emit(
-                    "tool_result",
-                    {
-                        "tool_call_id": call_id,
-                        "name": data["name"],
-                        "status": "completed",
-                        "result": recorded_result(result),
-                    },
-                )
-            except Exception:
-                response = {"error": "工具失败；请检查权限、参数与资源当前状态，不要重试未知写入"}
-            try:
-                writer.write(json.dumps(response, ensure_ascii=False).encode() + b"\n")
-                await writer.drain()
-            except (ConnectionError, OSError):
-                pass
-            finally:
-                self.connections.discard(writer)
-                writer.close()
-                try:
-                    await writer.wait_closed()
-                except (ConnectionError, OSError):
-                    pass
-
-        self.server = await asyncio.start_unix_server(
-            handle, path=socket_path, limit=2 * 1024 * 1024
-        )
-        os.chmod(socket_path, 0o600)
-        if getattr(sys, "frozen", False):
-            command = str(Path(sys.executable).resolve().parent.parent / "fpl" / "fpl")
-            args = ["mcp", "relay"]
-        else:
-            command = sys.executable
-            args = [str(REPO_ROOT / "scripts/website/cli.py"), "mcp", "relay"]
-        return {
-            "mcpServers": {
-                "fpl": {
-                    "command": command,
-                    "args": args,
-                    "env": {
-                        "FPL_TOOL_SOCKET": socket_path,
-                        "FPL_TOOL_TOKEN": self.token,
-                        "FPL_TOOL_DEFINITIONS": json.dumps(TOOLS),
-                    },
-                }
-            }
-        }
-
-    async def close(self):
-        self.closed = True
-        self.token = secrets.token_urlsafe(32)
-        if self.server:
-            self.server.close()
-            await self.server.wait_closed()
-        for writer in list(self.connections):
-            writer.close()
-        if self.directory:
-            self.directory.cleanup()

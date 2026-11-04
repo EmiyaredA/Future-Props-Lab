@@ -24,14 +24,15 @@ import {
 } from "./api";
 import { workbenchKeys } from "./queryKeys";
 
-function Message({
+export function WorkbenchMessage({
   entry,
   agent,
   sessionId,
 }: {
-  entry: HistoryEntry;
+  entry: Pick<HistoryEntry, "text" | "kind" | "role" | "attachments"> &
+    Partial<Pick<HistoryEntry, "timestamp" | "tool_name">>;
   agent: Conversation["agent_id"];
-  sessionId: string;
+  sessionId?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const body = expanded ? entry.text : entry.text.slice(0, 24000);
@@ -58,7 +59,7 @@ function Message({
                     ? "会话记录"
                     : agentName(agent)}
           </strong>
-          <time>{displayTime(entry.timestamp)}</time>
+          {entry.timestamp && <time>{displayTime(entry.timestamp)}</time>}
         </div>
         {tool ? (
           <details className="aw-tool">
@@ -107,22 +108,23 @@ function Message({
               : `展开完整内容（${entry.text.length.toLocaleString()} 字符）`}
           </button>
         )}
-        {entry.attachments.map((attachment) => {
-          const id = String(attachment.id ?? "");
-          const base = String(import.meta.env.VITE_API_BASE || "").replace(
-            /\/$/,
-            "",
-          );
-          return (
-            <a
-              className="aw-link"
-              key={id}
-              href={`${base}/v1/agent-workbench/sessions/${encodeURIComponent(sessionId)}/attachments/${encodeURIComponent(id)}`}
-            >
-              下载附件：{String(attachment.name ?? "文件")}
-            </a>
-          );
-        })}
+        {sessionId &&
+          entry.attachments.map((attachment) => {
+            const id = String(attachment.id ?? "");
+            const base = String(import.meta.env.VITE_API_BASE || "").replace(
+              /\/$/,
+              "",
+            );
+            return (
+              <a
+                className="aw-link"
+                key={id}
+                href={`${base}/v1/agent-workbench/sessions/${encodeURIComponent(sessionId)}/attachments/${encodeURIComponent(id)}`}
+              >
+                下载附件：{String(attachment.name ?? "文件")}
+              </a>
+            );
+          })}
         {["compaction", "branch_summary"].includes(entry.kind) && (
           <span className="aw-badge">
             {entry.kind === "compaction" ? "上下文压缩" : "分支摘要"}
@@ -254,7 +256,7 @@ export function ConversationView({
           </div>
         )}
         {messages.map((entry) => (
-          <Message
+          <WorkbenchMessage
             key={entry.id}
             entry={entry}
             agent={item.agent_id}

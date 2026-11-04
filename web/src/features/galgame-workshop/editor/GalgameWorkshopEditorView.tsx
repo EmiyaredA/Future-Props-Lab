@@ -219,13 +219,7 @@ export function GalgameWorkshopEditorView({
     );
   return (
     <Suspense
-      fallback={
-        <LoadingState
-          label="正在加载编辑器模块…"
-          variant="page"
-          className="page-loading"
-        />
-      }
+      fallback={<LoadingState label="正在加载编辑器模块…" variant="page" />}
     >
       <section className="galgame-editor-page" data-mobile-panel={mobilePanel}>
         <AmadeusEditorContext

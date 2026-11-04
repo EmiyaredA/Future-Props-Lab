@@ -101,7 +101,6 @@ async def evaluate_agent(session, settings, run, cancelled, executor=execute):
         snapshot.get("executor", {}).get("user_id"),
         kind,
         "visual_acceptance",
-        settings=settings,
     ):
         raise AcceptanceError("本机 Agent 执行授权已失效")
     available, message = await probe(kind, path)

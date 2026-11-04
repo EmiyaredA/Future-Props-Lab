@@ -196,7 +196,7 @@ async def require_public_studio_auth(request: Request, session: SessionDep) -> S
 
 
 async def authenticate_studio_websocket(
-    websocket: WebSocket, session: AsyncSession
+    websocket: WebSocket, session: AsyncSession, permission: str = "models.use"
 ) -> StudioPrincipal:
     if getattr(
         getattr(websocket.scope.get("app"), "state", None), "storage_upgrade_required", False
@@ -215,15 +215,17 @@ async def authenticate_studio_websocket(
     if row is None or not _valid_session(*row, utc_now()) or row[1].must_change_password:
         raise _unauthorized()
     principal = _principal(row[1], auth=row[0])
-    if not principal.allows("models.use"):
+    if not principal.allows(permission):
         raise _forbidden("insufficient_permission", "当前账号不能调用模型")
     bind_owner(session, principal.user_id)
     return principal
 
 
-async def resolve_studio_websocket_principal(websocket: WebSocket) -> StudioPrincipal:
+async def resolve_studio_websocket_principal(
+    websocket: WebSocket, permission: str = "models.use"
+) -> StudioPrincipal:
     async for session in get_session():
-        return await authenticate_studio_websocket(websocket, session)
+        return await authenticate_studio_websocket(websocket, session, permission)
     raise RuntimeError("database session dependency did not yield a session")
 
 

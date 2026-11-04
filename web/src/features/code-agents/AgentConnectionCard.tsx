@@ -24,7 +24,13 @@ export function AgentStatus({ agent }: { agent: Agent }) {
   );
 }
 
-export function AgentConnectionCard({ agent }: { agent: Agent }) {
+export function AgentConnectionCard({
+  agent,
+  onEnable,
+}: {
+  agent: Agent;
+  onEnable?: () => void;
+}) {
   const [details, setDetails] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
@@ -64,6 +70,15 @@ export function AgentConnectionCard({ agent }: { agent: Agent }) {
       <p className="code-agent-message">
         {agent.message || "连接由部署配置管理"}
       </p>
+      {onEnable && !agent.enabled && (
+        <button
+          className="btn primary code-agent-enable"
+          type="button"
+          onClick={onEnable}
+        >
+          启用 CLI 连接
+        </button>
+      )}
       <div className="code-agent-login-row">
         <span className="code-agent-field-label">登录命令</span>
         <div className="code-agent-commands">

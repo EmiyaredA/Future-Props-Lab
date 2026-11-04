@@ -72,7 +72,7 @@
 - 正式网站数据保存在项目 `.runtime/`，本地模型位于 `.runtime/local-models/`，配置仅在 `backend/config.toml`。从桌面迁入时唯一源为当时正在使用的 Application Support/Future Props Lab；完整停机、备份、核验后迁入，不与项目旧开发库合并，不更换加密密钥。原目录和恢复快照在验收前保留。
 - 本机前端 3000 代理至后端 9001，与公网回环 28081 共用一个 ASGI 应用和 Runner 生命周期。`scripts/website/development.py` 是命令行和后台服务共用的单例启动器，先等待后端就绪，再启动前端；任一子进程退出时清理整套服务，不自动换端口。重载父进程持续持有数据锁，每个 worker 导入数据库前检查迁移。公网只使用已发布前端，不暴露 Vite。`capabilities/web_access/` 拥有附加监听器与专用 SSH 生命周期；附加 lifespan 关闭。本机管理权限依据实际 socket，不信任客户端 hostname 或转发头。公网管理员也不得管理主机目录、Codex、磁盘或访问配置；相关菜单只在本机入口显示。
 - 网站静态资源通过 `build:studio` 构建清单、哈希与压缩文件；云端仅托管程序。`/v1`、私人素材、SSE 不进入共享缓存，HTML 回退不覆盖未知 API 和缺失资源。公网启动要求构建匹配。
-- Amadeus 新对话由已登记的 Codex、Claude Code、OpenCode、DeepSeek Harness 或 Pi CLI 执行；FPL 后端持有运行、事件、审批和恢复，CLI 仅获得任务工具授权，不继承个人工具或通用 Shell。连接部署配置归 TOML，按账号／用途的授权归治理；固定业务任务共用连接注册表并保留自有任务边界。外部 CLI 的模型和认证配置按白名单读取，执行配置、插件和工具目录不直接继承。
+- Amadeus 新对话由已登记的 Codex、Claude Code、OpenCode、DeepSeek Harness 或 Pi CLI 执行；FPL 后端持有运行、事件、审批和恢复，CLI 仅获得任务工具授权，不继承个人工具或通用 Shell。连接部署配置归 TOML，由可信本机管理员启用；有效账号可在有权访问的功能中使用已启用的连接。固定业务任务共用连接注册表并保留自有任务边界，云控仍仅管理员可访问。外部 CLI 的模型和认证配置按白名单读取，执行配置、插件和工具目录不直接继承。
 - CLI/SDK/MCP 使用网站地址和 Management API Key。`console/governance/automation_operations.json` 维护业务白名单，`/v1/automation` 提供能力发现与有归属校验的资源链接；不控制浏览器标签页，不开放账号治理、密钥管理或任意系统命令。客户端凭据目录 0700、文件 0600，不通过参数或日志传递密钥。
 - Amadeus 使用当前页面侧栏和显式账号上下文接口，不依赖原生窗口或 IPC。下载与演示窗口使用浏览器能力，并保留弹窗阻止反馈和未保存保护。
 - Web 保持 `app/ + features/ + shared/ + platform/ + generated/`：`app/` 负责入口、壳与路由，
@@ -121,7 +121,7 @@
 - `scripts/demo/` 只保存内容专用演示维护工具；必须通过正式 API 操作，并要求调用者显式提供项目 ID、
   素材根目录和输入/输出路径，不得保存本机绝对路径或默认目标项目。
 
-- 「云控」是仅管理员可访问的一级功能，入口为 `/cloud-control`，工作台入口为 `/agents`。业务 API、SSE 和后台采集叠加 `cloud-control.access`；普通账号已有副本保留且不转移归属。空间占用与 Codex 模型源工具已移除，不保留主机操作接口。当前网站保留兼容装配，独立服务实现由服务化分支按既定门禁统一切换，不另建云控服务。
+- 「云控」是仅管理员可访问的一级功能，入口为 `/cloud-control`，工作台入口为 `/agents`。业务 API、SSE 和后台采集叠加 `cloud-control.access`；普通账号已有副本保留且不转移归属。云控的公网远程桌面和工作台项目执行独立显式启用，并要求账号授权与密码重验、TOTP。远程桌面仅转接预设 Mac 屏幕共享，项目执行仅访问 TOML 授权的项目与命令预设。当前网站保留兼容装配，独立服务实现由服务化分支按既定门禁统一切换，不另建云控服务。
 
 ## SDK 与文档契约
 

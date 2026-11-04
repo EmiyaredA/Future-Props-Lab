@@ -1,0 +1,161 @@
+from fastapi import APIRouter, HTTPException, Request, Response, WebSocket
+
+from app.capabilities.identity.rate_limit import allow_attempt
+from app.console.cloud_control import access, setup
+from app.console.cloud_control.desktop import DESKTOP_COOKIE, DESKTOP_SOCKET
+from app.console.cloud_control.schemas import (
+    CloudSetup,
+    CloudSetupUpdate,
+    CloudStatus,
+    DesktopLogin,
+    Enrollment,
+    IdlePreference,
+    VerificationCode,
+)
+from app.deps import (
+    SessionDep,
+    StudioAuth,
+    require_recent_reauthentication,
+    resolve_studio_websocket_principal,
+)
+from app.runtime.config import get_cloud_settings
+from app.runtime.website import require_local_browser
+
+router = APIRouter(prefix="/cloud-control", tags=["cloud-control"])
+
+
+def local_request(request):
+    return getattr(request.state, "website_local", False)
+
+
+@router.get("/status", response_model=CloudStatus)
+async def status(request: Request, response: Response, db: SessionDep, principal: StudioAuth):
+    response.headers["Cache-Control"] = "no-store"
+    settings = get_cloud_settings()
+    local = local_request(request)
+    enabled = access.allowed(principal, local=local)
+    enrolled = await access.enrolled(db, principal.user_id) if enabled else False
+    minutes, revision = await access.desktop_preferences(db, principal.user_id)
+    return CloudStatus(
+        enabled=enabled,
+        host_label=settings.fpl_cloud_control_host_label,
+        desktop_configured=access.allowed(principal, local=local, desktop=True),
+        desktop_authorized=await access.desktop_authorized(db, principal, local=local),
+        idle_minutes=minutes,
+        idle_revision=revision,
+        local=local,
+        enrolled=enrolled,
+        unlocked_until=await access.unlock_expiry(db, principal, local=local),
+    )
+
+
+@router.post("/totp/enroll", response_model=Enrollment)
+async def enroll(request: Request, response: Response, db: SessionDep, principal: StudioAuth):
+    require_local_browser(request, principal)
+    access.require_enabled(principal, local=True)
+    require_recent_reauthentication(principal)
+    response.headers["Cache-Control"] = "no-store"
+    return Enrollment(secret=await access.start_enrollment(db, principal.user_id))
+
+
+@router.post("/totp/confirm", status_code=204)
+async def confirm(
+    request: Request,
+    body: VerificationCode,
+    db: SessionDep,
+    principal: StudioAuth,
+):
+    require_local_browser(request, principal)
+    access.require_enabled(principal, local=True)
+    require_recent_reauthentication(principal)
+    await access.verify(db, principal, body.code, enroll=True)
+    request.app.state.cloud_desktop.revoke(principal.user_id)
+
+
+@router.post("/totp/verify", status_code=204)
+async def verify(
+    request: Request,
+    body: VerificationCode,
+    db: SessionDep,
+    principal: StudioAuth,
+):
+    access.require_enabled(principal, local=local_request(request), desktop=body.desktop)
+    require_recent_reauthentication(principal)
+    await access.verify(db, principal, body.code, desktop=body.desktop)
+
+
+@router.put("/desktop/idle", response_model=IdlePreference)
+async def save_idle(request: Request, body: IdlePreference, db: SessionDep, principal: StudioAuth):
+    access.require_enabled(principal, local=local_request(request), desktop=True)
+    minutes, revision = await access.save_desktop_preferences(db, principal.user_id, body)
+    request.app.state.cloud_desktop.update_idle(principal.user_id)
+    return IdlePreference(idle_minutes=minutes, revision=revision)
+
+
+@router.post("/desktop/connect", status_code=204)
+async def connect(request: Request, body: DesktopLogin, db: SessionDep, principal: StudioAuth):
+    local = local_request(request)
+    if not await access.desktop_authorized(db, principal, local=local):
+        raise HTTPException(
+            403,
+            detail={
+                "code": "desktop_authorization_required",
+                "message": "请先验证云控访问权限",
+            },
+        )
+    if not allow_attempt(f"cloud-vnc:{principal.user_id}", 8):
+        raise HTTPException(429, "连接尝试过多，请稍后重试")
+    ticket = request.app.state.cloud_desktop.issue(
+        principal, local, body.password.get_secret_value()
+    )
+    if ticket is None:
+        raise HTTPException(503, "桌面连接暂不可用")
+    response = Response(status_code=204, headers={"Cache-Control": "no-store"})
+    response.set_cookie(
+        DESKTOP_COOKIE,
+        ticket,
+        max_age=access.TICKET_SECONDS,
+        path=DESKTOP_SOCKET,
+        httponly=True,
+        secure=not local_request(request),
+        samesite="strict",
+    )
+    return response
+
+
+@router.websocket("/desktop/socket")
+async def desktop_socket(socket: WebSocket):
+    local = local_request(socket)
+    settings = get_cloud_settings()
+    local_origins = {"http://127.0.0.1:3000", f"http://127.0.0.1:{settings.fpl_website_port}"}
+    origins = local_origins if local else {settings.fpl_remote_web_origin}
+    if (
+        socket.headers.get("origin") not in origins
+        or "guacamole" not in socket.scope["subprotocols"]
+    ):
+        await socket.close(4403)
+        return
+    try:
+        principal = await resolve_studio_websocket_principal(socket, "cloud-control.access")
+    except HTTPException:
+        await socket.close(4403)
+        return
+    if not access.allowed(principal, local=local, desktop=True):
+        await socket.close(4403)
+        return
+    await socket.app.state.cloud_desktop.connect(socket, principal, local)
+
+
+@router.get("/settings", response_model=CloudSetup)
+async def settings_view(request: Request, db: SessionDep, principal: StudioAuth):
+    require_local_browser(request, principal)
+    return await setup.read_setup(db, principal)
+
+
+@router.put("/settings", response_model=CloudSetup)
+async def settings_save(
+    request: Request, body: CloudSetupUpdate, db: SessionDep, principal: StudioAuth
+):
+    require_local_browser(request, principal)
+    require_recent_reauthentication(principal)
+    return await setup.save_setup(db, principal, body)

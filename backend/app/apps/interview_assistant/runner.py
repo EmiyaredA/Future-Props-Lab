@@ -5,7 +5,6 @@ from sqlalchemy import select, update
 
 from app.console.governance.code_agents import authorized
 from app.orm import bind_owner
-from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.operation_receipts import OperationError
 from app.runtime.polling_runner import PollingTaskRunner
@@ -59,7 +58,6 @@ class InterviewPreparationRunner(PollingTaskRunner):
                 return False
             bind_owner(session, task.owner_user_id)
             room = await session.get(InterviewRoom, task.room_id)
-            settings = get_settings()
             return bool(
                 room
                 and room.active_task_id == task.id
@@ -69,7 +67,6 @@ class InterviewPreparationRunner(PollingTaskRunner):
                     task.user_id,
                     "codex",
                     "interview_preparation",
-                    settings=settings,
                 )
                 and await self.actor_allowed(session, task.owner_user_id, task.user_id)
             )

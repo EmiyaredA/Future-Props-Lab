@@ -1,15 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
+from app.capabilities.agents.cli.catalog import AgentId
+from app.console.governance.code_agent_connections import enable_connection
 from app.console.governance.code_agents import (
     CatalogOut,
-    GrantsOut,
-    GrantUpdate,
     catalog,
-    read_grants,
-    save_grants,
 )
-from app.deps import SessionDep, StudioAuth
-from app.runtime.operation_receipts import OperationError
+from app.deps import StudioAuth, require_recent_reauthentication
+from app.runtime.website import require_local_browser
 
 
 def require_browser(principal: StudioAuth):
@@ -23,23 +21,21 @@ router = APIRouter(
 
 
 @router.get("", response_model=CatalogOut)
-async def list_code_agents(session: SessionDep, principal: StudioAuth):
-    return await catalog(session, principal)
+async def list_code_agents(request: Request, principal: StudioAuth):
+    return await catalog(
+        principal,
+        can_enable=getattr(request.state, "website_local", False)
+        and principal.allows("configuration.manage"),
+    )
 
 
 @router.post("/detect", response_model=CatalogOut)
-async def detect_code_agents(session: SessionDep, principal: StudioAuth):
-    return await catalog(session, principal)
+async def detect_code_agents(request: Request, principal: StudioAuth):
+    return await list_code_agents(request, principal)
 
 
-@router.get("/grants", response_model=GrantsOut)
-async def get_code_agent_grants(session: SessionDep, principal: StudioAuth):
-    return await read_grants(session, principal)
-
-
-@router.put("/grants", response_model=GrantsOut)
-async def put_code_agent_grants(body: GrantUpdate, session: SessionDep, principal: StudioAuth):
-    try:
-        return await save_grants(session, principal, body)
-    except OperationError as exc:
-        raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
+@router.post("/{agent_id}/enable", status_code=204)
+async def enable_code_agent(agent_id: AgentId, request: Request, principal: StudioAuth):
+    require_local_browser(request, principal)
+    require_recent_reauthentication(principal)
+    await enable_connection(agent_id)

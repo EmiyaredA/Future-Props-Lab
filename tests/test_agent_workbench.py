@@ -766,11 +766,15 @@ async def test_missing_native_file_retains_copy_and_recovers(store, tmp_path):
 @pytest.mark.parametrize("auth_kind,role", [("session", "user"), ("management_api_key", "admin")])
 async def test_cloud_control_rejects_every_workbench_operation(store, auth_kind, role):
     _, client = store
-    for route in router.routes:
-        for method in route.methods:
-            path = "/v1" + route.path
-            for name in ("source_id", "operation_id", "session_id", "attachment_id"):
-                path = path.replace("{" + name + "}", "unavailable")
+    schema = (await client.get("/openapi.json")).json()
+    for template, operations in schema["paths"].items():
+        if not template.startswith("/v1/agent-workbench/"):
+            continue
+        for method in operations:
+            method = method.upper()
+            path = "/".join(
+                "unavailable" if part.startswith("{") else part for part in template.split("/")
+            )
             response = await client.request(
                 method,
                 path,

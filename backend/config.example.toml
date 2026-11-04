@@ -22,6 +22,21 @@ public_enabled = false
 legacy_data_root = ""
 
 # 公网连接资料；自动启动由 website.public_enabled 控制。
+[cloud_control]
+enabled = false
+public_enabled = false
+public_desktop_vnc_only = false
+admin_user_ids = []
+host_label = "Mac"
+guacd_port = 4822
+vnc_host = "host.docker.internal"
+vnc_port = 5900
+# VNC 密码在网页连接弹窗输入。
+# [cloud_control.projects.my-project]
+# label = "My project"
+# root = "/Users/example/Projects/my-project"
+# user_ids = ["<admin-user-id>"]
+
 [remote_web]
 # 兼容旧配置字段，自动启动由 website.public_enabled 控制。
 enabled = false

@@ -553,13 +553,6 @@
     "verification": "named-operation-contract"
   },
   {
-    "http": "GET /v1/code-agents/grants",
-    "sdk": "client.code_agents.get_code_agent_grants",
-    "document": "/docs.html?page=sdk-reference-code-agents#get-code-agent-grants",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
     "http": "POST /v1/code-agents/detect",
     "sdk": "client.code_agents.detect_code_agents",
     "document": "/docs.html?page=sdk-reference-code-agents#detect-code-agents",
@@ -567,9 +560,9 @@
     "verification": "named-operation-contract"
   },
   {
-    "http": "PUT /v1/code-agents/grants",
-    "sdk": "client.code_agents.put_code_agent_grants",
-    "document": "/docs.html?page=sdk-reference-code-agents#put-code-agent-grants",
+    "http": "POST /v1/code-agents/{agent_id}/enable",
+    "sdk": "client.code_agents.enable_code_agent",
+    "document": "/docs.html?page=sdk-reference-code-agents#enable-code-agent",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },

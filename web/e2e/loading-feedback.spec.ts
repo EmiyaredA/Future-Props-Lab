@@ -3,6 +3,143 @@ import { resolve } from "node:path";
 import { imageVariants } from "../src/shared/lib/imageVariants";
 import { expect, test } from "@playwright/test";
 
+test("file loading art, label and progress dots share a center line", async ({
+  page,
+}, info) => {
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route(/\/v1\/files(?:\?.*)?$/, async (route) => {
+    await gate;
+    await route.continue();
+  });
+  await page.addInitScript(() =>
+    localStorage.setItem("future_props_theme", "dark"),
+  );
+  try {
+    await page.goto("/files", { waitUntil: "domcontentloaded" });
+    const loading = page.getByRole("status").filter({
+      hasText: "正在读取文件…",
+    });
+    const label = loading.getByText("正在读取文件…", { exact: true });
+    await expect(label).toBeVisible();
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      const centerX = async (locator: typeof loading) => {
+        const box = (await locator.boundingBox())!;
+        return box.x + box.width / 2;
+      };
+      const center = await centerX(loading);
+      for (const item of [
+        loading.locator(".fpl-loading-scene"),
+        label,
+        loading.getByRole("progressbar"),
+      ]) {
+        expect(Math.abs((await centerX(item)) - center)).toBeLessThan(1);
+      }
+    }
+    await loading.screenshot({
+      path: info.outputPath("file-loading-centered.png"),
+    });
+  } finally {
+    release();
+  }
+});
+
+test("startup loading covers the viewport through each handoff", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("future_props_theme", "dark"),
+  );
+  await page.setViewportSize({ width: 1920, height: 1071 });
+
+  const phases = [
+    [/\/src\/app\/main\.tsx(?:\?.*)?$/, "正在打开 Future Props Lab…"],
+    [/\/v1\/auth\/me$/, "正在连接 Future Props Lab…"],
+    [/\/src\/app\/SignedInApp\.tsx(?:\?.*)?$/, "正在打开工作台…"],
+  ] as const;
+  const releases: Array<() => void> = [];
+  for (const [url] of phases) {
+    const gate = new Promise<void>((resolve) => releases.push(resolve));
+    await page.route(url, async (route) => {
+      await gate;
+      await route.continue();
+    });
+  }
+
+  try {
+    await page.goto("/apps", { waitUntil: "domcontentloaded" });
+    for (const [index, [, label]] of phases.entries()) {
+      const loading = page.getByRole("status").filter({ hasText: label });
+      await expect(loading.getByText(label, { exact: true })).toBeVisible();
+      for (const viewport of [
+        { width: 1920, height: 1071 },
+        { width: 390, height: 844 },
+        { width: 740, height: 360 },
+      ]) {
+        await page.setViewportSize(viewport);
+        expect(await loading.boundingBox()).toEqual({
+          x: 0,
+          y: 0,
+          ...viewport,
+        });
+        expect(
+          await loading.evaluate((element) => {
+            const bounds = element.getBoundingClientRect();
+            const scene = element.firstElementChild!.getBoundingClientRect();
+            const copy = element.lastElementChild!.getBoundingClientRect();
+            return Math.abs(
+              (scene.top + copy.bottom) / 2 - (bounds.top + bounds.bottom) / 2,
+            );
+          }),
+        ).toBeLessThan(1);
+      }
+      releases[index]();
+    }
+    await expect(page.locator(".studio-sidebar")).toBeVisible();
+    await expect(page.locator(".fpl-loading--fullscreen")).toHaveCount(0);
+  } finally {
+    releases.forEach((release) => release());
+  }
+});
+
+test("an editor waiting for its document fills the available page", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1920, height: 1071 });
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route(
+    "**/v1/presentation-workshop/projects/loading-test",
+    async (route) => {
+      await gate;
+      await route.fulfill({ status: 404, json: { detail: "Not found" } });
+    },
+  );
+  try {
+    await page.goto("/apps/presentation-workshop/projects/loading-test");
+    const loading = page.getByRole("status").filter({
+      hasText: "正在打开演示文稿…",
+    });
+    await expect(loading).toBeVisible();
+    expect(await loading.boundingBox()).toEqual({
+      x: 0,
+      y: 0,
+      width: 1920,
+      height: 1071,
+    });
+  } finally {
+    release();
+  }
+  await expect(
+    page.getByRole("alert").filter({ hasText: "文稿加载失败" }),
+  ).toBeVisible();
+});
+
 for (const theme of ["light", "dark"] as const) {
   test(`application loading and small icons on a slow connection: ${theme}`, async ({
     page,
@@ -64,6 +201,18 @@ for (const theme of ["light", "dark"] as const) {
       await expect(
         page.getByRole("progressbar", { name: "正在加载…", exact: true }),
       ).toBeVisible();
+      const panel = page.locator(".studio-main");
+      expect(await panel.locator(".fpl-loading--page").boundingBox()).toEqual(
+        await panel.evaluate((element) => {
+          const { x, y } = element.getBoundingClientRect();
+          return {
+            x: x + element.clientLeft,
+            y: y + element.clientTop,
+            width: element.clientWidth,
+            height: element.clientHeight,
+          };
+        }),
+      );
       await expect(page.locator(".fpl-loading-character img")).toBeVisible();
       await expect(page.locator(".fpl-loading-character video")).toHaveCount(0);
       await page.screenshot({ path: info.outputPath(`loading-${theme}.png`) });

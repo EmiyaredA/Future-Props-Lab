@@ -192,13 +192,7 @@ export function EditorFastPreviewOverlay({
         : undefined;
   return (
     <Suspense
-      fallback={
-        <LoadingState
-          label="正在启动快速预演…"
-          variant="page"
-          className="page-loading"
-        />
-      }
+      fallback={<LoadingState label="正在启动快速预演…" variant="page" />}
     >
       <FastPreviewWorkspace
         projectId={model.projectId}

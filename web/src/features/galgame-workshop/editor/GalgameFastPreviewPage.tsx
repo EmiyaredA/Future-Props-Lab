@@ -139,7 +139,7 @@ export function GalgameFastPreviewPage({ projectId }: { projectId: string }) {
         {notice}
       </div>
     ) : (
-      <LoadingState label={notice} variant="page" className="page-loading" />
+      <LoadingState label={notice} variant="page" />
     );
   const applyDialogueEdit = async (edit: FastPreviewDialogueEdit) => {
     if (channelRef.current) {

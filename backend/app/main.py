@@ -12,6 +12,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 import app.orm  # noqa: F401 — register tenant listeners
 from app.api import api_router
+from app.apps.agent_workbench.execution.runner import WorkbenchRuns
+from app.apps.agent_workbench.execution.storage import interrupt_all as interrupt_workbench_runs
 from app.apps.agent_workbench.sync.runner import WorkbenchSyncRunner
 from app.apps.galgame_workshop.assets.annotation_import_runner import GalgameAnnotationImportRunner
 from app.apps.galgame_workshop.assets.asr import GalgameAsrRunner
@@ -33,6 +35,7 @@ from app.capabilities.asset_store.project_snapshots import cleanup_snapshot_stag
 from app.capabilities.asset_store.storage import AssetStorage
 from app.console.amadeus.execution import CodeAgentRuns
 from app.console.amadeus.runs import recover_interrupted_amadeus_runs
+from app.console.cloud_control.desktop import DesktopConnection
 from app.console.file_library.library_folder_archive import cleanup_library_folder_archive_staging
 from app.console.governance.external_sync_access import external_sync_actor_allowed
 from app.console.governance.generation_queue import claim_visual_capacity, visual_queue_candidates
@@ -86,6 +89,8 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
     async with SessionLocal() as session:
         await reconcile_project_trash(session, AssetStorage(settings))
         await reconcile_snapshot_imports(session, AssetStorage(settings))
+    async with SessionLocal() as session:
+        await interrupt_workbench_runs(session)
     await recover_admissions()
     await recover_interrupted_visual_assistant_runs()
     await recover_interrupted_model_test_runs()
@@ -124,6 +129,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
         yield
     finally:
         await lifespan_app.state.code_agent_runs.close()
+        await lifespan_app.state.workbench_runs.close()
         await supervisor.stop()
         await local_models.close()
         lifespan_app.state.runner_supervisor = None
@@ -137,6 +143,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.state.code_agent_runs = CodeAgentRuns()
+app.state.cloud_desktop = DesktopConnection()
+app.state.workbench_runs = WorkbenchRuns()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,

@@ -1,5 +1,13 @@
 # 开发交付说明
 
+## 云控桌面连接与本机设置
+
+`0121_cloud_desktop_sessions` 保存独立的公网桌面 Session 验证与账号空闲偏好。一次性连接凭证和 VNC 密码在进程内短暂存在。后端按键鼠输入实施空闲断开。可信本机配置入口使用 revision 更新现有 TOML，并复用 CLI 用途授权。
+
+## 云控双栏与 CLI 会话
+
+`0120_cloud_control` 新增按账号保存的 TOTP、短时 Session 授权和工作台执行记录。远程桌面通过同源 WebSocket 转接回环 guacd；CLI 仍由 FPL 单进程调度。公网操作由部署端显式启用，启用前通过真实 Mac 屏幕共享、HTTPS 和权限撤销验收。正式数据库通过既有停机备份和迁移预检流程升级。
+
 ## Mock 测试工具退役
 
 追加 `0119_retire_model_test_tools`，移除 Mock 工具定义、会话绑定和专用调用记录三张表，

@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@antv/infographic": "0.2.20",
+    "@glokon/guacamole-common-js": "1.6.0",
     "@mathjax/mathjax-tex-font": "4.1.3",
     "@mathjax/src": "4.1.3",
     "@radix-ui/react-dialog": "^1.1.23",

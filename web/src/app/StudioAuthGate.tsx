@@ -190,7 +190,7 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
       <LoadingState
         label="正在连接 Future Props Lab…"
         variant="page"
-        className="auth-screen"
+        className="fpl-loading--fullscreen"
       />
     );
   }

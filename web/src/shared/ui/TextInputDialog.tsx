@@ -9,6 +9,7 @@ export function TextInputDialog({
   className = "",
   title,
   label,
+  inputType = "text",
   initialValue = "",
   confirmLabel = "确认",
   cancelLabel = "取消",
@@ -23,6 +24,7 @@ export function TextInputDialog({
   className?: string;
   title: string;
   label: string;
+  inputType?: "text" | "password";
   initialValue?: string;
   confirmLabel?: string;
   cancelLabel?: string;
@@ -87,8 +89,8 @@ export function TextInputDialog({
   }, [initialValue, open]);
 
   if (!open) return null;
+  const reading = inputType === "password" ? value : value.trim();
   const submit = () => {
-    const reading = value.trim();
     if (reading && !pending && !confirmDisabled) onConfirm(reading);
   };
   return createPortal(
@@ -124,6 +126,10 @@ export function TextInputDialog({
         <input
           ref={inputRef}
           id={inputId}
+          type={inputType}
+          autoComplete={
+            inputType === "password" ? "current-password" : undefined
+          }
           value={value}
           disabled={pending}
           maxLength={maxLength}
@@ -148,7 +154,7 @@ export function TextInputDialog({
           <button
             type="submit"
             className="btn primary"
-            disabled={pending || confirmDisabled || !value.trim()}
+            disabled={pending || confirmDisabled || !reading}
           >
             {pending ? (
               <LoadingState variant="inline" label="保存中…" />

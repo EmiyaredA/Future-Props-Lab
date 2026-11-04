@@ -35,9 +35,13 @@ DEFINITIONS = {
 }
 
 
+def settings_prefix(agent_id):
+    return "claude" if agent_id == "claude-code" else agent_id
+
+
 def connection(settings, agent_id):
     definition = DEFINITIONS[agent_id]
-    prefix = "claude" if agent_id == "claude-code" else agent_id
+    prefix = settings_prefix(agent_id)
     enabled = getattr(settings, f"fpl_code_agents_{prefix}_enabled", None)
     configured = getattr(settings, f"fpl_code_agents_{prefix}_executable", "")
     legacy = [getattr(settings, f"fpl_acceptance_{prefix}_executable", "")]

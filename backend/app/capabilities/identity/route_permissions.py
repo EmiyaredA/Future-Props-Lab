@@ -3,6 +3,24 @@
 import re
 
 OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
+    "cloud-control.access": (
+        ("GET", "/v1/cloud-control/status"),
+        ("GET", "/v1/agent-workbench/execution/catalog"),
+        ("GET", "/v1/agent-workbench/chats"),
+        ("POST", "/v1/agent-workbench/chats"),
+        ("GET", "/v1/agent-workbench/chats/{chat_id}"),
+        ("GET", "/v1/agent-workbench/chats/{chat_id}/events"),
+        ("POST", "/v1/agent-workbench/chats/{chat_id}/turns"),
+        ("POST", "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/stop"),
+        ("POST", "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/approvals/{approval_id}"),
+        ("POST", "/v1/cloud-control/totp/enroll"),
+        ("POST", "/v1/cloud-control/totp/confirm"),
+        ("POST", "/v1/cloud-control/totp/verify"),
+        ("POST", "/v1/cloud-control/desktop/connect"),
+        ("PUT", "/v1/cloud-control/desktop/idle"),
+        ("GET", "/v1/cloud-control/settings"),
+        ("PUT", "/v1/cloud-control/settings"),
+    ),
     "content.write": (
         ("POST", "/v1/agent-workbench/sources"),
         ("PATCH", "/v1/agent-workbench/sources/{source_id}"),
@@ -247,8 +265,6 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("GET", "/v1/account/directory"),
         ("GET", "/v1/code-agents"),
         ("POST", "/v1/code-agents/detect"),
-        ("GET", "/v1/code-agents/grants"),
-        ("PUT", "/v1/code-agents/grants"),
         ("GET", "/v1/interview-assistant/executor"),
         ("GET", "/v1/interview-assistant/rooms"),
         ("GET", "/v1/interview-assistant/rooms/{room_id}"),
@@ -479,6 +495,7 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("POST", "/v1/visual-workshop/projects/{project_id}/generation-tasks"),
     ),
     "configuration.manage": (
+        ("POST", "/v1/code-agents/{agent_id}/enable"),
         ("GET", "/v1/automation/access"),
         ("POST", "/v1/automation/access/actions"),
         ("POST", "/v1/platform/local-models/{model_id}/actions"),

@@ -5,6 +5,7 @@ from __future__ import annotations
 from sqlalchemy import event
 from sqlalchemy.orm import Session, with_loader_criteria
 
+from app.apps.agent_workbench.execution.models import WorkbenchChat, WorkbenchTurn
 from app.apps.agent_workbench.models import (
     WorkbenchChange,
     WorkbenchOperation,
@@ -125,6 +126,7 @@ from app.console.amadeus.models import (
     AmadeusRun,
     AmadeusRunEvent,
 )
+from app.console.cloud_control.models import CloudFactor, CloudUnlock, DesktopPreference
 from app.console.creative_workshop.models import (
     CreativeInstallation,
 )
@@ -253,6 +255,11 @@ _ = (
 )
 
 TENANT_MODELS = (
+    CloudFactor,
+    CloudUnlock,
+    DesktopPreference,
+    WorkbenchChat,
+    WorkbenchTurn,
     WorkbenchSource,
     WorkbenchSession,
     WorkbenchOperation,

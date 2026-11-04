@@ -17,6 +17,18 @@ FIELDS = {
         "poll_seconds": ("fpl_agent_workbench_poll_seconds", int),
         "files_per_pass": ("fpl_agent_workbench_files_per_pass", int),
     },
+    "cloud_control": {
+        "enabled": ("fpl_cloud_control_enabled", bool),
+        "public_enabled": ("fpl_cloud_control_public_enabled", bool),
+        "public_desktop_vnc_only": ("fpl_cloud_control_public_desktop_vnc_only", bool),
+        "admin_user_ids": ("fpl_cloud_control_admin_user_ids", list),
+        "host_label": ("fpl_cloud_control_host_label", str),
+        "guacd_port": ("fpl_cloud_control_guacd_port", int),
+        "vnc_host": ("fpl_cloud_control_vnc_host", str),
+        "vnc_port": ("fpl_cloud_control_vnc_port", int),
+        "vnc_password": ("fpl_cloud_control_vnc_password", str),
+        "projects": ("fpl_cloud_control_projects", dict),
+    },
     "code_agents": {
         "codex_enabled": ("fpl_code_agents_codex_enabled", bool),
         "codex_executable": ("fpl_code_agents_codex_executable", str),

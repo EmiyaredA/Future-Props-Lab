@@ -83,33 +83,3 @@ async def authenticated_business_routes(request: pytest.FixtureRequest, monkeypa
 
 def pytest_sessionfinish() -> None:
     shutil.rmtree(TEST_RUNTIME_DIR, ignore_errors=True)
-
-
-@pytest.fixture(autouse=True)
-async def isolated_cli_allocation_policy():
-    if "app.main" not in sys.modules:
-        yield
-        return
-    from copy import deepcopy
-
-    from sqlalchemy import delete
-
-    from app.console.models.platform_governance import PlatformSetting
-    from app.runtime.db import SessionLocal
-
-    async with SessionLocal() as session:
-        row = await session.get(PlatformSetting, "code_agents")
-        snapshot = (
-            {
-                key: deepcopy(getattr(row, key))
-                for key in ["payload", "revision", "created_at", "updated_at"]
-            }
-            if row
-            else None
-        )
-    yield
-    async with SessionLocal() as session:
-        await session.execute(delete(PlatformSetting).where(PlatformSetting.id == "code_agents"))
-        if snapshot:
-            session.add(PlatformSetting(id="code_agents", **snapshot))
-        await session.commit()

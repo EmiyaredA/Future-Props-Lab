@@ -5,7 +5,7 @@
 
 ## Agent 工作台
 
-`backend/app/apps/agent_workbench/` 拥有当前账号的来源绑定、只读会话投影、搜索、扫描回执和 SSE；`sync/` 在原生 I/O 结束后以短事务保存归一条目与检查点，并独立调度各来源。`backend/app/capabilities/agents/sessions/` 拥有五种原生格式、只读文件／SQLite／本机 OpenCode HTTP 适配和受限附件读取，不依赖工作台 ORM；`inline_images.py` 按块省略超大内嵌图片编码，检查点保持原始字节位置。`web/src/features/agent-workbench/` 拥有独立应用注册、三栏阅读、来源管理与账号缓存键。本机网站允许显式填写目录，实际 socket 标记用于新绑定校验。来源授权不复用 Amadeus 的任务执行授权，首批不包含续聊。API、存储与来源矩阵见 [`../reference/agent-workbench.md`](../reference/agent-workbench.md)。
+`backend/app/apps/agent_workbench/` 拥有当前账号的来源绑定、只读会话投影、搜索、扫描回执和 SSE；`sync/` 在原生 I/O 结束后以短事务保存归一条目与检查点，并独立调度各来源。`backend/app/capabilities/agents/sessions/` 拥有五种原生格式、只读文件／SQLite／本机 OpenCode HTTP 适配和受限附件读取，不依赖工作台 ORM；`inline_images.py` 按块省略超大内嵌图片编码，检查点保持原始字节位置。`web/src/features/agent-workbench/` 拥有独立应用注册、三栏阅读、来源管理与账号缓存键。本机网站允许显式填写目录，实际 socket 标记用于新绑定校验。来源授权和执行授权独立。工作台的 `execution/` 拥有 FPL 创建的 CLI 会话、轮次和项目审批；CLI 通信与 MCP 中继由 `capabilities/agents/cli/` 共用。API、存储与来源矩阵见 [`../reference/agent-workbench.md`](../reference/agent-workbench.md)。
 
 ## 浏览器加载与图片派生
 
@@ -181,10 +181,10 @@ Future-Props-Lab/
 - 工具目录由 Web 静态注册表维护；后端 `tool_navigation/` 持久化稳定工具 ID 对应的收藏与
   最近使用状态，不复制工具名称、分类或外部网址。空间占用与 Codex 模型源页面和主机操作 API 已移除。
   视频下载用例调用本机 `yt-dlp`/`ffmpeg`，仅允许抖音与哔哩哔哩链接，任务与临时文件保存在运行时目录，可选写入文件库。
-- `web/src/features/cloud-control/` 拥有管理员专属云控入口与权限门禁；导航置于应用之后，工作台从应用目录和首页分组移至 `/agents`。
+- `web/src/features/cloud-control/` 拥有云控双栏、远程画面与验证界面。`backend/app/console/cloud_control/` 拥有按账号的 TOTP、桌面 Session 与空闲锁定、可信本机配置保存和 guacd 隧道。工作台仍可从 `/agents` 阅读已同步的原端会话。
   API、SSE 与后台采集同时检查 `cloud-control.access`，身份降级后保留原账号副本和检查点。
   当前网站保留兼容装配，独立服务实现保留在服务化分支并由其统一验收切换。
-`web/src/features/applications/ApplicationCard.tsx` 拥有应用目录与云控共用的紧凑入口卡片；布局、品牌图、简介和能力标签沿用应用目录样式，入口元数据由各装配入口显式传入。
+`web/src/features/applications/ApplicationCard.tsx` 拥有应用目录的紧凑入口卡片；布局、品牌图、简介和能力标签沿用应用目录样式，入口元数据由各装配入口显式传入。
 
 - `integrations/` 拥有独立于工具导航的账号集成目录：`tool_apis/` 管理受限 HTTP 调用配置，
   `mcp/` 管理 Streamable HTTP/stdio 连接与工具快照，`skills/` 管理安全 ZIP 导入和不可变版本，
@@ -674,7 +674,7 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 
 `web/src/features/visual-workshop/acceptance/` 的项目入口只提供只读模板与节点汇总；画布和看板共用 `NodeAcceptancePanel`，节点负责方案选择、启动、报告、人工确认及返修复验。验收状态、生成状态和最终输出分别展示。查询键由 `queryKeys.ts` 维护；[配置与执行边界](../operations/node-acceptance.md) 说明固定连接与历史 API 兼容。
 
-- `console/governance/code_agents.py` 拥有按账号和用途的授权 CAS 及旧授权接管，配置路径由 `fpl_config` 解析。`console/routes/code_agents.py` 只做协议适配。`capabilities/agents/cli/` 统一 CLI 发现、模型连接白名单、官方对话与固定任务传输；`web/src/features/code-agents/` 拥有管理页和查询键。独立 SDK 的 `mcp.py` 拥有外部 stdio MCP 与内部短期 Socket 中继，不导入后端。
+- `console/governance/code_agents.py` 解析有效账号自有任务使用的共享 CLI 连接。`code_agent_connections.py` 负责本机启用，`deployment_config.py` 与云控设置共用 TOML 配置锁。`console/routes/code_agents.py` 只做协议适配。`capabilities/agents/cli/` 统一 CLI 发现、模型连接白名单、官方对话与固定任务传输；`web/src/features/code-agents/` 拥有管理页和查询键。独立 SDK 的 `mcp.py` 拥有外部 stdio MCP 与内部短期 Socket 中继，不导入后端。
 
 ### 视频透明检查与格式信息
 

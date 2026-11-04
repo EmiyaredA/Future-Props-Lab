@@ -3,10 +3,17 @@ import { useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
 import { QueryFeedback } from "@shared/ui/QueryFeedback";
+import { TextInputDialog } from "@shared/ui/TextInputDialog";
 import { apiErrorMessage } from "@platform/api/errors";
-import { codeAgentKeys, detectAgents, getAgents } from "./api";
+import { reauthenticate } from "@features/accounts";
+import {
+  codeAgentKeys,
+  detectAgents,
+  enableAgent,
+  getAgents,
+  type Agent,
+} from "./api";
 import { AgentConnectionCard, AgentStatus } from "./AgentConnectionCard";
-import { AgentGrants } from "./AgentGrants";
 import { ExternalAgentAccess } from "./ExternalAgentAccess";
 import { AgentLogo } from "./AgentLogo";
 import "./code-agents.css";
@@ -21,6 +28,9 @@ export function CodeAgentsPage({
   renderHeader?: (actions: ReactNode) => ReactNode;
 }) {
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  const [enabling, setEnabling] = useState<Agent>();
+  const [enableError, setEnableError] = useState("");
+  const [enablePending, setEnablePending] = useState(false);
   const client = useQueryClient();
   const agents = useQuery({
     queryKey: codeAgentKeys.catalog(scope),
@@ -35,6 +45,22 @@ export function CodeAgentsPage({
   const selectedAgent =
     agents.data?.items.find((agent) => agent.id === selectedAgentId) ??
     agents.data?.items[0];
+
+  async function confirmEnable(password: string) {
+    if (!enabling) return;
+    setEnablePending(true);
+    setEnableError("");
+    try {
+      await reauthenticate(password);
+      await enableAgent(enabling.id);
+      await client.invalidateQueries({ queryKey: codeAgentKeys.root });
+      setEnabling(undefined);
+    } catch (error) {
+      setEnableError(apiErrorMessage(error, "无法启用 CLI 连接"));
+    } finally {
+      setEnablePending(false);
+    }
+  }
   const actions = (
     <button
       type="button"
@@ -128,10 +154,15 @@ export function CodeAgentsPage({
                       <AgentConnectionCard
                         key={selectedAgent.id}
                         agent={selectedAgent}
+                        onEnable={
+                          canManage && agents.data.can_enable
+                            ? () => {
+                                setEnableError("");
+                                setEnabling(selectedAgent);
+                              }
+                            : undefined
+                        }
                       />
-                    )}
-                    {canManage && (
-                      <AgentGrants scope={scope} agents={agents.data.items} />
                     )}
                   </div>
                 </>
@@ -145,6 +176,19 @@ export function CodeAgentsPage({
           <ExternalAgentAccess />
         </div>
       </div>
+      {enabling && (
+        <TextInputDialog
+          open
+          title={`启用 ${enabling.name} 连接`}
+          label="FPL 管理员密码"
+          inputType="password"
+          confirmLabel="启用连接"
+          pending={enablePending}
+          error={enableError}
+          onCancel={() => setEnabling(undefined)}
+          onConfirm={(password) => void confirmEnable(password)}
+        />
+      )}
     </section>
   );
 }

@@ -1,6 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
-  act,
   fireEvent,
   render,
   screen,
@@ -11,22 +10,23 @@ import { beforeEach, expect, test, vi } from "vitest";
 import { ModelInfrastructureHeader } from "@app/layout/ModelInfrastructureHeader";
 import { CodeAgentsPage } from "@features/code-agents/CodeAgentsPage";
 import { AgentConnectionCard } from "@features/code-agents/AgentConnectionCard";
-import { ApiError } from "@platform/api/errors";
+import { reauthenticate } from "@features/accounts";
 import {
   detectAgents,
+  enableAgent,
   getAgents,
-  getGrants,
-  putGrants,
   type Agent,
-  type Grants,
 } from "@features/code-agents/api";
 
 vi.mock("@features/code-agents/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@features/code-agents/api")>()),
   getAgents: vi.fn(),
-  getGrants: vi.fn(),
-  putGrants: vi.fn(),
   detectAgents: vi.fn(),
+  enableAgent: vi.fn(),
+}));
+vi.mock("@features/accounts", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@features/accounts")>()),
+  reauthenticate: vi.fn(),
 }));
 
 const codex: Agent = {
@@ -47,31 +47,13 @@ const claude: Agent = {
   executable: "/fixture/bin/claude",
   version: "2.1.259",
 };
-let state: Grants;
 let writeText: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   vi.clearAllMocks();
-  state = {
-    revision: 3,
-    grants: [],
-    managed: [],
-    legacy: [
-      { agent_id: "codex", purpose: "visual_acceptance", user_id: "a" },
-      { agent_id: "codex", purpose: "visual_acceptance", user_id: "b" },
-    ],
-    accounts: [
-      { id: "a", name: "管理员" },
-      { id: "b", name: "其他成员" },
-    ],
-  };
-  vi.mocked(getAgents).mockResolvedValue({ items: [codex, claude] });
-  vi.mocked(detectAgents).mockResolvedValue({ items: [codex, claude] });
-  vi.mocked(getGrants).mockImplementation(async () => structuredClone(state));
-  vi.mocked(putGrants).mockImplementation(async (body) => {
-    state = { ...state, ...body, revision: state.revision + 1 };
-    return structuredClone(state);
-  });
+  const catalog = { can_enable: false, items: [codex, claude] };
+  vi.mocked(getAgents).mockResolvedValue(catalog);
+  vi.mocked(detectAgents).mockResolvedValue(catalog);
   writeText = vi.fn().mockResolvedValue(undefined);
   Object.defineProperty(navigator, "clipboard", {
     configurable: true,
@@ -120,8 +102,6 @@ test("unified header switches by keyboard and keeps route selection separate fro
   fireEvent.click(screen.getByRole("tab", { name: "编程智能体" }));
   expect(navigate).toHaveBeenCalledTimes(1);
   expect(detectAgents).not.toHaveBeenCalled();
-  expect(putGrants).not.toHaveBeenCalled();
-  expect(getGrants).not.toHaveBeenCalled();
   expect(
     screen.queryByRole("combobox", { name: "授权账号" }),
   ).not.toBeInTheDocument();
@@ -204,80 +184,6 @@ test("selecting an agent shows its connection without carrying over disclosure o
     screen.getByRole("button", { name: "Claude Code 已连接" }),
   ).toHaveAttribute("aria-pressed", "true");
   expect(detectAgents).not.toHaveBeenCalled();
-  expect(putGrants).not.toHaveBeenCalled();
-});
-
-test("matrix preserves other legacy members and disables account selection during save", async () => {
-  let complete: ((value: Grants) => void) | undefined;
-  vi.mocked(putGrants).mockImplementation(
-    () =>
-      new Promise((resolve) => {
-        complete = resolve;
-      }),
-  );
-  setup();
-  const toggle = await screen.findByRole("switch", {
-    name: "管理员 · Codex · 视觉验收 授权",
-  });
-  await waitFor(() => expect(toggle).toBeEnabled());
-  expect(toggle).toHaveAttribute("aria-checked", "true");
-  fireEvent.click(toggle);
-  await waitFor(() => expect(putGrants).toHaveBeenCalledOnce());
-  const body = vi.mocked(putGrants).mock.calls[0][0];
-  expect(body.expected_revision).toBe(3);
-  expect(body.managed).toContain("codex:visual_acceptance");
-  expect(body.grants).toEqual([
-    { agent_id: "codex", purpose: "visual_acceptance", user_id: "b" },
-  ]);
-  expect(screen.getByRole("combobox", { name: "授权账号" })).toBeDisabled();
-  expect(
-    screen
-      .getAllByRole("switch")
-      .every((item) => (item as HTMLButtonElement).disabled),
-  ).toBe(true);
-  expect(screen.getByText("不支持")).toBeVisible();
-  await act(async () => {
-    complete?.({
-      ...state,
-      grants: body.grants,
-      managed: body.managed,
-      revision: 4,
-    });
-  });
-  await screen.findByText("授权已保存");
-  await waitFor(() => expect(toggle).toHaveAttribute("aria-checked", "false"));
-});
-
-test("a revision conflict reloads current grants without retrying the write", async () => {
-  vi.mocked(putGrants).mockImplementation(async () => {
-    state = {
-      ...state,
-      revision: 4,
-      managed: ["codex:amadeus"],
-      grants: [{ agent_id: "codex", purpose: "amadeus", user_id: "a" }],
-    };
-    throw new ApiError("conflict", { code: "revision_conflict" }, 409);
-  });
-  setup();
-  const toggle = await screen.findByRole("switch", {
-    name: "管理员 · Codex · Amadeus 授权",
-  });
-  await waitFor(() => expect(toggle).toBeEnabled());
-  fireEvent.click(toggle);
-  await screen.findByText(
-    "授权已被其他操作更新，已载入最新授权。请核对后重新操作。",
-  );
-  expect(toggle).toHaveAttribute("aria-checked", "true");
-  expect(putGrants).toHaveBeenCalledOnce();
-  expect(getGrants).toHaveBeenCalledTimes(2);
-});
-
-test("empty accounts and request failures offer safe feedback", async () => {
-  state.accounts = [];
-  setup();
-  await screen.findByText("当前空间暂无可授权账号。");
-  expect(screen.queryByRole("switch")).not.toBeInTheDocument();
-  expect(screen.getByRole("combobox", { name: "授权账号" })).toBeDisabled();
 });
 
 test("catalog failures can be retried and detection is explicit", async () => {
@@ -300,4 +206,32 @@ test("website access offers key-based CLI and multiline MCP configuration", asyn
   fireEvent.click(screen.getByRole("button", { name: "复制 codex MCP 配置" }));
   await screen.findByText("Codex 配置已复制");
   expect(writeText.mock.calls[0][0]).toContain('\ncommand = "fpl"\n');
+});
+
+test("enables a local CLI after reauthentication", async () => {
+  vi.mocked(getAgents).mockResolvedValue({
+    can_enable: true,
+    items: [{ ...codex, enabled: false, status: "disabled" }],
+  });
+  vi.mocked(reauthenticate).mockResolvedValue(undefined);
+  vi.mocked(enableAgent).mockImplementation(async () => {
+    vi.mocked(getAgents).mockResolvedValue({
+      can_enable: true,
+      items: [codex],
+    });
+  });
+
+  setup();
+  fireEvent.click(await screen.findByRole("button", { name: "启用 CLI 连接" }));
+  const dialog = screen.getByRole("dialog", { name: "启用 Codex 连接" });
+  const password = within(dialog).getByLabelText("FPL 管理员密码");
+  expect(password).toHaveAttribute("type", "password");
+  fireEvent.change(password, { target: { value: " fixture password " } });
+  fireEvent.click(within(dialog).getByRole("button", { name: "启用连接" }));
+  await waitFor(() => expect(dialog).not.toBeInTheDocument());
+  expect(reauthenticate).toHaveBeenCalledWith(" fixture password ");
+  expect(enableAgent).toHaveBeenCalledWith("codex");
+  expect(
+    screen.queryByRole("button", { name: "启用 CLI 连接" }),
+  ).not.toBeInTheDocument();
 });
