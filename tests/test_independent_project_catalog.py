@@ -244,6 +244,13 @@ async def verify_visual_canvas(case, app, request, path):
     edited = operated.json()
     assert edited["revision"] == 3 and edited["nodes"][0]["final_output_id"] == output
     assert edited["nodes"][0]["title"] == "Edited"
+    outputs = path + "/nodes/node/outputs"
+    listing = await request("GET", outputs)
+    assert listing.status_code == 200, listing.text
+    assert listing.json()["total"] == 1 and listing.json()["items"][0]["id"] == output
+    assert (await request("GET", outputs, params={"page": 2})).json() == {"items": [], "total": 1}
+    assert (await request("GET", outputs + "/" + output)).json() == listing.json()["items"][0]
+    assert (await request("GET", outputs.replace("/node/", "/different/"))).status_code == 404
     replayed = await request("POST", operation_path, json=operation)
     assert replayed.status_code == 200 and replayed.json() == edited
     other_body = {**operation, "expected_revision": 3}

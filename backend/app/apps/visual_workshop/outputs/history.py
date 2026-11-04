@@ -1,14 +1,16 @@
 from copy import deepcopy
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.visual_workshop.acceptance.models import AcceptanceRun
-from app.apps.visual_workshop.models import VisualCanvasDocument, VisualWorkshopProject
+from app.apps.visual_workshop.models import VisualCanvasDocument
 from app.apps.visual_workshop.node_placement import automatic_node_position
 from app.apps.visual_workshop.outputs.models import VisualNodeOutput
+from app.apps.visual_workshop.outputs.queries import OutputError as OutputError
+from app.apps.visual_workshop.outputs.queries import OutputQueries
+from app.apps.visual_workshop.outputs.queries import output_out as output_out
 from app.apps.visual_workshop.outputs.recording import register_output as register_output
-from app.apps.visual_workshop.outputs.schemas import VisualNodeOutputListOut, VisualNodeOutputOut
 from app.apps.visual_workshop.schemas.workshop import (
     VisualCanvasDocumentOut,
     default_material_categories,
@@ -17,29 +19,6 @@ from app.capabilities.asset_store.models import VisualAsset, VisualProjectAssetR
 from app.runtime.ids import new_id
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import iso_utc, utc_now
-
-
-class OutputError(Exception):
-    def __init__(self, message: str, *, code: str = "invalid_output", status: int = 422):
-        super().__init__(message)
-        self.code, self.status = code, status
-
-
-def output_out(row: VisualNodeOutput) -> VisualNodeOutputOut:
-    return VisualNodeOutputOut(
-        id=row.id,
-        node_id=row.node_id,
-        version=row.version,
-        kind=row.kind,
-        asset_id=row.asset_id,
-        inspection_asset_id=row.inspection_asset_id,
-        text=row.text,
-        source=row.source,
-        generation_task_id=row.generation_task_id,
-        input_snapshot=row.input_snapshot or [],
-        is_final=row.is_final,
-        created_at=iso_utc(row.created_at),
-    )
 
 
 async def publish_generated_output(
@@ -103,23 +82,7 @@ async def publish_generated_output(
     return node_id
 
 
-class NodeOutputs:
-    def __init__(self, session: AsyncSession, owner_user_id: str):
-        self.session, self.owner_user_id = session, owner_user_id
-
-    async def document(self, project_id: str, node_id: str):
-        project = await self.session.scalar(
-            select(VisualWorkshopProject).where(
-                VisualWorkshopProject.id == project_id,
-                VisualWorkshopProject.owner_user_id == self.owner_user_id,
-            )
-        )
-        canvas = await self.session.get(VisualCanvasDocument, project_id) if project else None
-        node = next((n for n in canvas.nodes if n["id"] == node_id), None) if canvas else None
-        if node is None:
-            raise OutputError("节点不存在", code="not_found", status=404)
-        return canvas, node
-
+class NodeOutputs(OutputQueries):
     async def claim(self, canvas: VisualCanvasDocument, expected_revision: int):
         result = await self.session.execute(
             update(VisualCanvasDocument)
@@ -146,21 +109,6 @@ class NodeOutputs:
             raise RevisionConflictError(
                 expected_revision, current.revision, current.model_dump(mode="json")
             )
-
-    async def list(self, project_id: str, node_id: str, page: int, page_size: int):
-        await self.document(project_id, node_id)
-        scope = (VisualNodeOutput.project_id == project_id, VisualNodeOutput.node_id == node_id)
-        total = await self.session.scalar(
-            select(func.count()).select_from(VisualNodeOutput).where(*scope)
-        )
-        rows = await self.session.scalars(
-            select(VisualNodeOutput)
-            .where(*scope)
-            .order_by(VisualNodeOutput.version.desc())
-            .offset((page - 1) * page_size)
-            .limit(page_size)
-        )
-        return VisualNodeOutputListOut(items=[output_out(row) for row in rows], total=total or 0)
 
     async def add(
         self, project_id: str, node_id: str, body, *, inspection_asset_id: str | None = None
@@ -246,19 +194,6 @@ class NodeOutputs:
             node["text"] = row.text or ""
         canvas.nodes = nodes
         await self.session.commit()
-
-    async def get(self, project_id: str, node_id: str, output_id: str):
-        await self.document(project_id, node_id)
-        row = await self.session.scalar(
-            select(VisualNodeOutput).where(
-                VisualNodeOutput.project_id == project_id,
-                VisualNodeOutput.node_id == node_id,
-                VisualNodeOutput.id == output_id,
-            )
-        )
-        if not row:
-            raise OutputError("输出版本不存在", code="not_found", status=404)
-        return output_out(row)
 
     async def delete(self, project_id: str, node_id: str, output_id: str, expected_revision: int):
         canvas, node = await self.document(project_id, node_id)
