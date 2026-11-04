@@ -41,6 +41,7 @@ from fpl_runtime.video_processing import video_peer
 from fpl_runtime.web import attach_web, load_release
 
 from .asset_intake import AssetIntakes
+from .audio_seam_routes import router as audio_seam_router
 from .frame_routes import router as frame_router
 from .handoff_routes import router as handoff_router
 from .media_delivery import MediaDelivery
@@ -79,6 +80,7 @@ OPERATIONS = {
     ("PATCH", PROJECT),
     ("DELETE", PROJECT),
     ("GET", PROJECT + "/timeline"),
+    ("POST", PROJECT + "/audio-seams/candidates"),
     ("GET", PROJECT + "/preview/frame"),
     ("GET", PROJECT + "/text-clips/{clip_id}/layer"),
     ("GET", PROJECT + "/asset-bakes/{task_id}"),
@@ -227,6 +229,7 @@ def create_app(
         media_router,
         tasks_router,
         frame_router,
+        audio_seam_router,
         preflight_router,
         render_router,
     ):

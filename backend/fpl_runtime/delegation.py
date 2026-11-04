@@ -14,6 +14,7 @@ from .presentation_archives import presentation_archive_grant
 from .presentation_assets import project_asset_grant
 from .resource_routes import RESOURCE_ROUTES
 from .video_assets import video_asset_grant, video_write_grant
+from .video_audio import audio_grant
 from .video_frames import frame_grant as video_frame_grant
 from .video_handoff import handoff_grant
 
@@ -177,6 +178,7 @@ def permitted(grant, catalog):
         or motion_export_grant(grant)
         or video_frame_grant(grant)
         or handoff_grant(grant)
+        or audio_grant(grant)
     ):
         return True
     if directory_grant(grant, catalog):

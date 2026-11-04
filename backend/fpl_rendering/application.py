@@ -32,6 +32,7 @@ from .motion_preview import router as motion_preview_router
 from .motion_transfer import router as motion_transfer_router
 from .previews import MediaPreviews
 from .routes import router
+from .video_audio import router as video_audio_router
 from .video_export_jobs import VideoExports
 from .video_export_routes import router as video_export_router
 from .video_frames import VideoFrameCache
@@ -132,6 +133,8 @@ def create_app(
     app.include_router(motion_transfer_router)
     app.state.video_frame_cache = VideoFrameCache()
     app.state.video_frame_slots = asyncio.Semaphore(2)
+    app.state.video_audio_slots = asyncio.Semaphore(2)
+    app.include_router(video_audio_router)
     app.include_router(video_frame_router)
     app.state.video_media_peer = (
         video_peer(video_media_key) if video_media_key is not None else None

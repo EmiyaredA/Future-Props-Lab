@@ -1,6 +1,9 @@
 """Video processing recovers the original Rendering job and keeps files private."""
 
+import wave
+from array import array
 from io import BytesIO
+from math import pi, sin
 from pathlib import Path
 
 import httpx
@@ -280,8 +283,59 @@ async def test_video_rendering_lost_reply_owner_isolation_and_removal(
         await render_delivery.process_once()
         assert await exports.load(case.viewer, cancelled_id) is None
 
+        audio = BytesIO()
+        with wave.open(audio, "wb") as stream:
+            stream.setparams((1, 2, 8_000, 0, "NONE", "not compressed"))
+            samples = array("h", (int(7_000 * sin(2 * pi * 220 * i / 8000)) for i in range(64_000)))
+            stream.writeframes(samples.tobytes())
+        uploaded_audio = await send(
+            api, "POST", files, files={"upload": ("seam.wav", audio.getvalue(), "audio/wav")}
+        )
+        assert uploaded_audio.status_code == 200, uploaded_audio.text
+        audio_id = uploaded_audio.json()["id"]
+        await delivery.process_once()
+        await jobs.process_once()
+        await delivery.process_once()
+        seam_edit = await send(
+            api,
+            "POST",
+            project + "/timeline/operations",
+            json={
+                "expectedRevision": 1,
+                "requestId": "video-seam-fixture",
+                "operations": [
+                    {
+                        "type": "addClip",
+                        "clip": {
+                            "id": f"audio-{i + 1}",
+                            "trackId": "audio-1",
+                            "kind": "audio",
+                            "name": "Audio",
+                            "assetId": audio_id,
+                            "durationUs": 2_000_000,
+                            "timelineStartUs": i * 2_000_000,
+                            "sourceInUs": i * 4_000_000,
+                        },
+                    }
+                    for i in range(2)
+                ],
+            },
+        )
+        assert seam_edit.status_code == 200, seam_edit.text
+        seam_path = project + "/audio-seams/candidates"
+        seam_request = {"expectedRevision": 2, "fromClipId": "audio-1", "toClipId": "audio-2"}
+        analyzed = await send(api, "POST", seam_path, json=seam_request)
+        assert analyzed.status_code == 200, analyzed.text
+        assert analyzed.json()["assetId"] == audio_id
+        assert len(analyzed.json()["referencePeaks"]) == 64
+        assert len(analyzed.json()["candidates"]) <= 3
+        assert (
+            await send(api, "POST", seam_path, json={**seam_request, "expectedRevision": 1})
+        ).status_code == 409
+
         deleted = await send(api, "DELETE", project, params={"expected_revision": 0})
         assert deleted.status_code == 200, deleted.text
+        await delivery.process_once()
         await delivery.process_once()
         assert not jobs.folder(case.viewer, job_id).exists()
         assert (await jobs.load(case.viewer, job_id)).status == "cancelled"
