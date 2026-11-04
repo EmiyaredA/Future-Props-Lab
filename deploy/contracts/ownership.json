@@ -4757,6 +4757,12 @@
       "model": "GalgameVideoDispatch"
     },
     {
+      "table": "galgame_handoff_dispatches",
+      "service": "galgame",
+      "module": "fpl_galgame.models",
+      "model": "GalgameHandoffDispatch"
+    },
+    {
       "table": "gateway_change_cursors",
       "service": "gateway",
       "module": "fpl_gateway.models",

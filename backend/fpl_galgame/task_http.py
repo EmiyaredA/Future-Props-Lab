@@ -6,6 +6,7 @@ from app.apps.galgame_workshop.schemas import (
     GalgameAnnotationImportIn,
     GalgameAnnotationImportPreviewOut,
     GalgameAnnotationImportTaskOut,
+    GalgameVideoEditorHandoffCreateIn,
     GalgameVideoEditorHandoffTaskListOut,
     GalgameVideoEditorHandoffTaskOut,
     GalgameVideoExportCreateIn,
@@ -26,6 +27,7 @@ from .exact_frame import exact_frame
 from .export_download import download_export
 from .export_jobs import enqueue_export
 from .export_preflight import export_preview
+from .handoff_jobs import enqueue_handoff
 from .task_records import TaskRecords
 
 router = APIRouter(prefix=SOURCE, tags=["galgame-workshop"])
@@ -148,6 +150,28 @@ async def cancel_video_export(
     session: SessionDep, project_id: str, export_id: str, owner_user_id: OwnerDep
 ) -> GalgameVideoExportTaskOut:
     return await TaskRecords(session, owner_user_id).cancel_export(project_id, export_id)
+
+
+@router.post(
+    "/{project_id}/video-editor-handoffs",
+    response_model=GalgameVideoEditorHandoffTaskOut,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def create_handoff(
+    session: SessionDep,
+    project_id: str,
+    body: GalgameVideoEditorHandoffCreateIn,
+    request: Request,
+    owner_user_id: OwnerDep,
+) -> GalgameVideoEditorHandoffTaskOut:
+    try:
+        return await enqueue_handoff(
+            request, read_assets(request, session, owner_user_id), project_id, body
+        )
+    except AssetError as exc:
+        raise HTTPException(
+            exc.status, {"code": exc.code, "message": str(exc), **exc.detail}
+        ) from None
 
 
 @router.get(

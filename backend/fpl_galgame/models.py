@@ -117,6 +117,21 @@ class GalgameVideoDispatch(StoryRetentionBase):
     checked_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, index=True)
 
 
+class GalgameHandoffDispatch(StoryRetentionBase):
+    __tablename__ = "galgame_handoff_dispatches"
+
+    task_id: Mapped[str] = mapped_column(
+        ForeignKey(GalgameVideoEditorHandoffTask.__table__.c.id, ondelete="CASCADE"),
+        primary_key=True,
+    )
+    owner_user_id: Mapped[str] = mapped_column(String(36))
+    assertion: Mapped[str] = mapped_column(Text)
+    plan: Mapped[dict] = mapped_column(JSON)
+    media: Mapped[dict | None] = mapped_column(JSON)
+    video_assertion: Mapped[str | None] = mapped_column(Text)
+    checked_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, index=True)
+
+
 MODELS = (
     GalgameMigrationReceipt,
     GalgameUploadIntake,
@@ -124,6 +139,7 @@ MODELS = (
     GalgameSnapshotImportBatch,
     GalgameAsrDispatch,
     GalgameVideoDispatch,
+    GalgameHandoffDispatch,
     GalgameWorkshopProject,
     GalgameStoryDocument,
     GalgameProjectAssetReference,

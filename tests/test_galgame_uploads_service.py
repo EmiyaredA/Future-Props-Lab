@@ -33,6 +33,7 @@ class DropAcknowledgement(httpx.AsyncBaseTransport):
         self.dropped = False
         self.drop_edit_commit = False
         self.drop_archive_settle = False
+        self.drop_video_handoff = False
 
     async def handle_async_request(self, request):
         response = await self.mesh.handle_async_request(request)
@@ -64,6 +65,15 @@ class DropAcknowledgement(httpx.AsyncBaseTransport):
             self.drop_archive_settle = False
             await response.aclose()
             raise httpx.ReadError("synthetic lost Galgame archive publication", request=request)
+        if (
+            self.drop_video_handoff
+            and request.method == "POST"
+            and request.url.path.startswith("/_internal/v1/galgame-video-handoffs/")
+            and response.status_code == 200
+        ):
+            self.drop_video_handoff = False
+            await response.aclose()
+            raise httpx.ReadError("synthetic lost Video handoff receipt", request=request)
         return response
 
 

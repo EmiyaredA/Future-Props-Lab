@@ -16,6 +16,7 @@ from fpl_runtime.galgame_exports import (
     submit_target,
 )
 from fpl_runtime.galgame_frames import INPUT_HEADER, MAX_FRAME_REQUEST
+from fpl_runtime.galgame_handoff import HANDOFF_INPUTS, HANDOFF_JOBS, GalgameHandoff
 from fpl_runtime.motion_preview import sha256
 
 from .galgame_export_jobs import receipt
@@ -60,7 +61,7 @@ async def authorize(request, scope, *, inputs=None):
     return actor, token
 
 
-async def read_body(request, fingerprint, scope_digest):
+async def read_body(request, fingerprint, scope_digest, model):
     data = bytearray()
     async for chunk in request.stream():
         if len(data) + len(chunk) > MAX_FRAME_REQUEST:
@@ -69,7 +70,7 @@ async def read_body(request, fingerprint, scope_digest):
     if sha256(data) != fingerprint:
         raise HTTPException(403, "galgame_render_body_changed")
     try:
-        body = GalgameExport.model_validate_json(bytes(data))
+        body = model.model_validate_json(bytes(data))
     except ValidationError:
         raise HTTPException(422, "galgame_render_body_invalid") from None
     if body.scope.digest != scope_digest:
@@ -78,6 +79,10 @@ async def read_body(request, fingerprint, scope_digest):
 
 
 @router.post(
+    HANDOFF_JOBS + "/{project_id}/{job_id}/{fingerprint}/submit/{scope_digest}",
+    response_model=ExportReceipt,
+)
+@router.post(
     JOBS + "/{project_id}/{job_id}/{fingerprint}/submit/{scope_digest}",
     response_model=ExportReceipt,
 )
@@ -85,12 +90,16 @@ async def submit_export(
     request: Request, project_id: str, job_id: str, fingerprint: str, scope_digest: str
 ):
     path = request.url.path
+    handoff = path.startswith(HANDOFF_JOBS + "/")
+    inputs = HANDOFF_INPUTS if handoff else INPUTS
     actor, token = await authorize(
         request,
         submit_target("POST", path),
-        inputs=f"{INPUTS}/{project_id}/{job_id}/{scope_digest}",
+        inputs=f"{inputs}/{project_id}/{job_id}/{scope_digest}",
     )
-    body = await read_body(request, fingerprint, scope_digest)
+    body = await read_body(
+        request, fingerprint, scope_digest, GalgameHandoff if handoff else GalgameExport
+    )
     return await request.app.state.galgame_exports.enqueue(
         actor.user_id,
         project_id,
@@ -103,6 +112,7 @@ async def submit_export(
     )
 
 
+@router.get(HANDOFF_JOBS + "/{project_id}/{job_id}/{fingerprint}", response_model=ExportReceipt)
 @router.get(JOBS + "/{project_id}/{job_id}/{fingerprint}", response_model=ExportReceipt)
 async def export_status(request: Request, project_id: str, job_id: str, fingerprint: str):
     actor, _ = await authorize(request, job_target("GET", request.url.path))
@@ -112,6 +122,9 @@ async def export_status(request: Request, project_id: str, job_id: str, fingerpr
     return receipt(job)
 
 
+@router.post(
+    HANDOFF_JOBS + "/{project_id}/{job_id}/{fingerprint}/cancel", response_model=ExportReceipt
+)
 @router.post(JOBS + "/{project_id}/{job_id}/{fingerprint}/cancel", response_model=ExportReceipt)
 async def cancel_export(request: Request, project_id: str, job_id: str, fingerprint: str):
     actor, _ = await authorize(request, job_target("POST", request.url.path))
@@ -120,6 +133,7 @@ async def cancel_export(request: Request, project_id: str, job_id: str, fingerpr
     )
 
 
+@router.get(HANDOFF_JOBS + "/{project_id}/{job_id}/{fingerprint}/download")
 @router.get(JOBS + "/{project_id}/{job_id}/{fingerprint}/download")
 async def download_export(request: Request, project_id: str, job_id: str, fingerprint: str):
     actor, _ = await authorize(request, job_target("GET", request.url.path))
@@ -127,12 +141,15 @@ async def download_export(request: Request, project_id: str, job_id: str, finger
     job = await exports.get(actor.user_id, project_id, job_id, fingerprint)
     if job.released or job.status != "completed" or not job.media:
         raise HTTPException(404, "galgame_render_output_unavailable")
-    path = exports.folder(actor.user_id, job_id) / "sealed" / "output.mp4"
+    mime = job.media["mime_type"]
+    filename = "output.zip" if mime == "application/zip" else "output.mp4"
+    path = exports.folder(actor.user_id, job_id) / "sealed" / filename
     if path.is_symlink() or not path.is_file() or path.stat().st_size != job.media["byte_size"]:
         raise HTTPException(503, "galgame_render_output_missing")
-    return FileResponse(path, media_type="video/mp4", headers={"Cache-Control": "no-store"})
+    return FileResponse(path, media_type=mime, headers={"Cache-Control": "no-store"})
 
 
+@router.post(HANDOFF_JOBS + "/{project_id}/{job_id}/{fingerprint}/release")
 @router.post(JOBS + "/{project_id}/{job_id}/{fingerprint}/release")
 async def release_export(request: Request, project_id: str, job_id: str, fingerprint: str):
     actor, _ = await authorize(request, job_target("POST", request.url.path))

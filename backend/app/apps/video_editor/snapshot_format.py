@@ -63,7 +63,7 @@ def _optional_revision(value: object) -> int | None:
     return value
 
 
-def validated_snapshot(staged):
+def validated_snapshot(staged, *, handoff_project=None):
     payload = staged.project
     source = payload.get("project")
     if payload.get("schema_version") != 1 or not isinstance(source, dict):
@@ -78,13 +78,21 @@ def validated_snapshot(staged):
     status = str(source.get("status") or "")
     if status not in {"draft", "completed"}:
         raise ProjectSnapshotError("视频剪辑项目状态无效")
+    if handoff_project is not None and (
+        source.get("source_application") != "galgame-workshop"
+        or source.get("source_project_id") != handoff_project
+        or source.get("source_revision") is None
+        or not source.get("source_compiler_version")
+        or status != "draft"
+    ):
+        raise ProjectSnapshotError("Galgame 剪辑交接来源信息无效")
     declared = {item.source_id for item in staged.manifest.assets}
     assets = _validated_assets(payload.get("assets"), declared)
     if timeline_asset_ids(document) - declared:
         raise ProjectSnapshotError("时间线或素材编排引用的素材未包含在项目快照中")
     return (
         {
-            "title": _copy_title(create.title),
+            "title": create.title if handoff_project is not None else _copy_title(create.title),
             "status": status,
             "source_application": _optional_string(source.get("source_application"), max_length=32),
             "source_project_id": _optional_string(source.get("source_project_id"), max_length=36),

@@ -49,7 +49,7 @@ SERVICES = (
         "galgame",
         "Galgame 工坊",
         ("/apps/galgame-workshop",),
-        ("assets", "models", "rendering", "tools", "annotation"),
+        ("identity", "assets", "models", "rendering", "tools", "annotation", "video"),
     ),
     Service(
         "video",

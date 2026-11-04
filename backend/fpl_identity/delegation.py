@@ -19,6 +19,7 @@ from fpl_runtime.galgame_assets import export_download_grant, galgame_asset_gran
 from fpl_runtime.galgame_exports import PURPOSE_INPUT as GALGAME_EXPORT_INPUT
 from fpl_runtime.galgame_exports import export_grant as galgame_export_grant
 from fpl_runtime.galgame_frames import frame_grant as galgame_frame_grant
+from fpl_runtime.galgame_handoff import video_handoff_grant as galgame_handoff_grant
 from fpl_runtime.galgame_render import capacity_grant
 from fpl_runtime.galgame_snapshot import archive_grant as galgame_archive_grant
 from fpl_runtime.galgame_snapshot import snapshot_files_grant, snapshot_model_grant
@@ -129,6 +130,7 @@ async def authorize_delegation(app, body, credential):
             or galgame_upload_grant(grant)
             or galgame_archive_grant(grant)
             or galgame_export_grant(grant)
+            or galgame_handoff_grant(grant)
             else (
                 "models.use"
                 if asr_job_grant(grant)

@@ -21,6 +21,7 @@ from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailabl
 from fpl_runtime.thought_archives import ArchiveBatchKey, ArchiveFileKey
 from fpl_runtime.video_snapshot import VideoArchiveManifest
 
+from .galgame_handoff_records import reserve_handoff
 from .media_registration import register_media
 from .models import VideoImportBatch
 
@@ -83,18 +84,36 @@ class SnapshotImports:
     def __init__(self, archive, delivery, settings):
         self.archive, self.delivery, self.settings = archive, delivery, settings
 
-    async def run(self, session, owner, upload, assertion):
+    async def run(self, session, owner, upload, assertion, *, handoff=None):
         incoming = HashingUpload(upload)
         staged = await stage_project_snapshot(
             self.settings, incoming, expected_application="video-editor"
         )
         try:
             digest = incoming.digest.hexdigest()
-            batch_id, previous = await reserve_import(session, VideoImportBatch, owner, digest)
+            if handoff is None:
+                batch_id, previous = await reserve_import(session, VideoImportBatch, owner, digest)
+            else:
+                source_project, task_id, expected = handoff
+                if expected != digest:
+                    raise ProjectSnapshotError("剪辑交接归档摘要不符")
+                batch_id, previous, digest = await reserve_handoff(
+                    session, owner, source_project, task_id, expected
+                )
             if previous == "staging":
-                raise ProjectSnapshotError("同一工程包正在导入", status=409)
-            if previous != "commit":
-                await self.commit(session, owner, staged, batch_id, digest, assertion)
+                raise ProjectSnapshotError(
+                    "同一工程包正在导入", status=503 if handoff is not None else 409
+                )
+            if previous not in {"commit", "published"}:
+                await self.commit(
+                    session,
+                    owner,
+                    staged,
+                    batch_id,
+                    digest,
+                    assertion,
+                    handoff_project=handoff[0] if handoff is not None else None,
+                )
             try:
                 result = await self.delivery.deliver(owner, batch_id)
             except (CapabilityDenied, CapabilityUnavailable) as exc:
@@ -103,11 +122,13 @@ class SnapshotImports:
         finally:
             staged.cleanup()
 
-    async def commit(self, session, owner, staged, batch_id, digest, assertion):
+    async def commit(
+        self, session, owner, staged, batch_id, digest, assertion, *, handoff_project=None
+    ):
         key = ArchiveBatchKey(batch_id=batch_id, source_sha256=digest)
         project_id = UUID(hex=batch_id)
         try:
-            details, document, assets = validated_snapshot(staged)
+            details, document, assets = validated_snapshot(staged, handoff_project=handoff_project)
             originals = {item.source_id: item for item in staged.manifest.assets}
             files, mapping = [], {}
             for ordinal, item in enumerate(assets):

@@ -11,6 +11,7 @@ from fpl_runtime.delegation import RequestGrant
 from fpl_runtime.galgame_assets import SOURCE
 from fpl_runtime.galgame_exports import INPUTS, JOBS, PURPOSE_INPUT, PURPOSE_JOB, ExportReceipt
 from fpl_runtime.galgame_frames import INPUT_HEADER
+from fpl_runtime.galgame_handoff import HANDOFF_INPUTS, HANDOFF_JOBS, GalgameHandoff, handoff_path
 from fpl_runtime.motion_preview import sha256
 from fpl_runtime.project_errors import ProjectResourceError
 
@@ -31,9 +32,13 @@ class RenderExport:
     def __init__(self, capabilities, assertion, project, identity, plan, *, origin=None):
         self.capabilities, self.assertion = capabilities, assertion
         self.project, self.identity, self.plan = project, identity, plan
-        self.source_method, self.source = origin or ("POST", source_path(project))
+        handoff = isinstance(plan, GalgameHandoff)
+        original = handoff_path(project) if handoff else source_path(project)
+        self.source_method, self.source = origin or ("POST", original)
+        self.input_prefix = HANDOFF_INPUTS if handoff else INPUTS
+        prefix = HANDOFF_JOBS if handoff else JOBS
         self.raw = plan.model_dump_json().encode()
-        self.target = f"{JOBS}/{project}/{identity}/{sha256(self.raw)}"
+        self.target = f"{prefix}/{project}/{identity}/{sha256(self.raw)}"
 
     async def token(self, service, purpose, method, path):
         try:
@@ -62,7 +67,7 @@ class RenderExport:
     async def submit(self):
         scope = self.plan.scope.digest
         path = self.target + "/submit/" + scope
-        inputs = f"{INPUTS}/{self.project}/{self.identity}/{scope}"
+        inputs = f"{self.input_prefix}/{self.project}/{self.identity}/{scope}"
         token, asset_token = await asyncio.gather(
             self.token("rendering", PURPOSE_JOB, "POST", path),
             self.token("assets", PURPOSE_INPUT, "POST", inputs),
@@ -100,7 +105,7 @@ class RenderExport:
         ) as response:
             require_response(response)
             if (
-                response.headers.get("content-type") != "video/mp4"
+                response.headers.get("content-type") != media.mime_type
                 or response.headers.get("Content-Encoding", "identity") != "identity"
                 or int(response.headers.get("Content-Length", "-1")) != media.byte_size
             ):

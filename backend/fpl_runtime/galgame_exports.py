@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .galgame_assets import SOURCE
 from .galgame_frames import GalgameRenderPlan
+from .galgame_handoff import HANDOFF_INPUTS, HANDOFF_JOBS, HandoffMedia
 from .library_assets import ID
 from .model_outputs import ModelOutputDescription
 from .motion_preview import DIGEST
@@ -56,25 +57,31 @@ class ExportReceipt(BaseModel):
     progress: int = Field(ge=0, le=100, strict=True)
     rendered_ms: int = Field(ge=0, strict=True)
     error: str | None = None
-    media: ExportMedia | None = None
+    media: ExportMedia | HandoffMedia | None = None
 
 
 def submit_target(method, path):
     return method == "POST" and re.fullmatch(
-        rf"{JOBS}/({ID})/({ID})/({DIGEST})/submit/({DIGEST})", path
+        rf"(?:{JOBS}|{HANDOFF_JOBS})/({ID})/({ID})/({DIGEST})/submit/({DIGEST})", path
     )
 
 
 def job_target(method, path):
     if method == "GET":
-        return re.fullmatch(rf"{JOBS}/({ID})/({ID})/({DIGEST})(?P<download>/download)?", path)
+        return re.fullmatch(
+            rf"(?:{JOBS}|{HANDOFF_JOBS})/({ID})/({ID})/({DIGEST})(?P<download>/download)?", path
+        )
     if method == "POST":
-        return re.fullmatch(rf"{JOBS}/({ID})/({ID})/({DIGEST})(?P<change>/cancel|/release)", path)
+        return re.fullmatch(
+            rf"(?:{JOBS}|{HANDOFF_JOBS})/({ID})/({ID})/({DIGEST})(?P<change>/cancel|/release)", path
+        )
     return None
 
 
 def inputs_target(method, path):
-    return method == "POST" and re.fullmatch(rf"{INPUTS}/({ID})/({ID})/({DIGEST})", path)
+    return method == "POST" and re.fullmatch(
+        rf"(?:{INPUTS}|{HANDOFF_INPUTS})/({ID})/({ID})/({DIGEST})", path
+    )
 
 
 def export_grant(grant):
@@ -97,7 +104,8 @@ def export_grant(grant):
         return change == "/release" and grant.source_path == project
     if grant.source_method != "POST":
         return False
-    original = f"{project}/video-exports"
+    handoff = grant.target_path.startswith((HANDOFF_JOBS + "/", HANDOFF_INPUTS + "/"))
+    original = project + ("/video-editor-handoffs" if handoff else "/video-exports")
     if change == "/cancel" and grant.source_path == f"{original}/{target[2]}/cancel":
         return True
     return grant.source_path == original

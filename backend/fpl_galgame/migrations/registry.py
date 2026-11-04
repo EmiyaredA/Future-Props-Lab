@@ -11,6 +11,7 @@ from .versions.v0006 import SQL as ANNOTATION_AUTHORIZATIONS
 from .versions.v0007 import SQL as SNAPSHOT_IMPORT_BATCHES
 from .versions.v0008 import SQL as ASR_DISPATCHES
 from .versions.v0009 import SQL as VIDEO_DISPATCHES
+from .versions.v0010 import SQL as HANDOFF_DISPATCHES
 
 MIGRATIONS = (
     Migration("0001_galgame_owned_projects", SQL),
@@ -22,4 +23,5 @@ MIGRATIONS = (
     Migration("0007_galgame_snapshot_import_batches", SNAPSHOT_IMPORT_BATCHES),
     Migration("0008_galgame_asr_dispatches", ASR_DISPATCHES),
     Migration("0009_galgame_video_dispatches", VIDEO_DISPATCHES),
+    Migration("0010_galgame_handoff_dispatches", HANDOFF_DISPATCHES),
 )

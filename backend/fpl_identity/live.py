@@ -31,6 +31,7 @@ from fpl_runtime.galgame_exports import job_target as galgame_export_job_target
 from fpl_runtime.galgame_exports import submit_target as galgame_export_submit_target
 from fpl_runtime.galgame_frames import frame_target as galgame_frame_target
 from fpl_runtime.galgame_frames import inputs_target as galgame_frame_inputs_target
+from fpl_runtime.galgame_handoff import video_target as galgame_handoff_video_target
 from fpl_runtime.galgame_render import capacity_target
 from fpl_runtime.galgame_snapshot import archive_target as galgame_archive_target
 from fpl_runtime.galgame_snapshot import (
@@ -198,6 +199,7 @@ async def live(request: Request, body: LiveRequest):
         or (body.service == "annotation" and annotation_target(body.method, body.path))
         or (body.service == "assets" and segment_bundle_target(body.method, body.path))
         or (body.service == "video" and handoff_target(body.method, body.path))
+        or (body.service == "video" and galgame_handoff_video_target(body.method, body.path))
     ) and (operation is None or operation.service != body.service):
         raise HTTPException(403, "invalid_service_target")
     try:

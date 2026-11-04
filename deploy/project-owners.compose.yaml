@@ -45,6 +45,11 @@ services:
           create_host_path: false
   galgame:
     <<: *project-owner
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/ready', timeout=2)"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
     image: ${FPL_GALGAME_IMAGE:?Build and select a Galgame release}
     volumes:
       - <<: *identity-public-key

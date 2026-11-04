@@ -56,6 +56,7 @@ from .audio_seam_routes import router as audio_seam_router
 from .bake_routes import router as bake_router
 from .clip_merge_routes import router as clip_merge_router
 from .frame_routes import router as frame_router
+from .galgame_handoff_http import router as galgame_handoff_router
 from .handoff_routes import router as handoff_router
 from .media_delivery import MediaDelivery
 from .media_routes import router as media_router
@@ -269,6 +270,7 @@ def create_app(
     app.state.handoff_identity = handoff_identity
     app.state.motion_handoffs = motion_handoffs
     app.include_router(handoff_router)
+    app.include_router(galgame_handoff_router)
     install_reference_runtime(
         app,
         service=SERVICE,

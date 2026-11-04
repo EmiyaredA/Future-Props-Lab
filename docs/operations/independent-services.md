@@ -536,3 +536,5 @@ Motion 与 Video 启动检查覆盖归属清单中的 21 和 38 项操作。七�
 四容器隔离运行 `fpl-galgame-browser-77e550aeb2` 通过网关导入 Story 1.3、检查引用范围、下载并比较保留文件字节，以及设置项目完成状态。Chromium 打开四个入口并验证 390／768／1440 宽度。Galgame 与 Assets 重启后复核同一 Story、线路报告和素材。项目写入、生成任务和完整历史的其余接线仍由就绪门禁跟踪。
 
 Galgame 快照 ZIP 导入使用 `deploy/galgame-snapshots.compose.yaml`，与 `deploy/project-owners.compose.yaml` 一起加载。将与其他凭据独立的归档密钥文件传给 `FPL_GALGAME_ARCHIVE_KEY`，只读挂载在 Galgame 和 Assets。启动前分别运行两者的 `migrate`。导入后先读回副本的线路报告，再按 ZIP 清单检查下载文件的 SHA256。若提交已落盘而发布回执中断，启动原版本服务以恢复该批次的发布。
+
+完整 Galgame 装配覆盖归属清单中的 52 个公开操作。`/ready` 要求发布版本匹配、归档密钥已挂载且后台执行器健康。剪辑交接还需要 `deploy/video.compose.yaml`，使用其中的 Video 归档配置。隔离验收在剪辑工坊打开目标时间线，随后重启 Galgame、Rendering 和 Video 并读回相同的目标项目 ID。

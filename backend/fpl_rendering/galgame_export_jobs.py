@@ -23,9 +23,11 @@ from fpl_runtime.galgame_exports import (
     ExportReceipt,
     GalgameExport,
 )
+from fpl_runtime.galgame_handoff import HANDOFF_INPUTS, HANDOFF_JOBS, GalgameHandoff
 from fpl_runtime.model_outputs import ModelOutputDescription
 
 from .galgame_frames import original_files, prepare_plan
+from .galgame_handoff_package import make_handoff_archive
 from .models import GalgameExportJob
 from .storage import sync_directory, sync_files
 
@@ -37,7 +39,7 @@ def receipt(job):
         progress=job.progress,
         rendered_ms=job.rendered_ms,
         error=job.error,
-        media=ExportMedia.model_validate(job.media) if job.media else None,
+        media=job.media,
     )
 
 
@@ -191,7 +193,10 @@ class GalgameExports(PollingTaskRunner):
             if folder.exists():
                 await run_sync(rmtree, folder)
             folder.mkdir(parents=True, exist_ok=False, mode=0o700)
-            body = GalgameExport.model_validate(job.payload)
+            model = (
+                GalgameHandoff if job.request_path.startswith(HANDOFF_JOBS + "/") else GalgameExport
+            )
+            body = model.model_validate(job.payload)
             media = await self.encode(job, body, folder)
             await self.require_running(job)
             await self.set_state(
@@ -246,7 +251,8 @@ class GalgameExports(PollingTaskRunner):
             staging = Path(temporary)
             source_folder = staging / "source"
             source_folder.mkdir()
-            path = f"{INPUTS}/{job.project_id}/{job.id}/{body.scope.digest}"
+            prefix = HANDOFF_INPUTS if isinstance(body, GalgameHandoff) else INPUTS
+            path = f"{prefix}/{job.project_id}/{job.id}/{body.scope.digest}"
             originals = await original_files(
                 self.state, body.scope, body.sizes, path, job.input_assertion, source_folder
             )
@@ -256,6 +262,16 @@ class GalgameExports(PollingTaskRunner):
                 job, lambda: prepare_plan(body, originals, cache, cancel=stop), stop
             )
             await self.require_running(job)
+            if isinstance(body, GalgameHandoff):
+                await self.set_state(job, phase="verifying", progress=84)
+                archive, media = await make_handoff_archive(
+                    self.state.settings.runtime_path, job.project_id, body, plan
+                )
+                try:
+                    await self.seal(folder, archive, "output.zip")
+                finally:
+                    archive.unlink(missing_ok=True)
+                return media
             await self.set_state(job, phase="rendering", progress=3)
             progress = [3]
             output = staging / "output.mp4"
@@ -283,11 +299,15 @@ class GalgameExports(PollingTaskRunner):
             description = await run_sync(
                 ModelOutputDescription.from_file, output, body.filename, "video/mp4"
             )
-            sealed = folder / "sealed"
-            sealed.mkdir()
-            os.replace(output, sealed / "output.mp4")
-            await run_sync(sync_files, sealed)
-            await run_sync(sync_directory, folder)
+            await self.seal(folder, output, "output.mp4")
             return ExportMedia(
                 **asdict(description), width=width, height=height, duration_ms=duration
             )
+
+    @staticmethod
+    async def seal(folder, source, filename):
+        sealed = folder / "sealed"
+        sealed.mkdir()
+        os.replace(source, sealed / filename)
+        await run_sync(sync_files, sealed)
+        await run_sync(sync_directory, folder)

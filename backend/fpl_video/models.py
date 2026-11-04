@@ -74,6 +74,7 @@ class VideoImportBatch(VideoServiceBase):
     owner_user_id: Mapped[str] = mapped_column(String(36), primary_key=True)
     batch_id: Mapped[str] = mapped_column(String(32), primary_key=True)
     source_sha256: Mapped[str] = mapped_column(String(64))
+    handoff_archive_sha256: Mapped[str | None] = mapped_column(String(64))
     manifest_sha256: Mapped[str | None] = mapped_column(String(64))
     result: Mapped[dict | None] = mapped_column(JSON)
     state: Mapped[str] = mapped_column(String(16), default="staging")

@@ -12,6 +12,7 @@ from .galgame_asr_execution import asr_job_grant
 from .galgame_assets import export_download_grant, galgame_asset_grant
 from .galgame_exports import export_grant as galgame_export_grant
 from .galgame_frames import frame_grant as galgame_frame_grant
+from .galgame_handoff import video_handoff_grant as galgame_handoff_grant
 from .galgame_render import capacity_grant
 from .galgame_snapshot import archive_grant as galgame_archive_grant
 from .galgame_snapshot import snapshot_files_grant, snapshot_model_grant
@@ -217,6 +218,7 @@ def permitted(grant, catalog):
         or capacity_grant(grant)
         or galgame_frame_grant(grant)
         or galgame_export_grant(grant)
+        or galgame_handoff_grant(grant)
         or galgame_annotation_grant(grant)
         or galgame_upload_grant(grant)
         or galgame_archive_grant(grant)

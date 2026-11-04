@@ -3,6 +3,9 @@
 import json
 from contextlib import asynccontextmanager
 
+from fastapi import HTTPException
+from sqlalchemy import text
+
 from app.apps.galgame_workshop.models import GalgameWorkshopProject
 from app.capabilities.asset_store.project_snapshots import cleanup_snapshot_staging
 from fpl_runtime.archive_transport import ArchiveTransport, SnapshotArchiveAsset
@@ -19,6 +22,7 @@ from .asr_routes import router as asr_router
 from .asr_runner import AsrRunner
 from .asset_read_routes import router as asset_read_router
 from .export_runner import ExportRunner
+from .handoff_runner import HandoffRunner
 from .migrations.registry import MIGRATIONS
 from .models import MODELS, GalgameCertificationReceipt, GalgameStoryReferenceMutation
 from .projects_http import router as project_router
@@ -50,6 +54,28 @@ def create_app(
     web_root=None,
     schema_path=None,
 ):
+    async def ready(instance):
+        if archive_key is None or web_root is None:
+            raise HTTPException(503, "galgame_production_dependencies_missing")
+        state = instance.state
+        if run_worker and not all(
+            runner.is_healthy
+            for runner in (
+                state.project_certifications,
+                state.reference_delivery,
+                state.upload_intakes,
+                state.annotation_imports,
+                state.asr_runner,
+                state.export_runner,
+                state.handoff_runner,
+                state.snapshot_imports.delivery,
+            )
+        ):
+            raise HTTPException(503, "galgame_runner_unavailable")
+        async with state.database.sessions() as db:
+            await db.execute(text("SELECT 1"))
+        return {"status": "ready", "service": "galgame"}
+
     app = create_certification_app(
         service="galgame",
         root=state_root,
@@ -62,6 +88,7 @@ def create_app(
         catalog=catalog,
         transport=transport,
         run_worker=run_worker,
+        ready_probe=ready,
     )
     install_reference_runtime(
         app,
@@ -101,6 +128,8 @@ def create_app(
     app.state.asr_runner = asr
     exports = ExportRunner(app.state, uploads)
     app.state.export_runner = exports
+    handoffs = HandoffRunner(app.state)
+    app.state.handoff_runner = handoffs
     archive_delivery = None
     app.state.snapshot_imports = None
     if archive_key is not None:
@@ -133,16 +162,31 @@ def create_app(
                     await imports.start()
                     await asr.start()
                     await exports.start()
+                    await handoffs.start()
                     if archive_delivery is not None:
                         await archive_delivery.start()
                 yield
             finally:
                 if archive_delivery is not None:
                     await archive_delivery.stop()
+                await handoffs.stop()
                 await exports.stop()
                 await asr.stop()
                 await imports.stop()
                 await uploads.stop()
 
     app.router.lifespan_context = with_capability_client
+    expected = {
+        (item.method, item.path): item.operation_id
+        for item in catalog.operations
+        if item.service == "galgame"
+    }
+    actual = {
+        (method.upper(), path): operation["operationId"]
+        for path, methods in app.openapi()["paths"].items()
+        for method, operation in methods.items()
+        if path.startswith("/v1/")
+    }
+    if actual != expected:
+        raise ValueError("Galgame 公共接口与发布契约不匹配")
     return app

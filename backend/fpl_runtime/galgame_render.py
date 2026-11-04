@@ -36,6 +36,7 @@ def capacity_grant(grant):
         target
         and grant.source_path
         in {
+            f"{SOURCE}/{target[1]}/video-editor-handoffs",
             f"{SOURCE}/{target[1]}/video-exports",
             f"{SOURCE}/{target[1]}/video-exports/preview",
             f"{SOURCE}/{target[1]}/video-exports/frame",

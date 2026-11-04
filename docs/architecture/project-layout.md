@@ -115,6 +115,8 @@ Galgame 精确帧的业务预检归 `fpl_galgame/exact_frame.py`。Rendering 通
 
 Galgame 成片任务与冻结 Story 由 `fpl_galgame/export_jobs.py`、`export_runner.py` 持有。Rendering 的 `galgame_export_jobs.py` 执行并封存已核验的 MP4。Assets 接收绑定摘要的成片，并负责 `storage.galgame_export_max_bytes`。Galgame 持久记录同一上传回执后开放下载，最后释放 Rendering 的暂存副本。
 
+Galgame 剪辑交接由 `fpl_galgame/handoff_jobs.py`、`handoff_runner.py` 协调。Rendering 的 `galgame_handoff_package.py` 生成包含可编辑时间线的 Video 工程包。Video 通过 `galgame_handoff_http.py` 接收，按源任务绑定归档摘要，在原件完成结算后公开工程副本。Galgame 按同一回执取得目标工程标识。
+
 `fpl_thought/upload_intents.py` 与 `fpl_assets/thought_uploads.py` 提供按账号绑定的私有上传回执，Identity 只为指定来源和目标签发上传委托。`upload_transport.py` 为已暂存上传逐请求换取绑定摘要的 Identity 委托并流式传输，来源服务仅在收到按账号、文件摘要和随机数认证的有效回执后确认并清理暂存；Assets 未配置独立回执密钥时拒绝该私有上传。`upload_recovery.py` 在启动独占锁内仅清理已确认副本和无持久意图的中断暂存；未决意图继续保留。该协议已通过隔离服务测试；独立 Thought 已装配公开上传入口，远端自动重放 worker 尚未接入，恢复网站暂不按重试标识去重。独立 Thought 的部分 HTTP 装配已包括目录移动、文档恢复和知识库回收／恢复，并保留现有版本控制及撤回发布规则；retention worker 已存在，但 `/ready` 始终返回 503，直至素材引用迁移及剩余业务能力完成。
 
 `backend/fpl_thought/` 拥有 Thought 自有表清单、仅保留自有外键的独立迁移与写作 HTTP 适配，通过显式选择的 `deploy/thought.compose.yaml` 提供独立部署入口。`web/src/app/entries/thought.tsx` 提供可独立构建的浏览器入口，与兼容站共用 Thought 模块的知识库、社区和旧链接路由。搜索、引用解析、反向链接、复制预检、检查点、阅读偏好、表格查询、社区收藏、社区管理元数据、官方包预检、同步绑定及任务记录查询共用 HTTP 装配。模型写作通过 `fpl_runtime/writing.py` 绑定笔记、请求摘要和原账号操作，由 `fpl_models/writing.py` 管理模型选择、流式调用、日志及配额。账户备份复用 `backup_manifest.py` 的现有归档格式，`fpl_thought/backup.py` 读取 Thought 一致快照并在结束读事务后按素材版本下载、核对大小及生成归档。素材引用变更通过独立的引用准备与回执提交。共享的 `fpl_runtime/reference_mutations.py` 在来源服务的自有账本中保存准备与结果，重启后补发确认。Thought 保留自己的账本表和正文、历史及表格引用规则。

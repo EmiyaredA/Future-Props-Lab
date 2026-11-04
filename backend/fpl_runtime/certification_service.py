@@ -40,6 +40,7 @@ def create_certification_app(
     catalog,
     transport,
     run_worker,
+    ready_probe=None,
 ):
     if not isinstance(credential, str) or len(credential) < 32:
         raise ValueError("作品服务需要专属身份凭据")
@@ -93,6 +94,8 @@ def create_certification_app(
 
     @app.get("/ready")
     async def ready():
+        if ready_probe is not None:
+            return await ready_probe(app)
         raise HTTPException(503, "project_application_assembly_incomplete")
 
     return app

@@ -22,6 +22,7 @@ from fpl_runtime.galgame_exports import INPUTS as EXPORT_INPUTS
 from fpl_runtime.galgame_exports import inputs_target as export_inputs_target
 from fpl_runtime.galgame_frames import INPUTS as FRAME_INPUTS
 from fpl_runtime.galgame_frames import inputs_target as frame_inputs_target
+from fpl_runtime.galgame_handoff import HANDOFF_INPUTS
 from fpl_runtime.galgame_snapshot import snapshot_files_target
 from fpl_runtime.motion_snapshot import MAX_SCOPE_BYTES, SnapshotScope
 
@@ -132,6 +133,7 @@ async def annotation_audio_original(request: Request, asset_id: str):
 @router.post(PREFIX + "/{project_id}/snapshot/{digest}")
 @router.post(FRAME_INPUTS + "/{project_id}/{digest}")
 @router.post(EXPORT_INPUTS + "/{project_id}/{job_id}/{digest}")
+@router.post(HANDOFF_INPUTS + "/{project_id}/{job_id}/{digest}")
 async def galgame_snapshot_originals(request: Request, project_id: str, digest: str):
     path = request.url.path
     if not (

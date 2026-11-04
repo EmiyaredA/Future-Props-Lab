@@ -1,14 +1,20 @@
 """Keep Galgame video preflight tied to the live Rendering and Assets owners."""
 
 import io
+from pathlib import Path
 
 import httpx
 from PIL import Image
 from starlette.datastructures import UploadFile
-from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario  # noqa: F401
+from tests.test_community_asset_protocol import (  # noqa: F401
+    ASSETS_SECRET,
+    CATALOG,
+    PASSWORD,
+    scenario,
+)
 from tests.test_creative_project_certification import CREDENTIALS
 from tests.test_galgame_uploads_service import DropAcknowledgement
-from tests.test_independent_project_catalog import authorize
+from tests.test_independent_project_catalog import ORIGIN, authorize
 
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.media_rendering.render_capacity import RenderCapacity
@@ -21,8 +27,14 @@ from fpl_rendering.settings import RenderingSettings
 from fpl_runtime.capability_client import CapabilityClient
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
+from fpl_runtime.thought_archives import ArchiveAuthenticator
+from fpl_runtime.video_snapshot import ARCHIVE_DOMAIN
+from fpl_video.application import create_app as create_video
+from fpl_video.migrations.registry import MIGRATIONS as VIDEO_MIGRATIONS
 
 PROJECTS = "/v1/galgame-workshop/projects"
+VIDEO_PROJECTS = "/v1/video-editor/projects"
+ROOT = Path(__file__).resolve().parents[1]
 
 
 async def test_live_rendering_capacity_and_exact_story_assets_control_preflight(
@@ -32,11 +44,28 @@ async def test_live_rendering_capacity_and_exact_story_assets_control_preflight(
 ):
     case = scenario
     galgame_root, render_root = tmp_path / "galgame", tmp_path / "rendering"
+    video_root = tmp_path / "video"
     apply(galgame_root / "service.db", "galgame", GALGAME_MIGRATIONS)
     apply(render_root / "service.db", "rendering", RENDERING_MIGRATIONS)
+    apply(video_root / "service.db", "video", VIDEO_MIGRATIONS)
     renderer_secret = "isolated-render-capacity-credential-" * 2
+    video_secret = "isolated-video-handoff-credential-" * 2
+    archive_secret = "isolated-video-archive-handoff-" * 2
     case.identity.state.identity_options["service_credentials"].update(
-        galgame=CREDENTIALS["galgame"], rendering=renderer_secret
+        galgame=CREDENTIALS["galgame"], rendering=renderer_secret, video=video_secret
+    )
+    case.assets.state.video_archive_auth = ArchiveAuthenticator(
+        archive_secret, domain=ARCHIVE_DOMAIN
+    )
+    video = create_video(
+        state_root=video_root,
+        public_key=case.key.public_key(),
+        catalog=CATALOG,
+        schema_path=ROOT / "web/src/generated/openapi.json",
+        credential=video_secret,
+        transport=case.mesh,
+        archive_key=archive_secret,
+        run_worker=False,
     )
     transfer = DropAcknowledgement(case.mesh)
     game = create_galgame(
@@ -64,7 +93,7 @@ async def test_live_rendering_capacity_and_exact_story_assets_control_preflight(
     )
     assets_live = LiveAuthorization(service="assets", credential=ASSETS_SECRET, transport=case.mesh)
     case.assets.state.identity = assets_live
-    case.mesh.apps.update(galgame=game, rendering=render)
+    case.mesh.apps.update(galgame=game, rendering=render, video=video)
     monkeypatch.setattr(
         galgame_capacity_http, "galgame_capacity", lambda _root: RenderCapacity((), None, 20 << 30)
     )
@@ -72,6 +101,7 @@ async def test_live_rendering_capacity_and_exact_story_assets_control_preflight(
         assets_live.client,
         game.router.lifespan_context(game),
         render.router.lifespan_context(render),
+        video.router.lifespan_context(video),
         httpx.AsyncClient(transport=case.mesh, base_url="http://galgame") as http,
     ):
 
@@ -183,6 +213,67 @@ async def test_live_rendering_capacity_and_exact_story_assets_control_preflight(
             "insufficient_disk_space",
         }
         assert unavailable.json()["previewFingerprint"] == ready.json()["previewFingerprint"]
+
+        monkeypatch.setattr(
+            galgame_capacity_http,
+            "galgame_capacity",
+            lambda _root: RenderCapacity((), None, 20 << 30),
+        )
+        handoffs = root + "/video-editor-handoffs"
+        handoff_options = {**options, "requestId": "actual-handoff", "title": "Owned timeline"}
+        handoff = await request("POST", handoffs, json=handoff_options)
+        assert handoff.status_code == 202, handoff.text
+        handoff_path = f"{handoffs}/{handoff.json()['id']}"
+        runner = game.state.handoff_runner
+        await runner.process_once()
+        await render.state.galgame_exports.process_once()
+        transfer.drop_video_handoff = True
+        await runner.process_once()
+        pending = await request("GET", handoff_path)
+        assert not transfer.drop_video_handoff and pending.json()["status"] == "running", (
+            pending.text
+        )
+        read_back = await authorize(case, "galgame", "GET", handoff_path)
+        logout = await case.browser.post(
+            "/v1/auth/logout", headers={"Origin": ORIGIN, "X-CSRF-Token": case.csrf}
+        )
+        assert logout.status_code == 204
+        await runner.recover()
+        await runner.process_once()
+        finished = await http.get(handoff_path, headers=read_back)
+        assert finished.json()["status"] == "completed", finished.text
+
+        signed_in = await case.browser.post(
+            "/v1/auth/login", json={"username": "viewing-user", "password": PASSWORD}
+        )
+        assert signed_in.status_code == 200, signed_in.text
+        case.csrf = case.browser.cookies["fpl_csrf"]
+        final = finished.json()
+        assert final["trackCount"] > 0 and final["assetCount"] > 0
+        assert (await request("POST", handoffs, json=handoff_options)).json() == final
+        projects = await http.get(
+            "http://video" + VIDEO_PROJECTS,
+            headers=await authorize(case, "video", "GET", VIDEO_PROJECTS),
+        )
+        assert projects.status_code == 200, projects.text
+        assert [item["id"] for item in projects.json()["items"]] == [final["outputProjectId"]]
+        destination = VIDEO_PROJECTS + "/" + final["outputProjectId"]
+        got = await http.get(
+            "http://video" + destination, headers=await authorize(case, "video", "GET", destination)
+        )
+        assert got.status_code == 200, got.text
+        assert got.json()["title"] == "Owned timeline"
+        assert got.json()["sourceApplication"] == "galgame-workshop"
+        assert got.json()["sourceProjectId"] == project.json()["id"]
+        assert got.json()["sourceRevision"] == 1
+
+        timeline_path = destination + "/timeline"
+        timeline = await http.get(
+            "http://video" + timeline_path,
+            headers=await authorize(case, "video", "GET", timeline_path),
+        )
+        assert timeline.status_code == 200, timeline.text
+        assert len(timeline.json()["document"]["tracks"]) == final["trackCount"]
 
         removed = await request("DELETE", root, params={"expected_revision": 0})
         assert removed.status_code == 200 and removed.json() == {"deleted": True}, removed.text
