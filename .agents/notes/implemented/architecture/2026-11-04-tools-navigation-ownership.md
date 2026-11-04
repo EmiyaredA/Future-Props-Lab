@@ -31,3 +31,7 @@ Chromium verifies the signed-in mobile directory, favorite mutation and deep lin
 Host protocol tests cover public administrator rejection, spoofed native ingress, known expiry before assignment, verified path resolution and lost acknowledgement followed by receipt replay without another invocation.
 
 The installed video test uses a deterministic MP4 fixture. It reads the same bytes through the browser download and Assets routes, then restarts Tools and checks the stored result. The raw video descriptor header avoids the gateway’s reserved identity-header namespace. Browser cookies are requested only from the local browser lane.
+
+The historical navigation dataset now has separate loopback-only export and import processes. The operator plan binds the source revision, frozen database SHA-256 and verified owner list to one run. Navigation pages preserve the complete record, including timestamps. The importer writes an account batch and its digest receipt in one immediate transaction. The transfer program can restart from the beginning and reads the target back to verify each page and the total count. Service startup and gateway access do not expose the maintenance routes.
+
+The subprocess rehearsal creates a source with the actual compatibility migrations, transfers 258 synthetic records across two accounts, interrupts after the first page, restarts the destination, and verifies receipt replay, rejection of conflicting and overlapping batches, exact content and an unchanged source digest. A changed source file signature stops further export.

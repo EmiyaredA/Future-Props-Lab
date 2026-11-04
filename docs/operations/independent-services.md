@@ -263,3 +263,20 @@ Galgame 的新项目创建和公开 Story 保存需要同一私网中的 Identit
 隔离运行 `fpl-tools-dependencies-7fa491262d` 经真实回环通道读取固定视频工具的测试状态。API 单测核对了本机响应中的路径与公网响应中的路径隐藏。下载任务的执行、文件交付和入库回执在后续批次接入。
 
 隔离运行 `fpl-tools-video-38e992255f` 使用真实四容器和原生回环传输，并用合成下载器替代外部供应商。任务只执行一次，网页下载与 Assets 入库读回相同字节，Tools 重启后仍可查询任务及下载。八项公开操作与发布契约一致。实际供应商下载与个人浏览器 Cookie 未用于验收。
+
+### Tools 历史导航迁移
+
+首条维护链路迁移历史收藏、使用次数和三个时间戳。使用合成数据或已经停写并完成 SQLite WAL 检查点的独立快照。源快照保持只读。目标必须为已通过同版本显式 `migrate` 初始化、且没有运行 Tools 应用的隔离状态目录。
+
+迁移计划是 0600 的 JSON 文件，保存本次的 `run_id`、旧站提交 `source_revision`、源数据库摘要 `source_database_sha256`、已核对的账号 UUID 清单 `owner_ids` 和单次迁移专用随机 `token`。账号清单须来自已核验的 Identity 数据。分开启动两个维护进程，再运行传输程序。
+
+```sh
+uv run python -m fpl_tools migration-export --migration-plan "$plan" \
+  --legacy-db "$snapshot/future-props.db" --port 19561
+uv run python -m fpl_tools migration-import --migration-plan "$plan" \
+  --state-root "$tools_state" --port 19562
+uv run python -m scripts.website.migrate_tools_navigation --plan "$plan" \
+  --source http://127.0.0.1:19561 --target http://127.0.0.1:19562
+```
+
+维护进程只监听回环，拒绝浏览器 Origin。传输以账号和工具键分页，每批最多 256 条。记录与回执同事务提交。连接中断后以同一计划和地址重跑，完全相同的批次返回原回执。账号缺失、批次摘要变化、记录重叠或源快照变化会终止传输。最后逐账号读回目标数据并核对分页摘要与总记录数。留存成功报告并停止两个维护进程。旧站回滚和其余数据集仍由整站演练门禁跟踪。

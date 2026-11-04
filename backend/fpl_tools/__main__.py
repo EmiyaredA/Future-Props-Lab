@@ -11,17 +11,21 @@ from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from pydantic import ValidationError
 
 from fpl_runtime.locking import service_lock
+from fpl_runtime.migration_batches import MigrationPlan
 from fpl_runtime.migrations import apply
 from fpl_runtime.routing import RouteCatalog
 from fpl_runtime.tools_native import ToolsNativeOptions
 
 from .application import create_app
+from .migration_application import create_export_app, create_import_app
 from .migrations.registry import MIGRATIONS
 
 
 def main():
     parser = argparse.ArgumentParser(description="FPL Tools")
-    parser.add_argument("command", choices=("serve", "migrate"))
+    parser.add_argument(
+        "command", choices=("serve", "migrate", "migration-export", "migration-import")
+    )
     parser.add_argument("--state-root", type=Path, default=Path("/state"))
     parser.add_argument("--public-key", type=Path, default=Path("/run/fpl/identity-public.pem"))
     parser.add_argument(
@@ -31,7 +35,29 @@ def main():
     parser.add_argument("--web-root", type=Path, default=Path("/app/web"))
     parser.add_argument("--native-config", type=Path)
     parser.add_argument("--port", type=int, default=8080)
+    parser.add_argument("--migration-plan", type=Path)
+    parser.add_argument("--legacy-db", type=Path)
     options = parser.parse_args()
+    if options.command.startswith("migration-"):
+        if options.migration_plan is None:
+            parser.error("迁移维护入口需要 --migration-plan")
+        if (options.command == "migration-export") != (options.legacy_db is not None):
+            parser.error("仅导出入口需要并接受 --legacy-db")
+        try:
+            plan = MigrationPlan.read(options.migration_plan)
+        except (OSError, ValueError):
+            parser.error("迁移计划无法读取或格式无效")
+        if options.legacy_db is not None:
+            try:
+                app = create_export_app(plan=plan, source_path=options.legacy_db)
+            except (OSError, ValueError) as exc:
+                parser.error(str(exc))
+        else:
+            app = create_import_app(plan=plan, state_root=options.state_root)
+        uvicorn.run(app, host="127.0.0.1", port=options.port, proxy_headers=False, access_log=False)
+        return
+    if options.migration_plan is not None or options.legacy_db is not None:
+        parser.error("迁移计划与源快照仅适用于迁移维护入口")
     if options.command == "migrate":
         with service_lock(options.state_root):
             apply(options.state_root / "service.db", "tools", MIGRATIONS)

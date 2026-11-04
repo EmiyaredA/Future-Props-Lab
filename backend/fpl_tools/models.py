@@ -27,3 +27,12 @@ class ToolsDownloadArtifact(ToolsNativeBase):
     description: Mapped[dict] = mapped_column(JSON)
     library_asset: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
+class ToolsNavigationImportReceipt(ToolsNativeBase):
+    __tablename__ = "tools_navigation_import_receipts"
+    run_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    owner_user_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    batch_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    receipt: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)

@@ -4710,6 +4710,12 @@
       "model": "ToolsDownloadArtifact"
     },
     {
+      "table": "tools_navigation_import_receipts",
+      "service": "tools",
+      "module": "fpl_tools.models",
+      "model": "ToolsNavigationImportReceipt"
+    },
+    {
       "table": "visual_certification_receipts",
       "service": "visual",
       "module": "fpl_visual.models",
