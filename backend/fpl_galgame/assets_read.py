@@ -95,11 +95,13 @@ class ProjectAssetReads(GalgameAssetAnalysisMixin):
 
     async def report(self, project_id):
         story = await self.projects.story(project_id)
-        document = story.document
-        report = build_route_report(project_id, story.revision, document)
         records = await self.asset_records(
-            project_id, {asset.file_id for asset in document.assets}, newest_first=False
+            project_id, {asset.file_id for asset in story.document.assets}, newest_first=False
         )
+        return self.report_from_records(project_id, story.revision, story.document, records)
+
+    def report_from_records(self, project_id, revision, document, records):
+        report = build_route_report(project_id, revision, document)
         files = {row.id: row for row, _ in records}
         try:
             for asset in document.assets:
@@ -110,7 +112,9 @@ class ProjectAssetReads(GalgameAssetAnalysisMixin):
         except GalgameStoryDocumentInvalidError as exc:
             return invalid_asset_reference(report, str(exc))
         manifest = self._package_manifest_from(
-            document, records, self._story_references_by_file(document)
+            document,
+            records,
+            self._story_references_by_file(document),
         )
         return complete_readiness(
             report,

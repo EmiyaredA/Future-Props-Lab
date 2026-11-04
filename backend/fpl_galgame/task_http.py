@@ -1,6 +1,6 @@
 """Published Galgame annotation, video export and editor handoff records."""
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request, status
 
 from app.apps.galgame_workshop.schemas import (
     GalgameAnnotationImportIn,
@@ -13,9 +13,11 @@ from app.apps.galgame_workshop.schemas import (
     GalgameVideoExportTaskListOut,
     GalgameVideoExportTaskOut,
 )
+from app.capabilities.asset_store.errors import AssetError
 from fpl_runtime.galgame_assets import SOURCE
 from fpl_runtime.http_dependencies import OwnerDep, SessionDep
 
+from .annotation_jobs import enqueue_import
 from .annotation_preview import annotation_preview
 from .asset_read_routes import read_assets
 from .export_download import download_export
@@ -35,9 +37,27 @@ async def preview_annotation_import(
     body: GalgameAnnotationImportIn,
     request: Request,
 ) -> GalgameAnnotationImportPreviewOut:
-    return await annotation_preview(
-        request, read_assets(request, session, owner_user_id), project_id, body
-    )
+    return await annotation_preview(read_assets(request, session, owner_user_id), project_id, body)
+
+
+@router.post(
+    "/{project_id}/annotation-imports",
+    response_model=GalgameAnnotationImportTaskOut,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def create_annotation_import(
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    project_id: str,
+    body: GalgameAnnotationImportIn,
+    request: Request,
+) -> GalgameAnnotationImportTaskOut:
+    try:
+        return await enqueue_import(read_assets(request, session, owner_user_id), project_id, body)
+    except AssetError as exc:
+        raise HTTPException(
+            exc.status, {"code": exc.code, "message": str(exc), **exc.detail}
+        ) from None
 
 
 @router.get(

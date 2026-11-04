@@ -4721,6 +4721,12 @@
       "model": "GalgameUploadIntake"
     },
     {
+      "table": "galgame_annotation_authorizations",
+      "service": "galgame",
+      "module": "fpl_galgame.models",
+      "model": "GalgameAnnotationAuthorization"
+    },
+    {
       "table": "gateway_change_cursors",
       "service": "gateway",
       "module": "fpl_gateway.models",

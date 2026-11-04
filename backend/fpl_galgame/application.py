@@ -10,6 +10,7 @@ from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.reference_runtime import install_reference_runtime
 from fpl_runtime.web import attach_web, load_release
 
+from .annotation_runner import AnnotationImports
 from .asr_routes import router as asr_router
 from .asset_read_routes import router as asset_read_router
 from .migrations.registry import MIGRATIONS
@@ -79,6 +80,8 @@ def create_app(
         attach_web(app, release, pages=PAGES)
     uploads = UploadIntakes(app.state.database.sessions, app.state.capabilities)
     app.state.upload_intakes = uploads
+    imports = AnnotationImports(app.state, uploads, state_root)
+    app.state.annotation_imports = imports
     lifespan = app.router.lifespan_context
 
     @asynccontextmanager
@@ -87,8 +90,10 @@ def create_app(
             try:
                 if run_worker:
                     await uploads.start()
+                    await imports.start()
                 yield
             finally:
+                await imports.stop()
                 await uploads.stop()
 
     app.router.lifespan_context = with_capability_client

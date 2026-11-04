@@ -481,11 +481,12 @@ def prepare_image(root: Path, service: str, *, web_release=None):
         check=True,
         capture_output=True,
     ).stdout
+    dockerfile = definition / ("Dockerfile.galgame" if service == "galgame" else "Dockerfile")
     payloads = {str(path.relative_to(root)): path.read_bytes() for path in sources.values()}
     payloads.update(
         {
             "requirements.txt": generated,
-            "Dockerfile": (definition / "Dockerfile").read_bytes(),
+            "Dockerfile": dockerfile.read_bytes(),
             "deploy/contracts/ownership.json": (
                 root / "deploy/contracts/ownership.json"
             ).read_bytes(),

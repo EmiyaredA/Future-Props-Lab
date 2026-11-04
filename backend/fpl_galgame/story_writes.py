@@ -57,23 +57,26 @@ class StoryWrites:
 
     async def _prepare(self, project_id, *, expected, method, path, files=(), metadata=None):
         try:
+            change = PrepareReferenceChange(
+                request_id=uuid4().hex,
+                resource_kind="story",
+                resource_id=project_id,
+                expected_resource_revision=expected,
+                asset_ids=sorted(files),
+                metadata_asset_ids=metadata,
+            )
+        except ValidationError as exc:
+            raise story_error("故事素材引用无效或过多") from exc
+        try:
             return await self.references.prepare(
                 owner=self.owner,
                 assertion=self.assertion,
                 source_method=method,
                 source_path=path,
-                change=PrepareReferenceChange(
-                    request_id=uuid4().hex,
-                    resource_kind="story",
-                    resource_id=project_id,
-                    expected_resource_revision=expected,
-                    asset_ids=sorted(files),
-                    metadata_asset_ids=metadata,
-                ),
+                change=change,
             )
-        except ValidationError as exc:
-            raise story_error("故事素材引用无效或过多") from exc
         except CapabilityDenied as exc:
+            await self.references.abandon_preparation(self.session, self.owner, change)
             scope = {
                 "story_visual_asset_scope": "不能引用视觉工坊的私有素材",
                 "story_galgame_asset_scope": "不能引用其他 Galgame 工程的私有素材",
@@ -93,7 +96,11 @@ class StoryWrites:
                 "素材引用准备被拒绝", "retention_denied", exc.status
             ) from exc
         except CapabilityUnavailable as exc:
+            await self.references.abandon_preparation(self.session, self.owner, change)
             raise ProjectResourceError("素材引用结果未确认", "retention_unconfirmed", 503) from exc
+        except ProjectResourceError:
+            await self.references.abandon_preparation(self.session, self.owner, change)
+            raise
 
     async def create_project(self, body):
         project_id = new_id()
@@ -272,6 +279,7 @@ class StoryWrites:
         path,
         record_operation=None,
         snapshot=None,
+        before_commit=None,
     ):
         files = {asset.file_id for asset in document.assets}
         snapshots = await self.session.scalars(
@@ -331,6 +339,9 @@ class StoryWrites:
             if snapshot is not None:
                 self.session.add(snapshot)
             await sync_asset_references(self.session, project_id, files)
-            return story_out(row, document)
+            saved = story_out(row, document)
+            if before_commit is not None:
+                await before_commit(saved)
+            return saved
 
         return await self.references.commit_source(self.session, prepared, apply, record_operation)

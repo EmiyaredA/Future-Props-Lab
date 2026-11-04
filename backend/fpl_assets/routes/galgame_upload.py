@@ -26,6 +26,13 @@ async def read_manifest(request, fingerprint, mode):
             manifest.digest != fingerprint
             or length != manifest.total_bytes
             or (mode == "single" and len(manifest.files) != 1)
+            or (
+                mode == "annotation"
+                and any(
+                    not file.filename.endswith(".m4a") or file.mime_type != "audio/mp4"
+                    for file in manifest.files
+                )
+            )
         ):
             raise ValueError("manifest changed")
     except (CapabilityUnavailable, ValueError) as exc:

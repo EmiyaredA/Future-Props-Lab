@@ -52,7 +52,9 @@ def annotation_target(method, path):
 
 
 def audio_target(method, path):
-    return method == "GET" and re.fullmatch(rf"{AUDIO_PATH}/({ID})/({ID})/({ID})", path)
+    return method == "GET" and re.fullmatch(
+        rf"{AUDIO_PATH}/({ID})/({ID})/({ID})(?:/original/(?P<sha256>[0-9a-f]{{64}}))?", path
+    )
 
 
 def import_paths(project):
@@ -70,4 +72,8 @@ def source_grant(grant):
         target = audio_target(grant.target_method, grant.target_path)
     else:
         return False
-    return bool(target and grant.source_path in import_paths(target[1]))
+    if not target:
+        return False
+    if destination == ("assets", AUDIO_PURPOSE) and target["sha256"]:
+        return grant.source_path == f"{SOURCE}/{target[1]}/annotation-imports"
+    return grant.source_path in import_paths(target[1])

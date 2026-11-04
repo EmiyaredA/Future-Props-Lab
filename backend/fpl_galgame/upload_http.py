@@ -1,7 +1,6 @@
 """Published multipart uploads for Galgame project originals."""
 
 import hashlib
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated
 
@@ -17,15 +16,9 @@ from fpl_runtime.galgame_upload import MAX_FILES
 from fpl_runtime.http_dependencies import OwnerDep
 from fpl_runtime.project_errors import ProjectResourceError
 
+from .upload_intakes import UploadSignature
+
 router = APIRouter(prefix=SOURCE, tags=["galgame-workshop"])
-
-
-@dataclass(frozen=True)
-class UploadSignature:
-    filename: str
-    mime_type: str | None
-    byte_size: int
-    sha256: str
 
 
 async def signature(file):
@@ -45,7 +38,13 @@ async def save_uploads(request, owner, project_id, files, category, mode):
     intake = request.app.state.upload_intakes
     await intake.require_project(owner, project_id)
     pending, manifest = await intake.reserve(
-        request, owner, project_id, category, [await signature(file) for file in files], mode
+        owner,
+        project_id,
+        category,
+        [await signature(file) for file in files],
+        mode,
+        assertion=request.state.service_assertion,
+        source_path=request.url.path,
     )
     return await intake.upload(pending, manifest, files)
 

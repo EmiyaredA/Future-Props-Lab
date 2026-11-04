@@ -53,7 +53,7 @@ class UploadReceipt(BaseModel):
 def upload_target(method, path):
     if method == "POST":
         return re.fullmatch(
-            rf"{PREFIX}/({ID})/([0-9a-f]{{32}})/(single|batch)/([0-9a-f]{{64}})", path
+            rf"{PREFIX}/({ID})/([0-9a-f]{{32}})/(single|batch|annotation)/([0-9a-f]{{64}})", path
         )
     return None
 
@@ -70,5 +70,9 @@ def upload_grant(grant):
     if target is None:
         return False
     project, _, mode, _ = target.groups()
-    suffix = "/batch" if mode == "batch" else ""
-    return grant.source_path == f"{SOURCE}/{project}/assets{suffix}"
+    suffix = {
+        "single": "/assets",
+        "batch": "/assets/batch",
+        "annotation": "/annotation-imports",
+    }[mode]
+    return grant.source_path == f"{SOURCE}/{project}{suffix}"

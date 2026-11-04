@@ -64,9 +64,20 @@ class GalgameUploadIntake(StoryRetentionBase):
     checked_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
 
 
+class GalgameAnnotationAuthorization(StoryRetentionBase):
+    __tablename__ = "galgame_annotation_authorizations"
+
+    task_id: Mapped[str] = mapped_column(
+        ForeignKey(GalgameAnnotationImportTask.__table__.c.id, ondelete="CASCADE"), primary_key=True
+    )
+    owner_user_id: Mapped[str] = mapped_column(String(36))
+    assertion: Mapped[str] = mapped_column(Text)
+
+
 MODELS = (
     GalgameMigrationReceipt,
     GalgameUploadIntake,
+    GalgameAnnotationAuthorization,
     GalgameWorkshopProject,
     GalgameStoryDocument,
     GalgameProjectAssetReference,

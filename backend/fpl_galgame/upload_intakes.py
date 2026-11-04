@@ -1,6 +1,7 @@
 """Reserve Galgame names and recover exact committed Assets upload receipts."""
 
 import mimetypes
+from dataclasses import dataclass
 from uuid import uuid4
 
 import httpx
@@ -23,6 +24,14 @@ from .models import GalgameUploadIntake
 from .projects import Projects
 
 ASSETS = "http://assets:8080"
+
+
+@dataclass(frozen=True)
+class UploadSignature:
+    filename: str
+    mime_type: str | None
+    byte_size: int
+    sha256: str
 
 
 class UploadIntakes(PollingTaskRunner):
@@ -50,7 +59,9 @@ class UploadIntakes(PollingTaskRunner):
         async with self.sessions(info={"owner_user_id": owner}) as db:
             await Projects(db, owner).row(project_id)
 
-    async def reserve(self, request, owner, project_id, category, signatures, mode):
+    async def reserve(
+        self, owner, project_id, category, signatures, mode, *, assertion, source_path
+    ):
         identity = uuid4().hex
         async with self.sessions(info={"owner_user_id": owner}) as db:
             await db.execute(text("BEGIN IMMEDIATE"))
@@ -70,7 +81,21 @@ class UploadIntakes(PollingTaskRunner):
                 )
             ):
                 existing_paths.extend(item["virtual_path"] for item in items)
-            plan = plan_uploads([item.filename for item in signatures], category, existing_paths)
+            filenames = [item.filename for item in signatures]
+            if mode == "annotation":
+                plans = [
+                    GalgameAssetImportPreviewItem(
+                        original_name=name, final_name=name, virtual_path=f"voice/{name}"
+                    )
+                    for name in filenames
+                ]
+                existing = {path.casefold() for path in existing_paths}
+                if any(item.virtual_path.casefold() in existing for item in plans):
+                    raise ProjectResourceError(
+                        "台词文件名称已占用", "annotation_clip_path_pending", 503
+                    )
+            else:
+                plans = plan_uploads(filenames, category, existing_paths).items
             try:
                 manifest = UploadManifest(
                     files=tuple(
@@ -82,7 +107,7 @@ class UploadIntakes(PollingTaskRunner):
                             byte_size=signature.byte_size,
                             content_sha256=signature.sha256,
                         )
-                        for item, signature in zip(plan.items, signatures, strict=True)
+                        for item, signature in zip(plans, signatures, strict=True)
                     )
                 )
             except ValueError as exc:
@@ -95,15 +120,13 @@ class UploadIntakes(PollingTaskRunner):
                 target_path=target,
                 category=category,
                 manifest=manifest.model_dump(mode="json"),
-                planned=[item.model_dump(mode="json") for item in plan.items],
+                planned=[item.model_dump(mode="json") for item in plans],
             )
             db.add(row)
             await db.commit()
-        grant = RequestGrant("galgame", PURPOSE, "POST", request.url.path, "assets", "POST", target)
+        grant = RequestGrant("galgame", PURPOSE, "POST", source_path, "assets", "POST", target)
         try:
-            assertion = await self.capabilities.authorize_request(
-                request.state.service_assertion, grant
-            )
+            assertion = await self.capabilities.authorize_request(assertion, grant)
         except CapabilityDenied as exc:
             await self.reject(owner, identity)
             raise ProjectResourceError(

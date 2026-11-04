@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+from shutil import which
 
 from fpl_runtime.project_owner_cli import run_project_owner
 
@@ -10,6 +11,8 @@ from .migrations.registry import MIGRATIONS
 
 
 def deployed_application(**settings):
+    if any(which(program) is None for program in ("ffmpeg", "ffprobe")):
+        raise ValueError("Galgame 标注导入需要 ffmpeg 和 ffprobe")
     uploads = settings["state_root"].resolve() / ".http-uploads"
     if uploads.is_symlink():
         raise ValueError("Galgame 上传暂存目录不能是符号链接")

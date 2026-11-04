@@ -82,6 +82,11 @@ def _galgame_file_source(body):
     return body.source_path == path and body.source_method == method
 
 
+def _galgame_annotation_source(body):
+    path = f"/v1/galgame-workshop/projects/{body.change.resource_id}/annotation-imports"
+    return (body.caller, body.source_method, body.source_path) == ("galgame", "POST", path)
+
+
 def _galgame_story_source(body):
     change = body.change
     if change.galgame_project_removal:
@@ -95,15 +100,21 @@ def _galgame_story_source(body):
     if not story_metadata(body.caller, change):
         return False
     if body.source_method == "POST":
-        return body.source_path in {
-            story_path + "/operations",
-            story_path + "/import",
-            story_path + "/portrait-upgrade",
-            f"/v1/galgame-workshop/projects/{change.resource_id}/assets/repair",
-            f"/v1/galgame-workshop/projects/{change.resource_id}/assets/asr/match-dialogue",
-        } or bool(
-            re.fullmatch(
-                re.escape(story_path) + r"/snapshots/[A-Za-z0-9_-]{1,128}/restore", body.source_path
+        return (
+            _galgame_annotation_source(body)
+            or body.source_path
+            in {
+                story_path + "/operations",
+                story_path + "/import",
+                story_path + "/portrait-upgrade",
+                f"/v1/galgame-workshop/projects/{change.resource_id}/assets/repair",
+                f"/v1/galgame-workshop/projects/{change.resource_id}/assets/asr/match-dialogue",
+            }
+            or bool(
+                re.fullmatch(
+                    re.escape(story_path) + r"/snapshots/[A-Za-z0-9_-]{1,128}/restore",
+                    body.source_path,
+                )
             )
         )
     return (body.source_method == "PUT" and body.source_path == story_path) or (
@@ -416,6 +427,8 @@ class RetentionAuthorization:
                 method=body.source_method,
                 path=body.source_path,
                 public_key=self.options["private_key"].public_key(),
+                # Re-admit only the exact saved job while its Session or key is still active.
+                allow_expired=_galgame_annotation_source(body),
             )
         except (jwt.InvalidTokenError, ValueError, TypeError) as exc:
             raise HTTPException(401, "invalid_source_assertion") from exc

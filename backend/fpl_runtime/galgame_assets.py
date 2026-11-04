@@ -101,6 +101,7 @@ def galgame_asset_grant(grant):
         ("GET", project + "/story/report"),
         ("PATCH", project),
         ("POST", project + "/assets/asr/match-dialogue"),
+        ("POST", project + "/annotation-imports"),
         ("POST", project + "/video-exports/preview"),
     }
 

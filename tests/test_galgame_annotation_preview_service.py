@@ -1,23 +1,38 @@
 """Exercise a real owned Annotation source and WAV through Galgame preflight."""
 
+import hashlib
+import time
+from uuid import uuid4
+
 import httpx
-from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario  # noqa: F401
+import pytest
+from tests.test_community_asset_protocol import (  # noqa: F401
+    ASSETS_SECRET,
+    CATALOG,
+    scenario,
+)
 from tests.test_creative_project_certification import CREDENTIALS
 from tests.test_galgame_annotation_import import _audio_bytes, _import_body
-from tests.test_independent_project_catalog import authorize
+from tests.test_galgame_uploads_service import DropAcknowledgement
+from tests.test_independent_project_catalog import ORIGIN, authorize
 
 from fpl_annotation.application import create_app as create_annotation
 from fpl_annotation.migrations.registry import MIGRATIONS as ANNOTATION_MIGRATIONS
+from fpl_galgame.annotation_original import fetch_original
 from fpl_galgame.application import create_app as create_galgame
 from fpl_galgame.migrations.registry import MIGRATIONS as GALGAME_MIGRATIONS
+from fpl_runtime.asset_references import PrepareReferenceChange
+from fpl_runtime.capability_client import CapabilityDenied
+from fpl_runtime.claims import issue_context, verify_context
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
+from fpl_runtime.project_errors import ProjectResourceError
 
 PROJECTS = "/v1/galgame-workshop/projects"
 ANNOTATION = "/v1/audio-annotation"
 
 
-async def test_annotation_preview_checks_live_document_and_exact_original_wav(
+async def test_annotation_import_recovers_exact_clips_after_lost_upload_acknowledgement(
     scenario,  # noqa: F811
     tmp_path,
 ):
@@ -26,6 +41,7 @@ async def test_annotation_preview_checks_live_document_and_exact_original_wav(
     case.identity.state.identity_options["service_credentials"].update(
         annotation=annotation_credential, galgame=CREDENTIALS["galgame"]
     )
+    transport = DropAcknowledgement(case.mesh)
     apps = {}
     for service, migrations, factory, credential in (
         ("annotation", ANNOTATION_MIGRATIONS, create_annotation, annotation_credential),
@@ -38,7 +54,7 @@ async def test_annotation_preview_checks_live_document_and_exact_original_wav(
             public_key=case.key.public_key(),
             catalog=CATALOG,
             credential=credential,
-            transport=case.mesh,
+            transport=transport,
             run_worker=False,
         )
     case.mesh.apps.update(apps)
@@ -122,3 +138,118 @@ async def test_annotation_preview_checks_live_document_and_exact_original_wav(
             "galgame", "POST", preview_path, json={**body, "sourceProjectId": "missing"}
         )
         assert denied.status_code == 404
+
+        output = tmp_path / "exact-original.wav"
+        download_path = path + "/annotation-imports"
+        assertion = (await authorize(case, "galgame", "POST", download_path))["x-fpl-context"]
+        args = (
+            apps["galgame"].state.capabilities,
+            assertion,
+            download_path,
+            project.json()["id"],
+            body["sourceProjectId"],
+            source.json()["id"],
+        )
+        await fetch_original(*args, hashlib.sha256(sound).hexdigest(), output)
+        assert output.read_bytes() == sound
+        rejected = tmp_path / "rejected.wav"
+        with pytest.raises(ProjectResourceError, match="摘要已变化"):
+            await fetch_original(*args, "a" * 64, rejected)
+        assert not rejected.exists()
+
+        created = await request("galgame", "POST", download_path, json=body)
+        assert created.status_code == 202, created.text
+        identity = created.json()["id"]
+        task_path = f"{download_path}/{identity}"
+        repeated = await request("galgame", "POST", download_path, json=body)
+        assert repeated.status_code == 202 and repeated.json()["id"] == identity
+        altered = await request(
+            "galgame", "POST", download_path, json={**body, "assetPrefix": "different"}
+        )
+        assert altered.status_code == 409 and altered.json()["code"] == "idempotency_conflict"
+
+        runner = apps["galgame"].state.annotation_imports
+        await runner.recover()
+        transport.drop_next = True
+        with pytest.raises(ProjectResourceError, match="回执未确认"):
+            await runner.process_once()
+        assert transport.dropped
+        pending = await request("galgame", "GET", task_path)
+        assert pending.json()["status"] == "running"
+        unchanged = await request("galgame", "GET", path + "/story")
+        assert unchanged.json()["revision"] == story["revision"]
+        await runner.recover()
+        await apps["galgame"].state.upload_intakes.process_once()
+        await runner.process_once()
+
+        completed = await request("galgame", "GET", task_path)
+        assert completed.json()["status"] == "completed", completed.text
+        result = completed.json()["result"]
+        assert result["voiceAssetCount"] == 2 and result["dialogueCount"] == 2
+        assert result["storyRevision"] == story["revision"] + 1 and result["ready"]
+        history = await request("galgame", "GET", path + "/story/snapshots")
+        assert [item["id"] for item in history.json()] == [result["snapshotId"]]
+        manifest = await request("galgame", "GET", path + "/assets")
+        assert manifest.status_code == 200, manifest.text
+        assert {item["id"] for item in manifest.json()["items"]} == {
+            master.json()["id"],
+            *(item["assetId"] for item in result["segments"]),
+        }
+        final_replay = await request("galgame", "POST", download_path, json=body)
+        assert final_replay.status_code == 202 and final_replay.json() == completed.json()
+
+        actor = verify_context(
+            assertion,
+            service="galgame",
+            method="POST",
+            path=download_path,
+            public_key=case.key.public_key(),
+        )
+        expired = issue_context(
+            actor,
+            service="galgame",
+            method="POST",
+            path=download_path,
+            private_key=case.key,
+            key_id="isolated",
+            now=int(time.time()) - 120,
+        )
+        change = PrepareReferenceChange(
+            request_id=uuid4().hex,
+            resource_kind="story",
+            resource_id=project.json()["id"],
+            expected_resource_revision=result["storyRevision"],
+            asset_ids=[master.json()["id"]],
+            metadata_asset_ids=[master.json()["id"]],
+        )
+        assert await apps["galgame"].state.retention_client.authorize(
+            assertion=expired, source_method="POST", source_path=download_path, change=change
+        )
+
+        revoked = await request(
+            "galgame",
+            "POST",
+            download_path,
+            json={
+                **body,
+                "requestId": "revoke-during-import",
+                "expectedStoryRevision": result["storyRevision"],
+            },
+        )
+        assert revoked.status_code == 202, revoked.text
+        status_path = f"{download_path}/{revoked.json()['id']}"
+        # Preserve an exact read token only to inspect the isolated owner's terminal job state.
+        owner_read = await authorize(case, "galgame", "GET", status_path)
+        logout = await case.browser.post(
+            "/v1/auth/logout", headers={"Origin": ORIGIN, "X-CSRF-Token": case.csrf}
+        )
+        assert logout.status_code == 204, logout.text
+        with pytest.raises(CapabilityDenied) as denial:
+            await apps["galgame"].state.retention_client.authorize(
+                assertion=expired, source_method="POST", source_path=download_path, change=change
+            )
+        assert denial.value.status == 401
+        await runner.process_once()
+        rejected_task = await client.get("http://galgame" + status_path, headers=owner_read)
+        assert rejected_task.json()["status"] == "failed", rejected_task.text
+        assert rejected_task.json()["result"] == {"phase": "failed"}

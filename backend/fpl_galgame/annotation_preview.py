@@ -20,11 +20,11 @@ from fpl_runtime.library_assets import ID
 from fpl_runtime.project_errors import ProjectResourceError
 
 
-async def read_peer(request, service, purpose, path, schema, missing):
-    peer = request.app.state.capabilities
-    grant = RequestGrant("galgame", purpose, "POST", request.url.path, service, "GET", path)
+async def read_peer(files, service, purpose, path, schema, missing):
+    peer = files.capabilities
+    grant = RequestGrant("galgame", purpose, "POST", files.source_path, service, "GET", path)
     try:
-        token = await peer.authorize_request(request.state.service_assertion, grant)
+        token = await peer.authorize_request(files.assertion, grant)
         reply = await peer.client.get(
             f"http://{service}:8080" + path,
             headers={HEADER: token},
@@ -46,7 +46,7 @@ async def read_peer(request, service, purpose, path, schema, missing):
         ) from exc
 
 
-async def annotation_preview(request, files, project_id, body):
+async def annotation_preview(files, project_id, body):
     story = await files.projects.story(project_id)
     source_id = body.source_project_id
     missing = ProjectResourceError("广播剧标注项目不存在")
@@ -54,7 +54,7 @@ async def annotation_preview(request, files, project_id, body):
         raise missing
     await files.session.rollback()
     source = await read_peer(
-        request,
+        files,
         "annotation",
         ANNOTATION_PURPOSE,
         f"{ANNOTATION_PATH}/{project_id}/{source_id}",
@@ -62,7 +62,7 @@ async def annotation_preview(request, files, project_id, body):
         missing,
     )
     digest = await read_peer(
-        request,
+        files,
         "assets",
         AUDIO_PURPOSE,
         f"{AUDIO_PATH}/{project_id}/{source.id}/{source.asset_id}",
@@ -83,6 +83,7 @@ async def annotation_preview(request, files, project_id, body):
     master, metadata = master_rows[0] if master_rows else (None, None)
     matches = bool(
         master
+        and master.exists
         and master.media_kind == "audio"
         and metadata
         and metadata.project_id == project_id

@@ -16,7 +16,7 @@ from fpl_runtime.galgame_assets import (
     export_download_target,
 )
 
-from ..galgame_audio_digest import read_digest
+from ..galgame_audio_digest import audio_original, digest_original, read_digest
 from ..galgame_files import export_file, files
 
 router = APIRouter(include_in_schema=False)
@@ -101,3 +101,19 @@ async def annotation_audio_digest(request: Request, asset_id: str):
     state = request.app.state
     async with state.database.sessions(info={"owner_user_id": actor.user_id}) as session:
         return await read_digest(session, state.settings, asset_id)
+
+
+@router.get(AUDIO_PATH + "/{project_id}/{annotation_id}/{asset_id}/original/{sha256}")
+async def annotation_audio_original(request: Request, asset_id: str):
+    scope = audio_target("GET", request.url.path)
+    if not scope or not scope["sha256"]:
+        raise HTTPException(403, "galgame_annotation_audio_grant_required")
+    actor = await verified_actor(request)
+    state = request.app.state
+    async with state.database.sessions(info={"owner_user_id": actor.user_id}) as session:
+        path = await audio_original(session, state.settings, asset_id)
+    if (await digest_original(path)).sha256 != scope["sha256"]:
+        raise HTTPException(409, "galgame_annotation_source_changed")
+    return FileResponse(
+        path, media_type="application/octet-stream", headers={"Cache-Control": "private, no-store"}
+    )
