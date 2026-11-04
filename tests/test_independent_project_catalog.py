@@ -12,12 +12,17 @@ from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario
 from tests.test_creative_project_certification import CREDENTIALS, ORIGIN, PROJECTS
 
 from app.apps.galgame_workshop.models import GalgameStorySnapshot
-from app.apps.visual_workshop.acceptance.models import AcceptanceTemplate
+from app.apps.visual_workshop.acceptance.models import (
+    AcceptanceRun,
+    AcceptanceStandardVersion,
+    AcceptanceTemplate,
+)
 from app.apps.visual_workshop.models import (
     VisualGenerationBatch,
     VisualGenerationTask,
     VisualWorkshopProject,
 )
+from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from app.capabilities.asset_store.library import AssetLibrary
 from fpl_assets.models import AssetReferencePin, AssetReferenceSet
 from fpl_galgame.models import GalgameStoryReferenceMutation
@@ -129,6 +134,7 @@ async def test_projects_create_owned_defaults_and_keep_the_published_contract(
             assert document.json()["categories"]
             await verify_visual_canvas(case, app, request, path)
             await verify_visual_records(case, app, request, record["id"])
+            await verify_visual_reviews(case, app, request, record["id"])
             changed = await request(
                 "PATCH", path, json={"title": "Changed", "expected_revision": 0}
             )
@@ -507,3 +513,109 @@ async def verify_visual_records(case, app, request, project_id):
     batch = await request("GET", f"{batches}/batch")
     assert batch.status_code == 200 and batch.json()["status"] == "processing"
     assert (await request("GET", batches)).json()["items"] == [batch.json()]
+
+
+async def verify_visual_reviews(case, app, request, project_id):
+    project = f"/v1/visual-workshop/projects/{project_id}/acceptance"
+    snapshot = {
+        "standard_version": 1,
+        "standard_title": "Reference checks",
+        "criteria": [
+            {
+                "id": "quality",
+                "title": "Image quality",
+                "requirement": "Keep details",
+                "method": "manual",
+                "required": True,
+            },
+        ],
+        "output": {
+            "id": "review-output",
+            "kind": "text",
+            "version": 1,
+            "asset_id": None,
+            "text": "draft",
+            "title": "Output",
+        },
+        "coverage": "manual",
+    }
+    async with app.state.database.sessions(info={"owner_user_id": case.viewer}) as session:
+        session.add_all(
+            [
+                VisualNodeOutput(
+                    id="review-output",
+                    project_id=project_id,
+                    node_id="review-node",
+                    version=1,
+                    kind="text",
+                    text="draft",
+                    source="uploaded",
+                    source_key="review-fixture",
+                ),
+                AcceptanceStandardVersion(
+                    id="standard-v1", project_id=project_id, version=1, document={}
+                ),
+            ]
+        )
+        await session.flush()
+        for run_id, scheme, status in (
+            ("completed", "motion-transfer:api", "completed"),
+            ("queued-review", "motion-transfer:api", "queued"),
+            ("legacy-review", "legacy", "completed"),
+        ):
+            session.add(
+                AcceptanceRun(
+                    id=run_id,
+                    project_id=project_id,
+                    node_id="review-node",
+                    output_id="review-output",
+                    standard_id="standard-v1",
+                    request_id=run_id,
+                    fingerprint="1" * 64,
+                    scheme_id=scheme,
+                    status=status,
+                    snapshot=snapshot,
+                    results=[
+                        {
+                            "criterion_id": "quality",
+                            "verdict": "pending",
+                            "explanation": "Original detail",
+                            "origin": "manual",
+                        }
+                    ],
+                )
+            )
+        await session.commit()
+    runs = f"{project}/runs"
+    listed = await request("GET", runs, params={"node_id": "review-node"})
+    assert listed.status_code == 200, listed.text
+    assert {item["id"] for item in listed.json()["items"]} == {
+        "queued-review",
+        "completed",
+        "legacy-review",
+    }
+    legacy = await request("POST", f"{runs}/legacy-review/cancel", params={"expected_revision": 0})
+    assert legacy.status_code == 409 and legacy.json()["code"] == "historical_readonly"
+    cancelled = await request(
+        "POST", f"{runs}/queued-review/cancel", params={"expected_revision": 0}
+    )
+    assert cancelled.status_code == 200 and cancelled.json()["status"] == "cancelled"
+    body = {"criterion_id": "quality", "verdict": "failed", "reason": "Missing detail"}
+    changed = await request(
+        "POST", f"{runs}/completed/decisions", json={"expected_revision": 0, **body}
+    )
+    assert changed.status_code == 200, changed.text
+    assert changed.json()["decisions"][0]["actor"] == case.viewer
+    stale = await request(
+        "POST", f"{runs}/completed/decisions", json={"expected_revision": 0, **body}
+    )
+    assert stale.status_code == 409 and stale.json()["current"]["revision"] == 1
+    finalized = await request(
+        "POST", f"{runs}/completed/decisions", json={"expected_revision": 1, "finalize": True}
+    )
+    assert finalized.status_code == 200 and finalized.json()["decision"] == "failed"
+    assert (await request("GET", f"{runs}/completed")).json() == finalized.json()
+    repair = await request("POST", f"{runs}/completed/repair-drafts")
+    assert repair.status_code == 200 and "Missing detail" in repair.json()["text"]
+    saved = await request("GET", f"{project}/repair-drafts/{repair.json()['id']}")
+    assert saved.status_code == 200 and saved.json() == repair.json()

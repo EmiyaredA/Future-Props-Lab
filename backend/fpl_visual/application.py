@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 import httpx
 from fastapi import Depends
 
+from app.apps.visual_workshop.acceptance.review_routes import router as review_router
 from app.apps.visual_workshop.acceptance.standard_routes import router as standard_router
 from app.apps.visual_workshop.generation_routes import router as generation_records_router
 from app.apps.visual_workshop.models import VisualWorkshopProject
@@ -68,6 +69,7 @@ def create_app(
     app.include_router(project_router)
     app.include_router(outputs_router)
     app.include_router(standard_router, prefix="/v1")
+    app.include_router(review_router, prefix="/v1")
     app.include_router(
         generation_records_router, prefix="/v1", dependencies=[Depends(require_studio_auth)]
     )

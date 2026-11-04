@@ -17,6 +17,7 @@ from app.apps.thought_workshop.routes.community_tables import router as communit
 from app.apps.thought_workshop.routes.external_sync import router as article_sync_router
 from app.apps.video_editor.assistant_operations import apply_assistant_timeline_batch
 from app.apps.video_editor.routes.compatibility import router as video_editor_router
+from app.apps.visual_workshop.acceptance.review_routes import router as visual_review_router
 from app.apps.visual_workshop.acceptance.routes import router as visual_acceptance_router
 from app.apps.visual_workshop.acceptance.standard_routes import router as visual_standard_router
 from app.apps.visual_workshop.generation_routes import (
@@ -180,6 +181,9 @@ api_router.include_router(
 )
 api_router.include_router(
     visual_standard_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
+)
+api_router.include_router(
+    visual_review_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
 )
 
 api_router.include_router(code_agents_router)

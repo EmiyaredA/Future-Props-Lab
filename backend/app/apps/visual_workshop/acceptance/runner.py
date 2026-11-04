@@ -15,7 +15,7 @@ from app.apps.visual_workshop.acceptance.media import (
     positions,
 )
 from app.apps.visual_workshop.acceptance.models import AcceptanceRun
-from app.apps.visual_workshop.acceptance.runs import review_models
+from app.apps.visual_workshop.acceptance.review_models import review_models
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.inspection import inspect_media, verify_video
