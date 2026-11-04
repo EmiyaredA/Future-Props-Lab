@@ -161,9 +161,7 @@ async def test_video_submit_materializes_asset_ids_and_keeps_legacy_urls(
         return f"https://temp.sh/{kind}-{asset_id}"
 
     runner = VisualGenerationRunner()
-    monkeypatch.setattr(
-        "app.apps.visual_workshop.generation_runner.submit_generation_task", fake_create
-    )
+    monkeypatch.setattr("app.llm.visual_generation_submission.submit_generation_task", fake_create)
     monkeypatch.setattr(runner, "_asset_data_uri", fake_image)
     monkeypatch.setattr(runner, "_temporary_asset_url", fake_temporary)
 
@@ -231,9 +229,7 @@ async def test_temporary_upload_failure_happens_before_provider_submission(
         raise TemporaryMediaError("private upstream response")
 
     runner = VisualGenerationRunner()
-    monkeypatch.setattr(
-        "app.apps.visual_workshop.generation_runner.submit_generation_task", fake_create
-    )
+    monkeypatch.setattr("app.llm.visual_generation_submission.submit_generation_task", fake_create)
     monkeypatch.setattr(runner, "_temporary_asset_url", failed_upload)
 
     with pytest.raises(TemporaryMediaError):
@@ -381,7 +377,7 @@ async def test_concurrent_claim_submits_a_queued_task_only_once(
             return "provider-task-once"
 
         monkeypatch.setattr(
-            "app.apps.visual_workshop.generation_runner.submit_generation_task", fake_submit
+            "app.llm.visual_generation_submission.submit_generation_task", fake_submit
         )
         runner = VisualGenerationRunner()
         await asyncio.gather(runner._process_task(task.id), runner._process_task(task.id))

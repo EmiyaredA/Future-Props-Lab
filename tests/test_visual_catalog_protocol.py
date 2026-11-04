@@ -32,6 +32,7 @@ from fpl_host.transport import NativeTransport
 from fpl_models.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
 from fpl_models.models import ACCOUNT_MODELS, MODELS
 from fpl_models.visual_catalog_http import router
+from fpl_models.visual_generation_http import router as visual_model_router
 from fpl_runtime.agent_connections import (
     AcceptanceAgentCatalog,
     AcceptanceAgentStatus,
@@ -57,6 +58,8 @@ from fpl_runtime.visual_catalog import (
     GENERATION_TARGET,
     PURPOSE,
 )
+from fpl_runtime.visual_generation import MODEL_PURPOSE as GENERATION_MODEL_PURPOSE
+from fpl_runtime.visual_generation import ModelSelection
 from fpl_runtime.visual_snapshot import ARCHIVE_DOMAIN, ARCHIVE_PREFIX, SnapshotAssetQuery
 from fpl_runtime.visual_snapshot import ASSET_PURPOSE as SNAPSHOT_ASSET_PURPOSE
 
@@ -125,6 +128,7 @@ async def test_visual_catalog_delegates_exact_paths_and_excludes_other_accounts(
     )
     models.state.settings = SimpleNamespace(fpl_temp_media_upload_url="")
     models.include_router(router)
+    models.include_router(visual_model_router)
     case.mesh.apps["models"] = models
     archive_key = "isolated-visual-archive-peer-key-" * 2
     case.assets.state.visual_archive_auth = ArchiveAuthenticator(archive_key, domain=ARCHIVE_DOMAIN)
@@ -171,6 +175,7 @@ async def test_visual_catalog_delegates_exact_paths_and_excludes_other_accounts(
         available = response.json()["models"]
         assert len(available) == 1 and available[0]["provider_name"] == "senseaudio_image-own"
         assert available[0]["max_prompt_length"] == 6000
+        await verify_model_choice(case, visual, http, available[0]["id"], database)
         path = "/v1/visual-workshop/projects/own/acceptance/models"
         response = await http.get(path, headers=await authorize(case, "visual", "GET", path))
         assert response.status_code == 200, response.text
@@ -208,6 +213,40 @@ async def test_visual_catalog_delegates_exact_paths_and_excludes_other_accounts(
             await http.get(private + GENERATION_TARGET, headers={HEADER: token})
         ).status_code == 401
     await database.close()
+
+
+async def verify_model_choice(case, visual, http, identity, database):
+    source = "/v1/visual-workshop/projects/own/generation-tasks"
+    original = (await authorize(case, "visual", "POST", source))[HEADER]
+
+    async def query(model_id, *, body=None):
+        scope = ModelSelection(model_id=model_id, kind="image")
+        token = await visual.state.capabilities.authorize_request(
+            original,
+            RequestGrant(
+                "visual", GENERATION_MODEL_PURPOSE, "POST", source, "models", "POST", scope.path
+            ),
+        )
+        return await http.post(
+            "http://models" + scope.path,
+            headers={HEADER: token},
+            json=(body or scope).model_dump(),
+        )
+
+    own = await query(identity)
+    assert own.status_code == 200, own.text
+    assert own.json()["model_id"] == identity
+    assert own.json()["model_slug"] == "senseaudio-image-2.0-260319"
+    assert "credential" not in own.text and "base_url" not in own.text
+    async with database.sessions(info={"owner_user_id": case.owner}) as session:
+        foreign = await session.scalar(
+            select(ModelEntry).where(ModelEntry.slug == "senseaudio-image-2.0-260319")
+        )
+        foreign_id = foreign.id
+    assert (await query(foreign_id)).status_code == 404
+    assert (
+        await query(identity, body=ModelSelection(model_id=foreign_id, kind="image"))
+    ).status_code == 403
 
 
 async def verify_fixed_acceptance(case, visual, http, models, database, root):

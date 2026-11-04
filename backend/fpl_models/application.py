@@ -52,6 +52,7 @@ from fpl_runtime.authentication import SignedIdentity
 from fpl_runtime.database import Database
 from fpl_runtime.migrations import check
 from fpl_runtime.request_limit import RequestLimit
+from fpl_runtime.visual_generation import MODEL as VISUAL_GENERATION_MODEL
 from fpl_runtime.visual_snapshot import MAX_LAYOUT_BYTES, MODEL_RESOLVE
 from fpl_runtime.visual_snapshot import MAX_QUERY_BYTES as MAX_VISUAL_SNAPSHOT_QUERY_BYTES
 from fpl_runtime.visual_snapshot import MODELS as VISUAL_SNAPSHOT_MODELS
@@ -85,6 +86,7 @@ from .task_usage import OwnedCatalogTaskUsage
 from .template_sync import TemplateSynchronization
 from .templates import initialize_account_catalog
 from .visual_catalog_http import router as visual_catalog_router
+from .visual_generation_http import router as visual_generation_router
 from .writing import router as writing_router
 
 
@@ -317,6 +319,8 @@ def create_app(
     app.include_router(writing_router)
     app.include_router(annotation_transcription_router)
     app.include_router(visual_catalog_router)
+    app.include_router(visual_generation_router)
+    app.add_middleware(RequestLimit, prefix=VISUAL_GENERATION_MODEL, maximum=16 * 1024)
     app.add_middleware(
         RequestLimit, prefix=VISUAL_SNAPSHOT_MODELS, maximum=MAX_VISUAL_SNAPSHOT_QUERY_BYTES
     )

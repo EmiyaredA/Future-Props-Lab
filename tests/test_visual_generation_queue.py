@@ -154,7 +154,7 @@ async def test_capacity_overflow_cancel_conflicts_and_workspace_isolation():
 @pytest.mark.asyncio
 async def test_dispatch_fifo_concurrent_claim_restart_and_cancel_race(monkeypatch):
     submit = AsyncMock(return_value="provider-task")
-    monkeypatch.setattr("app.apps.visual_workshop.generation_runner.submit_generation_task", submit)
+    monkeypatch.setattr("app.llm.visual_generation_submission.submit_generation_task", submit)
     monkeypatch.setattr(
         "app.apps.visual_workshop.generation_runner.poll_generation_task",
         AsyncMock(return_value=SimpleNamespace(status="pending", progress=0, execution_info=None)),
@@ -262,7 +262,7 @@ async def test_zero_and_lowered_queue_limit_preserve_accepted_tasks():
 @pytest.mark.parametrize("invalid", ["account", "model"])
 async def test_waiting_task_rechecks_execution_authorization(invalid, monkeypatch):
     submit = AsyncMock(return_value="should-not-submit")
-    monkeypatch.setattr("app.apps.visual_workshop.generation_runner.submit_generation_task", submit)
+    monkeypatch.setattr("app.llm.visual_generation_submission.submit_generation_task", submit)
     monkeypatch.setattr(
         "app.apps.visual_workshop.generation_runner.poll_generation_task",
         AsyncMock(return_value=SimpleNamespace(status="pending", progress=0, execution_info=None)),
@@ -297,7 +297,7 @@ async def test_competing_creates_cannot_exceed_running_or_waiting_capacity():
 @pytest.mark.asyncio
 async def test_long_blocked_queue_does_not_starve_other_owners_or_polling(monkeypatch):
     monkeypatch.setattr(
-        "app.apps.visual_workshop.generation_runner.submit_generation_task",
+        "app.llm.visual_generation_submission.submit_generation_task",
         AsyncMock(return_value="provider-task"),
     )
     monkeypatch.setattr(

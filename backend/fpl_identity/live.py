@@ -55,6 +55,7 @@ from fpl_runtime.visual_assistant import attachment_target
 from fpl_runtime.visual_catalog import AGENT_ACCEPTANCE_TARGET
 from fpl_runtime.visual_catalog import catalog_target as visual_catalog_target
 from fpl_runtime.visual_composition import grid_asset_target, grid_render_target
+from fpl_runtime.visual_generation import model_target as visual_generation_model_target
 from fpl_runtime.visual_snapshot import archive_target as visual_archive_target
 from fpl_runtime.visual_snapshot import asset_target as visual_snapshot_asset_target
 from fpl_runtime.visual_snapshot import model_target as visual_snapshot_model_target
@@ -149,6 +150,7 @@ async def live(request: Request, body: LiveRequest):
         or annotation_transcription_target(body.method, body.path) is not None
         or visual_catalog_target(body.method, body.path)
         or visual_snapshot_model_target(body.method, body.path)
+        or visual_generation_model_target(body.method, body.path)
         or visual_snapshot_resolution_target(body.method, body.path)
         or asr_model_target(body.method, body.path)
         or galgame_asr_catalog_target(body.method, body.path)

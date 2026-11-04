@@ -30,9 +30,7 @@ from app.apps.visual_workshop.schemas.workshop import (
     GenerationTaskCreateIn,
     GenerationTaskOut,
     ImageGenerationTaskCreateIn,
-    VideoGenerationTaskCreateIn,
 )
-from app.capabilities.asset_store import download_filename
 from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualProjectAssetReference,
@@ -43,19 +41,13 @@ from app.llm.models import (
     ModelEntry,
     ModelProvider,
 )
-from app.llm.providers import autodl_workflows
-from app.llm.providers.seedance_parameters import normalize_video_parameters, video_capabilities
 from app.llm.providers.seedance_references import SeedanceReference, validate_seedance_references
 from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
-from app.llm.providers.volcengine_image import SEEDREAM_MODEL, SEEDREAM_SIZES
-from app.llm.providers.zealman_workflows import (
-    REFERENCE_MIME_TYPES as WORKFLOW_MIME_TYPES,
-)
-from app.llm.providers.zealman_workflows import (
-    normalize_request,
-)
+from app.llm.providers.volcengine_image import SEEDREAM_SIZES
 from app.llm.schemas.visual_catalog import GenerationOptionsOut
 from app.llm.visual_catalog import generation_options
+from app.llm.visual_generation_model import VisualGenerationValidationError, select_visual_model
+from app.llm.visual_generation_payload import prepare_visual_payload
 from app.runtime.config import Settings, get_settings
 from app.runtime.task_admission import TaskAdmission
 from app.runtime.time import utc_now
@@ -88,38 +80,12 @@ class VisualGeneration(GenerationRecords):
     async def _model(
         self, model_id: str, kind: str, audio_mode: str | None = None
     ) -> tuple[ModelEntry, ModelProvider]:
-        model = await self.session.get(ModelEntry, model_id)
-        if model is None:
-            raise GenerationError("生成模型不存在", code="model_unavailable", status=404)
-        provider = await self.session.get(ModelProvider, model.provider_id)
-        capability = f"{kind}_generation"
-        expected_provider_kind = (
-            f"senseaudio_{audio_mode}" if kind == "audio" else f"senseaudio_{kind}"
-        )
-        if (
-            provider is None
-            or not provider.enabled
-            or not model.enabled
-            or provider.kind
-            not in (
-                {"senseaudio_image", "volcengine_image"}
-                if kind == "image"
-                else {"senseaudio_video", "zealman_video", "volcengine_video", "autodl_video"}
-                if kind == "video"
-                else {expected_provider_kind}
-            )
-            or capability not in list(model.capabilities or [])
-        ):
-            raise GenerationError("当前生成模型不可用", code="model_unavailable", status=409)
-        if provider.kind != "zealman_video" and not provider.api_key_ciphertext:
-            raise GenerationError("供应商尚未配置 API Key", code="missing_api_key", status=409)
-        if provider.kind == "volcengine_image" and model.slug != SEEDREAM_MODEL:
-            raise GenerationError("当前方舟图片适配仅支持 Seedream 4.5", code="unsupported_model")
         try:
-            video_capabilities(provider.kind, model.slug)
-        except ValueError as exc:
-            raise GenerationError(str(exc), code="unsupported_model") from None
-        return model, provider
+            return await select_visual_model(
+                self.session, self.session.info["owner_user_id"], model_id, kind, audio_mode
+            )
+        except VisualGenerationValidationError as exc:
+            raise GenerationError(str(exc), code=exc.code, status=exc.status) from None
 
     async def _reference_asset(
         self,
@@ -228,156 +194,38 @@ class VisualGeneration(GenerationRecords):
             frame_reference_slots=provider.kind == "autodl_video"
             and model.slug == "minimax_h3_lightx2v",
         )
-        payload = body.model_dump(
-            mode="json",
-            exclude={"canvas_node_id", "expected_canvas_revision"},
-        )
-        payload["input_snapshot"] = input_snapshot
-        reference_assets: dict[str, VisualAsset] = {}
-        if isinstance(body, ImageGenerationTaskCreateIn):
-            sizes = (
-                SEEDREAM_SIZES
-                if provider.kind == "volcengine_image"
-                else IMAGE_MODEL_SIZES.get(model.slug)
+
+        async def reference(identity, kind, *, accepted_mimes=None):
+            return await self._reference_asset(
+                project_id, identity, kind, accepted_mimes=accepted_mimes
             )
-            if not sizes or body.size not in sizes:
-                raise GenerationError("当前模型不支持所选图片尺寸", code="unsupported_size")
-            prompt_limit = 6000 if model.slug == "senseaudio-image-2.0-260319" else 2000
-            if len(body.prompt) > prompt_limit:
-                raise GenerationError(
-                    f"当前模型提示词最多支持 {prompt_limit} 个字符",
-                    code="prompt_too_long",
-                )
-            reference_ids = list(
-                dict.fromkeys(
-                    [
-                        *body.reference_asset_ids,
-                        *([body.reference_asset_id] if body.reference_asset_id else []),
-                    ]
-                )
+
+        async def seedance(slug, payload, assets):
+            await validate_seedance_references(
+                slug,
+                payload,
+                [
+                    SeedanceReference(
+                        asset.media_kind, asset.mime_type, self.storage.path_for(asset)
+                    )
+                    for asset in assets
+                ],
+                self.settings.fpl_temp_media_upload_url,
             )
-            if len(reference_ids) > (14 if provider.kind == "volcengine_image" else 1):
-                raise GenerationError(
-                    "当前图片模型不支持所选参考图数量", code="too_many_references"
-                )
-            if provider.kind == "volcengine_image" and body.seed is not None:
-                raise GenerationError(
-                    "Seedream 4.5 不支持指定随机种子", code="unsupported_parameter"
-                )
-            for reference_id in reference_ids:
-                reference_assets[reference_id] = await self._reference_asset(
-                    project_id, reference_id, "image"
-                )
-                if provider.kind == "volcengine_image" and reference_assets[
-                    reference_id
-                ].mime_type not in {"image/png", "image/jpeg", "image/webp"}:
-                    raise GenerationError(
-                        "Seedream 4.5 参考图仅支持 PNG、JPEG、WebP",
-                        code="unsupported_reference_format",
-                    )
-            payload["reference_asset_ids"] = reference_ids
-            payload["reference_asset_id"] = reference_ids[0] if len(reference_ids) == 1 else None
-        elif isinstance(body, VideoGenerationTaskCreateIn):
-            try:
-                payload = normalize_video_parameters(provider.kind, model.slug, payload)
-            except ValueError as exc:
-                raise GenerationError(str(exc), code="unsupported_parameter") from None
-            if provider.kind == "zealman_video":
-                try:
-                    payload["workflow_parameters"] = (
-                        body.workflow_parameters.model_dump(exclude_unset=True)
-                        if body.workflow_parameters
-                        else {}
-                    )
-                    payload = normalize_request(model.slug, payload, explicit_fields)
-                except ValueError as exc:
-                    raise GenerationError(str(exc), code="unsupported_parameter") from None
-            elif provider.kind != "autodl_video" and body.workflow_parameters is not None:
-                raise GenerationError("当前模型不支持工作流参数", code="unsupported_parameter")
-            if provider.kind not in {"zealman_video", "autodl_video"}:
-                for field, default in {
-                    "resolution": "720p",
-                    "ratio": "16:9",
-                    "watermark": True,
-                    "generate_audio": False,
-                }.items():
-                    if payload.get(field) is None:
-                        payload[field] = default
-            image_ids = [
-                item
-                for item in (
-                    body.first_frame_asset_id,
-                    body.last_frame_asset_id,
-                    *body.reference_asset_ids,
-                )
-                if item
-            ]
-            for asset_id in image_ids:
-                reference_assets[asset_id] = await self._reference_asset(
-                    project_id, asset_id, "image"
-                )
-            for asset_id in body.audio_asset_ids:
-                reference_assets[asset_id] = await self._reference_asset(
-                    project_id,
-                    asset_id,
-                    "audio",
-                    accepted_mimes=set(
-                        autodl_workflows.capabilities(model.slug).reference_mime_types["audio"]
-                    )
-                    if provider.kind == "autodl_video"
-                    else None,
-                )
-            for asset_id in body.video_asset_ids:
-                reference_assets[asset_id] = await self._reference_asset(
-                    project_id, asset_id, "video"
-                )
-            if provider.kind == "zealman_video":
-                if sum(asset.byte_size for asset in reference_assets.values()) > 45 * 1024 * 1024:
-                    raise GenerationError(
-                        "参考素材总大小不能超过 45 MB", code="reference_too_large"
-                    )
-                if any(
-                    asset.mime_type not in WORKFLOW_MIME_TYPES[asset.media_kind]
-                    for asset in reference_assets.values()
-                ):
-                    raise GenerationError("工作流不支持所选素材格式", code="invalid_reference")
-            if provider.kind == "autodl_video":
-                try:
-                    autodl_workflows.validate_references(
-                        model.slug,
-                        [
-                            (a.media_kind, a.mime_type, a.byte_size)
-                            for a in reference_assets.values()
-                        ],
-                    )
-                except ValueError as exc:
-                    raise GenerationError(str(exc), code="invalid_reference") from None
-            if provider.kind == "volcengine_video":
-                try:
-                    await validate_seedance_references(
-                        model.slug,
-                        payload,
-                        [
-                            SeedanceReference(
-                                asset.media_kind, asset.mime_type, self.storage.path_for(asset)
-                            )
-                            for asset in reference_assets.values()
-                        ],
-                        self.settings.fpl_temp_media_upload_url,
-                    )
-                except ValueError as exc:
-                    raise GenerationError(str(exc), code="invalid_reference") from None
-        elif isinstance(body, AudioGenerationTaskCreateIn):
-            for asset_id in body.reference_asset_ids:
-                reference_assets[asset_id] = await self._reference_asset(
-                    project_id, asset_id, "audio"
-                )
-        if reference_titles:
-            payload["reference_filenames"] = {
-                asset_id: download_filename(title, reference_assets[asset_id].original_filename)
-                for asset_id, title in reference_titles.items()
-                if asset_id in reference_assets
-            }
+
+        try:
+            payload = await prepare_visual_payload(
+                body,
+                provider_kind=provider.kind,
+                model_slug=model.slug,
+                explicit_fields=explicit_fields,
+                reference_titles=reference_titles,
+                input_snapshot=input_snapshot,
+                reference=reference,
+                validate_seedance=seedance,
+            )
+        except VisualGenerationValidationError as exc:
+            raise GenerationError(str(exc), code=exc.code, status=exc.status) from None
         row = VisualGenerationTask(
             owner_user_id=(await self._project(project_id)).owner_user_id,
             project_id=project_id,
