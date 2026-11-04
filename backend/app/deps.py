@@ -87,17 +87,22 @@ async def require_public_studio_auth(request: Request, session: SessionDep) -> S
 
 
 async def authenticate_studio_websocket(
-    websocket: WebSocket, session: AsyncSession
+    websocket: WebSocket, session: AsyncSession, permission: str = "models.use"
 ) -> StudioPrincipal:
     authenticator = getattr(websocket.app.state, "studio_socket_auth", None)
     if authenticator is None:
         raise _unauthorized()
-    return await authenticator(websocket, session)
+    principal = await authenticator(websocket, session)
+    if not principal.allows(permission):
+        raise _forbidden("insufficient_permission", "当前账号不允许此操作")
+    return principal
 
 
-async def resolve_studio_websocket_principal(websocket: WebSocket) -> StudioPrincipal:
+async def resolve_studio_websocket_principal(
+    websocket: WebSocket, permission: str = "models.use"
+) -> StudioPrincipal:
     async with websocket.app.state.database.sessions() as session:
-        return await authenticate_studio_websocket(websocket, session)
+        return await authenticate_studio_websocket(websocket, session, permission)
 
 
 StudioAuth = Annotated[StudioPrincipal, Depends(require_studio_auth)]

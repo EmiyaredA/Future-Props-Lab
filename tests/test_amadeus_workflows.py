@@ -9,7 +9,7 @@ from app.console.amadeus.runs import recover_interrupted_amadeus_runs
 from app.main import app
 from db.migrations.registry import LATEST_MIGRATION_ID
 from db.migrations.runner import apply_migrations, check_migrations, connect_database
-from test_code_agents import authorize, configured, wait_run  # noqa: F401
+from test_code_agents import configured, wait_run  # noqa: F401
 from test_workspace_governance import client_account
 
 pytestmark = pytest.mark.real_auth
@@ -58,7 +58,6 @@ def test_amadeus_workflow_migration_on_temporary_database(tmp_path: Path):
 async def test_completed_plan_and_agent_runs_accept_one_same_mode_revision():
     client, _, user_id, _ = await client_account(admin=True)
     async with aclosing(client):
-        await authorize(client, user_id)
         root = await conversation(client)
         await message(client, root, "读取项目目录")
         for mode in ("plan", "agent"):
@@ -82,7 +81,6 @@ async def test_completed_plan_and_agent_runs_accept_one_same_mode_revision():
 async def test_revising_write_parameters_invalidates_old_approval():
     client, _, user_id, _ = await client_account(admin=True)
     async with aclosing(client):
-        await authorize(client, user_id)
         project = (
             await client.post(
                 "/v1/visual-workshop/projects", json={"title": "审批修订", "kind": "video"}
@@ -131,7 +129,6 @@ async def test_revising_write_parameters_invalidates_old_approval():
 async def test_plan_to_agent_adds_draft_only_after_restored_approval():
     client, _, user_id, _ = await client_account(admin=True)
     async with aclosing(client):
-        await authorize(client, user_id)
         project = (
             await client.post(
                 "/v1/visual-workshop/projects", json={"title": "计划与执行", "kind": "video"}
@@ -186,7 +183,6 @@ async def test_plan_to_agent_adds_draft_only_after_restored_approval():
 async def test_question_survives_recovery_and_answer_is_single_use():
     client, _, user_id, _ = await client_account(admin=True)
     async with aclosing(client):
-        await authorize(client, user_id)
         root = await conversation(client)
         await message(client, root, "ASK_FAKE")
         original = await start(client, root, mode="plan")
@@ -215,7 +211,6 @@ async def test_question_survives_recovery_and_answer_is_single_use():
 async def test_legacy_model_bridge_cannot_run_subagent_or_write_tools():
     client, _, user_id, _ = await client_account(admin=True)
     async with aclosing(client):
-        await authorize(client, user_id)
         root = await conversation(client)
         await message(client, root, "读取项目目录")
         run = await start(client, root)

@@ -40,6 +40,29 @@ def test_all_public_operations_and_tables_have_reviewable_owners():
     assert catalog.match("GET", "/v1/unregistered") is None
 
 
+def test_cloud_control_capabilities_keep_their_registered_owners():
+    from fpl_config import FIELDS
+
+    data = document(ROOT)
+    paths = {item["path"]: item["service"] for item in data["operations"]}
+    assert paths["/v1/cloud-control/totp/confirm"] == "identity"
+    assert paths["/v1/cloud-control/desktop/connect"] == "remote"
+    assert paths["/v1/agent-workbench/chats/{chat_id}/events"] == "agents"
+    assert paths["/v1/code-agents/{agent_id}/enable"] == "agent-runtime"
+    assert "/v1/code-agents/grants" not in paths
+    tables = {item["table"]: item["service"] for item in data["tables"]}
+    assert tables["cloud_control_factors"] == tables["cloud_control_unlocks"] == "identity"
+    assert tables["cloud_desktop_preferences"] == "remote"
+    assert tables["workbench_chats"] == tables["workbench_turns"] == "agents"
+    assert {"path": "/cloud-control", "service": "portal"} in data["pages"]
+    assert not any(page["path"] == "/remote" for page in data["pages"])
+    assert {name: set(fields) for name, fields in data["configuration"].items()} == {
+        name: set(fields) for name, fields in FIELDS.items()
+    }
+    assert data["configuration"]["cloud_control"]["projects"] == "agents"
+    assert data["configuration"]["cloud_control"]["admin_user_ids"] == "identity"
+
+
 def test_routes_refuse_ambiguous_templates_and_contract_drift():
     with pytest.raises(ValueError, match="重复"):
         RouteCatalog(
@@ -85,7 +108,7 @@ def test_manifest_does_not_include_credentials_or_runtime_paths():
     content = json.dumps(document(ROOT))
     assert "fpm_" not in content
     assert "/Users/" not in content
-    assert "secrets_key" not in content
+    assert document(ROOT)["configuration"]["security"] == {"secrets_key": "per-service"}
 
 
 @pytest.mark.parametrize(
@@ -107,6 +130,9 @@ def test_websocket_ownership_is_explicit_and_never_a_fake_http_operation():
     catalog = RouteCatalog.read(ROOT / "deploy/contracts/ownership.json")
     socket = catalog.match_socket("/v1/model-test/realtime")
     assert socket == SocketOperation("models", "/v1/model-test/realtime", "models.use")
+    assert catalog.match_socket("/v1/cloud-control/desktop/socket") == SocketOperation(
+        "remote", "/v1/cloud-control/desktop/socket", "cloud-control.access"
+    )
     assert tuple(catalog.websockets) == SOCKET_OPERATIONS
     assert catalog.match("GET", socket.path) is None
     assert catalog.match_socket(socket.path + "/unknown") is None
@@ -159,10 +185,10 @@ def test_gateway_matches_real_socket_upgrade_and_strips_forged_protocol_headers(
             + "\n      header Upgrade websocket"
             in rendered
         )
-    assert rendered.count("request_header X-Fpl-Request-Protocol websocket") == 2
-    assert rendered.count("header_up -Upgrade") == 2
-    assert rendered.count("header_up -Connection") == 2
-    assert rendered.count("header_up -Sec-WebSocket-*") == 2
+    assert rendered.count("request_header X-Fpl-Request-Protocol websocket") == 4
+    assert rendered.count("header_up -Upgrade") == 4
+    assert rendered.count("header_up -Connection") == 4
+    assert rendered.count("header_up -Sec-WebSocket-*") == 4
     assert "request_header X-Fpl-Request-Protocol http" not in rendered
     assert rendered.index("request_header -X-Fpl-*") < rendered.index(
         "request_header X-Fpl-Request-Protocol websocket"

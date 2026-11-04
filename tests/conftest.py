@@ -88,36 +88,6 @@ def pytest_sessionfinish() -> None:
 
 
 @pytest.fixture(autouse=True)
-async def isolated_cli_allocation_policy():
-    if "app.main" not in sys.modules:
-        yield
-        return
-    from copy import deepcopy
-
-    from sqlalchemy import delete
-
-    from app.console.models.platform_governance import PlatformSetting
-    from app.runtime.db import SessionLocal
-
-    async with SessionLocal() as session:
-        row = await session.get(PlatformSetting, "code_agents")
-        snapshot = (
-            {
-                key: deepcopy(getattr(row, key))
-                for key in ["payload", "revision", "created_at", "updated_at"]
-            }
-            if row
-            else None
-        )
-    yield
-    async with SessionLocal() as session:
-        await session.execute(delete(PlatformSetting).where(PlatformSetting.id == "code_agents"))
-        if snapshot:
-            session.add(PlatformSetting(id="code_agents", **snapshot))
-        await session.commit()
-
-
-@pytest.fixture(autouse=True)
 def explicit_thought_identity_adapter():
     """Direct legacy storage tests opt into the same explicit local Identity port."""
     if "app.main" not in sys.modules:

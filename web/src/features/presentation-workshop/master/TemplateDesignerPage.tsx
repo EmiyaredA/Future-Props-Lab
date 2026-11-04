@@ -24,13 +24,7 @@ export function TemplateDesignerPage({
     enabled: id !== "new",
   });
   if (id !== "new" && query.isPending)
-    return (
-      <LoadingState
-        label="正在打开模板…"
-        variant="region"
-        className="presentation-loading"
-      />
-    );
+    return <LoadingState label="正在打开模板…" variant="page" />;
   if (id !== "new" && query.isError)
     return (
       <div className="presentation-loading" role="alert">

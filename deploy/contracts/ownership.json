@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "openapi_sha256": "467ee2656e2fc6ba1436d40a987dbd7742d254a598ad7a186c72d48dd74ff230",
+  "openapi_sha256": "bb7c6d8010ca42b6262f15cb243f22e8067dd148e5f19d23b961f1f01b50fed3",
   "operations": [
     {
       "service": "identity",
@@ -119,8 +119,56 @@
     {
       "service": "agents",
       "method": "GET",
+      "path": "/v1/agent-workbench/chats",
+      "operation_id": "list_chats_v1_agent_workbench_chats_get"
+    },
+    {
+      "service": "agents",
+      "method": "POST",
+      "path": "/v1/agent-workbench/chats",
+      "operation_id": "create_chat_v1_agent_workbench_chats_post"
+    },
+    {
+      "service": "agents",
+      "method": "GET",
+      "path": "/v1/agent-workbench/chats/{chat_id}",
+      "operation_id": "detail_v1_agent_workbench_chats__chat_id__get"
+    },
+    {
+      "service": "agents",
+      "method": "GET",
+      "path": "/v1/agent-workbench/chats/{chat_id}/events",
+      "operation_id": "stream_v1_agent_workbench_chats__chat_id__events_get"
+    },
+    {
+      "service": "agents",
+      "method": "POST",
+      "path": "/v1/agent-workbench/chats/{chat_id}/turns",
+      "operation_id": "send_turn_v1_agent_workbench_chats__chat_id__turns_post"
+    },
+    {
+      "service": "agents",
+      "method": "POST",
+      "path": "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/approvals/{approval_id}",
+      "operation_id": "decide_v1_agent_workbench_chats__chat_id__turns__turn_id__approvals__approval_id__post"
+    },
+    {
+      "service": "agents",
+      "method": "POST",
+      "path": "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/stop",
+      "operation_id": "stop_v1_agent_workbench_chats__chat_id__turns__turn_id__stop_post"
+    },
+    {
+      "service": "agents",
+      "method": "GET",
       "path": "/v1/agent-workbench/events",
       "operation_id": "events_v1_agent_workbench_events_get"
+    },
+    {
+      "service": "agents",
+      "method": "GET",
+      "path": "/v1/agent-workbench/execution/catalog",
+      "operation_id": "catalog_v1_agent_workbench_execution_catalog_get"
     },
     {
       "service": "agents",
@@ -567,6 +615,54 @@
       "operation_id": "service_status_v1_automation_services_get"
     },
     {
+      "service": "remote",
+      "method": "POST",
+      "path": "/v1/cloud-control/desktop/connect",
+      "operation_id": "connect_v1_cloud_control_desktop_connect_post"
+    },
+    {
+      "service": "remote",
+      "method": "PUT",
+      "path": "/v1/cloud-control/desktop/idle",
+      "operation_id": "save_idle_v1_cloud_control_desktop_idle_put"
+    },
+    {
+      "service": "remote",
+      "method": "GET",
+      "path": "/v1/cloud-control/settings",
+      "operation_id": "settings_view_v1_cloud_control_settings_get"
+    },
+    {
+      "service": "remote",
+      "method": "PUT",
+      "path": "/v1/cloud-control/settings",
+      "operation_id": "settings_save_v1_cloud_control_settings_put"
+    },
+    {
+      "service": "remote",
+      "method": "GET",
+      "path": "/v1/cloud-control/status",
+      "operation_id": "status_v1_cloud_control_status_get"
+    },
+    {
+      "service": "identity",
+      "method": "POST",
+      "path": "/v1/cloud-control/totp/confirm",
+      "operation_id": "confirm_v1_cloud_control_totp_confirm_post"
+    },
+    {
+      "service": "identity",
+      "method": "POST",
+      "path": "/v1/cloud-control/totp/enroll",
+      "operation_id": "enroll_v1_cloud_control_totp_enroll_post"
+    },
+    {
+      "service": "identity",
+      "method": "POST",
+      "path": "/v1/cloud-control/totp/verify",
+      "operation_id": "verify_v1_cloud_control_totp_verify_post"
+    },
+    {
       "service": "agent-runtime",
       "method": "GET",
       "path": "/v1/code-agents",
@@ -580,15 +676,9 @@
     },
     {
       "service": "agent-runtime",
-      "method": "GET",
-      "path": "/v1/code-agents/grants",
-      "operation_id": "get_code_agent_grants_v1_code_agents_grants_get"
-    },
-    {
-      "service": "agent-runtime",
-      "method": "PUT",
-      "path": "/v1/code-agents/grants",
-      "operation_id": "put_code_agent_grants_v1_code_agents_grants_put"
+      "method": "POST",
+      "path": "/v1/code-agents/{agent_id}/enable",
+      "operation_id": "enable_code_agent_v1_code_agents__agent_id__enable_post"
     },
     {
       "service": "creative",
@@ -3578,9 +3668,26 @@
       "service": "models",
       "path": "/v1/model-test/realtime",
       "permission": "models.use"
+    },
+    {
+      "service": "remote",
+      "path": "/v1/cloud-control/desktop/socket",
+      "permission": "cloud-control.access"
     }
   ],
   "tables": [
+    {
+      "table": "workbench_chats",
+      "service": "agents",
+      "module": "app.apps.agent_workbench.execution.models",
+      "model": "WorkbenchChat"
+    },
+    {
+      "table": "workbench_turns",
+      "service": "agents",
+      "module": "app.apps.agent_workbench.execution.models",
+      "model": "WorkbenchTurn"
+    },
     {
       "table": "agent_workbench_sources",
       "service": "agents",
@@ -4138,6 +4245,24 @@
       "service": "amadeus",
       "module": "app.console.amadeus.models",
       "model": "AmadeusRunEvent"
+    },
+    {
+      "table": "cloud_control_factors",
+      "service": "identity",
+      "module": "app.console.cloud_control.models",
+      "model": "CloudFactor"
+    },
+    {
+      "table": "cloud_control_unlocks",
+      "service": "identity",
+      "module": "app.console.cloud_control.models",
+      "model": "CloudUnlock"
+    },
+    {
+      "table": "cloud_desktop_preferences",
+      "service": "remote",
+      "module": "app.console.cloud_control.preference_models",
+      "model": "DesktopPreference"
     },
     {
       "table": "creative_items",
@@ -4734,6 +4859,228 @@
       "model": "VisualCanvasReferenceMutation"
     }
   ],
+  "pages": [
+    {
+      "path": "/management",
+      "service": "management"
+    },
+    {
+      "path": "/login",
+      "service": "identity"
+    },
+    {
+      "path": "/account",
+      "service": "identity"
+    },
+    {
+      "path": "/",
+      "service": "portal"
+    },
+    {
+      "path": "/home",
+      "service": "portal"
+    },
+    {
+      "path": "/apps",
+      "service": "portal"
+    },
+    {
+      "path": "/cloud-control",
+      "service": "portal"
+    },
+    {
+      "path": "/docs.html",
+      "service": "portal"
+    },
+    {
+      "path": "/docs",
+      "service": "portal"
+    },
+    {
+      "path": "/agents",
+      "service": "agents"
+    },
+    {
+      "path": "/apps/visual-workshop",
+      "service": "visual"
+    },
+    {
+      "path": "/apps/thought-workshop",
+      "service": "thought"
+    },
+    {
+      "path": "/apps/galgame-workshop",
+      "service": "galgame"
+    },
+    {
+      "path": "/apps/video-editor",
+      "service": "video"
+    },
+    {
+      "path": "/apps/motion-compositor",
+      "service": "motion"
+    },
+    {
+      "path": "/apps/presentation-workshop",
+      "service": "presentation"
+    },
+    {
+      "path": "/apps/audio-annotation",
+      "service": "annotation"
+    },
+    {
+      "path": "/apps/director-desk",
+      "service": "director"
+    },
+    {
+      "path": "/apps/interview-assistant",
+      "service": "interview"
+    },
+    {
+      "path": "/creative-workshop",
+      "service": "creative"
+    },
+    {
+      "path": "/files",
+      "service": "assets"
+    },
+    {
+      "path": "/model-service",
+      "service": "models"
+    },
+    {
+      "path": "/model-test",
+      "service": "models"
+    },
+    {
+      "path": "/model-call-logs",
+      "service": "models"
+    },
+    {
+      "path": "/code-agents",
+      "service": "agent-runtime"
+    },
+    {
+      "path": "/integrations",
+      "service": "integrations"
+    },
+    {
+      "path": "/tools",
+      "service": "tools"
+    }
+  ],
+  "configuration": {
+    "agent_workbench": {
+      "enabled": "agents",
+      "poll_seconds": "agents",
+      "files_per_pass": "agents"
+    },
+    "cloud_control": {
+      "enabled": "identity",
+      "public_enabled": "identity",
+      "public_desktop_vnc_only": "identity",
+      "admin_user_ids": "identity",
+      "host_label": "remote",
+      "guacd_port": "remote",
+      "vnc_host": "remote",
+      "vnc_port": "remote",
+      "vnc_password": "remote",
+      "projects": "agents"
+    },
+    "code_agents": {
+      "codex_enabled": "agent-runtime",
+      "codex_executable": "agent-runtime",
+      "claude_enabled": "agent-runtime",
+      "claude_executable": "agent-runtime",
+      "opencode_enabled": "agent-runtime",
+      "opencode_executable": "agent-runtime",
+      "dsh_enabled": "agent-runtime",
+      "dsh_executable": "agent-runtime",
+      "pi_enabled": "agent-runtime",
+      "pi_executable": "agent-runtime"
+    },
+    "visual_acceptance": {
+      "model_owner_user_id": "visual",
+      "model_id": "visual",
+      "codex_executable": "visual",
+      "codex_user_ids": "visual",
+      "claude_executable": "visual",
+      "claude_user_ids": "visual"
+    },
+    "interview_codex": {
+      "enabled": "interview",
+      "executable": "interview",
+      "user_id": "interview"
+    },
+    "management": {
+      "local_origin": "management",
+      "public_origin": "management"
+    },
+    "deployment": {
+      "compose_file": "management",
+      "project_name": "management",
+      "environment": "management"
+    },
+    "management_host": {
+      "base_url": "management",
+      "credential_file": "management",
+      "state_root": "management",
+      "business_services": "management",
+      "credentials_root": "management",
+      "auto_start": "management"
+    },
+    "management_remote": {
+      "port": "management",
+      "ssh_host": "management",
+      "ssh_user": "management",
+      "ssh_port": "management",
+      "remote_port": "management",
+      "identity_id": "management",
+      "known_hosts_id": "management",
+      "enabled": "management"
+    },
+    "website": {
+      "port": "gateway",
+      "web_root": "gateway",
+      "public_enabled": "gateway",
+      "legacy_data_root": "gateway"
+    },
+    "storage": {
+      "database_path": "per-service"
+    },
+    "security": {
+      "secrets_key": "per-service"
+    },
+    "http": {
+      "cors_origins": "gateway",
+      "auth_cookie_secure": "identity"
+    },
+    "remote_web": {
+      "enabled": "gateway",
+      "origin": "gateway",
+      "port": "gateway",
+      "web_root": "gateway",
+      "ssh_host": "gateway",
+      "ssh_user": "gateway",
+      "ssh_port": "gateway",
+      "remote_port": "gateway",
+      "identity_id": "gateway",
+      "known_hosts_id": "gateway"
+    },
+    "limits": {
+      "visual_asset_max_bytes": "assets",
+      "galgame_export_max_bytes": "galgame",
+      "project_snapshot_max_bytes": "assets",
+      "project_snapshot_max_files": "assets",
+      "skill_archive_max_bytes": "integrations",
+      "skill_expanded_max_bytes": "integrations",
+      "skill_max_files": "integrations"
+    },
+    "integrations": {
+      "temp_media_upload_url": "integrations",
+      "mcp_stdio_allowed_commands": "integrations"
+    }
+  },
   "partitions": {
     "platform_settings": {
       "keys": {

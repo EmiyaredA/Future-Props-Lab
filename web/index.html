@@ -26,8 +26,9 @@
         background: #202329;
       }
       .fpl-boot-loading {
-        min-height: 85vh !important;
         font: 14px system-ui;
+      }
+      .fpl-boot-loading > span {
         animation: fpl-boot-reveal 0.15s step-end;
       }
       html[data-theme="dark"] .fpl-boot-loading {
@@ -49,7 +50,7 @@
         role="status"
         aria-live="polite"
         aria-busy="true"
-        class="fpl-loading fpl-loading--page is-visible fpl-boot-loading"
+        class="fpl-loading fpl-loading--page fpl-loading--fullscreen is-visible fpl-boot-loading"
       >
         <span
           class="fpl-loading-scene fpl-loading-scene--page"

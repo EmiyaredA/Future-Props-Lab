@@ -80,10 +80,7 @@ async def scheme_status(
         label = DEFINITIONS[agent].name
 
         available = bool(
-            path
-            and await authorized(
-                session, owner_user_id, user_id, agent, "visual_acceptance", settings=settings
-            )
+            path and await authorized(session, owner_user_id, user_id, agent, "visual_acceptance")
         )
         message = "已配置" if available else "此账号尚未获准使用该固定 Agent 连接"
         if available and check_cli:

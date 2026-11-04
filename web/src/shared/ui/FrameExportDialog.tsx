@@ -228,7 +228,7 @@ export function FrameExportDialog({
               ) : previewUrl && snapshot ? (
                 <>
                   <ResponsiveImage src={previewUrl} alt="当前导出视频帧预览" />
-                  <span>
+                  <span className="frame-export-preview-details">
                     {snapshot.width} × {snapshot.height} ·{" "}
                     {formatFramePlaybackTime(snapshot.capturedAt)}
                   </span>

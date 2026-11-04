@@ -120,11 +120,7 @@ export function DirectorDeskEditorPage({
   return (
     <div className="director-desk-root" data-project-id={projectId}>
       {project.isPending ? (
-        <LoadingState
-          label="正在打开预演…"
-          variant="region"
-          className="director-desk-boot"
-        />
+        <LoadingState label="正在打开预演…" variant="page" />
       ) : null}
       <div id="app" />
     </div>

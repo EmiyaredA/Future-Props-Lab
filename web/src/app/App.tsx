@@ -151,15 +151,7 @@ const LegacyOfficialPage = lazy(() =>
 function PageBoundary({ children }: { children: ReactNode }) {
   return (
     <PageErrorBoundary key={window.location.pathname}>
-      <Suspense
-        fallback={
-          <LoadingState
-            label="正在加载…"
-            variant="page"
-            className="page-loading"
-          />
-        }
-      >
+      <Suspense fallback={<LoadingState label="正在加载…" variant="page" />}>
         {children}
       </Suspense>
     </PageErrorBoundary>
@@ -796,8 +788,9 @@ export default function App() {
           />
         ) : page === "cloud-control" ? (
           <CloudControlPage
-            onOpen={navigatePath}
-            workbench={AGENT_WORKBENCH_MODULE.definition}
+            owner={me.user.id}
+            onHistory={(id) => navigate("agent-workbench-session", id)}
+            onSources={() => navigate("agent-workbench-sources")}
           />
         ) : page === "files" ? (
           <FileManagementPage

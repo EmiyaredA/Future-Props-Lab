@@ -120,7 +120,7 @@
   object-fit: contain;
 }
 
-.frame-export-preview > span:not(.frame-export-loading) {
+.frame-export-preview-details {
   position: absolute;
   right: 10px;
   bottom: 10px;

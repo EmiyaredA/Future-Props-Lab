@@ -55,7 +55,10 @@ class RemoteWeb:
         ):
             await reject(404, "Not Found")
             return
-        if websocket and path != "/v1/model-test/realtime":
+        if websocket and path not in {
+            "/v1/model-test/realtime",
+            "/v1/cloud-control/desktop/socket",
+        }:
             await reject(404, "Not Found")
             return
 

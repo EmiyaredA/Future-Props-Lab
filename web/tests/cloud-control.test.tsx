@@ -4,28 +4,71 @@ import { AccountAccessProvider } from "@platform/auth/AccountAccess";
 import { CloudControlPage } from "@features/cloud-control/CloudControlPage";
 import { CloudControlAccess } from "@features/cloud-control/CloudControlAccess";
 import { APPLICATION_DEFINITIONS } from "@app/applicationRegistry";
-import { AGENT_WORKBENCH_MODULE } from "@features/agent-workbench/module";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ApplicationCenterPage } from "@features/applications/ApplicationCenterPage";
 import { parseRoute, pathFor } from "@app/routes";
 
-it("offers administrators the independent workbench in cloud control", () => {
+vi.mock("@features/cloud-control/cloudApi", () => ({
+  readCloudStatus: async () => ({
+    enabled: false,
+    local: true,
+    enrolled: false,
+    unlocked_until: 0,
+    desktop_configured: false,
+    host_label: "Fixture Mac",
+  }),
+}));
+vi.mock("@features/agent-workbench/executionApi", () => ({
+  getChats: async () => [],
+}));
+vi.mock("@features/agent-workbench/api", async (original) => ({
+  ...(await original<typeof import("@features/agent-workbench/api")>()),
+  getSessions: async () => ({ items: [] }),
+}));
+
+it("offers the two cloud panes and preserves the full workbench entry", async () => {
   const open = vi.fn();
-  render(
-    <AccountAccessProvider
-      userId="admin"
-      permissions={["cloud-control.access"]}
-    >
-      <CloudControlPage
-        onOpen={open}
-        workbench={AGENT_WORKBENCH_MODULE.definition}
-      />
-    </AccountAccessProvider>,
+  const observe = vi.fn();
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe = observe;
+      disconnect() {}
+    },
   );
-  expect(screen.getByRole("heading", { name: /^云控$/ })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "打开Agent 工作台" }));
-  expect(open).toHaveBeenCalledWith("/agents");
-  expect(screen.queryByText("空间占用")).not.toBeInTheDocument();
-  expect(screen.queryByText("Codex 模型源")).not.toBeInTheDocument();
+  try {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <AccountAccessProvider
+          userId="admin"
+          permissions={["cloud-control.access"]}
+        >
+          <CloudControlPage
+            owner="admin"
+            onHistory={open}
+            onSources={vi.fn()}
+          />
+        </AccountAccessProvider>
+      </QueryClientProvider>,
+    );
+    expect(screen.getByRole("heading", { name: /^云控$/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "远程桌面" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "Agent 工作台" }),
+    ).toBeInTheDocument();
+    const divider = screen.getByRole("separator", { name: "调整远程桌面宽度" });
+    expect(divider).toHaveAttribute("aria-valuenow", "65");
+    fireEvent.keyDown(divider, { key: "ArrowLeft" });
+    expect(divider).toHaveAttribute("aria-valuenow", "63");
+    fireEvent.click(screen.getByRole("button", { name: "会话历史" }));
+    fireEvent.click(screen.getByRole("button", { name: "查看完整工作台" }));
+    expect(open).toHaveBeenCalledWith();
+    expect(screen.queryByText("空间占用")).not.toBeInTheDocument();
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });
 
 it("never mounts protected content without cloud control permission", () => {

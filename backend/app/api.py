@@ -27,6 +27,7 @@ from app.console.routes.accounts import router as accounts_router
 from app.console.routes.amadeus import require_amadeus_session
 from app.console.routes.amadeus import router as amadeus_router
 from app.console.routes.automation import router as automation_router
+from app.console.routes.cloud_control import router as cloud_control_router
 from app.console.routes.code_agents import router as code_agents_router
 from app.console.routes.creative_workshop import router as creative_workshop_router
 from app.console.routes.file_management import router as file_management_router
@@ -57,6 +58,7 @@ from app.tool_navigation.video_download_routes import router as video_download_r
 register_video_executor(apply_assistant_timeline_batch)
 
 api_router = APIRouter(prefix="/v1")
+api_router.include_router(cloud_control_router)
 api_router.include_router(agent_workbench_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(local_models_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(interview_assistant_router, dependencies=[Depends(require_studio_auth)])

@@ -127,7 +127,7 @@ async def test_site_shares_accounts_and_projects_without_native_transport(websit
 async def test_public_admin_cannot_manage_host_or_public_access_even_with_spoofed_headers(website):
     public = await public_client(website)
     try:
-        for path, status in [
+        for path, expected in [
             ("/v1/automation/access", 403),
             ("/v1/tool-navigation/codex-source", 404),
             ("/v1/tool-navigation/storage-usage", 404),
@@ -136,7 +136,9 @@ async def test_public_admin_cannot_manage_host_or_public_access_even_with_spoofe
             response = await public.get(
                 path, headers={"x-fpl-desktop-token": "forged", "x-forwarded-for": "127.0.0.1"}
             )
-            assert response.status_code == status, (path, response.text)
+            assert response.status_code == expected, (path, response.text)
+        status = await public.get("/v1/cloud-control/status")
+        assert status.status_code == 200 and not status.json()["enabled"]
         assert (
             await public.post("/v1/automation/access/actions", json={"action": "public_start"})
         ).status_code == 403

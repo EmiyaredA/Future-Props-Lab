@@ -165,23 +165,6 @@ async def configured(tmp_path, monkeypatch):
     await app.state.code_agent_runs.close()
 
 
-async def authorize(client, user_id, agent="codex", purpose="amadeus"):
-    state = (await client.get("/v1/code-agents/grants")).json()
-    response = await client.put(
-        "/v1/code-agents/grants",
-        json={
-            "expected_revision": state["revision"],
-            "managed": list(set([*state["managed"], f"{agent}:{purpose}"])),
-            "grants": [
-                *state["grants"],
-                {"user_id": user_id, "agent_id": agent, "purpose": purpose},
-            ],
-        },
-    )
-    assert response.status_code == 200, response.text
-    return response.json()
-
-
 async def wait_run(client, root, identity):
     for _ in range(150):
         value = (await client.get(f"{root}/runs/{identity}")).json()
@@ -197,7 +180,6 @@ async def test_backend_owned_native_run_and_event_tombstones(configured, agent):
     assert configured
     client, _, user_id, _ = await client_account(admin=True)
     async with aclosing(client):
-        await authorize(client, user_id, agent)
         status = (await client.get("/v1/code-agents")).json()
         assert next(a for a in status["items"] if a["id"] == agent)["available"]
         conversation = (await client.post("/v1/amadeus/conversations")).json()
@@ -228,53 +210,32 @@ async def test_backend_owned_native_run_and_event_tombstones(configured, agent):
 
 
 @pytest.mark.asyncio
-async def test_grants_cas_purpose_scope_and_legacy_takeover(configured, monkeypatch):
-    assert configured
-    client, _, user_id, owner_user_id = await client_account(admin=True)
-    other, _, other_id, other_workspace = await client_account()
-    async with aclosing(client), aclosing(other):
-        state = await authorize(client, user_id)
-        stale = await client.put(
-            "/v1/code-agents/grants",
-            json={"expected_revision": 0, "managed": state["managed"], "grants": []},
-        )
-        assert stale.status_code == 409
-        missing = await client.put("/v1/code-agents/grants", json={"managed": [], "grants": []})
-        assert missing.status_code == 422
-        assert (await other.get("/v1/code-agents/grants")).status_code == 403
-        bad = await client.put(
-            "/v1/code-agents/grants",
-            json={
-                "expected_revision": state["revision"],
-                "managed": state["managed"],
-                "grants": [{"user_id": other_id, "agent_id": "codex", "purpose": "amadeus"}],
-            },
-        )
-        assert bad.status_code == 200
-        from app.console.governance.code_agents import authorized
+@pytest.mark.usefixtures("configured")
+async def test_cli_defaults_for_active_accounts_and_preserves_owner_boundary():
+    admin, _, admin_id, _ = await client_account(admin=True)
+    regular, _, user_id, _ = await client_account()
+    from app.console.governance.code_agents import authorized
 
+    async with aclosing(admin), aclosing(regular):
+        result = await regular.get("/v1/code-agents")
+        assert result.status_code == 200
+        assert not result.json()["can_enable"]
+        codex = next(item for item in result.json()["items"] if item["id"] == "codex")
+        assert codex["available"]
+        assert not codex["executable"]
+        assert (await regular.post("/v1/code-agents/codex/enable")).status_code == 403
+        assert (await regular.get("/v1/cloud-control/status")).status_code == 403
+        assert (
+            await regular.post("/v1/cloud-control/desktop/connect", json={"password": "fixture"})
+        ).status_code == 403
         async with SessionLocal() as session:
-            assert not await authorized(session, owner_user_id, user_id, "codex", "amadeus")
-            assert await authorized(session, other_id, other_id, "codex", "amadeus")
-            assert not await authorized(session, other_workspace, user_id, "codex", "amadeus")
+            assert await authorized(session, admin_id, admin_id, "codex", "amadeus")
+            assert await authorized(session, user_id, user_id, "codex", "visual_acceptance")
+            assert await authorized(session, user_id, user_id, "codex", "interview_preparation")
             assert not await authorized(
-                session, owner_user_id, user_id, "codex", "interview_preparation"
+                session, user_id, user_id, "claude-code", "interview_preparation"
             )
-        monkeypatch.setattr(get_settings(), "fpl_acceptance_codex_user_ids", user_id)
-        state = await authorize(client, user_id, purpose="visual_acceptance")
-        revoked = await client.put(
-            "/v1/code-agents/grants",
-            json={
-                "expected_revision": state["revision"],
-                "managed": state["managed"],
-                "grants": [],
-            },
-        )
-        assert revoked.status_code == 200
-        async with SessionLocal() as session:
-            assert not await authorized(
-                session, owner_user_id, user_id, "codex", "visual_acceptance"
-            )
+            assert not await authorized(session, admin_id, user_id, "codex", "amadeus")
 
 
 @pytest.mark.asyncio
@@ -285,7 +246,6 @@ async def test_tools_pause_for_owner_and_reject_plan_writes(configured, marker, 
     assert configured
     client, _, user_id, _ = await client_account(admin=True)
     async with aclosing(client):
-        await authorize(client, user_id)
         conversation = (await client.post("/v1/amadeus/conversations")).json()
         root = f"/v1/amadeus/conversations/{conversation['id']}"
         await client.post(
@@ -319,7 +279,6 @@ async def test_old_history_stays_readonly(configured):
     assert configured
     client, _, user_id, owner_user_id = await client_account(admin=True)
     async with aclosing(client):
-        await authorize(client, user_id)
         conversation = (await client.post("/v1/amadeus/conversations")).json()
         async with SessionLocal() as session:
             bind_owner(session, owner_user_id)
@@ -345,7 +304,6 @@ async def test_native_cancel_stops_process_and_plan_cannot_propose_writes(config
     assert configured
     client, _, user_id, _ = await client_account(admin=True)
     async with aclosing(client):
-        await authorize(client, user_id)
         conversation = (await client.post("/v1/amadeus/conversations")).json()
         root = f"/v1/amadeus/conversations/{conversation['id']}"
         await client.post(
@@ -449,7 +407,6 @@ async def test_oversized_reply_fails_without_stranding_the_owner(configured):
     assert configured
     client, _, user_id, _ = await client_account(admin=True)
     async with aclosing(client):
-        await authorize(client, user_id)
         conversation = (await client.post("/v1/amadeus/conversations")).json()
         root = f"/v1/amadeus/conversations/{conversation['id']}"
         await client.post(

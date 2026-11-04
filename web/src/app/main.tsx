@@ -26,7 +26,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               <LoadingState
                 label="正在打开工作台…"
                 variant="page"
-                className="page-loading"
+                className="fpl-loading--fullscreen"
               />
             }
           >

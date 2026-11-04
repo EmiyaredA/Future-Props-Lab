@@ -84,7 +84,7 @@ export function AmadeusPageProvider({
           >
             <Suspense
               fallback={
-                <LoadingState label="正在打开 Amadeus…" variant="region" />
+                <LoadingState label="正在打开 Amadeus…" variant="page" />
               }
             >
               <Assistant session={session} />

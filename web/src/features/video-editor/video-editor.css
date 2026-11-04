@@ -536,7 +536,7 @@
   }
 }
 .ve-editor-state {
-  height: 100vh;
+  height: 100dvh;
   display: grid;
   place-items: center;
   background: #10141d;

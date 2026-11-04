@@ -26,7 +26,10 @@ class SocketOperation:
     permission: str
 
 
-SOCKET_OPERATIONS = (SocketOperation("models", "/v1/model-test/realtime", "models.use"),)
+SOCKET_OPERATIONS = (
+    SocketOperation("models", "/v1/model-test/realtime", "models.use"),
+    SocketOperation("remote", "/v1/cloud-control/desktop/socket", "cloud-control.access"),
+)
 
 
 class RouteCatalog:

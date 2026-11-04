@@ -121,6 +121,8 @@ from db.migrations.versions import (
     r0117_agent_workbench,
     r0118_retire_character_workshops,
     r0119_retire_model_test_tools,
+    r0120_cloud_control,
+    r0121_cloud_desktop_sessions,
 )
 
 
@@ -562,6 +564,12 @@ MIGRATIONS += (
 
 MIGRATIONS += (
     Migration(r0119_retire_model_test_tools.MIGRATION_ID, r0119_retire_model_test_tools.SQL),
+)
+
+MIGRATIONS += (Migration(r0120_cloud_control.MIGRATION_ID, r0120_cloud_control.SQL),)
+
+MIGRATIONS += (
+    Migration(r0121_cloud_desktop_sessions.MIGRATION_ID, r0121_cloud_desktop_sessions.SQL),
 )
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

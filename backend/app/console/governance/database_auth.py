@@ -182,7 +182,5 @@ async def authenticate_database_websocket(
     if row is None or not valid_session(*row, utc_now()) or row[1].must_change_password:
         raise unauthorized()
     principal = principal_from_record(row[1], auth=row[0])
-    if not principal.allows("models.use"):
-        raise forbidden("insufficient_permission", "当前账号不能调用模型")
     bind_owner(session, principal.user_id)
     return principal

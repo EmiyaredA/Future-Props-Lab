@@ -53,6 +53,8 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
 async def validation_exception_handler(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:
+    if request.url.path == "/v1/cloud-control/desktop/connect":
+        return problem(request, 422, "VNC 密码格式无效", code="validation_error")
     return problem(
         request,
         422,

@@ -6,7 +6,8 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 
-from fpl_runtime.catalog import service_by_id
+from fpl_config import FIELDS
+from fpl_runtime.catalog import SERVICES, service_by_id
 from fpl_runtime.routing import SOCKET_OPERATIONS, Operation, RouteCatalog
 
 APP_OWNERS = {
@@ -30,6 +31,7 @@ API_OWNERS = {
     "audio-annotation": "annotation",
     "automation": "gateway",
     "code-agents": "agent-runtime",
+    "cloud-control": "remote",
     "creative-workshop": "creative",
     "demo-services": "models",
     "director-desk": "director",
@@ -64,6 +66,8 @@ def operation_owner(path):
     parts = path.strip("/").split("/")
     if len(parts) < 2 or parts[0] != "v1":
         raise ValueError("不是业务 API")
+    if path.startswith("/v1/cloud-control/totp/"):
+        return "identity"
     if path == "/v1/file-storage/open-folder":
         return "tools"
     if path in {
@@ -132,6 +136,8 @@ def table_owner(module, table):
         return "integrations"
     if module.startswith("app.tool_navigation."):
         return "tools"
+    if module.startswith("app.console.cloud_control."):
+        return "remote" if table == "cloud_desktop_preferences" else "identity"
     if module.startswith("app.console.amadeus."):
         return "amadeus"
     if module.startswith("app.console.creative_workshop."):
@@ -172,6 +178,66 @@ def model_tables(root):
     return result
 
 
+# Projection owners for the known TOML format. Storage and secret configuration
+# are instantiated per service from the recovery source under deployment control.
+CONFIG_GROUP_OWNERS = {
+    "agent_workbench": "agents",
+    "code_agents": "agent-runtime",
+    "visual_acceptance": "visual",
+    "interview_codex": "interview",
+    "management": "management",
+    "deployment": "management",
+    "management_host": "management",
+    "management_remote": "management",
+    "website": "gateway",
+    "storage": "per-service",
+    "security": "per-service",
+    "remote_web": "gateway",
+    "integrations": "integrations",
+}
+CONFIG_FIELD_OWNERS = {
+    "cloud_control": {
+        "enabled": "identity",
+        "public_enabled": "identity",
+        "public_desktop_vnc_only": "identity",
+        "admin_user_ids": "identity",
+        "host_label": "remote",
+        "guacd_port": "remote",
+        "vnc_host": "remote",
+        "vnc_port": "remote",
+        "vnc_password": "remote",
+        "projects": "agents",
+    },
+    "http": {"cors_origins": "gateway", "auth_cookie_secure": "identity"},
+    "limits": {
+        "visual_asset_max_bytes": "assets",
+        "galgame_export_max_bytes": "galgame",
+        "project_snapshot_max_bytes": "assets",
+        "project_snapshot_max_files": "assets",
+        "skill_archive_max_bytes": "integrations",
+        "skill_expanded_max_bytes": "integrations",
+        "skill_max_files": "integrations",
+    },
+}
+
+
+def configuration_owners():
+    if set(FIELDS) != CONFIG_GROUP_OWNERS.keys() | CONFIG_FIELD_OWNERS.keys():
+        raise ValueError("配置分组缺少服务归属")
+    result = {}
+    for group, fields in FIELDS.items():
+        owners = CONFIG_FIELD_OWNERS.get(group)
+        if owners is None:
+            owners = dict.fromkeys(fields, CONFIG_GROUP_OWNERS[group])
+        if set(owners) != fields.keys():
+            raise ValueError(f"配置分组字段缺少服务归属：{group}")
+        for service in owners.values():
+            if service != "per-service":
+                service_by_id(service)
+        result[group] = owners
+    return result
+
+
 def document(root):
     schema = json.loads((root / "web/src/generated/openapi.json").read_text())
     operations = []
@@ -188,7 +254,9 @@ def document(root):
                         "operation_id": value["operationId"],
                     }
                 )
-    catalog = RouteCatalog(Operation(**operation) for operation in operations)
+    catalog = RouteCatalog(
+        (Operation(**operation) for operation in operations), websockets=SOCKET_OPERATIONS
+    )
     catalog.check_openapi(
         {**schema, "paths": {k: v for k, v in schema["paths"].items() if k.startswith("/v1/")}}
     )
@@ -203,6 +271,12 @@ def document(root):
         "operations": operations,
         "websockets": [asdict(operation) for operation in SOCKET_OPERATIONS],
         "tables": tables,
+        "pages": [
+            {"path": root, "service": service.id}
+            for service in SERVICES
+            for root in service.page_roots
+        ],
+        "configuration": configuration_owners(),
         "partitions": {
             "platform_settings": {
                 "keys": {"runtime_quotas": "models", "code_agents": "agent-runtime"},

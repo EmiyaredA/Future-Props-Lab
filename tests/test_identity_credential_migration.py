@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import time
 from datetime import timedelta
 from io import BytesIO
 from uuid import UUID, uuid4
@@ -21,6 +22,7 @@ from tests.test_tools_navigation_migration import available_ports, listener
 from app.capabilities.identity.permissions import role_scopes
 from app.capabilities.identity.principal import StudioPrincipal
 from app.capabilities.identity.security import CSRF_COOKIE, SESSION_COOKIE
+from app.console.cloud_control.access import totp
 from app.console.governance.account_creation import create_account
 from app.console.governance.profile import apply_avatar, stage_avatar
 from app.console.governance.service import complete_login, create_api_key
@@ -200,6 +202,9 @@ async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, mon
     assert hashlib.sha256(legacy.read_bytes()).hexdigest() == digest
     monkeypatch.setenv("FPL_DATABASE_PATH", str(target / "service.db"))
     get_settings.cache_clear()
+    settings = get_settings()
+    monkeypatch.setattr(settings, "fpl_cloud_control_enabled", True)
+    monkeypatch.setattr(settings, "fpl_cloud_control_admin_user_ids", owner)
     key = Ed25519PrivateKey.generate()
     app = create_app(
         state_root=target,
@@ -227,6 +232,29 @@ async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, mon
             profile_avatar = await api.get("/v1/account/profile/avatar")
             assert profile_avatar.status_code == 200
             assert profile_avatar.content == avatar
+
+            factor = "/v1/cloud-control/totp"
+            csrf_headers = {"X-CSRF-Token": csrf, "Origin": "http://127.0.0.1:19000"}
+            assert (await api.post(factor + "/enroll")).status_code == 403
+            rejected_public = await api.post(
+                "https://studio.example.test" + factor + "/enroll",
+                headers={
+                    "X-Fpl-Ingress": "public",
+                    "X-CSRF-Token": csrf,
+                    "Origin": "https://studio.example.test",
+                },
+            )
+            assert rejected_public.status_code == 403
+            enrollment = await api.post(factor + "/enroll", headers=csrf_headers)
+            assert enrollment.status_code == 200
+            assert enrollment.headers["Cache-Control"] == "no-store"
+            code = totp(enrollment.json()["secret"], int(time.time()) // 30)
+            assert (
+                await api.post(factor + "/confirm", headers=csrf_headers, json={"code": code})
+            ).status_code == 204
+            assert (
+                await api.post(factor + "/verify", headers=csrf_headers, json={"code": code})
+            ).status_code == 403
             retained = await api.get("/v1/account/api-keys")
             assert retained.status_code == 200
             assert {entry["name"] for entry in retained.json()} == {"Retained key", "Revoked key"}

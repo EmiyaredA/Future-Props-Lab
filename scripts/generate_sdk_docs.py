@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 LABELS = {
-    "code_agents": "编程智能体连接与授权",
+    "code_agents": "编程智能体连接",
     "interview": "面试资料准备",
     "automation": "网站自动化接入与资源定位",
     "amadeus": "Amadeus 网页助手",
@@ -70,7 +70,9 @@ def auth_for(path, _method="GET"):
     if path.startswith(("/v1/auth", "/v1/account", "/v1/platform")):
         return "Session；敏感操作需要二次验证"
     if path.startswith("/v1/code-agents"):
-        return "浏览器 Session；连接授权管理须平台管理员并满足近期密码验证要求"
+        if path.endswith("/enable"):
+            return "可信本机管理员 Session；需要近期密码重验"
+        return "浏览器 Session"
     return "Management API Key 或 Session；按当前账号固定权限校验"
 
 

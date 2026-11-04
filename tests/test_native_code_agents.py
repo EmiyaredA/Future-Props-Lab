@@ -16,7 +16,7 @@ from app.capabilities.agents.cli.process import execute
 from app.capabilities.agents.cli.transport import CliError
 from app.main import app
 from app.runtime.config import get_settings
-from test_code_agents import authorize, wait_run
+from test_code_agents import wait_run
 from test_workspace_governance import client_account
 
 pytestmark = pytest.mark.real_auth
@@ -50,7 +50,6 @@ async def test_native_amadeus_calls_backend_tools_and_records_events(native_cli,
     assert native_cli
     client, _, user_id, _ = await client_account(admin=True)
     async with aclosing(client):
-        await authorize(client, user_id, kind)
         catalog = (await client.get("/v1/code-agents")).json()
         assert next(item for item in catalog["items"] if item["id"] == kind)["available"]
         conversation = (await client.post("/v1/amadeus/conversations")).json()

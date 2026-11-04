@@ -7,12 +7,46 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from cryptography.fernet import Fernet
-from pydantic import Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from fpl_config import CONFIG_FILE, ConfigurationError, read_config
 
 REPO_ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[3]))
+
+
+class CloudCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
+
+    label: str = Field(min_length=1, max_length=80)
+    argv: list[str] = Field(min_length=1, max_length=32)
+    executables: list[str] = Field(default_factory=list, max_length=32)
+    runtime_roots: list[str] = Field(default_factory=list, max_length=16)
+
+    @model_validator(mode="after")
+    def validate_paths(self) -> CloudCommand:
+        if any(
+            not Path(path).is_absolute()
+            for path in (self.argv[0], *self.executables, *self.runtime_roots)
+        ) or any("\x00" in arg for arg in self.argv):
+            raise ValueError("云控命令路径必须为绝对路径")
+        return self
+
+
+class CloudProject(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
+
+    label: str = Field(min_length=1, max_length=80)
+    root: str
+    user_ids: list[str]
+    commands: dict[str, CloudCommand] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_root(self) -> CloudProject:
+        path = Path(self.root)
+        if not path.is_absolute() or ".." in path.parts or len(path.parts) < 3:
+            raise ValueError("云控项目必须指向专用绝对路径")
+        return self
 
 
 class Settings(BaseSettings):
@@ -76,6 +110,16 @@ class Settings(BaseSettings):
     fpl_agent_workbench_enabled: bool = True
     fpl_agent_workbench_poll_seconds: int = Field(default=1, ge=1, le=30)
     fpl_agent_workbench_files_per_pass: int = Field(default=100, ge=1, le=1000)
+    fpl_cloud_control_enabled: bool = False
+    fpl_cloud_control_public_enabled: bool = False
+    fpl_cloud_control_public_desktop_vnc_only: bool = False
+    fpl_cloud_control_admin_user_ids: str = ""
+    fpl_cloud_control_host_label: str = "Mac"
+    fpl_cloud_control_guacd_port: int = Field(default=4822, ge=1, le=65535)
+    fpl_cloud_control_vnc_host: str = "host.docker.internal"
+    fpl_cloud_control_vnc_port: int = Field(default=5900, ge=1, le=65535)
+    fpl_cloud_control_vnc_password: str = Field(default="", repr=False)
+    fpl_cloud_control_projects: dict[str, CloudProject] = Field(default_factory=dict)
     fpl_code_agents_codex_enabled: bool | None = None
     fpl_code_agents_codex_executable: str = ""
     fpl_code_agents_claude_enabled: bool | None = None
@@ -241,3 +285,23 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+def get_cloud_settings() -> Settings:
+    """Refresh only cloud configuration and the shared CLI connection settings."""
+    base = get_settings()
+    try:
+        info = CONFIG_FILE.stat()
+    except FileNotFoundError:
+        return base
+    return base.model_copy(update=_cloud_overrides(info.st_ino, info.st_mtime_ns, info.st_size))
+
+
+@lru_cache(maxsize=1)
+def _cloud_overrides(*_fingerprint: int) -> dict:
+    configured = Settings(_config_file=CONFIG_FILE)
+    return {
+        name: getattr(configured, name)
+        for name in Settings.model_fields
+        if name.startswith(("fpl_cloud_control_", "fpl_code_agents_"))
+    }

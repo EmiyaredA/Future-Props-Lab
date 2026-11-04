@@ -159,6 +159,7 @@ def inventory(schema, existing):
                 "/v1/thought-workshop/community/",
                 "/v1/agent-workbench/",
                 "/v1/management/",
+                "/v1/cloud-control/",
                 "/v1/automation/runtime",
                 "/v1/automation/services",
                 "/v1/automation/access",

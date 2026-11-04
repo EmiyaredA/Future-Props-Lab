@@ -66,13 +66,7 @@ export function PresentationWorkshopPage({
   if (!projectId)
     return <PresentationLibrary onOpen={onOpen} readOnly={readOnly} />;
   if (project.isPending)
-    return (
-      <LoadingState
-        label="正在打开演示文稿…"
-        variant="region"
-        className="presentation-loading"
-      />
-    );
+    return <LoadingState label="正在打开演示文稿…" variant="page" />;
   if (project.isError || !project.data)
     return (
       <div className="presentation-loading" role="alert">

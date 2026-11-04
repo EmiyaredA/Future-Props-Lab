@@ -184,10 +184,11 @@ def run_relay():
     """Internal run-scoped relay; this token cannot authenticate any FPL HTTP API."""
     endpoint, token = os.environ["FPL_TOOL_SOCKET"], os.environ["FPL_TOOL_TOKEN"]
     tools = json.loads(os.environ["FPL_TOOL_DEFINITIONS"])
+    timeout = max(1, min(900, int(os.environ.get("FPL_TOOL_TIMEOUT", "120"))))
 
     def call(name, arguments):
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
-            connection.settimeout(120)
+            connection.settimeout(timeout)
             connection.connect(endpoint)
             connection.sendall(
                 json.dumps({"token": token, "name": name, "arguments": arguments}).encode() + b"\n"

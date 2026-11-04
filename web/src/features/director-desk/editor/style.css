@@ -15,10 +15,6 @@
   position: fixed;
   inset: 0;
 }
-.director-desk-boot {
-  margin: 0;
-  padding: 28px;
-}
 .director-desk-root[data-timeline-drag="move"],
 .director-desk-root[data-timeline-drag="move"] * {
   cursor: grabbing !important;

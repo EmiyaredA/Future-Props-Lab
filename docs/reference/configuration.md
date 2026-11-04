@@ -94,3 +94,19 @@ Web 开发代理已经为 `/v1` 开启 WebSocket upgrade。HTTPS 生产反向代
 Playwright E2E，按 Playwright 的安装说明单独准备，不参与正式视频导出。
 
 独立管理侧增加 `[management]`、`[management_host]`、`[management_remote]` 与 `[deployment]`；配置仍只维护于 `backend/config.toml`。字段用途、最小投影和管理会话边界见[独立管理服务](management-service.md)。
+
+## 云控操作
+
+在 `backend/config.toml` 的 `[cloud_control]` 中设置。默认 `enabled = false`、`public_enabled = false`。
+`public_desktop_vnc_only` 默认关闭。显式设为 `true` 后，公网开关只开放桌面。已授权管理员登录 FPL 后直接输入 VNC 密码，Agent 执行仍通过本机入口。
+`admin_user_ids` 是允许操作的管理员 ID 数组，`host_label` 用于显示主机名。
+`guacd_port` 默认 4822，FPL 始终连接本机 IPv4 回环。VNC 由 guacd 连接，`vnc_host` 默认
+`host.docker.internal`，`vnc_port` 默认 5900。连接时在网页中输入 VNC 密码；旧的 `vnc_password` 只保留解析兼容。
+
+`[cloud_control.projects.<id>]` 设置 `label`、已存在的绝对路径 `root` 和
+`user_ids` 数组。项目根须为具体项目目录。Agent 工作台自动读取已启用的 CLI 连接。
+`[cloud_control.projects.<id>.commands.<preset>]` 可配置 `label` 与固定的 `argv`，首项是
+绝对可执行文件路径。可选 `executables` 明确允许启动的子程序绝对路径，`runtime_roots`
+明确允许读取的依赖目录。命令在 macOS 沙箱中读取项目，只在独立临时目录写入。项目文件改动通过独立的文件审批工具完成。
+
+可信本机管理员可以在「编程智能体」启用已安装并登录的 CLI。所有有效账号都能在各自有权访问的功能中使用已启用的连接。云控仅向管理员开放，本机设置可保存主机名、账号项目授权和公网开关。

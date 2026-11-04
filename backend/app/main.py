@@ -13,6 +13,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 import app.orm  # noqa: F401 — register tenant listeners
 from app.api import api_router
+from app.apps.agent_workbench.execution.runner import WorkbenchRuns
+from app.apps.agent_workbench.execution.storage import interrupt_all as interrupt_workbench_runs
 from app.apps.agent_workbench.sync.runner import WorkbenchSyncRunner
 from app.apps.director_desk.agent_session import DirectorEditorSessions
 from app.apps.galgame_workshop.assets.annotation_import_runner import GalgameAnnotationImportRunner
@@ -41,6 +43,7 @@ from app.capabilities.asset_store.project_snapshots import cleanup_snapshot_stag
 from app.capabilities.asset_store.storage import AssetStorage
 from app.console.amadeus.execution import CodeAgentRuns
 from app.console.amadeus.runs import recover_interrupted_amadeus_runs
+from app.console.cloud_control.desktop import DesktopConnection
 from app.console.creative_workshop.legacy_archives import LegacyCreativeArchives
 from app.console.creative_workshop.legacy_authors import LegacyCreativeAuthors
 from app.console.creative_workshop.legacy_install import LegacyCreativeInstaller
@@ -124,6 +127,8 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
     async with SessionLocal() as session:
         await reconcile_project_trash(session, AssetStorage(settings))
         await reconcile_snapshot_imports(session, AssetStorage(settings))
+    async with SessionLocal() as session:
+        await interrupt_workbench_runs(session)
     await recover_admissions()
     await recover_interrupted_visual_assistant_runs()
     await recover_interrupted_model_test_runs(SessionLocal)
@@ -164,6 +169,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
         yield
     finally:
         await lifespan_app.state.code_agent_runs.close()
+        await lifespan_app.state.workbench_runs.close()
         await supervisor.stop()
         await local_models.close()
         lifespan_app.state.runner_supervisor = None
@@ -224,6 +230,8 @@ app.state.workbench_native = LocalSourceAccess()
 app.state.account_creator = create_account
 app.state.account_storage_check = upgrade_pending
 app.state.code_agent_runs = CodeAgentRuns()
+app.state.cloud_desktop = DesktopConnection()
+app.state.workbench_runs = WorkbenchRuns()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,

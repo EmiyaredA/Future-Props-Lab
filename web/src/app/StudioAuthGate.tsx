@@ -197,7 +197,7 @@ export function StudioAuthGate({
       <LoadingState
         label="正在连接 Future Props Lab…"
         variant="page"
-        className="auth-screen"
+        className="fpl-loading--fullscreen"
       />
     );
   }

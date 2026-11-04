@@ -10,10 +10,11 @@ from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.capabilities.identity.errors import AccountError
+from app.console.cloud_control.models import CloudFactor, CloudUnlock
 from app.console.governance.database_auth import authenticate_database_request
 from app.console.models.accounts import AuthSession, ManagementApiKey, SecurityAuditEvent, User
 from app.console.models.platform_governance import RegistrationInviteCode, RegistrationRedemption
-from app.console.routes import account_management, accounts, registration
+from app.console.routes import account_management, accounts, cloud_totp, registration
 from app.problem_details import (
     account_exception_handler,
     http_exception_handler,
@@ -54,6 +55,8 @@ from .retention_api import router as retention_router
 from .transport import GatewayTransport
 
 MODELS = (
+    CloudFactor,
+    CloudUnlock,
     User,
     AuthSession,
     ManagementApiKey,
@@ -140,6 +143,7 @@ def create_app(
             ):
                 included.routes.append(route)
     app.include_router(included, prefix="/v1")
+    app.include_router(cloud_totp.router, prefix="/v1/cloud-control", tags=["cloud-control"])
     app.include_router(authorization_router, include_in_schema=False)
     app.include_router(catalog_events_router)
     app.include_router(live_router, include_in_schema=False)

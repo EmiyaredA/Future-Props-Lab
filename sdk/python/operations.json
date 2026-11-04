@@ -295,10 +295,6 @@
     "method": "list_code_agents",
     "resource": "code_agents"
   },
-  "GET /v1/code-agents/grants": {
-    "method": "get_code_agent_grants",
-    "resource": "code_agents"
-  },
   "GET /v1/creative-workshop/items": {
     "method": "list_items",
     "resource": "creative_workshop"
@@ -1315,6 +1311,10 @@
     "method": "detect_code_agents",
     "resource": "code_agents"
   },
+  "POST /v1/code-agents/{agent_id}/enable": {
+    "method": "enable_code_agent",
+    "resource": "code_agents"
+  },
   "POST /v1/creative-workshop/installations": {
     "method": "install",
     "resource": "creative_workshop"
@@ -2098,10 +2098,6 @@
   "PUT /v1/audio-annotation/projects/{project_id}/waveform": {
     "method": "put_waveform",
     "resource": "annotation"
-  },
-  "PUT /v1/code-agents/grants": {
-    "method": "put_code_agent_grants",
-    "resource": "code_agents"
   },
   "PUT /v1/director-desk/motions/{motion_key}": {
     "method": "save_motion",

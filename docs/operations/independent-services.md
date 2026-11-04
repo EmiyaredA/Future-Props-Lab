@@ -303,3 +303,9 @@ Identity 传输工具随后核验并迁移同一快照中 `profiles/` 下的账�
 先运行 `npm run services:build:web -- director`，把返回目录作为 `--web-release` 传给 `npm run services:build -- director --build`。叠加 `deploy/director.compose.yaml` 并配置 `FPL_DIRECTOR_IMAGE`、`FPL_DIRECTOR_STATE` 和 Identity 公钥。在隔离空卷上显式运行 `director migrate` 后启动。Director 自己持有项目、动作库、文件和编辑器会话。服务重启后，浏览器重新建立编辑会话。
 
 三容器验收 `fpl-director-browser-65f3dcb78d` 验证了 390px 项目列表、WebGL 编辑器深链接和初始化保存、旧程序版本写入拒绝、回环公网监听的匿名保护，以及 Director 容器重启后原文件读回。浏览器版本为 `c6ba2149dd0e285ed7bc`，镜像为 `fpl/director:f4c0e8bde89255b83a46`。历史导演台项目与文件仍待导入验收，服务保留正式就绪门禁。
+
+### 主线云控与执行契约
+
+主线 `5f16f360` 新增的云控浏览页面仍由 Portal 提供。TOTP 与解锁凭据归 Identity，桌面状态、连接和 WebSocket 归已登记的 Remote 能力，工作台聊天与执行归 Agents。编程智能体目录、检测和本机启用归 Agent Runtime。归属清单现在同时登记页面根和各 TOML 字段的所有者。旧 `/remote` 占位页已从清单撤去，保留正式 `/cloud-control` 入口。
+
+合并后的兼容应用继续执行云控权限、可信入口、密码重验和已配置的桌面或项目限制。独立 Remote 的一次性 WebSocket 凭据转交、Agents 执行、既有 TOTP 数据迁移与配置投影仍需接线和隔离验证。独立 Identity 已装配 TOTP 验证与自有 schema。独立网关继续移除业务上游请求中的浏览器 Cookie，桌面专用凭据须单独限定用途与目标。

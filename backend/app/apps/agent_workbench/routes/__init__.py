@@ -21,6 +21,7 @@ from ..schemas import (
     WorkbenchSourceOut,
     WorkbenchSourcePatch,
 )
+from .execution import router as execution_router
 
 
 async def require_workbench_session(principal: StudioAuth, session: SessionDep):
@@ -250,3 +251,6 @@ async def session_events(
     await reading.get_conversation(session, owner, session_id)
     await session.rollback()
     return event_response(request, principal, after, session_id)
+
+
+router.include_router(execution_router)

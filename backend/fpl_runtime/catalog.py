@@ -23,8 +23,16 @@ SERVICES = (
     ),
     Service("identity", "账号与登录", ("/login", "/account")),
     Service("portal", "FPL 门户", ("/", "/home", "/apps", "/cloud-control", "/docs.html", "/docs")),
-    Service("agents", "Agent 工作台", ("/agents",), ("identity",), ("agent_sources",)),
-    Service("remote", "远程控制", ("/remote",), ("identity",), ("remote_files",)),
+    Service(
+        "agents",
+        "Agent 工作台",
+        ("/agents",),
+        ("identity", "agent-runtime"),
+        ("agent_sources", "workbench_execution"),
+    ),
+    Service(
+        "remote", "远程桌面", dependencies=("identity",), host_capabilities=("remote_desktop",)
+    ),
     Service(
         "visual", "视觉创作工坊", ("/apps/visual-workshop",), ("assets", "models", "rendering")
     ),
@@ -61,7 +69,7 @@ SERVICES = (
         "agent-runtime",
         "编程智能体",
         ("/code-agents",),
-        ("integrations",),
+        ("identity", "integrations"),
         ("code_agents", "mcp_stdio", "sandbox_scripts"),
     ),
     Service("integrations", "集成中心", ("/integrations",), host_capabilities=("mcp_stdio",)),
@@ -81,6 +89,9 @@ def service_by_id(identity: str) -> Service:
 def validate_catalog() -> None:
     if len(BY_ID) != len(SERVICES):
         raise ValueError("服务 ID 重复")
+    pages = [page for service in SERVICES for page in service.page_roots]
+    if len(set(pages)) != len(pages):
+        raise ValueError("页面根路径归属重复")
     for service in SERVICES:
         if service.id in service.dependencies or set(service.dependencies) - BY_ID.keys():
             raise ValueError(f"{service.id} 的服务依赖无效")

@@ -1879,6 +1879,41 @@
         "title": "AddTransitionOperation",
         "type": "object"
       },
+      "AgentChoice": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "id": {
+            "enum": [
+              "codex",
+              "claude-code",
+              "opencode",
+              "dsh",
+              "pi"
+            ],
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "available",
+          "status"
+        ],
+        "title": "AgentChoice",
+        "type": "object"
+      },
       "AgentOut": {
         "properties": {
           "available": {
@@ -2321,6 +2356,57 @@
           }
         },
         "title": "ApplicationState",
+        "type": "object"
+      },
+      "ApprovalDecision": {
+        "additionalProperties": false,
+        "properties": {
+          "approved": {
+            "title": "Approved",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "approved"
+        ],
+        "title": "ApprovalDecision",
+        "type": "object"
+      },
+      "ApprovalOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "write",
+              "command"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "preview": {
+            "title": "Preview",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "preview",
+          "status"
+        ],
+        "title": "ApprovalOut",
         "type": "object"
       },
       "ArticleBindingInput": {
@@ -5322,6 +5408,11 @@
       },
       "CatalogOut": {
         "properties": {
+          "can_enable": {
+            "default": false,
+            "title": "Can Enable",
+            "type": "boolean"
+          },
           "items": {
             "items": {
               "$ref": "#/components/schemas/AgentOut"
@@ -5431,6 +5522,112 @@
           "created_at"
         ],
         "title": "ChangeSummary",
+        "type": "object"
+      },
+      "ChatCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "agent_id": {
+            "enum": [
+              "codex",
+              "claude-code",
+              "opencode",
+              "dsh",
+              "pi"
+            ],
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "project_id": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Project Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "agent_id"
+        ],
+        "title": "ChatCreate",
+        "type": "object"
+      },
+      "ChatDetail": {
+        "properties": {
+          "agent_id": {
+            "enum": [
+              "codex",
+              "claude-code",
+              "opencode",
+              "dsh",
+              "pi"
+            ],
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "project_id": {
+            "title": "Project Id",
+            "type": "string"
+          },
+          "turns": {
+            "items": {
+              "$ref": "#/components/schemas/TurnOut"
+            },
+            "title": "Turns",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "agent_id",
+          "created_at",
+          "turns"
+        ],
+        "title": "ChatDetail",
+        "type": "object"
+      },
+      "ChatOut": {
+        "properties": {
+          "agent_id": {
+            "enum": [
+              "codex",
+              "claude-code",
+              "opencode",
+              "dsh",
+              "pi"
+            ],
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "project_id": {
+            "title": "Project Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "agent_id",
+          "created_at"
+        ],
+        "title": "ChatOut",
         "type": "object"
       },
       "CheckpointIn": {
@@ -5586,6 +5783,158 @@
           "newClipId"
         ],
         "title": "ClipMergeOperation",
+        "type": "object"
+      },
+      "CloudSetup": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "enrolled": {
+            "title": "Enrolled",
+            "type": "boolean"
+          },
+          "guacd_ready": {
+            "title": "Guacd Ready",
+            "type": "boolean"
+          },
+          "host_label": {
+            "title": "Host Label",
+            "type": "string"
+          },
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/SetupProject"
+            },
+            "title": "Projects",
+            "type": "array"
+          },
+          "public_desktop_vnc_only": {
+            "title": "Public Desktop Vnc Only",
+            "type": "boolean"
+          },
+          "public_enabled": {
+            "title": "Public Enabled",
+            "type": "boolean"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "string"
+          },
+          "screen_sharing_ready": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Screen Sharing Ready"
+          }
+        },
+        "required": [
+          "revision",
+          "host_label",
+          "enabled",
+          "public_enabled",
+          "public_desktop_vnc_only",
+          "enrolled",
+          "guacd_ready",
+          "screen_sharing_ready",
+          "projects"
+        ],
+        "title": "CloudSetup",
+        "type": "object"
+      },
+      "CloudSetupUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "host_label": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Host Label",
+            "type": "string"
+          },
+          "projects": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 80,
+            "title": "Projects",
+            "type": "array"
+          },
+          "public_enabled": {
+            "title": "Public Enabled",
+            "type": "boolean"
+          },
+          "revision": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Revision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "revision",
+          "host_label",
+          "public_enabled",
+          "projects"
+        ],
+        "title": "CloudSetupUpdate",
+        "type": "object"
+      },
+      "CloudStatus": {
+        "properties": {
+          "desktop_authorized": {
+            "title": "Desktop Authorized",
+            "type": "boolean"
+          },
+          "desktop_configured": {
+            "title": "Desktop Configured",
+            "type": "boolean"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "enrolled": {
+            "title": "Enrolled",
+            "type": "boolean"
+          },
+          "host_label": {
+            "title": "Host Label",
+            "type": "string"
+          },
+          "idle_minutes": {
+            "title": "Idle Minutes",
+            "type": "integer"
+          },
+          "idle_revision": {
+            "title": "Idle Revision",
+            "type": "integer"
+          },
+          "local": {
+            "title": "Local",
+            "type": "boolean"
+          },
+          "unlocked_until": {
+            "title": "Unlocked Until",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "enabled",
+          "host_label",
+          "desktop_configured",
+          "desktop_authorized",
+          "local",
+          "enrolled",
+          "unlocked_until",
+          "idle_minutes",
+          "idle_revision"
+        ],
+        "title": "CloudStatus",
         "type": "object"
       },
       "ColorRule": {
@@ -7399,6 +7748,24 @@
         "title": "DeploymentServicesOut",
         "type": "object"
       },
+      "DesktopLogin": {
+        "additionalProperties": false,
+        "properties": {
+          "password": {
+            "format": "password",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Password",
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "password"
+        ],
+        "title": "DesktopLogin",
+        "type": "object"
+      },
       "DeveloperDocumentOut": {
         "properties": {
           "group": {
@@ -8051,6 +8418,48 @@
           }
         },
         "title": "EndpointStatus",
+        "type": "object"
+      },
+      "Enrollment": {
+        "properties": {
+          "secret": {
+            "title": "Secret",
+            "type": "string"
+          }
+        },
+        "required": [
+          "secret"
+        ],
+        "title": "Enrollment",
+        "type": "object"
+      },
+      "ExecutionCatalog": {
+        "properties": {
+          "agents": {
+            "items": {
+              "$ref": "#/components/schemas/AgentChoice"
+            },
+            "title": "Agents",
+            "type": "array"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectChoice"
+            },
+            "title": "Projects",
+            "type": "array"
+          }
+        },
+        "required": [
+          "enabled",
+          "projects",
+          "agents"
+        ],
+        "title": "ExecutionCatalog",
         "type": "object"
       },
       "Experience": {
@@ -18175,125 +18584,6 @@
         "title": "GenerationTaskOut",
         "type": "object"
       },
-      "Grant": {
-        "additionalProperties": false,
-        "properties": {
-          "agent_id": {
-            "enum": [
-              "codex",
-              "claude-code",
-              "opencode",
-              "dsh",
-              "pi"
-            ],
-            "title": "Agent Id",
-            "type": "string"
-          },
-          "purpose": {
-            "enum": [
-              "amadeus",
-              "visual_acceptance",
-              "interview_preparation"
-            ],
-            "title": "Purpose",
-            "type": "string"
-          },
-          "user_id": {
-            "maxLength": 36,
-            "minLength": 1,
-            "title": "User Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "user_id",
-          "agent_id",
-          "purpose"
-        ],
-        "title": "Grant",
-        "type": "object"
-      },
-      "GrantUpdate": {
-        "additionalProperties": false,
-        "properties": {
-          "expected_revision": {
-            "minimum": 0.0,
-            "title": "Expected Revision",
-            "type": "integer"
-          },
-          "grants": {
-            "items": {
-              "$ref": "#/components/schemas/Grant"
-            },
-            "maxItems": 1000,
-            "title": "Grants",
-            "type": "array"
-          },
-          "managed": {
-            "items": {
-              "type": "string"
-            },
-            "maxItems": 15,
-            "title": "Managed",
-            "type": "array"
-          }
-        },
-        "required": [
-          "expected_revision",
-          "grants",
-          "managed"
-        ],
-        "title": "GrantUpdate",
-        "type": "object"
-      },
-      "GrantsOut": {
-        "properties": {
-          "accounts": {
-            "items": {
-              "additionalProperties": {
-                "type": "string"
-              },
-              "type": "object"
-            },
-            "title": "Accounts",
-            "type": "array"
-          },
-          "grants": {
-            "items": {
-              "$ref": "#/components/schemas/Grant"
-            },
-            "title": "Grants",
-            "type": "array"
-          },
-          "legacy": {
-            "items": {
-              "$ref": "#/components/schemas/Grant"
-            },
-            "title": "Legacy",
-            "type": "array"
-          },
-          "managed": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Managed",
-            "type": "array"
-          },
-          "revision": {
-            "title": "Revision",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "revision",
-          "grants",
-          "managed",
-          "legacy",
-          "accounts"
-        ],
-        "title": "GrantsOut",
-        "type": "object"
-      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -18362,6 +18652,28 @@
           "assetId"
         ],
         "title": "HandoffOut",
+        "type": "object"
+      },
+      "IdlePreference": {
+        "additionalProperties": false,
+        "properties": {
+          "idle_minutes": {
+            "maximum": 120.0,
+            "minimum": 5.0,
+            "title": "Idle Minutes",
+            "type": "integer"
+          },
+          "revision": {
+            "minimum": 0.0,
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "idle_minutes",
+          "revision"
+        ],
+        "title": "IdlePreference",
         "type": "object"
       },
       "ImageCompositionCreateIn": {
@@ -27483,6 +27795,24 @@
         "title": "PresentationTransition",
         "type": "object"
       },
+      "ProjectChoice": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "ProjectChoice",
+        "type": "object"
+      },
       "ProjectCreateIn": {
         "properties": {
           "aspect": {
@@ -30837,6 +31167,29 @@
           "edge"
         ],
         "title": "SetTransitionOperation",
+        "type": "object"
+      },
+      "SetupProject": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "root": {
+            "title": "Root",
+            "type": "string"
+          },
+          "selected": {
+            "title": "Selected",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "label",
+          "root",
+          "selected"
+        ],
+        "title": "SetupProject",
         "type": "object"
       },
       "SkillCatalogOut": {
@@ -35177,6 +35530,88 @@
         "title": "TrimClipOperation",
         "type": "object"
       },
+      "TurnCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "request_id": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 16000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "text"
+        ],
+        "title": "TurnCreate",
+        "type": "object"
+      },
+      "TurnOut": {
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "approvals": {
+            "items": {
+              "$ref": "#/components/schemas/ApprovalOut"
+            },
+            "title": "Approvals",
+            "type": "array"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "position",
+          "prompt",
+          "answer",
+          "status",
+          "error",
+          "approvals",
+          "revision"
+        ],
+        "title": "TurnOut",
+        "type": "object"
+      },
       "UpdateClipOperation": {
         "properties": {
           "clipId": {
@@ -35408,6 +35843,25 @@
           "released"
         ],
         "title": "ValidationReconcileOut",
+        "type": "object"
+      },
+      "VerificationCode": {
+        "properties": {
+          "code": {
+            "pattern": "^[0-9]{6}$",
+            "title": "Code",
+            "type": "string"
+          },
+          "desktop": {
+            "default": false,
+            "title": "Desktop",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "title": "VerificationCode",
         "type": "object"
       },
       "VideoCapabilitiesOut": {
@@ -42611,6 +43065,306 @@
         ]
       }
     },
+    "/v1/agent-workbench/chats": {
+      "get": {
+        "operationId": "list_chats_v1_agent_workbench_chats_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ChatOut"
+                  },
+                  "title": "Response List Chats V1 Agent Workbench Chats Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Chats",
+        "tags": [
+          "agent-workbench"
+        ]
+      },
+      "post": {
+        "operationId": "create_chat_v1_agent_workbench_chats_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Chat",
+        "tags": [
+          "agent-workbench"
+        ]
+      }
+    },
+    "/v1/agent-workbench/chats/{chat_id}": {
+      "get": {
+        "operationId": "detail_v1_agent_workbench_chats__chat_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "chat_id",
+            "required": true,
+            "schema": {
+              "title": "Chat Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Detail",
+        "tags": [
+          "agent-workbench"
+        ]
+      }
+    },
+    "/v1/agent-workbench/chats/{chat_id}/events": {
+      "get": {
+        "operationId": "stream_v1_agent_workbench_chats__chat_id__events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "chat_id",
+            "required": true,
+            "schema": {
+              "title": "Chat Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Stream",
+        "tags": [
+          "agent-workbench"
+        ]
+      }
+    },
+    "/v1/agent-workbench/chats/{chat_id}/turns": {
+      "post": {
+        "operationId": "send_turn_v1_agent_workbench_chats__chat_id__turns_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "chat_id",
+            "required": true,
+            "schema": {
+              "title": "Chat Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TurnCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TurnOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Send Turn",
+        "tags": [
+          "agent-workbench"
+        ]
+      }
+    },
+    "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/approvals/{approval_id}": {
+      "post": {
+        "operationId": "decide_v1_agent_workbench_chats__chat_id__turns__turn_id__approvals__approval_id__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "chat_id",
+            "required": true,
+            "schema": {
+              "title": "Chat Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "turn_id",
+            "required": true,
+            "schema": {
+              "title": "Turn Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "approval_id",
+            "required": true,
+            "schema": {
+              "title": "Approval Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApprovalDecision"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decide",
+        "tags": [
+          "agent-workbench"
+        ]
+      }
+    },
+    "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/stop": {
+      "post": {
+        "operationId": "stop_v1_agent_workbench_chats__chat_id__turns__turn_id__stop_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "chat_id",
+            "required": true,
+            "schema": {
+              "title": "Chat Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "turn_id",
+            "required": true,
+            "schema": {
+              "title": "Turn Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Stop",
+        "tags": [
+          "agent-workbench"
+        ]
+      }
+    },
     "/v1/agent-workbench/events": {
       "get": {
         "operationId": "events_v1_agent_workbench_events_get",
@@ -42683,6 +43437,27 @@
           }
         },
         "summary": "Events",
+        "tags": [
+          "agent-workbench"
+        ]
+      }
+    },
+    "/v1/agent-workbench/execution/catalog": {
+      "get": {
+        "operationId": "catalog_v1_agent_workbench_execution_catalog_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionCatalog"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Catalog",
         "tags": [
           "agent-workbench"
         ]
@@ -46254,6 +47029,251 @@
         ]
       }
     },
+    "/v1/cloud-control/desktop/connect": {
+      "post": {
+        "operationId": "connect_v1_cloud_control_desktop_connect_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DesktopLogin"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Connect",
+        "tags": [
+          "cloud-control"
+        ]
+      }
+    },
+    "/v1/cloud-control/desktop/idle": {
+      "put": {
+        "operationId": "save_idle_v1_cloud_control_desktop_idle_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdlePreference"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdlePreference"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Idle",
+        "tags": [
+          "cloud-control"
+        ]
+      }
+    },
+    "/v1/cloud-control/settings": {
+      "get": {
+        "operationId": "settings_view_v1_cloud_control_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudSetup"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Settings View",
+        "tags": [
+          "cloud-control"
+        ]
+      },
+      "put": {
+        "operationId": "settings_save_v1_cloud_control_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloudSetupUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudSetup"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Settings Save",
+        "tags": [
+          "cloud-control"
+        ]
+      }
+    },
+    "/v1/cloud-control/status": {
+      "get": {
+        "operationId": "status_v1_cloud_control_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Status",
+        "tags": [
+          "cloud-control"
+        ]
+      }
+    },
+    "/v1/cloud-control/totp/confirm": {
+      "post": {
+        "operationId": "confirm_v1_cloud_control_totp_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerificationCode"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm",
+        "tags": [
+          "cloud-control"
+        ]
+      }
+    },
+    "/v1/cloud-control/totp/enroll": {
+      "post": {
+        "operationId": "enroll_v1_cloud_control_totp_enroll_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Enrollment"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Enroll",
+        "tags": [
+          "cloud-control"
+        ]
+      }
+    },
+    "/v1/cloud-control/totp/verify": {
+      "post": {
+        "operationId": "verify_v1_cloud_control_totp_verify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerificationCode"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Verify",
+        "tags": [
+          "cloud-control"
+        ]
+      }
+    },
     "/v1/code-agents": {
       "get": {
         "operationId": "list_code_agents_v1_code_agents_get",
@@ -46296,47 +47316,29 @@
         ]
       }
     },
-    "/v1/code-agents/grants": {
-      "get": {
-        "operationId": "get_code_agent_grants_v1_code_agents_grants_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GrantsOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Get Code Agent Grants",
-        "tags": [
-          "code-agents"
-        ]
-      },
-      "put": {
-        "operationId": "put_code_agent_grants_v1_code_agents_grants_put",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GrantUpdate"
-              }
+    "/v1/code-agents/{agent_id}/enable": {
+      "post": {
+        "operationId": "enable_code_agent_v1_code_agents__agent_id__enable_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agent_id",
+            "required": true,
+            "schema": {
+              "enum": [
+                "codex",
+                "claude-code",
+                "opencode",
+                "dsh",
+                "pi"
+              ],
+              "title": "Agent Id",
+              "type": "string"
             }
-          },
-          "required": true
-        },
+          }
+        ],
         "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GrantsOut"
-                }
-              }
-            },
+          "204": {
             "description": "Successful Response"
           },
           "422": {
@@ -46350,7 +47352,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Put Code Agent Grants",
+        "summary": "Enable Code Agent",
         "tags": [
           "code-agents"
         ]

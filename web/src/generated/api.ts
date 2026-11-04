@@ -297,6 +297,109 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/agent-workbench/chats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Chats */
+        get: operations["list_chats_v1_agent_workbench_chats_get"];
+        put?: never;
+        /** Create Chat */
+        post: operations["create_chat_v1_agent_workbench_chats_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agent-workbench/chats/{chat_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Detail */
+        get: operations["detail_v1_agent_workbench_chats__chat_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agent-workbench/chats/{chat_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stream */
+        get: operations["stream_v1_agent_workbench_chats__chat_id__events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agent-workbench/chats/{chat_id}/turns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send Turn */
+        post: operations["send_turn_v1_agent_workbench_chats__chat_id__turns_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/approvals/{approval_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decide */
+        post: operations["decide_v1_agent_workbench_chats__chat_id__turns__turn_id__approvals__approval_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop */
+        post: operations["stop_v1_agent_workbench_chats__chat_id__turns__turn_id__stop_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/agent-workbench/events": {
         parameters: {
             query?: never;
@@ -306,6 +409,23 @@ export interface paths {
         };
         /** Events */
         get: operations["events_v1_agent_workbench_events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agent-workbench/execution/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Catalog */
+        get: operations["catalog_v1_agent_workbench_execution_catalog_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1380,6 +1500,126 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/cloud-control/desktop/connect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Connect */
+        post: operations["connect_v1_cloud_control_desktop_connect_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cloud-control/desktop/idle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Save Idle */
+        put: operations["save_idle_v1_cloud_control_desktop_idle_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cloud-control/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Settings View */
+        get: operations["settings_view_v1_cloud_control_settings_get"];
+        /** Settings Save */
+        put: operations["settings_save_v1_cloud_control_settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cloud-control/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Status */
+        get: operations["status_v1_cloud_control_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cloud-control/totp/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm */
+        post: operations["confirm_v1_cloud_control_totp_confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cloud-control/totp/enroll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enroll */
+        post: operations["enroll_v1_cloud_control_totp_enroll_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cloud-control/totp/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Verify */
+        post: operations["verify_v1_cloud_control_totp_verify_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/code-agents": {
         parameters: {
             query?: never;
@@ -1414,18 +1654,17 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/code-agents/grants": {
+    "/v1/code-agents/{agent_id}/enable": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get Code Agent Grants */
-        get: operations["get_code_agent_grants_v1_code_agents_grants_get"];
-        /** Put Code Agent Grants */
-        put: operations["put_code_agent_grants_v1_code_agents_grants_put"];
-        post?: never;
+        get?: never;
+        put?: never;
+        /** Enable Code Agent */
+        post: operations["enable_code_agent_v1_code_agents__agent_id__enable_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8838,6 +9077,20 @@ export interface components {
              */
             type: "addTransition";
         };
+        /** AgentChoice */
+        AgentChoice: {
+            /** Available */
+            available: boolean;
+            /**
+             * Id
+             * @enum {string}
+             */
+            id: "codex" | "claude-code" | "opencode" | "dsh" | "pi";
+            /** Label */
+            label: string;
+            /** Status */
+            status: string;
+        };
         /** AgentOut */
         AgentOut: {
             /** Available */
@@ -8999,6 +9252,27 @@ export interface components {
              * @enum {string}
              */
             phase: "stopped" | "starting" | "running" | "stopping" | "failed" | "unavailable";
+        };
+        /** ApprovalDecision */
+        ApprovalDecision: {
+            /** Approved */
+            approved: boolean;
+        };
+        /** ApprovalOut */
+        ApprovalOut: {
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "write" | "command";
+            /** Preview */
+            preview: string;
+            /** Status */
+            status: string;
+            /** Title */
+            title: string;
         };
         /** ArticleBindingInput */
         ArticleBindingInput: {
@@ -9994,6 +10268,11 @@ export interface components {
         };
         /** CatalogOut */
         CatalogOut: {
+            /**
+             * Can Enable
+             * @default false
+             */
+            can_enable: boolean;
             /** Items */
             items: components["schemas"]["AgentOut"][];
         };
@@ -10033,6 +10312,46 @@ export interface components {
             id: string;
             /** Revision */
             revision: number;
+        };
+        /** ChatCreate */
+        ChatCreate: {
+            /**
+             * Agent Id
+             * @enum {string}
+             */
+            agent_id: "codex" | "claude-code" | "opencode" | "dsh" | "pi";
+            /** Project Id */
+            project_id: string;
+        };
+        /** ChatDetail */
+        ChatDetail: {
+            /**
+             * Agent Id
+             * @enum {string}
+             */
+            agent_id: "codex" | "claude-code" | "opencode" | "dsh" | "pi";
+            /** Created At */
+            created_at: number;
+            /** Id */
+            id: string;
+            /** Project Id */
+            project_id: string;
+            /** Turns */
+            turns: components["schemas"]["TurnOut"][];
+        };
+        /** ChatOut */
+        ChatOut: {
+            /**
+             * Agent Id
+             * @enum {string}
+             */
+            agent_id: "codex" | "claude-code" | "opencode" | "dsh" | "pi";
+            /** Created At */
+            created_at: number;
+            /** Id */
+            id: string;
+            /** Project Id */
+            project_id: string;
         };
         /** CheckpointIn */
         CheckpointIn: {
@@ -10091,6 +10410,59 @@ export interface components {
              * @enum {string}
              */
             type: "applyClipMerge" | "undoClipMerge";
+        };
+        /** CloudSetup */
+        CloudSetup: {
+            /** Enabled */
+            enabled: boolean;
+            /** Enrolled */
+            enrolled: boolean;
+            /** Guacd Ready */
+            guacd_ready: boolean;
+            /** Host Label */
+            host_label: string;
+            /** Projects */
+            projects: components["schemas"]["SetupProject"][];
+            /** Public Desktop Vnc Only */
+            public_desktop_vnc_only: boolean;
+            /** Public Enabled */
+            public_enabled: boolean;
+            /** Revision */
+            revision: string;
+            /** Screen Sharing Ready */
+            screen_sharing_ready: boolean | null;
+        };
+        /** CloudSetupUpdate */
+        CloudSetupUpdate: {
+            /** Host Label */
+            host_label: string;
+            /** Projects */
+            projects: string[];
+            /** Public Enabled */
+            public_enabled: boolean;
+            /** Revision */
+            revision: string;
+        };
+        /** CloudStatus */
+        CloudStatus: {
+            /** Desktop Authorized */
+            desktop_authorized: boolean;
+            /** Desktop Configured */
+            desktop_configured: boolean;
+            /** Enabled */
+            enabled: boolean;
+            /** Enrolled */
+            enrolled: boolean;
+            /** Host Label */
+            host_label: string;
+            /** Idle Minutes */
+            idle_minutes: number;
+            /** Idle Revision */
+            idle_revision: number;
+            /** Local */
+            local: boolean;
+            /** Unlocked Until */
+            unlocked_until: number;
         };
         /** ColorRule */
         ColorRule: {
@@ -10797,6 +11169,14 @@ export interface components {
             /** Services */
             services?: components["schemas"]["DeploymentServiceState"][];
         };
+        /** DesktopLogin */
+        DesktopLogin: {
+            /**
+             * Password
+             * Format: password
+             */
+            password: string;
+        };
         /** DeveloperDocumentOut */
         DeveloperDocumentOut: {
             /** Group */
@@ -11075,6 +11455,20 @@ export interface components {
              * @default
              */
             url: string;
+        };
+        /** Enrollment */
+        Enrollment: {
+            /** Secret */
+            secret: string;
+        };
+        /** ExecutionCatalog */
+        ExecutionCatalog: {
+            /** Agents */
+            agents: components["schemas"]["AgentChoice"][];
+            /** Enabled */
+            enabled: boolean;
+            /** Projects */
+            projects: components["schemas"]["ProjectChoice"][];
         };
         /** Experience */
         Experience: {
@@ -14905,45 +15299,6 @@ export interface components {
             /** Updated At */
             updated_at: string;
         };
-        /** Grant */
-        Grant: {
-            /**
-             * Agent Id
-             * @enum {string}
-             */
-            agent_id: "codex" | "claude-code" | "opencode" | "dsh" | "pi";
-            /**
-             * Purpose
-             * @enum {string}
-             */
-            purpose: "amadeus" | "visual_acceptance" | "interview_preparation";
-            /** User Id */
-            user_id: string;
-        };
-        /** GrantUpdate */
-        GrantUpdate: {
-            /** Expected Revision */
-            expected_revision: number;
-            /** Grants */
-            grants: components["schemas"]["Grant"][];
-            /** Managed */
-            managed: string[];
-        };
-        /** GrantsOut */
-        GrantsOut: {
-            /** Accounts */
-            accounts: {
-                [key: string]: string;
-            }[];
-            /** Grants */
-            grants: components["schemas"]["Grant"][];
-            /** Legacy */
-            legacy: components["schemas"]["Grant"][];
-            /** Managed */
-            managed: string[];
-            /** Revision */
-            revision: number;
-        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -14967,6 +15322,13 @@ export interface components {
             assetId: string;
             /** Projectid */
             projectId: string;
+        };
+        /** IdlePreference */
+        IdlePreference: {
+            /** Idle Minutes */
+            idle_minutes: number;
+            /** Revision */
+            revision: number;
         };
         /** ImageCompositionCreateIn */
         ImageCompositionCreateIn: {
@@ -18433,6 +18795,13 @@ export interface components {
              */
             effect: "none" | "fade" | "slideX" | "slideY" | "slideX3D" | "slideY3D" | "rotate" | "scaleX" | "scaleY" | "scale" | "scaleReverse" | "random";
         };
+        /** ProjectChoice */
+        ProjectChoice: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+        };
         /** ProjectCreateIn */
         ProjectCreateIn: {
             /**
@@ -19762,6 +20131,15 @@ export interface components {
              * @enum {string}
              */
             type: "setTransition";
+        };
+        /** SetupProject */
+        SetupProject: {
+            /** Label */
+            label: string;
+            /** Root */
+            root: string;
+            /** Selected */
+            selected: boolean;
         };
         /** SkillCatalogOut */
         SkillCatalogOut: {
@@ -21474,6 +21852,32 @@ export interface components {
              */
             type: "trimClip";
         };
+        /** TurnCreate */
+        TurnCreate: {
+            /** Request Id */
+            request_id: string;
+            /** Text */
+            text: string;
+        };
+        /** TurnOut */
+        TurnOut: {
+            /** Answer */
+            answer: string;
+            /** Approvals */
+            approvals: components["schemas"]["ApprovalOut"][];
+            /** Error */
+            error: string | null;
+            /** Id */
+            id: string;
+            /** Position */
+            position: number;
+            /** Prompt */
+            prompt: string;
+            /** Revision */
+            revision: number;
+            /** Status */
+            status: string;
+        };
         /** UpdateClipOperation */
         UpdateClipOperation: {
             /** Clipid */
@@ -21586,6 +21990,16 @@ export interface components {
              * @enum {string}
              */
             status: "completed" | "not-started";
+        };
+        /** VerificationCode */
+        VerificationCode: {
+            /** Code */
+            code: string;
+            /**
+             * Desktop
+             * @default false
+             */
+            desktop: boolean;
         };
         /** VideoCapabilitiesOut */
         VideoCapabilitiesOut: {
@@ -24386,6 +24800,219 @@ export interface operations {
             };
         };
     };
+    list_chats_v1_agent_workbench_chats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatOut"][];
+                };
+            };
+        };
+    };
+    create_chat_v1_agent_workbench_chats_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    detail_v1_agent_workbench_chats__chat_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_v1_agent_workbench_chats__chat_id__events_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_turn_v1_agent_workbench_chats__chat_id__turns_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TurnCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TurnOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    decide_v1_agent_workbench_chats__chat_id__turns__turn_id__approvals__approval_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+                turn_id: string;
+                approval_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApprovalDecision"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stop_v1_agent_workbench_chats__chat_id__turns__turn_id__stop_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+                turn_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     events_v1_agent_workbench_events_get: {
         parameters: {
             query?: {
@@ -24423,6 +25050,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    catalog_v1_agent_workbench_execution_catalog_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExecutionCatalog"];
                 };
             };
         };
@@ -26794,6 +27441,225 @@ export interface operations {
             };
         };
     };
+    connect_v1_cloud_control_desktop_connect_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DesktopLogin"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_idle_v1_cloud_control_desktop_idle_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IdlePreference"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdlePreference"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    settings_view_v1_cloud_control_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CloudSetup"];
+                };
+            };
+        };
+    };
+    settings_save_v1_cloud_control_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloudSetupUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CloudSetup"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    status_v1_cloud_control_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CloudStatus"];
+                };
+            };
+        };
+    };
+    confirm_v1_cloud_control_totp_confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerificationCode"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    enroll_v1_cloud_control_totp_enroll_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Enrollment"];
+                };
+            };
+        };
+    };
+    verify_v1_cloud_control_totp_verify_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerificationCode"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_code_agents_v1_code_agents_get: {
         parameters: {
             query?: never;
@@ -26834,47 +27700,23 @@ export interface operations {
             };
         };
     };
-    get_code_agent_grants_v1_code_agents_grants_get: {
+    enable_code_agent_v1_code_agents__agent_id__enable_post: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                agent_id: "codex" | "claude-code" | "opencode" | "dsh" | "pi";
+            };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            200: {
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["GrantsOut"];
-                };
-            };
-        };
-    };
-    put_code_agent_grants_v1_code_agents_grants_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GrantUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GrantsOut"];
-                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

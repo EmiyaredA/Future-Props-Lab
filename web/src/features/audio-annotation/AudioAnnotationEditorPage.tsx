@@ -123,18 +123,7 @@ export function AudioAnnotationEditorPage({
       </section>
     );
   if (controller.status === "loading")
-    return (
-      <section
-        className="page annotation-editor-page"
-        data-mobile-panel={mobilePanel}
-      >
-        <LoadingState
-          label="正在加载录音标注任务…"
-          variant="page"
-          className="page-loading"
-        />
-      </section>
-    );
+    return <LoadingState label="正在加载录音标注任务…" variant="page" />;
   const {
     addOverlappingSegment,
     applyZoom,
