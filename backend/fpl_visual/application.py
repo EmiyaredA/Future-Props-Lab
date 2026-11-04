@@ -26,6 +26,7 @@ from .migrations.registry import MIGRATIONS
 from .models import MODELS, VisualCanvasReferenceMutation, VisualCertificationReceipt
 from .outputs_http import router as outputs_router
 from .projects_http import router as project_router
+from .repair_routes import router as repair_router
 from .segment_handoff_routes import router as segment_handoff_router
 from .segment_handoffs import SegmentHandoffs
 from .segment_target_routes import router as segment_target_router
@@ -90,6 +91,7 @@ def create_app(
     )
     app.include_router(standard_router, prefix="/v1")
     app.include_router(review_router, prefix="/v1")
+    app.include_router(repair_router)
     app.include_router(
         generation_records_router, prefix="/v1", dependencies=[Depends(require_studio_auth)]
     )

@@ -2,6 +2,8 @@ from copy import deepcopy
 
 from sqlalchemy import select
 
+from app.apps.visual_workshop.models import VisualCanvasDocument
+from app.apps.visual_workshop.schemas.workshop import VisualCanvasDocumentPutIn
 from app.runtime.ids import new_id
 from app.runtime.time import iso_utc, utc_now
 
@@ -120,6 +122,57 @@ class ReviewRecords(Runs):
         if row is None:
             raise AcceptanceError("返修草稿不存在", "not_found", 404)
         return row
+
+    async def write_repair(self, project_id, identity, body, *, replace_canvas):
+        row = await self.repair_row(project_id, identity)
+        run = await self.row(project_id, row.run_id)
+        if run.scheme_id == "legacy" or run.decision == "historical":
+            raise AcceptanceError("历史验收记录只读", "historical_readonly", 409)
+
+        async def current():
+            return repair_out(await self.repair_row(project_id, identity))
+
+        await cas(self.session, row, body.expected_revision, current)
+        row.text = body.text
+        if body.apply:
+            if body.expected_canvas_revision is None:
+                raise AcceptanceError("保存提示词版本需要画布 revision")
+            if row.prompt_version_id:
+                raise AcceptanceError("此草稿已保存为提示词版本", "already_applied", 409)
+            canvas = await self.session.get(VisualCanvasDocument, project_id)
+            if canvas is None:
+                raise AcceptanceError("项目画布不存在", "not_found", 404)
+            nodes = deepcopy(canvas.nodes)
+            node = next((node for node in nodes if node["id"] == run.node_id), None)
+            if not node or not node.get("generation_draft"):
+                raise AcceptanceError("此节点没有媒体生成配置")
+            draft = node["generation_draft"]
+            versions = draft.get("prompt_versions") or [
+                {"id": "v1", "name": "v1", "prompt": draft.get("prompt", "")}
+            ]
+            if len(versions) >= 20:
+                raise AcceptanceError("提示词版本已达上限，请先整理")
+            prompt_version_id = new_id()
+            draft.update(
+                prompt_versions=[
+                    *versions,
+                    {"id": prompt_version_id, "name": "验收返修", "prompt": body.text},
+                ],
+                active_prompt_version_id=prompt_version_id,
+                prompt=body.text,
+            )
+            await replace_canvas(
+                project_id,
+                VisualCanvasDocumentPutIn(
+                    expected_revision=body.expected_canvas_revision,
+                    nodes=nodes,
+                    edges=canvas.edges,
+                    categories=canvas.categories,
+                ),
+            )
+            row.prompt_version_id = prompt_version_id
+        await self.session.commit()
+        return repair_out(row)
 
 
 def repair_out(row):

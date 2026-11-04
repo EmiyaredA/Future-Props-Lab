@@ -634,6 +634,50 @@ async def verify_visual_reviews(case, app, request, project_id):
     assert repair.status_code == 200 and "Missing detail" in repair.json()["text"]
     saved = await request("GET", f"{project}/repair-drafts/{repair.json()['id']}")
     assert saved.status_code == 200 and saved.json() == repair.json()
+    repair_path = f"{project}/repair-drafts/{repair.json()['id']}"
+    plain = await request(
+        "PUT", repair_path, json={"expected_revision": 0, "text": "Refine the lighting"}
+    )
+    assert plain.status_code == 200, plain.text
+    assert plain.json()["revision"] == 1 and plain.json()["prompt_version_id"] is None
+    canvas_path = f"/v1/visual-workshop/projects/{project_id}/canvas"
+    canvas = (await request("GET", canvas_path)).json()
+    node = {
+        "id": "review-node",
+        "kind": "image",
+        "title": "Repair target",
+        "position": {"x": 0, "y": 0},
+        "generation_draft": {"prompt": "Original prompt"},
+    }
+    added = await request(
+        "PUT",
+        canvas_path,
+        json={"expected_revision": canvas["revision"], "nodes": [*canvas["nodes"], node]},
+    )
+    assert added.status_code == 200, added.text
+    apply = {"expected_revision": 1, "text": "Preserve the scene", "apply": True}
+    refused = await request(
+        "PUT", repair_path, json={**apply, "expected_canvas_revision": canvas["revision"]}
+    )
+    assert refused.status_code == 409, refused.text
+    assert (await request("GET", repair_path)).json() == plain.json()
+    applied = await request(
+        "PUT", repair_path, json={**apply, "expected_canvas_revision": added.json()["revision"]}
+    )
+    assert applied.status_code == 200, applied.text
+    prompt_id = applied.json()["prompt_version_id"]
+    assert applied.json()["revision"] == 2 and prompt_id
+    current = (await request("GET", canvas_path)).json()
+    assert current["revision"] == added.json()["revision"] + 1
+    updated = next(item for item in current["nodes"] if item["id"] == node["id"])
+    assert updated["generation_draft"]["active_prompt_version_id"] == prompt_id
+    assert updated["generation_draft"]["prompt"] == apply["text"]
+    repeated = await request(
+        "PUT",
+        repair_path,
+        json={**apply, "expected_revision": 2, "expected_canvas_revision": current["revision"]},
+    )
+    assert repeated.status_code == 409 and repeated.json()["code"] == "already_applied"
 
 
 async def verify_galgame_formats(case, app, request, projects):
