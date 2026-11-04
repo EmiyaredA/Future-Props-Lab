@@ -38,6 +38,7 @@ from .routes.files import router as files_router
 from .routes.layout import router as layout_router
 from .routes.library_inputs import router as library_inputs_router
 from .routes.library_outputs import router as library_outputs_router
+from .routes.motion_assets import router as motion_assets_router
 from .routes.presentation_archives import router as presentation_archives_router
 from .routes.presentation_assets import router as presentation_assets_router
 from .routes.project_links import router as links_router
@@ -149,6 +150,7 @@ def create_app(
     app.include_router(thought_library_router)
     app.include_router(annotation_assets_router)
     app.include_router(presentation_assets_router)
+    app.include_router(motion_assets_router)
     app.include_router(presentation_archives_router)
     app.include_router(thought_uploads_router)
     app.include_router(thought_archives_router)

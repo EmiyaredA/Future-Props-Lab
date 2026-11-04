@@ -5,7 +5,7 @@ from app.apps.audio_annotation.routes import router as audio_annotation_router
 from app.apps.director_desk.routes import router as director_desk_router
 from app.apps.galgame_workshop.routes import router as galgame_workshop_router
 from app.apps.interview_assistant.routes import router as interview_assistant_router
-from app.apps.motion_compositor.routes import router as motion_compositor_router
+from app.apps.motion_compositor.routes.compatibility import router as motion_compositor_router
 from app.apps.presentation_workshop.routes.compatibility import (
     router as presentation_workshop_router,
 )

@@ -456,3 +456,10 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 演示工坊的历史转移先导入同一计划下的 Assets 元数据和文件。随后启动独立回环 `presentation migration-export`、`presentation migration-import` 与 `assets migration-import`，使用 `uv run python -m scripts.website.migrate_presentation --plan <计划> --source <旧站快照维护地址> --target <Presentation 维护地址> --assets-target <Assets 维护地址>`。源仅打开封存的只读快照。迁移保存原始文档 JSON、标识、版本、时间戳与编辑回执，按三类资源重建并读回素材引用。关系导入要求同一轮原件 SHA256 回执，源引用不一致、缺失文件、账号越界或回执冲突会阻止核验。
 
 隔离旧站快照演练使用普通业务 API 建立原文稿、模板、示例、原件和含 Unicode 请求标识的编辑回执。导入和重放核对源与目的摘要，验证 Assets 维护进程重启后续跑，恢复旧站后核对原文稿修订及文件字节。
+
+
+### Motion 文稿边界
+
+特效制作工坊独立镜像承接项目列表、新建、读取、重命名、文稿和编辑批次六项操作。使用 `deploy/motion.compose.yaml`、专属状态目录和 Identity 凭据，显式执行 `motion migrate` 后启动。编辑素材只能通过签名请求读取同一账号、同一特效项目下的文件描述，文稿修订和编辑回执同事务提交。项目删除、文件、渲染和视频交接继续由生产就绪门禁跟踪。
+
+隔离运行 `fpl-motion-api-4ff09339f8` 使用镜像 `fpl/motion:5a541d36b4ec4d87ff3c`，经四容器 Gateway 验证旧修订拒绝、原回执重放、非本项目素材拒绝和回环公网认证。

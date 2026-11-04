@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from .annotation_assets import audio_asset_grant
 from .annotation_task_sources import task_read_grant, task_upload_grant
 from .annotation_transcription import segment_grant
+from .motion_assets import motion_asset_grant
 from .presentation_archives import presentation_archive_grant
 from .presentation_assets import project_asset_grant
 from .resource_routes import RESOURCE_ROUTES
@@ -133,6 +134,7 @@ def target_permission_path(grant):
         or archive_grant(grant)
         or audio_asset_grant(grant)
         or project_asset_grant(grant)
+        or motion_asset_grant(grant)
         or presentation_archive_grant(grant)
     ):
         return "/v1/files"
@@ -172,6 +174,7 @@ def permitted(grant, catalog):
         or community_upload_grant(grant)
         or audio_asset_grant(grant)
         or project_asset_grant(grant)
+        or motion_asset_grant(grant)
         or presentation_archive_grant(grant)
     ):
         return True
