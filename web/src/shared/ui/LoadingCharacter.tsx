@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 
-const POSTER = "/brand/loading/kurisu-run.png";
-const WEBP_POSTER = "/brand/loading/kurisu-run.webp";
-const ANIMATION = "/brand/loading/kurisu-run.webm";
+import { programAsset } from "@platform/programAsset";
+
+const POSTER = programAsset("/brand/loading/kurisu-run.png");
+const WEBP_POSTER = programAsset("/brand/loading/kurisu-run.webp");
+const ANIMATION = programAsset("/brand/loading/kurisu-run.webm");
 const MOTION_PREFERENCE = "(prefers-reduced-motion: reduce)";
 
 function CharacterPoster() {

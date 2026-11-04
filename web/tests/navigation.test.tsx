@@ -8,7 +8,23 @@ import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
 import { GALGAME_WORKSHOP_MODULE } from "@features/galgame-workshop/module";
 import { VIDEO_EDITOR_MODULE } from "@features/video-editor/module";
 import { VISUAL_WORKSHOP_MODULE } from "@features/visual-workshop/module";
+import { THOUGHT_WORKSHOP_MODULE } from "@features/thought-workshop/module";
 import { DocsApp } from "../src/docs/DocsApp";
+
+test.each([
+  "/apps/thought-workshop",
+  "/apps/thought-workshop/knowledge-bases/book/documents/note",
+  "/apps/thought-workshop/notes/legacy",
+  "/apps/thought-workshop/community",
+  "/apps/thought-workshop/community/published-book/documents/note",
+  "/apps/thought-workshop/favorites",
+  "/apps/thought-workshop/published",
+  "/apps/thought-workshop/official-knowledge-bases/general/documents/files",
+])("shares the Thought route %s across web entries", (path) => {
+  const route = parseRoute(path);
+  expect(THOUGHT_WORKSHOP_MODULE.matchPath(path)).toEqual(route);
+  expect(pathFor(route.page, route.projectId, route.documentId)).toBe(path);
+});
 
 function openDocsSearch() {
   HTMLDialogElement.prototype.showModal = function () {

@@ -3,6 +3,11 @@ import { imageVariants as variants } from "../src/shared/lib/imageVariants.ts";
 import { fileURLToPath } from "node:url";
 
 export const serviceAssets = {
+  thought: [
+    "brand/brand-mark.png",
+    "brand/favicon.png",
+    "brand/thought-workshop-mark.png",
+  ],
   creative: ["brand/brand-mark.png", "brand/favicon.png"],
   integrations: ["brand/brand-mark.png", "brand/favicon.png"],
   assets: ["brand/brand-mark.png", "brand/favicon.png"],
@@ -56,11 +61,28 @@ export const serviceAssets = {
 serviceAssets.portal.push(
   ...serviceAssets.agents.filter((name) => name.startsWith("providers/")),
 );
+const loadingAssets = [
+  "divergence-meter.webp",
+  "dr-pepper.webp",
+  "flip-phone.webp",
+  "gel-banana.webp",
+  "kurisu-run.png",
+  "kurisu-run.webm",
+  "kurisu-run.webp",
+  "loading-dial.svg",
+  "metal-upa.webp",
+  "phonewave.webp",
+  "pocket-watch.webp",
+  "time-machine.webp",
+].map((name) => "brand/loading/" + name);
+
 for (const [service, originals] of Object.entries(serviceAssets)) {
   const related = originals.flatMap((name) =>
     Object.values(variants["/" + name] || {}).map((value) =>
       value.replace(/^\//, ""),
     ),
   );
-  serviceAssets[service] = [...new Set([...originals, ...related])].sort();
+  serviceAssets[service] = [
+    ...new Set([...originals, ...related, ...loadingAssets]),
+  ].sort();
 }

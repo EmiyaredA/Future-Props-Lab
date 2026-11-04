@@ -131,19 +131,6 @@ export function parseRoute(
 
 function parsePathRoute(pathname: string): AppRoute {
   if (/^\/cloud-control\/?$/.test(pathname)) return { page: "cloud-control" };
-  const community = pathname.match(
-    /^\/apps\/thought-workshop\/community(?:\/([^/]+)(?:\/documents\/([^/]+))?)?\/?$/,
-  );
-  if (community)
-    return {
-      page: "thought-workshop-community",
-      projectId: community[1] ? decodeURIComponent(community[1]) : undefined,
-      documentId: community[2] ? decodeURIComponent(community[2]) : undefined,
-    };
-  if (pathname === "/apps/thought-workshop/favorites")
-    return { page: "thought-workshop-favorites" };
-  if (pathname === "/apps/thought-workshop/published")
-    return { page: "thought-workshop-published" };
   const application = matchApplicationPath(pathname);
   if (application) return application as AppRoute;
   // Legacy tool URLs keep resolving so bookmarks and old agent opens still land.

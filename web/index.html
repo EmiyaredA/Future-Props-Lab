@@ -16,73 +16,162 @@
         document.documentElement.dataset.theme = "light";
       }
     </script>
+    <link rel="stylesheet" href="/src/shared/ui/loading-scene.css" />
+    <link rel="stylesheet" href="/src/shared/ui/loading-state.css" />
     <style>
-      .fpl-boot-loading {
-        min-height: 70vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 16px;
-        padding: 24px;
-        font: 14px system-ui;
-        color: #82776b;
+      html {
+        background: #fffcf8;
       }
       html[data-theme="dark"] {
-        background: #1b1e1b;
+        background: #202329;
+      }
+      .fpl-boot-loading {
+        min-height: 85vh !important;
+        font: 14px system-ui;
+        animation: fpl-boot-reveal 0.15s step-end;
       }
       html[data-theme="dark"] .fpl-boot-loading {
         color: #c0b8ab;
       }
-      .fpl-boot-orbit {
-        width: 28px;
-        height: 28px;
-        border: 2px solid #82776b44;
-        border-top-color: #ef8054;
-        border-radius: 50%;
-        animation: fpl-boot-turn 1.6s linear infinite;
-      }
-      .fpl-boot-track {
-        display: block;
-        height: 3px;
-        margin-top: 12px;
-        background: #82776b33;
-        overflow: hidden;
-        border-radius: 8px;
-      }
-      .fpl-boot-track i {
-        display: block;
-        width: 35%;
-        height: 100%;
-        background: #ef8054;
-        animation: fpl-boot-slide 1.6s ease-in-out infinite;
-      }
-      @keyframes fpl-boot-turn {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-      @keyframes fpl-boot-slide {
+      @keyframes fpl-boot-reveal {
         from {
-          transform: translateX(-110%);
+          visibility: hidden;
         }
         to {
-          transform: translateX(390%);
-        }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .fpl-boot-orbit,
-        .fpl-boot-track i {
-          animation: none;
+          visibility: visible;
         }
       }
     </style>
   </head>
   <body>
     <div id="root">
-      <div role="status" class="fpl-boot-loading">
-        <span class="fpl-boot-orbit" aria-hidden="true"></span>
+      <div
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+        class="fpl-loading fpl-loading--page is-visible fpl-boot-loading"
+      >
         <span
-          >正在打开 Future Props Lab…<span class="fpl-boot-track"><i></i></span
+          class="fpl-loading-scene fpl-loading-scene--page"
+          aria-hidden="true"
+          data-paused="true"
+        >
+          <span class="fpl-loading-halo"></span>
+          <span class="fpl-loading-radar"></span>
+          <svg class="fpl-loading-dial" viewBox="0 0 320 320" fill="none">
+            <use
+              class="fpl-dial-base"
+              href="/brand/loading/loading-dial.svg#base"
+            ></use>
+            <g class="fpl-dial-sweep">
+              <use href="/brand/loading/loading-dial.svg#sweep"></use>
+            </g>
+            <g class="fpl-dial-tracers">
+              <use href="/brand/loading/loading-dial.svg#tracers"></use>
+            </g>
+            <g class="fpl-dial-comet">
+              <use href="/brand/loading/loading-dial.svg#comet"></use>
+            </g>
+            <g class="fpl-dial-energy">
+              <use href="/brand/loading/loading-dial.svg#energy"></use>
+            </g>
+            <g class="fpl-dial-particles">
+              <use href="/brand/loading/loading-dial.svg#particles"></use>
+            </g>
+            <use
+              class="fpl-dial-scan"
+              href="/brand/loading/loading-dial.svg#scan"
+            ></use>
+            <use
+              class="fpl-dial-speed"
+              href="/brand/loading/loading-dial.svg#speed"
+            ></use>
+          </svg>
+          <span class="fpl-scene-runner"
+            ><span class="fpl-loading-character" data-playing="false">
+              <picture
+                ><source
+                  data-srcset="/brand/loading/kurisu-run.webp"
+                  type="image/webp"
+                />
+                <img
+                  data-src="/brand/loading/kurisu-run.png"
+                  alt=""
+                  width="150"
+                  height="192"
+                /> </picture
+              ><video
+                data-src="/brand/loading/kurisu-run.webm"
+                data-poster="/brand/loading/kurisu-run.webp"
+                muted
+                loop
+                playsinline
+                preload="auto"
+                width="150"
+                height="192"
+              ></video> </span
+          ></span>
+          <span class="fpl-scene-prop fpl-scene-prop--phonewave"
+            ><img
+              data-src="/brand/loading/phonewave.webp"
+              alt=""
+              width="256"
+              height="256"
+          /></span>
+          <span class="fpl-scene-prop fpl-scene-prop--pocket-watch"
+            ><img
+              data-src="/brand/loading/pocket-watch.webp"
+              alt=""
+              width="256"
+              height="256"
+          /></span>
+          <span class="fpl-scene-prop fpl-scene-prop--metal-upa"
+            ><img
+              data-src="/brand/loading/metal-upa.webp"
+              alt=""
+              width="256"
+              height="256"
+          /></span>
+          <span class="fpl-scene-prop fpl-scene-prop--divergence-meter"
+            ><img
+              data-src="/brand/loading/divergence-meter.webp"
+              alt=""
+              width="256"
+              height="256"
+          /></span>
+          <span class="fpl-scene-prop fpl-scene-prop--flip-phone"
+            ><img
+              data-src="/brand/loading/flip-phone.webp"
+              alt=""
+              width="256"
+              height="256"
+          /></span>
+          <span class="fpl-scene-prop fpl-scene-prop--gel-banana"
+            ><img
+              data-src="/brand/loading/gel-banana.webp"
+              alt=""
+              width="256"
+              height="256"
+          /></span>
+          <span class="fpl-scene-prop fpl-scene-prop--dr-pepper"
+            ><img
+              data-src="/brand/loading/dr-pepper.webp"
+              alt=""
+              width="256"
+              height="256"
+          /></span>
+          <span class="fpl-scene-prop fpl-scene-prop--time-machine"
+            ><img
+              data-src="/brand/loading/time-machine.webp"
+              alt=""
+              width="256"
+              height="256"
+          /></span>
+        </span>
+        <span class="fpl-loading-copy"
+          ><span class="fpl-loading-label">正在打开 Future Props Lab…</span
+          ><span class="fpl-progress fpl-loading-dots" aria-hidden="true"
+            ><span></span></span
         ></span>
       </div>
     </div>

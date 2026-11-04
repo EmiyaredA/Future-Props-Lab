@@ -15,8 +15,8 @@ function snapshot(
     checked_at: checked,
     services: [
       {
-        service_id: "agents",
-        label: "Agent 工作台",
+        service_id: "thought",
+        label: "思绪工坊",
         phase,
         detail:
           phase === "running" ? "服务已就绪" : "服务已停止，请等待管理员启动",
@@ -38,15 +38,15 @@ test("shows real readiness and reveals details without nesting controls", async 
     />,
   );
   const status = screen.getByRole("button", {
-    name: "查看Agent 工作台服务状态：运行中",
+    name: "查看思绪工坊服务状态：运行中",
   });
   expect(status.parentElement!.closest("button")).toBeNull();
   await user.click(status);
-  const details = screen.getByRole("region", { name: "Agent 工作台服务状态" });
+  const details = screen.getByRole("region", { name: "思绪工坊服务状态" });
   expect(within(details).getByText("服务已就绪")).toBeInTheDocument();
   expect(status).toHaveAttribute("aria-expanded", "true");
-  await user.click(screen.getByRole("button", { name: "打开Agent 工作台" }));
-  expect(opened).toHaveBeenCalledWith("/apps/agent-workbench");
+  await user.click(screen.getByRole("button", { name: "打开思绪工坊" }));
+  expect(opened).toHaveBeenCalledWith("/apps/thought-workshop");
 });
 
 test("shows stopped and dependency failures as separate explanations", async () => {
@@ -64,7 +64,7 @@ test("shows stopped and dependency failures as separate explanations", async () 
     />,
   );
   expect(
-    screen.getByRole("button", { name: "查看Agent 工作台服务状态：已停止" }),
+    screen.getByRole("button", { name: "查看思绪工坊服务状态：已停止" }),
   ).toBeInTheDocument();
   expect(screen.getByText("服务已停止，请等待管理员启动")).toBeInTheDocument();
   rerender(
@@ -75,7 +75,7 @@ test("shows stopped and dependency failures as separate explanations", async () 
     />,
   );
   await user.click(
-    screen.getByRole("button", { name: "查看Agent 工作台服务状态：功能受限" }),
+    screen.getByRole("button", { name: "查看思绪工坊服务状态：功能受限" }),
   );
   expect(screen.getByText("模型服务：已停止")).toBeInTheDocument();
 });
@@ -91,14 +91,14 @@ test("a failed refresh never presents cached running status as current", async (
     />,
   );
   expect(
-    screen.queryByRole("button", { name: "查看Agent 工作台服务状态：运行中" }),
+    screen.queryByRole("button", { name: "查看思绪工坊服务状态：运行中" }),
   ).not.toBeInTheDocument();
   await user.click(
     screen.getByRole("button", {
-      name: "查看Agent 工作台服务状态：状态暂不可读",
+      name: "查看思绪工坊服务状态：状态暂不可读",
     }),
   );
-  const region = screen.getByRole("region", { name: "Agent 工作台服务状态" });
+  const region = screen.getByRole("region", { name: "思绪工坊服务状态" });
   expect(within(region).getByText("上次结果：运行中")).toBeInTheDocument();
   expect(within(region).getByText(/无法读取最新服务状态/)).toBeInTheDocument();
 });
@@ -115,7 +115,7 @@ test("initial loading and explicit refresh have no invented healthy state", asyn
     />,
   );
   expect(
-    screen.getByRole("button", { name: "查看Agent 工作台服务状态：检查中…" }),
+    screen.getByRole("button", { name: "查看思绪工坊服务状态：检查中…" }),
   ).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "刷新状态" })).toBeDisabled();
   rerender(

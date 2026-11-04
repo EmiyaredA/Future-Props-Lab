@@ -10,10 +10,13 @@ import {
 } from "@features/files/api";
 
 vi.mock("@features/files/AssetBrowser", () => ({
-  AssetBrowser: ({ onOpenLocalFolder }: { onOpenLocalFolder: () => void }) => (
+  AssetBrowser: ({ onOpenLocalFolder }: { onOpenLocalFolder?: () => void }) => (
     <div>
       <h1>文件管理</h1>
-      <button onClick={onOpenLocalFolder}>打开本地文件夹</button>素材列表
+      {onOpenLocalFolder && (
+        <button onClick={onOpenLocalFolder}>打开本地文件夹</button>
+      )}
+      素材列表
     </div>
   ),
 }));
@@ -61,13 +64,13 @@ function batch(overrides = {}) {
   };
 }
 
-function renderPage() {
+function renderPage(canOpenLocalFolder = false) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   return render(
     <QueryClientProvider client={client}>
-      <FileManagementPage />
+      <FileManagementPage canOpenLocalFolder={canOpenLocalFolder} />
     </QueryClientProvider>,
   );
 }
@@ -86,7 +89,7 @@ test("shows open-library control without workspace eyebrow", async () => {
     pending_assets: 0,
     complete: true,
   });
-  renderPage();
+  renderPage(true);
   expect(
     await screen.findByRole("heading", { name: "文件管理" }),
   ).toBeInTheDocument();
@@ -96,6 +99,13 @@ test("shows open-library control without workspace eyebrow", async () => {
   ).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "打开本地文件夹" }));
   await waitFor(() => expect(openLibraryFolder).toHaveBeenCalledTimes(1));
+});
+
+test("does not render a host folder action for public access", () => {
+  renderPage();
+  expect(
+    screen.queryByRole("button", { name: "打开本地文件夹" }),
+  ).not.toBeInTheDocument();
 });
 
 test("migrates storage in ordered batches and hides the prompt when complete", async () => {
