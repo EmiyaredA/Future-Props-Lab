@@ -4889,6 +4889,12 @@
       "model": "MotionImportBatch"
     },
     {
+      "table": "motion_export_bindings",
+      "service": "motion",
+      "module": "fpl_motion.models",
+      "model": "MotionExportBinding"
+    },
+    {
       "table": "presentation_reference_mutations",
       "service": "presentation",
       "module": "fpl_presentation.models",
@@ -4911,6 +4917,12 @@
       "service": "remote",
       "module": "fpl_remote.models",
       "model": "DesktopPreferenceImportReceipt"
+    },
+    {
+      "table": "motion_render_jobs",
+      "service": "rendering",
+      "module": "fpl_rendering.models",
+      "model": "MotionRenderJob"
     },
     {
       "table": "thought_archive_imports",

@@ -19,6 +19,7 @@ from fpl_runtime.annotation_task_sources import upload_target as annotation_uplo
 from fpl_runtime.annotation_transcription import target as annotation_transcription_target
 from fpl_runtime.claims import verify_context
 from fpl_runtime.model_outputs import is_model_output_path
+from fpl_runtime.motion_exports import render_target
 from fpl_runtime.tools_video_library import is_library_path as is_tools_output_path
 
 router = APIRouter()
@@ -71,7 +72,15 @@ async def active_actor(session, actor):
 async def live(request: Request, body: LiveRequest):
     options = request.app.state.identity_options
     credential = request.headers.get("authorization", "").removeprefix("Bearer ")
+    render_export = body.service == "rendering" and render_target(body.method, body.path)
     expected = options["service_credentials"].get(body.service)
+    assets_credential = options["service_credentials"].get("assets")
+    if (
+        render_export
+        and assets_credential
+        and secrets.compare_digest(credential, assets_credential)
+    ):
+        expected = assets_credential
     if expected is None or not secrets.compare_digest(credential, expected):
         raise HTTPException(403, "service_credential_required")
     operation = request.app.state.service_catalog.match(body.method, body.path)
@@ -128,6 +137,7 @@ async def live(request: Request, body: LiveRequest):
         or private_external
         or private_thought_upload
         or private_render
+        or render_export
     ) and (operation is None or operation.service != body.service):
         raise HTTPException(403, "invalid_service_target")
     try:

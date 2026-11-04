@@ -17,15 +17,10 @@ from app.apps.motion_compositor.schemas import (
 from app.apps.video_editor.motion_handoff import import_motion_export
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.motion_document import MotionComposition
+from app.capabilities.media_rendering.motion_outputs import OUTPUT_NAMES
 from app.runtime.config import get_settings
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import utc_now
-
-OUTPUT_NAMES = {
-    "mp4": "composition.mp4",
-    "mov4444": "composition-alpha.mov",
-    "png-sequence": "frames-alpha.zip",
-}
 
 
 class MotionExports:

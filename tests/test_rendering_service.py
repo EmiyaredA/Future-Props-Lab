@@ -14,6 +14,7 @@ from pypdf import PdfWriter
 
 from fpl_rendering.application import create_app
 from fpl_rendering.migrations.registry import MIGRATIONS
+from fpl_rendering.models import MotionRenderJob
 from fpl_rendering.settings import RenderingSettings
 from fpl_runtime.capability_client import CapabilityDenied
 from fpl_runtime.claims import Actor, issue_context, verify_context
@@ -136,7 +137,7 @@ async def test_media_public_contract_is_unchanged_and_no_asset_table_is_owned(in
     assert public_contract(app.openapi(), "rendering", CATALOG) == public_contract(
         original, "rendering", CATALOG
     )
-    assert app.state.database.models == ()
+    assert app.state.database.models == (MotionRenderJob,)
 
 
 async def test_owned_image_thumbnail_crop_and_revocation(instance):

@@ -41,7 +41,11 @@ def motion_asset_grant(grant):
     if match is None:
         return False
     project, suffix = match.groups()
-    if (method, suffix) in {("POST", "/document/operations"), ("GET", "/preview/frame")}:
+    if (method, suffix) in {
+        ("POST", "/document/operations"),
+        ("GET", "/preview/frame"),
+        ("POST", "/exports"),
+    }:
         return bool(re.fullmatch(rf"{PREFIX}/{project}/metadata/[0-9a-f]{{64}}", target))
     if (method, suffix) == ("GET", "/snapshot"):
         return target == f"{PREFIX}/{project}/snapshot-metadata"

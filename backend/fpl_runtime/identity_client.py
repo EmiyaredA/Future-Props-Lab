@@ -17,11 +17,21 @@ class LiveAuthorization:
         )
 
     async def status(self, *, assertion, method, path):
+        return await self._status(self.service, assertion=assertion, method=method, path=path)
+
+    async def motion_export_source_status(self, *, assertion, path):
+        from .motion_exports import render_target
+
+        if self.service != "assets" or not render_target("POST", path):
+            return False
+        return await self._status("rendering", assertion=assertion, method="POST", path=path)
+
+    async def _status(self, service, *, assertion, method, path):
         try:
             response = await self.client.post(
                 "/_internal/v1/authorization/live",
                 json={
-                    "service": self.service,
+                    "service": service,
                     "assertion": assertion,
                     "method": method,
                     "path": path,

@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, String
+from sqlalchemy import JSON, DateTime, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from app.runtime.time import utc_now
@@ -27,3 +27,15 @@ class MotionImportBatch(MotionLifecycleBase):
     result: Mapped[dict | None] = mapped_column(JSON)
     state: Mapped[str] = mapped_column(String(16), default="staging")
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
+class MotionExportBinding(MotionLifecycleBase):
+    __tablename__ = "motion_export_bindings"
+
+    task_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    owner_user_id: Mapped[str] = mapped_column(String(36))
+    remote_id: Mapped[str] = mapped_column(String(32))
+    request_path: Mapped[str] = mapped_column(String(512))
+    assertion: Mapped[str] = mapped_column(Text)
+    frozen_request: Mapped[dict] = mapped_column(JSON)
+    checked_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)

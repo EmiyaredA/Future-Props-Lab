@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from app.capabilities.identity.permissions import effective_permissions
 from fpl_runtime.claims import HEADER, verify_context
 from fpl_runtime.framed_media import content_length, stream_files
+from fpl_runtime.motion_exports import render_target
 from fpl_runtime.motion_preview import INPUTS, MAX_SCOPE_BYTES, FrameScope, preview_target
 
 from ..motion_files import versioned_files
@@ -20,8 +21,10 @@ async def originals(request: Request, project_id: str, digest: str):
     if "origin" in request.headers or "cookie" in request.headers:
         raise HTTPException(403, "private_motion_preview_required")
     target = request.headers.get("X-Fpl-Render-Target", "")
-    match = preview_target("POST", target)
-    if not match or (match[1], match[3]) != (project_id, digest):
+    export = render_target("POST", target)
+    preview = preview_target("POST", target)
+    match = (export[1], export[4]) if export else (preview[1], preview[3]) if preview else None
+    if match != (project_id, digest):
         raise HTTPException(403, "motion_preview_scope_mismatch")
     state = request.app.state
     try:
@@ -31,10 +34,12 @@ async def originals(request: Request, project_id: str, digest: str):
             method="POST",
             path=target,
             public_key=state.identity_public_key,
+            allow_expired=bool(export),
         )
     except (jwt.InvalidTokenError, ValueError, TypeError):
         raise HTTPException(401, "motion_preview_authorization_required") from None
-    if actor.purpose != "studio" or "content.read" not in effective_permissions(
+    permission = "content.write" if export else "content.read"
+    if actor.purpose != "studio" or permission not in effective_permissions(
         actor.platform_role, frozenset(actor.scopes)
     ):
         raise HTTPException(403, "motion_preview_forbidden")
@@ -49,6 +54,14 @@ async def originals(request: Request, project_id: str, digest: str):
         raise HTTPException(422, "motion_preview_scope_invalid") from None
     if scope.digest != digest:
         raise HTTPException(403, "motion_preview_scope_mismatch")
+    if export:
+        active = await state.identity.motion_export_source_status(
+            assertion=request.headers[HEADER], path=target
+        )
+        if active is None:
+            raise HTTPException(503, "identity_unavailable")
+        if not active:
+            raise HTTPException(401, "motion_export_revoked")
     async with state.database.sessions(info={"owner_user_id": actor.user_id}) as session:
         sources = await versioned_files(
             session, state.settings, actor.user_id, project_id, scope.files

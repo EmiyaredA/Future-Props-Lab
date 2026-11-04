@@ -10,6 +10,7 @@ from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
 from fpl_runtime.locking import service_lock
 from fpl_runtime.migrations import apply
+from fpl_runtime.motion_exports import load_export_key
 from fpl_runtime.routing import RouteCatalog
 
 from .application import create_app
@@ -29,6 +30,7 @@ def main():
     parser.add_argument("--port", type=int, default=8080)
     parser.add_argument("--archive-key", type=Path, default=Path("/run/fpl/motion-archive-key"))
     parser.add_argument("--identity-token", type=Path, default=Path("/run/fpl/identity-token"))
+    parser.add_argument("--export-key", type=Path, default=Path("/run/fpl/motion-export-key"))
     options = parser.parse_args()
     if options.command == "migrate":
         with service_lock(options.state_root):
@@ -56,11 +58,18 @@ def main():
         archive_key = options.archive_key.read_text().strip()
         if archive_key == credential:
             parser.error("特效归档对等凭据必须独立")
+    try:
+        export_key = load_export_key(
+            options.export_key, identity_credential=credential, archive_key=archive_key
+        )
+    except (ValueError, OSError) as exc:
+        parser.error(str(exc))
     app = create_app(
         state_root=options.state_root,
         public_key=key,
         credential=credential,
         archive_key=archive_key,
+        export_key=export_key,
         catalog=RouteCatalog.read(options.catalog),
         schema_path=options.schema,
         web_root=None if (options.web_root / ".api-only").is_file() else options.web_root,

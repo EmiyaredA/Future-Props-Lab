@@ -62,10 +62,9 @@ def png(document, media, frame):
         return buffer.getvalue()
 
 
-async def fetch_sources(request, project_id, scope, assertion, root):
+async def fetch_sources(state, target, project_id, scope, assertion, root, *, exporting=False):
     if not scope.files:
         return {}
-    state = request.app.state
     try:
         async with state.capabilities.client.stream(
             "POST",
@@ -73,12 +72,12 @@ async def fetch_sources(request, project_id, scope, assertion, root):
             content=scope.model_dump_json().encode(),
             headers={
                 HEADER: assertion,
-                "X-Fpl-Render-Target": request.url.path,
+                "X-Fpl-Render-Target": target,
                 "Accept-Encoding": "identity",
             },
             timeout=httpx.Timeout(120, connect=5),
         ) as response:
-            if response.status_code == 409:
+            if response.status_code == 409 or (exporting and response.status_code == 404):
                 raise HTTPException(409, {"code": "source_changed", "message": "渲染原件已变化"})
             response.raise_for_status()
             if (
@@ -87,6 +86,8 @@ async def fetch_sources(request, project_id, scope, assertion, root):
             ):
                 raise ValueError("invalid frame source response")
             total = int(response.headers["Content-Length"])
+            if exporting and total > 2 * 1024**3:
+                raise HTTPException(413, "motion_export_sources_too_large")
             return await unpack(response, root, scope, state.settings.max_input_bytes, total)
     except (httpx.HTTPError, ValueError, OSError, KeyError) as exc:
         raise CapabilityUnavailable("渲染原件暂不可用") from exc
@@ -145,7 +146,7 @@ async def render(request: Request, project_id: str, body_digest: str, scope_dige
             raise HTTPException(503, "motion_preview_storage_unavailable")
         with tempfile.TemporaryDirectory(dir=base, prefix="frame-") as staging:
             sources = await fetch_sources(
-                request, project_id, frame.scope, assertion, Path(staging)
+                state, request.url.path, project_id, frame.scope, assertion, Path(staging)
             )
             result = await run_sync(png, document, sources, frame.frame)
         await authorized(request, assertion)

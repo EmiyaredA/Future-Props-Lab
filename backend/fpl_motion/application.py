@@ -11,7 +11,12 @@ from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import HTTPConnection
 
-from app.apps.motion_compositor.models import MotionDocument, MotionOperationBatch, MotionProject
+from app.apps.motion_compositor.models import (
+    MotionDocument,
+    MotionOperationBatch,
+    MotionProject,
+    MotionTask,
+)
 from app.apps.motion_compositor.routes.projects import router
 from app.deps import db_session, require_studio_auth
 from app.problem_details import (
@@ -29,15 +34,18 @@ from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.locking import service_lock
 from fpl_runtime.migrations import check
 from fpl_runtime.motion_assets import SOURCE, MotionAsset
+from fpl_runtime.motion_exports import ExportPeer
 from fpl_runtime.motion_snapshot import ARCHIVE_DOMAIN, ARCHIVE_PREFIX, ARCHIVE_PURPOSE, IMPORT
 from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.reference_runtime import install_reference_runtime, reference_lifespan
 from fpl_runtime.routing import RouteCatalog
 from fpl_runtime.web import attach_web, load_release
 
+from .export_delivery import ExportDelivery
+from .export_routes import router as export_router
 from .file_routes import router as file_router
 from .migrations.registry import MIGRATIONS
-from .models import MotionImportBatch, MotionReferenceMutation
+from .models import MotionExportBinding, MotionImportBatch, MotionReferenceMutation
 from .preview_routes import router as preview_router
 from .resources import ProjectResources
 from .snapshot_imports import MotionImportDelivery, SnapshotImports
@@ -62,6 +70,11 @@ OPERATIONS = {
     ("GET", PROJECT + "/document"),
     ("GET", PROJECT + "/preview/frame"),
     ("GET", PROJECT + "/snapshot"),
+    ("GET", PROJECT + "/exports"),
+    ("POST", PROJECT + "/exports"),
+    ("GET", PROJECT + "/exports/{task_id}"),
+    ("POST", PROJECT + "/exports/{task_id}/cancel"),
+    ("GET", PROJECT + "/exports/{task_id}/download/{format_name}"),
     ("POST", IMPORT),
     ("GET", SOURCE + "/import-sources"),
     ("GET", PROJECT + "/assets"),
@@ -83,6 +96,7 @@ def create_app(
     run_worker=True,
     web_root=None,
     archive_key=None,
+    export_key=None,
 ):
     database = Database(
         SERVICE,
@@ -93,7 +107,10 @@ def create_app(
             MotionOperationBatch,
             MotionReferenceMutation,
             MotionImportBatch,
+            MotionTask,
+            MotionExportBinding,
         ),
+        hide_parameters=True,
     )
     snapshot_staging = database.root / ".snapshot-exports"
     identity = LiveAuthorization(service=SERVICE, credential=credential, transport=transport)
@@ -101,6 +118,11 @@ def create_app(
         service=SERVICE, credential=credential, catalog=catalog, transport=transport
     )
 
+    export_delivery = (
+        ExportDelivery(database.sessions, capabilities, ExportPeer(export_key))
+        if export_key is not None
+        else None
+    )
     archive = (
         ArchiveTransport(
             capabilities,
@@ -135,10 +157,14 @@ def create_app(
                 async with reference_lifespan(app):
                     if import_delivery is not None and run_worker:
                         await import_delivery.start()
+                    if export_delivery is not None and run_worker:
+                        await export_delivery.start()
                     yield
             finally:
                 if import_delivery is not None:
                     await import_delivery.stop()
+                if export_delivery is not None:
+                    await export_delivery.stop()
                 await capabilities.close()
                 await identity.close()
                 await database.close()
@@ -148,6 +174,7 @@ def create_app(
     )
     app.state.database = database
     app.state.motion_capabilities = capabilities
+    app.state.motion_export_delivery = export_delivery
     app.state.motion_identity = identity
     app.state.snapshot_staging = snapshot_staging
     app.state.snapshot_slots = asyncio.Semaphore(2)
@@ -178,7 +205,7 @@ def create_app(
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(OperationalError, storage_operational_error_handler)
     app.add_exception_handler(RevisionConflictError, revision_conflict_handler)
-    for component in (router, file_router, preview_router, snapshot_router):
+    for component in (router, file_router, preview_router, snapshot_router, export_router):
         app.include_router(
             component,
             prefix=SOURCE,

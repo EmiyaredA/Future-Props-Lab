@@ -20,6 +20,7 @@ def parser():
     result.add_argument(
         "--catalog", type=Path, default=Path("/app/deploy/contracts/ownership.json")
     )
+    result.add_argument("--export-key", type=Path, default=Path("/run/fpl/motion-export-key"))
     result.add_argument("--port", type=int, default=8080)
     return result
 
@@ -48,6 +49,7 @@ def run(options):
 
         from fpl_runtime.capability_client import CapabilityClient
         from fpl_runtime.identity_client import LiveAuthorization
+        from fpl_runtime.motion_exports import load_export_key
         from fpl_runtime.routing import RouteCatalog
 
         from .application import create_app
@@ -74,6 +76,7 @@ def run(options):
             capabilities=CapabilityClient(
                 service="rendering", credential=credential, catalog=catalog
             ),
+            export_key=load_export_key(options.export_key, identity_credential=credential),
             version=os.environ.get("FPL_SERVICE_VERSION", "development"),
         )
         uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)
