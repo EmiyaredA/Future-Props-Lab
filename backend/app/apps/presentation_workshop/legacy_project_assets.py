@@ -1,5 +1,8 @@
 """Compatibility site's library validation and project reference projection."""
 
+from contextlib import asynccontextmanager
+from types import SimpleNamespace
+
 from sqlalchemy import delete, select
 
 from app.capabilities.asset_store.models import VisualAsset
@@ -14,6 +17,8 @@ from .templates.models import PresentationExampleAsset, PresentationTemplateAsse
 
 
 class LegacyProjectAssets:
+    export_output_root = None
+
     def __init__(self, session, owner_user_id):
         self.session, self.owner_user_id = session, owner_user_id
 
@@ -59,3 +64,18 @@ class LegacyProjectAssets:
         )
         await self.session.execute(delete(model).where(getattr(model, key) == identity))
         self.session.add_all(model(**{key: identity, "asset_id": asset.id}) for asset in assets)
+
+    @asynccontextmanager
+    async def export_sources(self, rows):
+        storage = AssetStorage(get_settings())
+        sources = [
+            (
+                SimpleNamespace(
+                    id=row.id, original_filename=row.original_filename, mime_type=row.mime_type
+                ),
+                storage.path_for(row),
+            )
+            for row in rows
+        ]
+        await self.session.rollback()
+        yield sources

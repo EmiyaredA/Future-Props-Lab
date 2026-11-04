@@ -1,6 +1,7 @@
 """Standalone Presentation with request-bound Assets and its own project store."""
 
 import json
+import shutil
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException
@@ -10,6 +11,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import HTTPConnection
 
 from app.apps.presentation_workshop.project_errors import PresentationError
+from app.apps.presentation_workshop.routes.exports import router as exports_router
 from app.apps.presentation_workshop.routes.projects import router as projects_router
 from app.apps.presentation_workshop.routes.templates import router as templates_router
 from app.deps import db_session, require_studio_auth
@@ -45,6 +47,9 @@ OPERATIONS = {
     ("POST", PROJECT + "/operations"),
     ("POST", PROJECT + "/template/preview"),
     ("POST", PROJECT + "/template/apply"),
+    ("POST", PROJECT + "/export"),
+    ("POST", PROJECT + "/export/preview"),
+    ("POST", PROJECT + "/export/{format}"),
     ("POST", BUNDLE),
 }
 for kind, prefix in LIBRARY.items():
@@ -72,6 +77,7 @@ def create_app(
     run_worker=True,
 ):
     database = Database(SERVICE, state_root, models=MODELS)
+    staging = database.root / ".staging"
     capabilities = CapabilityClient(
         service=SERVICE, credential=credential, catalog=catalog, transport=transport
     )
@@ -81,6 +87,16 @@ def create_app(
         with service_lock(database.root):
             try:
                 check(database.path, SERVICE, MIGRATIONS)
+                if staging.is_symlink():
+                    raise ValueError("演示工坊暂存目录不能是符号链接")
+                staging.mkdir(exist_ok=True, mode=0o700)
+                for path in staging.iterdir():
+                    if (
+                        path.is_dir()
+                        and not path.is_symlink()
+                        and path.name.startswith(("sources-", "fpl-presentation-"))
+                    ):
+                        shutil.rmtree(path)
                 async with reference_lifespan(app):
                     yield
             finally:
@@ -105,7 +121,7 @@ def create_app(
         async with database.sessions() as session:
             session.info.update(
                 presentation_project_assets=lambda _db, _owner: ProjectAssets(
-                    connection, capabilities
+                    connection, capabilities, staging
                 ),
                 presentation_retention=ProjectReferences(
                     connection, session, app.state.reference_mutations
@@ -125,7 +141,7 @@ def create_app(
     app.add_exception_handler(OperationalError, storage_operational_error_handler)
     app.add_exception_handler(RevisionConflictError, revision_conflict_handler)
     app.add_exception_handler(PresentationError, presentation_error)
-    for router in (templates_router, projects_router):
+    for router in (templates_router, projects_router, exports_router):
         app.include_router(
             router,
             prefix=SOURCE,

@@ -14,6 +14,8 @@ dependencies = [
   "uvicorn==0.52.1",
   "defusedxml==0.7.1",
   "pillow==12.3.0",
+  "python-pptx==1.0.2",
+  "resvg-py==0.5.0",
 ]
 
 [tool.uv]

@@ -7,10 +7,8 @@ import tempfile
 from pathlib import Path
 from uuid import uuid4
 
-from app.apps.presentation_workshop.exchange.archives import MAX_BYTES, read_package, write_package
+from app.apps.presentation_workshop.exchange.archives import MAX_BYTES, read_package
 from app.apps.presentation_workshop.exchange.contracts import (
-    ConversionIssue,
-    ExportPreview,
     ImportPreview,
     ParsedPresentation,
 )
@@ -18,13 +16,11 @@ from app.apps.presentation_workshop.exchange.pptx_import import read_pptx
 from app.apps.presentation_workshop.projects import PresentationError, Presentations
 from app.apps.presentation_workshop.scene_edits import remap
 from app.apps.presentation_workshop.schemas.document import PresentationProjectIn
-from app.apps.presentation_workshop.templates.resolver import resolve_document
-from app.capabilities.asset_store import AssetStorage, IncomingFile
+from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.svg import normalize_svg
 from app.runtime.config import get_settings
 from app.runtime.ids import new_id
-from app.runtime.revisions import RevisionConflictError
 
 
 async def parse_upload(upload: IncomingFile) -> ParsedPresentation:
@@ -190,96 +186,3 @@ async def import_presentation(
         for path in paths:
             path.unlink(missing_ok=True)
         raise
-
-
-async def snapshot_at(projects, project_id, revision):
-    snapshot = await projects.get(project_id)
-    if snapshot.revision != revision:
-        raise RevisionConflictError(revision, snapshot.revision, snapshot.model_dump(mode="json"))
-    return snapshot
-
-
-async def export_preview(projects, project_id, revision):
-    snapshot = await snapshot_at(projects, project_id, revision)
-
-    _, template_issues = resolve_document(snapshot.document)
-    issues = [
-        ConversionIssue(slide_id=i["slide_id"], code=i["code"], message=i["message"])
-        for i in template_issues
-    ]
-    for slide in snapshot.document.slides:
-        if slide.animations or slide.transition:
-            issues.append(
-                ConversionIssue(
-                    slide_id=slide.id,
-                    code="static_animation",
-                    message="工坊动画与翻页效果保留在文稿包中，PPTX 导出静态可编辑对象",
-                )
-            )
-        if slide.annotations:
-            issues.append(
-                ConversionIssue(
-                    slide_id=slide.id,
-                    code="annotations_not_exported",
-                    message="页面批注与回复保留在文稿包中，不写入 PPTX",
-                )
-            )
-        for element in slide.elements:
-            if element.hidden:
-                continue
-            if element.kind in {"table", "chart"} and element.opacity != 1:
-                issues.append(
-                    ConversionIssue(
-                        slide_id=slide.id,
-                        element_id=element.id,
-                        code="object_opacity",
-                        message="表格与图表的整体透明度不写入 PPTX",
-                    )
-                )
-            if element.image_effects:
-                issues.append(
-                    ConversionIssue(
-                        slide_id=slide.id,
-                        element_id=element.id,
-                        code="image_effects_baked",
-                        message="图片滤镜写入 PPTX 的图片像素，原图与可调整滤镜保留在文稿包中",
-                    )
-                )
-            if element.chart and element.chart.type == "area" and element.chart.smooth:
-                issues.append(
-                    ConversionIssue(
-                        slide_id=slide.id,
-                        element_id=element.id,
-                        code="area_smoothing",
-                        message="PPTX 面积图使用直线边界，保留原生数据编辑",
-                    )
-                )
-    return ExportPreview(revision=revision, issues=issues)
-
-
-async def export_document(projects, project_id, revision, format):
-    snapshot = await snapshot_at(projects, project_id, revision)
-    if format == "json":
-        return json.dumps(
-            {"title": snapshot.title, "document": snapshot.document.model_dump()},
-            ensure_ascii=False,
-        ).encode()
-    rows = await projects.assets(snapshot.document)
-    if sum(row.byte_size for row in rows) > MAX_BYTES:
-        raise PresentationError("文稿素材总量不能超过 100 MiB", 413, "export_too_large")
-    storage = AssetStorage(get_settings())
-    assets = [(row, storage.path_for(row)) for row in rows]
-    # Copy metadata before ending the read transaction; ORM rows are expired by rollback.
-    from types import SimpleNamespace
-
-    assets = [
-        (
-            SimpleNamespace(
-                id=row.id, original_filename=row.original_filename, mime_type=row.mime_type
-            ),
-            path,
-        )
-        for row, path in assets
-    ]
-    await projects.session.rollback()
-    return await asyncio.to_thread(write_package, snapshot, assets)

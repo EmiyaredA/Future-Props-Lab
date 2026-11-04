@@ -28,6 +28,10 @@ class PresentationAsset(LibraryAssetDescription):
     def content_path(self):
         return f"{PREFIX}/content/{self.id}/{self.revision}"
 
+    @property
+    def export_path(self):
+        return f"{PREFIX}/export/{self.id}/{self.revision}"
+
 
 def project_asset_grant(grant):
     if (grant.caller, grant.purpose, grant.target_service, grant.target_method) != (
@@ -38,6 +42,13 @@ def project_asset_grant(grant):
     ):
         return False
     method, path = grant.source_method, grant.source_path
+    if method == "POST" and re.fullmatch(rf"{PROJECTS}/{ID}/export(?:/fplppt)?", path):
+        return bool(
+            re.fullmatch(
+                rf"{PREFIX}/(?:metadata/[0-9a-f]{{64}}|(?:content|export)/{ID}/[0-9]{{1,20}})",
+                grant.target_path,
+            )
+        )
     allowed = (
         (method == "POST" and path == PROJECTS)
         or (method == "PUT" and re.fullmatch(rf"{PROJECTS}/{ID}", path))

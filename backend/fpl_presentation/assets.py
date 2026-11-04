@@ -1,5 +1,9 @@
 """Presentation access to account-library assets and durable reference outcomes."""
 
+import asyncio
+import tempfile
+from contextlib import aclosing, asynccontextmanager
+from pathlib import Path
 from uuid import uuid4
 
 import httpx
@@ -14,11 +18,13 @@ from fpl_runtime.presentation_assets import MAX_IDS, PURPOSE, PresentationAsset,
 from fpl_runtime.project_errors import ProjectResourceError
 
 ASSETS = "http://assets:8080"
+EXPORT_SLOTS = asyncio.Semaphore(2)
 
 
 class ProjectAssets:
-    def __init__(self, connection, capabilities):
+    def __init__(self, connection, capabilities, staging):
         self.connection, self.capabilities = connection, capabilities
+        self.export_output_root = staging
         self.monochrome_results = {}
 
     async def _headers(self, target):
@@ -79,30 +85,67 @@ class ProjectAssets:
             if asset.byte_size > MAX_SVG_BYTES:
                 raise ValueError("SVG exceeds the published limit")
             body = bytearray()
-            async with self.capabilities.client.stream(
-                "GET",
-                ASSETS + asset.content_path,
-                headers=await self._headers(asset.content_path),
-            ) as response:
-                if response.status_code == 409:
-                    raise PresentationError("素材版本已变化，请重试", 409, "source_changed")
-                response.raise_for_status()
-                if (
-                    response.headers.get("Content-Encoding", "identity") != "identity"
-                    or response.headers.get("X-Fpl-File-Revision") != str(asset.revision)
-                    or response.headers.get("Content-Type") != "image/svg+xml"
-                    or int(response.headers["Content-Length"]) != asset.byte_size
-                ):
-                    raise ValueError("asset headers mismatch")
-                async for chunk in response.aiter_bytes():
+            async with aclosing(self._content(asset, asset.content_path)) as chunks:
+                async for chunk in chunks:
                     body.extend(chunk)
-                    if len(body) > asset.byte_size:
-                        raise ValueError("asset size mismatch")
-            if len(body) != asset.byte_size:
-                raise ValueError("asset size mismatch")
             return normalize_svg(body.decode())["monochrome"]
         except (CapabilityDenied, CapabilityUnavailable, httpx.HTTPError, ValueError, KeyError):
             raise PresentationError("矢量素材暂不可用", 503, "asset_unavailable") from None
+
+    async def _content(self, asset, path):
+        async with self.capabilities.client.stream(
+            "GET",
+            ASSETS + path,
+            headers=await self._headers(path),
+        ) as response:
+            if response.status_code == 409:
+                raise PresentationError("素材版本已变化，请重试", 409, "source_changed")
+            if response.status_code == 404:
+                raise PresentationError("素材原件不存在", 404, "not_found")
+            response.raise_for_status()
+            if (
+                response.headers.get("Content-Encoding", "identity") != "identity"
+                or response.headers.get("X-Fpl-File-Revision") != str(asset.revision)
+                or response.headers.get("Content-Type") != asset.mime_type
+                or int(response.headers["Content-Length"]) != asset.byte_size
+            ):
+                raise ValueError("asset headers mismatch")
+            received = 0
+            async for chunk in response.aiter_bytes(chunk_size=1024 * 1024):
+                received += len(chunk)
+                if received > asset.byte_size:
+                    raise ValueError("asset size mismatch")
+                yield chunk
+            if received != asset.byte_size:
+                raise ValueError("asset size mismatch")
+
+    @asynccontextmanager
+    async def export_sources(self, rows):
+        if EXPORT_SLOTS.locked():
+            raise PresentationError("导出繁忙，请稍后重试", 429, "export_busy")
+        async with EXPORT_SLOTS:
+            with tempfile.TemporaryDirectory(
+                dir=self.export_output_root, prefix="sources-"
+            ) as root:
+                sources = []
+                try:
+                    for asset in rows:
+                        target = Path(root) / asset.id
+                        async with aclosing(self._content(asset, asset.export_path)) as chunks:
+                            with target.open("xb") as file:
+                                async for chunk in chunks:
+                                    file.write(chunk)
+                        sources.append((asset, target))
+                except (
+                    CapabilityDenied,
+                    CapabilityUnavailable,
+                    httpx.HTTPError,
+                    OSError,
+                    ValueError,
+                    KeyError,
+                ):
+                    raise PresentationError("导出素材暂不可用", 503, "asset_unavailable") from None
+                yield sources
 
 
 class ProjectReferences:

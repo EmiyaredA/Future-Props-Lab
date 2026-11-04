@@ -56,15 +56,16 @@ async def metadata(
     )
 
 
-@router.get(PREFIX + "/content/{asset_id}/{revision}")
-async def file_content(request: Request, asset_id: str, revision: int):
+async def _content(request, asset_id, revision, *, vector_only):
     account = owner(request)
     async with request.app.state.database.sessions(info={"owner_user_id": account}) as session:
         description, path = await content(
             session, request.app.state.settings, account, asset_id, revision
         )
-    if description.mime_type != "image/svg+xml":
+    if vector_only and description.mime_type != "image/svg+xml":
         raise HTTPException(422, "presentation_vector_required")
+    if description.media_kind not in {"image", "audio", "video"}:
+        raise HTTPException(422, "presentation_media_required")
     return FileResponse(
         path,
         media_type=description.mime_type,
@@ -74,3 +75,13 @@ async def file_content(request: Request, asset_id: str, revision: int):
             "X-Fpl-File-Revision": str(description.revision),
         },
     )
+
+
+@router.get(PREFIX + "/content/{asset_id}/{revision}")
+async def file_content(request: Request, asset_id: str, revision: int):
+    return await _content(request, asset_id, revision, vector_only=True)
+
+
+@router.get(PREFIX + "/export/{asset_id}/{revision}")
+async def export_content(request: Request, asset_id: str, revision: int):
+    return await _content(request, asset_id, revision, vector_only=False)

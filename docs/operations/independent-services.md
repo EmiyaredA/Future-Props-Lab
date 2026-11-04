@@ -441,3 +441,7 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 四容器隔离验收 `fpl-presentation-api-8a59c2ddbf` 通过 Gateway 验证 SVG 上传与规范化摘要、文稿保存、素材删除保护、容器重启、原编辑回执重放、删除后的素材释放以及回环公网入口的认证。该批次使用 API 镜像 `fpl/presentation:643627c8951ef323c5b1`。
 
 模板和示例库增加 15 项独立操作。组合导入将模板、示例和两份素材引用结果放在同一事务。模板应用在素材准备完成后，通过源事务再次核对模板修订。隔离测试验证组合中第二项失败时不保留第一项记录，以及并发模板更新阻止旧预览落库。
+
+演示工坊还装配导出预览、JSON、原生文稿包和 PPTX。包含素材的导出通过专用签名读取固定版本，在独立状态目录暂存有界输入。测试核对原生文稿包中 SVG 的规范化原件、PPTX 页面和媒体、旧修订拒绝及暂存清理。
+
+四容器隔离验收 `fpl-presentation-export-f3a7f54fbf` 使用 `fpl/presentation:deec05c2517707b523ae`，经真实 Gateway 下载原生包和 PPTX，核对规范化 SVG 摘要及 PPTX 页面和媒体。

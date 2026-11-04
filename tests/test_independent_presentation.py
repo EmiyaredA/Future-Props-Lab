@@ -1,6 +1,7 @@
 """Exercise Presentation documents and reference delivery through owned services."""
 
 import io
+import zipfile
 from pathlib import Path
 
 import httpx
@@ -151,6 +152,8 @@ async def test_projects_hold_exact_account_asset_references_and_replay(
         repeated = await call(api, "POST", project + "/operations", json=body)
         assert repeated.json() == applied.json()
         assert applied.json()["revision"] == 2
+        await check_exports(api, call, project, applied.json(), asset)
+        assert list((state / ".staging").iterdir()) == []
         await restarted.state.reference_delivery.process_once()
         removed = await call(api, "DELETE", project, params={"expected_revision": 2})
         assert removed.status_code == 200, removed.text
@@ -265,3 +268,25 @@ async def check_template_bundle(api, call, app, delete_file, asset, monkeypatch)
     assert (await call(api, "GET", examples)).json()["total"] == 0
     assert (await delete_file()).status_code == 409
     await app.state.reference_delivery.process_once()
+
+
+async def check_exports(api, call, project, snapshot, asset):
+    revision = {"expected_revision": snapshot["revision"]}
+    prefix = project + "/export"
+    assert (await call(api, "POST", prefix, json={"expected_revision": 0})).status_code == 409
+    preview = await call(api, "POST", prefix + "/preview", json=revision)
+    assert preview.status_code == 200 and preview.json()["revision"] == snapshot["revision"]
+    raw = await call(api, "POST", prefix + "/json", json=revision)
+    assert raw.status_code == 200, raw.text
+    assert raw.json()["document"] == snapshot["document"]
+    package = await call(api, "POST", prefix + "/fplppt", json=revision)
+    assert package.status_code == 200, package.text
+    with zipfile.ZipFile(io.BytesIO(package.content)) as archive:
+        from app.capabilities.asset_store.svg import normalize_svg
+
+        assert archive.read("assets/" + asset) == normalize_svg(SVG.decode())["svg"].encode()
+    pptx = await call(api, "POST", prefix, json=revision)
+    assert pptx.status_code == 200, pptx.text
+    with zipfile.ZipFile(io.BytesIO(pptx.content)) as archive:
+        assert "ppt/slides/slide1.xml" in archive.namelist()
+        assert any(path.startswith("ppt/media/") for path in archive.namelist())
