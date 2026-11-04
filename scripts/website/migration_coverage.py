@@ -11,12 +11,14 @@ from fpl_director.migration_records import DATASETS as DIRECTOR
 from fpl_identity.credential_migration import DATASETS as IDENTITY
 from fpl_models.catalog_migration import DATASETS as MODELS
 from fpl_models.settings_migration import DEFAULT_PREFIX, POLICIES
+from fpl_motion.migration_records import DATASETS as MOTION
 from fpl_presentation.migration_operations import DATASET as PRESENTATION_RECEIPTS
 from fpl_presentation.migration_records import DATASETS as PRESENTATION
 from fpl_remote.preference_migration import DATASET as REMOTE
 from fpl_runtime.migration_apps import SourceSnapshot
 from fpl_runtime.migration_batches import MigrationPlan
 from fpl_tools.navigation_migration import DATASET as TOOLS
+from fpl_video.migration_records import DATASETS as VIDEO
 
 from .legacy_snapshot import CONFIG, DATABASE, MANIFEST, RUNTIME, digest, directory, private_config
 
@@ -25,6 +27,11 @@ TRANSFER = {
     **{
         dataset.model.__tablename__: dataset.name
         for dataset in (*IDENTITY, *ASSETS, *DIRECTOR, *MODELS, *PRESENTATION)
+    },
+    **{
+        dataset.model.__tablename__: dataset.name
+        for dataset in (*MOTION, *VIDEO)
+        if dataset.suffix not in {"media", "tasks"}
     },
     "cloud_desktop_preferences": REMOTE,
     "tool_navigation_items": TOOLS,

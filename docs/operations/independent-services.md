@@ -513,3 +513,9 @@ Motion 的 MP4 与 ProRes 4444 可交接到同账号的现有或新建剪辑项�
 分段任务可导出有序 MP4 批次并从原地址下载 ZIP。Rendering 核验封存规格，Assets 校验整组字节后原子发布，下载时重新比对每项 SHA256。五容器 Chromium 运行 `fpl-video-segments-5c805158cd` 验证真实编码、双服务重启、批次重放、取消、独立文件与 ZIP 条目一致以及 Range 下载。故障测试验证第二段摘要不符时整组不可见。
 
 分段可交接到既有或新建 Visual 画布。叠加 `deploy/project-owners.compose.yaml`、`deploy/video.compose.yaml` 和 `deploy/video-visual-handoff.compose.yaml`，并分别提供 `FPL_VIDEO_SEGMENT_VISUAL_KEY` 和 `FPL_VISUAL_SEGMENT_ASSETS_KEY`。显式运行 Video、Assets、Visual 的迁移。待接收文件在目标确认前不可见。确认时核对画布修订，并登记文件库归属、画布节点与输出历史。隔离测试覆盖丢失确认、过期修订和分段传输失败。 六容器 Chromium 运行 `fpl-video-visual-handoff-94b5a2c569` 验证两种目标、ZIP 摘要、服务重启和源项目删除后目标原件仍可下载。
+
+### 剪辑与特效历史记录
+
+按既有 Assets 流程先传输记录与原件。Video、Motion 分别运行 `migration-export` 和 `migration-import`，使用同一受保护迁移计划、明确的快照及各自隔离目标目录。将这四个回环地址及 Assets 两个回环地址传给 `uv run python -m scripts.website.migrate_editing_history`。命令先比对原件清单，再导入项目、文稿、编辑回执、素材元数据与任务记录，最后恢复匹配账号与原件集合的项目文件范围。缺失根项目、跨账号记录、文件摘要差异或记录重叠会阻止通过。
+
+剪辑和特效的历史派生文件、成片和下载关系由后续迁移步骤处理。当前隔离验收在真实兼容站写入合成项目与素材，校验批次重放与 SHA256，再从封存快照恢复会话、原件和两个文稿。

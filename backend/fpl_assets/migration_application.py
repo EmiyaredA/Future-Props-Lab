@@ -5,6 +5,7 @@ from functools import partial
 from fpl_runtime.migration_apps import export_app, import_app, mount_dataset
 
 from .migration_blobs import BLOBS, mount_blobs
+from .migration_editing_scopes import mount_project_scopes
 from .migration_models import AssetImportReceipt
 from .migration_presentation import mount_presentation_references
 from .migration_records import DATASETS, export_page, import_batch, inventory
@@ -29,6 +30,7 @@ def mount_records(app, plan, sessions, *, source=None):
             ingest=partial(import_batch, sessions, dataset) if source is None else None,
             source=source,
         )
+    mount_project_scopes(app, plan, sessions, source=source)
     return app
 
 

@@ -11,15 +11,19 @@ from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from fpl_runtime.locking import service_lock
 from fpl_runtime.migrations import apply
 from fpl_runtime.motion_exports import load_export_key
+from fpl_runtime.project_history_migration import add_maintenance_options, handle_maintenance
 from fpl_runtime.routing import RouteCatalog
 
 from .application import create_app
+from .migration_application import create_export_app, create_import_app
 from .migrations.registry import MIGRATIONS
 
 
 def main():
     parser = argparse.ArgumentParser(description="FPL Motion")
-    parser.add_argument("command", choices=("serve", "migrate"))
+    parser.add_argument(
+        "command", choices=("serve", "migrate", "migration-export", "migration-import")
+    )
     parser.add_argument("--state-root", type=Path, default=Path("/state"))
     parser.add_argument("--public-key", type=Path, default=Path("/run/fpl/identity-public.pem"))
     parser.add_argument(
@@ -31,7 +35,10 @@ def main():
     parser.add_argument("--archive-key", type=Path, default=Path("/run/fpl/motion-archive-key"))
     parser.add_argument("--identity-token", type=Path, default=Path("/run/fpl/identity-token"))
     parser.add_argument("--export-key", type=Path, default=Path("/run/fpl/motion-export-key"))
+    add_maintenance_options(parser)
     options = parser.parse_args()
+    if handle_maintenance(parser, options, create_export_app, create_import_app):
+        return
     if options.command == "migrate":
         with service_lock(options.state_root):
             apply(options.state_root / "service.db", "motion", MIGRATIONS)

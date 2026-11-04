@@ -6,6 +6,7 @@ from sqlalchemy import JSON, Boolean, DateTime, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from app.runtime.time import utc_now
+from fpl_runtime.migration_receipts import ImportReceiptFields
 from fpl_runtime.reference_records import ReferenceMutationFields
 
 
@@ -87,3 +88,7 @@ class VideoSegmentDelivery(VideoServiceBase):
     scope_sha256: Mapped[str] = mapped_column(String(64))
     state: Mapped[str] = mapped_column(String(16), default="preparing")
     error: Mapped[str | None] = mapped_column(Text)
+
+
+class VideoMigrationReceipt(ImportReceiptFields, VideoServiceBase):
+    __tablename__ = "video_migration_receipts"

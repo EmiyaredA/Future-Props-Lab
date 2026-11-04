@@ -6,6 +6,7 @@ from sqlalchemy import JSON, DateTime, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from app.runtime.time import utc_now
+from fpl_runtime.migration_receipts import ImportReceiptFields
 from fpl_runtime.reference_records import ReferenceMutationFields
 
 
@@ -39,3 +40,7 @@ class MotionExportBinding(MotionLifecycleBase):
     assertion: Mapped[str] = mapped_column(Text)
     frozen_request: Mapped[dict] = mapped_column(JSON)
     checked_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
+class MotionMigrationReceipt(ImportReceiptFields, MotionLifecycleBase):
+    __tablename__ = "motion_migration_receipts"

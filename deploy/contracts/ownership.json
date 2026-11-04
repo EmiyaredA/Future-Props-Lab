@@ -4925,6 +4925,12 @@
       "model": "MotionExportBinding"
     },
     {
+      "table": "motion_migration_receipts",
+      "service": "motion",
+      "module": "fpl_motion.models",
+      "model": "MotionMigrationReceipt"
+    },
+    {
       "table": "presentation_reference_mutations",
       "service": "presentation",
       "module": "fpl_presentation.models",
@@ -5049,6 +5055,12 @@
       "service": "video",
       "module": "fpl_video.models",
       "model": "VideoSegmentDelivery"
+    },
+    {
+      "table": "video_migration_receipts",
+      "service": "video",
+      "module": "fpl_video.models",
+      "model": "VideoMigrationReceipt"
     },
     {
       "table": "visual_certification_receipts",

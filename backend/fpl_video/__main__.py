@@ -11,16 +11,20 @@ from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
 from fpl_runtime.locking import service_lock
 from fpl_runtime.migrations import apply
+from fpl_runtime.project_history_migration import add_maintenance_options, handle_maintenance
 from fpl_runtime.routing import RouteCatalog
 from fpl_runtime.timed_peer import load_peer_key
 
 from .application import create_app
+from .migration_application import create_export_app, create_import_app
 from .migrations.registry import MIGRATIONS
 
 
 def main():
     parser = argparse.ArgumentParser(description="FPL Video Editor")
-    parser.add_argument("command", choices=("serve", "migrate"))
+    parser.add_argument(
+        "command", choices=("serve", "migrate", "migration-export", "migration-import")
+    )
     parser.add_argument("--state-root", type=Path, default=Path("/state"))
     parser.add_argument("--public-key", type=Path, default=Path("/run/fpl/identity-public.pem"))
     parser.add_argument(
@@ -35,7 +39,10 @@ def main():
         "--segment-visual-key", type=Path, default=Path("/run/fpl/video-segment-visual-key")
     )
     parser.add_argument("--port", type=int, default=8080)
+    add_maintenance_options(parser)
     options = parser.parse_args()
+    if handle_maintenance(parser, options, create_export_app, create_import_app):
+        return
     if options.command == "migrate":
         with service_lock(options.state_root):
             apply(options.state_root / "service.db", "video", MIGRATIONS)
