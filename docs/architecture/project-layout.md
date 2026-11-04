@@ -131,7 +131,7 @@ Agent Runtime 的 `backend/fpl_agent_runtime/` 拥有编程智能体目录、检
 独立页面由 `web/src/app/entries/agent-runtime.tsx` 构建。
 
 Remote 的 `backend/fpl_remote/` 拥有桌面偏好、短期连接票据与 WebSocket。
-共享 `app/console/cloud_control/desktop_bridge.py` 负责 Guacamole 协议，旧站与 Remote 分别注入自己的授权和连接端口。
+共享 `app/console/cloud_control/desktop_bridge.py` 负责 Guacamole 协议，旧站与 Remote 分别注入自己的授权和连接端口。历史偏好由 `fpl_remote/preference_migration.py` 在回环维护入口导入，Identity 的 `credential_migration.py` 保留加密 TOTP 登记与归属会话。
 `deploy/remote.compose.yaml` 只装配私网桌面服务，另需显式选择 Guacamole 对端。Identity 提供限定到原请求的会话复核。
 
 Agents 的 `execution_http.py` 读取自有聊天记录并逐次复核 SSE 授权。共享的 `app/apps/agent_workbench/execution/transcripts.py` 管理会话读回及中断状态。待 Mac 执行端口就绪后再开放独立执行写入。

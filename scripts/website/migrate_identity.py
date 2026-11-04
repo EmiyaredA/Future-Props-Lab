@@ -1,4 +1,4 @@
-"""Transfer accounts before browser sessions and Management API keys."""
+"""Transfer accounts before browser credentials, cloud factors and profile files."""
 
 from fpl_identity.credential_migration import DATASETS
 from fpl_identity.migration_application import PREFIX
@@ -7,7 +7,7 @@ from .migrate_identity_avatars import transfer_avatars
 from .migration_transfer import DatasetTransfer, run_cli
 
 CREDENTIALS = tuple(
-    DatasetTransfer(dataset.name, f"{PREFIX}/{dataset.path}", dataset.page, "id")
+    DatasetTransfer(dataset.name, f"{PREFIX}/{dataset.path}", dataset.page, dataset.key_field)
     for dataset in DATASETS
 )
 

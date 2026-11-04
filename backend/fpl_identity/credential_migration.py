@@ -1,4 +1,4 @@
-"""Identity-owned legacy accounts, browser sessions and Management API keys."""
+"""Identity-owned legacy accounts, credentials and cloud verification history."""
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -14,6 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import undefer
 
 from app.capabilities.identity.passwords import normalize_username
+from app.console.cloud_control.models import CloudFactor, CloudUnlock
 from app.console.models.accounts import AuthSession, ManagementApiKey, User
 from fpl_runtime.migration_batches import (
     MAX_RECORDS,
@@ -96,6 +97,26 @@ class KeyRecord(IdentityRecord):
     updated_at: datetime
 
 
+class FactorRecord(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    owner_user_id: str = Field(pattern=UUID_PATTERN)
+    secret: str | None = Field(min_length=1, max_length=1024, repr=False)
+    pending_secret: str | None = Field(min_length=1, max_length=1024, repr=False)
+    pending_until: int = Field(ge=0)
+    last_counter: int = Field(ge=-1)
+    attempts: int = Field(ge=0)
+    attempt_window: int = Field(ge=0)
+
+
+class UnlockRecord(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    session_id: str = Field(pattern=UUID_PATTERN)
+    expires_at: int = Field(ge=0)
+    ticket_hash: Digest | None = Field(repr=False)
+    ticket_until: int = Field(ge=0)
+    desktop_verified: bool
+
+
 class Accounts(MigrationBatch[AccountRecord]):
     dataset: Literal["identity.accounts"]
 
@@ -108,13 +129,23 @@ class Keys(MigrationBatch[KeyRecord]):
     dataset: Literal["identity.api-keys"]
 
 
+class Factors(MigrationBatch[FactorRecord]):
+    dataset: Literal["identity.cloud-factors"]
+
+
+class Unlocks(MigrationBatch[UnlockRecord]):
+    dataset: Literal["identity.cloud-unlocks"]
+
+
 @dataclass(frozen=True)
 class CredentialDataset:
     path: str
-    model: type[User] | type[AuthSession] | type[ManagementApiKey]
-    record: type[IdentityRecord]
+    model: type
+    record: type[BaseModel]
     batch: type[MigrationBatch]
     page: type[MigrationPage]
+    key_field: str = "id"
+    owner_field: str = "user_id"
 
     @property
     def name(self):
@@ -122,13 +153,37 @@ class CredentialDataset:
 
     @property
     def owner_column(self):
-        return User.id if self.model is User else self.model.user_id
+        return getattr(self.model, self.owner_field)
+
+    @property
+    def key_column(self):
+        return getattr(self.model, self.key_field)
 
 
 DATASETS = (
-    CredentialDataset("accounts", User, AccountRecord, Accounts, MigrationPage[Accounts]),
+    CredentialDataset(
+        "accounts", User, AccountRecord, Accounts, MigrationPage[Accounts], owner_field="id"
+    ),
     CredentialDataset("sessions", AuthSession, SessionRecord, Sessions, MigrationPage[Sessions]),
     CredentialDataset("api-keys", ManagementApiKey, KeyRecord, Keys, MigrationPage[Keys]),
+    CredentialDataset(
+        "cloud-factors",
+        CloudFactor,
+        FactorRecord,
+        Factors,
+        MigrationPage[Factors],
+        key_field="owner_user_id",
+        owner_field="owner_user_id",
+    ),
+    CredentialDataset(
+        "cloud-unlocks",
+        CloudUnlock,
+        UnlockRecord,
+        Unlocks,
+        MigrationPage[Unlocks],
+        key_field="session_id",
+        owner_field="owner_user_id",
+    ),
 )
 
 
@@ -162,8 +217,8 @@ async def export_page(sessions, plan, dataset, owner, after, *, legacy):
     model = dataset.model
     query = (
         select(model)
-        .where(dataset.owner_column == str(owner), model.id > (after or ""))
-        .order_by(model.id)
+        .where(dataset.owner_column == str(owner), dataset.key_column > (after or ""))
+        .order_by(dataset.key_column)
         .limit(MAX_RECORDS + 1)
     )
     if model is AuthSession and not legacy:
@@ -183,15 +238,19 @@ async def export_page(sessions, plan, dataset, owner, after, *, legacy):
     return dataset.page(
         batch=batch,
         sha256=batch.digest,
-        next_cursor=records[-1].id if len(rows) > MAX_RECORDS else None,
+        next_cursor=getattr(records[-1], dataset.key_field) if len(rows) > MAX_RECORDS else None,
     )
 
 
 async def import_batch(database, dataset, batch):
     owner = str(batch.owner_id)
     model = dataset.model
-    ids = [record.id for record in batch.records]
-    if ids != sorted(set(ids)) or (model is User and ids != [owner]):
+    ids = [getattr(record, dataset.key_field) for record in batch.records]
+    if (
+        ids != sorted(set(ids))
+        or (model is User and ids != [owner])
+        or (model is CloudFactor and ids not in ([], [owner]))
+    ):
         raise HTTPException(422, {"code": "migration_identity_record_order_or_owner"})
     digest = batch.digest
     key = str(batch.run_id), dataset.name, owner, str(batch.batch_id)
@@ -205,9 +264,17 @@ async def import_batch(database, dataset, batch):
             return receipt
         if model is not User and await session.get(User, owner) is None:
             raise HTTPException(409, {"code": "migration_owner_missing"})
-        if ids and await session.scalar(select(model.id).where(model.id.in_(ids)).limit(1)):
+        if ids and await session.scalar(
+            select(dataset.key_column).where(dataset.key_column.in_(ids)).limit(1)
+        ):
             raise HTTPException(409, {"code": "migration_identity_overlap"})
-        owned = {} if model is User else {"user_id": owner}
+        if model is CloudUnlock and ids:
+            scoped = await session.scalars(
+                select(AuthSession.id).where(AuthSession.user_id == owner, AuthSession.id.in_(ids))
+            )
+            if set(scoped) != set(ids):
+                raise HTTPException(409, {"code": "migration_cloud_session_unassigned"})
+        owned = {} if dataset.key_field == dataset.owner_field else {dataset.owner_field: owner}
         session.add_all([model(**owned, **record.model_dump()) for record in batch.records])
         receipt = BatchReceipt(
             run_id=batch.run_id,

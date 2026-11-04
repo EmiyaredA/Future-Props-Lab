@@ -18,8 +18,10 @@ Remote owns idle preferences and the in-memory, one-use ticket. Identity signs o
 
 ## Consequences
 
-Remote installs with a dedicated preference database and a minimal read-only transport configuration. The connection target comes from the deployment, and the browser supplies only a password. Configuration coordination and historical import still gate production readiness.
+Remote installs with a dedicated preference database and a minimal read-only transport configuration. The connection target comes from the deployment, and the browser supplies only a password. Configuration coordination and formal data verification still gate production readiness. The loopback maintenance entry transfers historical idle values and revisions under the shared verified account plan. It commits the preference and its durable receipt together.
 
 ## Verification
 
 The isolated test uses real TCP to a deterministic Guacamole peer and genuine Identity assertions. It verifies the owned idle preference revision, invalid origin, consumed ticket, allowed keyboard frame and logout-triggered close. The installation run also exercises the actual Gateway WebSocket upgrade and verifies the preference after Remote restart.
+
+The compatibility snapshot rehearsal saves a nondefault preference through the public API, imports and replays the batch through the independent maintenance listeners, and verifies the same value and revision after restoring the old site.

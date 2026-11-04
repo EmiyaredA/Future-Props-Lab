@@ -22,7 +22,7 @@ from tests.test_tools_navigation_migration import available_ports, listener
 from app.capabilities.identity.permissions import role_scopes
 from app.capabilities.identity.principal import StudioPrincipal
 from app.capabilities.identity.security import CSRF_COOKIE, SESSION_COOKIE
-from app.console.cloud_control.access import totp
+from app.console.cloud_control.access import start_enrollment, totp, verify
 from app.console.governance.account_creation import create_account
 from app.console.governance.profile import apply_avatar, stage_avatar
 from app.console.governance.service import complete_login, create_api_key
@@ -114,7 +114,21 @@ async def make_legacy(path):
                 expected_revision=owner.revision,
                 client_ip="",
             )
-            return owner.id, other.id, raw, csrf, key.id, raw_key, raw_revoked, original
+            secret = await start_enrollment(session, principal)
+            used_code = totp(secret, int(time.time()) // 30)
+            await verify(session, principal, used_code, enroll=True)
+            return (
+                owner.id,
+                other.id,
+                raw,
+                csrf,
+                key.id,
+                raw_key,
+                raw_revoked,
+                original,
+                secret,
+                used_code,
+            )
     finally:
         await engine.dispose()
 
@@ -124,7 +138,18 @@ async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, mon
     monkeypatch.setenv("FPL_DATABASE_PATH", str(legacy))
     get_settings.cache_clear()
     try:
-        owner, other, token, csrf, key_id, raw_key, revoked_key, avatar = await make_legacy(legacy)
+        (
+            owner,
+            other,
+            token,
+            csrf,
+            key_id,
+            raw_key,
+            revoked_key,
+            avatar,
+            secret,
+            used_code,
+        ) = await make_legacy(legacy)
     finally:
         get_settings.cache_clear()
     digest = hashlib.sha256(legacy.read_bytes()).hexdigest()
@@ -174,7 +199,7 @@ async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, mon
         invalid = client.post(account_path, headers=headers, json={"token_hash": "private-echo"})
         assert invalid.status_code == 422 and "private-echo" not in invalid.text
         reports = [transfer(client, plan, source, dest, dataset) for dataset in CREDENTIALS]
-        assert [report["record_count"] for report in reports] == [2, 1, 2]
+        assert [report["record_count"] for report in reports] == [2, 1, 2, 1, 1]
         assert reports == [transfer(client, plan, source, dest, dataset) for dataset in CREDENTIALS]
 
         avatar_path = f"{AVATAR_PATH}/{owner}"
@@ -236,6 +261,15 @@ async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, mon
             factor = "/v1/cloud-control/totp"
             csrf_headers = {"X-CSRF-Token": csrf, "Origin": "http://127.0.0.1:19000"}
             assert (await api.post(factor + "/enroll")).status_code == 403
+            replay = await api.post(
+                factor + "/verify", headers=csrf_headers, json={"code": used_code}
+            )
+            assert replay.status_code == 403
+            current_code = totp(secret, int(time.time()) // 30 + 1)
+            verified = await api.post(
+                factor + "/verify", headers=csrf_headers, json={"code": current_code}
+            )
+            assert verified.status_code == 204
             rejected_public = await api.post(
                 "https://studio.example.test" + factor + "/enroll",
                 headers={

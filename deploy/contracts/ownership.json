@@ -4811,6 +4811,12 @@
       "model": "NativeModelObservation"
     },
     {
+      "table": "remote_desktop_import_receipts",
+      "service": "remote",
+      "module": "fpl_remote.models",
+      "model": "DesktopPreferenceImportReceipt"
+    },
+    {
       "table": "thought_archive_imports",
       "service": "thought",
       "module": "fpl_thought.archive_records",

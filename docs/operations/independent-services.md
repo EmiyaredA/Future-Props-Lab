@@ -283,7 +283,7 @@ uv run python -m scripts.website.migrate_tools_navigation --plan "$plan" \
 
 ### Identity 账号与凭据迁移
 
-与 Tools 使用同一份源快照和迁移计划。Identity 的账号数据集核对计划中的全部账号 UUID，随后导入 Studio 会话和 Management API Key。保留密码摘要、原账号 ID、角色、凭据范围、过期与撤销状态。旧站的会话保持 Studio 用途。管理中台需要其专用会话。凭据摘要只通过显式回环维护进程传输，报告只保存数据集计数与批次摘要。
+与 Tools 使用同一份源快照和迁移计划。Identity 的账号数据集核对计划中的全部账号 UUID，随后导入 Studio 会话、Management API Key、加密 TOTP 登记和会话解锁记录。保留密码摘要、原账号 ID、角色、凭据范围、过期与撤销状态。旧站的会话保持 Studio 用途。管理中台需要其专用会话。凭据摘要和加密 TOTP 记录只通过显式回环维护进程传输，报告只保存数据集计数与批次摘要。
 
 ```sh
 uv run python -m fpl_identity migration-export --migration-plan "$plan" \
@@ -294,7 +294,7 @@ uv run python -m scripts.website.migrate_identity --plan "$plan" \
   --source http://127.0.0.1:19563 --target http://127.0.0.1:19564
 ```
 
-目标先按同版本显式初始化 schema，且处于停止状态。导入会拒绝缺少账号、账号冲突或摘要变化。隔离验收经独立 Identity 登录及授权入口验证原 Studio 会话、原管理密钥、已撤销密钥与另一账号密码。注册邀请码、安全审计及模型目录属于后续迁移数据集。只有所有数据集、文件与跨服务关系校验通过后才能恢复网站写入。
+目标先按同版本显式初始化 schema，且处于停止状态。导入会拒绝缺少账号、账号冲突或摘要变化。隔离验收经独立 Identity 登录及授权入口验证原 Studio 会话、原管理密钥、已撤销密钥与另一账号密码。TOTP 验证保留原加密密钥和已使用验证码计数，解锁记录必须对应同一账号的已导入会话。注册邀请码、安全审计及模型目录属于后续迁移数据集。只有所有数据集、文件与跨服务关系校验通过后才能恢复网站写入。
 
 Identity 传输工具随后核验并迁移同一快照中 `profiles/` 下的账号原头像。每个文件的账号路径、媒体类型和 SHA256 必须与账号记录一致。未登记的原件、符号链接、缺失或摘要不符都会停止验收。目标在写入同目录树内的私有暂存后，原子发布原件并同步目录。重放核对已存在文件的字节，再返回同一结果。暂存文件保留在快照中，生成的预览由账号资料入口按需重建。
 
@@ -308,7 +308,7 @@ Identity 传输工具随后核验并迁移同一快照中 `profiles/` 下的账�
 
 主线 `5f16f360` 新增的云控浏览页面仍由 Portal 提供。TOTP 与解锁凭据归 Identity，桌面状态、连接和 WebSocket 归已登记的 Remote 能力，工作台聊天与执行归 Agents。编程智能体目录、检测和本机启用归 Agent Runtime。归属清单现在同时登记页面根和各 TOML 字段的所有者。旧 `/remote` 占位页已从清单撤去，保留正式 `/cloud-control` 入口。
 
-合并后的兼容应用继续执行云控权限、可信入口、密码重验和已配置的桌面或项目限制。独立 Remote 的连接执行、Agents 执行、既有 TOTP 数据迁移与配置投影仍需接线和隔离验证。Identity 已签发仅用于 Remote WebSocket 的票据 SHA256 并提供限定用途的实时云控授权复核。独立 Identity 已装配 TOTP 验证与自有 schema。Agents 已装配自有聊天记录、SSE 和重启恢复；新执行与审批写入仍由独立服务就绪门禁拦截。独立网关继续移除业务上游请求中的浏览器 Cookie，桌面专用凭据须单独限定用途与目标。
+合并后的兼容应用继续执行云控权限、可信入口、密码重验和已配置的桌面或项目限制。独立 Remote 已装配桌面连接，Identity 已装配加密 TOTP 迁移。Agents 原生执行和配置投影仍需接线和隔离验证。Identity 已签发仅用于 Remote WebSocket 的票据 SHA256 并提供限定用途的实时云控授权复核。独立 Identity 已装配 TOTP 验证与自有 schema。Agents 已装配自有聊天记录、SSE 和重启恢复；新执行与审批写入仍由独立服务就绪门禁拦截。独立网关继续移除业务上游请求中的浏览器 Cookie，桌面专用凭据须单独限定用途与目标。
 
 ### Agent Runtime 独立连接目录
 
@@ -333,12 +333,25 @@ uv run python -m scripts.website.legacy_snapshot restore \
   --source-revision "$source_git_sha" --manifest-sha256 "$manifest_sha256"
 ```
 
-隔离恢复以原配置为凭据来源，另建启动投影，仅调整隔离数据库路径和监听端口并关闭公网。使用旧站同一启动器读回登录态、账号、工具记录与头像原件。验证链路还将同一快照经回环维护接口导入 Identity 与 Tools，重复提交核对原回执，再从原快照启动旧站。正式演练还需覆盖其余数据集、已发布网页、跨服务关系、网关凭据与公网恢复。
+隔离恢复以原配置为凭据来源，另建启动投影，仅调整隔离数据库路径和监听端口并关闭公网。使用旧站同一启动器读回登录态、账号、工具记录、头像原件与桌面空闲偏好。验证链路还将同一快照经回环维护接口导入 Identity、Tools 与 Remote，重复提交核对原回执，再从原快照启动旧站。正式演练还需覆盖其余数据集、已发布网页、跨服务关系、网关凭据与公网恢复。
 
 ### Remote 桌面连接
 
 运行 `npm run services:build -- remote --build` 并加载 `deploy/remote.compose.yaml`，为 Remote 指定专用卷、Identity 公钥、服务凭据和只读传输配置。网关只把签名上下文转交 Remote。连接票据仅能使用一次，绑定账号、会话、可信入口与当前 TOTP 登记代。撤销会话或重设验证器会阻止旧连接继续传输。
 
-独立验收使用合成 Guacamole 对端及隔离账号。生产 Guacamole 与 Mac 屏幕共享配置、云控设置协调写入、历史桌面偏好与 TOTP 迁移仍在切换门禁中。
+独立验收使用合成 Guacamole 对端及隔离账号。生产 Guacamole 与 Mac 屏幕共享配置、云控设置协调写入和正式数据验收仍在切换门禁中。
 
 四容器运行 `fpl-remote-protocol-95f841c9ca` 经真实 Gateway 建立桌面 WebSocket，验证了单次票据、注销后关流及 Remote 重启后偏好读回。镜像 `fpl/remote:09ba3729bd9555e58b81` 包含独立锁定的 WebSocket 依赖。Guacamole TCP 对端使用合成协议夹具。
+
+历史桌面空闲偏好使用同一份已封存源和迁移计划，目标为已初始化且停止运行的 Remote 状态目录。
+
+```sh
+uv run python -m fpl_remote migration-export --migration-plan "$plan" \
+  --legacy-db "$snapshot/future-props.db" --port 19565
+uv run python -m fpl_remote migration-import --migration-plan "$plan" \
+  --state-root "$remote_state" --port 19566
+uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
+  --source http://127.0.0.1:19565 --target http://127.0.0.1:19566
+```
+
+维护入口按账号核对分钟数、修订号、记录数量和摘要。记录与回执同事务提交，重复提交返回同一回执。隔离演练在旧站写入偏好，迁移、重放并从封存快照启动旧站后再核对修订号。

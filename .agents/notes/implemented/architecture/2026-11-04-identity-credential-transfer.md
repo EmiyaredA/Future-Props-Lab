@@ -8,7 +8,7 @@ Changing the owner of the account database must preserve existing IDs, authentic
 
 ## Decision
 
-Identity exports three typed, paginated datasets for accounts, Studio sessions and Management API keys from a checked immutable snapshot. It imports accounts first, then writes credentials under the verified account from the batch envelope. The business records and their receipt commit in the same transaction. The transfer process checks both sides using the same plan, exact page digests and total counts. The maintenance application authorizes requests before parsing, hides database parameters and returns sanitized validation responses.
+Identity exports typed, paginated datasets for accounts, Studio sessions, Management API keys, encrypted TOTP factors and session unlocks from a checked immutable snapshot. It imports accounts and sessions before dependent records and verifies that each unlock references a session owned by the same account. The business records and their receipt commit in the same transaction. The transfer process checks both sides using the same plan, exact page digests and total counts. The maintenance application authorizes requests before parsing, hides database parameters and returns sanitized validation responses.
 
 ## Alternatives considered
 
@@ -18,7 +18,7 @@ Identity exports three typed, paginated datasets for accounts, Studio sessions a
 
 ## Consequences
 
-The existing login hashing and expiration rules also apply to imported accounts. Existing Studio credentials cannot acquire management session purpose. Private migration transport is reused by Tools. Profile files, registration history, audit events and catalog ownership are tracked as separate dependencies for cutover.
+The existing login hashing and expiration rules also apply to imported accounts. Existing Studio credentials cannot acquire management session purpose. Private migration transport is reused by Tools. Registration history, audit events and catalog ownership are tracked as separate dependencies for cutover.
 
 ## Verification
 
@@ -27,3 +27,5 @@ Two real loopback maintenance subprocesses import and verify an isolated legacy 
 The Identity relay also transfers active profile originals after account verification. It uses the database-bound owner path, MIME type and SHA-256 for both publication and readback. File publication is atomic and durable, and the same verified original can be submitted again. An incomplete staging file is outside the original-file inventory. The complete source snapshot retains it for recovery. Unassigned, absent or changed originals fail verification.
 
 The isolated legacy fixture creates a PNG through the profile use case. The maintenance test rejects corrupted bytes, unassigned owners and stray originals, then confirms repeated transfer and exact bytes through the normal authenticated profile endpoint. The other account cannot read that avatar.
+
+The TOTP rehearsal keeps the existing encryption key and last accepted counter. The imported Identity rejects a previously used code and accepts a fresh code from the original authenticator.

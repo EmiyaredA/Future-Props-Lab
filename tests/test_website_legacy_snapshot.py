@@ -18,11 +18,13 @@ from PIL import Image
 from scripts.website import legacy_snapshot
 from scripts.website.migrate_identity import CREDENTIALS
 from scripts.website.migrate_identity_avatars import transfer_avatars
+from scripts.website.migrate_remote_preferences import PREFERENCES
 from scripts.website.migrate_tools_navigation import NAVIGATION
 from scripts.website.migration_transfer import transfer
 from tests.test_tools_navigation_migration import available_ports, listener
 
 from fpl_identity.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
+from fpl_remote.migrations.registry import MIGRATIONS as REMOTE_MIGRATIONS
 from fpl_runtime.migration_batches import MigrationPlan
 from fpl_runtime.migrations import apply
 from fpl_tools.migrations.registry import MIGRATIONS as TOOLS_MIGRATIONS
@@ -100,6 +102,7 @@ def migrate_rehearsal(snapshot_db, parent, account):
     for service, migrations, datasets in (
         ("identity", IDENTITY_MIGRATIONS, CREDENTIALS),
         ("tools", TOOLS_MIGRATIONS, (NAVIGATION,)),
+        ("remote", REMOTE_MIGRATIONS, (PREFERENCES,)),
     ):
         root = parent / f"independent-{service}"
         apply(root / "service.db", service, migrations)
@@ -176,6 +179,14 @@ def test_stopped_site_reopens_from_verified_runtime_and_original_config(tmp_path
         assert login.status_code == 200
         account = login.json()["user"]["id"]
         safe = {"Origin": origin, "X-CSRF-Token": client.cookies["fpl_csrf"]}
+        cloud = f"\n[cloud_control]\nenabled = true\nadmin_user_ids = [{json.dumps(account)}]\n"
+        with config.open("a") as target_config:
+            target_config.write(cloud)
+        idle = client.put(
+            "/v1/cloud-control/desktop/idle", headers=safe, json={"idle_minutes": 12, "revision": 0}
+        )
+        assert idle.status_code == 200, idle.text
+        assert idle.json() == {"idle_minutes": 12, "revision": 1}
         avatar = BytesIO()
         Image.new("RGB", (3, 3), "purple").save(avatar, format="PNG")
         image = avatar.getvalue()
@@ -227,11 +238,15 @@ def test_stopped_site_reopens_from_verified_runtime_and_original_config(tmp_path
         port=recovery_port,
         web=web,
     )
+    with launch.open("a") as target_config:
+        target_config.write(cloud)
     with website(launch, recovery_port) as (restored, _origin):
         restored.cookies.update(cookies)
         assert restored.get("/").status_code == 200
         assert restored.get("/v1/auth/me").json()["user"]["id"] == account
         assert restored.get(TOOLS).json() == state
+        status = restored.get("/v1/cloud-control/status").json()
+        assert (status["idle_minutes"], status["idle_revision"]) == (12, 1)
         response = restored.get(AVATAR)
         assert response.status_code == 200 and response.content == image
 
