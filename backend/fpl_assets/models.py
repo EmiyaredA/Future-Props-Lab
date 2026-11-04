@@ -312,6 +312,39 @@ class VideoArchiveFile(ReferenceBase):
     metadata_snapshot: Mapped[dict] = mapped_column(JSON)
 
 
+class VideoSegmentHandoffBatch(ReferenceBase):
+    """Invisible library originals for an exact cross-service canvas handoff."""
+
+    __tablename__ = "asset_video_segment_handoff_batches"
+    owner_user_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    batch_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    source_sha256: Mapped[str] = mapped_column(String(64))
+    scope: Mapped[dict] = mapped_column(JSON)
+    manifest: Mapped[dict] = mapped_column(JSON)
+    state: Mapped[str] = mapped_column(String(16), default="staging")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
+class VideoSegmentHandoffFile(ReferenceBase):
+    __tablename__ = "asset_video_segment_handoff_files"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["owner_user_id", "batch_id"],
+            [
+                "asset_video_segment_handoff_batches.owner_user_id",
+                "asset_video_segment_handoff_batches.batch_id",
+            ],
+            ondelete="RESTRICT",
+        ),
+    )
+    owner_user_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    batch_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    ordinal: Mapped[int] = mapped_column(Integer, primary_key=True)
+    asset_id: Mapped[str] = mapped_column(String(36), unique=True)
+    descriptor_sha256: Mapped[str] = mapped_column(String(64))
+    metadata_snapshot: Mapped[dict] = mapped_column(JSON)
+
+
 MODELS = (
     VisualAssetFolder,
     VisualAsset,
@@ -334,4 +367,6 @@ MODELS = (
     MotionArchiveFile,
     VideoArchiveBatch,
     VideoArchiveFile,
+    VideoSegmentHandoffBatch,
+    VideoSegmentHandoffFile,
 )

@@ -8,6 +8,7 @@ from .library_assets import ID
 from .motion_preview import DIGEST
 from .timed_peer import TimedPeer
 from .video_assets import VideoAsset
+from .video_segment_handoff import SegmentHandoff, SegmentTarget
 from .video_segments import PublishedSegment
 
 EXPORTS = "/_internal/v1/video-export-jobs"
@@ -82,6 +83,7 @@ class SegmentEncodeInput(BaseModel):
     fps: Literal["source", 30, 60]
     quality: Literal["high", "balanced", "small"]
     audio_mode: Literal["keep", "mute"]
+    label: str | None = Field(default=None, min_length=1, max_length=120)
 
     @model_validator(mode="after")
     def verify_name(self):
@@ -101,11 +103,14 @@ class VideoSegmentRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
     segments: tuple[SegmentEncodeInput, ...] = Field(min_length=1, max_length=100)
     files: tuple[ExportInput, ...] = Field(min_length=1, max_length=100)
+    target: SegmentTarget | None = None
 
     @model_validator(mode="after")
     def verify_sources(self):
         if [file.id for file in self.files] != sorted({item.asset_id for item in self.segments}):
             raise ValueError("分段原件范围不符")
+        if self.target is not None and any(item.label is None for item in self.segments):
+            raise ValueError("分段交接标签缺失")
         return self
 
 
@@ -127,6 +132,7 @@ class VideoExportReceipt(BaseModel):
         default_factory=dict
     )
     segments: list[RenderedSegment] = Field(default_factory=list, max_length=100)
+    handoff: SegmentHandoff | None = None
     error: str | None = None
 
     @model_validator(mode="after")
@@ -150,6 +156,8 @@ class VideoExportReceipt(BaseModel):
             or self.segments
         ):
             raise ValueError("未完成任务不能提供成片")
+        if self.handoff is not None and not self.segments:
+            raise ValueError("画布交接缺少分段回执")
         return self
 
 

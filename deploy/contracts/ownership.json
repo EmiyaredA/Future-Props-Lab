@@ -4643,6 +4643,18 @@
       "model": "VideoArchiveFile"
     },
     {
+      "table": "asset_video_segment_handoff_batches",
+      "service": "assets",
+      "module": "fpl_assets.models",
+      "model": "VideoSegmentHandoffBatch"
+    },
+    {
+      "table": "asset_video_segment_handoff_files",
+      "service": "assets",
+      "module": "fpl_assets.models",
+      "model": "VideoSegmentHandoffFile"
+    },
+    {
       "table": "creative_install_fences",
       "service": "creative",
       "module": "fpl_creative.fence_records",
@@ -5033,6 +5045,12 @@
       "model": "VideoImportBatch"
     },
     {
+      "table": "video_segment_deliveries",
+      "service": "video",
+      "module": "fpl_video.models",
+      "model": "VideoSegmentDelivery"
+    },
+    {
       "table": "visual_certification_receipts",
       "service": "visual",
       "module": "fpl_visual.models",
@@ -5043,6 +5061,12 @@
       "service": "visual",
       "module": "fpl_visual.models",
       "model": "VisualCanvasReferenceMutation"
+    },
+    {
+      "table": "visual_segment_handoffs",
+      "service": "visual",
+      "module": "fpl_visual.models",
+      "model": "VisualSegmentHandoff"
     }
   ],
   "pages": [

@@ -14,6 +14,7 @@ from .versions.v0009 import SQL as SQL_0009
 from .versions.v0010 import SQL as SQL_0010
 from .versions.v0011 import SQL as SQL_0011
 from .versions.v0012 import SQL as SQL_0012
+from .versions.v0013 import SQL as SQL_0013
 
 MIGRATIONS = (
     Migration("0001_assets", SQL_0001),
@@ -28,4 +29,5 @@ MIGRATIONS = (
     Migration("0010_motion_archive_staging", SQL_0010),
     Migration("0011_video_file_write_receipts", SQL_0011),
     Migration("0012_video_archive_staging", SQL_0012),
+    Migration("0013_video_segment_handoff", SQL_0013),
 )

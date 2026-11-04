@@ -24,6 +24,8 @@ from fpl_runtime.authentication import SignedIdentity
 from fpl_runtime.database import Database
 from fpl_runtime.migrations import check
 from fpl_runtime.request_limit import RequestLimit
+from fpl_runtime.video_segment_handoff import ASSET_HANDOFFS
+from fpl_runtime.video_segment_handoff import asset_peer as visual_segment_peer
 
 from .deletions import FileCleanup
 from .layout import StorageLayouts
@@ -54,8 +56,10 @@ from .routes.video_assets import router as video_assets_router
 from .routes.video_originals import router as video_originals_router
 from .routes.video_render_outputs import router as video_render_outputs_router
 from .routes.video_segment_bundles import router as video_segment_bundles_router
+from .routes.video_segment_handoffs import router as video_segment_handoffs_router
 from .routes.video_segment_outputs import router as video_segment_outputs_router
 from .video_segment_bundles import cleanup_bundles
+from .video_segment_handoffs import SegmentHandoffFiles
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +97,7 @@ def create_app(
     motion_archive_key=None,
     video_originals_key=None,
     video_archive_key=None,
+    visual_segment_assets_key=None,
 ):
     database = Database("assets", settings.runtime_path, models=MODELS)
     if settings.database_path != database.path:
@@ -180,6 +185,10 @@ def create_app(
     app.state.reference_changes = ReferenceChanges(database)
     app.state.layouts = StorageLayouts(database, settings)
     app.state.file_cleanup = cleaner
+    app.state.video_segment_handoffs = SegmentHandoffFiles(database, settings)
+    app.state.visual_segment_assets_peer = (
+        visual_segment_peer(visual_segment_assets_key) if visual_segment_assets_key else None
+    )
     for router in (files_router, layout_router, links_router):
         app.include_router(router, prefix="/v1")
     app.include_router(retention_router)
@@ -195,6 +204,8 @@ def create_app(
     app.include_router(video_originals_router)
     app.include_router(video_render_outputs_router)
     app.include_router(video_segment_bundles_router)
+    app.include_router(video_segment_handoffs_router)
+    app.add_middleware(RequestLimit, prefix=ASSET_HANDOFFS, maximum=16 * 1024)
     app.include_router(video_segment_outputs_router)
     app.include_router(motion_archives_router)
     app.include_router(motion_preview_router)

@@ -1,16 +1,44 @@
 """Independent Visual application with owner-side certification."""
 
+from contextlib import asynccontextmanager
+
+import httpx
+
 from app.apps.visual_workshop.models import VisualWorkshopProject
 from fpl_runtime.certification_service import create_certification_app
+from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.reference_runtime import install_reference_runtime
+from fpl_runtime.request_limit import RequestLimit
+from fpl_runtime.video_segment_handoff import VISUAL_HANDOFFS, asset_peer, visual_peer
 
 from .migrations.registry import MIGRATIONS
 from .models import MODELS, VisualCanvasReferenceMutation, VisualCertificationReceipt
 from .outputs_http import router as outputs_router
 from .projects_http import router as project_router
+from .segment_handoff_routes import router as segment_handoff_router
+from .segment_handoffs import SegmentHandoffs
+from .segment_target_routes import router as segment_target_router
 
 
-def create_app(*, state_root, public_key, credential, catalog, transport=None, run_worker=True):
+def create_app(
+    *,
+    state_root,
+    public_key,
+    credential,
+    catalog,
+    transport=None,
+    run_worker=True,
+    video_segment_key=None,
+    segment_assets_key=None,
+):
+    if bool(video_segment_key) != bool(segment_assets_key):
+        raise ValueError("Visual 分段交接需要独立的 Video 和 Assets 对等凭据")
+    if (
+        video_segment_key is not None
+        and len({video_segment_key, segment_assets_key, credential}) != 3
+    ):
+        raise ValueError("Visual 分段交接凭据必须独立")
+
     app = create_certification_app(
         service="visual",
         root=state_root,
@@ -35,4 +63,32 @@ def create_app(*, state_root, public_key, credential, catalog, transport=None, r
     )
     app.include_router(project_router)
     app.include_router(outputs_router)
+    app.include_router(segment_target_router)
+    app.include_router(segment_handoff_router)
+    app.add_middleware(RequestLimit, prefix=VISUAL_HANDOFFS, maximum=16 * 1024)
+    app.state.segment_handoffs = None
+    app.state.video_segment_peer = None
+    if video_segment_key is not None:
+        bind_segment_handoffs(app, credential, video_segment_key, segment_assets_key, transport)
     return app
+
+
+def bind_segment_handoffs(app, credential, video_key, assets_key, transport):
+    client = httpx.AsyncClient(transport=transport, trust_env=False, timeout=10)
+    identity = LiveAuthorization(service="visual", credential=credential, transport=transport)
+    app.state.video_segment_peer = visual_peer(video_key)
+    app.state.segment_handoffs = SegmentHandoffs(
+        app.state.database, client, asset_peer(assets_key), identity
+    )
+    lifespan = app.router.lifespan_context
+
+    @asynccontextmanager
+    async def with_segment_handoffs(instance):
+        try:
+            async with lifespan(instance):
+                yield
+        finally:
+            await identity.close()
+            await client.aclose()
+
+    app.router.lifespan_context = with_segment_handoffs

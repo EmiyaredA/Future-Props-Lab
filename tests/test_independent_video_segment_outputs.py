@@ -14,6 +14,7 @@ from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
 from fpl_runtime.model_outputs import ModelOutputDescription
 from fpl_runtime.video_exports import output_peer
+from fpl_runtime.video_segment_handoff import SegmentTarget, asset_peer
 from fpl_runtime.video_segments import OUTPUTS, SegmentBatchManifest
 from fpl_video.application import PROJECTS, create_app
 from fpl_video.migrations.registry import MIGRATIONS
@@ -103,4 +104,31 @@ async def test_segment_batch_second_file_failure_and_replay(scenario, tmp_path):
         ).status_code == 422
         assert (await receipt()).json() == accepted.json()
         assert (await receipt(case.owner)).status_code == 404
+
+        # A Visual transfer may have persisted the first hidden file when a later
+        # upload fails. Renderer can discard the incomplete stage with its exact scope.
+        case.assets.state.visual_segment_assets_peer = asset_peer("visual-segment-fixture-" * 3)
+        staged_manifest = SegmentBatchManifest(
+            files=manifest.files,
+            target=SegmentTarget(project_id=str(uuid4()), expected_revision=0),
+            labels=("First", "Second"),
+        )
+        pending = f"{OUTPUTS}/{project}/{uuid4()}/{staged_manifest.digest}"
+        partial = await assets.post(
+            pending,
+            headers={
+                **peer.headers("POST", pending, case.viewer),
+                "X-Fpl-Manifest-Length": str(len(staged_manifest.encoded)),
+            },
+            content=staged_manifest.encoded + first + second[:-1] + b"x",
+        )
+        assert partial.status_code == 422, partial.text
+        lookup = await assets.get(pending, headers=peer.headers("GET", pending, case.viewer))
+        assert lookup.status_code == 404
+        for _ in range(2):
+            discarded = await assets.delete(
+                pending, headers=peer.headers("DELETE", pending, case.viewer)
+            )
+            assert discarded.json() == {"state": "discarded"}
+        assert await case.assets.state.file_cleanup.run_once() == 1
     await identity.close()

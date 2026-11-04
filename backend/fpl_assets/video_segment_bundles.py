@@ -8,12 +8,14 @@ from zipfile import ZIP_STORED, ZipFile
 
 from sqlalchemy import select
 
+from app.capabilities.asset_store.asset_scope import is_library_asset
 from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from fpl_runtime.video_segments import PublishedSegment, segment_receipt_id
 
 from .models import VideoFileWriteReceipt
+from .video_segment_handoffs import SegmentHandoffFiles
 
 
 def missing():
@@ -68,17 +70,25 @@ async def build_bundle(database, settings, owner, project, task):
     storage = AssetStorage(settings)
     async with database.sessions(info={"owner_user_id": owner}) as session:
         receipt = await session.get(VideoFileWriteReceipt, (owner, receipt_id))
-        if receipt is None or receipt.project_id != project or not receipt.result:
+        if receipt is None:
+            handoff = SegmentHandoffFiles(database, settings)
+            result = await handoff.archived(session, owner, receipt_id, project)
+        elif receipt.project_id == project:
+            result = receipt.result
+        else:
+            result = None
+        if not result:
             raise missing()
-        items = [PublishedSegment.model_validate(item) for item in receipt.result]
+        items = [PublishedSegment.model_validate(item) for item in result]
         ids = {item.asset.id for item in items}
-        rows = await session.scalars(
-            select(VisualAsset).where(
-                VisualAsset.video_editor_project_id == project,
-                VisualAsset.id.in_(ids),
+        rows = await session.scalars(select(VisualAsset).where(VisualAsset.id.in_(ids)))
+        paths = {
+            row.id: storage.path_for(row)
+            for row in rows
+            if (
+                is_library_asset(row) if receipt is None else row.video_editor_project_id == project
             )
-        )
-        paths = {row.id: storage.path_for(row) for row in rows}
+        }
     if paths.keys() != ids:
         raise missing()
     entries = []

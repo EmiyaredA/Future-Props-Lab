@@ -9,7 +9,7 @@ from app.runtime.polling_runner import PollingTaskRunner
 from app.runtime.time import utc_now
 from fpl_runtime.capability_client import CapabilityUnavailable
 from fpl_runtime.motion_preview import sha256
-from fpl_runtime.video_exports import EXPORTS, VIDEO_WORK, VideoExportReceipt
+from fpl_runtime.video_exports import EXPORTS, VIDEO_WORK, VideoExportReceipt, VideoSegmentRequest
 
 from .models import VideoMediaDispatch, VideoRenderDispatch
 from .segment_results import settle_segments
@@ -22,9 +22,10 @@ class RenderDelivery(PollingTaskRunner):
     runner_name = "video-render-delivery"
     poll_interval_seconds = 1
 
-    def __init__(self, sessions, client, peer):
+    def __init__(self, sessions, client, peer, segment_delivery=None):
         super().__init__()
         self.sessions, self.client, self.peer = sessions, client, peer
+        self.segment_delivery = segment_delivery
 
     async def recover(self):
         # All tasks with published dispatches are polled by the same identity after restart.
@@ -106,6 +107,16 @@ class RenderDelivery(PollingTaskRunner):
                 receipt = VideoExportReceipt.model_validate(response.json())
         except (httpx.HTTPError, ValueError) as exc:
             raise CapabilityUnavailable("剪辑成片回执尚未确认") from exc
+        if receipt.handoff is not None:
+            request = VIDEO_WORK.validate_python(binding.frozen)
+            if (
+                self.segment_delivery is None
+                or not isinstance(request, VideoSegmentRequest)
+                or request.target != receipt.handoff.target
+            ):
+                raise CapabilityUnavailable("分段交接的目标范围不符")
+            await self.segment_delivery.deliver(binding, receipt)
+            return
         await self.settle(binding, receipt)
 
     async def settle(self, binding, receipt):

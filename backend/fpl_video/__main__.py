@@ -31,6 +31,9 @@ def main():
     parser.add_argument("--web-root", type=Path, default=Path("/app/web"))
     parser.add_argument("--media-key", type=Path, default=Path("/run/fpl/video-media-key"))
     parser.add_argument("--archive-key", type=Path, default=Path("/run/fpl/video-archive-key"))
+    parser.add_argument(
+        "--segment-visual-key", type=Path, default=Path("/run/fpl/video-segment-visual-key")
+    )
     parser.add_argument("--port", type=int, default=8080)
     options = parser.parse_args()
     if options.command == "migrate":
@@ -48,6 +51,9 @@ def main():
             raise ValueError
         media_key = load_peer_key(options.media_key, excluded=(credential,))
         archive_key = load_peer_key(options.archive_key, excluded=(credential, media_key))
+        segment_visual_key = load_peer_key(
+            options.segment_visual_key, excluded=(credential, media_key, archive_key)
+        )
         if media_key is None or archive_key is None:
             raise ValueError
     except (ValueError, OSError):
@@ -65,6 +71,7 @@ def main():
         credential=credential,
         media_key=media_key,
         archive_key=archive_key,
+        segment_visual_key=segment_visual_key,
         web_root=None if (options.web_root / ".api-only").is_file() else options.web_root,
     )
     uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)

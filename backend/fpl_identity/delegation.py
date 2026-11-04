@@ -19,6 +19,7 @@ from fpl_runtime.motion_snapshot import motion_snapshot_grant
 from fpl_runtime.project_reveal import reveal_grant
 from fpl_runtime.video_audio import audio_grant
 from fpl_runtime.video_frames import frame_grant as video_frame_grant
+from fpl_runtime.video_segment_handoff import target_grant as segment_target_grant
 from fpl_runtime.video_snapshot import snapshot_grant as video_snapshot_grant
 
 from .live import active_actor
@@ -102,7 +103,7 @@ async def authorize_delegation(app, body, credential):
         )
         else (
             "content.write"
-            if motion_export_grant(grant)
+            if motion_export_grant(grant) or segment_target_grant(grant)
             else route_permission(body.target_method, target_permission_path(grant))
         )
     )

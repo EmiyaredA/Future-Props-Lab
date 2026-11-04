@@ -1,7 +1,9 @@
 """Owned Visual ORM roots, with no foreign model imports."""
 
-from sqlalchemy import Index
-from sqlalchemy.orm import DeclarativeBase
+from datetime import datetime
+
+from sqlalchemy import JSON, DateTime, Index, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from app.apps.visual_workshop.acceptance.models import (
     AcceptanceAssetReference,
@@ -29,6 +31,7 @@ from app.apps.visual_workshop.outputs.models import (
     VisualNodeOutput,
 )
 from app.runtime.project_operations import ProjectOperationReceipt
+from app.runtime.time import utc_now
 from fpl_runtime.certification_owner import CertificationReceiptFields, CertificationRecordsBase
 from fpl_runtime.reference_records import ReferenceMutationFields
 
@@ -46,6 +49,22 @@ class CanvasRetentionBase(DeclarativeBase):
 
 class VisualCanvasReferenceMutation(ReferenceMutationFields, CanvasRetentionBase):
     __tablename__ = "visual_canvas_reference_mutations"
+
+
+class VisualSegmentHandoff(CanvasRetentionBase):
+    __tablename__ = "visual_segment_handoffs"
+    __table_args__ = (
+        Index("ix_visual_segment_handoff_target", "owner_user_id", "project_id", "state"),
+    )
+
+    owner_user_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    task_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    project_id: Mapped[str] = mapped_column(String(128))
+    scope_sha256: Mapped[str] = mapped_column(String(64))
+    state: Mapped[str] = mapped_column(String(16))
+    nodes: Mapped[list] = mapped_column(JSON)
+    result: Mapped[dict | None] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
 
 
 MODELS = (
@@ -68,5 +87,6 @@ MODELS = (
     VisualNodeOutput,
     VisualCertificationReceipt,
     VisualCanvasReferenceMutation,
+    VisualSegmentHandoff,
     ProjectOperationReceipt,
 )

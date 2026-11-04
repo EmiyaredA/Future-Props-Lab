@@ -510,4 +510,6 @@ Motion 的 MP4 与 ProRes 4444 可交接到同账号的现有或新建剪辑项�
 
 独立素材烘焙支持透明 PNG 与 1080p MP4，沿用 Video 到 Rendering 的持久任务与 Assets 原件发布凭据。五容器 Chromium 运行 `fpl-video-bake-a278ebf80c` 核对透明像素、视频规格、默认效果、重复提交、素材编排与双服务重启恢复。
 
-分段任务可导出有序 MP4 批次并从原地址下载 ZIP。Rendering 核验封存规格，Assets 校验整组字节后原子发布，下载时重新比对每项 SHA256。五容器 Chromium 运行 `fpl-video-segments-5c805158cd` 验证真实编码、双服务重启、批次重放、取消、独立文件与 ZIP 条目一致以及 Range 下载。故障测试验证第二段摘要不符时整组不可见。直接交接到 Visual 的画布接收仍由就绪门禁跟踪。
+分段任务可导出有序 MP4 批次并从原地址下载 ZIP。Rendering 核验封存规格，Assets 校验整组字节后原子发布，下载时重新比对每项 SHA256。五容器 Chromium 运行 `fpl-video-segments-5c805158cd` 验证真实编码、双服务重启、批次重放、取消、独立文件与 ZIP 条目一致以及 Range 下载。故障测试验证第二段摘要不符时整组不可见。
+
+分段可交接到既有或新建 Visual 画布。叠加 `deploy/project-owners.compose.yaml`、`deploy/video.compose.yaml` 和 `deploy/video-visual-handoff.compose.yaml`，并分别提供 `FPL_VIDEO_SEGMENT_VISUAL_KEY` 和 `FPL_VISUAL_SEGMENT_ASSETS_KEY`。显式运行 Video、Assets、Visual 的迁移。待接收文件在目标确认前不可见。确认时核对画布修订，并登记文件库归属、画布节点与输出历史。隔离测试覆盖丢失确认、过期修订和分段传输失败。 六容器 Chromium 运行 `fpl-video-visual-handoff-94b5a2c569` 验证两种目标、ZIP 摘要、服务重启和源项目删除后目标原件仍可下载。

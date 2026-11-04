@@ -4,11 +4,12 @@ import hashlib
 import re
 from uuid import NAMESPACE_URL, UUID, uuid5
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from .library_assets import ID
 from .model_outputs import ModelOutputDescription
 from .video_assets import SOURCE, VideoAsset
+from .video_segment_handoff import SegmentTarget
 
 OUTPUTS = "/_internal/v1/video-segment-outputs"
 BUNDLES = "/_internal/v1/video-segment-bundles"
@@ -19,6 +20,21 @@ MAX_MANIFEST_BYTES = 256 * 1024
 class SegmentBatchManifest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
     files: tuple[ModelOutputDescription, ...] = Field(min_length=1, max_length=100)
+    target: SegmentTarget | None = None
+    labels: tuple[str, ...] | None = Field(default=None, max_length=100)
+
+    @model_validator(mode="after")
+    def verify_placement(self):
+        if self.target is None:
+            if self.labels is not None:
+                raise ValueError("分段标签仅适用于画布交接")
+        elif (
+            self.labels is None
+            or len(self.labels) != len(self.files)
+            or any(not label.strip() or len(label) > 120 for label in self.labels)
+        ):
+            raise ValueError("分段交接标签无效")
+        return self
 
     @field_validator("files")
     @classmethod
@@ -31,7 +47,7 @@ class SegmentBatchManifest(BaseModel):
 
     @property
     def encoded(self):
-        return self.model_dump_json().encode()
+        return self.model_dump_json(exclude_none=True).encode()
 
     @property
     def digest(self):

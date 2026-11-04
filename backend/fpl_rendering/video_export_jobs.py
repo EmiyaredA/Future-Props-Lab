@@ -35,6 +35,7 @@ from fpl_runtime.video_exports import (
     VideoImageBakeRequest,
     VideoSegmentRequest,
 )
+from fpl_runtime.video_segment_handoff import SegmentHandoff
 from fpl_runtime.video_segments import SegmentBatchManifest
 
 from .models import VideoExportJob, VideoMediaJob
@@ -82,6 +83,7 @@ class VideoExports(PollingTaskRunner):
             fingerprint=job.sealed_output["content_sha256"] if single else None,
             output=job.result if single else None,
             segments=job.result["segments"] if group else [],
+            handoff=job.result.get("handoff") if group else None,
             variants=job.sealed_output.get("variants", {}) if single else {},
             error=job.error,
         )
@@ -302,17 +304,23 @@ class VideoExports(PollingTaskRunner):
         )
         return output, mime, probe, variants
 
-    async def deliver_artifact(self, job, lookup, send):
+    async def deliver_artifact(self, job, lookup, send, discard=None):
         response = await lookup()
         if response.status_code == 404:
             if not await self.authorized(job):
+                if discard is not None:
+                    await discard()
                 await self.set_state(job, "publishing", status="cancelled", progress=0)
                 return None
             response = await send()
         if response.status_code == 401:
+            if discard is not None:
+                await discard()
             await self.set_state(job, "publishing", status="cancelled", progress=0)
             return None
         if response.status_code in {403, 404, 409, 413, 422}:
+            if discard is not None:
+                await discard()
             await self.set_state(job, "publishing", status="failed", error="成片原件发布被拒绝")
             return None
         response.raise_for_status()
@@ -360,16 +368,27 @@ class VideoExports(PollingTaskRunner):
             job,
             lambda: self.segment_outputs.lookup(job, manifest),
             lambda: self.segment_outputs.publish(job, manifest, folder / "sealed"),
+            discard=(lambda: self.segment_outputs.discard(job, manifest))
+            if manifest.target
+            else None,
         )
         if response is None:
             return
         results = self.segment_outputs.result(response, manifest, job.probe["segments"])
+        result = {"segments": [value.model_dump(mode="json") for value in results]}
+        if manifest.target is not None:
+            result["handoff"] = SegmentHandoff(
+                source_project_id=job.project_id,
+                task_id=job.id,
+                manifest_sha256=manifest.digest,
+                target=manifest.target,
+            ).model_dump(mode="json")
         await self.set_state(
             job,
             "publishing",
             status="completed",
             progress=100,
-            result={"segments": [result.model_dump(mode="json") for result in results]},
+            result=result,
         )
 
     async def complete(self, job, result, variants, fingerprint):

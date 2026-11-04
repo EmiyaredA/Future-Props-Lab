@@ -41,6 +41,7 @@ from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.reference_runtime import install_reference_runtime, reference_lifespan
 from fpl_runtime.routing import RouteCatalog
 from fpl_runtime.video_processing import video_peer
+from fpl_runtime.video_segment_handoff import visual_peer as segment_visual_peer
 from fpl_runtime.video_snapshot import (
     ARCHIVE_DOMAIN,
     ARCHIVE_PREFIX,
@@ -66,12 +67,14 @@ from .models import (
     VideoMotionHandoff,
     VideoReferenceMutation,
     VideoRenderDispatch,
+    VideoSegmentDelivery,
 )
 from .motion_handoffs import MotionHandoffs
 from .project_layouts import ProjectLayouts
 from .project_reveal_routes import router as reveal_router
 from .render_delivery import RenderDelivery
 from .render_routes import router as render_router
+from .segment_handoff_delivery import SegmentDelivery
 from .segment_routes import router as segment_router
 from .snapshot_exports import SnapshotSettings
 from .snapshot_imports import SnapshotDelivery, SnapshotImports
@@ -144,6 +147,7 @@ def create_app(
     run_worker=True,
     media_key=None,
     archive_key=None,
+    segment_visual_key=None,
     web_root=None,
 ):
     database = Database(
@@ -160,6 +164,7 @@ def create_app(
             VideoImportBatch,
             VideoMediaDispatch,
             VideoRenderDispatch,
+            VideoSegmentDelivery,
             VideoMotionHandoff,
         ),
     )
@@ -191,8 +196,17 @@ def create_app(
         else None
     )
 
+    segment_delivery = (
+        SegmentDelivery(
+            database.sessions, capabilities.client, segment_visual_peer(segment_visual_key)
+        )
+        if segment_visual_key is not None
+        else None
+    )
     render_delivery = (
-        RenderDelivery(database.sessions, capabilities.client, video_peer(media_key))
+        RenderDelivery(
+            database.sessions, capabilities.client, video_peer(media_key), segment_delivery
+        )
         if media_key is not None
         else None
     )
@@ -250,6 +264,7 @@ def create_app(
     app.state.asset_intakes = asset_intakes
     app.state.media_delivery = media_delivery
     app.state.render_delivery = render_delivery
+    app.state.segment_handoff_delivery = segment_delivery
     app.state.identity_public_key = public_key
     app.state.handoff_identity = handoff_identity
     app.state.motion_handoffs = motion_handoffs

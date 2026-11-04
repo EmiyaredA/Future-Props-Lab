@@ -1,0 +1,28 @@
+# Add to the Video and project-owner Compose overlays for Visual segment delivery.
+x-video-visual-key: &video-visual-key
+  type: bind
+  source: ${FPL_VIDEO_SEGMENT_VISUAL_KEY:?Select the protected Video Visual handoff key}
+  target: /run/fpl/video-segment-visual-key
+  read_only: true
+  bind:
+    create_host_path: false
+
+x-visual-assets-key: &visual-assets-key
+  type: bind
+  source: ${FPL_VISUAL_SEGMENT_ASSETS_KEY:?Select the protected Visual Assets settlement key}
+  target: /run/fpl/visual-segment-assets-key
+  read_only: true
+  bind:
+    create_host_path: false
+
+services:
+  video:
+    volumes:
+      - <<: *video-visual-key
+  visual:
+    volumes:
+      - <<: *video-visual-key
+      - <<: *visual-assets-key
+  assets:
+    volumes:
+      - <<: *visual-assets-key

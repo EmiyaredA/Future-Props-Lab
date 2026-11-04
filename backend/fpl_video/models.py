@@ -76,3 +76,14 @@ class VideoImportBatch(VideoServiceBase):
     result: Mapped[dict | None] = mapped_column(JSON)
     state: Mapped[str] = mapped_column(String(16), default="staging")
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
+class VideoSegmentDelivery(VideoServiceBase):
+    __tablename__ = "video_segment_deliveries"
+
+    task_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    owner_user_id: Mapped[str] = mapped_column(String(36))
+    project_id: Mapped[str] = mapped_column(String(36))
+    scope_sha256: Mapped[str] = mapped_column(String(64))
+    state: Mapped[str] = mapped_column(String(16), default="preparing")
+    error: Mapped[str | None] = mapped_column(Text)

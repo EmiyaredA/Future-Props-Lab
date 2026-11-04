@@ -4,7 +4,6 @@ from sqlalchemy import text
 
 from app.apps.video_editor.errors import (
     VideoEditorNotFoundError,
-    VideoEditorUnavailableError,
     VideoEditorValidationError,
 )
 from app.apps.video_editor.models import VideoEditorTask, VideoEditorTimeline
@@ -16,15 +15,16 @@ from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import utc_now
 from fpl_runtime.video_exports import ExportInput, SegmentEncodeInput, VideoSegmentRequest
 
-from .models import VideoRenderDispatch
+from .models import VideoRenderDispatch, VideoSegmentDelivery
+from .segment_targets import plan_target
 
 KIND = "segment_export"
 MISSING = "分段导出任务不存在"
 
 
 class SegmentRequests:
-    def __init__(self, session, owner):
-        self.session, self.owner = session, owner
+    def __init__(self, session, owner, request=None):
+        self.session, self.owner, self.request = session, owner, request
         self.reads = VideoTaskReads(session, owner)
 
     async def _existing(self, project, request_id, payload):
@@ -52,9 +52,11 @@ class SegmentRequests:
         if existing is not None:
             return task_out(existing)
         timeline = await self._timeline(project, body.expected_revision)
-        if body.target is not None:
-            raise VideoEditorUnavailableError("独立工作坊的分段交接暂不可用")
         document = timeline.document
+        target = None
+        if body.target is not None:
+            await self.session.rollback()
+            target = await plan_target(self.request, body.target)
         selected = segment_selection(document, body.segments)
         ids = {item["assetId"] for item in selected}
         media = self.session.info["video_timeline_assets"](self.session, self.owner)
@@ -70,6 +72,7 @@ class SegmentRequests:
         await self._timeline(project, body.expected_revision)
         try:
             frozen = VideoSegmentRequest(
+                target=target,
                 files=tuple(
                     ExportInput(id=identity, sha256=assets[identity].fingerprint)
                     for identity in sorted(ids)
@@ -85,6 +88,7 @@ class SegmentRequests:
                         fps=item.fps,
                         quality=item.quality,
                         audio_mode=item.audio_mode,
+                        label=item.name if target else None,
                     )
                     for clip, item in zip(selected, body.segments, strict=True)
                 ),
@@ -103,8 +107,8 @@ class SegmentRequests:
             snapshot_document=document,
             result_detail={
                 "timelineRevision": body.expected_revision,
-                "importRequested": False,
-                "targetCanvasRevision": None,
+                "importRequested": target is not None,
+                "targetCanvasRevision": target.expected_revision if target else None,
                 "segments": selected,
             },
         )
@@ -128,7 +132,8 @@ class SegmentRequests:
         task = await self.session.scalar(query.where(VideoEditorTask.id == identity))
         if task is None:
             raise VideoEditorNotFoundError(MISSING)
-        if task.status in {"queued", "running"}:
+        delivery = await self.session.get(VideoSegmentDelivery, identity)
+        if task.status in {"queued", "running"} and not (delivery and delivery.state == "commit"):
             task.cancel_requested = True
             if task.status == "queued":
                 task.status, task.progress, task.finished_at = "cancelled", 0, utc_now()

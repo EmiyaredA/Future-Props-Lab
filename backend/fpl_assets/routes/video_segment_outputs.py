@@ -12,7 +12,7 @@ from ..video_segment_files import SegmentBody, SegmentFileWrites
 router = APIRouter(include_in_schema=False)
 
 
-@router.api_route(OUTPUTS + "/{project_id}/{task_id}/{digest}", methods=["GET", "POST"])
+@router.api_route(OUTPUTS + "/{project_id}/{task_id}/{digest}", methods=["GET", "POST", "DELETE"])
 async def output(request: Request, project_id: str, task_id: str, digest: str):
     state, method = request.app.state, request.method
     peer = state.video_output_peer
@@ -30,6 +30,10 @@ async def output(request: Request, project_id: str, task_id: str, digest: str):
     except ValueError:
         raise HTTPException(403, "private_video_segment_output_required") from None
 
+    if method == "DELETE":
+        await state.video_segment_handoffs.discard_staging(owner, project_id, task_id, digest)
+        return {"state": "discarded"}
+
     async def active():
         permission = await state.identity.owner_permission(owner=owner, permission="content.write")
         if not permission["available"]:
@@ -41,15 +45,22 @@ async def output(request: Request, project_id: str, task_id: str, digest: str):
         writer = SegmentFileWrites(
             session, state.settings, owner, project_id, receipt_id, digest, active=active
         )
+        handoff = state.video_segment_handoffs
         if method == "GET":
             receipt = await writer.prior()
             if receipt is None:
+                receipt = await handoff.prior(owner, project_id, task_id, digest)
+            if receipt is None:
                 raise HTTPException(404, "video_segment_output_missing")
             return {"items": receipt}
-        return {"items": await publish(request, writer, digest, state.settings)}
+        return {
+            "items": await publish(
+                request, writer, digest, state.settings, handoff, owner, project_id, task_id, active
+            )
+        }
 
 
-async def publish(request, writer, digest, settings):
+async def publish(request, writer, digest, settings, handoff, owner, project, task, active):
     if request.headers.get("content-encoding", "identity").lower() != "identity":
         raise HTTPException(422, "video_segment_encoding_forbidden")
     body = SegmentBody(request.stream())
@@ -68,6 +79,10 @@ async def publish(request, writer, digest, settings):
             file.byte_size > limit for file in manifest.files
         ):
             raise HTTPException(413, "video_segment_output_too_large")
+        if manifest.target is not None:
+            if request.app.state.visual_segment_assets_peer is None:
+                raise HTTPException(503, "segment_handoff_unavailable")
+            return await handoff.stage(owner, project, task, manifest, body, active)
         return await writer.publish(manifest, body, limit)
     finally:
         await body.close()

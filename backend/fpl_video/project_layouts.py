@@ -3,6 +3,8 @@
 from contextlib import asynccontextmanager
 from uuid import uuid4
 
+from sqlalchemy import text
+
 from app.apps.video_editor.errors import (
     VideoEditorNotFoundError,
     VideoEditorUnavailableError,
@@ -11,6 +13,8 @@ from app.apps.video_editor.errors import (
 from fpl_runtime.asset_references import PrepareReferenceChange
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
 from fpl_runtime.project_errors import ProjectResourceError
+
+from .segment_handoff_delivery import guard_project_removal
 
 
 class ProjectLayouts:
@@ -54,6 +58,9 @@ class ProjectLayouts:
         await self.session.rollback()
         prepared = await self.prepare(project_id, expected)
         try:
+            if deleted:
+                await self.session.execute(text("BEGIN IMMEDIATE"))
+                await guard_project_removal(self.session, self.owner, project_id)
             yield
             await self.coordinator.record(
                 self.session, prepared, resource_revision=expected + 1, deleted=deleted

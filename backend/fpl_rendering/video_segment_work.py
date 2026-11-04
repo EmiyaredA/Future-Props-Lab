@@ -79,7 +79,11 @@ async def encode_group(runner, job, request, sources, folder):
         await runner.set_state(
             job, "running", progress=max(1, round((index + 1) / len(request.segments) * 85))
         )
-    return SegmentBatchManifest(files=tuple(descriptors)), output_probes
+    return SegmentBatchManifest(
+        files=tuple(descriptors),
+        target=request.target,
+        labels=tuple(item.label for item in request.segments) if request.target else None,
+    ), output_probes
 
 
 class SegmentOutputs:
@@ -118,6 +122,16 @@ class SegmentOutputs:
             },
             timeout=httpx.Timeout(600, connect=5),
         )
+
+    async def discard(self, job, manifest):
+        path = self.path(job, manifest)
+        result = await self.client.delete(
+            "http://assets:8080" + path,
+            headers=self.peer.headers("DELETE", path, job.owner_user_id),
+        )
+        result.raise_for_status()
+        if result.json().get("state") != "discarded":
+            raise ValueError("分段暂存清理尚未确认")
 
     @staticmethod
     def result(response, manifest, probes):

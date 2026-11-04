@@ -3,7 +3,7 @@
 from uuid import uuid4
 
 from pydantic import ValidationError
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.apps.visual_workshop.canvas_asset_values import existing_assets, expected_assets
 from app.apps.visual_workshop.canvas_documents import CanvasDocuments
@@ -19,6 +19,7 @@ from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailabl
 from fpl_runtime.project_errors import ProjectResourceError
 
 from .projects import Projects
+from .segment_handoffs import require_canvas_unreserved
 
 PREFIX = "/v1/visual-workshop/projects"
 
@@ -157,6 +158,8 @@ class CanvasWrites:
                     raise ProjectResourceError("节点与素材类型不匹配", "asset_kind_mismatch", 422)
 
         async def apply():
+            await self.session.execute(text("BEGIN IMMEDIATE"))
+            await require_canvas_unreserved(self.session, self.owner, project_id)
             return await CanvasDocuments(self.session, validate_assets=validate).replace(
                 project_id, body
             )
