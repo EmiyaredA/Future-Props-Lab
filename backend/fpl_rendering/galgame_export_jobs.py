@@ -26,9 +26,10 @@ from fpl_runtime.galgame_exports import (
 from fpl_runtime.galgame_handoff import HANDOFF_INPUTS, HANDOFF_JOBS, GalgameHandoff
 from fpl_runtime.model_outputs import ModelOutputDescription
 
-from .galgame_frames import original_files, prepare_plan
+from .galgame_frames import prepare_plan
 from .galgame_handoff_package import make_handoff_archive
 from .models import GalgameExportJob
+from .scoped_originals import original_files
 from .storage import sync_directory, sync_files
 
 

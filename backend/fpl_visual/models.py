@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, Index, String
+from sqlalchemy import JSON, DateTime, ForeignKey, Index, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from app.apps.visual_workshop.acceptance.models import (
@@ -81,7 +81,23 @@ class VisualSnapshotImportBatch(CanvasRetentionBase):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
 
 
+class VisualCompositionDispatch(CanvasRetentionBase):
+    __tablename__ = "visual_composition_dispatches"
+
+    batch_id: Mapped[str] = mapped_column(
+        ForeignKey(VisualGenerationBatch.__table__.c.id, ondelete="CASCADE"), primary_key=True
+    )
+    owner_user_id: Mapped[str] = mapped_column(String(36))
+    source_path: Mapped[str] = mapped_column(Text)
+    assertion: Mapped[str] = mapped_column(Text)
+    plan: Mapped[dict] = mapped_column(JSON)
+    pending_asset_id: Mapped[str | None] = mapped_column(String(36))
+    pending_receipt_id: Mapped[str | None] = mapped_column(String(128))
+    checked_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, index=True)
+
+
 MODELS = (
+    VisualCompositionDispatch,
     VisualSnapshotImportBatch,
     VisualMigrationReceipt,
     AcceptanceTemplate,

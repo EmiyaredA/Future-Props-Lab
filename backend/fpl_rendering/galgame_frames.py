@@ -1,10 +1,8 @@
 """Render a frozen Galgame frame with account-scoped original files."""
 
-import shutil
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-import httpx
 import jwt
 from anyio.to_thread import run_sync
 from fastapi import APIRouter, HTTPException, Request
@@ -15,9 +13,7 @@ from app.capabilities.identity.permissions import effective_permissions
 from app.capabilities.media_rendering.frame_renderer import render_plan_frame
 from app.capabilities.media_rendering.galgame.compiler import compile_galgame_render_plan
 from app.capabilities.media_rendering.galgame.lip_sync import prepare_audio_envelopes
-from fpl_runtime.capability_client import CapabilityUnavailable
 from fpl_runtime.claims import HEADER, verify_context
-from fpl_runtime.framed_media import SIZE, FramedInputs
 from fpl_runtime.galgame_frames import (
     FRAMES,
     INPUT_HEADER,
@@ -28,6 +24,8 @@ from fpl_runtime.galgame_frames import (
 )
 from fpl_runtime.motion_preview import sha256
 
+from .scoped_originals import original_files
+
 router = APIRouter(include_in_schema=False)
 
 
@@ -37,49 +35,6 @@ async def authorize(request, token):
     )
     if active is not True:
         raise HTTPException(401 if active is False else 503, "galgame_frame_authority_ended")
-
-
-async def original_files(state, scope, sizes, path, token, directory):
-    if not scope.files:
-        return {}
-    total = sum(SIZE.size + size for size in sizes.values())
-    if any(size > state.settings.max_input_bytes for size in sizes.values()):
-        raise HTTPException(413, "galgame_frame_original_too_large")
-    if total > shutil.disk_usage(directory).free:
-        raise HTTPException(507, "galgame_frame_staging_full")
-    try:
-        async with state.capabilities.client.stream(
-            "POST",
-            "http://assets:8080" + path,
-            content=scope.model_dump_json().encode(),
-            headers={HEADER: token, "Accept-Encoding": "identity"},
-            timeout=httpx.Timeout(300, connect=5),
-        ) as response:
-            if response.status_code in {404, 409}:
-                raise HTTPException(409, {"code": "source_changed", "message": "渲染原件已变化"})
-            if response.status_code in {401, 403}:
-                raise HTTPException(response.status_code, "galgame_frame_original_denied")
-            response.raise_for_status()
-            if (
-                response.headers.get("Content-Encoding", "identity") != "identity"
-                or response.headers.get("Content-Type") != "application/octet-stream"
-                or int(response.headers["Content-Length"]) != total
-            ):
-                raise ValueError("unexpected Galgame frame originals response")
-            framed = FramedInputs(response.aiter_bytes(chunk_size=1024 * 1024))
-            originals = {}
-            for entry in scope.files:
-                size = SIZE.unpack(await framed.read(SIZE.size))[0]
-                if size != sizes[entry.id]:
-                    raise ValueError("Galgame frame original size changed")
-                local = directory / entry.id
-                with local.open("xb") as file:
-                    await framed.transfer(file, size)
-                originals[entry.id] = local
-            await framed.require_end(total)
-            return originals
-    except (CapabilityUnavailable, httpx.HTTPError, KeyError, OSError, ValueError) as exc:
-        raise HTTPException(503, "galgame_frame_originals_unavailable") from exc
 
 
 def prepare_plan(frame, originals, cache, *, cancel=None):

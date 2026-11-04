@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from sqlalchemy import update
 
+from app.apps.visual_workshop.composition_values import composition_items, new_composition
 from app.apps.visual_workshop.generation_common import GenerationError, generation_batch_out
 from app.apps.visual_workshop.models import VisualCanvasDocument, VisualGenerationBatch
 from app.apps.visual_workshop.schemas.generation import GenerationBatchOut, ImageCompositionCreateIn
@@ -25,42 +26,12 @@ async def create_composition(
         raise GenerationError(
             "画布已变化，请刷新后重试", code="canvas_revision_conflict", status=409
         )
-    nodes = {str(node.get("id")): node for node in (canvas.nodes or [])}
-    source_items: list[dict] = []
-    for item in body.items:
-        node = nodes.get(item.node_id)
-        if node is None:
-            raise GenerationError("画布节点不存在", code="canvas_node_not_found", status=404)
-        if node.get("kind") != "image":
-            raise GenerationError("宫格合成仅支持图片节点", code="canvas_kind_mismatch")
-        if node.get("asset_id") != item.asset_id:
-            raise GenerationError(
-                "图片节点素材已变化，请刷新后重试", code="stale_asset", status=409
-            )
-        await service._reference_asset(project_id, item.asset_id, "image")
-        source_items.append(
-            {
-                "node_id": item.node_id,
-                "asset_id": item.asset_id,
-                "caption": item.caption,
-                "binding": "fixed",
-                "purpose": "reference",
-                "output_id": node.get("final_output_id"),
-                "version": node.get("final_version"),
-            }
-        )
-    batch_id = str(uuid4())
-    result_node_id = f"image-{uuid4()}"
-    title = body.title.strip() or f"{body.grid_size}宫格合成"
-    result_node = {
-        "id": result_node_id,
-        "kind": "image",
-        "title": title,
-        "position": body.result_position.model_dump(mode="json"),
-        "asset_id": None,
-        "generation_task_id": None,
-        "generation_batch_id": batch_id,
-    }
+    source_items = composition_items(canvas, body)
+    for item in source_items:
+        await service._reference_asset(project_id, item["asset_id"], "image")
+    result_node, batch = new_composition(
+        project.owner_user_id, canvas, body, source_items, str(uuid4())
+    )
     result = await service.session.execute(
         update(VisualCanvasDocument)
         .where(
@@ -77,18 +48,6 @@ async def create_composition(
         raise GenerationError(
             "画布已变化，请刷新后重试", code="canvas_revision_conflict", status=409
         )
-    batch = VisualGenerationBatch(
-        id=batch_id,
-        owner_user_id=project.owner_user_id,
-        project_id=project_id,
-        batch_kind="composition",
-        grid_size=body.grid_size,
-        grid_output="composite",
-        child_task_ids=[],
-        source_items=source_items,
-        status="queued",
-        generation_node_id=result_node_id,
-    )
     service.session.add(batch)
     await service.session.commit()
     await service.session.refresh(batch)

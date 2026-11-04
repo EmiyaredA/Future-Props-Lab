@@ -23,6 +23,8 @@ from fpl_runtime.motion_exports import ExportPeer
 from fpl_runtime.request_limit import RequestLimit
 from fpl_runtime.video_exports import output_peer
 from fpl_runtime.video_processing import originals_peer, video_peer
+from fpl_runtime.visual_composition import MAX_PLAN_BYTES as MAX_VISUAL_GRID_BYTES
+from fpl_runtime.visual_composition import RENDER as VISUAL_GRID
 
 from .galgame_capacity_http import router as galgame_capacity_router
 from .galgame_export_jobs import GalgameExports
@@ -43,6 +45,7 @@ from .video_frames import VideoFrameCache
 from .video_frames import router as video_frame_router
 from .video_media_jobs import VideoJobs
 from .video_media_routes import router as video_media_router
+from .visual_grids import router as visual_grid_router
 
 
 def create_app(
@@ -132,6 +135,7 @@ def create_app(
     app.state.identity_public_key = public_key
     app.state.motion_frame_slots = asyncio.Semaphore(2)
     app.state.galgame_frame_slots = asyncio.Semaphore(2)
+    app.state.visual_grid_slots = asyncio.Semaphore(2)
     app.state.galgame_exports = galgame_exports
     app.state.motion_jobs = motion_jobs
     app.state.motion_export_peer = ExportPeer(export_key) if export_key is not None else None
@@ -141,6 +145,8 @@ def create_app(
     app.include_router(video_export_router)
     app.include_router(galgame_capacity_router)
     app.include_router(galgame_frames_router)
+    app.include_router(visual_grid_router)
+    app.add_middleware(RequestLimit, prefix=VISUAL_GRID, maximum=MAX_VISUAL_GRID_BYTES)
     app.include_router(galgame_exports_router)
     app.include_router(motion_transfer_router)
     app.state.video_frame_cache = VideoFrameCache()

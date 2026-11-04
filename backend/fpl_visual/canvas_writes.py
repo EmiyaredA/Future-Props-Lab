@@ -8,6 +8,7 @@ from sqlalchemy import select, text
 from app.apps.visual_workshop.canvas_asset_values import existing_assets, expected_assets
 from app.apps.visual_workshop.canvas_documents import CanvasDocuments
 from app.apps.visual_workshop.canvas_values import canvas_out
+from app.apps.visual_workshop.models import VisualGenerationBatch
 from app.apps.visual_workshop.operation_values import transform
 from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from app.apps.visual_workshop.outputs.mutations import OutputMutations
@@ -85,15 +86,13 @@ class CanvasWrites:
         return await self.references.commit_source(self.session, prepared, apply)
 
     async def history_assets(self, project_id, node_ids, *, omit_output=None):
-        if not node_ids:
-            return set()
         query = select(VisualNodeOutput).where(
             VisualNodeOutput.project_id == project_id, VisualNodeOutput.node_id.in_(node_ids)
         )
         if omit_output is not None:
             query = query.where(VisualNodeOutput.id != omit_output)
         outputs = await self.session.scalars(query)
-        return {
+        identities = {
             value
             for row in outputs
             for value in (
@@ -103,6 +102,18 @@ class CanvasWrites:
             )
             if value
         }
+        active = await self.session.scalars(
+            select(VisualGenerationBatch.source_items).where(
+                VisualGenerationBatch.project_id == project_id,
+                VisualGenerationBatch.owner_user_id == self.owner,
+                VisualGenerationBatch.batch_kind == "composition",
+                VisualGenerationBatch.status.in_(("queued", "processing")),
+            )
+        )
+        identities.update(
+            item["asset_id"] for items in active for item in (items or ()) if item.get("asset_id")
+        )
+        return identities
 
     async def put(self, project_id, body):
         row = await self.projects.canvas_row(project_id)

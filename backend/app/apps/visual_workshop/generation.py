@@ -37,6 +37,7 @@ from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualProjectAssetReference,
 )
+from app.capabilities.asset_store.policy import REFERENCE_IMAGE_MIME_TYPES
 from app.capabilities.asset_store.storage import AssetStorage
 from app.llm.models import (
     ModelEntry,
@@ -60,7 +61,7 @@ from app.runtime.task_admission import TaskAdmission
 from app.runtime.time import utc_now
 
 REFERENCE_MIME_TYPES = {
-    "image": {"image/jpeg", "image/png", "image/webp", "image/gif"},
+    "image": REFERENCE_IMAGE_MIME_TYPES,
     "audio": {
         "audio/mpeg",
         "audio/wav",

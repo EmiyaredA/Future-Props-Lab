@@ -72,6 +72,8 @@ class GenerationBatches(MigrationBatch[GenerationBatchRecord]):
 
 
 async def validate_batch_tasks(session, record):
+    if record.batch_kind == "composition" and record.status in {"queued", "processing"}:
+        raise blocked("migration_visual_composition_active")
     if not record.child_task_ids:
         return
     saved = set(

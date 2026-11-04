@@ -11,7 +11,7 @@ from .models import AssetReferencePin, AssetReferenceSet, VisualProjectFileLink
 from .scoped_project_files import check_project_scope
 
 
-async def scoped_assets(session, project, identities, *, include_private):
+async def scoped_assets(session, project, identities, *, include_private, include_pinned=True):
     owner = session.info["owner_user_id"]
     link = VisualProjectFileLink
     placement = and_(
@@ -31,13 +31,14 @@ async def scoped_assets(session, project, identities, *, include_private):
         )
     )
     private = VisualAsset.project_id == project
+    library_placement = or_(link.id.is_not(None), VisualAsset.id.in_(pinned))
     library = and_(
         VisualAsset.project_id.is_(None),
         VisualAsset.galgame_project_id.is_(None),
         VisualAsset.video_editor_project_id.is_(None),
         VisualAsset.motion_compositor_project_id.is_(None),
         VisualAsset.id.in_(identities),
-        or_(link.id.is_not(None), VisualAsset.id.in_(pinned)),
+        library_placement if include_pinned else link.id.is_not(None),
     )
     if not include_private:
         private = and_(private, VisualAsset.id.in_(identities))
@@ -106,7 +107,7 @@ async def metadata(session, settings, project, query):
     )
 
 
-async def originals(session, settings, project, files):
+async def originals(session, settings, project, files, *, media_kind=None):
     await check_project_scope(session, "visual", project)
     identities = {item.id for item in files}
     scoped = {
@@ -119,7 +120,11 @@ async def originals(session, settings, project, files):
     result = []
     for item in files:
         row = scoped.get(item.id)
-        if row is None or row.revision != item.revision:
+        if (
+            row is None
+            or row.revision != item.revision
+            or (media_kind is not None and row.media_kind != media_kind)
+        ):
             raise AssetError(
                 "项目素材在导出过程中已变化", code="snapshot_source_changed", status=409
             )

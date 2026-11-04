@@ -164,6 +164,8 @@ Galgame 的历史导出与导入由 `fpl_galgame/migration_application.py` 装�
 
 Visual 的便携 ZIP 导出由 `fpl_visual/snapshot_exports.py` 冻结 Canvas、输出与验收记录。Assets 的 `visual_snapshot_files.py` 核对同账号项目范围、库内引用和原件版本，按已授权的精确文件集合流式提供原件。Models 只返回模型提供方类型与标识。下载前重新核验会话，ZIP 和工作副本在响应结束或进程恢复时清理。 `fpl_visual/snapshot_imports.py` 保存 Visual 的精确导入决议，`snapshot_graph.py` 验证副本的画布、历史输出和验收关联。Assets 的 `visual_archives.py` 原子公开已核验的文件、嵌套目录和两类素材保留集合。Visual 收到回执后才公开同一副本。
 
+Visual 的图片宫格由 `fpl_visual/compositions.py` 保存批次与输入版本，`composition_runner.py` 恢复执行与结果结算。Assets 的 `visual_grid_files.py` 核验同账号工程图片。Rendering 的 `visual_grids.py` 使用精确原件、字幕和现有字体渲染 PNG。Visual 将新输出与 Canvas 回执一起保存，Assets 确认后完成批次。活跃的旧站合成必须在迁移前结算。
+
 Visual 的公开验收目录由 `fpl_visual/acceptance_options.py` 装配。固定视觉模型由 Models 核对账号与配置，Mac 上的五种 CLI 由 Agent Runtime 的只读租约探测。Identity 限定授权来源，目录响应只包含可用状态和展示字段。 节点验收资料由 `acceptance/context_values.py` 从所属画布和生成记录计算，并从 Assets 读取精确的工程素材投影。方案绑定在 Visual 中按版本更新，项目汇总复用相同的资料指纹。
 
 Visual 的 Canvas、工程与历史输出由 `fpl_visual/migration_application.py` 导出及导入。 Visual 与 Galgame 复用 `fpl_runtime/edit_receipt_migration.py`，在 Canvas 或 Story 导入后分账号保留历史操作回执和原响应。迁移阻止跨归属、缺少源文档或回执版本超出当前文档的记录。Canvas 文件保留集合包含当前节点及旧输出，Assets 逐文件校验回执后提交。库内放置通过 Assets 维护入口保留原名称、目录、标识和版本。 Visual 的 `migration_generation.py` 逐账号保留历史生成任务和批次，核对画布或输出的任务来源与批次成员归属。 `migration_acceptance.py` 保留验收定义、历史结果、修复草稿和证据关联，Assets 在核对原件与工程范围后重建验收素材保留集合。

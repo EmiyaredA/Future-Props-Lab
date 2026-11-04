@@ -29,6 +29,8 @@ from .acceptance_options import router as acceptance_options_router
 from .assistant_http import router as assistant_router
 from .catalog_http import acceptance as acceptance_catalog_router
 from .catalog_http import generation as generation_catalog_router
+from .composition_http import router as composition_router
+from .composition_runner import CompositionRunner
 from .migrations.registry import MIGRATIONS
 from .models import MODELS, VisualCanvasReferenceMutation, VisualCertificationReceipt
 from .outputs_http import router as outputs_router
@@ -95,6 +97,7 @@ def create_app(
     )
     app.include_router(project_router)
     app.include_router(snapshot_router)
+    app.include_router(composition_router)
     app.include_router(outputs_router)
     app.include_router(assistant_router)
     app.include_router(generation_catalog_router)
@@ -146,6 +149,8 @@ def create_app(
         ):
             raise ValueError("视觉创作工坊浏览器版本与发布契约不匹配")
         attach_web(app, release, pages=PAGES)
+    composition_runner = CompositionRunner(app.state)
+    app.state.composition_runner = composition_runner
     lifespan = app.router.lifespan_context
 
     @asynccontextmanager
@@ -157,10 +162,13 @@ def create_app(
         ):
             await asyncio.to_thread(cleanup_snapshot_staging, app.state.snapshot_settings)
             try:
-                if archive_delivery is not None and run_worker:
-                    await archive_delivery.start()
+                if run_worker:
+                    await composition_runner.start()
+                    if archive_delivery is not None:
+                        await archive_delivery.start()
                 yield
             finally:
+                await composition_runner.stop()
                 if archive_delivery is not None:
                     await archive_delivery.stop()
 

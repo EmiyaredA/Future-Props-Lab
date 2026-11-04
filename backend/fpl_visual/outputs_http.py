@@ -114,7 +114,7 @@ async def upload_node_output(
     expected_revision: Annotated[int, Form(ge=0)],
 ):
     try:
-        return await Uploads(request, session, owner_user_id).output(
+        return await Uploads.from_request(request, session, owner_user_id).output(
             project_id, node_id, file, expected_revision
         )
     except OutputError as exc:
@@ -135,7 +135,7 @@ async def upload_material_node(
     group: Annotated[str | None, Form(max_length=120)] = None,
 ):
     try:
-        return await Uploads(request, session, owner_user_id).material(
+        return await Uploads.from_request(request, session, owner_user_id).material(
             project_id, file, expected_revision, x, y, category_id, group
         )
     except (OutputError, VisualCanvasError) as exc:

@@ -54,6 +54,7 @@ from fpl_runtime.visual_acceptance_assets import acceptance_asset_target
 from fpl_runtime.visual_assistant import attachment_target
 from fpl_runtime.visual_catalog import AGENT_ACCEPTANCE_TARGET
 from fpl_runtime.visual_catalog import catalog_target as visual_catalog_target
+from fpl_runtime.visual_composition import grid_asset_target, grid_render_target
 from fpl_runtime.visual_snapshot import archive_target as visual_archive_target
 from fpl_runtime.visual_snapshot import asset_target as visual_snapshot_asset_target
 from fpl_runtime.visual_snapshot import model_target as visual_snapshot_model_target
@@ -172,6 +173,7 @@ async def live(request: Request, body: LiveRequest):
         or galgame_upload_target(body.method, body.path)
         or galgame_archive_target(body.method, body.path)
         or visual_archive_target(body.method, body.path)
+        or grid_asset_target(body.method, body.path)
         or archive_target(body.method, body.path)
         or presentation_archive_target(body.method, body.path)
         or motion_asset_write_target(body.method, body.path)
@@ -183,6 +185,7 @@ async def live(request: Request, body: LiveRequest):
     private_render = body.service == "rendering" and (
         capacity_target(body.method, body.path)
         or galgame_frame_target(body.method, body.path)
+        or grid_render_target(body.method, body.path)
         or galgame_export_submit_target(body.method, body.path)
         or galgame_export_job_target(body.method, body.path)
         or motion_preview_target(body.method, body.path)

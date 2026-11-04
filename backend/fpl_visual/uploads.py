@@ -44,7 +44,7 @@ async def upload_bytes(file):
         yield chunk
 
 
-async def describe(file, kind):
+async def describe(file, kind, *, composition_batch_id=None):
     checksum = hashlib.sha256()
     size = 0
     async for chunk in upload_bytes(file):
@@ -61,6 +61,7 @@ async def describe(file, kind):
             mime_type=mime,
             byte_size=size,
             content_sha256=checksum.hexdigest(),
+            composition_batch_id=composition_batch_id,
         )
     except ValueError as exc:
         raise OutputError("上传文件名、格式或内容无效", code="invalid_file_content") from exc
@@ -99,12 +100,18 @@ def media_receipt(reply, kind):
 
 
 class Uploads:
-    def __init__(self, request, session, owner):
-        self.request, self.session, self.owner = request, session, owner
+    def __init__(self, state, session, owner, assertion, source_path):
+        self.session, self.owner = session, owner
         self.projects = Projects(session, owner)
-        self.references = request.app.state.reference_mutations
-        self.delivery = request.app.state.reference_delivery
-        self.assertion = request.state.service_assertion
+        self.references = state.reference_mutations
+        self.delivery = state.reference_delivery
+        self.assertion, self.source_path = assertion, source_path
+
+    @classmethod
+    def from_request(cls, request, session, owner):
+        return cls(
+            request.app.state, session, owner, request.state.service_assertion, request.url.path
+        )
 
     async def _prepare(self, change):
         try:
@@ -112,7 +119,7 @@ class Uploads:
                 owner=self.owner,
                 assertion=self.assertion,
                 source_method="POST",
-                source_path=self.request.url.path,
+                source_path=self.source_path,
                 change=change,
             )
         except (CapabilityDenied, CapabilityUnavailable) as exc:
@@ -152,7 +159,9 @@ class Uploads:
         except (httpx.HTTPError, KeyError, TypeError, ValueError, CapabilityUnavailable) as exc:
             raise ProjectResourceError("上传结果未确认", "visual_upload_unconfirmed", 503) from exc
 
-    async def _upload(self, current, expected, file, kind, apply):
+    async def stage_and_commit(
+        self, current, expected, file, kind, apply, *, composition_batch_id=None
+    ):
         if current.revision != expected:
             raise conflict(expected, current)
         project_id = current.project_id
@@ -162,7 +171,7 @@ class Uploads:
         carried.update(asset_id for asset_id, _ in expected_assets(current.nodes))
         for identity in await pending_outcomes(self.session, project_id):
             await self._deliver(identity)
-        description = await describe(file, kind)
+        description = await describe(file, kind, composition_batch_id=composition_batch_id)
         change = PrepareReferenceChange(
             request_id=uuid4().hex,
             resource_kind="canvas",
@@ -183,7 +192,7 @@ class Uploads:
         async def write():
             await self.session.execute(text("BEGIN IMMEDIATE"))
             await require_canvas_unreserved(self.session, self.owner, project_id)
-            return await apply(assets)
+            return await apply(assets, prepared.request_id)
 
         result = await self.references.commit_source(self.session, prepared, write)
         await self._deliver(prepared.request_id)
@@ -204,7 +213,7 @@ class Uploads:
             raise OutputError("文本节点请使用保存版本")
         current = canvas_out(canvas)
 
-        async def apply(assets):
+        async def apply(assets, _request_id):
             return await outputs.append(
                 project,
                 node_id,
@@ -212,7 +221,7 @@ class Uploads:
                 inspection_asset_id=assets[1].id if len(assets) == 2 else None,
             )
 
-        return await self._upload(current, expected, file, node["kind"], apply)
+        return await self.stage_and_commit(current, expected, file, node["kind"], apply)
 
     async def material(self, project, file, expected, x, y, category_id, group):
         current = await self.projects.canvas(project)
@@ -233,7 +242,7 @@ class Uploads:
             # by Assets before entering this Canvas write.
             pass
 
-        async def apply(assets):
+        async def apply(assets, _request_id):
             original = assets[0]
             body = VisualCanvasDocumentPutIn(
                 expected_revision=expected,
@@ -255,4 +264,4 @@ class Uploads:
                 project, body
             )
 
-        return await self._upload(current, expected, file, "material", apply)
+        return await self.stage_and_commit(current, expected, file, "material", apply)

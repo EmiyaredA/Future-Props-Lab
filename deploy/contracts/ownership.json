@@ -5205,6 +5205,12 @@
       "service": "visual",
       "module": "fpl_visual.models",
       "model": "VisualSnapshotImportBatch"
+    },
+    {
+      "table": "visual_composition_dispatches",
+      "service": "visual",
+      "module": "fpl_visual.models",
+      "model": "VisualCompositionDispatch"
     }
   ],
   "pages": [
