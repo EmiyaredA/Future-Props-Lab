@@ -1,0 +1,33 @@
+# Isolated Video Editor application. Production readiness requires full API and migration.
+services:
+  video:
+    image: ${FPL_VIDEO_IMAGE:?Build and select a Video Editor release}
+    user: "${FPL_SERVICE_UID}:${FPL_SERVICE_GID}"
+    init: true
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    cpus: 1
+    mem_limit: 512m
+    stop_grace_period: 45s
+    tmpfs:
+      - /tmp:mode=1777,size=32m
+    volumes:
+      - type: bind
+        source: ${FPL_VIDEO_STATE:?Select isolated Video Editor state}
+        target: /state
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${FPL_IDENTITY_PUBLIC_KEY:?Select Identity public key}
+        target: /run/fpl/identity-public.pem
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+    networks: [private]

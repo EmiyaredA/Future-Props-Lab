@@ -15,12 +15,14 @@ OWNED_HTTP_IMAGES = PROJECT_OWNERS | {
     "remote",
     "interview",
     "motion",
+    "video",
 }
 
 ENTRY_POINTS = {
     "annotation": "fpl_annotation.__main__",
     "presentation": "fpl_presentation.__main__",
     "motion": "fpl_motion.__main__",
+    "video": "fpl_video.__main__",
     "visual": "fpl_visual.__main__",
     "galgame": "fpl_galgame.__main__",
     "tools": "fpl_tools.__main__",
@@ -51,6 +53,7 @@ PROJECT_PACKAGES = (
     "fpl_annotation",
     "fpl_presentation",
     "fpl_motion",
+    "fpl_video",
     "fpl_rendering",
     "fpl_models",
     "fpl_thought",
@@ -339,6 +342,18 @@ def source_closure(root: Path, service):
             }
         ):
             raise ValueError(f"Motion 镜像包含越界依赖：{name}")
+        if service == "video" and (
+            name in {"app.main", "app.api", "app.orm", "app.runtime.db"}
+            or name.startswith(("app.console", "app.llm", "fpl_assets", "fpl_identity", "fpl_host"))
+            or (name.startswith("app.apps.") and not name.startswith("app.apps.video_editor"))
+            or name
+            in {
+                "app.apps.video_editor.legacy_project_layouts",
+                "app.capabilities.asset_store.models",
+                "app.capabilities.asset_store.storage",
+            }
+        ):
+            raise ValueError(f"Video Editor 镜像包含越界依赖：{name}")
         if service == "presentation" and (
             name in {"app.main", "app.api", "app.orm", "app.runtime.db"}
             or name.startswith(("app.console", "app.llm", "fpl_assets", "fpl_identity", "fpl_host"))
@@ -491,6 +506,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
         "annotation",
         "presentation",
         "motion",
+        "video",
         "agent-runtime",
         "remote",
     }:
@@ -546,7 +562,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
             payloads["web/build.json"] = (release.root / "build.json").read_bytes()
             for name in release.files:
                 payloads["web/" + name] = (release.root / name).read_bytes()
-    elif service in PROJECT_OWNERS or service == "remote":
+    elif service in PROJECT_OWNERS or service in {"remote", "video"}:
         payloads["web/.api-only"] = b"No browser program in this API acceptance image.\n"
     hashes = {
         name: hashlib.sha256(content).hexdigest() for name, content in sorted(payloads.items())

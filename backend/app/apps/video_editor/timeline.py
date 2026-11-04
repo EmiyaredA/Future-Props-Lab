@@ -11,14 +11,13 @@ from app.apps.video_editor.audio_seam_edit import align_audio_seam
 from app.apps.video_editor.audio_transition_edit import set_audio_transition
 from app.apps.video_editor.clip_merging.document import replace_selection
 from app.apps.video_editor.clip_merging.tasks import VideoEditorClipMerges
-from app.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
+from app.apps.video_editor.errors import VideoEditorValidationError
 from app.apps.video_editor.models import (
     VideoEditorAssetMetadata,
     VideoEditorOperationBatch,
     VideoEditorProject,
     VideoEditorTimeline,
 )
-from app.apps.video_editor.projects import VideoEditorProjects
 from app.apps.video_editor.schemas import (
     VideoEditorClip,
     VideoEditorTimelineBatchIn,
@@ -26,6 +25,7 @@ from app.apps.video_editor.schemas import (
     VideoEditorTimelineOut,
 )
 from app.apps.video_editor.timed_effect_edit import crop_timed_effects, scale_timed_effects
+from app.apps.video_editor.timeline_read import VideoTimelineRead
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.media_rendering.audio_transitions import AUDIO_SEAM_KINDS
 from app.capabilities.media_rendering.timeline_document import (
@@ -769,31 +769,7 @@ async def validate_timeline(session: AsyncSession, project_id: str, document: di
     return dumped
 
 
-class VideoEditorTimelines:
-    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
-        self.session = session
-        self.owner_user_id = owner_user_id
-
-    async def row(self, project_id: str) -> VideoEditorTimeline:
-        await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
-        row = await self.session.get(VideoEditorTimeline, project_id)
-        if row is None:
-            raise VideoEditorNotFoundError("时间轴不存在")
-        return row
-
-    @staticmethod
-    def out(row: VideoEditorTimeline) -> VideoEditorTimelineOut:
-        document = normalize_legacy_edge_transitions(deepcopy(row.document or {}))
-        return VideoEditorTimelineOut(
-            projectId=row.project_id,
-            revision=row.revision,
-            document=document,
-            updatedAt=iso_utc(row.updated_at),
-        )
-
-    async def get(self, project_id: str) -> VideoEditorTimelineOut:
-        return self.out(await self.row(project_id))
-
+class VideoEditorTimelines(VideoTimelineRead):
     async def apply(
         self, project_id: str, body: VideoEditorTimelineBatchIn
     ) -> VideoEditorTimelineOut:

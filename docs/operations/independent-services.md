@@ -475,3 +475,7 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 特效工程包导入导出保留原 ZIP 清单。导出逐项核对文件版本和字节，生成后复查账号权限。导入由 `FPL_MOTION_ARCHIVE_KEY` 绑定 Motion 和 Assets 的专用归档通道。素材私有暂存，收到源决议才发布。Motion 在收到确认后一起写入项目、文稿和导入编辑回执。隔离运行 `fpl-motion-archive-e85ef214a3` 验证了 PNG、MP4 归档、文件 ID 重映射、原始和导入项目的精确帧逐字节相同，以及 Chromium 保存。
 
 五项导出操作通过 Motion 的持久投递连接 Rendering。部署叠加 `deploy/motion.compose.yaml` 时，将独立的 `FPL_MOTION_EXPORT_KEY` 只读挂载到两者，分别运行 `motion migrate` 和 `rendering migrate`。Rendering 持有冻结输入和成片。Motion 依据原请求 ID 返回同一任务，项目删除后继续送达远端清理。五容器隔离运行 `fpl-motion-exports-dd5ac218be` 验证任务提交后的双服务重启、MP4、ProRes 4444、透明 PNG 序列、精确帧字节一致和 206 下载，也复跑 Chromium 编辑及工程包。定向测试注入丢失提交回执和渲染中断，覆盖账号隔离、取消和授权撤销。历史任务及视频剪辑交接仍由切换门禁跟踪。
+
+### 视频剪辑项目
+
+使用 `deploy/video.compose.yaml`、`FPL_VIDEO_STATE` 和 Identity 公钥，显式运行 `video migrate` 后启动。独立镜像 `fpl/video:7814b83e8fce9b4dda89` 在三容器隔离运行 `fpl-video-api-aabb86662d` 经 Gateway 验证项目创建、默认时间轴、修订冲突、重启后记录和回环公网鉴权。此批装配五项读写操作。时间轴编辑、素材、任务、剪辑交接、浏览器和历史迁移继续由就绪门禁跟踪。

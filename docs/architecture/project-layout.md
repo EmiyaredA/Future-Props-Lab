@@ -61,6 +61,8 @@
 
 `backend/fpl_motion/` 装配独立特效项目、文稿及编辑批次。业务规则仍在 `app/apps/motion_compositor/`。独立编辑通过 `fpl_runtime/motion_assets.py` 的签名委托读取当前项目文件描述，Assets 单独持有文件。旧站通过显式文件布局端口保持兼容。
 
+`backend/fpl_video/` 装配独立视频剪辑项目和时间轴读取。项目事务复用 `app/apps/video_editor/`，空项目只需要自有项目与时间轴记录，旧站的素材目录由显式兼容适配器维护。独立镜像不加载素材 ORM。
+
 `backend/fpl_rendering/` 当前承接五个兼容媒体接口，不加载素材或工坊 ORM。`inputs.py` 通过受限的 `rendering.source.read` 委托读取同一素材的 HTTP 内容，以账号隔离的暂存目录接收并校验类型、revision、大小；Assets 内容响应显式声明这些描述头。`previews.py` 拥有有界缩略、裁剪、取帧及宫格输出，完成响应前再次验证账号授权；身份服务故障返回 503，撤销返回 401。它只挂载自己的状态目录和最小配置。`motion_jobs.py` 持有特效导出队列、已封存的原件与成片。Motion 持有公开任务、文档 CAS 和投递记录，两侧通过精确请求摘要和独立的控制凭据关联。剪辑交接与历史导出迁移仍属于整站切换门禁。
 
 `backend/fpl_models/` 拥有独立模型服务的 HTTP、任务 Runner、目录初始化和持久化边界；`models.py` 显式列出默认选择和全部 Models 自有 ORM，`ACCOUNT_MODELS` 只标记拥有账号归属的根记录。`0001_account_defaults` 保持原样，追加的 `0002_model_capabilities` 创建目录、日志、模型测试／推理、本地模型与治理记录，不创建账号、素材或工坊表。账号、源素材和外部排队任务 ID 是不透明引用；仅保留自有表外键。旧单体数据库继续由原 SQL 迁移维护，已有外键与级联不因 ORM 的服务边界描述而被改写。`application.py` 与 `__main__.py` 装配自有 HTTP、配额、任务授权、模板同步、确定性演示和实时语音；独立页面与镜像可用于隔离验收。Mac 原生模型通过受认证租约与 worker 显式执行；当前九容器确定性验收通过，真实 Qwen 权重／MLX、其余应用服务和正式数据导入仍受切换门禁约束。
