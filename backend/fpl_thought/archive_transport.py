@@ -1,5 +1,6 @@
 """Stream staged files and authenticate exact Assets batch receipts."""
 
+import base64
 import os
 import secrets
 import stat
@@ -9,6 +10,8 @@ from anyio.to_thread import run_sync
 
 from fpl_runtime.capability_client import CapabilityClient, CapabilityDenied, CapabilityUnavailable
 from fpl_runtime.claims import HEADER
+from fpl_runtime.community_uploads import PURPOSE as COMMUNITY_PURPOSE
+from fpl_runtime.community_uploads import public_path
 from fpl_runtime.delegation import RequestGrant
 from fpl_runtime.thought_archives import (
     IMPORT_PATH,
@@ -16,6 +19,8 @@ from fpl_runtime.thought_archives import (
     PURPOSE,
     SETTLE_PATH,
     ArchiveAuthenticator,
+    ArchiveFileKey,
+    ArchiveManifest,
 )
 from fpl_runtime.thought_assets import AssetDescription
 
@@ -30,7 +35,17 @@ class ArchiveTransport:
     async def close(self):
         await self.capabilities.close()
 
-    async def _send(self, path, owner, *, assertion=None, decision=None, headers=None, content):
+    async def _send(
+        self,
+        path,
+        owner,
+        *,
+        assertion=None,
+        decision=None,
+        headers=None,
+        content,
+        community=None,
+    ):
         nonce = secrets.token_hex(16)
         headers = {**(headers or {}), "X-Fpl-Archive-Nonce": nonce}
         if decision:
@@ -38,7 +53,20 @@ class ArchiveTransport:
                 "decision", path=path, owner=owner, nonce=nonce, body=content
             )
         else:
-            grant = RequestGrant("thought", PURPOSE, "POST", IMPORT_PATH, "assets", "POST", path)
+            if community is not None:
+                context = community.model_dump_json().encode()
+                headers["X-Fpl-Community-Upload-Context"] = base64.b64encode(context).decode()
+                headers["X-Fpl-Community-Upload-Proof"] = self.auth.sign(
+                    "community-stage", path=path, owner=owner, nonce=nonce, body=context
+                )
+                source = public_path(community.publication_id, community.note_id)
+                grant = RequestGrant(
+                    "thought", COMMUNITY_PURPOSE, "POST", source, "assets", "POST", path
+                )
+            else:
+                grant = RequestGrant(
+                    "thought", PURPOSE, "POST", IMPORT_PATH, "assets", "POST", path
+                )
             headers[HEADER] = await self.capabilities.authorize_request(assertion, grant)
         try:
             async with self.capabilities.client.stream(
@@ -105,6 +133,44 @@ class ArchiveTransport:
             return result
         except (OSError, ValueError) as exc:
             raise CapabilityUnavailable("归档文件暂存回执未确认") from exc
+
+    async def stage_community(self, scope, description, upload, assertion):
+        import json
+
+        async def chunks():
+            while data := await upload.read(1024 * 1024):
+                yield data
+
+        try:
+            body = json.loads(
+                await self._send(
+                    scope.target,
+                    scope.owner_id,
+                    assertion=assertion,
+                    community=scope,
+                    headers={
+                        "Content-Type": "application/octet-stream",
+                        "Content-Length": str(description.byte_size),
+                        "X-Fpl-Upload-Descriptor": description.header(),
+                    },
+                    content=chunks(),
+                )
+            )
+            asset = AssetDescription.model_validate(body["asset"])
+            manifest = ArchiveManifest(
+                files=[ArchiveFileKey(ordinal=0, descriptor_sha256=description.fingerprint)],
+                projections=[],
+            )
+            if (
+                body["manifest_sha256"] != manifest.fingerprint
+                or asset.original_filename != description.filename
+                or asset.byte_size != description.byte_size
+                or asset.revision != 0
+            ):
+                raise ValueError("community upload receipt mismatch")
+            return asset, manifest.fingerprint
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            raise CapabilityUnavailable("社区附件暂存回执未确认") from exc
 
     @staticmethod
     def _state(body, allowed):

@@ -53,29 +53,20 @@ async def begin_import(session, owner, fingerprint, request_key):
     return batch_id, None
 
 
-class ArchiveDelivery(PollingTaskRunner):
-    runner_name = "thought-archive-delivery"
+class FileBatchDelivery(PollingTaskRunner):
     poll_interval_seconds = 1
 
-    def __init__(self, sessions, transport, root):
+    def __init__(self, sessions, transport):
         super().__init__()
-        self.sessions, self.transport, self.root = sessions, transport, root
-
-    def scratch_path(self, batch_id):
-        if not re.fullmatch(r"[a-f0-9]{32}", batch_id):
-            raise ValueError("归档批次标识无效")
-        path = self.root / batch_id
-        if self.root.is_symlink() or path.is_symlink():
-            raise ValueError("归档暂存目录不允许符号链接")
-        return path
+        self.sessions, self.transport = sessions, transport
 
     async def recover(self):
         # Lifespan holds the service lock. No writer from the prior process can commit.
         async with self.sessions(info={"allow_system_reads": True}) as session:
             pending = list(
                 await session.execute(
-                    select(ThoughtArchiveImport.owner_user_id, ThoughtArchiveImport.batch_id).where(
-                        ThoughtArchiveImport.state == "staging"
+                    select(self.records.owner_user_id, self.records.batch_id).where(
+                        self.records.state == "staging"
                     )
                 )
             )
@@ -85,10 +76,10 @@ class ArchiveDelivery(PollingTaskRunner):
     async def release(self, owner, batch_id, *, retry):
         async with self.sessions(info={"owner_user_id": owner}) as session:
             await session.execute(
-                update(ThoughtArchiveImport)
+                update(self.records)
                 .where(
-                    ThoughtArchiveImport.batch_id == batch_id,
-                    ThoughtArchiveImport.state == "staging",
+                    self.records.batch_id == batch_id,
+                    self.records.state == "staging",
                 )
                 .values(state="retry" if retry else "abort", updated_at=utc_now())
             )
@@ -98,9 +89,9 @@ class ArchiveDelivery(PollingTaskRunner):
         async with self.sessions(info={"allow_system_reads": True}) as session:
             pending = list(
                 await session.execute(
-                    select(ThoughtArchiveImport.owner_user_id, ThoughtArchiveImport.batch_id)
-                    .where(ThoughtArchiveImport.state.in_(("commit", "abort")))
-                    .order_by(ThoughtArchiveImport.updated_at)
+                    select(self.records.owner_user_id, self.records.batch_id)
+                    .where(self.records.state.in_(("commit", "abort")))
+                    .order_by(self.records.updated_at)
                     .limit(50)
                 )
             )
@@ -113,10 +104,10 @@ class ArchiveDelivery(PollingTaskRunner):
                 first_failure = first_failure or exc
                 async with self.sessions(info={"owner_user_id": owner}) as session:
                     await session.execute(
-                        update(ThoughtArchiveImport)
+                        update(self.records)
                         .where(
-                            ThoughtArchiveImport.batch_id == batch_id,
-                            ThoughtArchiveImport.state.in_(("commit", "abort")),
+                            self.records.batch_id == batch_id,
+                            self.records.state.in_(("commit", "abort")),
                         )
                         .values(updated_at=utc_now())
                     )
@@ -126,12 +117,12 @@ class ArchiveDelivery(PollingTaskRunner):
 
     async def deliver(self, owner, batch_id):
         async with self.sessions(info={"owner_user_id": owner}) as session:
-            row = await session.get(ThoughtArchiveImport, (owner, batch_id))
+            row = await session.get(self.records, (owner, batch_id))
             if row is None or row.state in {"staging", "retry"}:
                 raise ThoughtError("归档批次尚未提交", 409, "archive_pending")
             state, result = row.state, row.result
             if state == "published":
-                return ThoughtImportOut.model_validate(result)
+                return self.result_model.model_validate(result)
             if state == "discarded":
                 return None
             key = ArchiveBatchKey(batch_id=batch_id, source_sha256=row.source_sha256)
@@ -142,20 +133,42 @@ class ArchiveDelivery(PollingTaskRunner):
                 manifest_sha256=row.manifest_sha256 if state == "commit" else None,
             )
         await self.transport.settle(outcome)
-        try:
-            # The target has confirmed this exact batch is terminal. Pending directories remain.
-            await run_sync(shutil.rmtree, self.scratch_path(batch_id))
-        except FileNotFoundError:
-            pass
+        await self.cleanup(batch_id)
         async with self.sessions(info={"owner_user_id": owner}) as session:
             await session.execute(
-                update(ThoughtArchiveImport)
-                .where(
-                    ThoughtArchiveImport.batch_id == batch_id, ThoughtArchiveImport.state == state
-                )
+                update(self.records)
+                .where(self.records.batch_id == batch_id, self.records.state == state)
                 .values(
                     state="published" if state == "commit" else "discarded", updated_at=utc_now()
                 )
             )
             await session.commit()
-        return ThoughtImportOut.model_validate(result) if state == "commit" else None
+        return self.result_model.model_validate(result) if state == "commit" else None
+
+    async def cleanup(self, _batch_id):
+        return
+
+
+class ArchiveDelivery(FileBatchDelivery):
+    runner_name = "thought-archive-delivery"
+    records = ThoughtArchiveImport
+    result_model = ThoughtImportOut
+
+    def __init__(self, sessions, transport, root):
+        super().__init__(sessions, transport)
+        self.root = root
+
+    def scratch_path(self, batch_id):
+        if not re.fullmatch(r"[a-f0-9]{32}", batch_id):
+            raise ValueError("归档批次标识无效")
+        path = self.root / batch_id
+        if self.root.is_symlink() or path.is_symlink():
+            raise ValueError("归档暂存目录不允许符号链接")
+        return path
+
+    async def cleanup(self, batch_id):
+        try:
+            # The target has confirmed this exact batch is terminal. Pending directories remain.
+            await run_sync(shutil.rmtree, self.scratch_path(batch_id))
+        except FileNotFoundError:
+            pass

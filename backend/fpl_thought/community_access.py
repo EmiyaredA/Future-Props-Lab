@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+from sqlalchemy import select
+
 from app.apps.thought_workshop.multitable.storage import asset_ids, snapshot
 from app.apps.thought_workshop.publication.access import (
     article,
@@ -10,6 +12,7 @@ from app.apps.thought_workshop.publication.access import (
     publication,
 )
 from app.apps.thought_workshop.publication.catalog import visible
+from app.apps.thought_workshop.publication.models import CommunityUpload
 from app.apps.thought_workshop.schemas.document import file_ids
 
 
@@ -59,11 +62,20 @@ async def published_asset(
             True,
         )
     if note_id:
-        config, note, _role = await article(session, principal, pub, note_id)
+        config, note, role = await article(session, principal, pub, note_id)
         allowed = file_ids(note.document)
         if note.kind == "multitable":
             allowed |= asset_ids(await snapshot(session, note.id))
-        if asset_id not in allowed:
+        if asset_id not in allowed and not (
+            role in {"edit", "manage"}
+            and await session.scalar(
+                select(CommunityUpload.asset_id).where(
+                    CommunityUpload.note_id == note.id,
+                    CommunityUpload.asset_id == asset_id,
+                    CommunityUpload.user_id == principal.user_id,
+                )
+            )
+        ):
             raise missing()
         return CommunityAssetEvidence(
             principal.user_id,

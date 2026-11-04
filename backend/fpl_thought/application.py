@@ -37,6 +37,7 @@ from .community_evidence import router as evidence_router
 from .community_http import CommunityFiles
 from .community_http import router as community_files_router
 from .community_reads import router as community_reads_router
+from .community_upload import CommunityUploadDelivery
 from .community_writes_http import router as community_writes_router
 from .migrations.registry import MIGRATIONS
 from .models import ACCOUNT_MODELS, MODELS
@@ -100,6 +101,9 @@ def create_app(
         if upload_receipt_credential is not None
         else None
     )
+    community_uploads = (
+        CommunityUploadDelivery(database.sessions, archives.transport) if archives else None
+    )
     references = ThoughtReferences(database.sessions, retention_client, public_key=public_key)
     delivery = ThoughtReferenceDelivery(database.sessions, retention_client)
     files = CommunityFiles(credential=credential, public_key=public_key, transport=transport)
@@ -153,8 +157,12 @@ def create_app(
                     await sync_runner.start()
                     if archives is not None:
                         await archives.start()
+                    if community_uploads is not None:
+                        await community_uploads.start()
                 yield
             finally:
+                if community_uploads is not None:
+                    await community_uploads.stop()
                 if archives is not None:
                     await archives.stop()
                     await archives.transport.close()
@@ -178,6 +186,7 @@ def create_app(
     app.state.database, app.state.identity = database, identity
     app.state.thought_backup_limits = backup_limits
     app.state.thought_archive_delivery = archives
+    app.state.thought_community_uploads = community_uploads
     app.state.thought_references, app.state.community_files = references, files
     app.state.thought_sync_reads = sync_reads
     app.state.thought_sync_intents = sync_intents

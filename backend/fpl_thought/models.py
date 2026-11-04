@@ -43,11 +43,13 @@ from app.runtime.project_operations import (
 )
 
 from .archive_records import ThoughtArchiveImport
+from .community_upload_records import ThoughtCommunityUpload
 from .retention_records import ThoughtReferenceMutation
 from .upload_records import ThoughtUploadIntent
 
 MODELS = (
     ThoughtArchiveImport,
+    ThoughtCommunityUpload,
     ThoughtReferenceMutation,
     ThoughtUploadIntent,
     ArticleSyncBinding,

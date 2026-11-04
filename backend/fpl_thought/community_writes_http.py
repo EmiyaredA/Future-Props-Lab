@@ -1,15 +1,18 @@
 """Published community writes for the independent Thought service."""
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 
 from app.apps.thought_workshop.http_bindings import CommunitySessionDep
 from app.apps.thought_workshop.multitable.schemas import BatchIn, BatchOut
 from app.apps.thought_workshop.publication.schemas import CommunityNote, CommunityNotePut
+from app.apps.thought_workshop.schemas.workshop import ThoughtAttachmentOut
 from app.deps import PublicStudioAuth
 
 from .community_edits import save_note
 from .community_tables import apply_table
+from .community_upload import upload_attachment
 from .mutations_http import guarded
+from .upload_http import guarded_upload
 
 router = APIRouter(prefix="/thought-workshop/community", tags=["knowledge-community"])
 
@@ -63,5 +66,36 @@ async def operations(
             identity=request.app.state.identity,
             assertion=request.state.service_assertion,
             source_path=request.url.path,
+        )
+    )
+
+
+@router.post(
+    "/publications/{publication_id}/notes/{note_id}/uploads", response_model=ThoughtAttachmentOut
+)
+async def upload(
+    request: Request,
+    publication_id: str,
+    note_id: str,
+    session: CommunitySessionDep,
+    principal: PublicStudioAuth,
+    upload: UploadFile = File(),
+):
+    app = request.app.state
+    if app.thought_community_uploads is None:
+        await upload.close()
+        raise HTTPException(503, "community_upload_unavailable")
+    return await guarded_upload(
+        upload_attachment(
+            session,
+            principal,
+            publication_id,
+            note_id,
+            upload,
+            request_key=request.headers.get("idempotency-key"),
+            maximum_bytes=app.thought_upload_configuration.maximum_bytes,
+            delivery=app.thought_community_uploads,
+            identity=app.identity,
+            assertion=request.state.service_assertion,
         )
     )

@@ -120,6 +120,9 @@ class HttpAccountDirectory:
         except (httpx.HTTPError, ValueError, KeyError, TypeError):
             raise ThoughtError("账号目录暂不可用", 503, "account_directory_unavailable") from None
 
+    async def refresh(self):
+        await self.fetch(DirectoryQuery(ids=[self.principal.user_id]))
+
     async def current(self, principal):
         if self.caller is None:
             await self.fetch(DirectoryQuery(ids=[principal.user_id]))

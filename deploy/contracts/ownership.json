@@ -4662,6 +4662,12 @@
       "model": "ThoughtArchiveImport"
     },
     {
+      "table": "thought_community_upload_intents",
+      "service": "thought",
+      "module": "fpl_thought.community_upload_records",
+      "model": "ThoughtCommunityUpload"
+    },
+    {
       "table": "thought_reference_mutations",
       "service": "thought",
       "module": "fpl_thought.retention_records",
