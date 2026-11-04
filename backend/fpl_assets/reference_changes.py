@@ -16,12 +16,16 @@ from fpl_runtime.asset_references import VIDEO_FILE_CHANGES, PrepareReferenceCha
 from fpl_runtime.retention_authority import canvas_metadata, change_digest, story_metadata
 from fpl_runtime.thought_assets import AssetDescription
 
-from . import galgame_file_changes, video_file_changes
+from . import galgame_file_changes, video_file_changes, visual_project_removal
 from .canvas_retention import canvas_files
-from .galgame_project_removal import check_removal_fence, prepare_project_removal
+from .galgame_project_removal import prepare_project_removal
 from .models import AssetReferencePin, AssetReferenceSet, PreparedAssetPin, ReferenceIntent
-from .references import protect_pending_removals
-from .scoped_project_files import PROJECT_FILE_COLUMNS, files_for_removal, remove_files
+from .references import check_removal_fence, protect_pending_removals
+from .scoped_project_files import (
+    check_project_scope,
+    files_for_removal,
+    remove_files,
+)
 
 
 def failure(code, message, status=409):
@@ -93,6 +97,8 @@ class ReferenceChanges:
                     AssetReferenceSet.resource_id == change.resource_id,
                 )
             )
+            if change.visual_conversation_project is not None:
+                await check_project_scope(session, "visual", change.visual_conversation_project)
             file_change = change.resource_kind in VIDEO_FILE_CHANGES
             if row is None:
                 if change.expected_resource_revision != -1 and not file_change:
@@ -122,14 +128,24 @@ class ReferenceChanges:
                 )
             )
             if service == "galgame" and change.resource_kind == "story":
-                await check_removal_fence(session, row.id)
+                await check_removal_fence(session, row.id, "galgame")
                 if change.galgame_project_removal:
                     if active or row.resource_revision != change.expected_resource_revision:
                         raise failure("project_references_pending", "项目引用尚未结算")
                     await prepare_project_removal(session, row)
+            if service == "visual" and change.resource_kind == "canvas":
+                await check_removal_fence(session, row.id, "visual")
+                if change.visual_project_removal is not None:
+                    # Text versions and final-output selection can advance the source
+                    # Canvas without changing the set of retained originals.
+                    if active:
+                        raise failure("project_references_pending", "项目引用尚未结算")
+                    await visual_project_removal.prepare(
+                        session, row, change.visual_project_removal
+                    )
             if active >= 128:
                 raise failure("reference_mutations_pending", "请先恢复未完成的引用变更")
-            if service in PROJECT_FILE_COLUMNS and change.resource_kind == "project":
+            if service in {"motion", "video", "galgame"} and change.resource_kind == "project":
                 if change.asset_ids:
                     raise failure(
                         f"invalid_{service}_project_reference", "项目范围不能指定素材", 422
@@ -220,6 +236,10 @@ class ReferenceChanges:
                 result.update(handler.command(change))
             if change.galgame_project_removal:
                 result["galgame_project_removal"] = True
+            if change.visual_project_removal is not None:
+                result["visual_project_removal"] = change.visual_project_removal
+            if change.visual_conversation_project is not None:
+                result["visual_conversation_project"] = change.visual_conversation_project
             if describe_canvas:
                 result["unavailable_asset_ids"] = sorted(unavailable)
             if community is not None or describe_story or describe_canvas:
@@ -294,7 +314,19 @@ class ReferenceChanges:
                 )
             ):
                 raise failure("invalid_resource_revision", "故事引用回执必须与保存版本一致", 422)
-            scoped_project = service in PROJECT_FILE_COLUMNS and row.resource_kind == "project"
+            visual_removal = intent.prepared_result.get("visual_project_removal")
+            if (
+                service == "visual"
+                and row.resource_kind == "canvas"
+                and (
+                    deleted != (visual_removal is not None)
+                    or resource_revision != intent.expected_resource_revision + 1
+                )
+            ):
+                raise failure("invalid_resource_revision", "画布引用回执必须与保存版本一致", 422)
+            scoped_project = (
+                service in {"motion", "video", "galgame"} and row.resource_kind == "project"
+            )
             if scoped_project and (
                 deleted != (intent.expected_resource_revision >= 0)
                 or resource_revision != intent.expected_resource_revision + 1
@@ -350,6 +382,8 @@ class ReferenceChanges:
                     await handler.commit(session, owner, row, intent, resource_revision, deleted)
                 if (scoped_project or galgame_removal) and deleted:
                     await remove_files(session, service, row.resource_id)
+                if visual_removal is not None:
+                    await visual_project_removal.commit(session, row, visual_removal)
                 row.resource_revision = resource_revision
                 row.deleted = deleted
                 state = "committed"

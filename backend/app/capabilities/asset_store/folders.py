@@ -1,5 +1,7 @@
 """Owned folder operations shared by the legacy adapter and independent Assets."""
 
+from collections.abc import Awaitable, Callable
+
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 
@@ -41,12 +43,19 @@ class AssetFolders(VisualAssetContext):
         )
         return VisualAssetFolderListOut(items=[folder_out(row) for row in rows])
 
-    async def create_folder(self, body: VisualAssetFolderCreateIn) -> VisualAssetFolderOut:
+    async def create_folder(
+        self,
+        body: VisualAssetFolderCreateIn,
+        *,
+        before_write: Callable[[str], Awaitable[None]] | None = None,
+    ) -> VisualAssetFolderOut:
         project_id = body.project_id if body.scope == "project" else None
         if body.scope == "project":
             if not project_id:
                 raise AssetError("项目文件夹必须指定 project_id")
             await self._project(project_id)
+            if before_write is not None:
+                await before_write(project_id)
         elif body.project_id is not None:
             raise AssetError("文件管理文件夹不能指定 project_id")
         parent = await self._validate_folder_scope(body.parent_id, project_id)

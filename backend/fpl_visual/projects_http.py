@@ -1,6 +1,6 @@
 """Published project and initial canvas operations for the Visual owner."""
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import ValidationError
 
 from app.apps.visual_workshop.canvas_documents import VisualCanvasError
@@ -23,6 +23,7 @@ from fpl_runtime.project_reveal_http import (
 from fpl_runtime.reference_runtime import reference_lifespan
 
 from .canvas_writes import PREFIX, CanvasWrites
+from .project_deletion import ProjectDeletion
 from .projects import Projects
 
 router = APIRouter(prefix=PREFIX, tags=["visual-workshop"], lifespan=reference_lifespan)
@@ -62,6 +63,18 @@ async def patch_project(
     body: VisualWorkshopProjectPatchIn,
 ):
     return await Projects(session, owner_user_id).patch(project_id, body)
+
+
+@router.delete("/{project_id}")
+async def delete_project(
+    request: Request,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    project_id: str,
+    expected_revision: int = Query(ge=0),
+) -> dict[str, bool]:
+    await ProjectDeletion(request, session, owner_user_id).delete(project_id, expected_revision)
+    return {"deleted": True}
 
 
 @router.get("/{project_id}/canvas", response_model=VisualCanvasDocumentOut)

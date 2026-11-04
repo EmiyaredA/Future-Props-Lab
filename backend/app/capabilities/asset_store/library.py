@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 from uuid import uuid4
 
@@ -46,6 +47,7 @@ class AssetLibrary:
         commit: bool = True,
         defer_persistence: bool = False,
         reserved_storage_key: str | None = None,
+        before_persist: Callable[[], Awaitable[None]] | None = None,
     ) -> VisualAsset:
         """Validate and stage a managed upload.
 
@@ -130,6 +132,8 @@ class AssetLibrary:
                 byte_size=size,
             )
             if not defer_persistence:
+                if before_persist is not None:
+                    await before_persist()
                 self.session.add(row)
                 if commit:
                     commit_started = True

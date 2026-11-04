@@ -59,6 +59,8 @@ def _visual_canvas_source(body):
     if change.expected_resource_revision == -1:
         return _create_projection(body, path)
     project = f"{path}/{change.resource_id}"
+    if change.visual_project_removal is not None:
+        return (body.source_method, body.source_path) == ("DELETE", project)
     canvas = project + "/canvas"
     outputs = re.fullmatch(re.escape(project) + r"/nodes/[^/]{1,64}/outputs", body.source_path)
     output = re.fullmatch(

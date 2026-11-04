@@ -70,13 +70,14 @@ class AssistantPeers:
                 "对话素材暂不可读", "conversation_assets_unavailable", 503
             ) from exc
 
-    async def prepare(self, session, conversation_id, expected_revision, request_id):
+    async def prepare(self, session, project_id, conversation_id, expected_revision, request_id):
         change = PrepareReferenceChange(
             request_id=request_id,
             resource_kind="conversation",
             resource_id=conversation_id,
             expected_resource_revision=expected_revision,
             asset_ids=[],
+            visual_conversation_project=project_id,
         )
         try:
             return await self.references.prepare(

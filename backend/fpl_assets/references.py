@@ -3,7 +3,7 @@
 import hashlib
 import json
 
-from sqlalchemy import delete, select, text
+from sqlalchemy import delete, func, select, text
 
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.models import VisualAsset
@@ -186,6 +186,29 @@ async def protect_references(session, asset_ids):
             raise AssetError("素材仍被应用或历史引用", code="asset_in_use", status=409)
 
 
+def project_removal_marker(service):
+    value = ReferenceIntent.prepared_result[f"{service}_project_removal"]
+    if service == "visual":
+        return (
+            func.json_type(ReferenceIntent.prepared_result, "$.visual_project_removal") == "array"
+        )
+    return value.as_boolean().is_(True)
+
+
+async def check_removal_fence(session, reference_set_id, service):
+    pending = await session.scalar(
+        select(ReferenceIntent.id)
+        .where(
+            ReferenceIntent.reference_set_id == reference_set_id,
+            ReferenceIntent.state == "prepared",
+            project_removal_marker(service),
+        )
+        .limit(1)
+    )
+    if pending is not None:
+        raise AssetError("项目正在删除", code="project_deletion_pending", status=409)
+
+
 async def protect_pending_removals(session, asset_ids):
     if not asset_ids:
         return
@@ -200,18 +223,26 @@ async def protect_pending_removals(session, asset_ids):
             PreparedAssetPin.asset_id.in_(asset_ids),
         )
     )
-    project_removal = (
-        select(VisualAsset.id)
-        .join(AssetReferenceSet, AssetReferenceSet.resource_id == VisualAsset.galgame_project_id)
-        .join(ReferenceIntent, ReferenceIntent.reference_set_id == AssetReferenceSet.id)
-        .where(
-            VisualAsset.id.in_(asset_ids),
-            AssetReferenceSet.service_id == "galgame",
-            AssetReferenceSet.resource_kind == "story",
-            ReferenceIntent.state == "prepared",
-            ReferenceIntent.prepared_result["galgame_project_removal"].as_boolean().is_(True),
+
+    def project_removal(service, column, kind):
+        return (
+            select(VisualAsset.id)
+            .join(AssetReferenceSet, AssetReferenceSet.resource_id == column)
+            .join(ReferenceIntent, ReferenceIntent.reference_set_id == AssetReferenceSet.id)
+            .where(
+                VisualAsset.id.in_(asset_ids),
+                AssetReferenceSet.service_id == service,
+                AssetReferenceSet.resource_kind == kind,
+                ReferenceIntent.state == "prepared",
+                project_removal_marker(service),
+            )
         )
+
+    reserved = await session.scalar(
+        file_removal.union_all(
+            project_removal("galgame", VisualAsset.galgame_project_id, "story"),
+            project_removal("visual", VisualAsset.project_id, "canvas"),
+        ).limit(1)
     )
-    reserved = await session.scalar(file_removal.union_all(project_removal).limit(1))
     if reserved is not None:
         raise AssetError("素材正在删除", code="reference_mutations_pending", status=409)

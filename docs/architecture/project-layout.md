@@ -164,7 +164,7 @@ Galgame 的历史导出与导入由 `fpl_galgame/migration_application.py` 装�
 
 Visual 的 Canvas、工程与历史输出由 `fpl_visual/migration_application.py` 导出及导入。Canvas 文件保留集合包含当前节点及旧输出，Assets 逐文件校验回执后提交。库内放置通过 Assets 维护入口保留原名称、目录、标识和版本。
 
-Visual 助手的对话、消息和操作记录由 `fpl_visual/conversations.py` 查询。模型选项由 Models 提供账号投影，附件元数据由 Assets 按项目、对话、精确 ID 和保留引用核验。新建及删除对话与素材引用回执共用 Visual 数据事务。
+Visual 助手的对话、消息和操作记录由 `fpl_visual/conversations.py` 查询。模型选项由 Models 提供账号投影，附件元数据由 Assets 按项目、对话、精确 ID 和保留引用核验。新建及删除对话与素材引用回执共用 Visual 数据事务。 Visual 删除项目时由 `fpl_visual/project_deletion.py` 核对项目版本、画布和对话范围，提交删除与恢复回执。Assets 的 `visual_project_removal.py` 在确认回执后清除画布与对话引用、项目放置和私有原件，保留文件库原件。项目文件、放置和分段交接发布在 Assets 写事务中检查删除准备。
 
 `web/src/app/entries/` 拥有独立应用装配与导航，`agents.tsx` 不加载门户路由，`IndependentShell.tsx` 复用账号、主题和导航组件。`web/service.config.ts` 选择单一入口和所属程序素材，`web/scripts/build-service.mjs` 生成逐文件 SHA256、gzip／Brotli 及单服务契约清单；产物保存在被忽略的 `.local/service-web/`，镜像封装时核验清单。`scripts/website/web_contract.py` 仅读静态契约，不初始化数据库。Models 的 `models.tsx` 只装配模型目录、测试和日志，保留当前账号权限、未保存导航保护及跨应用跳转。程序版本摘要包含所属 HTTP／WebSocket 契约，防止契约变化复用旧缓存；其他服务的契约变化不改变本服务协议摘要。 Visual 的 `visual.tsx` 与 `VisualApplication.tsx` 装配项目、画布、素材和任务入口，复用 Visual 功能页面及权限分支。Visual 镜像在提供程序资源前比对已安装程序的 API 摘要。 Galgame 的 `galgame.tsx` 与 `GalgameApplication.tsx` 独立装配项目列表、总览、编辑及预演，保留账号权限和已保存 Story 的预演回退。
 

@@ -6,11 +6,11 @@ from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 
 from .deletions import schedule
-from .galgame_project_removal import check_removal_fence
 from .models import AssetReferenceSet, ReferenceIntent
-from .references import protect_references
+from .references import check_removal_fence, protect_references
 
 PROJECT_FILE_COLUMNS = {
+    "visual": VisualAsset.project_id,
     "motion": VisualAsset.motion_compositor_project_id,
     "video": VisualAsset.video_editor_project_id,
     "galgame": VisualAsset.galgame_project_id,
@@ -77,5 +77,4 @@ async def check_project_scope(session, service, project_id):
         raise AssetError("项目文件范围尚未核验", code="project_scope_unverified", status=503)
     if projection.deleted:
         raise AssetError("项目已删除", code="not_found", status=404)
-    if service == "galgame":
-        await check_removal_fence(session, projection.id)
+    await check_removal_fence(session, projection.id, service)

@@ -136,7 +136,9 @@ class Conversations:
         await self.session.rollback()
         models = await self.peers.models()
         conversation_id = new_id()
-        prepared = await self.peers.prepare(self.session, conversation_id, -1, uuid4().hex)
+        prepared = await self.peers.prepare(
+            self.session, project_id, conversation_id, -1, uuid4().hex
+        )
 
         async def save():
             await self.session.execute(text("BEGIN IMMEDIATE"))
@@ -204,7 +206,7 @@ class Conversations:
         await self.require_writable(row, expected_revision, action="删除")
         await self.session.rollback()
         prepared = await self.peers.prepare(
-            self.session, conversation_id, expected_revision, uuid4().hex
+            self.session, project_id, conversation_id, expected_revision, uuid4().hex
         )
         try:
             await self.session.execute(text("BEGIN IMMEDIATE"))

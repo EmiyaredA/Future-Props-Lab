@@ -1,6 +1,6 @@
 """Project file placement and folder CAS live beside the owned file library."""
 
-from sqlalchemy import delete, select, text, update
+from sqlalchemy import delete, select, update
 
 from app.capabilities.asset_store.asset_outputs import asset_out
 from app.capabilities.asset_store.asset_scope import is_library_asset, is_visual_project_asset
@@ -20,7 +20,7 @@ class ProjectFileLinks:
 
     async def create(self, project_id, body):
         await self.files._project(project_id)
-        await self.session.execute(text("BEGIN IMMEDIATE"))
+        await self.files.lock_project_write(project_id)
         asset = await self.files._asset(body.asset_id)
         if not is_library_asset(asset):
             raise AssetError("只能从文件管理导入文件", code="scope_mismatch")
@@ -57,7 +57,7 @@ class ProjectFileLinks:
 
     async def patch(self, project_id, link_id, body):
         await self.files._project(project_id)
-        await self.session.execute(text("BEGIN IMMEDIATE"))
+        await self.files.lock_project_write(project_id)
         link = await self._link(project_id, link_id)
         asset = await self.files._asset(link.asset_id)
         if link.revision != body.expected_revision:
@@ -91,7 +91,7 @@ class ProjectFileLinks:
 
     async def delete(self, project_id, link_id, expected_revision):
         await self.files._project(project_id)
-        await self.session.execute(text("BEGIN IMMEDIATE"))
+        await self.files.lock_project_write(project_id)
         link = await self._link(project_id, link_id)
         if link.revision != expected_revision:
             current = asset_out(await self.files._asset(link.asset_id), reference=link)
@@ -113,7 +113,7 @@ class ProjectFileLinks:
             await self.files._project(body.source_project_id)
         # The library-reference branch has no file I/O inside its short write lock.
         if body.source_scope == "library":
-            await self.session.execute(text("BEGIN IMMEDIATE"))
+            await self.files.lock_project_write(project_id)
         rows = list(
             (
                 await self.session.scalars(

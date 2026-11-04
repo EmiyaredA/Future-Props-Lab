@@ -27,6 +27,7 @@ from app.runtime.time import utc_now
 from .deletions import schedule
 from .models import VisualProjectFileLink
 from .references import protect_references
+from .scoped_project_files import check_project_scope
 
 
 class Files(AssetFolders):
@@ -34,6 +35,13 @@ class Files(AssetFolders):
         if project_exists is None:
             raise ValueError("项目验证接口不可缺失")
         super().__init__(session, settings, owner, project_exists=project_exists)
+
+    async def lock_project_write(self, project_id):
+        await self.session.execute(text("BEGIN IMMEDIATE"))
+        await check_project_scope(self.session, "visual", project_id)
+
+    async def create_folder(self, body):
+        return await super().create_folder(body, before_write=self.lock_project_write)
 
     async def list_assets(
         self,
@@ -121,12 +129,18 @@ class Files(AssetFolders):
         if project_id:
             await self._project(project_id)
         await self._validate_folder_scope(folder_id, project_id)
+
+        async def before_persist():
+            await self.lock_project_write(project_id)
+            await self._validate_folder_scope(folder_id, project_id)
+
         row = await self.library.store_upload(
             upload,
             owner_user_id=self.owner_user_id,
             visual_project_id=project_id,
             folder_id=folder_id,
             display_name=display_name,
+            before_persist=before_persist if project_id is not None else None,
         )
         return asset_out(row)
 
@@ -236,7 +250,10 @@ class Files(AssetFolders):
                     byte_size=source.byte_size,
                 )
                 imported_rows.append(imported)
-                self.session.add(imported)
+            if project_id is not None:
+                await self.lock_project_write(project_id)
+                await self._validate_folder_scope(folder_id, project_id)
+            self.session.add_all(imported_rows)
             commit_started = True
             await self.session.commit()
             return VisualAssetListOut(items=[asset_out(row) for row in imported_rows])

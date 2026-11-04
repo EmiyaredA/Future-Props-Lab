@@ -60,7 +60,7 @@ def assistant_grant(grant):
 def conversation_retention(body):
     source = conversation_source(body.source_path)
     change = body.change
-    if source is None or change.asset_ids:
+    if source is None or change.asset_ids or change.visual_conversation_project != source[1]:
         return False
     if body.source_method == "POST":
         return source[2] is None and change.expected_resource_revision == -1

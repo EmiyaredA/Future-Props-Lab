@@ -106,6 +106,18 @@ async def test_visual_catalog_delegates_exact_paths_and_excludes_other_accounts(
         async with visual.state.database.sessions(info={"owner_user_id": owner}) as db:
             db.add(project_model(id=label, title=label, kind="canvas"))
             await db.commit()
+        await AssetReferences(case.assets.state.database).replace(
+            owner=owner,
+            service="visual",
+            update=ReferenceUpdate(
+                request_id="canvas-" + label,
+                resource_kind="canvas",
+                resource_id=label,
+                resource_revision=0,
+                expected_revision=0,
+                asset_ids=[],
+            ),
+        )
     async with (
         models.state.identity.client,
         assets_live.client,

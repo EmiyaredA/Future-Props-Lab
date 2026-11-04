@@ -11,7 +11,9 @@ from PIL import Image
 
 from fpl_assets.application import create_app
 from fpl_assets.migrations.registry import MIGRATIONS
+from fpl_assets.references import AssetReferences
 from fpl_assets.settings import StorageSettings
+from fpl_runtime.asset_references import ReferenceUpdate
 from fpl_runtime.claims import Actor, issue_context
 from fpl_runtime.migrations import apply
 from fpl_runtime.protocol_hash import public_contract
@@ -108,6 +110,18 @@ async def test_owned_upload_download_range_and_folder_links(instance):
     assert response.headers["cache-control"] == "no-store"
     denied = await client.get(path, headers=headers(private, "GET", path, "beta"))
     assert denied.status_code == 404
+    await AssetReferences(app.state.database).replace(
+        owner="alpha",
+        service="visual",
+        update=ReferenceUpdate(
+            request_id="own-canvas",
+            resource_kind="canvas",
+            resource_id="owned-project",
+            resource_revision=0,
+            expected_revision=0,
+            asset_ids=[],
+        ),
+    )
     project_path = "/v1/visual-workshop/projects/owned-project/asset-references"
     response = await client.post(
         project_path,

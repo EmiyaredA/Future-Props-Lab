@@ -96,6 +96,8 @@ class PrepareReferenceChange(BaseModel):
     video_file_removal: VideoFileRemoval | None = None
     galgame_file_mutation: GalgameFileMutation | None = None
     galgame_project_removal: Literal[True] | None = None
+    visual_project_removal: list[str] | None = Field(default=None, max_length=10000)
+    visual_conversation_project: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]{1,128}$")
 
     @model_validator(mode="after")
     def check_project_file_change(self):
@@ -127,9 +129,21 @@ class PrepareReferenceChange(BaseModel):
             or self.carried_asset_ids is not None
         ):
             raise ValueError("Galgame 项目删除范围无效")
+        if self.visual_project_removal is not None and (
+            self.resource_kind != "canvas"
+            or self.expected_resource_revision < 0
+            or self.asset_ids
+            or self.metadata_asset_ids is not None
+            or self.carried_asset_ids is not None
+        ):
+            raise ValueError("Visual 项目删除范围无效")
+        if self.visual_conversation_project is not None and self.resource_kind != "conversation":
+            raise ValueError("Visual 对话范围无效")
         return self
 
-    @field_validator("asset_ids", "metadata_asset_ids", "carried_asset_ids")
+    @field_validator(
+        "asset_ids", "metadata_asset_ids", "carried_asset_ids", "visual_project_removal"
+    )
     @classmethod
     def canonical_assets(cls, values):
         return ReferenceUpdate.canonical_assets(values) if values is not None else None
@@ -143,3 +157,7 @@ class PrepareReferenceChange(BaseModel):
             raise ValueError("素材变更命令与所属服务不符")
         if self.galgame_project_removal and service != "galgame":
             raise ValueError("项目删除命令与所属服务不符")
+        if service != "visual" and (
+            self.visual_project_removal is not None or self.visual_conversation_project is not None
+        ):
+            raise ValueError("Visual 变更范围与所属服务不符")

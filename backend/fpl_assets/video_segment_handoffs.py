@@ -19,6 +19,7 @@ from .models import (
     VideoSegmentHandoffFile,
     VisualProjectFileLink,
 )
+from .references import check_removal_fence
 from .scoped_project_files import check_writable
 from .video_files import record as file_record
 from .video_segment_files import SegmentFile
@@ -203,6 +204,7 @@ class SegmentHandoffFiles(ArchiveFileStaging):
             raise conflict("segment_target_projection_pending")
         elif projection.deleted or projection.resource_revision != expected:
             raise conflict("segment_target_projection_conflict")
+        await check_removal_fence(session, projection.id, "visual")
         return projection
 
     async def settle(self, owner, scope, *, publish):

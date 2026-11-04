@@ -46,6 +46,18 @@ async def owned(tmp_path):
     database = Database("assets", tmp_path, models=MODELS)
     settings = StorageSettings(tmp_path / "service.db")
     calls = []
+    await AssetReferences(database).replace(
+        owner="alpha",
+        service="visual",
+        update=ReferenceUpdate(
+            request_id="own-canvas",
+            resource_kind="canvas",
+            resource_id="owned-project",
+            resource_revision=0,
+            expected_revision=0,
+            asset_ids=[],
+        ),
+    )
 
     async def project_exists(project):
         calls.append(project)

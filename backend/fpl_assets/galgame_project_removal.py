@@ -9,23 +9,8 @@ from .models import (
     AssetReferencePin,
     GalgameUploadStage,
     PreparedAssetPin,
-    ReferenceIntent,
     VisualProjectFileLink,
 )
-
-
-async def check_removal_fence(session, reference_set_id):
-    pending = await session.scalar(
-        select(ReferenceIntent.id)
-        .where(
-            ReferenceIntent.reference_set_id == reference_set_id,
-            ReferenceIntent.state == "prepared",
-            ReferenceIntent.prepared_result["galgame_project_removal"].as_boolean().is_(True),
-        )
-        .limit(1)
-    )
-    if pending is not None:
-        raise AssetError("Galgame 项目正在删除", code="project_deletion_pending", status=409)
 
 
 async def prepare_project_removal(session, projection):
