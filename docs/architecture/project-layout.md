@@ -109,6 +109,8 @@ Galgame 广播剧导入由 `fpl_galgame/annotation_runner.py` 执行。Annotatio
 
 Galgame 便携 ZIP 的导出与导入归 `fpl_galgame/snapshot_exports.py` 和 `snapshot_imports.py`。两套网站装配共享 `app/apps/galgame_workshop/snapshot_values.py` 的文件元数据与 Story 校验。Assets 的 `fpl_assets/galgame_archives.py` 同事务公开原件与初始 Story 素材引用，Galgame 在收到结算回执后公开项目副本。
 
+Galgame 台词转写任务与转写版本归 `fpl_galgame/asr_jobs.py`、`asr_runner.py`。Assets 核验项目与文件版本后提供原音频。Models 的 `fpl_models/galgame_transcription.py` 执行已冻结的模型调用，并持久记录结果和调用日志。请求中断时，Galgame 用原任务标识读回结果。Models 重启时将未决的供应商请求记录为结果未知。
+
 `fpl_thought/upload_intents.py` 与 `fpl_assets/thought_uploads.py` 提供按账号绑定的私有上传回执，Identity 只为指定来源和目标签发上传委托。`upload_transport.py` 为已暂存上传逐请求换取绑定摘要的 Identity 委托并流式传输，来源服务仅在收到按账号、文件摘要和随机数认证的有效回执后确认并清理暂存；Assets 未配置独立回执密钥时拒绝该私有上传。`upload_recovery.py` 在启动独占锁内仅清理已确认副本和无持久意图的中断暂存；未决意图继续保留。该协议已通过隔离服务测试；独立 Thought 已装配公开上传入口，远端自动重放 worker 尚未接入，恢复网站暂不按重试标识去重。独立 Thought 的部分 HTTP 装配已包括目录移动、文档恢复和知识库回收／恢复，并保留现有版本控制及撤回发布规则；retention worker 已存在，但 `/ready` 始终返回 503，直至素材引用迁移及剩余业务能力完成。
 
 `backend/fpl_thought/` 拥有 Thought 自有表清单、仅保留自有外键的独立迁移与写作 HTTP 适配，通过显式选择的 `deploy/thought.compose.yaml` 提供独立部署入口。`web/src/app/entries/thought.tsx` 提供可独立构建的浏览器入口，与兼容站共用 Thought 模块的知识库、社区和旧链接路由。搜索、引用解析、反向链接、复制预检、检查点、阅读偏好、表格查询、社区收藏、社区管理元数据、官方包预检、同步绑定及任务记录查询共用 HTTP 装配。模型写作通过 `fpl_runtime/writing.py` 绑定笔记、请求摘要和原账号操作，由 `fpl_models/writing.py` 管理模型选择、流式调用、日志及配额。账户备份复用 `backup_manifest.py` 的现有归档格式，`fpl_thought/backup.py` 读取 Thought 一致快照并在结束读事务后按素材版本下载、核对大小及生成归档。素材引用变更通过独立的引用准备与回执提交。共享的 `fpl_runtime/reference_mutations.py` 在来源服务的自有账本中保存准备与结果，重启后补发确认。Thought 保留自己的账本表和正文、历史及表格引用规则。

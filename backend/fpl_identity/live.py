@@ -21,6 +21,9 @@ from fpl_runtime.claims import verify_context
 from fpl_runtime.galgame_annotation_source import annotation_target
 from fpl_runtime.galgame_annotation_source import audio_target as galgame_annotation_audio_target
 from fpl_runtime.galgame_asr import asr_model_target
+from fpl_runtime.galgame_asr_execution import catalog_target as galgame_asr_catalog_target
+from fpl_runtime.galgame_asr_execution import execution_target as galgame_asr_execution_target
+from fpl_runtime.galgame_asr_execution import original_target as galgame_asr_original_target
 from fpl_runtime.galgame_assets import asset_query_target as galgame_file_query_target
 from fpl_runtime.galgame_assets import export_download_target
 from fpl_runtime.galgame_render import capacity_target
@@ -133,6 +136,8 @@ async def live(request: Request, body: LiveRequest):
         or annotation_transcription_target(body.method, body.path) is not None
         or visual_catalog_target(body.method, body.path)
         or asr_model_target(body.method, body.path)
+        or galgame_asr_catalog_target(body.method, body.path)
+        or galgame_asr_execution_target(body.method, body.path)
         or model_reference_target(body.method, body.path)
         or model_resolution_target(body.method, body.path)
     )
@@ -175,6 +180,7 @@ async def live(request: Request, body: LiveRequest):
         or render_export
         or reveal_target(body.method, body.path, body.service)
         or (body.service == "assets" and galgame_file_query_target(body.method, body.path))
+        or (body.service == "assets" and galgame_asr_original_target(body.method, body.path))
         or (body.service == "assets" and snapshot_files_target(body.method, body.path))
         or (body.service == "assets" and attachment_target(body.method, body.path))
         or (body.service == "assets" and export_download_target(body.method, body.path))

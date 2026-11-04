@@ -14,6 +14,7 @@ from fpl_runtime.claims import issue_context, verify_context
 from fpl_runtime.community_uploads import upload_grant as community_upload_grant
 from fpl_runtime.delegation import RequestGrant, permitted, target_permission_path
 from fpl_runtime.galgame_annotation_source import source_grant as galgame_annotation_grant
+from fpl_runtime.galgame_asr_execution import PURPOSE_EXECUTION, asr_job_grant
 from fpl_runtime.galgame_assets import export_download_grant, galgame_asset_grant
 from fpl_runtime.galgame_render import capacity_grant
 from fpl_runtime.galgame_snapshot import archive_grant as galgame_archive_grant
@@ -104,6 +105,7 @@ async def authorize_delegation(app, body, credential):
         if (
             assistant_grant(grant)
             or galgame_asset_grant(grant)
+            or (asr_job_grant(grant) and grant.purpose != PURPOSE_EXECUTION)
             or snapshot_files_grant(grant)
             or snapshot_model_grant(grant)
             or export_download_grant(grant)
@@ -121,7 +123,11 @@ async def authorize_delegation(app, body, credential):
             or segment_target_grant(grant)
             or galgame_upload_grant(grant)
             or galgame_archive_grant(grant)
-            else route_permission(body.target_method, target_permission_path(grant))
+            else (
+                "models.use"
+                if asr_job_grant(grant)
+                else route_permission(body.target_method, target_permission_path(grant))
+            )
         )
     )
     if permission is None or (

@@ -4745,6 +4745,12 @@
       "model": "GalgameSnapshotImportBatch"
     },
     {
+      "table": "galgame_asr_dispatches",
+      "service": "galgame",
+      "module": "fpl_galgame.models",
+      "model": "GalgameAsrDispatch"
+    },
+    {
       "table": "gateway_change_cursors",
       "service": "gateway",
       "module": "fpl_gateway.models",
@@ -4941,6 +4947,12 @@
       "service": "models",
       "module": "fpl_models.models",
       "model": "AnnotationTranscriptionAttempt"
+    },
+    {
+      "table": "model_galgame_transcription_attempts",
+      "service": "models",
+      "module": "fpl_models.models",
+      "model": "GalgameTranscriptionAttempt"
     },
     {
       "table": "model_native_jobs",

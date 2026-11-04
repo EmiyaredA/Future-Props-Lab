@@ -4,11 +4,14 @@ from anyio import to_thread
 from sqlalchemy import or_, select
 
 from app.capabilities.asset_store.asset_scope import is_library_asset
+from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.media_metadata import inspect_media_file
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
+from fpl_runtime.galgame_asr_execution import MAX_BYTES
 from fpl_runtime.galgame_assets import GalgameAssetFile, MediaInspection
+from fpl_runtime.model_outputs import ModelOutputDescription
 
 from .models import AssetReferencePin, AssetReferenceSet, PreparedAssetPin, ReferenceIntent
 from .scoped_project_files import check_project_scope
@@ -144,3 +147,32 @@ async def snapshot_originals(session, settings, project_id, requested):
             )
         originals.append((path, row.byte_size))
     return originals
+
+
+async def asr_original(session, settings, project_id, asset_id, revision):
+    await check_project_scope(session, "galgame", project_id)
+    row = await session.scalar(
+        select(VisualAsset).where(
+            VisualAsset.id == asset_id,
+            VisualAsset.galgame_project_id == project_id,
+            VisualAsset.media_kind == "audio",
+        )
+    )
+    if row is None:
+        raise AssetError("语音识别原件不存在", code="not_found", status=404)
+    if row.revision != revision:
+        raise AssetError("语音识别原件版本已变化", code="asr_original_changed", status=409)
+    if not 0 < row.byte_size <= MAX_BYTES:
+        raise AssetError("语音识别原件大小无效", code="asr_original_too_large", status=413)
+    path = AssetStorage(settings).path_for(row)
+    filename, mime_type, size = row.original_filename, row.mime_type, row.byte_size
+    await session.rollback()
+    try:
+        if path.is_symlink() or not path.is_file() or path.stat().st_size != size:
+            raise AssetError("语音识别原件已变化", code="asr_original_changed", status=409)
+        checksum = await to_thread.run_sync(sha256_file, path)
+        return path, ModelOutputDescription(filename, mime_type, size, checksum)
+    except FileNotFoundError:
+        raise AssetError("语音识别原件不存在", code="not_found", status=404) from None
+    except ValueError:
+        raise AssetError("语音识别原件格式无效", code="invalid_asr_original", status=422) from None

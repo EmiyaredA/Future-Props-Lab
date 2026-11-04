@@ -16,6 +16,7 @@ from fpl_runtime.web import attach_web, load_release
 
 from .annotation_runner import AnnotationImports
 from .asr_routes import router as asr_router
+from .asr_runner import AsrRunner
 from .asset_read_routes import router as asset_read_router
 from .migrations.registry import MIGRATIONS
 from .models import MODELS, GalgameCertificationReceipt, GalgameStoryReferenceMutation
@@ -95,6 +96,8 @@ def create_app(
     app.state.upload_intakes = uploads
     imports = AnnotationImports(app.state, uploads, state_root)
     app.state.annotation_imports = imports
+    asr = AsrRunner(app.state, state_root)
+    app.state.asr_runner = asr
     archive_delivery = None
     app.state.snapshot_imports = None
     if archive_key is not None:
@@ -125,12 +128,14 @@ def create_app(
                     cleanup_snapshot_staging(app.state.snapshot_settings)
                     await uploads.start()
                     await imports.start()
+                    await asr.start()
                     if archive_delivery is not None:
                         await archive_delivery.start()
                 yield
             finally:
                 if archive_delivery is not None:
                     await archive_delivery.stop()
+                await asr.stop()
                 await imports.stop()
                 await uploads.stop()
 

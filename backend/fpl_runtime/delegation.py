@@ -8,6 +8,7 @@ from .annotation_task_sources import task_read_grant, task_upload_grant
 from .annotation_transcription import segment_grant
 from .galgame_annotation_source import source_grant as galgame_annotation_grant
 from .galgame_asr import asr_model_grant
+from .galgame_asr_execution import asr_job_grant
 from .galgame_assets import export_download_grant, galgame_asset_grant
 from .galgame_render import capacity_grant
 from .galgame_snapshot import archive_grant as galgame_archive_grant
@@ -218,6 +219,7 @@ def permitted(grant, catalog):
         or visual_catalog_grant(grant)
         or assistant_grant(grant)
         or asr_model_grant(grant)
+        or asr_job_grant(grant)
         or directory_grant(grant, catalog)
     ):
         return True

@@ -10,6 +10,7 @@ from app.capabilities.identity.permissions import effective_permissions
 from fpl_runtime.claims import HEADER, verify_context
 from fpl_runtime.framed_media import content_length, stream_files
 from fpl_runtime.galgame_annotation_source import AUDIO_PATH, AudioDigest, audio_target
+from fpl_runtime.galgame_asr_execution import ORIGINAL, ORIGINAL_HEADER, original_target
 from fpl_runtime.galgame_assets import (
     PREFIX,
     GalgameAssetFile,
@@ -21,7 +22,7 @@ from fpl_runtime.galgame_snapshot import snapshot_files_target
 from fpl_runtime.motion_snapshot import MAX_SCOPE_BYTES, SnapshotScope
 
 from ..galgame_audio_digest import audio_original, digest_original, read_digest
-from ..galgame_files import export_file, files, snapshot_originals
+from ..galgame_files import asr_original, export_file, files, snapshot_originals
 
 router = APIRouter(include_in_schema=False)
 
@@ -149,4 +150,21 @@ async def galgame_snapshot_originals(request: Request, project_id: str, digest: 
             "Cache-Control": "private, no-store",
             "Content-Length": str(content_length(originals)),
         },
+    )
+
+
+@router.get(ORIGINAL + "/{project_id}/{asset_id}/{revision}")
+async def galgame_asr_original(request: Request, project_id: str, asset_id: str, revision: int):
+    if not original_target("GET", request.url.path):
+        raise HTTPException(403, "galgame_asr_original_grant_required")
+    actor = await verified_actor(request)
+    state = request.app.state
+    async with state.database.sessions(info={"owner_user_id": actor.user_id}) as session:
+        path, description = await asr_original(
+            session, state.settings, project_id, asset_id, revision
+        )
+    return FileResponse(
+        path,
+        media_type="application/octet-stream",
+        headers={"Cache-Control": "private, no-store", ORIGINAL_HEADER: description.header()},
     )

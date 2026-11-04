@@ -3,6 +3,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.capabilities.transcription import max_transcription_input_bytes
 from app.llm.models import ModelEntry, ModelProvider
 
 
@@ -61,3 +62,16 @@ async def resolve_transcription_model_reference(
         .all()
     )
     return rows[0] if len(rows) == 1 else None
+
+
+async def transcription_model_snapshot(session, model_id):
+    model = await session.get(ModelEntry, model_id)
+    provider = await session.get(ModelProvider, model.provider_id) if model else None
+    if model is None or not supports_asr(model, provider):
+        return None
+    return {
+        "provider_id": provider.id,
+        "provider_name": provider.name,
+        "model_slug": model.slug,
+        "byte_limit": max_transcription_input_bytes(provider),
+    }

@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Index, String, Text
+from sqlalchemy import JSON, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from app.apps.galgame_workshop.models import (
@@ -86,11 +86,28 @@ class GalgameSnapshotImportBatch(StoryRetentionBase):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
 
 
+class GalgameAsrDispatch(StoryRetentionBase):
+    __tablename__ = "galgame_asr_dispatches"
+
+    task_id: Mapped[str] = mapped_column(
+        ForeignKey(GalgameAssetTranscriptionTask.__table__.c.id, ondelete="CASCADE"),
+        primary_key=True,
+    )
+    owner_user_id: Mapped[str] = mapped_column(String(36))
+    assertion: Mapped[str] = mapped_column(Text)
+    asset_revision: Mapped[int] = mapped_column(Integer)
+    transcript_revision: Mapped[int] = mapped_column(Integer)
+    byte_limit: Mapped[int] = mapped_column(Integer)
+    input: Mapped[dict | None] = mapped_column(JSON)
+    checked_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, index=True)
+
+
 MODELS = (
     GalgameMigrationReceipt,
     GalgameUploadIntake,
     GalgameAnnotationAuthorization,
     GalgameSnapshotImportBatch,
+    GalgameAsrDispatch,
     GalgameWorkshopProject,
     GalgameStoryDocument,
     GalgameProjectAssetReference,

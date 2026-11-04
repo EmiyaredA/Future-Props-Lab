@@ -127,8 +127,19 @@ class AnnotationTranscriptionAttempt(ModelsBase):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
 
 
+class GalgameTranscriptionAttempt(ModelsBase):
+    __tablename__ = "model_galgame_transcription_attempts"
+    owner_user_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    task_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    status: Mapped[str] = mapped_column(String(16), default="running", index=True)
+    outcome: Mapped[dict | None] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
 MODELS = (
     AnnotationTranscriptionAttempt,
+    GalgameTranscriptionAttempt,
     *NATIVE_MODELS,
     DemoInstallation,
     IntegrationCapacity,

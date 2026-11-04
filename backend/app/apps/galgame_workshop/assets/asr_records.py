@@ -19,7 +19,7 @@ from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import iso_utc, utc_now
 
 
-def _task_out(row: GalgameAssetTranscriptionTask) -> GalgameTranscriptionTaskOut:
+def transcription_task_out(row: GalgameAssetTranscriptionTask) -> GalgameTranscriptionTaskOut:
     return GalgameTranscriptionTaskOut(
         id=row.id,
         assetId=row.asset_id,
@@ -135,4 +135,4 @@ class AsrRecords:
             .scalars()
             .all()
         )
-        return GalgameTranscriptionTaskListOut(items=[_task_out(row) for row in rows])
+        return GalgameTranscriptionTaskListOut(items=[transcription_task_out(row) for row in rows])

@@ -63,6 +63,8 @@ from .demo_http import router as demo_router
 from .demo_installations import DemoInstallations
 from .execution_authority import ModelTaskAuthority
 from .galgame_asr_http import router as galgame_asr_router
+from .galgame_transcription import GalgameTranscription, recover_transcription_attempts
+from .galgame_transcription_http import router as galgame_transcription_router
 from .governance import router as governance_router
 from .integration_capacity_http import router as integration_capacity_router
 from .library_inputs import HttpLibraryInputs
@@ -204,6 +206,8 @@ def create_app(
     )
     local = native_models or broker
 
+    galgame_asr_staging = settings.runtime_path / ".galgame-asr-work"
+
     @asynccontextmanager
     async def lifespan(_app):
         try:
@@ -211,6 +215,12 @@ def create_app(
             await require_private_references(database.sessions)
             await ledger.recover()
             await recover_interrupted_model_test_runs(database.sessions)
+            await recover_transcription_attempts(database.sessions)
+            if galgame_asr_staging.is_symlink() or not galgame_asr_staging.resolve().is_relative_to(
+                settings.runtime_path.resolve()
+            ):
+                raise ValueError("Models 语音识别暂存目录不可用")
+            galgame_asr_staging.mkdir(parents=True, exist_ok=True, mode=0o700)
             if run_tasks:
                 await supervisor.start()
             yield
@@ -236,6 +246,8 @@ def create_app(
         openapi_url=None,
     )
     app.state.demo_installations = demo_installations
+    app.state.galgame_transcription = GalgameTranscription(database.sessions)
+    app.state.galgame_asr_staging = galgame_asr_staging
     app.state.integration_intents = integration_intents
     app.state.service_id = "models"
     app.state.settings, app.state.database = settings, database
@@ -302,6 +314,7 @@ def create_app(
     app.include_router(annotation_transcription_router)
     app.include_router(visual_catalog_router)
     app.include_router(galgame_asr_router)
+    app.include_router(galgame_transcription_router)
     if (native_ingress_token is None) != (workers is None):
         raise ValueError("Models 原生通道需要同时配置入口和worker凭据")
     if native_ingress_token is not None:

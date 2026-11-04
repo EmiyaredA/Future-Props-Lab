@@ -9,6 +9,7 @@ from app.apps.galgame_workshop.assets.asr_records import AsrRecords
 from app.apps.galgame_workshop.schemas import (
     GalgameAsrSettingsOut,
     GalgameAsrSettingsPatchIn,
+    GalgameTranscriptionCreateIn,
     GalgameTranscriptionTaskListOut,
     GalgameTranscriptPatchIn,
     GalgameVoiceMatchIn,
@@ -23,6 +24,7 @@ from fpl_runtime.galgame_assets import SOURCE
 from fpl_runtime.http_dependencies import OwnerDep, SessionDep
 from fpl_runtime.library_assets import ID
 
+from .asr_jobs import enqueue_transcriptions
 from .asset_read_routes import read_assets
 from .story_writes import StoryWrites
 from .voice_matches import match_voice, patch_transcript
@@ -89,6 +91,21 @@ async def patch_asr_settings(
         return await asr_records(request, session).patch_settings(project_id, body)
     except AssetError as exc:
         raise _asset_error(exc) from None
+
+
+@router.post(
+    "/{project_id}/assets/asr/transcriptions", response_model=GalgameTranscriptionTaskListOut
+)
+async def create_transcriptions(
+    request: Request,
+    session: SessionDep,
+    project_id: str,
+    body: GalgameTranscriptionCreateIn,
+    owner_user_id: OwnerDep,
+) -> GalgameTranscriptionTaskListOut:
+    return await enqueue_transcriptions(
+        read_assets(request, session, owner_user_id), project_id, body
+    )
 
 
 @router.get(

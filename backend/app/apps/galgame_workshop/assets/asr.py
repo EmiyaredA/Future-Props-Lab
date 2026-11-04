@@ -6,7 +6,7 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.apps.galgame_workshop.assets.asr_records import AsrRecords, _task_out
+from app.apps.galgame_workshop.assets.asr_records import AsrRecords, transcription_task_out
 from app.apps.galgame_workshop.assets.transcript_records import write_transcript
 from app.apps.galgame_workshop.assets.voice_matching import match_dialogue
 from app.apps.galgame_workshop.models import (
@@ -103,7 +103,9 @@ class GalgameAsrService(AsrRecords):
         await self.session.commit()
         for task in tasks:
             await self.session.refresh(task)
-        return GalgameTranscriptionTaskListOut(items=[_task_out(task) for task in tasks])
+        return GalgameTranscriptionTaskListOut(
+            items=[transcription_task_out(task) for task in tasks]
+        )
 
     async def patch_transcript(
         self, project_id: str, asset_id: str, body: GalgameTranscriptPatchIn
