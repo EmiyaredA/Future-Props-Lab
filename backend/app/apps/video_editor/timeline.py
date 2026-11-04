@@ -5,15 +5,13 @@ from math import floor
 
 from pydantic import ValidationError
 from sqlalchemy import select, update
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.video_editor.audio_seam_edit import align_audio_seam
 from app.apps.video_editor.audio_transition_edit import set_audio_transition
+from app.apps.video_editor.clip_merging.context import operation_contexts
 from app.apps.video_editor.clip_merging.document import replace_selection
-from app.apps.video_editor.clip_merging.tasks import VideoEditorClipMerges
 from app.apps.video_editor.errors import VideoEditorValidationError
 from app.apps.video_editor.models import (
-    VideoEditorAssetMetadata,
     VideoEditorOperationBatch,
     VideoEditorProject,
     VideoEditorTimeline,
@@ -26,7 +24,6 @@ from app.apps.video_editor.schemas import (
 )
 from app.apps.video_editor.timed_effect_edit import crop_timed_effects, scale_timed_effects
 from app.apps.video_editor.timeline_read import VideoTimelineRead
-from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.media_rendering.audio_transitions import AUDIO_SEAM_KINDS
 from app.capabilities.media_rendering.timeline_document import (
     normalize_legacy_edge_transitions,
@@ -563,7 +560,7 @@ def apply_operations(
     return result
 
 
-async def validate_timeline(session: AsyncSession, project_id: str, document: dict) -> dict:
+async def validate_timeline(assets, project_id: str, document: dict) -> dict:
     document = normalize_legacy_edge_transitions(document)
     try:
         parsed = VideoEditorTimelineDocument.model_validate(document)
@@ -715,45 +712,32 @@ async def validate_timeline(session: AsyncSession, project_id: str, document: di
         organized_asset_ids.update(folder.get("assetIds") or [])
     asset_ids = clip_asset_ids | organized_asset_ids
     if asset_ids:
-        rows = (
-            await session.execute(
-                select(VisualAsset, VideoEditorAssetMetadata)
-                .join(
-                    VideoEditorAssetMetadata,
-                    VideoEditorAssetMetadata.asset_id == VisualAsset.id,
-                )
-                .where(
-                    VisualAsset.id.in_(asset_ids),
-                    VisualAsset.video_editor_project_id == project_id,
-                )
-            )
-        ).all()
-        assets = {asset.id: (asset, metadata) for asset, metadata in rows}
-        if set(assets) != asset_ids:
+        records = await assets.describe(project_id, asset_ids)
+        if set(records) != asset_ids:
             raise VideoEditorValidationError(
                 "时间轴或素材编排引用了不属于当前项目的素材", code="invalid_asset"
             )
         for track in dumped["tracks"]:
             for clip in track["clips"]:
                 font_id = clip.get("fontAssetId")
-                if font_id and assets[font_id][0].media_kind != "font":
+                if font_id and records[font_id].kind != "font":
                     raise VideoEditorValidationError(
                         "文字字体必须引用字体素材", code="invalid_asset_kind"
                     )
                 asset_id = clip.get("assetId")
                 if not asset_id:
                     continue
-                asset, metadata = assets[asset_id]
+                asset = records[asset_id]
                 allowed = {
                     "video": {"video"},
                     "image": {"image"},
                     "audio": {"audio", "video"},
                 }.get(clip["kind"], set())
-                if asset.media_kind not in allowed:
+                if asset.kind not in allowed:
                     raise VideoEditorValidationError(
                         "Clip 类型与素材类型不匹配", code="invalid_asset_kind"
                     )
-                duration_us = int((metadata.probe or {}).get("durationUs") or 0)
+                duration_us = asset.duration_us
                 if (
                     duration_us
                     and not clip.get("sourceLoop")
@@ -802,23 +786,24 @@ class VideoEditorTimelines(VideoTimelineRead):
         operations = [
             op.model_dump(mode="json", by_alias=True, exclude_none=True) for op in body.operations
         ]
-        merge_contexts = await VideoEditorClipMerges(
-            self.session, self.owner_user_id
-        ).operation_contexts(project_id, body.operations)
-        document = await validate_timeline(
-            self.session, project_id, apply_operations(row.document, body, merge_contexts)
+        source_document = row.document
+        assets = self.session.info["video_timeline_assets"](self.session, self.owner_user_id)
+        merge_contexts = await operation_contexts(
+            self.session, self.owner_user_id, assets, project_id, body.operations
         )
-        for operation in body.operations:
-            if operation.type != "alignAudioSeam":
-                continue
-            _track, target = _find_clip(document, operation.to_clip_id)
-            asset = await self.session.get(VisualAsset, target["assetId"])
-            metadata = await self.session.get(VideoEditorAssetMetadata, target["assetId"])
-            if (
-                asset is None
-                or asset.media_kind != "audio"
-                or metadata is None
-                or metadata.processing_status != "ready"
+        document = await validate_timeline(
+            assets, project_id, apply_operations(source_document, body, merge_contexts)
+        )
+        audio_ids = {
+            _find_clip(document, operation.to_clip_id)[1]["assetId"]
+            for operation in body.operations
+            if operation.type == "alignAudioSeam"
+        }
+        if audio_ids:
+            records = await assets.describe(project_id, audio_ids)
+            if set(records) != audio_ids or any(
+                record.kind != "audio" or record.processing_status != "ready"
+                for record in records.values()
             ):
                 raise VideoEditorValidationError("音频素材尚未准备好", code="audio_not_ready")
         now = utc_now()

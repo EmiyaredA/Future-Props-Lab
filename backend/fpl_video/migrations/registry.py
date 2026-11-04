@@ -2,6 +2,9 @@
 
 from fpl_runtime.migrations import Migration
 
-from .versions import v0001
+from .versions import v0001, v0002
 
-MIGRATIONS = (Migration("0001_video_editor", v0001.SQL),)
+MIGRATIONS = (
+    Migration("0001_video_editor", v0001.SQL),
+    Migration("0002_video_timeline_media", v0002.SQL),
+)

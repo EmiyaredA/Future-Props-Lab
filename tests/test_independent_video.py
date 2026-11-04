@@ -1,10 +1,17 @@
 """The Video Editor owns project and timeline records in a dedicated database."""
 
+from io import BytesIO
 from pathlib import Path
 
 import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from PIL import Image
+from starlette.datastructures import Headers, UploadFile
+from tests.test_community_asset_protocol import scenario  # noqa: F401
+from tests.test_independent_project_catalog import authorize
 
+from app.apps.video_editor.models import VideoEditorAssetMetadata
+from app.capabilities.asset_store.library import AssetLibrary
 from fpl_deployment.images import source_closure
 from fpl_runtime.claims import HEADER, Actor, issue_context
 from fpl_runtime.migrations import apply
@@ -84,3 +91,97 @@ async def test_video_owned_projects_and_timeline_survive_restart(tmp_path):
     ):
         assert (await call(api, "GET", PROJECTS)).json()["items"] == [patched.json()]
         assert (await call(api, "GET", project + "/timeline")).json() == original
+
+
+async def test_timeline_edits_check_actual_signed_asset_scope(scenario, tmp_path):  # noqa: F811
+    case = scenario
+    credential = "isolated-video-timeline-test-credential"
+    case.identity.state.identity_options["service_credentials"]["video"] = credential
+    state = tmp_path / "video"
+    apply(state / "service.db", "video", MIGRATIONS)
+    app = create_app(
+        state_root=state,
+        catalog=RouteCatalog.read(ROOT / "deploy/contracts/ownership.json"),
+        public_key=case.key.public_key(),
+        schema_path=ROOT / "web/src/generated/openapi.json",
+        credential=credential,
+        transport=case.mesh,
+    )
+
+    async def send(api, method, path, **kwargs):
+        return await api.request(
+            method, path, headers=await authorize(case, "video", method, path), **kwargs
+        )
+
+    async def fixture_file(owner, project):
+        source = BytesIO()
+        Image.new("RGB", (3, 3), "navy").save(source, format="PNG")
+        source.seek(0)
+        settings = case.assets.state.settings
+        async with case.assets.state.database.sessions(info={"owner_user_id": owner}) as session:
+            row = await AssetLibrary(session, settings).store_upload(
+                UploadFile(
+                    source, filename="clip.png", headers=Headers({"Content-Type": "image/png"})
+                ),
+                owner_user_id=owner,
+                video_editor_project_id=project,
+            )
+            return row.id
+
+    async with (
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://video") as api,
+    ):
+        project_response = await send(api, "POST", PROJECTS, json={"title": "Timeline"})
+        assert project_response.status_code == 200, project_response.text
+        project = project_response.json()["id"]
+        other_response = await send(api, "POST", PROJECTS, json={"title": "Other Project"})
+        other = other_response.json()["id"]
+        target = PROJECTS + "/" + project + "/timeline/operations"
+        attached = await fixture_file(case.viewer, project)
+        wrong_scope = await fixture_file(case.viewer, other)
+        foreign = await fixture_file(case.owner, project)
+        async with app.state.database.sessions(info={"owner_user_id": case.viewer}) as session:
+            # Storage-only fixture setup in the per-test service database.
+            session.add(
+                VideoEditorAssetMetadata(
+                    asset_id=attached, project_id=project, processing_status="ready"
+                )
+            )
+            await session.commit()
+
+        def payload(identity, *, revision=0, kind="image"):
+            return {
+                "expectedRevision": revision,
+                "requestId": "video-test-timeline",
+                "operations": [
+                    {
+                        "type": "addClip",
+                        "clip": {
+                            "id": "image-1",
+                            "trackId": "visual-1",
+                            "kind": kind,
+                            "name": "Image",
+                            "durationUs": 1_000_000,
+                            "timelineStartUs": 0,
+                            "assetId": identity,
+                        },
+                    }
+                ],
+            }
+
+        for identity in (wrong_scope, foreign):
+            rejected = await send(api, "POST", target, json=payload(identity))
+            assert rejected.status_code == 422 and rejected.json()["code"] == "invalid_asset"
+        invalid_kind = await send(api, "POST", target, json=payload(attached, kind="video"))
+        assert (
+            invalid_kind.status_code == 422 and invalid_kind.json()["code"] == "invalid_asset_kind"
+        )
+        edited = await send(api, "POST", target, json=payload(attached))
+        assert edited.status_code == 200, edited.text
+        assert edited.json()["revision"] == 1
+        assert edited.json()["document"]["tracks"][0]["clips"][0]["assetId"] == attached
+        replayed = await send(api, "POST", target, json=payload(attached))
+        assert replayed.json() == edited.json()
+        stale = {**payload(attached), "requestId": "different-edit-id"}
+        assert (await send(api, "POST", target, json=stale)).status_code == 409

@@ -1,6 +1,7 @@
 """Start Video Editor or explicitly apply its owned schema."""
 
 import argparse
+import re
 from pathlib import Path
 
 import uvicorn
@@ -24,6 +25,7 @@ def main():
         "--catalog", type=Path, default=Path("/app/deploy/contracts/ownership.json")
     )
     parser.add_argument("--schema", type=Path, default=Path("/app/deploy/contracts/openapi.json"))
+    parser.add_argument("--identity-token", type=Path, default=Path("/run/fpl/identity-token"))
     parser.add_argument("--port", type=int, default=8080)
     options = parser.parse_args()
     if options.command == "migrate":
@@ -33,11 +35,20 @@ def main():
     key = load_pem_public_key(options.public_key.read_bytes())
     if not isinstance(key, Ed25519PublicKey):
         parser.error("Identity 公钥类型无效")
+    try:
+        if options.identity_token.is_symlink() or options.identity_token.stat().st_mode & 0o077:
+            raise ValueError
+        credential = options.identity_token.read_text().strip()
+        if not re.fullmatch(r"[A-Za-z0-9_-]{32,256}", credential):
+            raise ValueError
+    except (ValueError, OSError):
+        parser.error("剪辑服务需要受保护的 Identity 凭据")
     app = create_app(
         state_root=options.state_root,
         catalog=RouteCatalog.read(options.catalog),
         public_key=key,
         schema_path=options.schema,
+        credential=credential,
     )
     uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)
 

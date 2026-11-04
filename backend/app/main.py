@@ -36,6 +36,7 @@ from app.apps.thought_workshop.legacy_asset_metadata import LegacyAssetMetadata
 from app.apps.thought_workshop.legacy_writing import LegacyWritingModels
 from app.apps.thought_workshop.writing import WritingBindings
 from app.apps.video_editor.legacy_project_layouts import LegacyVideoLayouts
+from app.apps.video_editor.legacy_timeline_assets import LegacyTimelineAssets
 from app.apps.video_editor.runner import VideoEditorRunner
 from app.apps.visual_workshop.acceptance.runner import AcceptanceRunner
 from app.apps.visual_workshop.assistant import recover_interrupted_visual_assistant_runs
@@ -231,6 +232,7 @@ SessionLocal.configure(
         "presentation_project_assets": LegacyProjectAssets,
         "motion_project_resources": LegacyProjectResources,
         "video_project_layouts": LegacyVideoLayouts,
+        "video_timeline_assets": LegacyTimelineAssets,
         "presentation_import": import_legacy_presentation,
         "annotation_transcribe": legacy_transcribe,
         "creative_authors_factory": LegacyCreativeAuthors,

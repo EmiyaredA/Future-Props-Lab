@@ -25,6 +25,12 @@ services:
         read_only: true
         bind:
           create_host_path: false
+      - type: bind
+        source: ${FPL_VIDEO_IDENTITY_TOKEN:?Select the Video Editor Identity credential}
+        target: /run/fpl/identity-token
+        read_only: true
+        bind:
+          create_host_path: false
     healthcheck:
       test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)"]
       interval: 15s

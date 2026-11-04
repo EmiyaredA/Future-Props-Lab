@@ -13,6 +13,7 @@ from .motion_snapshot import motion_archive_grant, motion_snapshot_grant
 from .presentation_archives import presentation_archive_grant
 from .presentation_assets import project_asset_grant
 from .resource_routes import RESOURCE_ROUTES
+from .video_assets import video_asset_grant
 
 
 @dataclass(frozen=True)
@@ -138,6 +139,7 @@ def target_permission_path(grant):
         or audio_asset_grant(grant)
         or project_asset_grant(grant)
         or motion_asset_grant(grant)
+        or video_asset_grant(grant)
         or motion_asset_write_grant(grant)
         or motion_archive_grant(grant)
         or presentation_archive_grant(grant)
@@ -182,6 +184,7 @@ def permitted(grant, catalog):
         or audio_asset_grant(grant)
         or project_asset_grant(grant)
         or motion_asset_grant(grant)
+        or video_asset_grant(grant)
         or motion_asset_write_grant(grant)
         or motion_archive_grant(grant)
         or presentation_archive_grant(grant)

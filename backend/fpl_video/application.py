@@ -7,9 +7,17 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.requests import HTTPConnection
 
-from app.apps.video_editor.models import VideoEditorProject, VideoEditorTimeline
-from app.apps.video_editor.routes.projects import router
+from app.apps.video_editor.models import (
+    VideoEditorAssetMetadata,
+    VideoEditorOperationBatch,
+    VideoEditorProject,
+    VideoEditorTask,
+    VideoEditorTimeline,
+)
+from app.apps.video_editor.routes.projects import router as project_router
+from app.apps.video_editor.routes.timeline import router as timeline_router
 from app.deps import db_session, require_studio_auth
 from app.problem_details import (
     http_exception_handler,
@@ -19,6 +27,7 @@ from app.problem_details import (
 )
 from app.runtime.revisions import RevisionConflictError
 from fpl_runtime.authentication import SignedIdentity
+from fpl_runtime.capability_client import CapabilityClient
 from fpl_runtime.database import Database
 from fpl_runtime.locking import service_lock
 from fpl_runtime.migrations import check
@@ -26,6 +35,7 @@ from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.routing import RouteCatalog
 
 from .migrations.registry import MIGRATIONS
+from .timeline_media import TimelineMedia
 
 SERVICE = "video"
 SOURCE = "/v1/video-editor"
@@ -37,6 +47,7 @@ OPERATIONS = {
     ("GET", PROJECT),
     ("PATCH", PROJECT),
     ("GET", PROJECT + "/timeline"),
+    ("POST", PROJECT + "/timeline/operations"),
 }
 
 
@@ -55,8 +66,25 @@ class ProjectLayouts:
             raise
 
 
-def create_app(*, state_root, catalog, public_key, schema_path):
-    database = Database(SERVICE, state_root, models=(VideoEditorProject, VideoEditorTimeline))
+def create_app(*, state_root, catalog, public_key, schema_path, credential=None, transport=None):
+    database = Database(
+        SERVICE,
+        state_root,
+        models=(
+            VideoEditorProject,
+            VideoEditorTimeline,
+            VideoEditorOperationBatch,
+            VideoEditorAssetMetadata,
+            VideoEditorTask,
+        ),
+    )
+    capabilities = (
+        CapabilityClient(
+            service=SERVICE, credential=credential, catalog=catalog, transport=transport
+        )
+        if credential is not None
+        else None
+    )
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -65,6 +93,8 @@ def create_app(*, state_root, catalog, public_key, schema_path):
             try:
                 yield
             finally:
+                if capabilities is not None:
+                    await capabilities.close()
                 await database.close()
 
     app = FastAPI(
@@ -72,8 +102,16 @@ def create_app(*, state_root, catalog, public_key, schema_path):
     )
     app.state.database = database
 
-    async def request_session():
-        async with database.sessions(info={"video_project_layouts": ProjectLayouts}) as session:
+    async def request_session(connection: HTTPConnection):
+        def timeline_assets(session, owner):
+            return TimelineMedia(connection, session, owner, capabilities)
+
+        async with database.sessions(
+            info={
+                "video_project_layouts": ProjectLayouts,
+                "video_timeline_assets": timeline_assets,
+            }
+        ) as session:
             yield session
 
     app.dependency_overrides[db_session] = request_session
@@ -82,12 +120,13 @@ def create_app(*, state_root, catalog, public_key, schema_path):
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(OperationalError, storage_operational_error_handler)
     app.add_exception_handler(RevisionConflictError, revision_conflict_handler)
-    app.include_router(
-        router,
-        prefix=SOURCE,
-        tags=["video-editor"],
-        dependencies=[Depends(require_studio_auth)],
-    )
+    for router in (project_router, timeline_router):
+        app.include_router(
+            router,
+            prefix=SOURCE,
+            tags=["video-editor"],
+            dependencies=[Depends(require_studio_auth)],
+        )
 
     expected = RouteCatalog(
         operation

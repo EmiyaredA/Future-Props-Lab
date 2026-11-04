@@ -30,14 +30,11 @@ from app.apps.video_editor.schemas import (
     VideoEditorSegmentExportCreateIn,
     VideoEditorTaskListOut,
     VideoEditorTaskOut,
-    VideoEditorTimelineBatchIn,
-    VideoEditorTimelineOut,
 )
 from app.apps.video_editor.schemas.clip_merge import VideoEditorClipMergeCreateIn
 from app.apps.video_editor.segment_exports import VideoEditorSegmentExports
 from app.apps.video_editor.segment_files import download_segments
 from app.apps.video_editor.snapshots import VideoEditorProjectSnapshots
-from app.apps.video_editor.timeline import VideoEditorTimelines
 from app.capabilities.asset_store import (
     AssetError,
     AssetStorage,
@@ -51,6 +48,7 @@ from app.runtime.config import get_settings
 
 from .errors import _error as _public_error
 from .projects import router as projects_router
+from .timeline import router as timeline_router
 
 router = APIRouter(prefix="/video-editor", tags=["video-editor"])
 
@@ -265,19 +263,6 @@ async def asset_variant(
     if not path.is_file():
         raise HTTPException(404, {"code": "not_found", "message": "派生素材文件不存在"})
     return FileResponse(path, media_type=guessed_mime(path), content_disposition_type="inline")
-
-
-@router.post("/projects/{project_id}/timeline/operations", response_model=VideoEditorTimelineOut)
-async def apply_timeline_operations(
-    session: SessionDep,
-    owner_user_id: OwnerDep,
-    project_id: str,
-    body: VideoEditorTimelineBatchIn,
-) -> VideoEditorTimelineOut:
-    try:
-        return await VideoEditorTimelines(session, owner_user_id).apply(project_id, body)
-    except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
-        raise _error(exc) from None
 
 
 @router.post(
@@ -532,3 +517,4 @@ async def cancel_clip_merge(
 
 
 router.include_router(projects_router)
+router.include_router(timeline_router)

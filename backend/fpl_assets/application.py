@@ -48,6 +48,7 @@ from .routes.project_links import router as links_router
 from .routes.thought_archives import router as thought_archives_router
 from .routes.thought_library import router as thought_library_router
 from .routes.thought_uploads import router as thought_uploads_router
+from .routes.video_assets import router as video_assets_router
 
 logger = logging.getLogger(__name__)
 
@@ -162,6 +163,7 @@ def create_app(
     app.include_router(annotation_assets_router)
     app.include_router(presentation_assets_router)
     app.include_router(motion_assets_router)
+    app.include_router(video_assets_router)
     app.include_router(motion_archives_router)
     app.include_router(motion_preview_router)
     app.include_router(motion_snapshot_router)

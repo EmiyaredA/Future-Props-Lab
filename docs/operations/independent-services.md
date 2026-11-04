@@ -479,3 +479,5 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 ### 视频剪辑项目
 
 使用 `deploy/video.compose.yaml`、`FPL_VIDEO_STATE` 和 Identity 公钥，显式运行 `video migrate` 后启动。独立镜像 `fpl/video:7814b83e8fce9b4dda89` 在三容器隔离运行 `fpl-video-api-aabb86662d` 经 Gateway 验证项目创建、默认时间轴、修订冲突、重启后记录和回环公网鉴权。此批装配五项读写操作。时间轴编辑、素材、任务、剪辑交接、浏览器和历史迁移继续由就绪门禁跟踪。
+
+时间轴操作现由独立 Video Editor 处理。部署时额外配置只读 `FPL_VIDEO_IDENTITY_TOKEN`，并在 Identity 登记 Video 的专用服务凭据。Video 在提交时间轴 CAS 前，通过签名范围向 Assets 查验确切项目和文件 ID 集合，再使用自有媒体状态验证轨道、类型和源区间。四容器运行 `fpl-video-timeline-8ba3d11c5c` 使用 `fpl/video:772d4c348dcb0eeb1152`，验证素材范围拒绝、保存、重放、过期修订和重启。
