@@ -127,7 +127,7 @@ class GalgameAssetSettings(Base):
         primary_key=True,
     )
     asr_model_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("model_entries.id", ondelete="SET NULL")
+        String(36), ForeignKey(external_id("model_entries"), ondelete="SET NULL")
     )
     default_language: Mapped[str] = mapped_column(String(16), default="auto")
     concurrency: Mapped[int] = mapped_column(Integer, default=2)

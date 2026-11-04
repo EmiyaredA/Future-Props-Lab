@@ -18,6 +18,7 @@ from app.runtime.time import utc_now
 from fpl_runtime.annotation_task_sources import upload_target as annotation_upload_target
 from fpl_runtime.annotation_transcription import target as annotation_transcription_target
 from fpl_runtime.claims import verify_context
+from fpl_runtime.galgame_asr import asr_model_target
 from fpl_runtime.galgame_assets import asset_query_target as galgame_file_query_target
 from fpl_runtime.model_outputs import is_model_output_path
 from fpl_runtime.motion_exports import render_target
@@ -119,6 +120,7 @@ async def live(request: Request, body: LiveRequest):
         writing_target(body.method, body.path) is not None
         or annotation_transcription_target(body.method, body.path) is not None
         or visual_catalog_target(body.method, body.path)
+        or asr_model_target(body.method, body.path)
     )
     socket = (
         request.app.state.service_catalog.match_socket(body.path) if body.method == "GET" else None

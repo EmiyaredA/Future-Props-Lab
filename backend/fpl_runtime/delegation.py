@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from .annotation_assets import audio_asset_grant
 from .annotation_task_sources import task_read_grant, task_upload_grant
 from .annotation_transcription import segment_grant
+from .galgame_asr import asr_model_grant
 from .galgame_assets import galgame_asset_grant
 from .motion_assets import motion_asset_grant, motion_asset_write_grant
 from .motion_exports import render_grant as motion_export_grant
@@ -118,6 +119,7 @@ def target_permission_path(grant):
         or reveal_grant(grant)
         or segment_bundle_grant(grant)
         or visual_catalog_grant(grant)
+        or asr_model_grant(grant)
     ):
         return grant.source_path
     from .account_directory import directory_path
@@ -198,7 +200,12 @@ def permitted(grant, catalog):
         or video_snapshot_grant(grant)
     ):
         return True
-    if galgame_asset_grant(grant) or visual_catalog_grant(grant) or directory_grant(grant, catalog):
+    if (
+        galgame_asset_grant(grant)
+        or visual_catalog_grant(grant)
+        or asr_model_grant(grant)
+        or directory_grant(grant, catalog)
+    ):
         return True
     if preview_grant(grant) or source_transfer_grant(grant) or stdio_grant(grant):
         return True

@@ -62,6 +62,7 @@ from .demo_http import call_router
 from .demo_http import router as demo_router
 from .demo_installations import DemoInstallations
 from .execution_authority import ModelTaskAuthority
+from .galgame_asr_http import router as galgame_asr_router
 from .governance import router as governance_router
 from .integration_capacity_http import router as integration_capacity_router
 from .library_inputs import HttpLibraryInputs
@@ -300,6 +301,7 @@ def create_app(
     app.include_router(writing_router)
     app.include_router(annotation_transcription_router)
     app.include_router(visual_catalog_router)
+    app.include_router(galgame_asr_router)
     if (native_ingress_token is None) != (workers is None):
         raise ValueError("Models 原生通道需要同时配置入口和worker凭据")
     if native_ingress_token is not None:

@@ -9,19 +9,16 @@ import httpx
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.apps.galgame_workshop.assets.asr_records import AsrRecords, _task_out
 from app.apps.galgame_workshop.models import (
     GalgameAssetMetadata,
     GalgameAssetSettings,
     GalgameAssetTranscriptionTask,
-    GalgameWorkshopProject,
 )
 from app.apps.galgame_workshop.schemas import (
-    GalgameAsrSettingsOut,
-    GalgameAsrSettingsPatchIn,
     GalgameStoryDocumentPutIn,
     GalgameTranscriptionCreateIn,
     GalgameTranscriptionTaskListOut,
-    GalgameTranscriptionTaskOut,
     GalgameTranscriptPatchIn,
     GalgameVoiceMatchIn,
     GalgameVoiceMatchItem,
@@ -40,6 +37,7 @@ from app.llm.providers.senseaudio_asr import (
     SenseAudioAsrFileTooLarge,
 )
 from app.llm.providers.transcription import transcribe_model_audio
+from app.llm.transcription_catalog import supports_asr, transcription_model_ready
 from app.runtime.config import Settings, get_settings
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal
@@ -47,119 +45,12 @@ from app.runtime.ownership import bind_owner
 from app.runtime.polling_runner import PollingTaskRunner
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.task_admission import TaskAdmission
-from app.runtime.time import iso_utc, utc_now
+from app.runtime.time import utc_now
 
 
-def _task_out(row: GalgameAssetTranscriptionTask) -> GalgameTranscriptionTaskOut:
-    return GalgameTranscriptionTaskOut(
-        id=row.id,
-        assetId=row.asset_id,
-        providerName=row.provider_name,
-        modelSlug=row.model_slug,
-        language=row.language,
-        force=row.force,
-        status=row.status,
-        resultText=row.result_text,
-        resultSegments=list(row.result_segments or []),
-        error=row.error,
-        revision=row.revision,
-        createdAt=iso_utc(row.created_at),
-        startedAt=iso_utc(row.started_at) if row.started_at else None,
-        finishedAt=iso_utc(row.finished_at) if row.finished_at else None,
-    )
-
-
-def _model_supports_asr(model: ModelEntry, provider: ModelProvider | None) -> bool:
-    return bool(
-        provider is not None
-        and provider.kind in {"openai", "senseaudio_asr", "senseaudio_asr_pro"}
-        and provider.enabled
-        and model.enabled
-        and (
-            "speech_recognition" in list(model.capabilities or [])
-            or "speech_recognition" in list(model.categories or [])
-        )
-    )
-
-
-class GalgameAsrService:
+class GalgameAsrService(AsrRecords):
     def __init__(self, session: AsyncSession) -> None:
-        self.session = session
-
-    async def _project(self, project_id: str) -> None:
-        if await self.session.get(GalgameWorkshopProject, project_id) is None:
-            raise AssetError("项目不存在", code="not_found", status=404)
-
-    async def _settings(self, project_id: str) -> GalgameAssetSettings:
-        await self._project(project_id)
-        row = await self.session.get(GalgameAssetSettings, project_id)
-        if row is None:
-            row = GalgameAssetSettings(project_id=project_id)
-            self.session.add(row)
-            await self.session.commit()
-            await self.session.refresh(row)
-        return row
-
-    async def _settings_out(self, row: GalgameAssetSettings) -> GalgameAsrSettingsOut:
-        model = await self.session.get(ModelEntry, row.asr_model_id) if row.asr_model_id else None
-        provider = (
-            await self.session.get(ModelProvider, model.provider_id) if model is not None else None
-        )
-        return GalgameAsrSettingsOut(
-            modelId=row.asr_model_id,
-            modelReady=bool(model and _model_supports_asr(model, provider)),
-            defaultLanguage=row.default_language,
-            concurrency=row.concurrency,
-            revision=row.revision,
-        )
-
-    async def get_settings(self, project_id: str) -> GalgameAsrSettingsOut:
-        return await self._settings_out(await self._settings(project_id))
-
-    async def patch_settings(
-        self, project_id: str, body: GalgameAsrSettingsPatchIn
-    ) -> GalgameAsrSettingsOut:
-        await self._settings(project_id)
-        if body.model_id is not None:
-            model = await self.session.get(ModelEntry, body.model_id)
-            provider = (
-                await self.session.get(ModelProvider, model.provider_id)
-                if model is not None
-                else None
-            )
-            if model is None or not _model_supports_asr(model, provider):
-                raise AssetError(
-                    "只能选择已启用的 OpenAI 兼容或 SenseAudio 语音识别模型",
-                    code="asr_model_unavailable",
-                )
-        values: dict[str, object] = {
-            "revision": body.expected_revision + 1,
-            "updated_at": utc_now(),
-        }
-        if "model_id" in body.model_fields_set:
-            values["asr_model_id"] = body.model_id
-        if body.default_language is not None:
-            values["default_language"] = body.default_language
-        if body.concurrency is not None:
-            values["concurrency"] = body.concurrency
-        result = await self.session.execute(
-            update(GalgameAssetSettings)
-            .where(
-                GalgameAssetSettings.project_id == project_id,
-                GalgameAssetSettings.revision == body.expected_revision,
-            )
-            .values(**values)
-        )
-        if result.rowcount != 1:
-            await self.session.rollback()
-            current = await self._settings(project_id)
-            raise RevisionConflictError(
-                body.expected_revision,
-                current.revision,
-                (await self._settings_out(current)).model_dump(mode="json", by_alias=True),
-            )
-        await self.session.commit()
-        return await self._settings_out(await self._settings(project_id))
+        super().__init__(session, lambda model_id: transcription_model_ready(session, model_id))
 
     async def create_tasks(
         self,
@@ -177,7 +68,7 @@ class GalgameAsrService:
         provider = (
             await self.session.get(ModelProvider, model.provider_id) if model is not None else None
         )
-        if model is None or not _model_supports_asr(model, provider):
+        if model is None or not supports_asr(model, provider):
             raise AssetError("语音识别模型尚未就绪", code="asr_model_unavailable")
         query = (
             select(VisualAsset, GalgameAssetMetadata)
@@ -216,22 +107,6 @@ class GalgameAsrService:
         for task in tasks:
             await self.session.refresh(task)
         return GalgameTranscriptionTaskListOut(items=[_task_out(task) for task in tasks])
-
-    async def list_tasks(self, project_id: str) -> GalgameTranscriptionTaskListOut:
-        await self._project(project_id)
-        rows = list(
-            (
-                await self.session.execute(
-                    select(GalgameAssetTranscriptionTask)
-                    .where(GalgameAssetTranscriptionTask.project_id == project_id)
-                    .order_by(GalgameAssetTranscriptionTask.created_at.desc())
-                    .limit(500)
-                )
-            )
-            .scalars()
-            .all()
-        )
-        return GalgameTranscriptionTaskListOut(items=[_task_out(row) for row in rows])
 
     async def patch_transcript(
         self, project_id: str, asset_id: str, body: GalgameTranscriptPatchIn
@@ -464,7 +339,7 @@ class GalgameAsrRunner(PollingTaskRunner):
                     asset is None
                     or metadata is None
                     or model is None
-                    or not _model_supports_asr(model, provider)
+                    or not supports_asr(model, provider)
                 ):
                     task.status = "failed"
                     task.error = "素材、供应商或模型已不可用"

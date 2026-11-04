@@ -10,6 +10,7 @@ from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.reference_runtime import install_reference_runtime
 from fpl_runtime.web import attach_web, load_release
 
+from .asr_routes import router as asr_router
 from .asset_read_routes import router as asset_read_router
 from .migrations.registry import MIGRATIONS
 from .models import MODELS, GalgameCertificationReceipt, GalgameStoryReferenceMutation
@@ -59,6 +60,7 @@ def create_app(
     )
     app.include_router(project_router)
     app.include_router(asset_read_router)
+    app.include_router(asr_router)
     app.include_router(story_migration_router)
     app.state.capabilities = CapabilityClient(
         service="galgame", credential=credential, catalog=catalog, transport=transport
