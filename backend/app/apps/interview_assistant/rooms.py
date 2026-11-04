@@ -32,6 +32,7 @@ def task_out(row):
 class Rooms:
     def __init__(self, session, principal: StudioPrincipal):
         self.session, self.principal = session, principal
+        self.state_root = session.info.get("interview_files_root")
 
     async def get_row(self, room_id):
         row = await self.session.scalar(
@@ -148,7 +149,9 @@ class Rooms:
         await self.get_row(room_id)
         filename, data, digest = await receive_material(incoming)
         identifier = new_id()
-        path = material_path(self.principal.owner_user_id, room_id, identifier, filename)
+        path = material_path(
+            self.principal.owner_user_id, room_id, identifier, filename, state_root=self.state_root
+        )
         exclusive_write(path, data)
         try:
             await self.cas(room_id, expected)
@@ -178,7 +181,7 @@ class Rooms:
         if row is None:
             raise OperationError("材料不存在", "not_found", 404)
         return material_path(
-            self.principal.owner_user_id, room_id, row.id, row.filename
+            self.principal.owner_user_id, room_id, row.id, row.filename, state_root=self.state_root
         ), row.filename
 
     async def prepare(self, room_id, body):
@@ -293,7 +296,7 @@ class Rooms:
         await self.cas(room_id, expected)
         await self.session.execute(delete(InterviewRoom).where(InterviewRoom.id == room_id))
         await self.session.commit()
-        root = room_root(self.principal.owner_user_id, room_id)
+        root = room_root(self.principal.owner_user_id, room_id, state_root=self.state_root)
         if root.exists():
             shutil.rmtree(root)
 

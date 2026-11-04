@@ -41,6 +41,7 @@ export default defineConfig(async (environment) => {
       "thought",
       "tools",
       "director",
+      "interview",
       "agent-runtime",
     ].includes(service) ||
     !build ||
@@ -72,6 +73,7 @@ export default defineConfig(async (environment) => {
             | "thought"
             | "tools"
             | "director"
+            | "interview"
             | "agent-runtime"
         ],
       ),

@@ -25,6 +25,7 @@ if (
     "thought",
     "tools",
     "director",
+    "interview",
     "agent-runtime",
   ].includes(service)
 )

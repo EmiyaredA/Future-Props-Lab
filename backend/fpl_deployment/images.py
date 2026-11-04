@@ -8,13 +8,14 @@ from importlib.util import resolve_name
 from pathlib import Path
 
 PROJECT_OWNERS = frozenset({"visual", "galgame"})
-OWNED_HTTP_IMAGES = PROJECT_OWNERS | {"tools", "director", "agent-runtime", "remote"}
+OWNED_HTTP_IMAGES = PROJECT_OWNERS | {"tools", "director", "agent-runtime", "remote", "interview"}
 
 ENTRY_POINTS = {
     "visual": "fpl_visual.__main__",
     "galgame": "fpl_galgame.__main__",
     "tools": "fpl_tools.__main__",
     "director": "fpl_director.__main__",
+    "interview": "fpl_interview.__main__",
     "remote": "fpl_remote.__main__",
     "agent-runtime": "fpl_agent_runtime.__main__",
     "integrations": "fpl_integrations.__main__",
@@ -44,6 +45,7 @@ PROJECT_PACKAGES = (
     "fpl_galgame",
     "fpl_tools",
     "fpl_director",
+    "fpl_interview",
     "fpl_remote",
     "fpl_agent_runtime",
     "fpl_integrations",
@@ -312,6 +314,19 @@ def source_closure(root: Path, service):
             or name in {"app.console.cloud_control.access", "app.console.cloud_control.desktop"}
         ):
             raise ValueError(f"Remote 镜像包含越界依赖：{name}")
+        if service == "interview" and (
+            name in {"app.main", "app.api", "app.orm", "app.runtime.db"}
+            or name.startswith(("app.console", "app.llm", "fpl_assets", "fpl_identity", "fpl_host"))
+            or (
+                name.startswith("app.apps.") and not name.startswith("app.apps.interview_assistant")
+            )
+            or name
+            in {
+                "app.apps.interview_assistant.codex",
+                "app.apps.interview_assistant.runner",
+            }
+        ):
+            raise ValueError(f"Interview 镜像包含越界依赖：{name}")
         if service == "director" and (
             name in {"app.main", "app.api", "app.orm", "app.runtime.db"}
             or name.startswith(("app.console", "app.llm", "fpl_assets", "fpl_identity", "fpl_host"))
@@ -419,6 +434,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
         "thought",
         "tools",
         "director",
+        "interview",
         "agent-runtime",
         "remote",
     }:
@@ -458,6 +474,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
         "creative",
         "tools",
         "director",
+        "interview",
         "agent-runtime",
     }:
         if web_release is None:

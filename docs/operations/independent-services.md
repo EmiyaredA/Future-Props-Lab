@@ -370,3 +370,10 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 ```
 
 维护入口按账号核对分钟数、修订号、记录数量和摘要。记录与回执同事务提交，重复提交返回同一回执。隔离演练在旧站写入偏好，迁移、重放并从封存快照启动旧站后再核对修订号。
+
+
+### Interview 独立运行
+
+运行 `npm run services:build:web -- interview`，将产物目录通过 `--web-release` 传给 Interview 镜像构建。叠加 `deploy/interview.compose.yaml`，配置独立状态目录和 Identity 公钥。显式运行 `interview migrate` 后启动。Gateway 使用已登记的 `/apps/interview-assistant` 页面和 12 项发布 API。场次、原始材料、请求回执和准备历史由 Interview 持有。进程启动时把未完成的旧任务标记为中断，用户可重新提交。
+
+隔离运行 `fpl-interview-browser-11cf956d81` 通过 Gateway、Identity 和 Interview 验证登录、材料上传下载、旧浏览器版本拒绝、回环公网入口、容器重启和 390/768/1440px Chromium 界面。浏览器版本为 `3c3351e4400104946723`，Interview 镜像为 `fpl/interview:2f0792d1f1351f07fbc6`。本机 Codex 执行和历史数据迁移仍由正式就绪门禁跟踪。

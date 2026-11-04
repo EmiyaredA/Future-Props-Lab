@@ -21,6 +21,7 @@ from app.apps.galgame_workshop.assets.annotation_import_runner import GalgameAnn
 from app.apps.galgame_workshop.assets.asr import GalgameAsrRunner
 from app.apps.galgame_workshop.video.video_export_runner import GalgameVideoExportRunner
 from app.apps.galgame_workshop.video.video_handoff_runner import GalgameVideoEditorHandoffRunner
+from app.apps.interview_assistant.codex import executor_status
 from app.apps.interview_assistant.runner import InterviewPreparationRunner
 from app.apps.motion_compositor.runner import MotionExportRunner
 from app.apps.thought_workshop.account_directory import DirectoryBindings
@@ -219,6 +220,7 @@ SessionLocal.configure(
     info={
         **SessionLocal.kw.get("info", {}),
         "thought_asset_metadata_factory": LegacyAssetMetadata,
+        "interview_executor_status": executor_status,
         "creative_authors_factory": LegacyCreativeAuthors,
         "creative_archives_factory": LegacyCreativeArchives,
         "creative_sources_factory": LegacyCreativeSources,

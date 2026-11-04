@@ -4,7 +4,7 @@ from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, UniqueConstr
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.runtime.ids import new_id
-from app.runtime.orm_base import Base
+from app.runtime.orm_base import Base, external_id
 from app.runtime.time import utc_now
 
 
@@ -12,7 +12,7 @@ class InterviewRoom(Base):
     __tablename__ = "interview_rooms"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     owner_user_id: Mapped[str] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
+        ForeignKey(external_id("users"), ondelete="CASCADE"), index=True
     )
     user_id: Mapped[str] = mapped_column(String(36), index=True)
     title: Mapped[str] = mapped_column(String(120))

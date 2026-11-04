@@ -9,7 +9,6 @@ from app.deps import SessionDep, StudioAuth
 from app.runtime.operation_receipts import OperationError
 
 from ..bundles import markdown
-from ..codex import executor_status
 from ..rooms import Rooms
 from ..schemas import (
     InterviewCreateIn,
@@ -31,6 +30,10 @@ def errors():
         yield
     except OperationError as exc:
         raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
+
+
+async def executor_status(user_id, owner_user_id, session):
+    return await session.info["interview_executor_status"](user_id, owner_user_id, session)
 
 
 @router.get("/executor", response_model=InterviewExecutorOut)
