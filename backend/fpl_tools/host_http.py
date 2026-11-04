@@ -6,6 +6,7 @@ import binascii
 import secrets
 from uuid import UUID
 
+import jwt
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, ConfigDict, Field
@@ -13,14 +14,17 @@ from starlette.datastructures import Headers
 from starlette.responses import JSONResponse
 
 from app.capabilities.asset_store.schemas.project_snapshots import ProjectFolderOpenOut
+from app.capabilities.identity.permissions import effective_permissions
 from app.tool_navigation.video_download_contracts import (
     VideoDownloadDepsOut,
     VideoDownloadJobCreate,
     VideoDownloadJobOut,
 )
 from app.tool_navigation.video_download_errors import VideoDownloadError
+from fpl_runtime.claims import HEADER, verify_context
 from fpl_runtime.http_dependencies import StudioAuth
 from fpl_runtime.native_protocol import NativeLease, NativeOutcome
+from fpl_runtime.project_reveal import PROJECT_REVEAL, TOOLS_PREFIX, reveal_target
 from fpl_runtime.tools_native import OPEN_PATH, VIDEO_DEPS_PATH
 from fpl_runtime.tools_video import (
     DOWNLOAD_VIDEO,
@@ -100,6 +104,40 @@ async def reveal_library_folder(request: Request, principal: StudioAuth):
             503, {"code": "folder_open_unavailable", "message": "本机文件管理器连接不可用"}
         )
     await host.open_library(principal.user_id, request.state.service_assertion)
+    return ProjectFolderOpenOut()
+
+
+@public.post(TOOLS_PREFIX + "/video-editor/{project_id}", include_in_schema=False)
+async def reveal_project_folder(request: Request, project_id: str):
+    path = request.url.path
+    if (
+        not reveal_target("POST", path, "tools")
+        or "cookie" in request.headers
+        or "origin" in request.headers
+    ):
+        raise HTTPException(403, "private_project_reveal_required")
+    assertion = request.headers.get(HEADER, "")
+    try:
+        actor = verify_context(
+            assertion,
+            service="tools",
+            method="POST",
+            path=path,
+            public_key=request.app.state.identity_public_key,
+        )
+    except (jwt.InvalidTokenError, ValueError, TypeError):
+        raise HTTPException(401, "project_reveal_authorization_required") from None
+    if (
+        not actor.local
+        or actor.purpose != "studio"
+        or actor.auth_kind != "session"
+        or "content.write"
+        not in effective_permissions(actor.platform_role, frozenset(actor.scopes))
+    ):
+        raise HTTPException(403, "local_access_required")
+    await request.app.state.tools_host.open_folder(
+        actor.user_id, assertion, PROJECT_REVEAL, {"project_id": project_id}
+    )
     return ProjectFolderOpenOut()
 
 

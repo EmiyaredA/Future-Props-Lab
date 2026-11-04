@@ -11,6 +11,7 @@ from app.runtime.time import utc_now
 from app.tool_navigation.video_download_contracts import BinaryStatus, VideoDownloadDepsOut
 from fpl_runtime.native_protocol import NativeLease, NativeOutcome
 from fpl_runtime.native_queue import NativeQueue, NativeQueueError
+from fpl_runtime.project_reveal import PROJECT_REVEAL, reveal_payload
 from fpl_runtime.tools_native import (
     ERRORS,
     HOST_OPERATIONS,
@@ -42,14 +43,16 @@ class ToolsHost:
             database, ToolsNativeJob, operations=HOST_OPERATIONS, clock=utc_now
         )
 
-    async def _live(self, assertion, operation):
+    async def _live(self, assertion, operation, scope=None):
         if self.identity is None:
             return None
         method, path = HOST_OPERATIONS[operation]
+        if operation == PROJECT_REVEAL:
+            path = path.format(**reveal_payload(scope or {}))
         return await self.identity.status(assertion=assertion, method=method, path=path)
 
-    async def _run(self, owner, assertion, operation, *, timeout):
-        active = await self._live(assertion, operation)
+    async def _run(self, owner, assertion, operation, *, timeout, scope=None):
+        active = await self._live(assertion, operation, scope)
         if active is not True:
             raise HTTPException(
                 503 if active is None else 403,
@@ -59,7 +62,11 @@ class ToolsHost:
         job = await self.queue.enqueue(
             owner=owner,
             operation=operation,
-            payload={"assertion": assertion, "deadline": deadline.isoformat()},
+            payload={
+                "assertion": assertion,
+                "deadline": deadline.isoformat(),
+                "scope": scope or {},
+            },
             request_id=uuid4().hex,
         )
         try:
@@ -86,7 +93,10 @@ class ToolsHost:
             ) from exc
 
     async def open_library(self, owner, assertion):
-        result = await self._run(owner, assertion, OPEN_LIBRARY, timeout=WINDOW_SECONDS)
+        await self.open_folder(owner, assertion, OPEN_LIBRARY)
+
+    async def open_folder(self, owner, assertion, operation, scope=None):
+        result = await self._run(owner, assertion, operation, timeout=WINDOW_SECONDS, scope=scope)
         if result["status"] == "completed" and result["result"] == {"opened": True}:
             return
         code = result["error_code"]
@@ -113,6 +123,8 @@ class ToolsHost:
         return deps
 
     def _worker_payload(self, operation, payload):
+        if operation == PROJECT_REVEAL:
+            return reveal_payload(payload["scope"])
         if operation != DOWNLOAD_VIDEO:
             return {}
         body = payload["download"]
@@ -145,7 +157,7 @@ class ToolsHost:
             deadline = datetime.fromisoformat(row.payload["deadline"])
         if (
             deadline <= utc_now()
-            or not await self._live(assertion, lease.operation)
+            or not await self._live(assertion, lease.operation, lease.payload)
             or deadline <= utc_now()
         ):
             raise HTTPException(410, "tools_authorization_ended")
@@ -199,8 +211,13 @@ class ToolsHost:
         return await self.authorize(worker, lease, output=True)
 
     async def finish(self, worker, lease, outcome):
-        if (lease.operation != DOWNLOAD_VIDEO and lease.payload) or (
-            lease.operation == OPEN_LIBRARY
+        if lease.operation == PROJECT_REVEAL:
+            try:
+                reveal_payload(lease.payload)
+            except ValueError as exc:
+                raise HTTPException(422, "tools_outcome_invalid") from exc
+        if (lease.operation not in {DOWNLOAD_VIDEO, PROJECT_REVEAL} and lease.payload) or (
+            lease.operation in {OPEN_LIBRARY, PROJECT_REVEAL}
             and outcome.status == "completed"
             and outcome.result != {"opened": True}
         ):

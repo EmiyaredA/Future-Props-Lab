@@ -45,6 +45,7 @@ from .routes.motion_snapshot import router as motion_snapshot_router
 from .routes.presentation_archives import router as presentation_archives_router
 from .routes.presentation_assets import router as presentation_assets_router
 from .routes.project_links import router as links_router
+from .routes.project_reveal import router as project_reveal_router
 from .routes.thought_archives import router as thought_archives_router
 from .routes.thought_library import router as thought_library_router
 from .routes.thought_uploads import router as thought_uploads_router
@@ -178,6 +179,7 @@ def create_app(
     for router in (files_router, layout_router, links_router):
         app.include_router(router, prefix="/v1")
     app.include_router(retention_router)
+    app.include_router(project_reveal_router)
     app.include_router(library_inputs_router)
     app.include_router(library_outputs_router)
     app.include_router(thought_library_router)

@@ -17,6 +17,7 @@ from app.tool_navigation.video_download_dependencies import probe_deps
 from app.tool_navigation.video_download_errors import VideoDownloadError
 from fpl_runtime.locking import service_lock
 from fpl_runtime.native_protocol import NativeLease, NativeOutcome
+from fpl_runtime.project_reveal import PROJECT_REVEAL, reveal_payload
 from fpl_runtime.tools_native import HOST_OPERATIONS, OPEN_LIBRARY, VIDEO_PROBES
 from fpl_runtime.tools_video import (
     DOWNLOAD_VIDEO,
@@ -32,20 +33,20 @@ from .transport import LeaseEnded, NativeTransport, ProtocolConflict
 logger = logging.getLogger(__name__)
 
 
-def reveal_library(root, owner, *, launch=subprocess.Popen):
+def reveal(root, owner, parts, missing, *, launch=subprocess.Popen):
     try:
         owner_id = str(UUID(owner))
     except (ValueError, TypeError, AttributeError):
-        return {"error": "library_folder_missing"}
+        return {"error": missing}
     if owner != owner_id:
-        return {"error": "library_folder_missing"}
+        return {"error": missing}
     path = root
-    for segment in ("accounts", owner_id, "library", "assets"):
+    for segment in ("accounts", owner_id, *parts):
         path = path / segment
         if path.is_symlink() or not path.is_dir():
-            return {"error": "library_folder_missing"}
+            return {"error": missing}
     if not path.resolve().is_relative_to(root):
-        return {"error": "library_folder_missing"}
+        return {"error": missing}
     try:
         launch(
             ["/usr/bin/open", str(path)],
@@ -59,6 +60,21 @@ def reveal_library(root, owner, *, launch=subprocess.Popen):
     return {"opened": True}
 
 
+def reveal_library(root, owner, *, launch=subprocess.Popen):
+    return reveal(root, owner, ("library", "assets"), "library_folder_missing", launch=launch)
+
+
+def reveal_video_project(root, owner, project_id, *, launch=subprocess.Popen):
+    scope = reveal_payload({"project_id": project_id})
+    return reveal(
+        root,
+        owner,
+        ("applications", "video-editor", "projects", scope["project_id"]),
+        "project_folder_missing",
+        launch=launch,
+    )
+
+
 class ToolsWorker:
     def __init__(
         self,
@@ -67,6 +83,7 @@ class ToolsWorker:
         state_root,
         *,
         reveal=reveal_library,
+        reveal_project=reveal_video_project,
         dependencies=probe_deps,
         downloader=None,
     ):
@@ -74,6 +91,7 @@ class ToolsWorker:
             raise ValueError("Tools worker 必须指定真实的 Assets 状态目录")
         self.assets_root = assets_root.resolve()
         self.transport, self.reveal = transport, reveal
+        self.reveal_project = reveal_project
         self.dependencies = dependencies
         self.videos = VideoWorkspace(state_root, **({"download": downloader} if downloader else {}))
         self.receipts = ReceiptStore(
@@ -86,6 +104,7 @@ class ToolsWorker:
         error = outcome.result.get("error")
         if outcome.status == "completed" and error in {
             "library_folder_missing",
+            "project_folder_missing",
             "folder_open_unavailable",
             "authorization_revoked",
         }:
@@ -167,11 +186,16 @@ class ToolsWorker:
 
     async def execute(self, lease):
         if lease.operation not in HOST_OPERATIONS or (
-            lease.operation != DOWNLOAD_VIDEO and lease.payload
+            lease.operation not in {DOWNLOAD_VIDEO, PROJECT_REVEAL} and lease.payload
         ):
             raise ProtocolConflict("Tools 租约超出原生能力")
         if lease.operation == DOWNLOAD_VIDEO:
             VideoDownloadInput.model_validate(lease.payload)
+        elif lease.operation == PROJECT_REVEAL:
+            try:
+                reveal_payload(lease.payload)
+            except ValueError as exc:
+                raise ProtocolConflict("剪辑文件夹租约范围无效") from exc
         try:
             result = await self.transport.post(
                 "authorize", {"lease": lease.model_dump(mode="json")}
@@ -186,6 +210,10 @@ class ToolsWorker:
         def action(operation, _payload):
             if operation == OPEN_LIBRARY:
                 return self.reveal(self.assets_root, lease.owner_user_id)
+            if operation == PROJECT_REVEAL:
+                return self.reveal_project(
+                    self.assets_root, lease.owner_user_id, lease.payload["project_id"]
+                )
             if operation in VIDEO_PROBES:
                 return self.dependencies().model_dump(mode="json")
             try:

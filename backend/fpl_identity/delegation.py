@@ -16,6 +16,7 @@ from fpl_runtime.delegation import RequestGrant, permitted, target_permission_pa
 from fpl_runtime.motion_exports import render_grant as motion_export_grant
 from fpl_runtime.motion_preview import motion_preview_grant
 from fpl_runtime.motion_snapshot import motion_snapshot_grant
+from fpl_runtime.project_reveal import reveal_grant
 from fpl_runtime.video_audio import audio_grant
 from fpl_runtime.video_frames import frame_grant as video_frame_grant
 from fpl_runtime.video_snapshot import snapshot_grant as video_snapshot_grant
@@ -59,6 +60,9 @@ async def authorize_delegation(app, body, credential):
     async with app.database.sessions() as session:
         if not await active_actor(session, actor):
             raise HTTPException(401, "source_authorization_revoked")
+    reveal = reveal_grant(grant)
+    if reveal and (not actor.local or actor.auth_kind != "session" or actor.purpose != "studio"):
+        raise HTTPException(403, "local_access_required")
     principal = StudioPrincipal(
         user_id=actor.user_id,
         platform_role=actor.platform_role,
@@ -115,7 +119,7 @@ async def authorize_delegation(app, body, credential):
     if not principal.permits(scope):
         raise HTTPException(403, "target_scope_denied")
     return issue_context(
-        replace(actor, local=False),
+        replace(actor, local=bool(reveal)),
         service=body.target_service,
         method=body.target_method,
         path=body.target_path,

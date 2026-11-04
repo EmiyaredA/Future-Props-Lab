@@ -87,6 +87,7 @@ def create_app(
         title="FPL Tools", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan
     )
     app.state.database = database
+    app.state.identity_public_key = public_key
     app.state.tools_host = ToolsHost(database, identity)
     app.state.tools_videos = Videos(app.state.tools_host, VideoLibrary(capabilities))
     for operation in ("claim", "authorize", "heartbeat", "receipt"):

@@ -67,6 +67,7 @@ from .models import (
 )
 from .motion_handoffs import MotionHandoffs
 from .project_layouts import ProjectLayouts
+from .project_reveal_routes import router as reveal_router
 from .render_delivery import RenderDelivery
 from .render_routes import router as render_router
 from .snapshot_exports import SnapshotSettings
@@ -93,6 +94,7 @@ OPERATIONS = {
     ("GET", PROJECT),
     ("PATCH", PROJECT),
     ("DELETE", PROJECT),
+    ("POST", PROJECT + "/open-folder"),
     ("GET", PROJECT + "/timeline"),
     ("GET", PROJECT + "/snapshot"),
     ("POST", IMPORT),
@@ -281,6 +283,7 @@ def create_app(
         preflight_router,
         render_router,
         snapshot_router,
+        reveal_router,
     ):
         app.include_router(
             router,

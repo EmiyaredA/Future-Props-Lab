@@ -12,6 +12,7 @@ from .motion_preview import motion_preview_grant
 from .motion_snapshot import motion_archive_grant, motion_snapshot_grant
 from .presentation_archives import presentation_archive_grant
 from .presentation_assets import project_asset_grant
+from .project_reveal import reveal_grant
 from .resource_routes import RESOURCE_ROUTES
 from .video_assets import video_asset_grant, video_write_grant
 from .video_audio import audio_grant
@@ -108,7 +109,7 @@ def model_library_output(grant):
 
 
 def target_permission_path(grant):
-    if handoff_grant(grant):
+    if handoff_grant(grant) or reveal_grant(grant):
         return grant.source_path
     from .account_directory import directory_path
     from .community_uploads import upload_grant as community_upload_grant
@@ -181,6 +182,7 @@ def permitted(grant, catalog):
         or motion_export_grant(grant)
         or video_frame_grant(grant)
         or handoff_grant(grant)
+        or reveal_grant(grant)
         or audio_grant(grant)
         or video_snapshot_grant(grant)
     ):

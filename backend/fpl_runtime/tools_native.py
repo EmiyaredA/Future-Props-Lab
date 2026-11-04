@@ -5,6 +5,7 @@ from types import MappingProxyType
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
+from .project_reveal import PROJECT_REVEAL, TOOLS_PREFIX
 from .tools_video import DOWNLOAD_VIDEO, VIDEO_JOB_PATH
 
 OPEN_PATH = "/v1/file-storage/open-folder"
@@ -16,6 +17,7 @@ VIDEO_DEPS_PATH = "/v1/tool-navigation/video-download/deps"
 HOST_OPERATIONS = MappingProxyType(
     {
         OPEN_LIBRARY: ("POST", OPEN_PATH),
+        PROJECT_REVEAL: ("POST", TOOLS_PREFIX + "/video-editor/{project_id}"),
         PROBE_VIDEO: ("GET", VIDEO_DEPS_PATH),
         PROBE_VIDEO_SUBMIT: ("POST", VIDEO_JOB_PATH),
         DOWNLOAD_VIDEO: ("POST", VIDEO_JOB_PATH),
@@ -23,6 +25,7 @@ HOST_OPERATIONS = MappingProxyType(
 )
 ERRORS = {
     "library_folder_missing": (409, "文件库文件夹不存在"),
+    "project_folder_missing": (409, "项目文件夹不存在"),
     "folder_open_unavailable": (503, "无法启动系统文件管理器"),
     "authorization_revoked": (403, "文件夹打开授权已撤销"),
 }

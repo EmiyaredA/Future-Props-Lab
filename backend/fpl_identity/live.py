@@ -20,6 +20,7 @@ from fpl_runtime.annotation_transcription import target as annotation_transcript
 from fpl_runtime.claims import verify_context
 from fpl_runtime.model_outputs import is_model_output_path
 from fpl_runtime.motion_exports import render_target
+from fpl_runtime.project_reveal import reveal_target
 from fpl_runtime.tools_video_library import is_library_path as is_tools_output_path
 from fpl_runtime.video_assets import video_write_target
 from fpl_runtime.video_audio import audio_target
@@ -149,6 +150,7 @@ async def live(request: Request, body: LiveRequest):
         or private_thought_upload
         or private_render
         or render_export
+        or reveal_target(body.method, body.path, body.service)
         or (body.service == "video" and handoff_target(body.method, body.path))
     ) and (operation is None or operation.service != body.service):
         raise HTTPException(403, "invalid_service_target")
