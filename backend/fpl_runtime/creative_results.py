@@ -12,9 +12,17 @@ class CreativeResultAuthenticator:
             raise ValueError("Creative result credential is invalid")
         self._secret = secret.encode("ascii")
 
+    def stdio_digest(self, installation_id, configuration):
+        from .integration_intents import digest
+
+        checksum = digest([installation_id, configuration.model_dump(mode="json")])
+        return hmac.new(
+            self._secret, b"creative-stdio-v1:" + checksum.encode(), hashlib.sha256
+        ).hexdigest()
+
     def sign(self, *, action, operation, fingerprint, nonce, status, body):
         if (
-            action not in {"install", "receipt", "cancel"}
+            action not in {"install", "receipt", "cancel", "setup"}
             or not isinstance(operation, str)
             or not operation
             or not isinstance(fingerprint, str)

@@ -24,9 +24,11 @@ Source import requires the original gateway evidence and a destination assertion
 
 ## Consequences
 
-The catalog, source import, installation preview and submit can run as isolated services. Stdio configuration and historical transfer still keep the release readiness check closed.
+The catalog, source import, installation preview, submit and stdio configuration run as isolated services. Stdio uses an owned installation lookup, a destination assertion and a keyed digest of the configuration. Integrations encrypts environment values and returns an authenticated receipt. Creative advances the installed resource projection and keeps the original install receipt immutable. Project certification and historical transfer keep the release readiness check closed.
 
 ## Verification
+
+The stdio journey discards the Integrations setup response after commit. A matching retry returns the same disabled MCP. A different command conflicts, and replaying the earlier installation preserves the configured MCP. Invalid public input responses omit environment values.
 
 Isolated HTTP tests verify the Identity author peer and draft visibility. Creative and Integrations verify that the exact installation request can recover a lost target response without a second target write. The bridge tests exercise the owner-only socket and its cleanup and check that both website listeners authorize before forwarding to the private path.
 

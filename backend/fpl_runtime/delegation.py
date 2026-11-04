@@ -96,6 +96,7 @@ def target_permission_path(grant):
     from .account_directory import directory_path
     from .creative_preview import preview_grant
     from .creative_source_evidence import source_transfer_grant
+    from .creative_stdio import stdio_grant
     from .external_sync import close_grant, read_grant
     from .thought_assets import asset_grant, upload_grant
     from .writing import writing_grant, writing_target
@@ -110,6 +111,8 @@ def target_permission_path(grant):
         return "/v1/integrations/external-connections"
     if preview_grant(grant) or source_transfer_grant(grant):
         return "/v1/integrations/tool-apis"
+    if stdio_grant(grant):
+        return "/v1/integrations/mcp"
     if writing_grant(grant):
         return writing_target(grant.target_method, grant.target_path)
     if asset_grant(grant) or upload_grant(grant):
@@ -127,13 +130,14 @@ def permitted(grant, catalog):
     from .account_directory import directory_grant
     from .creative_preview import preview_grant
     from .creative_source_evidence import source_transfer_grant
+    from .creative_stdio import stdio_grant
     from .external_sync import close_grant, read_grant
     from .thought_assets import asset_grant, upload_grant
     from .writing import writing_grant
 
     if directory_grant(grant, catalog):
         return True
-    if preview_grant(grant) or source_transfer_grant(grant):
+    if preview_grant(grant) or source_transfer_grant(grant) or stdio_grant(grant):
         return True
     if writing_grant(grant) or read_grant(grant) or close_grant(grant):
         return True

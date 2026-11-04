@@ -764,18 +764,36 @@ async def test_independent_install_http_recovers_a_lost_target_reply(installatio
     from fpl_creative.migrations.registry import MIGRATIONS as CREATIVE_MIGRATIONS
     from fpl_integrations.creative_authority import CreativeHttpAuthority
     from fpl_integrations.creative_http import router
+    from fpl_integrations.creative_stdio_http import router as setup_router
     from fpl_runtime.claims import HEADER, Actor, issue_context
     from fpl_runtime.creative_install_evidence import INSTALL_PATH, issue_install_evidence
+    from fpl_runtime.creative_stdio import PRIVATE_STDIO, PUBLIC_STDIO
+    from fpl_runtime.delegation import RequestGrant, permitted
     from fpl_runtime.routing import RouteCatalog
 
     key = Ed25519PrivateKey.generate()
     peer, target, result = ("source-" * 8, "target-" * 8, "result-" * 8)
     installs = 0
+    setups = 0
     services = {}
 
     async def dispatch(request):
-        nonlocal installs
+        nonlocal installs, setups
         if request.url.host == "identity":
+            if request.url.path.endswith("/delegate"):
+                fields = json.loads(request.content)
+                del fields["assertion"]
+                grant = RequestGrant(**fields)
+                assert permitted(grant, catalog)
+                delegated = issue_context(
+                    actor,
+                    service="integrations",
+                    method="POST",
+                    path=grant.target_path,
+                    private_key=key,
+                    key_id="test",
+                )
+                return httpx.Response(200, json={"assertion": delegated})
             return httpx.Response(200, json={"active": True})
         response = await services[request.url.host].handle_async_request(request)
         if request.url.path == "/_internal/v1/creative-integrations/install":
@@ -784,6 +802,12 @@ async def test_independent_install_http_recovers_a_lost_target_reply(installatio
                 assert response.status_code == 200
                 await response.aclose()
                 raise httpx.ReadError("reply lost", request=request)
+        if request.url.path.startswith(PRIVATE_STDIO):
+            setups += 1
+            if setups == 1:
+                assert response.status_code == 200
+                await response.aclose()
+                raise httpx.ReadError("setup reply lost", request=request)
         return response
 
     transport = httpx.MockTransport(dispatch)
@@ -800,6 +824,9 @@ async def test_independent_install_http_recovers_a_lost_target_reply(installatio
     )
     integrations = FastAPI()
     integrations.include_router(router)
+    integrations.include_router(setup_router)
+    integrations.state.identity_public_key = key.public_key()
+    integrations.state.identity = creative.state.identity
     integrations.state.creative_installations = installation.use
     integrations.state.creative_authorization = CreativeHttpAuthority(
         creative_peer_credential=peer,
@@ -818,8 +845,8 @@ async def test_independent_install_http_recovers_a_lost_target_reply(installatio
     claims = jwt.decode(
         token, key.public_key(), algorithms=["EdDSA"], issuer="fpl-identity", audience="creative"
     )
-    part = tool()
-    raw = b'{"release_id":"tool-release","names":{"tool-release":"My Tool"}}'
+    part = stdio()
+    raw = json.dumps({"release_id": part.release_id}).encode()
     evidence = issue_install_evidence(
         actor=actor,
         request_id=claims["jti"],
@@ -840,7 +867,7 @@ async def test_independent_install_http_recovers_a_lost_target_reply(installatio
                     id="item",
                     origin_owner_user_id="author",
                     author_user_id="author",
-                    kind="tool_api",
+                    kind="mcp",
                     status="published",
                 )
             )
@@ -869,6 +896,64 @@ async def test_independent_install_http_recovers_a_lost_target_reply(installatio
         repeated = await browser.post(INSTALL_PATH, content=raw, headers=headers)
         assert repeated.json() == recovered.json()
         assert installs == 1
+        installed = recovered.json()
+        assert installed["resources"][0]["state"] == "pending_setup"
+        setup_path = PUBLIC_STDIO.format(installation_id=installed["id"])
+        setup_headers = {
+            HEADER: issue_context(
+                actor,
+                service="creative",
+                method="POST",
+                path=setup_path,
+                private_key=key,
+                key_id="test",
+            )
+        }
+        configuration = {
+            "release_id": part.release_id,
+            "command": "/usr/bin/env",
+            "arguments": ["sample-mcp"],
+            "environment": {"TEST_TOKEN": "synthetic-sensitive-value"},
+        }
+        outsider = Actor("beta", "user", "session", actor.scopes, session_id="other")
+        denied = await browser.post(
+            setup_path,
+            json=configuration,
+            headers={
+                HEADER: issue_context(
+                    outsider,
+                    service="creative",
+                    method="POST",
+                    path=setup_path,
+                    private_key=key,
+                    key_id="test",
+                )
+            },
+        )
+        assert denied.status_code == 404 and setups == 0
+        invalid = await browser.post(
+            setup_path,
+            json={**configuration, "environment": ["synthetic-sensitive-value"]},
+            headers=setup_headers,
+        )
+        assert invalid.status_code == 422 and "synthetic-sensitive-value" not in invalid.text
+        unknown = await browser.post(setup_path, json=configuration, headers=setup_headers)
+        assert unknown.status_code == 503, unknown.text
+        settled = await browser.post(setup_path, json=configuration, headers=setup_headers)
+        assert settled.status_code == 200, settled.text
+        assert settled.json()["resources"][0]["state"] == "disabled"
+        assert (
+            await browser.post(INSTALL_PATH, content=raw, headers=headers)
+        ).json() == settled.json()
+        changed = await browser.post(
+            setup_path, json={**configuration, "command": "another-command"}, headers=setup_headers
+        )
+        assert changed.status_code == 409, changed.text
+        async with installation.db.sessions(info={"owner_user_id": "alpha"}) as session:
+            configured = list(await session.scalars(select(McpIntegration)))
+            assert len(configured) == 1
+            assert configured[0].id == settled.json()["resources"][0]["resource_id"]
+            assert "synthetic-sensitive-value" not in configured[0].environment_ciphertext
 
 
 async def test_bound_preview_checks_exact_batch_and_live_account_without_writes(installation):

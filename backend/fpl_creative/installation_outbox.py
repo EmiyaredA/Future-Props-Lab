@@ -21,6 +21,7 @@ from fpl_runtime.integration_intents import digest
 from .fence_records import CreativeInstallCancellation, CreativeInstallFence
 from .installation_records import CreativeInstallOperation
 from .skill_integrity import published_skill_tree
+from .stdio_records import StdioRecordError, merge_resource
 
 
 class InstallIntentConflict(ValueError):
@@ -362,7 +363,11 @@ class InstallationOutbox:
             }
             expected[root_release_id] = receipt["resources"]
             root = None
+            settled = {}
             for release_id, resources in expected.items():
+                resources = [
+                    settled.get(resource["release_id"], resource) for resource in resources
+                ]
                 installation = await session.scalar(
                     select(CreativeInstallation).where(
                         CreativeInstallation.owner_user_id == owner,
@@ -379,7 +384,17 @@ class InstallationOutbox:
                     session.add(installation)
                     await session.flush()
                 elif installation.resources != resources:
-                    raise InstallIntentConflict("已有安装记录与目标回执不一致")
+                    try:
+                        installation.resources = [
+                            merge_resource(previous, incoming)
+                            for previous, incoming in zip(
+                                installation.resources, resources, strict=True
+                            )
+                        ]
+                    except (StdioRecordError, ValueError):
+                        raise InstallIntentConflict("已有安装记录与目标回执不一致") from None
+                if release_id != root_release_id:
+                    settled[release_id] = installation.resources[0]
                 if release_id == root_release_id:
                     root = installation
             await session.execute(

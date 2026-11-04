@@ -32,6 +32,7 @@ from app.runtime.credentials import SecretCipher
 from app.runtime.polling_runner import RunnerSupervisor
 from app.runtime.revisions import RevisionConflictError
 from fpl_runtime.authentication import SignedIdentity
+from fpl_runtime.creative_stdio import PRIVATE_STDIO
 from fpl_runtime.database import Database
 from fpl_runtime.integration_client import IntegrationAuthorizationUnavailable
 from fpl_runtime.migrations import check
@@ -42,6 +43,7 @@ from .creative_http import router as creative_router
 from .creative_installations import CreativeInstallations
 from .creative_preview_http import router as creative_preview_router
 from .creative_sources_http import router as creative_sources_router
+from .creative_stdio_http import router as creative_stdio_router
 from .demo_http import router as demo_install_router
 from .demo_tools import DemoToolInstallations
 from .external_http import router as external_sync_router
@@ -162,6 +164,7 @@ def create_app(
     app.state.creative_authorization = creative_authorization
     app.include_router(creative_preview_router)
     app.include_router(creative_sources_router)
+    app.include_router(creative_stdio_router)
     app.state.integration_validation_recovery = recovery
     app.state.supervisor = supervisor
 
@@ -242,6 +245,7 @@ def create_app(
         RequestLimit, prefix="/_internal/v1/external-sync/", maximum=32 * 1024 * 1024
     )
     app.add_middleware(CreativeRequestLimit)
+    app.add_middleware(RequestLimit, prefix=PRIVATE_STDIO, maximum=256 * 1024)
     app.add_middleware(RequestLimit, prefix="/_internal/v1/creative-sources/", maximum=40 * 1024)
     expected = {
         (op.method, op.path): op.operation_id

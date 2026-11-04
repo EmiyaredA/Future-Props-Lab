@@ -15,6 +15,7 @@ from fpl_runtime.authentication import SignedIdentity
 from fpl_runtime.capability_client import CapabilityClient
 from fpl_runtime.creative_install_evidence import INSTALL_PATH, MAX_BODY
 from fpl_runtime.creative_source_evidence import SOURCE_PATH
+from fpl_runtime.creative_stdio import PUBLIC_STDIO
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.locking import service_lock
 from fpl_runtime.migrations import check
@@ -33,6 +34,7 @@ from .migrations.registry import MIGRATIONS
 from .preview_http import router as preview_router
 from .skill_archive import CreativeSkillArchives, SkillArchivePacker
 from .source_http import router as source_router
+from .stdio_http import router as stdio_router
 from .storage import creative_database
 
 
@@ -132,9 +134,19 @@ def create_app(
         app.include_router(decision_router)
         app.include_router(installation_router, tags=["creative-workshop"])
         app.include_router(preview_router, tags=["creative-workshop"])
-        app.add_middleware(RequestLimit, prefix=INSTALL_PATH, maximum=MAX_BODY)
+        app.include_router(stdio_router, tags=["creative-workshop"])
+        app.add_middleware(RequestLimit, prefix=INSTALL_PATH, maximum=MAX_BODY, exact=True)
+        app.add_middleware(RequestLimit, prefix=INSTALL_PATH + "/", maximum=256 * 1024)
+
+    async def validate_request(request, exc):
+        if getattr(request.scope.get("route"), "path", None) == PUBLIC_STDIO:
+            return await http_exception_handler(
+                request, HTTPException(422, "creative_stdio_configuration_invalid")
+            )
+        return await validation_exception_handler(request, exc)
+
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
-    app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    app.add_exception_handler(RequestValidationError, validate_request)
     app.add_middleware(SignedIdentity, service="creative", public_key=public_key, catalog=catalog)
     if web_root is not None:
         from fpl_runtime.protocol_hash import public_contract
@@ -166,7 +178,7 @@ def create_app(
     async def ready():
         async with database.sessions() as session:
             await session.execute(text("SELECT 1"))
-        # Stdio setup and historical migration are still gated.
+        # Project certification and historical migration are still gated.
         raise HTTPException(503, "creative_assembly_incomplete")
 
     return app

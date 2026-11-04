@@ -4,11 +4,13 @@ from starlette.responses import JSONResponse
 
 
 class RequestLimit:
-    def __init__(self, app, *, prefix, maximum):
-        self.app, self.prefix, self.maximum = app, prefix, maximum
+    def __init__(self, app, *, prefix, maximum, exact=False):
+        self.app, self.prefix, self.maximum, self.exact = app, prefix, maximum, exact
 
     async def __call__(self, scope, receive, send):
-        if scope["type"] != "http" or not scope["path"].startswith(self.prefix):
+        if scope["type"] != "http" or not (
+            scope["path"] == self.prefix if self.exact else scope["path"].startswith(self.prefix)
+        ):
             await self.app(scope, receive, send)
             return
         body = bytearray()
