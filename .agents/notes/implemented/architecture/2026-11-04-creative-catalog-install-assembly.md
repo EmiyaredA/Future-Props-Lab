@@ -25,3 +25,5 @@ The catalog and installation submit can run as isolated services. Source import,
 ## Verification
 
 Isolated HTTP tests verify the Identity author peer and draft visibility. Creative and Integrations verify that the exact installation request can recover a lost target response without a second target write. The bridge tests exercise the owner-only socket and its cleanup and check that both website listeners authorize before forwarding to the private path.
+
+The isolated four-service Compose journey exercises local login, publish, install and replay. The public listener serves the Creative program and rejects direct bridge requests. Chromium visits the gallery, item detail and creation pages with a mobile viewport using the same packaged browser build.

@@ -135,7 +135,15 @@ def create_app(
         release = load_release(web_root, "creative")
         if release.api_sha256 != public_contract(public, "creative", catalog):
             raise ValueError("Creative 页面与公开契约不匹配")
-        attach_web(app, release, pages=("/creative-workshop", "/creative-workshop/"))
+        attach_web(
+            app,
+            release,
+            pages=tuple(
+                "/creative-workshop" + page + trailing
+                for page in ("", "/mine", "/new", "/edit/{item_id}", "/item/{item_id}")
+                for trailing in ("", "/")
+            ),
+        )
 
     @app.get("/health")
     async def health():
