@@ -142,7 +142,7 @@ Agents 的 `execution_http.py` 读取自有聊天记录并逐次复核 SSE 授�
 
 `runtime/website.py` 拥有可信本机 socket、SPA 静态托管和来源校验；`runtime/remote_web.py` 拥有公网 Host／Origin、浏览器 Session／受控 API Key 和缓存边界。`capabilities/web_access/` 拥有公网回环监听器、专用 SSH 重连和状态；附加 lifespan 关闭，不重复初始化数据库或 Runner。
 
-`scripts/website/serve.py` 在导入数据库前检查配置和迁移、持有目标与原桌面数据锁；`application.py` 在每个重载 worker 导入数据库前复查迁移，并装配网站与公网生命周期；`service.py` 管理同一个用户级 LaunchAgent，`development.py` 持有单例启动锁、沿用现有 TOML 和数据、按后端就绪顺序启动固定 9001/3000 热加载前后端并统一清理进程，`install_client.py` 核验原客户端授权并安装用户级 fpl 命令，`configure.py` 在停机快照约束下发布网站配置，`data_transfer.py` 拥有停机快照、SHA256、只读 SQLite 核验和文件发布回滚，`cleanup.py` 只清理受控缓存与有正式关联副本的临时媒体。相邻独立工具入口供 Amadeus／面试准备子进程调用，不启动主应用。
+`scripts/website/serve.py` 在导入数据库前检查配置和迁移、持有目标与原桌面数据锁；`application.py` 在每个重载 worker 导入数据库前复查迁移，并装配网站与公网生命周期；`service.py` 管理同一个用户级 LaunchAgent，`development.py` 持有单例启动锁、沿用现有 TOML 和数据、按后端就绪顺序启动固定 9001/3000 热加载前后端并统一清理进程，`install_client.py` 核验原客户端授权并安装用户级 fpl 命令，`configure.py` 在停机快照约束下发布网站配置，`data_transfer.py` 拥有停机快照、SHA256、只读 SQLite 核验和文件发布回滚，`legacy_snapshot.py` 将网站运行树与原 TOML 封存为独立恢复包，并核对每项文件与迁移校验和，`cleanup.py` 只清理受控缓存与有正式关联副本的临时媒体。相邻独立工具入口供 Amadeus／面试准备子进程调用，不启动主应用。
 
 `console/governance/automation.py` 校验资源归属并返回网站路径；`automation_operations.json` 维护 SDK／MCP 白名单，`automation_access.py` 将其编译为本机／公网共用的入口策略；`console/routes/automation.py` 负责发现和本机管理员访问控制。`sdk/python/src/future_props_lab/website.py` 保存受保护客户端连接，`cli.py` 提供 fpl。
 

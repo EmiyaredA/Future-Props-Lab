@@ -317,3 +317,20 @@ Identity 传输工具随后核验并迁移同一快照中 `profiles/` 下的账�
 Mac worker 从 `uv run python -m fpl_host.agent_connections_worker` 启动，显式传入专用回环 `--bridge`、当前用户独占的 `--worker-token`、`--state-root` 及部署 `--config`。编程智能体目录、重新检测和启用沿用发布契约。本机管理员近期密码验证后可启用已安装及已登录的连接。写入前再次检查原会话，回执丢失后重放原结果。公开访问看不到可执行文件路径，也不能启用 CLI。项目和对话的原生执行能力仍是正式就绪门禁。
 
 三容器运行 `fpl-agent-runtime-browser-64ccdf16ce` 验证了 Mac 回环、隔离 TOML 写入和 Chromium 390px 浏览器启用流程。模拟 CLI 返回固定版本与模型，无须真实供应商凭据。定向测试覆盖公网路径遮蔽、写入前撤权及丢失回执后的恢复。
+
+### 旧站快照及恢复目录演练
+
+恢复包包含停机网站的完整 `.runtime/` 运行树、原始 `backend/config.toml` 和逐文件清单。清单覆盖目录及权限、内部相对链接、文件大小和 SHA256、配置摘要与 SQLite 迁移顺序。数据库检查使用只读连接并逐条核对注册表 checksum。运行锁未释放、数据库仍打开、WAL 未结算、外部链接、文件变化或版本不符都会阻止发布恢复包。
+
+在独立验收目录和对应旧站提交下运行下列命令。所有输出目录必须预先选择为空路径，父目录已存在。
+
+```sh
+uv run python -m scripts.website.legacy_snapshot create \
+  --runtime "$source_runtime" --config "$source_config" \
+  --output "$sealed_snapshot" --source-revision "$source_git_sha"
+uv run python -m scripts.website.legacy_snapshot restore \
+  --snapshot "$sealed_snapshot" --target "$recovery_bundle" \
+  --source-revision "$source_git_sha" --manifest-sha256 "$manifest_sha256"
+```
+
+隔离恢复以原配置为凭据来源，另建启动投影，仅调整隔离数据库路径和监听端口并关闭公网。使用旧站同一启动器读回登录态、账号、工具记录与头像原件。验证链路还将同一快照经回环维护接口导入 Identity 与 Tools，重复提交核对原回执，再从原快照启动旧站。正式演练还需覆盖其余数据集、已发布网页、跨服务关系、网关凭据与公网恢复。
