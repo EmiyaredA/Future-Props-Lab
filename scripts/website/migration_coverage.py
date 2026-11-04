@@ -10,6 +10,7 @@ from fpl_assets.migration_records import DATASETS as ASSETS
 from fpl_director.migration_records import DATASETS as DIRECTOR
 from fpl_identity.credential_migration import DATASETS as IDENTITY
 from fpl_models.catalog_migration import DATASETS as MODELS
+from fpl_models.settings_migration import DEFAULT_PREFIX, POLICIES
 from fpl_remote.preference_migration import DATASET as REMOTE
 from fpl_runtime.migration_apps import SourceSnapshot
 from fpl_runtime.migration_batches import MigrationPlan
@@ -60,10 +61,13 @@ def platform_partitions(database, partition):
         )
 
     result = {}
+    pending = 0
     for key, count in database.execute("SELECT id, count(*) FROM platform_settings GROUP BY id"):
         service = owner(key)
         result[service] = result.get(service, 0) + count
-    return result
+        if service != "models" or (key not in POLICIES and not key.startswith(DEFAULT_PREFIX)):
+            pending += count
+    return result, pending
 
 
 def coverage(snapshot, catalog):
@@ -88,7 +92,9 @@ def coverage(snapshot, catalog):
                 if name == "platform_settings"
                 else None
             )
-            if name in TRANSFER:
+            if partition is not None and count:
+                status = "transfer_pending" if partition[1] else "dataset_registered"
+            elif name in TRANSFER:
                 status = "dataset_registered"
             elif name in derived:
                 status = "rebuild_pending"
@@ -105,7 +111,7 @@ def coverage(snapshot, catalog):
             if name in TRANSFER:
                 item["dataset"] = TRANSFER[name]
             if partition is not None:
-                item["partitions"] = partition
+                item["partitions"], item["pending_records"] = partition
             output.append(item)
     snapshot.check()
     pending = [

@@ -17,8 +17,10 @@ Models exposes loopback maintenance datasets for suppliers, providers, entries a
 
 ## Consequences
 
-The same key must be carried forward. Account defaults, platform settings and task and log history remain separate migration dependencies.
+The same key must be carried forward. Task and log history remain separate migration dependencies. Account defaults and supported platform policy partitions are migrated after the directory. Unknown platform settings still block the source coverage gate.
 
 ## Verification
 
 The isolated compatibility site creates a supplier and configured provider through normal APIs. The rehearsal verifies the catalog import, repeat receipt and rejection with a different key. The restored old site returns the original catalog.
+
+The policy rehearsal writes a default model selection, quota, encrypted role template and demo setting through the compatibility APIs. It compares source and destination receipts for both partitions and checks the restored values and revisions.

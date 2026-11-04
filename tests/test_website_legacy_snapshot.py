@@ -21,6 +21,7 @@ from scripts.website.migrate_director import DIRECTOR_RECORDS, transfer_director
 from scripts.website.migrate_identity import CREDENTIALS
 from scripts.website.migrate_identity_avatars import transfer_avatars
 from scripts.website.migrate_model_catalog import CATALOG as MODEL_CATALOG
+from scripts.website.migrate_model_catalog import POLICIES as MODEL_POLICIES
 from scripts.website.migrate_remote_preferences import PREFERENCES
 from scripts.website.migrate_tools_navigation import NAVIGATION
 from scripts.website.migration_coverage import inspect_bundle
@@ -127,7 +128,7 @@ def migrate_rehearsal(snapshot_db, parent, account, manifest_sha256):
     for service, migrations, datasets in (
         ("identity", IDENTITY_MIGRATIONS, CREDENTIALS),
         ("assets", ASSET_MIGRATIONS, ASSET_RECORDS),
-        ("models", MODEL_MIGRATIONS, MODEL_CATALOG),
+        ("models", MODEL_MIGRATIONS, MODEL_CATALOG + MODEL_POLICIES),
         ("tools", TOOLS_MIGRATIONS, (NAVIGATION,)),
         ("remote", REMOTE_MIGRATIONS, (PREFERENCES,)),
         ("director", DIRECTOR_MIGRATIONS, DIRECTOR_RECORDS),
@@ -176,6 +177,7 @@ def migrate_rehearsal(snapshot_db, parent, account, manifest_sha256):
             reports = [transfer(client, plan, source, destination, item) for item in datasets]
             if service == "models":
                 assert all(report["record_count"] >= 1 for report in reports)
+                assert reports[-1]["record_count"] >= 3
             else:
                 assert reports[0]["record_count"] == (2 if service == "assets" else 1)
             assert reports == [
@@ -369,6 +371,54 @@ def test_stopped_site_reopens_from_verified_runtime_and_original_config(tmp_path
             },
         )
         assert created_model.status_code == 200, created_model.text
+        defaults = client.put(
+            "/v1/model-catalog/defaults",
+            headers=safe,
+            json={
+                "expected_revision": created_model.json()["revision"],
+                "default_model_ids": {"chat": created_model.json()["model"]["id"]},
+            },
+        )
+        assert defaults.status_code == 200, defaults.text
+        quota_path = "/v1/platform/runtime-quotas"
+        old_quotas = client.get(quota_path).json()
+        quotas = client.patch(
+            quota_path,
+            headers=safe,
+            json={"expected_revision": old_quotas["revision"], "value": old_quotas["value"]},
+        )
+        assert quotas.status_code == 200, quotas.text
+        template_path = "/v1/platform/model-service-templates/user"
+        current_template = client.get(template_path).json()
+        template = client.put(
+            template_path,
+            headers=safe,
+            json={
+                "expected_revision": current_template["revision"],
+                "value": {
+                    "providers": [
+                        {
+                            "template_key": "fixture-provider-template",
+                            "name": "Retained template",
+                            "kind": "openai",
+                            "base_url": "https://provider.example.test/v1",
+                            "api_key": "fixture-template-secret",
+                        }
+                    ],
+                },
+            },
+        )
+        assert template.status_code == 200, template.text
+        demo_path = "/v1/platform/demo-services"
+        before_demo = next(
+            value for value in client.get(demo_path).json() if value["id"] == "mock_model"
+        )
+        demo = client.put(
+            demo_path + "/mock_model",
+            headers=safe,
+            json={"expected_revision": before_demo["revision"], "value": {"delay_ms": 5}},
+        )
+        assert demo.status_code == 200, demo.text
         catalog_before = client.get(providers).json()
         root_folder = client.post(
             "/v1/file-folders", headers=safe, json={"name": "Retained", "scope": "library"}
@@ -469,6 +519,15 @@ def test_stopped_site_reopens_from_verified_runtime_and_original_config(tmp_path
         assert response.status_code == 200 and response.content == image
         assert restored.get(asset_path).content == asset_body
         assert restored.get(providers).json() == catalog_before
+        assert restored.get(quota_path).json() == quotas.json()
+        assert restored.get(template_path).json() == template.json()
+        restored_demo = next(
+            item for item in restored.get(demo_path).json() if item["id"] == "mock_model"
+        )
+        assert (restored_demo["revision"], restored_demo["value"]) == (
+            demo.json()["revision"],
+            demo.json()["value"],
+        )
         assert restored.get(scene_path).json() == saved.json()
         assert restored.get(f"{scene_path}/files/{scene_hash}").content == scene_bytes
         assert restored.get(motion_path).json() == motion

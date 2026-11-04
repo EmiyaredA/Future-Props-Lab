@@ -71,6 +71,7 @@ class QuotaPolicy(ModelsBase):
     id: Mapped[str] = mapped_column(String(16), primary_key=True, default="runtime")
     payload: Mapped[dict] = mapped_column(JSON)
     revision: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
 
 
@@ -92,6 +93,7 @@ class DemoSetting(ModelsBase):
     id: Mapped[str] = mapped_column(String(32), primary_key=True)
     payload: Mapped[dict] = mapped_column(JSON)
     revision: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
 
 

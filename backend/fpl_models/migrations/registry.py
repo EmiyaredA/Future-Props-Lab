@@ -14,6 +14,7 @@ from .versions.v0011 import SQL as SQL_0011
 from .versions.v0012 import SQL as SQL_0012
 from .versions.v0013 import SQL as SQL_0013
 from .versions.v0014 import SQL as SQL_0014
+from .versions.v0015 import SQL as SQL_0015
 
 MIGRATIONS = (
     Migration("0001_account_defaults", SQL_0001),
@@ -30,4 +31,5 @@ MIGRATIONS = (
     Migration("0012_native_result_retention", SQL_0012),
     Migration("0013_annotation_transcription_receipts", SQL_0013),
     Migration("0014_models_import_receipts", SQL_0014),
+    Migration("0015_policy_creation_timestamps", SQL_0015),
 )
