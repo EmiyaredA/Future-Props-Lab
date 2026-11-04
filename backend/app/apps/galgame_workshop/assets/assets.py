@@ -2,18 +2,16 @@ from __future__ import annotations
 
 from pathlib import Path, PurePosixPath
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.galgame_workshop.assets.asset_analysis import GalgameAssetAnalysisMixin
+from app.apps.galgame_workshop.assets.asset_metadata import _file_metadata
 from app.apps.galgame_workshop.assets.asset_support import (
     CATEGORY_DIRECTORIES,
-    _deduplicated_name,
     _default_category,
     _default_virtual_path,
-    _file_metadata,
     galgame_asset_out,
-    normalize_import_filename,
 )
 from app.apps.galgame_workshop.errors import GalgameWorkshopProjectNotFoundError
 from app.apps.galgame_workshop.models import (
@@ -23,8 +21,6 @@ from app.apps.galgame_workshop.models import (
 )
 from app.apps.galgame_workshop.schemas import (
     GalgameAssetBatchUploadOut,
-    GalgameAssetImportPreviewItem,
-    GalgameAssetImportPreviewOut,
     GalgameProjectAssetListOut,
     GalgameProjectAssetOut,
     GalgameProjectAssetPatchIn,
@@ -76,42 +72,30 @@ class GalgameProjectAssets(GalgameAssetAnalysisMixin):
         await self.session.refresh(metadata)
         return metadata
 
-    async def import_preview(
-        self, project_id: str, filenames: list[str], category: str
-    ) -> GalgameAssetImportPreviewOut:
-        await self._project(project_id)
-        directory = CATEGORY_DIRECTORIES[category]
-        existing_paths = list(
-            (
+    async def _asset_records(self, project_id, referenced, *, newest_first):
+        query = select(VisualAsset, GalgameAssetMetadata).outerjoin(
+            GalgameAssetMetadata, GalgameAssetMetadata.asset_id == VisualAsset.id
+        )
+        owned = VisualAsset.galgame_project_id == project_id
+        if newest_first:
+            scope = or_(owned, VisualAsset.id.in_(referenced)) if referenced else owned
+            return (
                 await self.session.execute(
-                    select(GalgameAssetMetadata.virtual_path).where(
-                        GalgameAssetMetadata.project_id == project_id
+                    query.where(scope).order_by(
+                        VisualAsset.updated_at.desc(), VisualAsset.created_at.desc()
                     )
                 )
+            ).all()
+        records = (await self.session.execute(query.where(owned))).all()
+        remaining = referenced - {row.id for row, _ in records}
+        if remaining:
+            records.extend(
+                (await self.session.execute(query.where(VisualAsset.id.in_(remaining)))).all()
             )
-            .scalars()
-            .all()
-        )
-        used = {
-            PurePosixPath(path).name.casefold()
-            for path in existing_paths
-            if PurePosixPath(path).parent.as_posix() == directory
-        }
-        items: list[GalgameAssetImportPreviewItem] = []
-        for raw_name in filenames:
-            normalized, reasons = normalize_import_filename(raw_name)
-            final_name, renamed_for_duplicate = _deduplicated_name(normalized, used)
-            if renamed_for_duplicate:
-                reasons.append("同名文件已追加序号")
-            items.append(
-                GalgameAssetImportPreviewItem(
-                    originalName=raw_name,
-                    finalName=final_name,
-                    virtualPath=f"{directory}/{final_name}",
-                    reasons=reasons,
-                )
-            )
-        return GalgameAssetImportPreviewOut(items=items)
+        return records
+
+    def _file_exists(self, row):
+        return self.storage.path_for(row).is_file()
 
     async def list(self, project_id: str, *, query: str = "") -> GalgameProjectAssetListOut:
         await self._project(project_id)

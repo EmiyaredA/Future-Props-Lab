@@ -18,6 +18,7 @@ from app.runtime.time import utc_now
 from fpl_runtime.annotation_task_sources import upload_target as annotation_upload_target
 from fpl_runtime.annotation_transcription import target as annotation_transcription_target
 from fpl_runtime.claims import verify_context
+from fpl_runtime.galgame_assets import asset_query_target as galgame_file_query_target
 from fpl_runtime.model_outputs import is_model_output_path
 from fpl_runtime.motion_exports import render_target
 from fpl_runtime.project_reveal import reveal_target
@@ -154,6 +155,7 @@ async def live(request: Request, body: LiveRequest):
         or private_render
         or render_export
         or reveal_target(body.method, body.path, body.service)
+        or (body.service == "assets" and galgame_file_query_target(body.method, body.path))
         or (body.service == "assets" and segment_bundle_target(body.method, body.path))
         or (body.service == "video" and handoff_target(body.method, body.path))
     ) and (operation is None or operation.service != body.service):

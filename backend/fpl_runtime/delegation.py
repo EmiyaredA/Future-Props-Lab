@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from .annotation_assets import audio_asset_grant
 from .annotation_task_sources import task_read_grant, task_upload_grant
 from .annotation_transcription import segment_grant
+from .galgame_assets import galgame_asset_grant
 from .motion_assets import motion_asset_grant, motion_asset_write_grant
 from .motion_exports import render_grant as motion_export_grant
 from .motion_preview import motion_preview_grant
@@ -197,7 +198,7 @@ def permitted(grant, catalog):
         or video_snapshot_grant(grant)
     ):
         return True
-    if visual_catalog_grant(grant) or directory_grant(grant, catalog):
+    if galgame_asset_grant(grant) or visual_catalog_grant(grant) or directory_grant(grant, catalog):
         return True
     if preview_grant(grant) or source_transfer_grant(grant) or stdio_grant(grant):
         return True

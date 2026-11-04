@@ -55,3 +55,23 @@ async def check_writable(session, service, project_id):
     )
     if pending is not None:
         raise AssetError(f"{name}正在删除", code=f"{service}_project_deletion_pending", status=409)
+
+
+DOCUMENTS = {"visual": "canvas", "galgame": "story"}
+
+
+async def check_project_scope(session, service, project_id):
+    if service == "video":
+        await check_writable(session, service, project_id)
+        return
+    projection = await session.scalar(
+        select(AssetReferenceSet).where(
+            AssetReferenceSet.service_id == service,
+            AssetReferenceSet.resource_kind == DOCUMENTS[service],
+            AssetReferenceSet.resource_id == project_id,
+        )
+    )
+    if projection is None:
+        raise AssetError("项目文件范围尚未核验", code="project_scope_unverified", status=503)
+    if projection.deleted:
+        raise AssetError("项目已删除", code="not_found", status=404)

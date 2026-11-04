@@ -22,6 +22,8 @@ from app.problem_details import (
 from app.runtime.revisions import RevisionConflictError
 from fpl_runtime.authentication import SignedIdentity
 from fpl_runtime.database import Database
+from fpl_runtime.galgame_assets import MAX_QUERY_BYTES as MAX_GALGAME_QUERY_BYTES
+from fpl_runtime.galgame_assets import PREFIX as GALGAME_FILES
 from fpl_runtime.migrations import check
 from fpl_runtime.request_limit import RequestLimit
 from fpl_runtime.video_segment_handoff import ASSET_HANDOFFS
@@ -37,6 +39,7 @@ from .routes.annotation_assets import router as annotation_assets_router
 from .routes.community_assets import router as community_assets_router
 from .routes.community_uploads import router as community_uploads_router
 from .routes.files import router as files_router
+from .routes.galgame_assets import router as galgame_assets_router
 from .routes.layout import router as layout_router
 from .routes.library_inputs import router as library_inputs_router
 from .routes.library_outputs import router as library_outputs_router
@@ -193,6 +196,8 @@ def create_app(
         app.include_router(router, prefix="/v1")
     app.include_router(retention_router)
     app.include_router(project_reveal_router)
+    app.include_router(galgame_assets_router)
+    app.add_middleware(RequestLimit, prefix=GALGAME_FILES, maximum=MAX_GALGAME_QUERY_BYTES)
     app.include_router(library_inputs_router)
     app.include_router(library_outputs_router)
     app.include_router(thought_library_router)

@@ -12,6 +12,7 @@ from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario
 from tests.test_creative_project_certification import CREDENTIALS, ORIGIN, PROJECTS
 
 from app.apps.galgame_workshop.models import (
+    GalgameAssetMetadata,
     GalgameProjectAssetReference,
     GalgameStoryDocument,
     GalgameStorySnapshot,
@@ -33,6 +34,9 @@ from fpl_galgame.models import GalgameStoryReferenceMutation
 from fpl_runtime.asset_references import PrepareReferenceChange
 from fpl_runtime.capability_client import CapabilityClient, CapabilityDenied, CapabilityUnavailable
 from fpl_runtime.claims import HEADER
+from fpl_runtime.delegation import RequestGrant
+from fpl_runtime.galgame_assets import PURPOSE as GALGAME_FILES_READ
+from fpl_runtime.galgame_assets import GalgameAssetQuery
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
 
@@ -152,6 +156,7 @@ async def test_projects_create_owned_defaults_and_keep_the_published_contract(
             asset_id = await verify_galgame_story(
                 case, app, request, path, document.json()["document"]
             )
+            await verify_galgame_files(case, app, request, path, asset_id)
         assert (await request("GET", path)).json() == record
         async with app.state.database.sessions(info={"owner_user_id": case.owner}) as session:
             session.add(
@@ -691,3 +696,81 @@ async def verify_galgame_formats(case, app, request, projects):
     current = await request("GET", path)
     assert current.json()["revision"] == 2
     assert current.json()["document"] == original["document"]
+
+
+async def verify_galgame_files(case, app, request, path, story_asset):
+    project_id = path.rsplit("/", 1)[1]
+    async with case.assets.state.database.sessions(info={"owner_user_id": case.viewer}) as db:
+        library = AssetLibrary(db, case.assets.state.settings)
+
+        async def add_image(filename, **scope):
+            return await library.store_upload(
+                UploadFile(io.BytesIO(b"\x89PNG\r\n\x1a\n" + filename.encode()), filename=filename),
+                owner_user_id=case.viewer,
+                **scope,
+            )
+
+        project_file = await add_image("inventory.png", galgame_project_id=project_id)
+        unretained = await add_image("unretained.png")
+    async with app.state.database.sessions(info={"owner_user_id": case.viewer}) as db:
+        db.add(
+            GalgameAssetMetadata(
+                asset_id=project_file.id,
+                project_id=project_id,
+                category="cg",
+                virtual_path="cg/inventory.png",
+                packaging_policy="include",
+                width=10,
+                height=20,
+            )
+        )
+        await db.commit()
+    listing = await request("GET", path + "/assets", params={"query": " Invent "})
+    assert listing.status_code == 200, listing.text
+    assert [item["id"] for item in listing.json()["items"]] == [project_file.id]
+    assert listing.json()["items"][0]["width"] == 10
+    assert (await request("GET", path + "/assets", params={"query": "unretained"})).json() == {
+        "items": []
+    }
+    overview_path = path + "/assets/overview"
+    overview = await request("GET", overview_path)
+    assert overview.status_code == 200, overview.text
+    assert {item["id"] for item in overview.json()["items"]} == {project_file.id, story_asset}
+    manifest = await request("GET", path + "/assets/package-manifest")
+    assert manifest.status_code == 200, manifest.text
+    assert manifest.json()["ready"]
+    assert manifest.json()["items"] == [
+        {
+            "assetId": project_file.id,
+            "virtualPath": "cg/inventory.png",
+            "byteSize": project_file.byte_size,
+            "reason": "forced",
+        }
+    ]
+    preview = await request(
+        "POST",
+        path + "/assets/import-preview",
+        json={"filenames": ["C:/incoming/inventory.png"], "category": "cg"},
+    )
+    assert preview.status_code == 200, preview.text
+    assert preview.json()["items"][0]["virtualPath"] == "cg/inventory-2.png"
+    query = GalgameAssetQuery(asset_ids=[unretained.id, case.asset, story_asset])
+    target = query.path(project_id)
+    grant = RequestGrant(
+        "galgame", GALGAME_FILES_READ, "GET", overview_path, "assets", "POST", target
+    )
+    options = await authorize(case, "galgame", "GET", overview_path)
+    client = app.state.capabilities
+    token = await client.authorize_request(options[HEADER], grant)
+    reply = await client.client.post(
+        "http://assets:8080" + target, headers={HEADER: token}, json=query.model_dump()
+    )
+    assert reply.status_code == 200, reply.text
+    assert {item["id"] for item in reply.json()} == {project_file.id, story_asset}
+    tampered = await client.client.post(
+        "http://assets:8080" + target, headers={HEADER: token}, json={"asset_ids": []}
+    )
+    assert tampered.status_code == 403
+    assert (
+        await request("GET", path.replace(project_id, "missing") + "/assets")
+    ).status_code == 404

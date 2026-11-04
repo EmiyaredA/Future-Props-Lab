@@ -97,7 +97,7 @@ class GalgameAssetMetadata(Base):
     )
 
     asset_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="CASCADE"), primary_key=True
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="CASCADE"), primary_key=True
     )
     project_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("galgame_workshop_projects.id", ondelete="CASCADE")
@@ -152,7 +152,7 @@ class GalgameAssetTranscriptionTask(Base):
         String(36), ForeignKey("galgame_workshop_projects.id", ondelete="CASCADE")
     )
     asset_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="CASCADE")
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="CASCADE")
     )
     provider_id: Mapped[str | None] = mapped_column(String(36))
     provider_name: Mapped[str] = mapped_column(String(120), default="")

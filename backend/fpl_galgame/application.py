@@ -7,6 +7,7 @@ from fpl_runtime.capability_client import CapabilityClient
 from fpl_runtime.certification_service import create_certification_app
 from fpl_runtime.reference_runtime import install_reference_runtime
 
+from .asset_read_routes import router as asset_read_router
 from .migrations.registry import MIGRATIONS
 from .models import MODELS, GalgameCertificationReceipt, GalgameStoryReferenceMutation
 from .projects_http import router as project_router
@@ -37,6 +38,7 @@ def create_app(*, state_root, public_key, credential, catalog, transport=None, r
         run_worker=run_worker,
     )
     app.include_router(project_router)
+    app.include_router(asset_read_router)
     app.include_router(story_migration_router)
     app.state.capabilities = CapabilityClient(
         service="galgame", credential=credential, catalog=catalog, transport=transport
