@@ -380,7 +380,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
     if service in {"identity", "gateway"}:
         manifest = "backend/app/console/governance/automation_operations.json"
         payloads[manifest] = (root / manifest).read_bytes()
-    if service in {"creative", "gateway", "thought"}:
+    if service in {"creative", "gateway", "thought", "tools"}:
         payloads["deploy/contracts/openapi.json"] = (
             root / "web/src/generated/openapi.json"
         ).read_bytes()
@@ -415,6 +415,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
         "integrations",
         "thought",
         "creative",
+        "tools",
     }:
         if web_release is None:
             payloads["web/.api-only"] = b"No browser program in this API acceptance image.\n"
@@ -426,6 +427,8 @@ def prepare_image(root: Path, service: str, *, web_release=None):
             payloads["web/build.json"] = (release.root / "build.json").read_bytes()
             for name in release.files:
                 payloads["web/" + name] = (release.root / name).read_bytes()
+    elif service in PROJECT_OWNERS:
+        payloads["web/.api-only"] = b"Project owner API acceptance image.\n"
     hashes = {
         name: hashlib.sha256(content).hexdigest() for name, content in sorted(payloads.items())
     }

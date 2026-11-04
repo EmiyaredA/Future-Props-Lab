@@ -18,10 +18,12 @@ The published navigation router runs under a destination-bound Identity assertio
 
 ## Consequences
 
-The navigation API has an installed isolated image. The download executor, native file-manager action, browser entry and historic import are required for Tools readiness. Public readiness remains gated until those paths pass.
+The navigation API has an installed isolated image. The immutable browser release serves the tool directory and two existing deep links. The image verifies the browser contract hash and rejects writes from mismatched program versions. The download executor, native file-manager action and historic import are required for Tools readiness. Public readiness remains gated until those paths pass.
 
 ## Verification
 
 Isolated HTTP tests cover signed authorization, concurrent increments, persistence across app restart, account separation and exact published operation shapes. The existing compatibility route and architecture tests continue to cover the original entry point.
 
 An installed three-container run exercises navigation through Gateway, then restarts only Tools and reads back the exact favorite and usage state.
+
+Chromium verifies the signed-in mobile directory, favorite mutation and deep links through the installed stack. The isolated public listener serves the browser program and requires authentication for navigation state.

@@ -39,6 +39,7 @@ export default defineConfig(async (environment) => {
       "integrations",
       "creative",
       "thought",
+      "tools",
     ].includes(service) ||
     !build ||
     !/^[a-f0-9]{20}$/.test(build)
@@ -67,6 +68,7 @@ export default defineConfig(async (environment) => {
             | "integrations"
             | "creative"
             | "thought"
+            | "tools"
         ],
       ),
     ],

@@ -23,6 +23,8 @@ def main():
     parser.add_argument(
         "--catalog", type=Path, default=Path("/app/deploy/contracts/ownership.json")
     )
+    parser.add_argument("--schema", type=Path, default=Path("/app/deploy/contracts/openapi.json"))
+    parser.add_argument("--web-root", type=Path, default=Path("/app/web"))
     parser.add_argument("--port", type=int, default=8080)
     options = parser.parse_args()
     if options.command == "migrate":
@@ -33,7 +35,11 @@ def main():
     if not isinstance(key, Ed25519PublicKey):
         parser.error("Identity 公钥类型无效")
     app = create_app(
-        state_root=options.state_root, public_key=key, catalog=RouteCatalog.read(options.catalog)
+        state_root=options.state_root,
+        public_key=key,
+        catalog=RouteCatalog.read(options.catalog),
+        web_root=None if (options.web_root / ".api-only").is_file() else options.web_root,
+        schema_path=options.schema,
     )
     uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)
 

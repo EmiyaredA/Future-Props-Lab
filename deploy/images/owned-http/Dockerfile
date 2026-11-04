@@ -3,6 +3,7 @@ WORKDIR /app
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir --require-hashes -r /app/requirements.txt
 COPY backend/ /app/backend/
+COPY web/ /app/web/
 COPY deploy/contracts/ /app/deploy/contracts/
 COPY service-entry.py /app/service-entry.py
 ENV PYTHONPATH=/app/backend PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
