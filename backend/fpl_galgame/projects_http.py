@@ -1,8 +1,11 @@
 """Published project and initial Story operations for the Galgame owner."""
 
-from fastapi import APIRouter, HTTPException, Request
+from typing import Annotated
+
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from pydantic import ValidationError
 
+from app.apps.galgame_workshop.errors import GalgameStoryDocumentInvalidError
 from app.apps.galgame_workshop.schemas import (
     GalgameStoryDialoguePatchIn,
     GalgameStoryDialoguePatchOut,
@@ -18,6 +21,10 @@ from app.apps.galgame_workshop.schemas import (
     GalgameWorkshopProjectOut,
 )
 from app.apps.galgame_workshop.schemas.operations import GalgameOperationsIn
+from app.apps.galgame_workshop.story.migration_inventory import (
+    MAX_STORY_IMPORT_BYTES,
+    decode_legacy_story,
+)
 from app.capabilities.asset_store.schemas.project_snapshots import ProjectFolderOpenOut
 from app.runtime.operation_receipts import OperationError
 from fpl_runtime.http_dependencies import OwnerDep, SessionDep, StudioAuth
@@ -166,3 +173,23 @@ async def reveal_project_folder(
     require_local_project_request(request, principal)
     await Projects(session, principal.user_id).row(project_id)
     return await open_verified_project_folder(request, session, "galgame-workshop", project_id)
+
+
+@router.post("/{project_id}/story/import", response_model=GalgameStoryDocumentOut)
+async def import_legacy_story(
+    request: Request,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    project_id: str,
+    expected_revision: Annotated[int, Form(alias="expectedRevision", ge=0)],
+    file: Annotated[UploadFile, File()],
+) -> GalgameStoryDocumentOut:
+    try:
+        document = decode_legacy_story(await file.read(MAX_STORY_IMPORT_BYTES + 1))
+        return await story_writes(request, session, owner_user_id).import_legacy(
+            project_id, expected_revision, document
+        )
+    except GalgameStoryDocumentInvalidError as exc:
+        raise HTTPException(422, {"code": "invalid_story_document", "message": str(exc)}) from None
+    finally:
+        await file.close()

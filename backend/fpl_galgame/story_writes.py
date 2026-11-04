@@ -19,6 +19,7 @@ from app.apps.galgame_workshop.story.edit_values import (
     apply_edits,
     apply_stage_expression,
 )
+from app.apps.galgame_workshop.story.migration_inventory import normalize_legacy_import
 from app.apps.galgame_workshop.story.operation_values import transform
 from app.apps.galgame_workshop.story.reference_index import sync_asset_references
 from app.runtime.ids import new_id
@@ -113,6 +114,20 @@ class StoryWrites:
             document=body.document,
             method="PUT",
             path=f"{PREFIX}/{project_id}/story",
+        )
+
+    async def import_legacy(self, project_id, expected_revision, raw):
+        try:
+            document = normalize_legacy_import(raw)
+        except GalgameStoryDocumentInvalidError as exc:
+            raise story_error(str(exc)) from exc
+        await self.current_story(project_id, expected_revision)
+        return await self._save(
+            project_id,
+            expected_revision=expected_revision,
+            document=document,
+            method="POST",
+            path=f"{PREFIX}/{project_id}/story/import",
         )
 
     async def patch_edits(self, project_id, body):

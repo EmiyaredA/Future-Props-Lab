@@ -11,7 +11,11 @@ from starlette.datastructures import UploadFile
 from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario  # noqa: F401
 from tests.test_creative_project_certification import CREDENTIALS, ORIGIN, PROJECTS
 
-from app.apps.galgame_workshop.models import GalgameStorySnapshot
+from app.apps.galgame_workshop.models import (
+    GalgameProjectAssetReference,
+    GalgameStoryDocument,
+    GalgameStorySnapshot,
+)
 from app.apps.visual_workshop.acceptance.models import (
     AcceptanceRun,
     AcceptanceStandardVersion,
@@ -162,6 +166,8 @@ async def test_projects_create_owned_defaults_and_keep_the_published_contract(
         assert (await request("GET", prefix + "/other")).status_code == 404
         assert (await request("GET", prefix + "/other/" + suffix)).status_code == 404
         assert (await request("GET", prefix)).json() == {"items": [record]}
+        if kind == "galgame":
+            await verify_galgame_formats(case, app, request, prefix)
 
     if kind == "galgame":
         assert transport.lost
@@ -619,3 +625,69 @@ async def verify_visual_reviews(case, app, request, project_id):
     assert repair.status_code == 200 and "Missing detail" in repair.json()["text"]
     saved = await request("GET", f"{project}/repair-drafts/{repair.json()['id']}")
     assert saved.status_code == 200 and saved.json() == repair.json()
+
+
+async def verify_galgame_formats(case, app, request, projects):
+    created = await request("POST", projects, json={"title": "Historical formats"})
+    assert created.status_code == 200, created.text
+    project = created.json()["id"]
+    path = f"{projects}/{project}/story"
+    original = (await request("GET", path)).json()
+    raw = {**original["document"], "schemaVersion": "1.3"}
+    encoded = b"\xef\xbb\xbf" + json.dumps(raw).encode()
+    response = await request(
+        "POST",
+        path + "/import",
+        data={"expectedRevision": "0"},
+        files={"file": ("legacy.json", encoded, "application/json")},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["revision"] == 1
+    assert response.json()["document"] == original["document"]
+    stale = await request(
+        "POST",
+        path + "/import",
+        data={"expectedRevision": "0"},
+        files={"file": ("legacy.json", encoded, "application/json")},
+    )
+    assert stale.status_code == 409 and stale.json()["current"]["revision"] == 1
+    invalid = await request(
+        "POST",
+        path + "/import",
+        data={"expectedRevision": "1"},
+        files={"file": ("invalid.json", b"not JSON", "application/json")},
+    )
+    assert invalid.status_code == 422 and invalid.json()["code"] == "invalid_story_document"
+
+    async with app.state.database.sessions(info={"owner_user_id": case.viewer}) as session:
+        story = await session.get(GalgameStoryDocument, project)
+        story.document = raw
+        stale_reference = GalgameProjectAssetReference(
+            project_id=project, asset_id="isolated-stale"
+        )
+        session.add(stale_reference)
+        await session.commit()
+        reference_id = stale_reference.id
+    migrations = "/v1/galgame-workshop/story-migrations"
+    status = await request("GET", migrations + "/status")
+    assert status.json() == {"pending": 1, "invalid": 0, "current": 1, "total": 2}
+    blocked = await request("POST", migrations + "/run", json={"limit": 1})
+    assert blocked.status_code == 503 and blocked.json()["code"] == "retention_unconfirmed"
+    assert (await request("GET", path)).json()["revision"] == 1
+    async with app.state.database.sessions(info={"owner_user_id": case.viewer}) as session:
+        await session.delete(await session.get(GalgameProjectAssetReference, reference_id))
+        await session.commit()
+    done = await request("POST", migrations + "/run", json={"limit": 1})
+    assert done.status_code == 200, done.text
+    assert done.json() == {
+        "migrated": 1,
+        "conflicts": 0,
+        "invalid": 0,
+        "remaining": 0,
+        "current": 2,
+        "total": 2,
+    }
+    assert (await request("POST", migrations + "/run", json={"limit": 1})).json()["migrated"] == 0
+    current = await request("GET", path)
+    assert current.json()["revision"] == 2
+    assert current.json()["document"] == original["document"]
