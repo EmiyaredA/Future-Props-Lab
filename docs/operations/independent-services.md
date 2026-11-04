@@ -236,3 +236,7 @@ npm run services:build -- galgame --build
 为两套服务分别选择 `FPL_VISUAL_IMAGE` 和 `FPL_GALGAME_IMAGE`，设置专用 `FPL_VISUAL_STATE`、`FPL_GALGAME_STATE` 和同名服务的 `_IDENTITY_TOKEN` 文件。Identity 登记不同的凭据。对每套新隔离卷先执行 Compose 的 `run --rm --no-deps SERVICE migrate`。容器探针检查存活，应用的 `/ready` 保留完整编辑与部署门禁。
 
 隔离运行 `fpl-project-owners-958ca2aaf6` 使用六个安装镜像，通过 Gateway 创建、认证并读回两种项目，重复旧版本认证返回 409。Creative 的 stdio、Skill 归档和安装重放及 Chromium 的登录态入口通过。停止隔离容器并恢复同版本服务快照后，登录、Skill 文件内容、安装回执及两种认证标记均可读回。这项验证使用合成数据，历史迁移与旧站恢复分别由正式演练门禁跟踪。
+
+Galgame 的新项目创建和公开 Story 保存需要同一私网中的 Identity 与 Assets。对旧数据，迁移必须为每条 Story 预先构建匹配版本的素材投影，再核验当前与历史文件归属。未建立投影时，保存会提示素材引用状态未核验。
+
+隔离运行 `fpl-galgame-story-5bc33bf854` 在上述认证链路加装 Assets。经网关上传 PNG、保存故事、拒绝旧版本写入并下载原文件。恢复同版本隔离快照后，Story 版本为 1，下载文件 SHA256 为 `60660146a85c7cdfadc827f774e968bce1b63c1b68aa42c40d435c1e7f379cf9`。这是新服务自身的恢复验收，正式历史迁移和旧站回滚演练仍待完成。

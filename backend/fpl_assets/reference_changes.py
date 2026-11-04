@@ -12,7 +12,7 @@ from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.ids import new_id
 from fpl_runtime.asset_references import PrepareReferenceChange
-from fpl_runtime.retention_authority import change_digest
+from fpl_runtime.retention_authority import change_digest, story_metadata
 from fpl_runtime.thought_assets import AssetDescription
 
 from .models import AssetReferencePin, AssetReferenceSet, PreparedAssetPin, ReferenceIntent
@@ -117,25 +117,36 @@ class ReferenceChanges:
             if active >= 128:
                 raise failure("reference_mutations_pending", "请先恢复未完成的引用变更")
             requested = set(change.asset_ids)
-            present = (
-                set(
-                    (
-                        await session.scalars(
-                            select(VisualAsset.id).where(
-                                VisualAsset.id.in_(requested),
-                            )
-                        )
-                    ).all()
+            describe_story = story_metadata(service, change)
+            present = set()
+            if requested and describe_story:
+                candidates = list(
+                    await session.scalars(select(VisualAsset).where(VisualAsset.id.in_(requested)))
                 )
-                if requested
-                else set()
-            )
+                present = {asset.id for asset in candidates}
+                if present != requested:
+                    raise failure("not_found", "部分素材不存在", 404)
+                if any(asset.project_id is not None for asset in candidates):
+                    raise failure("story_visual_asset_scope", "不能引用视觉工坊的私有素材", 422)
+                if any(
+                    asset.galgame_project_id not in {None, change.resource_id}
+                    for asset in candidates
+                ):
+                    raise failure(
+                        "story_galgame_asset_scope", "不能引用其他 Galgame 工程的私有素材", 422
+                    )
+            elif requested:
+                present = set(
+                    await session.scalars(
+                        select(VisualAsset.id).where(VisualAsset.id.in_(requested))
+                    )
+                )
             if present != requested:
                 raise failure("not_found", "部分素材不存在", 404)
             identifier = new_id()
             row.revision += 1
             result = {"intent_id": identifier, "state": "prepared", "revision": row.revision}
-            if community is not None:
+            if community is not None or describe_story:
                 assets = await session.scalars(
                     select(VisualAsset).where(VisualAsset.id.in_(change.metadata_asset_ids))
                 )
@@ -195,6 +206,12 @@ class ReferenceChanges:
             if resource_revision <= intent.expected_resource_revision:
                 raise failure("invalid_resource_revision", "源提交必须推进资源版本", 422)
             row = await session.get(AssetReferenceSet, intent.reference_set_id)
+            if (
+                service == "galgame"
+                and row.resource_kind == "story"
+                and (deleted or resource_revision != intent.expected_resource_revision + 1)
+            ):
+                raise failure("invalid_resource_revision", "故事引用回执必须与保存版本一致", 422)
             desired = set(
                 (
                     await session.scalars(

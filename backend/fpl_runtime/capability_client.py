@@ -13,9 +13,9 @@ class CapabilityUnavailable(RuntimeError):
 
 
 class CapabilityDenied(RuntimeError):
-    def __init__(self, status):
+    def __init__(self, status, code=None):
         super().__init__("跨服务请求被拒绝")
-        self.status = status
+        self.status, self.code = status, code
 
 
 class CapabilityClient:

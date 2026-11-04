@@ -4476,6 +4476,12 @@
       "model": "GalgameCertificationReceipt"
     },
     {
+      "table": "galgame_story_reference_mutations",
+      "service": "galgame",
+      "module": "fpl_galgame.models",
+      "model": "GalgameStoryReferenceMutation"
+    },
+    {
       "table": "gateway_change_cursors",
       "service": "gateway",
       "module": "fpl_gateway.models",

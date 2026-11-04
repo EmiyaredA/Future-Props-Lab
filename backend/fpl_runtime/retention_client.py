@@ -38,7 +38,14 @@ class RetentionClient:
                 json=body,
             )
             if response.status_code in {401, 403, 404, 409, 422}:
-                raise CapabilityDenied(response.status_code)
+                try:
+                    payload = response.json()
+                except ValueError:
+                    payload = {}
+                code = payload.get("code") if isinstance(payload, dict) else None
+                raise CapabilityDenied(
+                    response.status_code, code if isinstance(code, str) else None
+                )
             if response.status_code != 200:
                 raise CapabilityUnavailable("素材引用服务暂不可用")
             result = response.json()

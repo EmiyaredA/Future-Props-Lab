@@ -1,14 +1,23 @@
 """Published project roots work without any access to the Assets database."""
 
+import io
 import json
 from pathlib import Path
 
 import httpx
 import pytest
-from tests.test_community_asset_protocol import CATALOG, scenario  # noqa: F401
+from sqlalchemy import select
+from starlette.datastructures import UploadFile
+from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario  # noqa: F401
 from tests.test_creative_project_certification import CREDENTIALS, ORIGIN, PROJECTS
 
+from app.capabilities.asset_store.library import AssetLibrary
+from fpl_assets.models import AssetReferencePin, AssetReferenceSet
+from fpl_galgame.models import GalgameStoryReferenceMutation
+from fpl_runtime.asset_references import PrepareReferenceChange
+from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
 from fpl_runtime.claims import HEADER
+from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,6 +38,26 @@ async def authorize(case, kind, method, path):
     return {HEADER: response.headers[HEADER]}
 
 
+class LostStoryCommit(httpx.AsyncBaseTransport):
+    def __init__(self, mesh):
+        self.mesh = mesh
+        self.lost = False
+
+    async def handle_async_request(self, request):
+        response = await self.mesh.handle_async_request(request)
+        if (
+            not self.lost
+            and request.url.host == "assets"
+            and request.url.path.endswith("/commit")
+            and json.loads(request.content).get("resource_revision") == 1
+            and response.status_code == 200
+        ):
+            self.lost = True
+            await response.aclose()
+            raise httpx.ReadError("isolated missing Story acknowledgement", request=request)
+        return response
+
+
 @pytest.mark.parametrize("kind", ["visual", "galgame"])
 async def test_projects_create_owned_defaults_and_keep_the_published_contract(
     scenario,  # noqa: F811
@@ -38,15 +67,20 @@ async def test_projects_create_owned_defaults_and_keep_the_published_contract(
     case = scenario
     factory, migrations, model, _ = PROJECTS[kind]
     apply(tmp_path / "service.db", kind, migrations)
-    app = factory(
+    transport = LostStoryCommit(case.mesh)
+    options = dict(
         state_root=tmp_path,
         public_key=case.key.public_key(),
         catalog=CATALOG,
         credential=CREDENTIALS[kind],
-        transport=case.mesh,
+        transport=transport,
         run_worker=False,
     )
+    app = factory(**options)
     case.mesh.apps[kind] = app
+    case.identity.state.identity_options["service_credentials"].update(CREDENTIALS)
+    asset_live = LiveAuthorization(service="assets", credential=ASSETS_SECRET, transport=case.mesh)
+    case.assets.state.identity = asset_live
     public = json.loads((ROOT / "web/src/generated/openapi.json").read_text())["paths"]
     for path, operations in app.openapi()["paths"].items():
         if path.startswith("/v1/"):
@@ -55,6 +89,7 @@ async def test_projects_create_owned_defaults_and_keep_the_published_contract(
     prefix = f"/v1/{kind}-workshop/projects"
     suffix = "canvas" if kind == "visual" else "story"
     async with (
+        asset_live.client,
         app.router.lifespan_context(app),
         httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url=f"http://{kind}"
@@ -90,6 +125,9 @@ async def test_projects_create_owned_defaults_and_keep_the_published_contract(
             record = changed.json()
         else:
             assert document.json()["document"]["entryChapterId"] == "chapter-1"
+            asset_id = await verify_galgame_story(
+                case, app, request, path, document.json()["document"]
+            )
         assert (await request("GET", path)).json() == record
         async with app.state.database.sessions(info={"owner_user_id": case.owner}) as session:
             session.add(
@@ -104,3 +142,92 @@ async def test_projects_create_owned_defaults_and_keep_the_published_contract(
         assert (await request("GET", prefix + "/other")).status_code == 404
         assert (await request("GET", prefix + "/other/" + suffix)).status_code == 404
         assert (await request("GET", prefix)).json() == {"items": [record]}
+
+    if kind == "galgame":
+        assert transport.lost
+        restarted = factory(**options)
+        case.mesh.apps[kind] = restarted
+        recovery_auth = LiveAuthorization(
+            service="assets", credential=ASSETS_SECRET, transport=case.mesh
+        )
+        case.assets.state.identity = recovery_auth
+        async with recovery_auth.client, restarted.router.lifespan_context(restarted):
+            delivery = restarted.state.reference_delivery
+            await delivery.recover()
+            await delivery.process_once()
+            async with restarted.state.database.sessions(
+                info={"owner_user_id": case.viewer}
+            ) as session:
+                outcomes = (await session.scalars(select(GalgameStoryReferenceMutation))).all()
+                assert any(
+                    row.state == "delivered"
+                    and row.delivered_result["state"] == "committed"
+                    and row.resource_revision == 1
+                    for row in outcomes
+                )
+        async with case.assets.state.database.sessions(
+            info={"owner_user_id": case.viewer}
+        ) as session:
+            pins = await session.scalars(
+                select(AssetReferencePin.asset_id)
+                .join(AssetReferenceSet, AssetReferenceSet.id == AssetReferencePin.reference_set_id)
+                .where(
+                    AssetReferenceSet.service_id == "galgame",
+                    AssetReferenceSet.resource_kind == "story",
+                )
+            )
+            assert list(pins) == [asset_id]
+
+
+async def verify_galgame_story(case, app, request, path, document):
+    story_path = path + "/story"
+    image = {
+        "id": "fixture-image",
+        "type": "image",
+        "role": "sceneLayer",
+        "status": "ready",
+        "fileId": case.asset,
+    }
+
+    async def save():
+        return await request(
+            "PUT",
+            story_path,
+            json={"expected_revision": 0, "document": {**document, "assets": [image]}},
+        )
+
+    context = await authorize(case, "galgame", "PUT", story_path)
+    with pytest.raises(CapabilityDenied) as rejected:
+        await app.state.retention_client.authorize(
+            assertion=context[HEADER],
+            source_method="PUT",
+            source_path=story_path,
+            change=PrepareReferenceChange(
+                request_id="mismatched-request",
+                resource_kind="story",
+                resource_id="other-project",
+                expected_resource_revision=0,
+                asset_ids=[],
+                metadata_asset_ids=[],
+            ),
+        )
+    assert rejected.value.status == 403
+
+    foreign = await save()
+    assert foreign.status_code == 422 and foreign.json()["code"] == "invalid_story_document"
+    assert (await request("GET", story_path)).json()["revision"] == 0
+    async with case.assets.state.database.sessions(info={"owner_user_id": case.viewer}) as session:
+        asset = await AssetLibrary(session, case.assets.state.settings).store_upload(
+            UploadFile(io.BytesIO(b"\x89PNG\r\n\x1a\nisolated story image"), filename="story.png"),
+            owner_user_id=case.viewer,
+        )
+        image["fileId"] = asset.id
+    saved = await save()
+    assert saved.status_code == 200, saved.text
+    assert saved.json()["revision"] == 1 and saved.json()["document"]["assets"] == [image]
+    stale = await save()
+    assert stale.status_code == 409 and stale.json()["current"]["revision"] == 1
+
+    with pytest.raises(CapabilityUnavailable):
+        await app.state.reference_delivery.process_once()
+    return image["fileId"]

@@ -62,6 +62,15 @@ class CommunityRetentionScope(BaseModel):
         )
 
 
+def story_metadata(caller, change):
+    return (
+        caller == "galgame"
+        and change.resource_kind == "story"
+        and change.metadata_asset_ids is not None
+        and set(change.metadata_asset_ids).issubset(change.asset_ids)
+    )
+
+
 class RetentionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     caller: str = Field(pattern=r"^[a-z][a-z-]{0,63}$")
@@ -113,7 +122,7 @@ class RetentionAuthority:
             and (
                 self.community.matches_change(change)
                 if self.community is not None
-                else change.metadata_asset_ids is None
+                else change.metadata_asset_ids is None or story_metadata(self.caller, change)
             )
         )
 

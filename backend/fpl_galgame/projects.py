@@ -33,8 +33,8 @@ class Projects:
     async def get(self, project_id):
         return project_out(await self.row(project_id))
 
-    async def create(self, body):
-        row = GalgameWorkshopProject(owner_user_id=self.owner, title=body.title)
+    async def create(self, body, *, project_id):
+        row = GalgameWorkshopProject(id=project_id, owner_user_id=self.owner, title=body.title)
         self.session.add(row)
         await self.session.flush()
         self.session.add(
@@ -43,9 +43,7 @@ class Projects:
                 document=default_story_document().model_dump(mode="json", by_alias=True),
             )
         )
-        result = project_out(row)
-        await self.session.commit()
-        return result
+        return project_out(row)
 
     async def story(self, project_id):
         await self.row(project_id)

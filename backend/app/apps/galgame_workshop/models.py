@@ -84,9 +84,9 @@ class GalgameProjectAssetReference(Base):
         String(36),
         ForeignKey("galgame_workshop_projects.id", ondelete="CASCADE"),
     )
-    asset_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="RESTRICT")
-    )
+    # The legacy database enforces its original FK through its migrations.
+    # The independent owner resolves this ID with the Assets retention protocol.
+    asset_id: Mapped[str] = mapped_column(String(36))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
 
 

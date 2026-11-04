@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import deque
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.galgame_workshop.errors import (
@@ -11,7 +11,6 @@ from app.apps.galgame_workshop.errors import (
     GalgameWorkshopProjectNotFoundError,
 )
 from app.apps.galgame_workshop.models import (
-    GalgameProjectAssetReference,
     GalgameStoryDocument,
     GalgameWorkshopProject,
 )
@@ -30,6 +29,7 @@ from app.apps.galgame_workshop.schemas import (
     GalgameStoryReportIssue,
     GalgameStoryRouteReportOut,
 )
+from app.apps.galgame_workshop.story.asset_values import validate_story_asset_media
 from app.apps.galgame_workshop.story.document_values import (
     default_story_document as default_story_document,
 )
@@ -39,6 +39,7 @@ from app.apps.galgame_workshop.story.document_values import (
 from app.apps.galgame_workshop.story.document_values import (
     story_out as story_out,
 )
+from app.apps.galgame_workshop.story.reference_index import sync_asset_references
 from app.apps.galgame_workshop.story.story_flow import STORY_TERMINATOR_TYPES
 from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.revisions import RevisionConflictError
@@ -407,68 +408,14 @@ class GalgameStoryDocuments:
         by_id = {row.id: row for row in rows}
         if set(by_id) != file_ids:
             raise GalgameStoryDocumentInvalidError("故事素材引用的文件不存在")
-        image_mime_types = {"image/jpeg", "image/png", "image/webp", "image/avif"}
-        audio_mime_types = {
-            "audio/mpeg",
-            "audio/wav",
-            "audio/x-wav",
-            "audio/mp4",
-            "audio/x-m4a",
-            "audio/ogg",
-        }
-        video_mime_types = {
-            "video/mp4",
-            "video/webm",
-            "video/quicktime",
-        }
         for asset in document.assets:
             row = by_id[asset.file_id]
-            if asset.type == "image" and (
-                row.media_kind != "image" or row.mime_type not in image_mime_types
-            ):
-                raise GalgameStoryDocumentInvalidError("故事图片素材必须引用静态图片")
-            if asset.type == "audio" and (
-                row.media_kind != "audio" or row.mime_type not in audio_mime_types
-            ):
-                raise GalgameStoryDocumentInvalidError("故事声音素材必须引用支持的音频文件")
-            if asset.type == "video" and (
-                row.media_kind != "video" or row.mime_type not in video_mime_types
-            ):
-                raise GalgameStoryDocumentInvalidError("故事视频素材必须引用 MP4、WebM 或 MOV")
+            validate_story_asset_media(asset.type, row.media_kind, row.mime_type)
             if row.project_id is not None:
                 raise GalgameStoryDocumentInvalidError("不能引用视觉工坊的私有素材")
             if row.galgame_project_id not in {None, project_id}:
                 raise GalgameStoryDocumentInvalidError("不能引用其他 Galgame 工程的私有素材")
         return by_id
-
-    async def _sync_asset_references(self, project_id: str, file_ids: set[str]) -> None:
-        current = (
-            (
-                await self.session.execute(
-                    select(GalgameProjectAssetReference).where(
-                        GalgameProjectAssetReference.project_id == project_id
-                    )
-                )
-            )
-            .scalars()
-            .all()
-        )
-        current_ids = {row.asset_id for row in current}
-        removed = current_ids - file_ids
-        if removed:
-            await self.session.execute(
-                delete(GalgameProjectAssetReference).where(
-                    GalgameProjectAssetReference.project_id == project_id,
-                    GalgameProjectAssetReference.asset_id.in_(removed),
-                )
-            )
-        for asset_id in file_ids - current_ids:
-            self.session.add(
-                GalgameProjectAssetReference(
-                    project_id=project_id,
-                    asset_id=asset_id,
-                )
-            )
 
     async def put(
         self, project_id: str, body: GalgameStoryDocumentPutIn, *, commit: bool = True
@@ -501,7 +448,7 @@ class GalgameStoryDocuments:
             project.status = "draft"
             project.revision += 1
             project.updated_at = now
-        await self._sync_asset_references(project_id, set(asset_rows))
+        await sync_asset_references(self.session, project_id, set(asset_rows))
         if commit:
             await self.session.commit()
         return await self.get(project_id)

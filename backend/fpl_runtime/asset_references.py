@@ -10,7 +10,7 @@ RESOURCE_KINDS = MappingProxyType(
         "thought": frozenset(
             {"note", "history", "template", "publication", "knowledge-base", "sync"}
         ),
-        "galgame": frozenset({"project", "history", "export"}),
+        "galgame": frozenset({"project", "story", "history", "export"}),
         "video": frozenset({"project", "history", "export"}),
         "motion": frozenset({"project", "history", "export"}),
         "presentation": frozenset({"project", "history", "template", "example", "export"}),
