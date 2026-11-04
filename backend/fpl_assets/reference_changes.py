@@ -16,7 +16,7 @@ from fpl_runtime.asset_references import VIDEO_FILE_CHANGES, PrepareReferenceCha
 from fpl_runtime.retention_authority import canvas_metadata, change_digest, story_metadata
 from fpl_runtime.thought_assets import AssetDescription
 
-from . import galgame_file_changes, video_file_changes, visual_project_removal
+from . import galgame_file_changes, video_file_changes, visual_project_removal, visual_upload_stages
 from .canvas_retention import canvas_files
 from .galgame_project_removal import prepare_project_removal
 from .models import AssetReferencePin, AssetReferenceSet, PreparedAssetPin, ReferenceIntent
@@ -135,6 +135,9 @@ class ReferenceChanges:
                     await prepare_project_removal(session, row)
             if service == "visual" and change.resource_kind == "canvas":
                 await check_removal_fence(session, row.id, "visual")
+                await visual_upload_stages.check_canvas_upload_fence(session, row.id)
+                if change.visual_upload is not None and active:
+                    raise failure("project_references_pending", "项目引用尚未结算")
                 if change.visual_project_removal is not None:
                     # Text versions and final-output selection can advance the source
                     # Canvas without changing the set of retained originals.
@@ -264,6 +267,8 @@ class ReferenceChanges:
             )
             session.add(intent)
             await session.flush()
+            if change.visual_upload is not None:
+                visual_upload_stages.reserve(session, intent, row.resource_id, change.visual_upload)
             session.add_all(
                 [
                     PreparedAssetPin(intent_id=identifier, asset_id=asset_id, owner_user_id=owner)
@@ -351,6 +356,8 @@ class ReferenceChanges:
             if row.resource_revision > resource_revision or intent.state == "superseded":
                 state = "superseded"
             else:
+                if service == "visual" and row.resource_kind == "canvas":
+                    desired.update(await visual_upload_stages.publish(session, intent))
                 current = set(
                     (
                         await session.scalars(
@@ -440,6 +447,8 @@ class ReferenceChanges:
             await session.execute(
                 delete(PreparedAssetPin).where(PreparedAssetPin.intent_id == intent.id)
             )
+            if service == "visual" and row.resource_kind == "canvas":
+                await visual_upload_stages.abort(session, intent)
             if intent.state != "superseded":
                 intent.state = "aborted"
             row.revision += 1

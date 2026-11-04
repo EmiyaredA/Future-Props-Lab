@@ -1,7 +1,10 @@
 """Published reads for Visual-owned node outputs."""
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from typing import Annotated
 
+from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
+
+from app.apps.visual_workshop.canvas_documents import VisualCanvasError
 from app.apps.visual_workshop.outputs.queries import OutputError, OutputQueries
 from app.apps.visual_workshop.outputs.schemas import (
     VisualNodeFinalOutputIn,
@@ -14,6 +17,7 @@ from fpl_runtime.http_dependencies import OwnerDep, SessionDep
 
 from .canvas_writes import PREFIX
 from .projects_http import canvas_writes
+from .uploads import Uploads
 
 router = APIRouter(prefix=PREFIX, tags=["visual-workshop"])
 
@@ -96,4 +100,43 @@ async def delete_node_output(
             project_id, node_id, output_id, expected_revision
         )
     except OutputError as exc:
+        raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
+
+
+@router.post("/{project_id}/nodes/{node_id}/output-uploads", response_model=VisualCanvasDocumentOut)
+async def upload_node_output(
+    request: Request,
+    project_id: str,
+    node_id: str,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    file: Annotated[UploadFile, File()],
+    expected_revision: Annotated[int, Form(ge=0)],
+):
+    try:
+        return await Uploads(request, session, owner_user_id).output(
+            project_id, node_id, file, expected_revision
+        )
+    except OutputError as exc:
+        raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
+
+
+@router.post("/{project_id}/node-uploads", response_model=VisualCanvasDocumentOut)
+async def upload_material_node(
+    request: Request,
+    project_id: str,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    file: Annotated[UploadFile, File()],
+    expected_revision: Annotated[int, Form(ge=0)],
+    x: Annotated[float, Form()] = 0,
+    y: Annotated[float, Form()] = 0,
+    category_id: Annotated[str | None, Form(max_length=64)] = None,
+    group: Annotated[str | None, Form(max_length=120)] = None,
+):
+    try:
+        return await Uploads(request, session, owner_user_id).material(
+            project_id, file, expected_revision, x, y, category_id, group
+        )
+    except (OutputError, VisualCanvasError) as exc:
         raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None

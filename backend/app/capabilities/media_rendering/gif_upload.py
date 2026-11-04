@@ -26,13 +26,15 @@ class ConvertedVideo:
 
 
 @asynccontextmanager
-async def prepare_output_upload(upload: IncomingFile, kind: str, *, max_bytes: int):
+async def prepare_output_upload(
+    upload: IncomingFile, kind: str, *, max_bytes: int, work_root: Path | None = None
+):
     filename = Path(upload.filename or "").name
     if kind != "video" or Path(filename).suffix.lower() != ".gif":
         yield upload, None
         return
     try:
-        with TemporaryDirectory(prefix="visual-gif-upload-") as temporary:
+        with TemporaryDirectory(prefix="visual-gif-upload-", dir=work_root) as temporary:
             source, target = Path(temporary) / "source.gif", Path(temporary) / "result.mp4"
             size = 0
             head = bytearray()

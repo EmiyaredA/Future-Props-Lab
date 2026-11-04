@@ -4685,6 +4685,12 @@
       "model": "VideoSegmentHandoffFile"
     },
     {
+      "table": "asset_visual_upload_stages",
+      "service": "assets",
+      "module": "fpl_assets.models",
+      "model": "VisualUploadStage"
+    },
+    {
       "table": "creative_install_fences",
       "service": "creative",
       "module": "fpl_creative.fence_records",

@@ -84,7 +84,7 @@ class CanvasWrites:
 
         return await self.references.commit_source(self.session, prepared, apply)
 
-    async def _history_assets(self, project_id, node_ids, *, omit_output=None):
+    async def history_assets(self, project_id, node_ids, *, omit_output=None):
         if not node_ids:
             return set()
         query = select(VisualNodeOutput).where(
@@ -155,7 +155,7 @@ class CanvasWrites:
         if current.revision != body.expected_revision:
             raise conflict(body.expected_revision, current)
         used = {asset_id for asset_id, _ in expected_assets(current.nodes)}
-        history = await self._history_assets(project_id, {node.id for node in current.nodes})
+        history = await self.history_assets(project_id, {node.id for node in current.nodes})
         carry = (used | history) - {body.asset_id}
         await self.session.rollback()
         try:
@@ -205,7 +205,7 @@ class CanvasWrites:
             else node
             for node in current.nodes
         ]
-        history = await self._history_assets(
+        history = await self.history_assets(
             project_id, {node.id for node in nodes}, omit_output=output_id
         )
         remaining = history | {asset_id for asset_id, _ in expected_assets(nodes)}
@@ -230,7 +230,7 @@ class CanvasWrites:
     async def _save(self, project_id, row, body, *, method, path, record_operation=None):
         existing = existing_assets(row.nodes or [])
         used = {asset_id for asset_id, _ in expected_assets(body.nodes)}
-        history = await self._history_assets(project_id, {node.id for node in body.nodes})
+        history = await self.history_assets(project_id, {node.id for node in body.nodes})
         carry = history | (existing & used)
         await self.session.rollback()
         prepared = await self._prepare(

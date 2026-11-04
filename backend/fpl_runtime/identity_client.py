@@ -79,12 +79,13 @@ class LiveAuthorization:
             pass
         return {"allowed": False, "available": False, "revision": None}
 
-    async def can_prepare_retention(self, authority):
+    async def can_prepare_retention(self, authority, *, sealed_visual_upload=False):
         if self.service != "assets":
             return False
         try:
             response = await self.client.post(
-                "/_internal/v1/asset-retention/check", json={"authority": authority}
+                "/_internal/v1/asset-retention/check",
+                json={"authority": authority, "sealed_visual_upload": sealed_visual_upload},
             )
             if response.status_code != 200:
                 return None

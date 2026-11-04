@@ -59,6 +59,10 @@ def _visual_canvas_source(body):
     if change.expected_resource_revision == -1:
         return _create_projection(body, path)
     project = f"{path}/{change.resource_id}"
+    if change.visual_upload is not None:
+        return change.visual_upload.matches_source(
+            body.source_method, body.source_path, change.resource_id
+        )
     if change.visual_project_removal is not None:
         return (body.source_method, body.source_path) == ("DELETE", project)
     canvas = project + "/canvas"
@@ -430,7 +434,9 @@ class RetentionAuthorization:
                 path=body.source_path,
                 public_key=self.options["private_key"].public_key(),
                 # Re-admit only the exact saved job while its Session or key is still active.
-                allow_expired=_galgame_annotation_source(body),
+                allow_expired=(
+                    _galgame_annotation_source(body) or body.change.visual_upload is not None
+                ),
             )
         except (jwt.InvalidTokenError, ValueError, TypeError) as exc:
             raise HTTPException(401, "invalid_source_assertion") from exc
@@ -464,13 +470,16 @@ class RetentionAuthorization:
             key_id=self.options["key_id"],
         )
 
-    async def can_prepare(self, token, credential):
+    async def can_prepare(self, token, credential, *, sealed_visual_upload=False):
         require_credential(self.options, "assets", credential)
         try:
             authority = verify_retention(token, public_key=self.options["private_key"].public_key())
         except (jwt.InvalidTokenError, ValueError, TypeError, KeyError) as exc:
             raise HTTPException(401, "invalid_retention_authority") from exc
-        if authority.prepare_before <= time.time():
+        if sealed_visual_upload:
+            if authority.caller != "visual":
+                return False
+        elif authority.prepare_before <= time.time():
             return False
         async with self.state.database.sessions() as session:
             return await active_actor(session, authority.actor)

@@ -21,8 +21,8 @@ from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailabl
 from fpl_runtime.project_errors import ProjectResourceError
 
 from .canvas_writes import conflict
-from .models import VisualCanvasReferenceMutation
 from .projects import Projects
+from .reference_backlog import pending_outcomes
 from .segment_handoffs import require_canvas_unreserved
 
 
@@ -32,27 +32,6 @@ class ProjectDeletion:
         self.projects = Projects(session, owner)
         self.references = request.app.state.reference_mutations
         self.delivery = request.app.state.reference_delivery
-
-    async def _settle_prior(self, project_id, conversations):
-        model = VisualCanvasReferenceMutation
-        kind, resource_id = model.change["resource_kind"], model.change["resource_id"]
-        identities = list(
-            await self.session.scalars(
-                select(model.request_id)
-                .where(
-                    model.state.in_(("commit", "abort")),
-                    ((kind.as_string() == "canvas") & (resource_id.as_string() == project_id))
-                    | (
-                        (kind.as_string() == "conversation")
-                        & resource_id.as_string().in_(conversations)
-                    ),
-                )
-                .order_by(model.created_at, model.request_id)
-            )
-        )
-        await self.session.rollback()
-        for identity in identities:
-            await self._deliver(identity)
 
     async def _deliver(self, identity):
         try:
@@ -136,7 +115,8 @@ class ProjectDeletion:
         await self._require_idle(project_id)
         revision = (await self.projects.canvas_row(project_id)).revision
         conversations = await self._conversations(project_id)
-        await self._settle_prior(project_id, conversations)
+        for identity in await pending_outcomes(self.session, project_id, conversations):
+            await self._deliver(identity)
         prepared = await self._prepare(project_id, revision, conversations)
         try:
             await self.session.execute(text("BEGIN IMMEDIATE"))

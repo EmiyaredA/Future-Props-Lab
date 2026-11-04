@@ -67,8 +67,10 @@ from .routes.video_segment_bundles import router as video_segment_bundles_router
 from .routes.video_segment_handoffs import router as video_segment_handoffs_router
 from .routes.video_segment_outputs import router as video_segment_outputs_router
 from .routes.visual_assistant import router as conversation_assets_router
+from .routes.visual_upload import router as visual_upload_router
 from .video_segment_bundles import cleanup_bundles
 from .video_segment_handoffs import SegmentHandoffFiles
+from .visual_upload_stages import recover as recover_visual_uploads
 
 logger = logging.getLogger(__name__)
 
@@ -128,6 +130,7 @@ def create_app(
         check(database.path, "assets", MIGRATIONS)
         cleanup_bundles(settings)
         await recover_uploads(database, settings)
+        await recover_visual_uploads(database, settings)
         task = asyncio.create_task(maintain()) if cleanup else None
         try:
             yield
@@ -210,6 +213,7 @@ def create_app(
     for router in (files_router, layout_router, links_router):
         app.include_router(router, prefix="/v1")
     app.include_router(retention_router)
+    app.include_router(visual_upload_router)
     app.include_router(project_reveal_router)
     app.include_router(conversation_assets_router)
     app.add_middleware(

@@ -1,6 +1,6 @@
 """Persist reference preparation and deliver the owner's durable source outcome."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from pydantic import ValidationError
 from sqlalchemy import select, text, update
@@ -22,6 +22,7 @@ class PreparedReferences:
     asset_intent_id: str
     metadata: tuple[AssetDescription, ...] = ()
     unavailable_asset_ids: frozenset[str] = frozenset()
+    authority: str = field(default="", repr=False)
 
 
 class ReferenceMutations:
@@ -130,7 +131,7 @@ class ReferenceMutations:
             )
             await session.commit()
         return PreparedReferences(
-            owner, change.request_id, fingerprint, identity, metadata, unavailable
+            owner, change.request_id, fingerprint, identity, metadata, unavailable, authority
         )
 
     async def record(self, source_session, prepared, *, resource_revision, deleted=False):
@@ -281,6 +282,7 @@ class ReferenceDelivery(PollingTaskRunner):
                     (409, "project_deletion_pending"),
                     (409, "project_references_pending"),
                     (409, "project_conversation_scope"),
+                    (409, "visual_upload_pending"),
                     (422, "story_visual_asset_scope"),
                     (422, "story_galgame_asset_scope"),
                     (422, "canvas_asset_scope"),

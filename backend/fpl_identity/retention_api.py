@@ -19,6 +19,7 @@ def bearer(request):
 class CheckRetention(BaseModel):
     model_config = ConfigDict(extra="forbid")
     authority: str = Field(min_length=1, max_length=16384)
+    sealed_visual_upload: bool = False
 
 
 @router.post("/authorize")
@@ -30,6 +31,6 @@ async def authorize(request: Request, body: RetentionRequest):
 @router.post("/check")
 async def check(request: Request, body: CheckRetention):
     active = await RetentionAuthorization(request.app.state).can_prepare(
-        body.authority, bearer(request)
+        body.authority, bearer(request), sealed_visual_upload=body.sealed_visual_upload
     )
     return JSONResponse({"active": active}, headers={"Cache-Control": "no-store"})

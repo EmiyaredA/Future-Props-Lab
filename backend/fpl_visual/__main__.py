@@ -1,5 +1,6 @@
 """Run the Visual project owner against its dedicated state directory."""
 
+import os
 from pathlib import Path
 
 from fpl_runtime.project_owner_cli import run_project_owner
@@ -10,6 +11,11 @@ from .migrations.registry import MIGRATIONS
 
 
 def deployed_application(**settings):
+    uploads = settings["state_root"].resolve() / ".http-uploads"
+    if uploads.is_symlink():
+        raise ValueError("Visual 上传暂存目录不能是符号链接")
+    uploads.mkdir(parents=True, exist_ok=True, mode=0o700)
+    os.environ["TMPDIR"] = str(uploads)
     web = Path("/app/web")
     has_web = (web / "build.json").is_file()
     if not has_web and not (web / ".api-only").is_file():

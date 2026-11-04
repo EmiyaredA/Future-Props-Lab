@@ -401,7 +401,23 @@ class VideoSegmentHandoffFile(ReferenceBase):
     metadata_snapshot: Mapped[dict] = mapped_column(JSON)
 
 
+class VisualUploadStage(ReferenceBase):
+    """Private originals admitted by one exclusive Canvas reference intent."""
+
+    __tablename__ = "asset_visual_upload_stages"
+    intent_id: Mapped[str] = mapped_column(
+        ForeignKey("asset_reference_intents.id", ondelete="RESTRICT"), primary_key=True
+    )
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
+    project_id: Mapped[str] = mapped_column(String(128))
+    descriptor: Mapped[dict] = mapped_column(JSON)
+    storage_keys: Mapped[list] = mapped_column(JSON)
+    originals: Mapped[list] = mapped_column(JSON, default=list)
+    state: Mapped[str] = mapped_column(String(16), default="reserved")
+
+
 MODELS = (
+    VisualUploadStage,
     VisualAssetFolder,
     VisualAsset,
     AssetReferenceSet,

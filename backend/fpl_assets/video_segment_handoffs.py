@@ -23,6 +23,7 @@ from .references import check_removal_fence
 from .scoped_project_files import check_writable
 from .video_files import record as file_record
 from .video_segment_files import SegmentFile
+from .visual_upload_stages import check_canvas_upload_fence
 
 
 def key_for(task, digest):
@@ -205,6 +206,7 @@ class SegmentHandoffFiles(ArchiveFileStaging):
         elif projection.deleted or projection.resource_revision != expected:
             raise conflict("segment_target_projection_conflict")
         await check_removal_fence(session, projection.id, "visual")
+        await check_canvas_upload_fence(session, projection.id)
         return projection
 
     async def settle(self, owner, scope, *, publish):
