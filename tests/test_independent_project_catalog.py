@@ -1,5 +1,6 @@
 """Published project roots work without any access to the Assets database."""
 
+import hashlib
 import io
 import json
 import wave
@@ -896,6 +897,12 @@ async def verify_voice_match(case, app, request, path):
         "source": "manual",
         "revision": 1,
     }
+    scan = await request("POST", path + "/assets/metadata-scan")
+    assert scan.status_code == 200, scan.text
+    scanned = next(item for item in scan.json()["items"] if item["id"] == asset.id)
+    assert scanned["checksumSha256"] == hashlib.sha256(content.getvalue()).hexdigest()
+    assert scanned["durationMs"] == 100 and scanned["transcript"] == "Initial"
+    assert scanned["transcriptRevision"] == 1
     conflict = await request("PATCH", transcript, json={**text, "text": "Stale"})
     assert conflict.status_code == 409 and conflict.json()["current"]["transcript"] == "Initial"
     story = await request("GET", path + "/story")

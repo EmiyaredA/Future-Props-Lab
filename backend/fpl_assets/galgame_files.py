@@ -1,10 +1,12 @@
 """Materialize one account's exact Galgame project file snapshot."""
 
+from anyio import to_thread
 from sqlalchemy import or_, select
 
+from app.capabilities.asset_store.media_metadata import inspect_media_file
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from fpl_runtime.galgame_assets import GalgameAssetFile
+from fpl_runtime.galgame_assets import GalgameAssetFile, MediaInspection
 
 from .models import AssetReferencePin, AssetReferenceSet, PreparedAssetPin, ReferenceIntent
 from .scoped_project_files import check_project_scope
@@ -64,14 +66,29 @@ async def files(session, settings, project_id, query):
     storage = AssetStorage(settings)
     result = []
     for row in await session.scalars(statement):
+        path = storage.path_for(row)
+        inspection = None
+        exists = path.is_file() and not path.is_symlink()
+        if query.scan and exists:
+            try:
+                sha256, width, height, duration = await to_thread.run_sync(
+                    inspect_media_file, path, row.media_kind
+                )
+            except FileNotFoundError:
+                exists = False
+            else:
+                inspection = MediaInspection(
+                    sha256=sha256, width=width, height=height, duration_ms=duration
+                )
         result.append(
             GalgameAssetFile(
                 **{
                     name: getattr(row, name)
                     for name in GalgameAssetFile.model_fields
-                    if name != "exists"
+                    if name not in {"exists", "inspection"}
                 },
-                exists=storage.path_for(row).is_file(),
+                exists=exists,
+                inspection=inspection,
             )
         )
     return result

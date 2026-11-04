@@ -3,7 +3,7 @@
 import re
 from datetime import datetime
 
-from pydantic import Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .library_assets import ID, LibraryAssetDescription, LibraryAssetQuery
 
@@ -17,10 +17,15 @@ class GalgameAssetQuery(LibraryAssetQuery):
     search: str = Field(default="", max_length=255)
     newest_first: bool = False
     replacement: bool = False
+    scan: bool = False
     project_file_id: str | None = Field(default=None, pattern="^" + ID + "$")
 
     @model_validator(mode="after")
     def exact_file_only(self):
+        if self.scan and (
+            self.replacement or self.project_file_id is not None or self.asset_ids or self.search
+        ):
+            raise ValueError("元数据扫描只读取当前项目原件")
         if self.replacement and self.project_file_id is None:
             raise ValueError("补链查询必须指定一个文件")
         if self.project_file_id is not None and (self.asset_ids or self.search):
@@ -32,7 +37,17 @@ class GalgameAssetQuery(LibraryAssetQuery):
             raise ValueError("Galgame 项目标识无效")
         mode = "replacement" if self.replacement else "one"
         suffix = f"/{mode}/{self.project_file_id}" if self.project_file_id else ""
+        if self.scan:
+            suffix = "/scan"
         return f"{PREFIX}/{project_id}{suffix}/{self.digest}"
+
+
+class MediaInspection(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    width: int | None = Field(ge=0)
+    height: int | None = Field(ge=0)
+    duration_ms: int | None = Field(ge=0)
 
 
 class GalgameAssetFile(LibraryAssetDescription):
@@ -40,12 +55,14 @@ class GalgameAssetFile(LibraryAssetDescription):
     created_at: datetime
     updated_at: datetime
     exists: bool
+    inspection: MediaInspection | None = None
 
 
 def asset_query_target(method, path):
     if method == "POST":
         return re.fullmatch(
-            rf"{PREFIX}/({ID})(?:/(?P<mode>one|replacement)/(?P<asset>{ID}))?/([a-f0-9]{{64}})",
+            rf"{PREFIX}/({ID})(?:/(?:(?P<mode>one|replacement)/(?P<asset>{ID})|(?P<scan>scan)))?"
+            r"/([a-f0-9]{64})",
             path,
         )
     return None
@@ -59,6 +76,11 @@ def galgame_asset_grant(grant):
         return False
     project = f"{SOURCE}/{target[1]}"
     asset_id = target["asset"]
+    if target["scan"]:
+        return (grant.source_method, grant.source_path) == (
+            "POST",
+            project + "/assets/metadata-scan",
+        )
     if target["mode"] == "replacement":
         return (grant.source_method, grant.source_path) == ("POST", project + "/assets/repair")
     if asset_id:

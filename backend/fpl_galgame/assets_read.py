@@ -52,6 +52,7 @@ class ProjectAssetReads(GalgameAssetAnalysisMixin):
         search="",
         project_file_id=None,
         replacement=False,
+        scan=False,
     ):
         metadata = {
             row.asset_id: row
@@ -65,6 +66,7 @@ class ProjectAssetReads(GalgameAssetAnalysisMixin):
             newest_first=newest_first,
             project_file_id=project_file_id,
             replacement=replacement,
+            scan=scan,
         )
         path = query.path(project_id)
         grant = RequestGrant(

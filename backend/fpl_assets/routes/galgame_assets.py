@@ -24,6 +24,7 @@ router = APIRouter(include_in_schema=False)
 @router.post(
     PREFIX + "/{project_id}/replacement/{asset_id}/{digest}", response_model=list[GalgameAssetFile]
 )
+@router.post(PREFIX + "/{project_id}/scan/{digest}", response_model=list[GalgameAssetFile])
 async def read_galgame_files(
     request: Request, project_id: str, digest: str, body: GalgameAssetQuery
 ):
@@ -32,6 +33,7 @@ async def read_galgame_files(
     if (
         scope is None
         or scope["asset"] != body.project_file_id
+        or bool(scope["scan"]) != body.scan
         or (scope["mode"] == "replacement") != body.replacement
         or "cookie" in request.headers
         or "origin" in request.headers

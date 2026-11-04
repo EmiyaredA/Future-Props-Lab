@@ -1,17 +1,15 @@
-"""Legacy file inspection from its owned filesystem adapter."""
+"""Inspect the bytes of an already scoped, owned media file."""
 
 import hashlib
 from pathlib import Path
 
 from PIL import Image
-
-try:
-    from tinytag import TinyTag
-except ImportError:  # pragma: no cover - dependency is required in production
-    TinyTag = None  # type: ignore[assignment]
+from tinytag import TinyTag, TinyTagException
 
 
-def _file_metadata(path: Path, media_kind: str) -> tuple[str, int | None, int | None, int | None]:
+def inspect_media_file(
+    path: Path, media_kind: str
+) -> tuple[str, int | None, int | None, int | None]:
     digest = hashlib.sha256()
     with path.open("rb") as source:
         while chunk := source.read(1024 * 1024):
@@ -27,11 +25,11 @@ def _file_metadata(path: Path, media_kind: str) -> tuple[str, int | None, int | 
             # Files uploaded by older versions were validated by signature only.
             # Keep them usable while reporting missing dimensions for maintenance.
             width = height = None
-    elif media_kind in {"audio", "video"} and TinyTag is not None:
+    elif media_kind in {"audio", "video"}:
         try:
             tag = TinyTag.get(path)
             if tag.duration is not None:
                 duration_ms = max(0, round(float(tag.duration) * 1000))
-        except (OSError, ValueError):
+        except (OSError, ValueError, TinyTagException):
             duration_ms = None
     return digest.hexdigest(), width, height, duration_ms

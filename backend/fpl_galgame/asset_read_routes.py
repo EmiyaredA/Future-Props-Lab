@@ -13,6 +13,7 @@ from app.apps.galgame_workshop.schemas import (
 from fpl_runtime.galgame_assets import SOURCE
 from fpl_runtime.http_dependencies import OwnerDep, SessionDep
 
+from .asset_scan import scan_metadata
 from .assets_read import ProjectAssetReads
 
 router = APIRouter(prefix=SOURCE, tags=["galgame-workshop"])
@@ -81,3 +82,13 @@ async def get_story_report(
     project_id: str,
 ) -> GalgameStoryRouteReportOut:
     return await read_assets(request, session, owner_user_id).report(project_id)
+
+
+@router.post("/{project_id}/assets/metadata-scan", response_model=GalgameProjectAssetListOut)
+async def scan_project_asset_metadata(
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    project_id: str,
+    request: Request,
+) -> GalgameProjectAssetListOut:
+    return await scan_metadata(read_assets(request, session, owner_user_id), project_id)

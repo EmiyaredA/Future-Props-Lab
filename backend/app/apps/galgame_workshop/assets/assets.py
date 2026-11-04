@@ -6,7 +6,6 @@ from sqlalchemy import delete, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.galgame_workshop.assets.asset_analysis import GalgameAssetAnalysisMixin
-from app.apps.galgame_workshop.assets.asset_metadata import _file_metadata
 from app.apps.galgame_workshop.assets.asset_support import (
     CATEGORY_DIRECTORIES,
     _default_category,
@@ -26,6 +25,7 @@ from app.apps.galgame_workshop.schemas import (
     GalgameProjectAssetPatchIn,
 )
 from app.capabilities.asset_store import AssetError, AssetLibrary, IncomingFile
+from app.capabilities.asset_store.media_metadata import inspect_media_file
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import GALGAME_EXTENSIONS
 from app.capabilities.asset_store.storage import AssetStorage
@@ -53,7 +53,7 @@ class GalgameProjectAssets(GalgameAssetAnalysisMixin):
     async def _create_metadata(
         self, row: VisualAsset, *, category: str, virtual_path: str
     ) -> GalgameAssetMetadata:
-        checksum, width, height, duration_ms = _file_metadata(
+        checksum, width, height, duration_ms = inspect_media_file(
             self.storage.path_for(row), row.media_kind
         )
         metadata = GalgameAssetMetadata(
@@ -261,7 +261,7 @@ class GalgameProjectAssets(GalgameAssetAnalysisMixin):
                 )
             path = self.storage.path_for(row)
             if path.is_file():
-                checksum, width, height, duration_ms = _file_metadata(path, row.media_kind)
+                checksum, width, height, duration_ms = inspect_media_file(path, row.media_kind)
                 metadata.checksum_sha256 = checksum
                 metadata.width = width
                 metadata.height = height
