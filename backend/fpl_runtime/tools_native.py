@@ -5,12 +5,21 @@ from types import MappingProxyType
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
+from .tools_video import DOWNLOAD_VIDEO, VIDEO_JOB_PATH
+
 OPEN_PATH = "/v1/file-storage/open-folder"
 OPEN_LIBRARY = "tools.library.reveal"
 PROBE_VIDEO = "tools.video.dependencies"
+PROBE_VIDEO_SUBMIT = "tools.video.submit-dependencies"
+VIDEO_PROBES = frozenset({PROBE_VIDEO, PROBE_VIDEO_SUBMIT})
 VIDEO_DEPS_PATH = "/v1/tool-navigation/video-download/deps"
 HOST_OPERATIONS = MappingProxyType(
-    {OPEN_LIBRARY: ("POST", OPEN_PATH), PROBE_VIDEO: ("GET", VIDEO_DEPS_PATH)}
+    {
+        OPEN_LIBRARY: ("POST", OPEN_PATH),
+        PROBE_VIDEO: ("GET", VIDEO_DEPS_PATH),
+        PROBE_VIDEO_SUBMIT: ("POST", VIDEO_JOB_PATH),
+        DOWNLOAD_VIDEO: ("POST", VIDEO_JOB_PATH),
+    }
 )
 ERRORS = {
     "library_folder_missing": (409, "文件库文件夹不存在"),

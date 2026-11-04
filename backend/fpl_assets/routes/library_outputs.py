@@ -10,6 +10,7 @@ from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.identity.permissions import effective_permissions
 from fpl_runtime.claims import HEADER, verify_context
 from fpl_runtime.model_outputs import ModelOutputDescription
+from fpl_runtime.tools_video_library import PREFIX, ToolLibraryDescription, is_library_path
 
 from ..library_outputs import LibraryOutputFiles
 
@@ -54,6 +55,19 @@ class OutputStream:
 
 @router.post("/_internal/v1/model-library-outputs/{task_id}/{descriptor_sha256}")
 async def library_output(request: Request, task_id: str, descriptor_sha256: str):
+    return await _store_output(request, task_id, descriptor_sha256, ModelOutputDescription)
+
+
+@router.post(PREFIX + "/{job_id}/{descriptor_sha256}")
+async def tools_library_output(request: Request, job_id: str, descriptor_sha256: str):
+    if not is_library_path(request.url.path):
+        raise HTTPException(404, "file_output_not_found")
+    return await _store_output(
+        request, "tools-" + job_id, descriptor_sha256, ToolLibraryDescription
+    )
+
+
+async def _store_output(request, task_id, descriptor_sha256, descriptor_type):
     if request.headers.get("origin") or request.headers.get("cookie"):
         raise HTTPException(403, "private_file_output_required")
     if request.headers.get("content-encoding", "identity").strip().lower() not in {"", "identity"}:
@@ -73,7 +87,7 @@ async def library_output(request: Request, task_id: str, descriptor_sha256: str)
     ):
         raise HTTPException(403, "file_output_authorization_forbidden")
     try:
-        description = ModelOutputDescription.from_header(
+        description = descriptor_type.from_header(
             request.headers.get("X-Fpl-Output-Descriptor", "")
         )
         length = int(request.headers.get("content-length", "-1"))
@@ -94,4 +108,9 @@ async def library_output(request: Request, task_id: str, descriptor_sha256: str)
     ) as session:
         return await LibraryOutputFiles(
             session, request.app.state.settings, actor.user_id, active=active
-        ).store(task_id, description, OutputStream(request, description))
+        ).store(
+            task_id,
+            description,
+            OutputStream(request, description),
+            folder_id=getattr(description, "folder_id", None),
+        )

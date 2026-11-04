@@ -101,6 +101,7 @@ def target_permission_path(grant):
     from .external_sync import close_grant, read_grant
     from .thought_archives import archive_grant
     from .thought_assets import asset_grant, upload_grant
+    from .tools_video_library import library_grant
     from .writing import writing_grant, writing_target
 
     if (
@@ -121,7 +122,7 @@ def target_permission_path(grant):
         return grant.source_path
     if asset_grant(grant) or upload_grant(grant) or archive_grant(grant):
         return "/v1/files"
-    if model_library_output(grant):
+    if model_library_output(grant) or library_grant(grant):
         return "/v1/files"
     asset_id = model_library_input(grant)
     return "/v1/files/" + asset_id + "/content" if asset_id else grant.target_path
@@ -139,6 +140,7 @@ def permitted(grant, catalog):
     from .external_sync import close_grant, read_grant
     from .thought_archives import archive_grant
     from .thought_assets import asset_grant, upload_grant
+    from .tools_video_library import library_grant
     from .writing import writing_grant
 
     if directory_grant(grant, catalog):
@@ -154,7 +156,7 @@ def permitted(grant, catalog):
         or community_upload_grant(grant)
     ):
         return True
-    if model_library_input(grant) or model_library_output(grant):
+    if model_library_input(grant) or model_library_output(grant) or library_grant(grant):
         return True
     destination = catalog.match(grant.target_method, grant.target_path)
     if destination is None or destination.service != grant.target_service:

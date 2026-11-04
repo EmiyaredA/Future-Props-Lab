@@ -2,6 +2,8 @@
 
 import argparse
 import asyncio
+import base64
+import contextlib
 import logging
 import os
 import stat
@@ -12,11 +14,19 @@ from uuid import UUID
 import httpx
 
 from app.tool_navigation.video_download_dependencies import probe_deps
+from app.tool_navigation.video_download_errors import VideoDownloadError
 from fpl_runtime.locking import service_lock
 from fpl_runtime.native_protocol import NativeLease, NativeOutcome
-from fpl_runtime.tools_native import HOST_OPERATIONS, OPEN_LIBRARY, PROBE_VIDEO
+from fpl_runtime.tools_native import HOST_OPERATIONS, OPEN_LIBRARY, VIDEO_PROBES
+from fpl_runtime.tools_video import (
+    DOWNLOAD_VIDEO,
+    OUTPUT_DESCRIPTOR_HEADER,
+    VideoDownloadInput,
+    VideoDownloadResult,
+)
 
 from .receipts import ReceiptStore
+from .tools_video import VideoWorkspace
 from .transport import LeaseEnded, NativeTransport, ProtocolConflict
 
 logger = logging.getLogger(__name__)
@@ -51,16 +61,24 @@ def reveal_library(root, owner, *, launch=subprocess.Popen):
 
 class ToolsWorker:
     def __init__(
-        self, transport, assets_root, state_root, *, reveal=reveal_library, dependencies=probe_deps
+        self,
+        transport,
+        assets_root,
+        state_root,
+        *,
+        reveal=reveal_library,
+        dependencies=probe_deps,
+        downloader=None,
     ):
         if assets_root.is_symlink() or not assets_root.is_dir():
             raise ValueError("Tools worker 必须指定真实的 Assets 状态目录")
         self.assets_root = assets_root.resolve()
         self.transport, self.reveal = transport, reveal
         self.dependencies = dependencies
+        self.videos = VideoWorkspace(state_root, **({"download": downloader} if downloader else {}))
         self.receipts = ReceiptStore(
             state_root / "receipts",
-            readonly_operations={PROBE_VIDEO},
+            readonly_operations=VIDEO_PROBES,
             retain_acknowledged_payload=False,
         )
 
@@ -72,6 +90,15 @@ class ToolsWorker:
             "authorization_revoked",
         }:
             outcome = NativeOutcome(status="failed", error_code=error)
+        if lease.operation == DOWNLOAD_VIDEO and outcome.status == "completed":
+            if "download_error" in outcome.result:
+                outcome = NativeOutcome(
+                    status="failed",
+                    error_code=outcome.result["download_error"],
+                    message=outcome.result["message"],
+                )
+            else:
+                outcome = await self._upload(lease, outcome)
         response = await self.transport.post(
             "receipt",
             {"lease": lease.model_dump(mode="json"), "outcome": outcome.model_dump(mode="json")},
@@ -79,10 +106,72 @@ class ToolsWorker:
         if response.get("acknowledged") is not True:
             raise ProtocolConflict("Tools 回执未确认")
         self.receipts.acknowledge(lease)
+        if lease.operation == DOWNLOAD_VIDEO:
+            self.videos.forget(lease.job_id)
+
+    async def _upload(self, lease, outcome):
+        result = VideoDownloadResult.model_validate(outcome.result)
+        path = await asyncio.to_thread(self.videos.result_path, lease.job_id, result)
+
+        async def chunks():
+            with path.open("rb") as source:
+                while chunk := await asyncio.to_thread(source.read, 1024 * 1024):
+                    yield chunk
+
+        encoded = base64.b64encode(result.model_dump_json().encode()).decode()
+        async with contextlib.aclosing(chunks()) as content:
+            response = await self.transport.client.post(
+                f"_native/v1/download-outputs/{lease.job_id}/{lease.lease_id}",
+                headers={
+                    "Content-Length": str(result.byte_size),
+                    "Content-Type": "application/octet-stream",
+                    OUTPUT_DESCRIPTOR_HEADER: encoded,
+                },
+                content=content,
+                timeout=600,
+            )
+        if response.status_code in {401, 403, 410}:
+            return NativeOutcome(
+                status="failed",
+                error_code="authorization_revoked",
+                message="下载交付授权已撤销",
+            )
+        if response.status_code in {404, 413, 422}:
+            return NativeOutcome(
+                status="failed",
+                error_code="delivery_rejected",
+                message="下载文件未通过交付校验",
+            )
+        if response.status_code == 409:
+            raise ProtocolConflict("下载产物与服务的回执冲突")
+        response.raise_for_status()
+        try:
+            body = response.json()
+        except ValueError as exc:
+            raise ProtocolConflict("下载产物回执格式无效") from exc
+        if not isinstance(body, dict) or body.get("stored") is not True:
+            raise ProtocolConflict("下载产物未取得持久确认")
+        return outcome
+
+    async def _heartbeat(self, lease):
+        while True:
+            await asyncio.sleep(15)
+            try:
+                response = await self.transport.post(
+                    "heartbeat", {"lease": lease.model_dump(mode="json")}
+                )
+            except (LeaseEnded, httpx.HTTPError, ProtocolConflict):
+                return
+            if response.get("active") is not True:
+                return
 
     async def execute(self, lease):
-        if lease.operation not in HOST_OPERATIONS or lease.payload:
-            raise ProtocolConflict("Tools 租约超出文件夹打开能力")
+        if lease.operation not in HOST_OPERATIONS or (
+            lease.operation != DOWNLOAD_VIDEO and lease.payload
+        ):
+            raise ProtocolConflict("Tools 租约超出原生能力")
+        if lease.operation == DOWNLOAD_VIDEO:
+            VideoDownloadInput.model_validate(lease.payload)
         try:
             result = await self.transport.post(
                 "authorize", {"lease": lease.model_dump(mode="json")}
@@ -97,7 +186,12 @@ class ToolsWorker:
         def action(operation, _payload):
             if operation == OPEN_LIBRARY:
                 return self.reveal(self.assets_root, lease.owner_user_id)
-            return self.dependencies().model_dump(mode="json")
+            if operation in VIDEO_PROBES:
+                return self.dependencies().model_dump(mode="json")
+            try:
+                return self.videos.execute(lease.job_id, lease.payload).model_dump(mode="json")
+            except VideoDownloadError as exc:
+                return {"download_error": exc.code[:100], "message": str(exc)[:1000]}
 
         return await asyncio.to_thread(self.receipts.execute, lease, action)
 
@@ -111,7 +205,17 @@ class ToolsWorker:
         result = await self.transport.post("claim", {"wait_seconds": 1})
         if result.get("lease"):
             lease = NativeLease.model_validate(result["lease"])
-            await self.deliver(lease, await self.execute(lease))
+            heartbeat = (
+                asyncio.create_task(self._heartbeat(lease))
+                if lease.operation == DOWNLOAD_VIDEO
+                else None
+            )
+            try:
+                await self.deliver(lease, await self.execute(lease))
+            finally:
+                if heartbeat is not None:
+                    heartbeat.cancel()
+                    await asyncio.gather(heartbeat, return_exceptions=True)
 
     async def run(self):
         try:

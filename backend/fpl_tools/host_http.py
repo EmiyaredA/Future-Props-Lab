@@ -1,20 +1,33 @@
 """Admit only verified local browser requests and authenticated native workers."""
 
 import asyncio
+import base64
+import binascii
 import secrets
+from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.datastructures import Headers
 from starlette.responses import JSONResponse
 
 from app.capabilities.asset_store.schemas.project_snapshots import ProjectFolderOpenOut
-from app.tool_navigation.video_download_contracts import VideoDownloadDepsOut
+from app.tool_navigation.video_download_contracts import (
+    VideoDownloadDepsOut,
+    VideoDownloadJobCreate,
+    VideoDownloadJobOut,
+)
+from app.tool_navigation.video_download_errors import VideoDownloadError
 from fpl_runtime.http_dependencies import StudioAuth
 from fpl_runtime.native_protocol import NativeLease, NativeOutcome
 from fpl_runtime.tools_native import OPEN_PATH, VIDEO_DEPS_PATH
-
-from .host import missing_dependencies
+from fpl_runtime.tools_video import (
+    DOWNLOAD_VIDEO,
+    OUTPUT_DESCRIPTOR_HEADER,
+    VIDEO_JOB_PATH,
+    VideoDownloadResult,
+)
 
 public = APIRouter()
 native = APIRouter(prefix="/_native/v1", include_in_schema=False)
@@ -82,7 +95,7 @@ async def reveal_library_folder(request: Request, principal: StudioAuth):
             403, {"code": "local_access_required", "message": "请从本机网站入口打开文件夹"}
         )
     host = request.app.state.tools_host
-    if host is None:
+    if host.identity is None:
         raise HTTPException(
             503, {"code": "folder_open_unavailable", "message": "本机文件管理器连接不可用"}
         )
@@ -93,11 +106,60 @@ async def reveal_library_folder(request: Request, principal: StudioAuth):
 @public.get(VIDEO_DEPS_PATH, response_model=VideoDownloadDepsOut, tags=["tool-navigation"])
 async def get_video_download_deps(request: Request, principal: StudioAuth):
     host = request.app.state.tools_host
-    if host is None:
-        return missing_dependencies()
     return await host.video_dependencies(
         principal.user_id, request.state.service_assertion, local=request.state.service_actor.local
     )
+
+
+def _video_error(exc):
+    return HTTPException(exc.status, {"code": exc.code, "message": str(exc)})
+
+
+@public.post(VIDEO_JOB_PATH, response_model=VideoDownloadJobOut, tags=["tool-navigation"])
+async def post_video_download_job(
+    body: VideoDownloadJobCreate, request: Request, principal: StudioAuth
+):
+    try:
+        return await request.app.state.tools_videos.create(
+            principal.user_id,
+            request.state.service_assertion,
+            body,
+            local=request.state.service_actor.local and principal.auth_kind == "session",
+        )
+    except VideoDownloadError as exc:
+        raise _video_error(exc) from exc
+    except ValueError as exc:
+        raise HTTPException(422, {"code": "invalid_request", "message": str(exc)}) from exc
+
+
+@public.get(
+    VIDEO_JOB_PATH + "/{job_id}", response_model=VideoDownloadJobOut, tags=["tool-navigation"]
+)
+async def get_video_download_job(job_id: str, request: Request, principal: StudioAuth):
+    try:
+        return await request.app.state.tools_videos.get(principal.user_id, job_id)
+    except VideoDownloadError as exc:
+        raise _video_error(exc) from exc
+
+
+@public.get(
+    VIDEO_JOB_PATH + "/{job_id}/file",
+    response_class=FileResponse,
+    tags=["tool-navigation"],
+    responses={
+        200: {
+            "content": {
+                "application/octet-stream": {"schema": {"type": "string", "format": "binary"}}
+            }
+        }
+    },
+)
+async def download_video_download_file(job_id: str, request: Request, principal: StudioAuth):
+    try:
+        path, filename = await request.app.state.tools_videos.file(principal.user_id, job_id)
+    except VideoDownloadError as exc:
+        raise _video_error(exc) from exc
+    return FileResponse(path, filename=filename, media_type="application/octet-stream")
 
 
 @native.post("/claim")
@@ -117,7 +179,59 @@ async def authorize(request: Request, body: Lease):
     return {"active": True}
 
 
+@native.post("/heartbeat")
+async def heartbeat(request: Request, body: Lease):
+    host, worker = request.app.state.tools_host, request.state.tools_worker
+    await host.authorize(worker, body.lease)
+    if not await host.queue.heartbeat(worker_id=worker, lease=body.lease):
+        raise HTTPException(410, "tools_lease_ended")
+    return {"active": True}
+
+
+@native.post("/download-outputs/{job_id}/{lease_id}")
+async def download_output(request: Request, job_id: UUID, lease_id: UUID):
+    row = await request.app.state.tools_host.download_upload(
+        request.state.tools_worker, job_id, lease_id
+    )
+    encoded = request.headers.get(OUTPUT_DESCRIPTOR_HEADER, "")
+    try:
+        if not 1 <= len(encoded) <= 4096:
+            raise ValueError("descriptor size")
+        result = VideoDownloadResult.model_validate_json(base64.b64decode(encoded, validate=True))
+        size = int(request.headers.get("content-length", "-1"))
+    except (ValueError, TypeError, binascii.Error) as exc:
+        raise HTTPException(422, "tools_video_descriptor_invalid") from exc
+    if (
+        size != result.byte_size
+        or request.headers.get("content-encoding", "identity") != "identity"
+    ):
+        raise HTTPException(422, "tools_video_descriptor_mismatch")
+    if size > 8 * 1024 * 1024 * 1024:
+        raise HTTPException(413, {"code": "output_too_large", "message": "下载文件超过交付容量"})
+
+    async def authorize_output():
+        await request.app.state.tools_host.download_upload(
+            request.state.tools_worker, job_id, lease_id
+        )
+
+    try:
+        await request.app.state.tools_videos.accept_file(
+            row, result, request.stream(), authorize=authorize_output
+        )
+    except VideoDownloadError as exc:
+        raise _video_error(exc) from exc
+    return {"stored": True}
+
+
 @native.post("/receipt")
 async def receipt(request: Request, body: Receipt):
-    await request.app.state.tools_host.finish(request.state.tools_worker, body.lease, body.outcome)
+    outcome = body.outcome
+    if body.lease.operation == DOWNLOAD_VIDEO:
+        try:
+            outcome = await request.app.state.tools_videos.confirmed(body.lease, outcome)
+        except VideoDownloadError as exc:
+            raise _video_error(exc) from exc
+    await request.app.state.tools_host.finish(request.state.tools_worker, body.lease, outcome)
+    if body.lease.operation == DOWNLOAD_VIDEO and outcome.status == "completed":
+        await request.app.state.tools_videos.discard_library_only_file(body.lease)
     return {"acknowledged": True}

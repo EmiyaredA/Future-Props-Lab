@@ -74,7 +74,7 @@ class LibraryOutputFiles:
                 status=401 if active is False else 503,
             )
 
-    async def store(self, task_id, description, incoming):
+    async def store(self, task_id, description, incoming, *, folder_id=None):
         staged_path = None
         committing = False
         try:
@@ -86,6 +86,7 @@ class LibraryOutputFiles:
             row = await AssetLibrary(self.session, self.settings).store_upload(
                 VerifiedOutput(incoming, description),
                 owner_user_id=self.owner,
+                folder_id=folder_id,
                 defer_persistence=True,
             )
             staged_path = AssetStorage(self.settings).path_for(row)

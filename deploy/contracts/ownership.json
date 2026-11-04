@@ -4704,6 +4704,12 @@
       "model": "ToolsNativeJob"
     },
     {
+      "table": "tools_download_artifacts",
+      "service": "tools",
+      "module": "fpl_tools.models",
+      "model": "ToolsDownloadArtifact"
+    },
+    {
       "table": "visual_certification_receipts",
       "service": "visual",
       "module": "fpl_visual.models",

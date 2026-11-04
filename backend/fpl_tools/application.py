@@ -17,6 +17,7 @@ from app.problem_details import (
 from app.tool_navigation.models import ToolNavigationItem
 from app.tool_navigation.routes import router
 from fpl_runtime.authentication import SignedIdentity
+from fpl_runtime.capability_client import CapabilityClient
 from fpl_runtime.database import Database
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.locking import service_lock
@@ -28,7 +29,9 @@ from fpl_runtime.web import attach_web, load_release
 from .host import ToolsHost
 from .host_http import NativeIngress, native, public
 from .migrations.registry import MIGRATIONS
-from .models import ToolsNativeJob
+from .models import ToolsDownloadArtifact, ToolsNativeJob
+from .video_library import VideoLibrary
+from .videos import Videos
 
 PAGES = ("/tools", "/tools/video-frame-exporter", "/tools/video-downloader")
 
@@ -43,11 +46,24 @@ def create_app(
     native_options=None,
     identity_transport=None,
 ):
-    database = Database("tools", state_root, models=(ToolNavigationItem, ToolsNativeJob))
+    database = Database(
+        "tools", state_root, models=(ToolNavigationItem, ToolsNativeJob, ToolsDownloadArtifact)
+    )
     identity = (
         LiveAuthorization(
             service="tools",
             credential=native_options.identity_credential,
+            transport=identity_transport,
+        )
+        if native_options
+        else None
+    )
+
+    capabilities = (
+        CapabilityClient(
+            service="tools",
+            credential=native_options.identity_credential,
+            catalog=catalog,
             transport=identity_transport,
         )
         if native_options
@@ -63,14 +79,18 @@ def create_app(
             finally:
                 if identity is not None:
                     await identity.close()
+                if capabilities is not None:
+                    await capabilities.client.aclose()
                 await database.close()
 
     app = FastAPI(
         title="FPL Tools", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan
     )
     app.state.database = database
-    app.state.tools_host = ToolsHost(database, identity) if identity is not None else None
-    app.add_middleware(RequestLimit, prefix="/_native/v1/", maximum=32 * 1024)
+    app.state.tools_host = ToolsHost(database, identity)
+    app.state.tools_videos = Videos(app.state.tools_host, VideoLibrary(capabilities))
+    for operation in ("claim", "authorize", "heartbeat", "receipt"):
+        app.add_middleware(RequestLimit, prefix=f"/_native/v1/{operation}", maximum=32 * 1024)
     app.add_middleware(NativeIngress, options=native_options)
     app.add_middleware(SignedIdentity, service="tools", public_key=public_key, catalog=catalog)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
@@ -84,7 +104,10 @@ def create_app(
             raise ValueError("Tools 浏览器程序缺少发布契约")
         release = load_release(web_root, "tools")
         published = json.loads(schema_path.read_text())
-        if release.api_sha256 != public_contract(published, "tools", catalog):
+        expected_hash = public_contract(published, "tools", catalog)
+        if public_contract(app.openapi(), "tools", catalog) != expected_hash:
+            raise ValueError("Tools 公开接口与发布契约不匹配")
+        if release.api_sha256 != expected_hash:
             raise ValueError("Tools 浏览器程序与发布契约不匹配")
         pages = [path for page in PAGES for path in (page, page + "/")]
         attach_web(app, release, pages=pages)
@@ -95,6 +118,6 @@ def create_app(
 
     @app.get("/ready")
     async def ready():
-        raise HTTPException(503, "tool_host_lane_incomplete")
+        raise HTTPException(503, "tools_cutover_incomplete")
 
     return app

@@ -6,7 +6,13 @@ from dataclasses import replace
 from pathlib import Path
 
 import httpx
-from tests.test_community_asset_protocol import CATALOG, PASSWORD, scenario  # noqa: F401
+import pytest
+from tests.test_community_asset_protocol import (  # noqa: F401
+    ASSETS_SECRET,
+    CATALOG,
+    PASSWORD,
+    scenario,
+)
 from tests.test_independent_project_catalog import authorize
 
 from fpl_runtime.migrations import apply
@@ -115,6 +121,9 @@ async def test_tools_library_reveal_is_local_and_replays_a_lost_worker_acknowled
         nonlocal lost
         # Simulate the headers added on the authenticated loopback ingress only.
         request.url = request.url.copy_with(path=request.url.path.removeprefix("/tools"))
+        for name in list(request.headers):
+            if name.startswith("x-fpl-"):
+                del request.headers[name]
         request.headers["X-Fpl-Native-Ingress"] = options.ingress
         if request.url.path.endswith("/authorize"):
             assert json.loads(request.content)["lease"]["payload"] == {}
@@ -243,3 +252,264 @@ def test_tools_worker_uses_only_the_owned_library_path(tmp_path):
         "error": "library_folder_missing"
     }
     assert len(calls) == 1
+
+
+def test_tools_native_download_workspace_binds_bytes_without_exposing_paths(tmp_path):
+    from uuid import uuid4
+
+    from app.tool_navigation.video_download_errors import VideoDownloadError
+    from fpl_host.tools_video import VideoWorkspace
+
+    calls = []
+
+    def download(*, url, quality, work_dir, cookies_from_browser):
+        calls.append((url, quality, cookies_from_browser))
+        (work_dir / "captured.mp4").write_bytes(b"synthetic native video")
+        (work_dir / "captured.info.json").write_text('{"title":"Sample video"}')
+
+    workspace = VideoWorkspace(tmp_path, download=download)
+    job = uuid4()
+    receipt = workspace.execute(
+        job,
+        {"url": "https://www.bilibili.com/video/BV1xx411c7mD", "quality": "720"},
+    )
+    assert len(calls) == 1 and calls[0][1:] == ("720", None)
+    assert receipt.title == "Sample video" and receipt.filename == "Sample_video.mp4"
+    assert "path" not in receipt.model_dump()
+    media = workspace.result_path(job, receipt)
+    assert media.read_bytes() == b"synthetic native video"
+    media.write_bytes(b"changed")
+    with pytest.raises(VideoDownloadError, match="持久回执"):
+        workspace.result_path(job, receipt)
+    workspace.forget(job)
+    assert not media.parent.exists()
+
+
+async def test_tools_download_artifact_commit_checks_digest_and_replays_after_reopen(tmp_path):
+    from hashlib import sha256
+
+    from app.runtime.time import utc_now
+    from app.tool_navigation.video_download_errors import VideoDownloadError
+    from fpl_runtime.database import Database
+    from fpl_runtime.native_queue import NativeQueue
+    from fpl_runtime.tools_video import DOWNLOAD_VIDEO, VideoDownloadResult
+    from fpl_tools.models import ToolsDownloadArtifact, ToolsNativeJob
+    from fpl_tools.video_files import DownloadFiles
+
+    models = (ToolsNativeJob, ToolsDownloadArtifact)
+    apply(tmp_path / "service.db", "tools", MIGRATIONS)
+    database = Database("tools", tmp_path, models=models)
+    contents = b"verified worker video"
+    expected = VideoDownloadResult(
+        title="Worker sample",
+        filename="sample.mp4",
+        mime_type="video/mp4",
+        byte_size=len(contents),
+        content_sha256=sha256(contents).hexdigest(),
+    )
+
+    async def chunks(value):
+        yield value[:4]
+        yield value[4:]
+
+    try:
+        queue = NativeQueue(database, ToolsNativeJob, operations={DOWNLOAD_VIDEO}, clock=utc_now)
+        job = await queue.enqueue(
+            owner="one",
+            operation=DOWNLOAD_VIDEO,
+            request_id="request",
+            payload={},
+        )
+        job_id = job["id"]
+        files = DownloadFiles(database)
+        with pytest.raises(VideoDownloadError, match="摘要"):
+            await files.store("one", job_id, expected, chunks(b"x" * len(contents)))
+        assert await files.receipt("one", job_id) is None
+        with pytest.raises(VideoDownloadError, match="任务不存在"):
+            await files.store("two", job_id, expected, chunks(contents))
+        assert await files.store("one", job_id, expected, chunks(contents)) == expected
+    finally:
+        await database.close()
+
+    reopened = Database("tools", tmp_path, models=models)
+    try:
+        files = DownloadFiles(reopened)
+        assert await files.store("one", job_id, expected, chunks(contents)) == expected
+        assert files.path(job_id, expected).read_bytes() == contents
+        mismatch = expected.model_copy(update={"title": "Changed"})
+        with pytest.raises(VideoDownloadError, match="回执冲突"):
+            await files.store("one", job_id, mismatch, chunks(contents))
+    finally:
+        await reopened.close()
+
+
+async def test_tools_native_video_replays_delivery_and_serves_owned_bytes(
+    scenario,  # noqa: F811
+    tmp_path,
+):
+    from sqlalchemy import select
+
+    from app.capabilities.asset_store.models import VisualAsset
+    from app.tool_navigation.video_download_contracts import BinaryStatus, VideoDownloadDepsOut
+    from fpl_host.tools_worker import ToolsWorker
+    from fpl_host.transport import NativeTransport
+    from fpl_runtime.identity_client import LiveAuthorization
+    from fpl_runtime.tools_native import ToolsNativeOptions
+    from fpl_runtime.tools_video import VIDEO_JOB_PATH
+
+    case = scenario
+    root = tmp_path / "tools"
+    assets_root = tmp_path / "owned-assets"
+    assets_root.mkdir()
+    apply(root / "service.db", "tools", MIGRATIONS)
+    options = ToolsNativeOptions(
+        identity_credential="identity-" * 8,
+        ingress="ingress-" * 8,
+        workers={"isolated-worker": "worker-" * 8},
+    )
+    case.identity.state.identity_options["service_credentials"]["tools"] = (
+        options.identity_credential
+    )
+    assets_live = LiveAuthorization(service="assets", credential=ASSETS_SECRET, transport=case.mesh)
+    case.assets.state.identity = assets_live
+    app = create_app(
+        state_root=root,
+        catalog=CATALOG,
+        public_key=case.key.public_key(),
+        native_options=options,
+        identity_transport=case.mesh,
+    )
+    published = json.loads((ROOT / "web/src/generated/openapi.json").read_text())["paths"]
+    paths = {
+        path: operations
+        for path, operations in app.openapi()["paths"].items()
+        if path.startswith("/v1/")
+    }
+    expected = {entry.path for entry in CATALOG.operations if entry.service == "tools"}
+    assert set(paths) == expected
+    assert paths == {path: published[path] for path in expected}
+
+    artifact = b"\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom" + b"\x00" * 64
+    calls = []
+    lost = False
+    real_transport = httpx.ASGITransport(app=app)
+
+    async def native_request(request):
+        nonlocal lost
+        request.url = request.url.copy_with(path=request.url.path.removeprefix("/tools"))
+        for name in list(request.headers):
+            if name.startswith("x-fpl-"):
+                del request.headers[name]
+        request.headers["X-Fpl-Native-Ingress"] = options.ingress
+        response = await real_transport.handle_async_request(request)
+        if not lost and "/download-outputs/" in request.url.path and response.status_code == 200:
+            lost = True
+            await response.aclose()
+            raise httpx.ReadError("synthetic lost output acknowledgement", request=request)
+        return response
+
+    def download(*, url, quality, work_dir, cookies_from_browser):
+        calls.append((url, quality, cookies_from_browser))
+        (work_dir / "native-video.mp4").write_bytes(artifact)
+
+    def dependencies():
+        return VideoDownloadDepsOut(
+            ready=True,
+            yt_dlp=BinaryStatus(name="yt-dlp", ok=True, version="fixture"),
+            ffmpeg=BinaryStatus(name="ffmpeg", ok=True, version="fixture"),
+        )
+
+    transport = NativeTransport(
+        service="tools",
+        base_url="http://127.0.0.1:19090/tools",
+        credential=options.workers["isolated-worker"],
+        transport=httpx.MockTransport(native_request),
+    )
+
+    def worker():
+        return ToolsWorker(
+            transport,
+            assets_root,
+            tmp_path / "worker",
+            dependencies=dependencies,
+            downloader=download,
+        )
+
+    async with (
+        transport.client,
+        assets_live.client,
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(transport=real_transport, base_url="http://tools") as api,
+        httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=case.assets), base_url="http://assets"
+        ) as asset_api,
+    ):
+        folder_path = "/v1/file-folders"
+        folder = await asset_api.post(
+            folder_path,
+            headers=await authorize(case, "assets", "POST", folder_path),
+            json={"scope": "library", "name": "Download fixtures"},
+        )
+        assert folder.status_code == 200, folder.text
+        folder_id = folder.json()["id"]
+        payload = {
+            "url": "https://www.bilibili.com/video/BV1xx411c7mD",
+            "quality": "720",
+            "folder_id": folder_id,
+        }
+
+        async def submit(active_worker, **options):
+            headers = await authorize(case, "tools", "POST", VIDEO_JOB_PATH)
+            response_task = asyncio.create_task(
+                api.post(VIDEO_JOB_PATH, headers=headers, json={**payload, **options})
+            )
+            await active_worker.poll_once()
+            response = await response_task
+            assert response.status_code == 200, response.text
+            assert response.json()["status"] == "queued"
+            return VIDEO_JOB_PATH + "/" + response.json()["id"]
+
+        initial = worker()
+        job = await submit(initial)
+        with pytest.raises(httpx.ReadError, match="synthetic lost"):
+            await initial.poll_once()
+        assert lost and len(calls) == 1
+        resumed = worker()
+        await resumed.poll_once()
+        result = await api.get(job, headers=await authorize(case, "tools", "GET", job))
+        assert result.status_code == 200 and result.json()["status"] == "succeeded", result.text
+        asset_id = result.json()["asset"]["id"]
+        download_path = job + "/file"
+        fetched = await api.get(
+            download_path, headers=await authorize(case, "tools", "GET", download_path)
+        )
+        assert fetched.status_code == 200 and fetched.content == artifact
+        assert len(calls) == 1
+
+        library_only = await submit(resumed, save_to_disk=False)
+        await resumed.poll_once()
+        unavailable = library_only + "/file"
+        assert (
+            await api.get(unavailable, headers=await authorize(case, "tools", "GET", unavailable))
+        ).status_code == 404
+        assert len(calls) == 2
+        async with case.assets.state.database.sessions(
+            info={"owner_user_id": case.viewer}
+        ) as session:
+            saved = list(await session.scalars(select(VisualAsset)))
+            assert len(saved) == 2 and asset_id in {row.id for row in saved}
+            assert {row.folder_id for row in saved} == {folder_id}
+
+    reopened = create_app(state_root=root, catalog=CATALOG, public_key=case.key.public_key())
+    async with (
+        reopened.router.lifespan_context(reopened),
+        httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=reopened), base_url="http://tools"
+        ) as api,
+    ):
+        saved = await api.get(job, headers=await authorize(case, "tools", "GET", job))
+        assert saved.status_code == 200 and saved.json()["asset"]["id"] == asset_id
+        fetched = await api.get(
+            download_path, headers=await authorize(case, "tools", "GET", download_path)
+        )
+        assert fetched.content == artifact

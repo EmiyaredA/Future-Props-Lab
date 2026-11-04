@@ -17,6 +17,7 @@ from app.console.models.accounts import AuthSession, ManagementApiKey, User
 from app.runtime.time import utc_now
 from fpl_runtime.claims import verify_context
 from fpl_runtime.model_outputs import is_model_output_path
+from fpl_runtime.tools_video_library import is_library_path as is_tools_output_path
 
 router = APIRouter()
 
@@ -73,7 +74,9 @@ async def live(request: Request, body: LiveRequest):
         raise HTTPException(403, "service_credential_required")
     operation = request.app.state.service_catalog.match(body.method, body.path)
     private_output = (
-        body.service == "assets" and body.method == "POST" and is_model_output_path(body.path)
+        body.service == "assets"
+        and body.method == "POST"
+        and (is_model_output_path(body.path) or is_tools_output_path(body.path))
     )
     from fpl_runtime.community_uploads import upload_target as community_upload_target
     from fpl_runtime.creative_preview import preview_target

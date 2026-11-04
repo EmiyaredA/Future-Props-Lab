@@ -252,7 +252,7 @@ Galgame 的新项目创建和公开 Story 保存需要同一私网中的 Identit
 
 ### Tools 导航状态
 
-`npm run services:build -- tools --build` 构建 Tools 镜像。`deploy/tools.compose.yaml` 使用独立的 `FPL_TOOLS_STATE` 与只读 Identity 公钥。隔离运行 `fpl-tools-owner-8f178e9894` 经 Gateway 验证了收藏、使用计数及容器重启后的持久化。视频下载执行和历史迁移仍纳入 Tools 完整就绪门禁。
+`npm run services:build -- tools --build` 构建 Tools 镜像。`deploy/tools.compose.yaml` 使用独立的 `FPL_TOOLS_STATE` 与只读 Identity 公钥。隔离运行 `fpl-tools-owner-8f178e9894` 经 Gateway 验证了收藏、使用计数及容器重启后的持久化。历史迁移及正式编排仍纳入 Tools 完整就绪门禁。
 
 构建浏览器程序可运行 `npm run services:build:web -- tools`，再把返回目录作为 `--web-release` 传给镜像构建。隔离运行 `fpl-tools-browser-71a1b5d024` 验证了 Chromium 登录态收藏、工具目录手机宽度、两条深链接及旧程序版本写入拒绝，也检查了公网监听的页面与未登录 API 响应。
 
@@ -260,4 +260,6 @@ Galgame 的新项目创建和公开 Story 保存需要同一私网中的 Identit
 
 隔离运行 `fpl-tools-native-245d307d35` 通过真实回环入口、签名账号会话和 Mac worker 逻辑完成目录请求。测试适配器记录了唯一的 Finder 启动参数，验证路径归属并拒绝浏览器访问原生入口。自动化用例另验证回执丢失后的恢复、过期未领取任务和公网管理员限制。
 
-隔离运行 `fpl-tools-dependencies-7fa491262d` 经真实回环通道读取固定视频工具的测试状态。API 单测核对了本机响应中的路径与公网响应中的路径隐藏。下载任务仍待接入执行、文件交付和入库回执。
+隔离运行 `fpl-tools-dependencies-7fa491262d` 经真实回环通道读取固定视频工具的测试状态。API 单测核对了本机响应中的路径与公网响应中的路径隐藏。下载任务的执行、文件交付和入库回执在后续批次接入。
+
+隔离运行 `fpl-tools-video-38e992255f` 使用真实四容器和原生回环传输，并用合成下载器替代外部供应商。任务只执行一次，网页下载与 Assets 入库读回相同字节，Tools 重启后仍可查询任务及下载。八项公开操作与发布契约一致。实际供应商下载与个人浏览器 Cookie 未用于验收。
