@@ -42,6 +42,7 @@ class CommunityAssetRequest(BaseModel):
     source_method: Literal["GET"]
     source_path: str = Field(min_length=1, max_length=4096)
     evidence: CommunityAssetEvidence
+    size: Literal[128, 320, 640, 1280] | None = None
 
     def matches_source(self):
         prefix = "/v1/thought-workshop/community/publications/" + self.evidence.publication_id
@@ -70,6 +71,7 @@ def issue_community_asset(actor, body, *, private_key, key_id, now=None):
             "source_method": body.source_method,
             "source_path": body.source_path,
             "evidence": body.evidence.model_dump(mode="json"),
+            **({"size": body.size} if body.size is not None else {}),
         },
         private_key,
         algorithm="EdDSA",
@@ -116,8 +118,11 @@ def verify_community_asset(token, *, public_key):
     actor = Actor(**fields)
     body = CommunityAssetRequest.model_validate(
         {
-            key: payload[key]
-            for key in ("source_assertion", "source_method", "source_path", "evidence")
+            **{
+                key: payload[key]
+                for key in ("source_assertion", "source_method", "source_path", "evidence")
+            },
+            "size": payload.get("size"),
         }
     )
     if (

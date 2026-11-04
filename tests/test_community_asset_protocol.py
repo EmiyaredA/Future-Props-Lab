@@ -502,6 +502,8 @@ async def test_public_asset_url_without_note_id_resolves_current_multitable_atta
 
 
 async def test_browser_route_streams_through_three_services_and_rechecks_revocation(scenario):
+    from PIL import Image
+
     from app.apps.thought_workshop.account_directory import DirectoryBindings
     from fpl_runtime.authentication import SignedIdentity
     from fpl_thought.account_directory import HttpAccountDirectory
@@ -554,6 +556,47 @@ async def test_browser_route_streams_through_three_services_and_rechecks_revocat
         assert response.status_code == 200, response.text
         assert response.content == b"\x89PNG\r\n\x1a\nvisible image bytes"
         assert response.headers["cache-control"] == "no-store"
+        invalid = await browser.get(
+            path, params={"size": 128}, headers={HEADER: authorized.headers[HEADER]}
+        )
+        assert invalid.status_code == 422, invalid.text
+        assert (
+            await browser.get(
+                path, params={"size": 129}, headers={HEADER: authorized.headers[HEADER]}
+            )
+        ).status_code == 422
+
+        picture = io.BytesIO()
+        Image.new("RGB", (640, 320), "blue").save(picture, "PNG")
+        original = picture.getvalue()
+        picture.seek(0)
+        async with case.assets.state.database.sessions(info={"owner_user_id": case.owner}) as files:
+            row = await AssetLibrary(files, case.assets.state.settings).store_upload(
+                UploadFile(picture, filename="preview.png"), owner_user_id=case.owner
+            )
+            preview_id = row.id
+        async with case.db.sessions(info={"owner_user_id": case.owner}) as source:
+            pub = await source.get(Publication, "pub")
+            pub.cover_asset_id = preview_id
+            pub.revision += 1
+            await source.commit()
+        cover = "/v1/thought-workshop/community/publications/pub/cover"
+        grant = await case.browser.get(
+            "/_internal/v1/authorize",
+            headers={
+                "X-Fpl-Target-Service": "thought",
+                "X-Fpl-Request-Method": "GET",
+                "X-Fpl-Request-Uri": cover,
+            },
+        )
+        cover_headers = {HEADER: grant.headers[HEADER]}
+        assert (await browser.get(cover, headers=cover_headers)).content == original
+        thumbnail = await browser.get(cover, params={"size": 128}, headers=cover_headers)
+        assert thumbnail.status_code == 200, thumbnail.text[:200]
+        assert thumbnail.headers["content-type"] == "image/webp"
+        with Image.open(io.BytesIO(thumbnail.content)) as resized:
+            assert resized.size == (128, 64)
+
         async with case.db.sessions(info={"owner_user_id": case.owner}) as session:
             await session.execute(delete(ArticleMember).where(ArticleMember.user_id == case.viewer))
             await session.commit()

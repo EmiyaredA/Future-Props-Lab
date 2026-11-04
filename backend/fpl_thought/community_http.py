@@ -1,5 +1,6 @@
 """Browser community-file adapter using only short-lived service capabilities."""
 
+import json
 from dataclasses import asdict
 
 import httpx
@@ -38,12 +39,13 @@ class CommunityFiles:
             transport=transport, trust_env=False, follow_redirects=False, timeout=10
         )
 
-    async def open(self, request, evidence):
+    async def open(self, request, evidence, size):
         body = CommunityAssetRequest(
             source_assertion=request.state.service_assertion,
             source_method=request.method,
             source_path=request.url.path,
             evidence=asdict(evidence),
+            size=size,
         )
         try:
             response = await self.client.post(
@@ -67,6 +69,23 @@ class CommunityFiles:
                 ),
                 stream=True,
             )
+            if upstream.status_code == 422 and size is not None:
+                try:
+                    data = bytearray()
+                    async for chunk in upstream.aiter_bytes():
+                        if len(data) + len(chunk) > 8192:
+                            raise ValueError("invalid thumbnail response")
+                        data.extend(chunk)
+                    code = json.loads(data)["code"]
+                finally:
+                    await upstream.aclose()
+                messages = {
+                    "thumbnail_unsupported": "此素材暂不支持缩略预览",
+                    "thumbnail_too_large": "图片超过缩略图解码限制",
+                }
+                if code in messages:
+                    raise HTTPException(422, {"code": code, "message": messages[code]})
+                raise ValueError("invalid thumbnail response")
             if upstream.status_code != 200:
                 await upstream.aclose()
                 if upstream.status_code in (401, 403, 404):
@@ -101,7 +120,7 @@ class CommunityFiles:
 
 
 async def _content(
-    request, session, principal, publication_id, asset_id, note_id=None, cover=False
+    request, session, principal, publication_id, asset_id, note_id=None, cover=False, size=None
 ):
     files = getattr(request.app.state, "community_files", None)
     if not isinstance(files, CommunityFiles):
@@ -119,7 +138,7 @@ async def _content(
                 cover=cover,
                 allow_draft=note_id is not None,
             )
-        return await files.open(request, evidence)
+        return await files.open(request, evidence, size)
     except ThoughtError as exc:
         raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
 
@@ -130,9 +149,9 @@ async def cover(
     publication_id: str,
     session: CommunitySessionDep,
     principal: PublicStudioAuth,
-    size: ThumbnailSize | None = None,  # noqa: ARG001
+    size: ThumbnailSize | None = None,
 ):
-    return await _content(request, session, principal, publication_id, None, cover=True)
+    return await _content(request, session, principal, publication_id, None, cover=True, size=size)
 
 
 @router.get("/publications/{publication_id}/assets/{asset_id}/content")
@@ -143,6 +162,8 @@ async def asset(
     session: CommunitySessionDep,
     principal: PublicStudioAuth,
     note_id: str | None = None,
-    size: ThumbnailSize | None = None,  # noqa: ARG001
+    size: ThumbnailSize | None = None,
 ):
-    return await _content(request, session, principal, publication_id, asset_id, note_id=note_id)
+    return await _content(
+        request, session, principal, publication_id, asset_id, note_id=note_id, size=size
+    )

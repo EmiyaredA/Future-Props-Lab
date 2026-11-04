@@ -23,3 +23,5 @@ The service can be built and exercised against isolated Identity, Assets and Gat
 ## Verification
 
 The packaging and host tests assert the source closure, explicit overlay selection and mount boundaries. The isolated Compose check verifies readiness, browser release selection, stale-build write rejection, image transfer, backup bytes, archive replay and official package availability. Its Chromium option opens the signed-in page and a real note deep link at a mobile viewport.
+
+The community read grant also binds the requested thumbnail size. Assets reuses the existing bounded decoder and account-scoped revision cache after authorization. The isolated HTTP test checks real WebP dimensions, original bytes and denial after access is revoked.

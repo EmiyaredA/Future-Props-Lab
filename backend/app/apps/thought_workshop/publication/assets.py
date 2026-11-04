@@ -3,13 +3,14 @@ from sqlalchemy import select, text
 from app.apps.thought_workshop.multitable.storage import asset_ids, snapshot
 from app.apps.thought_workshop.schemas.document import file_ids
 from app.apps.thought_workshop.schemas.workshop import ThoughtAttachmentOut
+from app.capabilities.asset_store.image_thumbnails import ThumbnailSource, asset_thumbnail
 from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
 from app.capabilities.asset_store.storage import AssetStorage
-from app.capabilities.asset_store.thumbnails import ThumbnailSize, ThumbnailSource, asset_thumbnail
 from app.runtime.config import get_settings
+from app.runtime.image_sizes import ThumbnailSize
 
 from .access import article, bind_source, missing, publication
 from .catalog import visible

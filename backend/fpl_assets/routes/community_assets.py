@@ -4,6 +4,7 @@ import jwt
 from fastapi import APIRouter, HTTPException, Request
 from starlette.responses import FileResponse
 
+from app.capabilities.asset_store.image_thumbnails import ThumbnailSource, asset_thumbnail
 from fpl_runtime.community_assets import verify_community_asset
 
 from ..thought_library import content, describe
@@ -51,9 +52,24 @@ async def content_for_community(request: Request):
             metadata[evidence.asset_id].revision,
         )
         await session.rollback()
+    mime = description.mime_type
+    if source.size is not None and mime != "image/svg+xml":
+        path = await asset_thumbnail(
+            request.app.state.settings,
+            ThumbnailSource(
+                description.id,
+                description.revision,
+                evidence.source_owner_id,
+                description.media_kind,
+                mime,
+            ),
+            path,
+            source.size,
+        )
+        mime = "image/webp"
     return FileResponse(
         path,
-        media_type=description.mime_type,
+        media_type=mime,
         filename=description.original_filename,
         content_disposition_type="inline",
         headers={
