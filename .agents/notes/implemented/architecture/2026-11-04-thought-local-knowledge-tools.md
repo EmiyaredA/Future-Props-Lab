@@ -31,6 +31,8 @@ A published cover has its own reference set keyed by publication ID. Thought der
 
 Independent document duplication reserves one Assets projection per destination note, including retained table history. Source and destination revisions are checked again before the copy transaction. The cross-service test checks account isolation, stale revisions and the copied table's pin.
 
+The packaged official library uses the same validated archive writer as regular backups. Independent Thought reserves empty Assets projections for the package's libraries and notes, checks the active administrator session before the source transaction, and commits origins, the import receipt and projection outcomes together. The isolated test verifies all projections and returns the same result on replay.
+
 Every shared operation is compared with the public OpenAPI contract. The isolated HTTP scenario searches and exports a newly created document, converts Markdown, and exports an owned knowledge base with its cover reference using Identity and Assets.
 
 The isolated scenario checks that account backups contain both the manifest and the exact asset bytes obtained through Assets. Contract parity covers the newly shared operations, including the external synchronization task record.

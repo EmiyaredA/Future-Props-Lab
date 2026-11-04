@@ -99,6 +99,14 @@ class RetentionAuthorization:
                 and body.change.expected_resource_revision == -1
                 and initial_id
             )
+            official_import = (
+                body.source_method == "POST"
+                and body.source_path == "/v1/thought-workshop/community/official-import"
+                and body.change.resource_kind in {"knowledge-base", "note"}
+                and body.change.expected_resource_revision == -1
+                and not body.change.asset_ids
+                and initial_id
+            )
             apply_template = (
                 body.source_method == "POST"
                 and re.fullmatch(
@@ -142,12 +150,18 @@ class RetentionAuthorization:
                     initial and (publication_source[1] != "libraries" or not initial_id)
                 ):
                     raise HTTPException(403, "retention_resource_mismatch")
-            elif new_template or apply_template or create_note or create_knowledge_base:
+            elif (
+                new_template
+                or apply_template
+                or create_note
+                or create_knowledge_base
+                or official_import
+            ):
                 expected_kind = (
                     "template"
                     if new_template
                     else body.change.resource_kind
-                    if create_knowledge_base
+                    if create_knowledge_base or official_import
                     else "note"
                 )
                 expected_id = body.change.resource_id
@@ -186,6 +200,10 @@ class RetentionAuthorization:
             else principal.allows("content.write") and principal.permits("studio:write")
         )
         if not permitted:
+            raise HTTPException(403, "retention_source_forbidden")
+        if body.source_path == "/v1/thought-workshop/community/official-import" and (
+            actor.auth_kind != "session" or actor.platform_role != "admin"
+        ):
             raise HTTPException(403, "retention_source_forbidden")
         async with self.state.database.sessions() as session:
             if not await active_actor(session, actor):

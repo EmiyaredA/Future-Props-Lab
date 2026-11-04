@@ -1,17 +1,11 @@
 """Explicit administrator import of the packaged migration source, never a reader."""
 
-import io
-import json
-import zipfile
-
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.apps.thought_workshop.archive_import import allocate_ids, persist_archive, validate_payload
 from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.notes import Notes
-from app.apps.thought_workshop.portability import import_backup
-from app.apps.thought_workshop.schemas.document import validate_document
 from app.apps.thought_workshop.schemas.workshop import ThoughtImportOut
-from app.runtime.config import get_settings
 
 from .access import current_actor
 from .models import OfficialImportReceipt, OfficialSource
@@ -25,21 +19,7 @@ class SeedImportInput(BaseModel):
     package_version: str = Field(min_length=64, max_length=64)
 
 
-class PackageFile:
-    filename = "official-notes.zip"
-    content_type = "application/zip"
-
-    def __init__(self, data):
-        self.buffer = io.BytesIO(data)
-
-    async def read(self, size=-1):
-        return self.buffer.read(size)
-
-    async def close(self):
-        self.buffer.close()
-
-
-async def import_source(session, principal, body):
+async def import_source(session, principal, body, *, projections=None):
     principal = await current_actor(session, principal)
     require_admin(principal)
     # Completed requests replay even after an application upgrade changes the seed.
@@ -52,24 +32,36 @@ async def import_source(session, principal, body):
     seed, version = source()
     if version != body.package_version:
         raise ThoughtError("导入包已更新，请重新预览", 409, "import_conflict")
-    for note in seed["archive"]["notes"]:
-        validate_document(note["document"])
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
-        archive.writestr("manifest.json", json.dumps(seed["archive"], ensure_ascii=False))
-
-    async def before_write(s):
-        await begin_write(s)
-        require_admin(await current_actor(s, principal))
-        current = await s.get(OfficialImportReceipt, key)
+    try:
+        payload, parsed = validate_payload(seed["archive"])
+    except (ValueError, TypeError, KeyError) as exc:
+        raise ThoughtError("官方文档包内容无效") from exc
+    if payload.get("assets"):
+        raise ThoughtError("官方文档包含未提供的附件")
+    project_ids, note_ids = allocate_ids(payload)
+    commit_started = False
+    try:
+        if projections is not None:
+            await session.rollback()
+            await projections.prepare(project_ids, note_ids)
+            await projections.require_active()
+        await begin_write(session)
+        if projections is None:
+            require_admin(await current_actor(session, principal))
+        current = await session.get(OfficialImportReceipt, key)
         if current:
             if current.package_version != version:
                 raise ThoughtError("导入请求已用于其他版本", 409, "import_conflict")
             return ThoughtImportOut.model_validate(current.result)
-        return None
-
-    async def before_commit(s, notes, _projects, result):
-        s.add_all(
+        result, notes, _ = await persist_archive(
+            Notes(session, principal.owner_user_id, principal.user_id),
+            payload,
+            parsed,
+            {},
+            project_ids,
+            note_ids,
+        )
+        session.add_all(
             OfficialSource(
                 note_id=notes[o["note_id"]],
                 owner_user_id=principal.owner_user_id,
@@ -78,7 +70,7 @@ async def import_source(session, principal, body):
             )
             for o in seed["origins"]
         )
-        s.add(
+        session.add(
             OfficialImportReceipt(
                 owner_user_id=principal.owner_user_id,
                 user_id=principal.user_id,
@@ -87,11 +79,13 @@ async def import_source(session, principal, body):
                 result=result.model_dump(mode="json"),
             )
         )
-
-    return await import_backup(
-        Notes(session, principal.owner_user_id, principal.user_id),
-        get_settings(),
-        PackageFile(buffer.getvalue()),
-        before_write=before_write,
-        before_commit=before_commit,
-    )
+        if projections is not None:
+            await projections.record(session)
+        commit_started = True
+        await session.commit()
+        return result
+    finally:
+        if not commit_started:
+            await session.rollback()
+            if projections is not None:
+                await projections.abort(session)

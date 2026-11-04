@@ -654,6 +654,7 @@ def test_independent_thought_mounts_shared_routes_with_public_contract(tmp_path)
         ("get", "/notes/{note_id}/external-sync/tasks/{task_id}"),
         ("put", "/community/favorites/{namespace}/{resource_id}"),
         ("get", "/community/official-import/preview"),
+        ("post", "/community/official-import"),
         ("get", "/community/official-import/{request_id}"),
         ("get", "/community/official-links/{library_key}"),
         ("get", "/community/publications/{publication_id}/management"),
