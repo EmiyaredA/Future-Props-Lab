@@ -257,3 +257,34 @@ def test_thought_packages_own_release_and_only_purpose_scoped_asset_credentials(
             assert "FPL_THOUGHT_STATE" in volume["source"]
         else:
             assert volume["read_only"] is True
+
+
+@pytest.mark.parametrize("service,other", [("visual", "galgame"), ("galgame", "visual")])
+def test_project_owner_images_and_compose_mounts_are_isolated(service, other):
+    closure = source_closure(ROOT, service)
+    assert f"fpl_{service}.application" in closure
+    assert f"app.apps.{service}_workshop.models" in closure
+    forbidden = (
+        f"fpl_{other}",
+        f"app.apps.{other}_workshop",
+        "app.capabilities.asset_store.models",
+        "app.runtime.db",
+        "app.main",
+        "fpl_creative",
+        "fpl_identity",
+    )
+    assert not any(
+        name == prefix or name.startswith(prefix + ".") for name in closure for prefix in forbidden
+    )
+
+    compose = yaml.safe_load((ROOT / "deploy/project-owners.compose.yaml").read_text())
+    unit = compose["services"][service]
+    assert unit["read_only"] and unit["networks"] == ["private"] and "ports" not in unit
+    state, credential, key = (
+        next(mount for mount in unit["volumes"] if mount["target"] == target)
+        for target in ("/state", "/run/fpl/identity-token", "/run/fpl/identity-public.pem")
+    )
+    assert f"FPL_{service.upper()}_STATE" in state["source"]
+    assert f"FPL_{service.upper()}_IDENTITY_TOKEN" in credential["source"]
+    assert credential["read_only"] and key["read_only"]
+    assert all(not mount["bind"]["create_host_path"] for mount in unit["volumes"])

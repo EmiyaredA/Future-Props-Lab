@@ -2,7 +2,7 @@
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.apps.visual_workshop.outputs.history import register_output
+from app.apps.visual_workshop.outputs.recording import register_output
 
 
 async def register_imported_output(

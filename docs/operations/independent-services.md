@@ -223,4 +223,16 @@ uv run python scripts/website/service_docker_smoke.py \
 
 ### Creative 作品认证
 
-Creative 已注册 16 项公开操作。作品认证通过 Identity 的签名命令交给 Visual 或 Galgame 更新自有项目和版本。所属服务将审计待投递状态与项目一同提交，确认丢失后可重放，Identity 按原命令去重并签发审计收据。隔离 HTTP 验证了两种项目、原账号归属、并发版本冲突、撤权及重启恢复。Visual 与 Galgame 的完整公开路由和部署仍是 Creative 整站联调的前置门禁。
+Creative 已注册 16 项公开操作。作品认证通过 Identity 的签名命令交给 Visual 或 Galgame 更新自有项目和版本。所属服务将审计待投递状态与项目一同提交，确认丢失后可重放，Identity 按原命令去重并签发审计收据。隔离 HTTP 验证了两种项目、原账号归属、并发版本冲突、撤权及重启恢复。Visual 与 Galgame 的完整公开路由、浏览器程序和生产就绪检查仍是整站联调的前置门禁。
+
+
+Visual 与 Galgame 的认证和公开项目目录可用安装后的进程验收。分别构建镜像，并在合成账号和独立卷的环境中加载 `deploy/project-owners.compose.yaml`，与 Creative、Integrations 和基础清单一起启动。
+
+```sh
+npm run services:build -- visual --build
+npm run services:build -- galgame --build
+```
+
+为两套服务分别选择 `FPL_VISUAL_IMAGE` 和 `FPL_GALGAME_IMAGE`，设置专用 `FPL_VISUAL_STATE`、`FPL_GALGAME_STATE` 和同名服务的 `_IDENTITY_TOKEN` 文件。Identity 登记不同的凭据。对每套新隔离卷先执行 Compose 的 `run --rm --no-deps SERVICE migrate`。容器探针检查存活，应用的 `/ready` 保留完整编辑与部署门禁。
+
+隔离运行 `fpl-project-owners-958ca2aaf6` 使用六个安装镜像，通过 Gateway 创建、认证并读回两种项目，重复旧版本认证返回 409。Creative 的 stdio、Skill 归档和安装重放及 Chromium 的登录态入口通过。停止隔离容器并恢复同版本服务快照后，登录、Skill 文件内容、安装回执及两种认证标记均可读回。这项验证使用合成数据，历史迁移与旧站恢复分别由正式演练门禁跟踪。

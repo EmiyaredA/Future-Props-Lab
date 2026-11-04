@@ -7,7 +7,11 @@ import subprocess
 from importlib.util import resolve_name
 from pathlib import Path
 
+PROJECT_OWNERS = frozenset({"visual", "galgame"})
+
 ENTRY_POINTS = {
+    "visual": "fpl_visual.__main__",
+    "galgame": "fpl_galgame.__main__",
     "integrations": "fpl_integrations.__main__",
     "thought": "fpl_thought.__main__",
     "creative": "fpl_creative.__main__",
@@ -260,6 +264,35 @@ def source_closure(root: Path, service):
             )
         ):
             raise ValueError(f"Models 镜像包含越界依赖：{name}")
+        if service in PROJECT_OWNERS:
+            other = "galgame" if service == "visual" else "visual"
+            forbidden = (
+                "app.main",
+                "app.api",
+                "app.orm",
+                "app.deps",
+                "app.runtime.db",
+                f"app.apps.{other}_workshop",
+                "app.capabilities.asset_store.models",
+                "app.capabilities.asset_store.storage",
+                "app.console",
+                "fpl_assets",
+                "fpl_creative",
+                "fpl_identity",
+                "fpl_host",
+                f"fpl_{other}",
+            )
+            llm_contract = name in {
+                "app.llm",
+                "app.llm.schemas",
+                "app.llm.task_execution",
+            } or name.startswith("app.llm.schemas.")
+            if (
+                name.startswith("app.llm.")
+                and not llm_contract
+                or any(name == prefix or name.startswith(prefix + ".") for prefix in forbidden)
+            ):
+                raise ValueError(f"{service} 镜像包含越界依赖：{name}")
         path = module_file(root, name)
         if path is None:
             continue
@@ -290,12 +323,15 @@ def source_closure(root: Path, service):
 
 def prepare_image(root: Path, service: str, *, web_release=None):
     sources = source_closure(root, service)
+    definition = (
+        root / "deploy/images" / ("project-owner" if service in PROJECT_OWNERS else service)
+    )
     generated = subprocess.run(
         [
             "uv",
             "export",
             "--project",
-            str(root / "deploy/images" / service),
+            str(definition),
             "--frozen",
             "--no-dev",
             "--no-emit-project",
@@ -310,12 +346,16 @@ def prepare_image(root: Path, service: str, *, web_release=None):
     payloads.update(
         {
             "requirements.txt": generated,
-            "Dockerfile": (root / "deploy/images" / service / "Dockerfile").read_bytes(),
+            "Dockerfile": (definition / "Dockerfile").read_bytes(),
             "deploy/contracts/ownership.json": (
                 root / "deploy/contracts/ownership.json"
             ).read_bytes(),
         }
     )
+    if service in PROJECT_OWNERS:
+        payloads["service-entry.py"] = (
+            f"from {ENTRY_POINTS[service]} import main\n\nmain()\n"
+        ).encode()
     if service in {"identity", "gateway"}:
         manifest = "backend/app/console/governance/automation_operations.json"
         payloads[manifest] = (root / manifest).read_bytes()

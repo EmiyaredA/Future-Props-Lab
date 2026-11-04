@@ -18,7 +18,7 @@ LibreOffice 或额外预览服务。视频和音频继续使用上述 FFmpeg/FFp
 
 ## 独立服务迁移
 
-正在按同仓库独立服务拆分。Identity、Gateway、Agents、Portal、Assets、Rendering、Management 和 Thought 已有独立构建与 Compose 装配；Agents、文件库和思绪工坊拥有独立浏览器入口，门户停止后的新登录、素材访问和原生同步已通过隔离验收。Rendering 当前承接五个兼容媒体处理接口，持久导出任务、其余服务和正式切换仍在实施。`npm run services:build -- identity --build` 构建独立镜像；操作与验收范围见[独立服务迁移](docs/operations/independent-services.md)。使用 `npm run services:start` 启动独立服务。完成全部门禁前，正式网站继续使用下述现有入口。
+正在按同仓库独立服务拆分。Identity、Gateway、Agents、Portal、Assets、Rendering、Management 和 Thought 已有独立构建与 Compose 装配；Agents、文件库和思绪工坊拥有独立浏览器入口，门户停止后的新登录、素材访问和原生同步已通过隔离验收。Visual 与 Galgame 的项目目录及 Creative 作品认证可通过专用 Compose 叠加清单隔离验证。Rendering 当前承接五个兼容媒体处理接口，持久导出任务、其余服务和正式切换仍在实施。`npm run services:build -- identity --build` 构建独立镜像；操作与验收范围见[独立服务迁移](docs/operations/independent-services.md)。使用 `npm run services:start` 启动独立服务。完成全部门禁前，正式网站继续使用下述现有入口。
 
 ## 快速开始
 
