@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 
+from pydantic import ValidationError
 from sqlalchemy import select, text, update
 
 from app.apps.thought_workshop.errors import ThoughtError
@@ -13,6 +14,7 @@ from app.runtime.time import utc_now
 from fpl_runtime.asset_references import PrepareReferenceChange
 from fpl_runtime.capability_client import CapabilityDenied
 from fpl_runtime.retention_authority import change_digest, verify_retention
+from fpl_runtime.thought_assets import AssetDescription
 
 from .retention_records import ThoughtReferenceMutation
 
@@ -23,6 +25,7 @@ class PreparedReferences:
     request_id: str
     change_sha256: str
     asset_intent_id: str
+    metadata: tuple[AssetDescription, ...] = ()
 
 
 async def note_pin_ids(session, owner, note_id, prospective=()):
@@ -51,17 +54,33 @@ class ThoughtReferences:
         self.sessions, self.client, self.public_key = sessions, client, public_key
 
     async def prepare(
-        self, *, owner, assertion, source_method, source_path, change: PrepareReferenceChange
+        self,
+        *,
+        owner,
+        assertion,
+        source_method,
+        source_path,
+        change: PrepareReferenceChange,
+        community=None,
     ):
         change.validate_service("thought")
-        fingerprint = change_digest(change)
+        fingerprint = change_digest(change, community)
         # The narrow retention token grants only this exact change. It is persisted
         # before any prepare is sent, and cannot execute or read another resource.
         authority = await self.client.authorize(
-            assertion=assertion, source_method=source_method, source_path=source_path, change=change
+            assertion=assertion,
+            source_method=source_method,
+            source_path=source_path,
+            change=change,
+            **({"community": community} if community is not None else {}),
         )
         grant = verify_retention(authority, public_key=self.public_key)
-        if grant.actor.user_id != owner or grant.caller != "thought" or not grant.matches(change):
+        if (
+            grant.owner_id != owner
+            or grant.caller != "thought"
+            or grant.community != community
+            or not grant.matches(change)
+        ):
             raise ThoughtError("引用授权与当前修改不匹配", 403, "retention_owner_mismatch")
         async with self.sessions(info={"owner_user_id": owner}) as session:
             await session.execute(text("BEGIN IMMEDIATE"))
@@ -72,7 +91,7 @@ class ThoughtReferences:
                 authority = row.authority
                 if row.state not in {"preparing", "prepared"}:
                     raise ThoughtError("引用修改结果已经确定", 409, "retention_outcome_conflict")
-                if row.asset_intent_id:
+                if row.asset_intent_id and community is None:
                     return PreparedReferences(
                         owner, row.request_id, fingerprint, row.asset_intent_id
                     )
@@ -95,6 +114,16 @@ class ThoughtReferences:
             or result.get("state") != "prepared"
         ):
             raise ThoughtError("素材引用准备未确认", 503, "retention_unconfirmed")
+        metadata = ()
+        if community is not None:
+            try:
+                metadata = tuple(
+                    AssetDescription.model_validate(value) for value in result["metadata"]
+                )
+                if [asset.id for asset in metadata] != change.metadata_asset_ids:
+                    raise ValueError("metadata receipt mismatch")
+            except (KeyError, ValueError, TypeError, ValidationError):
+                raise ThoughtError("素材元数据回执未确认", 503, "retention_unconfirmed") from None
         async with self.sessions(info={"owner_user_id": owner}) as session:
             await session.execute(
                 update(ThoughtReferenceMutation)
@@ -107,7 +136,7 @@ class ThoughtReferences:
                 .values(asset_intent_id=identity, state="prepared", updated_at=utc_now())
             )
             await session.commit()
-        return PreparedReferences(owner, change.request_id, fingerprint, identity)
+        return PreparedReferences(owner, change.request_id, fingerprint, identity, metadata)
 
     async def record(self, source_session, prepared, *, resource_revision, deleted=False):
         if source_session.info.get("owner_user_id") != prepared.owner:

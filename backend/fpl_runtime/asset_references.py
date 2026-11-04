@@ -62,11 +62,12 @@ class PrepareReferenceChange(BaseModel):
     resource_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,128}$")
     expected_resource_revision: int = Field(ge=-1, strict=True)
     asset_ids: list[str] = Field(max_length=10000)
+    metadata_asset_ids: list[str] | None = Field(default=None, max_length=10000)
 
-    @field_validator("asset_ids")
+    @field_validator("asset_ids", "metadata_asset_ids")
     @classmethod
     def canonical_assets(cls, values):
-        return ReferenceUpdate.canonical_assets(values)
+        return ReferenceUpdate.canonical_assets(values) if values is not None else None
 
     def validate_service(self, service):
         if self.resource_kind not in RESOURCE_KINDS.get(service, ()):

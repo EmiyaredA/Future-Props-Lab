@@ -48,19 +48,20 @@ class RetentionClient:
         except (httpx.HTTPError, ValueError, TypeError) as exc:
             raise CapabilityUnavailable("素材引用结果未确认，请保留原请求恢复") from exc
 
-    async def authorize(self, *, assertion, source_method, source_path, change):
+    async def authorize(self, *, assertion, source_method, source_path, change, community=None):
         body = RetentionRequest(
             caller=self.service,
             source_method=source_method,
             source_path=source_path,
             assertion=assertion,
             change=change,
+            community=community,
         )
         result = await self._request(
             "POST",
             self.identity_url + "/_internal/v1/asset-retention/authorize",
             token=self.credential,
-            body=body.model_dump(mode="json"),
+            body=body.model_dump(mode="json", exclude_none=True),
         )
         token = result.get("authority")
         if not isinstance(token, str) or not 1 <= len(token) <= 16384:
@@ -72,7 +73,7 @@ class RetentionClient:
             "POST",
             self.assets_url + "/_internal/v1/retention/prepare",
             token=authority,
-            body=change.model_dump(mode="json"),
+            body=change.model_dump(mode="json", exclude_none=True),
         )
 
     async def status(self, *, authority, intent_id):

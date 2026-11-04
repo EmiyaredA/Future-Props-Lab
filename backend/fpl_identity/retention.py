@@ -43,7 +43,18 @@ class RetentionAuthorization:
             ("publications", "management"),
         }:
             publication_source = None
-        expected_permission = "community.access" if publication_source else "content.write"
+        community = body.community
+        if community is None and body.change.metadata_asset_ids is not None:
+            raise HTTPException(403, "retention_metadata_scope_required")
+        if community is not None and (
+            body.caller != "thought"
+            or not community.matches_source(body.source_method, body.source_path)
+            or not community.matches_change(body.change)
+        ):
+            raise HTTPException(403, "retention_community_scope_mismatch")
+        expected_permission = (
+            "community.access" if publication_source or community else "content.write"
+        )
         if (
             operation is None
             or operation.service != body.caller
@@ -136,7 +147,9 @@ class RetentionAuthorization:
                 and body.change.expected_resource_revision == -1
                 and initial_id
             )
-            if publication_source:
+            if community:
+                expected_kind, expected_id = "note", community.note_id
+            elif publication_source:
                 # The library operation resolves its publication in Thought's owned registry.
                 # The management operation already carries the exact publication in its path.
                 expected_kind = "publication"
@@ -196,10 +209,10 @@ class RetentionAuthorization:
         )
         permitted = (
             actor.auth_kind == "session" and principal.permits("studio:read")
-            if publication_source
+            if publication_source or community
             else principal.allows("content.write") and principal.permits("studio:write")
         )
-        if not permitted:
+        if not permitted or (community is not None and actor.user_id != community.actor_id):
             raise HTTPException(403, "retention_source_forbidden")
         if body.source_path == "/v1/thought-workshop/community/official-import" and (
             actor.auth_kind != "session" or actor.platform_role != "admin"
@@ -212,6 +225,7 @@ class RetentionAuthorization:
             actor,
             caller=body.caller,
             change=body.change,
+            community=community,
             private_key=self.options["private_key"],
             key_id=self.options["key_id"],
         )

@@ -4,8 +4,6 @@ Only a source transaction's durable outcome may commit or abort an intent.
 Unknown outcomes keep their pins indefinitely; there is no expiry cleanup.
 """
 
-import hashlib
-import json
 import time
 
 from sqlalchemy import delete, func, select, text
@@ -14,6 +12,8 @@ from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.ids import new_id
 from fpl_runtime.asset_references import PrepareReferenceChange
+from fpl_runtime.retention_authority import change_digest
+from fpl_runtime.thought_assets import AssetDescription
 
 from .models import AssetReferencePin, AssetReferenceSet, PreparedAssetPin, ReferenceIntent
 
@@ -36,7 +36,7 @@ class ReferenceChanges:
     async def replay(self, *, authority):
         """A lost acknowledgement may be retrieved without accepting another mutation."""
         async with self.database.sessions() as session:
-            session.info["owner_user_id"] = authority.actor.user_id
+            session.info["owner_user_id"] = authority.owner_id
             intent = await session.scalar(
                 select(ReferenceIntent).where(
                     ReferenceIntent.service_id == authority.caller,
@@ -51,7 +51,7 @@ class ReferenceChanges:
 
     async def verify_access(self, *, authority, intent_id):
         async with self.database.sessions() as session:
-            session.info["owner_user_id"] = authority.actor.user_id
+            session.info["owner_user_id"] = authority.owner_id
             intent = await owned_intent(session, authority.caller, intent_id)
             if (intent.request_id, intent.payload_sha256) != (
                 authority.request_id,
@@ -59,16 +59,12 @@ class ReferenceChanges:
             ):
                 raise failure("not_found", "引用变更不存在", 404)
 
-    async def prepare(self, *, owner, service, change: PrepareReferenceChange, not_after=None):
+    async def prepare(
+        self, *, owner, service, change: PrepareReferenceChange, not_after=None, community=None
+    ):
         change = change.model_copy(deep=True)
         change.validate_service(service)
-        digest = hashlib.sha256(
-            json.dumps(
-                change.model_dump(mode="json"),
-                sort_keys=True,
-                separators=(",", ":"),
-            ).encode()
-        ).hexdigest()
+        digest = change_digest(change, community)
         async with self.database.sessions() as session:
             session.info["owner_user_id"] = owner
             await session.execute(text("BEGIN IMMEDIATE"))
@@ -139,6 +135,14 @@ class ReferenceChanges:
             identifier = new_id()
             row.revision += 1
             result = {"intent_id": identifier, "state": "prepared", "revision": row.revision}
+            if community is not None:
+                assets = await session.scalars(
+                    select(VisualAsset).where(VisualAsset.id.in_(change.metadata_asset_ids))
+                )
+                result["metadata"] = [
+                    AssetDescription.model_validate(asset, from_attributes=True).model_dump()
+                    for asset in sorted(assets, key=lambda asset: asset.id)
+                ]
             intent = ReferenceIntent(
                 id=identifier,
                 owner_user_id=owner,

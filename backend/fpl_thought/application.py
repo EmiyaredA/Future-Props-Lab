@@ -37,6 +37,7 @@ from .community_evidence import router as evidence_router
 from .community_http import CommunityFiles
 from .community_http import router as community_files_router
 from .community_reads import router as community_reads_router
+from .community_writes_http import router as community_writes_router
 from .migrations.registry import MIGRATIONS
 from .models import ACCOUNT_MODELS, MODELS
 from .mutations_http import router as mutations_router
@@ -236,6 +237,7 @@ def create_app(
     app.include_router(upload_router, prefix="/v1")
     app.include_router(community_files_router, prefix="/v1")
     app.include_router(community_reads_router, prefix="/v1")
+    app.include_router(community_writes_router, prefix="/v1")
     app.include_router(publication_router, prefix="/v1")
     app.include_router(
         community_metadata_router,

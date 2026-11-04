@@ -53,10 +53,11 @@ async def prepare(request: Request, body: PrepareReferenceChange):
         raise HTTPException(403, {"code": "retention_preparation_denied"})
     return private_result(
         await changes.prepare(
-            owner=grant.actor.user_id,
+            owner=grant.owner_id,
             service=grant.caller,
             change=body,
             not_after=grant.prepare_before,
+            community=grant.community,
         )
     )
 
@@ -65,26 +66,34 @@ async def checked_intent(request, intent_id):
     grant, _token = authority(request)
     changes = request.app.state.reference_changes
     await changes.verify_access(authority=grant, intent_id=intent_id)
-    return changes, {
-        "owner": grant.actor.user_id,
-        "service": grant.caller,
-        "intent_id": intent_id,
-    }
+    return (
+        changes,
+        grant,
+        {
+            "owner": grant.owner_id,
+            "service": grant.caller,
+            "intent_id": intent_id,
+        },
+    )
 
 
 @router.get("/intents/{intent_id}")
 async def status(request: Request, intent_id: str):
-    changes, arguments = await checked_intent(request, intent_id)
+    changes, _grant, arguments = await checked_intent(request, intent_id)
     return private_result(await changes.status(**arguments))
 
 
 @router.post("/intents/{intent_id}/commit")
 async def commit(request: Request, intent_id: str, body: CommitReference):
-    changes, arguments = await checked_intent(request, intent_id)
+    changes, grant, arguments = await checked_intent(request, intent_id)
+    if grant.community and (
+        body.deleted or body.resource_revision != grant.community.note_revision + 1
+    ):
+        raise HTTPException(403, {"code": "retention_community_outcome_mismatch"})
     return private_result(await changes.commit(**arguments, **body.model_dump()))
 
 
 @router.post("/intents/{intent_id}/abort")
 async def abort(request: Request, intent_id: str):
-    changes, arguments = await checked_intent(request, intent_id)
+    changes, _grant, arguments = await checked_intent(request, intent_id)
     return private_result(await changes.abort(**arguments))
