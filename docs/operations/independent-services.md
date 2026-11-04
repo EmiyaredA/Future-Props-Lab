@@ -252,6 +252,10 @@ Galgame 的新项目创建和公开 Story 保存需要同一私网中的 Identit
 
 ### Tools 导航状态
 
-`npm run services:build -- tools --build` 构建 Tools 镜像。`deploy/tools.compose.yaml` 使用独立的 `FPL_TOOLS_STATE` 与只读 Identity 公钥。隔离运行 `fpl-tools-owner-8f178e9894` 经 Gateway 验证了收藏、使用计数及容器重启后的持久化。宿主目录、视频下载执行和历史迁移仍纳入 Tools 完整就绪门禁。
+`npm run services:build -- tools --build` 构建 Tools 镜像。`deploy/tools.compose.yaml` 使用独立的 `FPL_TOOLS_STATE` 与只读 Identity 公钥。隔离运行 `fpl-tools-owner-8f178e9894` 经 Gateway 验证了收藏、使用计数及容器重启后的持久化。视频下载执行和历史迁移仍纳入 Tools 完整就绪门禁。
 
 构建浏览器程序可运行 `npm run services:build:web -- tools`，再把返回目录作为 `--web-release` 传给镜像构建。隔离运行 `fpl-tools-browser-71a1b5d024` 验证了 Chromium 登录态收藏、工具目录手机宽度、两条深链接及旧程序版本写入拒绝，也检查了公网监听的页面与未登录 API 响应。
+
+本机文件库打开可额外加载 `deploy/tools-native.compose.yaml`。隔离环境为 Tools、Identity 与原生入口分别设置用途限定凭据，Gateway 的独立回环监听登记 Tools 原生通道。Mac worker 由 `uv run python -m fpl_host.tools_worker` 启动，使用明确指定的回环桥接地址、独占凭据文件、Assets 状态根目录和自有回执目录。容器只接收任务与回执。公网及 Management API Key 无权打开本机目录。
+
+隔离运行 `fpl-tools-native-245d307d35` 通过真实回环入口、签名账号会话和 Mac worker 逻辑完成目录请求。测试适配器记录了唯一的 Finder 启动参数，验证路径归属并拒绝浏览器访问原生入口。自动化用例另验证回执丢失后的恢复、过期未领取任务和公网管理员限制。

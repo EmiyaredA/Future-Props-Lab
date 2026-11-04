@@ -18,7 +18,7 @@ The published navigation router runs under a destination-bound Identity assertio
 
 ## Consequences
 
-The navigation API has an installed isolated image. The immutable browser release serves the tool directory and two existing deep links. The image verifies the browser contract hash and rejects writes from mismatched program versions. The download executor, native file-manager action and historic import are required for Tools readiness. Public readiness remains gated until those paths pass.
+The navigation API has an installed isolated image. The immutable browser release serves the tool directory and two existing deep links. The image verifies the browser contract hash and rejects writes from mismatched program versions. A separate local browser action uses a short native lease for a fixed account-library folder. The Tools service rechecks the original Identity session and exposes only a sanitized lease. The Mac worker checks the resolved account path under the configured Assets root and persists the execution receipt before acknowledgement. The download executor and historic import are required for Tools readiness. Public readiness remains gated until those paths pass.
 
 ## Verification
 
@@ -27,3 +27,5 @@ Isolated HTTP tests cover signed authorization, concurrent increments, persisten
 An installed three-container run exercises navigation through Gateway, then restarts only Tools and reads back the exact favorite and usage state.
 
 Chromium verifies the signed-in mobile directory, favorite mutation and deep links through the installed stack. The isolated public listener serves the browser program and requires authentication for navigation state.
+
+Host protocol tests cover public administrator rejection, spoofed native ingress, known expiry before assignment, verified path resolution and lost acknowledgement followed by receipt replay without another invocation.

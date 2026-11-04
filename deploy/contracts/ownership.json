@@ -4698,6 +4698,12 @@
       "model": "ThoughtUploadIntent"
     },
     {
+      "table": "tools_native_jobs",
+      "service": "tools",
+      "module": "fpl_tools.models",
+      "model": "ToolsNativeJob"
+    },
+    {
       "table": "visual_certification_receipts",
       "service": "visual",
       "module": "fpl_visual.models",

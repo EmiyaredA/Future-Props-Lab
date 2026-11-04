@@ -16,7 +16,7 @@ class ProtocolConflict(RuntimeError):
 
 class NativeTransport:
     def __init__(self, *, base_url, credential, transport=None, service="agents"):
-        if service not in {"agents", "management", "models", "integrations"}:
+        if service not in {"agents", "management", "models", "integrations", "tools"}:
             raise ValueError("未登记的原生通道")
         url = urlsplit(base_url)
         if (

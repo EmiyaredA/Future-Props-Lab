@@ -1,0 +1,11 @@
+# Optional Tools loopback worker ingress. Host paths are held by the Mac worker.
+services:
+  tools:
+    command: [serve, --native-config, /run/fpl/native-tools.json]
+    volumes:
+      - type: bind
+        source: ${FPL_TOOLS_NATIVE_CONFIG:?Select isolated Tools worker credentials}
+        target: /run/fpl/native-tools.json
+        read_only: true
+        bind:
+          create_host_path: false

@@ -97,6 +97,8 @@ def operation_owner(path):
 
 
 def table_owner(module, table):
+    if module.startswith("fpl_tools."):
+        return "tools"
     if module.startswith("fpl_visual."):
         return "visual"
     if module.startswith("fpl_galgame."):
