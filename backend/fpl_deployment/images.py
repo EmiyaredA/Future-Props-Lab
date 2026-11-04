@@ -8,12 +8,13 @@ from importlib.util import resolve_name
 from pathlib import Path
 
 PROJECT_OWNERS = frozenset({"visual", "galgame"})
-OWNED_HTTP_IMAGES = PROJECT_OWNERS | {"tools"}
+OWNED_HTTP_IMAGES = PROJECT_OWNERS | {"tools", "director"}
 
 ENTRY_POINTS = {
     "visual": "fpl_visual.__main__",
     "galgame": "fpl_galgame.__main__",
     "tools": "fpl_tools.__main__",
+    "director": "fpl_director.__main__",
     "integrations": "fpl_integrations.__main__",
     "thought": "fpl_thought.__main__",
     "creative": "fpl_creative.__main__",
@@ -40,6 +41,7 @@ PROJECT_PACKAGES = (
     "fpl_visual",
     "fpl_galgame",
     "fpl_tools",
+    "fpl_director",
     "fpl_integrations",
     "fpl_creative",
     "fpl_runtime",
@@ -285,6 +287,12 @@ def source_closure(root: Path, service):
             )
         ):
             raise ValueError(f"Tools 镜像包含越界依赖：{name}")
+        if service == "director" and (
+            name in {"app.main", "app.api", "app.orm", "app.runtime.db"}
+            or name.startswith(("app.console", "app.llm", "fpl_assets", "fpl_identity", "fpl_host"))
+            or (name.startswith("app.apps.") and not name.startswith("app.apps.director_desk"))
+        ):
+            raise ValueError(f"Director 镜像包含越界依赖：{name}")
         if service in PROJECT_OWNERS:
             other = "galgame" if service == "visual" else "visual"
             forbidden = (
@@ -380,7 +388,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
     if service in {"identity", "gateway"}:
         manifest = "backend/app/console/governance/automation_operations.json"
         payloads[manifest] = (root / manifest).read_bytes()
-    if service in {"creative", "gateway", "thought", "tools"}:
+    if service in {"creative", "gateway", "thought", "tools", "director"}:
         payloads["deploy/contracts/openapi.json"] = (
             root / "web/src/generated/openapi.json"
         ).read_bytes()
@@ -416,6 +424,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
         "thought",
         "creative",
         "tools",
+        "director",
     }:
         if web_release is None:
             payloads["web/.api-only"] = b"No browser program in this API acceptance image.\n"

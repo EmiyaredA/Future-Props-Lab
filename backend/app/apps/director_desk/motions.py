@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.director_desk.files import DirectorDeskFiles
@@ -15,6 +15,7 @@ from app.apps.director_desk.schemas import (
     DirectorMotionOut,
     DirectorMotionWrite,
 )
+from app.capabilities.asset_store.storage import AssetStorage
 from app.runtime.time import utc_now
 
 MOTION_KEY = re.compile(r"^user-motion:model-[a-f0-9]{64}:[0-9]+$")
@@ -35,10 +36,12 @@ def file_keys(value: object) -> set[str]:
 
 
 class DirectorDeskMotions:
-    def __init__(self, session: AsyncSession, owner_user_id: str):
+    def __init__(
+        self, session: AsyncSession, owner_user_id: str, *, storage: AssetStorage | None = None
+    ):
         self.session = session
         self.owner_user_id = owner_user_id
-        self.files = DirectorDeskFiles(session, owner_user_id)
+        self.files = DirectorDeskFiles(session, owner_user_id, storage=storage)
 
     async def list(self, query: str) -> DirectorMotionList:
         filters = [DirectorDeskUserMotion.owner_user_id == self.owner_user_id]
@@ -62,10 +65,12 @@ class DirectorDeskMotions:
         keys = file_keys(body.resource)
         if not keys:
             raise DirectorDeskError("动作资源缺少文件", 422, "missing_file")
-        self.files.require_library_keys(keys)
         name = body.motion.get("name")
         if not isinstance(name, str) or not name.strip() or len(name) > 100:
             raise DirectorDeskError("动作名称无效", 422, "invalid_motion")
+        await self.session.rollback()
+        await self.session.execute(text("BEGIN IMMEDIATE"))
+        self.files.require_library_keys(keys)
         row = await self._find(motion_key)
         if row is None:
             row = DirectorDeskUserMotion(
@@ -85,6 +90,8 @@ class DirectorDeskMotions:
         return DirectorMotionOut(motion=row.motion, resource=row.resource)
 
     async def delete(self, motion_key: str) -> None:
+        await self.session.rollback()
+        await self.session.execute(text("BEGIN IMMEDIATE"))
         row = await self.row(motion_key)
         keys = file_keys(row.resource)
         await self.session.delete(row)
@@ -109,6 +116,7 @@ class DirectorDeskMotions:
     async def _drop_unused(self, keys: set[str]) -> None:
         if not keys:
             return
+        await self.session.execute(text("BEGIN IMMEDIATE"))
         rows = (
             await self.session.scalars(
                 select(DirectorDeskUserMotion.resource).where(
@@ -120,6 +128,7 @@ class DirectorDeskMotions:
         directory = self.files.library_dir()
         for key in keys - used:
             (directory / key).unlink(missing_ok=True)
+        await self.session.rollback()
 
     @staticmethod
     def _check_key(motion_key: str) -> None:

@@ -9,6 +9,11 @@ export const serviceAssets = {
     "brand/thought-workshop-mark.png",
   ],
   creative: ["brand/brand-mark.png", "brand/favicon.png"],
+  director: [
+    "brand/brand-mark.png",
+    "brand/favicon.png",
+    "brand/director-desk-mark.png",
+  ],
   tools: ["brand/brand-mark.png", "brand/favicon.png"],
   integrations: ["brand/brand-mark.png", "brand/favicon.png"],
   assets: ["brand/brand-mark.png", "brand/favicon.png"],

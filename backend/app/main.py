@@ -14,6 +14,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 import app.orm  # noqa: F401 — register tenant listeners
 from app.api import api_router
 from app.apps.agent_workbench.sync.runner import WorkbenchSyncRunner
+from app.apps.director_desk.agent_session import DirectorEditorSessions
 from app.apps.galgame_workshop.assets.annotation_import_runner import GalgameAnnotationImportRunner
 from app.apps.galgame_workshop.assets.asr import GalgameAsrRunner
 from app.apps.galgame_workshop.video.video_export_runner import GalgameVideoExportRunner
@@ -176,6 +177,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.state.database = SimpleNamespace(sessions=SessionLocal)
+app.state.director_editor = DirectorEditorSessions(SessionLocal)
 app.state.studio_http_auth = authenticate_database_request
 app.state.studio_socket_auth = authenticate_database_websocket
 app.state.integration_bindings = IntegrationBindings(

@@ -297,3 +297,9 @@ uv run python -m scripts.website.migrate_identity --plan "$plan" \
 目标先按同版本显式初始化 schema，且处于停止状态。导入会拒绝缺少账号、账号冲突或摘要变化。隔离验收经独立 Identity 登录及授权入口验证原 Studio 会话、原管理密钥、已撤销密钥与另一账号密码。注册邀请码、安全审计及模型目录属于后续迁移数据集。只有所有数据集、文件与跨服务关系校验通过后才能恢复网站写入。
 
 Identity 传输工具随后核验并迁移同一快照中 `profiles/` 下的账号原头像。每个文件的账号路径、媒体类型和 SHA256 必须与账号记录一致。未登记的原件、符号链接、缺失或摘要不符都会停止验收。目标在写入同目录树内的私有暂存后，原子发布原件并同步目录。重放核对已存在文件的字节，再返回同一结果。暂存文件保留在快照中，生成的预览由账号资料入口按需重建。
+
+### Director 独立运行
+
+先运行 `npm run services:build:web -- director`，把返回目录作为 `--web-release` 传给 `npm run services:build -- director --build`。叠加 `deploy/director.compose.yaml` 并配置 `FPL_DIRECTOR_IMAGE`、`FPL_DIRECTOR_STATE` 和 Identity 公钥。在隔离空卷上显式运行 `director migrate` 后启动。Director 自己持有项目、动作库、文件和编辑器会话。服务重启后，浏览器重新建立编辑会话。
+
+三容器验收 `fpl-director-browser-65f3dcb78d` 验证了 390px 项目列表、WebGL 编辑器深链接和初始化保存、旧程序版本写入拒绝、回环公网监听的匿名保护，以及 Director 容器重启后原文件读回。浏览器版本为 `c6ba2149dd0e285ed7bc`，镜像为 `fpl/director:f4c0e8bde89255b83a46`。历史导演台项目与文件仍待导入验收，服务保留正式就绪门禁。

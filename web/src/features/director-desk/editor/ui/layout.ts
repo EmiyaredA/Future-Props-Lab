@@ -1,10 +1,11 @@
+import { programAsset } from "@platform/programAsset";
 import type { Project } from "../model.ts";
 import { shortVersion as version } from "../version.ts";
 import { ASPECTS, FRAME_RATES } from "../model.ts";
 import { $, button, icon, options } from "./common.ts";
 export function mountLayout(project: Project) {
   $("#app").innerHTML = `
-<header class="topbar"><button type="button" id="director-desk-back" class="subtle">返回</button><div class="brand"><img class="logo" src="/brand/director-desk-mark.png" alt="" /><div><strong>导演台</strong><span class="brand-sub">AI 短剧预演</span></div></div><span class="top-separator"></span><div class="scene-switcher"><select id="scene-switch" aria-label="当前独立戏段"></select>${button("sequence-open", "戏段", "", "subtle")}${button("production-prompt", "提示词", "", "subtle", 'id="scene-prompt-toggle" title="展开当前戏段提示词"')}</div><span class="version">版本 ${version}</span><div class="header-actions"><span id="save-status" class="save-status">本地项目</span>${button("undo", "", "undo", "icon-button", 'title="撤销 Ctrl+Z"')}${button("redo", "", "redo", "icon-button", 'title="重做 Ctrl+Shift+Z"')}<span class="top-separator"></span><select id="aspect" aria-label="项目画幅">${options(
+<header class="topbar"><button type="button" id="director-desk-back" class="subtle">返回</button><div class="brand"><img class="logo" src="${programAsset("/brand/director-desk-mark.png")}" alt="" /><div><strong>导演台</strong><span class="brand-sub">AI 短剧预演</span></div></div><span class="top-separator"></span><div class="scene-switcher"><select id="scene-switch" aria-label="当前独立戏段"></select>${button("sequence-open", "戏段", "", "subtle")}${button("production-prompt", "提示词", "", "subtle", 'id="scene-prompt-toggle" title="展开当前戏段提示词"')}</div><span class="version">版本 ${version}</span><div class="header-actions"><span id="save-status" class="save-status">本地项目</span>${button("undo", "", "undo", "icon-button", 'title="撤销 Ctrl+Z"')}${button("redo", "", "redo", "icon-button", 'title="重做 Ctrl+Shift+Z"')}<span class="top-separator"></span><select id="aspect" aria-label="项目画幅">${options(
     ASPECTS.map((a) => [a, a]),
     project.aspect,
   )}</select><select id="fps" aria-label="项目帧率">${options(

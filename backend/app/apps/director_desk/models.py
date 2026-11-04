@@ -4,7 +4,7 @@ from sqlalchemy import JSON, DateTime, ForeignKey, Index, Integer, String, Uniqu
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.runtime.ids import new_id
-from app.runtime.orm_base import Base
+from app.runtime.orm_base import Base, external_id
 from app.runtime.time import utc_now
 
 
@@ -16,7 +16,7 @@ class DirectorDeskUserMotion(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey(external_id("users"), ondelete="CASCADE"))
     motion_key: Mapped[str] = mapped_column(String(200))
     name: Mapped[str] = mapped_column(String(100))
     motion: Mapped[dict] = mapped_column(JSON)
@@ -32,7 +32,7 @@ class DirectorDeskProject(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey(external_id("users"), ondelete="CASCADE"))
     title: Mapped[str] = mapped_column(String(120))
     document: Mapped[dict] = mapped_column(JSON)
     revision: Mapped[int] = mapped_column(Integer, default=0)
