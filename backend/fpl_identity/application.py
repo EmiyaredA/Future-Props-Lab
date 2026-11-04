@@ -32,6 +32,7 @@ from .account_directory import router as account_directory_router
 from .accounts import create_account
 from .authorization import router as authorization_router
 from .catalog_events import router as catalog_events_router
+from .cloud_authority import router as cloud_authority_router
 from .community_assets import router as community_assets_router
 from .creative_authors import router as creative_authors_router
 from .creative_source_evidence import router as creative_source_evidence_router
@@ -146,6 +147,7 @@ def create_app(
     app.include_router(cloud_totp.router, prefix="/v1/cloud-control", tags=["cloud-control"])
     app.include_router(authorization_router, include_in_schema=False)
     app.include_router(catalog_events_router)
+    app.include_router(cloud_authority_router)
     app.include_router(live_router, include_in_schema=False)
     app.include_router(delegation_router, include_in_schema=False)
     app.include_router(creative_source_evidence_router)
@@ -164,6 +166,9 @@ def create_app(
     app.add_exception_handler(AccountError, account_exception_handler)
     app.add_exception_handler(OperationalError, storage_operational_error_handler)
     app.add_middleware(RequestLimit, prefix="/_internal/v1/creative-authors", maximum=16 * 1024)
+    app.add_middleware(
+        RequestLimit, prefix="/_internal/v1/cloud-control/authority", maximum=16 * 1024
+    )
     app.add_middleware(
         GatewayTransport,
         gateway_token=gateway_token,

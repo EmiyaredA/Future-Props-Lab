@@ -30,3 +30,6 @@ Contract tests check ownership for the new HTTP operations, desktop WebSocket, t
 The Portal entry binds the account and both Workbench destinations to the updated cloud workspace. CLI enablement requires the trusted local listener, an administrator session and recent password verification. The catalog hides executable paths outside that lane.
 
 Agents owns the chat and turn schema, exact transcript routes and live reauthorized SSE. Interrupted turns become interrupted records on startup, with unknown approval results preserved. Chat creation, starting new turns and approval writes remain unavailable until the Mac execution port is connected. The Compose liveness probe checks process health while the service readiness endpoint reports the execution gate.
+
+
+Identity now issues a SHA-256 ticket proof only for the registered Remote desktop WebSocket, after checking the live desktop policy. The gateway strips Cookie and Authorization from the upstream connection. A scoped private status endpoint lets Remote and Agents recheck the original request, current session, enrollment and unlock state without direct Identity database access. Tests verify ticket binding, browser-origin denial and revocation after logout.

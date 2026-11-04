@@ -8,9 +8,11 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from app.capabilities.identity.permissions import CLOUD_CONTROL_PERMISSION, requires_cloud_control
 from app.capabilities.identity.route_permissions import route_permission
 from app.capabilities.identity.session_policy import MANAGEMENT_SESSION, STUDIO_SESSION
+from app.console.cloud_control.access import desktop_authorized
 from app.console.governance.automation_access import automation_allowed
 from app.deps import authenticate_studio_request
 from fpl_runtime.claims import HEADER, Actor, issue_context
+from fpl_runtime.cloud_authority import DESKTOP_COOKIE, desktop_ticket_digest, is_desktop_upgrade
 
 from .credential_metadata import credential_metadata
 
@@ -103,6 +105,14 @@ async def authorize(request: Request):
                 raise HTTPException(403, "browser_session_required")
             if not principal.allows(CLOUD_CONTROL_PERMISSION):
                 raise HTTPException(403, "insufficient_permission")
+        local = request.headers.get("x-fpl-ingress") == "local" and principal.auth_kind == "session"
+        desktop_ticket = None
+        if socket is not None and is_desktop_upgrade(service, method, path):
+            desktop_ticket = desktop_ticket_digest(request.cookies.get(DESKTOP_COOKIE, ""))
+            if desktop_ticket is None or not await desktop_authorized(
+                session, principal, local=local
+            ):
+                raise HTTPException(403, "desktop_authorization_required")
         client_ip = None
         if permission == "projects.certify":
             from ipaddress import ip_address
@@ -120,8 +130,8 @@ async def authorize(request: Request):
             session_id=principal.session_id,
             api_key_id=principal.api_key_id,
             client_ip=client_ip,
-            local=request.headers.get("x-fpl-ingress") == "local"
-            and principal.auth_kind == "session",
+            local=local,
+            desktop_ticket_sha256=desktop_ticket,
             reauthenticated_at=(
                 principal.reauthenticated_at.isoformat() if principal.reauthenticated_at else None
             ),

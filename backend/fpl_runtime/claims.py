@@ -1,11 +1,14 @@
 """Request-bound authentication assertions, issued only by Identity."""
 
+import re
 import time
 from dataclasses import dataclass
 from datetime import datetime
 from uuid import uuid4
 
 import jwt
+
+from .cloud_authority import is_desktop_upgrade
 
 ISSUER = "fpl-identity"
 HEADER = "x-fpl-context"
@@ -26,6 +29,7 @@ class Actor:
     api_key_name: str | None = None
     api_key_prefix: str | None = None
     client_ip: str | None = None
+    desktop_ticket_sha256: str | None = None
 
     def __post_init__(self):
         if self.purpose not in {"studio", "management"}:
@@ -55,6 +59,14 @@ class Actor:
             datetime.fromisoformat(self.reauthenticated_at)
         if self.local and self.auth_kind != "session":
             raise ValueError("主机权限只允许本机浏览器 Session")
+        if self.desktop_ticket_sha256 is not None and (
+            self.auth_kind != "session"
+            or self.purpose != "studio"
+            or self.platform_role != "admin"
+            or not isinstance(self.desktop_ticket_sha256, str)
+            or not re.fullmatch(r"[0-9a-f]{64}", self.desktop_ticket_sha256)
+        ):
+            raise ValueError("桌面票据上下文无效")
         for value, limit in ((self.api_key_name, 64), (self.api_key_prefix, 16)):
             if value is not None and (not isinstance(value, str) or len(value) > limit):
                 raise ValueError("API Key 归因元数据无效")
@@ -64,6 +76,8 @@ def issue_context(actor: Actor, *, service, method, path, private_key, key_id, n
     from .catalog import service_by_id
 
     service_by_id(service)
+    if (actor.desktop_ticket_sha256 is not None) != is_desktop_upgrade(service, method, path):
+        raise ValueError("桌面票据必须绑定到 Remote WebSocket")
     now = int(time.time()) if now is None else now
     claims = {
         "iss": ISSUER,
@@ -86,6 +100,11 @@ def issue_context(actor: Actor, *, service, method, path, private_key, key_id, n
         "local": actor.local,
         "reauthenticated_at": actor.reauthenticated_at,
         **({"client_ip": actor.client_ip} if actor.client_ip is not None else {}),
+        **(
+            {"desktop_ticket_sha256": actor.desktop_ticket_sha256}
+            if actor.desktop_ticket_sha256 is not None
+            else {}
+        ),
     }
     return jwt.encode(claims, private_key, algorithm="EdDSA", headers={"kid": key_id})
 
@@ -121,6 +140,9 @@ def verify_context(token, *, service, method, path, public_key, allow_expired=Fa
         raise jwt.InvalidTokenError("认证上下文不属于此请求")
     if claims["exp"] - claims["iat"] != 20:
         raise jwt.InvalidTokenError("认证上下文有效期无效")
+    desktop_ticket = claims.get("desktop_ticket_sha256")
+    if (desktop_ticket is not None) != is_desktop_upgrade(service, method, path):
+        raise jwt.InvalidTokenError("桌面票据不属于此请求")
     return Actor(
         user_id=claims["sub"],
         purpose=claims.get("purpose", "studio"),
@@ -132,6 +154,7 @@ def verify_context(token, *, service, method, path, public_key, allow_expired=Fa
         api_key_name=claims.get("api_key_name"),
         api_key_prefix=claims.get("api_key_prefix"),
         client_ip=claims.get("client_ip"),
+        desktop_ticket_sha256=desktop_ticket,
         local=claims["local"],
         reauthenticated_at=claims.get("reauthenticated_at"),
     )

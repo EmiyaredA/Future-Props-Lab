@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .catalog import service_by_id
+from .cloud_authority import DESKTOP_SOCKET
 
 
 @dataclass(frozen=True)
@@ -28,7 +29,7 @@ class SocketOperation:
 
 SOCKET_OPERATIONS = (
     SocketOperation("models", "/v1/model-test/realtime", "models.use"),
-    SocketOperation("remote", "/v1/cloud-control/desktop/socket", "cloud-control.access"),
+    SocketOperation("remote", DESKTOP_SOCKET, "cloud-control.access"),
 )
 
 

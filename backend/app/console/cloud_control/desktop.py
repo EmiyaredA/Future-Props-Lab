@@ -10,13 +10,13 @@ from starlette.websockets import WebSocketDisconnect
 from app.capabilities.identity.rate_limit import clear_attempts
 from app.runtime.config import get_cloud_settings
 from app.runtime.db import SessionLocal
+from fpl_runtime.cloud_authority import DESKTOP_COOKIE as DESKTOP_COOKIE
+from fpl_runtime.cloud_authority import DESKTOP_SOCKET as DESKTOP_SOCKET
 
 from .access import TICKET_SECONDS, desktop_authorized
 from .preferences import desktop_preferences
 from .vnc_check import password_rejected
 
-DESKTOP_SOCKET = "/v1/cloud-control/desktop/socket"
-DESKTOP_COOKIE = "fpl_desktop_ticket"
 MAX_INSTRUCTION = 16 * 1024 * 1024
 
 

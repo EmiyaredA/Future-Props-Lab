@@ -2,6 +2,8 @@
 
 import httpx
 
+from .cloud_authority import AUTHORITY_PATH, CloudAuthority, CloudAuthorityQuery
+
 
 class LiveAuthorization:
     def __init__(self, *, service, credential, base_url="http://identity:8080", transport=None):
@@ -34,6 +36,18 @@ class LiveAuthorization:
 
     async def active(self, *, assertion, method, path):
         return await self.status(assertion=assertion, method=method, path=path) is True
+
+    async def cloud_authority(self, *, assertion, method, path):
+        query = CloudAuthorityQuery(
+            service=self.service, assertion=assertion, method=method, path=path
+        )
+        try:
+            response = await self.client.post(AUTHORITY_PATH, json=query.model_dump())
+            if response.status_code == 200:
+                return CloudAuthority.model_validate(response.json())
+        except (httpx.HTTPError, ValueError):
+            pass
+        return None
 
     async def owner_permission(self, *, owner, permission):
         try:
