@@ -240,3 +240,5 @@ npm run services:build -- galgame --build
 Galgame 的新项目创建和公开 Story 保存需要同一私网中的 Identity 与 Assets。对旧数据，迁移必须为每条 Story 预先构建匹配版本的素材投影，再核验当前与历史文件归属。未建立投影时，保存会提示素材引用状态未核验。
 
 隔离运行 `fpl-galgame-story-5bc33bf854` 在上述认证链路加装 Assets。经网关上传 PNG、保存故事、拒绝旧版本写入并下载原文件。恢复同版本隔离快照后，Story 版本为 1，下载文件 SHA256 为 `60660146a85c7cdfadc827f774e968bce1b63c1b68aa42c40d435c1e7f379cf9`。这是新服务自身的恢复验收，正式历史迁移和旧站回滚演练仍待完成。
+
+隔离运行 `fpl-galgame-operations-6698b8bf25` 额外验证了 Story 操作批次。相同请求在正常执行后和快照恢复后都返回原版本，同一请求 ID 改用不同正文返回 409。

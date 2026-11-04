@@ -15,6 +15,7 @@ from app.apps.galgame_workshop.models import (
     GalgameVideoExportTask,
     GalgameWorkshopProject,
 )
+from app.runtime.project_operations import ProjectOperationReceipt
 from fpl_runtime.certification_owner import CertificationReceiptFields, CertificationRecordsBase
 from fpl_runtime.reference_records import ReferenceMutationFields
 
@@ -47,4 +48,5 @@ MODELS = (
     GalgameVideoEditorHandoffTask,
     GalgameCertificationReceipt,
     GalgameStoryReferenceMutation,
+    ProjectOperationReceipt,
 )

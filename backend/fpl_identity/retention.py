@@ -38,6 +38,8 @@ def _galgame_story_source(body):
     story_path = f"/v1/galgame-workshop/projects/{change.resource_id}/story"
     if not story_metadata(body.caller, change):
         return False
+    if body.source_method == "POST":
+        return body.source_path == story_path + "/operations"
     return (body.source_method == "PUT" and body.source_path == story_path) or (
         body.source_method == "PATCH"
         and body.source_path

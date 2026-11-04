@@ -253,4 +253,28 @@ async def verify_galgame_story(case, app, request, path, document):
     assert batch.status_code == 200, batch.text
     assert batch.json()["revision"] == 4 and batch.json()["document"]["assets"] == [image]
     assert batch.json()["document"]["chapters"][0]["fragments"][0]["blocks"][0]["text"] == "Batch"
+    operations = {
+        "request_id": "story-operation-fixture",
+        "expected_revision": 4,
+        "operations": [
+            {
+                "entity": "block",
+                "action": "update",
+                "id": "line",
+                "parent_id": "main",
+                "value": {"text": "Operation", "content": None},
+            }
+        ],
+    }
+    operation_path = story_path + "/operations"
+    operated = await request("POST", operation_path, json=operations)
+    assert operated.status_code == 200, operated.text
+    original = operated.json()
+    assert original["revision"] == 5 and original["document"]["assets"] == [image]
+    replayed = await request("POST", operation_path, json=operations)
+    assert replayed.status_code == 200 and replayed.json() == original
+    mismatched = await request(
+        "POST", operation_path, json={**operations, "settings": {"synopsis": "New body"}}
+    )
+    assert mismatched.status_code == 409 and mismatched.json()["code"] == "idempotency_conflict"
     return image["fileId"]

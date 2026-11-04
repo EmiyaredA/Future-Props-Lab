@@ -2,7 +2,8 @@
 
 from contextlib import asynccontextmanager
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
+from pydantic import ValidationError
 
 from app.apps.galgame_workshop.schemas import (
     GalgameStoryDialoguePatchIn,
@@ -16,7 +17,10 @@ from app.apps.galgame_workshop.schemas import (
     GalgameWorkshopProjectListOut,
     GalgameWorkshopProjectOut,
 )
+from app.apps.galgame_workshop.schemas.operations import GalgameOperationsIn
+from app.runtime.operation_receipts import OperationError
 from fpl_runtime.http_dependencies import OwnerDep, SessionDep
+from fpl_runtime.project_errors import ProjectResourceError
 
 from .projects import Projects
 from .story_writes import PREFIX, StoryWrites
@@ -114,3 +118,27 @@ async def patch_story_stage_expression(
     return await story_writes(request, session, owner_user_id).patch_stage_expression(
         project_id, body
     )
+
+
+@router.post("/{project_id}/story/operations", response_model=GalgameStoryDocumentOut)
+async def apply_story_operations(
+    request: Request,
+    project_id: str,
+    body: GalgameOperationsIn,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+):
+    try:
+        return await story_writes(request, session, owner_user_id).apply_operations(
+            project_id, body
+        )
+    except OperationError as exc:
+        raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
+    except ValidationError as exc:
+        raise HTTPException(
+            422, {"code": "invalid_operation_result", "errors": exc.errors(include_context=False)}
+        ) from None
+    except ProjectResourceError as exc:
+        if exc.code == "invalid_story_document":
+            raise HTTPException(422, {"code": "invalid_story", "message": str(exc)}) from None
+        raise

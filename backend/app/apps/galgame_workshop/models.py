@@ -16,7 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.runtime.ids import new_id
-from app.runtime.orm_base import Base
+from app.runtime.orm_base import Base, external_id
 from app.runtime.time import utc_now
 
 
@@ -84,9 +84,9 @@ class GalgameProjectAssetReference(Base):
         String(36),
         ForeignKey("galgame_workshop_projects.id", ondelete="CASCADE"),
     )
-    # The legacy database enforces its original FK through its migrations.
-    # The independent owner resolves this ID with the Assets retention protocol.
-    asset_id: Mapped[str] = mapped_column(String(36))
+    asset_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="RESTRICT")
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
 
 

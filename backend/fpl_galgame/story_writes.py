@@ -8,6 +8,7 @@ from app.apps.galgame_workshop.errors import GalgameStoryDocumentInvalidError
 from app.apps.galgame_workshop.models import GalgameStoryDocument, GalgameStorySnapshot
 from app.apps.galgame_workshop.schemas import (
     GalgameStoryDialoguePatchOut,
+    GalgameStoryDocumentOut,
     GalgameStoryStageExpressionPatchOut,
 )
 from app.apps.galgame_workshop.story.asset_values import validate_story_asset_media
@@ -17,8 +18,10 @@ from app.apps.galgame_workshop.story.edit_values import (
     apply_edits,
     apply_stage_expression,
 )
+from app.apps.galgame_workshop.story.operation_values import transform
 from app.apps.galgame_workshop.story.reference_index import sync_asset_references
 from app.runtime.ids import new_id
+from app.runtime.operation_receipts import record, replay
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import utc_now
 from fpl_runtime.asset_references import PrepareReferenceChange
@@ -84,9 +87,11 @@ class StoryWrites:
         except CapabilityUnavailable as exc:
             raise ProjectResourceError("素材引用结果未确认", "retention_unconfirmed", 503) from exc
 
-    async def _commit(self, prepared, apply):
+    async def _commit(self, prepared, apply, record_operation=None):
         try:
             result = await apply()
+            if record_operation is not None:
+                record_operation(result)
             await self.references.record(self.session, prepared, resource_revision=result.revision)
         except BaseException:
             await self.session.rollback()
@@ -159,7 +164,33 @@ class StoryWrites:
         )
         return story, edited
 
-    async def _save(self, project_id, *, expected_revision, document, method, path):
+    async def apply_operations(self, project_id, body):
+        current = await self.projects.story(project_id)
+        key = dict(owner_user_id=self.owner, kind="galgame", resource_id=project_id, body=body)
+        saved = await replay(self.session, **key)
+        if saved is not None:
+            return GalgameStoryDocumentOut.model_validate(saved)
+        if current.revision != body.expected_revision:
+            raise conflict(body.expected_revision, current)
+        candidate = transform(current, body)
+        try:
+            return await self._save(
+                project_id,
+                expected_revision=candidate.expected_revision,
+                document=candidate.document,
+                method="POST",
+                path=f"{PREFIX}/{project_id}/story/operations",
+                record_operation=lambda result: record(self.session, **key, result=result),
+            )
+        except RevisionConflictError:
+            saved = await replay(self.session, **key)
+            if saved is not None:
+                return GalgameStoryDocumentOut.model_validate(saved)
+            raise
+
+    async def _save(
+        self, project_id, *, expected_revision, document, method, path, record_operation=None
+    ):
         files = {asset.file_id for asset in document.assets}
         snapshots = await self.session.scalars(
             select(GalgameStorySnapshot.document).where(
@@ -214,4 +245,4 @@ class StoryWrites:
             await sync_asset_references(self.session, project_id, files)
             return story_out(row, document)
 
-        return await self._commit(prepared, apply)
+        return await self._commit(prepared, apply, record_operation)
