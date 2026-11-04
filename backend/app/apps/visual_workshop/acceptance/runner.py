@@ -6,7 +6,6 @@ from time import monotonic
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select, update
 
-from app.apps.visual_workshop.acceptance.access import AcceptanceError
 from app.apps.visual_workshop.acceptance.media import (
     check_specifications,
     extract_evidence,
@@ -31,6 +30,7 @@ from app.runtime.time import utc_now
 
 from .catalog import connection_signature, fixed_model
 from .execution.agents import evaluate_agent
+from .project_access import AcceptanceError
 
 
 class Suggestion(BaseModel):

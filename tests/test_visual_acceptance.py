@@ -482,8 +482,8 @@ async def test_invalid_result_cancel_recovery_and_workspace_isolation(client, vi
     assert (await client.get(f"{base}/acceptance/runs/{interrupted['id']}")).json()[
         "status"
     ] == "failed"
-    from app.apps.visual_workshop.acceptance.access import AcceptanceError
     from app.apps.visual_workshop.acceptance.nodes import NodeAcceptance
+    from app.apps.visual_workshop.acceptance.project_access import AcceptanceError
 
     async with SessionLocal() as session:
         with pytest.raises(AcceptanceError) as failure:

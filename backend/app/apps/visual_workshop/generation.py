@@ -2,23 +2,25 @@ from __future__ import annotations
 
 from uuid import uuid4
 
-from sqlalchemy import and_, func, or_, select, update
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.visual_workshop.batch_nodes import attach_grid_nodes
-from app.apps.visual_workshop.batch_retry import reopen_batch_after_retry
 from app.apps.visual_workshop.composition import create_composition, retry_composition
-from app.apps.visual_workshop.generation_common import GenerationError, generation_batch_out
+from app.apps.visual_workshop.generation_common import (
+    GenerationError,
+    generation_batch_out,
+    generation_task_out,
+)
+from app.apps.visual_workshop.generation_records import GenerationRecords
 from app.apps.visual_workshop.models import (
     VisualCanvasDocument,
     VisualGenerationBatch,
     VisualGenerationTask,
-    VisualWorkshopProject,
 )
 from app.apps.visual_workshop.outputs.history import OutputError
 from app.apps.visual_workshop.outputs.references import resolve_references
 from app.apps.visual_workshop.schemas.generation import (
-    GenerationBatchListOut,
     GenerationBatchOut,
     ImageCompositionCreateIn,
     ImageGenerationBatchCreateIn,
@@ -28,7 +30,6 @@ from app.apps.visual_workshop.schemas.workshop import (
     GenerationModelOptionOut,
     GenerationOptionsOut,
     GenerationTaskCreateIn,
-    GenerationTaskListOut,
     GenerationTaskOut,
     ImageGenerationTaskCreateIn,
     VideoGenerationTaskCreateIn,
@@ -39,7 +40,6 @@ from app.capabilities.asset_store.models import (
     VisualProjectAssetReference,
 )
 from app.capabilities.asset_store.storage import AssetStorage
-from app.llm.generation_runtime import GenerationTaskDriver, can_recover_generation_result
 from app.llm.models import (
     ModelEntry,
     ModelProvider,
@@ -59,9 +59,8 @@ from app.llm.providers.zealman_workflows import (
 )
 from app.runtime.config import Settings, get_settings
 from app.runtime.task_admission import TaskAdmission
-from app.runtime.time import iso_utc, utc_now
+from app.runtime.time import utc_now
 
-ACTIVE_TASK_STATUSES = ("queued", "submitting", "pending", "processing")
 REFERENCE_MIME_TYPES = {
     "image": {"image/jpeg", "image/png", "image/webp", "image/gif"},
     "audio": {
@@ -76,51 +75,9 @@ REFERENCE_MIME_TYPES = {
 }
 
 
-def generation_task_out(row: VisualGenerationTask) -> GenerationTaskOut:
-    return GenerationTaskOut(
-        id=row.id,
-        project_id=row.project_id,
-        provider_id=row.provider_id,
-        model_id=row.model_id,
-        provider_kind=row.provider_kind,
-        kind=row.generation_kind,
-        provider_name=row.provider_name,
-        model_slug=row.model_slug,
-        request_payload=dict(row.request_payload or {}),
-        canvas_node_id=row.canvas_node_id,
-        provider_task_id=row.provider_task_id,
-        status=row.status,
-        progress=row.progress,
-        execution_info=row.execution_info,
-        error_message=row.error_message,
-        result_asset_id=row.result_asset_id,
-        can_cancel=row.status == "queued" and row.generation_kind in {"image", "video"},
-        queue_message="任务已排队，获得生成额度后将自动执行"
-        if row.status == "queued" and row.generation_kind in {"image", "video"}
-        else None,
-        can_retry_materialization=can_recover_generation_result(row),
-        revision=row.revision,
-        created_at=iso_utc(row.created_at),
-        updated_at=iso_utc(row.updated_at),
-        completed_at=iso_utc(row.completed_at) if row.completed_at else None,
-    )
-
-
-async def has_active_generation_tasks(
-    session: AsyncSession, *, provider_id: str | None = None, model_id: str | None = None
-) -> bool:
-    conditions = [VisualGenerationTask.status.in_(ACTIVE_TASK_STATUSES)]
-    if provider_id:
-        conditions.append(VisualGenerationTask.provider_id == provider_id)
-    if model_id:
-        conditions.append(VisualGenerationTask.model_id == model_id)
-    count = await session.scalar(select(func.count(VisualGenerationTask.id)).where(*conditions))
-    return bool(count)
-
-
-class VisualGeneration:
+class VisualGeneration(GenerationRecords):
     def __init__(self, session: AsyncSession, settings: Settings | None = None) -> None:
-        self.session = session
+        super().__init__(session)
         self.settings = settings or get_settings()
         self.storage = AssetStorage(self.settings)
 
@@ -203,12 +160,6 @@ class VisualGeneration:
                 )
             ]
         )
-
-    async def _project(self, project_id: str) -> VisualWorkshopProject:
-        row = await self.session.get(VisualWorkshopProject, project_id)
-        if row is None:
-            raise GenerationError("项目不存在", code="not_found", status=404)
-        return row
 
     async def _model(
         self, model_id: str, kind: str, audio_mode: str | None = None
@@ -697,177 +648,3 @@ class VisualGeneration:
             raise GenerationError(
                 "画布已变化，请刷新后重试", code="canvas_revision_conflict", status=409
             )
-
-    async def get(self, task_id: str) -> GenerationTaskOut:
-        row = await self.session.get(VisualGenerationTask, task_id)
-        if row is None:
-            raise GenerationError("生成任务不存在", code="not_found", status=404)
-        return generation_task_out(row)
-
-    async def cancel(self, task_id: str, expected_revision: int) -> GenerationTaskOut:
-        row = await self.session.get(VisualGenerationTask, task_id)
-        if row is None:
-            raise GenerationError("生成任务不存在", code="not_found", status=404)
-        if not await GenerationTaskDriver.cancel_queued(self.session, row, expected_revision):
-            await self.session.refresh(row)
-            current = generation_task_out(row).model_dump(mode="json")
-            raise GenerationError(
-                "任务已变化或已开始提交，请刷新后重试",
-                code="generation_cancel_conflict",
-                status=409,
-                current=current,
-            )
-        await self.session.commit()
-        await self.session.refresh(row)
-        return generation_task_out(row)
-
-    async def get_batch(self, batch_id: str) -> GenerationBatchOut:
-        row = await self.session.get(VisualGenerationBatch, batch_id)
-        if row is None:
-            raise GenerationError("生成批次不存在", code="not_found", status=404)
-        return generation_batch_out(row)
-
-    async def list_batches(
-        self,
-        project_id: str | None = None,
-        page: int = 1,
-        page_size: int = 50,
-        current_nodes: bool = False,
-    ) -> GenerationBatchListOut:
-        conditions = []
-        if project_id:
-            conditions.append(VisualGenerationBatch.project_id == project_id)
-        if current_nodes:
-            if not project_id:
-                raise GenerationError("节点状态查询必须指定项目")
-            await self._project(project_id)
-            canvas = await self.session.get(VisualCanvasDocument, project_id)
-            nodes = canvas.nodes if canvas else []
-            conditions.append(
-                or_(
-                    VisualGenerationBatch.id.in_(
-                        [
-                            node.get("generation_batch_id")
-                            for node in nodes
-                            if node.get("generation_batch_id")
-                        ]
-                    ),
-                    and_(
-                        VisualGenerationBatch.generation_node_id.in_(
-                            [node["id"] for node in nodes]
-                        ),
-                        VisualGenerationBatch.status.in_(["queued", "processing"]),
-                    ),
-                )
-            )
-        total = await self.session.scalar(
-            select(func.count(VisualGenerationBatch.id)).where(*conditions)
-        )
-        rows = list(
-            await self.session.scalars(
-                select(VisualGenerationBatch)
-                .where(*conditions)
-                .order_by(VisualGenerationBatch.created_at.desc())
-                .offset((page - 1) * page_size)
-                .limit(page_size)
-            )
-        )
-        return GenerationBatchListOut(
-            items=[generation_batch_out(row) for row in rows], total=int(total or 0)
-        )
-
-    async def list(
-        self,
-        *,
-        project_id: str | None,
-        canvas_node_id: str | None,
-        kind: str | None,
-        status: str | None,
-        page: int,
-        page_size: int,
-        current_nodes: bool = False,
-    ) -> GenerationTaskListOut:
-        conditions = []
-        if project_id:
-            conditions.append(VisualGenerationTask.project_id == project_id)
-        if current_nodes:
-            if not project_id:
-                raise GenerationError("节点状态查询必须指定项目")
-            await self._project(project_id)
-            canvas = await self.session.get(VisualCanvasDocument, project_id)
-            nodes = canvas.nodes if canvas else []
-            conditions.append(
-                or_(
-                    VisualGenerationTask.id.in_(
-                        [
-                            node.get("generation_task_id")
-                            for node in nodes
-                            if node.get("generation_task_id")
-                        ]
-                    ),
-                    and_(
-                        VisualGenerationTask.canvas_node_id.in_([node["id"] for node in nodes]),
-                        VisualGenerationTask.status.in_(ACTIVE_TASK_STATUSES),
-                    ),
-                )
-            )
-        if canvas_node_id:
-            conditions.append(VisualGenerationTask.canvas_node_id == canvas_node_id)
-        if kind:
-            conditions.append(VisualGenerationTask.generation_kind == kind)
-        if status:
-            conditions.append(VisualGenerationTask.status == status)
-        total = int(
-            await self.session.scalar(
-                select(func.count(VisualGenerationTask.id)).where(*conditions)
-            )
-            or 0
-        )
-        rows = (
-            (
-                await self.session.execute(
-                    select(VisualGenerationTask)
-                    .where(*conditions)
-                    .order_by(VisualGenerationTask.created_at.desc())
-                    .offset((page - 1) * page_size)
-                    .limit(page_size)
-                )
-            )
-            .scalars()
-            .all()
-        )
-        return GenerationTaskListOut(items=[generation_task_out(row) for row in rows], total=total)
-
-    async def retry_materialization(self, task_id: str) -> GenerationTaskOut:
-        row = await self.session.get(VisualGenerationTask, task_id)
-        if row is None:
-            raise GenerationError("生成任务不存在", code="not_found", status=404)
-        if row.status in {"pending", "processing"} and row.provider_task_id:
-            return generation_task_out(row)
-        if not can_recover_generation_result(row):
-            raise GenerationError("当前任务没有可恢复查询或保存的结果", code="retry_unavailable")
-        revision = row.revision
-        changed = await self.session.execute(
-            update(VisualGenerationTask)
-            .where(
-                VisualGenerationTask.id == task_id,
-                VisualGenerationTask.revision == revision,
-                VisualGenerationTask.status == "failed",
-            )
-            .values(
-                status="processing" if row.result_url else "pending",
-                error_message=None,
-                revision=revision + 1,
-                updated_at=utc_now(),
-            )
-        )
-        if changed.rowcount != 1:
-            await self.session.rollback()
-            current = await self.session.get(VisualGenerationTask, task_id)
-            if current is not None and current.status in {"pending", "processing", "completed"}:
-                return generation_task_out(current)
-            raise GenerationError("任务状态已变更，请刷新后重试", code="conflict", status=409)
-        await self.session.refresh(row)
-        await reopen_batch_after_retry(self.session, row)
-        await self.session.commit()
-        return generation_task_out(row)

@@ -3,27 +3,10 @@ from sqlalchemy import select, update
 from app.apps.visual_workshop.acceptance.models import (
     AcceptanceStandard,
 )
-from app.apps.visual_workshop.models import VisualWorkshopProject
 from app.capabilities.asset_store.models import VisualAsset, VisualProjectAssetReference
 from app.runtime.revisions import RevisionConflictError
 
-
-class AcceptanceError(Exception):
-    def __init__(self, message, code="invalid_acceptance", status=422):
-        super().__init__(message)
-        self.code, self.status = code, status
-
-
-async def project(session, owner_user_id, project_id):
-    row = await session.scalar(
-        select(VisualWorkshopProject).where(
-            VisualWorkshopProject.id == project_id,
-            VisualWorkshopProject.owner_user_id == owner_user_id,
-        )
-    )
-    if row is None:
-        raise AcceptanceError("项目不存在", "not_found", 404)
-    return row
+from .project_access import AcceptanceError
 
 
 async def asset(session, owner_user_id, project_id, asset_id):

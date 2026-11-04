@@ -12,8 +12,8 @@ from app.apps.visual_workshop.canvas import VisualCanvasDocuments
 from app.apps.visual_workshop.generation import (
     GenerationError,
     VisualGeneration,
-    generation_task_out,
 )
+from app.apps.visual_workshop.generation_common import generation_task_out
 from app.apps.visual_workshop.models import (
     VisualGenerationTask,
     VisualWorkshopProject,

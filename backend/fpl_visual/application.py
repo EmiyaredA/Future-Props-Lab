@@ -3,8 +3,12 @@
 from contextlib import asynccontextmanager
 
 import httpx
+from fastapi import Depends
 
+from app.apps.visual_workshop.acceptance.standard_routes import router as standard_router
 from app.apps.visual_workshop.models import VisualWorkshopProject
+from app.apps.visual_workshop.routes.generation_records import router as generation_records_router
+from app.deps import require_studio_auth
 from fpl_runtime.certification_service import create_certification_app
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.reference_runtime import install_reference_runtime
@@ -63,6 +67,10 @@ def create_app(
     )
     app.include_router(project_router)
     app.include_router(outputs_router)
+    app.include_router(standard_router, prefix="/v1")
+    app.include_router(
+        generation_records_router, prefix="/v1", dependencies=[Depends(require_studio_auth)]
+    )
     app.include_router(segment_target_router)
     app.include_router(segment_handoff_router)
     app.add_middleware(RequestLimit, prefix=VISUAL_HANDOFFS, maximum=16 * 1024)

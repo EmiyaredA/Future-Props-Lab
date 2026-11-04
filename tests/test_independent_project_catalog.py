@@ -12,6 +12,8 @@ from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario
 from tests.test_creative_project_certification import CREDENTIALS, ORIGIN, PROJECTS
 
 from app.apps.galgame_workshop.models import GalgameStorySnapshot
+from app.apps.visual_workshop.acceptance.models import AcceptanceTemplate
+from app.apps.visual_workshop.models import VisualGenerationBatch, VisualGenerationTask
 from app.capabilities.asset_store.library import AssetLibrary
 from fpl_assets.models import AssetReferencePin, AssetReferenceSet
 from fpl_galgame.models import GalgameStoryReferenceMutation
@@ -122,6 +124,7 @@ async def test_projects_create_owned_defaults_and_keep_the_published_contract(
             assert document.json()["nodes"] == []
             assert document.json()["categories"]
             await verify_visual_canvas(case, app, request, path)
+            await verify_visual_records(case, app, request, record["id"])
             changed = await request(
                 "PATCH", path, json={"title": "Changed", "expected_revision": 0}
             )
@@ -405,3 +408,95 @@ async def verify_galgame_story(case, app, request, path, document):
         )
     ).status_code == 409
     return image["fileId"]
+
+
+async def verify_visual_records(case, app, request, project_id):
+    root = "/v1/visual-workshop"
+    project = f"{root}/projects/{project_id}"
+    project_standard = f"{project}/acceptance/standard"
+    async with app.state.database.sessions(info={"owner_user_id": case.viewer}) as session:
+        session.add(
+            AcceptanceTemplate(id="historical", title="Old preset", document={}, revision=3)
+        )
+        session.add(
+            VisualGenerationBatch(
+                id="batch",
+                project_id=project_id,
+                grid_size=4,
+                status="failed",
+                child_task_ids=["recoverable"],
+            )
+        )
+        for id_, fields in (
+            ("queued", {}),
+            (
+                "recoverable",
+                {
+                    "status": "failed",
+                    "provider_task_id": "accepted-once",
+                    "error_message": "任务处理失败（ReadTimeout）",
+                    "request_payload": {"generation_batch_id": "batch"},
+                },
+            ),
+        ):
+            session.add(
+                VisualGenerationTask(
+                    id=id_,
+                    project_id=project_id,
+                    provider_kind="volcengine_image",
+                    provider_name="Example",
+                    model_slug="test-image",
+                    generation_kind="image",
+                    **fields,
+                )
+            )
+        await session.commit()
+    async with app.state.database.sessions(info={"owner_user_id": case.owner}) as session:
+        session.add_all(
+            [
+                AcceptanceTemplate(id="foreign-template", title="Private preset", document={}),
+                VisualGenerationTask(
+                    id="foreign-task",
+                    project_id=project_id,
+                    provider_kind="volcengine_image",
+                    provider_name="Example",
+                    model_slug="test-image",
+                    generation_kind="image",
+                ),
+            ]
+        )
+        await session.commit()
+    templates = await request("GET", f"{root}/acceptance-templates")
+    assert templates.status_code == 200, templates.text
+    assert any(item["builtin"] for item in templates.json()["items"])
+    historical = {
+        item["id"]: item["revision"] for item in templates.json()["items"] if not item["builtin"]
+    }
+    assert historical == {"historical": 3}
+    standard = await request("GET", project_standard)
+    assert standard.status_code == 200 and standard.json()["project_id"] == project_id
+    assert (await request("GET", f"{root}/projects/missing/acceptance/standard")).status_code == 404
+    retired = await request("PUT", project_standard, json={"expected_revision": 0, "document": {}})
+    assert retired.status_code == 410 and retired.json()["code"] == "acceptance_api_replaced"
+    tasks = f"{root}/generation-tasks"
+    listed = await request("GET", tasks)
+    assert listed.status_code == 200, listed.text
+    assert {item["id"] for item in listed.json()["items"]} == {"queued", "recoverable"}
+    assert (await request("GET", f"{tasks}/foreign-task")).status_code == 404
+    assert (
+        await request("POST", f"{tasks}/foreign-task/cancel", json={"expected_revision": 0})
+    ).status_code == 404
+    stale = await request("POST", f"{tasks}/queued/cancel", json={"expected_revision": 1})
+    assert stale.status_code == 409 and stale.json()["current"]["status"] == "queued"
+    cancel = await request("POST", f"{tasks}/queued/cancel", json={"expected_revision": 0})
+    assert cancel.status_code == 200 and cancel.json()["status"] == "cancelled"
+    for _ in range(2):
+        retry = await request("POST", f"{tasks}/recoverable/retry-materialization")
+        assert retry.status_code == 200, retry.text
+        assert retry.json()["revision"] == 1
+        assert retry.json()["status"] == "pending"
+        assert retry.json()["provider_task_id"] == "accepted-once"
+    batches = f"{root}/generation-batches"
+    batch = await request("GET", f"{batches}/batch")
+    assert batch.status_code == 200 and batch.json()["status"] == "processing"
+    assert (await request("GET", batches)).json()["items"] == [batch.json()]

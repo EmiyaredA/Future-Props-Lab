@@ -3,7 +3,6 @@ from uuid import uuid4
 
 from PIL import Image
 
-from app.apps.visual_workshop.acceptance.access import AcceptanceError, asset
 from app.apps.visual_workshop.acceptance.models import AcceptanceAssetReference
 from app.capabilities.agents.harness.contracts import ImageInput
 from app.capabilities.asset_store.models import VisualAsset
@@ -12,6 +11,9 @@ from app.capabilities.media_rendering.inspection import inspect_media
 from app.capabilities.media_rendering.video_frames import extract_frame
 from app.capabilities.media_rendering.video_sampling import source_frame_time
 from app.runtime.ids import new_id
+
+from .access import asset
+from .project_access import AcceptanceError
 
 
 def positions(duration_ms, start=0, end=None):

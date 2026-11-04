@@ -9,7 +9,7 @@ from typing import Any, Protocol
 from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.llm.generation_runtime.poll_recovery import POLL_RETRY_PREFIX, is_transient_poll_error
+from app.llm.generation_state import POLL_RETRY_PREFIX, cancel_queued, is_transient_poll_error
 from app.llm.local_models.catalog import credential_ready
 from app.llm.models import ModelProvider
 from app.llm.task_execution import TaskExecutionInfo
@@ -348,24 +348,7 @@ class GenerationTaskDriver:
 
     @staticmethod
     async def cancel_queued(session: AsyncSession, task: Any, revision: int) -> bool:
-        task_type = type(task)
-        result = await session.execute(
-            update(task_type)
-            .where(
-                task_type.id == task.id,
-                task_type.revision == revision,
-                task_type.status == "queued",
-                task_type.provider_task_id.is_(None),
-                task_type.generation_kind.in_(("image", "video")),
-            )
-            .values(
-                status="cancelled",
-                revision=revision + 1,
-                updated_at=utc_now(),
-                completed_at=utc_now(),
-            )
-        )
-        return result.rowcount == 1
+        return await cancel_queued(session, task, revision)
 
     async def recover(self) -> None:
         await self.store.recover_submitting()

@@ -2,7 +2,6 @@ from copy import deepcopy
 
 from sqlalchemy import select
 
-from app.apps.visual_workshop.acceptance.access import AcceptanceError, cas
 from app.apps.visual_workshop.acceptance.media import extract_evidence, flush_evidence, positions
 from app.apps.visual_workshop.acceptance.models import AcceptanceRepairDraft
 from app.apps.visual_workshop.acceptance.runs import Runs, run_out
@@ -13,6 +12,9 @@ from app.apps.visual_workshop.schemas.workshop import VisualCanvasDocumentPutIn
 from app.runtime.config import get_settings
 from app.runtime.ids import new_id
 from app.runtime.time import iso_utc, utc_now
+
+from .access import cas
+from .project_access import AcceptanceError
 
 
 class Reviews(Runs):

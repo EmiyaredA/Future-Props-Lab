@@ -11,7 +11,7 @@ from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from app.capabilities.asset_store.storage import AssetStorage
 from app.runtime.config import get_settings
 
-from .access import AcceptanceError, asset, project
+from .access import asset
 from .catalog import (
     AGENT_REPORT_VERSION,
     API_RESULT_VERSION,
@@ -20,6 +20,7 @@ from .catalog import (
     TEMPLATE_VERSION,
 )
 from .node_schemas import AcceptanceInputOut
+from .project_access import AcceptanceError, project
 from .templates import builtin_templates
 
 

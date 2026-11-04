@@ -1,6 +1,5 @@
 from sqlalchemy import select
 
-from app.apps.visual_workshop.acceptance.access import AcceptanceError, cas, project
 from app.apps.visual_workshop.acceptance.models import (
     AcceptanceRun,
 )
@@ -11,6 +10,9 @@ from app.apps.visual_workshop.acceptance.schemas import (
 from app.llm.models import ModelEntry, ModelProvider
 from app.llm.providers.chat_completions import TEXT_PROVIDER_KINDS
 from app.runtime.time import iso_utc
+
+from .access import cas
+from .project_access import AcceptanceError, project
 
 
 def run_out(row):

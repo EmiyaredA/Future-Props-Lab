@@ -10,7 +10,7 @@ import httpx
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.apps.visual_workshop.generation import ACTIVE_TASK_STATUSES
+from app.apps.visual_workshop.generation_records import ACTIVE_TASK_STATUSES
 from app.apps.visual_workshop.models import (
     VisualGenerationBatch,
     VisualGenerationTask,
