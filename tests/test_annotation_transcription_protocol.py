@@ -2,6 +2,8 @@
 
 import io
 from contextlib import asynccontextmanager
+from types import SimpleNamespace
+from uuid import uuid4
 
 import httpx
 from fastapi import FastAPI
@@ -14,8 +16,9 @@ from tests.test_independent_annotation import PROJECTS, ROOT
 from tests.test_independent_project_catalog import authorize
 
 from app.capabilities.asset_store.library import AssetLibrary
-from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
+from app.llm.models import LlmCallLog, ModelEntry, ModelProvider, ModelTestTranscriptionTask
 from app.llm.providers.transcription import TranscriptionResult
+from app.llm.routes.models.model_test_transcription import router as task_router
 from app.problem_details import http_exception_handler
 from app.runtime.credentials import encrypt_secret
 from fpl_annotation.application import create_app
@@ -24,6 +27,7 @@ from fpl_models.annotation_transcription import router
 from fpl_models.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
 from fpl_models.models import ACCOUNT_MODELS, MODELS
 from fpl_runtime.annotation_transcription import PREFIX
+from fpl_runtime.authentication import SignedIdentity
 from fpl_runtime.database import Database
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
@@ -43,6 +47,10 @@ async def owned_models(case, path):
     app.state.identity_public_key = case.key.public_key()
     app.state.identity = live
     app.include_router(router)
+    app.include_router(task_router, prefix="/v1")
+    app.add_middleware(
+        SignedIdentity, service="models", public_key=case.key.public_key(), catalog=CATALOG
+    )
     case.mesh.apps["models"] = app
     try:
         async with live.client, database.sessions(info={"owner_user_id": case.viewer}) as db:
@@ -168,3 +176,88 @@ async def test_models_verify_exact_wav_and_replay_a_finished_attempt(
             )
             assert {row.id for row in logs} == {direct.json()["log_id"], saved.json()["log_id"]}
             assert all(row.auth_kind == "session" for row in logs)
+
+
+async def test_completed_task_original_import_replays_assets_receipt(
+    scenario,  # noqa: F811
+    tmp_path,
+    monkeypatch,
+):
+    case = scenario
+    inputs = tmp_path / "model-originals"
+    inputs.mkdir()
+    data = audio()
+    source = inputs / "model-task.wav"
+    source.write_bytes(data)
+    monkeypatch.setattr(
+        "app.llm.playground.transcription.get_settings",
+        lambda: SimpleNamespace(account_model_test_path=lambda *_parts: inputs),
+    )
+    case.identity.state.identity_options["service_credentials"]["annotation"] = TOKEN
+    assets_live = LiveAuthorization(service="assets", credential=ASSETS_SECRET, transport=case.mesh)
+    case.assets.state.identity = assets_live
+    state = tmp_path / "annotation"
+    apply(state / "service.db", "annotation", ANNOTATION_MIGRATIONS)
+    app = create_app(
+        state_root=state,
+        catalog=CATALOG,
+        public_key=case.key.public_key(),
+        credential=TOKEN,
+        schema_path=ROOT / "web/src/generated/openapi.json",
+        transport=case.mesh,
+        run_worker=False,
+    )
+    path = "/v1/audio-annotation/transcription-imports"
+    task_id = str(uuid4())
+
+    async with (
+        assets_live.client,
+        owned_models(case, tmp_path / "models") as (_model_app, models, _model),
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(
+            base_url="http://annotation", transport=httpx.ASGITransport(app=app)
+        ) as api,
+    ):
+        async with models.sessions(info={"owner_user_id": case.viewer}) as db:
+            db.add(
+                ModelTestTranscriptionTask(
+                    id=task_id,
+                    owner_user_id=case.viewer,
+                    provider_kind="openai",
+                    provider_name="Fixture",
+                    model_slug="whisper-fixture",
+                    source_kind="upload",
+                    input_storage_key=source.name,
+                    input_filename="model-task.wav",
+                    input_mime_type="audio/wav",
+                    input_byte_size=len(data),
+                    status="completed",
+                    result_text="Imported transcript",
+                    result_segments=[],
+                )
+            )
+            await db.commit()
+        headers = await authorize(case, "annotation", "POST", path)
+        body = {"source_kind": "task", "task_id": task_id}
+        first = await api.post(path, headers=headers, json=body)
+        assert first.status_code == 200, first.text
+        second = await api.post(path, headers=headers, json=body)
+        assert second.status_code == 200, second.text
+        assert second.json()["id"] != first.json()["id"]
+        asset_id = first.json()["asset_id"]
+        assert second.json()["asset_id"] == asset_id
+        assert first.json()["duration_ms"] == 1000
+        assert first.json()["title"] == "model-task"
+        docs = f"{PROJECTS}/{first.json()['id']}/document"
+        document = await api.get(docs, headers=await authorize(case, "annotation", "GET", docs))
+        assert document.json()["segments"][0]["text"] == "Imported transcript"
+        asset = f"/v1/files/{asset_id}/content"
+        async with httpx.AsyncClient(
+            base_url="http://assets", transport=httpx.ASGITransport(app=case.assets)
+        ) as client:
+            read = await client.get(asset, headers=await authorize(case, "assets", "GET", asset))
+            assert read.status_code == 200 and read.content == data
+        assert list((state / ".staging").iterdir()) == []
+        source.unlink()
+        missing = await api.post(path, headers=headers, json=body)
+        assert missing.status_code == 404 and missing.json()["code"] == "source_not_found"

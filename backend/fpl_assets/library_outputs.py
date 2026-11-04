@@ -74,7 +74,7 @@ class LibraryOutputFiles:
                 status=401 if active is False else 503,
             )
 
-    async def store(self, task_id, description, incoming, *, folder_id=None):
+    async def store(self, task_id, description, incoming, *, folder_id=None, verify_replay=False):
         staged_path = None
         committing = False
         try:
@@ -82,6 +82,10 @@ class LibraryOutputFiles:
             previous = await self._receipt(task_id, description)
             await self.session.rollback()
             if previous is not None:
+                if verify_replay:
+                    verified = VerifiedOutput(incoming, description)
+                    while await verified.read(1024 * 1024):
+                        pass
                 return previous
             row = await AssetLibrary(self.session, self.settings).store_upload(
                 VerifiedOutput(incoming, description),

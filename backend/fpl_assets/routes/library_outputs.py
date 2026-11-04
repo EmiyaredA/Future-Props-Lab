@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Request
 
 from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.identity.permissions import effective_permissions
+from fpl_runtime.annotation_task_sources import UPLOADS, AnnotationTaskOriginal, upload_target
 from fpl_runtime.claims import HEADER, verify_context
 from fpl_runtime.model_outputs import ModelOutputDescription
 from fpl_runtime.tools_video_library import PREFIX, ToolLibraryDescription, is_library_path
@@ -58,6 +59,19 @@ async def library_output(request: Request, task_id: str, descriptor_sha256: str)
     return await _store_output(request, task_id, descriptor_sha256, ModelOutputDescription)
 
 
+@router.post(UPLOADS + "/{task_id}/{descriptor_sha256}")
+async def annotation_original(request: Request, task_id: str, descriptor_sha256: str):
+    if not upload_target(request.url.path):
+        raise HTTPException(404, "annotation_original_not_found")
+    return await _store_output(
+        request,
+        "annotation-" + task_id,
+        descriptor_sha256,
+        AnnotationTaskOriginal,
+        verify_replay=True,
+    )
+
+
 @router.post(PREFIX + "/{job_id}/{descriptor_sha256}")
 async def tools_library_output(request: Request, job_id: str, descriptor_sha256: str):
     if not is_library_path(request.url.path):
@@ -67,7 +81,9 @@ async def tools_library_output(request: Request, job_id: str, descriptor_sha256:
     )
 
 
-async def _store_output(request, task_id, descriptor_sha256, descriptor_type):
+async def _store_output(
+    request, task_id, descriptor_sha256, descriptor_type, *, verify_replay=False
+):
     if request.headers.get("origin") or request.headers.get("cookie"):
         raise HTTPException(403, "private_file_output_required")
     if request.headers.get("content-encoding", "identity").strip().lower() not in {"", "identity"}:
@@ -113,4 +129,5 @@ async def _store_output(request, task_id, descriptor_sha256, descriptor_type):
             description,
             OutputStream(request, description),
             folder_id=getattr(description, "folder_id", None),
+            verify_replay=verify_replay,
         )

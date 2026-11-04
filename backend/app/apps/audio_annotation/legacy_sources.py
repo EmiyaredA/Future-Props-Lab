@@ -1,7 +1,6 @@
 """Compatibility bindings for the old site's shared file and model records."""
 
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from sqlalchemy import select
 
@@ -54,6 +53,7 @@ class LegacyAnnotationSources:
             raise AudioAnnotationError("音频文件内容不存在", code="file_missing", status=404)
         yield path
 
+    @asynccontextmanager
     async def transcription(self, task_id):
         task = await self.session.get(ModelTestTranscriptionTask, task_id)
         if task is None:
@@ -75,7 +75,8 @@ class LegacyAnnotationSources:
             and row.media_kind == "audio"
             and row.byte_size <= MAX_AUDIO_BYTES
         ):
-            return TranscriptionSource(audio(row), filename, text, segments)
+            yield TranscriptionSource(audio(row), filename, text, segments)
+            return
         owner, mime_type = task.owner_user_id, task.input_mime_type
         path = self.settings.account_model_test_path(owner, "references") / task.input_storage_key
         if not path.is_file():
@@ -93,9 +94,11 @@ class LegacyAnnotationSources:
             )
         except AssetError as exc:
             raise AudioAnnotationError(str(exc), code=exc.code, status=exc.status) from exc
-        return TranscriptionSource(audio(row), filename, text, segments, Path(cleanup))
-
-    async def discard_staged(self, asset, path):
-        await self.session.rollback()
-        if await self.session.get(VisualAsset, asset.id) is None:
-            path.unlink(missing_ok=True)
+        asset = audio(row)
+        try:
+            yield TranscriptionSource(asset, filename, text, segments)
+        except BaseException:
+            await self.session.rollback()
+            if await self.session.get(VisualAsset, asset.id) is None:
+                cleanup.unlink(missing_ok=True)
+            raise

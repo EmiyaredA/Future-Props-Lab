@@ -21,11 +21,14 @@ from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailabl
 from fpl_runtime.delegation import RequestGrant
 from fpl_runtime.project_errors import ProjectResourceError
 
+from .task_sources import TaskSources
+
 
 class Inputs:
     def __init__(self, connection, session, capabilities, staging):
         self.connection, self.session = connection, session
         self.capabilities, self.staging = capabilities, staging
+        self.tasks = TaskSources(self)
 
     def _scope(self, target):
         return RequestGrant(
@@ -135,10 +138,11 @@ class Inputs:
                 "音频原件暂不可用", code="asset_unavailable", status=503
             ) from None
 
-    async def transcription(self, _task_id):
-        raise AudioAnnotationError(
-            "识别结果暂不可导入", code="transcription_unavailable", status=503
-        )
+    def transcription(self, task_id):
+        return self.tasks.load(task_id)
+
+    async def publish_original(self, source):
+        return await self.tasks.publish(source)
 
 
 class ProjectReferences:

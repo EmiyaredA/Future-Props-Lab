@@ -4,6 +4,7 @@ import re
 from dataclasses import dataclass
 
 from .annotation_assets import audio_asset_grant
+from .annotation_task_sources import task_read_grant, task_upload_grant
 from .annotation_transcription import segment_grant
 from .resource_routes import RESOURCE_ROUTES
 
@@ -131,7 +132,7 @@ def target_permission_path(grant):
         or audio_asset_grant(grant)
     ):
         return "/v1/files"
-    if model_library_output(grant) or library_grant(grant):
+    if model_library_output(grant) or library_grant(grant) or task_upload_grant(grant):
         return "/v1/files"
     asset_id = model_library_input(grant)
     return "/v1/files/" + asset_id + "/content" if asset_id else grant.target_path
@@ -155,6 +156,8 @@ def permitted(grant, catalog):
     if directory_grant(grant, catalog):
         return True
     if preview_grant(grant) or source_transfer_grant(grant) or stdio_grant(grant):
+        return True
+    if task_read_grant(grant) or task_upload_grant(grant):
         return True
     if segment_grant(grant) or writing_grant(grant) or read_grant(grant) or close_grant(grant):
         return True

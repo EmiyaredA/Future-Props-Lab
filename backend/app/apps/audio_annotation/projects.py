@@ -76,13 +76,15 @@ class AudioAnnotationProjects:
 
     async def _duration(self, asset: AnnotationAudio) -> int:
         async with self.sources.open(asset) as path:
-            try:
-                tag = await asyncio.to_thread(TinyTag.get, path)
-                duration_ms = round(float(tag.duration or 0) * 1000)
-            except (OSError, ValueError) as exc:
-                raise AudioAnnotationError(
-                    "无法读取音频时长", code="audio_metadata_invalid"
-                ) from exc
+            return await self._measure_duration(path)
+
+    @staticmethod
+    async def _measure_duration(path: Path) -> int:
+        try:
+            tag = await asyncio.to_thread(TinyTag.get, path)
+            duration_ms = round(float(tag.duration or 0) * 1000)
+        except (OSError, ValueError) as exc:
+            raise AudioAnnotationError("无法读取音频时长", code="audio_metadata_invalid") from exc
         if duration_ms <= 0:
             raise AudioAnnotationError("音频时长无效", code="audio_metadata_invalid")
         if duration_ms > MAX_DURATION_MS:
@@ -354,15 +356,14 @@ class AudioAnnotationProjects:
     async def import_transcription(
         self, body: AudioAnnotationTranscriptionImportIn
     ) -> AudioAnnotationProjectOut:
-        cleanup_path: Path | None = None
         if body.source_kind == "json":
             asset = await self._asset(body.asset_id)
-            title = body.title
-            text = body.text
-            segments = body.segments
-        else:
-            source = await self.sources.transcription(body.task_id)
-            asset, text, cleanup_path = source.asset, source.text, source.staged
+            duration_ms = await self._duration(asset)
+            return await self._from_transcription(
+                asset, body.title, body.text, body.segments, duration_ms
+            )
+
+        async with self.sources.transcription(body.task_id) as source:
             title = (body.title or Path(source.filename).stem.strip() or "录音标注")[:120]
             try:
                 segments = [
@@ -370,19 +371,20 @@ class AudioAnnotationProjects:
                     for item in source.segments
                 ]
             except ValidationError as exc:
-                if cleanup_path is not None:
-                    await self.sources.discard_staged(asset, cleanup_path)
                 raise AudioAnnotationError(
                     "识别任务的分段数据格式无效", code="transcription_segments_invalid"
                 ) from exc
+            if source.asset is not None:
+                duration_ms = await self._duration(source.asset)
+                return await self._from_transcription(
+                    source.asset, title, source.text, segments, duration_ms
+                )
 
-        try:
-            duration_ms = await self._duration(asset)
+            duration_ms = await self._measure_duration(source.original)
             speakers, converted = self._transcription_document(
-                text=text,
-                segments=segments,
-                duration_ms=duration_ms,
+                text=source.text, segments=segments, duration_ms=duration_ms
             )
+            asset = await self.sources.publish_original(source)
             return await self._create_project_record(
                 title=title,
                 asset=asset,
@@ -390,10 +392,14 @@ class AudioAnnotationProjects:
                 speakers=speakers,
                 segments=converted,
             )
-        except Exception:
-            if cleanup_path is not None:
-                await self.sources.discard_staged(asset, cleanup_path)
-            raise
+
+    async def _from_transcription(self, asset, title, text, segments, duration_ms):
+        speakers, converted = self._transcription_document(
+            text=text, segments=segments, duration_ms=duration_ms
+        )
+        return await self._create_project_record(
+            title=title, asset=asset, duration_ms=duration_ms, speakers=speakers, segments=converted
+        )
 
     async def patch(
         self, project_id: str, body: AudioAnnotationProjectPatchIn

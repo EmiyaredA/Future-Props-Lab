@@ -38,8 +38,10 @@ class AnnotationAudio:
 
 @dataclass(frozen=True)
 class TranscriptionSource:
-    asset: AnnotationAudio
+    asset: AnnotationAudio | None
     filename: str
     text: str
     segments: list
-    staged: Path | None = None
+    original: Path | None = None
+    mime_type: str = ""
+    task_id: str = ""

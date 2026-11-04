@@ -15,6 +15,7 @@ from app.capabilities.identity.permissions import (
 )
 from app.console.models.accounts import AuthSession, ManagementApiKey, User
 from app.runtime.time import utc_now
+from fpl_runtime.annotation_task_sources import upload_target as annotation_upload_target
 from fpl_runtime.annotation_transcription import target as annotation_transcription_target
 from fpl_runtime.claims import verify_context
 from fpl_runtime.model_outputs import is_model_output_path
@@ -77,7 +78,11 @@ async def live(request: Request, body: LiveRequest):
     private_output = (
         body.service == "assets"
         and body.method == "POST"
-        and (is_model_output_path(body.path) or is_tools_output_path(body.path))
+        and (
+            is_model_output_path(body.path)
+            or is_tools_output_path(body.path)
+            or annotation_upload_target(body.path)
+        )
     )
     from fpl_runtime.community_uploads import upload_target as community_upload_target
     from fpl_runtime.creative_preview import preview_target
