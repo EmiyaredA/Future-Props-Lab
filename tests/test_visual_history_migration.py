@@ -15,13 +15,29 @@ from cryptography.fernet import Fernet
 from PIL import Image
 from scripts.website import legacy_snapshot
 from scripts.website.migrate_assets import ASSET_RECORDS, transfer_asset_blobs
-from scripts.website.migrate_visual_history import CONVERSATION_PINS, PINS, RECORDS, migrate
+from scripts.website.migrate_visual_history import (
+    ACCEPTANCE_PINS,
+    CONVERSATION_PINS,
+    PINS,
+    RECORDS,
+    migrate,
+)
 from scripts.website.migration_transfer import pages, transfer
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from tests.test_galgame_history_migration import open_peers, verify_edit_replay
 from tests.test_tools_navigation_migration import available_ports
 from tests.test_website_legacy_snapshot import PASSWORD, REVISION, ROOT, configuration, website
 
+from app.apps.visual_workshop.acceptance.models import (
+    AcceptanceAssetReference,
+    AcceptanceRepairDraft,
+    AcceptanceRun,
+    AcceptanceStandard,
+    AcceptanceStandardVersion,
+    AcceptanceTemplate,
+    NodeAcceptanceBinding,
+)
 from app.apps.visual_workshop.models import (
     VisualAssistantAction,
     VisualAssistantConversation,
@@ -30,6 +46,7 @@ from app.apps.visual_workshop.models import (
     VisualGenerationBatch,
     VisualGenerationTask,
 )
+from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from fpl_runtime.migration_batches import MigrationPlan
 from fpl_visual.migrations.registry import MIGRATIONS
 
@@ -114,7 +131,7 @@ def seed_project(client, origin):
     )
 
 
-async def seed_history(database, owner, project, asset):
+async def seed_history(database, owner, project, asset, evidence_asset):
     # Populate old worker outcomes in this isolated migration fixture.
     engine = create_async_engine(f"sqlite+aiosqlite:///{database}")
     children = [f"generation-{index}" for index in range(4)]
@@ -222,10 +239,122 @@ async def seed_history(database, owner, project, asset):
                     ),
                 ]
             )
+            await seed_review(session, str(owner), project, evidence_asset)
             await session.commit()
     finally:
         await engine.dispose()
     return children, submitted
+
+
+async def seed_review(session, owner, project, evidence_asset):
+    output = await session.scalar(
+        select(VisualNodeOutput).where(
+            VisualNodeOutput.project_id == project, VisualNodeOutput.is_final.is_(True)
+        )
+    )
+    criterion = {
+        "id": "quality",
+        "title": "Original quality",
+        "requirement": "Keep details",
+        "method": "manual",
+        "required": True,
+    }
+    definition = {"title": "History review", "node_ids": [output.node_id], "criteria": [criterion]}
+    session.add_all(
+        [
+            AcceptanceTemplate(
+                id="old-template",
+                owner_user_id=owner,
+                title="History review",
+                document=definition,
+                revision=4,
+            ),
+            AcceptanceStandard(
+                project_id=project,
+                owner_user_id=owner,
+                draft=definition,
+                published_version=1,
+                required=True,
+                revision=3,
+            ),
+            AcceptanceStandardVersion(
+                id="old-standard",
+                owner_user_id=owner,
+                project_id=project,
+                version=1,
+                document=definition,
+            ),
+            NodeAcceptanceBinding(
+                id="old-binding",
+                owner_user_id=owner,
+                project_id=project,
+                node_id=output.node_id,
+                scheme_id=None,
+                revision=2,
+            ),
+        ]
+    )
+    await session.flush()
+    session.add(
+        AcceptanceRun(
+            id="old-review",
+            owner_user_id=owner,
+            project_id=project,
+            node_id=output.node_id,
+            output_id=output.id,
+            standard_id="old-standard",
+            request_id="legacy-review-req",
+            fingerprint="c" * 64,
+            status="completed",
+            decision="historical",
+            revision=6,
+            snapshot={
+                "standard_version": 1,
+                "standard_title": "History review",
+                "criteria": [criterion],
+                "coverage": "Historical evidence",
+                "output": {
+                    "id": output.id,
+                    "version": output.version,
+                    "asset_id": output.asset_id,
+                    "kind": output.kind,
+                    "text": None,
+                    "title": "Original output",
+                },
+            },
+            results=[
+                {
+                    "criterion_id": "quality",
+                    "verdict": "failed",
+                    "origin": "manual",
+                    "evidence_ids": ["evidence"],
+                    "explanation": "Historical judgement",
+                },
+            ],
+            evidence=[
+                {"id": "evidence", "asset_id": evidence_asset, "source_asset_id": output.asset_id}
+            ],
+        )
+    )
+    await session.flush()
+    session.add_all(
+        [
+            AcceptanceRepairDraft(
+                id="old-repair",
+                owner_user_id=owner,
+                project_id=project,
+                run_id="old-review",
+                text="Preserve original lighting",
+                revision=2,
+            ),
+            AcceptanceAssetReference(
+                owner_id="old-standard", project_id=project, asset_id=evidence_asset
+            ),
+            AcceptanceAssetReference(
+                owner_id="old-review", project_id=project, asset_id=evidence_asset
+            ),
+        ]
+    )
 
 
 def test_visual_history_preserves_canvas_output_placement_and_rollback(tmp_path):
@@ -256,7 +385,7 @@ def test_visual_history_preserves_canvas_output_placement_and_rollback(tmp_path)
     with website(config, source_port) as (client, origin):
         owner, path, canvas, ids, blobs, placements, edit = seed_project(client, origin)
     children, submitted = asyncio.run(
-        seed_history(runtime / legacy_snapshot.DATABASE, owner, path.rsplit("/", 1)[-1], ids[0])
+        seed_history(runtime / legacy_snapshot.DATABASE, owner, path.rsplit("/", 1)[-1], *ids)
     )
     snapshot = tmp_path / "snapshot"
     proof = legacy_snapshot.create(runtime, config, snapshot, REVISION)
@@ -325,6 +454,14 @@ def test_visual_history_preserves_canvas_output_placement_and_rollback(tmp_path)
             "visual.assistant-attachments": 1,
             "visual.assistant-actions": 1,
             "visual.conversation-pins": 1,
+            "visual.acceptance-templates": 1,
+            "visual.acceptance-standards": 1,
+            "visual.acceptance-versions": 1,
+            "visual.acceptance-runs": 1,
+            "visual.acceptance-bindings": 1,
+            "visual.acceptance-repair-drafts": 1,
+            "visual.acceptance-asset-references": 2,
+            "visual.acceptance-pins": 1,
         }
         tasks = next(item for item in RECORDS if item.name == "visual.generation-tasks")
         batch = next(item for item in RECORDS if item.name == "visual.generation-batches")
@@ -353,6 +490,25 @@ def test_visual_history_preserves_canvas_output_placement_and_rollback(tmp_path)
         action = stored_action.batch.records[0]
         assert action.generation_task_id == children[0] and action.approval_group_id == "old-group"
         assert action.result_payload == {"saved": True}
+        reference_dataset = next(
+            item for item in RECORDS if item.name == "visual.acceptance-asset-references"
+        )
+        references = [
+            item
+            for page in pages(client, visual_target, headers, plan, owner, reference_dataset)
+            for item in page.batch.records
+        ]
+        assert {(row.owner_id, row.asset_id) for row in references} == {
+            ("old-review", ids[1]),
+            ("old-standard", ids[1]),
+        }
+        evidence_source = next(pages(client, visual_source, headers, plan, owner, ACCEPTANCE_PINS))
+        assert (
+            next(pages(client, asset_target, headers, plan, owner, ACCEPTANCE_PINS))
+            == evidence_source
+        )
+        assert evidence_source.batch.records[0].asset_ids == [ids[1]]
+
     asyncio.run(verify_edit_replay(tmp_path / "visual", "visual", owner, *edit))
     recovered = tmp_path / "recovered"
     legacy_snapshot.restore(snapshot, recovered, REVISION, proof["manifest_sha256"])
@@ -374,5 +530,10 @@ def test_visual_history_preserves_canvas_output_placement_and_rollback(tmp_path)
         messages = transcript.json()["messages"]
         assert messages[0]["assets"][0]["id"] == ids[0]
         assert messages[1]["actions"][0]["generation_task_id"] == children[0]
+        review = client.get(path + "/acceptance/runs/old-review")
+        assert review.status_code == 200, review.text
+        assert review.json()["revision"] == 6
+        assert review.json()["evidence"][0]["asset_id"] == ids[1]
+
         for asset_id, blob in zip(ids, blobs, strict=True):
             assert client.get(f"/v1/files/{asset_id}/download").content == blob

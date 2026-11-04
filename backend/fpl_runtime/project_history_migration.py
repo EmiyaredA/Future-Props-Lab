@@ -28,6 +28,7 @@ class ProjectDataset:
     project: type | None = None
     owns_record: bool = True
     page_size: int = 1
+    cursor_pattern: str = CURSOR
     projection: Callable | None = None
     validate: Callable | None = None
 
@@ -152,7 +153,7 @@ def mount_project_history(app, plan, sessions, prefix, datasets, receipt_model, 
             app,
             prefix=f"{prefix}/{dataset.suffix}",
             plan=plan,
-            cursor_pattern=CURSOR,
+            cursor_pattern=dataset.cursor_pattern,
             batch_model=dataset.batch,
             page_model=dataset.page,
             inventory=partial(inventory, sessions, plan, dataset),

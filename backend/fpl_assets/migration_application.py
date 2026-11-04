@@ -10,6 +10,7 @@ from .migration_models import MIGRATION_MODELS
 from .migration_project_pins import (
     mount_galgame_references,
     mount_presentation_references,
+    mount_visual_acceptance_pins,
     mount_visual_canvas_pins,
     mount_visual_conversation_pins,
 )
@@ -65,5 +66,6 @@ def create_import_app(*, plan, state_root):
     mount_galgame_references(app, plan, database.sessions)
     mount_visual_canvas_pins(app, plan, database.sessions)
     mount_visual_conversation_pins(app, plan, database.sessions)
+    mount_visual_acceptance_pins(app, plan, database.sessions)
     mount_video_outputs(app, plan, database.sessions, database.root)
     return mount_records(app, plan, database.sessions)

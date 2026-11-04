@@ -136,6 +136,18 @@ async def test_delete_visual_project_fences_writes_and_replays_after_lost_receip
         )
         assert linked.status_code == 200, linked.text
         projection = AssetReferences(case.assets.state.database)
+        await projection.replace(
+            owner=case.viewer,
+            service="visual",
+            update=ReferenceUpdate(
+                request_id="own-review",
+                resource_kind="acceptance",
+                resource_id=project,
+                resource_revision=0,
+                expected_revision=0,
+                asset_ids=[private],
+            ),
+        )
 
         async def foreign_consumer(revision, version, ids):
             return await projection.replace(

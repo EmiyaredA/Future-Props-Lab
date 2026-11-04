@@ -27,10 +27,14 @@ from fpl_runtime.presentation_migration import (
 )
 from fpl_runtime.project_history_migration import CURSOR
 from fpl_runtime.visual_migration import (
+    ACCEPTANCE_PINS_DATASET,
+    ACCEPTANCE_PINS_PATH,
     CANVAS_PINS_DATASET,
     CANVAS_PINS_PATH,
     CONVERSATION_PINS_DATASET,
     CONVERSATION_PINS_PATH,
+    AcceptancePinBatch,
+    AcceptancePinPage,
     CanvasPinBatch,
     CanvasPinPage,
     CanvasPins,
@@ -142,6 +146,7 @@ async def ingest(sessions, dataset, service, kind, batch):
             if kind == "conversation":
                 project_id = record.project_id
                 media = (*media, "document")
+            if kind in {"conversation", "acceptance"}:
                 parent = await db.scalar(
                     select(AssetReferenceSet.id).where(
                         AssetReferenceSet.owner_user_id == owner,
@@ -189,7 +194,7 @@ async def ingest(sessions, dataset, service, kind, batch):
                     resource_kind=kind,
                     resource_id=record.id,
                     resource_revision=record.revision,
-                    scope_project_id=project_id if kind == "conversation" else None,
+                    scope_project_id=project_id if kind in {"conversation", "acceptance"} else None,
                 )
             )
             try:
@@ -296,4 +301,20 @@ def mount_visual_conversation_pins(app, plan, sessions):
         record_type=ConversationPins,
         batch_type=ConversationPinBatch,
         page_type=ConversationPinPage,
+    )
+
+
+def mount_visual_acceptance_pins(app, plan, sessions):
+    mount_project_pins(
+        app,
+        plan,
+        sessions,
+        prefix=ACCEPTANCE_PINS_PATH,
+        dataset=ACCEPTANCE_PINS_DATASET,
+        service="visual",
+        kind="acceptance",
+        cursor=CURSOR,
+        record_type=CanvasPins,
+        batch_type=AcceptancePinBatch,
+        page_type=AcceptancePinPage,
     )

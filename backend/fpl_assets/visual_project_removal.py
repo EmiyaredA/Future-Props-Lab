@@ -1,6 +1,6 @@
 """Delete project-owned folders and originals after the Visual source commits."""
 
-from sqlalchemy import delete, select
+from sqlalchemy import and_, delete, or_, select
 
 from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.models import VisualAsset, VisualAssetFolder
@@ -15,18 +15,26 @@ from .models import (
 from .scoped_project_files import remove_files
 
 
-def conversations(projection, identities):
+def project_children(projection, identities):
     return select(AssetReferenceSet.id).where(
         AssetReferenceSet.owner_user_id == projection.owner_user_id,
         AssetReferenceSet.service_id == "visual",
-        AssetReferenceSet.resource_kind == "conversation",
-        AssetReferenceSet.resource_id.in_(identities),
+        or_(
+            and_(
+                AssetReferenceSet.resource_kind == "conversation",
+                AssetReferenceSet.resource_id.in_(identities),
+            ),
+            and_(
+                AssetReferenceSet.resource_kind == "acceptance",
+                AssetReferenceSet.resource_id == projection.resource_id,
+            ),
+        ),
         AssetReferenceSet.deleted.is_(False),
     )
 
 
 async def prepare(session, projection, identities):
-    children = conversations(projection, identities)
+    children = project_children(projection, identities)
     if (
         await session.scalar(
             select(ReferenceIntent.id)
@@ -88,7 +96,7 @@ async def prepare(session, projection, identities):
 async def commit(session, projection, identities):
     for child in await session.scalars(
         select(AssetReferenceSet).where(
-            AssetReferenceSet.id.in_(conversations(projection, identities))
+            AssetReferenceSet.id.in_(project_children(projection, identities))
         )
     ):
         await session.execute(

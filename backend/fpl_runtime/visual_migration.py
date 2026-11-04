@@ -45,3 +45,15 @@ class ConversationPinBatch(MigrationBatch[ConversationPins]):
 
 
 ConversationPinPage = MigrationPage[ConversationPinBatch]
+
+
+ACCEPTANCE_PINS_DATASET = "visual.acceptance-pins"
+ACCEPTANCE_PINS_PATH = "/v1/migration/visual/acceptance-pins"
+
+
+class AcceptancePinBatch(MigrationBatch[CanvasPins]):
+    dataset: Literal["visual.acceptance-pins"]
+    records: tuple[CanvasPins, ...] = Field(max_length=1)
+
+
+AcceptancePinPage = MigrationPage[AcceptancePinBatch]

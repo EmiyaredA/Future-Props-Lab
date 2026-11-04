@@ -9,10 +9,13 @@ import httpx
 from fpl_runtime.edit_receipt_migration import SUFFIX
 from fpl_runtime.migration_batches import MigrationPlan
 from fpl_runtime.visual_migration import (
+    ACCEPTANCE_PINS_DATASET,
+    ACCEPTANCE_PINS_PATH,
     CANVAS_PINS_DATASET,
     CANVAS_PINS_PATH,
     CONVERSATION_PINS_DATASET,
     CONVERSATION_PINS_PATH,
+    AcceptancePinPage,
     CanvasPinPage,
     ConversationPinPage,
 )
@@ -27,6 +30,9 @@ RECORDS = (
     DatasetTransfer(OPERATIONS.name, f"{PREFIX}/{SUFFIX}", OPERATIONS.page, "id", page_size=1),
 )
 PINS = DatasetTransfer(CANVAS_PINS_DATASET, CANVAS_PINS_PATH, CanvasPinPage, "id", page_size=1)
+ACCEPTANCE_PINS = DatasetTransfer(
+    ACCEPTANCE_PINS_DATASET, ACCEPTANCE_PINS_PATH, AcceptancePinPage, "id", page_size=1
+)
 CONVERSATION_PINS = DatasetTransfer(
     CONVERSATION_PINS_DATASET, CONVERSATION_PINS_PATH, ConversationPinPage, "id", page_size=1
 )
@@ -44,7 +50,10 @@ def migrate(client, plan, visual_source, visual_target, assets_source, assets_ta
     )
     if conversations["record_count"] != conversation_pins["record_count"]:
         raise ValueError("Visual 对话与附件范围记录数不一致")
-    return [*results, pins, conversation_pins]
+    acceptance_pins = transfer(client, plan, visual_source, assets_target, ACCEPTANCE_PINS)
+    if acceptance_pins["record_count"] != pins["record_count"]:
+        raise ValueError("Visual 工程与验收素材范围记录数不一致")
+    return [*results, pins, conversation_pins, acceptance_pins]
 
 
 def main():

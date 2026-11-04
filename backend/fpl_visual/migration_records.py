@@ -17,6 +17,7 @@ from fpl_runtime.migration_batches import MigrationBatch, MigrationPage
 from fpl_runtime.project_history_migration import ProjectDataset
 from fpl_runtime.project_history_records import HistoryRecord, Identifier, ProjectRecord
 
+from .migration_acceptance import DATASETS as ACCEPTANCE_DATASETS
 from .migration_assistant import DATASETS as ASSISTANT_DATASETS
 from .migration_generation import DATASETS as GENERATION_DATASETS
 from .models import VisualMigrationReceipt
@@ -105,6 +106,7 @@ DATASETS = (
     ),
     *GENERATION_DATASETS,
     *ASSISTANT_DATASETS,
+    *ACCEPTANCE_DATASETS,
 )
 
 
