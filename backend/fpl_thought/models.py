@@ -42,10 +42,12 @@ from app.runtime.project_operations import (
     ProjectOperationReceipt,
 )
 
+from .archive_records import ThoughtArchiveImport
 from .retention_records import ThoughtReferenceMutation
 from .upload_records import ThoughtUploadIntent
 
 MODELS = (
+    ThoughtArchiveImport,
     ThoughtReferenceMutation,
     ThoughtUploadIntent,
     ArticleSyncBinding,

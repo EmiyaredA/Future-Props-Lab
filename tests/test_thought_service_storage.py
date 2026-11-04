@@ -58,7 +58,7 @@ def test_thought_models_and_writing_import_without_foreign_orm_or_global_db():
 import sys
 from fpl_thought.models import MODELS
 from app.apps.thought_workshop import assistant
-assert len(MODELS) == 31
+assert len(MODELS) == 32
 for name in ('app.orm', 'app.runtime.db', 'app.console.models.accounts',
              'app.llm.models', 'app.capabilities.asset_store.models'):
     assert name not in sys.modules, name

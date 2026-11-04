@@ -98,6 +98,7 @@ def target_permission_path(grant):
     from .creative_source_evidence import source_transfer_grant
     from .creative_stdio import stdio_grant
     from .external_sync import close_grant, read_grant
+    from .thought_archives import archive_grant
     from .thought_assets import asset_grant, upload_grant
     from .writing import writing_grant, writing_target
 
@@ -115,7 +116,7 @@ def target_permission_path(grant):
         return "/v1/integrations/mcp"
     if writing_grant(grant):
         return writing_target(grant.target_method, grant.target_path)
-    if asset_grant(grant) or upload_grant(grant):
+    if asset_grant(grant) or upload_grant(grant) or archive_grant(grant):
         return "/v1/files"
     if model_library_output(grant):
         return "/v1/files"
@@ -132,6 +133,7 @@ def permitted(grant, catalog):
     from .creative_source_evidence import source_transfer_grant
     from .creative_stdio import stdio_grant
     from .external_sync import close_grant, read_grant
+    from .thought_archives import archive_grant
     from .thought_assets import asset_grant, upload_grant
     from .writing import writing_grant
 
@@ -141,7 +143,7 @@ def permitted(grant, catalog):
         return True
     if writing_grant(grant) or read_grant(grant) or close_grant(grant):
         return True
-    if asset_grant(grant) or upload_grant(grant):
+    if asset_grant(grant) or upload_grant(grant) or archive_grant(grant):
         return True
     if model_library_input(grant) or model_library_output(grant):
         return True

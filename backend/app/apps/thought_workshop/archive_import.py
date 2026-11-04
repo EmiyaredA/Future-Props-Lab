@@ -3,7 +3,7 @@
 import copy
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from uuid import uuid4
+from uuid import UUID, uuid4, uuid5
 
 from app.apps.thought_workshop.archive_structure import (
     convert_v3_folders_to_notes,
@@ -80,11 +80,17 @@ class ArchiveIds:
     templates: dict[str, str]
 
 
-def allocate_ids(payload):
+def allocate_ids(payload, *, namespace: UUID | None = None):
+    def allocate(group):
+        return {
+            row["id"]: str(uuid5(namespace, f"{group}:{row['id']}") if namespace else uuid4())
+            for row in payload.get(group, [])
+        }
+
     return ArchiveIds(
-        projects={row["id"]: str(uuid4()) for row in payload["knowledge_bases"]},
-        notes={row["id"]: str(uuid4()) for row in payload["notes"]},
-        templates={row["id"]: str(uuid4()) for row in payload.get("templates", [])},
+        projects=allocate("knowledge_bases"),
+        notes=allocate("notes"),
+        templates=allocate("templates"),
     )
 
 

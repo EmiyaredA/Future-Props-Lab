@@ -6,6 +6,7 @@ import shutil
 import zipfile
 import zlib
 from pathlib import Path
+from typing import BinaryIO
 
 from pydantic import ValidationError
 
@@ -17,7 +18,7 @@ from .schemas.workshop import ThoughtNoteIn
 
 
 def extract_archive(
-    path: Path,
+    path: Path | BinaryIO,
     root: Path,
     *,
     maximum_files: int,
@@ -65,6 +66,7 @@ def extract_archive(
         TypeError,
         ValueError,
         zipfile.BadZipFile,
+        NotImplementedError,
         zlib.error,
         ValidationError,
     ) as exc:

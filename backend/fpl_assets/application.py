@@ -37,6 +37,7 @@ from .routes.layout import router as layout_router
 from .routes.library_inputs import router as library_inputs_router
 from .routes.library_outputs import router as library_outputs_router
 from .routes.project_links import router as links_router
+from .routes.thought_archives import router as thought_archives_router
 from .routes.thought_library import router as thought_library_router
 from .routes.thought_uploads import router as thought_uploads_router
 
@@ -118,8 +119,10 @@ def create_app(
     app.state.identity_public_key = public_key
     app.state.community_asset_checks = community_asset_checks
     if thought_upload_result_key is not None:
+        from fpl_runtime.thought_archives import ArchiveAuthenticator
         from fpl_runtime.thought_uploads import ThoughtUploadReceiptAuthenticator
 
+        app.state.thought_archive_auth = ArchiveAuthenticator(thought_upload_result_key)
         app.state.thought_upload_results = ThoughtUploadReceiptAuthenticator(
             thought_upload_result_key
         )
@@ -133,6 +136,7 @@ def create_app(
     app.include_router(library_outputs_router)
     app.include_router(thought_library_router)
     app.include_router(thought_uploads_router)
+    app.include_router(thought_archives_router)
     app.include_router(community_assets_router)
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)

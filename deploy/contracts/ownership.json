@@ -4656,6 +4656,12 @@
       "model": "NativeModelObservation"
     },
     {
+      "table": "thought_archive_imports",
+      "service": "thought",
+      "module": "fpl_thought.archive_records",
+      "model": "ThoughtArchiveImport"
+    },
+    {
       "table": "thought_reference_mutations",
       "service": "thought",
       "module": "fpl_thought.retention_records",

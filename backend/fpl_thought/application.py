@@ -26,6 +26,9 @@ from fpl_runtime.migrations import check
 from fpl_runtime.request_limit import RequestLimit
 
 from .account_directory import HttpAccountDirectory
+from .archive_delivery import ArchiveDelivery
+from .archive_http import router as archive_router
+from .archive_transport import ArchiveTransport
 from .asset_metadata import HttpAssetMetadata
 from .backup import BackupLimits
 from .backup_http import router as backup_router
@@ -82,6 +85,20 @@ def create_app(
         if upload_receipt_credential in {credential, assets_peer_credential}:
             raise ValueError("Thought 上传回执凭据必须独立")
     database = Database("thought", state_root, models=MODELS, account_models=ACCOUNT_MODELS)
+    archives = (
+        ArchiveDelivery(
+            database.sessions,
+            ArchiveTransport(
+                credential=credential,
+                peer_key=upload_receipt_credential,
+                catalog=catalog,
+                transport=transport,
+            ),
+            state_root / "archive-staging",
+        )
+        if upload_receipt_credential is not None
+        else None
+    )
     references = ThoughtReferences(database.sessions, retention_client, public_key=public_key)
     delivery = ThoughtReferenceDelivery(database.sessions, retention_client)
     files = CommunityFiles(credential=credential, public_key=public_key, transport=transport)
@@ -133,8 +150,13 @@ def create_app(
                 if run_worker:
                     await delivery.start()
                     await sync_runner.start()
+                    if archives is not None:
+                        await archives.start()
                 yield
             finally:
+                if archives is not None:
+                    await archives.stop()
+                    await archives.transport.close()
                 await sync_runner.stop()
                 await delivery.stop()
                 await files.close()
@@ -154,6 +176,7 @@ def create_app(
     app.state.service_id = "thought"
     app.state.database, app.state.identity = database, identity
     app.state.thought_backup_limits = backup_limits
+    app.state.thought_archive_delivery = archives
     app.state.thought_references, app.state.community_files = references, files
     app.state.thought_sync_reads = sync_reads
     app.state.thought_sync_intents = sync_intents
@@ -196,6 +219,7 @@ def create_app(
     )
     app.include_router(reads_router, prefix="/v1")
     app.include_router(backup_router, prefix="/v1")
+    app.include_router(archive_router, prefix="/v1")
     app.include_router(content_exports_router, prefix="/v1")
     app.include_router(sync_records_router, prefix="/v1")
     app.include_router(sync_binding_router, prefix="/v1")

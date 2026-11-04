@@ -56,3 +56,76 @@ class ArchiveManifest(BaseModel):
         return hashlib.sha256(
             json.dumps(self.model_dump(mode="json"), sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
+
+
+IMPORT_PATH = "/v1/thought-workshop/imports"
+PREFIX = "/_internal/v1/thought-archives"
+PURPOSE = "thought.archive.stage"
+MAX_MANIFEST_BYTES = 32 * 1024 * 1024
+SETTLE_PATH = PREFIX + "/settle"
+
+
+def archive_target(method, path):
+    import re
+
+    return method == "POST" and re.fullmatch(
+        PREFIX + r"/([a-f0-9]{32})/([a-f0-9]{64})/(files/[0-9]{1,4}|seal)/([a-f0-9]{64})",
+        path,
+    )
+
+
+def archive_grant(grant):
+    return bool(
+        grant.caller == "thought"
+        and grant.purpose == PURPOSE
+        and (grant.source_method, grant.source_path) == ("POST", IMPORT_PATH)
+        and grant.target_service == "assets"
+        and archive_target(grant.target_method, grant.target_path)
+    )
+
+
+class ArchiveOutcome(ArchiveBatchKey):
+    owner: str = Field(pattern=r"^[A-Za-z0-9_-]{1,36}$")
+    decision: Literal["commit", "abort"]
+    manifest_sha256: Fingerprint | None = None
+
+    @model_validator(mode="after")
+    def coherent(self):
+        if (self.decision == "commit") != (self.manifest_sha256 is not None):
+            raise ValueError("归档提交必须绑定封存摘要")
+        return self
+
+
+class ArchiveAuthenticator:
+    """Separate domains for receipts and decisions using the Thought–Assets peer key."""
+
+    def __init__(self, secret):
+        if not isinstance(secret, str) or not secret.isascii() or len(secret) < 32:
+            raise ValueError("归档对等凭据无效")
+        self.secret = secret.encode("ascii")
+
+    def sign(self, use, *, path, owner, nonce, body):
+        import hmac
+        import re
+
+        if use not in {"receipt", "decision"} or not re.fullmatch(r"[a-f0-9]{32}", nonce):
+            raise ValueError("归档签名绑定无效")
+        payload = json.dumps(
+            [use, path, owner, nonce, hashlib.sha256(body).hexdigest()],
+            ensure_ascii=True,
+            separators=(",", ":"),
+        ).encode("ascii")
+        return hmac.new(
+            self.secret, b"fpl-thought-archive-v1\0" + payload, hashlib.sha256
+        ).hexdigest()
+
+    def verify(self, signature, use, **binding):
+        import hmac
+
+        if (
+            not isinstance(signature, str)
+            or len(signature) != 64
+            or not signature.isascii()
+            or not hmac.compare_digest(signature, self.sign(use, **binding))
+        ):
+            raise ValueError("归档回执或源决议签名无效")
