@@ -70,6 +70,7 @@ from .routes.video_segment_bundles import router as video_segment_bundles_router
 from .routes.video_segment_handoffs import router as video_segment_handoffs_router
 from .routes.video_segment_outputs import router as video_segment_outputs_router
 from .routes.visual_acceptance import router as visual_acceptance_router
+from .routes.visual_archives import router as visual_archives_router
 from .routes.visual_assistant import router as conversation_assets_router
 from .routes.visual_snapshot import router as visual_snapshot_router
 from .routes.visual_upload import router as visual_upload_router
@@ -114,6 +115,7 @@ def create_app(
     video_originals_key=None,
     video_archive_key=None,
     galgame_archive_key=None,
+    visual_archive_key=None,
     visual_segment_assets_key=None,
 ):
     database = Database("assets", settings.runtime_path, models=MODELS)
@@ -201,6 +203,13 @@ def create_app(
         app.state.galgame_archive_auth = ArchiveAuthenticator(
             galgame_archive_key, domain=ARCHIVE_DOMAIN
         )
+    if visual_archive_key is not None:
+        from fpl_runtime.thought_archives import ArchiveAuthenticator
+        from fpl_runtime.visual_snapshot import ARCHIVE_DOMAIN
+
+        app.state.visual_archive_auth = ArchiveAuthenticator(
+            visual_archive_key, domain=ARCHIVE_DOMAIN
+        )
     if video_archive_key is not None:
         from fpl_runtime.thought_archives import ArchiveAuthenticator
         from fpl_runtime.video_snapshot import ARCHIVE_DOMAIN
@@ -241,6 +250,7 @@ def create_app(
     app.include_router(motion_assets_router)
     app.include_router(video_archives_router)
     app.include_router(galgame_archives_router)
+    app.include_router(visual_archives_router)
     app.include_router(video_assets_router)
     app.include_router(video_originals_router)
     app.include_router(video_render_outputs_router)

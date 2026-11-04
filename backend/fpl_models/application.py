@@ -52,6 +52,7 @@ from fpl_runtime.authentication import SignedIdentity
 from fpl_runtime.database import Database
 from fpl_runtime.migrations import check
 from fpl_runtime.request_limit import RequestLimit
+from fpl_runtime.visual_snapshot import MAX_LAYOUT_BYTES, MODEL_RESOLVE
 from fpl_runtime.visual_snapshot import MAX_QUERY_BYTES as MAX_VISUAL_SNAPSHOT_QUERY_BYTES
 from fpl_runtime.visual_snapshot import MODELS as VISUAL_SNAPSHOT_MODELS
 
@@ -319,6 +320,7 @@ def create_app(
     app.add_middleware(
         RequestLimit, prefix=VISUAL_SNAPSHOT_MODELS, maximum=MAX_VISUAL_SNAPSHOT_QUERY_BYTES
     )
+    app.add_middleware(RequestLimit, prefix=MODEL_RESOLVE, maximum=MAX_LAYOUT_BYTES)
     app.include_router(galgame_asr_router)
     app.include_router(galgame_transcription_router)
     if (native_ingress_token is None) != (workers is None):

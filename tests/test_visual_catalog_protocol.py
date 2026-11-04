@@ -44,6 +44,7 @@ from fpl_runtime.database import Database
 from fpl_runtime.delegation import RequestGrant
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
+from fpl_runtime.thought_archives import ArchiveAuthenticator
 from fpl_runtime.visual_acceptance_assets import PURPOSE as ACCEPTANCE_ASSETS_PURPOSE
 from fpl_runtime.visual_acceptance_assets import AcceptanceAssetQuery
 from fpl_runtime.visual_assistant import ASSET_PURPOSE, AttachmentQuery
@@ -56,8 +57,22 @@ from fpl_runtime.visual_catalog import (
     GENERATION_TARGET,
     PURPOSE,
 )
+from fpl_runtime.visual_snapshot import ARCHIVE_DOMAIN, ARCHIVE_PREFIX, SnapshotAssetQuery
 from fpl_runtime.visual_snapshot import ASSET_PURPOSE as SNAPSHOT_ASSET_PURPOSE
-from fpl_runtime.visual_snapshot import SnapshotAssetQuery
+
+
+class LostVisualArchiveReceipt(httpx.AsyncBaseTransport):
+    def __init__(self, mesh):
+        self.mesh, self.drop_next = mesh, False
+
+    async def handle_async_request(self, request):
+        response = await self.mesh.handle_async_request(request)
+        if self.drop_next and request.url.path == ARCHIVE_PREFIX + "/settle":
+            assert response.status_code == 200
+            self.drop_next = False
+            await response.aclose()
+            raise httpx.ReadError("simulated lost Visual archive receipt", request=request)
+        return response
 
 
 async def seed_catalog(database, owner, suffix):
@@ -111,12 +126,16 @@ async def test_visual_catalog_delegates_exact_paths_and_excludes_other_accounts(
     models.state.settings = SimpleNamespace(fpl_temp_media_upload_url="")
     models.include_router(router)
     case.mesh.apps["models"] = models
+    archive_key = "isolated-visual-archive-peer-key-" * 2
+    case.assets.state.visual_archive_auth = ArchiveAuthenticator(archive_key, domain=ARCHIVE_DOMAIN)
+    transport = LostVisualArchiveReceipt(case.mesh)
     visual = factory(
+        archive_key=archive_key,
         state_root=root,
         public_key=case.key.public_key(),
         catalog=CATALOG,
         credential=CREDENTIALS["visual"],
-        transport=case.mesh,
+        transport=transport,
         run_worker=False,
     )
     case.mesh.apps["visual"] = visual
@@ -178,7 +197,7 @@ async def test_visual_catalog_delegates_exact_paths_and_excludes_other_accounts(
             )
         ).status_code == 403
         await verify_fixed_acceptance(case, visual, http, models, database, tmp_path)
-        await verify_node_context(case, visual, http, entries[0]["id"])
+        await verify_node_context(case, visual, http, entries[0]["id"], transport)
         await verify_conversations(case, visual, http)
         logged_out = await case.browser.post(
             "/v1/auth/logout",
@@ -275,7 +294,7 @@ async def verify_fixed_acceptance(case, visual, http, models, database, root):
         await transport.close()
 
 
-async def verify_node_context(case, visual, http, model_id):
+async def verify_node_context(case, visual, http, model_id, transport):
     case.assets.state.capabilities = CapabilityClient(
         service="assets", credential=ASSETS_SECRET, catalog=CATALOG, transport=case.mesh
     )
@@ -418,7 +437,7 @@ async def verify_node_context(case, visual, http, model_id):
             ),
         )
 
-    await verify_snapshot(
+    snapshot = await verify_snapshot(
         case,
         visual,
         send,
@@ -432,6 +451,7 @@ async def verify_node_context(case, visual, http, model_id):
         model_id,
         png.getvalue(),
     )
+    await verify_snapshot_import(send, prefix, snapshot, model_id, transport)
 
 
 async def verify_snapshot(
@@ -487,6 +507,56 @@ async def verify_snapshot(
                 scope.path("foreign"),
             ),
         )
+
+    return response.content, payload, manifest
+
+
+async def verify_snapshot_import(send, prefix, snapshot, model_id, transport):
+    data, original, source_manifest = snapshot
+    uploads = {"file": ("visual.zip", data, "application/zip")}
+    path = prefix + "/snapshot-imports"
+    before = (await send("GET", prefix)).json()
+    transport.drop_next = True
+    interrupted = await send("POST", path, files=uploads)
+    assert interrupted.status_code == 503, interrupted.text
+    assert not transport.drop_next
+    assert (await send("GET", prefix)).json() == before
+
+    retried = await send("POST", path, files=uploads)
+    assert retried.status_code == 200, retried.text
+    project = retried.json()["project"]
+    assert project["title"].endswith("（副本）") and retried.json()["warnings"] == []
+    root = prefix + "/" + project["id"]
+    canvas = (await send("GET", root + "/canvas")).json()
+    assert canvas["nodes"][0]["id"] != "review"
+    assert canvas["nodes"][0]["generation_draft"]["model_id"] == model_id
+    restored = await send("GET", root + "/snapshot")
+    assert restored.status_code == 200, restored.text
+    with ZipFile(io.BytesIO(restored.content)) as archive:
+        payload = json.loads(archive.read("project.json"))
+        manifest = json.loads(archive.read("manifest.json"))
+        assert {row["id"] for row in payload["assets"]}.isdisjoint(
+            row["id"] for row in original["assets"]
+        )
+        assert sorted(row["sha256"] for row in manifest["assets"]) == sorted(
+            row["sha256"] for row in source_manifest["assets"]
+        )
+        assert payload["acceptance"]["bindings"] == [
+            {"node_id": canvas["nodes"][0]["id"], "scheme_id": "motion-transfer:api"}
+        ]
+        assert (
+            len(payload["outputs"]) == 1
+            and payload["outputs"][0]["id"] != original["outputs"][0]["id"]
+        )
+        folders = {row["name"]: row for row in payload["folders"]}
+        assert folders["细节"]["parent_id"] == folders["素材"]["id"]
+        assert (
+            next(row for row in payload["assets"] if row["display_name"] == "shared")["folder_id"]
+            == folders["细节"]["id"]
+        )
+
+    copied = await send("POST", path, files=uploads)
+    assert copied.status_code == 200 and copied.json()["project"]["id"] != project["id"]
 
 
 async def verify_conversations(case, visual, http):

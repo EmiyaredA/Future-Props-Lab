@@ -45,8 +45,8 @@ MODEL_IDENTITIES = TypeAdapter(dict[str, ModelIdentity])
 @dataclass(frozen=True)
 class SnapshotSettings:
     runtime_path: Path
-    fpl_project_snapshot_max_bytes: int
-    fpl_project_snapshot_max_files: int
+    fpl_project_snapshot_max_bytes: int = 8 * 1024**3
+    fpl_project_snapshot_max_files: int = 10_000
 
     def staging(self, total_bytes):
         root = self.runtime_path / ".tmp" / "project-snapshots"

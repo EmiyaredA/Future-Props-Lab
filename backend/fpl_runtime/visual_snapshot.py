@@ -3,9 +3,12 @@
 import hashlib
 import re
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from .library_assets import ID, LibraryAssetDescription, LibraryAssetQuery
+from .motion_preview import DIGEST
+from .motion_snapshot import MotionArchiveManifest
+from .thought_archives import ArchiveFileKey
 from .visual_assistant import SOURCE
 
 ASSETS = "/_internal/v1/visual-snapshot-assets"
@@ -92,4 +95,81 @@ def snapshot_grant(grant):
         return bool(target and target[1] == source[1])
     return (grant.purpose, grant.target_service) == (MODEL_PURPOSE, "models") and model_target(
         grant.target_method, grant.target_path
+    )
+
+
+IMPORT = SOURCE + "/snapshot-imports"
+ARCHIVE_PREFIX = "/_internal/v1/visual-archives"
+ARCHIVE_PURPOSE = "visual.archive.stage"
+ARCHIVE_DOMAIN = b"fpl-visual-archive-v1"
+MODEL_RESOLVE = "/_internal/v1/visual-snapshot-model-resolution"
+MODEL_RESOLVE_PURPOSE = "visual.snapshot-models.resolve"
+MAX_LAYOUT_BYTES = 10 * 1024 * 1024
+
+
+class SnapshotModelResolution(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    references: dict[str, ModelIdentity] = Field(max_length=10000)
+
+    @property
+    def digest(self):
+        return hashlib.sha256(self.model_dump_json().encode()).hexdigest()
+
+    @property
+    def path(self):
+        return f"{MODEL_RESOLVE}/{self.digest}"
+
+
+class VisualArchiveFolder(SnapshotFolder):
+    id: str = Field(pattern=rf"^{ID}$")
+    parent_id: str | None = Field(default=None, pattern=rf"^{ID}$")
+    name: str = Field(min_length=1, max_length=120)
+
+
+class VisualArchiveManifest(MotionArchiveManifest):
+    files: list[ArchiveFileKey] = Field(max_length=9998)
+    folders: list[VisualArchiveFolder] = Field(max_length=10000)
+    file_folders: list[str | None] = Field(max_length=9998)
+    canvas_ordinals: list[int] = Field(max_length=9998)
+    acceptance_ordinals: list[int] = Field(max_length=9998)
+
+    @model_validator(mode="after")
+    def validate_layout(self):
+        known = set()
+        for folder in self.folders:
+            if folder.id in known or (
+                folder.parent_id is not None and folder.parent_id not in known
+            ):
+                raise ValueError("视觉归档文件夹身份或顺序无效")
+            known.add(folder.id)
+        if len(self.file_folders) != len(self.files) or any(
+            identity is not None and identity not in known for identity in self.file_folders
+        ):
+            raise ValueError("视觉归档素材文件夹无效")
+        for ordinals in (self.canvas_ordinals, self.acceptance_ordinals):
+            if ordinals != sorted(set(ordinals)) or any(
+                not 0 <= ordinal < len(self.files) for ordinal in ordinals
+            ):
+                raise ValueError("视觉归档素材序号无效")
+        return self
+
+
+def archive_target(method, path):
+    return method == "POST" and re.fullmatch(
+        ARCHIVE_PREFIX + rf"/([a-f0-9]{{32}})/({DIGEST})/(files/[0-9]{{1,4}}|seal)/({DIGEST})",
+        path,
+    )
+
+
+def resolution_target(method, path):
+    return method == "POST" and re.fullmatch(rf"{MODEL_RESOLVE}/({DIGEST})", path)
+
+
+def archive_grant(grant):
+    if (grant.caller, grant.source_method, grant.source_path) != ("visual", "POST", IMPORT):
+        return False
+    if (grant.purpose, grant.target_service) == (ARCHIVE_PURPOSE, "assets"):
+        return bool(archive_target(grant.target_method, grant.target_path))
+    return (grant.purpose, grant.target_service) == (MODEL_RESOLVE_PURPOSE, "models") and bool(
+        resolution_target(grant.target_method, grant.target_path)
     )

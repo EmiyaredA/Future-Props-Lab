@@ -10,7 +10,7 @@ from fpl_runtime.claims import HEADER, verify_context
 
 
 @asynccontextmanager
-async def owned_catalog(request, *, purpose):
+async def owned_catalog(request, *, purpose, permission="content.read"):
     if "origin" in request.headers or "cookie" in request.headers:
         raise HTTPException(403, f"{purpose}_grant_required")
     token = request.headers.get(HEADER, "")
@@ -25,7 +25,7 @@ async def owned_catalog(request, *, purpose):
         )
     except (jwt.InvalidTokenError, ValueError, TypeError):
         raise HTTPException(401, f"{purpose}_grant_required") from None
-    if actor.purpose != "studio" or "content.read" not in effective_permissions(
+    if actor.purpose != "studio" or permission not in effective_permissions(
         actor.platform_role, frozenset(actor.scopes)
     ):
         raise HTTPException(403, f"{purpose}_access_forbidden")

@@ -14,11 +14,18 @@ from app.llm.visual_catalog import (
     acceptance_models,
     fixed_acceptance_model,
     generation_options,
+    resolve_snapshot_models,
     snapshot_model_labels,
 )
 from fpl_runtime.visual_assistant import MODEL_TARGET
 from fpl_runtime.visual_catalog import ACCEPTANCE_TARGET, FIXED_ACCEPTANCE_TARGET, GENERATION_TARGET
-from fpl_runtime.visual_snapshot import MODELS, ModelIdentity, SnapshotModels
+from fpl_runtime.visual_snapshot import (
+    MODEL_RESOLVE,
+    MODELS,
+    ModelIdentity,
+    SnapshotModelResolution,
+    SnapshotModels,
+)
 
 from .catalog_reads import owned_catalog
 
@@ -60,3 +67,19 @@ async def read_snapshot_model_labels(request: Request, digest: str, body: Snapsh
         raise HTTPException(403, "visual_snapshot_model_query_changed")
     async with owned_catalog(request, purpose="visual_snapshot_models") as (actor, session):
         return await snapshot_model_labels(session, actor.user_id, body.model_ids)
+
+
+@router.post(MODEL_RESOLVE + "/{digest}", response_model=dict[str, str])
+async def resolve_snapshot_model_labels(
+    request: Request, digest: str, body: SnapshotModelResolution
+):
+    if body.digest != digest:
+        raise HTTPException(403, "visual_snapshot_model_query_changed")
+    async with owned_catalog(
+        request, purpose="visual_snapshot_models", permission="content.write"
+    ) as (actor, session):
+        return await resolve_snapshot_models(
+            session,
+            {key: value.model_dump() for key, value in body.references.items()},
+            actor.user_id,
+        )

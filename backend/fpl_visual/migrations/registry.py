@@ -7,6 +7,7 @@ from .versions.v0002 import SQL as CANVAS_RETENTION
 from .versions.v0003 import SQL as CANVAS_OPERATIONS
 from .versions.v0004 import SQL as SEGMENT_HANDOFFS
 from .versions.v0005 import SQL as MIGRATION_RECEIPTS
+from .versions.v0006 import SQL as SNAPSHOT_IMPORTS
 
 MIGRATIONS = (
     Migration("0001_visual_owned_projects", SQL),
@@ -14,4 +15,5 @@ MIGRATIONS = (
     Migration("0003_canvas_operation_receipts", CANVAS_OPERATIONS),
     Migration("0004_visual_segment_handoffs", SEGMENT_HANDOFFS),
     Migration("0005_visual_migration_receipts", MIGRATION_RECEIPTS),
+    Migration("0006_visual_snapshot_imports", SNAPSHOT_IMPORTS),
 )

@@ -1,6 +1,7 @@
 """Select the account model catalog entries offered in Visual."""
 
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.llm.models import ModelEntry, ModelProvider
 from app.llm.providers import autodl_workflows
@@ -165,3 +166,42 @@ async def snapshot_model_labels(session, owner_user_id, model_ids):
         )
     ).all()
     return {identity: {"provider_kind": kind, "model_slug": slug} for identity, kind, slug in rows}
+
+
+async def resolve_snapshot_models(
+    session: AsyncSession, references: object, owner_user_id: str
+) -> dict[str, str]:
+    if not isinstance(references, dict):
+        return {}
+    pairs = {
+        (str(item.get("provider_kind") or ""), str(item.get("model_slug") or ""))
+        for item in references.values()
+        if isinstance(item, dict)
+    }
+    if not pairs:
+        return {}
+    rows = (
+        await session.execute(
+            select(ModelEntry, ModelProvider)
+            .join(ModelProvider, ModelProvider.id == ModelEntry.provider_id)
+            .where(
+                ModelEntry.enabled.is_(True),
+                ModelProvider.enabled.is_(True),
+                ModelEntry.owner_user_id == owner_user_id,
+                ModelProvider.owner_user_id == owner_user_id,
+            )
+        )
+    ).all()
+    by_pair: dict[tuple[str, str], list[str]] = {}
+    for model, provider in rows:
+        by_pair.setdefault((provider.kind, model.slug), []).append(model.id)
+    result: dict[str, str] = {}
+    for source_id, item in references.items():
+        if not isinstance(item, dict):
+            continue
+        ids = by_pair.get(
+            (str(item.get("provider_kind") or ""), str(item.get("model_slug") or "")), []
+        )
+        if len(ids) == 1:
+            result[str(source_id)] = ids[0]
+    return result

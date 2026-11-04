@@ -12,7 +12,7 @@ from app.apps.visual_workshop.schemas.workshop import (
     VisualCanvasImageGenerationDraft,
     VisualCanvasVideoGenerationDraft,
 )
-from app.apps.visual_workshop.snapshots import _remap_canvas
+from app.apps.visual_workshop.snapshot_values import remap_canvas
 from app.capabilities.identity.principal import StudioPrincipal
 from app.deps import SessionDep, require_studio_auth
 from app.main import app
@@ -250,7 +250,7 @@ def test_snapshot_remaps_shared_mention_names_without_changing_version_text():
             }
         ],
     )
-    nodes, _, _ = _remap_canvas(canvas, {"source": "imported"}, {}, {})
+    nodes, _, _ = remap_canvas(canvas, {"source": "imported"}, {}, {})
     restored = nodes[0]["generation_draft"]
     assert restored["prompt_reference_names"] == {"imported": "舞蹈参考.png"}
     assert restored["reference_asset_ids"] == ["imported"]

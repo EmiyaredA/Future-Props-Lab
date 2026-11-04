@@ -4673,6 +4673,18 @@
       "model": "GalgameArchiveFile"
     },
     {
+      "table": "asset_visual_archive_batches",
+      "service": "assets",
+      "module": "fpl_assets.models",
+      "model": "VisualArchiveBatch"
+    },
+    {
+      "table": "asset_visual_archive_files",
+      "service": "assets",
+      "module": "fpl_assets.models",
+      "model": "VisualArchiveFile"
+    },
+    {
       "table": "asset_video_segment_handoff_batches",
       "service": "assets",
       "module": "fpl_assets.models",
@@ -5187,6 +5199,12 @@
       "service": "visual",
       "module": "fpl_visual.models",
       "model": "VisualMigrationReceipt"
+    },
+    {
+      "table": "visual_snapshot_import_batches",
+      "service": "visual",
+      "module": "fpl_visual.models",
+      "model": "VisualSnapshotImportBatch"
     }
   ],
   "pages": [

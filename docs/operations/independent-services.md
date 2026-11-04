@@ -529,6 +529,8 @@ Motion 与 Video 启动检查覆盖归属清单中的 21 和 38 项操作。七�
 
 模型选项和验收模型通过 Identity 将原请求委派给 Models。Models 在自己的账号库筛选可用条目，只返回界面所需字段。五容器隔离运行 `fpl-visual-browser-9163104183` 在 Chromium 验证四个入口、390／768／1440 宽度、画布保存和过期浏览器版本拒绝，并在重启后核验项目与模型目录。剩余公开操作和正式历史导入继续由 Visual 就绪门禁跟踪。
 
+Visual ZIP 导入使用 `deploy/visual-snapshots.compose.yaml`，与 `deploy/project-owners.compose.yaml` 一起加载。将独立的 `FPL_VISUAL_ARCHIVE_KEY` 以受保护的文件挂载到 Visual 和 Assets，分别运行两者的 `migrate`。副本公开前核验原件摘要、目录、画布、输出历史、验收关联和同账号模型绑定。结算回执中断时，启动同版本 Visual 与 Assets 以恢复原批次。导入完成后可以再次从同一 ZIP 创建新的项目副本。
+
 ### Galgame 工坊的浏览器版本与故事验收
 
 运行 `npm run services:build:web -- galgame`，将清单目录传给 `npm run services:build -- galgame --build --web-release`。在 `deploy/project-owners.compose.yaml` 中使用 Galgame 专属状态目录和 Identity 凭据。项目列表、总览、编辑和已保存 Story 预演由 Galgame 镜像提供，旧版本写请求返回 409。

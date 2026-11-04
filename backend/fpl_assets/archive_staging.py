@@ -80,6 +80,9 @@ class ArchiveFileStaging:
     def placement(self, _key):
         return {}
 
+    def upload_placement(self, placement):
+        return placement
+
     def file_limit(self):
         return None
 
@@ -120,7 +123,7 @@ class ArchiveFileStaging:
                     allowed_extensions=self.allowed_extensions,
                     max_bytes=self.file_limit(),
                     defer_persistence=True,
-                    **placement,
+                    **self.upload_placement(placement),
                 )
                 path = AssetStorage(self.settings).path_for(row)
                 row.id, row.revision = new_id(), 0

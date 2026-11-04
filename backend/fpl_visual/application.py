@@ -13,6 +13,7 @@ from app.apps.visual_workshop.generation_routes import router as generation_reco
 from app.apps.visual_workshop.models import VisualWorkshopProject
 from app.capabilities.asset_store.project_snapshots import cleanup_snapshot_staging
 from app.deps import require_studio_auth
+from fpl_runtime.archive_transport import ArchiveTransport, SnapshotArchiveAsset
 from fpl_runtime.capability_client import CapabilityClient
 from fpl_runtime.certification_service import create_certification_app
 from fpl_runtime.identity_client import LiveAuthorization
@@ -20,6 +21,7 @@ from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.reference_runtime import install_reference_runtime
 from fpl_runtime.request_limit import RequestLimit
 from fpl_runtime.video_segment_handoff import VISUAL_HANDOFFS, asset_peer, visual_peer
+from fpl_runtime.visual_snapshot import ARCHIVE_DOMAIN, ARCHIVE_PREFIX, ARCHIVE_PURPOSE, IMPORT
 from fpl_runtime.web import attach_web, load_release
 
 from .acceptance_nodes_http import router as acceptance_nodes_router
@@ -37,6 +39,7 @@ from .segment_handoffs import SegmentHandoffs
 from .segment_target_routes import router as segment_target_router
 from .snapshot_exports import SnapshotSettings
 from .snapshot_http import router as snapshot_router
+from .snapshot_imports import SnapshotDelivery, SnapshotImports
 
 PAGES = (
     "/apps/visual-workshop",
@@ -58,6 +61,7 @@ def create_app(
     segment_assets_key=None,
     web_root=None,
     schema_path=None,
+    archive_key=None,
 ):
     if bool(video_segment_key) != bool(segment_assets_key):
         raise ValueError("Visual 分段交接需要独立的 Video 和 Assets 对等凭据")
@@ -103,6 +107,25 @@ def create_app(
     app.state.capabilities = CapabilityClient(
         service="visual", credential=credential, catalog=catalog, transport=transport
     )
+    app.state.snapshot_settings = SnapshotSettings(state_root.resolve())
+    app.state.snapshot_imports = None
+    archive_delivery = None
+    if archive_key is not None:
+        if archive_key in {credential, video_segment_key, segment_assets_key}:
+            raise ValueError("Visual 归档对等凭据必须独立")
+        archive = ArchiveTransport(
+            app.state.capabilities,
+            archive_key,
+            service="visual",
+            purpose=ARCHIVE_PURPOSE,
+            source_path=IMPORT,
+            prefix=ARCHIVE_PREFIX,
+            domain=ARCHIVE_DOMAIN,
+            asset_model=SnapshotArchiveAsset,
+            exact_mime=False,
+        )
+        archive_delivery = SnapshotDelivery(app.state.database.sessions, archive)
+        app.state.snapshot_imports = SnapshotImports(app.state, archive, archive_delivery)
     app.include_router(standard_router, prefix="/v1")
     app.include_router(review_router, prefix="/v1")
     app.include_router(repair_router)
@@ -132,10 +155,14 @@ def create_app(
             app.state.snapshot_authorization.client,
             lifespan(instance),
         ):
-            await asyncio.to_thread(
-                cleanup_snapshot_staging, SnapshotSettings(app.state.database.root, 1, 1)
-            )
-            yield
+            await asyncio.to_thread(cleanup_snapshot_staging, app.state.snapshot_settings)
+            try:
+                if archive_delivery is not None and run_worker:
+                    await archive_delivery.start()
+                yield
+            finally:
+                if archive_delivery is not None:
+                    await archive_delivery.stop()
 
     app.router.lifespan_context = with_capability_client
     return app
