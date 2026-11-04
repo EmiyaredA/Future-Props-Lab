@@ -33,7 +33,7 @@ async def capacity(request, project_id):
         ) from exc
 
 
-async def export_preview(request, files, project_id, body):
+async def export_context(request, files, project_id, body):
     story = await files.projects.story(project_id)
     ids = {asset.file_id for asset in story.document.assets}
     rows = await files.asset_records(project_id, ids, newest_first=False) if ids else ()
@@ -45,7 +45,7 @@ async def export_preview(request, files, project_id, body):
     }
     await files.session.rollback()
     renderer = await capacity(request, project_id)
-    return preview_export(
+    preview = preview_export(
         story,
         body,
         assets_by_file=by_id,
@@ -53,3 +53,10 @@ async def export_preview(request, files, project_id, body):
         durations_by_file=durations,
         capacity=renderer,
     )
+
+    return story, by_id, durations, preview
+
+
+async def export_preview(request, files, project_id, body):
+    _, _, _, preview = await export_context(request, files, project_id, body)
+    return preview

@@ -3,7 +3,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from app.apps.galgame_workshop.video.video_compiler_support import (
+from app.capabilities.media_rendering.galgame.lip_sync import LipSyncSchedule
+from app.capabilities.media_rendering.galgame.values import (
     CharacterPresentation,
     actor_layout,
     apply_composed_visual_motion,
@@ -11,7 +12,6 @@ from app.apps.galgame_workshop.video.video_compiler_support import (
     portrait_segments,
     timeline_clip,
 )
-from app.apps.galgame_workshop.video.video_lip_sync import LipSyncSchedule
 
 
 def _actor_opacity(

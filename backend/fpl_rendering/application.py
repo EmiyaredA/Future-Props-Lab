@@ -25,6 +25,7 @@ from fpl_runtime.video_exports import output_peer
 from fpl_runtime.video_processing import originals_peer, video_peer
 
 from .galgame_capacity_http import router as galgame_capacity_router
+from .galgame_frames import router as galgame_frames_router
 from .migrations.registry import MIGRATIONS
 from .models import MotionRenderJob, VideoExportJob, VideoMediaJob
 from .motion_export_routes import router as motion_export_router
@@ -125,6 +126,7 @@ def create_app(
     app.state.media = MediaPreviews(settings)
     app.state.identity_public_key = public_key
     app.state.motion_frame_slots = asyncio.Semaphore(2)
+    app.state.galgame_frame_slots = asyncio.Semaphore(2)
     app.state.motion_jobs = motion_jobs
     app.state.motion_export_peer = ExportPeer(export_key) if export_key is not None else None
     app.state.motion_submission_locks = tuple(asyncio.Lock() for _ in range(16))
@@ -132,6 +134,7 @@ def create_app(
     app.state.video_exports = video_exports
     app.include_router(video_export_router)
     app.include_router(galgame_capacity_router)
+    app.include_router(galgame_frames_router)
     app.include_router(motion_transfer_router)
     app.state.video_frame_cache = VideoFrameCache()
     app.state.video_frame_slots = asyncio.Semaphore(2)

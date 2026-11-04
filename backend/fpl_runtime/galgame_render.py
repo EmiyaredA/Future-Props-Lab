@@ -32,4 +32,11 @@ def capacity_grant(grant):
     ):
         return False
     target = capacity_target(grant.target_method, grant.target_path)
-    return bool(target and grant.source_path == f"{SOURCE}/{target[1]}/video-exports/preview")
+    return bool(
+        target
+        and grant.source_path
+        in {
+            f"{SOURCE}/{target[1]}/video-exports/preview",
+            f"{SOURCE}/{target[1]}/video-exports/frame",
+        }
+    )

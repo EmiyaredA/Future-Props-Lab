@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.apps.galgame_workshop.video.video_compiler_support import (
+from app.capabilities.media_rendering.galgame.timing import estimate_block_ms
+from app.capabilities.media_rendering.galgame.values import (
     camera_values,
     dialogue_speaker_ids,
 )
-from app.apps.galgame_workshop.video.video_export_planning import _estimate_block_ms
 
 CompilerEvent = tuple[int, int, str, dict[str, Any]]
 
@@ -111,7 +111,7 @@ def sequential_events(
     }
     for block in fragment.get("blocks", []):
         block_type = block.get("type")
-        duration, _exact = _estimate_block_ms(block, asset_duration)
+        duration, _exact = estimate_block_ms(block, asset_duration)
         if block_type in automatic:
             started = cursor
             events.append((started, 15, "automatic", block))

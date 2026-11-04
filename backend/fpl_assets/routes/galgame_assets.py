@@ -18,6 +18,8 @@ from fpl_runtime.galgame_assets import (
     asset_query_target,
     export_download_target,
 )
+from fpl_runtime.galgame_frames import INPUTS as FRAME_INPUTS
+from fpl_runtime.galgame_frames import inputs_target as frame_inputs_target
 from fpl_runtime.galgame_snapshot import snapshot_files_target
 from fpl_runtime.motion_snapshot import MAX_SCOPE_BYTES, SnapshotScope
 
@@ -125,8 +127,10 @@ async def annotation_audio_original(request: Request, asset_id: str):
 
 
 @router.post(PREFIX + "/{project_id}/snapshot/{digest}")
+@router.post(FRAME_INPUTS + "/{project_id}/{digest}")
 async def galgame_snapshot_originals(request: Request, project_id: str, digest: str):
-    if not snapshot_files_target("POST", request.url.path):
+    path = request.url.path
+    if not (snapshot_files_target("POST", path) or frame_inputs_target("POST", path)):
         raise HTTPException(403, "galgame_snapshot_grant_required")
     actor = await verified_actor(request)
     raw = bytearray()

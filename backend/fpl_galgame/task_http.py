@@ -1,6 +1,6 @@
 """Published Galgame annotation, video export and editor handoff records."""
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 
 from app.apps.galgame_workshop.schemas import (
     GalgameAnnotationImportIn,
@@ -8,6 +8,7 @@ from app.apps.galgame_workshop.schemas import (
     GalgameAnnotationImportTaskOut,
     GalgameVideoEditorHandoffTaskListOut,
     GalgameVideoEditorHandoffTaskOut,
+    GalgameVideoExportFrameIn,
     GalgameVideoExportPreviewIn,
     GalgameVideoExportPreviewOut,
     GalgameVideoExportTaskListOut,
@@ -20,6 +21,7 @@ from fpl_runtime.http_dependencies import OwnerDep, SessionDep
 from .annotation_jobs import enqueue_import
 from .annotation_preview import annotation_preview
 from .asset_read_routes import read_assets
+from .exact_frame import exact_frame
 from .export_download import download_export
 from .export_preflight import export_preview
 from .task_records import TaskRecords
@@ -80,6 +82,25 @@ async def preview_video_export(
     return await export_preview(
         request, read_assets(request, session, owner_user_id), project_id, body
     )
+
+
+@router.post("/{project_id}/video-exports/frame")
+async def exact_video_export_frame(
+    session: SessionDep,
+    project_id: str,
+    body: GalgameVideoExportFrameIn,
+    request: Request,
+    owner_user_id: OwnerDep,
+) -> Response:
+    try:
+        png = await exact_frame(
+            request, read_assets(request, session, owner_user_id), project_id, body
+        )
+    except AssetError as exc:
+        raise HTTPException(
+            exc.status, {"code": exc.code, "message": str(exc), **exc.detail}
+        ) from None
+    return Response(png, media_type="image/png", headers={"Cache-Control": "private, no-store"})
 
 
 @router.get("/{project_id}/video-exports", response_model=GalgameVideoExportTaskListOut)

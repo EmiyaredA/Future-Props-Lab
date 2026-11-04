@@ -13,12 +13,6 @@ from app.apps.galgame_workshop.models import (
     GalgameVideoEditorHandoffTask,
     GalgameWorkshopProject,
 )
-from app.apps.galgame_workshop.video.video_compiler import (
-    COMPILER_VERSION,
-    compile_galgame_render_plan,
-    remap_render_plan_assets,
-)
-from app.apps.galgame_workshop.video.video_lip_sync import prepare_audio_envelopes
 from app.apps.video_editor.models import (
     VideoEditorAssetMetadata,
     VideoEditorProject,
@@ -29,6 +23,12 @@ from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import VIDEO_EDITABLE_EXTENSIONS
 from app.capabilities.asset_store.storage import AssetStorage
+from app.capabilities.media_rendering.galgame.compiler import (
+    COMPILER_VERSION,
+    compile_galgame_render_plan,
+    remap_render_plan_assets,
+)
+from app.capabilities.media_rendering.galgame.lip_sync import prepare_audio_envelopes
 from app.runtime.config import Settings, get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.ownership import bind_owner, require_owner_id

@@ -112,6 +112,16 @@ async def test_live_rendering_capacity_and_exact_story_assets_control_preflight(
         assert ready.status_code == 200 and ready.json()["ready"], ready.text
         assert ready.json()["width"] == 1280 and len(ready.json()["previewFingerprint"]) == 64
         assert (await request("POST", preview, json=body)).json() == ready.json()
+        frame_path = root + "/video-exports/frame"
+        rendered = await request("POST", frame_path, json={**body, "timeMs": 200, "width": 640})
+        assert rendered.status_code == 200, rendered.text
+        assert rendered.headers["content-type"] == "image/png"
+        with Image.open(io.BytesIO(rendered.content)) as result:
+            assert result.size == (640, 360)
+        repeated = await request("POST", frame_path, json={**body, "timeMs": 200, "width": 640})
+        assert repeated.content == rendered.content
+        too_late = await request("POST", frame_path, json={**body, "timeMs": 100_000})
+        assert too_late.status_code == 422 and too_late.json()["code"] == "invalid_time"
         stale = await request("POST", preview, json={**body, "expectedStoryRevision": 0})
         assert stale.status_code == 200
         assert {item["code"] for item in stale.json()["blockers"]} == {"story_revision_conflict"}

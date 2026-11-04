@@ -4,13 +4,21 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from app.apps.galgame_workshop.video.video_actor_compiler import compile_actor_clips
-from app.apps.galgame_workshop.video.video_compiler_events import (
+from app.capabilities.media_rendering.contracts import RenderCaptureFrame, RenderPlan
+from app.capabilities.media_rendering.galgame.actors import compile_actor_clips
+from app.capabilities.media_rendering.galgame.dialogue import FONT_REGULAR, render_dialogue_layer
+from app.capabilities.media_rendering.galgame.events import (
     apply_event,
     sequential_events,
     timed_events,
 )
-from app.apps.galgame_workshop.video.video_compiler_support import (
+from app.capabilities.media_rendering.galgame.lip_sync import (
+    AudioEnvelope,
+    LipSyncSchedule,
+    build_lip_sync_schedule,
+)
+from app.capabilities.media_rendering.galgame.timing import COMPILER_VERSION
+from app.capabilities.media_rendering.galgame.values import (
     actor_layout,
     apply_composed_opacity,
     apply_composed_visual_motion,
@@ -19,22 +27,12 @@ from app.apps.galgame_workshop.video.video_compiler_support import (
     dialogue_speaker_ids,
     speaker_name,
 )
-from app.apps.galgame_workshop.video.video_compiler_support import asset_maps as _asset_maps
-from app.apps.galgame_workshop.video.video_compiler_support import (
+from app.capabilities.media_rendering.galgame.values import asset_maps as _asset_maps
+from app.capabilities.media_rendering.galgame.values import (
     remap_render_plan_assets as remap_render_plan_assets,
 )
-from app.apps.galgame_workshop.video.video_compiler_support import timeline_clip as _clip
-from app.apps.galgame_workshop.video.video_compiler_support import timeline_track as _track
-from app.apps.galgame_workshop.video.video_dialogue import FONT_REGULAR, render_dialogue_layer
-from app.apps.galgame_workshop.video.video_export_planning import (
-    COMPILER_VERSION as COMPILER_VERSION,
-)
-from app.apps.galgame_workshop.video.video_lip_sync import (
-    AudioEnvelope,
-    LipSyncSchedule,
-    build_lip_sync_schedule,
-)
-from app.capabilities.media_rendering.contracts import RenderCaptureFrame, RenderPlan
+from app.capabilities.media_rendering.galgame.values import timeline_clip as _clip
+from app.capabilities.media_rendering.galgame.values import timeline_track as _track
 from app.capabilities.media_rendering.timeline_document import VideoEditorTimelineDocument
 
 FLOATING_TEXT_FONT_ASSET_ID = "galgame-floating-text-noto-sans-sc"

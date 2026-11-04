@@ -26,6 +26,8 @@ from fpl_runtime.galgame_asr_execution import execution_target as galgame_asr_ex
 from fpl_runtime.galgame_asr_execution import original_target as galgame_asr_original_target
 from fpl_runtime.galgame_assets import asset_query_target as galgame_file_query_target
 from fpl_runtime.galgame_assets import export_download_target
+from fpl_runtime.galgame_frames import frame_target as galgame_frame_target
+from fpl_runtime.galgame_frames import inputs_target as galgame_frame_inputs_target
 from fpl_runtime.galgame_render import capacity_target
 from fpl_runtime.galgame_snapshot import archive_target as galgame_archive_target
 from fpl_runtime.galgame_snapshot import (
@@ -167,6 +169,7 @@ async def live(request: Request, body: LiveRequest):
     )
     private_render = body.service == "rendering" and (
         capacity_target(body.method, body.path)
+        or galgame_frame_target(body.method, body.path)
         or motion_preview_target(body.method, body.path)
         or video_frame_target(body.method, body.path)
         or audio_target(body.method, body.path)
@@ -182,6 +185,7 @@ async def live(request: Request, body: LiveRequest):
         or (body.service == "assets" and galgame_file_query_target(body.method, body.path))
         or (body.service == "assets" and galgame_asr_original_target(body.method, body.path))
         or (body.service == "assets" and snapshot_files_target(body.method, body.path))
+        or (body.service == "assets" and galgame_frame_inputs_target(body.method, body.path))
         or (body.service == "assets" and attachment_target(body.method, body.path))
         or (body.service == "assets" and export_download_target(body.method, body.path))
         or (body.service == "assets" and galgame_annotation_audio_target(body.method, body.path))

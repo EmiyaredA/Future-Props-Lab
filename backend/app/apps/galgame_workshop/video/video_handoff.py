@@ -16,9 +16,9 @@ from app.apps.galgame_workshop.schemas import (
 )
 from app.apps.galgame_workshop.story.story import GalgameStoryDocuments
 from app.apps.galgame_workshop.task_views import handoff_out
-from app.apps.galgame_workshop.video.video_compiler import COMPILER_VERSION
 from app.apps.galgame_workshop.video.video_export import GalgameVideoExports
 from app.capabilities.asset_store import AssetError
+from app.capabilities.media_rendering.galgame.compiler import COMPILER_VERSION
 from app.runtime.time import utc_now
 
 
