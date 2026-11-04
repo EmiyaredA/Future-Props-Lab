@@ -2,13 +2,17 @@
 
 from uuid import uuid4
 
+from pydantic import ValidationError
 from sqlalchemy import select
 
 from app.apps.visual_workshop.canvas_asset_values import existing_assets, expected_assets
 from app.apps.visual_workshop.canvas_documents import CanvasDocuments
 from app.apps.visual_workshop.canvas_values import canvas_out
+from app.apps.visual_workshop.operation_values import transform
 from app.apps.visual_workshop.outputs.models import VisualNodeOutput
+from app.apps.visual_workshop.schemas.workshop import VisualCanvasDocumentOut
 from app.runtime.ids import new_id
+from app.runtime.operation_receipts import record, replay
 from app.runtime.revisions import RevisionConflictError
 from fpl_runtime.asset_references import PrepareReferenceChange
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
@@ -48,6 +52,8 @@ class CanvasWrites:
                     carried_asset_ids=carried,
                 ),
             )
+        except ValidationError as exc:
+            raise ProjectResourceError("节点素材引用无效或过多", "asset_not_found", 422) from exc
         except CapabilityDenied as exc:
             if exc.code == "canvas_asset_scope":
                 raise ProjectResourceError("节点素材不属于当前项目", "scope_mismatch", 422) from exc
@@ -66,17 +72,6 @@ class CanvasWrites:
         except CapabilityUnavailable as exc:
             raise ProjectResourceError("素材引用结果未确认", "retention_unconfirmed", 503) from exc
 
-    async def _commit(self, prepared, apply):
-        try:
-            result = await apply()
-            await self.references.record(self.session, prepared, resource_revision=result.revision)
-        except BaseException:
-            await self.session.rollback()
-            await self.references.abort_after_rollback(self.session, prepared)
-            raise
-        await self.session.commit()
-        return result
-
     async def create_project(self, body):
         project_id = new_id()
         prepared = await self._prepare(project_id, expected=-1, method="POST", path=PREFIX)
@@ -84,7 +79,7 @@ class CanvasWrites:
         async def apply():
             return await self.projects.create(body, project_id=project_id)
 
-        return await self._commit(prepared, apply)
+        return await self.references.commit_source(self.session, prepared, apply)
 
     async def _history_assets(self, project_id, node_ids):
         if not node_ids:
@@ -109,6 +104,35 @@ class CanvasWrites:
         row = await self.projects.canvas_row(project_id)
         if row.revision != body.expected_revision:
             raise conflict(body.expected_revision, canvas_out(row))
+        return await self._save(
+            project_id, row, body, method="PUT", path=f"{PREFIX}/{project_id}/canvas"
+        )
+
+    async def apply_operations(self, project_id, body):
+        row = await self.projects.canvas_row(project_id)
+        current = canvas_out(row)
+        key = dict(owner_user_id=self.owner, kind="visual", resource_id=project_id, body=body)
+        saved = await replay(self.session, **key)
+        if saved is not None:
+            return VisualCanvasDocumentOut.model_validate(saved)
+        if current.revision != body.expected_revision:
+            raise conflict(body.expected_revision, current)
+        try:
+            return await self._save(
+                project_id,
+                row,
+                transform(current, body),
+                method="POST",
+                path=f"{PREFIX}/{project_id}/canvas/operations",
+                record_operation=lambda result: record(self.session, **key, result=result),
+            )
+        except RevisionConflictError:
+            saved = await replay(self.session, **key)
+            if saved is not None:
+                return VisualCanvasDocumentOut.model_validate(saved)
+            raise
+
+    async def _save(self, project_id, row, body, *, method, path, record_operation=None):
         existing = existing_assets(row.nodes or [])
         used = {asset_id for asset_id, _ in expected_assets(body.nodes)}
         history = await self._history_assets(project_id, {node.id for node in body.nodes})
@@ -117,8 +141,8 @@ class CanvasWrites:
         prepared = await self._prepare(
             project_id,
             expected=body.expected_revision,
-            method="PUT",
-            path=f"{PREFIX}/{project_id}/canvas",
+            method=method,
+            path=path,
             files=used | history,
             used=sorted(used),
             carried=sorted(carry),
@@ -137,4 +161,4 @@ class CanvasWrites:
                 project_id, body
             )
 
-        return await self._commit(prepared, apply)
+        return await self.references.commit_source(self.session, prepared, apply, record_operation)

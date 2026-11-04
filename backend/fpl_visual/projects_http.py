@@ -1,8 +1,10 @@
 """Published project and initial canvas operations for the Visual owner."""
 
 from fastapi import APIRouter, HTTPException, Request
+from pydantic import ValidationError
 
 from app.apps.visual_workshop.canvas_documents import VisualCanvasError
+from app.apps.visual_workshop.schemas.operations import VisualOperationsIn
 from app.apps.visual_workshop.schemas.workshop import (
     VisualCanvasDocumentOut,
     VisualCanvasDocumentPutIn,
@@ -11,6 +13,7 @@ from app.apps.visual_workshop.schemas.workshop import (
     VisualWorkshopProjectOut,
     VisualWorkshopProjectPatchIn,
 )
+from app.runtime.operation_receipts import OperationError
 from fpl_runtime.http_dependencies import OwnerDep, SessionDep
 from fpl_runtime.reference_runtime import reference_lifespan
 
@@ -73,3 +76,23 @@ async def put_canvas(
         return await canvas_writes(request, session, owner_user_id).put(project_id, body)
     except VisualCanvasError as exc:
         raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
+
+
+@router.post("/{project_id}/canvas/operations", response_model=VisualCanvasDocumentOut)
+async def apply_canvas_operations(
+    request: Request,
+    project_id: str,
+    body: VisualOperationsIn,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+):
+    try:
+        return await canvas_writes(request, session, owner_user_id).apply_operations(
+            project_id, body
+        )
+    except (OperationError, VisualCanvasError) as exc:
+        raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
+    except ValidationError as exc:
+        raise HTTPException(
+            422, {"code": "invalid_operation_result", "errors": exc.errors(include_context=False)}
+        ) from None

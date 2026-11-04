@@ -48,10 +48,9 @@ def _visual_canvas_source(body):
     path = "/v1/visual-workshop/projects"
     if change.expected_resource_revision == -1:
         return _create_projection(body, path)
-    return (
-        body.source_method == "PUT"
-        and body.source_path == f"{path}/{change.resource_id}/canvas"
-        and canvas_metadata(body.caller, change)
+    path = f"{path}/{change.resource_id}/canvas"
+    return canvas_metadata(body.caller, change) and (
+        (body.source_method, body.source_path) in {("PUT", path), ("POST", path + "/operations")}
     )
 
 

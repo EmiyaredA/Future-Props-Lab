@@ -28,6 +28,7 @@ from app.apps.visual_workshop.models import (
 from app.apps.visual_workshop.outputs.models import (
     VisualNodeOutput,
 )
+from app.runtime.project_operations import ProjectOperationReceipt
 from fpl_runtime.certification_owner import CertificationReceiptFields, CertificationRecordsBase
 from fpl_runtime.reference_records import ReferenceMutationFields
 
@@ -67,4 +68,5 @@ MODELS = (
     VisualNodeOutput,
     VisualCertificationReceipt,
     VisualCanvasReferenceMutation,
+    ProjectOperationReceipt,
 )

@@ -2,6 +2,7 @@
 
 from uuid import uuid4
 
+from pydantic import ValidationError
 from sqlalchemy import select, text
 
 from app.apps.galgame_workshop.errors import GalgameStoryDocumentInvalidError
@@ -65,6 +66,8 @@ class StoryWrites:
                     metadata_asset_ids=metadata,
                 ),
             )
+        except ValidationError as exc:
+            raise story_error("故事素材引用无效或过多") from exc
         except CapabilityDenied as exc:
             scope = {
                 "story_visual_asset_scope": "不能引用视觉工坊的私有素材",
@@ -87,20 +90,6 @@ class StoryWrites:
         except CapabilityUnavailable as exc:
             raise ProjectResourceError("素材引用结果未确认", "retention_unconfirmed", 503) from exc
 
-    async def _commit(self, prepared, apply, record_operation=None):
-        try:
-            result = await apply()
-            if record_operation is not None:
-                record_operation(result)
-            await self.references.record(self.session, prepared, resource_revision=result.revision)
-        except BaseException:
-            await self.session.rollback()
-            await self.references.abort_after_rollback(self.session, prepared)
-            raise
-        # Once commit starts, only the durable outcome can decide a remote abort.
-        await self.session.commit()
-        return result
-
     async def create_project(self, body):
         project_id = new_id()
         prepared = await self._prepare(project_id, expected=-1, method="POST", path=PREFIX)
@@ -108,7 +97,7 @@ class StoryWrites:
         async def apply():
             return await self.projects.create(body, project_id=project_id)
 
-        return await self._commit(prepared, apply)
+        return await self.references.commit_source(self.session, prepared, apply)
 
     async def current_story(self, project_id, expected_revision):
         current = await self.projects.story(project_id)
@@ -268,4 +257,4 @@ class StoryWrites:
             await sync_asset_references(self.session, project_id, files)
             return story_out(row, document)
 
-        return await self._commit(prepared, apply, record_operation)
+        return await self.references.commit_source(self.session, prepared, apply, record_operation)

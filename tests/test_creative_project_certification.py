@@ -133,8 +133,7 @@ async def test_owner_scoped_certification_and_audit(scenario, tmp_path, kind, lo
                     Path(__file__).resolve().parents[1] / "deploy/contracts/ownership.json"
                 ).read_text()
             )
-            partitioned = {"project_operation_receipts"} if kind == "galgame" else set()
-            assert tables == {"_fpl_service_schema"} | partitioned | {
+            assert tables == {"_fpl_service_schema", "project_operation_receipts"} | {
                 item["table"] for item in registry["tables"] if item["service"] == kind
             }
 

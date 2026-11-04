@@ -163,6 +163,20 @@ class ReferenceMutations:
         # Caller commits this outcome with the document/history mutation.
         await source_session.flush()
 
+    async def commit_source(self, session, prepared, apply, record_operation=None):
+        try:
+            result = await apply()
+            if record_operation is not None:
+                record_operation(result)
+            await self.record(session, prepared, resource_revision=result.revision)
+        except BaseException:
+            await session.rollback()
+            await self.abort_after_rollback(session, prepared)
+            raise
+        # Once commit starts, only the durable outcome can decide a remote abort.
+        await session.commit()
+        return result
+
     async def abort_after_rollback(self, source_session, prepared):
         if source_session.info.get("owner_user_id") != prepared.owner:
             raise self.failure("引用结果缺少匹配的账号上下文", 403, "retention_owner_mismatch")

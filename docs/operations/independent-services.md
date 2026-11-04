@@ -244,3 +244,5 @@ Galgame 的新项目创建和公开 Story 保存需要同一私网中的 Identit
 隔离运行 `fpl-galgame-operations-6698b8bf25` 额外验证了 Story 操作批次。相同请求在正常执行后和快照恢复后都返回原版本，同一请求 ID 改用不同正文返回 409。
 
 隔离运行 `fpl-visual-canvas-11f5f07889` 在同一七服务链路验证 Visual 画布。未放置的文件被拒绝，关联后可保存，移除原放置后再保存仍保留同一输出 ID。恢复隔离快照后读回相同画布版本、节点输出和素材字节。Visual 的新项目创建和画布保存依赖同一私网的 Identity 与 Assets。
+
+隔离运行 `fpl-visual-operations-4dffc38f1e` 验证了画布操作批次和恢复后的重放。相同请求返回原画布版本与输出 ID，不同请求复用同一请求 ID 时返回 409。

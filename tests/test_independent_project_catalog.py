@@ -231,6 +231,24 @@ async def verify_visual_canvas(case, app, request, path):
     assert second.status_code == 200, second.text
     assert second.json()["revision"] == 2
     assert second.json()["nodes"][0]["final_output_id"] == output
+    operation_path = canvas + "/operations"
+    operation = {
+        "request_id": "canvas-edit-fixture",
+        "expected_revision": 2,
+        "operations": [
+            {"entity": "node", "id": "node", "action": "update", "value": {"title": "Edited"}}
+        ],
+    }
+    operated = await request("POST", operation_path, json=operation)
+    assert operated.status_code == 200, operated.text
+    edited = operated.json()
+    assert edited["revision"] == 3 and edited["nodes"][0]["final_output_id"] == output
+    assert edited["nodes"][0]["title"] == "Edited"
+    replayed = await request("POST", operation_path, json=operation)
+    assert replayed.status_code == 200 and replayed.json() == edited
+    other_body = {**operation, "expected_revision": 3}
+    mismatched = await request("POST", operation_path, json=other_body)
+    assert mismatched.status_code == 409 and mismatched.json()["code"] == "idempotency_conflict"
     await app.state.reference_delivery.process_once()
     async with case.assets.state.database.sessions(info={"owner_user_id": case.viewer}) as session:
         pins = await session.scalars(
@@ -239,7 +257,7 @@ async def verify_visual_canvas(case, app, request, path):
             .where(
                 AssetReferenceSet.service_id == "visual",
                 AssetReferenceSet.resource_kind == "canvas",
-                AssetReferenceSet.resource_revision == 2,
+                AssetReferenceSet.resource_revision == 3,
             )
         )
         assert list(pins) == [asset.id]
