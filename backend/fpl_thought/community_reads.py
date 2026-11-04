@@ -99,7 +99,11 @@ async def favorites(session: CommunitySessionDep, principal: PublicStudioAuth):
     return await guarded(Community(session, principal).favorites())
 
 
-@router.get("/publications/{publication_id}/notes/{note_id}/multitable", response_model=Structure)
+@router.get(
+    "/publications/{publication_id}/notes/{note_id}/multitable",
+    response_model=Structure,
+    operation_id="structure_v1_thought_workshop_community_publications__publication_id__notes__note_id__multitable_get",
+)
 async def table_structure(
     publication_id: str,
     note_id: str,
@@ -115,6 +119,7 @@ async def table_structure(
 @router.post(
     "/publications/{publication_id}/notes/{note_id}/multitable/tables/{table_id}/query",
     response_model=RecordPage,
+    operation_id="records_v1_thought_workshop_community_publications__publication_id__notes__note_id__multitable_tables__table_id__query_post",
 )
 async def table_records(
     publication_id: str,

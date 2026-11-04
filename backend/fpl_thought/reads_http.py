@@ -111,7 +111,11 @@ async def templates(session: SessionDep, owner_user_id: OwnerDep):
     return await guarded(ReusableContent(session, owner_user_id).templates())
 
 
-@router.get("/notes/{note_id}/multitable", response_model=Structure)
+@router.get(
+    "/notes/{note_id}/multitable",
+    response_model=Structure,
+    operation_id="structure_v1_thought_workshop_notes__note_id__multitable_get",
+)
 async def table_structure(note_id: str, session: SessionDep, principal: StudioAuth):
     return await guarded(
         Multitable(session, principal.user_id).structure(
@@ -120,21 +124,33 @@ async def table_structure(note_id: str, session: SessionDep, principal: StudioAu
     )
 
 
-@router.post("/notes/{note_id}/multitable/tables/{table_id}/query", response_model=RecordPage)
+@router.post(
+    "/notes/{note_id}/multitable/tables/{table_id}/query",
+    response_model=RecordPage,
+    operation_id="records_v1_thought_workshop_notes__note_id__multitable_tables__table_id__query_post",
+)
 async def table_records(
     note_id: str, table_id: str, body: QueryIn, session: SessionDep, owner_user_id: OwnerDep
 ):
     return await guarded(Multitable(session, owner_user_id).records(note_id, table_id, body))
 
 
-@router.get("/notes/{note_id}/multitable/history", response_model=list[ChangeSummary])
+@router.get(
+    "/notes/{note_id}/multitable/history",
+    response_model=list[ChangeSummary],
+    operation_id="history_v1_thought_workshop_notes__note_id__multitable_history_get",
+)
 async def table_history(
     note_id: str, session: SessionDep, owner_user_id: OwnerDep, offset: int = Query(default=0, ge=0)
 ):
     return await guarded(Multitable(session, owner_user_id).history(note_id, offset))
 
 
-@router.get("/notes/{note_id}/multitable/history/{revision}", response_model=Snapshot)
+@router.get(
+    "/notes/{note_id}/multitable/history/{revision}",
+    response_model=Snapshot,
+    operation_id="detail_v1_thought_workshop_notes__note_id__multitable_history__revision__get",
+)
 async def table_history_detail(
     note_id: str, revision: int, session: SessionDep, owner_user_id: OwnerDep
 ):

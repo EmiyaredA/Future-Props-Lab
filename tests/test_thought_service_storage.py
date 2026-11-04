@@ -271,3 +271,41 @@ async def test_incomplete_thought_assembly_locks_storage_and_cannot_report_ready
             assert (await c.put("/v1/thought-workshop/notes/note", json={})).status_code == 401
     with service_lock(tmp_path):
         pass
+
+
+def test_thought_assembly_preserves_published_operation_ids(tmp_path):
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    from fpl_runtime.routing import RouteCatalog
+    from fpl_thought.application import create_app
+
+    root = Path(__file__).resolve().parents[1]
+    catalog = RouteCatalog.read(root / "deploy" / "contracts" / "ownership.json")
+    app = create_app(
+        state_root=tmp_path,
+        catalog=catalog,
+        public_key=Ed25519PrivateKey.generate().public_key(),
+        credential="i" * 48,
+        assets_peer_credential="p" * 48,
+        identity=None,
+        retention_client=None,
+        run_worker=False,
+    )
+    expected = {
+        (entry.method, entry.path): entry.operation_id
+        for entry in catalog.operations
+        if entry.service == "thought"
+    }
+    actual = {
+        (method.upper(), path): operation["operationId"]
+        for path, operations in app.openapi()["paths"].items()
+        if path.startswith("/v1/")
+        for method, operation in operations.items()
+    }
+    assert {key: expected[key] for key in actual} == actual
+    assert expected.keys() - actual.keys() <= {
+        (
+            "POST",
+            "/v1/thought-workshop/community/publications/{publication_id}/notes/{note_id}/uploads",
+        ),
+    }
