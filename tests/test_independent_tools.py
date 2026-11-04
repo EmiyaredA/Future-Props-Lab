@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import httpx
@@ -76,10 +77,11 @@ async def test_tools_library_reveal_is_local_and_replays_a_lost_worker_acknowled
     tmp_path,
     monkeypatch,
 ):
+    from app.tool_navigation.video_download_contracts import BinaryStatus, VideoDownloadDepsOut
     from fpl_host.tools_worker import ToolsWorker
     from fpl_host.transport import NativeTransport
-    from fpl_runtime.claims import HEADER, Actor, issue_context
-    from fpl_runtime.tools_native import OPEN_PATH, ToolsNativeOptions
+    from fpl_runtime.claims import HEADER, Actor, issue_context, verify_context
+    from fpl_runtime.tools_native import OPEN_PATH, VIDEO_DEPS_PATH, ToolsNativeOptions
     from fpl_tools import host as tools_host
 
     case = scenario
@@ -104,6 +106,7 @@ async def test_tools_library_reveal_is_local_and_replays_a_lost_worker_acknowled
     )
     published = json.loads((ROOT / "web/src/generated/openapi.json").read_text())["paths"]
     assert app.openapi()["paths"][OPEN_PATH] == published[OPEN_PATH]
+    assert app.openapi()["paths"][VIDEO_DEPS_PATH] == published[VIDEO_DEPS_PATH]
     calls = []
     lost = False
     real_transport = httpx.ASGITransport(app=app)
@@ -121,6 +124,13 @@ async def test_tools_library_reveal_is_local_and_replays_a_lost_worker_acknowled
             await response.aclose()
             raise httpx.ReadError("synthetic lost Tools acknowledgement", request=request)
         return response
+
+    def dependencies():
+        return VideoDownloadDepsOut(
+            ready=True,
+            yt_dlp=BinaryStatus(name="yt-dlp", ok=True, path="/fixture/yt-dlp", version="test"),
+            ffmpeg=BinaryStatus(name="ffmpeg", ok=True, path="/fixture/ffmpeg", version="test"),
+        )
 
     def reveal(path, owner):
         calls.append((path, owner))
@@ -174,7 +184,9 @@ async def test_tools_library_reveal_is_local_and_replays_a_lost_worker_acknowled
         response = await request
         assert response.status_code == 200, response.text
         assert len(list(worker.receipts.pending())) == 1
-        restarted = ToolsWorker(transport, assets, tmp_path / "worker", reveal=reveal)
+        restarted = ToolsWorker(
+            transport, assets, tmp_path / "worker", reveal=reveal, dependencies=dependencies
+        )
         await restarted.poll_once()
         assert list(restarted.receipts.pending()) == []
         assert calls == [(assets.resolve(), case.viewer)]
@@ -183,6 +195,32 @@ async def test_tools_library_reveal_is_local_and_replays_a_lost_worker_acknowled
         assert expired.status_code == 503 and expired.json()["code"] == "folder_open_unavailable"
         unclaimed = await transport.post("claim", {"wait_seconds": 0})
         assert unclaimed == {"lease": None}
+        assert calls == [(assets.resolve(), case.viewer)]
+        local_headers = await authorize(case, "tools", "GET", VIDEO_DEPS_PATH)
+        local_actor = verify_context(
+            local_headers[HEADER],
+            service="tools",
+            method="GET",
+            path=VIDEO_DEPS_PATH,
+            public_key=case.key.public_key(),
+        )
+        public_probe = issue_context(
+            replace(local_actor, local=False),
+            service="tools",
+            method="GET",
+            path=VIDEO_DEPS_PATH,
+            private_key=case.key,
+            key_id="test",
+        )
+        for headers, expected_path in (
+            (local_headers, "/fixture/yt-dlp"),
+            ({HEADER: public_probe}, None),
+        ):
+            pending = asyncio.create_task(api.get(VIDEO_DEPS_PATH, headers=headers))
+            await restarted.poll_once()
+            probed = await pending
+            assert probed.status_code == 200 and probed.json()["ready"], probed.text
+            assert probed.json()["yt_dlp"]["path"] == expected_path
         assert calls == [(assets.resolve(), case.viewer)]
 
 

@@ -12,13 +12,23 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit, urlunsplit
 
-from pydantic import BaseModel, Field, model_validator
-
 from app.capabilities.asset_store.library import AssetError, AssetLibrary
 from app.runtime.config import Settings, get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.ids import new_id
 from app.runtime.time import iso_utc, utc_now
+from app.tool_navigation.video_download_contracts import BinaryStatus as BinaryStatus
+from app.tool_navigation.video_download_contracts import (
+    VideoDownloadAssetOut as VideoDownloadAssetOut,
+)
+from app.tool_navigation.video_download_contracts import (
+    VideoDownloadDepsOut as VideoDownloadDepsOut,
+)
+from app.tool_navigation.video_download_contracts import (
+    VideoDownloadJobCreate as VideoDownloadJobCreate,
+)
+from app.tool_navigation.video_download_contracts import VideoDownloadJobOut as VideoDownloadJobOut
+from app.tool_navigation.video_download_dependencies import probe_deps as probe_deps
 from app.tool_navigation.video_download_douyin import fetch_douyin_media
 from app.tool_navigation.video_download_errors import VideoDownloadError
 
@@ -49,66 +59,6 @@ _URL_IN_TEXT = re.compile(r"https?://[^\s<>\"'`，。；、！？]+", re.IGNOREC
 _DOUYIN_VIDEO_PATH = re.compile(r"/video/(\d+)", re.IGNORECASE)
 _JOBS_LOCK = threading.Lock()
 _JOBS: dict[str, VideoDownloadJob] = {}
-
-
-class BinaryStatus(BaseModel):
-    name: str
-    ok: bool
-    path: str | None = None
-    version: str | None = None
-    hint: str | None = None
-
-
-class VideoDownloadDepsOut(BaseModel):
-    ready: bool
-    yt_dlp: BinaryStatus
-    ffmpeg: BinaryStatus
-
-
-class VideoDownloadJobCreate(BaseModel):
-    url: str = Field(min_length=8, max_length=4096)
-    quality: str = Field(default="best", pattern=r"^(best|1080|720|480)$")
-    use_browser_cookies: bool = False
-    cookies_from_browser: str = Field(
-        default="chrome", pattern=r"^(chrome|chromium|edge|safari|brave|firefox)$"
-    )
-    save_to_disk: bool = True
-    save_to_library: bool = True
-    folder_id: str | None = Field(default=None, max_length=64)
-
-    @model_validator(mode="after")
-    def require_destination(self) -> VideoDownloadJobCreate:
-        if not self.save_to_disk and not self.save_to_library:
-            raise ValueError("至少选择一种保存方式")
-        if self.folder_id is not None and not self.folder_id.strip():
-            self.folder_id = None
-        return self
-
-
-class VideoDownloadAssetOut(BaseModel):
-    id: str
-    display_name: str
-    original_filename: str
-    mime_type: str
-    byte_size: int
-
-
-class VideoDownloadJobOut(BaseModel):
-    id: str
-    status: str
-    url: str
-    quality: str
-    use_browser_cookies: bool
-    cookies_from_browser: str | None
-    save_to_disk: bool
-    save_to_library: bool
-    title: str | None = None
-    filename: str | None = None
-    byte_size: int | None = None
-    error: str | None = None
-    asset: VideoDownloadAssetOut | None = None
-    created_at: str
-    updated_at: str
 
 
 @dataclass
@@ -225,48 +175,6 @@ def validate_video_url(url: str) -> str:
     # Drop fragments; keep query only when needed for short-link hosts.
     cleaned = urlunsplit((parsed.scheme, parsed.netloc, parsed.path, parsed.query, ""))
     return _canonical_douyin_url(cleaned)
-
-
-def _probe_binary(name: str, *, version_flag: str = "--version") -> BinaryStatus:
-    path = shutil.which(name)
-    if not path:
-        hint = (
-            "macOS: brew install yt-dlp ffmpeg"
-            if name == "yt-dlp"
-            else "macOS: brew install ffmpeg"
-        )
-        return BinaryStatus(name=name, ok=False, hint=hint)
-    try:
-        result = subprocess.run(
-            [path, version_flag],
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=8,
-        )
-    except (OSError, subprocess.TimeoutExpired):
-        return BinaryStatus(
-            name=name,
-            ok=False,
-            path=path,
-            hint=f"无法执行 {name}，请检查安装",
-        )
-    version_line = (result.stdout or result.stderr or "").strip().splitlines()
-    version = version_line[0].strip() if version_line else None
-    ok = result.returncode == 0
-    return BinaryStatus(
-        name=name,
-        ok=ok,
-        path=path,
-        version=version,
-        hint=None if ok else f"{name} 返回异常退出码",
-    )
-
-
-def probe_deps() -> VideoDownloadDepsOut:
-    yt_dlp = _probe_binary("yt-dlp")
-    ffmpeg = _probe_binary("ffmpeg", version_flag="-version")
-    return VideoDownloadDepsOut(ready=yt_dlp.ok and ffmpeg.ok, yt_dlp=yt_dlp, ffmpeg=ffmpeg)
 
 
 def _jobs_root(settings: Settings | None = None) -> Path:

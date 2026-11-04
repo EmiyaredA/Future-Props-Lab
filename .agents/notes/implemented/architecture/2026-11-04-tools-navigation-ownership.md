@@ -18,7 +18,7 @@ The published navigation router runs under a destination-bound Identity assertio
 
 ## Consequences
 
-The navigation API has an installed isolated image. The immutable browser release serves the tool directory and two existing deep links. The image verifies the browser contract hash and rejects writes from mismatched program versions. A separate local browser action uses a short native lease for a fixed account-library folder. The Tools service rechecks the original Identity session and exposes only a sanitized lease. The Mac worker checks the resolved account path under the configured Assets root and persists the execution receipt before acknowledgement. The download executor and historic import are required for Tools readiness. Public readiness remains gated until those paths pass.
+The navigation API has an installed isolated image. The immutable browser release serves the tool directory and two existing deep links. The image verifies the browser contract hash and rejects writes from mismatched program versions. A separate local browser action uses a short native lease for a fixed account-library folder. The Tools service rechecks the original Identity session and exposes only a sanitized lease. The Mac worker checks the resolved account path under the configured Assets root and persists the execution receipt before acknowledgement. The existing video dependency check asks the same worker to probe the two fixed executables. Public callers get availability and versions with local executable paths removed. The download executor and historic import are required for Tools readiness. Public readiness remains gated until those paths pass.
 
 ## Verification
 

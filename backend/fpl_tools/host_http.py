@@ -9,11 +9,14 @@ from starlette.datastructures import Headers
 from starlette.responses import JSONResponse
 
 from app.capabilities.asset_store.schemas.project_snapshots import ProjectFolderOpenOut
+from app.tool_navigation.video_download_contracts import VideoDownloadDepsOut
 from fpl_runtime.http_dependencies import StudioAuth
 from fpl_runtime.native_protocol import NativeLease, NativeOutcome
-from fpl_runtime.tools_native import OPEN_PATH
+from fpl_runtime.tools_native import OPEN_PATH, VIDEO_DEPS_PATH
 
-public = APIRouter(tags=["file-management"])
+from .host import missing_dependencies
+
+public = APIRouter()
 native = APIRouter(prefix="/_native/v1", include_in_schema=False)
 
 
@@ -67,7 +70,7 @@ class Receipt(Lease):
     outcome: NativeOutcome
 
 
-@public.post(OPEN_PATH, response_model=ProjectFolderOpenOut)
+@public.post(OPEN_PATH, response_model=ProjectFolderOpenOut, tags=["file-management"])
 async def reveal_library_folder(request: Request, principal: StudioAuth):
     if principal.auth_kind != "session":
         raise HTTPException(
@@ -85,6 +88,16 @@ async def reveal_library_folder(request: Request, principal: StudioAuth):
         )
     await host.open_library(principal.user_id, request.state.service_assertion)
     return ProjectFolderOpenOut()
+
+
+@public.get(VIDEO_DEPS_PATH, response_model=VideoDownloadDepsOut, tags=["tool-navigation"])
+async def get_video_download_deps(request: Request, principal: StudioAuth):
+    host = request.app.state.tools_host
+    if host is None:
+        return missing_dependencies()
+    return await host.video_dependencies(
+        principal.user_id, request.state.service_assertion, local=request.state.service_actor.local
+    )
 
 
 @native.post("/claim")

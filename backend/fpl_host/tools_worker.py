@@ -11,9 +11,10 @@ from uuid import UUID
 
 import httpx
 
+from app.tool_navigation.video_download_dependencies import probe_deps
 from fpl_runtime.locking import service_lock
 from fpl_runtime.native_protocol import NativeLease, NativeOutcome
-from fpl_runtime.tools_native import OPEN_LIBRARY
+from fpl_runtime.tools_native import HOST_OPERATIONS, OPEN_LIBRARY, PROBE_VIDEO
 
 from .receipts import ReceiptStore
 from .transport import LeaseEnded, NativeTransport, ProtocolConflict
@@ -49,12 +50,19 @@ def reveal_library(root, owner, *, launch=subprocess.Popen):
 
 
 class ToolsWorker:
-    def __init__(self, transport, assets_root, state_root, *, reveal=reveal_library):
+    def __init__(
+        self, transport, assets_root, state_root, *, reveal=reveal_library, dependencies=probe_deps
+    ):
         if assets_root.is_symlink() or not assets_root.is_dir():
             raise ValueError("Tools worker 必须指定真实的 Assets 状态目录")
         self.assets_root = assets_root.resolve()
         self.transport, self.reveal = transport, reveal
-        self.receipts = ReceiptStore(state_root / "receipts", retain_acknowledged_payload=False)
+        self.dependencies = dependencies
+        self.receipts = ReceiptStore(
+            state_root / "receipts",
+            readonly_operations={PROBE_VIDEO},
+            retain_acknowledged_payload=False,
+        )
 
     async def deliver(self, lease, outcome):
         error = outcome.result.get("error")
@@ -73,7 +81,7 @@ class ToolsWorker:
         self.receipts.acknowledge(lease)
 
     async def execute(self, lease):
-        if lease.operation != OPEN_LIBRARY or lease.payload:
+        if lease.operation not in HOST_OPERATIONS or lease.payload:
             raise ProtocolConflict("Tools 租约超出文件夹打开能力")
         try:
             result = await self.transport.post(
@@ -86,8 +94,10 @@ class ToolsWorker:
                 self.receipts.execute, lease, lambda *_: {"error": "authorization_revoked"}
             )
 
-        def action(_operation, _payload):
-            return self.reveal(self.assets_root, lease.owner_user_id)
+        def action(operation, _payload):
+            if operation == OPEN_LIBRARY:
+                return self.reveal(self.assets_root, lease.owner_user_id)
+            return self.dependencies().model_dump(mode="json")
 
         return await asyncio.to_thread(self.receipts.execute, lease, action)
 

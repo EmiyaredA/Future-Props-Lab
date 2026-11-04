@@ -1,12 +1,17 @@
 """Exact local-library operation and private native admission settings."""
 
 import re
+from types import MappingProxyType
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 OPEN_PATH = "/v1/file-storage/open-folder"
 OPEN_LIBRARY = "tools.library.reveal"
-HOST_OPERATIONS = frozenset({OPEN_LIBRARY})
+PROBE_VIDEO = "tools.video.dependencies"
+VIDEO_DEPS_PATH = "/v1/tool-navigation/video-download/deps"
+HOST_OPERATIONS = MappingProxyType(
+    {OPEN_LIBRARY: ("POST", OPEN_PATH), PROBE_VIDEO: ("GET", VIDEO_DEPS_PATH)}
+)
 ERRORS = {
     "library_folder_missing": (409, "文件库文件夹不存在"),
     "folder_open_unavailable": (503, "无法启动系统文件管理器"),

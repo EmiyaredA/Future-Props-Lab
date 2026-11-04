@@ -259,3 +259,5 @@ Galgame 的新项目创建和公开 Story 保存需要同一私网中的 Identit
 本机文件库打开可额外加载 `deploy/tools-native.compose.yaml`。隔离环境为 Tools、Identity 与原生入口分别设置用途限定凭据，Gateway 的独立回环监听登记 Tools 原生通道。Mac worker 由 `uv run python -m fpl_host.tools_worker` 启动，使用明确指定的回环桥接地址、独占凭据文件、Assets 状态根目录和自有回执目录。容器只接收任务与回执。公网及 Management API Key 无权打开本机目录。
 
 隔离运行 `fpl-tools-native-245d307d35` 通过真实回环入口、签名账号会话和 Mac worker 逻辑完成目录请求。测试适配器记录了唯一的 Finder 启动参数，验证路径归属并拒绝浏览器访问原生入口。自动化用例另验证回执丢失后的恢复、过期未领取任务和公网管理员限制。
+
+隔离运行 `fpl-tools-dependencies-7fa491262d` 经真实回环通道读取固定视频工具的测试状态。API 单测核对了本机响应中的路径与公网响应中的路径隐藏。下载任务仍待接入执行、文件交付和入库回执。
