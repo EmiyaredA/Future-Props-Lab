@@ -51,7 +51,8 @@ def video_asset_grant(grant):
     if grant.source_method == "POST" and retry:
         return grant.target_path == f"{PREFIX}/{retry[1]}/files/{retry[2]}/descriptor"
     source = re.fullmatch(
-        rf"{SOURCE}/projects/({ID})/(timeline/operations|audio-seams/candidates)", grant.source_path
+        rf"{SOURCE}/projects/({ID})/(timeline/operations|audio-seams/candidates|clip-merges)",
+        grant.source_path,
     )
     return bool(
         grant.source_method == "POST"

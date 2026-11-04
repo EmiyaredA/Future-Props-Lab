@@ -1,6 +1,5 @@
 import asyncio
 import threading
-from fractions import Fraction
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -12,7 +11,7 @@ from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.media_rendering.render_engine import RenderCancelled, render_document
 from app.capabilities.media_rendering.timeline_document import parse_timeline_document
-from app.capabilities.media_rendering.video_derivatives import probe_media
+from app.capabilities.media_rendering.video_output import verify_clip_merge_output
 from app.runtime.ids import new_id
 from app.runtime.ownership import bind_owner
 from app.runtime.time import utc_now
@@ -77,27 +76,9 @@ async def process_clip_merge(
                 transparent=True,
             )
             await raise_if_cancelled(task_id)
-            probe = await asyncio.to_thread(probe_media, output)
-            video = next(
-                (item for item in probe["streams"] if item.get("codec_type") == "video"), {}
+            probe = await asyncio.to_thread(
+                verify_clip_merge_output, output, f"1080p{fps}", source["durationUs"]
             )
-            audio = next(
-                (item for item in probe["streams"] if item.get("codec_type") == "audio"), {}
-            )
-            if (
-                video.get("codec_name") != "prores"
-                or not str(video.get("pix_fmt", "")).startswith("yuva")
-                or video.get("width") != 1920
-                or video.get("height") != 1080
-                or abs(float(Fraction(video.get("avg_frame_rate") or "0")) - fps) > 0.001
-                or int(video.get("nb_frames") or 0)
-                != (source["durationUs"] * fps + 999_999) // 1_000_000
-                or abs(int(probe.get("durationUs") or 0) - source["durationUs"])
-                > round(1_000_000 / fps)
-                or audio.get("codec_name") != "aac"
-                or int(audio.get("sample_rate") or 0) != 48000
-            ):
-                raise RuntimeError("合并视频的画幅、帧数、透明通道、时长或音轨校验失败")
             # Prepare proxies before publishing metadata.
             probe, proxy, thumbnail, waveform, fingerprint = await asyncio.to_thread(
                 prepare_media,

@@ -10,7 +10,7 @@ from fpl_runtime.capability_client import CapabilityUnavailable
 from fpl_runtime.motion_preview import sha256
 from fpl_runtime.video_exports import EXPORTS, VideoExportReceipt, VideoExportRequest
 
-from .models import VideoRenderDispatch
+from .models import VideoMediaDispatch, VideoRenderDispatch
 
 RENDERING = "http://rendering:8080"
 ACTIVE = ("queued", "running")
@@ -149,11 +149,25 @@ class RenderDelivery(PollingTaskRunner):
                             project_id=binding.project_id,
                             processing_status="ready",
                             probe=receipt.probe,
+                            proxy_filename=receipt.variants.get("proxy"),
+                            thumbnail_filename=receipt.variants.get("thumbnail"),
+                            waveform_filename=receipt.variants.get("waveform"),
                             fingerprint=receipt.fingerprint,
                         )
                     )
                 elif metadata.project_id != binding.project_id:
                     raise ValueError("剪辑成片回执项目不符")
+                if task.kind == "clip_merge":
+                    if not receipt.variants.get("proxy") or not receipt.variants.get("thumbnail"):
+                        raise ValueError("合并视频派生回执缺失")
+                    session.add(
+                        VideoMediaDispatch(
+                            task_id=task.id,
+                            owner_user_id=binding.owner_user_id,
+                            project_id=binding.project_id,
+                            asset_id=asset.id,
+                        )
+                    )
                 task.output_asset_id = asset.id
                 task.result_detail = {
                     **task.result_detail,

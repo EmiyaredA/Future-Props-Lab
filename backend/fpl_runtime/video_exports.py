@@ -28,6 +28,7 @@ class VideoExportRequest(BaseModel):
     start_us: int = Field(ge=0, strict=True)
     end_us: int = Field(gt=0, strict=True)
     filename: str = Field(min_length=1, max_length=255)
+    transparent: bool = False
     files: tuple[ExportInput, ...] = Field(max_length=10000)
 
     @model_validator(mode="after")
@@ -40,7 +41,7 @@ class VideoExportRequest(BaseModel):
             or ids != sorted(set(ids))
             or Path(self.filename).name != self.filename
             or "\\" in self.filename
-            or not self.filename.endswith(".mp4")
+            or not self.filename.endswith(".mov" if self.transparent else ".mp4")
             or any(ord(char) < 32 for char in self.filename)
         ):
             raise ValueError("剪辑导出范围无效")
@@ -54,6 +55,9 @@ class VideoExportReceipt(BaseModel):
     probe: dict = Field(default_factory=dict)
     fingerprint: str | None = Field(default=None, pattern="^" + DIGEST + "$")
     output: VideoAsset | None = None
+    variants: dict[Literal["proxy", "thumbnail", "waveform"], str | None] = Field(
+        default_factory=dict
+    )
     error: str | None = None
 
     @model_validator(mode="after")
@@ -66,7 +70,7 @@ class VideoExportReceipt(BaseModel):
                 or self.progress != 100
             ):
                 raise ValueError("剪辑成片回执不完整")
-        elif self.output is not None or self.fingerprint is not None:
+        elif self.output is not None or self.fingerprint is not None or self.variants:
             raise ValueError("未完成任务不能提供成片")
         return self
 

@@ -53,6 +53,7 @@ async def submit(request: Request, task_id: str, project_id: str, digest: str):
         if (
             ids != {item.id for item in frozen.files}
             or frozen.preset not in RENDER_PRESETS
+            or (frozen.transparent and frozen.preset != f"1080p{document.settings.fps}")
             or frozen.end_us > timeline_duration_us(document)
         ):
             raise ValueError("invalid frozen scope")

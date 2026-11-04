@@ -17,6 +17,14 @@ from .storage import sync_directory, sync_files
 from .video_originals import download_original
 
 
+def media_folder(settings, owner, job_id):
+    account = settings.account_path(owner)
+    root = account / "video-media" / job_id
+    if root.is_symlink() or not root.resolve().is_relative_to(account):
+        raise ValueError("剪辑处理目录无效")
+    return root
+
+
 class VideoJobs(PollingTaskRunner):
     runner_name = "rendering-video-media"
     poll_interval_seconds = 1
@@ -30,11 +38,7 @@ class VideoJobs(PollingTaskRunner):
         return self.database.sessions(info={"owner_user_id": owner})
 
     def folder(self, owner, job_id):
-        account = self.settings.account_path(owner)
-        root = account / "video-media" / job_id
-        if root.is_symlink() or not root.resolve().is_relative_to(account):
-            raise ValueError("剪辑处理目录无效")
-        return root
+        return media_folder(self.settings, owner, job_id)
 
     async def load(self, owner, job_id):
         async with self.session(owner) as session:

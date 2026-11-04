@@ -48,3 +48,23 @@ def verify_video_output(path: Path, preset: str, expected_duration_us: int) -> d
     ):
         raise RuntimeError("成片帧数、帧率或时长校验失败")
     return probe
+
+
+def verify_clip_merge_output(path: Path, preset: str, expected_duration_us: int) -> dict:
+    probe = probe_media(path)
+    width, height, fps = RENDER_PRESETS[preset]
+    video = next((item for item in probe["streams"] if item.get("codec_type") == "video"), {})
+    audio = next((item for item in probe["streams"] if item.get("codec_type") == "audio"), {})
+    if (
+        video.get("codec_name") != "prores"
+        or not str(video.get("pix_fmt", "")).startswith("yuva")
+        or video.get("width") != width
+        or video.get("height") != height
+        or abs(_fraction(video.get("avg_frame_rate")) - fps) > 0.001
+        or int(video.get("nb_frames") or 0) != (expected_duration_us * fps + 999_999) // 1_000_000
+        or abs(int(probe.get("durationUs") or 0) - expected_duration_us) > round(1_000_000 / fps)
+        or audio.get("codec_name") != "aac"
+        or int(audio.get("sample_rate") or 0) != 48_000
+    ):
+        raise RuntimeError("合并视频的画幅、帧数、透明通道、时长或音轨校验失败")
+    return probe

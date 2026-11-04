@@ -1,6 +1,7 @@
 """Render Video movies and recover the publication of each sealed output once."""
 
 import asyncio
+from dataclasses import asdict
 from functools import partial
 from pathlib import Path
 from shutil import rmtree
@@ -14,7 +15,10 @@ from sqlalchemy import select, text, update
 
 from app.capabilities.media_rendering.render_engine import RenderCancelled, render_document
 from app.capabilities.media_rendering.timeline_document import parse_timeline_document
-from app.capabilities.media_rendering.video_output import verify_video_output
+from app.capabilities.media_rendering.video_output import (
+    verify_clip_merge_output,
+    verify_video_output,
+)
 from app.runtime.polling_runner import PollingTaskRunner
 from fpl_runtime.capability_client import CapabilityUnavailable
 from fpl_runtime.model_outputs import ModelOutputDescription
@@ -25,8 +29,9 @@ from fpl_runtime.video_exports import (
     VideoExportRequest,
 )
 
-from .models import VideoExportJob
+from .models import VideoExportJob, VideoMediaJob
 from .storage import sync_directory, sync_files
+from .video_export_variants import install_variants, seal_variants
 from .video_originals import download_original
 from .video_outputs import VideoOutputs
 
@@ -64,6 +69,7 @@ class VideoExports(PollingTaskRunner):
             probe=job.probe,
             fingerprint=job.sealed_output["content_sha256"] if published else None,
             output=job.result if published else None,
+            variants=job.sealed_output.get("variants", {}) if published else {},
             error=job.error,
         )
 
@@ -198,6 +204,7 @@ class VideoExports(PollingTaskRunner):
                     end_us=request.end_us,
                     cancel=stop,
                     progress=lambda value: loop.call_soon_threadsafe(report, value),
+                    transparent=request.transparent,
                 )
             )
         finally:
@@ -220,13 +227,23 @@ class VideoExports(PollingTaskRunner):
                 originals = staging / "inputs"
                 originals.mkdir()
                 sources = await self.inputs(job, request, originals)
-                output = staging / "movie.mp4"
+                ext, mime, verify = (
+                    ("mov", "video/quicktime", verify_clip_merge_output)
+                    if request.transparent
+                    else ("mp4", "video/mp4", verify_video_output)
+                )
+                output = staging / f"movie.{ext}"
                 await self.encode(job, request, document, sources, output)
                 probe = await run_sync(
-                    verify_video_output, output, request.preset, request.end_us - request.start_us
+                    verify, output, request.preset, request.end_us - request.start_us
                 )
                 descriptor = await run_sync(
-                    ModelOutputDescription.from_file, output, request.filename, "video/mp4"
+                    ModelOutputDescription.from_file, output, request.filename, mime
+                )
+                variants = (
+                    await seal_variants(job, folder, staging, output, probe)
+                    if request.transparent
+                    else {}
                 )
                 if not await self.authorized(job):
                     raise RenderCancelled("剪辑成片已取消")
@@ -234,19 +251,17 @@ class VideoExports(PollingTaskRunner):
                 if target.exists():
                     await run_sync(rmtree, target)
                 target.mkdir()
-                output.rename(target / "movie.mp4")
+                output.rename(target / output.name)
                 await run_sync(sync_files, target)
                 for parent in (folder, folder.parent, folder.parent.parent):
                     await run_sync(sync_directory, parent)
-                from dataclasses import asdict
-
                 if not await self.set_state(
                     job,
                     "running",
                     status="publishing",
                     progress=98,
                     probe=probe,
-                    sealed_output=asdict(descriptor),
+                    sealed_output={**asdict(descriptor), "variants": variants},
                 ):
                     raise RenderCancelled("剪辑成片已取消")
         except RenderCancelled:
@@ -261,7 +276,10 @@ class VideoExports(PollingTaskRunner):
 
     async def publish(self, job):
         folder = self.folder(job.owner_user_id, job.id)
-        descriptor = ModelOutputDescription(**job.sealed_output)
+        sealed = dict(job.sealed_output)
+        variants = sealed.pop("variants", {})
+        descriptor = ModelOutputDescription(**sealed)
+        ext = "mov" if descriptor.mime_type == "video/quicktime" else "mp4"
         request_id = UUID(job.id).hex
         try:
             response = await self.outputs.lookup(
@@ -277,7 +295,7 @@ class VideoExports(PollingTaskRunner):
                     job.project_id,
                     request_id,
                     descriptor,
-                    folder / "sealed" / "movie.mp4",
+                    folder / "sealed" / f"movie.{ext}",
                 )
             if response.status_code == 401:
                 await self.set_state(job, "publishing", status="cancelled", progress=0)
@@ -297,11 +315,31 @@ class VideoExports(PollingTaskRunner):
                 raise ValueError("剪辑成片回执不符")
         except (httpx.HTTPError, ValueError) as exc:
             raise CapabilityUnavailable("剪辑成片发布回执尚未确认") from exc
-        await self.set_state(
-            job,
-            "publishing",
-            status="completed",
-            progress=100,
-            result=result.model_dump(mode="json"),
-        )
+        if variants:
+            await install_variants(self.settings, job, folder, variants)
+        await self.complete(job, result, variants, descriptor.content_sha256)
         await run_sync(lambda: rmtree(folder, ignore_errors=True))
+
+    async def complete(self, job, result, variants, fingerprint):
+        async with self.session(job.owner_user_id) as session:
+            await session.execute(text("BEGIN IMMEDIATE"))
+            current = await session.get(VideoExportJob, (job.owner_user_id, job.id))
+            if current is None or current.status != "publishing":
+                return
+            if variants:
+                session.add(
+                    VideoMediaJob(
+                        id=job.id,
+                        owner_user_id=job.owner_user_id,
+                        project_id=job.project_id,
+                        asset_id=result.id,
+                        status="completed",
+                        probe=job.probe,
+                        fingerprint=fingerprint,
+                        outputs=variants,
+                    )
+                )
+            current.status = "completed"
+            current.progress = 100
+            current.result = result.model_dump(mode="json")
+            await session.commit()

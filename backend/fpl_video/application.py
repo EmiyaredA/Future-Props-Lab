@@ -52,6 +52,7 @@ from fpl_runtime.web import attach_web, load_release
 
 from .asset_intake import AssetIntakes
 from .audio_seam_routes import router as audio_seam_router
+from .clip_merge_routes import router as clip_merge_router
 from .frame_routes import router as frame_router
 from .handoff_routes import router as handoff_router
 from .media_delivery import MediaDelivery
@@ -111,6 +112,8 @@ OPERATIONS = {
     ("GET", PROJECT + "/segment-exports"),
     ("GET", PROJECT + "/segment-exports/{task_id}"),
     ("GET", PROJECT + "/clip-merges"),
+    ("POST", PROJECT + "/clip-merges"),
+    ("POST", PROJECT + "/clip-merges/{task_id}/cancel"),
     ("GET", PROJECT + "/clip-merges/{task_id}"),
     ("POST", PROJECT + "/timeline/operations"),
     ("GET", SOURCE + "/import-sources"),
@@ -285,6 +288,7 @@ def create_app(
         audio_seam_router,
         preflight_router,
         render_router,
+        clip_merge_router,
         snapshot_router,
         reveal_router,
     ):
