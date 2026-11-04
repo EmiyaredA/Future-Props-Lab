@@ -22,6 +22,7 @@ from .migrations import check
 from .request_limit import RequestLimit
 
 PREFIX = "/v1/migration"
+DEFAULT_MAXIMUM = 2 * 1024 * 1024
 
 
 class SourceSnapshot:
@@ -48,7 +49,7 @@ class SourceSnapshot:
             raise ValueError("迁移源数据库快照在导出期间发生变化")
 
 
-def maintenance_app(plan, lifespan):
+def maintenance_app(plan, lifespan, *, maximum=DEFAULT_MAXIMUM, streaming_prefix=None):
     admission = MigrationAdmission(plan)
     app = FastAPI(
         title="FPL migration maintenance",
@@ -57,7 +58,9 @@ def maintenance_app(plan, lifespan):
         openapi_url=None,
         lifespan=lifespan,
     )
-    app.add_middleware(RequestLimit, prefix=PREFIX, maximum=2 * 1024 * 1024)
+    app.add_middleware(
+        RequestLimit, prefix=PREFIX, maximum=maximum, streaming_prefix=streaming_prefix
+    )
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(OperationalError, storage_operational_error_handler)
 
@@ -80,7 +83,7 @@ def maintenance_app(plan, lifespan):
     return app
 
 
-def export_app(plan, path):
+def export_app(plan, path, **transport):
     source = SourceSnapshot(path, plan.source_database_sha256)
     engine = create_async_engine(
         URL.create(
@@ -100,10 +103,10 @@ def export_app(plan, path):
         finally:
             await engine.dispose()
 
-    return maintenance_app(plan, lifespan), sessions, source
+    return maintenance_app(plan, lifespan, **transport), sessions, source
 
 
-def import_app(plan, state_root, service, models, migrations, *, account_models=None):
+def import_app(plan, state_root, service, models, migrations, *, account_models=None, **transport):
     database = Database(
         service, state_root, models=models, account_models=account_models, hide_parameters=True
     )
@@ -117,7 +120,7 @@ def import_app(plan, state_root, service, models, migrations, *, account_models=
             finally:
                 await database.close()
 
-    return maintenance_app(plan, lifespan), database
+    return maintenance_app(plan, lifespan, **transport), database
 
 
 def mount_dataset(

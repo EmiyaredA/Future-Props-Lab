@@ -302,7 +302,22 @@ Identity 传输工具随后核验并迁移同一快照中 `profiles/` 下的账�
 
 先运行 `npm run services:build:web -- director`，把返回目录作为 `--web-release` 传给 `npm run services:build -- director --build`。叠加 `deploy/director.compose.yaml` 并配置 `FPL_DIRECTOR_IMAGE`、`FPL_DIRECTOR_STATE` 和 Identity 公钥。在隔离空卷上显式运行 `director migrate` 后启动。Director 自己持有项目、动作库、文件和编辑器会话。服务重启后，浏览器重新建立编辑会话。
 
-三容器验收 `fpl-director-browser-65f3dcb78d` 验证了 390px 项目列表、WebGL 编辑器深链接和初始化保存、旧程序版本写入拒绝、回环公网监听的匿名保护，以及 Director 容器重启后原文件读回。浏览器版本为 `c6ba2149dd0e285ed7bc`，镜像为 `fpl/director:f4c0e8bde89255b83a46`。历史导演台项目与文件仍待导入验收，服务保留正式就绪门禁。
+三容器验收 `fpl-director-browser-65f3dcb78d` 验证了 390px 项目列表、WebGL 编辑器深链接和初始化保存、旧程序版本写入拒绝、回环公网监听的匿名保护，以及 Director 容器重启后原文件读回。浏览器版本为 `c6ba2149dd0e285ed7bc`，镜像为 `fpl/director:f4c0e8bde89255b83a46`。导演台项目和动作文件已有隔离迁移验收，服务保留正式历史数据和整站就绪门禁。
+
+### Director 历史项目与文件
+
+复用已封存快照和 Identity 确认过的账号计划。项目文档、修订号、动作和历史时间戳经回环维护接口迁移。每条记录独立分页，单条请求超过 32 MiB 会停止迁移。文件按账号以及项目或动作库分区传输，单文件上限与导演台日常上传一致。SHA256 校验通过后原子发布，再持久记录回执。相同文件重放时核对磁盘字节。未登记账号、项目引用缺失、额外目标文件、摘要不符或仍待恢复的删除暂存都会阻止验收。
+
+```sh
+uv run python -m fpl_director migration-export --migration-plan "$plan" \
+  --legacy-db "$snapshot/future-props.db" --port 19567
+uv run python -m fpl_director migration-import --migration-plan "$plan" \
+  --state-root "$director_state" --port 19568
+uv run python -m scripts.website.migrate_director --plan "$plan" \
+  --source http://127.0.0.1:19567 --target http://127.0.0.1:19568
+```
+
+隔离快照演练从旧站 API 写入项目、动作和超过 2 MiB 的项目文件，验证损坏上传失败、原批次重放、源目标文件清单一致，并从回滚后的旧站读回项目修订号及两份原件。
 
 ### 主线云控与执行契约
 

@@ -4601,6 +4601,12 @@
       "model": "CreativeInstallOperation"
     },
     {
+      "table": "director_import_receipts",
+      "service": "director",
+      "module": "fpl_director.migration_receipts",
+      "model": "DirectorImportReceipt"
+    },
+    {
       "table": "galgame_certification_receipts",
       "service": "galgame",
       "module": "fpl_galgame.models",

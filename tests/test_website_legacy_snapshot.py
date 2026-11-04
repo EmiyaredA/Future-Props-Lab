@@ -16,6 +16,7 @@ import pytest
 from cryptography.fernet import Fernet
 from PIL import Image
 from scripts.website import legacy_snapshot
+from scripts.website.migrate_director import DIRECTOR_RECORDS, transfer_director_files
 from scripts.website.migrate_identity import CREDENTIALS
 from scripts.website.migrate_identity_avatars import transfer_avatars
 from scripts.website.migrate_remote_preferences import PREFERENCES
@@ -23,6 +24,8 @@ from scripts.website.migrate_tools_navigation import NAVIGATION
 from scripts.website.migration_transfer import transfer
 from tests.test_tools_navigation_migration import available_ports, listener
 
+from fpl_director.migration_files import FILES as DIRECTOR_FILES
+from fpl_director.migrations.registry import MIGRATIONS as DIRECTOR_MIGRATIONS
 from fpl_identity.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
 from fpl_remote.migrations.registry import MIGRATIONS as REMOTE_MIGRATIONS
 from fpl_runtime.migration_batches import MigrationPlan
@@ -103,6 +106,7 @@ def migrate_rehearsal(snapshot_db, parent, account):
         ("identity", IDENTITY_MIGRATIONS, CREDENTIALS),
         ("tools", TOOLS_MIGRATIONS, (NAVIGATION,)),
         ("remote", REMOTE_MIGRATIONS, (PREFERENCES,)),
+        ("director", DIRECTOR_MIGRATIONS, DIRECTOR_RECORDS),
     ):
         root = parent / f"independent-{service}"
         apply(root / "service.db", service, migrations)
@@ -136,6 +140,32 @@ def migrate_rehearsal(snapshot_db, parent, account):
             ]
             if service == "identity":
                 assert transfer_avatars(client, plan, source, destination)["record_count"] == 1
+            if service == "director":
+                assert [report["record_count"] for report in reports] == [1, 1]
+                headers = {"X-Fpl-Migration-Token": plan.token.get_secret_value()}
+                source_files = client.get(f"{source}{DIRECTOR_FILES}/{account}", headers=headers)
+                assert source_files.status_code == 200, source_files.text
+                assert len(source_files.json()) == 2
+                entry = source_files.json()[0]
+                file_path = f"{DIRECTOR_FILES}/{account}/{entry['scope']}/{entry['sha256']}"
+                invalid = client.put(destination + file_path, headers=headers, content=b"partial")
+                assert invalid.status_code == 422
+                target = client.get(f"{destination}{DIRECTOR_FILES}/{account}", headers=headers)
+                assert target.json() == []
+                files = transfer_director_files(client, plan, source, destination)
+                assert files["record_count"] == 2 and files["byte_count"] > 2 * 1024 * 1024
+                assert transfer_director_files(client, plan, source, destination) == files
+                # Account paths absent from the plan must be detected even without DB records.
+                orphan = (
+                    snapshot_db.parent / "accounts" / str(uuid4()) / "applications/director-desk"
+                )
+                orphan.mkdir(parents=True)
+                try:
+                    assert client.get(source + DIRECTOR_FILES, headers=headers).status_code == 409
+                finally:
+                    orphan.rmdir()
+                    orphan.parent.rmdir()
+                    orphan.parent.parent.rmdir()
 
 
 def test_stopped_site_reopens_from_verified_runtime_and_original_config(tmp_path):
@@ -202,6 +232,37 @@ def test_stopped_site_reopens_from_verified_runtime_and_original_config(tmp_path
         assert client.patch(tool, headers=safe, json={"is_favorite": True}).status_code == 200
         assert client.post(tool + "/use", headers=safe).status_code == 200
         state = client.get(TOOLS).json()
+        director = "/v1/director-desk"
+        created = client.post(
+            director + "/projects", headers=safe, json={"title": "Retained scene"}
+        )
+        assert created.status_code == 201, created.text
+        project = created.json()
+        scene_path = f"{director}/projects/{project['id']}"
+        scene_bytes = b"director migration" * 128000
+        project_file = client.post(
+            scene_path + "/files", headers=safe, files={"upload": ("scene.bin", scene_bytes)}
+        )
+        assert project_file.status_code == 200, project_file.text
+        scene_hash = project_file.json()["key"]
+        saved = client.patch(
+            scene_path,
+            headers=safe,
+            json={
+                "title": project["title"],
+                "document": {**project["document"], "resources": [{"file": scene_hash}]},
+                "expected_revision": 0,
+            },
+        )
+        assert saved.status_code == 200 and saved.json()["revision"] == 1
+        library = director + "/library/files"
+        library_bytes = b"retained motion"
+        upload = client.post(library, headers=safe, files={"upload": ("motion.bin", library_bytes)})
+        assert upload.status_code == 200, upload.text
+        motion_hash = upload.json()["key"]
+        motion_path = f"{director}/motions/user-motion:model-{motion_hash}:0"
+        motion = {"motion": {"name": "Retained motion"}, "resource": {"file": motion_hash}}
+        assert client.put(motion_path, headers=safe, json=motion).status_code == 200
         cookies = dict(client.cookies)
 
     proof = legacy_snapshot.create(runtime, config, snapshot, REVISION)
@@ -249,6 +310,10 @@ def test_stopped_site_reopens_from_verified_runtime_and_original_config(tmp_path
         assert (status["idle_minutes"], status["idle_revision"]) == (12, 1)
         response = restored.get(AVATAR)
         assert response.status_code == 200 and response.content == image
+        assert restored.get(scene_path).json() == saved.json()
+        assert restored.get(f"{scene_path}/files/{scene_hash}").content == scene_bytes
+        assert restored.get(motion_path).json() == motion
+        assert restored.get(f"{library}/{motion_hash}").content == library_bytes
 
     (snapshot / ".runtime/local-models/fixture/weights.bin").write_bytes(b"tampered")
     refused = tmp_path / "must-not-publish"

@@ -101,6 +101,8 @@ def operation_owner(path):
 
 
 def table_owner(module, table):
+    if module.startswith("fpl_director."):
+        return "director"
     if module.startswith("fpl_remote."):
         return "remote"
     if module.startswith("fpl_agent_runtime."):

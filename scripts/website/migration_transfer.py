@@ -20,6 +20,7 @@ class DatasetTransfer:
     page: type[MigrationPage]
     key_field: str
     platform: bool = False
+    page_size: int = MAX_RECORDS
 
 
 def loopback(value):
@@ -67,11 +68,12 @@ def pages(client, address, headers, plan, owner, dataset):
             or batch.owner_id != owner
             or batch.batch_id != uuid5(plan.run_id, f"{dataset.name}/{owner}/{cursor or ''}")
             or batch.digest != page.sha256
+            or len(keys) > dataset.page_size
             or keys != sorted(set(keys))
             or (keys and keys[0] <= (cursor or ""))
             or (
                 page.next_cursor is not None
-                and (len(keys) != MAX_RECORDS or page.next_cursor != keys[-1])
+                and (len(keys) != dataset.page_size or page.next_cursor != keys[-1])
             )
         ):
             raise ValueError("迁移页的来源、摘要或分页校验失败")
