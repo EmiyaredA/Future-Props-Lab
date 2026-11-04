@@ -1,11 +1,33 @@
 """Deliver durable archive outcomes after source commit and restart."""
 
-from sqlalchemy import select, update
+from uuid import uuid4
+
+from sqlalchemy import select, text, update
 
 from app.runtime.polling_runner import PollingTaskRunner
 from app.runtime.time import utc_now
 
 from .thought_archives import ArchiveBatchKey, ArchiveOutcome
+
+
+async def reserve_import(session, records, owner, digest):
+    await session.rollback()
+    await session.execute(text("BEGIN IMMEDIATE"))
+    row = await session.scalar(
+        select(records).where(
+            records.owner_user_id == owner,
+            records.source_sha256 == digest,
+            records.state.in_(("staging", "commit")),
+        )
+    )
+    if row is not None:
+        previous = row.batch_id, row.state
+        await session.rollback()
+        return previous
+    batch_id = uuid4().hex
+    session.add(records(owner_user_id=owner, batch_id=batch_id, source_sha256=digest))
+    await session.commit()
+    return batch_id, None
 
 
 class FileBatchDelivery(PollingTaskRunner):

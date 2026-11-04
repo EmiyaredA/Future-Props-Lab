@@ -26,7 +26,7 @@ from .library_outputs import OutputStream
 router = APIRouter(include_in_schema=False)
 
 
-def owner_for(request):
+def owner_for(request, *, permission="content.read"):
     if "origin" in request.headers or "cookie" in request.headers:
         raise HTTPException(403, "private_motion_assets_required")
     try:
@@ -39,7 +39,6 @@ def owner_for(request):
         )
     except (jwt.InvalidTokenError, ValueError, TypeError):
         raise HTTPException(401, "motion_assets_authorization_required") from None
-    permission = "content.write" if request.method == "POST" else "content.read"
     if actor.purpose != "studio" or permission not in effective_permissions(
         actor.platform_role, frozenset(actor.scopes)
     ):
@@ -98,7 +97,7 @@ async def write_file(
         raise HTTPException(404, "motion_file_write_not_found")
     if request.headers.get("content-encoding", "identity").lower() != "identity":
         raise HTTPException(422, "motion_file_encoding_forbidden")
-    owner = owner_for(request)
+    owner = owner_for(request, permission="content.write")
     state = request.app.state
 
     async def active():

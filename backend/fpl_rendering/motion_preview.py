@@ -16,11 +16,11 @@ from app.capabilities.media_rendering.motion_document import MotionComposition
 from app.capabilities.media_rendering.motion_frames import MotionFrameRenderer
 from fpl_runtime.capability_client import CapabilityUnavailable
 from fpl_runtime.claims import HEADER, verify_context
+from fpl_runtime.framed_media import SIZE, FramedInputs
 from fpl_runtime.motion_preview import (
     INPUTS,
     MAX_SCENE_BYTES,
     PREFIX,
-    SIZE,
     FrameRequest,
     active_media,
     preview_target,
@@ -30,40 +30,19 @@ from fpl_runtime.motion_preview import (
 router = APIRouter(include_in_schema=False)
 
 
-class FramedInputs:
-    def __init__(self, response):
-        self.chunks = response.aiter_bytes(chunk_size=1024 * 1024).__aiter__()
-        self.buffer = bytearray()
-        self.received = 0
-
-    async def read(self, size):
-        while len(self.buffer) < size:
-            chunk = await anext(self.chunks, b"")
-            if not chunk:
-                raise CapabilityUnavailable("渲染原件传输未完成")
-            self.buffer.extend(chunk)
-        data = bytes(self.buffer[:size])
-        del self.buffer[:size]
-        self.received += size
-        return data
-
-    async def unpack(self, root, scope, maximum):
-        paths = {}
-        for source in scope.files:
-            size = SIZE.unpack(await self.read(SIZE.size))[0]
-            if not 0 < size <= maximum:
-                raise HTTPException(413, {"code": "file_too_large", "message": "渲染原件超限"})
-            path = root / source.id
-            with path.open("xb") as file:
-                remaining = size
-                while remaining:
-                    chunk = await self.read(min(remaining, 1024 * 1024))
-                    await run_sync(file.write, chunk)
-                    remaining -= len(chunk)
-            paths[source.id] = path
-        if self.buffer or await anext(self.chunks, b""):
-            raise CapabilityUnavailable("渲染原件传输包含额外数据")
-        return paths
+async def unpack(response, root, scope, maximum, total):
+    framed = FramedInputs(response)
+    paths = {}
+    for source in scope.files:
+        size = SIZE.unpack(await framed.read(SIZE.size))[0]
+        if not 0 < size <= maximum:
+            raise HTTPException(413, {"code": "file_too_large", "message": "渲染原件超限"})
+        path = root / source.id
+        with path.open("xb") as file:
+            await framed.transfer(file, size)
+        paths[source.id] = path
+    await framed.require_end(total)
+    return paths
 
 
 async def authorized(request, assertion):
@@ -108,11 +87,7 @@ async def fetch_sources(request, project_id, scope, assertion, root):
             ):
                 raise ValueError("invalid frame source response")
             total = int(response.headers["Content-Length"])
-            framed = FramedInputs(response)
-            result = await framed.unpack(root, scope, state.settings.max_input_bytes)
-            if total != framed.received:
-                raise ValueError("invalid frame source length")
-            return result
+            return await unpack(response, root, scope, state.settings.max_input_bytes, total)
     except (httpx.HTTPError, ValueError, OSError, KeyError) as exc:
         raise CapabilityUnavailable("渲染原件暂不可用") from exc
 

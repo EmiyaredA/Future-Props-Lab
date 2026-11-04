@@ -13,14 +13,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.motion_compositor.projects import MotionInvalid, MotionProjects
 from app.apps.motion_compositor.schemas import OperationBatchIn, ProjectCreateIn, ProjectOut
+from app.apps.motion_compositor.snapshot_format import (
+    FORMAT,
+    MAX_ARCHIVE_BYTES,
+    archive_asset,
+    archive_manifest,
+)
 from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.motion_document import MotionComposition
 from app.runtime.config import get_settings
-
-MAX_ARCHIVE_BYTES = 1024 * 1024 * 1024
 
 
 class MotionSnapshots:
@@ -46,25 +50,11 @@ class MotionSnapshots:
             ).scalars()
         )
         target = Path(tempfile.gettempdir()) / f"motion-{uuid4().hex}.zip"
-        manifest = {
-            "format": "future-props-motion-project-v1",
-            "title": project.title,
-            "document": document.document.model_dump(mode="json", by_alias=True),
-            "assets": [],
-        }
+        entries = [archive_asset(asset) for asset in assets]
+        manifest = archive_manifest(project.title, document.document, entries)
         with zipfile.ZipFile(target, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-            for asset in assets:
-                suffix = Path(asset.original_filename).suffix.lower()
-                name = f"assets/{asset.id}{suffix}"
-                archive.write(self.storage.path_for(asset), name)
-                manifest["assets"].append(
-                    {
-                        "id": asset.id,
-                        "name": name,
-                        "filename": asset.original_filename,
-                        "mimeType": asset.mime_type,
-                    }
-                )
+            for asset, entry in zip(assets, entries, strict=True):
+                archive.write(self.storage.path_for(asset), entry["name"])
             archive.writestr("manifest.json", json.dumps(manifest, ensure_ascii=False))
         return target
 
@@ -84,7 +74,7 @@ class MotionSnapshots:
                 if "manifest.json" not in members or members["manifest.json"].file_size > 5_000_000:
                     raise MotionInvalid("工程包缺少有效清单")
                 manifest = json.loads(archive.read("manifest.json"))
-                if manifest.get("format") != "future-props-motion-project-v1":
+                if manifest.get("format") != FORMAT:
                     raise MotionInvalid("不支持此工程包版本")
                 entries = manifest.get("assets", [])
                 if not isinstance(entries, list) or len(entries) > 500:

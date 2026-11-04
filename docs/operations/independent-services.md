@@ -471,3 +471,5 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 精确帧由独立 Rendering 生成。Motion 提交固定修订的文稿和当前帧素材版本，Assets 核验同账号同项目后按固定顺序流式传输原件。Rendering 完成前再次核验账号权限。五容器隔离运行 `fpl-motion-preview-7ecfac220d` 验证 PNG 原件像素、MP4 取帧、旧修订拒绝及项目删除后的原件保护。
 
 运行 `npm run services:build:web -- motion`，将产物通过 `--web-release` 封装到特效工坊镜像。五容器 Chromium 验收 `fpl-motion-browser-604205eb1f` 使用浏览器版本 `536c7b557a235e5c145d`，验证 390/768/1440px、精确帧、编辑保存、回环公网入口及旧版本写入拒绝。工程包和导出任务仍由就绪门禁跟踪。
+
+特效工程包导入导出保留原 ZIP 清单。导出逐项核对文件版本和字节，生成后复查账号权限。导入由 `FPL_MOTION_ARCHIVE_KEY` 绑定 Motion 和 Assets 的专用归档通道。素材私有暂存，收到源决议才发布。Motion 在收到确认后一起写入项目、文稿和导入编辑回执。隔离运行 `fpl-motion-archive-e85ef214a3` 验证了 PNG、MP4 归档、文件 ID 重映射、原始和导入项目的精确帧逐字节相同，以及 Chromium 保存。

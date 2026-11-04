@@ -1,5 +1,7 @@
 """Standalone Motion keeps revisions, edit replay and file scope across restarts."""
 
+import json
+import zipfile
 from io import BytesIO
 from pathlib import Path
 from uuid import UUID
@@ -27,10 +29,13 @@ from fpl_rendering.settings import RenderingSettings
 from fpl_runtime.capability_client import CapabilityClient, CapabilityUnavailable
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
+from fpl_runtime.motion_snapshot import ARCHIVE_DOMAIN, IMPORT
+from fpl_runtime.thought_archives import ArchiveAuthenticator
 
 ROOT = Path(__file__).resolve().parents[1]
 TOKEN = "motion-identity-fixture-secret-unique"
 RENDERING_TOKEN = "motion-fixture-rendering-identity-secret"
+ARCHIVE_KEY = "motion-fixture-archive-peer-secret"
 
 
 async def test_motion_project_metadata_checks_exact_project_and_owner(
@@ -42,6 +47,7 @@ async def test_motion_project_metadata_checks_exact_project_and_owner(
     state = tmp_path / "motion"
     apply(state / "service.db", "motion", MIGRATIONS)
     case.identity.state.identity_options["service_credentials"]["motion"] = TOKEN
+    case.assets.state.motion_archive_auth = ArchiveAuthenticator(ARCHIVE_KEY, domain=ARCHIVE_DOMAIN)
 
     case.identity.state.identity_options["service_credentials"]["rendering"] = RENDERING_TOKEN
     rendering_root = tmp_path / "rendering"
@@ -72,6 +78,7 @@ async def test_motion_project_metadata_checks_exact_project_and_owner(
             catalog=CATALOG,
             public_key=case.key.public_key(),
             credential=TOKEN,
+            archive_key=ARCHIVE_KEY,
             schema_path=ROOT / "web/src/generated/openapi.json",
             transport=case.mesh,
             run_worker=False,
@@ -203,6 +210,18 @@ async def test_motion_project_metadata_checks_exact_project_and_owner(
             fault.setattr(rendering_identity, "status", revoke_during_render)
             revoked = await call(api, "GET", frame, params={"frame": 0, "revision": 1})
         assert revoked.status_code == 401
+        snapshot = await call(api, "GET", project + "/snapshot")
+        assert snapshot.status_code == 200, snapshot.text
+        with zipfile.ZipFile(BytesIO(snapshot.content)) as archive:
+            manifest = json.loads(archive.read("manifest.json"))
+            assert manifest["format"] == "future-props-motion-project-v1"
+            assert manifest["title"] == "Owned motion"
+            assert manifest["document"] == applied.json()["document"]
+            assert {entry["id"] for entry in manifest["assets"]} == {owned, copy_id}
+            for entry in manifest["assets"]:
+                assert archive.read(entry["name"]) == raw
+        assert list((state / ".snapshot-exports").iterdir()) == []
+        await verify_archive_import(api, call, first, case, snapshot.content, owned, monkeypatch)
         rename = await call(
             api, "PATCH", project, json={"title": "Renamed motion", "expectedRevision": 0}
         )
@@ -277,3 +296,50 @@ async def test_motion_project_metadata_checks_exact_project_and_owner(
         assert [item["id"] for item in candidates.json()["items"]] == [foreign]
         assert await case.assets.state.file_cleanup.run_once() == 2
         assert (await call(api, "GET", project)).status_code == 404
+
+
+async def verify_archive_import(api, call, app, case, payload, original, monkeypatch):
+    uploaded = {"file": ("motion-project.zip", payload, "application/zip")}
+    delivery = app.state.motion_import_delivery
+    settle = delivery.transport.settle
+
+    async def lost_archive_reply(outcome):
+        await settle(outcome)
+        raise CapabilityUnavailable("simulated Motion archive settlement loss")
+
+    with monkeypatch.context() as fault:
+        fault.setattr(delivery.transport, "settle", lost_archive_reply)
+        interrupted = await call(api, "POST", IMPORT, files=uploaded)
+    assert interrupted.status_code == 503, interrupted.text
+    assert len((await call(api, "GET", PROJECTS)).json()["items"]) == 1
+
+    repeated = await call(api, "POST", IMPORT, files=uploaded)
+    assert repeated.status_code == 200, repeated.text
+    result = repeated.json()
+    url = f"{PROJECTS}/{result['id']}"
+    opened = (await call(api, "GET", url + "/document")).json()
+    assert opened["revision"] == 1
+    assert opened["document"]["layers"][0]["assetId"] != original
+    copies = (await call(api, "GET", url + "/assets")).json()["items"]
+    assert len(copies) == 2
+    removed = await call(api, "DELETE", url, params={"expectedRevision": 0})
+    assert removed.status_code == 200, removed.text
+    await app.state.reference_delivery.process_once()
+    assert await case.assets.state.file_cleanup.run_once() == 2
+
+    tampered = BytesIO()
+    with (
+        zipfile.ZipFile(BytesIO(payload)) as source,
+        zipfile.ZipFile(tampered, "w") as invalid,
+    ):
+        manifest = json.loads(source.read("manifest.json"))
+        manifest["document"]["layers"][0]["assetId"] = "missing"
+        invalid.writestr("manifest.json", json.dumps(manifest))
+        for entry in manifest["assets"]:
+            invalid.writestr(entry["name"], source.read(entry["name"]))
+    refused = await call(
+        api, "POST", IMPORT, files={"file": ("broken.zip", tampered.getvalue(), "application/zip")}
+    )
+    assert refused.status_code == 422, refused.text
+    assert len((await call(api, "GET", PROJECTS)).json()["items"]) == 1
+    await delivery.process_once()

@@ -108,7 +108,7 @@ async def original(session, settings, owner, project_id, asset_id):
     return path, row.mime_type
 
 
-async def frame_files(session, settings, owner, project_id, requested):
+async def versioned_files(session, settings, owner, project_id, requested):
     rows = list(
         await session.scalars(
             project_query(owner, project_id)
@@ -126,3 +126,11 @@ async def frame_files(session, settings, owner, project_id, requested):
             raise AssetError("渲染原件已变化或缺失", code="source_changed", status=409)
         output.append((path, row.byte_size))
     return output
+
+
+async def snapshot_metadata(session, owner, project_id):
+    rows = list(await session.scalars(project_query(owner, project_id).order_by(VisualAsset.id)))
+    return [
+        MotionAsset(**{field: getattr(row, field) for field in MotionAsset.model_fields})
+        for row in rows
+    ]

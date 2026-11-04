@@ -1,7 +1,9 @@
 """Standalone Motion project and document operations."""
 
+import asyncio
 import json
 from contextlib import asynccontextmanager
+from shutil import rmtree
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
@@ -19,12 +21,15 @@ from app.problem_details import (
     validation_exception_handler,
 )
 from app.runtime.revisions import RevisionConflictError
+from fpl_runtime.archive_transport import ArchiveTransport
 from fpl_runtime.authentication import SignedIdentity
 from fpl_runtime.capability_client import CapabilityClient
 from fpl_runtime.database import Database
+from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.locking import service_lock
 from fpl_runtime.migrations import check
-from fpl_runtime.motion_assets import SOURCE
+from fpl_runtime.motion_assets import SOURCE, MotionAsset
+from fpl_runtime.motion_snapshot import ARCHIVE_DOMAIN, ARCHIVE_PREFIX, ARCHIVE_PURPOSE, IMPORT
 from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.reference_runtime import install_reference_runtime, reference_lifespan
 from fpl_runtime.routing import RouteCatalog
@@ -32,9 +37,11 @@ from fpl_runtime.web import attach_web, load_release
 
 from .file_routes import router as file_router
 from .migrations.registry import MIGRATIONS
-from .models import MotionReferenceMutation
+from .models import MotionImportBatch, MotionReferenceMutation
 from .preview_routes import router as preview_router
 from .resources import ProjectResources
+from .snapshot_imports import MotionImportDelivery, SnapshotImports
+from .snapshot_routes import router as snapshot_router
 
 SERVICE = "motion"
 WEB_ROOT = "/apps/motion-compositor"
@@ -54,6 +61,8 @@ OPERATIONS = {
     ("DELETE", PROJECT),
     ("GET", PROJECT + "/document"),
     ("GET", PROJECT + "/preview/frame"),
+    ("GET", PROJECT + "/snapshot"),
+    ("POST", IMPORT),
     ("GET", SOURCE + "/import-sources"),
     ("GET", PROJECT + "/assets"),
     ("POST", PROJECT + "/assets"),
@@ -73,25 +82,65 @@ def create_app(
     transport=None,
     run_worker=True,
     web_root=None,
+    archive_key=None,
 ):
     database = Database(
         SERVICE,
         state_root,
-        models=(MotionProject, MotionDocument, MotionOperationBatch, MotionReferenceMutation),
+        models=(
+            MotionProject,
+            MotionDocument,
+            MotionOperationBatch,
+            MotionReferenceMutation,
+            MotionImportBatch,
+        ),
     )
+    snapshot_staging = database.root / ".snapshot-exports"
+    identity = LiveAuthorization(service=SERVICE, credential=credential, transport=transport)
     capabilities = CapabilityClient(
         service=SERVICE, credential=credential, catalog=catalog, transport=transport
     )
+
+    archive = (
+        ArchiveTransport(
+            capabilities,
+            archive_key,
+            service=SERVICE,
+            purpose=ARCHIVE_PURPOSE,
+            source_path=IMPORT,
+            prefix=ARCHIVE_PREFIX,
+            domain=ARCHIVE_DOMAIN,
+            asset_model=MotionAsset,
+            exact_mime=False,
+        )
+        if archive_key is not None
+        else None
+    )
+    import_delivery = MotionImportDelivery(database.sessions, archive) if archive else None
 
     @asynccontextmanager
     async def lifespan(app):
         with service_lock(database.root):
             try:
                 check(database.path, SERVICE, MIGRATIONS)
+                if snapshot_staging.is_symlink():
+                    raise ValueError("特效工程包暂存目录不能是符号链接")
+                snapshot_staging.mkdir(exist_ok=True, mode=0o700)
+                for item in snapshot_staging.glob("motion-snapshot-*.zip"):
+                    if item.is_file() or item.is_symlink():
+                        item.unlink()
+                for item in snapshot_staging.glob("motion-import-*"):
+                    if item.is_dir() and not item.is_symlink():
+                        rmtree(item)
                 async with reference_lifespan(app):
+                    if import_delivery is not None and run_worker:
+                        await import_delivery.start()
                     yield
             finally:
+                if import_delivery is not None:
+                    await import_delivery.stop()
                 await capabilities.close()
+                await identity.close()
                 await database.close()
 
     app = FastAPI(
@@ -99,6 +148,13 @@ def create_app(
     )
     app.state.database = database
     app.state.motion_capabilities = capabilities
+    app.state.motion_identity = identity
+    app.state.snapshot_staging = snapshot_staging
+    app.state.snapshot_slots = asyncio.Semaphore(2)
+    app.state.motion_imports = (
+        SnapshotImports(archive, import_delivery, snapshot_staging) if archive else None
+    )
+    app.state.motion_import_delivery = import_delivery
     install_reference_runtime(
         app,
         service=SERVICE,
@@ -122,7 +178,7 @@ def create_app(
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(OperationalError, storage_operational_error_handler)
     app.add_exception_handler(RevisionConflictError, revision_conflict_handler)
-    for component in (router, file_router, preview_router):
+    for component in (router, file_router, preview_router, snapshot_router):
         app.include_router(
             component,
             prefix=SOURCE,

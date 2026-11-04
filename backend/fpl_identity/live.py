@@ -91,6 +91,7 @@ async def live(request: Request, body: LiveRequest):
     from fpl_runtime.external_sync import close_target, read_target
     from fpl_runtime.motion_assets import motion_asset_write_target
     from fpl_runtime.motion_preview import preview_target as motion_preview_target
+    from fpl_runtime.motion_snapshot import motion_archive_target
     from fpl_runtime.presentation_archives import archive_target as presentation_archive_target
     from fpl_runtime.thought_archives import archive_target
     from fpl_runtime.thought_uploads import is_upload_target
@@ -117,6 +118,7 @@ async def live(request: Request, body: LiveRequest):
         or archive_target(body.method, body.path)
         or presentation_archive_target(body.method, body.path)
         or motion_asset_write_target(body.method, body.path)
+        or motion_archive_target(body.method, body.path)
         or community_upload_target(body.method, body.path)
     )
     private_render = body.service == "rendering" and motion_preview_target(body.method, body.path)

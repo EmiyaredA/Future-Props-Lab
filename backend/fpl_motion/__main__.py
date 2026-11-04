@@ -27,6 +27,7 @@ def main():
     parser.add_argument("--schema", type=Path, default=Path("/app/deploy/contracts/openapi.json"))
     parser.add_argument("--web-root", type=Path, default=Path("/app/web"))
     parser.add_argument("--port", type=int, default=8080)
+    parser.add_argument("--archive-key", type=Path, default=Path("/run/fpl/motion-archive-key"))
     parser.add_argument("--identity-token", type=Path, default=Path("/run/fpl/identity-token"))
     options = parser.parse_args()
     if options.command == "migrate":
@@ -48,10 +49,18 @@ def main():
         parser.error("特效工坊上传暂存目录不能是符号链接")
     uploads.mkdir(parents=True, exist_ok=True, mode=0o700)
     os.environ["TMPDIR"] = str(uploads)
+    archive_key = None
+    if options.archive_key.is_file():
+        if options.archive_key.is_symlink() or options.archive_key.stat().st_mode & 0o077:
+            parser.error("特效归档对等凭据必须为受保护的普通文件")
+        archive_key = options.archive_key.read_text().strip()
+        if archive_key == credential:
+            parser.error("特效归档对等凭据必须独立")
     app = create_app(
         state_root=options.state_root,
         public_key=key,
         credential=credential,
+        archive_key=archive_key,
         catalog=RouteCatalog.read(options.catalog),
         schema_path=options.schema,
         web_root=None if (options.web_root / ".api-only").is_file() else options.web_root,

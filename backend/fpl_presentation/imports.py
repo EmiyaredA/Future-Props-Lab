@@ -1,9 +1,8 @@
 """Own presentation import decisions and materialize documents after Assets settlement."""
 
 import hashlib
-from uuid import uuid4
 
-from sqlalchemy import select, text, update
+from sqlalchemy import text, update
 
 from app.apps.presentation_workshop.asset_references import document_references, validate_assets
 from app.apps.presentation_workshop.exchange.transfers import remap_document
@@ -16,7 +15,7 @@ from app.apps.presentation_workshop.schemas.document import (
 from app.capabilities.asset_store.svg import normalize_svg
 from app.runtime.ids import new_id
 from app.runtime.time import utc_now
-from fpl_runtime.archive_delivery import FileBatchDelivery
+from fpl_runtime.archive_delivery import FileBatchDelivery, reserve_import
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
 from fpl_runtime.model_outputs import ModelOutputDescription
 from fpl_runtime.presentation_archives import PresentationManifest
@@ -51,28 +50,6 @@ class ImportDelivery(FileBatchDelivery):
             await session.commit()
 
 
-async def reserve(session, owner, digest):
-    await session.rollback()
-    await session.execute(text("BEGIN IMMEDIATE"))
-    row = await session.scalar(
-        select(PresentationImportBatch).where(
-            PresentationImportBatch.owner_user_id == owner,
-            PresentationImportBatch.source_sha256 == digest,
-            PresentationImportBatch.state.in_(("staging", "commit")),
-        )
-    )
-    if row is not None:
-        previous = row.batch_id, row.state
-        await session.rollback()
-        return previous
-    batch_id = uuid4().hex
-    session.add(
-        PresentationImportBatch(owner_user_id=owner, batch_id=batch_id, source_sha256=digest)
-    )
-    await session.commit()
-    return batch_id, None
-
-
 def payload(title, document, ids):
     return PresentationProjectIn(title=title, document=remap_document(document, ids))
 
@@ -87,7 +64,9 @@ class Imports:
         if self.archive is None:
             raise PresentationError("演示归档暂不可用", 503, "archive_unavailable")
         session, owner = projects.session, projects.owner_user_id
-        batch_id, previous = await reserve(session, owner, source_sha256)
+        batch_id, previous = await reserve_import(
+            session, PresentationImportBatch, owner, source_sha256
+        )
         if previous == "staging":
             raise PresentationError("同一文稿已在导入", 409, "archive_pending")
         if previous == "commit":

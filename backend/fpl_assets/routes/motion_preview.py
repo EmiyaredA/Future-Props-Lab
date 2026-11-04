@@ -7,9 +7,10 @@ from pydantic import ValidationError
 
 from app.capabilities.identity.permissions import effective_permissions
 from fpl_runtime.claims import HEADER, verify_context
-from fpl_runtime.motion_preview import INPUTS, MAX_SCOPE_BYTES, SIZE, FrameScope, preview_target
+from fpl_runtime.framed_media import content_length, stream_files
+from fpl_runtime.motion_preview import INPUTS, MAX_SCOPE_BYTES, FrameScope, preview_target
 
-from ..motion_files import frame_files
+from ..motion_files import versioned_files
 
 router = APIRouter(include_in_schema=False)
 
@@ -49,17 +50,12 @@ async def originals(request: Request, project_id: str, digest: str):
     if scope.digest != digest:
         raise HTTPException(403, "motion_preview_scope_mismatch")
     async with state.database.sessions(info={"owner_user_id": actor.user_id}) as session:
-        sources = await frame_files(session, state.settings, actor.user_id, project_id, scope.files)
-
-    def chunks():
-        for path, size in sources:
-            yield SIZE.pack(size)
-            with path.open("rb") as handle:
-                while chunk := handle.read(1024 * 1024):
-                    yield chunk
+        sources = await versioned_files(
+            session, state.settings, actor.user_id, project_id, scope.files
+        )
 
     return StreamingResponse(
-        chunks(),
+        stream_files(sources),
         media_type="application/octet-stream",
-        headers={"Content-Length": str(sum(SIZE.size + size for _, size in sources))},
+        headers={"Content-Length": str(content_length(sources))},
     )

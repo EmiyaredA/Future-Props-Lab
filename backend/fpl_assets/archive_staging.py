@@ -77,6 +77,9 @@ class ArchiveFileStaging:
         if (total or 0) + row.byte_size > self.batch_byte_limit:
             raise AssetError("归档素材总量超限", code="archive_media_too_large", status=413)
 
+    def placement(self, _key):
+        return {}
+
     async def stage_file(self, *, owner, key, ordinal, description, incoming, require_active):
         path = None
         committing = False
@@ -90,6 +93,7 @@ class ArchiveFileStaging:
                 await session.rollback()
                 if prior is not None:
                     return prior
+                placement = self.placement(key)
                 row = await AssetLibrary(session, self.settings).store_upload(
                     VerifiedOutput(
                         incoming,
@@ -99,6 +103,7 @@ class ArchiveFileStaging:
                     owner_user_id=owner,
                     allowed_extensions=self.allowed_extensions,
                     defer_persistence=True,
+                    **placement,
                 )
                 path = AssetStorage(self.settings).path_for(row)
                 row.id, row.revision = new_id(), 0
@@ -128,7 +133,10 @@ class ArchiveFileStaging:
                         asset_id=row.id,
                         descriptor_sha256=description.fingerprint,
                         metadata_snapshot={
-                            "asset": {name: getattr(row, name) for name in SNAPSHOT_FIELDS},
+                            "asset": {
+                                **{name: getattr(row, name) for name in SNAPSHOT_FIELDS},
+                                **placement,
+                            },
                             "result": result,
                         },
                     )

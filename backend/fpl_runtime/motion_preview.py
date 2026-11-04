@@ -2,7 +2,6 @@
 
 import hashlib
 import re
-from struct import Struct
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -12,7 +11,6 @@ from .motion_assets import SOURCE
 PREFIX = "/_internal/v1/motion-preview"
 INPUTS = "/_internal/v1/motion-preview-inputs"
 PURPOSE = "motion.preview.render"
-SIZE = Struct(">Q")
 MAX_SCENE_BYTES = 16 * 1024 * 1024
 MAX_SCOPE_BYTES = 48 * 1024
 DIGEST = r"[0-9a-f]{64}"
