@@ -4811,6 +4811,12 @@
       "model": "TemplateSyncAuthority"
     },
     {
+      "table": "model_annotation_transcription_attempts",
+      "service": "models",
+      "module": "fpl_models.models",
+      "model": "AnnotationTranscriptionAttempt"
+    },
+    {
       "table": "model_native_jobs",
       "service": "models",
       "module": "fpl_models.native_records",

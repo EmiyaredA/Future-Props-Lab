@@ -30,7 +30,8 @@ from fpl_runtime.web import attach_web, load_release
 
 from .migrations.registry import MIGRATIONS
 from .models import MODELS, AnnotationReferenceMutation
-from .sources import Inputs, ProjectReferences, transcription_unavailable
+from .sources import Inputs, ProjectReferences
+from .transcription import SegmentTranscription
 
 SERVICE = "annotation"
 PAGES = (
@@ -93,7 +94,7 @@ def create_app(
                 annotation_references=ProjectReferences(
                     connection, session, app.state.reference_mutations
                 ),
-                annotation_transcribe=transcription_unavailable,
+                annotation_transcribe=SegmentTranscription(connection, capabilities),
                 annotation_staging=staging,
             )
             yield session

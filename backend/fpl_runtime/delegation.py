@@ -4,6 +4,7 @@ import re
 from dataclasses import dataclass
 
 from .annotation_assets import audio_asset_grant
+from .annotation_transcription import segment_grant
 from .resource_routes import RESOURCE_ROUTES
 
 
@@ -117,6 +118,8 @@ def target_permission_path(grant):
         return "/v1/integrations/tool-apis"
     if stdio_grant(grant):
         return "/v1/integrations/mcp"
+    if segment_grant(grant):
+        return "/v1/model-inference/tasks"
     if writing_grant(grant):
         return writing_target(grant.target_method, grant.target_path)
     if community_upload_grant(grant):
@@ -153,7 +156,7 @@ def permitted(grant, catalog):
         return True
     if preview_grant(grant) or source_transfer_grant(grant) or stdio_grant(grant):
         return True
-    if writing_grant(grant) or read_grant(grant) or close_grant(grant):
+    if segment_grant(grant) or writing_grant(grant) or read_grant(grant) or close_grant(grant):
         return True
     if (
         asset_grant(grant)

@@ -180,8 +180,3 @@ class ProjectReferences:
 
     async def abort(self, session, prepared):
         await self.coordinator.abort_after_rollback(session, prepared)
-
-
-async def transcription_unavailable(_session, _project_id, *, upload, **_kwargs):
-    await upload.close()
-    raise AudioAnnotationError("片段识别暂不可用", code="transcription_unavailable", status=503)

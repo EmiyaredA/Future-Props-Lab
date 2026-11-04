@@ -54,6 +54,7 @@ from fpl_runtime.migrations import check
 
 from .account_events import CatalogProvisioningRunner
 from .admission import ModelAdmission, settle
+from .annotation_transcription import router as annotation_transcription_router
 from .audit_delivery import ModelAuditDelivery
 from .defaults import OwnedCatalogDefaults
 from .demo import DemoConfiguration, DemoServices
@@ -296,6 +297,7 @@ def create_app(
         app.include_router(source, prefix="/v1")
     app.include_router(integration_capacity_router)
     app.include_router(writing_router)
+    app.include_router(annotation_transcription_router)
     if (native_ingress_token is None) != (workers is None):
         raise ValueError("Models 原生通道需要同时配置入口和worker凭据")
     if native_ingress_token is not None:

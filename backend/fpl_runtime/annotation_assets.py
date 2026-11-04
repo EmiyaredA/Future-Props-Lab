@@ -4,6 +4,7 @@ import re
 
 from pydantic import Field
 
+from .annotation_transcription import SEGMENT
 from .library_assets import ID, LibraryAssetDescription, LibraryAssetQuery
 
 PREFIX = "/_internal/v1/annotation-assets"
@@ -12,7 +13,7 @@ PURPOSE = "annotation.audio-input.read"
 MAX_AUDIO_BYTES = 100 * 1024 * 1024
 MAX_IDS = 64
 _PROJECT = rf"{SOURCE}/projects/{ID}"
-_SEGMENT = rf"{_PROJECT}/segments/{ID}"
+_SEGMENT = rf"{_PROJECT}/segments/{SEGMENT}"
 PROJECT_CREATION = frozenset(
     {
         f"{SOURCE}/projects",

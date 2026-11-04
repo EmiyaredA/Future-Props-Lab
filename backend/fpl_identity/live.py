@@ -15,6 +15,7 @@ from app.capabilities.identity.permissions import (
 )
 from app.console.models.accounts import AuthSession, ManagementApiKey, User
 from app.runtime.time import utc_now
+from fpl_runtime.annotation_transcription import target as annotation_transcription_target
 from fpl_runtime.claims import verify_context
 from fpl_runtime.model_outputs import is_model_output_path
 from fpl_runtime.tools_video_library import is_library_path as is_tools_output_path
@@ -87,8 +88,9 @@ async def live(request: Request, body: LiveRequest):
     from fpl_runtime.thought_uploads import is_upload_target
     from fpl_runtime.writing import writing_target
 
-    private_writing = (
-        body.service == "models" and writing_target(body.method, body.path) is not None
+    private_writing = body.service == "models" and (
+        writing_target(body.method, body.path) is not None
+        or annotation_transcription_target(body.method, body.path) is not None
     )
     socket = (
         request.app.state.service_catalog.match_socket(body.path) if body.method == "GET" else None

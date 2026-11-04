@@ -115,7 +115,18 @@ class TemplateSyncAuthority(ModelsBase):
     audit_intent_id: Mapped[str] = mapped_column(String(36), default="")
 
 
+class AnnotationTranscriptionAttempt(ModelsBase):
+    __tablename__ = "model_annotation_transcription_attempts"
+    owner_user_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    attempt_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    result: Mapped[dict | None] = mapped_column(JSON)
+    error: Mapped[dict | None] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
 MODELS = (
+    AnnotationTranscriptionAttempt,
     *NATIVE_MODELS,
     DemoInstallation,
     IntegrationCapacity,
