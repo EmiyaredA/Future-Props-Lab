@@ -207,7 +207,7 @@ class ModelAdmission:
 
     async def attach(self, session, lease_id, kind, task_ids):
         """Attach inside the task creation transaction; immutable replay cannot change tasks."""
-        if kind not in TASK_MODELS:
+        if kind == "visual" or kind not in TASK_MODELS:
             raise ValueError("任务不属于 Models 服务")
         owner = session.info.get("owner_user_id")
         require_owner(session, owner)

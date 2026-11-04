@@ -16,6 +16,7 @@ from .versions.v0013 import SQL as SQL_0013
 from .versions.v0014 import SQL as SQL_0014
 from .versions.v0015 import SQL as SQL_0015
 from .versions.v0016 import SQL as SQL_0016
+from .versions.v0017 import SQL as SQL_0017
 
 MIGRATIONS = (
     Migration("0001_account_defaults", SQL_0001),
@@ -34,4 +35,5 @@ MIGRATIONS = (
     Migration("0014_models_import_receipts", SQL_0014),
     Migration("0015_policy_creation_timestamps", SQL_0015),
     Migration("0016_galgame_transcription_receipts", SQL_0016),
+    Migration("0017_visual_provider_dispatch", SQL_0017),
 )

@@ -5,6 +5,7 @@ import hashlib
 import io
 import json
 from types import SimpleNamespace
+from uuid import uuid4
 from zipfile import ZipFile
 
 import httpx
@@ -22,7 +23,9 @@ from app.apps.visual_workshop.models import (
     VisualAssistantMessageAsset,
 )
 from app.capabilities.asset_store.library import AssetLibrary
+from app.llm.generation_runtime import ImmediateGenerationResult
 from app.llm.models import ModelEntry, ModelProvider
+from app.llm.task_outcomes import SUBMISSION_INTERRUPTED_MESSAGE
 from fpl_agent_runtime.application import create_app as create_agent_runtime
 from fpl_agent_runtime.migrations.registry import MIGRATIONS as AGENT_RUNTIME_MIGRATIONS
 from fpl_assets.models import AssetReferencePin, AssetReferenceSet
@@ -33,6 +36,10 @@ from fpl_models.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
 from fpl_models.models import ACCOUNT_MODELS, MODELS
 from fpl_models.visual_catalog_http import router
 from fpl_models.visual_generation_http import router as visual_model_router
+from fpl_models.visual_generation_intake import VisualGenerationIntake
+from fpl_models.visual_generation_records import VisualProviderTask
+from fpl_models.visual_generation_results import VisualGenerationResults
+from fpl_models.visual_generation_runner import VisualGenerationRunner
 from fpl_runtime.agent_connections import (
     AcceptanceAgentCatalog,
     AcceptanceAgentStatus,
@@ -47,6 +54,7 @@ from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
 from fpl_runtime.motion_preview import FrameFile
 from fpl_runtime.thought_archives import ArchiveAuthenticator
+from fpl_runtime.timed_peer import TimedPeer
 from fpl_runtime.visual_acceptance_assets import PURPOSE as ACCEPTANCE_ASSETS_PURPOSE
 from fpl_runtime.visual_acceptance_assets import AcceptanceAssetQuery
 from fpl_runtime.visual_assistant import ASSET_PURPOSE, AttachmentQuery
@@ -61,7 +69,17 @@ from fpl_runtime.visual_catalog import (
 )
 from fpl_runtime.visual_generation import ASSET_PURPOSE as GENERATION_ASSETS_PURPOSE
 from fpl_runtime.visual_generation import MODEL_PURPOSE as GENERATION_MODEL_PURPOSE
-from fpl_runtime.visual_generation import GenerationAssetQuery, GenerationFileScope, ModelSelection
+from fpl_runtime.visual_generation import (
+    PEER_DOMAIN,
+    PLAN_PURPOSE,
+    GenerationAssetQuery,
+    GenerationAssets,
+    GenerationFileScope,
+    ModelSelection,
+    VisualModelChoice,
+    settlement_path,
+)
+from fpl_runtime.visual_generation_plan import GenerationPlan, TaskPlan
 from fpl_runtime.visual_snapshot import ARCHIVE_DOMAIN, ARCHIVE_PREFIX, SnapshotAssetQuery
 from fpl_runtime.visual_snapshot import ASSET_PURPOSE as SNAPSHOT_ASSET_PURPOSE
 
@@ -110,6 +128,7 @@ async def seed_catalog(database, owner, suffix):
 async def test_visual_catalog_delegates_exact_paths_and_excludes_other_accounts(
     scenario,  # noqa: F811
     tmp_path,
+    monkeypatch,
 ):
     case = scenario
     root = tmp_path / "visual"
@@ -128,7 +147,18 @@ async def test_visual_catalog_delegates_exact_paths_and_excludes_other_accounts(
     models.state.identity = LiveAuthorization(
         service="models", credential=credential, transport=case.mesh
     )
-    models.state.settings = SimpleNamespace(fpl_temp_media_upload_url="")
+    models.state.settings = SimpleNamespace(
+        fpl_temp_media_upload_url="", fpl_visual_asset_max_bytes=10**8
+    )
+    models.state.capabilities = CapabilityClient(
+        service="models", credential=credential, catalog=CATALOG, transport=case.mesh
+    )
+    models.state.visual_generation_peer = TimedPeer(
+        "isolated-visual-generation-peer-" * 2, domain=PEER_DOMAIN
+    )
+    models.state.visual_generation_intake = VisualGenerationIntake(models.state)
+    models.state.visual_generation_runner = VisualGenerationRunner(models.state)
+    models.state.visual_generation_results = VisualGenerationResults(models.state)
     models.include_router(router)
     models.include_router(visual_model_router)
     case.mesh.apps["models"] = models
@@ -177,7 +207,8 @@ async def test_visual_catalog_delegates_exact_paths_and_excludes_other_accounts(
         available = response.json()["models"]
         assert len(available) == 1 and available[0]["provider_name"] == "senseaudio_image-own"
         assert available[0]["max_prompt_length"] == 6000
-        await verify_model_choice(case, visual, http, available[0]["id"], database)
+        selection = await verify_model_choice(case, visual, http, available[0]["id"], database)
+        await verify_generation_plan(case, visual, http, models.state, selection, monkeypatch)
         path = "/v1/visual-workshop/projects/own/acceptance/models"
         response = await http.get(path, headers=await authorize(case, "visual", "GET", path))
         assert response.status_code == 200, response.text
@@ -249,6 +280,137 @@ async def verify_model_choice(case, visual, http, identity, database):
     assert (
         await query(identity, body=ModelSelection(model_id=foreign_id, kind="image"))
     ).status_code == 403
+
+    return VisualModelChoice.model_validate(own.json())
+
+
+async def verify_generation_plan(case, visual, http, models, choice, monkeypatch):
+    source = "/v1/visual-workshop/projects/own/generation-tasks"
+    original = (await authorize(case, "visual", "POST", source))[HEADER]
+    task_id, plan_id = uuid4(), uuid4()
+    body = GenerationPlan(
+        project_id="own",
+        plan_id=plan_id,
+        model=choice,
+        tasks=[
+            TaskPlan(
+                task_id=task_id,
+                arguments={
+                    "model_id": choice.model_id,
+                    "kind": "image",
+                    "prompt": "retained prompt",
+                },
+                explicit_fields=["model_id", "kind", "prompt"],
+                reference_titles={},
+                input_snapshot=[],
+            )
+        ],
+        assets=GenerationAssets(items=[], max_video_bytes=10**8),
+    )
+
+    async def prepare(plan):
+        token = await visual.state.capabilities.authorize_request(
+            original,
+            RequestGrant("visual", PLAN_PURPOSE, "POST", source, "models", "POST", plan.path),
+        )
+        return await http.post(
+            "http://models" + plan.path, headers={HEADER: token}, json=plan.model_dump(mode="json")
+        )
+
+    async def settle(plan, decision, *, signed=True):
+        path = settlement_path("own", str(plan.plan_id), plan.digest, decision)
+        headers = models.visual_generation_peer.headers("POST", path, case.viewer) if signed else {}
+        return await http.post("http://models" + path, headers=headers)
+
+    prepared = await prepare(body)
+    assert prepared.status_code == 200, prepared.text
+    assert prepared.json()["state"] == "prepared"
+    assert prepared.json()["payloads"][str(task_id)]["prompt"] == "retained prompt"
+    assert (await prepare(body)).json() == prepared.json()
+    assert (await settle(body, "activate", signed=False)).status_code == 401
+    async with models.database.sessions(info={"owner_user_id": case.viewer}) as session:
+        task = await session.get(VisualProviderTask, str(task_id))
+        assert task.status == "prepared" and task.provider_task_id is None
+    activated = await settle(body, "activate")
+    assert activated.status_code == 200 and activated.json()["state"] == "active"
+    assert (await settle(body, "activate")).json() == activated.json()
+    assert (await settle(body, "abort")).status_code == 409
+    async with models.database.sessions(info={"owner_user_id": case.viewer}) as session:
+        task = await session.get(VisualProviderTask, str(task_id))
+        assert task.status == "queued" and task.provider_task_id is None
+    cancelled = body.model_copy(update={"plan_id": uuid4()})
+    assert (await settle(cancelled, "abort")).json() == {"state": "aborted"}
+    assert (await prepare(cancelled)).status_code == 409
+    await verify_provider_result(case, http, models, body, task_id, monkeypatch)
+    unknown = body.model_copy(
+        update={
+            "plan_id": uuid4(),
+            "tasks": [body.tasks[0].model_copy(update={"task_id": uuid4()})],
+        }
+    )
+    assert (await prepare(unknown)).status_code == 200
+    assert (await settle(unknown, "activate")).status_code == 200
+    runner = models.visual_generation_runner
+    attempts = []
+
+    async def interrupt(_inputs, **_kwargs):
+        attempts.append("external call")
+        raise asyncio.CancelledError
+
+    monkeypatch.setattr("fpl_models.visual_generation_runner.submit_visual_generation", interrupt)
+    unknown_id = str(unknown.tasks[0].task_id)
+    with pytest.raises(asyncio.CancelledError):
+        await runner.driver.process(unknown_id)
+    await runner.recover()
+    await runner.driver.process(unknown_id)
+    assert attempts == ["external call"]
+    async with models.database.sessions(info={"owner_user_id": case.viewer}) as session:
+        task = await session.get(VisualProviderTask, unknown_id)
+        assert task.status == "failed" and task.error_message == SUBMISSION_INTERRUPTED_MESSAGE
+
+
+async def verify_provider_result(case, http, models, body, task_id, monkeypatch):
+    runner = models.visual_generation_runner
+    calls = []
+    original = b"isolated-provider-image-bytes"
+
+    async def submit(_inputs, **options):
+        calls.append(options["payload"]["prompt"])
+        return ImmediateGenerationResult("https://media.example.test/image")
+
+    async def materialize(**options):
+        options["target"].write_bytes(original)
+        return len(original), "image", "image/png", ".png"
+
+    monkeypatch.setattr(
+        "app.llm.generation_runtime.driver.decrypt_secret", lambda _value: "fixture"
+    )
+    monkeypatch.setattr("fpl_models.visual_generation_runner.submit_visual_generation", submit)
+    monkeypatch.setattr("fpl_models.visual_generation_runner.download_generated_media", materialize)
+    await runner.process_once()
+    await runner.process_once()
+    assert calls == ["retained prompt"]
+    path = body.path + "/tasks/" + str(task_id)
+    state = await http.get(
+        "http://models" + path,
+        headers=models.visual_generation_peer.headers("GET", path, case.viewer),
+    )
+    assert state.status_code == 200, state.text
+    assert state.json()["status"] == "completed"
+    file = state.json()["result"]
+    assert file["sha256"] == hashlib.sha256(original).hexdigest() and "key" not in file
+    content_path = path + "/result/" + file["sha256"]
+    result = await http.get(
+        "http://models" + content_path,
+        headers=models.visual_generation_peer.headers("GET", content_path, case.viewer),
+    )
+    assert result.status_code == 200 and result.content == original
+    assert (await http.get("http://models" + content_path)).status_code == 401
+    foreign = await http.get(
+        "http://models" + content_path,
+        headers=models.visual_generation_peer.headers("GET", content_path, case.owner),
+    )
+    assert foreign.status_code == 404
 
 
 async def verify_fixed_acceptance(case, visual, http, models, database, root):

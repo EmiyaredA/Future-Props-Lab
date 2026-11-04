@@ -5,7 +5,10 @@ import json
 
 from app.llm.models import ModelInferenceTask, ModelTestGenerationTask, ModelTestTranscriptionTask
 
+from .visual_generation_records import VisualProviderTask
+
 TASK_MODELS = {
+    "visual": VisualProviderTask,
     "inference": ModelInferenceTask,
     "model": ModelTestGenerationTask,
     "transcription": ModelTestTranscriptionTask,

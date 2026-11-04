@@ -52,6 +52,8 @@ from fpl_runtime.authentication import SignedIdentity
 from fpl_runtime.database import Database
 from fpl_runtime.migrations import check
 from fpl_runtime.request_limit import RequestLimit
+from fpl_runtime.timed_peer import TimedPeer
+from fpl_runtime.visual_generation import MAX_PLAN_BYTES, PEER_DOMAIN, PLANS
 from fpl_runtime.visual_generation import MODEL as VISUAL_GENERATION_MODEL
 from fpl_runtime.visual_snapshot import MAX_LAYOUT_BYTES, MODEL_RESOLVE
 from fpl_runtime.visual_snapshot import MAX_QUERY_BYTES as MAX_VISUAL_SNAPSHOT_QUERY_BYTES
@@ -87,6 +89,9 @@ from .template_sync import TemplateSynchronization
 from .templates import initialize_account_catalog
 from .visual_catalog_http import router as visual_catalog_router
 from .visual_generation_http import router as visual_generation_router
+from .visual_generation_intake import VisualGenerationIntake
+from .visual_generation_results import VisualGenerationResults
+from .visual_generation_runner import VisualGenerationRunner
 from .writing import router as writing_router
 
 
@@ -152,6 +157,7 @@ def create_app(
     version="development",
     web_root=None,
     run_tasks=True,
+    visual_generation_key=None,
 ):
     database = Database(
         "models", settings.runtime_path, models=MODELS, account_models=ACCOUNT_MODELS
@@ -259,6 +265,17 @@ def create_app(
     app.state.settings, app.state.database = settings, database
     app.state.identity_public_key, app.state.identity = public_key, identity
     app.state.capabilities = capabilities
+    app.state.visual_generation_peer = (
+        TimedPeer(visual_generation_key, domain=PEER_DOMAIN)
+        if visual_generation_key is not None
+        else None
+    )
+    app.state.visual_generation_intake = VisualGenerationIntake(app.state)
+    app.state.visual_generation_runner = VisualGenerationRunner(app.state)
+    app.state.visual_generation_results = VisualGenerationResults(app.state)
+    if visual_generation_key is not None:
+        supervisor = RunnerSupervisor((*supervisor.runners, app.state.visual_generation_runner))
+
     app.state.model_catalog_bindings = CatalogBindings(
         defaults=OwnedCatalogDefaults, task_usage=OwnedCatalogTaskUsage
     )
@@ -321,6 +338,7 @@ def create_app(
     app.include_router(visual_catalog_router)
     app.include_router(visual_generation_router)
     app.add_middleware(RequestLimit, prefix=VISUAL_GENERATION_MODEL, maximum=16 * 1024)
+    app.add_middleware(RequestLimit, prefix=PLANS, maximum=MAX_PLAN_BYTES)
     app.add_middleware(
         RequestLimit, prefix=VISUAL_SNAPSHOT_MODELS, maximum=MAX_VISUAL_SNAPSHOT_QUERY_BYTES
     )

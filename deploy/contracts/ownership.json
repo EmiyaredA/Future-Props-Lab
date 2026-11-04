@@ -5003,6 +5003,18 @@
       "model": "NativeModelObservation"
     },
     {
+      "table": "model_visual_provider_batches",
+      "service": "models",
+      "module": "fpl_models.visual_generation_records",
+      "model": "VisualProviderBatch"
+    },
+    {
+      "table": "model_visual_provider_tasks",
+      "service": "models",
+      "module": "fpl_models.visual_generation_records",
+      "model": "VisualProviderTask"
+    },
+    {
       "table": "motion_reference_mutations",
       "service": "motion",
       "module": "fpl_motion.models",

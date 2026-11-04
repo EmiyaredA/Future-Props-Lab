@@ -39,7 +39,7 @@ class ModelTaskAuthority:
         operation = self.catalog.match(method, path)
         if (
             not isinstance(actor, Actor)
-            or kind not in TASK_MODELS
+            or kind not in CREATION_PATHS
             or method != "POST"
             or operation is None
             or operation.service != "models"
@@ -121,7 +121,7 @@ class ModelTaskAuthority:
 
     async def prepare(self, kind, task_id):
         """Returns a short-lived local claim check; no network runs in its transaction."""
-        if kind not in TASK_MODELS:
+        if kind not in CREATION_PATHS:
             raise ValueError("任务不属于 Models 服务")
         async with self.sessions() as session:
             task = await load_runner_task(session, TASK_MODELS[kind], task_id, subject="模型任务")

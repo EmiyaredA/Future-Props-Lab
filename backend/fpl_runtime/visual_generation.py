@@ -101,3 +101,26 @@ def visual_generation_asset_grant(grant):
     source = generation_source(grant.source_method, grant.source_path)
     target = generation_asset_target(grant.target_method, grant.target_path)
     return bool(source and target and source[1] == target[1])
+
+
+PLANS = "/_internal/v1/visual-generation/plans"
+PLAN_PURPOSE = "visual.generation-plan.prepare"
+MAX_PLAN_BYTES = 2 * 1024**2
+ORIGINALS_HEADER = "X-Fpl-Generation-Originals"
+PEER_DOMAIN = b"fpl-visual-model-generation-v1"
+
+
+def plan_target(method, path):
+    return method == "POST" and re.fullmatch(rf"{PLANS}/({ID})/({ID})/({DIGEST})", path)
+
+
+def visual_generation_plan_grant(grant):
+    if (grant.caller, grant.purpose, grant.target_service) != ("visual", PLAN_PURPOSE, "models"):
+        return False
+    source = generation_source(grant.source_method, grant.source_path)
+    target = plan_target(grant.target_method, grant.target_path)
+    return bool(source and target and source[1] == target[1])
+
+
+def settlement_path(project, identity, digest, decision):
+    return f"{PLANS}/{project}/{identity}/{digest}/{decision}"

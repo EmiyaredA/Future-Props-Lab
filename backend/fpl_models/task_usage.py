@@ -4,7 +4,10 @@ from sqlalchemy import select
 
 from app.llm.models import ModelInferenceTask, ModelTestGenerationTask, ModelTestTranscriptionTask
 
+from .visual_generation_records import VisualProviderTask
+
 TASKS = (
+    (VisualProviderTask, ("prepared", "queued", "submitting", "pending", "processing")),
     (ModelInferenceTask, ("queued", "submitting", "pending", "processing", "running")),
     (ModelTestGenerationTask, ("queued", "submitting", "pending", "processing")),
     (ModelTestTranscriptionTask, ("queued", "running")),

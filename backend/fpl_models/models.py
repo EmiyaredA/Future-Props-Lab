@@ -32,6 +32,7 @@ from .demo_install_records import DemoInstallation
 from .integration_records import IntegrationCapacity
 from .native_records import NATIVE_MODELS
 from .orm import ModelsBase
+from .visual_generation_records import VisualProviderBatch, VisualProviderTask
 
 
 class AccountDefaults(ModelsBase):
@@ -138,6 +139,8 @@ class GalgameTranscriptionAttempt(ModelsBase):
 
 
 MODELS = (
+    VisualProviderBatch,
+    VisualProviderTask,
     AnnotationTranscriptionAttempt,
     GalgameTranscriptionAttempt,
     *NATIVE_MODELS,

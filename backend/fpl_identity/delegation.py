@@ -39,6 +39,7 @@ from fpl_runtime.visual_composition import composition_grant
 from fpl_runtime.visual_generation import (
     visual_generation_asset_grant,
     visual_generation_model_grant,
+    visual_generation_plan_grant,
 )
 from fpl_runtime.visual_snapshot import archive_grant as visual_archive_grant
 from fpl_runtime.visual_snapshot import snapshot_grant as visual_snapshot_grant
@@ -152,6 +153,7 @@ async def authorize_delegation(app, body, credential):
                     asr_job_grant(grant)
                     or visual_generation_model_grant(grant)
                     or visual_generation_asset_grant(grant)
+                    or visual_generation_plan_grant(grant)
                 )
                 else route_permission(body.target_method, target_permission_path(grant))
             )
