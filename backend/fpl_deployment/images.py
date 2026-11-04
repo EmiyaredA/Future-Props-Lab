@@ -510,6 +510,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
         "director",
         "interview",
         "annotation",
+        "presentation",
         "agent-runtime",
     }:
         if web_release is None:
@@ -522,7 +523,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
             payloads["web/build.json"] = (release.root / "build.json").read_bytes()
             for name in release.files:
                 payloads["web/" + name] = (release.root / name).read_bytes()
-    elif service in PROJECT_OWNERS or service in {"remote", "presentation"}:
+    elif service in PROJECT_OWNERS or service == "remote":
         payloads["web/.api-only"] = b"No browser program in this API acceptance image.\n"
     hashes = {
         name: hashlib.sha256(content).hexdigest() for name, content in sorted(payloads.items())

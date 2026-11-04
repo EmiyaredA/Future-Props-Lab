@@ -27,6 +27,7 @@ if (
     "director",
     "interview",
     "annotation",
+    "presentation",
     "agent-runtime",
   ].includes(service)
 )

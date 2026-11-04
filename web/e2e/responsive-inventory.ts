@@ -130,6 +130,7 @@ export const staticPaths = [
   "/apps/visual-workshop/tasks",
   "/apps/galgame-workshop",
   "/apps/presentation-workshop",
+  "/apps/presentation-workshop/templates",
   "/apps/video-editor",
   "/apps/video-editor/tasks",
   "/apps/motion-compositor",

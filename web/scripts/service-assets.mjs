@@ -23,6 +23,15 @@ export const serviceAssets = {
     "brand/favicon.png",
     "brand/audio-annotation-mark.png",
   ],
+  presentation: [
+    "brand/brand-mark.png",
+    "brand/favicon.png",
+    "brand/presentation-workshop-mark.png",
+    "presentation-templates/report-background.png",
+    "presentation-templates/structured-template.png",
+    "presentation-templates/html-template.png",
+    "presentation-templates/visual-generation.png",
+  ],
   interview: [
     "brand/brand-mark.png",
     "brand/favicon.png",

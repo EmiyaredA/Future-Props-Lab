@@ -31,12 +31,20 @@ from fpl_runtime.presentation_assets import BUNDLE, LIBRARY, PROJECTS, SOURCE
 from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.reference_runtime import install_reference_runtime, reference_lifespan
 from fpl_runtime.routing import RouteCatalog
+from fpl_runtime.web import attach_web, load_release
 
 from .assets import ProjectAssets, ProjectReferences
 from .migrations.registry import MIGRATIONS
 from .models import MODELS, PresentationReferenceMutation
 
 SERVICE = "presentation"
+WEB_ROOT = "/apps/presentation-workshop"
+PAGES = tuple(
+    WEB_ROOT + suffix + trailing
+    for suffix in ("", "/templates", "/templates/{template_id}", "/projects/{project_id}")
+    for trailing in ("", "/")
+)
+
 PROJECT = PROJECTS + "/{project_id}"
 OPERATIONS = {
     ("GET", PROJECTS),
@@ -73,6 +81,7 @@ def create_app(
     public_key,
     credential,
     schema_path=None,
+    web_root=None,
     transport=None,
     run_worker=True,
 ):
@@ -166,9 +175,18 @@ def create_app(
             or {(item.method, item.path) for item in project_catalog.operations} != OPERATIONS
         ):
             raise ValueError("演示文稿项目路由归属不匹配")
-        expected = public_contract(json.loads(schema_path.read_text()), SERVICE, project_catalog)
+        published = json.loads(schema_path.read_text())
+        expected = public_contract(published, SERVICE, project_catalog)
         if public_contract(schema, SERVICE, project_catalog) != expected:
             raise ValueError("演示文稿项目 API 与发布契约不匹配")
+
+    if web_root is not None:
+        release = load_release(web_root, SERVICE)
+        if schema_path is None or release.api_sha256 != public_contract(
+            published, SERVICE, catalog
+        ):
+            raise ValueError("演示工坊浏览器版本与发布契约不匹配")
+        attach_web(app, release, pages=PAGES)
 
     @app.get("/health")
     async def health():

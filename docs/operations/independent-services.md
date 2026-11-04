@@ -445,3 +445,5 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 演示工坊还装配导出预览、JSON、原生文稿包和 PPTX。包含素材的导出通过专用签名读取固定版本，在独立状态目录暂存有界输入。测试核对原生文稿包中 SVG 的规范化原件、PPTX 页面和媒体、旧修订拒绝及暂存清理。
 
 四容器隔离验收 `fpl-presentation-export-f3a7f54fbf` 使用 `fpl/presentation:deec05c2517707b523ae`，经真实 Gateway 下载原生包和 PPTX，核对规范化 SVG 摘要及 PPTX 页面和媒体。
+
+运行 `npm run services:build:web -- presentation`，将产物通过 `--web-release` 封装到演示工坊镜像。列表、文稿画布、模板库、模板设计器和演示入口沿用原 URL。四容器隔离验收 `fpl-presentation-browser-0045ccb84e` 验证浏览器版本 `0cb23c1a148a6ca275e0`、390/768/1440px 布局、模板保存、旧浏览器版本拒绝及回环公网模板入口。
