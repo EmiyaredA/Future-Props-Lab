@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, model_validator
 
 from .library_assets import ID
 from .motion_preview import DIGEST
@@ -29,6 +29,7 @@ class VideoExportRequest(BaseModel):
     end_us: int = Field(gt=0, strict=True)
     filename: str = Field(min_length=1, max_length=255)
     transparent: bool = False
+    video_bake: bool = False
     files: tuple[ExportInput, ...] = Field(max_length=10000)
 
     @model_validator(mode="after")
@@ -38,6 +39,7 @@ class VideoExportRequest(BaseModel):
         ids = [item.id for item in self.files]
         if (
             self.end_us <= self.start_us
+            or (self.transparent and self.video_bake)
             or ids != sorted(set(ids))
             or Path(self.filename).name != self.filename
             or "\\" in self.filename
@@ -46,6 +48,29 @@ class VideoExportRequest(BaseModel):
         ):
             raise ValueError("剪辑导出范围无效")
         return self
+
+
+class VideoImageBakeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    filename: str = Field(min_length=5, max_length=255)
+    image_bake: dict
+    files: tuple[ExportInput] = Field(min_length=1, max_length=1)
+
+    @model_validator(mode="after")
+    def validate_filename(self):
+        from pathlib import Path
+
+        if (
+            Path(self.filename).name != self.filename
+            or "\\" in self.filename
+            or not self.filename.endswith(".png")
+            or any(ord(char) < 32 for char in self.filename)
+        ):
+            raise ValueError("剪辑烘焙文件名无效")
+        return self
+
+
+VIDEO_WORK = TypeAdapter(VideoExportRequest | VideoImageBakeRequest)
 
 
 class VideoExportReceipt(BaseModel):

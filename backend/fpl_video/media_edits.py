@@ -23,7 +23,6 @@ from app.runtime.time import utc_now
 from fpl_runtime.asset_references import PrepareReferenceChange, VideoFileRemoval, VideoFileRename
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
 from fpl_runtime.project_errors import ProjectResourceError
-from fpl_runtime.video_assets import PREFIX, VideoAsset
 
 from .media_reads import MediaReads
 
@@ -72,15 +71,7 @@ class MediaEdits:
     async def patch(self, project, asset, body):
         await VideoEditorProjects(self.session, self.owner).row(project)
         await self.session.rollback()
-        descriptor = await MediaReads(self.request, self.session, self.owner).read(
-            f"{PREFIX}/{project}/files/{asset}/descriptor"
-        )
-        try:
-            original = VideoAsset.model_validate(descriptor)
-            if original.id != asset:
-                raise ValueError("剪辑原件标识不匹配")
-        except ValueError:
-            raise VideoEditorUnavailableError("剪辑原件描述暂不可用") from None
+        original = await MediaReads(self.request, self.session, self.owner).original(project, asset)
         if (
             body.default_effects is not None
             and original.media_kind not in {"video", "image"}

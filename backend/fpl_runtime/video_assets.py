@@ -47,6 +47,9 @@ def video_asset_grant(grant):
     patch = re.fullmatch(rf"{SOURCE}/projects/({ID})/assets/({ID})", grant.source_path)
     if grant.source_method == "PATCH" and patch:
         return grant.target_path == f"{PREFIX}/{patch[1]}/files/{patch[2]}/descriptor"
+    bake = re.fullmatch(rf"{SOURCE}/projects/({ID})/assets/({ID})/bakes", grant.source_path)
+    if grant.source_method == "POST" and bake:
+        return grant.target_path == f"{PREFIX}/{bake[1]}/files/{bake[2]}/descriptor"
     retry = re.fullmatch(rf"{SOURCE}/projects/({ID})/assets/({ID})/proxy/retry", grant.source_path)
     if grant.source_method == "POST" and retry:
         return grant.target_path == f"{PREFIX}/{retry[1]}/files/{retry[2]}/descriptor"

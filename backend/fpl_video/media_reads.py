@@ -38,6 +38,16 @@ class MediaReads:
         except (CapabilityDenied, CapabilityUnavailable, httpx.HTTPError, ValueError):
             raise VideoEditorUnavailableError("剪辑素材暂不可用") from None
 
+    async def original(self, project, asset):
+        descriptor = await self.read(f"{PREFIX}/{project}/files/{asset}/descriptor")
+        try:
+            original = VideoAsset.model_validate(descriptor)
+            if original.id != asset:
+                raise ValueError("剪辑原件标识不匹配")
+            return original
+        except ValueError:
+            raise VideoEditorUnavailableError("剪辑原件描述暂不可用") from None
+
     async def available(self):
         await self.session.rollback()
         result = await self.read(PREFIX + "/sources")

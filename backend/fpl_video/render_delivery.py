@@ -3,12 +3,13 @@
 import httpx
 from sqlalchemy import select, text, update
 
+from app.apps.video_editor.bake_organization import insert_baked_asset_in_organization
 from app.apps.video_editor.models import VideoEditorAssetMetadata, VideoEditorTask
 from app.runtime.polling_runner import PollingTaskRunner
 from app.runtime.time import utc_now
 from fpl_runtime.capability_client import CapabilityUnavailable
 from fpl_runtime.motion_preview import sha256
-from fpl_runtime.video_exports import EXPORTS, VideoExportReceipt, VideoExportRequest
+from fpl_runtime.video_exports import EXPORTS, VIDEO_WORK, VideoExportReceipt
 
 from .models import VideoMediaDispatch, VideoRenderDispatch
 
@@ -95,9 +96,7 @@ class RenderDelivery(PollingTaskRunner):
                 if response.status_code == 404:
                     if not await self.claim_submission(binding):
                         return
-                    raw = (
-                        VideoExportRequest.model_validate(binding.frozen).model_dump_json().encode()
-                    )
+                    raw = VIDEO_WORK.validate_python(binding.frozen).model_dump_json().encode()
                     response = await self.send(
                         "POST", f"{path}/{binding.project_id}/{sha256(raw)}", owner, body=raw
                     )
@@ -174,4 +173,20 @@ class RenderDelivery(PollingTaskRunner):
                     "probe": receipt.probe,
                     "outputFilename": asset.original_filename,
                 }
+                if task.kind == "asset_bake":
+                    source_id = task.request_payload["assetId"]
+                    source = await session.get(VideoEditorAssetMetadata, source_id)
+                    if source is not None and source.project_id == task.project_id:
+                        await insert_baked_asset_in_organization(
+                            session,
+                            project_id=task.project_id,
+                            source_asset_id=source_id,
+                            output_asset_id=asset.id,
+                        )
+                    task.result_detail = {
+                        "sourceAssetId": source_id,
+                        "outputFilename": asset.original_filename,
+                        "probe": receipt.probe,
+                        "effects": task.request_payload["effects"],
+                    }
             await session.commit()

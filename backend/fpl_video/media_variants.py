@@ -3,12 +3,11 @@
 from sqlalchemy import select, text
 
 from app.apps.video_editor.asset_output import asset_output
-from app.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorUnavailableError
+from app.apps.video_editor.errors import VideoEditorNotFoundError
 from app.apps.video_editor.models import VideoEditorAssetMetadata, VideoEditorTask
 from app.apps.video_editor.projects import VideoEditorProjects
 from app.runtime.ids import new_id
 from app.runtime.time import utc_now
-from fpl_runtime.video_assets import PREFIX, VideoAsset
 from fpl_runtime.video_processing import VARIANTS
 
 from .media_delivery import ACTIVE
@@ -19,15 +18,7 @@ from .models import VideoMediaDispatch
 async def retry(request, session, owner, project, asset):
     await VideoEditorProjects(session, owner).row(project)
     await session.rollback()
-    descriptor = await MediaReads(request, session, owner).read(
-        f"{PREFIX}/{project}/files/{asset}/descriptor"
-    )
-    try:
-        original = VideoAsset.model_validate(descriptor)
-    except ValueError:
-        raise VideoEditorUnavailableError("原件描述暂不可用") from None
-    if original.id != asset:
-        raise VideoEditorUnavailableError("原件描述暂不可用")
+    original = await MediaReads(request, session, owner).original(project, asset)
     await session.execute(text("BEGIN IMMEDIATE"))
     metadata = await session.get(VideoEditorAssetMetadata, asset)
     if metadata is None or metadata.project_id != project:

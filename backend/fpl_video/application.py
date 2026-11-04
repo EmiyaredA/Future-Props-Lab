@@ -52,6 +52,7 @@ from fpl_runtime.web import attach_web, load_release
 
 from .asset_intake import AssetIntakes
 from .audio_seam_routes import router as audio_seam_router
+from .bake_routes import router as bake_router
 from .clip_merge_routes import router as clip_merge_router
 from .frame_routes import router as frame_router
 from .handoff_routes import router as handoff_router
@@ -103,6 +104,7 @@ OPERATIONS = {
     ("GET", PROJECT + "/preview/frame"),
     ("GET", PROJECT + "/text-clips/{clip_id}/layer"),
     ("GET", PROJECT + "/asset-bakes/{task_id}"),
+    ("POST", PROJECT + "/assets/{asset_id}/bakes"),
     ("GET", PROJECT + "/renders"),
     ("POST", PROJECT + "/renders/preflight"),
     ("POST", PROJECT + "/renders"),
@@ -289,6 +291,7 @@ def create_app(
         preflight_router,
         render_router,
         clip_merge_router,
+        bake_router,
         snapshot_router,
         reveal_router,
     ):

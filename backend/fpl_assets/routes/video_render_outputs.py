@@ -58,7 +58,7 @@ async def output(request: Request, project_id: str, request_id: str, digest: str
             if (
                 descriptor.fingerprint != digest
                 or (descriptor.mime_type, descriptor.filename.rsplit(".", 1)[-1])
-                not in {("video/mp4", "mp4"), ("video/quicktime", "mov")}
+                not in {("video/mp4", "mp4"), ("video/quicktime", "mov"), ("image/png", "png")}
                 or descriptor.byte_size != length
             ):
                 raise ValueError("video output descriptor changed")

@@ -507,3 +507,5 @@ Motion 的 MP4 与 ProRes 4444 可交接到同账号的现有或新建剪辑项�
 剪辑素材删除和已结束成片删除复用持久 Assets 结算。删除前核验时间轴引用和任务版本，成片按原发布回执绑定文件。五容器 Chromium 运行 `fpl-video-removal-c29c913081` 验证真实编码成片、任务和文件删除、旧版本拒绝及删除后派生文件不可访问。隔离测试验证删除与时间轴保存并发时不会提交失效素材引用。
 
 剪辑片段合并使用已有 Video 与 Rendering 凭据及原件摘要链路。Rendering 校验 ProRes 4444 帧数、音轨和透明通道，派生代理与成片回执一起确认。五容器 Chromium 运行 `fpl-video-clip-merges-50d0cb484a` 验证真实编码、代理读取、同请求复用、应用合并、撤销和取消。
+
+独立素材烘焙支持透明 PNG 与 1080p MP4，沿用 Video 到 Rendering 的持久任务与 Assets 原件发布凭据。五容器 Chromium 运行 `fpl-video-bake-a278ebf80c` 核对透明像素、视频规格、默认效果、重复提交、素材编排与双服务重启恢复。

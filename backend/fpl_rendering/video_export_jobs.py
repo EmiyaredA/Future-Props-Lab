@@ -13,8 +13,13 @@ import httpx
 from anyio.to_thread import run_sync
 from sqlalchemy import select, text, update
 
+from app.capabilities.media_rendering.chroma_key import bake_image
 from app.capabilities.media_rendering.render_engine import RenderCancelled, render_document
-from app.capabilities.media_rendering.timeline_document import parse_timeline_document
+from app.capabilities.media_rendering.timeline_document import (
+    VideoEditorChromaKey,
+    parse_timeline_document,
+)
+from app.capabilities.media_rendering.video_derivatives import probe_media
 from app.capabilities.media_rendering.video_output import (
     verify_clip_merge_output,
     verify_video_output,
@@ -25,8 +30,9 @@ from fpl_runtime.model_outputs import ModelOutputDescription
 from fpl_runtime.video_assets import VideoAsset
 from fpl_runtime.video_exports import (
     MAX_EXPORT_INPUT_BYTES,
+    VIDEO_WORK,
     VideoExportReceipt,
-    VideoExportRequest,
+    VideoImageBakeRequest,
 )
 
 from .models import VideoExportJob, VideoMediaJob
@@ -219,31 +225,18 @@ class VideoExports(PollingTaskRunner):
         try:
             if not await self.authorized(job):
                 raise RenderCancelled("剪辑成片已取消")
-            request = VideoExportRequest.model_validate(job.payload)
-            document = parse_timeline_document(request.document)
+            request = VIDEO_WORK.validate_python(job.payload)
             folder.mkdir(parents=True, exist_ok=True, mode=0o700)
             with TemporaryDirectory(dir=folder, prefix="encode-") as temporary:
                 staging = Path(temporary)
                 originals = staging / "inputs"
                 originals.mkdir()
                 sources = await self.inputs(job, request, originals)
-                ext, mime, verify = (
-                    ("mov", "video/quicktime", verify_clip_merge_output)
-                    if request.transparent
-                    else ("mp4", "video/mp4", verify_video_output)
-                )
-                output = staging / f"movie.{ext}"
-                await self.encode(job, request, document, sources, output)
-                probe = await run_sync(
-                    verify, output, request.preset, request.end_us - request.start_us
+                output, mime, probe, variants = await self.prepare_output(
+                    job, request, folder, staging, sources
                 )
                 descriptor = await run_sync(
                     ModelOutputDescription.from_file, output, request.filename, mime
-                )
-                variants = (
-                    await seal_variants(job, folder, staging, output, probe)
-                    if request.transparent
-                    else {}
                 )
                 if not await self.authorized(job):
                     raise RenderCancelled("剪辑成片已取消")
@@ -274,12 +267,34 @@ class VideoExports(PollingTaskRunner):
             await self.set_state(job, "running", status="failed", error="剪辑成片渲染失败")
             await run_sync(lambda: rmtree(folder, ignore_errors=True))
 
+    async def prepare_output(self, job, request, folder, staging, sources):
+        if isinstance(request, VideoImageBakeRequest):
+            output = staging / "movie.png"
+            chroma = VideoEditorChromaKey.model_validate(request.image_bake)
+            probe = await run_sync(bake_image, sources[request.files[0].id], output, chroma)
+            return output, "image/png", probe, {}
+        document = parse_timeline_document(request.document)
+        suffix, mime = (".mov", "video/quicktime") if request.transparent else (".mp4", "video/mp4")
+        output = staging / ("movie" + suffix)
+        await self.encode(job, request, document, sources, output)
+        verify = verify_clip_merge_output if request.transparent else verify_video_output
+        if request.video_bake:
+            probe = await run_sync(probe_media, output)
+        else:
+            probe = await run_sync(
+                verify, output, request.preset, request.end_us - request.start_us
+            )
+        variants = (
+            await seal_variants(job, folder, staging, output, probe) if request.transparent else {}
+        )
+        return output, mime, probe, variants
+
     async def publish(self, job):
         folder = self.folder(job.owner_user_id, job.id)
         sealed = dict(job.sealed_output)
         variants = sealed.pop("variants", {})
         descriptor = ModelOutputDescription(**sealed)
-        ext = "mov" if descriptor.mime_type == "video/quicktime" else "mp4"
+        suffix = Path(descriptor.filename).suffix
         request_id = UUID(job.id).hex
         try:
             response = await self.outputs.lookup(
@@ -295,7 +310,7 @@ class VideoExports(PollingTaskRunner):
                     job.project_id,
                     request_id,
                     descriptor,
-                    folder / "sealed" / f"movie.{ext}",
+                    folder / "sealed" / ("movie" + suffix),
                 )
             if response.status_code == 401:
                 await self.set_state(job, "publishing", status="cancelled", progress=0)
@@ -310,7 +325,7 @@ class VideoExports(PollingTaskRunner):
             if (
                 result.byte_size != descriptor.byte_size
                 or result.original_filename != descriptor.filename
-                or result.media_kind != "video"
+                or result.media_kind != descriptor.mime_type.split("/", 1)[0]
             ):
                 raise ValueError("剪辑成片回执不符")
         except (httpx.HTTPError, ValueError) as exc:

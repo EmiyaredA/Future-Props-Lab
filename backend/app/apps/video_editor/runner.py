@@ -9,7 +9,7 @@ from typing import Literal
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.apps.video_editor.asset_bakes import insert_baked_asset_in_organization
+from app.apps.video_editor.bake_organization import insert_baked_asset_in_organization
 from app.apps.video_editor.clip_merging.runner import process_clip_merge
 from app.apps.video_editor.models import (
     VideoEditorAssetMetadata,
@@ -22,9 +22,10 @@ from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from app.capabilities.media_rendering.chroma_key import apply_chroma_key
+from app.capabilities.media_rendering.chroma_key import bake_image
 from app.capabilities.media_rendering.render_engine import RenderCancelled, render_document
 from app.capabilities.media_rendering.timeline_document import VideoEditorChromaKey
+from app.capabilities.media_rendering.video_bake_document import bake_video_document
 from app.capabilities.media_rendering.video_derivatives import prepare_media, probe_media
 from app.capabilities.media_rendering.video_output import verify_video_output
 from app.runtime.config import Settings, get_settings
@@ -358,8 +359,6 @@ class VideoEditorRunner(PollingTaskRunner):
     async def _process_asset_bake(self, task_id: str) -> None:
         from uuid import uuid4
 
-        from PIL import Image
-
         async with self.session_factory() as session:
             task = await self._get(session, task_id)
             if task is None:
@@ -395,76 +394,15 @@ class VideoEditorRunner(PollingTaskRunner):
                     output = temp_root / "baked.png"
                     await self._set(task_id, progress=20)
 
-                    def bake_image() -> None:
-                        layer = Image.open(source).convert("RGBA")
-                        keyed = apply_chroma_key(layer, chroma)
-                        keyed.save(output, format="PNG")
-
-                    await asyncio.to_thread(bake_image)
+                    probe = await asyncio.to_thread(bake_image, source, output, chroma)
                     await self._raise_if_cancelled(task_id)
                     content_type = "image/png"
                     filename = f"{display_name}-baked-{task_id[:8]}.png"
                     extensions = {".png"}
-                    probe: dict = {
-                        "mediaKind": "image",
-                        "durationUs": 5_000_000,
-                        "streams": [{"codec_type": "video", "width": 0, "height": 0}],
-                    }
-                    with Image.open(output) as baked:
-                        probe["streams"][0]["width"] = baked.width
-                        probe["streams"][0]["height"] = baked.height
                 else:
                     output = temp_root / "baked.mp4"
-                    document = parse_timeline_document(
-                        {
-                            "settings": {
-                                "width": 1920,
-                                "height": 1080,
-                                "fps": 30,
-                                "backgroundColor": "#000000",
-                            },
-                            "tracks": [
-                                {
-                                    "id": "bake-visual",
-                                    "kind": "visual",
-                                    "name": "画面",
-                                    "order": 0,
-                                    "locked": False,
-                                    "hidden": False,
-                                    "muted": False,
-                                    "clips": [
-                                        {
-                                            "id": str(uuid4()),
-                                            "trackId": "bake-visual",
-                                            "kind": "video",
-                                            "name": display_name,
-                                            "timelineStartUs": 0,
-                                            "durationUs": max(1, duration_us),
-                                            "sourceInUs": 0,
-                                            "assetId": source_asset_id,
-                                            "fitMode": "contain",
-                                            "volume": 1,
-                                            "muted": True,
-                                            "chromaKey": chroma.model_dump(
-                                                mode="json", by_alias=True
-                                            ),
-                                            "transform": {
-                                                "x": 960,
-                                                "y": 540,
-                                                "scaleX": 1,
-                                                "scaleY": 1,
-                                                "rotation": 0,
-                                                "opacity": 1,
-                                                "anchor": "center",
-                                                "brightness": 1,
-                                            },
-                                            "keyframes": [],
-                                        }
-                                    ],
-                                }
-                            ],
-                            "assetOrganization": {"folders": [], "rootAssetIds": []},
-                        }
+                    document = bake_video_document(
+                        source_asset_id, display_name, duration_us, str(uuid4()), chroma
                     )
                     loop = asyncio.get_running_loop()
 

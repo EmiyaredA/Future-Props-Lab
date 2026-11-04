@@ -6,10 +6,18 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import ValidationError
 
 from app.capabilities.media_rendering.presets import RENDER_PRESETS
-from app.capabilities.media_rendering.timeline_document import parse_timeline_document
+from app.capabilities.media_rendering.timeline_document import (
+    VideoEditorChromaKey,
+    parse_timeline_document,
+)
 from app.capabilities.media_rendering.timeline_ranges import timeline_duration_us
 from fpl_runtime.motion_preview import sha256
-from fpl_runtime.video_exports import EXPORTS, MAX_EXPORT_REQUEST_BYTES, VideoExportRequest
+from fpl_runtime.video_exports import (
+    EXPORTS,
+    MAX_EXPORT_REQUEST_BYTES,
+    VIDEO_WORK,
+    VideoImageBakeRequest,
+)
 from fpl_runtime.video_processing import valid_id
 
 router = APIRouter(include_in_schema=False)
@@ -28,6 +36,34 @@ def peer_scope(request, task_id):
     return state.video_exports, owner
 
 
+def validate_scope(frozen):
+    if isinstance(frozen, VideoImageBakeRequest):
+        if not VideoEditorChromaKey.model_validate(frozen.image_bake).enabled:
+            raise ValueError("invalid image bake")
+        return
+    document = parse_timeline_document(frozen.document)
+    clips = [clip for track in document.tracks for clip in track.clips]
+    ids = {
+        identity for clip in clips for identity in (clip.asset_id, clip.font_asset_id) if identity
+    }
+    if (
+        ids != {item.id for item in frozen.files}
+        or frozen.preset not in RENDER_PRESETS
+        or (frozen.transparent and frozen.preset != f"1080p{document.settings.fps}")
+        or frozen.end_us > timeline_duration_us(document)
+    ):
+        raise ValueError("invalid frozen scope")
+    if frozen.video_bake and (
+        len(clips) != 1
+        or clips[0].kind != "video"
+        or clips[0].chroma_key is None
+        or not clips[0].chroma_key.enabled
+        or frozen.start_us != 0
+        or frozen.preset != "1080p30"
+    ):
+        raise ValueError("invalid video bake")
+
+
 @router.post(EXPORTS + "/{task_id}/{project_id}/{digest}")
 async def submit(request: Request, task_id: str, project_id: str, digest: str):
     jobs, owner = peer_scope(request, task_id)
@@ -41,22 +77,8 @@ async def submit(request: Request, task_id: str, project_id: str, digest: str):
     if sha256(raw) != digest:
         raise HTTPException(403, "video_export_document_changed")
     try:
-        frozen = VideoExportRequest.model_validate_json(bytes(raw))
-        document = parse_timeline_document(frozen.document)
-        ids = {
-            identity
-            for track in document.tracks
-            for clip in track.clips
-            for identity in (clip.asset_id, clip.font_asset_id)
-            if identity
-        }
-        if (
-            ids != {item.id for item in frozen.files}
-            or frozen.preset not in RENDER_PRESETS
-            or (frozen.transparent and frozen.preset != f"1080p{document.settings.fps}")
-            or frozen.end_us > timeline_duration_us(document)
-        ):
-            raise ValueError("invalid frozen scope")
+        frozen = VIDEO_WORK.validate_json(bytes(raw))
+        validate_scope(frozen)
     except (ValidationError, ValueError):
         raise HTTPException(422, "video_export_scope_invalid") from None
     try:
