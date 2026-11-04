@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 DESKTOP_SOCKET = "/v1/cloud-control/desktop/socket"
 DESKTOP_COOKIE = "fpl_desktop_ticket"
 AUTHORITY_PATH = "/_internal/v1/cloud-control/authority"
+TICKET_SECONDS = 30
 
 
 def desktop_ticket_digest(token):
@@ -58,3 +59,4 @@ class CloudAuthority(BaseModel):
     unlocked_until: int = Field(default=0, ge=0)
     desktop_configured: bool = False
     desktop_authorized: bool = False
+    factor_epoch: str | None = None

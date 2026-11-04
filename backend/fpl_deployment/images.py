@@ -8,13 +8,14 @@ from importlib.util import resolve_name
 from pathlib import Path
 
 PROJECT_OWNERS = frozenset({"visual", "galgame"})
-OWNED_HTTP_IMAGES = PROJECT_OWNERS | {"tools", "director", "agent-runtime"}
+OWNED_HTTP_IMAGES = PROJECT_OWNERS | {"tools", "director", "agent-runtime", "remote"}
 
 ENTRY_POINTS = {
     "visual": "fpl_visual.__main__",
     "galgame": "fpl_galgame.__main__",
     "tools": "fpl_tools.__main__",
     "director": "fpl_director.__main__",
+    "remote": "fpl_remote.__main__",
     "agent-runtime": "fpl_agent_runtime.__main__",
     "integrations": "fpl_integrations.__main__",
     "thought": "fpl_thought.__main__",
@@ -43,6 +44,7 @@ PROJECT_PACKAGES = (
     "fpl_galgame",
     "fpl_tools",
     "fpl_director",
+    "fpl_remote",
     "fpl_agent_runtime",
     "fpl_integrations",
     "fpl_creative",
@@ -304,6 +306,12 @@ def source_closure(root: Path, service):
             )
         ):
             raise ValueError(f"Agent Runtime 镜像包含越界依赖：{name}")
+        if service == "remote" and (
+            name in {"app.main", "app.api", "app.orm", "app.runtime.db"}
+            or name.startswith(("app.apps.", "app.console.models", "app.llm", "fpl_identity"))
+            or name in {"app.console.cloud_control.access", "app.console.cloud_control.desktop"}
+        ):
+            raise ValueError(f"Remote 镜像包含越界依赖：{name}")
         if service == "director" and (
             name in {"app.main", "app.api", "app.orm", "app.runtime.db"}
             or name.startswith(("app.console", "app.llm", "fpl_assets", "fpl_identity", "fpl_host"))
@@ -405,7 +413,15 @@ def prepare_image(root: Path, service: str, *, web_release=None):
     if service in {"identity", "gateway"}:
         manifest = "backend/app/console/governance/automation_operations.json"
         payloads[manifest] = (root / manifest).read_bytes()
-    if service in {"creative", "gateway", "thought", "tools", "director", "agent-runtime"}:
+    if service in {
+        "creative",
+        "gateway",
+        "thought",
+        "tools",
+        "director",
+        "agent-runtime",
+        "remote",
+    }:
         payloads["deploy/contracts/openapi.json"] = (
             root / "web/src/generated/openapi.json"
         ).read_bytes()
@@ -454,8 +470,8 @@ def prepare_image(root: Path, service: str, *, web_release=None):
             payloads["web/build.json"] = (release.root / "build.json").read_bytes()
             for name in release.files:
                 payloads["web/" + name] = (release.root / name).read_bytes()
-    elif service in PROJECT_OWNERS:
-        payloads["web/.api-only"] = b"Project owner API acceptance image.\n"
+    elif service in PROJECT_OWNERS or service == "remote":
+        payloads["web/.api-only"] = b"No browser program in this API acceptance image.\n"
     hashes = {
         name: hashlib.sha256(content).hexdigest() for name, content in sorted(payloads.items())
     }

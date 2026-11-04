@@ -1,12 +1,15 @@
 """Return only current cloud authority for a bound Remote or Workbench request."""
 
+import hashlib
 import secrets
 
 import jwt
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Response
+from sqlalchemy import select
 
 from app.capabilities.identity.principal import StudioPrincipal
 from app.console.cloud_control import access
+from app.console.cloud_control.models import CloudFactor
 from fpl_runtime.claims import verify_context
 from fpl_runtime.cloud_authority import (
     AUTHORITY_PATH,
@@ -21,7 +24,8 @@ router = APIRouter(include_in_schema=False)
 
 
 @router.post(AUTHORITY_PATH, response_model=CloudAuthority)
-async def cloud_authority(request: Request, body: CloudAuthorityQuery):
+async def cloud_authority(request: Request, response: Response, body: CloudAuthorityQuery):
+    response.headers["Cache-Control"] = "no-store"
     options = request.app.state.identity_options
     expected = options["service_credentials"].get(body.service)
     supplied = request.headers.get("Authorization", "")
@@ -64,10 +68,14 @@ async def cloud_authority(request: Request, body: CloudAuthorityQuery):
         if not await active_actor(db, actor):
             return CloudAuthority(active=False)
         enabled = access.allowed(principal, local=actor.local)
+        factor = await db.scalar(
+            select(CloudFactor.secret).where(CloudFactor.owner_user_id == actor.user_id)
+        )
         return CloudAuthority(
             active=True,
             enabled=enabled,
-            enrolled=await access.enrolled(db, actor.user_id) if enabled else False,
+            enrolled=enabled and bool(factor),
+            factor_epoch=hashlib.sha256(factor.encode()).hexdigest() if factor else None,
             unlocked_until=await access.unlock_expiry(db, principal, local=actor.local),
             desktop_configured=access.allowed(principal, local=actor.local, desktop=True),
             desktop_authorized=await access.desktop_authorized(db, principal, local=actor.local),

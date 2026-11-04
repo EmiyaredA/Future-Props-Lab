@@ -334,3 +334,11 @@ uv run python -m scripts.website.legacy_snapshot restore \
 ```
 
 隔离恢复以原配置为凭据来源，另建启动投影，仅调整隔离数据库路径和监听端口并关闭公网。使用旧站同一启动器读回登录态、账号、工具记录与头像原件。验证链路还将同一快照经回环维护接口导入 Identity 与 Tools，重复提交核对原回执，再从原快照启动旧站。正式演练还需覆盖其余数据集、已发布网页、跨服务关系、网关凭据与公网恢复。
+
+### Remote 桌面连接
+
+运行 `npm run services:build -- remote --build` 并加载 `deploy/remote.compose.yaml`，为 Remote 指定专用卷、Identity 公钥、服务凭据和只读传输配置。网关只把签名上下文转交 Remote。连接票据仅能使用一次，绑定账号、会话、可信入口与当前 TOTP 登记代。撤销会话或重设验证器会阻止旧连接继续传输。
+
+独立验收使用合成 Guacamole 对端及隔离账号。生产 Guacamole 与 Mac 屏幕共享配置、云控设置协调写入、历史桌面偏好与 TOTP 迁移仍在切换门禁中。
+
+四容器运行 `fpl-remote-protocol-95f841c9ca` 经真实 Gateway 建立桌面 WebSocket，验证了单次票据、注销后关流及 Remote 重启后偏好读回。镜像 `fpl/remote:09ba3729bd9555e58b81` 包含独立锁定的 WebSocket 依赖。Guacamole TCP 对端使用合成协议夹具。
