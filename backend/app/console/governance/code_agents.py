@@ -63,12 +63,12 @@ async def resolve_connection(agent_id, *, settings=None, probe=True):
     return path
 
 
-async def catalog(principal, *, can_enable=False):
+async def catalog(*, can_enable=False):
     settings = get_cloud_settings()
     connections = await asyncio.gather(
         *(inspect_connection(settings, identity) for identity in DEFINITIONS)
     )
-    if principal.platform_role != "admin":
+    if not can_enable:
         for item in connections:
             item["executable"] = ""
     return CatalogOut(items=[AgentOut(**item) for item in connections], can_enable=can_enable)

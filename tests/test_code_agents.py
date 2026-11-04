@@ -7,6 +7,7 @@ import sys
 from contextlib import aclosing
 from pathlib import Path
 
+import httpx
 import pytest
 from sqlalchemy import update
 
@@ -236,6 +237,42 @@ async def test_cli_defaults_for_active_accounts_and_preserves_owner_boundary():
                 session, user_id, user_id, "claude-code", "interview_preparation"
             )
             assert not await authorized(session, admin_id, user_id, "codex", "amadeus")
+
+
+@pytest.mark.usefixtures("configured")
+async def test_cli_host_paths_and_enable_require_local_admin(monkeypatch):
+    from app.console.routes import code_agents
+
+    admin, *_ = await client_account(admin=True)
+    regular, *_ = await client_account()
+    enabled = []
+
+    async def enable(agent_id):
+        enabled.append(agent_id)
+
+    async def local(scope, receive, send):
+        scope["state"] = {"website_local": True}
+        await app(scope, receive, send)
+
+    monkeypatch.setattr(code_agents, "enable_connection", enable)
+    async with aclosing(admin), aclosing(regular):
+        public_catalog = (await admin.get("/v1/code-agents")).json()
+        assert not public_catalog["can_enable"]
+        assert not any(item["executable"] for item in public_catalog["items"])
+        assert (await admin.post("/v1/code-agents/codex/enable")).status_code == 403
+        for client, can_enable in ((regular, False), (admin, True)):
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(local),
+                base_url="http://test",
+                headers=client.headers,
+                cookies=client.cookies,
+            ) as browser:
+                local_catalog = (await browser.get("/v1/code-agents")).json()
+                assert local_catalog["can_enable"] is can_enable
+                assert any(item["executable"] for item in local_catalog["items"]) is can_enable
+                response = await browser.post("/v1/code-agents/codex/enable")
+                assert response.status_code == (204 if can_enable else 403), response.text
+    assert enabled == ["codex"]
 
 
 @pytest.mark.asyncio

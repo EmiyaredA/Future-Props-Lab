@@ -25,3 +25,8 @@ The merged contracts identify each remaining deployment dependency. Remote's sco
 ## Verification
 
 Contract tests check ownership for the new HTTP operations, desktop WebSocket, tables and configuration fields. The compatibility tests exercise the account and listener permissions. Generated API, SDK and official Thought package reflect both branches.
+
+
+The Portal entry binds the account and both Workbench destinations to the updated cloud workspace. CLI enablement requires the trusted local listener, an administrator session and recent password verification. The catalog hides executable paths outside that lane.
+
+Agents owns the chat and turn schema, exact transcript routes and live reauthorized SSE. Interrupted turns become interrupted records on startup, with unknown approval results preserved. Chat creation, starting new turns and approval writes remain unavailable until the Mac execution port is connected. The Compose liveness probe checks process health while the service readiness endpoint reports the execution gate.

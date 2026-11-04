@@ -98,8 +98,14 @@ def test_retirement_preserves_populated_accounts_messages_and_log_snapshots(tmp_
             for table in preserved
         }
         history = connection.execute("SELECT * FROM schema_migrations ORDER BY rowid").fetchall()
-    assert apply_migrations(database) == (MIGRATIONS[-1].migration_id, True)
-    assert apply_migrations(database) == (MIGRATIONS[-1].migration_id, False)
+    retirement = MIGRATIONS[: RETIREMENT_INDEX + 1]
+    expected = retirement[-1].migration_id
+    with (
+        patch.object(runner, "MIGRATIONS", retirement),
+        patch.object(runner, "LATEST_MIGRATION_ID", expected),
+    ):
+        assert apply_migrations(database) == (expected, True)
+        assert apply_migrations(database) == (expected, False)
     with connect_database(database) as connection:
         assert tables_before - _tables(connection) == RETIRED
         assert _tables(connection) - tables_before == set()

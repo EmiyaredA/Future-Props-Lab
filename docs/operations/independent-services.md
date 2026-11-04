@@ -308,4 +308,4 @@ Identity 传输工具随后核验并迁移同一快照中 `profiles/` 下的账�
 
 主线 `5f16f360` 新增的云控浏览页面仍由 Portal 提供。TOTP 与解锁凭据归 Identity，桌面状态、连接和 WebSocket 归已登记的 Remote 能力，工作台聊天与执行归 Agents。编程智能体目录、检测和本机启用归 Agent Runtime。归属清单现在同时登记页面根和各 TOML 字段的所有者。旧 `/remote` 占位页已从清单撤去，保留正式 `/cloud-control` 入口。
 
-合并后的兼容应用继续执行云控权限、可信入口、密码重验和已配置的桌面或项目限制。独立 Remote 的一次性 WebSocket 凭据转交、Agents 执行、既有 TOTP 数据迁移与配置投影仍需接线和隔离验证。独立 Identity 已装配 TOTP 验证与自有 schema。独立网关继续移除业务上游请求中的浏览器 Cookie，桌面专用凭据须单独限定用途与目标。
+合并后的兼容应用继续执行云控权限、可信入口、密码重验和已配置的桌面或项目限制。独立 Remote 的一次性 WebSocket 凭据转交、Agents 执行、既有 TOTP 数据迁移与配置投影仍需接线和隔离验证。独立 Identity 已装配 TOTP 验证与自有 schema。Agents 已装配自有聊天记录、SSE 和重启恢复；新执行与审批写入仍由独立服务就绪门禁拦截。独立网关继续移除业务上游请求中的浏览器 Cookie，桌面专用凭据须单独限定用途与目标。

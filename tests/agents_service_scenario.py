@@ -16,6 +16,7 @@ from fpl_agents.supervisor import CollectionSupervisor
 from fpl_runtime.claims import Actor, issue_context
 from fpl_runtime.migrations import apply
 from fpl_runtime.native_protocol import NativeLease
+from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.routing import RouteCatalog
 
 assert "app.main" not in sys.modules and "app.orm" not in sys.modules
@@ -53,14 +54,19 @@ class Identity:
 
 
 identity = Identity()
+catalog = RouteCatalog.read(Path("deploy/contracts/ownership.json"))
 app = create_app(
     state_root=state,
-    catalog=RouteCatalog.read(Path("deploy/contracts/ownership.json")),
+    catalog=catalog,
     public_key=key.public_key(),
     identity=identity,
     native_ingress_token="private-native-ingress-" * 3,
     workers={"collector": "private-native-worker-" * 3},
     collect=False,
+)
+published = json.loads(Path("web/src/generated/openapi.json").read_text())
+assert public_contract(app.openapi(), "agents", catalog) == public_contract(
+    published, "agents", catalog
 )
 apply(state / "service.db", "agents", MIGRATIONS)
 native_headers = {
@@ -187,6 +193,18 @@ async def journey():
                 assert response.status_code == 200 and response.json()["applied"] is True, (
                     response.text
                 )
+            assert (await client.get("/ready")).status_code == 503
+            chats_path = "/v1/agent-workbench/chats"
+            assert (
+                await client.get(chats_path, headers=actor_headers("GET", chats_path))
+            ).json() == []
+            assert (
+                await client.post(
+                    chats_path,
+                    headers=actor_headers("POST", chats_path),
+                    json={"project_id": "isolated", "agent_id": "codex"},
+                )
+            ).status_code == 503
             sessions_path = "/v1/agent-workbench/sessions"
             response = await client.get(sessions_path, headers=actor_headers("GET", sessions_path))
             session_id = response.json()["items"][0]["id"]

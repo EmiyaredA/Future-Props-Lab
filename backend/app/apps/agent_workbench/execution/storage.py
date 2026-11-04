@@ -13,9 +13,27 @@ from app.runtime.ids import new_id
 
 from .models import WorkbenchChat, WorkbenchTurn
 from .project_files import project_for
-from .schemas import AgentChoice, ChatDetail, ChatOut, ExecutionCatalog, ProjectChoice, TurnOut
-
-ACTIVE = ("running", "waiting_approval", "cancelling")
+from .schemas import AgentChoice, ChatOut, ExecutionCatalog, ProjectChoice, TurnOut
+from .transcripts import (
+    ACTIVE,
+    get_chat,
+    get_turn,
+)
+from .transcripts import (
+    detail as detail,
+)
+from .transcripts import (
+    end_turn as end_turn,
+)
+from .transcripts import (
+    interrupt_all as interrupt_all,
+)
+from .transcripts import (
+    list_chats as list_chats,
+)
+from .transcripts import (
+    recent_turns as recent_turns,
+)
 
 
 async def begin(db):
@@ -51,49 +69,6 @@ async def catalog(db, principal, local):
         if item["enabled"]
     ]
     return ExecutionCatalog(enabled=True, projects=projects, agents=agents)
-
-
-async def get_chat(db, owner, chat_id):
-    chat = await db.scalar(
-        select(WorkbenchChat).where(
-            WorkbenchChat.id == chat_id, WorkbenchChat.owner_user_id == owner
-        )
-    )
-    if chat is None:
-        raise HTTPException(404, "会话不存在")
-    return chat
-
-
-async def list_chats(db, owner):
-    rows = (
-        await db.scalars(
-            select(WorkbenchChat)
-            .where(WorkbenchChat.owner_user_id == owner)
-            .order_by(WorkbenchChat.created_at.desc(), WorkbenchChat.id.desc())
-            .limit(100)
-        )
-    ).all()
-    return [ChatOut.model_validate(row) for row in rows]
-
-
-async def recent_turns(db, owner, chat_id, limit=50):
-    rows = (
-        await db.scalars(
-            select(WorkbenchTurn)
-            .where(WorkbenchTurn.owner_user_id == owner, WorkbenchTurn.chat_id == chat_id)
-            .order_by(WorkbenchTurn.position.desc())
-            .limit(limit)
-        )
-    ).all()
-    return list(reversed(rows))
-
-
-async def detail(db, owner, chat_id):
-    chat = await get_chat(db, owner, chat_id)
-    return ChatDetail(
-        **ChatOut.model_validate(chat).model_dump(),
-        turns=[TurnOut.model_validate(row) for row in await recent_turns(db, owner, chat_id)],
-    )
 
 
 async def create_chat(db, owner, body):
@@ -159,19 +134,6 @@ async def create_turn(db, owner, chat_id, body):
     return TurnOut.model_validate(turn), True
 
 
-async def get_turn(db, owner, chat_id, turn_id):
-    row = await db.scalar(
-        select(WorkbenchTurn).where(
-            WorkbenchTurn.id == turn_id,
-            WorkbenchTurn.chat_id == chat_id,
-            WorkbenchTurn.owner_user_id == owner,
-        )
-    )
-    if row is None:
-        raise HTTPException(404, "轮次不存在")
-    return row
-
-
 def change_approval(turn, identity, status):
     turn.approvals = [
         {**approval, "status": status} if approval["id"] == identity else approval
@@ -193,29 +155,4 @@ async def decide(db, owner, chat_id, turn_id, approval_id, approved):
     if turn.status != "waiting_approval" or approval["status"] != "pending":
         raise HTTPException(409, "审批已处理或失效")
     change_approval(turn, approval_id, decision)
-    await db.commit()
-
-
-def end_turn(turn, status, error=None):
-    turn.status, turn.error = status, error
-    turn.approvals = [
-        {
-            **approval,
-            "status": (
-                "unknown"
-                if approval["status"] == "executing"
-                else "expired"
-                if approval["status"] in {"pending", "approved"}
-                else approval["status"]
-            ),
-        }
-        for approval in turn.approvals
-    ]
-    turn.revision += 1
-
-
-async def interrupt_all(db):
-    rows = (await db.scalars(select(WorkbenchTurn).where(WorkbenchTurn.status.in_(ACTIVE)))).all()
-    for row in rows:
-        end_turn(row, "interrupted", "服务已重启，请核对结果后继续")
     await db.commit()

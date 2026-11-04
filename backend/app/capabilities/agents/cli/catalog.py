@@ -5,34 +5,12 @@ import os
 import re
 import shutil
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Literal
 
+from .definitions import DEFINITIONS as DEFINITIONS
+from .definitions import AgentId as AgentId
 from .transport import _stop, environment
-
-AgentId = Literal["codex", "claude-code", "opencode", "dsh", "pi"]
-
-
-@dataclass(frozen=True)
-class AgentDefinition:
-    id: str
-    name: str
-    binary: str
-    minimum: tuple[int, int, int]
-    auth_args: tuple[str, ...]
-
-
-DEFINITIONS = {
-    "codex": AgentDefinition("codex", "Codex", "codex", (0, 163, 0), ("login", "status")),
-    "claude-code": AgentDefinition(
-        "claude-code", "Claude Code", "claude", (2, 1, 259), ("auth", "status")
-    ),
-    "opencode": AgentDefinition("opencode", "OpenCode", "opencode", (1, 19, 4), ("auth", "list")),
-    "dsh": AgentDefinition("dsh", "DeepSeek Harness", "dsh", (0, 2, 1), ()),
-    "pi": AgentDefinition("pi", "Pi", "pi", (1, 4, 0), ("auth", "check", "--json", "--no-refresh")),
-}
 
 
 def settings_prefix(agent_id):

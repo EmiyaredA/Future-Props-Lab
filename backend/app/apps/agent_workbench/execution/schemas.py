@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.capabilities.agents.cli.catalog import AgentId
+from app.capabilities.agents.cli.definitions import AgentId
 
 
 class Input(BaseModel):

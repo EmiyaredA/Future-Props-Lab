@@ -10,6 +10,8 @@ from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.apps.agent_workbench.change_stream import stream_events
+from app.apps.agent_workbench.execution.models import WorkbenchChat, WorkbenchTurn
+from app.apps.agent_workbench.execution.transcripts import recover_owned_turns
 from app.apps.agent_workbench.models import (
     WorkbenchChange,
     WorkbenchCheckpoint,
@@ -34,6 +36,7 @@ from fpl_runtime.native_queue import NativeQueue
 from fpl_runtime.request_limit import RequestLimit
 
 from .authorization import NativeTransport
+from .execution_http import router as execution_router
 from .migrations.registry import MIGRATIONS
 from .models import NativeJob, NativeProjectionReceipt, NativeSubscription, NativeWorkerSeen
 from .native_access import NativeSourceAccess
@@ -42,6 +45,8 @@ from .routes import router
 from .supervisor import CollectionSupervisor
 
 MODELS = (
+    WorkbenchChat,
+    WorkbenchTurn,
     WorkbenchSource,
     WorkbenchSession,
     WorkbenchEntry,
@@ -80,6 +85,7 @@ def create_app(
     @asynccontextmanager
     async def lifespan(_app):
         check(database.path, "agents", MIGRATIONS)
+        await recover_owned_turns(database.sessions)
         if collect and get_settings().fpl_agent_workbench_enabled:
             await supervisor.start()
         try:
@@ -136,6 +142,7 @@ def create_app(
 
     app.dependency_overrides[db_session] = sessions
     app.include_router(router, prefix="/v1")
+    app.include_router(execution_router, prefix="/v1")
     app.include_router(native_router)
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
@@ -179,7 +186,7 @@ def create_app(
         check(database.path, "agents", MIGRATIONS)
         async with database.sessions(info={"allow_system_reads": True}) as session:
             await session.execute(text("SELECT 1"))
-        return {"status": "ready", "service": "agents"}
+        raise HTTPException(503, "workbench_execution_unavailable")
 
     expected = {
         (op.method, op.path): op.operation_id for op in catalog.operations if op.service == "agents"
