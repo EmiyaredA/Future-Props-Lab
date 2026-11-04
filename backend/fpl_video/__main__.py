@@ -1,6 +1,7 @@
 """Start Video Editor or explicitly apply its owned schema."""
 
 import argparse
+import os
 import re
 from pathlib import Path
 
@@ -43,6 +44,11 @@ def main():
             raise ValueError
     except (ValueError, OSError):
         parser.error("剪辑服务需要受保护的 Identity 凭据")
+    uploads = options.state_root.resolve() / ".http-uploads"
+    if uploads.is_symlink():
+        parser.error("视频剪辑上传暂存目录不能是符号链接")
+    uploads.mkdir(parents=True, exist_ok=True, mode=0o700)
+    os.environ["TMPDIR"] = str(uploads)
     app = create_app(
         state_root=options.state_root,
         catalog=RouteCatalog.read(options.catalog),

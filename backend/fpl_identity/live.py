@@ -21,6 +21,7 @@ from fpl_runtime.claims import verify_context
 from fpl_runtime.model_outputs import is_model_output_path
 from fpl_runtime.motion_exports import render_target
 from fpl_runtime.tools_video_library import is_library_path as is_tools_output_path
+from fpl_runtime.video_assets import video_write_target
 
 router = APIRouter()
 
@@ -127,6 +128,7 @@ async def live(request: Request, body: LiveRequest):
         or archive_target(body.method, body.path)
         or presentation_archive_target(body.method, body.path)
         or motion_asset_write_target(body.method, body.path)
+        or video_write_target(body.method, body.path)
         or motion_archive_target(body.method, body.path)
         or community_upload_target(body.method, body.path)
     )

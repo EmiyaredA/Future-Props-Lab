@@ -20,7 +20,7 @@ from fpl_runtime.motion_assets import (
 )
 
 from ..motion_files import describe, files, import_sources, original
-from ..motion_writes import MotionFileWrites
+from ..scoped_writes import MotionFileWrites
 from .library_outputs import OutputStream
 
 router = APIRouter(include_in_schema=False)

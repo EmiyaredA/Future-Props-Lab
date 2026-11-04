@@ -1,6 +1,7 @@
 """Read the original kinds of an exact set of account-owned Video project files."""
 
 import re
+from datetime import datetime
 
 from pydantic import Field
 
@@ -22,19 +23,55 @@ class VideoAssetQuery(LibraryAssetQuery):
 
 
 def video_asset_grant(grant):
-    if (
-        grant.caller,
-        grant.purpose,
-        grant.target_service,
-        grant.source_method,
-        grant.target_method,
-    ) != ("video", PURPOSE, "assets", "POST", "GET"):
+    if (grant.caller, grant.purpose, grant.target_service, grant.target_method) != (
+        "video",
+        PURPOSE,
+        "assets",
+        "GET",
+    ):
         return False
+    if (grant.source_method, grant.source_path) == ("GET", SOURCE + "/import-sources"):
+        return grant.target_path == PREFIX + "/sources"
+    if grant.source_method == "GET":
+        source = re.fullmatch(rf"{SOURCE}/projects/({ID})/assets", grant.source_path)
+        return bool(source and grant.target_path == f"{PREFIX}/{source[1]}/files")
     source = re.fullmatch(rf"{SOURCE}/projects/({ID})/timeline/operations", grant.source_path)
     return bool(
-        source and re.fullmatch(rf"{PREFIX}/{source[1]}/metadata/[0-9a-f]{{64}}", grant.target_path)
+        grant.source_method == "POST"
+        and source
+        and re.fullmatch(rf"{PREFIX}/{source[1]}/metadata/[0-9a-f]{{64}}", grant.target_path)
     )
 
 
 class VideoAsset(LibraryAssetDescription):
-    pass
+    display_name: str
+    created_at: datetime
+
+
+WRITE_PURPOSE = "video.project-assets.write"
+
+
+def video_write_target(method, path):
+    return method == "POST" and re.fullmatch(
+        rf"{PREFIX}/({ID})/writes/([a-f0-9]{{32}})/(upload|copy)/([a-f0-9]{{64}})",
+        path,
+    )
+
+
+def video_write_grant(grant):
+    if (grant.caller, grant.purpose, grant.target_service, grant.source_method) != (
+        "video",
+        WRITE_PURPOSE,
+        "assets",
+        "POST",
+    ):
+        return False
+    match = video_write_target(grant.target_method, grant.target_path)
+    if not match:
+        return False
+    suffix = "/assets/import" if match[3] == "copy" else "/assets"
+    return grant.source_path == f"{SOURCE}/projects/{match[1]}{suffix}"
+
+
+class VideoCopyQuery(LibraryAssetQuery):
+    asset_ids: list[str] = Field(min_length=1, max_length=100)

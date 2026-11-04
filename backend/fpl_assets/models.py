@@ -232,6 +232,16 @@ class MotionFileWriteReceipt(ReferenceBase):
     result: Mapped[list] = mapped_column(JSON)
 
 
+class VideoFileWriteReceipt(ReferenceBase):
+    __tablename__ = "asset_video_file_write_receipts"
+
+    owner_user_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    request_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    project_id: Mapped[str] = mapped_column(String(36))
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    result: Mapped[list] = mapped_column(JSON)
+
+
 class MotionArchiveBatch(ReferenceBase):
     """One archive's immutable source descriptor and publication decision."""
 
@@ -284,6 +294,7 @@ MODELS = (
     PresentationArchiveBatch,
     PresentationArchiveFile,
     MotionFileWriteReceipt,
+    VideoFileWriteReceipt,
     MotionArchiveBatch,
     MotionArchiveFile,
 )

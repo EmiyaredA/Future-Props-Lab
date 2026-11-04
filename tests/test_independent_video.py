@@ -6,14 +6,16 @@ from pathlib import Path
 import httpx
 import pytest
 from PIL import Image
+from sqlalchemy import select
 from starlette.datastructures import Headers, UploadFile
 from tests.test_community_asset_protocol import ASSETS_SECRET, scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 
-from app.apps.video_editor.models import VideoEditorAssetMetadata
+from app.apps.video_editor.models import VideoEditorAssetMetadata, VideoEditorTask
 from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
+from app.capabilities.asset_store.storage import AssetStorage
 from fpl_assets.scoped_project_files import check_writable
 from fpl_deployment.images import source_closure
 from fpl_runtime.capability_client import CapabilityUnavailable
@@ -247,3 +249,122 @@ async def test_timeline_edits_check_actual_signed_asset_scope(scenario, tmp_path
             assert await db.get(VisualAsset, wrong_scope) is not None
         async with case.assets.state.database.sessions(info={"owner_user_id": case.owner}) as db:
             assert await db.get(VisualAsset, foreign) is not None
+
+
+class DropAssetWriteReply(httpx.AsyncBaseTransport):
+    def __init__(self, mesh):
+        self.mesh = mesh
+        self.receipt_path = None
+
+    async def handle_async_request(self, request):
+        response = await self.mesh.handle_async_request(request)
+        if (
+            self.receipt_path is None
+            and request.url.host == "assets"
+            and request.method == "POST"
+            and "/writes/" in request.url.path
+            and response.status_code == 200
+        ):
+            self.receipt_path = request.url.path
+            await response.aclose()
+            raise httpx.ReadError("asset acknowledgement dropped", request=request)
+        return response
+
+
+async def test_upload_and_copy_recover_durable_receipt_after_restart(scenario, tmp_path):  # noqa: F811
+    case = scenario
+    credential = "isolated-video-intake-test-credential"
+    case.identity.state.identity_options["service_credentials"]["video"] = credential
+    state = tmp_path / "video"
+    apply(state / "service.db", "video", MIGRATIONS)
+    assets_identity = LiveAuthorization(
+        service="assets", credential=ASSETS_SECRET, transport=case.mesh
+    )
+    case.assets.state.identity = assets_identity
+    faults = DropAssetWriteReply(case.mesh)
+
+    def new_app():
+        return create_app(
+            state_root=state,
+            catalog=RouteCatalog.read(ROOT / "deploy/contracts/ownership.json"),
+            public_key=case.key.public_key(),
+            schema_path=ROOT / "web/src/generated/openapi.json",
+            credential=credential,
+            transport=faults,
+            run_worker=False,
+        )
+
+    async def send(api, method, path, **kwargs):
+        return await api.request(
+            method, path, headers=await authorize(case, "video", method, path), **kwargs
+        )
+
+    source = BytesIO()
+    Image.new("RGB", (3, 3), "orange").save(source, format="PNG")
+    raw = source.getvalue()
+    async with case.assets.state.database.sessions(info={"owner_user_id": case.viewer}) as db:
+        library = await AssetLibrary(db, case.assets.state.settings).store_upload(
+            UploadFile(
+                BytesIO(raw), filename="library.png", headers=Headers({"Content-Type": "image/png"})
+            ),
+            owner_user_id=case.viewer,
+        )
+        library_id = library.id
+
+    async with assets_identity.client:
+        first = new_app()
+        async with (
+            first.router.lifespan_context(first),
+            httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=first), base_url="http://video"
+            ) as api,
+        ):
+            created = await send(api, "POST", PROJECTS, json={"title": "Intake"})
+            assert created.status_code == 200, created.text
+            files = PROJECTS + "/" + created.json()["id"] + "/assets"
+            sources = await send(api, "GET", "/v1/video-editor/import-sources")
+            assert library_id in {item["id"] for item in sources.json()["items"]}
+            lost = await send(
+                api, "POST", files, files={"upload": ("uploaded.png", raw, "image/png")}
+            )
+            assert lost.status_code == 503 and faults.receipt_path, lost.text
+            assert (await send(api, "GET", files)).json()["items"] == []
+
+        second = new_app()
+        async with (
+            second.router.lifespan_context(second),
+            httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=second), base_url="http://video"
+            ) as api,
+        ):
+            intakes = second.state.asset_intakes
+            await intakes.process_once()
+            await intakes.process_once()
+            registered = (await send(api, "GET", files)).json()["items"]
+            assert len(registered) == 1 and registered[0]["byteSize"] == len(raw)
+            assert registered[0]["processingStatus"] == "queued"
+            assert registered[0]["originalFilename"] == "uploaded.png"
+            copied = await send(api, "POST", files + "/import", json={"assetIds": [library_id]})
+            assert copied.status_code == 200, copied.text
+            imported = copied.json()["items"][0]["id"]
+            assert imported != library_id
+            assert {item["id"] for item in (await send(api, "GET", files)).json()["items"]} == {
+                imported,
+                registered[0]["id"],
+            }
+            same_project_copy = await send(
+                api, "POST", files + "/import", json={"assetIds": [imported]}
+            )
+            assert same_project_copy.status_code == 422
+            async with case.assets.state.database.sessions(
+                info={"owner_user_id": case.viewer}
+            ) as db:
+                storage = AssetStorage(case.assets.state.settings)
+                for identity in (imported, registered[0]["id"], library_id):
+                    row = await db.get(VisualAsset, identity)
+                    assert storage.path_for(row).read_bytes() == raw
+            async with second.state.database.sessions(info={"owner_user_id": case.viewer}) as db:
+                tasks = (await db.scalars(select(VideoEditorTask))).all()
+                assert sorted(task.request_payload["assetId"] for task in tasks) == sorted(
+                    [imported, registered[0]["id"]]
+                )

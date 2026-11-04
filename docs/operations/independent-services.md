@@ -483,3 +483,5 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 时间轴操作现由独立 Video Editor 处理。部署时额外配置只读 `FPL_VIDEO_IDENTITY_TOKEN`，并在 Identity 登记 Video 的专用服务凭据。Video 在提交时间轴 CAS 前，通过签名范围向 Assets 查验确切项目和文件 ID 集合，再使用自有媒体状态验证轨道、类型和源区间。四容器运行 `fpl-video-timeline-8ba3d11c5c` 使用 `fpl/video:772d4c348dcb0eeb1152`，验证素材范围拒绝、保存、重放、过期修订和重启。
 
 视频剪辑项目创建与删除通过持久范围回执连接 Assets。删除准备期间拒绝该项目的原件写入，源项目事务与回执一起提交，结算只清理匹配账号和项目的文件。运行 `fpl-video-layout-419ce2edc9` 经四容器验证了创建、旧修订拒绝、删除后 404 与时间轴重启。故障注入覆盖远端确认中断后保留栅栏及重新结算。
+
+剪辑素材目录、原件上传与复制接入独立 Assets。Video 先持久登记请求，再通过绑定原件摘要或源文件集合的授权调用 Assets。Assets 同时提交原件和回执。Video 收到回执后登记素材元数据和一项处理任务，未知结果可在重启后按原路径查询。四容器运行 `fpl-video-files-8e4daa17a5` 使用 `fpl/video:39e5742f198c9f5aafcd`，验证上传、复制、时间轴引用、重启和删除后保留账号库原件。剪辑代理、音频波形和导出处理仍由就绪门禁跟踪。

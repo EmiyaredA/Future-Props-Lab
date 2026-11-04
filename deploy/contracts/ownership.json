@@ -4613,6 +4613,12 @@
       "model": "MotionFileWriteReceipt"
     },
     {
+      "table": "asset_video_file_write_receipts",
+      "service": "assets",
+      "module": "fpl_assets.models",
+      "model": "VideoFileWriteReceipt"
+    },
+    {
       "table": "asset_motion_archive_batches",
       "service": "assets",
       "module": "fpl_assets.models",
@@ -4971,6 +4977,12 @@
       "service": "video",
       "module": "fpl_video.models",
       "model": "VideoReferenceMutation"
+    },
+    {
+      "table": "video_asset_intakes",
+      "service": "video",
+      "module": "fpl_video.models",
+      "model": "VideoAssetIntake"
     },
     {
       "table": "visual_certification_receipts",

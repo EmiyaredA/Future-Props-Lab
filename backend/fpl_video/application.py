@@ -35,8 +35,10 @@ from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.reference_runtime import install_reference_runtime, reference_lifespan
 from fpl_runtime.routing import RouteCatalog
 
+from .asset_intake import AssetIntakes
+from .media_routes import router as media_router
 from .migrations.registry import MIGRATIONS
-from .models import VideoReferenceMutation
+from .models import VideoAssetIntake, VideoReferenceMutation
 from .project_layouts import ProjectLayouts
 from .timeline_media import TimelineMedia
 
@@ -52,6 +54,10 @@ OPERATIONS = {
     ("DELETE", PROJECT),
     ("GET", PROJECT + "/timeline"),
     ("POST", PROJECT + "/timeline/operations"),
+    ("GET", SOURCE + "/import-sources"),
+    ("GET", PROJECT + "/assets"),
+    ("POST", PROJECT + "/assets"),
+    ("POST", PROJECT + "/assets/import"),
 }
 
 
@@ -68,11 +74,14 @@ def create_app(
             VideoEditorAssetMetadata,
             VideoEditorTask,
             VideoReferenceMutation,
+            VideoAssetIntake,
         ),
     )
     capabilities = CapabilityClient(
         service=SERVICE, credential=credential, catalog=catalog, transport=transport
     )
+
+    asset_intakes = AssetIntakes(database.sessions, capabilities)
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -80,8 +89,11 @@ def create_app(
             check(database.path, SERVICE, MIGRATIONS)
             try:
                 async with reference_lifespan(_app):
+                    if run_worker:
+                        await asset_intakes.start()
                     yield
             finally:
+                await asset_intakes.stop()
                 await capabilities.close()
                 await database.close()
 
@@ -89,6 +101,8 @@ def create_app(
         title="FPL Video Editor", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan
     )
     app.state.database = database
+    app.state.capabilities = capabilities
+    app.state.asset_intakes = asset_intakes
     install_reference_runtime(
         app,
         service=SERVICE,
@@ -120,7 +134,7 @@ def create_app(
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(OperationalError, storage_operational_error_handler)
     app.add_exception_handler(RevisionConflictError, revision_conflict_handler)
-    for router in (project_router, timeline_router):
+    for router in (project_router, timeline_router, media_router):
         app.include_router(
             router,
             prefix=SOURCE,

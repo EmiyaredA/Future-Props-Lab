@@ -5,6 +5,7 @@ from copy import deepcopy
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.apps.video_editor.asset_output import asset_output
 from app.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from app.apps.video_editor.media import VideoEditorMedia
 from app.apps.video_editor.models import (
@@ -53,7 +54,7 @@ class VideoEditorAssetBakes:
             raise RevisionConflictError(
                 body.expected_revision,
                 metadata.revision,
-                self.media._out(project_id, asset, metadata).model_dump(mode="json"),
+                asset_output(project_id, asset, metadata).model_dump(mode="json"),
             )
         if asset.media_kind not in {"video", "image"}:
             raise VideoEditorValidationError("只有视频和图片可以烘焙抠像", code="invalid_kind")

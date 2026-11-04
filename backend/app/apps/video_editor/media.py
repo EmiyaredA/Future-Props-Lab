@@ -10,6 +10,7 @@ from uuid import uuid4
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.apps.video_editor.asset_output import asset_output
 from app.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from app.apps.video_editor.models import (
     VideoEditorAssetMetadata,
@@ -24,7 +25,6 @@ from app.apps.video_editor.schemas import (
     VideoEditorAssetPatchIn,
     VideoEditorAvailableAssetListOut,
     VideoEditorAvailableAssetOut,
-    VideoEditorDefaultEffects,
 )
 from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.library import AssetLibrary
@@ -73,29 +73,6 @@ class VideoEditorMedia:
     async def _project(self, project_id: str) -> None:
         await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
 
-    def _out(
-        self, project_id: str, asset: VisualAsset, metadata: VideoEditorAssetMetadata
-    ) -> VideoEditorAssetOut:
-        base = f"/v1/video-editor/projects/{project_id}/assets/{asset.id}"
-        effects = VideoEditorDefaultEffects.model_validate(metadata.default_effects or {})
-        return VideoEditorAssetOut(
-            id=asset.id,
-            displayName=asset.display_name,
-            originalFilename=asset.original_filename,
-            mediaKind=asset.media_kind,
-            mimeType=asset.mime_type,
-            byteSize=asset.byte_size,
-            processingStatus=metadata.processing_status,
-            probe=metadata.probe or {},
-            proxyUrl=f"{base}/proxy" if metadata.proxy_filename else None,
-            thumbnailUrl=f"{base}/thumbnail" if metadata.thumbnail_filename else None,
-            waveformUrl=f"{base}/waveform" if metadata.waveform_filename else None,
-            error=metadata.error,
-            defaultEffects=effects,
-            revision=metadata.revision,
-            createdAt=iso_utc(asset.created_at),
-        )
-
     async def list(self, project_id: str) -> VideoEditorAssetListOut:
         await self._project(project_id)
         rows = (
@@ -107,7 +84,7 @@ class VideoEditorMedia:
             )
         ).all()
         return VideoEditorAssetListOut(
-            items=[self._out(project_id, asset, meta) for asset, meta in rows]
+            items=[asset_output(project_id, asset, meta) for asset, meta in rows]
         )
 
     async def available(self) -> VideoEditorAvailableAssetListOut:
@@ -156,7 +133,7 @@ class VideoEditorMedia:
         self.session.add_all((metadata, task))
         await self.session.commit()
         await self.session.refresh(metadata)
-        return self._out(project_id, asset, metadata)
+        return asset_output(project_id, asset, metadata)
 
     async def upload(self, project_id: str, upload: IncomingFile) -> VideoEditorAssetOut:
         await self._project(project_id)
@@ -216,7 +193,7 @@ class VideoEditorMedia:
                 path.unlink(missing_ok=True)
             raise
         return VideoEditorAssetListOut(
-            items=[self._out(project_id, asset, metadata) for asset, metadata in created]
+            items=[asset_output(project_id, asset, metadata) for asset, metadata in created]
         )
 
     async def asset(
@@ -251,7 +228,7 @@ class VideoEditorMedia:
             )
         )
         await self.session.commit()
-        return self._out(project_id, asset, metadata)
+        return asset_output(project_id, asset, metadata)
 
     async def patch(
         self, project_id: str, asset_id: str, body: VideoEditorAssetPatchIn
@@ -281,7 +258,7 @@ class VideoEditorMedia:
 
         async def load_current() -> VideoEditorAssetOut:
             current_asset, current_meta = await self.asset(project_id, asset_id)
-            return self._out(project_id, current_asset, current_meta)
+            return asset_output(project_id, current_asset, current_meta)
 
         await require_revision_write(
             self.session,
@@ -293,7 +270,7 @@ class VideoEditorMedia:
             asset.display_name = body.display_name
         await self.session.commit()
         asset, metadata = await self.asset(project_id, asset_id)
-        return self._out(project_id, asset, metadata)
+        return asset_output(project_id, asset, metadata)
 
     async def delete(self, project_id: str, asset_id: str) -> None:
         asset, _metadata = await self.asset(project_id, asset_id)

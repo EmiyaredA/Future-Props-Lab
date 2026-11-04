@@ -5,26 +5,28 @@ from sqlalchemy import select, text
 from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
+from app.capabilities.asset_store.policy import VIDEO_EDITABLE_EXTENSIONS
 from app.capabilities.asset_store.storage import AssetStorage
 from fpl_runtime.motion_assets import MOTION_EXTENSIONS
 
 from .library_outputs import VerifiedOutput
-from .models import MotionFileWriteReceipt
+from .models import MotionFileWriteReceipt, VideoFileWriteReceipt
 from .motion_files import file_record
 from .scoped_project_files import check_writable
+from .video_files import record as video_file_record
 
 
-class MotionFileWrites:
+class ScopedFileWrites:
     def __init__(self, session, settings, owner, project, request_id, fingerprint, *, active):
         if session.info.get("owner_user_id") != owner:
-            raise ValueError("特效素材写入缺少匹配的账号上下文")
+            raise ValueError("项目素材写入缺少匹配的账号上下文")
         self.session, self.owner, self.project = session, owner, project
         self.request_id, self.fingerprint, self.active = request_id, fingerprint, active
         self.library = AssetLibrary(session, settings)
         self.storage = AssetStorage(settings)
 
     async def prior(self):
-        row = await self.session.get(MotionFileWriteReceipt, (self.owner, self.request_id))
+        row = await self.session.get(self.receipt_model, (self.owner, self.request_id))
         if row is None:
             return None
         if (row.project_id, row.fingerprint) != (self.project, self.fingerprint):
@@ -36,8 +38,8 @@ class MotionFileWrites:
             row = await self.library.store_upload(
                 VerifiedOutput(incoming, description),
                 owner_user_id=self.owner,
-                motion_compositor_project_id=self.project,
-                allowed_extensions=MOTION_EXTENSIONS,
+                allowed_extensions=self.extensions,
+                **{self.project_column: self.project},
                 defer_persistence=True,
             )
             yield row, self.storage.path_for(row)
@@ -52,17 +54,20 @@ class MotionFileWrites:
         finally:
             await incoming.close()
 
+    def copy_query(self, ids):
+        return select(VisualAsset).where(
+            VisualAsset.owner_user_id == self.owner, VisualAsset.id.in_(ids)
+        )
+
     async def copy(self, ids):
         async def stage():
             sources = list(
-                await self.session.scalars(
-                    select(VisualAsset)
-                    .where(VisualAsset.owner_user_id == self.owner, VisualAsset.id.in_(ids))
-                    .order_by(VisualAsset.id)
-                )
+                await self.session.scalars(self.copy_query(ids).order_by(VisualAsset.id))
             )
             if {row.id for row in sources} != set(ids):
-                raise AssetError("有素材不存在或不属于当前账号", code="invalid_motion", status=422)
+                raise AssetError(
+                    "有素材不存在或不属于当前账号", code=self.invalid_source, status=422
+                )
             files = [
                 (self.storage.path_for(row), row.original_filename, row.mime_type)
                 for row in sources
@@ -74,10 +79,10 @@ class MotionFileWrites:
                 yield await self.library.stage_local_copy(
                     path,
                     owner_user_id=self.owner,
-                    motion_compositor_project_id=self.project,
+                    **{self.project_column: self.project},
                     filename=filename,
                     content_type=mime,
-                    allowed_extensions=MOTION_EXTENSIONS,
+                    allowed_extensions=self.extensions,
                     defer_persistence=True,
                 )
 
@@ -90,7 +95,7 @@ class MotionFileWrites:
             await self.active()
             previous = await self.prior()
             if previous is None:
-                await check_writable(self.session, "motion", self.project)
+                await check_writable(self.session, self.service, self.project)
             await self.session.rollback()
             if previous is not None:
                 if verify_previous is not None:
@@ -104,12 +109,12 @@ class MotionFileWrites:
             if previous is not None:
                 await self.session.rollback()
                 return previous
-            await check_writable(self.session, "motion", self.project)
+            await check_writable(self.session, self.service, self.project)
             self.session.add_all(row for row, _ in staged)
             await self.session.flush()
-            result = [file_record(self.project, row) for row, _ in staged]
+            result = [self.record(self.project, row) for row, _ in staged]
             self.session.add(
-                MotionFileWriteReceipt(
+                self.receipt_model(
                     owner_user_id=self.owner,
                     request_id=self.request_id,
                     project_id=self.project,
@@ -127,3 +132,24 @@ class MotionFileWrites:
             if not committing:
                 for _, path in staged:
                     path.unlink(missing_ok=True)
+
+
+class MotionFileWrites(ScopedFileWrites):
+    service = "motion"
+    project_column = "motion_compositor_project_id"
+    receipt_model = MotionFileWriteReceipt
+    extensions = MOTION_EXTENSIONS
+    record = staticmethod(file_record)
+    invalid_source = "invalid_motion"
+
+
+class VideoFileWrites(ScopedFileWrites):
+    service = "video"
+    project_column = "video_editor_project_id"
+    receipt_model = VideoFileWriteReceipt
+    extensions = VIDEO_EDITABLE_EXTENSIONS
+    record = staticmethod(video_file_record)
+    invalid_source = "invalid_asset"
+
+    def copy_query(self, ids):
+        return super().copy_query(ids).where(VisualAsset.video_editor_project_id.is_(None))
