@@ -2,7 +2,7 @@ import { MOTION_COMPOSITOR_DEFINITION } from "@features/applications";
 import { Layers3 } from "lucide-react";
 import { defineApplicationModule } from "@features/applications";
 
-export const MOTION_COMPOSITOR_MODULE = defineApplicationModule({
+const definition = {
   definition: MOTION_COMPOSITOR_DEFINITION,
   supportsProjects: true,
   shell: "motion-compositor",
@@ -48,4 +48,6 @@ export const MOTION_COMPOSITOR_MODULE = defineApplicationModule({
         default: module.EditorPage,
       })),
   },
-});
+} as const;
+
+export const MOTION_COMPOSITOR_MODULE = defineApplicationModule(definition);

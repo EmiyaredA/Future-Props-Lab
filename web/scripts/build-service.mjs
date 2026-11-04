@@ -28,6 +28,7 @@ if (
     "interview",
     "annotation",
     "presentation",
+    "motion",
     "agent-runtime",
   ].includes(service)
 )

@@ -44,6 +44,7 @@ export default defineConfig(async (environment) => {
       "interview",
       "annotation",
       "presentation",
+      "motion",
       "agent-runtime",
     ].includes(service) ||
     !build ||
@@ -78,6 +79,7 @@ export default defineConfig(async (environment) => {
             | "interview"
             | "annotation"
             | "presentation"
+            | "motion"
             | "agent-runtime"
         ],
       ),

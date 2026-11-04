@@ -85,6 +85,16 @@ export const independentApplications = {
   assets: ["/files"],
   "agent-runtime": ["/code-agents"],
   annotation: ["/apps/audio-annotation", "/apps/audio-annotation/projects/:id"],
+  presentation: [
+    "/apps/presentation-workshop",
+    "/apps/presentation-workshop/templates",
+    "/apps/presentation-workshop/templates/:id",
+    "/apps/presentation-workshop/projects/:id",
+  ],
+  motion: [
+    "/apps/motion-compositor",
+    "/apps/motion-compositor/projects/:id/editor",
+  ],
   interview: ["/apps/interview-assistant"],
   director: ["/apps/director-desk", "/apps/director-desk/projects/:id"],
   tools: ["/tools", "/tools/video-frame-exporter", "/tools/video-downloader"],

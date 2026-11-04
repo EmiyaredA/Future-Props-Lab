@@ -23,6 +23,11 @@ export const serviceAssets = {
     "brand/favicon.png",
     "brand/audio-annotation-mark.png",
   ],
+  motion: [
+    "brand/brand-mark.png",
+    "brand/favicon.png",
+    "brand/motion-compositor-mark.png",
+  ],
   presentation: [
     "brand/brand-mark.png",
     "brand/favicon.png",

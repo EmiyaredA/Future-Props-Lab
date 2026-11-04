@@ -28,6 +28,7 @@ from fpl_runtime.motion_assets import SOURCE
 from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.reference_runtime import install_reference_runtime, reference_lifespan
 from fpl_runtime.routing import RouteCatalog
+from fpl_runtime.web import attach_web, load_release
 
 from .file_routes import router as file_router
 from .migrations.registry import MIGRATIONS
@@ -36,6 +37,13 @@ from .preview_routes import router as preview_router
 from .resources import ProjectResources
 
 SERVICE = "motion"
+WEB_ROOT = "/apps/motion-compositor"
+PAGES = (
+    WEB_ROOT,
+    WEB_ROOT + "/",
+    WEB_ROOT + "/projects/{project_id}/editor",
+    WEB_ROOT + "/projects/{project_id}/editor/",
+)
 PROJECTS = SOURCE + "/projects"
 PROJECT = PROJECTS + "/{project_id}"
 OPERATIONS = {
@@ -64,6 +72,7 @@ def create_app(
     schema_path=None,
     transport=None,
     run_worker=True,
+    web_root=None,
 ):
     database = Database(
         SERVICE,
@@ -127,6 +136,7 @@ def create_app(
             if operation.service == SERVICE and (operation.method, operation.path) in OPERATIONS
         )
         schema = app.openapi()
+        published = json.loads(schema_path.read_text())
         mounted = {
             (method.upper(), path)
             for path, operations in schema["paths"].items()
@@ -138,9 +148,17 @@ def create_app(
             or {(operation.method, operation.path) for operation in partial.operations}
             != OPERATIONS
             or public_contract(schema, SERVICE, partial)
-            != public_contract(json.loads(schema_path.read_text()), SERVICE, partial)
+            != public_contract(published, SERVICE, partial)
         ):
             raise ValueError("特效文稿 API 与发布契约不匹配")
+
+    if web_root is not None:
+        release = load_release(web_root, SERVICE)
+        if schema_path is None or release.api_sha256 != public_contract(
+            published, SERVICE, catalog
+        ):
+            raise ValueError("特效工坊浏览器版本与发布契约不匹配")
+        attach_web(app, release, pages=PAGES)
 
     @app.get("/health")
     async def health():

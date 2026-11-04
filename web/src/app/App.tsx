@@ -125,16 +125,10 @@ const GalgameFastPreviewPage = lazy(GALGAME_WORKSHOP_MODULE.pages.preview);
 const VideoEditorProjectsPage = lazy(VIDEO_EDITOR_MODULE.pages.projects);
 const VideoEditorPage = lazy(VIDEO_EDITOR_MODULE.pages.editor);
 const VideoEditorTasksPage = lazy(VIDEO_EDITOR_MODULE.pages.tasks);
-const MotionCompositorProjectsPage = lazy(() =>
-  import("@features/motion-compositor/ProjectsPage").then((m) => ({
-    default: m.ProjectsPage,
-  })),
+const MotionCompositorProjectsPage = lazy(
+  MOTION_COMPOSITOR_MODULE.pages.projects,
 );
-const MotionCompositorEditorPage = lazy(() =>
-  import("@features/motion-compositor/EditorPage").then((m) => ({
-    default: m.EditorPage,
-  })),
-);
+const MotionCompositorEditorPage = lazy(MOTION_COMPOSITOR_MODULE.pages.editor);
 
 const KnowledgeCommunityPage = lazy(() =>
   import("@features/thought-workshop/community/KnowledgeCommunityPage").then(
