@@ -1,0 +1,217 @@
+"""The Identity destination accepts original Studio credentials after import."""
+
+import hashlib
+import json
+from datetime import timedelta
+from uuid import UUID, uuid4
+
+import httpx
+import pytest
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from scripts.website.migrate_identity import CREDENTIALS
+from scripts.website.migration_transfer import pages, transfer
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from tests.test_community_asset_protocol import CATALOG, GATEWAY_SECRET, PASSWORD
+from tests.test_tools_navigation_migration import available_ports, listener
+
+from app.capabilities.identity.permissions import role_scopes
+from app.capabilities.identity.principal import StudioPrincipal
+from app.capabilities.identity.security import CSRF_COOKIE, SESSION_COOKIE
+from app.console.governance.account_creation import create_account
+from app.console.governance.service import complete_login, create_api_key
+from app.runtime.config import get_settings
+from app.runtime.time import utc_now
+from db.migrations import apply_migrations
+from fpl_identity.application import create_app
+from fpl_identity.migrations.registry import MIGRATIONS
+from fpl_runtime.claims import HEADER, verify_context
+from fpl_runtime.migration_batches import MigrationPlan
+from fpl_runtime.migrations import apply
+
+pytestmark = pytest.mark.real_auth
+
+
+async def make_legacy(path):
+    apply_migrations(path)
+    engine = create_async_engine(f"sqlite+aiosqlite:///{path}")
+    sessions = async_sessionmaker(engine, expire_on_commit=False)
+
+    async def skip_catalog(_session, _id, _role):
+        pass
+
+    try:
+        async with sessions() as session:
+            owner, _ = await create_account(
+                session,
+                initializer=skip_catalog,
+                username="MigratedAdmin",
+                display_name="Migrated Admin",
+                platform_role="admin",
+                password=PASSWORD,
+            )
+            other, _ = await create_account(
+                session,
+                initializer=skip_catalog,
+                username="migrated-user",
+                display_name="Migrated User",
+                platform_role="user",
+                password=PASSWORD,
+            )
+            _, auth, raw, csrf = await complete_login(
+                session, username=owner.username, password=PASSWORD, client_ip="", user_agent=""
+            )
+            principal = StudioPrincipal(
+                user_id=owner.id,
+                must_change_password=False,
+                auth_kind="session",
+                scopes=role_scopes(owner.platform_role),
+                platform_role=owner.platform_role,
+                session_id=auth.id,
+            )
+            key, raw_key = await create_api_key(
+                session,
+                principal,
+                name="Retained key",
+                scopes=["studio:read"],
+                expires_in_days=7,
+                client_ip="",
+            )
+            revoked, raw_revoked = await create_api_key(
+                session,
+                principal,
+                name="Revoked key",
+                scopes=["studio:write"],
+                expires_in_days=7,
+                client_ip="",
+            )
+            # Test-only state covers already-revoked historical credentials.
+            revoked.revoked_at = utc_now() - timedelta(minutes=10)
+            await session.commit()
+            await session.refresh(owner)
+            await session.refresh(other)
+            await session.refresh(key)
+            return owner.id, other.id, raw, csrf, key.id, raw_key, raw_revoked
+    finally:
+        await engine.dispose()
+
+
+async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, monkeypatch):
+    legacy = tmp_path / "legacy.db"
+    owner, other, token, csrf, key_id, raw_key, revoked_key = await make_legacy(legacy)
+    digest = hashlib.sha256(legacy.read_bytes()).hexdigest()
+    plan = MigrationPlan(
+        run_id=uuid4(),
+        source_revision="b" * 40,
+        source_database_sha256=digest,
+        owner_ids=(UUID(owner), UUID(other)),
+        token="identity-synthetic-migration-credential",
+    )
+    plan_file = tmp_path / "plan.json"
+    plan_file.touch(mode=0o600)
+    plan_file.write_text(
+        json.dumps(
+            {
+                **plan.model_dump(mode="json", exclude={"token"}),
+                "token": plan.token.get_secret_value(),
+            }
+        )
+    )
+    target = tmp_path / "identity"
+    apply(target / "service.db", "identity", MIGRATIONS)
+    source_port, target_port = available_ports()
+    headers = {"X-Fpl-Migration-Token": plan.token.get_secret_value()}
+    common = {"module": "fpl_identity", "prefix": CREDENTIALS[0].prefix}
+
+    with (
+        httpx.Client(timeout=5, trust_env=False) as client,
+        listener(
+            client, source_port, "migration-export", plan_file, "--legacy-db", legacy, **common
+        ) as source,
+        listener(
+            client, target_port, "migration-import", plan_file, "--state-root", target, **common
+        ) as dest,
+    ):
+        session_data = CREDENTIALS[1]
+        page = next(pages(client, source, headers, plan, UUID(owner), session_data))
+        path = f"{dest}{session_data.prefix}/batches"
+        response = client.post(
+            path,
+            json=page.batch.model_dump(mode="json"),
+            headers={**headers, "X-Fpl-Migration-SHA256": page.sha256},
+        )
+        assert response.status_code == 409
+        assert response.json()["code"] == "migration_owner_missing"
+        account_path = f"{dest}{CREDENTIALS[0].prefix}/batches"
+        invalid = client.post(account_path, headers=headers, json={"token_hash": "private-echo"})
+        assert invalid.status_code == 422 and "private-echo" not in invalid.text
+        reports = [transfer(client, plan, source, dest, dataset) for dataset in CREDENTIALS]
+        assert [report["record_count"] for report in reports] == [2, 1, 2]
+        assert reports == [transfer(client, plan, source, dest, dataset) for dataset in CREDENTIALS]
+
+    assert hashlib.sha256(legacy.read_bytes()).hexdigest() == digest
+    monkeypatch.setenv("FPL_DATABASE_PATH", str(target / "service.db"))
+    get_settings.cache_clear()
+    key = Ed25519PrivateKey.generate()
+    app = create_app(
+        state_root=target,
+        catalog=CATALOG,
+        gateway_token=GATEWAY_SECRET,
+        local_origin="http://127.0.0.1:19000",
+        public_origin="https://studio.example.test",
+        private_key=key,
+    )
+    try:
+        async with (
+            app.router.lifespan_context(app),
+            httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app),
+                base_url="http://127.0.0.1:19000",
+                headers={"X-Fpl-Gateway": GATEWAY_SECRET, "X-Fpl-Ingress": "local"},
+            ) as api,
+        ):
+            api.cookies.set(SESSION_COOKIE, token)
+            api.cookies.set(CSRF_COOKIE, csrf)
+            me = await api.get("/v1/auth/me")
+            assert me.status_code == 200
+            assert me.json()["user"]["id"] == owner
+            assert "cloud-control.access" in me.json()["permission_keys"]
+            retained = await api.get("/v1/account/api-keys")
+            assert retained.status_code == 200
+            assert {entry["name"] for entry in retained.json()} == {"Retained key", "Revoked key"}
+
+            api.cookies.clear()
+            endpoint = "/v1/model-inference/options"
+            key_headers = {
+                "X-Fpl-Target-Service": "models",
+                "X-Fpl-Request-Method": "GET",
+                "X-Fpl-Request-Uri": endpoint,
+            }
+            approved = await api.get(
+                "/_internal/v1/authorize",
+                headers={**key_headers, "Authorization": f"Bearer {raw_key}"},
+            )
+            assert approved.status_code == 204
+            actor = verify_context(
+                approved.headers[HEADER],
+                service="models",
+                method="GET",
+                path=endpoint,
+                public_key=key.public_key(),
+            )
+            assert actor.user_id == owner and actor.api_key_id == key_id
+            assert "studio:write" not in actor.scopes
+            revoked = await api.get(
+                "/_internal/v1/authorize",
+                headers={**key_headers, "Authorization": f"Bearer {revoked_key}"},
+            )
+            assert revoked.status_code == 401
+            login = await api.post(
+                "/v1/auth/login",
+                json={"username": "migrated-user", "password": PASSWORD},
+            )
+            assert login.status_code == 200 and login.json()["user"]["id"] == other
+            profile = await api.get("/v1/auth/me")
+            assert "cloud-control.access" not in profile.json()["permission_keys"]
+            assert (await api.get("/v1/account/api-keys")).json() == []
+    finally:
+        get_settings.cache_clear()

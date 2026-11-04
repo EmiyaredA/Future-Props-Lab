@@ -4524,6 +4524,12 @@
       "model": "CertificationAuditDelivery"
     },
     {
+      "table": "identity_import_receipts",
+      "service": "identity",
+      "module": "fpl_identity.models",
+      "model": "IdentityImportReceipt"
+    },
+    {
       "table": "integration_creative_install_receipts",
       "service": "integrations",
       "module": "fpl_integrations.creative_records",

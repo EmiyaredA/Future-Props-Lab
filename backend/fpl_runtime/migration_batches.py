@@ -67,6 +67,17 @@ class MigrationBatch(BaseModel, Generic[Record]):
         return hashlib.sha256(body).hexdigest()
 
 
+Batch = TypeVar("Batch", bound=MigrationBatch)
+
+
+class MigrationPage(BaseModel, Generic[Batch]):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    batch: Batch
+    sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    next_cursor: str | None
+
+
 class BatchReceipt(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
     run_id: UUID
@@ -85,16 +96,19 @@ class MigrationAdmission:
 
     def authorize(self, request: Request):
         supplied = request.headers.get("X-Fpl-Migration-Token", "").encode()
-        if "origin" in request.headers or not secrets.compare_digest(supplied, self.secret):
+        if (
+            "origin" in request.headers
+            or "cookie" in request.headers
+            or not secrets.compare_digest(supplied, self.secret)
+        ):
             raise HTTPException(403, {"code": "migration_authority_required"})
 
-    def check(self, request: Request, owner):
-        self.authorize(request)
+    def check_owner(self, owner):
         if owner not in self.owners:
             raise HTTPException(409, {"code": "migration_owner_unassigned"})
 
     def check_batch(self, request: Request, batch):
-        self.check(request, batch.owner_id)
+        self.check_owner(batch.owner_id)
         if (
             batch.run_id != self.plan.run_id
             or batch.source_revision != self.plan.source_revision

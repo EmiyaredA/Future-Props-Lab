@@ -63,3 +63,17 @@ class CertificationAuditDelivery(CertificationAuditBase):
     fingerprint: Mapped[str] = mapped_column(String(64))
     audit_event_id: Mapped[str] = mapped_column(String(36), unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
+class IdentityMaintenanceBase(DeclarativeBase):
+    pass
+
+
+class IdentityImportReceipt(IdentityMaintenanceBase):
+    __tablename__ = "identity_import_receipts"
+    run_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    dataset: Mapped[str] = mapped_column(String(64), primary_key=True)
+    owner_user_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    batch_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    receipt: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)

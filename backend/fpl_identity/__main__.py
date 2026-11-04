@@ -12,7 +12,12 @@ from fpl_runtime.locking import service_lock
 
 def parser():
     result = argparse.ArgumentParser(description="FPL Identity service")
-    result.add_argument("command", choices=("serve", "migrate", "create-admin"))
+    result.add_argument(
+        "command",
+        choices=("serve", "migrate", "create-admin", "migration-export", "migration-import"),
+    )
+    result.add_argument("--migration-plan", type=Path)
+    result.add_argument("--legacy-db", type=Path)
     result.add_argument("--config", type=Path, default=Path("/run/fpl/config.toml"))
     result.add_argument("--state-root", type=Path, default=Path("/state"))
     result.add_argument("--signing-key", type=Path, default=Path("/run/fpl/identity-signing.pem"))
@@ -30,7 +35,34 @@ def parser():
     return result
 
 
+def run_maintenance(options):
+    import uvicorn
+
+    from fpl_runtime.migration_batches import MigrationPlan
+
+    from .migration_application import create_export_app, create_import_app
+
+    if options.migration_plan is None:
+        raise ValueError("迁移维护入口需要 --migration-plan")
+    if (options.command == "migration-export") != (options.legacy_db is not None):
+        raise ValueError("仅导出入口需要并接受 --legacy-db")
+    try:
+        plan = MigrationPlan.read(options.migration_plan)
+    except (OSError, ValueError):
+        raise ValueError("迁移计划无法读取或格式无效") from None
+    if options.legacy_db is not None:
+        app = create_export_app(plan=plan, source_path=options.legacy_db)
+    else:
+        app = create_import_app(plan=plan, state_root=options.state_root)
+    uvicorn.run(app, host="127.0.0.1", port=options.port, proxy_headers=False, access_log=False)
+
+
 def run(options):
+    if options.command.startswith("migration-"):
+        run_maintenance(options)
+        return
+    if options.migration_plan is not None or options.legacy_db is not None:
+        raise ValueError("迁移计划与源快照仅适用于迁移维护入口")
     if not options.config.is_file():
         raise ValueError("缺少只读服务配置")
     os.environ["FPL_CONFIG_FILE"] = str(options.config.resolve())

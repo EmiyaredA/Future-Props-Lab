@@ -74,7 +74,9 @@ def validate_writes(session, _context, _instances):
 
 
 class Database:
-    def __init__(self, service, state_root: Path, *, models=(), account_models=None):
+    def __init__(
+        self, service, state_root: Path, *, models=(), account_models=None, hide_parameters=False
+    ):
         service_by_id(service)
         self.service = service
         self.root = state_root.resolve()
@@ -84,6 +86,7 @@ class Database:
             f"sqlite+aiosqlite:///{self.path.as_posix()}",
             connect_args={"check_same_thread": False},
             pool_pre_ping=True,
+            hide_parameters=hide_parameters,
         )
         self.sessions = async_sessionmaker(
             self.engine,

@@ -280,3 +280,18 @@ uv run python -m scripts.website.migrate_tools_navigation --plan "$plan" \
 ```
 
 维护进程只监听回环，拒绝浏览器 Origin。传输以账号和工具键分页，每批最多 256 条。记录与回执同事务提交。连接中断后以同一计划和地址重跑，完全相同的批次返回原回执。账号缺失、批次摘要变化、记录重叠或源快照变化会终止传输。最后逐账号读回目标数据并核对分页摘要与总记录数。留存成功报告并停止两个维护进程。旧站回滚和其余数据集仍由整站演练门禁跟踪。
+
+### Identity 账号与凭据迁移
+
+与 Tools 使用同一份源快照和迁移计划。Identity 的账号数据集核对计划中的全部账号 UUID，随后导入 Studio 会话和 Management API Key。保留密码摘要、原账号 ID、角色、凭据范围、过期与撤销状态。旧站的会话保持 Studio 用途。管理中台需要其专用会话。凭据摘要只通过显式回环维护进程传输，报告只保存数据集计数与批次摘要。
+
+```sh
+uv run python -m fpl_identity migration-export --migration-plan "$plan" \
+  --legacy-db "$snapshot/future-props.db" --port 19563
+uv run python -m fpl_identity migration-import --migration-plan "$plan" \
+  --state-root "$identity_state" --port 19564
+uv run python -m scripts.website.migrate_identity --plan "$plan" \
+  --source http://127.0.0.1:19563 --target http://127.0.0.1:19564
+```
+
+目标先按同版本显式初始化 schema，且处于停止状态。导入会拒绝缺少账号、账号冲突或摘要变化。隔离验收经独立 Identity 登录及授权入口验证原 Studio 会话、原管理密钥、已撤销密钥与另一账号密码。注册邀请码、安全审计、头像文件及模型目录属于后续迁移数据集。只有所有数据集、文件与跨服务关系校验通过后才能恢复网站写入。

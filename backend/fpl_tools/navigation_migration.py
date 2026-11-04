@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select, text
 
 from app.tool_navigation.models import ToolNavigationItem
-from fpl_runtime.migration_batches import MAX_RECORDS, BatchReceipt, MigrationBatch
+from fpl_runtime.migration_batches import MAX_RECORDS, BatchReceipt, MigrationBatch, MigrationPage
 
 from .models import ToolsNavigationImportReceipt
 
@@ -31,10 +31,7 @@ class NavigationBatch(MigrationBatch[NavigationRecord]):
     dataset: Literal["tools.navigation"]
 
 
-class NavigationPage(BaseModel):
-    batch: NavigationBatch
-    sha256: str
-    next_cursor: str | None
+NavigationPage = MigrationPage[NavigationBatch]
 
 
 async def export_page(sessions, plan, owner: UUID, after: str | None):

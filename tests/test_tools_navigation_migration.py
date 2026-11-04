@@ -13,7 +13,8 @@ from uuid import uuid4
 
 import httpx
 import pytest
-from scripts.website.migrate_tools_navigation import transfer
+from scripts.website.migrate_tools_navigation import NAVIGATION
+from scripts.website.migration_transfer import transfer
 
 from db.migrations.runner import apply_migrations
 from fpl_runtime.migration_batches import MAX_RECORDS, MigrationPlan
@@ -64,13 +65,13 @@ def available_ports():
 
 
 @contextmanager
-def listener(client, port, command, plan, *args):
+def listener(client, port, command, plan, *args, module="fpl_tools", prefix=PREFIX):
     address = f"http://127.0.0.1:{port}"
     with subprocess.Popen(
         [
             sys.executable,
             "-m",
-            "fpl_tools",
+            module,
             command,
             "--port",
             str(port),
@@ -85,7 +86,7 @@ def listener(client, port, command, plan, *args):
             deadline = time.monotonic() + 12
             while time.monotonic() < deadline and proc.poll() is None:
                 try:
-                    if client.get(f"{address}{PREFIX}/inventory").status_code == 403:
+                    if client.get(f"{address}{prefix}/inventory").status_code == 403:
                         break
                 except httpx.ConnectError:
                     pass
@@ -174,9 +175,9 @@ def test_migrate_tools_navigation_across_restarts(tmp_path):
                 update={"batch_id": uuid4(), "records": (new_record, modified)}
             )
             assert submit(dst, overlap).status_code == 409
-            report = transfer(client, plan, src, dst)
+            report = transfer(client, plan, src, dst, NAVIGATION)
             assert report["record_count"] == MAX_RECORDS + 2
-            assert transfer(client, plan, src, dst) == report
+            assert transfer(client, plan, src, dst, NAVIGATION) == report
             os.utime(legacy, ns=(legacy.stat().st_atime_ns, legacy.stat().st_mtime_ns + 1000))
             assert client.get(url, headers=headers).status_code == 409
     restricted = plan.model_copy(update={"owner_ids": (owner,)})
