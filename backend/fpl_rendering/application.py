@@ -30,6 +30,8 @@ from .motion_jobs import MotionJobs
 from .motion_preview import router as motion_preview_router
 from .previews import MediaPreviews
 from .routes import router
+from .video_frames import VideoFrameCache
+from .video_frames import router as video_frame_router
 from .video_media_jobs import VideoJobs
 from .video_media_routes import router as video_media_router
 
@@ -106,6 +108,9 @@ def create_app(
     app.state.motion_export_peer = ExportPeer(export_key) if export_key is not None else None
     app.state.motion_submission_locks = tuple(asyncio.Lock() for _ in range(16))
     app.state.video_jobs = video_jobs
+    app.state.video_frame_cache = VideoFrameCache()
+    app.state.video_frame_slots = asyncio.Semaphore(2)
+    app.include_router(video_frame_router)
     app.state.video_media_peer = (
         video_peer(video_media_key) if video_media_key is not None else None
     )

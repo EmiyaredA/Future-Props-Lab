@@ -102,3 +102,12 @@ def _legacy_text_layer(clip: VideoEditorClip, font: ImageFont.FreeTypeFont) -> I
         draw.text((16 - box[0], y - box[1]), line, font=font, fill=clip.text_color)
         y += box[3] - box[1] + 12
     return layer
+
+
+def text_layer_png(clip, font_path):
+    import io
+
+    with render_text_layer(clip, font_path) as layer:
+        output = io.BytesIO()
+        layer.save(output, format="PNG")
+        return output.getvalue()

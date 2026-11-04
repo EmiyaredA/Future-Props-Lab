@@ -34,7 +34,16 @@ def video_asset_grant(grant):
         return grant.target_path == PREFIX + "/sources"
     if grant.source_method == "GET":
         source = re.fullmatch(rf"{SOURCE}/projects/({ID})/assets", grant.source_path)
-        return bool(source and grant.target_path == f"{PREFIX}/{source[1]}/files")
+        if source:
+            return grant.target_path == f"{PREFIX}/{source[1]}/files"
+        source = re.fullmatch(
+            rf"{SOURCE}/projects/({ID})/(preview/frame|text-clips/[^/]{{1,64}}/layer)",
+            grant.source_path,
+        )
+        return bool(
+            source
+            and re.fullmatch(rf"{PREFIX}/{source[1]}/metadata/[0-9a-f]{{64}}", grant.target_path)
+        )
     retry = re.fullmatch(rf"{SOURCE}/projects/({ID})/assets/({ID})/proxy/retry", grant.source_path)
     if grant.source_method == "POST" and retry:
         return grant.target_path == f"{PREFIX}/{retry[1]}/files/{retry[2]}/descriptor"

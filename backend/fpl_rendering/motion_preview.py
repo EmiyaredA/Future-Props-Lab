@@ -62,13 +62,15 @@ def png(document, media, frame):
         return buffer.getvalue()
 
 
-async def fetch_sources(state, target, project_id, scope, assertion, root, *, exporting=False):
+async def fetch_sources(
+    state, target, project_id, scope, assertion, root, *, exporting=False, input_prefix=INPUTS
+):
     if not scope.files:
         return {}
     try:
         async with state.capabilities.client.stream(
             "POST",
-            f"http://assets:8080{INPUTS}/{project_id}/{scope.digest}",
+            f"http://assets:8080{input_prefix}/{project_id}/{scope.digest}",
             content=scope.model_dump_json().encode(),
             headers={
                 HEADER: assertion,

@@ -14,6 +14,7 @@ from .presentation_archives import presentation_archive_grant
 from .presentation_assets import project_asset_grant
 from .resource_routes import RESOURCE_ROUTES
 from .video_assets import video_asset_grant, video_write_grant
+from .video_frames import frame_grant as video_frame_grant
 
 
 @dataclass(frozen=True)
@@ -167,7 +168,12 @@ def permitted(grant, catalog):
     from .tools_video_library import library_grant
     from .writing import writing_grant
 
-    if motion_preview_grant(grant) or motion_snapshot_grant(grant) or motion_export_grant(grant):
+    if (
+        motion_preview_grant(grant)
+        or motion_snapshot_grant(grant)
+        or motion_export_grant(grant)
+        or video_frame_grant(grant)
+    ):
         return True
     if directory_grant(grant, catalog):
         return True

@@ -18,9 +18,9 @@ class TimelineMedia:
         self.capabilities = capabilities
         self.cache = {}
 
-    async def describe(self, project_id, ids):
-        if self.cache and self.cache.keys() >= ids:
-            return {identity: self.cache[identity] for identity in ids}
+    async def originals(self, project_id, ids):
+        if not ids:
+            return {}
         await self.session.rollback()
         ids = sorted(ids)
         originals = {}
@@ -57,6 +57,14 @@ class TimelineMedia:
             except (CapabilityDenied, CapabilityUnavailable, httpx.HTTPError, KeyError, ValueError):
                 raise VideoEditorUnavailableError("剪辑素材验证暂不可用") from None
             originals.update({row.id: row for row in rows})
+        return originals
+
+    async def describe(self, project_id, ids):
+        if self.cache and self.cache.keys() >= ids:
+            return {identity: self.cache[identity] for identity in ids}
+        originals = await self.originals(project_id, ids)
+        if not originals:
+            return {}
         metadata = await self.session.scalars(
             select(VideoEditorAssetMetadata).where(
                 VideoEditorAssetMetadata.project_id == project_id,

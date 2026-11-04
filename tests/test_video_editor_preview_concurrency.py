@@ -6,7 +6,6 @@ from concurrent.futures import ThreadPoolExecutor
 
 import httpx
 import pytest
-from PIL import Image
 
 from app.apps.video_editor import frames
 from app.apps.video_editor.schemas import VideoEditorTimelineDocument
@@ -32,12 +31,12 @@ async def test_split_saves_while_preview_is_still_rendering(monkeypatch, preview
         try:
             if not release.wait(5):
                 raise TimeoutError("preview blocked the editing request")
-            return b"preview" if preview_kind == "frame" else Image.new("RGBA", (8, 8))
+            return b"preview"
         finally:
             finished.set()
 
     monkeypatch.setattr(
-        frames, "render_plan_frame" if preview_kind == "frame" else "render_text_layer", slow_render
+        frames, "render_plan_frame" if preview_kind == "frame" else "text_layer_png", slow_render
     )
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"

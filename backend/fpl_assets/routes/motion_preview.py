@@ -1,4 +1,4 @@
-"""Stream a signed frame's exact project originals in canonical scope order."""
+"""Stream the requested signed Motion or Video project originals in scope order."""
 
 import jwt
 from fastapi import APIRouter, HTTPException, Request
@@ -10,20 +10,31 @@ from fpl_runtime.claims import HEADER, verify_context
 from fpl_runtime.framed_media import content_length, stream_files
 from fpl_runtime.motion_exports import render_target
 from fpl_runtime.motion_preview import INPUTS, MAX_SCOPE_BYTES, FrameScope, preview_target
+from fpl_runtime.video_frames import INPUTS as VIDEO_INPUTS
+from fpl_runtime.video_frames import target as video_target
 
 from ..motion_files import versioned_files
+from ..video_files import versioned_files as video_files
 
 router = APIRouter(include_in_schema=False)
 
 
+@router.post(VIDEO_INPUTS + "/{project_id}/{digest}")
 @router.post(INPUTS + "/{project_id}/{digest}")
 async def originals(request: Request, project_id: str, digest: str):
     if "origin" in request.headers or "cookie" in request.headers:
         raise HTTPException(403, "private_motion_preview_required")
     target = request.headers.get("X-Fpl-Render-Target", "")
-    export = render_target("POST", target)
-    preview = preview_target("POST", target)
-    match = (export[1], export[4]) if export else (preview[1], preview[3]) if preview else None
+    video = request.url.path.startswith(VIDEO_INPUTS + "/")
+    export = None if video else render_target("POST", target)
+    preview = video_target("POST", target) if video else preview_target("POST", target)
+    match = (
+        (export[1], export[4])
+        if export
+        else (preview[1], preview[5] if video else preview[3])
+        if preview
+        else None
+    )
     if match != (project_id, digest):
         raise HTTPException(403, "motion_preview_scope_mismatch")
     state = request.app.state
@@ -63,9 +74,8 @@ async def originals(request: Request, project_id: str, digest: str):
         if not active:
             raise HTTPException(401, "motion_export_revoked")
     async with state.database.sessions(info={"owner_user_id": actor.user_id}) as session:
-        sources = await versioned_files(
-            session, state.settings, actor.user_id, project_id, scope.files
-        )
+        load_files = video_files if video else versioned_files
+        sources = await load_files(session, state.settings, actor.user_id, project_id, scope.files)
 
     return StreamingResponse(
         stream_files(sources),

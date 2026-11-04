@@ -49,6 +49,7 @@ class DropJobReply(httpx.AsyncBaseTransport):
 async def test_video_rendering_lost_reply_owner_isolation_and_removal(
     scenario,  # noqa: F811
     tmp_path,
+    monkeypatch,
 ):
     case = scenario
     case.identity.state.identity_options["service_credentials"].update(
@@ -138,6 +139,76 @@ async def test_video_rendering_lost_reply_owner_isolation_and_removal(
         assert (
             await internal.get("http://rendering" + job_path, headers=foreign)
         ).status_code == 404
+
+        # A still uses the visible image plus its text layer, both tied to revision 1.
+        edited = await send(
+            api,
+            "POST",
+            project + "/timeline/operations",
+            json={
+                "expectedRevision": 0,
+                "requestId": "video-frame-edit",
+                "operations": [
+                    {
+                        "type": "addClip",
+                        "clip": {
+                            "id": "image-1",
+                            "trackId": "mixed-1",
+                            "kind": "image",
+                            "name": "Image",
+                            "assetId": asset["id"],
+                            "durationUs": 1_000_000,
+                            "timelineStartUs": 0,
+                        },
+                    },
+                    {
+                        "type": "addClip",
+                        "clip": {
+                            "id": "title-1",
+                            "trackId": "visual-1",
+                            "kind": "text",
+                            "name": "Title",
+                            "text": "剪辑文字",
+                            "durationUs": 1_000_000,
+                            "timelineStartUs": 0,
+                        },
+                    },
+                ],
+            },
+        )
+        assert edited.status_code == 200, edited.text
+        preview = project + "/preview/frame"
+        parameters = {"revision": 1, "timeUs": 0, "width": 320}
+        still = await send(api, "GET", preview, params=parameters)
+        assert still.status_code == 200, still.text
+        with Image.open(BytesIO(still.content)) as picture:
+            assert picture.size == (320, 180)
+        repeat = await send(api, "GET", preview, params=parameters)
+        assert repeat.content == still.content
+        stale = await send(api, "GET", preview, params={**parameters, "revision": 0})
+        assert stale.status_code == 409
+        text = await send(
+            api,
+            "GET",
+            project + "/text-clips/title-1/layer",
+            params={"revision": 1},
+        )
+        assert text.status_code == 200 and text.content.startswith(b"\x89PNG")
+        active = rendering.state.identity.status
+        validated = False
+
+        async def revoke_before_output(**kwargs):
+            nonlocal validated
+            if validated:
+                return False
+            validated = True
+            return await active(**kwargs)
+
+        with monkeypatch.context() as fault:
+            fault.setattr(rendering.state.identity, "status", revoke_before_output)
+            revoked = await send(api, "GET", preview, params={**parameters, "width": 321})
+        assert revoked.status_code == 401
+
         deleted = await send(api, "DELETE", project, params={"expected_revision": 0})
         assert deleted.status_code == 200, deleted.text
         await delivery.process_once()

@@ -39,6 +39,7 @@ from fpl_runtime.video_processing import video_peer
 from fpl_runtime.web import attach_web, load_release
 
 from .asset_intake import AssetIntakes
+from .frame_routes import router as frame_router
 from .media_delivery import MediaDelivery
 from .media_routes import router as media_router
 from .migrations.registry import MIGRATIONS
@@ -66,6 +67,8 @@ OPERATIONS = {
     ("PATCH", PROJECT),
     ("DELETE", PROJECT),
     ("GET", PROJECT + "/timeline"),
+    ("GET", PROJECT + "/preview/frame"),
+    ("GET", PROJECT + "/text-clips/{clip_id}/layer"),
     ("GET", PROJECT + "/asset-bakes/{task_id}"),
     ("GET", PROJECT + "/renders"),
     ("GET", PROJECT + "/renders/{task_id}"),
@@ -176,7 +179,7 @@ def create_app(
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(OperationalError, storage_operational_error_handler)
     app.add_exception_handler(RevisionConflictError, revision_conflict_handler)
-    for router in (project_router, timeline_router, media_router, tasks_router):
+    for router in (project_router, timeline_router, media_router, tasks_router, frame_router):
         app.include_router(
             router,
             prefix=SOURCE,

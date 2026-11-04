@@ -7,6 +7,7 @@ from sqlalchemy import select
 from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import VIDEO_EDITABLE_EXTENSIONS
+from app.capabilities.asset_store.storage import AssetStorage
 from fpl_runtime.video_assets import VideoAsset
 
 
@@ -83,3 +84,27 @@ async def original_record(session, owner, project_id, asset_id):
             VisualAsset.id == asset_id,
         )
     )
+
+
+async def versioned_files(session, settings, owner, project_id, requested):
+    rows = (
+        await session.scalars(
+            select(VisualAsset)
+            .where(
+                VisualAsset.owner_user_id == owner,
+                VisualAsset.video_editor_project_id == project_id,
+                VisualAsset.id.in_([file.id for file in requested]),
+            )
+            .order_by(VisualAsset.id)
+        )
+    ).all()
+    if [(row.id, row.revision) for row in rows] != [(file.id, file.revision) for file in requested]:
+        raise AssetError("剪辑原件已变化或缺失", code="source_changed", status=409)
+    storage = AssetStorage(settings)
+    output = []
+    for row in rows:
+        path = storage.path_for(row)
+        if path.is_symlink() or not path.is_file() or path.stat().st_size != row.byte_size:
+            raise AssetError("剪辑原件已变化或缺失", code="source_changed", status=409)
+        output.append((path, row.byte_size))
+    return output

@@ -16,6 +16,7 @@ from fpl_runtime.delegation import RequestGrant, permitted, target_permission_pa
 from fpl_runtime.motion_exports import render_grant as motion_export_grant
 from fpl_runtime.motion_preview import motion_preview_grant
 from fpl_runtime.motion_snapshot import motion_snapshot_grant
+from fpl_runtime.video_frames import frame_grant as video_frame_grant
 
 from .live import active_actor
 
@@ -86,7 +87,7 @@ async def authorize_delegation(app, body, credential):
         raise HTTPException(403, "source_permission_denied")
     permission = (
         "content.read"
-        if motion_preview_grant(grant) or motion_snapshot_grant(grant)
+        if motion_preview_grant(grant) or motion_snapshot_grant(grant) or video_frame_grant(grant)
         else (
             "content.write"
             if motion_export_grant(grant)
