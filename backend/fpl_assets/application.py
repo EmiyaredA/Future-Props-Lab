@@ -38,6 +38,7 @@ from .routes.files import router as files_router
 from .routes.layout import router as layout_router
 from .routes.library_inputs import router as library_inputs_router
 from .routes.library_outputs import router as library_outputs_router
+from .routes.presentation_archives import router as presentation_archives_router
 from .routes.presentation_assets import router as presentation_assets_router
 from .routes.project_links import router as links_router
 from .routes.thought_archives import router as thought_archives_router
@@ -76,6 +77,7 @@ def create_app(
     cleanup=True,
     community_asset_checks=None,
     thought_upload_result_key=None,
+    presentation_archive_key=None,
 ):
     database = Database("assets", settings.runtime_path, models=MODELS)
     if settings.database_path != database.path:
@@ -129,6 +131,13 @@ def create_app(
         app.state.thought_upload_results = ThoughtUploadReceiptAuthenticator(
             thought_upload_result_key
         )
+    if presentation_archive_key is not None:
+        from fpl_runtime.presentation_archives import DOMAIN
+        from fpl_runtime.thought_archives import ArchiveAuthenticator
+
+        app.state.presentation_archive_auth = ArchiveAuthenticator(
+            presentation_archive_key, domain=DOMAIN
+        )
     app.state.reference_changes = ReferenceChanges(database)
     app.state.layouts = StorageLayouts(database, settings)
     app.state.file_cleanup = cleaner
@@ -140,6 +149,7 @@ def create_app(
     app.include_router(thought_library_router)
     app.include_router(annotation_assets_router)
     app.include_router(presentation_assets_router)
+    app.include_router(presentation_archives_router)
     app.include_router(thought_uploads_router)
     app.include_router(thought_archives_router)
     app.include_router(community_assets_router)

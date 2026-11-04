@@ -99,10 +99,11 @@ class ArchiveOutcome(ArchiveBatchKey):
 class ArchiveAuthenticator:
     """Separate domains for receipts and decisions using the Thought–Assets peer key."""
 
-    def __init__(self, secret):
+    def __init__(self, secret, *, domain=b"fpl-thought-archive-v1"):
         if not isinstance(secret, str) or not secret.isascii() or len(secret) < 32:
             raise ValueError("归档对等凭据无效")
         self.secret = secret.encode("ascii")
+        self.domain = domain
 
     def sign(self, use, *, path, owner, nonce, body):
         import hmac
@@ -117,9 +118,7 @@ class ArchiveAuthenticator:
             ensure_ascii=True,
             separators=(",", ":"),
         ).encode("ascii")
-        return hmac.new(
-            self.secret, b"fpl-thought-archive-v1\0" + payload, hashlib.sha256
-        ).hexdigest()
+        return hmac.new(self.secret, self.domain + b"\0" + payload, hashlib.sha256).hexdigest()
 
     def verify(self, signature, use, **binding):
         import hmac

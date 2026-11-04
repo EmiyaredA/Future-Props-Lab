@@ -12,6 +12,7 @@ from app.capabilities.identity.route_permissions import route_permission
 from fpl_runtime.annotation_assets import PROJECT_CREATION
 from fpl_runtime.annotation_assets import SOURCE as ANNOTATION
 from fpl_runtime.claims import verify_context
+from fpl_runtime.presentation_archives import IMPORT as PRESENTATION_IMPORT
 from fpl_runtime.presentation_assets import BUNDLE as PRESENTATION_BUNDLE
 from fpl_runtime.presentation_assets import LIBRARY as PRESENTATION_LIBRARY
 from fpl_runtime.presentation_assets import PROJECTS as PRESENTATION
@@ -122,7 +123,7 @@ def _presentation_source(body):
         return (
             method == "POST"
             and (
-                path == PRESENTATION
+                path in {PRESENTATION, PRESENTATION_IMPORT}
                 or any(
                     re.fullmatch(rf"{prefix}/[A-Za-z0-9_-]+/documents", path)
                     for prefix in PRESENTATION_LIBRARY.values()

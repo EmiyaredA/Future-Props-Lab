@@ -447,3 +447,7 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 四容器隔离验收 `fpl-presentation-export-f3a7f54fbf` 使用 `fpl/presentation:deec05c2517707b523ae`，经真实 Gateway 下载原生包和 PPTX，核对规范化 SVG 摘要及 PPTX 页面和媒体。
 
 运行 `npm run services:build:web -- presentation`，将产物通过 `--web-release` 封装到演示工坊镜像。列表、文稿画布、模板库、模板设计器和演示入口沿用原 URL。四容器隔离验收 `fpl-presentation-browser-0045ccb84e` 验证浏览器版本 `0cb23c1a148a6ca275e0`、390/768/1440px 布局、模板保存、旧浏览器版本拒绝及回环公网模板入口。
+
+演示工坊的 26 项发布操作均已装配。部署叠加文件为 Presentation 与 Assets 挂载同一份独立的 `FPL_PRESENTATION_ARCHIVE_KEY`。PPTX 和原生包嵌入素材先私有暂存，源事务提交决议后才发布，收到准确回执后才开放项目。已拥有的素材引用在封存时受保护。JSON 文稿沿用现有素材及普通文稿引用事务。历史迁移和全站切换继续使用独立门禁。
+
+隔离运行 `fpl-presentation-import-f141f81f9a` 用镜像 `fpl/presentation:4b3faf0faa941f0a81a7` 通过四容器及 Chromium，覆盖原生包和 JSON 往返、复制素材 SHA256、编辑回执、模板保存、旧浏览器版本拒绝及回环公网入口。

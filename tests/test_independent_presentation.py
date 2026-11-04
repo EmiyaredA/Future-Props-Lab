@@ -24,10 +24,13 @@ from fpl_presentation.migrations.registry import MIGRATIONS
 from fpl_runtime.capability_client import CapabilityUnavailable
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
+from fpl_runtime.presentation_archives import DOMAIN, IMPORT
 from fpl_runtime.presentation_assets import BUNDLE, LIBRARY, PROJECTS
+from fpl_runtime.thought_archives import ArchiveAuthenticator
 
 ROOT = Path(__file__).resolve().parents[1]
 TOKEN = "presentation-identity-fixture-secret-unique"
+ARCHIVE_KEY = "presentation-archive-fixture-secret-unique"
 SVG = (
     b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">'
     b'<rect width="20" height="20" fill="#111111"/></svg>'
@@ -43,6 +46,7 @@ async def test_projects_hold_exact_account_asset_references_and_replay(
     state = tmp_path / "presentation"
     apply(state / "service.db", "presentation", MIGRATIONS)
     case.identity.state.identity_options["service_credentials"]["presentation"] = TOKEN
+    case.assets.state.presentation_archive_auth = ArchiveAuthenticator(ARCHIVE_KEY, domain=DOMAIN)
     async with case.assets.state.database.sessions(info={"owner_user_id": case.viewer}) as session:
         uploaded = await AssetLibrary(session, case.assets.state.settings).store_upload(
             UploadFile(
@@ -64,6 +68,7 @@ async def test_projects_hold_exact_account_asset_references_and_replay(
             catalog=CATALOG,
             public_key=case.key.public_key(),
             credential=TOKEN,
+            archive_key=ARCHIVE_KEY,
             schema_path=ROOT / "web/src/generated/openapi.json",
             transport=case.mesh,
             run_worker=False,
@@ -79,8 +84,8 @@ async def test_projects_hold_exact_account_asset_references_and_replay(
         )
         return case.assets.state.identity.client
 
-    async def delete_file():
-        path = f"/v1/files/{asset}"
+    async def delete_file(identity=asset):
+        path = f"/v1/files/{identity}"
         headers = await authorize(case, "assets", "DELETE", path)
         async with httpx.AsyncClient(
             base_url="http://assets", transport=httpx.ASGITransport(app=case.assets)
@@ -152,7 +157,8 @@ async def test_projects_hold_exact_account_asset_references_and_replay(
         repeated = await call(api, "POST", project + "/operations", json=body)
         assert repeated.json() == applied.json()
         assert applied.json()["revision"] == 2
-        await check_exports(api, call, project, applied.json(), asset)
+        package = await check_exports(api, call, project, applied.json(), asset)
+        await check_archive_import(api, call, restarted, delete_file, package, asset, monkeypatch)
         assert list((state / ".staging").iterdir()) == []
         await restarted.state.reference_delivery.process_once()
         removed = await call(api, "DELETE", project, params={"expected_revision": 2})
@@ -290,3 +296,44 @@ async def check_exports(api, call, project, snapshot, asset):
     with zipfile.ZipFile(io.BytesIO(pptx.content)) as archive:
         assert "ppt/slides/slide1.xml" in archive.namelist()
         assert any(path.startswith("ppt/media/") for path in archive.namelist())
+    return package.content
+
+
+async def check_archive_import(api, call, app, delete_file, package, original, monkeypatch):
+    file = {"upload": ("fixture.fplppt", package, "application/zip")}
+    preview = await call(api, "POST", IMPORT + "/preview", files=file)
+    assert preview.status_code == 200, preview.text
+    assert preview.json()["preview_assets"][original].startswith("data:image/svg+xml;base64,")
+
+    transport = app.state.import_delivery.transport
+    settle = transport.settle
+
+    async def lost_published_receipt(outcome):
+        await settle(outcome)
+        raise CapabilityUnavailable("simulated lost archive receipt")
+
+    with monkeypatch.context() as fault:
+        fault.setattr(transport, "settle", lost_published_receipt)
+        pending = await call(api, "POST", IMPORT, files=file)
+    assert pending.status_code == 503, pending.text
+    assert pending.json()["code"] == "archive_pending"
+    assert (await call(api, "GET", PROJECTS)).json()["total"] == 1
+
+    retry = await call(api, "POST", IMPORT, files=file)
+    assert retry.status_code == 200, retry.text
+    assert (await call(api, "GET", PROJECTS)).json()["total"] == 2
+    result = retry.json()
+    copied = next(
+        element["asset_id"]
+        for element in result["document"]["slides"][0]["elements"]
+        if element["kind"] == "vector"
+    )
+    assert copied != original
+    await app.state.import_delivery.process_once()
+    assert (await delete_file(copied)).status_code == 409
+    removed = await call(
+        api, "DELETE", f"{PROJECTS}/{result['id']}", params={"expected_revision": 0}
+    )
+    assert removed.status_code == 200, removed.text
+    await app.state.reference_delivery.process_once()
+    assert (await delete_file(copied)).status_code == 200

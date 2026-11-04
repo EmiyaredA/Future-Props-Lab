@@ -4595,6 +4595,18 @@
       "model": "ThoughtArchiveFile"
     },
     {
+      "table": "asset_presentation_archive_batches",
+      "service": "assets",
+      "module": "fpl_assets.models",
+      "model": "PresentationArchiveBatch"
+    },
+    {
+      "table": "asset_presentation_archive_files",
+      "service": "assets",
+      "module": "fpl_assets.models",
+      "model": "PresentationArchiveFile"
+    },
+    {
       "table": "creative_install_fences",
       "service": "creative",
       "module": "fpl_creative.fence_records",
@@ -4851,6 +4863,12 @@
       "service": "presentation",
       "module": "fpl_presentation.models",
       "model": "PresentationReferenceMutation"
+    },
+    {
+      "table": "presentation_import_batches",
+      "service": "presentation",
+      "module": "fpl_presentation.models",
+      "model": "PresentationImportBatch"
     },
     {
       "table": "remote_desktop_import_receipts",

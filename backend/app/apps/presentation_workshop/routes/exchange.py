@@ -8,7 +8,7 @@ from app.apps.presentation_workshop.exchange.transfers import (
 )
 from app.apps.presentation_workshop.projects import PresentationError, Presentations
 from app.apps.presentation_workshop.schemas.document import PresentationProjectOut
-from app.capabilities.asset_store.library import AssetError
+from app.capabilities.asset_store.errors import AssetError
 from app.deps import OwnerDep, SessionDep
 
 router = APIRouter()

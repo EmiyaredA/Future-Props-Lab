@@ -22,6 +22,9 @@ def parser():
     )
     result.add_argument("--web-root", type=Path, default=Path("/app/web"))
     result.add_argument("--thought-peer", type=Path)
+    result.add_argument(
+        "--presentation-archive-key", type=Path, default=Path("/run/fpl/presentation-archive-key")
+    )
     result.add_argument("--port", type=int, default=8080)
     result.add_argument("--migration-plan", type=Path)
     result.add_argument("--legacy-db", type=Path)
@@ -115,6 +118,20 @@ def run(options):
             if options.thought_peer is not None
             else None
         )
+        archive_key = (
+            options.presentation_archive_key.read_text().strip()
+            if options.presentation_archive_key.is_file()
+            else None
+        )
+        if archive_key is not None and archive_key in {
+            credential,
+            *(
+                set()
+                if thought_peer is None
+                else {thought_peer.community, thought_peer.upload_receipt}
+            ),
+        }:
+            raise ValueError("演示导入对等凭据必须独立")
         has_web = (options.web_root / "build.json").is_file()
         if not has_web and not (options.web_root / ".api-only").is_file():
             raise ValueError("Assets 缺少已安装的浏览器程序")
@@ -130,6 +147,7 @@ def run(options):
             if thought_peer
             else None,
             thought_upload_result_key=thought_peer.upload_receipt if thought_peer else None,
+            presentation_archive_key=archive_key,
             web_root=options.web_root if has_web else None,
             version=os.environ.get("FPL_SERVICE_VERSION", "development"),
         )

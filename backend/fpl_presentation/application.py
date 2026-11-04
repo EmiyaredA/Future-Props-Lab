@@ -11,6 +11,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import HTTPConnection
 
 from app.apps.presentation_workshop.project_errors import PresentationError
+from app.apps.presentation_workshop.routes.exchange import router as exchange_router
 from app.apps.presentation_workshop.routes.exports import router as exports_router
 from app.apps.presentation_workshop.routes.projects import router as projects_router
 from app.apps.presentation_workshop.routes.templates import router as templates_router
@@ -30,10 +31,11 @@ from fpl_runtime.migrations import check
 from fpl_runtime.presentation_assets import BUNDLE, LIBRARY, PROJECTS, SOURCE
 from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.reference_runtime import install_reference_runtime, reference_lifespan
-from fpl_runtime.routing import RouteCatalog
 from fpl_runtime.web import attach_web, load_release
 
+from .archive_transport import ArchiveTransport
 from .assets import ProjectAssets, ProjectReferences
+from .imports import ImportDelivery, Imports
 from .migrations.registry import MIGRATIONS
 from .models import MODELS, PresentationReferenceMutation
 
@@ -59,6 +61,8 @@ OPERATIONS = {
     ("POST", PROJECT + "/export/preview"),
     ("POST", PROJECT + "/export/{format}"),
     ("POST", BUNDLE),
+    ("POST", SOURCE + "/imports"),
+    ("POST", SOURCE + "/imports/preview"),
 }
 for kind, prefix in LIBRARY.items():
     resource = f"{prefix}/{{{kind}_id}}"
@@ -84,12 +88,16 @@ def create_app(
     web_root=None,
     transport=None,
     run_worker=True,
+    archive_key=None,
 ):
     database = Database(SERVICE, state_root, models=MODELS)
     staging = database.root / ".staging"
     capabilities = CapabilityClient(
         service=SERVICE, credential=credential, catalog=catalog, transport=transport
     )
+
+    archive = ArchiveTransport(capabilities, archive_key) if archive_key is not None else None
+    imports = ImportDelivery(database.sessions, archive) if archive is not None else None
 
     @asynccontextmanager
     async def lifespan(app):
@@ -107,8 +115,12 @@ def create_app(
                     ):
                         shutil.rmtree(path)
                 async with reference_lifespan(app):
+                    if imports is not None and run_worker:
+                        await imports.start()
                     yield
             finally:
+                if imports is not None:
+                    await imports.stop()
                 await capabilities.close()
                 await database.close()
 
@@ -116,6 +128,7 @@ def create_app(
         title="FPL Presentation", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan
     )
     app.state.database = database
+    app.state.import_delivery = imports
     install_reference_runtime(
         app,
         service=SERVICE,
@@ -132,6 +145,7 @@ def create_app(
                 presentation_project_assets=lambda _db, _owner: ProjectAssets(
                     connection, capabilities, staging
                 ),
+                presentation_import=Imports(connection, archive, imports),
                 presentation_retention=ProjectReferences(
                     connection, session, app.state.reference_mutations
                 ),
@@ -150,7 +164,7 @@ def create_app(
     app.add_exception_handler(OperationalError, storage_operational_error_handler)
     app.add_exception_handler(RevisionConflictError, revision_conflict_handler)
     app.add_exception_handler(PresentationError, presentation_error)
-    for router in (templates_router, projects_router, exports_router):
+    for router in (exchange_router, templates_router, projects_router, exports_router):
         app.include_router(
             router,
             prefix=SOURCE,
@@ -158,11 +172,6 @@ def create_app(
             dependencies=[Depends(require_studio_auth)],
         )
     if schema_path is not None:
-        project_catalog = RouteCatalog(
-            item
-            for item in catalog.operations
-            if item.service == SERVICE and (item.method, item.path) in OPERATIONS
-        )
         schema = app.openapi()
         mounted = {
             (method.upper(), path)
@@ -172,19 +181,18 @@ def create_app(
         }
         if (
             mounted != OPERATIONS
-            or {(item.method, item.path) for item in project_catalog.operations} != OPERATIONS
+            or {(item.method, item.path) for item in catalog.operations if item.service == SERVICE}
+            != OPERATIONS
         ):
             raise ValueError("演示文稿项目路由归属不匹配")
         published = json.loads(schema_path.read_text())
-        expected = public_contract(published, SERVICE, project_catalog)
-        if public_contract(schema, SERVICE, project_catalog) != expected:
+        expected = public_contract(published, SERVICE, catalog)
+        if public_contract(schema, SERVICE, catalog) != expected:
             raise ValueError("演示文稿项目 API 与发布契约不匹配")
 
     if web_root is not None:
         release = load_release(web_root, SERVICE)
-        if schema_path is None or release.api_sha256 != public_contract(
-            published, SERVICE, catalog
-        ):
+        if schema_path is None or release.api_sha256 != expected:
             raise ValueError("演示工坊浏览器版本与发布契约不匹配")
         attach_web(app, release, pages=PAGES)
 

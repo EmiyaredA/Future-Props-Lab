@@ -55,7 +55,7 @@ def project_asset_grant(grant):
         or (
             method == "POST"
             and (
-                path == BUNDLE
+                path in {BUNDLE, SOURCE + "/imports", SOURCE + "/imports/preview"}
                 or path in LIBRARY.values()
                 or re.fullmatch(rf"{PROJECTS}/{ID}/(?:operations|template/apply)", path)
                 or any(

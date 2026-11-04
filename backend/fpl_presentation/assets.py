@@ -43,7 +43,11 @@ class ProjectAssets:
         return {"X-Fpl-Context": token, "Accept-Encoding": "identity"}
 
     async def assets(self, document):
-        ids = sorted(document_references(document))
+        rows = await self.describe(document_references(document))
+        return await validate_assets(document, rows, monochrome=self.monochrome)
+
+    async def describe(self, identities):
+        ids = sorted(identities)
         rows = []
         for start in range(0, len(ids), MAX_IDS):
             query = PresentationQuery(asset_ids=ids[start : start + MAX_IDS])
@@ -73,7 +77,7 @@ class ProjectAssets:
             ):
                 raise PresentationError("素材描述暂不可用", 503, "asset_unavailable") from None
             rows.extend(batch)
-        return await validate_assets(document, rows, monochrome=self.monochrome)
+        return rows
 
     async def monochrome(self, asset):
         if asset.id not in self.monochrome_results:

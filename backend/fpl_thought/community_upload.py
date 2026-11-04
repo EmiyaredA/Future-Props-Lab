@@ -30,6 +30,7 @@ from .community_upload_records import ThoughtCommunityUpload
 class CommunityUploadDelivery(FileBatchDelivery):
     runner_name = "thought-community-upload-delivery"
     records = ThoughtCommunityUpload
+    pending_error = staticmethod(lambda: ThoughtError("归档批次尚未提交", 409, "archive_pending"))
     result_model = ThoughtAttachmentOut
 
 

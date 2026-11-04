@@ -26,6 +26,7 @@ from app.apps.galgame_workshop.video.video_handoff_runner import GalgameVideoEdi
 from app.apps.interview_assistant.executor_status import executor_status
 from app.apps.interview_assistant.runner import InterviewPreparationRunner
 from app.apps.motion_compositor.runner import MotionExportRunner
+from app.apps.presentation_workshop.exchange.legacy_import import import_legacy_presentation
 from app.apps.presentation_workshop.legacy_project_assets import LegacyProjectAssets
 from app.apps.thought_workshop.account_directory import DirectoryBindings
 from app.apps.thought_workshop.external_sync.runner import ArticleSyncRunner
@@ -226,6 +227,7 @@ SessionLocal.configure(
         "interview_executor_status": executor_status,
         "annotation_sources": LegacyAnnotationSources,
         "presentation_project_assets": LegacyProjectAssets,
+        "presentation_import": import_legacy_presentation,
         "annotation_transcribe": legacy_transcribe,
         "creative_authors_factory": LegacyCreativeAuthors,
         "creative_archives_factory": LegacyCreativeArchives,
