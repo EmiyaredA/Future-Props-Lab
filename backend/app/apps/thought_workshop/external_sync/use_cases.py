@@ -2,25 +2,19 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-import httpx
 from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 
-from app.apps.thought_workshop.content_exports import resolve_assets
-from app.apps.thought_workshop.multitable.content import project as project_tables
-from app.integrations.external.blocks import feishu_tree
 from app.integrations.external.catalog import ExternalConnections
 from app.integrations.external.contracts import ExternalError
 from app.runtime.time import utc_now
 
 from .binding import bind_note
-from .content import TABLE_SNAPSHOT, has_multitable_view, project_content
 from .models import ArticleSyncAsset, ArticleSyncStep, ArticleSyncTask
+from .preview import preview_note
 from .records import ArticleSyncRecords, task_out
 from .schemas import (
-    ArticleSyncPreview,
     ArticleSyncReconcileOut,
-    SnapshotBlock,
 )
 
 
@@ -38,84 +32,17 @@ class ArticleSync(ArticleSyncRecords):
         )
 
     async def preview(self, note_id, body):
-        note = await self.note(note_id)
-        if note.revision != body.expected_revision:
-            raise ExternalError("文章已变化，请保存后重新预览", 409, "note_changed")
-        binding = await self.binding(note_id)
-        if not binding or binding.revision != body.binding_revision:
-            raise ExternalError("绑定已变化，请重新预览", 409)
-        await self.idle(binding.target_key)
-        expanded = await project_tables(self.session, self.owner_user_id, note)
-        content = project_content(note.title, expanded)
-        if note.kind == "multitable" or has_multitable_view(note.document):
-            content["warnings"] = sorted({*content["warnings"], TABLE_SNAPSHOT})
-        if not content["blockers"]:
-            try:
-                feishu_tree(content["nodes"])
-            except ExternalError as exc:
-                content["blockers"].append(str(exc))
-        assets = await resolve_assets(self.session, self.owner_user_id, set(content["asset_ids"]))
-        for asset in assets.values():
-            if asset.byte_size > 20 * 1024 * 1024 or asset.mime_type not in {
-                "image/png",
-                "image/jpeg",
-                "image/gif",
-                "image/webp",
-            }:
-                content["blockers"].append(
-                    f"图片 {asset.original_filename} 格式不支持或超过 20 MiB"
-                )
-        connection = await ExternalConnections(self.session, self.owner_user_id).get(
-            binding.connection_id
-        )
-        fields = dict(
-            owner_user_id=self.owner_user_id,
-            note_id=note_id,
-            binding_id=binding.id,
-            binding_revision=binding.revision,
-            connection_id=connection.id,
-            connection_revision=connection.revision,
-            target_key=binding.target_key,
-            note_revision=note.revision,
-            content=content,
-        )
-        # JSON does not encode principal frozensets or datetimes.
-        fields["actor"] = {
-            "user_id": self.principal.user_id,
-            "auth_kind": self.principal.auth_kind,
-            "api_key_id": self.principal.api_key_id,
-        }
-        document_id, previous = binding.document_id, binding.last_fingerprint
-        client = await ExternalConnections(self.session, self.owner_user_id, self.transport).client(
-            fields["connection_id"], expected_revision=fields["connection_revision"]
-        )
-        try:
+        async def read_target(connection_id, document_id):
+            connections = ExternalConnections(self.session, self.owner_user_id, self.transport)
+            revision = (await connections.get(connection_id)).revision
+            client = await connections.client(connection_id, expected_revision=revision)
+            await self.session.rollback()
             remote = await client.read(document_id)
             if not await client.can_write(document_id):
                 raise ExternalError("目标文档不可编辑", 403)
-        except httpx.HTTPError:
-            raise ExternalError("飞书连接失败，请重试", 502) from None
-        task = None
-        if not content["blockers"]:
-            task = ArticleSyncTask(**fields, remote=remote.snapshot())
-            self.session.add(task)
-            await self.session.flush()
-            self.session.add_all(
-                ArticleSyncAsset(task_id=task.id, asset_id=id) for id in content["asset_ids"]
-            )
-            await self.session.commit()
-        return ArticleSyncPreview(
-            preview_id=task.id if task else None,
-            note_revision=fields["note_revision"],
-            local_text=content["text"],
-            snapshot=[SnapshotBlock.model_validate(node) for node in content["nodes"]],
-            remote_text=remote.text,
-            target_title=remote.title,
-            warnings=content["warnings"],
-            blockers=content["blockers"],
-            remote_changed=bool(previous and previous != remote.fingerprint),
-            first_sync=not previous,
-        )
+            return revision, remote
+
+        return await preview_note(self, read_target, note_id, body)
 
     async def submit(self, note_id, body):
         operation_id = str(body.operation_id)

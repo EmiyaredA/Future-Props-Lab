@@ -8,14 +8,20 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.external_sync.binding import bind_note
+from app.apps.thought_workshop.external_sync.preview import preview_note
 from app.apps.thought_workshop.external_sync.records import ArticleSyncRecords
-from app.apps.thought_workshop.external_sync.schemas import ArticleBindingInput, ArticleBindingOut
+from app.apps.thought_workshop.external_sync.schemas import (
+    ArticleBindingInput,
+    ArticleBindingOut,
+    ArticlePreviewInput,
+    ArticleSyncPreview,
+)
 from app.apps.thought_workshop.http_bindings import SessionDep
 from app.deps import OwnerDep, StudioAuth
-from app.integrations.external.contracts import ExternalError
+from app.integrations.external.contracts import ExternalError, RemoteDocument
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
 from fpl_runtime.delegation import RequestGrant
-from fpl_runtime.external_sync import ExternalBindingTarget, ExternalRead
+from fpl_runtime.external_sync import ExternalBindingTarget, ExternalDocumentSnapshot, ExternalRead
 
 router = APIRouter(
     prefix="/thought-workshop/notes/{note_id}/external-sync", tags=["thought-workshop"]
@@ -35,13 +41,18 @@ class ResolvedDocument(BaseModel):
     url: str = Field(max_length=2048)
 
 
+class WritePermission(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    can_write: bool
+
+
 class BindingReads:
     def __init__(self, request, note_id):
         self.request, self.note_id = request, note_id
         self.client = request.app.state.thought_sync_reads
         self.revision = None
 
-    async def execute(self, connection, body, output):
+    async def execute(self, connection, body, output, *, maximum_bytes=32 * 1024):
         request = self.request
         try:
             path = body.path(self.note_id, connection)
@@ -67,7 +78,7 @@ class BindingReads:
                 payload = bytearray()
                 async for chunk in response.aiter_bytes():
                     payload.extend(chunk)
-                    if len(payload) > 32 * 1024:
+                    if len(payload) > maximum_bytes:
                         raise ValueError("external target response too large")
                 if response.status_code in {401, 403, 404, 409, 422, 502, 503}:
                     error = json.loads(payload)
@@ -113,6 +124,32 @@ class BindingReads:
             ConnectionVersion,
         )
 
+    async def read_document(self, connection, revision, document_id):
+        value = await self.execute(
+            connection,
+            ExternalRead(op="read", document_id=document_id, connection_revision=revision),
+            ExternalDocumentSnapshot,
+            maximum_bytes=32 * 1024 * 1024,
+        )
+        remote = RemoteDocument(
+            value.document_id, value.title, value.revision, value.blocks, value.root_ids
+        )
+        if remote.document_id != document_id or remote.snapshot() != value.model_dump():
+            raise ExternalError("远端文档快照与读取范围不一致", 503, "external_snapshot_invalid")
+        return remote
+
+    async def preview_target(self, connection, document_id):
+        revision = (await self.get(connection)).revision
+        remote = await self.read_document(connection, revision, document_id)
+        permission = await self.execute(
+            connection,
+            ExternalRead(op="can_write", document_id=document_id, connection_revision=revision),
+            WritePermission,
+        )
+        if not permission.can_write:
+            raise ExternalError("目标文档不可编辑", 403)
+        return revision, remote
+
 
 @router.put("/binding", response_model=ArticleBindingOut)
 async def bind(
@@ -127,6 +164,26 @@ async def bind(
         return await bind_note(
             ArticleSyncRecords(session, owner_user_id, principal),
             BindingReads(request, note_id),
+            note_id,
+            body,
+        )
+    except (ExternalError, ThoughtError) as exc:
+        raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
+
+
+@router.post("/preview", response_model=ArticleSyncPreview)
+async def preview(
+    note_id: str,
+    body: ArticlePreviewInput,
+    principal: StudioAuth,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    request: Request,
+):
+    try:
+        return await preview_note(
+            ArticleSyncRecords(session, owner_user_id, principal),
+            BindingReads(request, note_id).preview_target,
             note_id,
             body,
         )

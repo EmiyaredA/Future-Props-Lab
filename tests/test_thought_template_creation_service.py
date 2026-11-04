@@ -650,6 +650,7 @@ def test_independent_thought_mounts_shared_routes_with_public_contract(tmp_path)
         ("post", "/notes/{note_id}/multitable/tables/{table_id}/csv-export"),
         ("get", "/notes/{note_id}/external-sync"),
         ("put", "/notes/{note_id}/external-sync/binding"),
+        ("post", "/notes/{note_id}/external-sync/preview"),
         ("delete", "/notes/{note_id}/external-sync/binding"),
         ("get", "/notes/{note_id}/external-sync/tasks/{task_id}"),
         ("put", "/community/favorites/{namespace}/{resource_id}"),

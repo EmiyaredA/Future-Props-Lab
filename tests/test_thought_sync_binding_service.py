@@ -134,4 +134,22 @@ async def test_binding_reads_only_the_actors_integration_and_rechecks_revision(
         assert stale.status_code == 409, stale.text
         state = await thought_api.get(sync, headers=await authorize(owner, "thought", "GET", sync))
         assert state.json()["binding"] == changed.json()
+        path = sync + "/preview"
+        payload = {"expected_revision": 0, "binding_revision": changed.json()["revision"]}
+        denied = await thought_api.post(
+            path, headers=await authorize(case.browser, "thought", "POST", path), json=payload
+        )
+        assert denied.status_code == 404, denied.text
+        stale = await thought_api.post(
+            path,
+            headers=await authorize(owner, "thought", "POST", path),
+            json={**payload, "binding_revision": 0},
+        )
+        assert stale.status_code == 409, stale.text
+        preview = await thought_api.post(
+            path, headers=await authorize(owner, "thought", "POST", path), json=payload
+        )
+        assert preview.status_code == 200, preview.text
+        assert preview.json()["preview_id"] and preview.json()["remote_text"] == "远端原正文"
+        assert preview.json()["first_sync"] is True
         assert remote.writes == []

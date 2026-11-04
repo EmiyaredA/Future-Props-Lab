@@ -92,6 +92,17 @@ class ExternalBindingTarget(BaseModel):
     can_write: bool
 
 
+class ExternalDocumentSnapshot(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    document_id: str = Field(pattern="^" + DOC + "$")
+    title: str
+    revision: int = Field(ge=0, strict=True)
+    blocks: list[dict]
+    root_ids: list[str]
+    fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
+    text: str
+
+
 def read_grant(grant):
     target = read_target(grant.target_method, grant.target_path)
     if (
