@@ -36,7 +36,6 @@ test("every route and independent HTML entry has a responsive scenario", () => {
       "motion-compositor-editor",
       "presentation-workshop-editor",
       "presentation-workshop-template-editor",
-      "presentation-workshop-templates",
       "thought-workshop-editor",
       "thought-workshop-legacy",
       "video-editor-editor",
