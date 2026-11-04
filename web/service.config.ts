@@ -47,6 +47,7 @@ export default defineConfig(async (environment) => {
       "motion",
       "video",
       "visual",
+      "galgame",
       "agent-runtime",
     ].includes(service) ||
     !build ||
@@ -84,6 +85,7 @@ export default defineConfig(async (environment) => {
             | "motion"
             | "video"
             | "visual"
+            | "galgame"
             | "agent-runtime"
         ],
       ),

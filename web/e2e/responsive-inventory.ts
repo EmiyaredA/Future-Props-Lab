@@ -102,6 +102,12 @@ export const independentApplications = {
     "/apps/visual-workshop/projects/:id/canvas",
     "/apps/visual-workshop/projects/:id/assets",
   ],
+  galgame: [
+    "/apps/galgame-workshop",
+    "/apps/galgame-workshop/projects/:id/overview",
+    "/apps/galgame-workshop/projects/:id/editor",
+    "/apps/galgame-workshop/projects/:id/preview",
+  ],
   motion: [
     "/apps/motion-compositor",
     "/apps/motion-compositor/projects/:id/editor",

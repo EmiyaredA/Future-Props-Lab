@@ -31,6 +31,7 @@ if (
     "motion",
     "video",
     "visual",
+    "galgame",
     "agent-runtime",
   ].includes(service)
 )

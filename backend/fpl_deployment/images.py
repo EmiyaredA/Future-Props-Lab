@@ -510,6 +510,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
         "motion",
         "video",
         "visual",
+        "galgame",
         "agent-runtime",
         "remote",
     }:
@@ -555,6 +556,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
         "motion",
         "video",
         "visual",
+        "galgame",
         "agent-runtime",
     }:
         if web_release is None:

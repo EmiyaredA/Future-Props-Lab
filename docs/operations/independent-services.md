@@ -528,3 +528,9 @@ Motion 与 Video 启动检查覆盖归属清单中的 21 和 38 项操作。七�
 用 `npm run services:build:web -- visual` 构建项目、画布、素材和任务入口。将清单返回的目录传给 `npm run services:build -- visual --build --web-release`，并使用 `deploy/project-owners.compose.yaml` 中的 Visual 状态卷和身份凭据。安装时核验程序文件与 Visual 的发布 API 摘要。旧程序的写请求返回 409。
 
 模型选项和验收模型通过 Identity 将原请求委派给 Models。Models 在自己的账号库筛选可用条目，只返回界面所需字段。五容器隔离运行 `fpl-visual-browser-9163104183` 在 Chromium 验证四个入口、390／768／1440 宽度、画布保存和过期浏览器版本拒绝，并在重启后核验项目与模型目录。剩余公开操作和正式历史导入继续由 Visual 就绪门禁跟踪。
+
+### Galgame 工坊的浏览器版本与故事验收
+
+运行 `npm run services:build:web -- galgame`，将清单目录传给 `npm run services:build -- galgame --build --web-release`。在 `deploy/project-owners.compose.yaml` 中使用 Galgame 专属状态目录和 Identity 凭据。项目列表、总览、编辑和已保存 Story 预演由 Galgame 镜像提供，旧版本写请求返回 409。
+
+四容器隔离运行 `fpl-galgame-browser-77e550aeb2` 通过网关导入 Story 1.3、检查引用范围、下载并比较保留文件字节，以及设置项目完成状态。Chromium 打开四个入口并验证 390／768／1440 宽度。Galgame 与 Assets 重启后复核同一 Story、线路报告和素材。项目写入、生成任务和完整历史的其余接线仍由就绪门禁跟踪。

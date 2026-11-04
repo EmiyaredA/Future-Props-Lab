@@ -33,6 +33,11 @@ export const serviceAssets = {
     "brand/favicon.png",
     "brand/visual-workshop-mark.png",
   ],
+  galgame: [
+    "brand/brand-mark.png",
+    "brand/favicon.png",
+    "brand/galgame-workshop-mark.png",
+  ],
   motion: [
     "brand/brand-mark.png",
     "brand/favicon.png",
