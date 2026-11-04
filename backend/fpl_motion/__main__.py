@@ -1,6 +1,7 @@
 """Start the installed Motion service or explicitly initialize its state."""
 
 import argparse
+import os
 from pathlib import Path
 
 import uvicorn
@@ -41,6 +42,11 @@ def main():
     except (OSError, ValueError):
         parser.error("Motion Identity 凭据无法读取或无效")
 
+    uploads = options.state_root.resolve() / ".http-uploads"
+    if uploads.is_symlink():
+        parser.error("特效工坊上传暂存目录不能是符号链接")
+    uploads.mkdir(parents=True, exist_ok=True, mode=0o700)
+    os.environ["TMPDIR"] = str(uploads)
     app = create_app(
         state_root=options.state_root,
         public_key=key,

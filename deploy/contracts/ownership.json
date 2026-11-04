@@ -4607,6 +4607,12 @@
       "model": "PresentationArchiveFile"
     },
     {
+      "table": "asset_motion_file_write_receipts",
+      "service": "assets",
+      "module": "fpl_assets.models",
+      "model": "MotionFileWriteReceipt"
+    },
+    {
       "table": "creative_install_fences",
       "service": "creative",
       "module": "fpl_creative.fence_records",

@@ -22,3 +22,5 @@ The installed image mounts six project and document operations. Remaining file o
 ## Verification
 
 The signed in-process test covers same-project acceptance, other-scope denial, revision conflicts, another account and replay after restart. The four-container acceptance checks the installed ingress, scope rejection and the exact saved edit after restarting Motion.
+
+The five published file operations use request-bound Assets grants. Source discovery and project lists follow the original scope. Uploads bind the raw SHA256 and byte count. Copy requests bind the canonical source ID set. Assets saves each exact receipt in the same transaction as its new project files. Reads preserve byte ranges and close the upstream stream when the download ends. Installed validation exercises an original upload, account-library copy, byte range and document save.

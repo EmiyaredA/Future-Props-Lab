@@ -222,6 +222,16 @@ class PresentationArchiveFile(ReferenceBase):
     metadata_snapshot: Mapped[dict] = mapped_column(JSON)
 
 
+class MotionFileWriteReceipt(ReferenceBase):
+    __tablename__ = "asset_motion_file_write_receipts"
+
+    owner_user_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    request_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    project_id: Mapped[str] = mapped_column(String(36))
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    result: Mapped[list] = mapped_column(JSON)
+
+
 MODELS = (
     VisualAssetFolder,
     VisualAsset,
@@ -238,4 +248,5 @@ MODELS = (
     ThoughtArchiveFile,
     PresentationArchiveBatch,
     PresentationArchiveFile,
+    MotionFileWriteReceipt,
 )

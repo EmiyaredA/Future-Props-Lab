@@ -89,6 +89,7 @@ async def live(request: Request, body: LiveRequest):
     from fpl_runtime.creative_source_evidence import source_transfer_target
     from fpl_runtime.creative_stdio import stdio_target
     from fpl_runtime.external_sync import close_target, read_target
+    from fpl_runtime.motion_assets import motion_asset_write_target
     from fpl_runtime.presentation_archives import archive_target as presentation_archive_target
     from fpl_runtime.thought_archives import archive_target
     from fpl_runtime.thought_uploads import is_upload_target
@@ -114,6 +115,7 @@ async def live(request: Request, body: LiveRequest):
         is_upload_target(body.method, body.path)
         or archive_target(body.method, body.path)
         or presentation_archive_target(body.method, body.path)
+        or motion_asset_write_target(body.method, body.path)
         or community_upload_target(body.method, body.path)
     )
     if not (private_output or private_writing or private_external or private_thought_upload) and (

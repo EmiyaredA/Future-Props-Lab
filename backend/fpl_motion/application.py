@@ -28,6 +28,7 @@ from fpl_runtime.motion_assets import SOURCE
 from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.routing import RouteCatalog
 
+from .file_routes import router as file_router
 from .migrations.registry import MIGRATIONS
 from .resources import ProjectResources
 
@@ -40,6 +41,11 @@ OPERATIONS = {
     ("GET", PROJECT),
     ("PATCH", PROJECT),
     ("GET", PROJECT + "/document"),
+    ("GET", SOURCE + "/import-sources"),
+    ("GET", PROJECT + "/assets"),
+    ("POST", PROJECT + "/assets"),
+    ("POST", PROJECT + "/assets/import"),
+    ("GET", PROJECT + "/assets/{asset_id}/file"),
     ("POST", PROJECT + "/document/operations"),
 }
 
@@ -66,6 +72,7 @@ def create_app(*, state_root, catalog, public_key, credential, schema_path=None,
         title="FPL Motion", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan
     )
     app.state.database = database
+    app.state.motion_capabilities = capabilities
 
     async def request_session(connection: HTTPConnection):
         async with database.sessions() as session:
@@ -80,12 +87,13 @@ def create_app(*, state_root, catalog, public_key, credential, schema_path=None,
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(OperationalError, storage_operational_error_handler)
     app.add_exception_handler(RevisionConflictError, revision_conflict_handler)
-    app.include_router(
-        router,
-        prefix=SOURCE,
-        tags=["motion-compositor"],
-        dependencies=[Depends(require_studio_auth)],
-    )
+    for component in (router, file_router):
+        app.include_router(
+            component,
+            prefix=SOURCE,
+            tags=["motion-compositor"],
+            dependencies=[Depends(require_studio_auth)],
+        )
     if schema_path is not None:
         partial = RouteCatalog(
             operation

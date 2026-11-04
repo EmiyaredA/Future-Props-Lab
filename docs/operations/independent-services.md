@@ -463,3 +463,5 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 特效制作工坊独立镜像承接项目列表、新建、读取、重命名、文稿和编辑批次六项操作。使用 `deploy/motion.compose.yaml`、专属状态目录和 Identity 凭据，显式执行 `motion migrate` 后启动。编辑素材只能通过签名请求读取同一账号、同一特效项目下的文件描述，文稿修订和编辑回执同事务提交。项目删除、文件、渲染和视频交接继续由生产就绪门禁跟踪。
 
 隔离运行 `fpl-motion-api-4ff09339f8` 使用镜像 `fpl/motion:5a541d36b4ec4d87ff3c`，经四容器 Gateway 验证旧修订拒绝、原回执重放、非本项目素材拒绝和回环公网认证。
+
+特效制作工坊的五项素材操作也经独立接线。上传绑定原件大小和 SHA256，复制绑定源文件集合，Assets 将文件记录和回执一起提交。隔离运行 `fpl-motion-media-9847b25f1d` 使用 `fpl/motion:2b4f4592fa8a6f4469e8`，经四容器验证上传、复制、206 分段下载、完整字节和文稿引用。

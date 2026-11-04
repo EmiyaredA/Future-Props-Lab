@@ -2,27 +2,41 @@
 
 from io import BytesIO
 from pathlib import Path
+from uuid import UUID
 
 import httpx
 from PIL import Image
 from starlette.datastructures import Headers, UploadFile
-from tests.test_community_asset_protocol import CATALOG, PASSWORD, scenario  # noqa: F401
+from tests.test_community_asset_protocol import (  # noqa: F401
+    ASSETS_SECRET,
+    CATALOG,
+    PASSWORD,
+    scenario,
+)
 from tests.test_independent_project_catalog import authorize
 
 from app.capabilities.asset_store.library import AssetLibrary
+from fpl_motion import file_routes
 from fpl_motion.application import PROJECTS, create_app
 from fpl_motion.migrations.registry import MIGRATIONS
+from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
 
 ROOT = Path(__file__).resolve().parents[1]
 TOKEN = "motion-identity-fixture-secret-unique"
 
 
-async def test_motion_project_metadata_checks_exact_project_and_owner(scenario, tmp_path):  # noqa: F811
+async def test_motion_project_metadata_checks_exact_project_and_owner(
+    scenario,  # noqa: F811
+    tmp_path,
+    monkeypatch,
+):
     case = scenario
     state = tmp_path / "motion"
     apply(state / "service.db", "motion", MIGRATIONS)
     case.identity.state.identity_options["service_credentials"]["motion"] = TOKEN
+    live = LiveAuthorization(service="assets", credential=ASSETS_SECRET, transport=case.mesh)
+    case.assets.state.identity = live
 
     def app():
         return create_app(
@@ -41,6 +55,7 @@ async def test_motion_project_metadata_checks_exact_project_and_owner(scenario, 
     async def upload(project_id):
         body = BytesIO()
         Image.new("RGB", (4, 4), "green").save(body, format="PNG")
+        raw = body.getvalue()
         body.seek(0)
         async with case.assets.state.database.sessions(info={"owner_user_id": case.viewer}) as db:
             row = await AssetLibrary(db, case.assets.state.settings).store_upload(
@@ -50,10 +65,11 @@ async def test_motion_project_metadata_checks_exact_project_and_owner(scenario, 
                 owner_user_id=case.viewer,
                 motion_compositor_project_id=project_id,
             )
-            return row.id
+            return row.id, raw
 
     first = app()
     async with (
+        live.client,
         first.router.lifespan_context(first),
         httpx.AsyncClient(
             transport=httpx.ASGITransport(app=first), base_url="http://motion"
@@ -69,8 +85,47 @@ async def test_motion_project_metadata_checks_exact_project_and_owner(scenario, 
         assert (await call(api, "GET", PROJECTS)).json()["items"] == [row]
         document = project + "/document"
         assert (await call(api, "GET", document)).json()["revision"] == 0
-        owned = await upload(project_id)
-        foreign = await upload(None)
+        foreign, raw = await upload(None)
+        upload_body = {"file": ("owned.png", raw, "image/png")}
+        with monkeypatch.context() as fault:
+            fault.setattr(
+                file_routes, "uuid4", lambda: UUID("e3cb6549-c686-4ab1-a4b2-e39442544cb1")
+            )
+            attached = await call(api, "POST", project + "/assets", files=upload_body)
+            assert attached.status_code == 200, attached.text
+            replayed = await call(api, "POST", project + "/assets", files=upload_body)
+            assert replayed.json() == attached.json()
+            conflicting = await call(
+                api, "POST", project + "/assets", files={"file": ("changed.png", raw, "image/png")}
+            )
+            assert conflicting.status_code == 409
+        owned = attached.json()["id"]
+        copied = await call(api, "POST", project + "/assets/import", json={"assetIds": [foreign]})
+        assert copied.status_code == 200, copied.text
+        copy_id = copied.json()["items"][0]["id"]
+        assert copy_id != foreign
+        assert (
+            await call(api, "POST", project + "/assets/import", json={"assetIds": ["unknown"]})
+        ).status_code == 422
+        files = await call(api, "GET", project + "/assets")
+        assert files.status_code == 200, files.text
+        assert {item["id"] for item in files.json()["items"]} == {owned, copy_id}
+        candidates = await call(api, "GET", "/v1/motion-compositor/import-sources")
+        sources = {item["id"]: item["sourceApplication"] for item in candidates.json()["items"]}
+        assert sources == {
+            owned: "motion-compositor",
+            copy_id: "motion-compositor",
+            foreign: "file-library",
+        }
+        stored_path = f"{project}/assets/{owned}/file"
+        full = await call(api, "GET", stored_path)
+        assert full.status_code == 200 and full.content == raw
+        proof = await authorize(case, "motion", "GET", stored_path)
+        chunk = await api.get(stored_path, headers={**proof, "Range": "bytes=0-7"})
+        assert chunk.status_code == 206 and chunk.content == raw[:8]
+        assert chunk.headers["content-range"] == f"bytes 0-7/{len(raw)}"
+        foreign_read = await call(api, "GET", f"{project}/assets/{foreign}/file")
+        assert foreign_read.status_code == 404
         layer = {
             "id": "owned-layer",
             "kind": "image",
