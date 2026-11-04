@@ -32,7 +32,7 @@ def test_audio_annotation_lives_under_apps() -> None:
 def test_thought_workshop_lives_under_apps() -> None:
     assert (BACKEND_APP / "apps" / "thought_workshop" / "models.py").is_file()
     assert (BACKEND_APP / "apps" / "thought_workshop" / "routes" / "__init__.py").is_file()
-    assert (BACKEND_APP / "apps" / "thought_workshop" / "routes" / "conversion.py").is_file()
+    assert (BACKEND_APP / "apps" / "thought_workshop" / "content_exports_http.py").is_file()
     assert not (BACKEND_APP / "thought_workshop").exists()
     assert not (BACKEND_APP / "models" / "thought_workshop.py").exists()
     assert not (BACKEND_APP / "routes" / "thought_workshop.py").exists()

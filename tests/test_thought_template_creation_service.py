@@ -26,10 +26,13 @@ from fpl_thought.application import create_app
 async def test_create_template_pins_same_account_assets_over_http(scenario):  # noqa: F811
     case = scenario
     from app.apps.thought_workshop.models import ThoughtKnowledgeBase
+    from app.apps.thought_workshop.publication.models import PublishedArticle
 
     async with case.db.sessions(info={"owner_user_id": case.owner}) as session:
         book = await session.get(ThoughtKnowledgeBase, "book")
         book.home_note_id = "note"
+        article = await session.get(PublishedArticle, ("pub", "note"))
+        article.visibility = "members"
         await session.commit()
     case.assets.state.identity = LiveAuthorization(
         service="assets", credential=ASSETS_SECRET, transport=case.mesh
@@ -266,6 +269,42 @@ async def test_create_template_pins_same_account_assets_over_http(scenario):  # 
                 )
                 assert favorite.status_code == 200, favorite.text
                 assert favorite.json()["resource_ids"] == ["official/example"]
+                permissions = "/v1/thought-workshop/community/publications/pub/permissions"
+                settings = await client.get(
+                    permissions,
+                    headers=await context(owner, permissions, "GET"),
+                    params={"note_id": "note"},
+                )
+                assert settings.status_code == 200, settings.text
+                update_permissions = {
+                    "articles": [
+                        {
+                            "note_id": "note",
+                            "expected_revision": settings.json()[0]["revision"],
+                            "visibility": "members",
+                            "members": [{"username": "viewing-user", "role": "edit"}],
+                        }
+                    ]
+                }
+                denied = await client.put(
+                    permissions,
+                    headers=await context(case.browser, permissions, "PUT"),
+                    json=update_permissions,
+                )
+                assert denied.status_code == 404, denied.text
+                granted = await client.put(
+                    permissions,
+                    headers=await context(owner, permissions, "PUT"),
+                    json=update_permissions,
+                )
+                assert granted.status_code == 200, granted.text
+                assert granted.json()[0]["members"][0]["role"] == "edit"
+                conflict = await client.put(
+                    permissions,
+                    headers=await context(owner, permissions, "PUT"),
+                    json=update_permissions,
+                )
+                assert conflict.status_code == 409, conflict.text
                 update_body = {"title": "Cover removed", "expected_revision": 1}
                 denied = await client.put(
                     update_path,
@@ -518,6 +557,7 @@ def test_independent_thought_mounts_shared_routes_with_public_contract(tmp_path)
         ("get", "/community/official-import/{request_id}"),
         ("get", "/community/official-links/{library_key}"),
         ("get", "/community/publications/{publication_id}/management"),
+        ("put", "/community/publications/{publication_id}/permissions"),
         ("post", "/community/publications/{publication_id}/references"),
         (
             "post",

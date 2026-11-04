@@ -18,7 +18,6 @@ from app.apps.thought_workshop.publication.schemas import (
     CommunityNotePut,
     CommunitySnapshot,
     FavoritesOut,
-    PermissionInput,
     PublicationConfig,
     PublicationOut,
     PublishInput,
@@ -96,13 +95,6 @@ async def settings(
     note_id: list[str] = Query(min_length=1, max_length=2000),
 ):
     return await call(Community(session, principal).settings(publication_id, note_id))
-
-
-@router.put("/publications/{publication_id}/permissions", response_model=list[ArticleConfig])
-async def permissions(
-    publication_id: str, body: PermissionInput, session: SessionDep, principal: PublicStudioAuth
-):
-    return await call(Community(session, principal).permissions(publication_id, body))
 
 
 @router.get("/publications/{publication_id}/cover")

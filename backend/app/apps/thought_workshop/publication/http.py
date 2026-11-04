@@ -15,9 +15,11 @@ from app.apps.thought_workshop.publication.official_source import (
 from app.apps.thought_workshop.publication.references import CommunityReferenceTarget
 from app.apps.thought_workshop.publication.references import resolve as resolve_references
 from app.apps.thought_workshop.publication.schemas import (
+    ArticleConfig,
     CommunityManagement,
     FavoriteInput,
     FavoritesOut,
+    PermissionInput,
 )
 from app.apps.thought_workshop.publication.use_cases import Community
 from app.apps.thought_workshop.schemas.workshop import ThoughtImportOut
@@ -48,6 +50,13 @@ async def favorite(
 @router.get("/publications/{publication_id}/management", response_model=CommunityManagement)
 async def management(publication_id: str, session: SessionDep, principal: PublicStudioAuth):
     return await call(Community(session, principal).management(publication_id))
+
+
+@router.put("/publications/{publication_id}/permissions", response_model=list[ArticleConfig])
+async def permissions(
+    publication_id: str, body: PermissionInput, session: SessionDep, principal: PublicStudioAuth
+):
+    return await call(Community(session, principal).permissions(publication_id, body))
 
 
 @router.get("/official-import/preview", response_model=SeedPreview)

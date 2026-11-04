@@ -21,6 +21,8 @@ Independent Thought gains search, backlinks, reference resolution, copy prefligh
 
 Additional shared routers expose table queries, model writing, community metadata, favorites and official package preflight, plus account-owned external synchronization records. Remote synchronization operations remain separately mounted. Account ZIP backup collects the manifest under a Thought database snapshot, ends the transaction, then downloads the exact asset versions into bounded staging before writing the ZIP.
 
+Community article permission changes reuse the publication role checks and revision guards. Identity resolves the proposed members before acquiring the Thought writer lock. This operation updates article visibility and membership without modifying the source document or its asset set.
+
 ## Verification
 
 Every shared operation is compared with the public OpenAPI contract. The isolated HTTP scenario searches and exports a newly created document, converts Markdown, and exports an owned knowledge base with its cover reference using Identity and Assets.
