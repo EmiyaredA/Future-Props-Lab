@@ -4631,6 +4631,18 @@
       "model": "MotionArchiveFile"
     },
     {
+      "table": "asset_video_archive_batches",
+      "service": "assets",
+      "module": "fpl_assets.models",
+      "model": "VideoArchiveBatch"
+    },
+    {
+      "table": "asset_video_archive_files",
+      "service": "assets",
+      "module": "fpl_assets.models",
+      "model": "VideoArchiveFile"
+    },
+    {
       "table": "creative_install_fences",
       "service": "creative",
       "module": "fpl_creative.fence_records",
@@ -5013,6 +5025,12 @@
       "service": "video",
       "module": "fpl_video.models",
       "model": "VideoMotionHandoff"
+    },
+    {
+      "table": "video_import_batches",
+      "service": "video",
+      "module": "fpl_video.models",
+      "model": "VideoImportBatch"
     },
     {
       "table": "visual_certification_receipts",

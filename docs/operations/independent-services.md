@@ -497,3 +497,5 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 Motion 的 MP4 与 ProRes 4444 可交接到同账号的现有或新建剪辑项目。Rendering 将相同原件字节写入目标 Assets 范围，Video 同事务登记原件、代理任务、顶层片段和交接回执。六容器 Chromium 运行 `fpl-motion-handoff-327535bf19` 验证两种格式逐字节一致，以及源项目删除后目标原件仍可用。隔离测试注入交接响应丢失，原请求按回执恢复。Motion 的 21 项发布操作已接线，历史转移与整站切换继续由就绪门禁跟踪。
 
 音频相似接点分析复用原算法，经只读委托读取同一项目中相邻片段的同一原件。Rendering 核对源文件摘要和授权，返回原有候选及参考波形格式。五容器运行 `fpl-video-audio-66fb23759c` 使用合成音频验证重复分析结果、过期修订拒绝，并复跑 Chromium 和真实成片。
+
+视频剪辑工程包沿用 `future-props-project-snapshot` 清单和项目 JSON。导出只包含项目原件及时间轴仍引用的成片，Assets 按原件修订传输。部署需将独立 `FPL_VIDEO_ARCHIVE_KEY` 只读挂载到 Video 和 Assets。导入核对 ZIP 与各原件摘要，Assets 确认后才发布副本并重映射时间轴。五容器 Chromium 运行 `fpl-video-snapshot-3f7566d8c1` 验证包内摘要和导入前后精确帧一致，隔离故障测试验证确认丢失时仅发布一次。

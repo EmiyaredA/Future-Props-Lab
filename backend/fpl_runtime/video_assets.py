@@ -33,7 +33,7 @@ def video_asset_grant(grant):
     if (grant.source_method, grant.source_path) == ("GET", SOURCE + "/import-sources"):
         return grant.target_path == PREFIX + "/sources"
     if grant.source_method == "GET":
-        source = re.fullmatch(rf"{SOURCE}/projects/({ID})/assets", grant.source_path)
+        source = re.fullmatch(rf"{SOURCE}/projects/({ID})/(assets|snapshot)", grant.source_path)
         if source:
             return grant.target_path == f"{PREFIX}/{source[1]}/files"
         source = re.fullmatch(

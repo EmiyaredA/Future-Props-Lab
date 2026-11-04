@@ -105,7 +105,7 @@ def archive_router(
             raise HTTPException(422, "invalid_archive_file") from None
         if length != description.byte_size or description.fingerprint != fingerprint:
             raise HTTPException(422, "archive_file_descriptor_mismatch")
-        limit = request.app.state.settings.fpl_visual_asset_max_bytes
+        limit = archives.file_limit() or request.app.state.settings.fpl_visual_asset_max_bytes
         if max_file_bytes is not None:
             limit = min(limit, max_file_bytes)
         if length > limit:

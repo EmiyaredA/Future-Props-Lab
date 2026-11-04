@@ -1,7 +1,10 @@
 """Video processing recovers the original Rendering job and keeps files private."""
 
+import json
 import wave
+import zipfile
 from array import array
+from hashlib import sha256
 from io import BytesIO
 from math import pi, sin
 from pathlib import Path
@@ -18,8 +21,10 @@ from fpl_rendering.settings import RenderingSettings
 from fpl_runtime.capability_client import CapabilityClient, CapabilityUnavailable
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
+from fpl_runtime.thought_archives import ArchiveAuthenticator
 from fpl_runtime.video_exports import OUTPUTS, output_peer
 from fpl_runtime.video_processing import JOBS, ORIGINALS, originals_peer, video_peer
+from fpl_runtime.video_snapshot import ARCHIVE_DOMAIN, ARCHIVE_PREFIX, IMPORT
 from fpl_video.application import PROJECTS, create_app
 from fpl_video.migrations.registry import MIGRATIONS
 
@@ -28,12 +33,14 @@ VIDEO_TOKEN = "isolated-video-derivatives-client-credential"
 RENDER_TOKEN = "isolated-video-rendering-client-credential"
 MEDIA_KEY = "isolated-video-rendering-specific-job-key"
 ORIGINALS_KEY = "isolated-rendering-assets-specific-originals-key"
+ARCHIVE_KEY = "isolated-video-assets-specific-archive-key"
 
 
 class DropJobReply(httpx.AsyncBaseTransport):
     def __init__(self, mesh):
         self.mesh = mesh
         self.submissions = []
+        self.lost_archive = False
 
     async def handle_async_request(self, request):
         response = await self.mesh.handle_async_request(request)
@@ -47,6 +54,15 @@ class DropJobReply(httpx.AsyncBaseTransport):
             if len(self.submissions) == 1:
                 await response.aclose()
                 raise httpx.ReadError("isolated rendering receipt dropped", request=request)
+        if (
+            not self.lost_archive
+            and request.url.host == "assets"
+            and request.url.path == ARCHIVE_PREFIX + "/settle"
+            and response.status_code == 200
+        ):
+            self.lost_archive = True
+            await response.aclose()
+            raise httpx.ReadError("isolated archive publication reply dropped", request=request)
         return response
 
 
@@ -85,6 +101,7 @@ async def test_video_rendering_lost_reply_owner_isolation_and_removal(
     case.assets.state.identity = assets_authority
     case.assets.state.video_originals_peer = originals_peer(ORIGINALS_KEY)
     case.assets.state.video_output_peer = output_peer(ORIGINALS_KEY)
+    case.assets.state.video_archive_auth = ArchiveAuthenticator(ARCHIVE_KEY, domain=ARCHIVE_DOMAIN)
     publication = DropOutputReply(case.mesh)
     render_db = tmp_path / "rendering" / "service.db"
     video_root = tmp_path / "video"
@@ -115,6 +132,7 @@ async def test_video_rendering_lost_reply_owner_isolation_and_removal(
         transport=faults,
         run_worker=False,
         media_key=MEDIA_KEY,
+        archive_key=ARCHIVE_KEY,
     )
 
     async def send(client, method, path, **kwargs):
@@ -332,6 +350,44 @@ async def test_video_rendering_lost_reply_owner_isolation_and_removal(
         assert (
             await send(api, "POST", seam_path, json={**seam_request, "expectedRevision": 1})
         ).status_code == 409
+
+        exported = await send(api, "GET", project + "/snapshot")
+        assert exported.status_code == 200, exported.text
+        with zipfile.ZipFile(BytesIO(exported.content)) as bundle:
+            manifest = json.loads(bundle.read("manifest.json"))
+            assert manifest["application_id"] == "video-editor"
+            entries = {item["source_id"]: item for item in manifest["assets"]}
+            assert set(entries) == {asset["id"], audio_id}
+            for entry in entries.values():
+                assert sha256(bundle.read(entry["path"])).hexdigest() == entry["sha256"]
+        upload = {"file": ("video.zip", exported.content, "application/zip")}
+        uncertain = await send(api, "POST", IMPORT, files=upload)
+        assert uncertain.status_code == 503 and faults.lost_archive, uncertain.text
+        assert len((await send(api, "GET", PROJECTS)).json()["items"]) == 1
+        restored = await send(api, "POST", IMPORT, files=upload)
+        assert restored.status_code == 200, restored.text
+        imported = restored.json()["project"]
+        assert imported["title"].endswith("（副本）")
+        imported_root = PROJECTS + "/" + imported["id"]
+        imported_timeline = (await send(api, "GET", imported_root + "/timeline")).json()
+        assert imported_timeline["revision"] == 0
+        originals = {
+            clip["assetId"]
+            for track in imported_timeline["document"]["tracks"]
+            for clip in track["clips"]
+            if clip.get("assetId")
+        }
+        assert len(originals) == 2 and not originals & set(entries)
+        restored_picture = await send(
+            api,
+            "GET",
+            imported_root + "/preview/frame",
+            params={"revision": 0, "timeUs": 0, "width": 320},
+        )
+        assert restored_picture.content == still.content
+        assert len((await send(api, "GET", PROJECTS)).json()["items"]) == 2
+        removed = await send(api, "DELETE", imported_root, params={"expected_revision": 0})
+        assert removed.status_code == 200, removed.text
 
         deleted = await send(api, "DELETE", project, params={"expected_revision": 0})
         assert deleted.status_code == 200, deleted.text

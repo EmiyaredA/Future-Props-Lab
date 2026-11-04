@@ -12,14 +12,9 @@ from .deletions import schedule
 from .models import AssetReferenceSet, MotionArchiveBatch, MotionArchiveFile
 
 
-class MotionArchives(ArchiveFileStaging):
-    batch_model = MotionArchiveBatch
-    file_model = MotionArchiveFile
-    allowed_extensions = None
-    batch_byte_limit = 2 * MAX_ARCHIVE_BYTES
-
+class ScopedProjectArchives(ArchiveFileStaging):
     def placement(self, key):
-        return {"motion_compositor_project_id": str(UUID(hex=key.batch_id))}
+        return {self.project_column: str(UUID(hex=key.batch_id))}
 
     async def seal(self, *, owner, key, manifest):
         if manifest.project_id.hex != key.batch_id:
@@ -47,11 +42,11 @@ class MotionArchives(ArchiveFileStaging):
             await session.commit()
             return batch.state
 
-    @staticmethod
-    async def require_new_project(session, identity):
+    @classmethod
+    async def require_new_project(cls, session, identity):
         if await session.scalar(
             select(AssetReferenceSet.id).where(
-                AssetReferenceSet.service_id == "motion",
+                AssetReferenceSet.service_id == cls.service,
                 AssetReferenceSet.resource_kind == "project",
                 AssetReferenceSet.resource_id == str(identity),
             )
@@ -81,12 +76,12 @@ class MotionArchives(ArchiveFileStaging):
                 for row in await self._files(session, key.batch_id)
             ]
             if commit:
-                manifest = MotionArchiveManifest.model_validate(batch.projections[0])
+                manifest = self.manifest_type.model_validate(batch.projections[0])
                 await self.require_new_project(session, manifest.project_id)
                 session.add(
                     AssetReferenceSet(
                         owner_user_id=owner,
-                        service_id="motion",
+                        service_id=self.service,
                         resource_kind="project",
                         resource_id=str(manifest.project_id),
                         resource_revision=0,
@@ -98,3 +93,13 @@ class MotionArchives(ArchiveFileStaging):
             batch.state = target
             await session.commit()
             return target
+
+
+class MotionArchives(ScopedProjectArchives):
+    service = "motion"
+    project_column = "motion_compositor_project_id"
+    manifest_type = MotionArchiveManifest
+    batch_model = MotionArchiveBatch
+    file_model = MotionArchiveFile
+    allowed_extensions = None
+    batch_byte_limit = 2 * MAX_ARCHIVE_BYTES

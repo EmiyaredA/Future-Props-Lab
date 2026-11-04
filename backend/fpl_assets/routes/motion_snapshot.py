@@ -7,9 +7,12 @@ from pydantic import ValidationError
 from fpl_runtime.framed_media import content_length, stream_files
 from fpl_runtime.motion_assets import PREFIX
 from fpl_runtime.motion_snapshot import MAX_SCOPE_BYTES, SnapshotScope
+from fpl_runtime.video_assets import PREFIX as VIDEO_PREFIX
 
 from ..motion_files import snapshot_metadata, versioned_files
+from ..video_files import versioned_files as video_files
 from .motion_assets import owner_for
+from .video_assets import owner_for as video_owner
 
 router = APIRouter(include_in_schema=False)
 
@@ -21,9 +24,11 @@ async def metadata(request: Request, project_id: str):
         return {"items": await snapshot_metadata(session, owner, project_id)}
 
 
+@router.post(VIDEO_PREFIX + "/{project_id}/snapshot/{digest}")
 @router.post(PREFIX + "/{project_id}/snapshot/{digest}")
 async def snapshot_files(request: Request, project_id: str, digest: str):
-    owner = owner_for(request)
+    video = request.url.path.startswith(VIDEO_PREFIX + "/")
+    owner = video_owner(request, method="POST") if video else owner_for(request)
     raw = bytearray()
     async for chunk in request.stream():
         if len(raw) + len(chunk) > MAX_SCOPE_BYTES:
@@ -37,7 +42,8 @@ async def snapshot_files(request: Request, project_id: str, digest: str):
         raise HTTPException(403, "motion_snapshot_scope_mismatch")
     state = request.app.state
     async with state.database.sessions(info={"owner_user_id": owner}) as session:
-        files = await versioned_files(session, state.settings, owner, project_id, scope.files)
+        load = video_files if video else versioned_files
+        files = await load(session, state.settings, owner, project_id, scope.files)
     return StreamingResponse(
         stream_files(files),
         media_type="application/octet-stream",

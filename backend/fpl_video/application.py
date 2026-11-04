@@ -1,5 +1,6 @@
 """Standalone Video Editor uses only its own database and public contracts."""
 
+import asyncio
 import json
 from contextlib import asynccontextmanager
 
@@ -20,6 +21,7 @@ from app.apps.video_editor.routes.projects import router as project_router
 from app.apps.video_editor.routes.render_preflight import router as preflight_router
 from app.apps.video_editor.routes.tasks import router as tasks_router
 from app.apps.video_editor.routes.timeline import router as timeline_router
+from app.capabilities.asset_store.project_snapshots import cleanup_snapshot_staging
 from app.deps import db_session, require_studio_auth
 from app.problem_details import (
     http_exception_handler,
@@ -28,6 +30,7 @@ from app.problem_details import (
     validation_exception_handler,
 )
 from app.runtime.revisions import RevisionConflictError
+from fpl_runtime.archive_transport import ArchiveTransport
 from fpl_runtime.authentication import SignedIdentity
 from fpl_runtime.capability_client import CapabilityClient
 from fpl_runtime.database import Database
@@ -38,6 +41,13 @@ from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.reference_runtime import install_reference_runtime, reference_lifespan
 from fpl_runtime.routing import RouteCatalog
 from fpl_runtime.video_processing import video_peer
+from fpl_runtime.video_snapshot import (
+    ARCHIVE_DOMAIN,
+    ARCHIVE_PREFIX,
+    ARCHIVE_PURPOSE,
+    IMPORT,
+    VideoArchiveAsset,
+)
 from fpl_runtime.web import attach_web, load_release
 
 from .asset_intake import AssetIntakes
@@ -49,6 +59,7 @@ from .media_routes import router as media_router
 from .migrations.registry import MIGRATIONS
 from .models import (
     VideoAssetIntake,
+    VideoImportBatch,
     VideoMediaDispatch,
     VideoMotionHandoff,
     VideoReferenceMutation,
@@ -58,6 +69,9 @@ from .motion_handoffs import MotionHandoffs
 from .project_layouts import ProjectLayouts
 from .render_delivery import RenderDelivery
 from .render_routes import router as render_router
+from .snapshot_exports import SnapshotSettings
+from .snapshot_imports import SnapshotDelivery, SnapshotImports
+from .snapshot_routes import router as snapshot_router
 from .timeline_media import TimelineMedia
 
 SERVICE = "video"
@@ -80,6 +94,8 @@ OPERATIONS = {
     ("PATCH", PROJECT),
     ("DELETE", PROJECT),
     ("GET", PROJECT + "/timeline"),
+    ("GET", PROJECT + "/snapshot"),
+    ("POST", IMPORT),
     ("POST", PROJECT + "/audio-seams/candidates"),
     ("GET", PROJECT + "/preview/frame"),
     ("GET", PROJECT + "/text-clips/{clip_id}/layer"),
@@ -113,6 +129,7 @@ def create_app(
     transport=None,
     run_worker=True,
     media_key=None,
+    archive_key=None,
     web_root=None,
 ):
     database = Database(
@@ -126,6 +143,7 @@ def create_app(
             VideoEditorTask,
             VideoReferenceMutation,
             VideoAssetIntake,
+            VideoImportBatch,
             VideoMediaDispatch,
             VideoRenderDispatch,
             VideoMotionHandoff,
@@ -136,6 +154,23 @@ def create_app(
     )
 
     asset_intakes = AssetIntakes(database.sessions, capabilities)
+    snapshot_settings = SnapshotSettings(database.root)
+    archive = (
+        ArchiveTransport(
+            capabilities,
+            archive_key,
+            service=SERVICE,
+            purpose=ARCHIVE_PURPOSE,
+            source_path=IMPORT,
+            prefix=ARCHIVE_PREFIX,
+            domain=ARCHIVE_DOMAIN,
+            asset_model=VideoArchiveAsset,
+            exact_mime=False,
+        )
+        if archive_key is not None
+        else None
+    )
+    archive_delivery = SnapshotDelivery(database.sessions, archive) if archive else None
     media_delivery = (
         MediaDelivery(database.sessions, capabilities.client, video_peer(media_key))
         if media_key is not None
@@ -161,10 +196,15 @@ def create_app(
     async def lifespan(_app):
         with service_lock(database.root):
             check(database.path, SERVICE, MIGRATIONS)
+            if (database.root / ".tmp").is_symlink():
+                raise ValueError("剪辑快照暂存目录无效")
+            cleanup_snapshot_staging(snapshot_settings)
             try:
                 async with reference_lifespan(_app):
                     if run_worker:
                         await asset_intakes.start()
+                        if archive_delivery is not None:
+                            await archive_delivery.start()
                         if media_delivery is not None:
                             await media_delivery.start()
                             await render_delivery.start()
@@ -175,6 +215,8 @@ def create_app(
                     await motion_handoffs.stop()
                     await render_delivery.stop()
                     await media_delivery.stop()
+                if archive_delivery is not None:
+                    await archive_delivery.stop()
                 await asset_intakes.stop()
                 await handoff_identity.close()
                 await capabilities.close()
@@ -185,6 +227,12 @@ def create_app(
     )
     app.state.database = database
     app.state.capabilities = capabilities
+    app.state.video_snapshot_settings = snapshot_settings
+    app.state.snapshot_slots = asyncio.Semaphore(2)
+    app.state.video_snapshot_imports = (
+        SnapshotImports(archive, archive_delivery, snapshot_settings) if archive else None
+    )
+    app.state.video_archive_delivery = archive_delivery
     app.state.asset_intakes = asset_intakes
     app.state.media_delivery = media_delivery
     app.state.render_delivery = render_delivery
@@ -232,6 +280,7 @@ def create_app(
         audio_seam_router,
         preflight_router,
         render_router,
+        snapshot_router,
     ):
         app.include_router(
             router,

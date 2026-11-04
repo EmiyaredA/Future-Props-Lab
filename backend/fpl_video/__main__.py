@@ -30,6 +30,7 @@ def main():
     parser.add_argument("--identity-token", type=Path, default=Path("/run/fpl/identity-token"))
     parser.add_argument("--web-root", type=Path, default=Path("/app/web"))
     parser.add_argument("--media-key", type=Path, default=Path("/run/fpl/video-media-key"))
+    parser.add_argument("--archive-key", type=Path, default=Path("/run/fpl/video-archive-key"))
     parser.add_argument("--port", type=int, default=8080)
     options = parser.parse_args()
     if options.command == "migrate":
@@ -46,10 +47,11 @@ def main():
         if not re.fullmatch(r"[A-Za-z0-9_-]{32,256}", credential):
             raise ValueError
         media_key = load_peer_key(options.media_key, excluded=(credential,))
-        if media_key is None:
+        archive_key = load_peer_key(options.archive_key, excluded=(credential, media_key))
+        if media_key is None or archive_key is None:
             raise ValueError
     except (ValueError, OSError):
-        parser.error("剪辑服务需要受保护且独立的 Identity 和 Rendering 凭据")
+        parser.error("剪辑服务需要受保护且独立的 Identity、Rendering 和归档凭据")
     uploads = options.state_root.resolve() / ".http-uploads"
     if uploads.is_symlink():
         parser.error("视频剪辑上传暂存目录不能是符号链接")
@@ -62,6 +64,7 @@ def main():
         schema_path=options.schema,
         credential=credential,
         media_key=media_key,
+        archive_key=archive_key,
         web_root=None if (options.web_root / ".api-only").is_file() else options.web_root,
     )
     uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)

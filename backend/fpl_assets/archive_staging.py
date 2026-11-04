@@ -80,6 +80,22 @@ class ArchiveFileStaging:
     def placement(self, _key):
         return {}
 
+    def file_limit(self):
+        return None
+
+    async def normalize_staged(self, _description, _row, _path):
+        pass
+
+    def asset_result(self, row):
+        return {
+            "id": row.id,
+            "original_filename": row.original_filename,
+            "mime_type": row.mime_type,
+            "media_kind": row.media_kind,
+            "byte_size": row.byte_size,
+            "revision": 0,
+        }
+
     async def stage_file(self, *, owner, key, ordinal, description, incoming, require_active):
         path = None
         committing = False
@@ -102,11 +118,13 @@ class ArchiveFileStaging:
                     ),
                     owner_user_id=owner,
                     allowed_extensions=self.allowed_extensions,
+                    max_bytes=self.file_limit(),
                     defer_persistence=True,
                     **placement,
                 )
                 path = AssetStorage(self.settings).path_for(row)
                 row.id, row.revision = new_id(), 0
+                await self.normalize_staged(description, row, path)
                 await require_active()
                 await session.execute(text("BEGIN IMMEDIATE"))
                 batch = await self._batch(session, owner, key)
@@ -117,14 +135,7 @@ class ArchiveFileStaging:
                 if batch is None:
                     self._new_batch(session, owner, key)
                     await session.flush()
-                result = {
-                    "id": row.id,
-                    "original_filename": row.original_filename,
-                    "mime_type": row.mime_type,
-                    "media_kind": row.media_kind,
-                    "byte_size": row.byte_size,
-                    "revision": 0,
-                }
+                result = self.asset_result(row)
                 session.add(
                     self.file_model(
                         owner_user_id=owner,

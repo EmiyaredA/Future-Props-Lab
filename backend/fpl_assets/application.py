@@ -48,6 +48,7 @@ from .routes.project_links import router as links_router
 from .routes.thought_archives import router as thought_archives_router
 from .routes.thought_library import router as thought_library_router
 from .routes.thought_uploads import router as thought_uploads_router
+from .routes.video_archives import router as video_archives_router
 from .routes.video_assets import router as video_assets_router
 from .routes.video_originals import router as video_originals_router
 from .routes.video_render_outputs import router as video_render_outputs_router
@@ -87,6 +88,7 @@ def create_app(
     presentation_archive_key=None,
     motion_archive_key=None,
     video_originals_key=None,
+    video_archive_key=None,
 ):
     database = Database("assets", settings.runtime_path, models=MODELS)
     if settings.database_path != database.path:
@@ -163,6 +165,13 @@ def create_app(
         app.state.motion_archive_auth = ArchiveAuthenticator(
             motion_archive_key, domain=ARCHIVE_DOMAIN
         )
+    if video_archive_key is not None:
+        from fpl_runtime.thought_archives import ArchiveAuthenticator
+        from fpl_runtime.video_snapshot import ARCHIVE_DOMAIN
+
+        app.state.video_archive_auth = ArchiveAuthenticator(
+            video_archive_key, domain=ARCHIVE_DOMAIN
+        )
     app.state.reference_changes = ReferenceChanges(database)
     app.state.layouts = StorageLayouts(database, settings)
     app.state.file_cleanup = cleaner
@@ -175,6 +184,7 @@ def create_app(
     app.include_router(annotation_assets_router)
     app.include_router(presentation_assets_router)
     app.include_router(motion_assets_router)
+    app.include_router(video_archives_router)
     app.include_router(video_assets_router)
     app.include_router(video_originals_router)
     app.include_router(video_render_outputs_router)

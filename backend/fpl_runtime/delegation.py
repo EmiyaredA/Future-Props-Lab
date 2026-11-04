@@ -17,6 +17,8 @@ from .video_assets import video_asset_grant, video_write_grant
 from .video_audio import audio_grant
 from .video_frames import frame_grant as video_frame_grant
 from .video_handoff import handoff_grant
+from .video_snapshot import archive_grant as video_archive_grant
+from .video_snapshot import snapshot_grant as video_snapshot_grant
 
 
 @dataclass(frozen=True)
@@ -146,6 +148,7 @@ def target_permission_path(grant):
         or motion_asset_grant(grant)
         or video_asset_grant(grant)
         or video_write_grant(grant)
+        or video_archive_grant(grant)
         or motion_asset_write_grant(grant)
         or motion_archive_grant(grant)
         or presentation_archive_grant(grant)
@@ -179,6 +182,7 @@ def permitted(grant, catalog):
         or video_frame_grant(grant)
         or handoff_grant(grant)
         or audio_grant(grant)
+        or video_snapshot_grant(grant)
     ):
         return True
     if directory_grant(grant, catalog):
@@ -199,6 +203,7 @@ def permitted(grant, catalog):
         or motion_asset_grant(grant)
         or video_asset_grant(grant)
         or video_write_grant(grant)
+        or video_archive_grant(grant)
         or motion_asset_write_grant(grant)
         or motion_archive_grant(grant)
         or presentation_archive_grant(grant)

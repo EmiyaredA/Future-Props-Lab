@@ -25,6 +25,7 @@ from fpl_runtime.video_assets import video_write_target
 from fpl_runtime.video_audio import audio_target
 from fpl_runtime.video_frames import target as video_frame_target
 from fpl_runtime.video_handoff import handoff_target
+from fpl_runtime.video_snapshot import archive_target as video_archive_target
 
 router = APIRouter()
 
@@ -132,6 +133,7 @@ async def live(request: Request, body: LiveRequest):
         or presentation_archive_target(body.method, body.path)
         or motion_asset_write_target(body.method, body.path)
         or video_write_target(body.method, body.path)
+        or video_archive_target(body.method, body.path)
         or motion_archive_target(body.method, body.path)
         or community_upload_target(body.method, body.path)
     )

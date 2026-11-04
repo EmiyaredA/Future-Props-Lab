@@ -18,6 +18,7 @@ from fpl_runtime.motion_preview import motion_preview_grant
 from fpl_runtime.motion_snapshot import motion_snapshot_grant
 from fpl_runtime.video_audio import audio_grant
 from fpl_runtime.video_frames import frame_grant as video_frame_grant
+from fpl_runtime.video_snapshot import snapshot_grant as video_snapshot_grant
 
 from .live import active_actor
 
@@ -93,6 +94,7 @@ async def authorize_delegation(app, body, credential):
             or motion_snapshot_grant(grant)
             or video_frame_grant(grant)
             or audio_grant(grant)
+            or video_snapshot_grant(grant)
         )
         else (
             "content.write"

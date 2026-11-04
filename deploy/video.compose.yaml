@@ -8,6 +8,12 @@ services:
         read_only: true
         bind:
           create_host_path: false
+      - type: bind
+        source: ${FPL_VIDEO_ARCHIVE_KEY:?Select the protected Video Assets archive key}
+        target: /run/fpl/video-archive-key
+        read_only: true
+        bind:
+          create_host_path: false
   rendering:
     volumes:
       - type: bind
@@ -56,6 +62,12 @@ services:
       - type: bind
         source: ${FPL_VIDEO_MEDIA_KEY:?Select the protected Video Rendering key}
         target: /run/fpl/video-media-key
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${FPL_VIDEO_ARCHIVE_KEY:?Select the protected Video Assets archive key}
+        target: /run/fpl/video-archive-key
         read_only: true
         bind:
           create_host_path: false

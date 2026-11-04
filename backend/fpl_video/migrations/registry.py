@@ -2,7 +2,7 @@
 
 from fpl_runtime.migrations import Migration
 
-from .versions import v0001, v0002, v0003, v0004, v0005, v0006, v0007
+from .versions import v0001, v0002, v0003, v0004, v0005, v0006, v0007, v0008
 
 MIGRATIONS = (
     Migration("0001_video_editor", v0001.SQL),
@@ -12,4 +12,5 @@ MIGRATIONS = (
     Migration("0005_video_media_dispatch", v0005.SQL),
     Migration("0006_video_render_dispatch", v0006.SQL),
     Migration("0007_video_motion_handoffs", v0007.SQL),
+    Migration("0008_video_import_batches", v0008.SQL),
 )
