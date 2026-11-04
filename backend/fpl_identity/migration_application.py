@@ -23,8 +23,9 @@ def _mount(app, plan, sessions, *, source=None, database=None):
             page_model=dataset.page,
             inventory=partial(inventory, sessions, plan, dataset, legacy=source is not None),
             page=partial(export_page, sessions, plan, dataset, legacy=source is not None),
-            ingest=partial(import_batch, database, dataset) if database is not None else None,
+            ingest=partial(import_batch, database, plan, dataset) if database is not None else None,
             source=source,
+            platform=dataset.platform,
         )
     return app
 

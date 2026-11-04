@@ -18,7 +18,7 @@ Identity exports typed, paginated datasets for accounts, Studio sessions, Manage
 
 ## Consequences
 
-The existing login hashing and expiration rules also apply to imported accounts. Existing Studio credentials cannot acquire management session purpose. Private migration transport is reused by Tools. Registration history, audit events and catalog ownership are tracked as separate dependencies for cutover.
+The existing login hashing and expiration rules also apply to imported accounts. Existing Studio credentials cannot acquire management session purpose. Private migration transport is reused by Tools. Model catalog ownership remains a separate dependency for cutover.
 
 ## Verification
 
@@ -29,3 +29,5 @@ The Identity relay also transfers active profile originals after account verific
 The isolated legacy fixture creates a PNG through the profile use case. The maintenance test rejects corrupted bytes, unassigned owners and stray originals, then confirms repeated transfer and exact bytes through the normal authenticated profile endpoint. The other account cannot read that avatar.
 
 The TOTP rehearsal keeps the existing encryption key and last accepted counter. The imported Identity rejects a previously used code and accepts a fresh code from the original authenticator.
+
+Registration invitations and security audits use the run ID as a separate maintenance partition. Invitations retain encrypted secrets, revocation and deletion history. The source checks each invitation quota against its redemption history. Redemptions remain account-scoped and must reference an imported invitation. Audit actor, target and owner IDs must belong to the approved account plan, while anonymous failures retain their null associations. The normal management ingress verifies original invitation bytes, redemptions and audit IDs after replay.

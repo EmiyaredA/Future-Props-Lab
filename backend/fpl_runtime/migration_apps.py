@@ -132,8 +132,9 @@ def mount_dataset(
     page,
     ingest=None,
     source=None,
+    platform=False,
 ):
-    admission = MigrationAdmission(plan)
+    admission = MigrationAdmission(plan, platform=platform)
 
     def assert_source():
         if source is not None:

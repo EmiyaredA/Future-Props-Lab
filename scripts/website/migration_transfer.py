@@ -19,6 +19,7 @@ class DatasetTransfer:
     prefix: str
     page: type[MigrationPage]
     key_field: str
+    platform: bool = False
 
 
 def loopback(value):
@@ -88,7 +89,7 @@ def transfer(client, plan, source, target, dataset):
     before = inventory(client, source, headers, dataset)
     if inventory(client, target, headers, dataset) > before:
         raise ValueError("迁移目标记录数超过源快照")
-    owners = sorted(plan.owner_ids)
+    owners = (plan.run_id,) if dataset.platform else sorted(plan.owner_ids)
     for owner in owners:
         for page in pages(client, source, headers, plan, owner, dataset):
             batch = page.batch

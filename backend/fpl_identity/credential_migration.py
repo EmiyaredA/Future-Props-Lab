@@ -8,14 +8,15 @@ from uuid import uuid5
 from argon2 import extract_parameters
 from argon2.exceptions import InvalidHashError
 from fastapi import HTTPException
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, ValidationError, model_validator
 from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import undefer
 
 from app.capabilities.identity.passwords import normalize_username
 from app.console.cloud_control.models import CloudFactor, CloudUnlock
-from app.console.models.accounts import AuthSession, ManagementApiKey, User
+from app.console.models.accounts import AuthSession, ManagementApiKey, SecurityAuditEvent, User
+from app.console.models.platform_governance import RegistrationInviteCode, RegistrationRedemption
 from fpl_runtime.migration_batches import (
     MAX_RECORDS,
     BatchReceipt,
@@ -117,6 +118,42 @@ class UnlockRecord(BaseModel):
     desktop_verified: bool
 
 
+class InviteRecord(IdentityRecord):
+    name: str = Field(min_length=1, max_length=120)
+    code_hash: Digest = Field(repr=False)
+    code_hint: str = Field(max_length=40)
+    secret_ciphertext: str = Field(min_length=1, max_length=1024, repr=False)
+    enabled: bool
+    max_uses: int = Field(ge=1, le=10000)
+    used_count: int = Field(ge=0)
+    validity_days: int = Field(ge=1, le=365)
+    expires_at: datetime
+    deleted_at: datetime | None
+    revision: int = Field(ge=0)
+    updated_at: datetime
+
+    @model_validator(mode="after")
+    def verify_invite(self):
+        if self.used_count > self.max_uses or (self.deleted_at is not None and self.enabled):
+            raise ValueError("邀请码状态不一致")
+        return self
+
+
+class RedemptionRecord(IdentityRecord):
+    invite_id: str = Field(pattern=UUID_PATTERN)
+
+
+class AuditRecord(IdentityRecord):
+    actor_user_id: Annotated[str, Field(pattern=UUID_PATTERN)] | None
+    target_user_id: Annotated[str, Field(pattern=UUID_PATTERN)] | None
+    owner_user_id: Annotated[str, Field(pattern=UUID_PATTERN)] | None
+    event_type: str = Field(min_length=1, max_length=64)
+    outcome: str = Field(min_length=1, max_length=16)
+    client_ip: str = Field(max_length=64)
+    user_agent: str = Field(max_length=500)
+    metadata_json: dict[str, JsonValue] = Field(repr=False)
+
+
 class Accounts(MigrationBatch[AccountRecord]):
     dataset: Literal["identity.accounts"]
 
@@ -137,6 +174,18 @@ class Unlocks(MigrationBatch[UnlockRecord]):
     dataset: Literal["identity.cloud-unlocks"]
 
 
+class Invites(MigrationBatch[InviteRecord]):
+    dataset: Literal["identity.registration-invites"]
+
+
+class Redemptions(MigrationBatch[RedemptionRecord]):
+    dataset: Literal["identity.registration-redemptions"]
+
+
+class Audit(MigrationBatch[AuditRecord]):
+    dataset: Literal["identity.security-audit"]
+
+
 @dataclass(frozen=True)
 class CredentialDataset:
     path: str
@@ -145,7 +194,11 @@ class CredentialDataset:
     batch: type[MigrationBatch]
     page: type[MigrationPage]
     key_field: str = "id"
-    owner_field: str = "user_id"
+    owner_field: str | None = "user_id"
+
+    @property
+    def platform(self):
+        return self.owner_field is None
 
     @property
     def name(self):
@@ -184,6 +237,29 @@ DATASETS = (
         key_field="session_id",
         owner_field="owner_user_id",
     ),
+    CredentialDataset(
+        "registration-invites",
+        RegistrationInviteCode,
+        InviteRecord,
+        Invites,
+        MigrationPage[Invites],
+        owner_field=None,
+    ),
+    CredentialDataset(
+        "registration-redemptions",
+        RegistrationRedemption,
+        RedemptionRecord,
+        Redemptions,
+        MigrationPage[Redemptions],
+    ),
+    CredentialDataset(
+        "security-audit",
+        SecurityAuditEvent,
+        AuditRecord,
+        Audit,
+        MigrationPage[Audit],
+        owner_field=None,
+    ),
 )
 
 
@@ -203,8 +279,29 @@ def _serialize(dataset, row, *, legacy):
 
 
 async def inventory(sessions, plan, dataset, *, legacy):
-    owner = dataset.owner_column
     async with sessions() as session:
+        if dataset.platform:
+            count = await session.scalar(select(func.count()).select_from(dataset.model))
+            return {"record_count": count}
+        if legacy and dataset.model is RegistrationRedemption:
+            redemption_counts = (
+                select(RegistrationRedemption.invite_id, func.count().label("total"))
+                .group_by(RegistrationRedemption.invite_id)
+                .subquery()
+            )
+            invalid = await session.scalar(
+                select(RegistrationInviteCode.id)
+                .outerjoin(
+                    redemption_counts, redemption_counts.c.invite_id == RegistrationInviteCode.id
+                )
+                .where(
+                    RegistrationInviteCode.used_count != func.coalesce(redemption_counts.c.total, 0)
+                )
+                .limit(1)
+            )
+            if invalid is not None:
+                raise HTTPException(409, {"code": "migration_redemption_count_mismatch"})
+        owner = dataset.owner_column
         rows = await session.execute(select(owner, func.count()).group_by(owner))
         counts = dict(rows.all())
     allowed = {str(account) for account in plan.owner_ids}
@@ -217,10 +314,12 @@ async def export_page(sessions, plan, dataset, owner, after, *, legacy):
     model = dataset.model
     query = (
         select(model)
-        .where(dataset.owner_column == str(owner), dataset.key_column > (after or ""))
+        .where(dataset.key_column > (after or ""))
         .order_by(dataset.key_column)
         .limit(MAX_RECORDS + 1)
     )
+    if not dataset.platform:
+        query = query.where(dataset.owner_column == str(owner))
     if model is AuthSession and not legacy:
         query = query.options(undefer(AuthSession.purpose))
     async with sessions() as session:
@@ -242,7 +341,7 @@ async def export_page(sessions, plan, dataset, owner, after, *, legacy):
     )
 
 
-async def import_batch(database, dataset, batch):
+async def import_batch(database, plan, dataset, batch):
     owner = str(batch.owner_id)
     model = dataset.model
     ids = [getattr(record, dataset.key_field) for record in batch.records]
@@ -262,7 +361,7 @@ async def import_batch(database, dataset, batch):
             if receipt.sha256 != digest:
                 raise HTTPException(409, {"code": "migration_batch_conflict"})
             return receipt
-        if model is not User and await session.get(User, owner) is None:
+        if not dataset.platform and model is not User and await session.get(User, owner) is None:
             raise HTTPException(409, {"code": "migration_owner_missing"})
         if ids and await session.scalar(
             select(dataset.key_column).where(dataset.key_column.in_(ids)).limit(1)
@@ -274,7 +373,18 @@ async def import_batch(database, dataset, batch):
             )
             if set(scoped) != set(ids):
                 raise HTTPException(409, {"code": "migration_cloud_session_unassigned"})
-        owned = {} if dataset.key_field == dataset.owner_field else {dataset.owner_field: owner}
+        if model is SecurityAuditEvent:
+            referenced = {
+                account
+                for record in batch.records
+                for account in (record.actor_user_id, record.target_user_id, record.owner_user_id)
+                if account is not None
+            }
+            if referenced - {str(account) for account in plan.owner_ids}:
+                raise HTTPException(409, {"code": "migration_audit_account_unassigned"})
+        owned = {}
+        if not dataset.platform and dataset.key_field != dataset.owner_field:
+            owned[dataset.owner_field] = owner
         session.add_all([model(**owned, **record.model_dump()) for record in batch.records])
         receipt = BatchReceipt(
             run_id=batch.run_id,

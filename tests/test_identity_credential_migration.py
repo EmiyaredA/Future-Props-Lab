@@ -22,10 +22,17 @@ from tests.test_tools_navigation_migration import available_ports, listener
 from app.capabilities.identity.permissions import role_scopes
 from app.capabilities.identity.principal import StudioPrincipal
 from app.capabilities.identity.security import CSRF_COOKIE, SESSION_COOKIE
+from app.capabilities.identity.session_policy import MANAGEMENT_SESSION
 from app.console.cloud_control.access import start_enrollment, totp, verify
 from app.console.governance.account_creation import create_account
 from app.console.governance.profile import apply_avatar, stage_avatar
+from app.console.governance.registration import change_invite, create_invite, register
 from app.console.governance.service import complete_login, create_api_key
+from app.console.schemas.registration import (
+    RegistrationIn,
+    RegistrationInviteAction,
+    RegistrationInviteIn,
+)
 from app.runtime.config import get_settings
 from app.runtime.time import utc_now
 from db.migrations import apply_migrations
@@ -57,14 +64,6 @@ async def make_legacy(path):
                 platform_role="admin",
                 password=PASSWORD,
             )
-            other, _ = await create_account(
-                session,
-                initializer=skip_catalog,
-                username="migrated-user",
-                display_name="Migrated User",
-                platform_role="user",
-                password=PASSWORD,
-            )
             _, auth, raw, csrf = await complete_login(
                 session, username=owner.username, password=PASSWORD, client_ip="", user_agent=""
             )
@@ -75,6 +74,45 @@ async def make_legacy(path):
                 scopes=role_scopes(owner.platform_role),
                 platform_role=owner.platform_role,
                 session_id=auth.id,
+            )
+            invite = await create_invite(
+                session, principal, RegistrationInviteIn(name="Restored invitation", max_uses=2), ""
+            )
+            deleted = await create_invite(
+                session, principal, RegistrationInviteIn(name="Deleted invitation"), ""
+            )
+            await change_invite(
+                session,
+                principal,
+                deleted["invite"]["id"],
+                RegistrationInviteAction(expected_revision=0, action="delete"),
+                "",
+            )
+
+            async def create_registered(db, **values):
+                return await create_account(db, initializer=skip_catalog, **values)
+
+            other, *_ = await register(
+                session,
+                RegistrationIn(
+                    username="migrated-user",
+                    display_name="Migrated User",
+                    password=PASSWORD,
+                    invite_code=invite["secret"],
+                ),
+                "",
+                "",
+                account_creator=create_registered,
+            )
+            assert (
+                await complete_login(
+                    session,
+                    username="unknown-account",
+                    password=PASSWORD,
+                    client_ip="",
+                    user_agent="",
+                )
+                is None
             )
             key, raw_key = await create_api_key(
                 session,
@@ -128,6 +166,8 @@ async def make_legacy(path):
                 original,
                 secret,
                 used_code,
+                invite,
+                deleted["invite"]["id"],
             )
     finally:
         await engine.dispose()
@@ -149,6 +189,8 @@ async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, mon
             avatar,
             secret,
             used_code,
+            invite,
+            deleted_id,
         ) = await make_legacy(legacy)
     finally:
         get_settings.cache_clear()
@@ -198,8 +240,21 @@ async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, mon
         account_path = f"{dest}{CREDENTIALS[0].prefix}/batches"
         invalid = client.post(account_path, headers=headers, json={"token_hash": "private-echo"})
         assert invalid.status_code == 422 and "private-echo" not in invalid.text
+        invites, redemptions, audit = CREDENTIALS[-3:]
+        assert client.get(f"{source}{invites.prefix}/{owner}", headers=headers).status_code == 409
+        assert (
+            client.get(f"{source}{redemptions.prefix}/{plan.run_id}", headers=headers).status_code
+            == 409
+        )
         reports = [transfer(client, plan, source, dest, dataset) for dataset in CREDENTIALS]
-        assert [report["record_count"] for report in reports] == [2, 1, 2, 1, 1]
+        assert [report["record_count"] for report in reports[:-1]] == [2, 2, 2, 1, 1, 2, 1]
+        assert reports[-1]["record_count"] > 0
+        original_audit = next(pages(client, source, headers, plan, plan.run_id, audit))
+        assert any(record.actor_user_id is None for record in original_audit.batch.records)
+        assert any(
+            record.event_type == "registration_invite.redeemed" and record.owner_user_id == other
+            for record in original_audit.batch.records
+        )
         assert reports == [transfer(client, plan, source, dest, dataset) for dataset in CREDENTIALS]
 
         avatar_path = f"{AVATAR_PATH}/{owner}"
@@ -231,6 +286,7 @@ async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, mon
     monkeypatch.setattr(settings, "fpl_cloud_control_enabled", True)
     monkeypatch.setattr(settings, "fpl_cloud_control_admin_user_ids", owner)
     key = Ed25519PrivateKey.generate()
+    management_token = "credential-migration-management-gateway-" * 2
     app = create_app(
         state_root=target,
         catalog=CATALOG,
@@ -238,6 +294,7 @@ async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, mon
         local_origin="http://127.0.0.1:19000",
         public_origin="https://studio.example.test",
         private_key=key,
+        management_gateway_token=management_token,
     )
     try:
         async with (
@@ -247,6 +304,11 @@ async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, mon
                 base_url="http://127.0.0.1:19000",
                 headers={"X-Fpl-Gateway": GATEWAY_SECRET, "X-Fpl-Ingress": "local"},
             ) as api,
+            httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app),
+                base_url="http://127.0.0.1:9002",
+                headers={"X-Fpl-Gateway": management_token, "X-Fpl-Ingress": "local"},
+            ) as management,
         ):
             api.cookies.set(SESSION_COOKIE, token)
             api.cookies.set(CSRF_COOKIE, csrf)
@@ -292,6 +354,38 @@ async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, mon
             retained = await api.get("/v1/account/api-keys")
             assert retained.status_code == 200
             assert {entry["name"] for entry in retained.json()} == {"Retained key", "Revoked key"}
+
+            invites_path = "/v1/platform/registration-invite-codes"
+            assert (await api.get(invites_path)).status_code == 404
+            signed_in = await management.post(
+                "/v1/auth/login", json={"username": "MigratedAdmin", "password": PASSWORD}
+            )
+            assert signed_in.status_code == 200
+            management_csrf = {
+                "Origin": "http://127.0.0.1:9002",
+                "X-CSRF-Token": management.cookies[MANAGEMENT_SESSION.csrf_cookie],
+            }
+            active = (await management.get(invites_path)).json()["items"]
+            assert [item["id"] for item in active] == [invite["invite"]["id"]]
+            assert active[0]["used_count"] == 1 and active[0]["revision"] == 1
+            deleted_page = await management.get(invites_path, params={"status": "deleted"})
+            deleted = deleted_page.json()["items"]
+            assert [item["id"] for item in deleted] == [deleted_id]
+            invite_path = f"{invites_path}/{active[0]['id']}"
+            history = (await management.get(invite_path + "/redemptions")).json()["items"]
+            assert [item["username"] for item in history] == ["migrated-user"]
+            reveal = await management.post(invite_path + "/secret", headers=management_csrf)
+            assert reveal.status_code == 200 and reveal.json()["secret"] == invite["secret"]
+            failures = await management.get(
+                "/v1/platform/security-events",
+                params={"event_type": "auth.login", "outcome": "failure"},
+            )
+            source_failures = {
+                record.id
+                for record in original_audit.batch.records
+                if record.event_type == "auth.login" and record.outcome == "failure"
+            }
+            assert {event["id"] for event in failures.json()["items"]} == source_failures
 
             api.cookies.clear()
             endpoint = "/v1/model-inference/options"

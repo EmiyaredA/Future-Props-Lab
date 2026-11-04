@@ -89,9 +89,9 @@ class BatchReceipt(BaseModel):
 
 
 class MigrationAdmission:
-    def __init__(self, plan):
+    def __init__(self, plan, *, platform=False):
         self.plan = plan
-        self.owners = frozenset(plan.owner_ids)
+        self.owners = frozenset((plan.run_id,) if platform else plan.owner_ids)
         self.secret = plan.token.get_secret_value().encode()
 
     def authorize(self, request: Request):
