@@ -121,7 +121,7 @@ async def snapshot(session, principal, pub_id):
         }
         for target in targets:
             try:
-                _, target_pub, _ = await TableAccess(session, principal).access(
+                _, target_pub, _, _ = await TableAccess(session, principal).access(
                     pub_id, target, parent.id
                 )
             except ThoughtError as error:

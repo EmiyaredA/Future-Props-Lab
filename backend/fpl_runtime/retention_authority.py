@@ -26,7 +26,7 @@ AUDIENCE = "fpl-assets-retention-v1"
 def change_digest(change, community=None):
     payload = change.model_dump(mode="json", exclude_none=True)
     if community is not None:
-        payload["community"] = community.model_dump(mode="json")
+        payload["community"] = community.model_dump(mode="json", exclude_none=True)
     return hashlib.sha256(
         json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
@@ -38,6 +38,7 @@ class CommunityRetentionScope(BaseModel):
     owner_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,36}$")
     publication_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,128}$")
     note_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,128}$")
+    article_publication_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]{1,128}$")
     publication_revision: int = Field(ge=0, strict=True)
     article_revision: int = Field(ge=0, strict=True)
     note_revision: int = Field(ge=0, strict=True)
@@ -47,7 +48,9 @@ class CommunityRetentionScope(BaseModel):
             "/v1/thought-workshop/community/publications/"
             f"{self.publication_id}/notes/{self.note_id}"
         )
-        return (method, path) in {("PUT", base), ("POST", base + "/multitable/operations")}
+        if method == "PUT":
+            return path == base and self.article_publication_id in {None, self.publication_id}
+        return method == "POST" and path == base + "/multitable/operations"
 
     def matches_change(self, change):
         return (
@@ -131,7 +134,11 @@ def issue_retention(actor, *, caller, change, private_key, key_id, now=None, com
             "request_id": change.request_id,
             "change_sha256": change_digest(change, community),
             "actor": asdict(actor),
-            **({"community": community.model_dump(mode="json")} if community else {}),
+            **(
+                {"community": community.model_dump(mode="json", exclude_none=True)}
+                if community
+                else {}
+            ),
         },
         private_key,
         algorithm="EdDSA",

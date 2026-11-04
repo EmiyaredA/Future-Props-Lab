@@ -1,5 +1,7 @@
 """Cross-account community writes through actual Thought, Identity and Assets APIs."""
 
+from copy import deepcopy
+
 import httpx
 import pytest
 from sqlalchemy import select
@@ -9,8 +11,14 @@ from tests.test_community_asset_protocol import (
 )
 from tests.test_thought_archive_import_service import ORIGIN, thought_app
 
-from app.apps.thought_workshop.models import ThoughtNote
-from app.apps.thought_workshop.publication.models import ArticleMember
+from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
+from app.apps.thought_workshop.multitable.storage import initialize, snapshot
+from app.apps.thought_workshop.publication.models import (
+    ArticleMember,
+    CommunityUpload,
+    Publication,
+    PublishedArticle,
+)
 from app.capabilities.asset_store.models import VisualAsset
 from fpl_assets.models import AssetReferencePin, ReferenceIntent
 from fpl_runtime.asset_references import PrepareReferenceChange
@@ -141,3 +149,128 @@ async def test_edit_rechecks_role_and_records_owner_scoped_retention(scenario, r
             info={"owner_user_id": case.viewer}
         ) as session:
             assert await session.get(VisualAsset, case.asset) is None
+
+
+async def setup_table(case, *, embedded):
+    await prepare_case(case)
+    await change_role(case, "edit")
+    async with case.db.sessions(info={"owner_user_id": case.owner}) as session:
+        note = await session.get(ThoughtNote, "note")
+        note.kind = "multitable"
+        note.document = {"type": "doc", "content": [{"type": "paragraph"}]}
+        await initialize(session, note)
+        state = await snapshot(session, note.id)
+        table = state.tables[0].model_dump(mode="json")
+        session.add(CommunityUpload(note_id=note.id, asset_id=case.asset, user_id=case.viewer))
+        if embedded:
+            session.add(
+                ThoughtKnowledgeBase(id="parent-book", owner_user_id=case.owner, title="Parent")
+            )
+            await session.flush()
+            session.add_all(
+                [
+                    ThoughtNote(
+                        id="parent-note",
+                        owner_user_id=case.owner,
+                        knowledge_base_id="parent-book",
+                        title="Parent note",
+                        kind="note",
+                        document={
+                            "type": "doc",
+                            "content": [
+                                {
+                                    "type": "multitableView",
+                                    "attrs": {
+                                        "noteId": "note",
+                                        "tableId": table["id"],
+                                        "viewId": table["views"][0]["id"],
+                                    },
+                                }
+                            ],
+                        },
+                        search_text="",
+                    ),
+                    Publication(
+                        id="parent-pub",
+                        owner_user_id=case.owner,
+                        knowledge_base_id="parent-book",
+                        publisher_id=case.owner,
+                        title="Parent publication",
+                    ),
+                ]
+            )
+            await session.flush()
+            session.add(PublishedArticle(publication_id="parent-pub", note_id="parent-note"))
+        await session.commit()
+    table["fields"].append(
+        {"id": "files", "name": "Files", "type": "attachment", "position": len(table["fields"])}
+    )
+    return table
+
+
+@pytest.mark.parametrize(("embedded", "revoke"), [(False, False), (True, False), (True, True)])
+async def test_community_table_uses_article_owner_and_keeps_attachment_history(
+    scenario,  # noqa: F811
+    embedded,
+    revoke,
+):
+    case = scenario
+    table = await setup_table(case, embedded=embedded)
+    transport = RevokeAfterPrepare(case) if revoke else case.mesh
+    app = thought_app(case, transport)
+    path = (PATH.replace("/pub/", "/parent-pub/") if embedded else PATH) + "/multitable/operations"
+    params = {"parent_note_id": "parent-note"} if embedded else {}
+    body = {
+        "expected_revision": 0,
+        "operations": [
+            {"op": "table.put", "table": table},
+            {
+                "op": "records.put",
+                "table_id": table["id"],
+                "records": [{"id": "row", "position": 0, "values": {"files": [case.asset]}}],
+            },
+        ],
+    }
+    async with (
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://thought") as c,
+    ):
+        denied = deepcopy(body)
+        denied["operations"][1]["records"][0]["values"]["files"] = ["unpublished-file"]
+        result = await c.post(
+            path, headers=await authorize(case, "POST", path), json=denied, params=params
+        )
+        assert result.status_code == 404, result.text
+        result = await c.post(
+            path, headers=await authorize(case, "POST", path), json=body, params=params
+        )
+        assert result.status_code == (404 if revoke else 200), result.text
+        if not revoke:
+            assert result.json()["structure"]["publication_id"] == "pub"
+            delete = {
+                "expected_revision": 1,
+                "operations": [{"op": "records.delete", "table_id": table["id"], "ids": ["row"]}],
+            }
+            removed = await c.post(
+                path, headers=await authorize(case, "POST", path), json=delete, params=params
+            )
+            assert removed.status_code == 200, removed.text
+            assert removed.json()["structure"]["revision"] == 2
+        async with app.state.database.sessions(info={"owner_user_id": case.owner}) as session:
+            note = await session.get(ThoughtNote, "note")
+            assert note.revision == (0 if revoke else 2)
+            mutations = list(await session.scalars(select(ThoughtReferenceMutation)))
+            assert {mutation.state for mutation in mutations} == {"abort" if revoke else "commit"}
+        from fpl_thought.retention import ThoughtReferenceDelivery
+
+        delivery = ThoughtReferenceDelivery(
+            app.state.database.sessions, app.state.thought_references.client
+        )
+        for mutation in sorted(mutations, key=lambda row: row.resource_revision or 0):
+            await delivery.deliver(case.owner, mutation.request_id)
+        async with case.assets.state.database.sessions(
+            info={"owner_user_id": case.owner}
+        ) as session:
+            assert [row.asset_id for row in await session.scalars(select(AssetReferencePin))] == [
+                case.asset
+            ]

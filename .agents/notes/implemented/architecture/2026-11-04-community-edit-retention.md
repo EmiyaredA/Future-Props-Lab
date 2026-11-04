@@ -23,3 +23,5 @@ A permission change before the source write produces an abort outcome. The exist
 ## Verification
 
 The isolated HTTP scenario grants and revokes an editor role, verifies that the source owner retains the resulting note and asset references, rejects a hidden file, and checks the original revision when permission is revoked after remote preparation.
+
+Community table batches use the same owner-scoped receipts. The source rechecks both the embedded parent and target article permissions, and validates table entity IDs while holding the write lock. Isolated HTTP tests cover direct and embedded editing, attachment removal with retained history, and revocation during preparation.
