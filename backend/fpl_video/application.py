@@ -107,6 +107,7 @@ OPERATIONS = {
     ("POST", PROJECT + "/renders"),
     ("POST", PROJECT + "/renders/{task_id}/cancel"),
     ("GET", PROJECT + "/renders/{task_id}"),
+    ("DELETE", PROJECT + "/renders/{task_id}"),
     ("GET", PROJECT + "/segment-exports"),
     ("GET", PROJECT + "/segment-exports/{task_id}"),
     ("GET", PROJECT + "/clip-merges"),
@@ -117,6 +118,7 @@ OPERATIONS = {
     ("POST", PROJECT + "/assets"),
     ("POST", PROJECT + "/assets/import"),
     ("PATCH", PROJECT + "/assets/{asset_id}"),
+    ("DELETE", PROJECT + "/assets/{asset_id}"),
     ("POST", PROJECT + "/assets/{asset_id}/proxy/retry"),
     ("GET", PROJECT + "/assets/{asset_id}/{variant}"),
 }

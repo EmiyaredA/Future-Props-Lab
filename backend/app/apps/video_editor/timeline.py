@@ -806,6 +806,7 @@ class VideoEditorTimelines(VideoTimelineRead):
                 for record in records.values()
             ):
                 raise VideoEditorValidationError("音频素材尚未准备好", code="audio_not_ready")
+        await assets.guard_write(project_id)
         now = utc_now()
         result = await self.session.execute(
             update(VideoEditorTimeline)

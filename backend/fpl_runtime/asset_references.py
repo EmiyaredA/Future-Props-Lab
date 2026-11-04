@@ -4,6 +4,8 @@ from types import MappingProxyType
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+VIDEO_FILE_CHANGES = frozenset({"file-name", "file-removal"})
+
 RESOURCE_KINDS = MappingProxyType(
     {
         "visual": frozenset(
@@ -13,7 +15,7 @@ RESOURCE_KINDS = MappingProxyType(
             {"note", "history", "template", "publication", "knowledge-base", "sync"}
         ),
         "galgame": frozenset({"project", "story", "history", "export"}),
-        "video": frozenset({"project", "history", "export", "file-name"}),
+        "video": frozenset({"project", "history", "export"}) | VIDEO_FILE_CHANGES,
         "motion": frozenset({"project", "history", "export"}),
         "presentation": frozenset({"project", "history", "template", "example", "export"}),
         "annotation": frozenset({"project", "history", "export"}),
@@ -61,6 +63,15 @@ class VideoFileRename(BaseModel):
     display_name: str = Field(min_length=1, max_length=255)
 
 
+class VideoFileRemoval(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    project_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,128}$")
+    render_id: str | None = Field(
+        default=None,
+        pattern=r"^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+    )
+
+
 class PrepareReferenceChange(BaseModel):
     """A source mutation retains prospective files until its local outcome is known."""
 
@@ -74,20 +85,25 @@ class PrepareReferenceChange(BaseModel):
 
     carried_asset_ids: list[str] | None = Field(default=None, max_length=10000)
     video_file_rename: VideoFileRename | None = None
+    video_file_removal: VideoFileRemoval | None = None
 
     @model_validator(mode="after")
-    def check_file_rename(self):
-        if self.video_file_rename is None:
-            if self.resource_kind == "file-name":
-                raise ValueError("剪辑素材改名缺少文件范围")
-        elif (
-            self.resource_kind != "file-name"
-            or self.expected_resource_revision < 0
-            or self.asset_ids
-            or self.metadata_asset_ids is not None
-            or self.carried_asset_ids is not None
-        ):
-            raise ValueError("剪辑素材改名范围无效")
+    def check_video_file_change(self):
+        valid = {
+            "file-name": self.video_file_rename is not None and self.video_file_removal is None,
+            "file-removal": self.video_file_removal is not None and self.video_file_rename is None,
+        }
+        if self.resource_kind in valid:
+            if (
+                not valid[self.resource_kind]
+                or self.expected_resource_revision < 0
+                or self.asset_ids
+                or self.metadata_asset_ids is not None
+                or self.carried_asset_ids is not None
+            ):
+                raise ValueError("剪辑素材变更范围无效")
+        elif self.video_file_rename is not None or self.video_file_removal is not None:
+            raise ValueError("素材范围仅适用于剪辑原件变更")
         return self
 
     @field_validator("asset_ids", "metadata_asset_ids", "carried_asset_ids")

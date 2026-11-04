@@ -134,3 +134,116 @@ async def test_asset_patch_recovers_both_sides_of_the_commit(scenario, tmp_path)
         case.csrf = case.browser.cookies["fpl_csrf"]
         assert (await send(api, "PATCH", path, json=payload)).status_code == 404
     await identity.close()
+
+
+async def test_asset_removal_settles_and_rechecks_inflight_timeline(
+    scenario,  # noqa: F811
+    tmp_path,
+    monkeypatch,
+):
+    import asyncio
+
+    from fpl_video.timeline_media import TimelineMedia
+
+    case = scenario
+    credential = "isolated-video-removal-credential"
+    case.identity.state.identity_options["service_credentials"]["video"] = credential
+    identity = LiveAuthorization(service="assets", credential=ASSETS_SECRET, transport=case.mesh)
+    case.assets.state.identity = identity
+    state = tmp_path / "video"
+    apply(state / "service.db", "video", MIGRATIONS)
+    faults = LoseNameReply(case.mesh)
+    video = create_app(
+        state_root=state,
+        catalog=CATALOG,
+        public_key=case.key.public_key(),
+        schema_path=ROOT / "web/src/generated/openapi.json",
+        credential=credential,
+        transport=faults,
+        run_worker=False,
+    )
+
+    async def send(api, method, path, **kwargs):
+        return await api.request(
+            method, path, headers=await authorize(case, "video", method, path), **kwargs
+        )
+
+    async with (
+        video.router.lifespan_context(video),
+        httpx.AsyncClient(transport=httpx.ASGITransport(app=video), base_url="http://video") as api,
+    ):
+        created = await send(api, "POST", PROJECTS, json={"title": "Remove Media"})
+        assert created.status_code == 200, created.text
+        project = PROJECTS + "/" + created.json()["id"]
+        files, operations = project + "/assets", project + "/timeline/operations"
+        original = BytesIO()
+        Image.new("RGB", (3, 3), "cyan").save(original, format="PNG")
+        raw = original.getvalue()
+
+        async def upload(name):
+            result = await send(api, "POST", files, files={"upload": (name, raw, "image/png")})
+            assert result.status_code == 200, result.text
+            return result.json()["id"]
+
+        attached = await upload("attached.png")
+        racing = await upload("racing.png")
+
+        def append_clip(identity, revision, name):
+            return {
+                "expectedRevision": revision,
+                "requestId": "video-removal-" + name,
+                "operations": [
+                    {
+                        "type": "addClip",
+                        "clip": {
+                            "id": name,
+                            "trackId": "visual-1",
+                            "kind": "image",
+                            "name": name,
+                            "durationUs": 1_000_000,
+                            "timelineStartUs": revision * 1_000_000,
+                            "assetId": identity,
+                        },
+                    }
+                ],
+            }
+
+        linked = await send(api, "POST", operations, json=append_clip(attached, 0, "active"))
+        assert linked.status_code == 200, linked.text
+        protected = await send(api, "DELETE", files + "/" + attached)
+        assert protected.status_code == 422 and protected.json()["code"] == "asset_in_use"
+        no_scope = await send(api, "DELETE", files + "/" + case.asset)
+        assert no_scope.status_code == 404
+
+        validated, resume = asyncio.Event(), asyncio.Event()
+        normal_guard = TimelineMedia.guard_write
+
+        async def hold_guard(self, project):
+            validated.set()
+            await asyncio.wait_for(resume.wait(), 5)
+            await normal_guard(self, project)
+
+        monkeypatch.setattr(TimelineMedia, "guard_write", hold_guard)
+        in_flight = asyncio.create_task(
+            send(api, "POST", operations, json=append_clip(racing, 1, "inflight"))
+        )
+        try:
+            await asyncio.wait_for(validated.wait(), 5)
+            faults.suffix = "/commit"
+            removed = await send(api, "DELETE", files + "/" + racing)
+            assert removed.status_code == 503 and faults.suffix is None, removed.text
+        finally:
+            resume.set()
+            conflict = await in_flight
+        assert conflict.status_code == 422 and conflict.json()["code"] == "invalid_asset"
+        await video.state.reference_delivery.process_once()
+        assert (await send(api, "GET", project + "/timeline")).json() == linked.json()
+        found = (await send(api, "GET", files)).json()["items"]
+        assert [item["id"] for item in found] == [attached]
+        assert (await send(api, "DELETE", files + "/" + racing)).status_code == 404
+        assert await case.assets.state.file_cleanup.run_once() == 1
+
+        async with case.assets.state.database.sessions(info={"owner_user_id": case.viewer}) as db:
+            assert await db.get(VisualAsset, racing) is None
+            assert await db.get(VisualAsset, attached) is not None
+    await identity.close()

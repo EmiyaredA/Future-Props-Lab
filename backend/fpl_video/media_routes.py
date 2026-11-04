@@ -154,6 +154,26 @@ async def patch_asset(
         raise _error(exc) from None
 
 
+@router.delete(FILES + "/{asset_id}")
+async def delete_asset(
+    request: Request,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    project_id: str,
+    asset_id: str,
+) -> dict[str, bool]:
+    try:
+        await MediaEdits(request, session, owner_user_id).remove(project_id, asset_id)
+    except (
+        VideoEditorNotFoundError,
+        VideoEditorUnavailableError,
+        VideoEditorValidationError,
+        AssetError,
+    ) as exc:
+        raise _error(exc) from None
+    return {"deleted": True}
+
+
 @router.post(FILES + "/{asset_id}/proxy/retry", response_model=VideoEditorAssetOut)
 async def retry_proxy(
     request: Request, session: SessionDep, owner_user_id: OwnerDep, project_id: str, asset_id: str

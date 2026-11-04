@@ -29,3 +29,7 @@ class LegacyTimelineAssets:
             asset.id: TimelineAsset.from_metadata(asset.media_kind, metadata)
             for asset, metadata in rows
         }
+
+    async def guard_write(self, _project_id):
+        # Compatibility reads and writes the document and metadata in one database.
+        pass

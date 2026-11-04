@@ -8,7 +8,7 @@ from sqlalchemy import delete, select, text
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.ids import new_id
-from fpl_runtime.asset_references import ReferenceUpdate
+from fpl_runtime.asset_references import VIDEO_FILE_CHANGES, ReferenceUpdate
 
 from .models import (
     AssetReferencePin,
@@ -46,8 +46,8 @@ class AssetReferences:
         """
         update = update.model_copy(deep=True)
         update.validate_service(service)
-        if update.resource_kind == "file-name":
-            raise AssetError("素材改名须通过源操作提交", code="invalid_reference_kind", status=422)
+        if update.resource_kind in VIDEO_FILE_CHANGES:
+            raise AssetError("素材变更须通过源操作提交", code="invalid_reference_kind", status=422)
         payload = update.model_dump(mode="json")
         digest = hashlib.sha256(
             json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
@@ -93,6 +93,7 @@ class AssetReferences:
                     "不能回退已确认的资源版本", code="resource_revision_conflict", status=409
                 )
             requested = set(update.asset_ids)
+            await protect_pending_removals(session, requested)
             present = (
                 set(
                     (
@@ -183,3 +184,22 @@ async def protect_references(session, asset_ids):
             is not None
         ):
             raise AssetError("素材仍被应用或历史引用", code="asset_in_use", status=409)
+
+
+async def protect_pending_removals(session, asset_ids):
+    if not asset_ids:
+        return
+    reserved = await session.scalar(
+        select(PreparedAssetPin.asset_id)
+        .join(ReferenceIntent, ReferenceIntent.id == PreparedAssetPin.intent_id)
+        .join(AssetReferenceSet, AssetReferenceSet.id == ReferenceIntent.reference_set_id)
+        .where(
+            AssetReferenceSet.service_id == "video",
+            AssetReferenceSet.resource_kind == "file-removal",
+            ReferenceIntent.state == "prepared",
+            PreparedAssetPin.asset_id.in_(asset_ids),
+        )
+        .limit(1)
+    )
+    if reserved is not None:
+        raise AssetError("素材正在删除", code="reference_mutations_pending", status=409)

@@ -110,6 +110,14 @@ def _project_file_scope_source(body, prefix):
     if prefix == VIDEO and (rename := change.video_file_rename) is not None:
         path = f"{prefix}/projects/{rename.project_id}/assets/{change.resource_id}"
         return body.source_method == "PATCH" and body.source_path == path
+    if prefix == VIDEO and (removal := change.video_file_removal) is not None:
+        project = f"{prefix}/projects/{removal.project_id}"
+        path = (
+            f"{project}/renders/{removal.render_id}"
+            if removal.render_id is not None
+            else f"{project}/assets/{change.resource_id}"
+        )
+        return body.source_method == "DELETE" and body.source_path == path
     if change.resource_kind != "project" or change.asset_ids:
         return False
     projects = prefix + "/projects"

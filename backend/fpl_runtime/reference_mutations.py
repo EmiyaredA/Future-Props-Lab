@@ -277,6 +277,7 @@ class ReferenceDelivery(PollingTaskRunner):
                     (409, "resource_revision_conflict"),
                     (409, "reference_mutations_pending"),
                     (409, "asset_in_use"),
+                    (409, "video_project_deletion_pending"),
                     (422, "story_visual_asset_scope"),
                     (422, "story_galgame_asset_scope"),
                     (422, "canvas_asset_scope"),

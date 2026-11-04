@@ -12,13 +12,14 @@ from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.ids import new_id
 from fpl_runtime.annotation_assets import MAX_AUDIO_BYTES
-from fpl_runtime.asset_references import PrepareReferenceChange
+from fpl_runtime.asset_references import VIDEO_FILE_CHANGES, PrepareReferenceChange
 from fpl_runtime.retention_authority import canvas_metadata, change_digest, story_metadata
 from fpl_runtime.thought_assets import AssetDescription
 
-from . import video_file_names
+from . import video_file_changes
 from .canvas_retention import canvas_files
 from .models import AssetReferencePin, AssetReferenceSet, PreparedAssetPin, ReferenceIntent
+from .references import protect_pending_removals
 from .scoped_project_files import PROJECT_FILE_COLUMNS, files_for_removal, remove_files
 
 
@@ -91,9 +92,9 @@ class ReferenceChanges:
                     AssetReferenceSet.resource_id == change.resource_id,
                 )
             )
-            rename = change.video_file_rename
+            file_change = change.resource_kind in VIDEO_FILE_CHANGES
             if row is None:
-                if change.expected_resource_revision != -1 and rename is None:
+                if change.expected_resource_revision != -1 and not file_change:
                     raise failure("reference_projection_required", "请先导入或核验已保存资源的引用")
                 row = AssetReferenceSet(
                     id=new_id(),
@@ -129,6 +130,7 @@ class ReferenceChanges:
                 if change.expected_resource_revision >= 0:
                     await files_for_removal(session, service, change.resource_id)
             requested = set(change.asset_ids)
+            await protect_pending_removals(session, requested)
             describe_story = story_metadata(service, change)
             describe_canvas = canvas_metadata(service, change)
             unavailable = set()
@@ -195,13 +197,13 @@ class ReferenceChanges:
                 )
             if not describe_canvas and present != requested:
                 raise failure("not_found", "部分素材不存在", 404)
-            if rename is not None:
-                present.add(await video_file_names.prepare(session, owner, row, change))
+            if file_change:
+                present.add(await video_file_changes.prepare(session, owner, row, change))
             identifier = new_id()
             row.revision += 1
             result = {"intent_id": identifier, "state": "prepared", "revision": row.revision}
-            if rename is not None:
-                result["video_file_rename"] = rename.model_dump(mode="json")
+            if file_change:
+                result.update(video_file_changes.command(change))
             if describe_canvas:
                 result["unavailable_asset_ids"] = sorted(unavailable)
             if community is not None or describe_story or describe_canvas:
@@ -287,8 +289,8 @@ class ReferenceChanges:
                     )
                 ).all()
             )
-            rename = row.resource_kind == "file-name"
-            if rename:
+            file_change = row.resource_kind in VIDEO_FILE_CHANGES
+            if file_change:
                 desired.clear()
             if deleted and desired:
                 raise failure("invalid_deleted_reference", "删除资源的最终引用必须为空", 422)
@@ -323,8 +325,8 @@ class ReferenceChanges:
                         for asset_id in sorted(desired)
                     ]
                 )
-                if rename:
-                    await video_file_names.commit(
+                if file_change:
+                    await video_file_changes.commit(
                         session, owner, row, intent, resource_revision, deleted
                     )
                 if scoped_project and deleted:

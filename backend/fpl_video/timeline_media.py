@@ -1,9 +1,12 @@
 """Join Video processing metadata to narrowly delegated Assets descriptions."""
 
 import httpx
-from sqlalchemy import select
+from sqlalchemy import select, text
 
-from app.apps.video_editor.errors import VideoEditorUnavailableError
+from app.apps.video_editor.errors import (
+    VideoEditorUnavailableError,
+    VideoEditorValidationError,
+)
 from app.apps.video_editor.models import VideoEditorAssetMetadata
 from app.apps.video_editor.timeline_assets import TimelineAsset
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
@@ -77,3 +80,20 @@ class TimelineMedia:
         }
         self.cache.update(result)
         return result
+
+    async def guard_write(self, project_id):
+        # Remote validation runs before the lock. An owned file can have been
+        # deleted while those requests were in flight, even with no timeline change.
+        await self.session.rollback()
+        await self.session.execute(text("BEGIN IMMEDIATE"))
+        if self.cache:
+            current = set(
+                await self.session.scalars(
+                    select(VideoEditorAssetMetadata.asset_id).where(
+                        VideoEditorAssetMetadata.project_id == project_id,
+                        VideoEditorAssetMetadata.asset_id.in_(self.cache),
+                    )
+                )
+            )
+            if current != self.cache.keys():
+                raise VideoEditorValidationError("素材已从当前项目删除", code="invalid_asset")

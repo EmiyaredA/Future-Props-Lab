@@ -55,18 +55,27 @@ class MediaDelivery(PollingTaskRunner):
         async with self.sessions(info={"allow_system_reads": True}) as session:
             pair = (
                 await session.execute(
-                    select(VideoMediaDispatch, VideoEditorTask)
+                    select(VideoMediaDispatch, VideoEditorTask, VideoEditorAssetMetadata.asset_id)
                     .outerjoin(VideoEditorTask, VideoEditorTask.id == VideoMediaDispatch.task_id)
-                    .where(VideoEditorTask.id.is_(None) | VideoEditorTask.status.in_(ACTIVE))
+                    .outerjoin(
+                        VideoEditorAssetMetadata,
+                        (VideoEditorAssetMetadata.asset_id == VideoMediaDispatch.asset_id)
+                        & (VideoEditorAssetMetadata.project_id == VideoMediaDispatch.project_id),
+                    )
+                    .where(
+                        VideoEditorTask.id.is_(None)
+                        | VideoEditorAssetMetadata.asset_id.is_(None)
+                        | VideoEditorTask.status.in_(ACTIVE)
+                    )
                     .order_by(VideoMediaDispatch.checked_at, VideoMediaDispatch.task_id)
                     .limit(1)
                 )
             ).one_or_none()
         if pair is None:
             return
-        binding, task = pair
+        binding, task, asset_id = pair
         try:
-            await self.deliver(binding, task)
+            await self.deliver(binding, task if asset_id else None)
         finally:
             async with self.session(binding) as session:
                 await session.execute(
