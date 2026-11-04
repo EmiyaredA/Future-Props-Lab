@@ -6,6 +6,7 @@ import os
 import subprocess
 import sys
 from contextlib import ExitStack
+from datetime import datetime
 from io import BytesIO
 from uuid import UUID, uuid4
 
@@ -16,10 +17,12 @@ from scripts.website import legacy_snapshot
 from scripts.website.migrate_assets import ASSET_RECORDS, transfer_asset_blobs
 from scripts.website.migrate_visual_history import PINS, RECORDS, migrate
 from scripts.website.migration_transfer import pages, transfer
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from tests.test_galgame_history_migration import open_peers, verify_edit_replay
 from tests.test_tools_navigation_migration import available_ports
 from tests.test_website_legacy_snapshot import PASSWORD, REVISION, ROOT, configuration, website
 
+from app.apps.visual_workshop.models import VisualGenerationBatch, VisualGenerationTask
 from fpl_runtime.migration_batches import MigrationPlan
 from fpl_visual.migrations.registry import MIGRATIONS
 
@@ -104,6 +107,55 @@ def seed_project(client, origin):
     )
 
 
+async def seed_generation(database, owner, project, asset):
+    # Populate old worker outcomes in this isolated migration fixture.
+    engine = create_async_engine(f"sqlite+aiosqlite:///{database}")
+    children = [f"generation-{index}" for index in range(4)]
+    submitted = datetime(2026, 1, 2, 3, 4, 5)
+    try:
+        async with async_sessionmaker(engine)() as session:
+            session.add_all(
+                VisualGenerationTask(
+                    id=task_id,
+                    owner_user_id=str(owner),
+                    project_id=project,
+                    provider_kind="senseaudio_image",
+                    generation_kind="image",
+                    provider_name="Saved provider",
+                    model_slug="saved-model",
+                    provider_task_id=f"legacy-{task_id}",
+                    submitted_at=submitted,
+                    canvas_node_id="paint",
+                    request_payload={"prompt": "历史画面"},
+                    status="completed",
+                    progress=100,
+                    result_asset_id=asset,
+                    revision=3,
+                    completed_at=submitted,
+                )
+                for task_id in children
+            )
+            session.add(
+                VisualGenerationBatch(
+                    id="historical-grid",
+                    owner_user_id=str(owner),
+                    project_id=project,
+                    grid_size=4,
+                    grid_output="composite",
+                    child_task_ids=children,
+                    status="completed",
+                    completed_count=4,
+                    result_asset_id=asset,
+                    revision=5,
+                    completed_at=submitted,
+                )
+            )
+            await session.commit()
+    finally:
+        await engine.dispose()
+    return children, submitted
+
+
 def test_visual_history_preserves_canvas_output_placement_and_rollback(tmp_path):
     runtime = tmp_path / "source/.runtime"
     runtime.mkdir(parents=True)
@@ -131,6 +183,9 @@ def test_visual_history_preserves_canvas_output_placement_and_rollback(tmp_path)
     )
     with website(config, source_port) as (client, origin):
         owner, path, canvas, ids, blobs, placements, edit = seed_project(client, origin)
+    children, submitted = asyncio.run(
+        seed_generation(runtime / legacy_snapshot.DATABASE, owner, path.rsplit("/", 1)[-1], ids[0])
+    )
     snapshot = tmp_path / "snapshot"
     proof = legacy_snapshot.create(runtime, config, snapshot, REVISION)
     source_db = snapshot / ".runtime" / legacy_snapshot.DATABASE
@@ -162,7 +217,7 @@ def test_visual_history_preserves_canvas_output_placement_and_rollback(tmp_path)
             migrations=MIGRATIONS,
             records=RECORDS,
         )
-        visual_source, _, asset_source, asset_target = peers
+        visual_source, visual_target, asset_source, asset_target = peers
         headers = {"X-Fpl-Migration-Token": plan.token.get_secret_value()}
         original = next(pages(client, visual_source, headers, plan, owner, PINS))
         assert original.batch.records[0].asset_ids == sorted(ids)
@@ -181,7 +236,25 @@ def test_visual_history_preserves_canvas_output_placement_and_rollback(tmp_path)
             "visual.outputs": 3,
             "visual.canvas-pins": 1,
             "visual.operation-receipts": 1,
+            "visual.generation-tasks": 4,
+            "visual.generation-batches": 1,
         }
+        tasks = next(item for item in RECORDS if item.name == "visual.generation-tasks")
+        batch = next(item for item in RECORDS if item.name == "visual.generation-batches")
+        stored_tasks = [
+            record
+            for page in pages(client, visual_target, headers, plan, owner, tasks)
+            for record in page.batch.records
+        ]
+        stored_batch = next(
+            pages(client, visual_target, headers, plan, owner, batch)
+        ).batch.records[0]
+        assert [row.id for row in stored_tasks] == children == stored_batch.child_task_ids
+        assert stored_batch.revision == 5 and stored_batch.result_asset_id == ids[0]
+        assert all(row.submitted_at == submitted and row.revision == 3 for row in stored_tasks)
+        assert [row.provider_task_id for row in stored_tasks] == [
+            f"legacy-{task_id}" for task_id in children
+        ]
     asyncio.run(verify_edit_replay(tmp_path / "visual", "visual", owner, *edit))
     recovered = tmp_path / "recovered"
     legacy_snapshot.restore(snapshot, recovered, REVISION, proof["manifest_sha256"])

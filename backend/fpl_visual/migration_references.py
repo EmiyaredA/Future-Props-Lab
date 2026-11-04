@@ -5,7 +5,11 @@ from uuid import uuid5
 from sqlalchemy import select
 
 from app.apps.visual_workshop.canvas_asset_values import existing_assets
-from app.apps.visual_workshop.models import VisualCanvasDocument, VisualWorkshopProject
+from app.apps.visual_workshop.models import (
+    VisualCanvasDocument,
+    VisualGenerationTask,
+    VisualWorkshopProject,
+)
 from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from fpl_runtime.project_history_migration import blocked, inventory
 from fpl_runtime.visual_migration import (
@@ -29,6 +33,26 @@ async def canvas_pins(session, row):
         )
     )
     output_ids = {output.id: output for output in outputs}
+    task_ids = {
+        identity
+        for identity in (
+            *(output.generation_task_id for output in outputs),
+            *(node.get("generation_task_id") for node in row.nodes),
+        )
+        if identity
+    }
+    if task_ids:
+        actual = set(
+            await session.scalars(
+                select(VisualGenerationTask.id).where(
+                    VisualGenerationTask.id.in_(task_ids),
+                    VisualGenerationTask.project_id == row.project_id,
+                    VisualGenerationTask.owner_user_id == session.info["owner_user_id"],
+                )
+            )
+        )
+        if actual != task_ids:
+            raise blocked("migration_visual_generation_source_missing")
     for node in row.nodes:
         if selected := node.get("final_output_id"):
             output = output_ids.get(selected)

@@ -17,6 +17,7 @@ from fpl_runtime.migration_batches import MigrationBatch, MigrationPage
 from fpl_runtime.project_history_migration import ProjectDataset
 from fpl_runtime.project_history_records import HistoryRecord, Identifier, ProjectRecord
 
+from .migration_generation import DATASETS as GENERATION_DATASETS
 from .models import VisualMigrationReceipt
 
 
@@ -101,6 +102,7 @@ DATASETS = (
         project=VisualWorkshopProject,
         owns_record=False,
     ),
+    *GENERATION_DATASETS,
 )
 
 
