@@ -7,6 +7,7 @@ from shutil import rmtree
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
+from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import HTTPConnection
@@ -222,10 +223,8 @@ def create_app(
             dependencies=[Depends(require_studio_auth)],
         )
     if schema_path is not None:
-        partial = RouteCatalog(
-            operation
-            for operation in catalog.operations
-            if operation.service == SERVICE and (operation.method, operation.path) in OPERATIONS
+        expected = RouteCatalog(
+            operation for operation in catalog.operations if operation.service == SERVICE
         )
         schema = app.openapi()
         published = json.loads(schema_path.read_text())
@@ -237,10 +236,10 @@ def create_app(
         }
         if (
             mounted != OPERATIONS
-            or {(operation.method, operation.path) for operation in partial.operations}
+            or {(operation.method, operation.path) for operation in expected.operations}
             != OPERATIONS
-            or public_contract(schema, SERVICE, partial)
-            != public_contract(published, SERVICE, partial)
+            or public_contract(schema, SERVICE, expected)
+            != public_contract(published, SERVICE, expected)
         ):
             raise ValueError("特效文稿 API 与发布契约不匹配")
 
@@ -258,6 +257,14 @@ def create_app(
 
     @app.get("/ready")
     async def ready():
-        raise HTTPException(503, "motion_cutover_incomplete")
+        runners = (app.state.reference_delivery, import_delivery, export_delivery)
+        if web_root is None or not run_worker or any(runner is None for runner in runners):
+            raise HTTPException(503, "motion_dependencies_unconfigured")
+        check(database.path, SERVICE, MIGRATIONS)
+        if any(not runner.is_healthy for runner in runners):
+            raise HTTPException(503, "motion_worker_unavailable")
+        async with database.sessions() as session:
+            await session.execute(text("SELECT 1"))
+        return {"status": "ready", "service": SERVICE}
 
     return app

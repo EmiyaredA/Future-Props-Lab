@@ -4655,6 +4655,12 @@
       "model": "VideoSegmentHandoffFile"
     },
     {
+      "table": "asset_video_output_history",
+      "service": "assets",
+      "module": "fpl_assets.models",
+      "model": "AssetVideoOutputHistory"
+    },
+    {
       "table": "creative_install_fences",
       "service": "creative",
       "module": "fpl_creative.fence_records",

@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
+from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import HTTPConnection
@@ -323,9 +324,7 @@ def create_app(
         )
 
     expected = RouteCatalog(
-        operation
-        for operation in catalog.operations
-        if operation.service == SERVICE and (operation.method, operation.path) in OPERATIONS
+        operation for operation in catalog.operations if operation.service == SERVICE
     )
     schema = app.openapi()
     mounted = {
@@ -351,6 +350,26 @@ def create_app(
 
     @app.get("/ready")
     async def ready():
-        raise HTTPException(503, "video_cutover_incomplete")
+        runners = (
+            app.state.reference_delivery,
+            asset_intakes,
+            archive_delivery,
+            media_delivery,
+            render_delivery,
+            motion_handoffs,
+        )
+        if (
+            web_root is None
+            or not run_worker
+            or segment_delivery is None
+            or any(runner is None for runner in runners)
+        ):
+            raise HTTPException(503, "video_dependencies_unconfigured")
+        check(database.path, SERVICE, MIGRATIONS)
+        if any(not runner.is_healthy for runner in runners):
+            raise HTTPException(503, "video_worker_unavailable")
+        async with database.sessions() as session:
+            await session.execute(text("SELECT 1"))
+        return {"status": "ready", "service": SERVICE}
 
     return app

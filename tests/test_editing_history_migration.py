@@ -9,6 +9,7 @@ import time
 from contextlib import AsyncExitStack, ExitStack
 from io import BytesIO
 from uuid import UUID, uuid4
+from zipfile import ZipFile
 
 import httpx
 from cryptography.fernet import Fernet
@@ -21,6 +22,7 @@ from scripts.website.migrate_editing_history import (
     MOTION,
     MOTION_OUTPUTS,
     VIDEO,
+    VIDEO_OUTPUTS,
     VIDEO_VARIANTS,
     transfer_artifacts,
     transfer_history,
@@ -31,22 +33,95 @@ from tests.test_community_asset_protocol import CATALOG, Mesh
 from tests.test_tools_navigation_migration import available_ports, listener
 from tests.test_website_legacy_snapshot import PASSWORD, REVISION, ROOT, configuration, website
 
+from fpl_assets.application import create_app as create_assets
 from fpl_assets.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
+from fpl_assets.settings import StorageSettings
 from fpl_motion.application import create_app as create_motion
 from fpl_motion.migrations.registry import MIGRATIONS as MOTION_MIGRATIONS
 from fpl_rendering.application import create_app as create_rendering
 from fpl_rendering.migrations.registry import MIGRATIONS as RENDERING_MIGRATIONS
 from fpl_rendering.settings import RenderingSettings
 from fpl_runtime.capability_client import CapabilityClient
-from fpl_runtime.claims import HEADER, Actor, issue_context
+from fpl_runtime.claims import HEADER, Actor, issue_context, verify_context
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migration_batches import MigrationPlan
 from fpl_runtime.migrations import apply
+from fpl_runtime.video_segments import bundle_grant
 from fpl_video.application import create_app as create_video
 from fpl_video.migrations.registry import MIGRATIONS as VIDEO_MIGRATIONS
 
 MOTION_PROJECTS = "/v1/motion-compositor/projects"
 VIDEO_PROJECTS = "/v1/video-editor/projects"
+
+
+def wait_terminal(client, path):
+    for _ in range(200):
+        result = client.get(path)
+        assert result.status_code == 200, result.text
+        outcome = result.json()
+        if outcome["status"] in ("completed", "failed", "cancelled"):
+            assert outcome["status"] == "completed", outcome
+            return outcome
+        time.sleep(0.1)
+    raise AssertionError("Isolated legacy render did not settle")
+
+
+def create_video_outputs(client, post, path, timeline):
+    renders = path + "/renders"
+    spec = {"expectedRevision": timeline["revision"], "preset": "720p30", "endUs": 200_000}
+    preflight = post(renders + "/preflight", json=spec)
+    assert preflight["ready"], preflight
+    started = post(
+        renders,
+        json={
+            **spec,
+            "requestId": "retained-movie",
+            "previewFingerprint": preflight["fingerprint"],
+        },
+    )
+    movie = wait_terminal(client, renders + "/" + started["id"])
+    asset = movie["outputAssetId"]
+    timeline = post(
+        path + "/timeline/operations",
+        json={
+            "expectedRevision": timeline["revision"],
+            "requestId": "retained-video-segment",
+            "operations": [
+                {
+                    "type": "addClip",
+                    "clip": {
+                        "id": "retained-source",
+                        "trackId": "visual-1",
+                        "kind": "video",
+                        "name": "Source",
+                        "durationUs": 100_000,
+                        "timelineStartUs": 1_000_000,
+                        "assetId": asset,
+                    },
+                }
+            ],
+        },
+    )
+    segments = path + "/segment-exports"
+    visual = post(
+        "/v1/visual-workshop/projects", json={"title": "Legacy Visual target", "kind": "canvas"}
+    )
+    groups, output_ids = [], [asset]
+    for suffix, target in (("project", None), ("library", {"projectId": visual["id"]})):
+        started = post(
+            segments,
+            json={
+                "expectedRevision": timeline["revision"],
+                "requestId": "retained-zip-" + suffix,
+                "target": target,
+                "segments": [{"clipId": "retained-source", "name": "Recovered Segment"}],
+            },
+        )
+        group_path = segments + "/" + started["id"]
+        group = wait_terminal(client, group_path)
+        groups.append(group_path + "/download")
+        output_ids.append(group["resultDetail"]["segments"][0]["assetId"])
+    return timeline, groups, [f"/v1/files/{value}/download" for value in output_ids]
 
 
 def create_editor_history(client, origin, image):
@@ -107,12 +182,7 @@ def create_editor_history(client, origin, image):
             "endFrame": 2,
         },
     )
-    for _ in range(160):
-        outcome = client.get(motion_path + "/exports/" + export["id"]).json()
-        if outcome["status"] in ("completed", "failed", "cancelled"):
-            break
-        time.sleep(0.1)
-    assert outcome["status"] == "completed", outcome
+    outcome = wait_terminal(client, motion_path + "/exports/" + export["id"])
     video_assets = client.get(video_path + "/assets").json()["items"]
     for _ in range(100):
         if video_assets[0]["processingStatus"] in ("ready", "failed"):
@@ -120,9 +190,11 @@ def create_editor_history(client, origin, image):
         time.sleep(0.1)
         video_assets = client.get(video_path + "/assets").json()["items"]
     assert video_assets[0]["processingStatus"] == "ready", video_assets
+    video_doc, zip_paths, raw_outputs = create_video_outputs(client, post, video_path, video_doc)
     routes = {
         "motion": tuple(outcome["outputs"].values()),
-        "video": (video_assets[0]["thumbnailUrl"],),
+        "video": (video_assets[0]["thumbnailUrl"], *zip_paths),
+        "assets": tuple(raw_outputs),
     }
     outputs = {
         service: [(url, client.get(url).content) for url in urls]
@@ -234,12 +306,12 @@ def test_editing_history_scopes_and_sealed_rollback(tmp_path):
         assert rejected.json()["code"] == "migration_editing_files_incomplete"
         for dataset in ASSET_RECORDS:
             transfer(client, plan, assets_source, assets_target, dataset)
-        assert transfer_asset_blobs(client, plan, assets_source, assets_target)["record_count"] == 2
+        assert transfer_asset_blobs(client, plan, assets_source, assets_target)["record_count"] == 5
         verify_originals(client, plan, assets_source, assets_target)
 
         for service, spec, expected in (
             ("motion", MOTION, (1, 1, 1, 1)),
-            ("video", VIDEO, (1, 1, 1, 1, 1)),
+            ("video", VIDEO, (1, 1, 3, 2, 4)),
         ):
             reports = transfer_history(client, plan, *endpoints[service], spec)
             assert tuple(report["record_count"] for report in reports) == expected
@@ -247,6 +319,10 @@ def test_editing_history_scopes_and_sealed_rollback(tmp_path):
         scopes = transfer(client, plan, assets_source, assets_target, ASSET_SCOPES)
         assert scopes["record_count"] == 2
         assert transfer(client, plan, assets_source, assets_target, ASSET_SCOPES) == scopes
+
+        video_outputs = transfer(client, plan, assets_source, assets_target, VIDEO_OUTPUTS)
+        assert video_outputs["record_count"] == 3
+        assert transfer(client, plan, assets_source, assets_target, VIDEO_OUTPUTS) == video_outputs
 
         rendering_port, _ = available_ports()
         rendering_root = tmp_path / "rendering"
@@ -323,7 +399,44 @@ async def check_independent_outputs(root, owner, outputs):
         video_originals_key="isolated-originals-runtime-" * 2,
     )
     mesh.apps["rendering"] = render
+
+    class LiveFixture:
+        async def status(self, **_):
+            return True
+
+        async def close(self):
+            pass
+
+    assets = create_assets(
+        settings=StorageSettings(root / "assets/service.db"),
+        catalog=CATALOG,
+        public_key=key.public_key(),
+        identity=LiveFixture(),
+        capabilities=LiveFixture(),
+        cleanup=False,
+    )
+    mesh.apps["assets"] = assets
+
+    async def authorize_archive(assertion, grant):
+        assert bundle_grant(grant)
+        actor = verify_context(
+            assertion,
+            service="video",
+            method="GET",
+            path=grant.source_path,
+            public_key=key.public_key(),
+        )
+        return issue_context(
+            actor,
+            service="assets",
+            method="GET",
+            path=grant.target_path,
+            private_key=key,
+            key_id="isolated",
+        )
+
     apps = {
+        "assets": assets,
         "motion": create_motion(
             state_root=root / "motion",
             catalog=CATALOG,
@@ -344,6 +457,7 @@ async def check_independent_outputs(root, owner, outputs):
             run_worker=False,
         ),
     }
+    apps["video"].state.capabilities.authorize_request = authorize_archive
     async with AsyncExitStack() as stack:
         await stack.enter_async_context(render.router.lifespan_context(render))
         for service, app in apps.items():
@@ -370,6 +484,16 @@ async def check_independent_outputs(root, owner, outputs):
                 )
                 received = await client.get(path, headers={HEADER: context})
                 assert received.status_code == 200, received.text
-                assert received.content == expected
+                if service == "video" and "/segment-exports/" in path:
+                    with (
+                        ZipFile(BytesIO(received.content)) as archived,
+                        ZipFile(BytesIO(expected)) as original,
+                    ):
+                        assert archived.namelist() == original.namelist()
+                        assert [archived.read(name) for name in archived.namelist()] == [
+                            original.read(name) for name in original.namelist()
+                        ]
+                else:
+                    assert received.content == expected
                 partial = await client.get(path, headers={HEADER: context, "Range": "bytes=0-7"})
-                assert partial.status_code == 206 and partial.content == expected[:8]
+                assert partial.status_code == 206 and partial.content == received.content[:8]

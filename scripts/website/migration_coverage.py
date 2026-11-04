@@ -28,11 +28,7 @@ TRANSFER = {
         dataset.model.__tablename__: dataset.name
         for dataset in (*IDENTITY, *ASSETS, *DIRECTOR, *MODELS, *PRESENTATION)
     },
-    **{
-        dataset.model.__tablename__: dataset.name
-        for dataset in (*MOTION, *VIDEO)
-        if dataset.name != "video.tasks"
-    },
+    **{dataset.model.__tablename__: dataset.name for dataset in (*MOTION, *VIDEO)},
     "cloud_desktop_preferences": REMOTE,
     "tool_navigation_items": TOOLS,
     "presentation_asset_references": "presentation.project-references",

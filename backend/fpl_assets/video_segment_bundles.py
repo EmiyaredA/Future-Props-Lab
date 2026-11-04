@@ -81,12 +81,15 @@ async def build_bundle(database, settings, owner, project, task):
             raise missing()
         items = [PublishedSegment.model_validate(item) for item in result]
         ids = {item.asset.id for item in items}
+        library = {item.asset.id for item in items if receipt is None or item.library}
         rows = await session.scalars(select(VisualAsset).where(VisualAsset.id.in_(ids)))
         paths = {
             row.id: storage.path_for(row)
             for row in rows
             if (
-                is_library_asset(row) if receipt is None else row.video_editor_project_id == project
+                is_library_asset(row)
+                if row.id in library
+                else row.video_editor_project_id == project
             )
         }
     if paths.keys() != ids:

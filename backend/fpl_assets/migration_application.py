@@ -9,8 +9,14 @@ from .migration_editing_scopes import mount_project_scopes
 from .migration_models import AssetImportReceipt
 from .migration_presentation import mount_presentation_references
 from .migration_records import DATASETS, export_page, import_batch, inventory
+from .migration_video_outputs import mount_video_outputs
 from .migrations.registry import MIGRATIONS
-from .models import AssetReferencePin, AssetReferenceSet
+from .models import (
+    AssetReferencePin,
+    AssetReferenceSet,
+    AssetVideoOutputHistory,
+    VideoFileWriteReceipt,
+)
 
 PREFIX = "/v1/migration/assets"
 TRANSPORT = {"streaming_prefix": BLOBS + "/"}
@@ -37,6 +43,7 @@ def mount_records(app, plan, sessions, *, source=None):
 def create_export_app(*, plan, source_path):
     app, sessions, source = export_app(plan, source_path, **TRANSPORT)
     mount_blobs(app, plan, sessions, root=source.path.parent, source=source)
+    mount_video_outputs(app, plan, sessions, source.path.parent, source=source)
     return mount_records(app, plan, sessions, source=source)
 
 
@@ -46,8 +53,11 @@ def create_import_app(*, plan, state_root):
         AssetImportReceipt,
         AssetReferenceSet,
         AssetReferencePin,
+        AssetVideoOutputHistory,
+        VideoFileWriteReceipt,
     )
     app, database = import_app(plan, state_root, "assets", models, MIGRATIONS, **TRANSPORT)
     mount_blobs(app, plan, database.sessions, root=database.root)
     mount_presentation_references(app, plan, database.sessions)
+    mount_video_outputs(app, plan, database.sessions, database.root)
     return mount_records(app, plan, database.sessions)

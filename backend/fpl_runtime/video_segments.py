@@ -62,6 +62,7 @@ class PublishedSegment(BaseModel):
     model_config = ConfigDict(extra="forbid")
     asset: VideoAsset
     sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    library: bool = False
 
 
 def segment_receipt_id(task_id):

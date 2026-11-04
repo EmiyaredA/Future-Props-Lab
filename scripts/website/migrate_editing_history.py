@@ -9,6 +9,9 @@ import httpx
 
 from fpl_assets.migration_blobs import BLOBS
 from fpl_assets.migration_editing_scopes import DATASET, PREFIX, ProjectScopePage
+from fpl_assets.migration_video_outputs import DATASET as OUTPUT_DATASET
+from fpl_assets.migration_video_outputs import PREFIX as OUTPUT_PREFIX
+from fpl_assets.migration_video_outputs import LegacyOutputPage
 from fpl_motion.migration_application import PREFIX as MOTION_PREFIX
 from fpl_motion.migration_records import DATASETS as MOTION_DATASETS
 from fpl_runtime.editing_artifacts import (
@@ -44,6 +47,7 @@ def datasets(prefix, entries):
 MOTION = datasets(MOTION_PREFIX, MOTION_DATASETS)
 VIDEO = datasets(VIDEO_PREFIX, VIDEO_DATASETS)
 ASSET_SCOPES = DatasetTransfer(DATASET, PREFIX, ProjectScopePage, "id")
+VIDEO_OUTPUTS = DatasetTransfer(OUTPUT_DATASET, OUTPUT_PREFIX, LegacyOutputPage, "id", page_size=1)
 MOTION_OUTPUTS = DatasetTransfer(
     MOTION_DATASET, MOTION_ARTIFACT_PREFIX, MotionRenderPage, "id", page_size=1
 )
@@ -139,6 +143,9 @@ def main():
             )
             if scope["record_count"] != motion[0]["record_count"] + video[0]["record_count"]:
                 raise ValueError("素材范围与剪辑及特效项目数量不一致")
+            video_outputs = transfer(
+                client, plan, options.assets_source, options.assets_target, VIDEO_OUTPUTS
+            )
             motion_files = transfer_artifacts(
                 client, plan, options.motion_source, options.rendering_target, MOTION_OUTPUTS
             )
@@ -151,7 +158,11 @@ def main():
         parser.exit(1, "迁移维护服务连接失败\n")
     except ValueError:
         parser.exit(1, "迁移校验失败，保留已持久化的批次回执\n")
-    print(json.dumps([*motion, *video, scope, *motion_files, *video_files], sort_keys=True))
+    print(
+        json.dumps(
+            [*motion, *video, scope, video_outputs, *motion_files, *video_files], sort_keys=True
+        )
+    )
 
 
 if __name__ == "__main__":
