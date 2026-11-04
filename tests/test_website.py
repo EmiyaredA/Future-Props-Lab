@@ -127,16 +127,16 @@ async def test_site_shares_accounts_and_projects_without_native_transport(websit
 async def test_public_admin_cannot_manage_host_or_public_access_even_with_spoofed_headers(website):
     public = await public_client(website)
     try:
-        for path in [
-            "/v1/automation/access",
-            "/v1/tool-navigation/codex-source",
-            "/v1/tool-navigation/storage-usage",
-            "/v1/agent-workbench/candidates",
+        for path, status in [
+            ("/v1/automation/access", 403),
+            ("/v1/tool-navigation/codex-source", 404),
+            ("/v1/tool-navigation/storage-usage", 404),
+            ("/v1/agent-workbench/candidates", 403),
         ]:
             response = await public.get(
                 path, headers={"x-fpl-desktop-token": "forged", "x-forwarded-for": "127.0.0.1"}
             )
-            assert response.status_code == 403, (path, response.text)
+            assert response.status_code == status, (path, response.text)
         assert (
             await public.post("/v1/automation/access/actions", json={"action": "public_start"})
         ).status_code == 403
@@ -219,6 +219,8 @@ async def test_hot_frontend_proxy_keeps_session_csrf_and_socket_permissions(webs
     app.exception_handlers.update(main_app.exception_handlers)
     app.include_router(api_router)
     app.state.automation_changes = {}
+    app.state.database = main_app.state.database
+    app.state.studio_http_auth = main_app.state.studio_http_auth
     app.add_middleware(WebsiteTransport, local_port=9001, frontend_origin="http://127.0.0.1:3000")
     # Vite rewrites Host to the API target and preserves the browser's Origin.
     async with httpx.AsyncClient(

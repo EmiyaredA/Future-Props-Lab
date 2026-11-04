@@ -159,7 +159,11 @@ async def scenario():
                 "/_internal/v1/authorization/live", json=live_body, headers=live_headers
             )
             assert live.status_code == 200 and live.json()["active"] is True
-            task_body = {"service": "agents", "owner_user_id": owner, "permission": "content.read"}
+            task_body = {
+                "service": "agents",
+                "owner_user_id": owner,
+                "permission": "cloud-control.access",
+            }
             task = await client.post(
                 "/_internal/v1/tasks/authorize", json=task_body, headers=live_headers
             )
