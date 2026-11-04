@@ -10,7 +10,6 @@ from threading import Event
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.apps.video_editor.media import probe_media
 from app.apps.video_editor.models import (
     VideoEditorAssetMetadata,
     VideoEditorTask,
@@ -30,6 +29,7 @@ from app.capabilities.asset_store.models import (
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.render_engine import RenderCancelled
 from app.capabilities.media_rendering.speed import audio_speed_filters
+from app.capabilities.media_rendering.video_derivatives import probe_media
 from app.runtime.config import Settings
 from app.runtime.time import utc_now
 

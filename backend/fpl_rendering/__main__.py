@@ -21,6 +21,10 @@ def parser():
         "--catalog", type=Path, default=Path("/app/deploy/contracts/ownership.json")
     )
     result.add_argument("--export-key", type=Path, default=Path("/run/fpl/motion-export-key"))
+    result.add_argument("--video-media-key", type=Path, default=Path("/run/fpl/video-media-key"))
+    result.add_argument(
+        "--video-originals-key", type=Path, default=Path("/run/fpl/video-originals-key")
+    )
     result.add_argument("--port", type=int, default=8080)
     return result
 
@@ -51,6 +55,7 @@ def run(options):
         from fpl_runtime.identity_client import LiveAuthorization
         from fpl_runtime.motion_exports import load_export_key
         from fpl_runtime.routing import RouteCatalog
+        from fpl_runtime.timed_peer import load_peer_key
 
         from .application import create_app
 
@@ -68,6 +73,11 @@ def run(options):
             raise ValueError("Rendering 身份服务连接配置无效")
         credential = values["credential"]
         catalog = RouteCatalog.read(options.catalog)
+        export_key = load_export_key(options.export_key, identity_credential=credential)
+        media_key = load_peer_key(options.video_media_key, excluded=(credential, export_key))
+        originals_key = load_peer_key(
+            options.video_originals_key, excluded=(credential, export_key, media_key)
+        )
         app = create_app(
             settings=settings,
             catalog=catalog,
@@ -76,7 +86,9 @@ def run(options):
             capabilities=CapabilityClient(
                 service="rendering", credential=credential, catalog=catalog
             ),
-            export_key=load_export_key(options.export_key, identity_credential=credential),
+            export_key=export_key,
+            video_media_key=media_key,
+            video_originals_key=originals_key,
             version=os.environ.get("FPL_SERVICE_VERSION", "development"),
         )
         uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)

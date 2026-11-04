@@ -73,3 +73,13 @@ async def available(session, owner):
         for row in rows
         if Path(row.original_filename).suffix.lower() in VIDEO_EDITABLE_EXTENSIONS
     ]
+
+
+async def original_record(session, owner, project_id, asset_id):
+    return await session.scalar(
+        select(VisualAsset).where(
+            VisualAsset.owner_user_id == owner,
+            VisualAsset.video_editor_project_id == project_id,
+            VisualAsset.id == asset_id,
+        )
+    )

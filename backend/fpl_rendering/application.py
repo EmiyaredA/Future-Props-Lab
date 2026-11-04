@@ -21,14 +21,17 @@ from fpl_runtime.database import Database
 from fpl_runtime.migrations import check
 from fpl_runtime.motion_exports import ExportPeer
 from fpl_runtime.request_limit import RequestLimit
+from fpl_runtime.video_processing import originals_peer, video_peer
 
 from .migrations.registry import MIGRATIONS
-from .models import MotionRenderJob
+from .models import MotionRenderJob, VideoMediaJob
 from .motion_export_routes import router as motion_export_router
 from .motion_jobs import MotionJobs
 from .motion_preview import router as motion_preview_router
 from .previews import MediaPreviews
 from .routes import router
+from .video_media_jobs import VideoJobs
+from .video_media_routes import router as video_media_router
 
 
 def create_app(
@@ -41,14 +44,32 @@ def create_app(
     version="development",
     run_worker=True,
     export_key=None,
+    video_media_key=None,
+    video_originals_key=None,
 ):
     database = Database(
-        "rendering", settings.runtime_path, models=(MotionRenderJob,), hide_parameters=True
+        "rendering",
+        settings.runtime_path,
+        models=(MotionRenderJob, VideoMediaJob),
+        hide_parameters=True,
     )
     if database.path != settings.database_path:
         raise ValueError("Rendering 配置必须指向自己的数据目录")
 
     motion_jobs = MotionJobs(database=database, settings=settings, identity=identity)
+    if (video_media_key is None) != (video_originals_key is None):
+        raise ValueError("剪辑派生需要两端专用对等凭据")
+    video_jobs = (
+        VideoJobs(
+            database=database,
+            settings=settings,
+            identity=identity,
+            client=capabilities.client,
+            originals=originals_peer(video_originals_key),
+        )
+        if video_media_key is not None
+        else None
+    )
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -56,8 +77,12 @@ def create_app(
         try:
             if run_worker:
                 await motion_jobs.start()
+                if video_jobs is not None:
+                    await video_jobs.start()
             yield
         finally:
+            if video_jobs is not None:
+                await video_jobs.stop()
             await motion_jobs.stop()
             await capabilities.close()
             await identity.close()
@@ -80,6 +105,11 @@ def create_app(
     app.state.motion_jobs = motion_jobs
     app.state.motion_export_peer = ExportPeer(export_key) if export_key is not None else None
     app.state.motion_submission_locks = tuple(asyncio.Lock() for _ in range(16))
+    app.state.video_jobs = video_jobs
+    app.state.video_media_peer = (
+        video_peer(video_media_key) if video_media_key is not None else None
+    )
+    app.include_router(video_media_router)
     app.include_router(motion_export_router)
     app.include_router(motion_preview_router)
     app.include_router(router, prefix="/v1")
@@ -120,7 +150,9 @@ def create_app(
     @app.get("/ready")
     async def ready():
         check(database.path, "rendering", MIGRATIONS)
-        if run_worker and not motion_jobs.is_healthy:
+        if run_worker and (
+            not motion_jobs.is_healthy or (video_jobs is not None and not video_jobs.is_healthy)
+        ):
             raise HTTPException(503, "motion_export_runner_unavailable")
         async with database.sessions() as session:
             await session.execute(text("SELECT 1"))

@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import json
 import mimetypes
-import subprocess
 from copy import deepcopy
 from pathlib import Path
 from uuid import uuid4
@@ -36,28 +34,6 @@ from app.runtime.revisions import RevisionConflictError, require_revision_write
 from app.runtime.time import iso_utc, utc_now
 
 VIDEO_EDITOR_EXTENSIONS = VIDEO_EDITABLE_EXTENSIONS
-
-
-def probe_media(path: Path) -> dict:
-    result = subprocess.run(
-        [
-            "ffprobe",
-            "-v",
-            "error",
-            "-show_entries",
-            "format=duration,format_name:stream=index,codec_type,codec_name,width,height,avg_frame_rate,pix_fmt,nb_frames,sample_rate,channels",
-            "-of",
-            "json",
-            str(path),
-        ],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    payload = json.loads(result.stdout)
-    duration = float((payload.get("format") or {}).get("duration") or 0)
-    payload["durationUs"] = max(0, round(duration * 1_000_000))
-    return payload
 
 
 class VideoEditorMedia:

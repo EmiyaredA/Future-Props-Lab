@@ -1,5 +1,27 @@
 # Isolated Video Editor application. Production readiness requires full API and migration.
 services:
+  assets:
+    volumes:
+      - type: bind
+        source: ${FPL_VIDEO_ORIGINALS_KEY:?Select the protected Rendering Assets key}
+        target: /run/fpl/video-originals-key
+        read_only: true
+        bind:
+          create_host_path: false
+  rendering:
+    volumes:
+      - type: bind
+        source: ${FPL_VIDEO_ORIGINALS_KEY:?Select the protected Rendering Assets key}
+        target: /run/fpl/video-originals-key
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${FPL_VIDEO_MEDIA_KEY:?Select the protected Video Rendering key}
+        target: /run/fpl/video-media-key
+        read_only: true
+        bind:
+          create_host_path: false
   video:
     image: ${FPL_VIDEO_IMAGE:?Build and select a Video Editor release}
     user: "${FPL_SERVICE_UID}:${FPL_SERVICE_GID}"
@@ -28,6 +50,12 @@ services:
       - type: bind
         source: ${FPL_VIDEO_IDENTITY_TOKEN:?Select the Video Editor Identity credential}
         target: /run/fpl/identity-token
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${FPL_VIDEO_MEDIA_KEY:?Select the protected Video Rendering key}
+        target: /run/fpl/video-media-key
         read_only: true
         bind:
           create_host_path: false

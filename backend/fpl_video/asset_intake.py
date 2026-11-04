@@ -13,6 +13,7 @@ from app.apps.video_editor.models import (
     VideoEditorTask,
 )
 from app.capabilities.asset_store.errors import AssetError
+from app.runtime.ids import new_id
 from app.runtime.polling_runner import PollingTaskRunner
 from app.runtime.time import utc_now
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
@@ -20,7 +21,7 @@ from fpl_runtime.claims import HEADER
 from fpl_runtime.delegation import RequestGrant
 from fpl_runtime.video_assets import PREFIX, WRITE_PURPOSE, VideoAsset
 
-from .models import VideoAssetIntake
+from .models import VideoAssetIntake, VideoMediaDispatch
 
 ASSETS = "http://assets:8080"
 
@@ -118,8 +119,18 @@ class AssetIntakes(PollingTaskRunner):
                 if metadata is None:
                     metadata = VideoEditorAssetMetadata(asset_id=item.id, project_id=project)
                     session.add(metadata)
+                    task_id = new_id()
+                    session.add(
+                        VideoMediaDispatch(
+                            task_id=task_id,
+                            owner_user_id=owner,
+                            project_id=project,
+                            asset_id=item.id,
+                        )
+                    )
                     session.add(
                         VideoEditorTask(
+                            id=task_id,
                             owner_user_id=owner,
                             project_id=project,
                             kind="media",

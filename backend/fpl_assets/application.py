@@ -49,6 +49,7 @@ from .routes.thought_archives import router as thought_archives_router
 from .routes.thought_library import router as thought_library_router
 from .routes.thought_uploads import router as thought_uploads_router
 from .routes.video_assets import router as video_assets_router
+from .routes.video_originals import router as video_originals_router
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +85,7 @@ def create_app(
     thought_upload_result_key=None,
     presentation_archive_key=None,
     motion_archive_key=None,
+    video_originals_key=None,
 ):
     database = Database("assets", settings.runtime_path, models=MODELS)
     if settings.database_path != database.path:
@@ -128,6 +130,11 @@ def create_app(
     app.state.database, app.state.settings = database, settings
     app.state.identity, app.state.capabilities = identity, capabilities
     app.state.identity_public_key = public_key
+    from fpl_runtime.video_processing import originals_peer
+
+    app.state.video_originals_peer = (
+        originals_peer(video_originals_key) if video_originals_key is not None else None
+    )
     app.state.community_asset_checks = community_asset_checks
     if thought_upload_result_key is not None:
         from fpl_runtime.thought_archives import ArchiveAuthenticator
@@ -164,6 +171,7 @@ def create_app(
     app.include_router(presentation_assets_router)
     app.include_router(motion_assets_router)
     app.include_router(video_assets_router)
+    app.include_router(video_originals_router)
     app.include_router(motion_archives_router)
     app.include_router(motion_preview_router)
     app.include_router(motion_snapshot_router)

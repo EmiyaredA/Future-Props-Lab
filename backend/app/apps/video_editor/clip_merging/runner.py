@@ -7,12 +7,12 @@ from tempfile import TemporaryDirectory
 from sqlalchemy import select, update
 
 from app.apps.video_editor.clip_merging.document import render_snapshot
-from app.apps.video_editor.media import probe_media
 from app.apps.video_editor.models import VideoEditorAssetMetadata, VideoEditorTask
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.media_rendering.render_engine import RenderCancelled, render_document
 from app.capabilities.media_rendering.timeline_document import parse_timeline_document
+from app.capabilities.media_rendering.video_derivatives import probe_media
 from app.runtime.ids import new_id
 from app.runtime.ownership import bind_owner
 from app.runtime.time import utc_now
@@ -99,11 +99,11 @@ async def process_clip_merge(
             ):
                 raise RuntimeError("合并视频的画幅、帧数、透明通道、时长或音轨校验失败")
             # Prepare proxies before publishing metadata.
-            preview_asset = VisualAsset(owner_user_id=owner_user_id, id=task_id, media_kind="video")
             probe, proxy, thumbnail, waveform, fingerprint = await asyncio.to_thread(
                 prepare_media,
                 output,
-                preview_asset,
+                task_id,
+                "video",
                 Path(temporary),
                 probe,
             )

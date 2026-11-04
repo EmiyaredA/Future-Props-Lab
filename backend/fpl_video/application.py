@@ -34,11 +34,13 @@ from fpl_runtime.migrations import check
 from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.reference_runtime import install_reference_runtime, reference_lifespan
 from fpl_runtime.routing import RouteCatalog
+from fpl_runtime.video_processing import video_peer
 
 from .asset_intake import AssetIntakes
+from .media_delivery import MediaDelivery
 from .media_routes import router as media_router
 from .migrations.registry import MIGRATIONS
-from .models import VideoAssetIntake, VideoReferenceMutation
+from .models import VideoAssetIntake, VideoMediaDispatch, VideoReferenceMutation
 from .project_layouts import ProjectLayouts
 from .timeline_media import TimelineMedia
 
@@ -58,11 +60,21 @@ OPERATIONS = {
     ("GET", PROJECT + "/assets"),
     ("POST", PROJECT + "/assets"),
     ("POST", PROJECT + "/assets/import"),
+    ("POST", PROJECT + "/assets/{asset_id}/proxy/retry"),
+    ("GET", PROJECT + "/assets/{asset_id}/{variant}"),
 }
 
 
 def create_app(
-    *, state_root, catalog, public_key, schema_path, credential, transport=None, run_worker=True
+    *,
+    state_root,
+    catalog,
+    public_key,
+    schema_path,
+    credential,
+    transport=None,
+    run_worker=True,
+    media_key=None,
 ):
     database = Database(
         SERVICE,
@@ -75,6 +87,7 @@ def create_app(
             VideoEditorTask,
             VideoReferenceMutation,
             VideoAssetIntake,
+            VideoMediaDispatch,
         ),
     )
     capabilities = CapabilityClient(
@@ -82,6 +95,11 @@ def create_app(
     )
 
     asset_intakes = AssetIntakes(database.sessions, capabilities)
+    media_delivery = (
+        MediaDelivery(database.sessions, capabilities.client, video_peer(media_key))
+        if media_key is not None
+        else None
+    )
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -91,8 +109,12 @@ def create_app(
                 async with reference_lifespan(_app):
                     if run_worker:
                         await asset_intakes.start()
+                        if media_delivery is not None:
+                            await media_delivery.start()
                     yield
             finally:
+                if media_delivery is not None:
+                    await media_delivery.stop()
                 await asset_intakes.stop()
                 await capabilities.close()
                 await database.close()
@@ -103,6 +125,7 @@ def create_app(
     app.state.database = database
     app.state.capabilities = capabilities
     app.state.asset_intakes = asset_intakes
+    app.state.media_delivery = media_delivery
     install_reference_runtime(
         app,
         service=SERVICE,

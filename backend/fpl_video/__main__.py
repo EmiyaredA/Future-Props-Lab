@@ -12,6 +12,7 @@ from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from fpl_runtime.locking import service_lock
 from fpl_runtime.migrations import apply
 from fpl_runtime.routing import RouteCatalog
+from fpl_runtime.timed_peer import load_peer_key
 
 from .application import create_app
 from .migrations.registry import MIGRATIONS
@@ -27,6 +28,7 @@ def main():
     )
     parser.add_argument("--schema", type=Path, default=Path("/app/deploy/contracts/openapi.json"))
     parser.add_argument("--identity-token", type=Path, default=Path("/run/fpl/identity-token"))
+    parser.add_argument("--media-key", type=Path, default=Path("/run/fpl/video-media-key"))
     parser.add_argument("--port", type=int, default=8080)
     options = parser.parse_args()
     if options.command == "migrate":
@@ -42,8 +44,11 @@ def main():
         credential = options.identity_token.read_text().strip()
         if not re.fullmatch(r"[A-Za-z0-9_-]{32,256}", credential):
             raise ValueError
+        media_key = load_peer_key(options.media_key, excluded=(credential,))
+        if media_key is None:
+            raise ValueError
     except (ValueError, OSError):
-        parser.error("剪辑服务需要受保护的 Identity 凭据")
+        parser.error("剪辑服务需要受保护且独立的 Identity 和 Rendering 凭据")
     uploads = options.state_root.resolve() / ".http-uploads"
     if uploads.is_symlink():
         parser.error("视频剪辑上传暂存目录不能是符号链接")
@@ -55,6 +60,7 @@ def main():
         public_key=key,
         schema_path=options.schema,
         credential=credential,
+        media_key=media_key,
     )
     uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)
 

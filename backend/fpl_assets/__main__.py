@@ -28,6 +28,9 @@ def parser():
     result.add_argument(
         "--motion-archive-key", type=Path, default=Path("/run/fpl/motion-archive-key")
     )
+    result.add_argument(
+        "--video-originals-key", type=Path, default=Path("/run/fpl/video-originals-key")
+    )
     result.add_argument("--port", type=int, default=8080)
     result.add_argument("--migration-plan", type=Path)
     result.add_argument("--legacy-db", type=Path)
@@ -98,6 +101,7 @@ def run(options):
         from fpl_runtime.identity_client import LiveAuthorization
         from fpl_runtime.routing import RouteCatalog
         from fpl_runtime.thought_peer import ThoughtPeer
+        from fpl_runtime.timed_peer import load_peer_key
 
         from .application import create_app
         from .community_assets import CommunityAssetChecks
@@ -150,6 +154,16 @@ def run(options):
             ),
         }:
             raise ValueError("特效归档对等凭据必须独立")
+        video_key = load_peer_key(
+            options.video_originals_key,
+            excluded=(
+                credential,
+                archive_key,
+                motion_key,
+                thought_peer.community if thought_peer else None,
+                thought_peer.upload_receipt if thought_peer else None,
+            ),
+        )
         has_web = (options.web_root / "build.json").is_file()
         if not has_web and not (options.web_root / ".api-only").is_file():
             raise ValueError("Assets 缺少已安装的浏览器程序")
@@ -167,6 +181,7 @@ def run(options):
             thought_upload_result_key=thought_peer.upload_receipt if thought_peer else None,
             presentation_archive_key=archive_key,
             motion_archive_key=motion_key,
+            video_originals_key=video_key,
             web_root=options.web_root if has_web else None,
             version=os.environ.get("FPL_SERVICE_VERSION", "development"),
         )

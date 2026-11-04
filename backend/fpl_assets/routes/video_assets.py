@@ -18,7 +18,7 @@ from fpl_runtime.video_assets import (
 )
 
 from ..scoped_writes import VideoFileWrites
-from ..video_files import available, describe, files
+from ..video_files import available, describe, files, original_record, record
 from .library_outputs import OutputStream
 
 router = APIRouter(include_in_schema=False)
@@ -141,3 +141,13 @@ async def copy_query(request, fingerprint):
     if query.digest != fingerprint:
         raise HTTPException(403, "video_copy_request_changed")
     return query
+
+
+@router.get(PREFIX + "/{project_id}/files/{asset_id}/descriptor")
+async def descriptor(request: Request, project_id: str, asset_id: str):
+    owner = owner_for(request)
+    async with request.app.state.database.sessions(info={"owner_user_id": owner}) as session:
+        row = await original_record(session, owner, project_id, asset_id)
+        if row is None:
+            raise HTTPException(404, "video_original_not_found")
+        return record(project_id, row)

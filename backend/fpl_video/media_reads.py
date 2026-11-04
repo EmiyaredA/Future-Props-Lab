@@ -4,7 +4,7 @@ import httpx
 from sqlalchemy import select
 
 from app.apps.video_editor.asset_output import asset_output
-from app.apps.video_editor.errors import VideoEditorUnavailableError
+from app.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorUnavailableError
 from app.apps.video_editor.models import VideoEditorAssetMetadata
 from app.apps.video_editor.projects import VideoEditorProjects
 from app.apps.video_editor.schemas import VideoEditorAssetListOut, VideoEditorAvailableAssetListOut
@@ -21,7 +21,9 @@ class MediaReads:
 
     async def read(self, target):
         request = self.request
-        grant = RequestGrant("video", PURPOSE, "GET", request.url.path, "assets", "GET", target)
+        grant = RequestGrant(
+            "video", PURPOSE, request.method, request.url.path, "assets", "GET", target
+        )
         try:
             token = await self.capabilities.authorize_request(
                 request.state.service_assertion, grant
@@ -29,6 +31,8 @@ class MediaReads:
             response = await self.capabilities.client.get(
                 "http://assets:8080" + target, headers={HEADER: token}
             )
+            if response.status_code == 404:
+                raise VideoEditorNotFoundError("素材不存在")
             response.raise_for_status()
             return response.json()
         except (CapabilityDenied, CapabilityUnavailable, httpx.HTTPError, ValueError):

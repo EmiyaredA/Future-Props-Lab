@@ -1,6 +1,5 @@
 """Run a sealed export from Rendering-owned files and publish only complete outputs."""
 
-import os
 from shutil import rmtree
 
 from anyio.to_thread import run_sync
@@ -13,21 +12,7 @@ from fpl_runtime.capability_client import CapabilityUnavailable
 from fpl_runtime.motion_exports import RenderRequest, RenderStatus
 
 from .models import MotionRenderJob
-
-
-def sync_directory(directory):
-    descriptor = os.open(directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
-    try:
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
-
-
-def sync_files(directory):
-    for path in directory.iterdir():
-        with path.open("rb") as handle:
-            os.fsync(handle.fileno())
-    sync_directory(directory)
+from .storage import sync_directory, sync_files
 
 
 class MotionJobs(PollingTaskRunner):

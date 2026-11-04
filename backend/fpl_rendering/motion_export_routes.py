@@ -19,8 +19,8 @@ from fpl_runtime.claims import HEADER, verify_context
 from fpl_runtime.motion_exports import PREFIX, RenderRequest, export_media, render_target
 from fpl_runtime.motion_preview import MAX_SCENE_BYTES, sha256
 
-from .motion_jobs import sync_directory, sync_files
 from .motion_preview import fetch_sources
+from .storage import sync_directory, sync_files
 
 router = APIRouter(include_in_schema=False)
 
