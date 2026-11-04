@@ -98,7 +98,7 @@
 
 `fpl_thought/upload_intents.py` 与 `fpl_assets/thought_uploads.py` 提供按账号绑定的私有上传回执，Identity 只为指定来源和目标签发上传委托。`upload_transport.py` 为已暂存上传逐请求换取绑定摘要的 Identity 委托并流式传输，来源服务仅在收到按账号、文件摘要和随机数认证的有效回执后确认并清理暂存；Assets 未配置独立回执密钥时拒绝该私有上传。`upload_recovery.py` 在启动独占锁内仅清理已确认副本和无持久意图的中断暂存；未决意图继续保留。该协议已通过隔离服务测试；独立 Thought 已装配公开上传入口，远端自动重放 worker 尚未接入，恢复网站暂不按重试标识去重。独立 Thought 的部分 HTTP 装配已包括目录移动、文档恢复和知识库回收／恢复，并保留现有版本控制及撤回发布规则；retention worker 已存在，但 `/ready` 始终返回 503，直至素材引用迁移及剩余业务能力完成。
 
-`backend/fpl_thought/` 拥有 Thought 自有表清单、仅保留自有外键的独立迁移与写作 HTTP 适配，目前还不提供完整部署入口。`web/src/app/entries/thought.tsx` 提供可独立构建的浏览器入口，与兼容站共用 Thought 模块的知识库、社区和旧链接路由。`fpl_runtime/writing.py` 是绑定笔记、请求内容摘要和原始账号操作的私有写作协议；`fpl_models/writing.py` 负责 Models 自有选择、流式调用、日志和配额。Thought 的 `writing.py` 与 `legacy_writing.py` 分别定义显式模型端口和恢复网站适配器，业务写作不直接加载模型 ORM 或全局数据库。
+`backend/fpl_thought/` 拥有 Thought 自有表清单、仅保留自有外键的独立迁移与写作 HTTP 适配，目前还不提供完整部署入口。`web/src/app/entries/thought.tsx` 提供可独立构建的浏览器入口，与兼容站共用 Thought 模块的知识库、社区和旧链接路由。搜索、引用解析、反向链接、复制预检、检查点、阅读偏好和知识库快照使用共享的账号内 HTTP 装配；涉及素材写入的用例仍通过独立的引用准备与回执提交。`fpl_runtime/writing.py` 是绑定笔记、请求内容摘要和原始账号操作的私有写作协议；`fpl_models/writing.py` 负责 Models 自有选择、流式调用、日志和配额。Thought 的 `writing.py` 与 `legacy_writing.py` 分别定义显式模型端口和恢复网站适配器，业务写作不直接加载模型 ORM 或全局数据库。
 
 `fpl_runtime/routing.py` 分别维护 HTTP 操作与固定 WebSocket 归属。实时语音只接受实际 Upgrade 握手，网关清除外部身份头后标记协议并交 Identity 复核；管理网关不开放该入口。`protocol_hash.py` 只将本服务的 Socket 契约纳入版本，公开 OpenAPI 不伪造普通 GET 操作。
 

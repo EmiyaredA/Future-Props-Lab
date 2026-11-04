@@ -8,6 +8,7 @@ from sqlalchemy import text
 
 from app.apps.thought_workshop.account_directory import DirectoryBindings
 from app.apps.thought_workshop.asset_metadata import AssetMetadataBindings
+from app.apps.thought_workshop.knowledge_tools.http import router as knowledge_tools_router
 from app.problem_details import revision_conflict_handler
 from app.runtime.revisions import RevisionConflictError
 from fpl_runtime.authentication import SignedIdentity
@@ -140,6 +141,9 @@ def create_app(
         )
     )
     app.include_router(reads_router, prefix="/v1")
+    app.include_router(
+        knowledge_tools_router, prefix="/v1/thought-workshop", tags=["thought-workshop"]
+    )
     app.include_router(mutations_router, prefix="/v1")
     app.include_router(upload_router, prefix="/v1")
     app.include_router(community_files_router, prefix="/v1")

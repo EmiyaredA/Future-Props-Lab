@@ -204,6 +204,23 @@ async def test_create_template_pins_same_account_assets_over_http(scenario):  # 
                     json={"title": "New document", "expected_revision": 0},
                 )
                 assert added.status_code == 200, added.text
+                search_path = "/v1/thought-workshop/search"
+                search_headers = await context(owner, search_path, "GET")
+                search = await client.get(
+                    search_path,
+                    headers=search_headers,
+                    params={"knowledge_base_id": knowledge["id"], "query": "New document"},
+                )
+                assert search.status_code == 200, search.text
+                assert search.json()["total"] == 1
+                assert search.json()["items"][0]["id"] == added.json()["id"]
+                snapshot_path = f"{update_path}/export-snapshot"
+                snapshot = await client.get(
+                    snapshot_path,
+                    headers=await context(owner, snapshot_path, "GET"),
+                )
+                assert snapshot.status_code == 200, snapshot.text
+                assert snapshot.json()["asset_ids"] == [case.asset]
                 update_body = {"title": "Cover removed", "expected_revision": 1}
                 denied = await client.put(
                     update_path,
@@ -397,3 +414,23 @@ def test_knowledge_base_mutations_match_public_contract():
     assert app.openapi()["paths"][path]["post"] == expected["paths"][path]["post"]
     path += "/{project_id}"
     assert app.openapi()["paths"][path]["put"] == expected["paths"][path]["put"]
+
+
+def test_account_owned_knowledge_tools_match_public_contract():
+    import json
+    from pathlib import Path
+
+    from fastapi import FastAPI
+
+    from app.apps.thought_workshop.knowledge_tools.http import router
+
+    app = FastAPI()
+    app.include_router(router, prefix="/v1/thought-workshop", tags=["thought-workshop"])
+    expected = json.loads(
+        (Path(__file__).resolve().parents[1] / "web/src/generated/openapi.json").read_text()
+    )
+    operations = app.openapi()["paths"]
+    assert len(operations) == 11
+    for path, methods in operations.items():
+        for method, operation in methods.items():
+            assert operation == expected["paths"][path][method]
