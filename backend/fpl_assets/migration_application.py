@@ -11,6 +11,7 @@ from .migration_project_pins import (
     mount_galgame_references,
     mount_presentation_references,
     mount_visual_canvas_pins,
+    mount_visual_conversation_pins,
 )
 from .migration_records import DATASETS, export_page, import_batch, inventory
 from .migration_video_outputs import mount_video_outputs
@@ -63,5 +64,6 @@ def create_import_app(*, plan, state_root):
     mount_presentation_references(app, plan, database.sessions)
     mount_galgame_references(app, plan, database.sessions)
     mount_visual_canvas_pins(app, plan, database.sessions)
+    mount_visual_conversation_pins(app, plan, database.sessions)
     mount_video_outputs(app, plan, database.sessions, database.root)
     return mount_records(app, plan, database.sessions)

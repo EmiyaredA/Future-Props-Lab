@@ -34,6 +34,7 @@ class AssetReferenceSet(ReferenceBase):
     resource_kind: Mapped[str] = mapped_column(String(64))
     resource_id: Mapped[str] = mapped_column(String(128))
     resource_revision: Mapped[int] = mapped_column(Integer)
+    scope_project_id: Mapped[str | None] = mapped_column(String(128))
     deleted: Mapped[bool] = mapped_column(Boolean, default=False)
     revision: Mapped[int] = mapped_column(Integer, default=0)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)

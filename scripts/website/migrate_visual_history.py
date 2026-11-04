@@ -8,7 +8,14 @@ import httpx
 
 from fpl_runtime.edit_receipt_migration import SUFFIX
 from fpl_runtime.migration_batches import MigrationPlan
-from fpl_runtime.visual_migration import CANVAS_PINS_DATASET, CANVAS_PINS_PATH, CanvasPinPage
+from fpl_runtime.visual_migration import (
+    CANVAS_PINS_DATASET,
+    CANVAS_PINS_PATH,
+    CONVERSATION_PINS_DATASET,
+    CONVERSATION_PINS_PATH,
+    CanvasPinPage,
+    ConversationPinPage,
+)
 from fpl_visual.migration_application import PREFIX
 from fpl_visual.migration_records import DATASETS, OPERATIONS
 
@@ -20,6 +27,9 @@ RECORDS = (
     DatasetTransfer(OPERATIONS.name, f"{PREFIX}/{SUFFIX}", OPERATIONS.page, "id", page_size=1),
 )
 PINS = DatasetTransfer(CANVAS_PINS_DATASET, CANVAS_PINS_PATH, CanvasPinPage, "id", page_size=1)
+CONVERSATION_PINS = DatasetTransfer(
+    CONVERSATION_PINS_DATASET, CONVERSATION_PINS_PATH, ConversationPinPage, "id", page_size=1
+)
 
 
 def migrate(client, plan, visual_source, visual_target, assets_source, assets_target):
@@ -28,7 +38,13 @@ def migrate(client, plan, visual_source, visual_target, assets_source, assets_ta
     pins = transfer(client, plan, visual_source, assets_target, PINS)
     if any(report["record_count"] != pins["record_count"] for report in results[:2]):
         raise ValueError("Visual 项目、Canvas 与素材范围记录数不一致")
-    return [*results, pins]
+    conversation_pins = transfer(client, plan, visual_source, assets_target, CONVERSATION_PINS)
+    conversations = next(
+        row for row in results if row["dataset"] == "visual.assistant-conversations"
+    )
+    if conversations["record_count"] != conversation_pins["record_count"]:
+        raise ValueError("Visual 对话与附件范围记录数不一致")
+    return [*results, pins, conversation_pins]
 
 
 def main():

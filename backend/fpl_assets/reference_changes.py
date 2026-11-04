@@ -117,6 +117,10 @@ class ReferenceChanges:
                 await session.flush()
             if row.deleted:
                 raise failure("not_found", "源资源已删除", 404)
+            if change.visual_conversation_project is not None:
+                if row.scope_project_id not in {None, change.visual_conversation_project}:
+                    raise failure("project_conversation_scope", "对话不属于当前项目")
+                row.scope_project_id = change.visual_conversation_project
             if change.expected_resource_revision < row.resource_revision:
                 raise failure("resource_revision_conflict", "源资源版本已过期")
             active = await session.scalar(

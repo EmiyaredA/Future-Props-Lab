@@ -29,9 +29,14 @@ from fpl_runtime.project_history_migration import CURSOR
 from fpl_runtime.visual_migration import (
     CANVAS_PINS_DATASET,
     CANVAS_PINS_PATH,
+    CONVERSATION_PINS_DATASET,
+    CONVERSATION_PINS_PATH,
     CanvasPinBatch,
     CanvasPinPage,
     CanvasPins,
+    ConversationPinBatch,
+    ConversationPinPage,
+    ConversationPins,
 )
 
 from .migration_blobs import DATASET as ASSET_BLOBS
@@ -97,8 +102,15 @@ async def page(
                     .order_by(AssetReferencePin.asset_id)
                 )
             )
+            scope = {}
+            if kind == "conversation":
+                if row.scope_project_id is None:
+                    raise HTTPException(409, {"code": "migration_reference_project_missing"})
+                scope["project_id"] = row.scope_project_id
             records.append(
-                record_type(id=row.resource_id, revision=row.resource_revision, asset_ids=assets)
+                record_type(
+                    id=row.resource_id, revision=row.resource_revision, asset_ids=assets, **scope
+                )
             )
     batch = batch_type(
         run_id=plan.run_id,
@@ -125,14 +137,30 @@ async def ingest(sessions, dataset, service, kind, batch):
             return receipt
         for record in batch.records:
             scope = PROJECT_SCOPES.get(service)
-            allowed = LIBRARY if scope is None else or_(LIBRARY, scope == record.id)
+            project_id = record.id
+            media = ("image", "audio", "video")
+            if kind == "conversation":
+                project_id = record.project_id
+                media = (*media, "document")
+                parent = await db.scalar(
+                    select(AssetReferenceSet.id).where(
+                        AssetReferenceSet.owner_user_id == owner,
+                        AssetReferenceSet.service_id == service,
+                        AssetReferenceSet.resource_kind == "canvas",
+                        AssetReferenceSet.resource_id == project_id,
+                        AssetReferenceSet.deleted.is_(False),
+                    )
+                )
+                if parent is None:
+                    raise HTTPException(409, {"code": "migration_reference_project_missing"})
+            allowed = LIBRARY if scope is None else or_(LIBRARY, scope == project_id)
             present = set(
                 await db.scalars(
                     select(VisualAsset.id).where(
                         VisualAsset.id.in_(record.asset_ids),
                         allowed,
                         VisualAsset.owner_user_id == owner,
-                        VisualAsset.media_kind.in_(("image", "audio", "video")),
+                        VisualAsset.media_kind.in_(media),
                     )
                 )
             )
@@ -161,6 +189,7 @@ async def ingest(sessions, dataset, service, kind, batch):
                     resource_kind=kind,
                     resource_id=record.id,
                     resource_revision=record.revision,
+                    scope_project_id=project_id if kind == "conversation" else None,
                 )
             )
             try:
@@ -251,4 +280,20 @@ def mount_visual_canvas_pins(app, plan, sessions):
         record_type=CanvasPins,
         batch_type=CanvasPinBatch,
         page_type=CanvasPinPage,
+    )
+
+
+def mount_visual_conversation_pins(app, plan, sessions):
+    mount_project_pins(
+        app,
+        plan,
+        sessions,
+        prefix=CONVERSATION_PINS_PATH,
+        dataset=CONVERSATION_PINS_DATASET,
+        service="visual",
+        kind="conversation",
+        cursor=CURSOR,
+        record_type=ConversationPins,
+        batch_type=ConversationPinBatch,
+        page_type=ConversationPinPage,
     )

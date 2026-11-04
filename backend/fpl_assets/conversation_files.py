@@ -14,6 +14,10 @@ async def attachments(session, project_id, conversation_id, asset_ids):
         AssetReferenceSet.service_id == "visual",
         AssetReferenceSet.resource_kind == "conversation",
         AssetReferenceSet.resource_id == conversation_id,
+        or_(
+            AssetReferenceSet.scope_project_id == project_id,
+            AssetReferenceSet.scope_project_id.is_(None),
+        ),
         AssetReferenceSet.deleted.is_(False),
     )
     committed = select(AssetReferencePin.asset_id).where(

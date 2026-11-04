@@ -19,6 +19,7 @@ from .versions.v0014 import SQL as SQL_0014
 from .versions.v0015 import SQL as SQL_0015
 from .versions.v0016 import SQL as SQL_0016
 from .versions.v0017 import SQL as SQL_0017
+from .versions.v0018 import SQL as SQL_0018
 
 MIGRATIONS = (
     Migration("0001_assets", SQL_0001),
@@ -38,4 +39,5 @@ MIGRATIONS = (
     Migration("0015_galgame_upload_receipts", SQL_0015),
     Migration("0016_galgame_archive_staging", SQL_0016),
     Migration("0017_visual_upload_staging", SQL_0017),
+    Migration("0018_visual_conversation_scopes", SQL_0018),
 )

@@ -52,6 +52,18 @@ async def prepare(session, projection, identities):
         is not None
     ):
         raise AssetError("对话不属于当前项目", code="project_conversation_scope", status=409)
+    if (
+        await session.scalar(
+            select(AssetReferenceSet.id)
+            .where(
+                AssetReferenceSet.id.in_(children),
+                AssetReferenceSet.scope_project_id != projection.resource_id,
+            )
+            .limit(1)
+        )
+        is not None
+    ):
+        raise AssetError("对话不属于当前项目", code="project_conversation_scope", status=409)
     originals = select(VisualAsset.id).where(
         VisualAsset.owner_user_id == projection.owner_user_id,
         VisualAsset.project_id == projection.resource_id,
