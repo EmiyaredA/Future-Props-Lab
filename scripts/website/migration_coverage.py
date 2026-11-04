@@ -1,0 +1,159 @@
+"""List migration coverage against the sealed source schema without reading private records."""
+
+import argparse
+import json
+import sqlite3
+from contextlib import closing
+from pathlib import Path
+
+from fpl_assets.migration_records import DATASETS as ASSETS
+from fpl_director.migration_records import DATASETS as DIRECTOR
+from fpl_identity.credential_migration import DATASETS as IDENTITY
+from fpl_remote.preference_migration import DATASET as REMOTE
+from fpl_runtime.migration_apps import SourceSnapshot
+from fpl_runtime.migration_batches import MigrationPlan
+from fpl_tools.navigation_migration import DATASET as TOOLS
+
+from .legacy_snapshot import CONFIG, DATABASE, MANIFEST, RUNTIME, digest, directory, private_config
+
+ROOT = Path(__file__).resolve().parents[2]
+TRANSFER = {
+    **{dataset.model.__tablename__: dataset.name for dataset in (*IDENTITY, *ASSETS, *DIRECTOR)},
+    "cloud_desktop_preferences": REMOTE,
+    "tool_navigation_items": TOOLS,
+}
+
+
+def quoted(identifier):
+    return '"' + identifier.replace('"', '""') + '"'
+
+
+def table_count(database, name):
+    return database.execute(f"SELECT COUNT(*) FROM {quoted(name)}").fetchone()[0]
+
+
+def registered_owners(catalog):
+    owners = {}
+    for entry in catalog["tables"]:
+        table, owner = entry["table"], entry["service"]
+        previous = owners.setdefault(table, owner)
+        if previous != owner:
+            raise ValueError("数据归属清单包含冲突")
+    return owners
+
+
+def platform_partitions(database, partition):
+    def owner(key):
+        if key in partition["keys"]:
+            return partition["keys"][key]
+        return next(
+            (
+                service
+                for prefix, service in partition["prefixes"].items()
+                if key.startswith(prefix)
+            ),
+            "unassigned",
+        )
+
+    result = {}
+    for key, count in database.execute("SELECT id, count(*) FROM platform_settings GROUP BY id"):
+        service = owner(key)
+        result[service] = result.get(service, 0) + count
+    return result
+
+
+def coverage(snapshot, catalog):
+    snapshot.check()
+    owners = registered_owners(catalog)
+    derived = catalog["derived_tables"]
+    output = []
+    with closing(
+        sqlite3.connect(snapshot.path.as_uri() + "?mode=ro&immutable=1", uri=True)
+    ) as database:
+        sources = list(database.execute("PRAGMA table_list"))
+        for schema, name, kind, *_ in sorted(sources):
+            if schema != "main" or name == "schema_migrations" or name.startswith("sqlite_"):
+                continue
+            if kind == "view":
+                continue
+            if kind == "shadow" and any(name.startswith(table + "_") for table in derived):
+                continue
+            count = table_count(database, name)
+            partition = (
+                platform_partitions(database, catalog["partitions"][name])
+                if name == "platform_settings"
+                else None
+            )
+            if name in TRANSFER:
+                status = "dataset_registered"
+            elif name in derived:
+                status = "rebuild_pending"
+            elif count:
+                status = "transfer_pending" if name in owners else "owner_unassigned"
+            else:
+                status = "empty"
+            item = {
+                "table": name,
+                "service": derived.get(name, owners.get(name)),
+                "record_count": count,
+                "status": status,
+            }
+            if name in TRANSFER:
+                item["dataset"] = TRANSFER[name]
+            if partition is not None:
+                item["partitions"] = partition
+            output.append(item)
+    snapshot.check()
+    pending = [
+        row["table"]
+        for row in output
+        if row["status"] in {"transfer_pending", "owner_unassigned", "rebuild_pending"}
+    ]
+    return {"tables": output, "pending_tables": pending}
+
+
+def inspect_bundle(bundle, *, plan, manifest_sha256, catalog):
+    root = directory(bundle)
+    marker = private_config(root / MANIFEST)
+    if digest(marker) != manifest_sha256:
+        raise ValueError("快照清单摘要不符")
+    manifest = json.loads(marker.read_text())
+    if manifest["version"] != 1 or manifest["source_revision"] != plan.source_revision:
+        raise ValueError("快照来源与迁移计划不匹配")
+    if manifest["files"][DATABASE]["sha256"] != plan.source_database_sha256:
+        raise ValueError("数据库来源与迁移计划不匹配")
+    if digest(private_config(root / CONFIG)) != manifest["config_sha256"]:
+        raise ValueError("快照配置摘要不符")
+    source = SourceSnapshot(directory(root / RUNTIME) / DATABASE, plan.source_database_sha256)
+    result = coverage(source, catalog)
+    return {
+        "source_revision": plan.source_revision,
+        "source_database_sha256": plan.source_database_sha256,
+        "manifest_sha256": manifest_sha256,
+        **result,
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--snapshot", required=True, type=Path)
+    parser.add_argument("--manifest-sha256", required=True)
+    parser.add_argument("--plan", required=True, type=Path)
+    options = parser.parse_args()
+    try:
+        plan = MigrationPlan.read(options.plan)
+        report = inspect_bundle(
+            options.snapshot,
+            plan=plan,
+            manifest_sha256=options.manifest_sha256,
+            catalog=json.loads((ROOT / "deploy/contracts/ownership.json").read_text()),
+        )
+    except (ValueError, OSError, KeyError, TypeError, sqlite3.Error):
+        parser.exit(1, "无法核验封存来源或迁移覆盖清单\n")
+    print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+    if report["pending_tables"]:
+        parser.exit(2)
+
+
+if __name__ == "__main__":
+    main()

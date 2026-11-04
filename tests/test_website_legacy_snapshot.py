@@ -22,6 +22,7 @@ from scripts.website.migrate_identity import CREDENTIALS
 from scripts.website.migrate_identity_avatars import transfer_avatars
 from scripts.website.migrate_remote_preferences import PREFERENCES
 from scripts.website.migrate_tools_navigation import NAVIGATION
+from scripts.website.migration_coverage import inspect_bundle
 from scripts.website.migration_transfer import transfer
 from tests.test_tools_navigation_migration import available_ports, listener
 
@@ -87,7 +88,7 @@ def website(config, port):
                 proc.wait(timeout=15)
 
 
-def migrate_rehearsal(snapshot_db, parent, account):
+def migrate_rehearsal(snapshot_db, parent, account, manifest_sha256):
     plan = MigrationPlan(
         run_id=uuid4(),
         source_revision=REVISION,
@@ -105,6 +106,21 @@ def migrate_rehearsal(snapshot_db, parent, account):
             }
         )
     )
+    report = inspect_bundle(
+        snapshot_db.parent.parent,
+        plan=plan,
+        manifest_sha256=manifest_sha256,
+        catalog=json.loads((ROOT / "deploy/contracts/ownership.json").read_text()),
+    )
+    indexed = {item["table"]: item for item in report["tables"]}
+    assert indexed["visual_assets"]["dataset"] == "assets.files"
+    assert indexed["visual_asset_folders"]["record_count"] == 2
+    assert indexed["users"]["dataset"] == "identity.accounts"
+    assert indexed["director_desk_projects"]["dataset"] == "director.projects"
+    assert indexed["agent_workbench_search"]["status"] == "rebuild_pending"
+    assert "model_catalog_state" in report["pending_tables"]
+    with pytest.raises(ValueError, match="清单摘要"):
+        inspect_bundle(snapshot_db.parent.parent, plan=plan, manifest_sha256="0" * 64, catalog={})
     for service, migrations, datasets in (
         ("identity", IDENTITY_MIGRATIONS, CREDENTIALS),
         ("assets", ASSET_MIGRATIONS, ASSET_RECORDS),
@@ -315,7 +331,7 @@ def test_stopped_site_reopens_from_verified_runtime_and_original_config(tmp_path
     assert (snapshot / ".runtime/fixture-link").is_symlink()
     snapshot_database = snapshot / ".runtime" / legacy_snapshot.DATABASE
     assert legacy_snapshot.digest(snapshot_database) == legacy_snapshot.digest(database)
-    migrate_rehearsal(snapshot_database, tmp_path, account)
+    migrate_rehearsal(snapshot_database, tmp_path, account, proof["manifest_sha256"])
     assert legacy_snapshot.digest(snapshot_database) == legacy_snapshot.digest(database)
     target = tmp_path / "recovery"
     seal = proof["manifest_sha256"]
