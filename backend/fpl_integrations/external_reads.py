@@ -67,10 +67,12 @@ class ExternalReads:
                     lambda: connections.resolve_document(connection_id, body.url), check
                 )
                 return {"document_id": result[0], "url": result[1]}
-            if body.op == "target":
-                return (
-                    await guarded(lambda: connections.target(connection_id, body.url), check)
-                ).model_dump(mode="json")
+            if body.op in {"target", "binding_target"}:
+                result = await guarded(lambda: connections.target(connection_id, body.url), check)
+                fields = (
+                    {"document_id", "title", "can_write"} if body.op == "binding_target" else None
+                )
+                return result.model_dump(mode="json", include=fields)
             client = await connections.client(connection_id, expected_revision=revision)
         if body.op == "read":
             return (await guarded(lambda: client.read(body.document_id), check)).snapshot()

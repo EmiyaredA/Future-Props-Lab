@@ -40,14 +40,22 @@ class ExternalTaskPayload(BaseModel):
 
 class ExternalRead(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    op: Literal["get", "require_enabled", "resolve_document", "target", "read", "can_write"]
+    op: Literal[
+        "get",
+        "require_enabled",
+        "resolve_document",
+        "target",
+        "binding_target",
+        "read",
+        "can_write",
+    ]
     connection_revision: int | None = Field(default=None, ge=0)
     url: str = Field(default="", max_length=2048)
     document_id: str = Field(default="", pattern=r"^[A-Za-z0-9]{0,200}$")
 
     @model_validator(mode="after")
     def operation_fields(self):
-        if self.op in {"resolve_document", "target"}:
+        if self.op in {"resolve_document", "target", "binding_target"}:
             valid = bool(self.url) and not self.document_id
         elif self.op in {"read", "can_write"}:
             valid = bool(self.document_id) and not self.url
@@ -75,6 +83,13 @@ def read_target(method, path):
     return method == "POST" and re.fullmatch(
         rf"/_internal/v1/external-sync/reads/({ID})/({ID})/[a-f0-9]{{64}}", path
     )
+
+
+class ExternalBindingTarget(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    document_id: str = Field(pattern=r"^[A-Za-z0-9]{1,200}$")
+    title: str
+    can_write: bool
 
 
 def read_grant(grant):

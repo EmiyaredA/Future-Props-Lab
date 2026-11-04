@@ -18,6 +18,7 @@ from app.apps.thought_workshop.writing_http import router as writing_router
 from app.problem_details import revision_conflict_handler
 from app.runtime.revisions import RevisionConflictError
 from fpl_runtime.authentication import SignedIdentity
+from fpl_runtime.capability_client import CapabilityClient
 from fpl_runtime.database import Database
 from fpl_runtime.locking import service_lock
 from fpl_runtime.migrations import check
@@ -37,6 +38,7 @@ from .models import ACCOUNT_MODELS, MODELS
 from .mutations_http import router as mutations_router
 from .reads_http import router as reads_router
 from .retention import ThoughtReferenceDelivery, ThoughtReferences
+from .sync_binding import router as sync_binding_router
 from .upload_http import UploadConfiguration
 from .upload_http import router as upload_router
 from .upload_recovery import recover_upload_staging
@@ -78,6 +80,9 @@ def create_app(
     references = ThoughtReferences(database.sessions, retention_client, public_key=public_key)
     delivery = ThoughtReferenceDelivery(database.sessions, retention_client)
     files = CommunityFiles(credential=credential, public_key=public_key, transport=transport)
+    sync_reads = CapabilityClient(
+        service="thought", credential=credential, catalog=catalog, transport=transport
+    )
 
     def directory(principal, assertion, method, path):
         return HttpAccountDirectory(
@@ -120,6 +125,7 @@ def create_app(
             finally:
                 await delivery.stop()
                 await files.close()
+                await sync_reads.close()
                 await retention_client.close()
                 await identity.close()
                 await database.close()
@@ -135,6 +141,7 @@ def create_app(
     app.state.database, app.state.identity = database, identity
     app.state.thought_backup_limits = backup_limits
     app.state.thought_references, app.state.community_files = references, files
+    app.state.thought_sync_reads = sync_reads
     if upload_receipt_credential is not None:
         app.state.thought_upload_configuration = UploadConfiguration(
             root=state_root,
@@ -173,6 +180,7 @@ def create_app(
     app.include_router(backup_router, prefix="/v1")
     app.include_router(content_exports_router, prefix="/v1")
     app.include_router(sync_records_router, prefix="/v1")
+    app.include_router(sync_binding_router, prefix="/v1")
     app.include_router(writing_router, prefix="/v1/thought-workshop", tags=["thought-workshop"])
     app.include_router(
         table_query_router,

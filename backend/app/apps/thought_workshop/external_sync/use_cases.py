@@ -11,12 +11,12 @@ from app.apps.thought_workshop.multitable.content import project as project_tabl
 from app.integrations.external.blocks import feishu_tree
 from app.integrations.external.catalog import ExternalConnections
 from app.integrations.external.contracts import ExternalError
-from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import utc_now
 
+from .binding import bind_note
 from .content import TABLE_SNAPSHOT, has_multitable_view, project_content
-from .models import ArticleSyncAsset, ArticleSyncBinding, ArticleSyncStep, ArticleSyncTask
-from .records import ArticleSyncRecords, binding_out, task_out
+from .models import ArticleSyncAsset, ArticleSyncStep, ArticleSyncTask
+from .records import ArticleSyncRecords, task_out
 from .schemas import (
     ArticleSyncPreview,
     ArticleSyncReconcileOut,
@@ -30,77 +30,12 @@ class ArticleSync(ArticleSyncRecords):
         self.transport = transport
 
     async def bind(self, note_id, body):
-        note = await self.note(note_id)
-        current = await self.binding(note_id)
-        if current and current.revision != body.expected_revision:
-            raise RevisionConflictError(
-                body.expected_revision,
-                current.revision,
-                binding_out(current).model_dump(mode="json"),
-            )
-        if not current and body.expected_revision != 0:
-            raise ExternalError("绑定已变化，请刷新", 409)
-        if current:
-            await self.idle(current.target_key)
-        note_revision = note.revision
-        current_id = current.id if current else None
-        document_id, url = await ExternalConnections(
-            self.session, self.owner_user_id, self.transport
-        ).resolve_document(body.connection_id, body.url)
-        target_key = "feishu:" + document_id
-        await self.idle(target_key)
-        connection_revision = (
-            await ExternalConnections(self.session, self.owner_user_id).get(body.connection_id)
-        ).revision
-        remote = await ExternalConnections(self.session, self.owner_user_id, self.transport).target(
-            body.connection_id, url
+        return await bind_note(
+            self,
+            ExternalConnections(self.session, self.owner_user_id, self.transport),
+            note_id,
+            body,
         )
-        if not remote.can_write:
-            raise ExternalError("应用没有目标文档的编辑权限", 403, "target_readonly")
-        # Recheck the note after network I/O; then acquire a write via its existing revision.
-        note = await self.note(note_id)
-        if note.revision != note_revision:
-            raise ExternalError("文章已变化，请重新绑定", 409)
-        await ExternalConnections(self.session, self.owner_user_id).require_enabled(
-            body.connection_id, expected_revision=connection_revision
-        )
-        await self.idle(target_key)
-        current = await self.binding(note_id)
-        if current:
-            await self.idle(current.target_key)
-        values = dict(
-            connection_id=body.connection_id,
-            document_id=document_id,
-            target_key=target_key,
-            url=url,
-            title=remote.title,
-            last_fingerprint="",
-            last_note_revision=None,
-            last_synced_at=None,
-        )
-        try:
-            if current_id:
-                result = await self.session.execute(
-                    update(ArticleSyncBinding)
-                    .where(
-                        ArticleSyncBinding.id == current_id,
-                        ArticleSyncBinding.revision == body.expected_revision,
-                    )
-                    .values(**values, revision=ArticleSyncBinding.revision + 1)
-                )
-                if result.rowcount != 1:
-                    raise ExternalError("绑定已变化，请刷新", 409)
-            else:
-                self.session.add(
-                    ArticleSyncBinding(owner_user_id=self.owner_user_id, note_id=note_id, **values)
-                )
-            await self.session.commit()
-        except IntegrityError:
-            await self.session.rollback()
-            raise ExternalError(
-                "目标文档已有有效绑定，请使用另一份文档", 409, "target_bound"
-            ) from None
-        return binding_out(await self.binding(note_id))
 
     async def preview(self, note_id, body):
         note = await self.note(note_id)
