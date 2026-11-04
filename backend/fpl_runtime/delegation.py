@@ -22,6 +22,7 @@ from .video_segment_handoff import target_grant as segment_target_grant
 from .video_segments import bundle_grant as segment_bundle_grant
 from .video_snapshot import archive_grant as video_archive_grant
 from .video_snapshot import snapshot_grant as video_snapshot_grant
+from .visual_catalog import visual_catalog_grant
 
 
 @dataclass(frozen=True)
@@ -111,7 +112,12 @@ def model_library_output(grant):
 
 
 def target_permission_path(grant):
-    if handoff_grant(grant) or reveal_grant(grant) or segment_bundle_grant(grant):
+    if (
+        handoff_grant(grant)
+        or reveal_grant(grant)
+        or segment_bundle_grant(grant)
+        or visual_catalog_grant(grant)
+    ):
         return grant.source_path
     from .account_directory import directory_path
     from .community_uploads import upload_grant as community_upload_grant
@@ -191,7 +197,7 @@ def permitted(grant, catalog):
         or video_snapshot_grant(grant)
     ):
         return True
-    if directory_grant(grant, catalog):
+    if visual_catalog_grant(grant) or directory_grant(grant, catalog):
         return True
     if preview_grant(grant) or source_transfer_grant(grant) or stdio_grant(grant):
         return True

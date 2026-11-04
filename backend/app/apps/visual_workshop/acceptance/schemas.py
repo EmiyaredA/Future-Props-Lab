@@ -2,8 +2,6 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-from app.llm.schemas.provider_types import ProviderKind
-
 MediaKind = Literal["image", "video", "audio", "text"]
 Verdict = Literal["passed", "failed", "pending", "not_applicable"]
 
@@ -207,15 +205,3 @@ class AcceptanceRepairWriteIn(BaseModel):
     text: str = Field(min_length=1, max_length=6000)
     apply: bool = False
     expected_canvas_revision: int | None = Field(default=None, ge=0)
-
-
-class AcceptanceModelOut(BaseModel):
-    id: str
-    label: str
-    slug: str
-    provider_name: str
-    provider_kind: ProviderKind
-
-
-class AcceptanceModelListOut(BaseModel):
-    items: list[AcceptanceModelOut]

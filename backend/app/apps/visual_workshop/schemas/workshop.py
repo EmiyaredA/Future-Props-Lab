@@ -24,8 +24,7 @@ from app.llm.schemas.generation_tasks import (
     ImageGenerationTaskCreateIn,
     VideoGenerationTaskCreateIn,
 )
-from app.llm.schemas.video_capabilities import VideoCapabilitiesOut
-from app.llm.schemas.workflow_video import WorkflowVideoCapabilitiesOut, WorkflowVideoParameters
+from app.llm.schemas.workflow_video import WorkflowVideoParameters
 from app.llm.task_execution import TaskExecutionInfo
 
 GenerationTaskStatus = Literal[
@@ -570,29 +569,6 @@ class VisualAssistantApprovalIn(BaseModel):
 
 class VisualAssistantApprovalOut(BaseModel):
     accepted: bool = True
-
-
-class GenerationModelOptionOut(BaseModel):
-    id: str
-    provider_id: str
-    provider_name: str
-    kind: Literal["image", "video", "audio"]
-    slug: str
-    label: str
-    description: str
-    sizes: list[str] = Field(default_factory=list)
-    max_reference_images: int = 1
-    supports_seed: bool | None = True
-    max_prompt_length: int | None = 2000
-    video_capabilities: VideoCapabilitiesOut | None = None
-    workflow_capabilities: WorkflowVideoCapabilitiesOut | None = None
-    reference_mime_types: list[str] = Field(
-        default_factory=lambda: ["image/jpeg", "image/png", "image/webp"]
-    )
-
-
-class GenerationOptionsOut(BaseModel):
-    models: list[GenerationModelOptionOut]
 
 
 class GenerationTaskOut(BaseModel):

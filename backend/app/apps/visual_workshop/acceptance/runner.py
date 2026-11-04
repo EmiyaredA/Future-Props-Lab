@@ -15,12 +15,12 @@ from app.apps.visual_workshop.acceptance.media import (
     positions,
 )
 from app.apps.visual_workshop.acceptance.models import AcceptanceRun
-from app.apps.visual_workshop.acceptance.review_models import review_models
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.inspection import inspect_media, verify_video
 from app.llm.models import LlmCallLog
 from app.llm.providers.streaming import ChatMessageInput, stream_text_completion
+from app.llm.visual_catalog import review_models
 from app.runtime.config import get_settings
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal

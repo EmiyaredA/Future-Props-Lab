@@ -27,8 +27,6 @@ from app.apps.visual_workshop.schemas.generation import (
 )
 from app.apps.visual_workshop.schemas.workshop import (
     AudioGenerationTaskCreateIn,
-    GenerationModelOptionOut,
-    GenerationOptionsOut,
     GenerationTaskCreateIn,
     GenerationTaskOut,
     ImageGenerationTaskCreateIn,
@@ -53,10 +51,10 @@ from app.llm.providers.zealman_workflows import (
     REFERENCE_MIME_TYPES as WORKFLOW_MIME_TYPES,
 )
 from app.llm.providers.zealman_workflows import (
-    WORKFLOWS,
     normalize_request,
-    parameter_options,
 )
+from app.llm.schemas.visual_catalog import GenerationOptionsOut
+from app.llm.visual_catalog import generation_options
 from app.runtime.config import Settings, get_settings
 from app.runtime.task_admission import TaskAdmission
 from app.runtime.time import utc_now
@@ -82,83 +80,8 @@ class VisualGeneration(GenerationRecords):
         self.storage = AssetStorage(self.settings)
 
     async def options(self) -> GenerationOptionsOut:
-        rows = (
-            await self.session.execute(
-                select(ModelEntry, ModelProvider)
-                .join(ModelProvider, ModelProvider.id == ModelEntry.provider_id)
-                .where(
-                    ModelProvider.enabled.is_(True),
-                    ModelEntry.enabled.is_(True),
-                    ModelProvider.kind.in_(
-                        (
-                            "senseaudio_image",
-                            "volcengine_image",
-                            "senseaudio_video",
-                            "volcengine_video",
-                            "zealman_video",
-                            "autodl_video",
-                            "senseaudio_music",
-                            "senseaudio_sfx",
-                        )
-                    ),
-                )
-                .order_by(ModelProvider.sort_order, ModelEntry.sort_order)
-            )
-        ).all()
-        return GenerationOptionsOut(
-            models=[
-                GenerationModelOptionOut(
-                    id=model.id,
-                    provider_id=provider.id,
-                    provider_name=provider.name,
-                    kind=(
-                        "image"
-                        if provider.kind in {"senseaudio_image", "volcengine_image"}
-                        else "video"
-                        if provider.kind
-                        in {"senseaudio_video", "zealman_video", "volcengine_video", "autodl_video"}
-                        else "audio"
-                    ),
-                    slug=model.slug,
-                    label=model.label or model.slug,
-                    description=model.description,
-                    sizes=list(
-                        SEEDREAM_SIZES
-                        if provider.kind == "volcengine_image"
-                        else IMAGE_MODEL_SIZES.get(model.slug, ())
-                    ),
-                    max_reference_images=14
-                    if provider.kind == "volcengine_image"
-                    else 30
-                    if provider.kind == "volcengine_video"
-                    and model.slug == "doubao-seedance-2-5-260628"
-                    else 9
-                    if provider.kind in {"zealman_video", "volcengine_video", "autodl_video"}
-                    else 1,
-                    supports_seed=provider.kind not in {"volcengine_image", "volcengine_video"},
-                    max_prompt_length=20000
-                    if provider.kind == "autodl_video"
-                    else 6000
-                    if provider.kind in {"zealman_video", "autodl_video"}
-                    or model.slug == "senseaudio-image-2.0-260319"
-                    else 2000,
-                    video_capabilities=video_capabilities(
-                        provider.kind,
-                        model.slug,
-                        upload_configured=bool(self.settings.fpl_temp_media_upload_url),
-                    ),
-                    workflow_capabilities=(
-                        parameter_options(model.slug) if provider.kind == "zealman_video" else None
-                    ),
-                )
-                for model, provider in rows
-                if (provider.kind != "zealman_video" or model.slug in WORKFLOWS)
-                and (provider.kind != "autodl_video" or model.slug in autodl_workflows.WORKFLOWS)
-                and (
-                    provider.kind != "volcengine_video"
-                    or model.slug in {"doubao-seedance-2-0-260128", "doubao-seedance-2-5-260628"}
-                )
-            ]
+        return await generation_options(
+            self.session, upload_configured=bool(self.settings.fpl_temp_media_upload_url)
         )
 
     async def _model(

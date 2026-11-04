@@ -77,6 +77,7 @@ from .stream_access import access_check
 from .task_usage import OwnedCatalogTaskUsage
 from .template_sync import TemplateSynchronization
 from .templates import initialize_account_catalog
+from .visual_catalog_http import router as visual_catalog_router
 from .writing import router as writing_router
 
 
@@ -298,6 +299,7 @@ def create_app(
     app.include_router(integration_capacity_router)
     app.include_router(writing_router)
     app.include_router(annotation_transcription_router)
+    app.include_router(visual_catalog_router)
     if (native_ingress_token is None) != (workers is None):
         raise ValueError("Models 原生通道需要同时配置入口和worker凭据")
     if native_ingress_token is not None:

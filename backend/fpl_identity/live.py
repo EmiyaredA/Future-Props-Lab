@@ -28,6 +28,7 @@ from fpl_runtime.video_frames import target as video_frame_target
 from fpl_runtime.video_handoff import handoff_target
 from fpl_runtime.video_segments import bundle_target as segment_bundle_target
 from fpl_runtime.video_snapshot import archive_target as video_archive_target
+from fpl_runtime.visual_catalog import catalog_target as visual_catalog_target
 
 router = APIRouter()
 
@@ -113,9 +114,10 @@ async def live(request: Request, body: LiveRequest):
     from fpl_runtime.thought_uploads import is_upload_target
     from fpl_runtime.writing import writing_target
 
-    private_writing = body.service == "models" and (
+    private_models = body.service == "models" and (
         writing_target(body.method, body.path) is not None
         or annotation_transcription_target(body.method, body.path) is not None
+        or visual_catalog_target(body.method, body.path)
     )
     socket = (
         request.app.state.service_catalog.match_socket(body.path) if body.method == "GET" else None
@@ -146,7 +148,7 @@ async def live(request: Request, body: LiveRequest):
     )
     if not (
         private_output
-        or private_writing
+        or private_models
         or private_external
         or private_thought_upload
         or private_render

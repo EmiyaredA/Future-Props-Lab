@@ -11,12 +11,12 @@ from app.apps.visual_workshop.schemas.generation import (
     ImageGenerationBatchCreateIn,
 )
 from app.apps.visual_workshop.schemas.workshop import (
-    GenerationOptionsOut,
     GenerationTaskCreateIn,
     GenerationTaskOut,
 )
 from app.deps import SessionDep
 from app.llm.routes.model_capacity import task_admission
+from app.llm.schemas.visual_catalog import GenerationOptionsOut
 
 router = APIRouter(prefix="/visual-workshop", tags=["visual-generation"])
 

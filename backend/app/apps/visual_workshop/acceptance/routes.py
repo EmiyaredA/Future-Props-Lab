@@ -1,10 +1,7 @@
 from fastapi import APIRouter
 
-from app.apps.visual_workshop.acceptance.review_models import review_models
 from app.apps.visual_workshop.acceptance.reviews import Reviews
 from app.apps.visual_workshop.acceptance.schemas import (
-    AcceptanceModelListOut,
-    AcceptanceModelOut,
     AcceptanceRepairOut,
     AcceptanceRepairWriteIn,
     AcceptanceRunOut,
@@ -12,6 +9,8 @@ from app.apps.visual_workshop.acceptance.schemas import (
 )
 from app.apps.visual_workshop.acceptance.standards import Standards
 from app.deps import OwnerDep, SessionDep
+from app.llm.schemas.visual_catalog import AcceptanceModelListOut
+from app.llm.visual_catalog import acceptance_models
 
 from .http_errors import errors
 from .node_routes import router as node_router
@@ -23,18 +22,7 @@ router = APIRouter(prefix="/visual-workshop", tags=["visual-workshop"])
 async def list_acceptance_models(project_id: str, session: SessionDep, owner_user_id: OwnerDep):
     with errors():
         await Standards(session, owner_user_id).get(project_id)
-        return AcceptanceModelListOut(
-            items=[
-                AcceptanceModelOut(
-                    id=model.id,
-                    label=model.label or model.slug,
-                    slug=model.slug,
-                    provider_name=provider.name,
-                    provider_kind=provider.kind,
-                )
-                for model, provider in await review_models(session, owner_user_id)
-            ]
-        )
+        return await acceptance_models(session, owner_user_id)
 
 
 @router.post(

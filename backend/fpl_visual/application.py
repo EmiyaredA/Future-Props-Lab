@@ -10,12 +10,15 @@ from app.apps.visual_workshop.acceptance.standard_routes import router as standa
 from app.apps.visual_workshop.generation_routes import router as generation_records_router
 from app.apps.visual_workshop.models import VisualWorkshopProject
 from app.deps import require_studio_auth
+from fpl_runtime.capability_client import CapabilityClient
 from fpl_runtime.certification_service import create_certification_app
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.reference_runtime import install_reference_runtime
 from fpl_runtime.request_limit import RequestLimit
 from fpl_runtime.video_segment_handoff import VISUAL_HANDOFFS, asset_peer, visual_peer
 
+from .catalog_http import acceptance as acceptance_catalog_router
+from .catalog_http import generation as generation_catalog_router
 from .migrations.registry import MIGRATIONS
 from .models import MODELS, VisualCanvasReferenceMutation, VisualCertificationReceipt
 from .outputs_http import router as outputs_router
@@ -68,6 +71,11 @@ def create_app(
     )
     app.include_router(project_router)
     app.include_router(outputs_router)
+    app.include_router(generation_catalog_router)
+    app.include_router(acceptance_catalog_router)
+    app.state.model_catalog_client = CapabilityClient(
+        service="visual", credential=credential, catalog=catalog, transport=transport
+    )
     app.include_router(standard_router, prefix="/v1")
     app.include_router(review_router, prefix="/v1")
     app.include_router(
@@ -80,6 +88,14 @@ def create_app(
     app.state.video_segment_peer = None
     if video_segment_key is not None:
         bind_segment_handoffs(app, credential, video_segment_key, segment_assets_key, transport)
+    lifespan = app.router.lifespan_context
+
+    @asynccontextmanager
+    async def with_model_catalog(instance):
+        async with app.state.model_catalog_client.client, lifespan(instance):
+            yield
+
+    app.router.lifespan_context = with_model_catalog
     return app
 
 
