@@ -12,10 +12,10 @@ from app.apps.galgame_workshop.schemas import (
     GalgameStorySnapshotOut,
     GalgameStorySnapshotRestoreIn,
 )
+from app.apps.galgame_workshop.story.snapshots import list_snapshots
 from app.apps.galgame_workshop.story.story import GalgameStoryDocuments
 from app.capabilities.asset_store import AssetError
 from app.runtime.revisions import RevisionConflictError
-from app.runtime.time import iso_utc
 
 
 class GalgamePortraitMaintenance:
@@ -109,26 +109,7 @@ class GalgamePortraitMaintenance:
 
     async def list_snapshots(self, project_id: str) -> list[GalgameStorySnapshotOut]:
         await GalgameStoryDocuments(self.session).get(project_id)
-        rows = list(
-            (
-                await self.session.execute(
-                    select(GalgameStorySnapshot)
-                    .where(GalgameStorySnapshot.project_id == project_id)
-                    .order_by(GalgameStorySnapshot.created_at.desc())
-                )
-            )
-            .scalars()
-            .all()
-        )
-        return [
-            GalgameStorySnapshotOut(
-                id=row.id,
-                storyRevision=row.story_revision,
-                reason=row.reason,
-                createdAt=iso_utc(row.created_at),
-            )
-            for row in rows
-        ]
+        return await list_snapshots(self.session, project_id)
 
     async def restore(
         self, project_id: str, snapshot_id: str, body: GalgameStorySnapshotRestoreIn

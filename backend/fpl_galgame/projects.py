@@ -9,6 +9,7 @@ from app.apps.galgame_workshop.story.document_values import (
     normalize_story_document,
     story_out,
 )
+from app.apps.galgame_workshop.story.snapshots import list_snapshots
 from app.runtime.project_records import list_owned_projects, load_owned_project
 from fpl_runtime.project_errors import ProjectResourceError
 
@@ -54,3 +55,7 @@ class Projects:
             return story_out(story, normalize_story_document(story.document))
         except GalgameStoryDocumentInvalidError as exc:
             raise ProjectResourceError(str(exc), "invalid_story_document", 422) from exc
+
+    async def snapshots(self, project_id):
+        await self.story(project_id)
+        return await list_snapshots(self.session, project_id)

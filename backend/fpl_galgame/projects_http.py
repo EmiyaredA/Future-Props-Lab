@@ -11,6 +11,8 @@ from app.apps.galgame_workshop.schemas import (
     GalgameStoryDocumentOut,
     GalgameStoryDocumentPutIn,
     GalgameStoryEditsPatchIn,
+    GalgameStorySnapshotOut,
+    GalgameStorySnapshotRestoreIn,
     GalgameStoryStageExpressionPatchIn,
     GalgameStoryStageExpressionPatchOut,
     GalgameWorkshopProjectCreateIn,
@@ -142,3 +144,25 @@ async def apply_story_operations(
         if exc.code == "invalid_story_document":
             raise HTTPException(422, {"code": "invalid_story", "message": str(exc)}) from None
         raise
+
+
+@router.get("/{project_id}/story/snapshots", response_model=list[GalgameStorySnapshotOut])
+async def list_story_snapshots(session: SessionDep, project_id: str, owner_user_id: OwnerDep):
+    return await Projects(session, owner_user_id).snapshots(project_id)
+
+
+@router.post(
+    "/{project_id}/story/snapshots/{snapshot_id}/restore",
+    response_model=GalgameStoryDocumentOut,
+)
+async def restore_story_snapshot(
+    request: Request,
+    session: SessionDep,
+    project_id: str,
+    snapshot_id: str,
+    body: GalgameStorySnapshotRestoreIn,
+    owner_user_id: OwnerDep,
+):
+    return await story_writes(request, session, owner_user_id).restore_snapshot(
+        project_id, snapshot_id, body.expected_story_revision
+    )

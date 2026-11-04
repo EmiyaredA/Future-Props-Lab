@@ -39,7 +39,11 @@ def _galgame_story_source(body):
     if not story_metadata(body.caller, change):
         return False
     if body.source_method == "POST":
-        return body.source_path == story_path + "/operations"
+        return body.source_path == story_path + "/operations" or bool(
+            re.fullmatch(
+                re.escape(story_path) + r"/snapshots/[A-Za-z0-9_-]{1,128}/restore", body.source_path
+            )
+        )
     return (body.source_method == "PUT" and body.source_path == story_path) or (
         body.source_method == "PATCH"
         and body.source_path

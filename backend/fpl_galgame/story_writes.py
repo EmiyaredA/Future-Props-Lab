@@ -188,6 +188,29 @@ class StoryWrites:
                 return GalgameStoryDocumentOut.model_validate(saved)
             raise
 
+    async def restore_snapshot(self, project_id, snapshot_id, expected_revision):
+        await self.projects.row(project_id)
+        snapshot = await self.session.scalar(
+            select(GalgameStorySnapshot).where(
+                GalgameStorySnapshot.project_id == project_id,
+                GalgameStorySnapshot.id == snapshot_id,
+            )
+        )
+        if snapshot is None:
+            raise ProjectResourceError("维护快照不存在")
+        await self.current_story(project_id, expected_revision)
+        try:
+            document = normalize_story_document(snapshot.document)
+        except GalgameStoryDocumentInvalidError as exc:
+            raise story_error(str(exc)) from exc
+        return await self._save(
+            project_id,
+            expected_revision=expected_revision,
+            document=document,
+            method="POST",
+            path=f"{PREFIX}/{project_id}/story/snapshots/{snapshot_id}/restore",
+        )
+
     async def _save(
         self, project_id, *, expected_revision, document, method, path, record_operation=None
     ):

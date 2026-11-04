@@ -11,6 +11,7 @@ from starlette.datastructures import UploadFile
 from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario  # noqa: F401
 from tests.test_creative_project_certification import CREDENTIALS, ORIGIN, PROJECTS
 
+from app.apps.galgame_workshop.models import GalgameStorySnapshot
 from app.capabilities.asset_store.library import AssetLibrary
 from fpl_assets.models import AssetReferencePin, AssetReferenceSet
 from fpl_galgame.models import GalgameStoryReferenceMutation
@@ -277,4 +278,40 @@ async def verify_galgame_story(case, app, request, path, document):
         "POST", operation_path, json={**operations, "settings": {"synopsis": "New body"}}
     )
     assert mismatched.status_code == 409 and mismatched.json()["code"] == "idempotency_conflict"
+    project_id = path.rsplit("/", 1)[1]
+    async with app.state.database.sessions(info={"owner_user_id": case.viewer}) as session:
+        session.add(
+            GalgameStorySnapshot(
+                id="saved-snapshot",
+                project_id=project_id,
+                story_revision=1,
+                reason="portrait-size-upgrade",
+                document=saved.json()["document"],
+            )
+        )
+        await session.commit()
+    snapshots_path = story_path + "/snapshots"
+    listing = await request("GET", snapshots_path)
+    assert listing.status_code == 200, listing.text
+    assert [item["id"] for item in listing.json()] == ["saved-snapshot"]
+    assert listing.json()[0]["storyRevision"] == 1
+    missing = await request(
+        "POST",
+        snapshots_path + "/unknown/restore",
+        json={"expectedStoryRevision": 5},
+    )
+    assert missing.status_code == 404 and missing.json()["code"] == "not_found"
+    restored = await request(
+        "POST",
+        snapshots_path + "/saved-snapshot/restore",
+        json={"expectedStoryRevision": 5},
+    )
+    assert restored.status_code == 200, restored.text
+    assert restored.json()["revision"] == 6
+    assert restored.json()["document"] == saved.json()["document"]
+    assert (
+        await request(
+            "POST", snapshots_path + "/saved-snapshot/restore", json={"expectedStoryRevision": 5}
+        )
+    ).status_code == 409
     return image["fileId"]
