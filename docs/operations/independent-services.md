@@ -281,6 +281,21 @@ uv run python -m scripts.website.migrate_tools_navigation --plan "$plan" \
 
 维护进程只监听回环，拒绝浏览器 Origin。传输以账号和工具键分页，每批最多 256 条。记录与回执同事务提交。连接中断后以同一计划和地址重跑，完全相同的批次返回原回执。账号缺失、批次摘要变化、记录重叠或源快照变化会终止传输。最后逐账号读回目标数据并核对分页摘要与总记录数。留存成功报告并停止两个维护进程。旧站回滚和其余数据集仍由整站演练门禁跟踪。
 
+### Assets 历史文件夹和原件
+
+使用已核验的账号计划，先导入父目录，再导入素材记录，最后传输原件。记录保留 ID、项目作用域、目录、版本和时间戳。原件按账号及记录推导路径，逐个核对长度和 SHA256。传输流通过临时文件落盘并原子发布。已提交的原件按摘要重放。未知原件、跨账号目录、父目录冲突或仍待恢复的项目删除暂存都会停止迁移。
+
+```sh
+uv run python -m fpl_assets migration-export --migration-plan "$plan" \
+  --legacy-db "$snapshot/future-props.db" --port 19569
+uv run python -m fpl_assets migration-import --migration-plan "$plan" \
+  --state-root "$assets_state" --port 19570
+uv run python -m scripts.website.migrate_assets --plan "$plan" \
+  --source http://127.0.0.1:19569 --target http://127.0.0.1:19570
+```
+
+与当前文件摘要相同的旧版升级副本保留在完整回滚快照。项目链接和引用索引应在相应业务数据导入后重建并核验，仍由整站切换门禁跟踪。
+
 ### Identity 账号与凭据迁移
 
 与 Tools 使用同一份源快照和迁移计划。Identity 的账号数据集核对计划中的全部账号 UUID，随后导入 Studio 会话、Management API Key、加密 TOTP 登记和会话解锁记录。保留密码摘要、原账号 ID、角色、凭据范围、过期与撤销状态。旧站的会话保持 Studio 用途。管理中台需要其专用会话。凭据摘要和加密 TOTP 记录只通过显式回环维护进程传输，报告只保存数据集计数与批次摘要。

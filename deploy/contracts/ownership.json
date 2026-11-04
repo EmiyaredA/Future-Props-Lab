@@ -4523,6 +4523,12 @@
       "model": "AnnotationReferenceMutation"
     },
     {
+      "table": "asset_import_receipts",
+      "service": "assets",
+      "module": "fpl_assets.migration_models",
+      "model": "AssetImportReceipt"
+    },
+    {
       "table": "asset_reference_sets",
       "service": "assets",
       "module": "fpl_assets.models",

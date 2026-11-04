@@ -4,7 +4,6 @@ import asyncio
 import hashlib
 import json
 import os
-import stat
 from pathlib import Path
 from typing import Annotated
 from uuid import UUID, uuid4, uuid5
@@ -20,6 +19,7 @@ from app.apps.director_desk.models import DirectorDeskProject, DirectorDeskUserM
 from app.apps.director_desk.motions import file_keys
 from app.apps.director_desk.schemas import FILE_KEY
 from fpl_runtime.migration_batches import BatchReceipt, MigrationAdmission
+from fpl_runtime.migration_files import inspect_blob, publish_blob
 
 from .migration_receipts import has_receipt, record_receipt
 from .migration_records import ID
@@ -62,18 +62,10 @@ def directory(path):
 
 
 def measure(path, scope, digest):
-    with os.fdopen(os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK), "rb") as stream:
-        initial = os.fstat(stream.fileno())
-        if not stat.S_ISREG(initial.st_mode) or not 0 < initial.st_size <= MAX_FILE_BYTES:
-            raise ValueError("导演台文件无效")
-        actual = hashlib.file_digest(stream, "sha256").hexdigest()
-        final = os.fstat(stream.fileno())
-    if actual != digest or (initial.st_size, initial.st_mtime_ns) != (
-        final.st_size,
-        final.st_mtime_ns,
-    ):
+    size, actual = inspect_blob(path, maximum=MAX_FILE_BYTES)
+    if actual != digest:
         raise ValueError("导演台文件摘要不匹配")
-    return DirectorFile(scope=scope, sha256=digest, size=initial.st_size)
+    return DirectorFile(scope=scope, sha256=digest, size=size)
 
 
 class DirectorFiles:
@@ -206,20 +198,7 @@ class DirectorFiles:
 
 
 def publish(root: Path, path: Path, staged, scope, digest, size):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        os.link(staged, path, follow_symlinks=False)
-    except FileExistsError:
-        if measure(path, scope, digest).size != size:
-            raise ValueError("导演台文件重放摘要不一致") from None
-    for parent in path.parents:
-        fd = os.open(parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
-        try:
-            os.fsync(fd)
-        finally:
-            os.close(fd)
-        if parent == root:
-            break
+    publish_blob(root, path, staged, size, digest)
     return DirectorFile(scope=scope, sha256=digest, size=size)
 
 

@@ -16,6 +16,7 @@ import pytest
 from cryptography.fernet import Fernet
 from PIL import Image
 from scripts.website import legacy_snapshot
+from scripts.website.migrate_assets import ASSET_RECORDS, transfer_asset_blobs
 from scripts.website.migrate_director import DIRECTOR_RECORDS, transfer_director_files
 from scripts.website.migrate_identity import CREDENTIALS
 from scripts.website.migrate_identity_avatars import transfer_avatars
@@ -24,6 +25,8 @@ from scripts.website.migrate_tools_navigation import NAVIGATION
 from scripts.website.migration_transfer import transfer
 from tests.test_tools_navigation_migration import available_ports, listener
 
+from fpl_assets.migration_blobs import BLOBS as ASSET_BLOBS
+from fpl_assets.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
 from fpl_director.migration_files import FILES as DIRECTOR_FILES
 from fpl_director.migrations.registry import MIGRATIONS as DIRECTOR_MIGRATIONS
 from fpl_identity.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
@@ -104,6 +107,7 @@ def migrate_rehearsal(snapshot_db, parent, account):
     )
     for service, migrations, datasets in (
         ("identity", IDENTITY_MIGRATIONS, CREDENTIALS),
+        ("assets", ASSET_MIGRATIONS, ASSET_RECORDS),
         ("tools", TOOLS_MIGRATIONS, (NAVIGATION,)),
         ("remote", REMOTE_MIGRATIONS, (PREFERENCES,)),
         ("director", DIRECTOR_MIGRATIONS, DIRECTOR_RECORDS),
@@ -134,12 +138,33 @@ def migrate_rehearsal(snapshot_db, parent, account):
             ) as destination,
         ):
             reports = [transfer(client, plan, source, destination, item) for item in datasets]
-            assert reports[0]["record_count"] == 1
+            assert reports[0]["record_count"] == (2 if service == "assets" else 1)
             assert reports == [
                 transfer(client, plan, source, destination, item) for item in datasets
             ]
             if service == "identity":
                 assert transfer_avatars(client, plan, source, destination)["record_count"] == 1
+            if service == "assets":
+                assert [report["record_count"] for report in reports] == [2, 1]
+                headers = {"X-Fpl-Migration-Token": plan.token.get_secret_value()}
+                original = client.get(f"{source}{ASSET_BLOBS}/{account}", headers=headers).json()
+                assert len(original) == 1
+                entry = original[0]
+                route = f"{ASSET_BLOBS}/{account}/{entry['id']}/{entry['sha256']}"
+                wrong = client.put(destination + route, headers=headers, content=b"invalid")
+                assert wrong.status_code == 409
+                assert (
+                    client.get(f"{destination}{ASSET_BLOBS}/{account}", headers=headers).json()
+                    == []
+                )
+                migrated = transfer_asset_blobs(client, plan, source, destination)
+                assert migrated["record_count"] == 1
+                assert transfer_asset_blobs(client, plan, source, destination) == migrated
+                different_digest = route.rsplit("/", 1)[0] + "/" + "0" * 64
+                changed = client.put(
+                    destination + different_digest, headers=headers, content=b"changed"
+                )
+                assert changed.json()["code"] == "migration_batch_conflict"
             if service == "director":
                 assert [report["record_count"] for report in reports] == [1, 1]
                 headers = {"X-Fpl-Migration-Token": plan.token.get_secret_value()}
@@ -232,6 +257,25 @@ def test_stopped_site_reopens_from_verified_runtime_and_original_config(tmp_path
         assert client.patch(tool, headers=safe, json={"is_favorite": True}).status_code == 200
         assert client.post(tool + "/use", headers=safe).status_code == 200
         state = client.get(TOOLS).json()
+        root_folder = client.post(
+            "/v1/file-folders", headers=safe, json={"name": "Retained", "scope": "library"}
+        )
+        assert root_folder.status_code == 200, root_folder.text
+        child = client.post(
+            "/v1/file-folders",
+            headers=safe,
+            json={"name": "Nested", "scope": "library", "parent_id": root_folder.json()["id"]},
+        )
+        assert child.status_code == 200, child.text
+        asset_body = b"retained private asset bytes"
+        asset = client.post(
+            "/v1/files",
+            headers=safe,
+            data={"folder_id": child.json()["id"]},
+            files={"upload": ("retained.txt", asset_body, "text/plain")},
+        )
+        assert asset.status_code == 200, asset.text
+        asset_path = f"/v1/files/{asset.json()['id']}/content"
         director = "/v1/director-desk"
         created = client.post(
             director + "/projects", headers=safe, json={"title": "Retained scene"}
@@ -310,6 +354,7 @@ def test_stopped_site_reopens_from_verified_runtime_and_original_config(tmp_path
         assert (status["idle_minutes"], status["idle_revision"]) == (12, 1)
         response = restored.get(AVATAR)
         assert response.status_code == 200 and response.content == image
+        assert restored.get(asset_path).content == asset_body
         assert restored.get(scene_path).json() == saved.json()
         assert restored.get(f"{scene_path}/files/{scene_hash}").content == scene_bytes
         assert restored.get(motion_path).json() == motion
