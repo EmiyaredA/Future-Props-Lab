@@ -21,12 +21,16 @@ from fpl_motion import file_routes
 from fpl_motion.application import PROJECTS, create_app
 from fpl_motion.migrations.registry import MIGRATIONS
 from fpl_motion.resources import ProjectResources
-from fpl_runtime.capability_client import CapabilityUnavailable
+from fpl_rendering.application import create_app as rendering_app
+from fpl_rendering.migrations.registry import MIGRATIONS as RENDERING_MIGRATIONS
+from fpl_rendering.settings import RenderingSettings
+from fpl_runtime.capability_client import CapabilityClient, CapabilityUnavailable
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
 
 ROOT = Path(__file__).resolve().parents[1]
 TOKEN = "motion-identity-fixture-secret-unique"
+RENDERING_TOKEN = "motion-fixture-rendering-identity-secret"
 
 
 async def test_motion_project_metadata_checks_exact_project_and_owner(
@@ -38,6 +42,24 @@ async def test_motion_project_metadata_checks_exact_project_and_owner(
     state = tmp_path / "motion"
     apply(state / "service.db", "motion", MIGRATIONS)
     case.identity.state.identity_options["service_credentials"]["motion"] = TOKEN
+
+    case.identity.state.identity_options["service_credentials"]["rendering"] = RENDERING_TOKEN
+    rendering_root = tmp_path / "rendering"
+    render_db = rendering_root / "service.db"
+    apply(render_db, "rendering", RENDERING_MIGRATIONS)
+    rendering_identity = LiveAuthorization(
+        service="rendering", credential=RENDERING_TOKEN, transport=case.mesh
+    )
+    renderer = rendering_app(
+        settings=RenderingSettings(render_db),
+        public_key=case.key.public_key(),
+        catalog=CATALOG,
+        identity=rendering_identity,
+        capabilities=CapabilityClient(
+            service="rendering", credential=RENDERING_TOKEN, catalog=CATALOG, transport=case.mesh
+        ),
+    )
+    case.mesh.apps["rendering"] = renderer
 
     def assets_authority():
         live = LiveAuthorization(service="assets", credential=ASSETS_SECRET, transport=case.mesh)
@@ -77,6 +99,7 @@ async def test_motion_project_metadata_checks_exact_project_and_owner(
     first = app()
     async with (
         assets_authority(),
+        renderer.router.lifespan_context(renderer),
         first.router.lifespan_context(first),
         httpx.AsyncClient(
             transport=httpx.ASGITransport(app=first), base_url="http://motion"
@@ -153,6 +176,33 @@ async def test_motion_project_metadata_checks_exact_project_and_owner(
         applied = await call(api, "POST", document + "/operations", json=edit)
         assert applied.status_code == 200, applied.text
         assert applied.json()["revision"] == 1
+        frame = project + "/preview/frame"
+        preview = await call(api, "GET", frame, params={"frame": 0, "revision": 1})
+        assert preview.status_code == 200, preview.text
+        assert preview.headers["cache-control"] == "no-store"
+        with Image.open(BytesIO(preview.content)) as rendered:
+            assert rendered.size == (1920, 1080)
+            assert rendered.getpixel((0, 0))[:3] == (0, 128, 0)
+        assert (
+            await call(api, "GET", frame, params={"frame": 0, "revision": 0})
+        ).status_code == 409
+        assert (
+            await call(api, "GET", frame, params={"frame": 180, "revision": 1})
+        ).status_code == 422
+        checked = rendering_identity.status
+        checked_once = False
+
+        async def revoke_during_render(**request):
+            nonlocal checked_once
+            if checked_once:
+                return False
+            checked_once = True
+            return await checked(**request)
+
+        with monkeypatch.context() as fault:
+            fault.setattr(rendering_identity, "status", revoke_during_render)
+            revoked = await call(api, "GET", frame, params={"frame": 0, "revision": 1})
+        assert revoked.status_code == 401
         rename = await call(
             api, "PATCH", project, json={"title": "Renamed motion", "expectedRevision": 0}
         )

@@ -106,3 +106,23 @@ async def original(session, settings, owner, project_id, asset_id):
     if path.is_symlink() or not path.is_file():
         raise AssetError("素材不存在", code="not_found", status=404)
     return path, row.mime_type
+
+
+async def frame_files(session, settings, owner, project_id, requested):
+    rows = list(
+        await session.scalars(
+            project_query(owner, project_id)
+            .where(VisualAsset.id.in_([file.id for file in requested]))
+            .order_by(VisualAsset.id)
+        )
+    )
+    if [(row.id, row.revision) for row in rows] != [(file.id, file.revision) for file in requested]:
+        raise AssetError("渲染原件已变化或缺失", code="source_changed", status=409)
+    storage = AssetStorage(settings)
+    output = []
+    for row in rows:
+        path = storage.path_for(row)
+        if path.is_symlink() or not path.is_file() or path.stat().st_size != row.byte_size:
+            raise AssetError("渲染原件已变化或缺失", code="source_changed", status=409)
+        output.append((path, row.byte_size))
+    return output

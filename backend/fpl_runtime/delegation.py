@@ -7,6 +7,7 @@ from .annotation_assets import audio_asset_grant
 from .annotation_task_sources import task_read_grant, task_upload_grant
 from .annotation_transcription import segment_grant
 from .motion_assets import motion_asset_grant, motion_asset_write_grant
+from .motion_preview import motion_preview_grant
 from .presentation_archives import presentation_archive_grant
 from .presentation_assets import project_asset_grant
 from .resource_routes import RESOURCE_ROUTES
@@ -160,6 +161,8 @@ def permitted(grant, catalog):
     from .tools_video_library import library_grant
     from .writing import writing_grant
 
+    if motion_preview_grant(grant):
+        return True
     if directory_grant(grant, catalog):
         return True
     if preview_grant(grant) or source_transfer_grant(grant) or stdio_grant(grant):

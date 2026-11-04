@@ -32,6 +32,7 @@ from fpl_runtime.routing import RouteCatalog
 from .file_routes import router as file_router
 from .migrations.registry import MIGRATIONS
 from .models import MotionReferenceMutation
+from .preview_routes import router as preview_router
 from .resources import ProjectResources
 
 SERVICE = "motion"
@@ -44,6 +45,7 @@ OPERATIONS = {
     ("PATCH", PROJECT),
     ("DELETE", PROJECT),
     ("GET", PROJECT + "/document"),
+    ("GET", PROJECT + "/preview/frame"),
     ("GET", SOURCE + "/import-sources"),
     ("GET", PROJECT + "/assets"),
     ("POST", PROJECT + "/assets"),
@@ -111,7 +113,7 @@ def create_app(
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(OperationalError, storage_operational_error_handler)
     app.add_exception_handler(RevisionConflictError, revision_conflict_handler)
-    for component in (router, file_router):
+    for component in (router, file_router, preview_router):
         app.include_router(
             component,
             prefix=SOURCE,

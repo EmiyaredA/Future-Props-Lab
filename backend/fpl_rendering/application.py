@@ -1,5 +1,6 @@
 """The initial media endpoint slice has no asset/workshop ORM or monolith runner."""
 
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
@@ -21,6 +22,7 @@ from fpl_runtime.migrations import check
 from fpl_runtime.request_limit import RequestLimit
 
 from .migrations.registry import MIGRATIONS
+from .motion_preview import router as motion_preview_router
 from .previews import MediaPreviews
 from .routes import router
 
@@ -52,6 +54,9 @@ def create_app(*, settings, public_key, catalog, identity, capabilities, version
     app.state.settings, app.state.database = settings, database
     app.state.identity, app.state.capabilities = identity, capabilities
     app.state.media = MediaPreviews(settings)
+    app.state.identity_public_key = public_key
+    app.state.motion_frame_slots = asyncio.Semaphore(2)
+    app.include_router(motion_preview_router)
     app.include_router(router, prefix="/v1")
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)

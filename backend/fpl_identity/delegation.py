@@ -13,6 +13,7 @@ from app.capabilities.identity.route_permissions import route_permission
 from fpl_runtime.claims import issue_context, verify_context
 from fpl_runtime.community_uploads import upload_grant as community_upload_grant
 from fpl_runtime.delegation import RequestGrant, permitted, target_permission_path
+from fpl_runtime.motion_preview import motion_preview_grant
 
 from .live import active_actor
 
@@ -81,7 +82,11 @@ async def authorize_delegation(app, body, credential):
         source_permission is None or not principal.allows(source_permission)
     ):
         raise HTTPException(403, "source_permission_denied")
-    permission = route_permission(body.target_method, target_permission_path(grant))
+    permission = (
+        "content.read"
+        if motion_preview_grant(grant)
+        else route_permission(body.target_method, target_permission_path(grant))
+    )
     if permission is None or (
         permission != "community.access" if community_upload else not principal.allows(permission)
     ):

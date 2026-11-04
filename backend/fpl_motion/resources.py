@@ -63,10 +63,8 @@ class ProjectResources:
             raise
         await self.session.commit()
 
-    async def validate_assets(self, project_id, document):
-        ids = sorted({layer.asset_id for layer in document.layers if layer.asset_id})
-        if not ids:
-            return
+    async def describe_assets(self, project_id, identities):
+        ids = sorted(identities)
         await self.session.rollback()
         assets = {}
         for offset in range(0, len(ids), MAX_IDS):
@@ -108,6 +106,13 @@ class ProjectResources:
             ):
                 raise MotionUnavailable("素材验证暂不可用") from None
             assets.update({row.id: row for row in rows})
+        return assets
+
+    async def validate_assets(self, project_id, document):
+        ids = {layer.asset_id for layer in document.layers if layer.asset_id}
+        if not ids:
+            return
+        assets = await self.describe_assets(project_id, ids)
         if any(
             assets[layer.asset_id].media_kind != layer.kind
             for layer in document.layers
