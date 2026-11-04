@@ -22,3 +22,5 @@ Assets accepts library media only. SVG recoloring uses the existing validator. P
 ## Verification
 
 The isolated Identity, Assets and Presentation test covers the published schema, a scoped SVG original, foreign accounts, revision conflicts, operation replay, file deletion before and after settlement, and recovery after Assets commits but its reply is lost.
+
+The library stores templates and complete examples. A bundle obtains both reference outcomes before opening its source write transaction. Both rows and both committed outcomes are written together. On a known source rollback the service records abort outcomes for the successful preparations. Template apply checks the target revision again inside the project CAS transaction after remote preparation. The isolated test updates the template between those steps and checks that the original document and revision survive.

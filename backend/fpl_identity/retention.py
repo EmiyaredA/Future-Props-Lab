@@ -12,6 +12,8 @@ from app.capabilities.identity.route_permissions import route_permission
 from fpl_runtime.annotation_assets import PROJECT_CREATION
 from fpl_runtime.annotation_assets import SOURCE as ANNOTATION
 from fpl_runtime.claims import verify_context
+from fpl_runtime.presentation_assets import BUNDLE as PRESENTATION_BUNDLE
+from fpl_runtime.presentation_assets import LIBRARY as PRESENTATION_LIBRARY
 from fpl_runtime.presentation_assets import PROJECTS as PRESENTATION
 from fpl_runtime.retention_authority import (
     canvas_metadata,
@@ -101,19 +103,38 @@ def _annotation_source(body):
 
 def _presentation_source(body):
     change = body.change
-    if change.resource_kind != "project":
+    kind, identity = change.resource_kind, change.resource_id
+    method, path = body.source_method, body.source_path
+    if kind in PRESENTATION_LIBRARY:
+        collection = PRESENTATION_LIBRARY[kind]
+        if change.expected_resource_revision == -1:
+            return (
+                method == "POST"
+                and path in {collection, PRESENTATION_BUNDLE}
+                and _GENERATED_PROJECT_ID.fullmatch(identity) is not None
+            )
+        return path == f"{collection}/{identity}" and (
+            method == "PUT" or (method == "DELETE" and not change.asset_ids)
+        )
+    if kind != "project":
         return False
     if change.expected_resource_revision == -1:
         return (
-            body.source_method == "POST"
-            and body.source_path == PRESENTATION
-            and _GENERATED_PROJECT_ID.fullmatch(change.resource_id) is not None
+            method == "POST"
+            and (
+                path == PRESENTATION
+                or any(
+                    re.fullmatch(rf"{prefix}/[A-Za-z0-9_-]+/documents", path)
+                    for prefix in PRESENTATION_LIBRARY.values()
+                )
+            )
+            and _GENERATED_PROJECT_ID.fullmatch(identity) is not None
         )
-    project = f"{PRESENTATION}/{change.resource_id}"
+    project = f"{PRESENTATION}/{identity}"
     return (
-        (body.source_method == "PUT" and body.source_path == project)
-        or (body.source_method == "POST" and body.source_path == project + "/operations")
-        or (body.source_method == "DELETE" and body.source_path == project and not change.asset_ids)
+        (method == "PUT" and path == project)
+        or (method == "POST" and path in {project + "/operations", project + "/template/apply"})
+        or (method == "DELETE" and path == project and not change.asset_ids)
     )
 
 

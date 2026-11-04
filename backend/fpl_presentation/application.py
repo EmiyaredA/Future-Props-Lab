@@ -10,7 +10,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import HTTPConnection
 
 from app.apps.presentation_workshop.project_errors import PresentationError
-from app.apps.presentation_workshop.routes.projects import router
+from app.apps.presentation_workshop.routes.projects import router as projects_router
+from app.apps.presentation_workshop.routes.templates import router as templates_router
 from app.deps import db_session, require_studio_auth
 from app.problem_details import (
     http_exception_handler,
@@ -24,7 +25,7 @@ from fpl_runtime.capability_client import CapabilityClient
 from fpl_runtime.database import Database
 from fpl_runtime.locking import service_lock
 from fpl_runtime.migrations import check
-from fpl_runtime.presentation_assets import PROJECTS
+from fpl_runtime.presentation_assets import BUNDLE, LIBRARY, PROJECTS, SOURCE
 from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.reference_runtime import install_reference_runtime, reference_lifespan
 from fpl_runtime.routing import RouteCatalog
@@ -42,7 +43,22 @@ OPERATIONS = {
     ("PUT", PROJECT),
     ("DELETE", PROJECT),
     ("POST", PROJECT + "/operations"),
+    ("POST", PROJECT + "/template/preview"),
+    ("POST", PROJECT + "/template/apply"),
+    ("POST", BUNDLE),
 }
+for kind, prefix in LIBRARY.items():
+    resource = f"{prefix}/{{{kind}_id}}"
+    OPERATIONS.update(
+        {
+            ("GET", prefix),
+            ("POST", prefix),
+            ("GET", resource),
+            ("PUT", resource),
+            ("DELETE", resource),
+            ("POST", resource + "/documents"),
+        }
+    )
 
 
 def create_app(
@@ -109,12 +125,13 @@ def create_app(
     app.add_exception_handler(OperationalError, storage_operational_error_handler)
     app.add_exception_handler(RevisionConflictError, revision_conflict_handler)
     app.add_exception_handler(PresentationError, presentation_error)
-    app.include_router(
-        router,
-        prefix="/v1/presentation-workshop",
-        tags=["presentation-workshop"],
-        dependencies=[Depends(require_studio_auth)],
-    )
+    for router in (templates_router, projects_router):
+        app.include_router(
+            router,
+            prefix=SOURCE,
+            tags=["presentation-workshop"],
+            dependencies=[Depends(require_studio_auth)],
+        )
     if schema_path is not None:
         project_catalog = RouteCatalog(
             item

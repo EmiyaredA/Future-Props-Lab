@@ -214,7 +214,12 @@ class Presentations:
         return result
 
     async def put(
-        self, project_id: str, body: PresentationProjectPut, *, record_operation=None
+        self,
+        project_id: str,
+        body: PresentationProjectPut,
+        *,
+        before_write=None,
+        record_operation=None,
     ) -> PresentationProjectOut:
         current = await self.row(project_id)
         if body.document.source_version < 5 and current.document.get("version", 3) >= 5:
@@ -245,6 +250,8 @@ class Presentations:
         prepared = await self._prepare(project_id, body.expected_revision, body.document)
         legacy_assets = await self.assets(body.document) if prepared is None else ()
         try:
+            if before_write is not None:
+                await before_write()
             await patch_revisioned_project(
                 self.session,
                 PresentationProject,

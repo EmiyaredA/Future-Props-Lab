@@ -2,6 +2,9 @@
 
 from fpl_runtime.migrations import Migration
 
-from .versions.v0001 import SQL
+from .versions import v0001, v0002
 
-MIGRATIONS = (Migration("0001_presentation", SQL),)
+MIGRATIONS = (
+    Migration("0001_presentation", v0001.SQL),
+    Migration("0002_presentation_examples", v0002.SQL),
+)

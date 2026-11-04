@@ -7,7 +7,10 @@ from pydantic import Field
 from .library_assets import ID, LibraryAssetDescription, LibraryAssetQuery
 
 PREFIX = "/_internal/v1/presentation-assets"
-PROJECTS = "/v1/presentation-workshop/projects"
+SOURCE = "/v1/presentation-workshop"
+PROJECTS = SOURCE + "/projects"
+BUNDLE = SOURCE + "/library/import"
+LIBRARY = {kind: f"{SOURCE}/{kind}s" for kind in ("template", "example")}
 PURPOSE = "presentation.project-assets.read"
 MAX_IDS = 64
 
@@ -38,7 +41,21 @@ def project_asset_grant(grant):
     allowed = (
         (method == "POST" and path == PROJECTS)
         or (method == "PUT" and re.fullmatch(rf"{PROJECTS}/{ID}", path))
-        or (method == "POST" and re.fullmatch(rf"{PROJECTS}/{ID}/operations", path))
+        or (
+            method == "POST"
+            and (
+                path == BUNDLE
+                or path in LIBRARY.values()
+                or re.fullmatch(rf"{PROJECTS}/{ID}/(?:operations|template/apply)", path)
+                or any(
+                    re.fullmatch(rf"{prefix}/{ID}/documents", path) for prefix in LIBRARY.values()
+                )
+            )
+        )
+        or (
+            method == "PUT"
+            and any(re.fullmatch(rf"{prefix}/{ID}", path) for prefix in LIBRARY.values())
+        )
     )
     return bool(
         allowed

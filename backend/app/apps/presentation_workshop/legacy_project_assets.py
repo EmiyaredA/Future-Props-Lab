@@ -10,6 +10,7 @@ from app.runtime.config import get_settings
 from .asset_references import document_references, validate_assets
 from .models import PresentationAssetReference
 from .schemas.document import PresentationDocument
+from .templates.models import PresentationExampleAsset, PresentationTemplateAsset
 
 
 class LegacyProjectAssets:
@@ -49,3 +50,12 @@ class LegacyProjectAssets:
         self.session.add_all(
             PresentationAssetReference(project_id=project_id, asset_id=a.id) for a in assets
         )
+
+    async def library_references(self, kind, identity, assets):
+        model, key = (
+            (PresentationTemplateAsset, "template_id")
+            if kind == "templates"
+            else (PresentationExampleAsset, "example_id")
+        )
+        await self.session.execute(delete(model).where(getattr(model, key) == identity))
+        self.session.add_all(model(**{key: identity, "asset_id": asset.id}) for asset in assets)

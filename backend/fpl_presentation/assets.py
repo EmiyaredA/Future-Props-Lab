@@ -109,7 +109,7 @@ class ProjectReferences:
     def __init__(self, connection, session, coordinator):
         self.connection, self.session, self.coordinator = connection, session, coordinator
 
-    async def prepare(self, project_id, expected, asset_ids):
+    async def prepare(self, identity, expected, asset_ids, *, kind="project"):
         try:
             return await self.coordinator.prepare(
                 owner=self.session.info["owner_user_id"],
@@ -118,8 +118,8 @@ class ProjectReferences:
                 source_path=self.connection.url.path,
                 change=PrepareReferenceChange(
                     request_id=uuid4().hex,
-                    resource_kind="project",
-                    resource_id=project_id,
+                    resource_kind=kind,
+                    resource_id=identity,
                     expected_resource_revision=expected,
                     asset_ids=asset_ids,
                 ),

@@ -3,7 +3,10 @@
 from sqlalchemy.orm import DeclarativeBase
 
 from app.apps.presentation_workshop.models import PresentationProject
-from app.apps.presentation_workshop.templates.models import PresentationTemplate
+from app.apps.presentation_workshop.templates.models import (
+    PresentationExample,
+    PresentationTemplate,
+)
 from app.runtime.project_operations import ProjectOperationReceipt
 from fpl_runtime.reference_records import ReferenceMutationFields
 
@@ -19,6 +22,7 @@ class PresentationReferenceMutation(ReferenceMutationFields, PresentationRetenti
 MODELS = (
     PresentationProject,
     PresentationTemplate,
+    PresentationExample,
     ProjectOperationReceipt,
     PresentationReferenceMutation,
 )
