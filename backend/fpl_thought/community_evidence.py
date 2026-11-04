@@ -69,6 +69,7 @@ class CommunityEvidenceVerifier:
                     source.evidence.asset_id,
                     note_id=source.evidence.note_id,
                     cover=source.evidence.cover,
+                    allow_draft=source.evidence.note_id is not None,
                 )
                 return CommunityAssetEvidence.model_validate(asdict(actual)) == source.evidence
         except ThoughtError as exc:

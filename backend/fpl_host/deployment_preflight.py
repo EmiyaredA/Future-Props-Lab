@@ -14,6 +14,7 @@ MIGRATION_MODULES = {
     "portal": "fpl_portal.migrations.registry",
     "assets": "fpl_assets.migrations.registry",
     "rendering": "fpl_rendering.migrations.registry",
+    "thought": "fpl_thought.migrations.registry",
     "integrations": "fpl_integrations.migrations.registry",
 }
 

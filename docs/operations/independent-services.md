@@ -24,7 +24,7 @@ npm run services:build -- agents --build --web-release .local/service-web/agents
 
 当前独立镜像入口包含 Identity、Gateway、Agents、Portal、Assets、Rendering、Management、Models 与 Integrations；其他服务的独立构建会明确拒绝。Gateway 包含 Caddy 与独立控制面，互相监督并持有自己的数据锁。构建器计算可审计源码闭包并拒绝单体入口、全部 ORM、工坊与模型内部依赖。镜像不复制整个后端，不打包配置、密钥、运行数据或仓库。Identity 自有锁文件固定所需依赖；版本由实际输入内容决定。
 
-`deploy/compose.yaml` 目前装配 Identity、Agents、Portal、Assets、Rendering 和 Gateway，`deploy/management.compose.yaml` 提供独立管理端叠加清单；Models 与 Integrations 分别使用显式选择的 `deploy/models.compose.yaml` 和 `deploy/integrations.compose.yaml`。启动只使用已构建镜像，不自动构建或迁移。数据库初始化必须通过所属镜像显式执行 `migrate`；已有数据库迁移历史不符时启动失败。`create-admin` 只接受标准输入 JSON，并且仅用于没有账号的新安装；已有正式账号应从受控导入保留。
+`deploy/compose.yaml` 目前装配 Identity、Agents、Portal、Assets、Rendering 和 Gateway，`deploy/management.compose.yaml` 提供独立管理端叠加清单；Models、Integrations 和 Thought 使用显式选择的 `deploy/models.compose.yaml`、`deploy/integrations.compose.yaml` 和 `deploy/thought.compose.yaml`。启动只使用已构建镜像，不自动构建或迁移。数据库初始化必须通过所属镜像显式执行 `migrate`；已有数据库迁移历史不符时启动失败。`create-admin` 只接受标准输入 JSON，并且仅用于没有账号的新安装；已有正式账号应从受控导入保留。
 
 ## Docker 隔离验收
 
@@ -183,7 +183,7 @@ Models 已独立装配目录与治理、初始化事件、任务执行与配额�
 
 Integrations 已独立装配工具、MCP、Skills 和外部连接。Identity 固定意图绑定原请求、账号、资源和输入摘要；Models 保留共享验证额度与演示安装协调。stdio MCP 由 Mac worker 使用本机显式登记的完整命令与参数执行，环境键需另行登记，不继承个人 HOME、PATH 或工作目录。执行前持久化意图，回复丢失只重交付原回执；中断结果未知时不重新派发。Skills 文件按本服务已提交的记录恢复。未知验证的公开核对入口仍待完成，不能据此认定全部恢复能力已交付。
 
-Thought 的自有 schema、账号目录、受限写作模型端口、素材元数据和 Markdown/HTML 导出字节端口已经隔离；恢复网站显式注入旧适配器。修改与模板复用在写事务前预取素材快照，失败或过期拒绝写入。飞书同步继续通过用户显式同步请求调用已有外部连接，图片读取使用同一素材端口。完整 Thought 服务尚缺持久素材保留编排、上传/归档的跨服务回执和社区源账号素材授权，当前不提供完整部署入口。
+Thought 的自有 schema、账号目录、受限写作模型端口、素材元数据和 Markdown/HTML 导出字节端口已经隔离；恢复网站显式注入旧适配器。修改与模板复用在写事务前预取素材快照，失败或过期拒绝写入。飞书同步继续通过用户显式同步请求调用已有外部连接，图片读取使用同一素材端口。独立 Thought 现提供 93 项已登记公开操作和浏览器入口，引用准备、上传与归档回执均可恢复。
 
 真实九容器与 Chromium 验收 `fpl-isolated-agents-e308095503` 的 17 项综合检查通过：Models 页面、HTTP/SSE、实时语音撤权、原生安装与语音、Models 重启后重复回存只执行一次；Integrations 的真实 stdio 发现、共享额度结算、独立重启与 Skills 字节持久化；以及既有账号、工作台、素材、渲染、门户停止后的新登录和程序版本隔离。Models 三页与 Integrations 四页覆盖 390／768／1600px、明暗主题，手机聊天区填满可用宽度。依赖镜像在真实容器中执行导入检查，避免本机依赖掩盖漏包。
 
@@ -196,6 +196,26 @@ Thought 的自有 schema、账号目录、受限写作模型端口、素材元�
 
 Creative 已具备三张自有表、独立迁移、公开读取与账号写入保护、显式作者／来源／归档／安装端口及独立浏览器构建。上传使用 CAS，提交结果未知时保留可能已登记的文件；旧站显式装配原有适配。Integrations 目标端已具备固定批次、Skill 校验与幂等安装回执的隔离用例，但生产 HTTP、Creative 侧持久协调和可信原始请求体绑定尚未接入。创意工坊的来源 ID 不能仅凭原始请求路径授权，完整服务仍不得部署。
 
-Thought 已具备引用准备与结果 outbox，笔记和模板更新／删除的来源授权绑定具体资源 ID，其他来源默认拒绝；模板创建等无法可信绑定目标的操作继续关闭。社区单素材私有读取在 Assets 每次访问时重新核对 Identity Session 与 Thought 的当前发布、文章权限、正文／多维表引用和资源版本。独立 Thought HTTP、服务凭据装配、其他写入、上传与归档仍未完成。
+Thought 已具备引用准备与结果 outbox，笔记和模板更新／删除的来源授权绑定具体资源 ID，其他来源默认拒绝；模板创建等无法可信绑定目标的操作继续关闭。社区单素材私有读取在 Assets 每次访问时重新核对 Identity Session 与 Thought 的当前发布、文章权限、正文／多维表引用和资源版本。这些 Thought 边界随后通过独立 HTTP 和启动装配接通。
 
 最新隔离九容器与浏览器运行 `fpl-isolated-agents-b2069b57b3` 的 17 项综合检查通过；其中集成接口额外检查了分页响应、非法 ID 和不存在的核对记录。Thought 社区与 Creative 目标安装本批使用独立数据库及真实 ASGI 私有协议测试，尚未纳入完整服务容器验收。正式数据未切换。
+
+### Thought 独立部署
+
+构建页面后，把命令返回的浏览器版本目录传给镜像构建。
+
+```sh
+npm run services:build:web -- thought
+npm run services:build -- thought --web-release .local/service-web/thought/BUILD_ID --build
+```
+
+`FPL_THOUGHT_IMAGE` 显式选择叠加清单。配置 `FPL_THOUGHT_STATE`、`FPL_THOUGHT_CONFIG`、`FPL_THOUGHT_IDENTITY_CLIENT` 和 `FPL_THOUGHT_ASSETS_PEER`。Identity 登记 Thought 专属连接凭据。Thought 与 Assets 只读挂载同一对等配置文件，其中 `community` 与 `upload_receipt` 使用分别生成的独立凭据。Thought TOML 只读取所属 SQLite 路径及备份、上传容量限制。镜像要求 `migrate` 显式执行，启动会核验数据库历史和浏览器契约。Models 和 Integrations 通过固定接口提供写作和外部同步。
+
+隔离验收命令使用专用项目、合成账号和独立卷。指定本机 Chromium 可覆盖浏览器版本缓存缺失的情况。
+
+```sh
+uv run python scripts/website/service_docker_smoke.py \
+  --image fpl/identity:VERSION --gateway-image fpl/gateway:VERSION \
+  --assets-image fpl/assets:VERSION --thought-image fpl/thought:VERSION \
+  --local-port 19442 --public-port 19443 --browser-check
+```

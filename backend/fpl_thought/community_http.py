@@ -111,7 +111,13 @@ async def _content(
             if cover:
                 asset_id = (await publication(source, publication_id)).cover_asset_id
             evidence = await published_asset(
-                source, principal, publication_id, asset_id, note_id=note_id, cover=cover
+                source,
+                principal,
+                publication_id,
+                asset_id,
+                note_id=note_id,
+                cover=cover,
+                allow_draft=note_id is not None,
             )
         return await files.open(request, evidence)
     except ThoughtError as exc:

@@ -30,9 +30,16 @@ def exercise(
     *,
     local_port,
     public_port,
+    thought_image=None,
+    assets_image=None,
+    browser_check=False,
     gateway_image="caddy@sha256:36c24ad91a7ff7bc4c87fe22bfa8df3c4b18da0773d73fc12ee2c52b98c0bb7e",
 ):
     control = not gateway_image.startswith("caddy@")
+    if thought_image and not assets_image:
+        raise ValueError("Thought acceptance requires Assets")
+    thought_credentials = [secrets.token_urlsafe(48) for _ in range(4)] if thought_image else []
+
     run_id = secrets.token_hex(5)
     project = "fpl-isolated-identity-" + run_id
     root = ROOT / ".local/service-split" / project
@@ -78,6 +85,19 @@ def exercise(
     }
     material["agents.toml"] = material["identity.toml"]
     material["gateway.toml"] = material["identity.toml"]
+    if thought_image:
+        thought_token, assets_token, community_token, upload_token = thought_credentials
+        for service in ("thought", "assets"):
+            (root / service).mkdir(mode=0o700)
+            material[service + ".toml"] = b'[storage]\ndatabase_path = "/state/service.db"\n'
+        material["thought-client.json"] = json.dumps({"credential": thought_token}).encode()
+        material["assets-client.json"] = json.dumps({"credential": assets_token}).encode()
+        material["thought-peer.json"] = json.dumps(
+            {"community": community_token, "upload_receipt": upload_token}
+        ).encode()
+        material["service-credentials.json"] = json.dumps(
+            {"gateway": gateway_token, "thought": thought_token, "assets": assets_token}
+        ).encode()
     for name, content in material.items():
         path = root / name
         path.write_bytes(content)
@@ -125,6 +145,20 @@ def exercise(
             "FPL_PUBLIC_PORT": str(public_port),
         }
     )
+    if thought_image:
+        environment.update(
+            {
+                "FPL_THOUGHT_IMAGE": thought_image,
+                "FPL_ASSETS_IMAGE": assets_image,
+                "FPL_ASSETS_STATE": str(root / "assets"),
+                "FPL_ASSETS_CONFIG": str(root / "assets.toml"),
+                "FPL_ASSETS_IDENTITY_CLIENT": str(root / "assets-client.json"),
+                "FPL_THOUGHT_STATE": str(root / "thought"),
+                "FPL_THOUGHT_CONFIG": str(root / "thought.toml"),
+                "FPL_THOUGHT_IDENTITY_CLIENT": str(root / "thought-client.json"),
+                "FPL_THOUGHT_ASSETS_PEER": str(root / "thought-peer.json"),
+            }
+        )
     fixture = {
         "services": {
             "agents": {
@@ -157,6 +191,9 @@ def exercise(
         str(root / "protocol-fixture.yaml"),
     ]
 
+    if thought_image:
+        prefix.extend(["--file", str(ROOT / "deploy/thought.compose.yaml")])
+
     def compose(*args, input_text=None, checked=True):
         result = subprocess.run(
             [*prefix, *args],
@@ -168,7 +205,7 @@ def exercise(
             timeout=90,
         )
         log = result.stdout + result.stderr
-        for secret in (gateway_token, password, encryption_key):
+        for secret in (gateway_token, password, encryption_key, *thought_credentials):
             log = log.replace(secret, "[redacted]")
         with (root / "commands.log").open("a") as output:
             output.write("compose " + " ".join(args) + "\n" + log + "\n")
@@ -202,7 +239,10 @@ def exercise(
             "create-admin",
             input_text=json.dumps({"username": "isolated-admin", "password": password}),
         )
-        compose("up", "--detach", "--no-build", "identity", "gateway", "agents")
+        extra = ("thought", "assets") if thought_image else ()
+        for service in extra:
+            compose("run", "--rm", "--no-deps", service, "migrate")
+        compose("up", "--detach", "--no-build", "identity", "gateway", "agents", *extra)
         base = f"http://127.0.0.1:{local_port}"
         with httpx.Client(base_url=base, timeout=3, trust_env=False) as client:
 
@@ -242,6 +282,13 @@ def exercise(
             assert login.headers["cache-control"] == "no-store"
             checks.append("browser account login works without Portal")
             unsafe = {"Origin": base, "X-CSRF-Token": client.cookies.get("fpl_csrf", "")}
+            if thought_image:
+                from thought_docker_checks import verify_thought
+
+                wait_for("/apps/thought-workshop")
+                checks.append(
+                    verify_thought(client, unsafe, compose, ROOT, base, browser=browser_check)
+                )
             profile = client.patch(
                 "/v1/account/profile",
                 headers=unsafe,
@@ -346,10 +393,19 @@ def exercise(
             assert client.get("/v1/auth/me").status_code == 401
             checks.append("logout immediately prevents subsequent authenticated requests")
         report = {"status": "passed", "image": image, "checks": checks, "project": project}
+        if thought_image:
+            report["images"] = {
+                "identity": image,
+                "gateway": gateway_image,
+                "thought": thought_image,
+                "assets": assets_image,
+            }
+            report["browser"] = browser_check
         (root / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
         print(json.dumps(report, ensure_ascii=False))
     finally:
-        compose("logs", "--no-color", "--tail", "50", "gateway", "identity", checked=False)
+        extra = ("thought", "assets") if thought_image else ()
+        compose("logs", "--no-color", "--tail", "50", "gateway", "identity", *extra, checked=False)
         compose("down", "--remove-orphans", checked=False)
 
 
@@ -360,6 +416,9 @@ if __name__ == "__main__":
         "--gateway-image",
         default="caddy@sha256:36c24ad91a7ff7bc4c87fe22bfa8df3c4b18da0773d73fc12ee2c52b98c0bb7e",
     )
+    parser.add_argument("--thought-image")
+    parser.add_argument("--assets-image")
+    parser.add_argument("--browser-check", action="store_true")
     parser.add_argument("--local-port", type=int, default=19000)
     parser.add_argument("--public-port", type=int, default=19081)
     args = parser.parse_args()
@@ -368,4 +427,7 @@ if __name__ == "__main__":
         local_port=args.local_port,
         public_port=args.public_port,
         gateway_image=args.gateway_image,
+        thought_image=args.thought_image,
+        assets_image=args.assets_image,
+        browser_check=args.browser_check,
     )

@@ -1,1 +1,1 @@
-"""Thought service adapters. A complete service assembly remains gated on owned ports."""
+"""Independent Thought application and account-scoped document storage."""

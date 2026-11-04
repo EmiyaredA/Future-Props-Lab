@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse
 
 from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.http_bindings import CommunitySessionDep as SessionDep
+from app.apps.thought_workshop.publication.assets import LegacyCommunityFiles
 from app.apps.thought_workshop.publication.http import router as metadata_router
 from app.apps.thought_workshop.publication.imports import (
     SeedImportInput,
@@ -104,7 +105,9 @@ async def cover(
     principal: PublicStudioAuth,
     size: ThumbnailSize | None = None,
 ):
-    mime_type, path = await call(Community(session, principal).cover(publication_id, size))
+    mime_type, path = await call(
+        LegacyCommunityFiles(session, principal).cover(publication_id, size)
+    )
     return FileResponse(path, media_type=mime_type, headers={"Cache-Control": "private, no-store"})
 
 
@@ -118,7 +121,7 @@ async def asset(
     size: ThumbnailSize | None = None,
 ):
     mime_type, path = await call(
-        Community(session, principal).asset(publication_id, asset_id, note_id, size)
+        LegacyCommunityFiles(session, principal).asset(publication_id, asset_id, note_id, size)
     )
     return FileResponse(
         path,
@@ -137,7 +140,9 @@ async def upload(
     principal: PublicStudioAuth,
     upload: UploadFile = File(),
 ):
-    return await call(Community(session, principal).upload(publication_id, note_id, upload))
+    return await call(
+        LegacyCommunityFiles(session, principal).upload(publication_id, note_id, upload)
+    )
 
 
 @router.get("/publications/{publication_id}/export-snapshot", response_model=CommunitySnapshot)

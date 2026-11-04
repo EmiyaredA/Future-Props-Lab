@@ -19,6 +19,7 @@ def parser():
         "--catalog", type=Path, default=Path("/app/deploy/contracts/ownership.json")
     )
     result.add_argument("--web-root", type=Path, default=Path("/app/web"))
+    result.add_argument("--thought-peer", type=Path)
     result.add_argument("--port", type=int, default=8080)
     return result
 
@@ -59,8 +60,10 @@ def run(options):
         from fpl_runtime.capability_client import CapabilityClient
         from fpl_runtime.identity_client import LiveAuthorization
         from fpl_runtime.routing import RouteCatalog
+        from fpl_runtime.thought_peer import ThoughtPeer
 
         from .application import create_app
+        from .community_assets import CommunityAssetChecks
 
         public = load_pem_public_key(options.public_key.read_bytes())
         if not isinstance(public, Ed25519PublicKey):
@@ -76,6 +79,11 @@ def run(options):
         credential = connection["credential"]
         identity = LiveAuthorization(service="assets", credential=credential)
         capabilities = CapabilityClient(service="assets", credential=credential, catalog=catalog)
+        thought_peer = (
+            ThoughtPeer.read(options.thought_peer, identity_credential=credential)
+            if options.thought_peer is not None
+            else None
+        )
         has_web = (options.web_root / "build.json").is_file()
         if not has_web and not (options.web_root / ".api-only").is_file():
             raise ValueError("Assets 缺少已安装的浏览器程序")
@@ -85,6 +93,12 @@ def run(options):
             public_key=public,
             identity=identity,
             capabilities=capabilities,
+            community_asset_checks=CommunityAssetChecks(
+                identity_credential=credential, thought_credential=thought_peer.community
+            )
+            if thought_peer
+            else None,
+            thought_upload_result_key=thought_peer.upload_receipt if thought_peer else None,
             web_root=options.web_root if has_web else None,
             version=os.environ.get("FPL_SERVICE_VERSION", "development"),
         )

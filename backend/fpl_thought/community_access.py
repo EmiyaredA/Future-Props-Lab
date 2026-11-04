@@ -30,7 +30,7 @@ class CommunityAssetEvidence:
 
 
 async def published_asset(
-    session, principal, publication_id, asset_id, *, note_id=None, cover=False
+    session, principal, publication_id, asset_id, *, note_id=None, cover=False, allow_draft=False
 ):
     """Re-evaluate a browser viewer's current publication, article and body.
 
@@ -67,7 +67,8 @@ async def published_asset(
         if note.kind == "multitable":
             allowed |= asset_ids(await snapshot(session, note.id))
         if asset_id not in allowed and not (
-            role in {"edit", "manage"}
+            allow_draft
+            and role in {"edit", "manage"}
             and await session.scalar(
                 select(CommunityUpload.asset_id).where(
                     CommunityUpload.note_id == note.id,

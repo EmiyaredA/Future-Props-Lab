@@ -410,3 +410,19 @@ def test_integrations_overlay_requires_explicit_config_and_rejects_symlinks(tmp_
     overlay.symlink_to(implicit.compose_file)
     with pytest.raises(ValueError, match="缺少匹配"):
         DeploymentControl(**options)
+
+
+def test_thought_overlay_is_selected_only_by_explicit_release_configuration(tmp_path, monkeypatch):
+    monkeypatch.setenv("FPL_THOUGHT_IMAGE", "untrusted-shell-value")
+    overlay = tmp_path / "thought.compose.yaml"
+    overlay.write_text("services: {}\n")
+    implicit = control(tmp_path, lambda *_args, **_kwargs: None)
+    assert str(overlay) not in implicit.prefix
+    selected = DeploymentControl(
+        compose_file=implicit.compose_file,
+        project_name="isolated-test",
+        services=["thought"],
+        environment={"FPL_THOUGHT_IMAGE": "fpl/thought:verified"},
+        tunnels={},
+    )
+    assert selected.prefix.count(str(overlay)) == 1

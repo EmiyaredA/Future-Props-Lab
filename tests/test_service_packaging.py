@@ -233,3 +233,27 @@ def test_owned_service_receipts_do_not_register_with_the_recovery_database():
         IntegrationCapacity,
     ):
         assert model.__table__.metadata is not Base.metadata
+
+
+def test_thought_packages_own_release_and_only_purpose_scoped_asset_credentials():
+    closure = source_closure(ROOT, "thought")
+    assert {"fpl_thought.__main__", "fpl_thought.application"} <= closure.keys()
+    assert "app.apps.thought_workshop.publication.official_source" in closure
+    assert "app.apps.thought_workshop.publication.assets" not in closure
+    assert "app.capabilities.asset_store.models" not in closure
+    assert "app.runtime.db" not in closure
+
+    services = yaml.safe_load((ROOT / "deploy/thought.compose.yaml").read_text())["services"]
+    thought, assets = services["thought"], services["assets"]
+    assert thought["networks"] == ["private"]
+    assert thought["read_only"] and thought["cap_drop"] == ["ALL"]
+    assert "ports" not in thought
+    assert assets["command"] == ["serve", "--thought-peer", "/run/fpl/thought-peer.json"]
+    assert len(assets["volumes"]) == 1
+    assert assets["volumes"][0] in thought["volumes"]
+    for volume in thought["volumes"]:
+        assert volume["bind"]["create_host_path"] is False
+        if volume["target"] == "/state":
+            assert "FPL_THOUGHT_STATE" in volume["source"]
+        else:
+            assert volume["read_only"] is True

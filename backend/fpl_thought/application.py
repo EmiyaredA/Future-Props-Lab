@@ -1,10 +1,14 @@
 """Fail-closed assembly for the independent Thought service under construction."""
 
+import json
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
 from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.apps.thought_workshop.account_directory import DirectoryBindings
 from app.apps.thought_workshop.asset_metadata import AssetMetadataBindings
@@ -15,7 +19,12 @@ from app.apps.thought_workshop.multitable.query_http import router as table_quer
 from app.apps.thought_workshop.publication.http import router as community_metadata_router
 from app.apps.thought_workshop.writing import WritingBindings
 from app.apps.thought_workshop.writing_http import router as writing_router
-from app.problem_details import revision_conflict_handler
+from app.problem_details import (
+    http_exception_handler,
+    revision_conflict_handler,
+    storage_operational_error_handler,
+    validation_exception_handler,
+)
 from app.runtime.revisions import RevisionConflictError
 from fpl_runtime.authentication import SignedIdentity
 from fpl_runtime.capability_client import CapabilityClient
@@ -23,6 +32,7 @@ from fpl_runtime.database import Database
 from fpl_runtime.integration_client import IntegrationIntentClient
 from fpl_runtime.locking import service_lock
 from fpl_runtime.migrations import check
+from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.request_limit import RequestLimit
 
 from .account_directory import HttpAccountDirectory
@@ -69,6 +79,9 @@ def create_app(
     upload_receipt_credential=None,
     upload_maximum_bytes=200 * 1024 * 1024,
     backup_limits=BackupLimits(),
+    schema_path=None,
+    web_root=None,
+    version="development",
 ):
     if not isinstance(credential, str) or len(credential) < 32:
         raise ValueError("Thought 需要专属身份凭据")
@@ -176,7 +189,8 @@ def create_app(
                 await database.close()
 
     app = FastAPI(
-        title="FPL Thought (incomplete)",
+        title="FPL Thought",
+        version=version,
         lifespan=lifespan,
         docs_url=None,
         redoc_url=None,
@@ -255,8 +269,39 @@ def create_app(
     )
     app.include_router(evidence_router)
     app.add_exception_handler(RevisionConflictError, revision_conflict_handler)
+    app.add_exception_handler(StarletteHTTPException, http_exception_handler)
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    app.add_exception_handler(OperationalError, storage_operational_error_handler)
     app.add_middleware(SignedIdentity, service="thought", public_key=public_key, catalog=catalog)
     app.add_middleware(RequestLimit, prefix="/_internal/v1/community-evidence/", maximum=32 * 1024)
+
+    contract_hash = None
+    if schema_path is not None:
+        published = json.loads(schema_path.read_text())
+        expected = {
+            (entry.method, entry.path): entry.operation_id
+            for entry in catalog.operations
+            if entry.service == "thought"
+        }
+        actual = {
+            (method.upper(), path): operation["operationId"]
+            for path, operations in app.openapi()["paths"].items()
+            if path.startswith("/v1/")
+            for method, operation in operations.items()
+        }
+        if actual != expected:
+            raise ValueError("Thought 路由或操作 ID 与发布清单不匹配")
+        contract_hash = public_contract(published, "thought", catalog)
+        if public_contract(app.openapi(), "thought", catalog) != contract_hash:
+            raise ValueError("Thought 公开接口与发布契约不匹配")
+    if web_root is not None:
+        from fpl_runtime.web import attach_web, load_release
+
+        release = load_release(web_root, "thought")
+        if release.api_sha256 != contract_hash:
+            raise ValueError("Thought 页面与公开契约不匹配")
+        page = "/apps/thought-workshop"
+        attach_web(app, release, pages=(page, page + "/", page + "/{path:path}"))
 
     @app.get("/health")
     async def health():
@@ -266,7 +311,14 @@ def create_app(
     async def ready():
         async with database.sessions() as session:
             await session.execute(text("SELECT 1"))
-        # Other public operations and import/upload recovery are still not wired.
-        raise HTTPException(503, "thought_assembly_incomplete")
+        if (
+            schema_path is None
+            or archives is None
+            or not all(
+                runner.is_healthy for runner in (delivery, sync_runner, archives, community_uploads)
+            )
+        ):
+            raise HTTPException(503, "thought_dependencies_incomplete")
+        return {"status": "ready", "service": "thought", "version": version}
 
     return app

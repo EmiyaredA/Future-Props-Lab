@@ -311,6 +311,8 @@ async def delete_template(
     "/notes/{note_id}/multitable/operations",
     response_model=BatchOut,
     operation_id="operations_v1_thought_workshop_notes__note_id__multitable_operations_post",
+    summary="Operations",
+    tags=["thought-multitable"],
 )
 async def table_operations(
     request: Request, note_id: str, body: BatchIn, session: SessionDep, principal: StudioAuth
@@ -332,6 +334,8 @@ async def table_operations(
     "/notes/{note_id}/multitable/history/{revision}/restore",
     response_model=BatchOut,
     operation_id="restore_v1_thought_workshop_notes__note_id__multitable_history__revision__restore_post",
+    summary="Restore",
+    tags=["thought-multitable"],
 )
 async def table_restore(
     request: Request,
@@ -358,6 +362,8 @@ async def table_restore(
     "/notes/{note_id}/multitable/tables/{table_id}/csv-import",
     response_model=BatchOut,
     operation_id="csv_import_v1_thought_workshop_notes__note_id__multitable_tables__table_id__csv_import_post",
+    summary="Csv Import",
+    tags=["thought-multitable"],
 )
 async def table_csv_import(
     request: Request,
@@ -385,6 +391,7 @@ async def table_csv_import(
     "/notes/{note_id}/restore",
     response_model=ThoughtNoteOut,
     operation_id="restore_note_v1_thought_workshop_notes__note_id__restore_post",
+    summary="Restore Note",
 )
 async def restore_trashed_note(
     note_id: str, body: ThoughtNoteTransitionIn, session: SessionDep, owner_user_id: OwnerDep

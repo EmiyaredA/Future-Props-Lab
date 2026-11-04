@@ -72,6 +72,11 @@ class DeploymentControl:
             if not integration_overlay.is_file() or integration_overlay.is_symlink():
                 raise ValueError("已选择 Integrations 镜像但缺少匹配的服务部署清单")
             self.prefix.extend(["--file", str(integration_overlay)])
+        if environment.get("FPL_THOUGHT_IMAGE"):
+            thought_overlay = self.compose_file.parent / "thought.compose.yaml"
+            if not thought_overlay.is_file() or thought_overlay.is_symlink():
+                raise ValueError("已选择 Thought 镜像但缺少匹配的服务部署清单")
+            self.prefix.extend(["--file", str(thought_overlay)])
         self.prefix.extend(["--project-name", project_name])
         self.services, self.env = tuple(services), {**os.environ, **environment}
         self.env["COMPOSE_DISABLE_ENV_FILE"] = "true"

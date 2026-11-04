@@ -1,0 +1,54 @@
+# Select alongside the base, Models and Integrations overlays.
+services:
+  thought:
+    image: ${FPL_THOUGHT_IMAGE:?Build and select a Thought release}
+    user: "${FPL_SERVICE_UID}:${FPL_SERVICE_GID}"
+    init: true
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    cpus: 2
+    mem_limit: 1536m
+    stop_grace_period: 60s
+    tmpfs:
+      - /tmp:mode=1777,size=32m
+    volumes:
+      - type: bind
+        source: ${FPL_THOUGHT_STATE:?Select isolated or formally migrated Thought state}
+        target: /state
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${FPL_THOUGHT_CONFIG:?Select minimal read-only Thought TOML}
+        target: /run/fpl/config.toml
+        read_only: true
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${FPL_IDENTITY_PUBLIC_KEY:?Select Identity public key}
+        target: /run/fpl/identity-public.pem
+        read_only: true
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${FPL_THOUGHT_IDENTITY_CLIENT:?Select the protected Thought Identity connection}
+        target: /run/fpl/identity-client.json
+        read_only: true
+        bind: {create_host_path: false}
+      - type: bind
+        source: ${FPL_THOUGHT_ASSETS_PEER:?Select the protected Thought and Assets peer configuration}
+        target: /run/fpl/thought-peer.json
+        read_only: true
+        bind: {create_host_path: false}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/ready', timeout=2)"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+    networks: [private]
+  assets:
+    command: [serve, --thought-peer, /run/fpl/thought-peer.json]
+    volumes:
+      - type: bind
+        source: ${FPL_THOUGHT_ASSETS_PEER:?Select the protected Thought and Assets peer configuration}
+        target: /run/fpl/thought-peer.json
+        read_only: true
+        bind: {create_host_path: false}

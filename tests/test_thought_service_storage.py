@@ -290,6 +290,7 @@ def test_thought_assembly_preserves_published_operation_ids(tmp_path):
         identity=None,
         retention_client=None,
         run_worker=False,
+        schema_path=root / "web/src/generated/openapi.json",
     )
     expected = {
         (entry.method, entry.path): entry.operation_id

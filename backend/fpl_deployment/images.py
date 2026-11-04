@@ -9,6 +9,7 @@ from pathlib import Path
 
 ENTRY_POINTS = {
     "integrations": "fpl_integrations.__main__",
+    "thought": "fpl_thought.__main__",
     "creative": "fpl_creative.__main__",
     "models": "fpl_models.__main__",
     "rendering": "fpl_rendering.__main__",
@@ -214,6 +215,27 @@ def source_closure(root: Path, service):
             )
         ):
             raise ValueError(f"Creative 镜像包含越界依赖：{name}")
+        if service == "thought" and any(
+            name == prefix or name.startswith(prefix + ".")
+            for prefix in (
+                "app.main",
+                "app.api",
+                "app.orm",
+                "app.runtime.db",
+                "app.console.models",
+                "app.capabilities.asset_store.models",
+                "app.capabilities.asset_store.library",
+                "app.capabilities.asset_store.storage",
+                "app.apps.thought_workshop.portability",
+                "app.apps.thought_workshop.publication.assets",
+                "fpl_assets",
+                "fpl_identity",
+                "fpl_models",
+                "fpl_integrations",
+                "fpl_host",
+            )
+        ):
+            raise ValueError(f"Thought 镜像包含越界依赖：{name}")
         if service == "models" and any(
             name == prefix or name.startswith(prefix + ".")
             for prefix in (
@@ -293,10 +315,13 @@ def prepare_image(root: Path, service: str, *, web_release=None):
     if service in {"identity", "gateway"}:
         manifest = "backend/app/console/governance/automation_operations.json"
         payloads[manifest] = (root / manifest).read_bytes()
-    if service in {"creative", "gateway"}:
+    if service in {"creative", "gateway", "thought"}:
         payloads["deploy/contracts/openapi.json"] = (
             root / "web/src/generated/openapi.json"
         ).read_bytes()
+    if service == "thought":
+        seed = "backend/app/apps/thought_workshop/publication/seed.json"
+        payloads[seed] = (root / seed).read_bytes()
     if service == "models":
         manifest = "backend/app/llm/local_models/manifest.json"
         payloads[manifest] = (root / manifest).read_bytes()
@@ -323,6 +348,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
         "management",
         "models",
         "integrations",
+        "thought",
         "creative",
     }:
         if web_release is None:
