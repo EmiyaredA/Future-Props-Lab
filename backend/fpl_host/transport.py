@@ -22,6 +22,7 @@ class NativeTransport:
             "management",
             "models",
             "integrations",
+            "interview",
             "tools",
         }:
             raise ValueError("未登记的原生通道")

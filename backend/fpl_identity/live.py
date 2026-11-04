@@ -137,7 +137,10 @@ class TaskAuthorizationRequest(BaseModel):
     permission: str = Field(max_length=100)
 
 
-TASK_PERMISSIONS = {"agents": frozenset({CLOUD_CONTROL_PERMISSION})}
+TASK_PERMISSIONS = {
+    "agents": frozenset({CLOUD_CONTROL_PERMISSION}),
+    "interview": frozenset({"content.write"}),
+}
 
 
 @router.post("/_internal/v1/tasks/authorize")

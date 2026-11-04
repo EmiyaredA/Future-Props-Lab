@@ -1,0 +1,10 @@
+# Trusted loopback native tasks use a separate identity and worker credential.
+services:
+  interview:
+    volumes:
+      - type: bind
+        source: ${FPL_INTERVIEW_NATIVE_OPTIONS:?Select private Interview worker configuration}
+        target: /run/fpl/native-options.json
+        read_only: true
+        bind:
+          create_host_path: false

@@ -4727,6 +4727,12 @@
       "model": "ExternalClosure"
     },
     {
+      "table": "interview_native_leases",
+      "service": "interview",
+      "module": "fpl_interview.models",
+      "model": "InterviewNativeLease"
+    },
+    {
       "table": "management_native_jobs",
       "service": "management",
       "module": "fpl_management.models",

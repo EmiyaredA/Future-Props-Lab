@@ -10,6 +10,7 @@ from pypdf import PdfWriter
 from app.apps.interview_assistant import codex, routes, runner
 from app.apps.interview_assistant.bundles import acceptance
 from app.apps.interview_assistant.codex import task_context
+from app.apps.interview_assistant.executor_status import executor_status
 from app.apps.interview_assistant.models import InterviewPreparation
 from app.apps.interview_assistant.schemas import InterviewExecutorOut, PreparationBundle
 from app.apps.interview_assistant.task_tools import TaskFiles, extract_document
@@ -491,6 +492,6 @@ def test_executor_binding_is_checked_before_cli_discovery(configured, monkeypatc
     monkeypatch.setattr(
         codex, "executable", lambda: pytest.fail("unbound users must not probe the CLI")
     )
-    status = asyncio.run(codex.executor_status("another-account"))
+    status = asyncio.run(executor_status("another-account"))
     assert not status.available
     assert status.code == "agent_not_authorized"

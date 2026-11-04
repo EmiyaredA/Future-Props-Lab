@@ -376,4 +376,10 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 
 运行 `npm run services:build:web -- interview`，将产物目录通过 `--web-release` 传给 Interview 镜像构建。叠加 `deploy/interview.compose.yaml`，配置独立状态目录和 Identity 公钥。显式运行 `interview migrate` 后启动。Gateway 使用已登记的 `/apps/interview-assistant` 页面和 12 项发布 API。场次、原始材料、请求回执和准备历史由 Interview 持有。进程启动时把未完成的旧任务标记为中断，用户可重新提交。
 
-隔离运行 `fpl-interview-browser-11cf956d81` 通过 Gateway、Identity 和 Interview 验证登录、材料上传下载、旧浏览器版本拒绝、回环公网入口、容器重启和 390/768/1440px Chromium 界面。浏览器版本为 `3c3351e4400104946723`，Interview 镜像为 `fpl/interview:2f0792d1f1351f07fbc6`。本机 Codex 执行和历史数据迁移仍由正式就绪门禁跟踪。
+隔离运行 `fpl-interview-browser-11cf956d81` 通过 Gateway、Identity 和 Interview 验证登录、材料上传下载、旧浏览器版本拒绝、回环公网入口、容器重启和 390/768/1440px Chromium 界面。浏览器版本为 `3c3351e4400104946723`，Interview 镜像为 `fpl/interview:2f0792d1f1351f07fbc6`。历史数据迁移和真实 Codex 连接仍由正式就绪门禁跟踪。
+
+启用执行时叠加 `deploy/interview-native.compose.yaml`。为 Gateway 的 Interview 原生回环入口、Identity 用途限定访问和每个 Mac worker 分别生成凭据。容器读取专用的 `FPL_INTERVIEW_NATIVE_OPTIONS`。Mac worker 用 `uv run python -m fpl_host.interview_worker` 启动，参数为 `--bridge`、`--worker-token`、`--state-root` 和 `--config`。回环地址须包含 `/interview`，凭据和配置须由当前用户独占。
+
+任务只向 worker 交付对应场次的冻结输入和原件。运行时复核账号权限并持续检查租约。重复回执复用已入库的交付。重启、超时、权限撤销和输入版本变化会终止旧任务或阻止其发布。真实供应商凭据和任务材料保持在隔离执行边界内。
+
+隔离运行 `fpl-interview-native-aa2b9b3b06` 使用镜像 `fpl/gateway:0d91b963d4902f76670d`、`fpl/identity:4b5009a0cc269e124498` 和 `fpl/interview:57314b3064824bae0946`。Mac 侧合成执行器通过真实 Gateway 领取原件，提交按规则标记为待补充的交付，随后经公开接口读取进度和导出。浏览器来源访问原生领取入口返回 403。

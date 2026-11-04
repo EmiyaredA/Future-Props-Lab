@@ -320,6 +320,7 @@ def render_gateway(
                 "management",
                 "models",
                 "integrations",
+                "interview",
                 "tools",
             } or not re.fullmatch(r"[A-Za-z0-9_-]{32,256}", token):
                 raise ValueError("原生通道服务或凭据无效")

@@ -11,7 +11,8 @@ from app.runtime.polling_runner import PollingTaskRunner
 from app.runtime.time import iso_utc, utc_now
 
 from .bundles import acceptance
-from .codex import CodexExecutor, executor_status, task_context
+from .codex import CodexExecutor, task_context
+from .executor_status import executor_status
 from .models import InterviewPreparation, InterviewRoom
 from .schemas import PreparationBundle
 

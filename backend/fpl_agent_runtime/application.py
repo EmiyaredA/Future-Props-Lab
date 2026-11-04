@@ -19,6 +19,7 @@ from fpl_runtime.database import Database
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.locking import service_lock
 from fpl_runtime.migrations import check
+from fpl_runtime.native_ingress import NativeIngress
 from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.request_limit import RequestLimit
 from fpl_runtime.web import attach_web, load_release
@@ -26,7 +27,6 @@ from fpl_runtime.web import attach_web, load_release
 from .host import ConnectionHost
 from .migrations.registry import MIGRATIONS
 from .models import ConnectionJob
-from .native_http import NativeIngress
 from .native_http import router as native_router
 
 SERVICE = "agent-runtime"
