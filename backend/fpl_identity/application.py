@@ -23,6 +23,8 @@ from app.problem_details import (
 from app.runtime.config import get_settings
 from fpl_runtime.database import Database
 from fpl_runtime.migrations import check
+from fpl_runtime.project_certification import MAX_BODY as CERTIFICATION_BODY
+from fpl_runtime.project_certification import PREFIX as CERTIFICATION_PREFIX
 from fpl_runtime.request_limit import RequestLimit
 
 from .account_directory import router as account_directory_router
@@ -40,7 +42,14 @@ from .migrations.registry import MIGRATIONS
 from .model_audit import ModelAuditInbox
 from .model_audit_http import router as model_audit_router
 from .model_governance import router as model_governance_router
-from .models import AccountEvent, IntegrationIntent, ModelAuditDelivery, ModelAuditIntent
+from .models import (
+    AccountEvent,
+    CertificationAuditDelivery,
+    IntegrationIntent,
+    ModelAuditDelivery,
+    ModelAuditIntent,
+)
+from .project_certification import router as certification_router
 from .retention_api import router as retention_router
 from .transport import GatewayTransport
 
@@ -55,6 +64,7 @@ MODELS = (
     ModelAuditDelivery,
     ModelAuditIntent,
     IntegrationIntent,
+    CertificationAuditDelivery,
 )
 
 
@@ -141,6 +151,8 @@ def create_app(
     app.include_router(retention_router)
     app.include_router(model_governance_router)
     app.include_router(model_audit_router)
+    app.include_router(certification_router)
+    app.add_middleware(RequestLimit, prefix=CERTIFICATION_PREFIX, maximum=CERTIFICATION_BODY)
     app.include_router(integration_intent_router)
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)

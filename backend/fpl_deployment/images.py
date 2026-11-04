@@ -31,6 +31,8 @@ PROJECT_PACKAGES = (
     "fpl_rendering",
     "fpl_models",
     "fpl_thought",
+    "fpl_visual",
+    "fpl_galgame",
     "fpl_integrations",
     "fpl_creative",
     "fpl_runtime",
@@ -211,6 +213,8 @@ def source_closure(root: Path, service):
                 "app.integrations.models",
                 "fpl_identity",
                 "fpl_integrations",
+                "fpl_visual",
+                "fpl_galgame",
                 "fpl_host",
             )
         ):

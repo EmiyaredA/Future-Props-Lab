@@ -219,3 +219,8 @@ uv run python scripts/website/service_docker_smoke.py \
   --assets-image fpl/assets:VERSION --thought-image fpl/thought:VERSION \
   --local-port 19442 --public-port 19443 --browser-check
 ```
+
+
+### Creative 作品认证
+
+Creative 已注册 16 项公开操作。作品认证通过 Identity 的签名命令交给 Visual 或 Galgame 更新自有项目和版本。所属服务将审计待投递状态与项目一同提交，确认丢失后可重放，Identity 按原命令去重并签发审计收据。隔离 HTTP 验证了两种项目、原账号归属、并发版本冲突、撤权及重启恢复。Visual 与 Galgame 的完整公开路由和部署仍是 Creative 整站联调的前置门禁。

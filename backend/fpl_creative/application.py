@@ -13,6 +13,7 @@ from app.deps import db_session
 from app.problem_details import http_exception_handler, validation_exception_handler
 from fpl_runtime.authentication import SignedIdentity
 from fpl_runtime.capability_client import CapabilityClient
+from fpl_runtime.certification_client import CertificationClient
 from fpl_runtime.creative_install_evidence import INSTALL_PATH, MAX_BODY
 from fpl_runtime.creative_source_evidence import SOURCE_PATH
 from fpl_runtime.creative_stdio import PUBLIC_STDIO
@@ -22,6 +23,7 @@ from fpl_runtime.migrations import check
 from fpl_runtime.request_limit import RequestLimit
 
 from .authors import HttpCreativeAuthors
+from .certification_http import router as certification_router
 from .decision_http import InstallDecisionEndpoint
 from .decision_http import router as decision_router
 from .install_authorization import IdentityInstallAuthorization
@@ -58,6 +60,10 @@ def create_app(
         service="creative", credential=credential, catalog=catalog, transport=transport
     )
 
+    certifications = CertificationClient(
+        credential=credential, public_key=public_key, transport=transport
+    )
+
     @asynccontextmanager
     async def lifespan(_app):
         with service_lock(database.root):
@@ -65,6 +71,7 @@ def create_app(
                 check(database.path, "creative", MIGRATIONS)
                 yield
             finally:
+                await certifications.close()
                 await identity.close()
                 await capabilities.close()
                 await database.close()
@@ -80,6 +87,7 @@ def create_app(
     app.state.service_id, app.state.database = "creative", database
     app.state.identity, app.state.identity_public_key = identity, public_key
     app.state.creative_capabilities = capabilities
+    app.state.certifications = certifications
 
     async def request_session(request: Request):
         assertion = request.state.service_assertion
@@ -102,6 +110,7 @@ def create_app(
     app.dependency_overrides[db_session] = request_session
     app.include_router(catalog_router, prefix="/v1/creative-workshop", tags=["creative-workshop"])
     app.include_router(source_router, tags=["creative-workshop"])
+    app.include_router(certification_router)
     app.add_middleware(RequestLimit, prefix=SOURCE_PATH, maximum=MAX_BODY)
     if install_credentials is not None:
         peer, integrations, result = install_credentials
@@ -154,9 +163,21 @@ def create_app(
 
         public = json.loads(schema_path.read_text())
         actual = app.openapi()
-        for path, operations in actual["paths"].items():
-            if path.startswith("/v1/") and operations != public["paths"].get(path):
-                raise ValueError("Creative 已接入接口与公开契约不匹配")
+        expected_routes = {
+            (entry.method, entry.path)
+            for entry in catalog.operations
+            if entry.service == "creative"
+        }
+        actual_routes = {
+            (method.upper(), path)
+            for path, operations in actual["paths"].items()
+            if path.startswith("/v1/")
+            for method in operations
+        }
+        if actual_routes != expected_routes or public_contract(
+            actual, "creative", catalog
+        ) != public_contract(public, "creative", catalog):
+            raise ValueError("Creative 公开接口与发布契约不匹配")
         release = load_release(web_root, "creative")
         if release.api_sha256 != public_contract(public, "creative", catalog):
             raise ValueError("Creative 页面与公开契约不匹配")
@@ -178,7 +199,7 @@ def create_app(
     async def ready():
         async with database.sessions() as session:
             await session.execute(text("SELECT 1"))
-        # Project certification and historical migration are still gated.
+        # The owner applications and historical cutover are still gated.
         raise HTTPException(503, "creative_assembly_incomplete")
 
     return app

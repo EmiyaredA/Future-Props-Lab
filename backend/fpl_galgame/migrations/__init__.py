@@ -1,0 +1,1 @@
+"""Independent Galgame service sources."""

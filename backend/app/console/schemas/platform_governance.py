@@ -1,4 +1,3 @@
-from pydantic import BaseModel, Field
 
 from app.llm.schemas.runtime_quotas import (
     GenerationQueueLimits as GenerationQueueLimits,
@@ -18,6 +17,8 @@ from app.llm.schemas.runtime_quotas import (
 
 from .developer_documents import DeveloperDocumentOut as DeveloperDocumentOut
 from .developer_documents import DeveloperDocumentsOut as DeveloperDocumentsOut
+from .project_certification import CertificationIn as CertificationIn
+from .project_certification import CertificationOut as CertificationOut
 from .registration import (
     RedemptionOut as RedemptionOut,
 )
@@ -48,14 +49,3 @@ from .registration import (
 from .registration import (
     SecretOut as SecretOut,
 )
-
-
-class CertificationIn(BaseModel):
-    is_official: bool
-    expected_revision: int = Field(ge=0)
-
-
-class CertificationOut(BaseModel):
-    id: str
-    is_official: bool
-    revision: int

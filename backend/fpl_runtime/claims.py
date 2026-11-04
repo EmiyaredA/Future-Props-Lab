@@ -25,6 +25,7 @@ class Actor:
     purpose: str = "studio"
     api_key_name: str | None = None
     api_key_prefix: str | None = None
+    client_ip: str | None = None
 
     def __post_init__(self):
         if self.purpose not in {"studio", "management"}:
@@ -44,6 +45,12 @@ class Actor:
                 raise ValueError("Session 不含 API Key 元数据")
         elif not isinstance(self.api_key_id, str) or not self.api_key_id or self.session_id:
             raise ValueError("API Key 上下文无效")
+        if self.client_ip is not None:
+            from ipaddress import ip_address
+
+            if not isinstance(self.client_ip, str) or len(self.client_ip) > 64:
+                raise ValueError("审计客户端地址无效")
+            ip_address(self.client_ip)
         if self.reauthenticated_at is not None:
             datetime.fromisoformat(self.reauthenticated_at)
         if self.local and self.auth_kind != "session":
@@ -78,6 +85,7 @@ def issue_context(actor: Actor, *, service, method, path, private_key, key_id, n
         "api_key_prefix": actor.api_key_prefix,
         "local": actor.local,
         "reauthenticated_at": actor.reauthenticated_at,
+        **({"client_ip": actor.client_ip} if actor.client_ip is not None else {}),
     }
     return jwt.encode(claims, private_key, algorithm="EdDSA", headers={"kid": key_id})
 
@@ -123,6 +131,7 @@ def verify_context(token, *, service, method, path, public_key, allow_expired=Fa
         api_key_id=claims.get("api_key"),
         api_key_name=claims.get("api_key_name"),
         api_key_prefix=claims.get("api_key_prefix"),
+        client_ip=claims.get("client_ip"),
         local=claims["local"],
         reauthenticated_at=claims.get("reauthenticated_at"),
     )

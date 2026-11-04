@@ -96,6 +96,8 @@
 
 `fpl_creative/installation_outbox.py` 和 `installation_coordinator.py` 保存按账号及版本绑定的安装意图。安装前保护根发布及组件，目标结果未知时保留围栏。Creative 与 Integrations 分别保存取消回执及阻止迟到提交的状态，源端只在验证签名回执后释放围栏。`decision_http.py` 与 `creative_authority.py` 通过独立对等凭据绑定原请求、持久批次和发布状态。`fpl_runtime/creative_results.py` 与 `install_target.py` 对目标回执及不存在响应使用独立密钥和逐请求随机数认证。`skill_archive.py` 和 `install_batch.py` 绑定固定格式归档和文件树摘要，保留对历史无树摘要回执的恢复。`install_authorization.py` 在提交和结算时复核原始请求体与当前身份授权。
 
+Creative 的公开作品认证由 `certification_http.py` 转发。Identity 签发绑定账号、项目类型、标识和版本的命令，Visual 与 Galgame 只修改各自项目库。项目更新和待审计回执共用事务，Identity 去重写入并签发审计确认，Creative 验证后返回。两套项目库已登记初始自有 schema，私有认证入口已经接通，公开项目功能与安装部署继续推进。
+
 `fpl_thought/upload_intents.py` 与 `fpl_assets/thought_uploads.py` 提供按账号绑定的私有上传回执，Identity 只为指定来源和目标签发上传委托。`upload_transport.py` 为已暂存上传逐请求换取绑定摘要的 Identity 委托并流式传输，来源服务仅在收到按账号、文件摘要和随机数认证的有效回执后确认并清理暂存；Assets 未配置独立回执密钥时拒绝该私有上传。`upload_recovery.py` 在启动独占锁内仅清理已确认副本和无持久意图的中断暂存；未决意图继续保留。该协议已通过隔离服务测试；独立 Thought 已装配公开上传入口，远端自动重放 worker 尚未接入，恢复网站暂不按重试标识去重。独立 Thought 的部分 HTTP 装配已包括目录移动、文档恢复和知识库回收／恢复，并保留现有版本控制及撤回发布规则；retention worker 已存在，但 `/ready` 始终返回 503，直至素材引用迁移及剩余业务能力完成。
 
 `backend/fpl_thought/` 拥有 Thought 自有表清单、仅保留自有外键的独立迁移与写作 HTTP 适配，通过显式选择的 `deploy/thought.compose.yaml` 提供独立部署入口。`web/src/app/entries/thought.tsx` 提供可独立构建的浏览器入口，与兼容站共用 Thought 模块的知识库、社区和旧链接路由。搜索、引用解析、反向链接、复制预检、检查点、阅读偏好、表格查询、社区收藏、社区管理元数据、官方包预检、同步绑定及任务记录查询共用 HTTP 装配。模型写作通过 `fpl_runtime/writing.py` 绑定笔记、请求摘要和原账号操作，由 `fpl_models/writing.py` 管理模型选择、流式调用、日志及配额。账户备份复用 `backup_manifest.py` 的现有归档格式，`fpl_thought/backup.py` 读取 Thought 一致快照并在结束读事务后按素材版本下载、核对大小及生成归档。素材引用变更通过独立的引用准备与回执提交。

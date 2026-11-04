@@ -3,7 +3,7 @@
 from datetime import datetime
 
 from sqlalchemy import JSON, DateTime, Integer, String, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from app.runtime.ids import new_id
 from app.runtime.orm_base import Base
@@ -50,4 +50,16 @@ class IntegrationIntent(Base):
     source_path: Mapped[str] = mapped_column(String(4096))
     actor: Mapped[dict] = mapped_column(JSON)
     scope: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
+class CertificationAuditBase(DeclarativeBase):
+    pass
+
+
+class CertificationAuditDelivery(CertificationAuditBase):
+    __tablename__ = "identity_certification_audit_receipts"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    audit_event_id: Mapped[str] = mapped_column(String(36), unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)

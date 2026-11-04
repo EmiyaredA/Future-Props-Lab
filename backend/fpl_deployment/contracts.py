@@ -97,6 +97,10 @@ def operation_owner(path):
 
 
 def table_owner(module, table):
+    if module.startswith("fpl_visual."):
+        return "visual"
+    if module.startswith("fpl_galgame."):
+        return "galgame"
     if module.startswith("fpl_creative."):
         return "creative"
     if module.startswith("fpl_integrations."):
@@ -140,18 +144,9 @@ def table_owner(module, table):
 
 def model_tables(root):
     result = []
-    for path in sorted(
-        list((root / "backend/app").rglob("*.py"))
-        + list((root / "backend/fpl_identity").rglob("*.py"))
-        + list((root / "backend/fpl_management").rglob("*.py"))
-        + list((root / "backend/fpl_agents").rglob("*.py"))
-        + list((root / "backend/fpl_gateway").rglob("*.py"))
-        + list((root / "backend/fpl_assets").rglob("*.py"))
-        + list((root / "backend/fpl_models").rglob("*.py"))
-        + list((root / "backend/fpl_integrations").rglob("*.py"))
-        + list((root / "backend/fpl_creative").rglob("*.py"))
-        + list((root / "backend/fpl_thought").rglob("*.py"))
-    ):
+    backend = root / "backend"
+    packages = [backend / "app", *backend.glob("fpl_*")]
+    for path in sorted(path for package in packages for path in package.rglob("*.py")):
         tree = ast.parse(path.read_text())
         module = ".".join(path.relative_to(root / "backend").with_suffix("").parts)
         for node in ast.walk(tree):

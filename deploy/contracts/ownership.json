@@ -4470,6 +4470,12 @@
       "model": "CreativeInstallOperation"
     },
     {
+      "table": "galgame_certification_receipts",
+      "service": "galgame",
+      "module": "fpl_galgame.models",
+      "model": "GalgameCertificationReceipt"
+    },
+    {
       "table": "gateway_change_cursors",
       "service": "gateway",
       "module": "fpl_gateway.models",
@@ -4504,6 +4510,12 @@
       "service": "identity",
       "module": "fpl_identity.models",
       "model": "IntegrationIntent"
+    },
+    {
+      "table": "identity_certification_audit_receipts",
+      "service": "identity",
+      "module": "fpl_identity.models",
+      "model": "CertificationAuditDelivery"
     },
     {
       "table": "integration_creative_install_receipts",
@@ -4678,6 +4690,12 @@
       "service": "thought",
       "module": "fpl_thought.upload_records",
       "model": "ThoughtUploadIntent"
+    },
+    {
+      "table": "visual_certification_receipts",
+      "service": "visual",
+      "module": "fpl_visual.models",
+      "model": "VisualCertificationReceipt"
     }
   ],
   "partitions": {

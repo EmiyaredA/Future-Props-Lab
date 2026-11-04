@@ -103,6 +103,14 @@ async def authorize(request: Request):
                 raise HTTPException(403, "browser_session_required")
             if not principal.allows(CLOUD_CONTROL_PERMISSION):
                 raise HTTPException(403, "insufficient_permission")
+        client_ip = None
+        if permission == "projects.certify":
+            from ipaddress import ip_address
+
+            try:
+                client_ip = str(ip_address(request.headers.get("x-fpl-client-ip", "")))
+            except ValueError:
+                pass
         actor = Actor(
             user_id=principal.user_id,
             purpose="management" if management else "studio",
@@ -111,6 +119,7 @@ async def authorize(request: Request):
             scopes=tuple(sorted(principal.scopes)),
             session_id=principal.session_id,
             api_key_id=principal.api_key_id,
+            client_ip=client_ip,
             local=request.headers.get("x-fpl-ingress") == "local"
             and principal.auth_kind == "session",
             reauthenticated_at=(
