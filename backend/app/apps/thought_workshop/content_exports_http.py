@@ -1,3 +1,5 @@
+"""HTTP routes for the shared Thought conversion and export use cases."""
+
 import shutil
 from typing import Literal
 

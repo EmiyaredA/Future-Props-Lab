@@ -17,8 +17,8 @@ The account-owned knowledge tool routes live in a shared router. Both assemblies
 
 ## Consequences
 
-Independent Thought gains search, backlinks, reference resolution, copy preflight, checkpoints, preferences and library snapshots. The library snapshot is the existing user export, while full historical migration still requires its own verified transfer.
+Independent Thought gains search, backlinks, reference resolution, copy preflight, checkpoints, preferences and library snapshots. A separate shared router exposes Markdown conversion and document export using the same metadata and download port. These user exports keep their existing format. Full historical migration still requires its own verified transfer.
 
 ## Verification
 
-Every shared operation is compared with the public OpenAPI contract. The isolated HTTP scenario searches a newly created document and exports an owned knowledge base with its cover reference using Identity and Assets.
+Every shared operation is compared with the public OpenAPI contract. The isolated HTTP scenario searches and exports a newly created document, converts Markdown, and exports an owned knowledge base with its cover reference using Identity and Assets.

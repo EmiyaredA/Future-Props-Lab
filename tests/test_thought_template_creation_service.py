@@ -204,6 +204,22 @@ async def test_create_template_pins_same_account_assets_over_http(scenario):  # 
                     json={"title": "New document", "expected_revision": 0},
                 )
                 assert added.status_code == 200, added.text
+                convert_path = "/v1/thought-workshop/markdown/convert"
+                converted = await client.post(
+                    convert_path,
+                    headers=await context(owner, convert_path),
+                    json={"markdown": "# Converted heading"},
+                )
+                assert converted.status_code == 200, converted.text
+                assert converted.json()["document"]["content"][0]["type"] == "heading"
+                export_path = f"/v1/thought-workshop/notes/{added.json()['id']}/export"
+                exported = await client.get(
+                    export_path,
+                    headers=await context(owner, export_path, "GET"),
+                    params={"expected_revision": 0},
+                )
+                assert exported.status_code == 200, exported.text
+                assert exported.text.startswith("# New document")
                 search_path = "/v1/thought-workshop/search"
                 search_headers = await context(owner, search_path, "GET")
                 search = await client.get(
@@ -422,15 +438,17 @@ def test_account_owned_knowledge_tools_match_public_contract():
 
     from fastapi import FastAPI
 
+    from app.apps.thought_workshop.content_exports_http import router as conversion_router
     from app.apps.thought_workshop.knowledge_tools.http import router
 
     app = FastAPI()
     app.include_router(router, prefix="/v1/thought-workshop", tags=["thought-workshop"])
+    app.include_router(conversion_router, prefix="/v1")
     expected = json.loads(
         (Path(__file__).resolve().parents[1] / "web/src/generated/openapi.json").read_text()
     )
     operations = app.openapi()["paths"]
-    assert len(operations) == 11
+    assert len(operations) == 13
     for path, methods in operations.items():
         for method, operation in methods.items():
             assert operation == expected["paths"][path][method]

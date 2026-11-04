@@ -7,7 +7,7 @@ from app.apps.galgame_workshop.routes import router as galgame_workshop_router
 from app.apps.interview_assistant.routes import router as interview_assistant_router
 from app.apps.motion_compositor.routes import router as motion_compositor_router
 from app.apps.presentation_workshop.routes import router as presentation_workshop_router
-from app.apps.thought_workshop.routes import conversion as thought_conversion
+from app.apps.thought_workshop import content_exports_http as thought_conversion
 from app.apps.thought_workshop.routes import router as thought_workshop_router
 from app.apps.thought_workshop.routes.community import router as community_router
 from app.apps.thought_workshop.routes.community_tables import router as community_tables_router
