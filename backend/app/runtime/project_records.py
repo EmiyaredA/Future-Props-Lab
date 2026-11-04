@@ -11,6 +11,17 @@ from app.runtime.revisions import RevisionSnapshot, require_revision_write
 ProjectRow = TypeVar("ProjectRow")
 
 
+async def list_owned_projects(
+    session: AsyncSession, model: type[ProjectRow], owner_user_id: str
+) -> list[ProjectRow]:
+    rows = await session.scalars(
+        select(model)
+        .where(model.owner_user_id == owner_user_id)
+        .order_by(model.updated_at.desc(), model.created_at.desc())
+    )
+    return list(rows)
+
+
 async def load_owned_project(
     session: AsyncSession,
     model: type[ProjectRow],

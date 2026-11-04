@@ -4,6 +4,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.visual_workshop.acceptance.models import AcceptanceRun, NodeAcceptanceBinding
+from app.apps.visual_workshop.canvas_values import canvas_out as canvas_out
 from app.apps.visual_workshop.models import (
     VisualCanvasDocument,
     VisualGenerationTask,
@@ -24,7 +25,7 @@ from app.capabilities.asset_store.models import (
 )
 from app.runtime.ids import new_id
 from app.runtime.revisions import RevisionConflictError
-from app.runtime.time import iso_utc, utc_now
+from app.runtime.time import utc_now
 
 
 class VisualCanvasError(Exception):
@@ -32,17 +33,6 @@ class VisualCanvasError(Exception):
         super().__init__(message)
         self.code = code
         self.status = status
-
-
-def canvas_out(row: VisualCanvasDocument) -> VisualCanvasDocumentOut:
-    return VisualCanvasDocumentOut(
-        project_id=row.project_id,
-        nodes=row.nodes or [],
-        edges=row.edges or [],
-        revision=row.revision,
-        updated_at=iso_utc(row.updated_at),
-        categories=row.categories or default_material_categories(),
-    )
 
 
 class VisualCanvasDocuments:

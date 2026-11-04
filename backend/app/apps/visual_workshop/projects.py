@@ -10,6 +10,7 @@ from app.apps.visual_workshop.models import (
     VisualWorkshopProject,
 )
 from app.apps.visual_workshop.outputs.models import VisualNodeOutput
+from app.apps.visual_workshop.project_values import project_out as project_out
 from app.apps.visual_workshop.schemas.workshop import (
     VisualWorkshopProjectCreateIn,
     VisualWorkshopProjectListOut,
@@ -26,27 +27,15 @@ from app.runtime.config import get_settings
 from app.runtime.operation_receipts import forget
 from app.runtime.project_records import (
     delete_revisioned_project,
+    list_owned_projects,
     load_owned_project,
     patch_revisioned_project,
 )
-from app.runtime.time import iso_utc, utc_now
+from app.runtime.time import utc_now
 
 
 class VisualWorkshopProjectNotFoundError(Exception):
     pass
-
-
-def project_out(row: VisualWorkshopProject) -> VisualWorkshopProjectOut:
-    return VisualWorkshopProjectOut(
-        id=row.id,
-        title=row.title,
-        is_official=row.is_official,
-        kind=row.kind,
-        status=row.status,
-        revision=row.revision,
-        created_at=iso_utc(row.created_at),
-        updated_at=iso_utc(row.updated_at),
-    )
 
 
 class VisualWorkshopProjects:
@@ -56,20 +45,7 @@ class VisualWorkshopProjects:
         self.storage = AssetStorage(get_settings())
 
     async def list(self) -> VisualWorkshopProjectListOut:
-        rows = (
-            (
-                await self.session.execute(
-                    select(VisualWorkshopProject)
-                    .where(VisualWorkshopProject.owner_user_id == self.owner_user_id)
-                    .order_by(
-                        VisualWorkshopProject.updated_at.desc(),
-                        VisualWorkshopProject.created_at.desc(),
-                    )
-                )
-            )
-            .scalars()
-            .all()
-        )
+        rows = await list_owned_projects(self.session, VisualWorkshopProject, self.owner_user_id)
         return VisualWorkshopProjectListOut(items=[project_out(row) for row in rows])
 
     async def _row(self, project_id: str) -> VisualWorkshopProject:

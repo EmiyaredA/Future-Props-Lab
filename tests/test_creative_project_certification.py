@@ -36,7 +36,7 @@ CREDENTIALS = {
     for service in ("creative", "visual", "galgame")
 }
 PROJECTS = {
-    "visual": (visual_app, VISUAL, VisualWorkshopProject, {"kind": "single"}),
+    "visual": (visual_app, VISUAL, VisualWorkshopProject, {"kind": "canvas"}),
     "galgame": (galgame_app, GALGAME, GalgameWorkshopProject, {}),
 }
 
@@ -61,12 +61,12 @@ class LostAudit(httpx.AsyncBaseTransport):
         return response
 
 
-async def authorize(browser, path):
+async def authorize(browser, path, *, service="creative", method="PATCH"):
     return await browser.get(
         "/_internal/v1/authorize",
         headers={
-            "X-Fpl-Target-Service": "creative",
-            "X-Fpl-Request-Method": "PATCH",
+            "X-Fpl-Target-Service": service,
+            "X-Fpl-Request-Method": method,
             "X-Fpl-Request-Uri": path,
             "Origin": ORIGIN,
             "X-CSRF-Token": browser.cookies["fpl_csrf"],
@@ -95,6 +95,7 @@ async def test_owner_scoped_certification_and_audit(scenario, tmp_path, kind, lo
         apply(tmp_path / service / "service.db", service, registry)
     owner_options = {
         "state_root": tmp_path / kind,
+        "catalog": CATALOG,
         "public_key": case.key.public_key(),
         "credential": CREDENTIALS[kind],
         "transport": transport,
@@ -175,6 +176,20 @@ async def test_owner_scoped_certification_and_audit(scenario, tmp_path, kind, lo
         conflict = await patch(path, body)
         assert conflict.status_code == 409, conflict.text
         assert conflict.json()["current"]["revision"] == 1
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=target), base_url=f"http://{kind}"
+        ) as owner_http:
+            prefix = f"/v1/{kind}-workshop/projects"
+            for uri in (f"{prefix}/owned", prefix):
+                token = await authorize(browser, uri, service=kind, method="GET")
+                assert token.status_code == 204, token.text
+                public = await owner_http.get(uri, headers={HEADER: token.headers[HEADER]})
+                assert public.status_code == 200, public.text
+                record = public.json()
+                if uri == prefix:
+                    assert [item["id"] for item in record["items"]] == ["owned"]
+                    record = record["items"][0]
+                assert record["is_official"] is True and record["revision"] == 1
         async with target.state.database.sessions(info={"owner_user_id": owner}) as session:
             row = await session.get(model, "owned")
             assert row.is_official and row.revision == 1

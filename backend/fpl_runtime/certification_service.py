@@ -2,11 +2,20 @@
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.problem_details import http_exception_handler
+from app.problem_details import (
+    http_exception_handler,
+    revision_conflict_handler,
+    storage_operational_error_handler,
+    validation_exception_handler,
+)
+from app.runtime.revisions import RevisionConflictError
 
+from .authentication import SignedIdentity
 from .certification_client import CertificationClient
 from .certification_http import router
 from .certification_owner import ProjectCertifications
@@ -14,6 +23,7 @@ from .database import Database
 from .locking import service_lock
 from .migrations import check
 from .project_certification import MAX_BODY, PREFIX
+from .project_errors import ProjectResourceError
 from .request_limit import RequestLimit
 
 
@@ -27,6 +37,7 @@ def create_certification_app(
     receipts,
     key,
     credential,
+    catalog,
     transport,
     run_worker,
 ):
@@ -62,7 +73,18 @@ def create_certification_app(
     app.state.project_certifications = certification
     app.state.database = database
     app.add_middleware(RequestLimit, prefix=PREFIX, maximum=MAX_BODY)
+    app.add_middleware(SignedIdentity, service=service, public_key=key, catalog=catalog)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    app.add_exception_handler(RevisionConflictError, revision_conflict_handler)
+    app.add_exception_handler(OperationalError, storage_operational_error_handler)
+
+    @app.exception_handler(ProjectResourceError)
+    async def project_failure(request: Request, exc: ProjectResourceError):
+        return await http_exception_handler(
+            request, HTTPException(exc.status, {"code": exc.code, "message": str(exc)})
+        )
+
     app.include_router(router)
 
     @app.get("/health")
