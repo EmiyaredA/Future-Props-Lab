@@ -1,4 +1,4 @@
-# Galgame Annotation import preview through service contracts
+# Agent Note: Galgame Annotation import preview through service contracts
 
 Status: implemented
 
