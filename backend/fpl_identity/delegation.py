@@ -14,6 +14,7 @@ from fpl_runtime.claims import issue_context, verify_context
 from fpl_runtime.community_uploads import upload_grant as community_upload_grant
 from fpl_runtime.delegation import RequestGrant, permitted, target_permission_path
 from fpl_runtime.galgame_assets import export_download_grant, galgame_asset_grant
+from fpl_runtime.galgame_render import capacity_grant
 from fpl_runtime.motion_exports import render_grant as motion_export_grant
 from fpl_runtime.motion_preview import motion_preview_grant
 from fpl_runtime.motion_snapshot import motion_snapshot_grant
@@ -100,6 +101,7 @@ async def authorize_delegation(app, body, credential):
             assistant_grant(grant)
             or galgame_asset_grant(grant)
             or export_download_grant(grant)
+            or capacity_grant(grant)
             or motion_preview_grant(grant)
             or motion_snapshot_grant(grant)
             or video_frame_grant(grant)

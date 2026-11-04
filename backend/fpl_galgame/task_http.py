@@ -6,13 +6,17 @@ from app.apps.galgame_workshop.schemas import (
     GalgameAnnotationImportTaskOut,
     GalgameVideoEditorHandoffTaskListOut,
     GalgameVideoEditorHandoffTaskOut,
+    GalgameVideoExportPreviewIn,
+    GalgameVideoExportPreviewOut,
     GalgameVideoExportTaskListOut,
     GalgameVideoExportTaskOut,
 )
 from fpl_runtime.galgame_assets import SOURCE
 from fpl_runtime.http_dependencies import OwnerDep, SessionDep
 
+from .asset_read_routes import read_assets
 from .export_download import download_export
+from .export_preflight import export_preview
 from .task_records import TaskRecords
 
 router = APIRouter(prefix=SOURCE, tags=["galgame-workshop"])
@@ -25,6 +29,19 @@ async def get_annotation_import(
     session: SessionDep, owner_user_id: OwnerDep, project_id: str, import_id: str
 ) -> GalgameAnnotationImportTaskOut:
     return await TaskRecords(session, owner_user_id).annotation_import(project_id, import_id)
+
+
+@router.post("/{project_id}/video-exports/preview", response_model=GalgameVideoExportPreviewOut)
+async def preview_video_export(
+    session: SessionDep,
+    project_id: str,
+    body: GalgameVideoExportPreviewIn,
+    request: Request,
+    owner_user_id: OwnerDep,
+) -> GalgameVideoExportPreviewOut:
+    return await export_preview(
+        request, read_assets(request, session, owner_user_id), project_id, body
+    )
 
 
 @router.get("/{project_id}/video-exports", response_model=GalgameVideoExportTaskListOut)

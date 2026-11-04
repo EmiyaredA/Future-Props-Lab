@@ -524,11 +524,12 @@ def prepare_image(root: Path, service: str, *, web_release=None):
         manifest = "backend/app/llm/local_models/manifest.json"
         payloads[manifest] = (root / manifest).read_bytes()
     if service == "rendering":
-        font = "backend/app/capabilities/media_rendering/assets/NotoSansSC-Regular.ttf"
-        body = (root / font).read_bytes()
-        if body.startswith(b"version https://git-lfs"):
-            raise ValueError("Rendering 字体缺少 LFS 内容")
-        payloads[font] = body
+        for name in ("NotoSansSC-Regular.ttf", "NotoSansSC-Medium.ttf", "OFL.txt"):
+            asset = "backend/app/capabilities/media_rendering/assets/" + name
+            body = (root / asset).read_bytes()
+            if body.startswith(b"version https://git-lfs"):
+                raise ValueError("Rendering 字体缺少 LFS 内容")
+            payloads[asset] = body
     if service == "portal":
         documents = [root / "README.md", root / "CONTRIBUTING.md", root / "docs/assets/MANIFEST.md"]
         for directory in ("architecture", "operations", "reference"):

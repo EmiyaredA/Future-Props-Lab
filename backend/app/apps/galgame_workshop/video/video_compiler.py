@@ -26,6 +26,9 @@ from app.apps.galgame_workshop.video.video_compiler_support import (
 from app.apps.galgame_workshop.video.video_compiler_support import timeline_clip as _clip
 from app.apps.galgame_workshop.video.video_compiler_support import timeline_track as _track
 from app.apps.galgame_workshop.video.video_dialogue import FONT_REGULAR, render_dialogue_layer
+from app.apps.galgame_workshop.video.video_export_planning import (
+    COMPILER_VERSION as COMPILER_VERSION,
+)
 from app.apps.galgame_workshop.video.video_lip_sync import (
     AudioEnvelope,
     LipSyncSchedule,
@@ -34,7 +37,6 @@ from app.apps.galgame_workshop.video.video_lip_sync import (
 from app.capabilities.media_rendering.contracts import RenderCaptureFrame, RenderPlan
 from app.capabilities.media_rendering.timeline_document import VideoEditorTimelineDocument
 
-COMPILER_VERSION = "galgame-render-plan-v3"
 FLOATING_TEXT_FONT_ASSET_ID = "galgame-floating-text-noto-sans-sc"
 
 

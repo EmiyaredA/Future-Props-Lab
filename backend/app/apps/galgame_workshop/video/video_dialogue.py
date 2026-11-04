@@ -52,18 +52,6 @@ BASE_STYLE: dict[str, Any] = {
 }
 
 
-def dialogue_renderer_issue() -> str | None:
-    missing = [path.name for path in (FONT_REGULAR, FONT_MEDIUM) if not path.is_file()]
-    if missing:
-        return f"Galgame 导出字体缺失：{', '.join(missing)}"
-    try:
-        _font(FONT_REGULAR, 16)
-        _font(FONT_MEDIUM, 16)
-    except (OSError, RuntimeError) as exc:
-        return str(exc)
-    return None
-
-
 def _merged(base: dict[str, Any], patch: dict[str, Any] | None) -> dict[str, Any]:
     result = dict(base)
     for key, value in (patch or {}).items():

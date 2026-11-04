@@ -24,6 +24,7 @@ from fpl_runtime.request_limit import RequestLimit
 from fpl_runtime.video_exports import output_peer
 from fpl_runtime.video_processing import originals_peer, video_peer
 
+from .galgame_capacity_http import router as galgame_capacity_router
 from .migrations.registry import MIGRATIONS
 from .models import MotionRenderJob, VideoExportJob, VideoMediaJob
 from .motion_export_routes import router as motion_export_router
@@ -130,6 +131,7 @@ def create_app(
     app.state.video_jobs = video_jobs
     app.state.video_exports = video_exports
     app.include_router(video_export_router)
+    app.include_router(galgame_capacity_router)
     app.include_router(motion_transfer_router)
     app.state.video_frame_cache = VideoFrameCache()
     app.state.video_frame_slots = asyncio.Semaphore(2)

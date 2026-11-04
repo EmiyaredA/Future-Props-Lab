@@ -21,6 +21,7 @@ from fpl_runtime.claims import verify_context
 from fpl_runtime.galgame_asr import asr_model_target
 from fpl_runtime.galgame_assets import asset_query_target as galgame_file_query_target
 from fpl_runtime.galgame_assets import export_download_target
+from fpl_runtime.galgame_render import capacity_target
 from fpl_runtime.model_outputs import is_model_output_path
 from fpl_runtime.motion_exports import render_target
 from fpl_runtime.project_reveal import reveal_target
@@ -147,7 +148,8 @@ async def live(request: Request, body: LiveRequest):
         or community_upload_target(body.method, body.path)
     )
     private_render = body.service == "rendering" and (
-        motion_preview_target(body.method, body.path)
+        capacity_target(body.method, body.path)
+        or motion_preview_target(body.method, body.path)
         or video_frame_target(body.method, body.path)
         or audio_target(body.method, body.path)
     )

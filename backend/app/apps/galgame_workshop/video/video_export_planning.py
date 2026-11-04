@@ -8,6 +8,7 @@ from typing import Any
 from app.apps.galgame_workshop.schemas import GalgameVideoExportIssue
 from app.apps.galgame_workshop.story.story_flow import TIMED_ROUTE_BOUNDARY_TYPES
 
+COMPILER_VERSION = "galgame-render-plan-v3"
 PRESETS = {
     "1080p30": (1920, 1080, 30),
     "720p30": (1280, 720, 30),

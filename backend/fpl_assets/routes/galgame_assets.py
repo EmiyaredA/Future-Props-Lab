@@ -76,7 +76,7 @@ async def read_galgame_files(
 
 
 @router.get(PREFIX + "/{project_id}/exports/{export_id}/files/{asset_id}")
-async def download_galgame_export(request: Request, project_id: str, export_id: str, asset_id: str):
+async def download_galgame_export(request: Request, project_id: str, asset_id: str):
     if export_download_target("GET", request.url.path) is None:
         raise HTTPException(404, "galgame_export_not_found")
     actor = await verified_actor(request)
