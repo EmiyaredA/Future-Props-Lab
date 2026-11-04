@@ -15,6 +15,7 @@ from fpl_rendering.settings import RenderingSettings
 from fpl_runtime.capability_client import CapabilityClient, CapabilityUnavailable
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
+from fpl_runtime.video_exports import OUTPUTS, output_peer
 from fpl_runtime.video_processing import JOBS, ORIGINALS, originals_peer, video_peer
 from fpl_video.application import PROJECTS, create_app
 from fpl_video.migrations.registry import MIGRATIONS
@@ -46,6 +47,26 @@ class DropJobReply(httpx.AsyncBaseTransport):
         return response
 
 
+class DropOutputReply(httpx.AsyncBaseTransport):
+    def __init__(self, mesh):
+        self.mesh = mesh
+        self.outputs = []
+
+    async def handle_async_request(self, request):
+        response = await self.mesh.handle_async_request(request)
+        if (
+            request.url.host == "assets"
+            and request.method == "POST"
+            and request.url.path.startswith(OUTPUTS + "/")
+            and response.status_code == 200
+        ):
+            self.outputs.append(request.url.path)
+            if len(self.outputs) == 1:
+                await response.aclose()
+                raise httpx.ReadError("isolated Assets output receipt dropped", request=request)
+        return response
+
+
 async def test_video_rendering_lost_reply_owner_isolation_and_removal(
     scenario,  # noqa: F811
     tmp_path,
@@ -60,6 +81,8 @@ async def test_video_rendering_lost_reply_owner_isolation_and_removal(
     )
     case.assets.state.identity = assets_authority
     case.assets.state.video_originals_peer = originals_peer(ORIGINALS_KEY)
+    case.assets.state.video_output_peer = output_peer(ORIGINALS_KEY)
+    publication = DropOutputReply(case.mesh)
     render_db = tmp_path / "rendering" / "service.db"
     video_root = tmp_path / "video"
     apply(render_db, "rendering", RENDER_MIGRATIONS)
@@ -72,7 +95,7 @@ async def test_video_rendering_lost_reply_owner_isolation_and_removal(
             service="rendering", credential=RENDER_TOKEN, transport=case.mesh
         ),
         capabilities=CapabilityClient(
-            service="rendering", credential=RENDER_TOKEN, catalog=CATALOG, transport=case.mesh
+            service="rendering", credential=RENDER_TOKEN, catalog=CATALOG, transport=publication
         ),
         run_worker=False,
         video_media_key=MEDIA_KEY,
@@ -208,6 +231,54 @@ async def test_video_rendering_lost_reply_owner_isolation_and_removal(
             fault.setattr(rendering.state.identity, "status", revoke_before_output)
             revoked = await send(api, "GET", preview, params={**parameters, "width": 321})
         assert revoked.status_code == 401
+
+        renders = project + "/renders"
+        request = {"expectedRevision": 1, "preset": "720p30", "endUs": 100_000}
+        preflight = await send(api, "POST", renders + "/preflight", json=request)
+        assert preflight.status_code == 200 and preflight.json()["ready"], preflight.text
+        job_request = {
+            **request,
+            "requestId": "video-export-fixture",
+            "previewFingerprint": preflight.json()["fingerprint"],
+        }
+        submitted = await send(api, "POST", renders, json=job_request)
+        assert submitted.status_code == 200, submitted.text
+        submitted = submitted.json()
+        task_id = submitted["id"]
+        assert (await send(api, "POST", renders, json=job_request)).json()["id"] == task_id
+        render_delivery = video.state.render_delivery
+        await render_delivery.process_once()
+        exports = rendering.state.video_exports
+        await exports.process_once()
+        sealed = await exports.load(case.viewer, task_id)
+        assert sealed.status == "publishing", sealed.error
+        with pytest.raises(CapabilityUnavailable):
+            await exports.process_once()
+        assert len(publication.outputs) == 1
+        assert (await exports.load(case.viewer, task_id)).status == "publishing"
+        await exports.recover()
+        await exports.process_once()
+        await render_delivery.process_once()
+        assert len(publication.outputs) == 1
+        finished = (await send(api, "GET", renders + "/" + task_id)).json()
+        assert finished["status"] == "completed" and finished["progress"] == 100, finished
+        assert finished["resultDetail"]["frameCount"] == 3
+        assert finished["resultDetail"]["probe"]["durationUs"] == 100_000
+        public_file = "/v1/files/" + finished["outputAssetId"] + "/download"
+        headers = await authorize(case, "assets", "GET", public_file)
+        movie = await internal.get("http://assets" + public_file, headers=headers)
+        assert movie.status_code == 200 and b"ftyp" in movie.content[:16]
+        assert (await send(api, "GET", files)).status_code == 200
+
+        cancelled = await send(
+            api, "POST", renders, json={**job_request, "requestId": "video-export-cancel"}
+        )
+        assert cancelled.status_code == 200, cancelled.text
+        cancelled_id = cancelled.json()["id"]
+        cancelled = await send(api, "POST", renders + "/" + cancelled_id + "/cancel")
+        assert cancelled.json()["status"] == "cancelled"
+        await render_delivery.process_once()
+        assert await exports.load(case.viewer, cancelled_id) is None
 
         deleted = await send(api, "DELETE", project, params={"expected_revision": 0})
         assert deleted.status_code == 200, deleted.text

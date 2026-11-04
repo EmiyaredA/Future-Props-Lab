@@ -4937,6 +4937,12 @@
       "model": "VideoMediaJob"
     },
     {
+      "table": "video_export_jobs",
+      "service": "rendering",
+      "module": "fpl_rendering.models",
+      "model": "VideoExportJob"
+    },
+    {
       "table": "thought_archive_imports",
       "service": "thought",
       "module": "fpl_thought.archive_records",
@@ -4995,6 +5001,12 @@
       "service": "video",
       "module": "fpl_video.models",
       "model": "VideoMediaDispatch"
+    },
+    {
+      "table": "video_render_dispatches",
+      "service": "video",
+      "module": "fpl_video.models",
+      "model": "VideoRenderDispatch"
     },
     {
       "table": "visual_certification_receipts",

@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from app.runtime.time import utc_now
@@ -37,4 +37,15 @@ class VideoMediaDispatch(VideoServiceBase):
     owner_user_id: Mapped[str] = mapped_column(String(36))
     project_id: Mapped[str] = mapped_column(String(36))
     asset_id: Mapped[str] = mapped_column(String(36))
+    checked_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
+class VideoRenderDispatch(VideoServiceBase):
+    __tablename__ = "video_render_dispatches"
+
+    task_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    owner_user_id: Mapped[str] = mapped_column(String(36))
+    project_id: Mapped[str] = mapped_column(String(36))
+    frozen: Mapped[dict] = mapped_column(JSON)
+    settled: Mapped[bool] = mapped_column(Boolean, default=False)
     checked_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)

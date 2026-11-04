@@ -17,6 +17,7 @@ from app.apps.video_editor.models import (
     VideoEditorTimeline,
 )
 from app.apps.video_editor.routes.projects import router as project_router
+from app.apps.video_editor.routes.render_preflight import router as preflight_router
 from app.apps.video_editor.routes.tasks import router as tasks_router
 from app.apps.video_editor.routes.timeline import router as timeline_router
 from app.deps import db_session, require_studio_auth
@@ -43,8 +44,15 @@ from .frame_routes import router as frame_router
 from .media_delivery import MediaDelivery
 from .media_routes import router as media_router
 from .migrations.registry import MIGRATIONS
-from .models import VideoAssetIntake, VideoMediaDispatch, VideoReferenceMutation
+from .models import (
+    VideoAssetIntake,
+    VideoMediaDispatch,
+    VideoReferenceMutation,
+    VideoRenderDispatch,
+)
 from .project_layouts import ProjectLayouts
+from .render_delivery import RenderDelivery
+from .render_routes import router as render_router
 from .timeline_media import TimelineMedia
 
 SERVICE = "video"
@@ -71,6 +79,9 @@ OPERATIONS = {
     ("GET", PROJECT + "/text-clips/{clip_id}/layer"),
     ("GET", PROJECT + "/asset-bakes/{task_id}"),
     ("GET", PROJECT + "/renders"),
+    ("POST", PROJECT + "/renders/preflight"),
+    ("POST", PROJECT + "/renders"),
+    ("POST", PROJECT + "/renders/{task_id}/cancel"),
     ("GET", PROJECT + "/renders/{task_id}"),
     ("GET", PROJECT + "/segment-exports"),
     ("GET", PROJECT + "/segment-exports/{task_id}"),
@@ -110,6 +121,7 @@ def create_app(
             VideoReferenceMutation,
             VideoAssetIntake,
             VideoMediaDispatch,
+            VideoRenderDispatch,
         ),
     )
     capabilities = CapabilityClient(
@@ -119,6 +131,12 @@ def create_app(
     asset_intakes = AssetIntakes(database.sessions, capabilities)
     media_delivery = (
         MediaDelivery(database.sessions, capabilities.client, video_peer(media_key))
+        if media_key is not None
+        else None
+    )
+
+    render_delivery = (
+        RenderDelivery(database.sessions, capabilities.client, video_peer(media_key))
         if media_key is not None
         else None
     )
@@ -133,9 +151,11 @@ def create_app(
                         await asset_intakes.start()
                         if media_delivery is not None:
                             await media_delivery.start()
+                            await render_delivery.start()
                     yield
             finally:
                 if media_delivery is not None:
+                    await render_delivery.stop()
                     await media_delivery.stop()
                 await asset_intakes.stop()
                 await capabilities.close()
@@ -148,6 +168,7 @@ def create_app(
     app.state.capabilities = capabilities
     app.state.asset_intakes = asset_intakes
     app.state.media_delivery = media_delivery
+    app.state.render_delivery = render_delivery
     install_reference_runtime(
         app,
         service=SERVICE,
@@ -179,7 +200,15 @@ def create_app(
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(OperationalError, storage_operational_error_handler)
     app.add_exception_handler(RevisionConflictError, revision_conflict_handler)
-    for router in (project_router, timeline_router, media_router, tasks_router, frame_router):
+    for router in (
+        project_router,
+        timeline_router,
+        media_router,
+        tasks_router,
+        frame_router,
+        preflight_router,
+        render_router,
+    ):
         app.include_router(
             router,
             prefix=SOURCE,

@@ -42,6 +42,7 @@ class AssetLibrary:
         motion_compositor_project_id: str | None = None,
         folder_id: str | None = None,
         allowed_extensions: set[str] | None = None,
+        max_bytes: int | None = None,
         commit: bool = True,
         defer_persistence: bool = False,
     ) -> VisualAsset:
@@ -79,6 +80,9 @@ class AssetLibrary:
             motion_compositor_project_id=motion_compositor_project_id,
             owner_user_id=owner_user_id,
         )
+        maximum = max_bytes if max_bytes is not None else self.settings.fpl_visual_asset_max_bytes
+        if extension == ".svg":
+            maximum = min(maximum, 2 * 1024 * 1024)
         size = 0
         head = bytearray()
         commit_started = False
@@ -86,11 +90,7 @@ class AssetLibrary:
             with temp_path.open("xb") as target:
                 while chunk := await upload.read(1024 * 1024):
                     size += len(chunk)
-                    if size > (
-                        min(self.settings.fpl_visual_asset_max_bytes, 2 * 1024 * 1024)
-                        if extension == ".svg"
-                        else self.settings.fpl_visual_asset_max_bytes
-                    ):
+                    if size > maximum:
                         raise AssetError(
                             "文件超过上传大小限制",
                             code="file_too_large",

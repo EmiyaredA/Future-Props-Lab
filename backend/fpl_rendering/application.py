@@ -21,15 +21,18 @@ from fpl_runtime.database import Database
 from fpl_runtime.migrations import check
 from fpl_runtime.motion_exports import ExportPeer
 from fpl_runtime.request_limit import RequestLimit
+from fpl_runtime.video_exports import output_peer
 from fpl_runtime.video_processing import originals_peer, video_peer
 
 from .migrations.registry import MIGRATIONS
-from .models import MotionRenderJob, VideoMediaJob
+from .models import MotionRenderJob, VideoExportJob, VideoMediaJob
 from .motion_export_routes import router as motion_export_router
 from .motion_jobs import MotionJobs
 from .motion_preview import router as motion_preview_router
 from .previews import MediaPreviews
 from .routes import router
+from .video_export_jobs import VideoExports
+from .video_export_routes import router as video_export_router
 from .video_frames import VideoFrameCache
 from .video_frames import router as video_frame_router
 from .video_media_jobs import VideoJobs
@@ -52,7 +55,7 @@ def create_app(
     database = Database(
         "rendering",
         settings.runtime_path,
-        models=(MotionRenderJob, VideoMediaJob),
+        models=(MotionRenderJob, VideoMediaJob, VideoExportJob),
         hide_parameters=True,
     )
     if database.path != settings.database_path:
@@ -73,6 +76,19 @@ def create_app(
         else None
     )
 
+    video_exports = (
+        VideoExports(
+            database=database,
+            settings=settings,
+            identity=identity,
+            client=capabilities.client,
+            originals=originals_peer(video_originals_key),
+            outputs=output_peer(video_originals_key),
+        )
+        if video_media_key is not None
+        else None
+    )
+
     @asynccontextmanager
     async def lifespan(_app):
         check(database.path, "rendering", MIGRATIONS)
@@ -81,9 +97,11 @@ def create_app(
                 await motion_jobs.start()
                 if video_jobs is not None:
                     await video_jobs.start()
+                    await video_exports.start()
             yield
         finally:
             if video_jobs is not None:
+                await video_exports.stop()
                 await video_jobs.stop()
             await motion_jobs.stop()
             await capabilities.close()
@@ -108,6 +126,8 @@ def create_app(
     app.state.motion_export_peer = ExportPeer(export_key) if export_key is not None else None
     app.state.motion_submission_locks = tuple(asyncio.Lock() for _ in range(16))
     app.state.video_jobs = video_jobs
+    app.state.video_exports = video_exports
+    app.include_router(video_export_router)
     app.state.video_frame_cache = VideoFrameCache()
     app.state.video_frame_slots = asyncio.Semaphore(2)
     app.include_router(video_frame_router)
@@ -156,7 +176,11 @@ def create_app(
     async def ready():
         check(database.path, "rendering", MIGRATIONS)
         if run_worker and (
-            not motion_jobs.is_healthy or (video_jobs is not None and not video_jobs.is_healthy)
+            not motion_jobs.is_healthy
+            or (
+                video_jobs is not None
+                and (not video_jobs.is_healthy or not video_exports.is_healthy)
+            )
         ):
             raise HTTPException(503, "motion_export_runner_unavailable")
         async with database.sessions() as session:

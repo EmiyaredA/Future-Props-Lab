@@ -760,7 +760,7 @@ def render_document(
         if transparent
         else round((end_us - start_us) / 1_000_000 * fps)
     )
-    with TemporaryDirectory(prefix="video-editor-render-") as temp:
+    with TemporaryDirectory(dir=output_path.parent, prefix="video-editor-render-") as temp:
         root = Path(temp)
         # One continuous encode: internal 30s chunk+concat restarted decoders with
         # input-side -ss, which jumped back ~1 GOP at each boundary (e.g. 2:00).

@@ -25,8 +25,6 @@ from app.apps.video_editor.schemas import (
     VideoEditorAvailableAssetListOut,
     VideoEditorProjectSnapshotImportOut,
     VideoEditorRenderCreateIn,
-    VideoEditorRenderPreviewIn,
-    VideoEditorRenderPreviewOut,
     VideoEditorSegmentExportCreateIn,
     VideoEditorTaskOut,
 )
@@ -47,6 +45,7 @@ from app.runtime.config import get_settings
 
 from .errors import _error as _public_error
 from .projects import router as projects_router
+from .render_preflight import router as preflight_router
 from .tasks import router as tasks_router
 from .timeline import router as timeline_router
 
@@ -305,19 +304,6 @@ async def text_clip_layer(
     return Response(png, media_type="image/png", headers={"Cache-Control": "private, no-cache"})
 
 
-@router.post("/projects/{project_id}/renders/preflight", response_model=VideoEditorRenderPreviewOut)
-async def render_preflight(
-    session: SessionDep,
-    owner_user_id: OwnerDep,
-    project_id: str,
-    body: VideoEditorRenderPreviewIn,
-) -> VideoEditorRenderPreviewOut:
-    try:
-        return await VideoEditorRenders(session, owner_user_id).preview(project_id, body)
-    except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
-        raise _error(exc) from None
-
-
 @router.post("/projects/{project_id}/renders", response_model=VideoEditorTaskOut)
 async def create_render(
     session: SessionDep,
@@ -432,3 +418,4 @@ async def cancel_clip_merge(
 router.include_router(projects_router)
 router.include_router(timeline_router)
 router.include_router(tasks_router)
+router.include_router(preflight_router)

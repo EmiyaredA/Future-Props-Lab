@@ -16,7 +16,6 @@ from app.apps.video_editor.models import (
     VideoEditorProject,
     VideoEditorTask,
 )
-from app.apps.video_editor.rendering import PRESETS
 from app.apps.video_editor.schemas import parse_timeline_document
 from app.apps.video_editor.segment_runner import VideoEditorSegmentTaskRunner
 from app.capabilities.asset_store.digests import sha256_file
@@ -27,20 +26,12 @@ from app.capabilities.media_rendering.chroma_key import apply_chroma_key
 from app.capabilities.media_rendering.render_engine import RenderCancelled, render_document
 from app.capabilities.media_rendering.timeline_document import VideoEditorChromaKey
 from app.capabilities.media_rendering.video_derivatives import prepare_media, probe_media
+from app.capabilities.media_rendering.video_output import verify_video_output
 from app.runtime.config import Settings, get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.ownership import bind_owner, require_owner_id
 from app.runtime.polling_runner import PollingTaskRunner
 from app.runtime.time import utc_now
-
-
-def _fraction(value: object) -> float:
-    text = str(value or "0")
-    numerator, separator, denominator = text.partition("/")
-    if not separator:
-        return float(numerator or 0)
-    divisor = float(denominator or 0)
-    return float(numerator or 0) / divisor if divisor else 0.0
 
 
 class VideoEditorRunner(PollingTaskRunner):
@@ -323,46 +314,9 @@ class VideoEditorRunner(PollingTaskRunner):
                 )
             finally:
                 watch.cancel()
-            probe = await asyncio.to_thread(probe_media, output)
-            width, height, fps = PRESETS[str(payload["preset"])]
-            video = next(
-                (
-                    stream
-                    for stream in probe.get("streams", [])
-                    if stream.get("codec_type") == "video"
-                ),
-                None,
+            probe = await asyncio.to_thread(
+                verify_video_output, output, str(payload["preset"]), int(detail["durationUs"])
             )
-            audio = next(
-                (
-                    stream
-                    for stream in probe.get("streams", [])
-                    if stream.get("codec_type") == "audio"
-                ),
-                None,
-            )
-            if not video or not audio:
-                raise RuntimeError("成片缺少 H.264 画面或 AAC 音轨")
-            if (
-                video.get("codec_name") != "h264"
-                or audio.get("codec_name") != "aac"
-                or video.get("width") != width
-                or video.get("height") != height
-                or video.get("pix_fmt") != "yuv420p"
-                or int(audio.get("sample_rate") or 0) != 48_000
-            ):
-                raise RuntimeError("成片规格校验失败")
-            expected_duration_us = int(detail["durationUs"])
-            expected_frames = round(expected_duration_us / 1_000_000 * fps)
-            actual_frames = int(video.get("nb_frames") or 0)
-            actual_fps = _fraction(video.get("avg_frame_rate"))
-            duration_delta_us = abs(int(probe.get("durationUs") or 0) - expected_duration_us)
-            if (
-                actual_frames != expected_frames
-                or abs(actual_fps - fps) > 0.001
-                or duration_delta_us > max(round(1_000_000 / fps), 2_000)
-            ):
-                raise RuntimeError("成片帧数、帧率或时长校验失败")
             async with self.session_factory() as session:
                 bind_owner(session, owner_user_id)
                 project = await session.get(VideoEditorProject, project_id)

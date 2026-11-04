@@ -1,149 +1,30 @@
 from __future__ import annotations
 
-import hashlib
-import json
-
 from sqlalchemy import delete, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from app.apps.video_editor.media import VideoEditorMedia
 from app.apps.video_editor.models import (
-    VideoEditorAssetMetadata,
     VideoEditorTask,
-    VideoEditorTimeline,
 )
 from app.apps.video_editor.projects import VideoEditorProjects
+from app.apps.video_editor.render_preflight import VideoRenderPreflight
 from app.apps.video_editor.schemas import (
     VideoEditorRenderCreateIn,
-    VideoEditorRenderIssue,
     VideoEditorRenderPreviewIn,
-    VideoEditorRenderPreviewOut,
     VideoEditorTaskListOut,
     VideoEditorTaskOut,
-    parse_timeline_document,
 )
 from app.apps.video_editor.task_reads import task_out
 from app.capabilities.asset_store.library import AssetError
-from app.capabilities.media_rendering.evaluator import timeline_duration_us, visual_gaps
 from app.capabilities.media_rendering.presets import RENDER_PRESETS
-from app.runtime.revisions import RevisionConflictError, require_revision_write
+from app.runtime.revisions import require_revision_write
 from app.runtime.time import utc_now
 
 PRESETS = RENDER_PRESETS
 
 
-class VideoEditorRenders:
-    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
-        self.session = session
-        self.owner_user_id = owner_user_id
-
-    async def _timeline(self, project_id: str) -> VideoEditorTimeline:
-        await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
-        row = await self.session.get(VideoEditorTimeline, project_id)
-        if row is None:
-            raise VideoEditorNotFoundError("时间轴不存在")
-        return row
-
-    async def _asset_fingerprints(self, project_id: str, document: dict) -> list[str]:
-        asset_ids = {
-            value
-            for track in document.get("tracks", [])
-            for clip in track.get("clips", [])
-            for value in (clip.get("assetId"), clip.get("fontAssetId"))
-            if value
-        }
-        if not asset_ids:
-            return []
-        rows = list(
-            (
-                await self.session.execute(
-                    select(VideoEditorAssetMetadata).where(
-                        VideoEditorAssetMetadata.project_id == project_id,
-                        VideoEditorAssetMetadata.asset_id.in_(asset_ids),
-                    )
-                )
-            ).scalars()
-        )
-        return sorted(f"{row.asset_id}:{row.fingerprint}:{row.revision}" for row in rows)
-
-    async def preview(
-        self, project_id: str, body: VideoEditorRenderPreviewIn
-    ) -> VideoEditorRenderPreviewOut:
-        timeline = await self._timeline(project_id)
-        if timeline.revision != body.expected_revision:
-            raise RevisionConflictError(
-                body.expected_revision,
-                timeline.revision,
-                {"revision": timeline.revision, "document": timeline.document},
-            )
-        document = parse_timeline_document(timeline.document)
-        total = timeline_duration_us(document)
-        end = body.end_us or total
-        blockers: list[VideoEditorRenderIssue] = []
-        if end <= body.start_us or end > total:
-            blockers.append(
-                VideoEditorRenderIssue(code="invalid_range", message="导出范围超出时间轴")
-            )
-        asset_ids = {
-            clip.asset_id for track in document.tracks for clip in track.clips if clip.asset_id
-        }
-        if asset_ids:
-            rows = list(
-                (
-                    await self.session.execute(
-                        select(VideoEditorAssetMetadata).where(
-                            VideoEditorAssetMetadata.project_id == project_id,
-                            VideoEditorAssetMetadata.asset_id.in_(asset_ids),
-                        )
-                    )
-                ).scalars()
-            )
-            ready = {row.asset_id for row in rows if row.processing_status == "ready"}
-            for asset_id in sorted(asset_ids - ready):
-                blockers.append(
-                    VideoEditorRenderIssue(
-                        code="asset_not_ready", message=f"素材 {asset_id} 尚未处理完成"
-                    )
-                )
-        warnings = [
-            VideoEditorRenderIssue(
-                code="visual_gap",
-                message="该区间没有视觉 Clip，将显示项目底色",
-                startUs=start,
-                endUs=stop,
-            )
-            for start, stop in visual_gaps(document)
-            if stop > body.start_us and start < end
-        ]
-        fingerprints = await self._asset_fingerprints(project_id, timeline.document)
-        fingerprint = hashlib.sha256(
-            json.dumps(
-                {
-                    "revision": timeline.revision,
-                    "document": timeline.document,
-                    "assets": fingerprints,
-                    "preset": body.preset,
-                    "startUs": body.start_us,
-                    "endUs": end,
-                },
-                sort_keys=True,
-                separators=(",", ":"),
-            ).encode()
-        ).hexdigest()
-        fps = PRESETS[body.preset][2]
-        duration = max(0, end - body.start_us)
-        return VideoEditorRenderPreviewOut(
-            ready=not blockers,
-            revision=timeline.revision,
-            preset=body.preset,
-            durationUs=duration,
-            frameCount=round(duration / 1_000_000 * fps),
-            fingerprint=fingerprint,
-            blockers=blockers,
-            warnings=warnings,
-        )
-
+class VideoEditorRenders(VideoRenderPreflight):
     async def create(self, project_id: str, body: VideoEditorRenderCreateIn) -> VideoEditorTaskOut:
         existing = (
             await self.session.execute(

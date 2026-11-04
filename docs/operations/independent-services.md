@@ -491,3 +491,5 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 运行 `npm run services:build:web -- video`，把返回的目录交给 `npm run services:build -- video --build --web-release`。独立程序包含原项目列表、任务列表和剪辑深链接。剪辑任务查询使用账号及项目归属，继续按渲染、分段和合并分类。五容器 Chromium 验收 `fpl-video-browser-99dadd330d` 使用浏览器版本 `656cd6bec9d069f15fc5`，验证 390/768/1440px、真实文字片段保存、任务页、回环公网入口和过期程序版本拒绝。渲染任务创建、工程包、成片交接和历史迁移继续由就绪门禁跟踪。
 
 剪辑精确帧和文字图层经只读签名委托交给 Rendering。文稿修订、请求摘要及原件 revision 一起校验，转场帧读取两侧必要素材。PNG 返回前重新检查原授权。五容器运行 `fpl-video-frames-51f085e410` 复跑 Chromium 并验证文字图层、精确帧尺寸、缓存重放和旧修订拒绝。
+
+独立成片保留原预检指纹、任务创建、状态、取消及下载地址。Video 提交冻结时间轴和原件 SHA256，Rendering 编码并核验 H.264、AAC、分辨率、帧率和时长。封存后按原输出摘要重试 Assets 入库，原件入库前再次核验账号权限。五容器 `fpl-video-export-0d00ac6caa` 验证 720p 成片、服务重启恢复、下载和 Chromium。故障用例注入 Assets 发布成功但丢失回执，恢复后复用同一文件。

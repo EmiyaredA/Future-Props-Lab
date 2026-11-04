@@ -33,12 +33,13 @@ class ScopedFileWrites:
             raise AssetError("同一请求标识不能更换内容", code="request_id_conflict", status=409)
         return row.result
 
-    async def store_upload(self, description, incoming):
+    async def store_upload(self, description, incoming, *, max_bytes=None):
         async def stage():
             row = await self.library.store_upload(
                 VerifiedOutput(incoming, description),
                 owner_user_id=self.owner,
                 allowed_extensions=self.extensions,
+                max_bytes=max_bytes,
                 **{self.project_column: self.project},
                 defer_persistence=True,
             )
