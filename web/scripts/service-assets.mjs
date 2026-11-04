@@ -32,6 +32,13 @@ export const serviceAssets = {
     "brand/brand-mark.png",
     "brand/favicon.png",
     "brand/visual-workshop-mark.png",
+    "providers/codex-logo.svg",
+    "providers/claudecode-logo.svg",
+    "providers/opencode-logo.svg",
+    "providers/deepseek-logo.svg",
+    "providers/pi-logo.svg",
+    "providers/qwen-logo.svg",
+    "providers/senseaudio-logo.svg",
   ],
   galgame: [
     "brand/brand-mark.png",

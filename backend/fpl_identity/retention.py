@@ -57,9 +57,17 @@ def _visual_canvas_source(body):
     path = "/v1/visual-workshop/projects"
     if change.expected_resource_revision == -1:
         return _create_projection(body, path)
-    path = f"{path}/{change.resource_id}/canvas"
+    project = f"{path}/{change.resource_id}"
+    canvas = project + "/canvas"
+    outputs = re.fullmatch(re.escape(project) + r"/nodes/[^/]{1,64}/outputs", body.source_path)
+    output = re.fullmatch(
+        re.escape(project) + r"/nodes/[^/]{1,64}/outputs/[^/]{1,128}", body.source_path
+    )
     return canvas_metadata(body.caller, change) and (
-        (body.source_method, body.source_path) in {("PUT", path), ("POST", path + "/operations")}
+        (body.source_method, body.source_path)
+        in {("PUT", canvas), ("POST", canvas + "/operations")}
+        or (body.source_method == "POST" and outputs is not None)
+        or (body.source_method == "DELETE" and output is not None)
     )
 
 

@@ -10,6 +10,8 @@ from app.apps.visual_workshop.canvas_documents import CanvasDocuments
 from app.apps.visual_workshop.canvas_values import canvas_out
 from app.apps.visual_workshop.operation_values import transform
 from app.apps.visual_workshop.outputs.models import VisualNodeOutput
+from app.apps.visual_workshop.outputs.mutations import OutputMutations
+from app.apps.visual_workshop.outputs.queries import OutputError
 from app.apps.visual_workshop.schemas.workshop import VisualCanvasDocumentOut
 from app.runtime.ids import new_id
 from app.runtime.operation_receipts import record, replay
@@ -82,14 +84,15 @@ class CanvasWrites:
 
         return await self.references.commit_source(self.session, prepared, apply)
 
-    async def _history_assets(self, project_id, node_ids):
+    async def _history_assets(self, project_id, node_ids, *, omit_output=None):
         if not node_ids:
             return set()
-        outputs = await self.session.scalars(
-            select(VisualNodeOutput).where(
-                VisualNodeOutput.project_id == project_id, VisualNodeOutput.node_id.in_(node_ids)
-            )
+        query = select(VisualNodeOutput).where(
+            VisualNodeOutput.project_id == project_id, VisualNodeOutput.node_id.in_(node_ids)
         )
+        if omit_output is not None:
+            query = query.where(VisualNodeOutput.id != omit_output)
+        outputs = await self.session.scalars(query)
         return {
             value
             for row in outputs
@@ -132,6 +135,97 @@ class CanvasWrites:
             if saved is not None:
                 return VisualCanvasDocumentOut.model_validate(saved)
             raise
+
+    async def append_output(self, project_id, node_id, body):
+        outputs = OutputMutations(self.session, self.owner)
+        canvas, node = await outputs.document(project_id, node_id)
+        kind = node["kind"]
+        if kind == "text":
+            if body.text is None or body.asset_id is not None:
+                raise OutputError("文本节点必须保存文本版本")
+            await self.session.rollback()
+            await self.session.execute(text("BEGIN IMMEDIATE"))
+            await require_canvas_unreserved(self.session, self.owner, project_id)
+            result = await outputs.append(project_id, node_id, body)
+            await self.session.commit()
+            return result
+        if body.asset_id is None:
+            raise OutputError("素材不属于当前项目", code="not_found", status=404)
+        current = canvas_out(canvas)
+        if current.revision != body.expected_revision:
+            raise conflict(body.expected_revision, current)
+        used = {asset_id for asset_id, _ in expected_assets(current.nodes)}
+        history = await self._history_assets(project_id, {node.id for node in current.nodes})
+        carry = (used | history) - {body.asset_id}
+        await self.session.rollback()
+        try:
+            prepared = await self._prepare(
+                project_id,
+                expected=body.expected_revision,
+                method="POST",
+                path=f"{PREFIX}/{project_id}/nodes/{node_id}/outputs",
+                files=carry | {body.asset_id},
+                used=[body.asset_id],
+                carried=sorted(carry),
+            )
+        except ProjectResourceError as exc:
+            if exc.code in {"asset_not_found", "scope_mismatch"}:
+                raise OutputError("素材不属于当前项目", code="not_found", status=404) from None
+            raise
+
+        async def apply():
+            metadata = next((item for item in prepared.metadata if item.id == body.asset_id), None)
+            if metadata is None or metadata.media_kind != kind or body.text is not None:
+                raise OutputError("输出版本与节点类型不匹配")
+            await self.session.execute(text("BEGIN IMMEDIATE"))
+            await require_canvas_unreserved(self.session, self.owner, project_id)
+            return await outputs.append(project_id, node_id, body)
+
+        return await self.references.commit_source(self.session, prepared, apply)
+
+    async def select_final_output(self, project_id, node_id, body):
+        await self.session.execute(text("BEGIN IMMEDIATE"))
+        await require_canvas_unreserved(self.session, self.owner, project_id)
+        result = await OutputMutations(self.session, self.owner).set_final(
+            project_id, node_id, body
+        )
+        await self.session.commit()
+        return result
+
+    async def delete_output(self, project_id, node_id, output_id, expected_revision):
+        outputs = OutputMutations(self.session, self.owner)
+        canvas, is_final, replacement = await outputs.deletion(project_id, node_id, output_id)
+        current = canvas_out(canvas)
+        if current.revision != expected_revision:
+            raise conflict(expected_revision, current)
+        replacement_id = replacement.asset_id if replacement else None
+        nodes = [
+            node.model_copy(update={"asset_id": replacement_id})
+            if is_final and node.id == node_id and node.kind != "text"
+            else node
+            for node in current.nodes
+        ]
+        history = await self._history_assets(
+            project_id, {node.id for node in nodes}, omit_output=output_id
+        )
+        remaining = history | {asset_id for asset_id, _ in expected_assets(nodes)}
+        await self.session.rollback()
+        prepared = await self._prepare(
+            project_id,
+            expected=expected_revision,
+            method="DELETE",
+            path=f"{PREFIX}/{project_id}/nodes/{node_id}/outputs/{output_id}",
+            files=remaining,
+            used=[],
+            carried=sorted(remaining),
+        )
+
+        async def apply():
+            await self.session.execute(text("BEGIN IMMEDIATE"))
+            await require_canvas_unreserved(self.session, self.owner, project_id)
+            return await outputs.remove(project_id, node_id, output_id, expected_revision)
+
+        return await self.references.commit_source(self.session, prepared, apply)
 
     async def _save(self, project_id, row, body, *, method, path, record_operation=None):
         existing = existing_assets(row.nodes or [])

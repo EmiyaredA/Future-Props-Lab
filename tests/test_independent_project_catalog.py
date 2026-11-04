@@ -282,6 +282,8 @@ async def verify_visual_canvas(case, app, request, path):
     other_body = {**operation, "expected_revision": 3}
     mismatched = await request("POST", operation_path, json=other_body)
     assert mismatched.status_code == 409 and mismatched.json()["code"] == "idempotency_conflict"
+    await verify_visual_output_writes(case, request, path, asset.id, output)
+
     await app.state.reference_delivery.process_once()
     async with case.assets.state.database.sessions(info={"owner_user_id": case.viewer}) as session:
         pins = await session.scalars(
@@ -290,7 +292,7 @@ async def verify_visual_canvas(case, app, request, path):
             .where(
                 AssetReferenceSet.service_id == "visual",
                 AssetReferenceSet.resource_kind == "canvas",
-                AssetReferenceSet.resource_revision == 3,
+                AssetReferenceSet.resource_revision == 6,
             )
         )
         assert list(pins) == [asset.id]
@@ -872,3 +874,52 @@ async def verify_voice_match(case, app, request, path):
         stale.status_code == 409 and stale.json()["current"]["revision"] == saved.json()["revision"]
     )
     return asset.id
+
+
+async def verify_visual_output_writes(case, request, path, previous_asset, previous_output):
+    outputs = path + "/nodes/node/outputs"
+    denied = await request(
+        "POST", outputs, json={"expected_revision": 3, "asset_id": previous_asset}
+    )
+    assert denied.status_code == 404, denied.text
+    project_id = path.rsplit("/", 1)[1]
+    async with case.assets.state.database.sessions(info={"owner_user_id": case.viewer}) as db:
+        current_asset = await AssetLibrary(db, case.assets.state.settings).store_upload(
+            UploadFile(io.BytesIO(b"\x89PNG\r\n\x1a\nnew output"), filename="new-output.png"),
+            owner_user_id=case.viewer,
+            visual_project_id=project_id,
+        )
+    added = await request(
+        "POST", outputs, json={"expected_revision": 3, "asset_id": current_asset.id}
+    )
+    assert added.status_code == 200, added.text
+    node = added.json()["nodes"][0]
+    assert added.json()["revision"] == 4 and node["asset_id"] == current_asset.id
+    assert node["final_version"] == 2 and node["final_output_id"] != previous_output
+    switch = path + "/nodes/node/final-output"
+    stale = await request(
+        "PUT", switch, json={"expected_revision": 3, "output_id": previous_output}
+    )
+    assert stale.status_code == 409 and stale.json()["current"]["revision"] == 4
+    selected = await request(
+        "PUT", switch, json={"expected_revision": 4, "output_id": previous_output}
+    )
+    assert selected.status_code == 200, selected.text
+    node = selected.json()["nodes"][0]
+    assert selected.json()["revision"] == 5 and node["asset_id"] == previous_asset
+    assert node["final_version"] == 1 and node["output_sequence"] == 2
+    history = await request("GET", outputs)
+    assert [(item["version"], item["is_final"]) for item in history.json()["items"]] == [
+        (2, False),
+        (1, True),
+    ]
+    newest = history.json()["items"][0]["id"]
+    removal = outputs + "/" + newest
+    stale = await request("DELETE", removal, params={"expected_revision": 4})
+    assert stale.status_code == 409, stale.text
+    removed = await request("DELETE", removal, params={"expected_revision": 5})
+    assert removed.status_code == 200, removed.text
+    assert removed.json()["revision"] == 6
+    assert removed.json()["nodes"][0]["final_output_id"] == previous_output
+    assert removed.json()["nodes"][0]["output_sequence"] == 2
+    assert (await request("GET", removal)).status_code == 404
