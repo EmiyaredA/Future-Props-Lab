@@ -13,6 +13,7 @@ from sqlalchemy.exc import OperationalError
 from tests.migration_fixtures import LATEST_MIGRATION_ID, MIGRATIONS, apply_migrations
 
 import app.main as main_module
+import app.runtime.db as database_module
 from app.problem_details import storage_operational_error_handler
 from db.migrations.runner import connect_database, ensure_registry, migration_checksum
 
@@ -355,7 +356,7 @@ def test_sqlite_pragmas_json_and_foreign_key_cascade(tmp_path: Path) -> None:
 
 @pytest.mark.asyncio
 async def test_async_database_connections_enable_sqlite_pragmas() -> None:
-    async with main_module.engine.connect() as connection:
+    async with database_module.engine.connect() as connection:
         foreign_keys = (await connection.execute(text("PRAGMA foreign_keys"))).scalar_one()
         journal_mode = (await connection.execute(text("PRAGMA journal_mode"))).scalar_one()
         busy_timeout = (await connection.execute(text("PRAGMA busy_timeout"))).scalar_one()
@@ -377,7 +378,11 @@ async def test_lifespan_applies_migrations_and_disposes_engine(
     async def fake_dispose() -> None:
         disposed.append(True)
 
-    monkeypatch.setattr(main_module, "engine", SimpleNamespace(dispose=fake_dispose))
+    monkeypatch.setattr(
+        database_module,
+        "engine",
+        SimpleNamespace(connect=database_module.engine.connect, dispose=fake_dispose),
+    )
     async with main_module.lifespan(main_module.app):
         pass
 
