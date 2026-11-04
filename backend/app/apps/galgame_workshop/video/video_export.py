@@ -28,6 +28,7 @@ from app.apps.galgame_workshop.schemas import (
     GalgameVideoExportTaskOut,
 )
 from app.apps.galgame_workshop.story.story import GalgameStoryDocuments
+from app.apps.galgame_workshop.task_views import export_task_out as _task_out
 from app.apps.galgame_workshop.video.video_compiler import (
     COMPILER_VERSION,
     compile_galgame_render_plan,
@@ -46,49 +47,9 @@ from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.frame_renderer import render_plan_frame
 from app.runtime.config import Settings, get_settings
-from app.runtime.time import iso_utc, utc_now
+from app.runtime.time import utc_now
 
 __all__ = ["EXPORT_PACKAGING_POLICY", "GalgameVideoExports"]
-
-
-def _task_out(row: GalgameVideoExportTask) -> GalgameVideoExportTaskOut:
-    result = dict(row.result_detail or {})
-    phase = result.get("phase")
-    if phase not in {
-        "queued",
-        "preparing",
-        "analyzing",
-        "rendering",
-        "encoding",
-        "verifying",
-        "registering",
-        "completed",
-        "failed",
-        "cancelled",
-    }:
-        phase = "rendering" if row.status == "running" else row.status
-    return GalgameVideoExportTaskOut(
-        id=row.id,
-        projectId=row.project_id,
-        requestId=row.request_id,
-        storyRevision=row.story_revision,
-        status=row.status,
-        phase=phase,
-        progress=row.progress,
-        renderedMs=max(0, int(result.get("renderedMs", 0))),
-        totalMs=max(0, int(result.get("totalMs", 0))),
-        preset=row.request_payload.get("preset", "1080p30"),
-        endingLabel=str(result.get("endingLabel", "")),
-        outputAssetId=row.output_asset_id,
-        outputFilename=result.get("outputFilename"),
-        cancelRequested=row.cancel_requested,
-        error=row.error,
-        revision=row.revision,
-        createdAt=iso_utc(row.created_at),
-        updatedAt=iso_utc(row.updated_at),
-        startedAt=iso_utc(row.started_at) if row.started_at else None,
-        finishedAt=iso_utc(row.finished_at) if row.finished_at else None,
-    )
 
 
 class GalgameVideoExports:

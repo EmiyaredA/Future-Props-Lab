@@ -204,7 +204,7 @@ class GalgameAnnotationImportTask(Base):
         String(36), ForeignKey("galgame_workshop_projects.id", ondelete="CASCADE")
     )
     source_project_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("audio_annotation_projects.id", ondelete="RESTRICT")
+        String(36), ForeignKey(external_id("audio_annotation_projects"), ondelete="RESTRICT")
     )
     request_id: Mapped[str] = mapped_column(String(64))
     expected_source_revision: Mapped[int] = mapped_column(Integer)
@@ -248,7 +248,7 @@ class GalgameVideoExportTask(Base):
     progress: Mapped[int] = mapped_column(Integer, default=0)
     result_detail: Mapped[dict] = mapped_column(JSON, default=dict)
     output_asset_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="SET NULL")
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="SET NULL")
     )
     cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False)
     error: Mapped[str | None] = mapped_column(Text)
@@ -286,7 +286,7 @@ class GalgameVideoEditorHandoffTask(Base):
     progress: Mapped[int] = mapped_column(Integer, default=0)
     result_detail: Mapped[dict] = mapped_column(JSON, default=dict)
     output_project_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("video_editor_projects.id", ondelete="SET NULL")
+        String(36), ForeignKey(external_id("video_editor_projects"), ondelete="SET NULL")
     )
     cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False)
     error: Mapped[str | None] = mapped_column(Text)

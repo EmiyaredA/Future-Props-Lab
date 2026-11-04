@@ -16,6 +16,7 @@ from .migrations.registry import MIGRATIONS
 from .models import MODELS, GalgameCertificationReceipt, GalgameStoryReferenceMutation
 from .projects_http import router as project_router
 from .story_migration_http import router as story_migration_router
+from .task_http import router as task_router
 
 PAGES = (
     "/apps/galgame-workshop",
@@ -60,6 +61,7 @@ def create_app(
     )
     app.include_router(project_router)
     app.include_router(asset_read_router)
+    app.include_router(task_router)
     app.include_router(asr_router)
     app.include_router(story_migration_router)
     app.state.capabilities = CapabilityClient(

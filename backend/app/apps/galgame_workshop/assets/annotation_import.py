@@ -24,47 +24,12 @@ from app.apps.galgame_workshop.schemas import (
     GalgameStoryDialogueBlock,
 )
 from app.apps.galgame_workshop.story.story import GalgameStoryDocuments
+from app.apps.galgame_workshop.task_views import annotation_task_out as _task_out
 from app.capabilities.asset_store import AssetError
 from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.runtime.config import Settings, get_settings
-from app.runtime.time import iso_utc
-
-
-def _task_out(row: GalgameAnnotationImportTask) -> GalgameAnnotationImportTaskOut:
-    result = dict(row.result_detail or {})
-    phase = result.get("phase")
-    allowed_phases = {
-        "queued",
-        "cutting",
-        "validating",
-        "saving",
-        "accepting",
-        "rolling_back",
-        "completed",
-        "failed",
-        "conflict",
-        "rolled_back",
-    }
-    if phase not in allowed_phases:
-        phase = "cutting" if row.status == "running" else row.status
-    return GalgameAnnotationImportTaskOut(
-        id=row.id,
-        projectId=row.project_id,
-        sourceProjectId=row.source_project_id,
-        requestId=row.request_id,
-        status=row.status,
-        phase=phase,
-        progress=row.progress,
-        result=result,
-        error=row.error,
-        revision=row.revision,
-        createdAt=iso_utc(row.created_at),
-        updatedAt=iso_utc(row.updated_at),
-        startedAt=iso_utc(row.started_at) if row.started_at else None,
-        finishedAt=iso_utc(row.finished_at) if row.finished_at else None,
-    )
 
 
 def _effective_text(segment: AudioAnnotationSegment) -> str:

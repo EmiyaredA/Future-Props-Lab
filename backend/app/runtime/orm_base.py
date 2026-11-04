@@ -13,6 +13,8 @@ _external_tables = {
     name: Table(name, _external_metadata, Column("id", String(36), primary_key=True))
     for name in (
         "users",
+        "audio_annotation_projects",
+        "video_editor_projects",
         "visual_assets",
         "integration_external_connections",
         "model_entries",
