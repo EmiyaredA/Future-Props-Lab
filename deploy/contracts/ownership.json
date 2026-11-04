@@ -4751,6 +4751,12 @@
       "model": "GalgameAsrDispatch"
     },
     {
+      "table": "galgame_video_dispatches",
+      "service": "galgame",
+      "module": "fpl_galgame.models",
+      "model": "GalgameVideoDispatch"
+    },
+    {
       "table": "gateway_change_cursors",
       "service": "gateway",
       "module": "fpl_gateway.models",
@@ -5037,6 +5043,12 @@
       "service": "rendering",
       "module": "fpl_rendering.models",
       "model": "VideoExportJob"
+    },
+    {
+      "table": "galgame_export_jobs",
+      "service": "rendering",
+      "module": "fpl_rendering.models",
+      "model": "GalgameExportJob"
     },
     {
       "table": "rendering_history_manifests",
@@ -5375,7 +5387,7 @@
     },
     "limits": {
       "visual_asset_max_bytes": "assets",
-      "galgame_export_max_bytes": "galgame",
+      "galgame_export_max_bytes": "assets",
       "project_snapshot_max_bytes": "assets",
       "project_snapshot_max_files": "assets",
       "skill_archive_max_bytes": "integrations",

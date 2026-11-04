@@ -7,6 +7,8 @@ from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailabl
 from fpl_runtime.claims import HEADER
 from fpl_runtime.delegation import RequestGrant
 from fpl_runtime.galgame_render import CAPACITY_PREFIX, CAPACITY_PURPOSE, RendererCapacity
+from fpl_runtime.motion_preview import FrameFile
+from fpl_runtime.motion_snapshot import SnapshotScope
 from fpl_runtime.project_errors import ProjectResourceError
 
 
@@ -60,3 +62,21 @@ async def export_context(request, files, project_id, body):
 async def export_preview(request, files, project_id, body):
     _, _, _, preview = await export_context(request, files, project_id, body)
     return preview
+
+
+def frozen_plan(story, assets, durations, preview, payload):
+    return {
+        "document": story.document.model_dump(mode="json", by_alias=True),
+        "payload": {**payload, "resolvedFragmentIds": preview.route.fragment_ids},
+        "scope": SnapshotScope(
+            files=tuple(FrameFile(id=key, revision=assets[key].revision) for key in sorted(assets))
+        ),
+        "sizes": {key: asset.byte_size for key, asset in assets.items()},
+        "durations": {
+            item.id: durations[item.file_id]
+            for item in story.document.assets
+            if item.file_id in durations
+        },
+        "fragment_durations_ms": preview.route.fragment_durations_ms,
+        "total_ms": preview.route.estimated_duration_ms,
+    }

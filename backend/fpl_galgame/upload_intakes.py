@@ -60,7 +60,16 @@ class UploadIntakes(PollingTaskRunner):
             await Projects(db, owner).row(project_id)
 
     async def reserve(
-        self, owner, project_id, category, signatures, mode, *, assertion, source_path
+        self,
+        owner,
+        project_id,
+        category,
+        signatures,
+        mode,
+        *,
+        assertion,
+        source_path,
+        on_reserve=None,
     ):
         identity = uuid4().hex
         async with self.sessions(info={"owner_user_id": owner}) as db:
@@ -82,17 +91,18 @@ class UploadIntakes(PollingTaskRunner):
             ):
                 existing_paths.extend(item["virtual_path"] for item in items)
             filenames = [item.filename for item in signatures]
-            if mode == "annotation":
+            if mode in {"annotation", "export"}:
+                directory = "voice" if mode == "annotation" else "exports"
                 plans = [
                     GalgameAssetImportPreviewItem(
-                        original_name=name, final_name=name, virtual_path=f"voice/{name}"
+                        original_name=name, final_name=name, virtual_path=f"{directory}/{name}"
                     )
                     for name in filenames
                 ]
                 existing = {path.casefold() for path in existing_paths}
                 if any(item.virtual_path.casefold() in existing for item in plans):
                     raise ProjectResourceError(
-                        "台词文件名称已占用", "annotation_clip_path_pending", 503
+                        "生成文件名称暂不可用", "generated_asset_path_pending", 503
                     )
             else:
                 plans = plan_uploads(filenames, category, existing_paths).items
@@ -123,6 +133,8 @@ class UploadIntakes(PollingTaskRunner):
                 planned=[item.model_dump(mode="json") for item in plans],
             )
             db.add(row)
+            if on_reserve is not None:
+                await on_reserve(db, identity)
             await db.commit()
         grant = RequestGrant("galgame", PURPOSE, "POST", source_path, "assets", "POST", target)
         try:
@@ -237,6 +249,7 @@ class UploadIntakes(PollingTaskRunner):
                     raise ValueError("upload metadata missing after settlement")
                 entries.append((row, metadata))
             current.state, current.assertion = "settled", ""
+            current.receipt = receipt.model_dump(mode="json")
             await db.flush()
             items = [galgame_asset_out(row, meta) for row, meta in entries]
             await db.commit()

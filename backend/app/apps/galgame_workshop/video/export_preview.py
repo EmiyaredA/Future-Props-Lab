@@ -10,10 +10,9 @@ from app.apps.galgame_workshop.schemas import (
     GalgameVideoExportPreviewOut,
     GalgameVideoExportRouteOut,
 )
-from app.capabilities.media_rendering.galgame.timing import COMPILER_VERSION
+from app.capabilities.media_rendering.galgame.timing import COMPILER_VERSION, PRESETS
 
 from .video_export_planning import (
-    PRESETS,
     _plan_clip,
     _plan_fragments,
     _plan_route,

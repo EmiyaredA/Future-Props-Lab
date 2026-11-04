@@ -16,6 +16,8 @@ from fpl_runtime.delegation import RequestGrant, permitted, target_permission_pa
 from fpl_runtime.galgame_annotation_source import source_grant as galgame_annotation_grant
 from fpl_runtime.galgame_asr_execution import PURPOSE_EXECUTION, asr_job_grant
 from fpl_runtime.galgame_assets import export_download_grant, galgame_asset_grant
+from fpl_runtime.galgame_exports import PURPOSE_INPUT as GALGAME_EXPORT_INPUT
+from fpl_runtime.galgame_exports import export_grant as galgame_export_grant
 from fpl_runtime.galgame_frames import frame_grant as galgame_frame_grant
 from fpl_runtime.galgame_render import capacity_grant
 from fpl_runtime.galgame_snapshot import archive_grant as galgame_archive_grant
@@ -112,6 +114,7 @@ async def authorize_delegation(app, body, credential):
             or export_download_grant(grant)
             or capacity_grant(grant)
             or galgame_frame_grant(grant)
+            or (galgame_export_grant(grant) and grant.purpose == GALGAME_EXPORT_INPUT)
             or galgame_annotation_grant(grant)
             or motion_preview_grant(grant)
             or motion_snapshot_grant(grant)
@@ -125,6 +128,7 @@ async def authorize_delegation(app, body, credential):
             or segment_target_grant(grant)
             or galgame_upload_grant(grant)
             or galgame_archive_grant(grant)
+            or galgame_export_grant(grant)
             else (
                 "models.use"
                 if asr_job_grant(grant)

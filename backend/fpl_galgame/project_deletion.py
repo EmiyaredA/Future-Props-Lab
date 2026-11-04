@@ -2,6 +2,7 @@
 
 from uuid import uuid4
 
+import httpx
 from sqlalchemy import delete, select, text
 
 from app.apps.galgame_workshop.models import (
@@ -18,7 +19,7 @@ from fpl_runtime.asset_references import PrepareReferenceChange
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
 from fpl_runtime.project_errors import ProjectResourceError
 
-from .models import GalgameStoryReferenceMutation, GalgameUploadIntake
+from .models import GalgameStoryReferenceMutation, GalgameUploadIntake, GalgameVideoDispatch
 from .projects import Projects
 
 TASKS = (
@@ -115,12 +116,37 @@ class ProjectDeletion:
             )
         await self.settle_prior(project_id)
         await self.require_idle(project_id)
+        try:
+            await self.request.app.state.export_runner.release_project(
+                self.session,
+                self.owner,
+                project_id,
+                self.request.state.service_assertion,
+                ("DELETE", self.request.url.path),
+            )
+        except (ProjectResourceError, CapabilityUnavailable, httpx.HTTPError, ValueError) as exc:
+            raise ProjectResourceError(
+                "视频导出回执尚未清理", "project_export_receipt_pending", 503
+            ) from exc
         story_revision = (await self.projects.story(project_id)).revision
         await self.session.rollback()
         prepared = await self.prepare(project_id, story_revision)
         try:
             await self.session.execute(text("BEGIN IMMEDIATE"))
             await self.require_idle(project_id)
+            unsettled = await self.session.scalar(
+                select(GalgameVideoDispatch.task_id)
+                .join(
+                    GalgameVideoExportTask,
+                    GalgameVideoExportTask.id == GalgameVideoDispatch.task_id,
+                )
+                .where(GalgameVideoExportTask.project_id == project_id)
+                .limit(1)
+            )
+            if unsettled is not None:
+                raise ProjectResourceError(
+                    "视频导出回执尚未清理", "project_export_receipt_pending", 409
+                )
             story = await self.projects.story(project_id)
             if story.revision != story_revision:
                 raise ProjectResourceError(

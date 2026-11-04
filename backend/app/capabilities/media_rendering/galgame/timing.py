@@ -3,6 +3,12 @@
 from typing import Any
 
 COMPILER_VERSION = "galgame-render-plan-v3"
+PRESETS = {
+    "1080p30": (1920, 1080, 30),
+    "720p30": (1280, 720, 30),
+    "1080p60": (1920, 1080, 60),
+    "720p60": (1280, 720, 60),
+}
 
 
 def _content_text(block: dict[str, Any]) -> str:

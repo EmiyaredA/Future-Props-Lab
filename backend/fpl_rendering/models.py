@@ -64,6 +64,28 @@ class VideoExportJob(RenderingBase):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
 
 
+class GalgameExportJob(RenderingBase):
+    __tablename__ = "galgame_export_jobs"
+
+    owner_user_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    project_id: Mapped[str] = mapped_column(String(36))
+    request_path: Mapped[str] = mapped_column(String(512))
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    assertion: Mapped[str] = mapped_column(Text)
+    input_assertion: Mapped[str] = mapped_column(Text)
+    payload: Mapped[dict] = mapped_column(JSON)
+    status: Mapped[str] = mapped_column(String(16), default="queued")
+    phase: Mapped[str] = mapped_column(String(16), default="queued")
+    progress: Mapped[int] = mapped_column(Integer, default=0)
+    rendered_ms: Mapped[int] = mapped_column(Integer, default=0)
+    media: Mapped[dict | None] = mapped_column(JSON)
+    error: Mapped[str | None] = mapped_column(Text)
+    cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False)
+    released: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
 class RenderingHistoryManifest(RenderingBase):
     __tablename__ = "rendering_history_manifests"
 

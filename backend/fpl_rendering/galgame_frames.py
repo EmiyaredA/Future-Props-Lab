@@ -82,7 +82,7 @@ async def original_files(state, scope, sizes, path, token, directory):
         raise HTTPException(503, "galgame_frame_originals_unavailable") from exc
 
 
-def prepare_plan(frame, originals, cache):
+def prepare_plan(frame, originals, cache, *, cancel=None):
     fingerprints = {
         item.id: f"{item.id}:{item.revision}:{frame.sizes[item.id]}" for item in frame.scope.files
     }
@@ -92,6 +92,7 @@ def prepare_plan(frame, originals, cache):
         cache_dir=cache,
         asset_fingerprints=fingerprints,
         selected_fragment_ids=set(frame.payload["resolvedFragmentIds"]),
+        cancel=cancel,
     )
     return compile_galgame_render_plan(
         frame.document,

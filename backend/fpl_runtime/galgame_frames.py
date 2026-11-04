@@ -17,7 +17,7 @@ INPUT_HEADER = "X-Fpl-Galgame-Render-Inputs"
 MAX_FRAME_REQUEST = 16 * 1024 * 1024
 
 
-class GalgameFrame(BaseModel):
+class GalgameRenderPlan(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
     document: dict
     payload: dict
@@ -26,8 +26,6 @@ class GalgameFrame(BaseModel):
     durations: dict[str, int]
     fragment_durations_ms: list[int] = Field(max_length=20_000)
     total_ms: int = Field(ge=0, strict=True)
-    time_ms: int = Field(ge=0, strict=True)
-    width: int = Field(ge=320, le=1920, strict=True)
 
     @model_validator(mode="after")
     def exact_scope(self):
@@ -40,8 +38,7 @@ class GalgameFrame(BaseModel):
         ids = {item.id for item in self.scope.files}
         selected = self.payload.get("resolvedFragmentIds")
         if (
-            self.time_ms > self.total_ms
-            or not isinstance(selected, list)
+            not isinstance(selected, list)
             or len(selected) != len(self.fragment_durations_ms)
             or any(
                 type(duration) is not int or duration < 0 for duration in self.fragment_durations_ms
@@ -51,6 +48,17 @@ class GalgameFrame(BaseModel):
             or any(size <= 0 for size in self.sizes.values())
         ):
             raise ValueError("渲染时间或原件范围无效")
+        return self
+
+
+class GalgameFrame(GalgameRenderPlan):
+    time_ms: int = Field(ge=0, strict=True)
+    width: int = Field(ge=320, le=1920, strict=True)
+
+    @model_validator(mode="after")
+    def time_inside_plan(self):
+        if self.time_ms > self.total_ms:
+            raise ValueError("渲染时间超出范围")
         return self
 
 

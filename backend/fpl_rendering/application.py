@@ -25,9 +25,11 @@ from fpl_runtime.video_exports import output_peer
 from fpl_runtime.video_processing import originals_peer, video_peer
 
 from .galgame_capacity_http import router as galgame_capacity_router
+from .galgame_export_jobs import GalgameExports
+from .galgame_export_routes import router as galgame_exports_router
 from .galgame_frames import router as galgame_frames_router
 from .migrations.registry import MIGRATIONS
-from .models import MotionRenderJob, VideoExportJob, VideoMediaJob
+from .models import GalgameExportJob, MotionRenderJob, VideoExportJob, VideoMediaJob
 from .motion_export_routes import router as motion_export_router
 from .motion_jobs import MotionJobs
 from .motion_preview import router as motion_preview_router
@@ -59,13 +61,14 @@ def create_app(
     database = Database(
         "rendering",
         settings.runtime_path,
-        models=(MotionRenderJob, VideoMediaJob, VideoExportJob),
+        models=(GalgameExportJob, MotionRenderJob, VideoMediaJob, VideoExportJob),
         hide_parameters=True,
     )
     if database.path != settings.database_path:
         raise ValueError("Rendering 配置必须指向自己的数据目录")
 
     motion_jobs = MotionJobs(database=database, settings=settings, identity=identity)
+    galgame_exports = GalgameExports(database, settings, identity, capabilities)
     if (video_media_key is None) != (video_originals_key is None):
         raise ValueError("剪辑派生需要两端专用对等凭据")
     video_jobs = (
@@ -99,6 +102,7 @@ def create_app(
         try:
             if run_worker:
                 await motion_jobs.start()
+                await galgame_exports.start()
                 if video_jobs is not None:
                     await video_jobs.start()
                     await video_exports.start()
@@ -107,6 +111,7 @@ def create_app(
             if video_jobs is not None:
                 await video_exports.stop()
                 await video_jobs.stop()
+            await galgame_exports.stop()
             await motion_jobs.stop()
             await capabilities.close()
             await identity.close()
@@ -127,6 +132,7 @@ def create_app(
     app.state.identity_public_key = public_key
     app.state.motion_frame_slots = asyncio.Semaphore(2)
     app.state.galgame_frame_slots = asyncio.Semaphore(2)
+    app.state.galgame_exports = galgame_exports
     app.state.motion_jobs = motion_jobs
     app.state.motion_export_peer = ExportPeer(export_key) if export_key is not None else None
     app.state.motion_submission_locks = tuple(asyncio.Lock() for _ in range(16))
@@ -135,6 +141,7 @@ def create_app(
     app.include_router(video_export_router)
     app.include_router(galgame_capacity_router)
     app.include_router(galgame_frames_router)
+    app.include_router(galgame_exports_router)
     app.include_router(motion_transfer_router)
     app.state.video_frame_cache = VideoFrameCache()
     app.state.video_frame_slots = asyncio.Semaphore(2)
@@ -185,6 +192,8 @@ def create_app(
     @app.get("/ready")
     async def ready():
         check(database.path, "rendering", MIGRATIONS)
+        if run_worker and not galgame_exports.is_healthy:
+            raise HTTPException(503, "galgame_export_runner_unavailable")
         if run_worker and (
             not motion_jobs.is_healthy
             or (

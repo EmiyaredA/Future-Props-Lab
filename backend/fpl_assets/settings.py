@@ -10,6 +10,7 @@ from fpl_config import REPO_ROOT, ConfigurationError, read_config
 LIMITS = MappingProxyType(
     {
         "fpl_visual_asset_max_bytes": 200 * 1024 * 1024,
+        "fpl_galgame_export_max_bytes": 8 * 1024**3,
         "fpl_project_snapshot_max_bytes": 8 * 1024 * 1024 * 1024,
         "fpl_project_snapshot_max_files": 10000,
     }
@@ -20,6 +21,7 @@ LIMITS = MappingProxyType(
 class StorageSettings:
     database_path: Path
     fpl_visual_asset_max_bytes: int = LIMITS["fpl_visual_asset_max_bytes"]
+    fpl_galgame_export_max_bytes: int = LIMITS["fpl_galgame_export_max_bytes"]
     fpl_project_snapshot_max_bytes: int = LIMITS["fpl_project_snapshot_max_bytes"]
     fpl_project_snapshot_max_files: int = LIMITS["fpl_project_snapshot_max_files"]
 

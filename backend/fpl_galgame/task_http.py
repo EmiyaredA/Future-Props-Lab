@@ -8,6 +8,7 @@ from app.apps.galgame_workshop.schemas import (
     GalgameAnnotationImportTaskOut,
     GalgameVideoEditorHandoffTaskListOut,
     GalgameVideoEditorHandoffTaskOut,
+    GalgameVideoExportCreateIn,
     GalgameVideoExportFrameIn,
     GalgameVideoExportPreviewIn,
     GalgameVideoExportPreviewOut,
@@ -23,6 +24,7 @@ from .annotation_preview import annotation_preview
 from .asset_read_routes import read_assets
 from .exact_frame import exact_frame
 from .export_download import download_export
+from .export_jobs import enqueue_export
 from .export_preflight import export_preview
 from .task_records import TaskRecords
 
@@ -101,6 +103,28 @@ async def exact_video_export_frame(
             exc.status, {"code": exc.code, "message": str(exc), **exc.detail}
         ) from None
     return Response(png, media_type="image/png", headers={"Cache-Control": "private, no-store"})
+
+
+@router.post(
+    "/{project_id}/video-exports",
+    response_model=GalgameVideoExportTaskOut,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def create_video_export(
+    session: SessionDep,
+    project_id: str,
+    body: GalgameVideoExportCreateIn,
+    request: Request,
+    owner_user_id: OwnerDep,
+) -> GalgameVideoExportTaskOut:
+    try:
+        return await enqueue_export(
+            request, read_assets(request, session, owner_user_id), project_id, body
+        )
+    except AssetError as exc:
+        raise HTTPException(
+            exc.status, {"code": exc.code, "message": str(exc), **exc.detail}
+        ) from None
 
 
 @router.get("/{project_id}/video-exports", response_model=GalgameVideoExportTaskListOut)

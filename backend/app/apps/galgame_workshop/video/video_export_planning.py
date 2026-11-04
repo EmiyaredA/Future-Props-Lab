@@ -9,12 +9,6 @@ from app.apps.galgame_workshop.schemas import GalgameVideoExportIssue
 from app.apps.galgame_workshop.story.story_flow import TIMED_ROUTE_BOUNDARY_TYPES
 from app.capabilities.media_rendering.galgame.timing import estimate_block_ms
 
-PRESETS = {
-    "1080p30": (1920, 1080, 30),
-    "720p30": (1280, 720, 30),
-    "1080p60": (1920, 1080, 60),
-    "720p60": (1280, 720, 60),
-}
 CHOICE_DURATION_MS = 2000
 CHOICE_HIGHLIGHT_MS = 500
 MAX_ROUTE_STEPS = 20_000

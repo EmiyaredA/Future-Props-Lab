@@ -60,6 +60,7 @@ class GalgameUploadIntake(StoryRetentionBase):
     category: Mapped[str] = mapped_column(String(32))
     planned: Mapped[list] = mapped_column(JSON)
     manifest: Mapped[dict] = mapped_column(JSON)
+    receipt: Mapped[dict | None] = mapped_column(JSON)
     state: Mapped[str] = mapped_column(String(16), default="reserved")
     checked_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
 
@@ -102,12 +103,27 @@ class GalgameAsrDispatch(StoryRetentionBase):
     checked_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, index=True)
 
 
+class GalgameVideoDispatch(StoryRetentionBase):
+    __tablename__ = "galgame_video_dispatches"
+
+    task_id: Mapped[str] = mapped_column(
+        ForeignKey(GalgameVideoExportTask.__table__.c.id, ondelete="CASCADE"), primary_key=True
+    )
+    owner_user_id: Mapped[str] = mapped_column(String(36))
+    assertion: Mapped[str] = mapped_column(Text)
+    plan: Mapped[dict] = mapped_column(JSON)
+    upload_id: Mapped[str | None] = mapped_column(String(32))
+    media: Mapped[dict | None] = mapped_column(JSON)
+    checked_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, index=True)
+
+
 MODELS = (
     GalgameMigrationReceipt,
     GalgameUploadIntake,
     GalgameAnnotationAuthorization,
     GalgameSnapshotImportBatch,
     GalgameAsrDispatch,
+    GalgameVideoDispatch,
     GalgameWorkshopProject,
     GalgameStoryDocument,
     GalgameProjectAssetReference,

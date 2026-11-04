@@ -18,10 +18,9 @@ from fpl_runtime.galgame_frames import (
     RENDER_PURPOSE,
     GalgameFrame,
 )
-from fpl_runtime.motion_preview import FrameFile, sha256
-from fpl_runtime.motion_snapshot import SnapshotScope
+from fpl_runtime.motion_preview import sha256
 
-from .export_preflight import export_context
+from .export_preflight import export_context, frozen_plan
 
 
 async def exact_frame(request, files, project_id, body):
@@ -35,24 +34,9 @@ async def exact_frame(request, files, project_id, body):
     if body.time_ms > preview.route.estimated_duration_ms:
         raise AssetError("预览时间超出导出范围", code="invalid_time", status=422)
     payload = body.model_dump(mode="json", by_alias=True, exclude={"time_ms", "width"})
-    payload["resolvedFragmentIds"] = preview.route.fragment_ids
     try:
         frame = GalgameFrame(
-            document=story.document.model_dump(mode="json", by_alias=True),
-            payload=payload,
-            scope=SnapshotScope(
-                files=tuple(
-                    FrameFile(id=key, revision=assets[key].revision) for key in sorted(assets)
-                )
-            ),
-            sizes={key: asset.byte_size for key, asset in assets.items()},
-            durations={
-                item.id: duration[item.file_id]
-                for item in story.document.assets
-                if item.file_id in duration
-            },
-            fragment_durations_ms=preview.route.fragment_durations_ms,
-            total_ms=preview.route.estimated_duration_ms,
+            **frozen_plan(story, assets, duration, preview, payload),
             time_ms=body.time_ms,
             width=body.width,
         )

@@ -18,6 +18,7 @@ from .annotation_runner import AnnotationImports
 from .asr_routes import router as asr_router
 from .asr_runner import AsrRunner
 from .asset_read_routes import router as asset_read_router
+from .export_runner import ExportRunner
 from .migrations.registry import MIGRATIONS
 from .models import MODELS, GalgameCertificationReceipt, GalgameStoryReferenceMutation
 from .projects_http import router as project_router
@@ -98,6 +99,8 @@ def create_app(
     app.state.annotation_imports = imports
     asr = AsrRunner(app.state, state_root)
     app.state.asr_runner = asr
+    exports = ExportRunner(app.state, uploads)
+    app.state.export_runner = exports
     archive_delivery = None
     app.state.snapshot_imports = None
     if archive_key is not None:
@@ -129,12 +132,14 @@ def create_app(
                     await uploads.start()
                     await imports.start()
                     await asr.start()
+                    await exports.start()
                     if archive_delivery is not None:
                         await archive_delivery.start()
                 yield
             finally:
                 if archive_delivery is not None:
                     await archive_delivery.stop()
+                await exports.stop()
                 await asr.stop()
                 await imports.stop()
                 await uploads.stop()

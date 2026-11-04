@@ -231,7 +231,7 @@ CONFIG_FIELD_OWNERS = {
     "http": {"cors_origins": "gateway", "auth_cookie_secure": "identity"},
     "limits": {
         "visual_asset_max_bytes": "assets",
-        "galgame_export_max_bytes": "galgame",
+        "galgame_export_max_bytes": "assets",
         "project_snapshot_max_bytes": "assets",
         "project_snapshot_max_files": "assets",
         "skill_archive_max_bytes": "integrations",

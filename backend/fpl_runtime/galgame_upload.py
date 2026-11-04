@@ -53,7 +53,8 @@ class UploadReceipt(BaseModel):
 def upload_target(method, path):
     if method == "POST":
         return re.fullmatch(
-            rf"{PREFIX}/({ID})/([0-9a-f]{{32}})/(single|batch|annotation)/([0-9a-f]{{64}})", path
+            rf"{PREFIX}/({ID})/([0-9a-f]{{32}})/(single|batch|annotation|export)/([0-9a-f]{{64}})",
+            path,
         )
     return None
 
@@ -74,5 +75,6 @@ def upload_grant(grant):
         "single": "/assets",
         "batch": "/assets/batch",
         "annotation": "/annotation-imports",
+        "export": "/video-exports",
     }[mode]
     return grant.source_path == f"{SOURCE}/{project}{suffix}"

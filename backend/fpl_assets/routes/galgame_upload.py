@@ -25,7 +25,14 @@ async def read_manifest(request, fingerprint, mode):
         if (
             manifest.digest != fingerprint
             or length != manifest.total_bytes
-            or (mode == "single" and len(manifest.files) != 1)
+            or (mode in {"single", "export"} and len(manifest.files) != 1)
+            or (
+                mode == "export"
+                and (
+                    not manifest.files[0].filename.endswith(".mp4")
+                    or manifest.files[0].mime_type != "video/mp4"
+                )
+            )
             or (
                 mode == "annotation"
                 and any(
@@ -104,7 +111,11 @@ async def upload(request: Request, project_id: str, request_id: str, mode: str, 
             raise HTTPException(422, "galgame_upload_encoding_forbidden")
         await active()
         reader, manifest = await read_manifest(request, fingerprint, mode)
-        maximum = state.settings.fpl_visual_asset_max_bytes
+        maximum = (
+            state.settings.fpl_galgame_export_max_bytes
+            if mode == "export"
+            else state.settings.fpl_visual_asset_max_bytes
+        )
         if any(file.byte_size > maximum for file in manifest.files):
             raise HTTPException(413, {"code": "file_too_large", "message": "文件超过上传大小限制"})
         return {"items": await writer.store(reader, manifest, maximum, admit=admit)}
