@@ -1,9 +1,9 @@
 """Seal and publish Video's exact project snapshot through its own peer channel."""
 
+from fpl_runtime.archive_transport import SnapshotFileDescription
 from fpl_runtime.video_snapshot import (
     ARCHIVE_PREFIX,
     VideoArchiveManifest,
-    VideoSnapshotFileDescription,
     archive_target,
 )
 
@@ -15,7 +15,7 @@ router = archive_router(
     archive_target=archive_target,
     auth_field="video_archive_auth",
     archive_factory=VideoArchives,
-    descriptor_type=VideoSnapshotFileDescription,
+    descriptor_type=SnapshotFileDescription,
     manifest_type=VideoArchiveManifest,
     max_manifest_bytes=2 * 1024 * 1024,
 )

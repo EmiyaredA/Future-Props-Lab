@@ -333,6 +333,41 @@ class VideoArchiveFile(ReferenceBase):
     metadata_snapshot: Mapped[dict] = mapped_column(JSON)
 
 
+class GalgameArchiveBatch(ReferenceBase):
+    """One archive's immutable source descriptor and publication decision."""
+
+    __tablename__ = "asset_galgame_archive_batches"
+    owner_user_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    batch_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    source_sha256: Mapped[str] = mapped_column(String(64))
+    manifest_sha256: Mapped[str | None] = mapped_column(String(64))
+    projections: Mapped[list | None] = mapped_column(JSON)
+    state: Mapped[str] = mapped_column(String(16), default="staging")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
+class GalgameArchiveFile(ReferenceBase):
+    """Validated file metadata while its bytes remain private to the batch."""
+
+    __tablename__ = "asset_galgame_archive_files"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["owner_user_id", "batch_id"],
+            [
+                "asset_galgame_archive_batches.owner_user_id",
+                "asset_galgame_archive_batches.batch_id",
+            ],
+            ondelete="RESTRICT",
+        ),
+    )
+    owner_user_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    batch_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    ordinal: Mapped[int] = mapped_column(Integer, primary_key=True)
+    asset_id: Mapped[str] = mapped_column(String(36), unique=True)
+    descriptor_sha256: Mapped[str] = mapped_column(String(64))
+    metadata_snapshot: Mapped[dict] = mapped_column(JSON)
+
+
 class VideoSegmentHandoffBatch(ReferenceBase):
     """Invisible library originals for an exact cross-service canvas handoff."""
 
@@ -390,6 +425,8 @@ MODELS = (
     MotionArchiveFile,
     VideoArchiveBatch,
     VideoArchiveFile,
+    GalgameArchiveBatch,
+    GalgameArchiveFile,
     VideoSegmentHandoffBatch,
     VideoSegmentHandoffFile,
 )

@@ -1,12 +1,17 @@
 """Transport exact archive file and manifest bytes over scoped Assets requests."""
 
+import hashlib
 import secrets
+from dataclasses import dataclass
 
 import httpx
+from anyio import open_file
 
 from .capability_client import CapabilityDenied, CapabilityUnavailable
 from .claims import HEADER
 from .delegation import RequestGrant
+from .library_assets import LibraryAssetDescription
+from .model_outputs import ModelOutputDescription
 from .thought_archives import ArchiveAuthenticator
 
 
@@ -106,3 +111,37 @@ class ArchiveTransport:
         )
         if data != expected:
             raise CapabilityUnavailable("归档决议未确认")
+
+
+@dataclass(frozen=True)
+class SnapshotFileDescription(ModelOutputDescription):
+    display_name: str
+
+    def __post_init__(self):
+        super().__post_init__()
+        if not isinstance(self.display_name, str) or not 1 <= len(self.display_name) <= 255:
+            raise ValueError("归档素材名称无效")
+
+
+class HashingUpload:
+    def __init__(self, incoming):
+        self.incoming = incoming
+        self.digest = hashlib.sha256()
+
+    async def read(self, size):
+        data = await self.incoming.read(size)
+        self.digest.update(data)
+        return data
+
+    async def close(self):
+        await self.incoming.close()
+
+
+async def chunks(path):
+    async with await open_file(path, "rb") as file:
+        while data := await file.read(1024 * 1024):
+            yield data
+
+
+class SnapshotArchiveAsset(LibraryAssetDescription):
+    display_name: str

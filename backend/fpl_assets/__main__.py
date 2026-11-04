@@ -32,6 +32,9 @@ def parser():
         "--video-originals-key", type=Path, default=Path("/run/fpl/video-originals-key")
     )
     result.add_argument(
+        "--galgame-archive-key", type=Path, default=Path("/run/fpl/galgame-archive-key")
+    )
+    result.add_argument(
         "--video-archive-key", type=Path, default=Path("/run/fpl/video-archive-key")
     )
     result.add_argument(
@@ -193,6 +196,19 @@ def run(options):
                 thought_peer.upload_receipt if thought_peer else None,
             ),
         )
+        galgame_archive = load_peer_key(
+            options.galgame_archive_key,
+            excluded=(
+                credential,
+                archive_key,
+                motion_key,
+                video_key,
+                video_archive,
+                visual_segment_assets,
+                thought_peer.community if thought_peer else None,
+                thought_peer.upload_receipt if thought_peer else None,
+            ),
+        )
         has_web = (options.web_root / "build.json").is_file()
         if not has_web and not (options.web_root / ".api-only").is_file():
             raise ValueError("Assets 缺少已安装的浏览器程序")
@@ -212,6 +228,7 @@ def run(options):
             motion_archive_key=motion_key,
             video_originals_key=video_key,
             video_archive_key=video_archive,
+            galgame_archive_key=galgame_archive,
             visual_segment_assets_key=visual_segment_assets,
             web_root=options.web_root if has_web else None,
             version=os.environ.get("FPL_SERVICE_VERSION", "development"),

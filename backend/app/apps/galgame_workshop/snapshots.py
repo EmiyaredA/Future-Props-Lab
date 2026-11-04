@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from pathlib import Path, PurePosixPath
 from uuid import uuid4
 
-from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,11 +17,12 @@ from app.apps.galgame_workshop.models import (
 from app.apps.galgame_workshop.projects import project_out
 from app.apps.galgame_workshop.schemas import (
     GalgameProjectSnapshotImportOut,
-    GalgameStoryProject,
-    GalgameWorkshopProjectCreateIn,
 )
-from app.apps.galgame_workshop.schemas.asr import GalgameTranscriptSegmentOut
-from app.apps.galgame_workshop.snapshot_values import snapshot_asset_record
+from app.apps.galgame_workshop.snapshot_values import (
+    snapshot_asset_record,
+    story_file_ids,
+    validate_snapshot,
+)
 from app.capabilities.asset_store import (
     AssetStorage,
     ExportedProjectSnapshot,
@@ -36,133 +35,13 @@ from app.capabilities.asset_store import (
 )
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.project_transactions import importing_project_layout
-from app.capabilities.asset_store.schemas.project_snapshots import ProjectSnapshotImportWarning
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION
-from app.llm.models import (
-    ModelEntry,
-    ModelProvider,
+from app.llm.transcription_catalog import (
+    resolve_transcription_model_reference,
+    transcription_model_reference,
 )
-from app.llm.transcription_catalog import transcription_model_reference
 from app.runtime.config import Settings
 from app.runtime.ids import new_id
-
-VALID_CATEGORIES = {
-    "character",
-    "scene",
-    "cg",
-    "bgm",
-    "ambient",
-    "sfx",
-    "voice",
-    "video",
-    "font",
-    "other",
-}
-VALID_TRANSCRIPT_STATUS = {"pending", "queued", "running", "ready", "failed"}
-
-
-def _copy_title(title: str) -> str:
-    suffix = "（副本）"
-    return f"{title[: 120 - len(suffix)]}{suffix}"
-
-
-def _story_file_ids(document: dict) -> set[str]:
-    return {
-        str(item["fileId"])
-        for item in document.get("assets", [])
-        if isinstance(item, dict) and item.get("fileId")
-    }
-
-
-def _validated_assets(value: object, declared: set[str]) -> list[dict]:
-    if not isinstance(value, list):
-        raise ProjectSnapshotError("Galgame 快照素材必须是数组")
-    records: list[dict] = []
-    ids: set[str] = set()
-    virtual_paths: set[str] = set()
-    for item in value:
-        if not isinstance(item, dict):
-            raise ProjectSnapshotError("Galgame 快照包含无效素材记录")
-        asset_id = str(item.get("id") or "")
-        filename = Path(str(item.get("original_filename") or "")).name
-        display_name = str(item.get("display_name") or "").strip()
-        virtual_path = str(item.get("virtual_path") or "")
-        path = PurePosixPath(virtual_path)
-        byte_size = item.get("byte_size")
-        transcript_revision = item.get("transcript_revision", 0)
-        transcript_segments = item.get("transcript_segments", [])
-        try:
-            validated_segments = [
-                GalgameTranscriptSegmentOut.model_validate(segment).model_dump(
-                    mode="json", by_alias=True
-                )
-                for segment in transcript_segments
-            ]
-        except (TypeError, ValidationError) as exc:
-            raise ProjectSnapshotError("Galgame 快照转写分段无效") from exc
-        if (
-            not asset_id
-            or asset_id in ids
-            or asset_id not in declared
-            or not filename
-            or not display_name
-            or not isinstance(byte_size, int)
-            or byte_size < 1
-            or item.get("media_kind") not in {"image", "video", "audio", "font", "document"}
-            or not str(item.get("mime_type") or "")
-            or item.get("category") not in VALID_CATEGORIES
-            or item.get("packaging_policy") not in {"auto", "include", "exclude"}
-            or item.get("transcript_status") not in VALID_TRANSCRIPT_STATUS
-            or item.get("transcript_source") not in {None, "asr", "manual"}
-            or not isinstance(transcript_revision, int)
-            or transcript_revision < 0
-            or not isinstance(transcript_segments, list)
-            or path.is_absolute()
-            or ".." in path.parts
-            or len(path.parts) < 2
-            or virtual_path.casefold() in virtual_paths
-        ):
-            raise ProjectSnapshotError("Galgame 快照素材元数据无效")
-        ids.add(asset_id)
-        virtual_paths.add(virtual_path.casefold())
-        records.append(
-            dict(
-                item,
-                original_filename=filename,
-                display_name=display_name,
-                transcript_revision=transcript_revision,
-                transcript_segments=validated_segments,
-            )
-        )
-    if ids != declared:
-        raise ProjectSnapshotError("Galgame 素材记录与快照清单不一致")
-    return records
-
-
-async def _resolve_model(
-    session: AsyncSession, reference: object, owner_user_id: str
-) -> str | None:
-    if not isinstance(reference, dict):
-        return None
-    rows = (
-        (
-            await session.execute(
-                select(ModelEntry.id)
-                .join(ModelProvider, ModelProvider.id == ModelEntry.provider_id)
-                .where(
-                    ModelProvider.kind == str(reference.get("provider_kind") or ""),
-                    ModelEntry.slug == str(reference.get("model_slug") or ""),
-                    ModelEntry.enabled.is_(True),
-                    ModelProvider.enabled.is_(True),
-                    ModelEntry.owner_user_id == owner_user_id,
-                    ModelProvider.owner_user_id == owner_user_id,
-                )
-            )
-        )
-        .scalars()
-        .all()
-    )
-    return rows[0] if len(rows) == 1 else None
 
 
 class GalgameProjectSnapshots:
@@ -187,7 +66,7 @@ class GalgameProjectSnapshots:
         if project is None or story is None:
             raise ProjectSnapshotError("项目不存在", code="not_found", status=404)
         document = deepcopy(story.document or {})
-        used_ids = _story_file_ids(document)
+        used_ids = story_file_ids(document)
         output_ids = set(
             (
                 await self.session.execute(
@@ -280,53 +159,18 @@ class GalgameProjectSnapshots:
             self.settings, upload, expected_application=self.application_id
         )
         try:
-            payload = staged.project
-            source_project = payload.get("project")
-            if payload.get("schema_version") != 1 or not isinstance(source_project, dict):
-                raise ProjectSnapshotError("project.json 不是受支持的 Galgame 快照")
-            try:
-                create = GalgameWorkshopProjectCreateIn.model_validate(source_project)
-                story = GalgameStoryProject.model_validate(payload.get("story"))
-            except ValidationError as exc:
-                raise ProjectSnapshotError("Galgame Story 结构无效") from exc
-            status = str(source_project.get("status") or "")
-            if status not in {"draft", "completed"}:
-                raise ProjectSnapshotError("Galgame 项目状态无效")
-            declared = {item.source_id for item in staged.manifest.assets}
-            assets = _validated_assets(payload.get("assets"), declared)
+            values = validate_snapshot(staged)
+            assets = values.assets
             asset_ids = {item["id"]: new_id() for item in assets}
-            story_dump = story.model_dump(mode="json", by_alias=True)
-            for item in story_dump.get("assets", []):
-                source_file = item.get("fileId")
-                if source_file not in asset_ids:
-                    raise ProjectSnapshotError("Story 引用的素材未包含在项目快照中")
-                item["fileId"] = asset_ids[source_file]
-            raw_settings = payload.get("asset_settings")
-            raw_settings = raw_settings if isinstance(raw_settings, dict) else {}
-            model_reference = raw_settings.get("model_reference")
-            model_id = await _resolve_model(self.session, model_reference, self.owner_user_id)
-            warnings: list[ProjectSnapshotImportWarning] = []
-            if model_reference and not model_id:
-                warnings.append(
-                    ProjectSnapshotImportWarning(
-                        code="model_binding_unavailable",
-                        field="asset_settings.model_id",
-                        message="原语音识别模型在当前账号中不可用，请重新选择。",
-                    )
-                )
-            language = str(raw_settings.get("default_language") or "auto")
-            concurrency = raw_settings.get("concurrency", 2)
-            if (
-                language not in {"auto", "zh", "ja"}
-                or not isinstance(concurrency, int)
-                or not 1 <= concurrency <= 8
-            ):
-                raise ProjectSnapshotError("Galgame ASR 设置无效")
+            story_dump = values.with_files(asset_ids)
+            model_id = await resolve_transcription_model_reference(
+                self.session, values.model_reference, self.owner_user_id
+            )
             project = GalgameWorkshopProject(
                 id=new_id(),
                 owner_user_id=self.owner_user_id,
-                title=_copy_title(create.title),
-                status=status,
+                title=values.title,
+                status=values.status,
             )
             self.session.add(project)
             await self.session.flush()
@@ -384,7 +228,7 @@ class GalgameProjectSnapshots:
                         ),
                         expected_size=item["byte_size"],
                     )
-                for new_asset_id in _story_file_ids(story_dump):
+                for new_asset_id in story_file_ids(story_dump):
                     self.session.add(
                         GalgameProjectAssetReference(project_id=project.id, asset_id=new_asset_id)
                     )
@@ -393,11 +237,13 @@ class GalgameProjectSnapshots:
                     GalgameAssetSettings(
                         project_id=project.id,
                         asr_model_id=model_id,
-                        default_language=language,
-                        concurrency=concurrency,
+                        default_language=values.language,
+                        concurrency=values.concurrency,
                     )
                 )
             await self.session.refresh(project)
-            return GalgameProjectSnapshotImportOut(project=project_out(project), warnings=warnings)
+            return GalgameProjectSnapshotImportOut(
+                project=project_out(project), warnings=values.model_warnings(model_id)
+            )
         finally:
             staged.cleanup()

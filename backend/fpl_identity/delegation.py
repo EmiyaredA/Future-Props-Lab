@@ -16,7 +16,8 @@ from fpl_runtime.delegation import RequestGrant, permitted, target_permission_pa
 from fpl_runtime.galgame_annotation_source import source_grant as galgame_annotation_grant
 from fpl_runtime.galgame_assets import export_download_grant, galgame_asset_grant
 from fpl_runtime.galgame_render import capacity_grant
-from fpl_runtime.galgame_snapshot import model_reference_grant, snapshot_files_grant
+from fpl_runtime.galgame_snapshot import archive_grant as galgame_archive_grant
+from fpl_runtime.galgame_snapshot import snapshot_files_grant, snapshot_model_grant
 from fpl_runtime.galgame_upload import upload_grant as galgame_upload_grant
 from fpl_runtime.motion_exports import render_grant as motion_export_grant
 from fpl_runtime.motion_preview import motion_preview_grant
@@ -104,7 +105,7 @@ async def authorize_delegation(app, body, credential):
             assistant_grant(grant)
             or galgame_asset_grant(grant)
             or snapshot_files_grant(grant)
-            or model_reference_grant(grant)
+            or snapshot_model_grant(grant)
             or export_download_grant(grant)
             or capacity_grant(grant)
             or galgame_annotation_grant(grant)
@@ -119,6 +120,7 @@ async def authorize_delegation(app, body, credential):
             if motion_export_grant(grant)
             or segment_target_grant(grant)
             or galgame_upload_grant(grant)
+            or galgame_archive_grant(grant)
             else route_permission(body.target_method, target_permission_path(grant))
         )
     )

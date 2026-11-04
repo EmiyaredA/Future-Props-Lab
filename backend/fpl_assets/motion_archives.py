@@ -2,8 +2,11 @@
 
 from uuid import UUID
 
+from anyio.to_thread import run_sync
 from sqlalchemy import select, text
 
+from app.capabilities.asset_store.digests import sha256_file
+from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from fpl_runtime.motion_snapshot import MAX_ARCHIVE_BYTES, MotionArchiveManifest
 
@@ -13,6 +16,8 @@ from .models import AssetReferenceSet, MotionArchiveBatch, MotionArchiveFile
 
 
 class ScopedProjectArchives(ArchiveFileStaging):
+    resource_kind = "project"
+
     def placement(self, key):
         return {self.project_column: str(UUID(hex=key.batch_id))}
 
@@ -47,7 +52,7 @@ class ScopedProjectArchives(ArchiveFileStaging):
         if await session.scalar(
             select(AssetReferenceSet.id).where(
                 AssetReferenceSet.service_id == cls.service,
-                AssetReferenceSet.resource_kind == "project",
+                AssetReferenceSet.resource_kind == cls.resource_kind,
                 AssetReferenceSet.resource_id == str(identity),
             )
         ):
@@ -78,21 +83,44 @@ class ScopedProjectArchives(ArchiveFileStaging):
             if commit:
                 manifest = self.manifest_type.model_validate(batch.projections[0])
                 await self.require_new_project(session, manifest.project_id)
-                session.add(
-                    AssetReferenceSet(
-                        owner_user_id=owner,
-                        service_id=self.service,
-                        resource_kind="project",
-                        resource_id=str(manifest.project_id),
-                        resource_revision=0,
-                    )
-                )
-                session.add_all(files)
+                await self.publish_project(session, owner, manifest, files)
             else:
                 schedule(session, files)
             batch.state = target
             await session.commit()
             return target
+
+    async def publish_project(self, session, owner, manifest, files):
+        projection = AssetReferenceSet(
+            owner_user_id=owner,
+            service_id=self.service,
+            resource_kind=self.resource_kind,
+            resource_id=str(manifest.project_id),
+            resource_revision=0,
+        )
+        session.add(projection)
+        session.add_all(files)
+        return projection
+
+
+class PortableProjectArchives(ScopedProjectArchives):
+    @property
+    def batch_byte_limit(self):
+        return self.settings.fpl_project_snapshot_max_bytes
+
+    def file_limit(self):
+        return self.batch_byte_limit
+
+    async def normalize_staged(self, description, row, path):
+        if (
+            row.byte_size != description.byte_size
+            or await run_sync(sha256_file, path) != description.content_sha256
+        ):
+            raise AssetError("归档文件内容已变化", code="archive_file_changed", status=422)
+        row.display_name = description.display_name
+
+    def asset_result(self, row):
+        return {**super().asset_result(row), "display_name": row.display_name}
 
 
 class MotionArchives(ScopedProjectArchives):

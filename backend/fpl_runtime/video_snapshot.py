@@ -1,12 +1,10 @@
 """Bound a Video project snapshot to its exact source file versions."""
 
 import re
-from dataclasses import dataclass
 
 from pydantic import Field
 
-from .library_assets import ID, LibraryAssetDescription
-from .model_outputs import ModelOutputDescription
+from .library_assets import ID
 from .motion_preview import DIGEST
 from .motion_snapshot import MotionArchiveManifest
 from .thought_archives import ArchiveFileKey
@@ -35,20 +33,6 @@ IMPORT = SOURCE + "/projects/snapshot-imports"
 ARCHIVE_PREFIX = "/_internal/v1/video-archives"
 ARCHIVE_PURPOSE = "video.archive.stage"
 ARCHIVE_DOMAIN = b"fpl-video-archive-v1"
-
-
-@dataclass(frozen=True)
-class VideoSnapshotFileDescription(ModelOutputDescription):
-    display_name: str
-
-    def __post_init__(self):
-        super().__post_init__()
-        if not isinstance(self.display_name, str) or not 1 <= len(self.display_name) <= 255:
-            raise ValueError("视频剪辑归档素材名称无效")
-
-
-class VideoArchiveAsset(LibraryAssetDescription):
-    display_name: str
 
 
 class VideoArchiveManifest(MotionArchiveManifest):

@@ -1,9 +1,12 @@
 """Published portable Galgame project snapshot endpoints."""
 
-from fastapi import APIRouter, HTTPException, Request
+from typing import Annotated
+
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
+from app.apps.galgame_workshop.schemas import GalgameProjectSnapshotImportOut
 from app.capabilities.asset_store.project_snapshots import ProjectSnapshotError
 from fpl_runtime.galgame_assets import SOURCE
 from fpl_runtime.http_dependencies import OwnerDep, SessionDep
@@ -35,3 +38,20 @@ async def export_project_snapshot(
         headers={"Cache-Control": "private, no-store"},
         background=BackgroundTask(exported.path.unlink, missing_ok=True),
     )
+
+
+@router.post("/snapshot-imports", response_model=GalgameProjectSnapshotImportOut)
+async def import_project_snapshot(
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    file: Annotated[UploadFile, File()],
+    request: Request,
+) -> GalgameProjectSnapshotImportOut:
+    imports = request.app.state.snapshot_imports
+    if imports is None:
+        await file.close()
+        raise HTTPException(503, "galgame_archive_authorization_unavailable")
+    try:
+        return await imports.run(session, owner_user_id, file, request.state.service_assertion)
+    except ProjectSnapshotError as exc:
+        raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None

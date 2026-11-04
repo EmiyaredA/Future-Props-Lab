@@ -27,9 +27,11 @@ from fpl_galgame.migrations.registry import MIGRATIONS as GALGAME_MIGRATIONS
 from fpl_runtime.asset_references import PrepareReferenceChange
 from fpl_runtime.capability_client import CapabilityDenied
 from fpl_runtime.claims import issue_context, verify_context
+from fpl_runtime.galgame_snapshot import ARCHIVE_DOMAIN
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
 from fpl_runtime.project_errors import ProjectResourceError
+from fpl_runtime.thought_archives import ArchiveAuthenticator
 
 PROJECTS = "/v1/galgame-workshop/projects"
 ANNOTATION = "/v1/audio-annotation"
@@ -43,6 +45,10 @@ async def test_annotation_import_recovers_exact_clips_after_lost_upload_acknowle
     annotation_credential = "isolated-annotation-source-credential-" * 2
     case.identity.state.identity_options["service_credentials"].update(
         annotation=annotation_credential, galgame=CREDENTIALS["galgame"]
+    )
+    archive_key = "isolated-galgame-archive-key-" * 2
+    case.assets.state.galgame_archive_auth = ArchiveAuthenticator(
+        archive_key, domain=ARCHIVE_DOMAIN
     )
     transport = DropAcknowledgement(case.mesh)
     apps = {}
@@ -59,6 +65,7 @@ async def test_annotation_import_recovers_exact_clips_after_lost_upload_acknowle
             credential=credential,
             transport=transport,
             run_worker=False,
+            **({"archive_key": archive_key} if service == "galgame" else {}),
         )
     case.mesh.apps.update(apps)
     live = LiveAuthorization(service="assets", credential=ASSETS_SECRET, transport=case.mesh)
@@ -226,6 +233,35 @@ async def test_annotation_import_recovers_exact_clips_after_lost_upload_acknowle
                 master.json()["id"]: hashlib.sha256(sound).hexdigest(),
                 **{item["assetId"]: item["checksumSha256"] for item in result["segments"]},
             }
+
+        def multipart(body):
+            return {"file": ("project-snapshot.zip", body, "application/zip")}
+
+        transport.drop_archive_settle = True
+        pending_copy = await request(
+            "galgame", "POST", PROJECTS + "/snapshot-imports", files=multipart(archive.content)
+        )
+        assert pending_copy.status_code == 503, pending_copy.text
+        assert not transport.drop_archive_settle
+        before = await request("galgame", "GET", PROJECTS)
+        assert len(before.json()["items"]) == 1
+        copies = apps["galgame"].state.snapshot_imports.delivery
+        await copies.recover()
+        await copies.process_once()
+        after = await request("galgame", "GET", PROJECTS)
+        copied = next(item for item in after.json()["items"] if item["id"] != project.json()["id"])
+        assert copied["title"] == "Owned Galgame（副本）"
+        copy_path = f"{PROJECTS}/{copied['id']}"
+        retained = await request("galgame", "GET", copy_path + "/story/report")
+        assert retained.status_code == 200 and retained.json()["ready"], retained.text
+        copied_assets = (await request("galgame", "GET", copy_path + "/assets")).json()["items"]
+        assert {item["checksumSha256"] for item in copied_assets} == set(hashes.values())
+        assert {item["id"] for item in copied_assets}.isdisjoint(hashes)
+        invalid = await request(
+            "galgame", "POST", PROJECTS + "/snapshot-imports", files=multipart(b"bad zip")
+        )
+        assert invalid.status_code == 422, invalid.text
+        assert len((await request("galgame", "GET", PROJECTS)).json()["items"]) == 2
 
         actor = verify_context(
             assertion,

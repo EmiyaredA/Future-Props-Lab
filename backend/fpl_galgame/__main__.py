@@ -5,6 +5,7 @@ from pathlib import Path
 from shutil import which
 
 from fpl_runtime.project_owner_cli import run_project_owner
+from fpl_runtime.timed_peer import load_peer_key
 
 from .application import create_app
 from .migrations.registry import MIGRATIONS
@@ -24,6 +25,9 @@ def deployed_application(**settings):
         raise ValueError("Galgame 缺少已安装的浏览器程序")
     return create_app(
         web_root=web if has_web else None,
+        archive_key=load_peer_key(
+            Path("/run/fpl/galgame-archive-key"), excluded=(settings["credential"],)
+        ),
         schema_path=Path("/app/deploy/contracts/openapi.json") if has_web else None,
         **settings,
     )

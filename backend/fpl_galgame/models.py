@@ -74,10 +74,23 @@ class GalgameAnnotationAuthorization(StoryRetentionBase):
     assertion: Mapped[str] = mapped_column(Text)
 
 
+class GalgameSnapshotImportBatch(StoryRetentionBase):
+    __tablename__ = "galgame_snapshot_import_batches"
+
+    owner_user_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    batch_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    source_sha256: Mapped[str] = mapped_column(String(64))
+    manifest_sha256: Mapped[str | None] = mapped_column(String(64))
+    result: Mapped[dict | None] = mapped_column(JSON)
+    state: Mapped[str] = mapped_column(String(16), default="staging")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
 MODELS = (
     GalgameMigrationReceipt,
     GalgameUploadIntake,
     GalgameAnnotationAuthorization,
+    GalgameSnapshotImportBatch,
     GalgameWorkshopProject,
     GalgameStoryDocument,
     GalgameProjectAssetReference,

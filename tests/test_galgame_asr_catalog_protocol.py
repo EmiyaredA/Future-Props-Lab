@@ -14,7 +14,13 @@ from fpl_models.models import ACCOUNT_MODELS, MODELS
 from fpl_runtime.claims import HEADER
 from fpl_runtime.database import Database
 from fpl_runtime.delegation import RequestGrant
-from fpl_runtime.galgame_snapshot import MODEL_PURPOSE, MODEL_REFERENCE_PREFIX
+from fpl_runtime.galgame_snapshot import (
+    IMPORT,
+    MODEL_PURPOSE,
+    MODEL_REFERENCE_PREFIX,
+    MODEL_RESOLVE_PREFIX,
+    ModelReference,
+)
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
 
@@ -131,6 +137,22 @@ async def test_galgame_asr_settings_check_the_owned_catalog_and_keep_task_histor
             token = await galgame.state.capabilities.authorize_request(original, grant)
             reference = await http.get("http://models" + target, headers={HEADER: token})
             assert reference.status_code == 200 and reference.json() == expected, reference.text
+        import_token = (await authorize(case, "galgame", "POST", IMPORT))[HEADER]
+        for slug, expected in (("isolated-asr", own), ("missing-asr", None)):
+            model = ModelReference(provider_kind="openai", model_slug=slug)
+            target = f"{MODEL_RESOLVE_PREFIX}/{model.digest}"
+            grant = RequestGrant("galgame", MODEL_PURPOSE, "POST", IMPORT, "models", "POST", target)
+            token = await galgame.state.capabilities.authorize_request(import_token, grant)
+            resolved = await http.post(
+                "http://models" + target, headers={HEADER: token}, json=model.model_dump()
+            )
+            assert resolved.status_code == 200 and resolved.json() == expected, resolved.text
+            changed = await http.post(
+                "http://models" + target,
+                headers={HEADER: token},
+                json={**model.model_dump(), "model_slug": "tampered"},
+            )
+            assert changed.status_code == 403
         cleared = await call("PATCH", path, json={"expectedRevision": 1, "modelId": None})
         assert cleared.status_code == 200, cleared.text
         assert cleared.json()["modelId"] is None and not cleared.json()["modelReady"]

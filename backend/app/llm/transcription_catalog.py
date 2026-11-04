@@ -1,5 +1,8 @@
 """Credential-free readiness for a catalog speech recognition model."""
 
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.llm.models import ModelEntry, ModelProvider
 
 
@@ -32,3 +35,29 @@ async def transcription_model_reference(session, model_id, owner):
     if provider is None or provider.owner_user_id != owner:
         return None
     return {"provider_kind": provider.kind, "model_slug": model.slug}
+
+
+async def resolve_transcription_model_reference(
+    session: AsyncSession, reference: object, owner_user_id: str
+) -> str | None:
+    if not isinstance(reference, dict):
+        return None
+    rows = (
+        (
+            await session.execute(
+                select(ModelEntry.id)
+                .join(ModelProvider, ModelProvider.id == ModelEntry.provider_id)
+                .where(
+                    ModelProvider.kind == str(reference.get("provider_kind") or ""),
+                    ModelEntry.slug == str(reference.get("model_slug") or ""),
+                    ModelEntry.enabled.is_(True),
+                    ModelProvider.enabled.is_(True),
+                    ModelEntry.owner_user_id == owner_user_id,
+                    ModelProvider.owner_user_id == owner_user_id,
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return rows[0] if len(rows) == 1 else None

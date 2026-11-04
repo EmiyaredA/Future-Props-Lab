@@ -42,6 +42,7 @@ from .routes.annotation_assets import router as annotation_assets_router
 from .routes.community_assets import router as community_assets_router
 from .routes.community_uploads import router as community_uploads_router
 from .routes.files import router as files_router
+from .routes.galgame_archives import router as galgame_archives_router
 from .routes.galgame_assets import router as galgame_assets_router
 from .routes.galgame_upload import router as galgame_upload_router
 from .routes.layout import router as layout_router
@@ -105,6 +106,7 @@ def create_app(
     motion_archive_key=None,
     video_originals_key=None,
     video_archive_key=None,
+    galgame_archive_key=None,
     visual_segment_assets_key=None,
 ):
     database = Database("assets", settings.runtime_path, models=MODELS)
@@ -184,6 +186,13 @@ def create_app(
         app.state.motion_archive_auth = ArchiveAuthenticator(
             motion_archive_key, domain=ARCHIVE_DOMAIN
         )
+    if galgame_archive_key is not None:
+        from fpl_runtime.galgame_snapshot import ARCHIVE_DOMAIN
+        from fpl_runtime.thought_archives import ArchiveAuthenticator
+
+        app.state.galgame_archive_auth = ArchiveAuthenticator(
+            galgame_archive_key, domain=ARCHIVE_DOMAIN
+        )
     if video_archive_key is not None:
         from fpl_runtime.thought_archives import ArchiveAuthenticator
         from fpl_runtime.video_snapshot import ARCHIVE_DOMAIN
@@ -216,6 +225,7 @@ def create_app(
     app.include_router(presentation_assets_router)
     app.include_router(motion_assets_router)
     app.include_router(video_archives_router)
+    app.include_router(galgame_archives_router)
     app.include_router(video_assets_router)
     app.include_router(video_originals_router)
     app.include_router(video_render_outputs_router)

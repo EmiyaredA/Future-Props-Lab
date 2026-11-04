@@ -4,8 +4,11 @@ import json
 from contextlib import asynccontextmanager
 
 from app.apps.galgame_workshop.models import GalgameWorkshopProject
+from app.capabilities.asset_store.project_snapshots import cleanup_snapshot_staging
+from fpl_runtime.archive_transport import ArchiveTransport, SnapshotArchiveAsset
 from fpl_runtime.capability_client import CapabilityClient
 from fpl_runtime.certification_service import create_certification_app
+from fpl_runtime.galgame_snapshot import ARCHIVE_DOMAIN, ARCHIVE_PREFIX, ARCHIVE_PURPOSE, IMPORT
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.reference_runtime import install_reference_runtime
@@ -19,6 +22,7 @@ from .models import MODELS, GalgameCertificationReceipt, GalgameStoryReferenceMu
 from .projects_http import router as project_router
 from .snapshot_exports import SnapshotSettings
 from .snapshot_http import router as snapshot_router
+from .snapshot_imports import SnapshotDelivery, SnapshotImports
 from .story_migration_http import router as story_migration_router
 from .task_http import router as task_router
 from .upload_http import router as upload_router
@@ -40,6 +44,7 @@ def create_app(
     catalog,
     transport=None,
     run_worker=True,
+    archive_key=None,
     web_root=None,
     schema_path=None,
 ):
@@ -90,6 +95,22 @@ def create_app(
     app.state.upload_intakes = uploads
     imports = AnnotationImports(app.state, uploads, state_root)
     app.state.annotation_imports = imports
+    archive_delivery = None
+    app.state.snapshot_imports = None
+    if archive_key is not None:
+        archive = ArchiveTransport(
+            app.state.capabilities,
+            archive_key,
+            service="galgame",
+            purpose=ARCHIVE_PURPOSE,
+            source_path=IMPORT,
+            prefix=ARCHIVE_PREFIX,
+            domain=ARCHIVE_DOMAIN,
+            asset_model=SnapshotArchiveAsset,
+            exact_mime=False,
+        )
+        archive_delivery = SnapshotDelivery(app.state.database.sessions, archive)
+        app.state.snapshot_imports = SnapshotImports(app.state, archive, archive_delivery)
     lifespan = app.router.lifespan_context
 
     @asynccontextmanager
@@ -101,10 +122,15 @@ def create_app(
         ):
             try:
                 if run_worker:
+                    cleanup_snapshot_staging(app.state.snapshot_settings)
                     await uploads.start()
                     await imports.start()
+                    if archive_delivery is not None:
+                        await archive_delivery.start()
                 yield
             finally:
+                if archive_delivery is not None:
+                    await archive_delivery.stop()
                 await imports.stop()
                 await uploads.stop()
 

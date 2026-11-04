@@ -31,7 +31,7 @@ from app.problem_details import (
     validation_exception_handler,
 )
 from app.runtime.revisions import RevisionConflictError
-from fpl_runtime.archive_transport import ArchiveTransport
+from fpl_runtime.archive_transport import ArchiveTransport, SnapshotArchiveAsset
 from fpl_runtime.authentication import SignedIdentity
 from fpl_runtime.capability_client import CapabilityClient
 from fpl_runtime.database import Database
@@ -48,7 +48,6 @@ from fpl_runtime.video_snapshot import (
     ARCHIVE_PREFIX,
     ARCHIVE_PURPOSE,
     IMPORT,
-    VideoArchiveAsset,
 )
 from fpl_runtime.web import attach_web, load_release
 
@@ -184,7 +183,7 @@ def create_app(
             source_path=IMPORT,
             prefix=ARCHIVE_PREFIX,
             domain=ARCHIVE_DOMAIN,
-            asset_model=VideoArchiveAsset,
+            asset_model=SnapshotArchiveAsset,
             exact_mime=False,
         )
         if archive_key is not None

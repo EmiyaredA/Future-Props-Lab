@@ -1,10 +1,8 @@
 """Publish an imported Video project only after exact Assets archive settlement."""
 
-import hashlib
 from datetime import datetime
 from uuid import UUID
 
-from anyio import open_file
 from pydantic import BaseModel
 from sqlalchemy import text, update
 
@@ -18,9 +16,10 @@ from app.capabilities.asset_store.project_snapshots import (
 )
 from app.runtime.time import utc_now
 from fpl_runtime.archive_delivery import FileBatchDelivery, reserve_import
+from fpl_runtime.archive_transport import HashingUpload, SnapshotFileDescription, chunks
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
 from fpl_runtime.thought_archives import ArchiveBatchKey, ArchiveFileKey
-from fpl_runtime.video_snapshot import VideoArchiveManifest, VideoSnapshotFileDescription
+from fpl_runtime.video_snapshot import VideoArchiveManifest
 
 from .media_registration import register_media
 from .models import VideoImportBatch
@@ -80,26 +79,6 @@ class SnapshotDelivery(FileBatchDelivery):
             await session.commit()
 
 
-class HashingUpload:
-    def __init__(self, incoming):
-        self.incoming = incoming
-        self.digest = hashlib.sha256()
-
-    async def read(self, size):
-        data = await self.incoming.read(size)
-        self.digest.update(data)
-        return data
-
-    async def close(self):
-        await self.incoming.close()
-
-
-async def chunks(path):
-    async with await open_file(path, "rb") as file:
-        while data := await file.read(1024 * 1024):
-            yield data
-
-
 class SnapshotImports:
     def __init__(self, archive, delivery, settings):
         self.archive, self.delivery, self.settings = archive, delivery, settings
@@ -136,7 +115,7 @@ class SnapshotImports:
                 original = originals[identity]
                 if item["byte_size"] != original.byte_size:
                     raise ProjectSnapshotError("工程包素材长度与清单不符")
-                descriptor = VideoSnapshotFileDescription(
+                descriptor = SnapshotFileDescription(
                     item["original_filename"],
                     item["mime_type"],
                     original.byte_size,

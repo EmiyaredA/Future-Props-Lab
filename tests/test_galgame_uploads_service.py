@@ -32,6 +32,7 @@ class DropAcknowledgement(httpx.AsyncBaseTransport):
         self.drop_next = False
         self.dropped = False
         self.drop_edit_commit = False
+        self.drop_archive_settle = False
 
     async def handle_async_request(self, request):
         response = await self.mesh.handle_async_request(request)
@@ -54,6 +55,15 @@ class DropAcknowledgement(httpx.AsyncBaseTransport):
             self.drop_edit_commit = False
             await response.aclose()
             raise httpx.ReadError("synthetic lost Galgame file mutation receipt", request=request)
+        if (
+            self.drop_archive_settle
+            and request.method == "POST"
+            and request.url.path == "/_internal/v1/galgame-archives/settle"
+            and response.status_code == 200
+        ):
+            self.drop_archive_settle = False
+            await response.aclose()
+            raise httpx.ReadError("synthetic lost Galgame archive publication", request=request)
         return response
 
 

@@ -19,7 +19,7 @@ async def owned_catalog(request, *, purpose):
         actor = verify_context(
             token,
             service="models",
-            method="GET",
+            method=request.method,
             path=path,
             public_key=request.app.state.identity_public_key,
         )
@@ -29,7 +29,9 @@ async def owned_catalog(request, *, purpose):
         actor.platform_role, frozenset(actor.scopes)
     ):
         raise HTTPException(403, f"{purpose}_access_forbidden")
-    active = await request.app.state.identity.status(assertion=token, method="GET", path=path)
+    active = await request.app.state.identity.status(
+        assertion=token, method=request.method, path=path
+    )
     if active is not True:
         raise HTTPException(401 if active is False else 503, f"{purpose}_authority_unavailable")
     async with request.app.state.database.sessions(
