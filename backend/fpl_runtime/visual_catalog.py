@@ -2,6 +2,8 @@
 
 import re
 
+from .visual_assistant import MODEL_TARGET
+
 GENERATION_SOURCE = "/v1/visual-workshop/generation-options"
 GENERATION_TARGET = "/_internal/v1/visual-catalog/generation-options"
 ACCEPTANCE_TARGET = "/_internal/v1/visual-catalog/acceptance-models"
@@ -12,7 +14,7 @@ PURPOSE = "visual.model-catalog.read"
 
 
 def catalog_target(method, path):
-    return method == "GET" and path in {GENERATION_TARGET, ACCEPTANCE_TARGET}
+    return method == "GET" and path in {GENERATION_TARGET, ACCEPTANCE_TARGET, MODEL_TARGET}
 
 
 def visual_catalog_grant(grant):
@@ -21,7 +23,8 @@ def visual_catalog_grant(grant):
         or grant.purpose != PURPOSE
         or grant.source_method != "GET"
         or grant.target_service != "models"
-        or not catalog_target(grant.target_method, grant.target_path)
+        or grant.target_method != "GET"
+        or grant.target_path not in {GENERATION_TARGET, ACCEPTANCE_TARGET}
     ):
         return False
     if grant.target_path == GENERATION_TARGET:

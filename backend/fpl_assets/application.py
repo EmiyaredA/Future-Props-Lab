@@ -28,6 +28,8 @@ from fpl_runtime.migrations import check
 from fpl_runtime.request_limit import RequestLimit
 from fpl_runtime.video_segment_handoff import ASSET_HANDOFFS
 from fpl_runtime.video_segment_handoff import asset_peer as visual_segment_peer
+from fpl_runtime.visual_assistant import ASSET_PREFIX as CONVERSATION_FILES
+from fpl_runtime.visual_assistant import MAX_QUERY_BYTES as MAX_CONVERSATION_QUERY_BYTES
 
 from .deletions import FileCleanup
 from .layout import StorageLayouts
@@ -61,6 +63,7 @@ from .routes.video_render_outputs import router as video_render_outputs_router
 from .routes.video_segment_bundles import router as video_segment_bundles_router
 from .routes.video_segment_handoffs import router as video_segment_handoffs_router
 from .routes.video_segment_outputs import router as video_segment_outputs_router
+from .routes.visual_assistant import router as conversation_assets_router
 from .video_segment_bundles import cleanup_bundles
 from .video_segment_handoffs import SegmentHandoffFiles
 
@@ -196,6 +199,10 @@ def create_app(
         app.include_router(router, prefix="/v1")
     app.include_router(retention_router)
     app.include_router(project_reveal_router)
+    app.include_router(conversation_assets_router)
+    app.add_middleware(
+        RequestLimit, prefix=CONVERSATION_FILES, maximum=MAX_CONVERSATION_QUERY_BYTES
+    )
     app.include_router(galgame_assets_router)
     app.add_middleware(RequestLimit, prefix=GALGAME_FILES, maximum=MAX_GALGAME_QUERY_BYTES)
     app.include_router(library_inputs_router)

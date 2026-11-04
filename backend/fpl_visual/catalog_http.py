@@ -21,9 +21,11 @@ generation = APIRouter(tags=["visual-generation"])
 acceptance = APIRouter(tags=["visual-workshop"])
 
 
-async def lookup(request, target, schema):
+async def lookup(request, target, schema, *, purpose=PURPOSE):
     client = request.app.state.capabilities
-    grant = RequestGrant("visual", PURPOSE, "GET", request.url.path, "models", "GET", target)
+    grant = RequestGrant(
+        "visual", purpose, request.method, request.url.path, "models", "GET", target
+    )
     try:
         token = await client.authorize_request(request.state.service_assertion, grant)
         response = await client.client.get("http://models:8080" + target, headers={HEADER: token})

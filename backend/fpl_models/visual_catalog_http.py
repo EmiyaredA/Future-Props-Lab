@@ -2,8 +2,14 @@
 
 from fastapi import APIRouter, Request
 
-from app.llm.schemas.visual_catalog import AcceptanceModelListOut, GenerationOptionsOut
+from app.llm.assistant_catalog import assistant_models
+from app.llm.schemas.visual_catalog import (
+    AcceptanceModelListOut,
+    AssistantCatalog,
+    GenerationOptionsOut,
+)
 from app.llm.visual_catalog import acceptance_models, generation_options
+from fpl_runtime.visual_assistant import MODEL_TARGET
 from fpl_runtime.visual_catalog import ACCEPTANCE_TARGET, GENERATION_TARGET
 
 from .catalog_reads import owned_catalog
@@ -23,3 +29,9 @@ async def read_generation_options(request: Request):
 async def read_acceptance_models(request: Request):
     async with owned_catalog(request, purpose="visual_catalog") as (actor, session):
         return await acceptance_models(session, actor.user_id)
+
+
+@router.get(MODEL_TARGET, response_model=AssistantCatalog)
+async def read_assistant_models(request: Request):
+    async with owned_catalog(request, purpose="visual_assistant") as (_actor, session):
+        return await assistant_models(session)

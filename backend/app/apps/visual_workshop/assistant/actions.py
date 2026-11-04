@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy import func, select, update
 
+from app.apps.visual_workshop.assistant_values import action_out as action_out
 from app.apps.visual_workshop.models import (
     VisualAssistantAction,
     VisualAssistantConversation,
@@ -11,30 +12,9 @@ from app.apps.visual_workshop.schemas.workshop import VisualAssistantActionOut
 from app.capabilities.agents.harness import AgentEvent
 from app.runtime.db import SessionLocal
 from app.runtime.ownership import bind_owner
-from app.runtime.time import iso_utc, utc_now
+from app.runtime.time import utc_now
 
 ACTIVE_ACTION_STATUSES = ("proposed", "waiting_approval", "running")
-
-
-def action_out(row: VisualAssistantAction) -> VisualAssistantActionOut:
-    return VisualAssistantActionOut(
-        id=row.id,
-        action_id=row.action_id,
-        run_id=row.run_id,
-        approval_group_id=row.approval_group_id,
-        position=row.position,
-        tool_name=row.tool_name,
-        effect=row.effect,
-        status=row.status,
-        display_payload=dict(row.display_payload or {}),
-        result_payload=dict(row.result_payload or {}),
-        error_message=row.error_message,
-        duration_ms=row.duration_ms,
-        canvas_revision=row.canvas_revision,
-        generation_task_id=row.generation_task_id,
-        created_at=iso_utc(row.created_at),
-        updated_at=iso_utc(row.updated_at),
-    )
 
 
 def _safe_result(payload: dict) -> tuple[dict, int | None, str | None]:

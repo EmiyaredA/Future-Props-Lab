@@ -24,6 +24,9 @@ from app.llm.schemas.generation_tasks import (
     ImageGenerationTaskCreateIn,
     VideoGenerationTaskCreateIn,
 )
+from app.llm.schemas.visual_catalog import (
+    VisualAssistantModelOptionOut as VisualAssistantModelOptionOut,
+)
 from app.llm.schemas.workflow_video import WorkflowVideoParameters
 from app.llm.task_execution import TaskExecutionInfo
 
@@ -486,16 +489,6 @@ class VisualAssistantConversationOut(VisualAssistantConversationSummaryOut):
 
 class VisualAssistantConversationListOut(BaseModel):
     items: list[VisualAssistantConversationSummaryOut]
-
-
-class VisualAssistantModelOptionOut(BaseModel):
-    id: str
-    provider_id: str
-    provider_name: str
-    slug: str
-    label: str
-    description: str
-    capabilities: list[str]
 
 
 class VisualAssistantModelOptionListOut(BaseModel):

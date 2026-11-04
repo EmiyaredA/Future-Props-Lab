@@ -155,13 +155,13 @@ class VisualAssistantConversation(Base):
     )
     title: Mapped[str] = mapped_column(String(120), default="AI 助手对话")
     model_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("model_entries.id", ondelete="SET NULL"), nullable=True
+        String(36), ForeignKey(external_id("model_entries"), ondelete="SET NULL"), nullable=True
     )
     image_model_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("model_entries.id", ondelete="SET NULL"), nullable=True
+        String(36), ForeignKey(external_id("model_entries"), ondelete="SET NULL"), nullable=True
     )
     video_model_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("model_entries.id", ondelete="SET NULL"), nullable=True
+        String(36), ForeignKey(external_id("model_entries"), ondelete="SET NULL"), nullable=True
     )
     revision: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
@@ -216,7 +216,7 @@ class VisualAssistantMessageAsset(Base):
         String(36), ForeignKey("visual_assistant_messages.id", ondelete="CASCADE")
     )
     asset_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="RESTRICT")
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="RESTRICT")
     )
     position: Mapped[int] = mapped_column(Integer)
 

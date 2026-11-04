@@ -25,6 +25,7 @@ from fpl_runtime.retention_authority import (
 )
 from fpl_runtime.video_assets import SOURCE as VIDEO
 from fpl_runtime.video_handoff import handoff_target
+from fpl_runtime.visual_assistant import conversation_retention
 
 from .live import active_actor
 
@@ -241,6 +242,12 @@ class RetentionAuthorization:
             body.caller == "visual"
             and body.change.resource_kind == "canvas"
             and not _visual_canvas_source(body)
+        ):
+            raise HTTPException(403, "retention_resource_mismatch")
+        if (
+            body.caller == "visual"
+            and body.change.resource_kind == "conversation"
+            and not conversation_retention(body)
         ):
             raise HTTPException(403, "retention_resource_mismatch")
         if body.caller == "galgame" and not (

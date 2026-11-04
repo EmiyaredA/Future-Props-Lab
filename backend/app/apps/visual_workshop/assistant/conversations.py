@@ -13,6 +13,7 @@ from app.apps.visual_workshop.assistant.actions import action_out
 from app.apps.visual_workshop.assistant.attachments import (
     VisualAssistantAttachmentMixin,
 )
+from app.apps.visual_workshop.assistant_values import message_out as message_out
 from app.apps.visual_workshop.models import (
     VisualAssistantAction,
     VisualAssistantConversation,
@@ -23,23 +24,26 @@ from app.apps.visual_workshop.models import (
 )
 from app.apps.visual_workshop.schemas.workshop import (
     VisualAssistantActionOut,
-    VisualAssistantAssetOut,
     VisualAssistantContentPart,
     VisualAssistantConversationListOut,
     VisualAssistantConversationOut,
     VisualAssistantConversationPatchIn,
     VisualAssistantConversationSummaryOut,
-    VisualAssistantMessageOut,
     VisualAssistantModelOptionListOut,
-    VisualAssistantModelOptionOut,
 )
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
+from app.llm.assistant_catalog import (
+    catalog_rows,
+    chat_order,
+    chat_ready,
+    generation_ready,
+    model_option,
+)
 from app.llm.models import (
     ModelEntry,
     ModelProvider,
 )
-from app.llm.providers.chat_completions import TEXT_PROVIDER_KINDS
 from app.llm.providers.streaming import ChatMessageInput
 from app.runtime.config import Settings, get_settings
 from app.runtime.revisions import RevisionConflictError
@@ -90,35 +94,6 @@ class PreparedAssistantGeneration:
     api_key_id: str | None = None
     api_key_name: str | None = None
     api_key_prefix: str | None = None
-
-
-def asset_out(row: VisualAsset) -> VisualAssistantAssetOut:
-    return VisualAssistantAssetOut(
-        id=row.id,
-        display_name=row.display_name,
-        mime_type=row.mime_type,
-        byte_size=row.byte_size,
-    )
-
-
-def message_out(
-    row: VisualAssistantMessage,
-    assets: list[VisualAsset] | None = None,
-    actions: list[VisualAssistantActionOut] | None = None,
-) -> VisualAssistantMessageOut:
-    return VisualAssistantMessageOut(
-        id=row.id,
-        turn_id=row.turn_id,
-        role=row.role,
-        content=row.content,
-        model_slug=row.model_slug,
-        status=row.status,
-        error_message=row.error_message,
-        created_at=iso_utc(row.created_at),
-        content_parts=row.content_parts or [],
-        assets=[asset_out(item) for item in assets or []],
-        actions=actions or [],
-    )
 
 
 class VisualAssistantConversations(VisualAssistantAttachmentMixin):
@@ -239,27 +214,13 @@ class VisualAssistantConversations(VisualAssistantAttachmentMixin):
     async def _available_models(
         self, *, require_vision: bool
     ) -> list[tuple[ModelEntry, ModelProvider]]:
-        rows = (
-            await self.session.execute(
-                select(ModelEntry, ModelProvider)
-                .join(ModelProvider, ModelProvider.id == ModelEntry.provider_id)
-                .where(
-                    ModelEntry.enabled.is_(True),
-                    ModelProvider.enabled.is_(True),
-                    ModelProvider.kind.in_(TEXT_PROVIDER_KINDS),
-                )
-                .order_by(ModelProvider.sort_order, ModelEntry.sort_order, ModelEntry.slug)
-            )
-        ).all()
-        filtered = [
-            (model, provider)
-            for model, provider in rows
-            if "chat" in list(model.capabilities or [])
-            and (not require_vision or "vision" in list(model.capabilities or []))
-        ]
         return sorted(
-            filtered,
-            key=lambda item: ("tools" not in list(item[0].capabilities or []),),
+            [
+                (model, provider)
+                for model, provider in await catalog_rows(self.session)
+                if chat_ready(model, provider, require_vision=require_vision)
+            ],
+            key=chat_order,
         )
 
     async def _select_model(
@@ -296,18 +257,7 @@ class VisualAssistantConversations(VisualAssistantAttachmentMixin):
         await self._project(project_id)
         models = await self._available_models(require_vision=False)
         return VisualAssistantModelOptionListOut(
-            items=[
-                VisualAssistantModelOptionOut(
-                    id=model.id,
-                    provider_id=provider.id,
-                    provider_name=provider.name,
-                    slug=model.slug,
-                    label=model.label or model.slug,
-                    description=model.description,
-                    capabilities=list(model.capabilities or []),
-                )
-                for model, provider in models
-            ]
+            items=[model_option(model, provider) for model, provider in models]
         )
 
     async def _has_pending(self, conversation_id: str) -> bool:
@@ -326,14 +276,7 @@ class VisualAssistantConversations(VisualAssistantAttachmentMixin):
     async def _validate_generation_model(self, model_id: str, kind: str) -> None:
         model = await self.session.get(ModelEntry, model_id)
         provider = await self.session.get(ModelProvider, model.provider_id) if model else None
-        if (
-            model is None
-            or provider is None
-            or not model.enabled
-            or not provider.enabled
-            or provider.kind != f"senseaudio_{kind}"
-            or f"{kind}_generation" not in list(model.capabilities or [])
-        ):
+        if not generation_ready(model, provider, kind):
             label = "图像" if kind == "image" else "视频"
             raise AssistantModelUnavailableError(f"所选{label}生成模型已停用或不可用")
 
