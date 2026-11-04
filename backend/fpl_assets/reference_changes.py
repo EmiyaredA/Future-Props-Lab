@@ -11,6 +11,7 @@ from sqlalchemy import delete, func, select, text
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.ids import new_id
+from fpl_runtime.annotation_assets import MAX_AUDIO_BYTES
 from fpl_runtime.asset_references import PrepareReferenceChange
 from fpl_runtime.retention_authority import canvas_metadata, change_digest, story_metadata
 from fpl_runtime.thought_assets import AssetDescription
@@ -138,6 +139,23 @@ class ReferenceChanges:
                     raise failure(
                         "story_galgame_asset_scope", "不能引用其他 Galgame 工程的私有素材", 422
                     )
+            elif requested and service == "annotation":
+                asset = await session.scalar(
+                    select(VisualAsset).where(
+                        VisualAsset.id.in_(requested),
+                        VisualAsset.project_id.is_(None),
+                        VisualAsset.galgame_project_id.is_(None),
+                        VisualAsset.video_editor_project_id.is_(None),
+                        VisualAsset.motion_compositor_project_id.is_(None),
+                    )
+                )
+                if asset is None or len(requested) != 1:
+                    raise failure("not_found", "音频文件不存在", 404)
+                if asset.media_kind != "audio":
+                    raise failure("invalid_audio", "标注任务只能使用音频文件", 422)
+                if asset.byte_size > MAX_AUDIO_BYTES:
+                    raise failure("audio_too_large", "音频不能超过 100 MiB", 413)
+                present = {asset.id}
             elif requested and describe_canvas:
                 present, known = await canvas_files(session, row, change)
                 unavailable = requested - present

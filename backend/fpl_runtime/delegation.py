@@ -3,6 +3,7 @@
 import re
 from dataclasses import dataclass
 
+from .annotation_assets import audio_asset_grant
 from .resource_routes import RESOURCE_ROUTES
 
 
@@ -120,7 +121,12 @@ def target_permission_path(grant):
         return writing_target(grant.target_method, grant.target_path)
     if community_upload_grant(grant):
         return grant.source_path
-    if asset_grant(grant) or upload_grant(grant) or archive_grant(grant):
+    if (
+        asset_grant(grant)
+        or upload_grant(grant)
+        or archive_grant(grant)
+        or audio_asset_grant(grant)
+    ):
         return "/v1/files"
     if model_library_output(grant) or library_grant(grant):
         return "/v1/files"
@@ -154,6 +160,7 @@ def permitted(grant, catalog):
         or upload_grant(grant)
         or archive_grant(grant)
         or community_upload_grant(grant)
+        or audio_asset_grant(grant)
     ):
         return True
     if model_library_input(grant) or model_library_output(grant) or library_grant(grant):

@@ -1,14 +1,14 @@
-"""Thought reads only the authenticated account's ordinary library files."""
+"""Read only the authenticated account's ordinary library files."""
 
 from sqlalchemy import select
 
 from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from fpl_runtime.thought_assets import AssetDescription
+from fpl_runtime.library_assets import LibraryAssetDescription
 
 
-async def describe(session, owner, ids):
+async def describe(session, owner, ids, *, description=LibraryAssetDescription):
     if session.info.get("owner_user_id") != owner:
         raise ValueError("素材请求缺少匹配的账号上下文")
     rows = (
@@ -30,9 +30,7 @@ async def describe(session, owner, ids):
     if {row.id for row in rows} != set(ids):
         raise AssetError("文件不存在", code="not_found", status=404)
     return {
-        row.id: AssetDescription(
-            **{field: getattr(row, field) for field in AssetDescription.model_fields}
-        )
+        row.id: description(**{field: getattr(row, field) for field in description.model_fields})
         for row in rows
     }
 

@@ -130,6 +130,7 @@ Agent Runtime 的 `backend/fpl_agent_runtime/` 拥有编程智能体目录、检
 `deploy/agent-runtime.compose.yaml` 只挂载服务自有数据与最小凭据。
 独立页面由 `web/src/app/entries/agent-runtime.tsx` 构建。
 
+Assets 的 `backend/fpl_assets/library_reads.py` 提供账号文件库查询，音频标注通过专用签名协议读取元数据和对应修订的音频，并为项目准备素材引用。
 面试助手的 `backend/fpl_interview/` 独立装配签名接口、场次数据库及私有材料目录。兼容站仍由现有 Codex runner 执行。独立面试助手通过 `backend/fpl_host/interview_worker.py` 领取固定准备任务，并通过 Identity 复核账号权限。
 导演台的 `backend/fpl_director/migration_application.py` 装配回环维护入口，按账号迁移原项目、动作及其文件。
 Remote 的 `backend/fpl_remote/` 拥有桌面偏好、短期连接票据与 WebSocket。

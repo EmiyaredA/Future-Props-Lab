@@ -7,7 +7,7 @@ from starlette.responses import FileResponse
 from app.capabilities.asset_store.image_thumbnails import ThumbnailSource, asset_thumbnail
 from fpl_runtime.community_assets import verify_community_asset
 
-from ..thought_library import content, describe
+from ..library_reads import content, describe
 
 router = APIRouter(prefix="/_internal/v1/thought-community-assets", include_in_schema=False)
 

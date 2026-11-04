@@ -31,6 +31,7 @@ from .migrations.registry import MIGRATIONS
 from .models import MODELS
 from .reference_changes import ReferenceChanges
 from .retention_api import router as retention_router
+from .routes.annotation_assets import router as annotation_assets_router
 from .routes.community_assets import router as community_assets_router
 from .routes.community_uploads import router as community_uploads_router
 from .routes.files import router as files_router
@@ -136,6 +137,7 @@ def create_app(
     app.include_router(library_inputs_router)
     app.include_router(library_outputs_router)
     app.include_router(thought_library_router)
+    app.include_router(annotation_assets_router)
     app.include_router(thought_uploads_router)
     app.include_router(thought_archives_router)
     app.include_router(community_assets_router)

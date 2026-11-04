@@ -9,7 +9,7 @@ from app.capabilities.identity.permissions import effective_permissions
 from fpl_runtime.claims import HEADER, verify_context
 from fpl_runtime.thought_assets import PREFIX, AssetQuery
 
-from ..thought_library import content, describe
+from ..library_reads import content, describe
 
 router = APIRouter(include_in_schema=False)
 

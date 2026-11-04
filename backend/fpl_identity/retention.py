@@ -9,6 +9,8 @@ from fastapi import HTTPException
 
 from app.capabilities.identity.principal import StudioPrincipal
 from app.capabilities.identity.route_permissions import route_permission
+from fpl_runtime.annotation_assets import PROJECT_CREATION
+from fpl_runtime.annotation_assets import SOURCE as ANNOTATION
 from fpl_runtime.claims import verify_context
 from fpl_runtime.retention_authority import (
     canvas_metadata,
@@ -78,6 +80,24 @@ def _galgame_story_source(body):
     )
 
 
+def _annotation_source(body):
+    change = body.change
+    if change.resource_kind != "project":
+        return False
+    if change.expected_resource_revision == -1:
+        return (
+            body.source_method == "POST"
+            and body.source_path in PROJECT_CREATION
+            and _GENERATED_PROJECT_ID.fullmatch(change.resource_id) is not None
+            and len(change.asset_ids) == 1
+        )
+    return (
+        body.source_method == "DELETE"
+        and body.source_path == f"{ANNOTATION}/projects/{change.resource_id}"
+        and not change.asset_ids
+    )
+
+
 class RetentionAuthorization:
     def __init__(self, state):
         self.state = state
@@ -138,6 +158,8 @@ class RetentionAuthorization:
         if body.caller == "galgame" and not (
             body.change.resource_kind == "story" and _galgame_story_source(body)
         ):
+            raise HTTPException(403, "retention_resource_mismatch")
+        if body.caller == "annotation" and not _annotation_source(body):
             raise HTTPException(403, "retention_resource_mismatch")
         if body.caller == "thought":
             # An original write is not by itself authority to change an arbitrary
