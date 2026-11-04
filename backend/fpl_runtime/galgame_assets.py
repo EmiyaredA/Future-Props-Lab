@@ -99,6 +99,7 @@ def galgame_asset_grant(grant):
         ("GET", project + "/assets/overview"),
         ("GET", project + "/assets/package-manifest"),
         ("GET", project + "/story/report"),
+        ("GET", project + "/snapshot"),
         ("PATCH", project),
         ("POST", project + "/assets/asr/match-dialogue"),
         ("POST", project + "/annotation-imports"),

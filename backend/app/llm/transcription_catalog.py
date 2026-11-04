@@ -20,3 +20,15 @@ async def transcription_model_ready(session, model_id):
     model = await session.get(ModelEntry, model_id)
     provider = await session.get(ModelProvider, model.provider_id) if model else None
     return bool(model and supports_asr(model, provider))
+
+
+async def transcription_model_reference(session, model_id, owner):
+    if not model_id:
+        return None
+    model = await session.get(ModelEntry, model_id)
+    if model is None or model.owner_user_id != owner:
+        return None
+    provider = await session.get(ModelProvider, model.provider_id)
+    if provider is None or provider.owner_user_id != owner:
+        return None
+    return {"provider_kind": provider.kind, "model_slug": model.slug}

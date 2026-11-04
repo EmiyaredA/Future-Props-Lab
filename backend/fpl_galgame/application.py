@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from app.apps.galgame_workshop.models import GalgameWorkshopProject
 from fpl_runtime.capability_client import CapabilityClient
 from fpl_runtime.certification_service import create_certification_app
+from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.reference_runtime import install_reference_runtime
 from fpl_runtime.web import attach_web, load_release
@@ -16,6 +17,8 @@ from .asset_read_routes import router as asset_read_router
 from .migrations.registry import MIGRATIONS
 from .models import MODELS, GalgameCertificationReceipt, GalgameStoryReferenceMutation
 from .projects_http import router as project_router
+from .snapshot_exports import SnapshotSettings
+from .snapshot_http import router as snapshot_router
 from .story_migration_http import router as story_migration_router
 from .task_http import router as task_router
 from .upload_http import router as upload_router
@@ -62,6 +65,7 @@ def create_app(
         transport=transport,
         run_worker=run_worker,
     )
+    app.include_router(snapshot_router)
     app.include_router(project_router)
     app.include_router(asset_read_router)
     app.include_router(task_router)
@@ -71,6 +75,10 @@ def create_app(
     app.state.capabilities = CapabilityClient(
         service="galgame", credential=credential, catalog=catalog, transport=transport
     )
+    app.state.live_authorization = LiveAuthorization(
+        service="galgame", credential=credential, transport=transport
+    )
+    app.state.snapshot_settings = SnapshotSettings(state_root.resolve())
     if web_root is not None:
         release = load_release(web_root, "galgame")
         if schema_path is None or release.api_sha256 != public_contract(
@@ -86,7 +94,11 @@ def create_app(
 
     @asynccontextmanager
     async def with_capability_client(instance):
-        async with app.state.capabilities.client, lifespan(instance):
+        async with (
+            app.state.capabilities.client,
+            app.state.live_authorization.client,
+            lifespan(instance),
+        ):
             try:
                 if run_worker:
                     await uploads.start()

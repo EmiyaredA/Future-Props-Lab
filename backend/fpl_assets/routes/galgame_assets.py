@@ -2,11 +2,13 @@
 
 import jwt
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
+from pydantic import ValidationError
 
 from app.capabilities.asset_store.policy import download_filename
 from app.capabilities.identity.permissions import effective_permissions
 from fpl_runtime.claims import HEADER, verify_context
+from fpl_runtime.framed_media import content_length, stream_files
 from fpl_runtime.galgame_annotation_source import AUDIO_PATH, AudioDigest, audio_target
 from fpl_runtime.galgame_assets import (
     PREFIX,
@@ -15,9 +17,11 @@ from fpl_runtime.galgame_assets import (
     asset_query_target,
     export_download_target,
 )
+from fpl_runtime.galgame_snapshot import snapshot_files_target
+from fpl_runtime.motion_snapshot import MAX_SCOPE_BYTES, SnapshotScope
 
 from ..galgame_audio_digest import audio_original, digest_original, read_digest
-from ..galgame_files import export_file, files
+from ..galgame_files import export_file, files, snapshot_originals
 
 router = APIRouter(include_in_schema=False)
 
@@ -116,4 +120,33 @@ async def annotation_audio_original(request: Request, asset_id: str):
         raise HTTPException(409, "galgame_annotation_source_changed")
     return FileResponse(
         path, media_type="application/octet-stream", headers={"Cache-Control": "private, no-store"}
+    )
+
+
+@router.post(PREFIX + "/{project_id}/snapshot/{digest}")
+async def galgame_snapshot_originals(request: Request, project_id: str, digest: str):
+    if not snapshot_files_target("POST", request.url.path):
+        raise HTTPException(403, "galgame_snapshot_grant_required")
+    actor = await verified_actor(request)
+    raw = bytearray()
+    async for chunk in request.stream():
+        if len(raw) + len(chunk) > MAX_SCOPE_BYTES:
+            raise HTTPException(413, "galgame_snapshot_scope_too_large")
+        raw.extend(chunk)
+    try:
+        scope = SnapshotScope.model_validate_json(bytes(raw))
+    except ValidationError:
+        raise HTTPException(422, "galgame_snapshot_scope_invalid") from None
+    if scope.digest != digest:
+        raise HTTPException(403, "galgame_snapshot_scope_mismatch")
+    state = request.app.state
+    async with state.database.sessions(info={"owner_user_id": actor.user_id}) as session:
+        originals = await snapshot_originals(session, state.settings, project_id, scope.files)
+    return StreamingResponse(
+        stream_files(originals),
+        media_type="application/octet-stream",
+        headers={
+            "Cache-Control": "private, no-store",
+            "Content-Length": str(content_length(originals)),
+        },
     )

@@ -23,6 +23,7 @@ from app.apps.galgame_workshop.schemas import (
     GalgameWorkshopProjectCreateIn,
 )
 from app.apps.galgame_workshop.schemas.asr import GalgameTranscriptSegmentOut
+from app.apps.galgame_workshop.snapshot_values import snapshot_asset_record
 from app.capabilities.asset_store import (
     AssetStorage,
     ExportedProjectSnapshot,
@@ -41,6 +42,7 @@ from app.llm.models import (
     ModelEntry,
     ModelProvider,
 )
+from app.llm.transcription_catalog import transcription_model_reference
 from app.runtime.config import Settings
 from app.runtime.ids import new_id
 
@@ -69,45 +71,6 @@ def _story_file_ids(document: dict) -> set[str]:
         str(item["fileId"])
         for item in document.get("assets", [])
         if isinstance(item, dict) and item.get("fileId")
-    }
-
-
-def _fallback_category(asset: VisualAsset) -> str:
-    return {
-        "video": "video",
-        "audio": "voice",
-        "font": "font",
-    }.get(asset.media_kind, "other")
-
-
-def _asset_record(
-    asset: VisualAsset, metadata: GalgameAssetMetadata | None, fallback_index: int
-) -> dict:
-    virtual_path = (
-        metadata.virtual_path
-        if metadata is not None and metadata.virtual_path
-        else f"assets/imported-{fallback_index:04d}-{asset.original_filename}"
-    )
-    return {
-        "id": asset.id,
-        "original_filename": asset.original_filename,
-        "display_name": asset.display_name,
-        "media_kind": asset.media_kind,
-        "mime_type": asset.mime_type,
-        "byte_size": asset.byte_size,
-        "category": metadata.category if metadata else _fallback_category(asset),
-        "virtual_path": virtual_path,
-        "packaging_policy": metadata.packaging_policy if metadata else "auto",
-        "checksum_sha256": metadata.checksum_sha256 if metadata else None,
-        "width": metadata.width if metadata else None,
-        "height": metadata.height if metadata else None,
-        "duration_ms": metadata.duration_ms if metadata else None,
-        "transcript": metadata.transcript if metadata else None,
-        "transcript_language": metadata.transcript_language if metadata else None,
-        "transcript_status": metadata.transcript_status if metadata else "pending",
-        "transcript_source": metadata.transcript_source if metadata else None,
-        "transcript_revision": metadata.transcript_revision if metadata else 0,
-        "transcript_segments": deepcopy(metadata.transcript_segments or []) if metadata else [],
     }
 
 
@@ -174,28 +137,6 @@ def _validated_assets(value: object, declared: set[str]) -> list[dict]:
     if ids != declared:
         raise ProjectSnapshotError("Galgame 素材记录与快照清单不一致")
     return records
-
-
-async def _model_reference(
-    session: AsyncSession, model_id: str | None, owner_user_id: str
-) -> dict[str, str] | None:
-    if not model_id:
-        return None
-    row = (
-        await session.execute(
-            select(ModelEntry, ModelProvider)
-            .join(ModelProvider, ModelProvider.id == ModelEntry.provider_id)
-            .where(
-                ModelEntry.id == model_id,
-                ModelEntry.owner_user_id == owner_user_id,
-                ModelProvider.owner_user_id == owner_user_id,
-            )
-        )
-    ).first()
-    if row is None:
-        return None
-    model, provider = row
-    return {"provider_kind": provider.kind, "model_slug": model.slug}
 
 
 async def _resolve_model(
@@ -305,13 +246,13 @@ class GalgameProjectSnapshots:
             "project": {"title": project.title, "status": project.status},
             "story": document,
             "assets": [
-                _asset_record(asset, metadata.get(asset.id), index)
+                snapshot_asset_record(asset, metadata.get(asset.id), index)
                 for index, asset in enumerate(selected.values(), 1)
             ],
             "asset_settings": {
                 "default_language": asset_settings.default_language if asset_settings else "auto",
                 "concurrency": asset_settings.concurrency if asset_settings else 2,
-                "model_reference": await _model_reference(
+                "model_reference": await transcription_model_reference(
                     self.session,
                     asset_settings.asr_model_id if asset_settings else None,
                     self.owner_user_id,

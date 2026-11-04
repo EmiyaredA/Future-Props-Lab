@@ -3,6 +3,7 @@
 from anyio import to_thread
 from sqlalchemy import or_, select
 
+from app.capabilities.asset_store.asset_scope import is_library_asset
 from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.media_metadata import inspect_media_file
 from app.capabilities.asset_store.models import VisualAsset
@@ -110,3 +111,36 @@ async def export_file(session, settings, project_id, asset_id):
     if path.is_symlink() or not path.is_file():
         raise AssetError("导出视频文件不存在", code="not_found", status=404)
     return row, path
+
+
+async def snapshot_originals(session, settings, project_id, requested):
+    await check_project_scope(session, "galgame", project_id)
+    owner = session.info["owner_user_id"]
+    ids = {item.id for item in requested}
+    rows = list(
+        await session.scalars(
+            select(VisualAsset)
+            .where(VisualAsset.owner_user_id == owner, VisualAsset.id.in_(ids))
+            .order_by(VisualAsset.id)
+        )
+    )
+    if [(row.id, row.revision) for row in rows] != [(file.id, file.revision) for file in requested]:
+        raise AssetError("Galgame 快照原件已变化或缺失", code="snapshot_source_changed", status=409)
+    retained = set(
+        await session.scalars(_retained_story_files(owner, project_id).subquery().select())
+    )
+    for row in rows:
+        if row.galgame_project_id != project_id and (
+            row.id not in retained or not is_library_asset(row)
+        ):
+            raise AssetError("Galgame 快照原件不属于当前项目", code="not_found", status=404)
+    storage = AssetStorage(settings)
+    originals = []
+    for row in rows:
+        path = storage.path_for(row)
+        if path.is_symlink() or not path.is_file() or path.stat().st_size != row.byte_size:
+            raise AssetError(
+                "Galgame 快照原件已变化或缺失", code="snapshot_source_changed", status=409
+            )
+        originals.append((path, row.byte_size))
+    return originals

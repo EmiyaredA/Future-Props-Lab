@@ -24,6 +24,7 @@ from fpl_runtime.galgame_asr import asr_model_target
 from fpl_runtime.galgame_assets import asset_query_target as galgame_file_query_target
 from fpl_runtime.galgame_assets import export_download_target
 from fpl_runtime.galgame_render import capacity_target
+from fpl_runtime.galgame_snapshot import model_reference_target, snapshot_files_target
 from fpl_runtime.galgame_upload import upload_target as galgame_upload_target
 from fpl_runtime.model_outputs import is_model_output_path
 from fpl_runtime.motion_exports import render_target
@@ -127,6 +128,7 @@ async def live(request: Request, body: LiveRequest):
         or annotation_transcription_target(body.method, body.path) is not None
         or visual_catalog_target(body.method, body.path)
         or asr_model_target(body.method, body.path)
+        or model_reference_target(body.method, body.path)
     )
     socket = (
         request.app.state.service_catalog.match_socket(body.path) if body.method == "GET" else None
@@ -166,6 +168,7 @@ async def live(request: Request, body: LiveRequest):
         or render_export
         or reveal_target(body.method, body.path, body.service)
         or (body.service == "assets" and galgame_file_query_target(body.method, body.path))
+        or (body.service == "assets" and snapshot_files_target(body.method, body.path))
         or (body.service == "assets" and attachment_target(body.method, body.path))
         or (body.service == "assets" and export_download_target(body.method, body.path))
         or (body.service == "assets" and galgame_annotation_audio_target(body.method, body.path))

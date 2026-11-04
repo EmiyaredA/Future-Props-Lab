@@ -1,7 +1,10 @@
 """Exercise a real owned Annotation source and WAV through Galgame preflight."""
 
 import hashlib
+import io
+import json
 import time
+import zipfile
 from uuid import uuid4
 
 import httpx
@@ -197,6 +200,32 @@ async def test_annotation_import_recovers_exact_clips_after_lost_upload_acknowle
         }
         final_replay = await request("galgame", "POST", download_path, json=body)
         assert final_replay.status_code == 202 and final_replay.json() == completed.json()
+
+        archive = await request("galgame", "GET", path + "/snapshot")
+        assert archive.status_code == 200, archive.text
+        assert archive.headers["content-type"] == "application/zip"
+        assert archive.headers["cache-control"] == "no-store"
+        with zipfile.ZipFile(io.BytesIO(archive.content)) as package:
+            metadata = json.loads(package.read("project.json"))
+            assert metadata["schema_version"] == 1
+            assert metadata["asset_settings"] == {
+                "default_language": "auto",
+                "concurrency": 2,
+                "model_reference": None,
+            }
+            assert {item["id"] for item in metadata["assets"]} == {
+                master.json()["id"],
+                *(item["assetId"] for item in result["segments"]),
+            }
+            archived = json.loads(package.read("manifest.json"))
+            hashes = {
+                file["source_id"]: hashlib.sha256(package.read(file["path"])).hexdigest()
+                for file in archived["assets"]
+            }
+            assert hashes == {
+                master.json()["id"]: hashlib.sha256(sound).hexdigest(),
+                **{item["assetId"]: item["checksumSha256"] for item in result["segments"]},
+            }
 
         actor = verify_context(
             assertion,

@@ -11,7 +11,10 @@ from app.llm.models import ModelEntry, ModelProvider
 from fpl_models.galgame_asr_http import router
 from fpl_models.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
 from fpl_models.models import ACCOUNT_MODELS, MODELS
+from fpl_runtime.claims import HEADER
 from fpl_runtime.database import Database
+from fpl_runtime.delegation import RequestGrant
+from fpl_runtime.galgame_snapshot import MODEL_PURPOSE, MODEL_REFERENCE_PREFIX
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
 
@@ -117,6 +120,17 @@ async def test_galgame_asr_settings_check_the_owned_catalog_and_keep_task_histor
         records = await call("GET", root + "/transcriptions")
         assert records.status_code == 200, records.text
         assert [item["resultText"] for item in records.json()["items"]] == ["owned transcription"]
+        snapshot = root.removesuffix("/assets/asr") + "/snapshot"
+        original = (await authorize(case, "galgame", "GET", snapshot))[HEADER]
+        for model, expected in (
+            (own, {"provider_kind": "openai", "model_slug": "isolated-asr"}),
+            (foreign, None),
+        ):
+            target = f"{MODEL_REFERENCE_PREFIX}/{model}"
+            grant = RequestGrant("galgame", MODEL_PURPOSE, "GET", snapshot, "models", "GET", target)
+            token = await galgame.state.capabilities.authorize_request(original, grant)
+            reference = await http.get("http://models" + target, headers={HEADER: token})
+            assert reference.status_code == 200 and reference.json() == expected, reference.text
         cleared = await call("PATCH", path, json={"expectedRevision": 1, "modelId": None})
         assert cleared.status_code == 200, cleared.text
         assert cleared.json()["modelId"] is None and not cleared.json()["modelReady"]
