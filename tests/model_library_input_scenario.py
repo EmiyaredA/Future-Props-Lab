@@ -24,6 +24,7 @@ from app.llm.models import ModelInferenceAsset
 from app.llm.schemas.model_inference import InferenceAssetImportIn, InferenceAssetOut
 from fpl_assets.application import create_app as create_assets
 from fpl_assets.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
+from fpl_assets.references import AssetReferences
 from fpl_assets.settings import StorageSettings
 from fpl_identity.accounts import create_account
 from fpl_identity.application import create_app as create_identity
@@ -31,6 +32,7 @@ from fpl_identity.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
 from fpl_models.library_inputs import HttpLibraryInputs
 from fpl_models.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
 from fpl_models.models import ACCOUNT_MODELS, MODELS
+from fpl_runtime.asset_references import ReferenceUpdate
 from fpl_runtime.authentication import SignedIdentity
 from fpl_runtime.capability_client import CapabilityClient
 from fpl_runtime.claims import Actor, issue_context
@@ -209,6 +211,18 @@ async def scenario():
             )
             assert library.status_code == 200, library.text
             asset_id = library.json()["id"]
+            await AssetReferences(assets.state.database).replace(
+                owner=owners[0],
+                service="visual",
+                update=ReferenceUpdate(
+                    request_id="fixture-canvas",
+                    resource_kind="canvas",
+                    resource_id="fixture-project",
+                    resource_revision=0,
+                    expected_revision=0,
+                    asset_ids=[],
+                ),
+            )
             project = await asset_client.post(
                 "/v1/files",
                 headers={"X-Fpl-Context": asset_proof},

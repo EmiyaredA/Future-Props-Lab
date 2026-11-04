@@ -59,11 +59,11 @@ async def owned(tmp_path):
         ),
     )
 
-    async def project_exists(project):
-        calls.append(project)
-        return project == "owned-project"
-
     def cases(session, owner="alpha"):
+        async def project_exists(project):
+            calls.append(project)
+            return owner == "alpha" and project == "owned-project"
+
         session.info["owner_user_id"] = owner
         return Files(session, settings, owner, project_exists=project_exists)
 
