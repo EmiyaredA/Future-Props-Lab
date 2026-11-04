@@ -31,6 +31,7 @@ from app.runtime.revisions import RevisionConflictError
 from fpl_runtime.authentication import SignedIdentity
 from fpl_runtime.capability_client import CapabilityClient
 from fpl_runtime.database import Database
+from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.locking import service_lock
 from fpl_runtime.migrations import check
 from fpl_runtime.protocol_hash import public_contract
@@ -41,15 +42,18 @@ from fpl_runtime.web import attach_web, load_release
 
 from .asset_intake import AssetIntakes
 from .frame_routes import router as frame_router
+from .handoff_routes import router as handoff_router
 from .media_delivery import MediaDelivery
 from .media_routes import router as media_router
 from .migrations.registry import MIGRATIONS
 from .models import (
     VideoAssetIntake,
     VideoMediaDispatch,
+    VideoMotionHandoff,
     VideoReferenceMutation,
     VideoRenderDispatch,
 )
+from .motion_handoffs import MotionHandoffs
 from .project_layouts import ProjectLayouts
 from .render_delivery import RenderDelivery
 from .render_routes import router as render_router
@@ -122,6 +126,7 @@ def create_app(
             VideoAssetIntake,
             VideoMediaDispatch,
             VideoRenderDispatch,
+            VideoMotionHandoff,
         ),
     )
     capabilities = CapabilityClient(
@@ -141,6 +146,15 @@ def create_app(
         else None
     )
 
+    handoff_identity = LiveAuthorization(
+        service=SERVICE, credential=credential, transport=transport
+    )
+    motion_handoffs = (
+        MotionHandoffs(database.sessions, capabilities.client, video_peer(media_key))
+        if media_key is not None
+        else None
+    )
+
     @asynccontextmanager
     async def lifespan(_app):
         with service_lock(database.root):
@@ -152,12 +166,15 @@ def create_app(
                         if media_delivery is not None:
                             await media_delivery.start()
                             await render_delivery.start()
+                            await motion_handoffs.start()
                     yield
             finally:
                 if media_delivery is not None:
+                    await motion_handoffs.stop()
                     await render_delivery.stop()
                     await media_delivery.stop()
                 await asset_intakes.stop()
+                await handoff_identity.close()
                 await capabilities.close()
                 await database.close()
 
@@ -169,6 +186,10 @@ def create_app(
     app.state.asset_intakes = asset_intakes
     app.state.media_delivery = media_delivery
     app.state.render_delivery = render_delivery
+    app.state.identity_public_key = public_key
+    app.state.handoff_identity = handoff_identity
+    app.state.motion_handoffs = motion_handoffs
+    app.include_router(handoff_router)
     install_reference_runtime(
         app,
         service=SERVICE,

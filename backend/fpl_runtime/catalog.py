@@ -46,7 +46,9 @@ SERVICES = (
         "galgame", "Galgame 工坊", ("/apps/galgame-workshop",), ("assets", "models", "rendering")
     ),
     Service("video", "视频剪辑工坊", ("/apps/video-editor",), ("assets", "models", "rendering")),
-    Service("motion", "特效制作工坊", ("/apps/motion-compositor",), ("assets", "rendering")),
+    Service(
+        "motion", "特效制作工坊", ("/apps/motion-compositor",), ("assets", "rendering", "video")
+    ),
     Service(
         "presentation", "演示文稿工坊", ("/apps/presentation-workshop",), ("assets", "rendering")
     ),

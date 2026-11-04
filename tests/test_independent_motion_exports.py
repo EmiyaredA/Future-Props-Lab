@@ -24,11 +24,19 @@ from fpl_runtime.capability_client import CapabilityClient, CapabilityUnavailabl
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
 from fpl_runtime.motion_exports import PREFIX, ExportPeer, render_target
+from fpl_runtime.video_exports import output_peer
+from fpl_runtime.video_handoff import HANDOFFS
+from fpl_video.application import PROJECTS as VIDEO_PROJECTS
+from fpl_video.application import create_app as video_app
+from fpl_video.migrations.registry import MIGRATIONS as VIDEO_MIGRATIONS
 
 ROOT = Path(__file__).resolve().parents[1]
 MOTION_TOKEN = "motion-test-identity-client-credential"
 RENDER_TOKEN = "render-test-identity-client-credential"
 PEER_KEY = "motion-render-test-unique-peer-control-key"
+VIDEO_TOKEN = "motion-video-test-identity-client-credential"
+VIDEO_MEDIA = "motion-video-test-render-media-peer-key"
+VIDEO_ORIGINALS = "motion-video-test-assets-originals-peer-key"
 
 
 class LostSubmit(httpx.AsyncBaseTransport):
@@ -36,6 +44,7 @@ class LostSubmit(httpx.AsyncBaseTransport):
         self.mesh = mesh
         self.lost = False
         self.submissions = []
+        self.dropped_handoff = False
 
     async def handle_async_request(self, request):
         response = await self.mesh.handle_async_request(request)
@@ -45,6 +54,16 @@ class LostSubmit(httpx.AsyncBaseTransport):
                 self.lost = True
                 await response.aclose()
                 raise httpx.ReadError("submission reply dropped", request=request)
+        if (
+            not self.dropped_handoff
+            and request.url.host == "video"
+            and request.method == "POST"
+            and request.url.path.startswith(HANDOFFS + "/")
+            and response.status_code == 200
+        ):
+            self.dropped_handoff = True
+            await response.aclose()
+            raise httpx.ReadError("handoff reply dropped", request=request)
         return response
 
 
@@ -52,17 +71,20 @@ class LostSubmit(httpx.AsyncBaseTransport):
 async def split(scenario, tmp_path):  # noqa: F811
     case = scenario
     case.identity.state.identity_options["service_credentials"].update(
-        motion=MOTION_TOKEN, rendering=RENDER_TOKEN
+        motion=MOTION_TOKEN, rendering=RENDER_TOKEN, video=VIDEO_TOKEN
     )
     motion_root, render_root = tmp_path / "motion", tmp_path / "rendering"
     apply(motion_root / "service.db", "motion", MIGRATIONS)
     render_db = render_root / "service.db"
+    video_root = tmp_path / "video"
+    apply(video_root / "service.db", "video", VIDEO_MIGRATIONS)
     apply(render_db, "rendering", RENDERING_MIGRATIONS)
     lost = LostSubmit(case.mesh)
     assets_identity = LiveAuthorization(
         service="assets", credential=ASSETS_SECRET, transport=case.mesh
     )
     case.assets.state.identity = assets_identity
+    case.assets.state.video_output_peer = output_peer(VIDEO_ORIGINALS)
 
     def motion():
         return create_app(
@@ -89,12 +111,28 @@ async def split(scenario, tmp_path):  # noqa: F811
             ),
             run_worker=False,
             export_key=PEER_KEY,
+            video_media_key=VIDEO_MEDIA,
+            video_originals_key=VIDEO_ORIGINALS,
         )
         case.mesh.apps["rendering"] = app
         return app
 
+    def video():
+        app = video_app(
+            state_root=video_root,
+            catalog=CATALOG,
+            public_key=case.key.public_key(),
+            schema_path=ROOT / "web/src/generated/openapi.json",
+            credential=VIDEO_TOKEN,
+            transport=case.mesh,
+            run_worker=False,
+            media_key=VIDEO_MEDIA,
+        )
+        case.mesh.apps["video"] = app
+        return app
+
     async with assets_identity.client:
-        yield case, motion, renderer, lost
+        yield case, motion, renderer, lost, video
 
 
 async def api(app):
@@ -165,7 +203,7 @@ async def create_export(case, client, path, request_id="export-test-task"):
 
 
 async def test_motion_export_lost_ack_restart_outputs_and_project_cleanup(split, monkeypatch):
-    case, motion, renderer, lost = split
+    case, motion, renderer, lost, _video = split
     first = motion()
     render_first = renderer()
     async with (
@@ -238,7 +276,7 @@ async def test_motion_export_lost_ack_restart_outputs_and_project_cleanup(split,
 
 
 async def test_motion_export_cancellation_and_revocation_publish_no_files(split):
-    case, motion, renderer, lost = split
+    case, motion, renderer, lost, _video = split
     app, render = motion(), renderer()
     lost.lost = True
     async with (
@@ -271,3 +309,60 @@ async def test_motion_export_cancellation_and_revocation_publish_no_files(split)
         assert status.status_code == 200
         assert status.json()["status"] == "cancelled" and status.json()["outputs"] == {}
         assert not jobs.folder(case.viewer, job_id).exists()
+
+
+async def test_motion_handoff_preserves_original_movies_and_recovers_lost_reply(split):
+    case, motion, renderer, lost, video = split
+    app, render, editor = motion(), renderer(), video()
+    lost.lost = True
+    async with (
+        app.router.lifespan_context(app),
+        render.router.lifespan_context(render),
+        editor.router.lifespan_context(editor),
+        await api(app) as client,
+        httpx.AsyncClient(transport=case.mesh) as mesh,
+    ):
+        project = await project_with_image(case, client)
+        task = await create_export(case, client, project + "/exports")
+        delivery = app.state.motion_export_delivery
+        await delivery.process_once()
+        await render.state.motion_jobs.process_once()
+        await delivery.process_once()
+        completed = (await call(case, client, "GET", task)).json()
+        assert completed["status"] == "completed"
+
+        async def video_call(method, path, **kwargs):
+            headers = await authorize(case, "video", method, path)
+            return await mesh.request(method, "http://video" + path, headers=headers, **kwargs)
+
+        existing = await video_call("POST", VIDEO_PROJECTS, json={"title": "Existing Video"})
+        assert existing.status_code == 200, existing.text
+        selected = existing.json()["id"]
+        endpoint = task + "/video-editor-handoffs"
+        destinations = [
+            ("mp4", {"targetProjectId": selected}, "Existing Video"),
+            ("mov4444", {"newProjectTitle": "New Motion Cut"}, "New Motion Cut"),
+        ]
+        for format_name, destination, title in destinations:
+            original = await call(case, client, "GET", completed["outputs"][format_name])
+            handed = await call(
+                case, client, "POST", endpoint, json={**destination, "format": format_name}
+            )
+            assert handed.status_code == 200, handed.text
+            receipt = handed.json()
+            if format_name == "mp4":
+                assert receipt["projectId"] == selected and lost.dropped_handoff
+            root = f"{VIDEO_PROJECTS}/{receipt['projectId']}"
+            project_row = (await video_call("GET", root)).json()
+            assert project_row["title"] == title
+            timeline = (await video_call("GET", root + "/timeline")).json()
+            assert timeline["revision"] == 1
+            top = min(timeline["document"]["tracks"], key=lambda track: track["order"])
+            assert top["order"] == 0 and len(top["clips"]) == 1
+            clip = top["clips"][0]
+            assert clip["assetId"] == receipt["assetId"]
+            assert clip["durationUs"] == 66_667
+            copied_path = f"/v1/files/{receipt['assetId']}/download"
+            headers = await authorize(case, "assets", "GET", copied_path)
+            copied = await mesh.get("http://assets" + copied_path, headers=headers)
+            assert copied.status_code == 200 and copied.content == original.content

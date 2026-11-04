@@ -29,6 +29,7 @@ from .models import MotionRenderJob, VideoExportJob, VideoMediaJob
 from .motion_export_routes import router as motion_export_router
 from .motion_jobs import MotionJobs
 from .motion_preview import router as motion_preview_router
+from .motion_transfer import router as motion_transfer_router
 from .previews import MediaPreviews
 from .routes import router
 from .video_export_jobs import VideoExports
@@ -128,6 +129,7 @@ def create_app(
     app.state.video_jobs = video_jobs
     app.state.video_exports = video_exports
     app.include_router(video_export_router)
+    app.include_router(motion_transfer_router)
     app.state.video_frame_cache = VideoFrameCache()
     app.state.video_frame_slots = asyncio.Semaphore(2)
     app.include_router(video_frame_router)

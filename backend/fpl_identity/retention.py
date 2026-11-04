@@ -24,6 +24,7 @@ from fpl_runtime.retention_authority import (
     verify_retention,
 )
 from fpl_runtime.video_assets import SOURCE as VIDEO
+from fpl_runtime.video_handoff import handoff_target
 
 from .live import active_actor
 
@@ -109,6 +110,12 @@ def _project_file_scope_source(body, prefix):
     if change.resource_kind != "project" or change.asset_ids:
         return False
     projects = prefix + "/projects"
+    if prefix == VIDEO and (handoff := handoff_target(body.source_method, body.source_path)):
+        return (
+            handoff[5] == "new"
+            and handoff[4] == change.resource_id
+            and change.expected_resource_revision == -1
+        )
     if change.expected_resource_revision == -1:
         return (
             body.source_method == "POST"
@@ -200,7 +207,8 @@ class RetentionAuthorization:
         expected_permission = (
             "community.access" if publication_source or community else "content.write"
         )
-        if (
+        handoff = body.caller == "video" and handoff_target(body.source_method, body.source_path)
+        if not handoff and (
             operation is None
             or operation.service != body.caller
             or route_permission(body.source_method, body.source_path) != expected_permission

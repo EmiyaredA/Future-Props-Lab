@@ -8,6 +8,7 @@ from uuid import uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.video_editor.models import VideoEditorAssetMetadata, VideoEditorTask
+from app.apps.video_editor.motion_operations import motion_operations
 from app.apps.video_editor.projects import VideoEditorProjects
 from app.apps.video_editor.schemas import VideoEditorProjectCreateIn, VideoEditorTimelineBatchIn
 from app.apps.video_editor.timeline import VideoEditorTimelines
@@ -60,47 +61,13 @@ async def import_motion_export(
         )
         await session.flush()
         timeline = await VideoEditorTimelines(session, owner_user_id).get(project_id)
-        tracks = timeline.document.model_dump(mode="json", by_alias=True)["tracks"]
-        track_id = f"motion-{uuid4().hex[:12]}"
-        operations = [
-            {"type": "reorderTrack", "trackId": track["id"], "order": track["order"] + 1}
-            for track in sorted(tracks, key=lambda track: track["order"], reverse=True)
-        ]
-        operations.extend(
-            [
-                {
-                    "type": "addTrack",
-                    "track": {
-                        "id": track_id,
-                        "kind": "visual",
-                        "name": "特效制作",
-                        "order": 0,
-                        "clips": [],
-                    },
-                },
-                {
-                    "type": "addClip",
-                    "clip": {
-                        "id": f"motion-clip-{uuid4().hex[:12]}",
-                        "trackId": track_id,
-                        "kind": "video",
-                        "name": Path(filename).stem,
-                        "timelineStartUs": 0,
-                        "durationUs": duration_us,
-                        "sourceInUs": 0,
-                        "assetId": asset.id,
-                        "fitMode": "contain",
-                        "transform": {
-                            "x": 960,
-                            "y": 540,
-                            "scaleX": 1,
-                            "scaleY": 1,
-                            "rotation": 0,
-                            "opacity": 1,
-                        },
-                    },
-                },
-            ]
+        operations = motion_operations(
+            timeline.document.model_dump(mode="json", by_alias=True),
+            asset_id=asset.id,
+            filename=filename,
+            duration_us=duration_us,
+            track_id=f"motion-{uuid4().hex[:12]}",
+            clip_id=f"motion-clip-{uuid4().hex[:12]}",
         )
         await VideoEditorTimelines(session, owner_user_id).apply(
             project_id,

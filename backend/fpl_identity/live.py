@@ -23,6 +23,7 @@ from fpl_runtime.motion_exports import render_target
 from fpl_runtime.tools_video_library import is_library_path as is_tools_output_path
 from fpl_runtime.video_assets import video_write_target
 from fpl_runtime.video_frames import target as video_frame_target
+from fpl_runtime.video_handoff import handoff_target
 
 router = APIRouter()
 
@@ -143,6 +144,7 @@ async def live(request: Request, body: LiveRequest):
         or private_thought_upload
         or private_render
         or render_export
+        or (body.service == "video" and handoff_target(body.method, body.path))
     ) and (operation is None or operation.service != body.service):
         raise HTTPException(403, "invalid_service_target")
     try:

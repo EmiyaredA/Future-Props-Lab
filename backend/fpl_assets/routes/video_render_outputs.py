@@ -57,8 +57,8 @@ async def output(request: Request, project_id: str, request_id: str, digest: str
             length = int(request.headers.get("Content-Length", "-1"))
             if (
                 descriptor.fingerprint != digest
-                or descriptor.mime_type != "video/mp4"
-                or not descriptor.filename.endswith(".mp4")
+                or (descriptor.mime_type, descriptor.filename.rsplit(".", 1)[-1])
+                not in {("video/mp4", "mp4"), ("video/quicktime", "mov")}
                 or descriptor.byte_size != length
             ):
                 raise ValueError("video output descriptor changed")

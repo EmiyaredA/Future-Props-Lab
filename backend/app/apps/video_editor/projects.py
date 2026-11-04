@@ -119,11 +119,14 @@ class VideoEditorProjects:
         )
         resources = self.session.info["video_project_layouts"](self.session, self.owner_user_id)
         async with resources.create_layout(row.id):
-            self.session.add(row)
-            await self.session.flush()
-            self.session.add(VideoEditorTimeline(project_id=row.id, document=default_timeline()))
+            await self.add_project(row)
         await self.session.refresh(row)
         return project_out(row)
+
+    async def add_project(self, row: VideoEditorProject) -> None:
+        self.session.add(row)
+        await self.session.flush()
+        self.session.add(VideoEditorTimeline(project_id=row.id, document=default_timeline()))
 
     async def patch(
         self, project_id: str, body: VideoEditorProjectPatchIn

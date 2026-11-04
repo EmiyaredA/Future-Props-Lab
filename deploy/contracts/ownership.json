@@ -5009,6 +5009,12 @@
       "model": "VideoRenderDispatch"
     },
     {
+      "table": "video_motion_handoffs",
+      "service": "video",
+      "module": "fpl_video.models",
+      "model": "VideoMotionHandoff"
+    },
+    {
       "table": "visual_certification_receipts",
       "service": "visual",
       "module": "fpl_visual.models",

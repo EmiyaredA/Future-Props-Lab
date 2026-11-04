@@ -493,3 +493,5 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 剪辑精确帧和文字图层经只读签名委托交给 Rendering。文稿修订、请求摘要及原件 revision 一起校验，转场帧读取两侧必要素材。PNG 返回前重新检查原授权。五容器运行 `fpl-video-frames-51f085e410` 复跑 Chromium 并验证文字图层、精确帧尺寸、缓存重放和旧修订拒绝。
 
 独立成片保留原预检指纹、任务创建、状态、取消及下载地址。Video 提交冻结时间轴和原件 SHA256，Rendering 编码并核验 H.264、AAC、分辨率、帧率和时长。封存后按原输出摘要重试 Assets 入库，原件入库前再次核验账号权限。五容器 `fpl-video-export-0d00ac6caa` 验证 720p 成片、服务重启恢复、下载和 Chromium。故障用例注入 Assets 发布成功但丢失回执，恢复后复用同一文件。
+
+Motion 的 MP4 与 ProRes 4444 可交接到同账号的现有或新建剪辑项目。Rendering 将相同原件字节写入目标 Assets 范围，Video 同事务登记原件、代理任务、顶层片段和交接回执。六容器 Chromium 运行 `fpl-motion-handoff-327535bf19` 验证两种格式逐字节一致，以及源项目删除后目标原件仍可用。隔离测试注入交接响应丢失，原请求按回执恢复。Motion 的 21 项发布操作已接线，历史转移与整站切换继续由就绪门禁跟踪。

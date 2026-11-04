@@ -44,6 +44,7 @@ from fpl_runtime.web import attach_web, load_release
 from .export_delivery import ExportDelivery
 from .export_routes import router as export_router
 from .file_routes import router as file_router
+from .handoff_routes import router as handoff_router
 from .migrations.registry import MIGRATIONS
 from .models import MotionExportBinding, MotionImportBatch, MotionReferenceMutation
 from .preview_routes import router as preview_router
@@ -74,6 +75,7 @@ OPERATIONS = {
     ("POST", PROJECT + "/exports"),
     ("GET", PROJECT + "/exports/{task_id}"),
     ("POST", PROJECT + "/exports/{task_id}/cancel"),
+    ("POST", PROJECT + "/exports/{task_id}/video-editor-handoffs"),
     ("GET", PROJECT + "/exports/{task_id}/download/{format_name}"),
     ("POST", IMPORT),
     ("GET", SOURCE + "/import-sources"),
@@ -205,7 +207,14 @@ def create_app(
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(OperationalError, storage_operational_error_handler)
     app.add_exception_handler(RevisionConflictError, revision_conflict_handler)
-    for component in (router, file_router, preview_router, snapshot_router, export_router):
+    for component in (
+        router,
+        file_router,
+        preview_router,
+        snapshot_router,
+        export_router,
+        handoff_router,
+    ):
         app.include_router(
             component,
             prefix=SOURCE,

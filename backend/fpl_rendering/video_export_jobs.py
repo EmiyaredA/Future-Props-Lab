@@ -9,7 +9,6 @@ from threading import Event
 from uuid import UUID
 
 import httpx
-from anyio import open_file
 from anyio.to_thread import run_sync
 from sqlalchemy import select, text, update
 
@@ -22,7 +21,6 @@ from fpl_runtime.model_outputs import ModelOutputDescription
 from fpl_runtime.video_assets import VideoAsset
 from fpl_runtime.video_exports import (
     MAX_EXPORT_INPUT_BYTES,
-    OUTPUTS,
     VideoExportReceipt,
     VideoExportRequest,
 )
@@ -30,6 +28,7 @@ from fpl_runtime.video_exports import (
 from .models import VideoExportJob
 from .storage import sync_directory, sync_files
 from .video_originals import download_original
+from .video_outputs import VideoOutputs
 
 
 class VideoExports(PollingTaskRunner):
@@ -39,7 +38,8 @@ class VideoExports(PollingTaskRunner):
     def __init__(self, *, database, settings, identity, client, originals, outputs):
         super().__init__()
         self.database, self.settings, self.identity = database, settings, identity
-        self.client, self.originals, self.outputs = client, originals, outputs
+        self.client, self.originals = client, originals
+        self.outputs = VideoOutputs(client, outputs)
 
     def session(self, owner):
         return self.database.sessions(info={"owner_user_id": owner})
@@ -262,33 +262,22 @@ class VideoExports(PollingTaskRunner):
     async def publish(self, job):
         folder = self.folder(job.owner_user_id, job.id)
         descriptor = ModelOutputDescription(**job.sealed_output)
-        path = f"{OUTPUTS}/{job.project_id}/{UUID(job.id).hex}/{descriptor.fingerprint}"
+        request_id = UUID(job.id).hex
         try:
-            response = await self.client.get(
-                "http://assets:8080" + path,
-                headers=self.outputs.headers("GET", path, job.owner_user_id),
+            response = await self.outputs.lookup(
+                job.owner_user_id, job.project_id, request_id, descriptor
             )
             if response.status_code == 404:
                 if not await self.authorized(job):
                     await self.set_state(job, "publishing", status="cancelled", progress=0)
                     await run_sync(lambda: rmtree(folder, ignore_errors=True))
                     return
-                headers = {
-                    **self.outputs.headers("POST", path, job.owner_user_id),
-                    "Content-Length": str(descriptor.byte_size),
-                    "X-Fpl-Video-Output": descriptor.header(),
-                }
-
-                async def stream():
-                    async with await open_file(folder / "sealed" / "movie.mp4", "rb") as handle:
-                        while chunk := await handle.read(1024 * 1024):
-                            yield chunk
-
-                response = await self.client.post(
-                    "http://assets:8080" + path,
-                    content=stream(),
-                    headers=headers,
-                    timeout=httpx.Timeout(300, connect=5),
+                response = await self.outputs.publish(
+                    job.owner_user_id,
+                    job.project_id,
+                    request_id,
+                    descriptor,
+                    folder / "sealed" / "movie.mp4",
                 )
             if response.status_code == 401:
                 await self.set_state(job, "publishing", status="cancelled", progress=0)

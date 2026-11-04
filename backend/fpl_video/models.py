@@ -49,3 +49,18 @@ class VideoRenderDispatch(VideoServiceBase):
     frozen: Mapped[dict] = mapped_column(JSON)
     settled: Mapped[bool] = mapped_column(Boolean, default=False)
     checked_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
+class VideoMotionHandoff(VideoServiceBase):
+    __tablename__ = "video_motion_handoffs"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    owner_user_id: Mapped[str] = mapped_column(String(36))
+    project_id: Mapped[str] = mapped_column(String(36))
+    source_path: Mapped[str] = mapped_column(String(512))
+    payload: Mapped[dict] = mapped_column(JSON)
+    output_descriptor: Mapped[dict] = mapped_column(JSON)
+    output_asset_id: Mapped[str | None] = mapped_column(String(36))
+    state: Mapped[str] = mapped_column(String(16), default="pending")
+    error: Mapped[str | None] = mapped_column(String(128))
+    checked_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
