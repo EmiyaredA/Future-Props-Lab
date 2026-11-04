@@ -13,15 +13,15 @@ from uuid import uuid4
 from pydantic import ValidationError
 from sqlalchemy import select
 
-from app.apps.thought_workshop.archive_import import allocate_ids, persist_archive, validate_payload
+from app.apps.thought_workshop.archive_files import extract_archive, stage_archive
+from app.apps.thought_workshop.archive_import import allocate_ids, persist_archive
 from app.apps.thought_workshop.backup_manifest import collect_backup
 from app.apps.thought_workshop.notes import Notes, ThoughtError
-from app.apps.thought_workshop.schemas.workshop import ThoughtImportOut, ThoughtNoteIn
+from app.apps.thought_workshop.schemas.workshop import ThoughtImportOut
 from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
-from app.capabilities.asset_store.project_snapshots import _validate_member
 from app.capabilities.asset_store.storage import AssetStorage
 from app.runtime.config import Settings
 
@@ -79,40 +79,6 @@ async def export_backup(
     return await asyncio.to_thread(write)
 
 
-def validate_archive(
-    path: Path, root: Path, settings: Settings
-) -> tuple[dict, list[ThoughtNoteIn]]:
-    with zipfile.ZipFile(path) as archive:
-        entries = archive.infolist()
-        if len(entries) > settings.fpl_project_snapshot_max_files:
-            raise ThoughtError("导入文件数量超过限制", 413)
-        if sum(item.file_size for item in entries) > settings.fpl_project_snapshot_max_bytes:
-            raise ThoughtError("解压大小超过限制", 413)
-        names = set()
-        for item in entries:
-            _validate_member(item)
-            if item.filename in names:
-                raise ThoughtError("归档包含重复路径")
-            names.add(item.filename)
-        manifest = archive.getinfo("manifest.json")
-        if manifest.file_size > 32 * 1024 * 1024:
-            raise ThoughtError("备份清单过大", 413)
-        payload = json.loads(archive.read(manifest))
-        payload, parsed = validate_payload(payload)
-        assets = payload.get("assets", [])
-        for i, asset in enumerate(assets):
-            if asset["path"] not in names:
-                raise ThoughtError("备份缺少附件文件")
-            info = archive.getinfo(asset["path"])
-            if info.file_size > settings.fpl_visual_asset_max_bytes:
-                raise ThoughtError("文件超过大小限制", 413)
-            dest = root / f"image-{i}"
-            with archive.open(info) as source, dest.open("wb") as target:
-                shutil.copyfileobj(source, target)
-            asset["staged_path"] = str(dest)
-    return payload, parsed
-
-
 async def import_backup(
     notes: Notes,
     settings: Settings,
@@ -126,15 +92,17 @@ async def import_backup(
     root = Path(tempfile.mkdtemp(prefix="thought-import-"))
     files: list[Path] = []
     try:
-        path = root / "upload.zip"
-        size = 0
-        with path.open("wb") as target:
-            while chunk := await upload.read(1024 * 1024):
-                size += len(chunk)
-                if size > settings.fpl_project_snapshot_max_bytes:
-                    raise ThoughtError("备份超过大小限制", 413)
-                await asyncio.to_thread(target.write, chunk)
-        payload, parsed = await asyncio.to_thread(validate_archive, path, root, settings)
+        path = await stage_archive(
+            upload, root, maximum_bytes=settings.fpl_project_snapshot_max_bytes
+        )
+        payload, parsed = await asyncio.to_thread(
+            extract_archive,
+            path,
+            root,
+            maximum_files=settings.fpl_project_snapshot_max_files,
+            maximum_bytes=settings.fpl_project_snapshot_max_bytes,
+            maximum_asset_bytes=settings.fpl_visual_asset_max_bytes,
+        )
         await notes.session.rollback()
         mapping: dict[str, str] = {}
         library = AssetLibrary(notes.session, settings)
@@ -161,14 +129,12 @@ async def import_backup(
                 return replay
         notes.session.add_all(staged_rows)
         await notes.session.flush()
-        project_ids, note_ids = allocate_ids(payload)
         output, note_mapping, project_mapping = await persist_archive(
             notes,
             payload,
             parsed,
             mapping,
-            project_ids,
-            note_ids,
+            allocate_ids(payload),
             knowledge_base_id,
             expected_revision,
         )

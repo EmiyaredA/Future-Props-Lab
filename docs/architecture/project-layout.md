@@ -102,7 +102,7 @@
 
 `fpl_thought/sync_binding.py` 通过按文章、连接和请求摘要绑定的授权查询 Integrations。Thought 保留同步绑定和修订控制，Integrations 持有连接凭据和远程访问。`publication_retention.py` 将公开封面绑定到发布记录，源知识库替换封面时保留已发布素材。发布写入和回执状态共用事务，历史发布在切换前须建立经核验的初始引用。
 
-`fpl_thought/duplicate_retention.py` 为复制的每个文档准备独立投影，保留多维表历史中的素材。复制结果和投影结果共用源事务。`archive_import.py` 拥有备份和官方包共用的清单校验、标识重映射及入库。`fpl_thought/official_projections.py` 为内置官方包创建初始投影，导入回执、来源映射和投影结果一同提交。
+`fpl_thought/duplicate_retention.py` 为复制的每个文档准备独立投影，保留多维表历史中的素材。复制结果和投影结果共用源事务。`archive_import.py` 拥有备份和官方包共用的清单校验、标识重映射及入库。导入前统一分配知识库、文档与模板标识，并按资源计算正文、表格及历史素材引用。`archive_files.py` 在固定大小和数量上限内校验并解包，使用无 ORM 的 `runtime/zip_members.py` 过滤不安全成员。`fpl_thought/official_projections.py` 为内置官方包创建初始投影，导入回执、来源映射和投影结果一同提交。
 
 `fpl_thought/sync_submit.py` 在排队前固定预览、远端版本和图片摘要，`sync_artifacts.py` 暂存任务私有图片副本。`sync_runner.py` 通过 Identity 的持久任务授权在 Integrations 执行逐步写入，进程退出时把运行中的任务置为待核对。`sync_reconcile.py` 使用只读步骤回执及远端快照核对已确认写入，或显式关闭任务以阻止迟到写入。供应商连接、远端步骤记录和关闭回执留在 Integrations。
 

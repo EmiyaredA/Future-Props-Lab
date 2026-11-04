@@ -4,6 +4,7 @@ from uuid import uuid4
 
 from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.knowledge import KnowledgeBases
+from app.apps.thought_workshop.knowledge_tools.reuse import ReusableContent
 from app.apps.thought_workshop.notes import Notes
 from fpl_runtime.asset_references import PrepareReferenceChange
 
@@ -18,20 +19,21 @@ class OfficialProjections:
         )
         self.prepared = {}
 
-    async def prepare(self, project_ids, note_ids):
-        for kind, ids in (("knowledge-base", project_ids), ("note", note_ids)):
-            for resource_id in ids.values():
-                self.prepared[kind, resource_id] = await self.references.prepare(
-                    owner=self.owner,
-                    **self.source,
-                    change=PrepareReferenceChange(
-                        request_id=uuid4().hex,
-                        resource_kind=kind,
-                        resource_id=resource_id,
-                        expected_resource_revision=-1,
-                        asset_ids=[],
-                    ),
-                )
+    async def prepare(self, pins_by_resource):
+        for (kind, resource_id), pins in pins_by_resource.items():
+            if pins:
+                raise ThoughtError("官方文档包含未提供的附件")
+            self.prepared[kind, resource_id] = await self.references.prepare(
+                owner=self.owner,
+                **self.source,
+                change=PrepareReferenceChange(
+                    request_id=uuid4().hex,
+                    resource_kind=kind,
+                    resource_id=resource_id,
+                    expected_resource_revision=-1,
+                    asset_ids=[],
+                ),
+            )
 
     async def require_active(self):
         current = await self.identity.status(
@@ -47,11 +49,12 @@ class OfficialProjections:
     async def record(self, session):
         knowledge, notes = KnowledgeBases(session, self.owner), Notes(session, self.owner)
         for (kind, resource_id), reference in self.prepared.items():
-            row = (
-                await notes.get(resource_id)
-                if kind == "note"
-                else await knowledge.get(resource_id, include_deleted=True)
-            )
+            if kind == "note":
+                row = await notes.get(resource_id)
+            elif kind == "template":
+                row = await ReusableContent(session, self.owner).template(resource_id)
+            else:
+                row = await knowledge.get(resource_id, include_deleted=True)
             await self.references.record(session, reference, resource_revision=row.revision)
 
     async def abort(self, session):

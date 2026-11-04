@@ -1,6 +1,7 @@
 """Thought-owned validation, ID allocation and archive persistence."""
 
 import copy
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import uuid4
 
@@ -14,11 +15,20 @@ from app.apps.thought_workshop.history_archive import import_history, validate_h
 from app.apps.thought_workshop.knowledge import KnowledgeBases
 from app.apps.thought_workshop.knowledge_tools.archive import import_tools, validate_tools
 from app.apps.thought_workshop.knowledge_tools.references import remap_references
+from app.apps.thought_workshop.knowledge_tools.schemas import TemplateOut
 from app.apps.thought_workshop.legacy_import import convert_legacy_backup
 from app.apps.thought_workshop.models import ThoughtKnowledgeBase
-from app.apps.thought_workshop.multitable.archive import entity_mapping, import_tables, remap_embeds
+from app.apps.thought_workshop.multitable.archive import (
+    archive_assets,
+    entity_mapping,
+    import_tables,
+    remap_embeds,
+)
 from app.apps.thought_workshop.multitable.archive import validate_archive as validate_tables
+from app.apps.thought_workshop.multitable.storage import asset_ids
 from app.apps.thought_workshop.schemas.canvas import remap_canvas
+from app.apps.thought_workshop.schemas.document import file_ids
+from app.apps.thought_workshop.schemas.history import ThoughtHistorySnapshot
 from app.apps.thought_workshop.schemas.workshop import ThoughtImportOut
 
 
@@ -63,11 +73,51 @@ def validate_payload(payload):
     return payload, parsed
 
 
+@dataclass(frozen=True)
+class ArchiveIds:
+    projects: dict[str, str]
+    notes: dict[str, str]
+    templates: dict[str, str]
+
+
 def allocate_ids(payload):
-    return (
-        {row["id"]: str(uuid4()) for row in payload["knowledge_bases"]},
-        {row["id"]: str(uuid4()) for row in payload["notes"]},
+    return ArchiveIds(
+        projects={row["id"]: str(uuid4()) for row in payload["knowledge_bases"]},
+        notes={row["id"]: str(uuid4()) for row in payload["notes"]},
+        templates={row["id"]: str(uuid4()) for row in payload.get("templates", [])},
     )
+
+
+def archive_references(payload, parsed, ids: ArchiveIds, assets, *, into_existing=False):
+    """Return complete initial pins, including files used only in history."""
+    references = {}
+    if not into_existing:
+        for project in payload["knowledge_bases"]:
+            cover = project.get("cover_asset_id")
+            references["knowledge-base", ids.projects[project["id"]]] = (
+                {assets[cover]} if cover else set()
+            )
+    imported_notes = {
+        source["id"]: file_ids(body.document)
+        for source, body in zip(payload["notes"], parsed, strict=True)
+        if not (into_existing and source.get("is_home"))
+    }
+    for entry in payload.get("history", []):
+        if entry["note_id"] in imported_notes:
+            snapshot = ThoughtHistorySnapshot.model_validate(entry)
+            imported_notes[snapshot.note_id].update(file_ids(snapshot.document))
+    for note_id, table in payload.get("multitables", {}).items():
+        if note_id in imported_notes:
+            imported_notes[note_id].update(archive_assets({note_id: table}))
+    for note_id, pins in imported_notes.items():
+        references["note", ids.notes[note_id]] = {assets[pin] for pin in pins}
+    for entry in payload.get("templates", []):
+        template = TemplateOut.model_validate(entry)
+        pins = file_ids(template.document)
+        if template.multitable:
+            pins.update(asset_ids(template.multitable))
+        references["template", ids.templates[template.id]] = {assets[pin] for pin in pins}
+    return references
 
 
 async def persist_archive(
@@ -75,14 +125,13 @@ async def persist_archive(
     payload,
     parsed,
     mapping,
-    project_ids,
-    note_ids,
+    ids: ArchiveIds,
     knowledge_base_id=None,
     expected_revision=None,
 ):
     knowledge = KnowledgeBases(notes.session, notes.owner_user_id)
     project_mapping = {}
-    note_mapping = dict(note_ids)
+    note_mapping = dict(ids.notes)
     project_rows = {}
     warnings = set()
     table_mapping = entity_mapping(payload.get("multitables", {}))
@@ -99,7 +148,7 @@ async def persist_archive(
             project_mapping[project["id"]] = knowledge_base_id
             continue
         row = ThoughtKnowledgeBase(
-            id=project_ids[project["id"]],
+            id=ids.projects[project["id"]],
             owner_user_id=notes.owner_user_id,
             title=project["title"],
             description=project.get("description", ""),
@@ -176,6 +225,7 @@ async def persist_archive(
         mapping,
         remap_images,
         warnings,
+        template_ids=ids.templates,
     )
     await import_tables(
         notes.session, payload.get("multitables", {}), note_mapping, mapping, table_mapping

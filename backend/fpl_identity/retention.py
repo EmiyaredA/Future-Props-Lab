@@ -102,7 +102,7 @@ class RetentionAuthorization:
             official_import = (
                 body.source_method == "POST"
                 and body.source_path == "/v1/thought-workshop/community/official-import"
-                and body.change.resource_kind in {"knowledge-base", "note"}
+                and body.change.resource_kind in {"knowledge-base", "note", "template"}
                 and body.change.expected_resource_revision == -1
                 and not body.change.asset_ids
                 and initial_id

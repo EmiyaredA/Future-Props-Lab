@@ -2,7 +2,12 @@
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.apps.thought_workshop.archive_import import allocate_ids, persist_archive, validate_payload
+from app.apps.thought_workshop.archive_import import (
+    allocate_ids,
+    archive_references,
+    persist_archive,
+    validate_payload,
+)
 from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.notes import Notes
 from app.apps.thought_workshop.schemas.workshop import ThoughtImportOut
@@ -38,12 +43,12 @@ async def import_source(session, principal, body, *, projections=None):
         raise ThoughtError("官方文档包内容无效") from exc
     if payload.get("assets"):
         raise ThoughtError("官方文档包含未提供的附件")
-    project_ids, note_ids = allocate_ids(payload)
+    ids = allocate_ids(payload)
     commit_started = False
     try:
         if projections is not None:
             await session.rollback()
-            await projections.prepare(project_ids, note_ids)
+            await projections.prepare(archive_references(payload, parsed, ids, {}))
             await projections.require_active()
         await begin_write(session)
         if projections is None:
@@ -58,8 +63,7 @@ async def import_source(session, principal, body, *, projections=None):
             payload,
             parsed,
             {},
-            project_ids,
-            note_ids,
+            ids,
         )
         session.add_all(
             OfficialSource(

@@ -80,6 +80,8 @@ async def import_tools(
     asset_mapping,
     remap_assets,
     warnings,
+    *,
+    template_ids,
 ):
     for value in payload.get("templates", []):
         source = TemplateOut.model_validate(value)
@@ -92,7 +94,7 @@ async def import_tools(
                 raw, entity_mapping({"template": {"state": raw}}), note_mapping, asset_mapping
             ).model_dump(mode="json")
         row = ThoughtTemplate(
-            id=new_id(),
+            id=template_ids[source.id],
             owner_user_id=owner_user_id,
             name=source.name,
             description=source.description,

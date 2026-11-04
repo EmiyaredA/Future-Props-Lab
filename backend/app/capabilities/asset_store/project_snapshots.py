@@ -5,7 +5,6 @@ import hashlib
 import json
 import os
 import shutil
-import stat
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -20,6 +19,7 @@ from app.capabilities.asset_store.schemas.project_snapshots import (
 )
 from app.runtime.config import Settings
 from app.runtime.time import iso_utc, utc_now
+from app.runtime.zip_members import safe_zip_member
 
 FORMAT_NAME = "future-props-project-snapshot"
 FORMAT_VERSION = 1
@@ -68,16 +68,7 @@ def _safe_download_name(title: str, application_id: str) -> str:
 
 
 def _validate_member(item: zipfile.ZipInfo) -> None:
-    path = PurePosixPath(item.filename)
-    mode = item.external_attr >> 16
-    if (
-        path.is_absolute()
-        or ".." in path.parts
-        or "\\" in item.filename
-        or (path.parts and path.parts[0].endswith(":"))
-        or "\x00" in item.filename
-        or (mode and stat.S_ISLNK(mode))
-    ):
+    if not safe_zip_member(item):
         raise ProjectSnapshotError("项目快照包含不安全路径")
 
 
