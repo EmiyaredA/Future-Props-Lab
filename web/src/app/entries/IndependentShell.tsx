@@ -7,6 +7,7 @@ import { ThemeToggle } from "@shared/ui/ThemeToggle";
 import { ApplicationUpdate } from "./ApplicationUpdate";
 import { BrandMark } from "@shared/ui/BrandMark";
 
+import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { guardedNavigation } from "./navigation";
 
 export function IndependentShell({
@@ -17,6 +18,7 @@ export function IndependentShell({
   children: ReactNode;
 }) {
   const session = useStudioSession();
+  const canUseCloudControl = useAccountPermission("cloud-control.access");
   const follow = (event: MouseEvent<HTMLAnchorElement>) => {
     if (
       event.button ||
@@ -47,12 +49,11 @@ export function IndependentShell({
             <a href="/apps" onClick={follow}>
               应用目录
             </a>
-            <a href="/agents" onClick={follow}>
-              Agents
-            </a>
-            <a href="/remote" onClick={follow}>
-              远程控制
-            </a>
+            {canUseCloudControl && (
+              <a href="/cloud-control" onClick={follow}>
+                云控
+              </a>
+            )}
             <a href="/docs.html" onClick={follow}>
               文档
             </a>

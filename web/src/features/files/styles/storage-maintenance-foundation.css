@@ -15,16 +15,6 @@
   white-space: nowrap;
 }
 
-.spin {
-  animation: file-spin 0.8s linear infinite;
-}
-
-@keyframes file-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .file-busy {
   position: absolute;
   inset: 0;

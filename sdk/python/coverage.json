@@ -3150,23 +3150,9 @@
     "verification": "named-operation-contract"
   },
   {
-    "http": "GET /v1/tool-navigation/codex-source",
-    "sdk": "client.tools.get_codex_source",
-    "document": "/docs.html?page=sdk-reference-tools#get-codex-source",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
     "http": "GET /v1/tool-navigation/state",
     "sdk": "client.tools.get_state",
     "document": "/docs.html?page=sdk-reference-tools#get-state",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "GET /v1/tool-navigation/storage-usage",
-    "sdk": "client.tools.get_storage_usage",
-    "document": "/docs.html?page=sdk-reference-tools#get-storage-usage",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -3199,27 +3185,6 @@
     "verification": "named-operation-contract"
   },
   {
-    "http": "POST /v1/tool-navigation/codex-source/restore",
-    "sdk": "client.tools.post_codex_source_restore",
-    "document": "/docs.html?page=sdk-reference-tools#post-codex-source-restore",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "POST /v1/tool-navigation/storage-usage/analyze",
-    "sdk": "client.tools.analyze_storage_directory",
-    "document": "/docs.html?page=sdk-reference-tools#analyze-storage-directory",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "POST /v1/tool-navigation/storage-usage/open-directory",
-    "sdk": "client.tools.open_storage_directory",
-    "document": "/docs.html?page=sdk-reference-tools#open-storage-directory",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
     "http": "POST /v1/tool-navigation/tools/{tool_id}/use",
     "sdk": "client.tools.record_use",
     "document": "/docs.html?page=sdk-reference-tools#record-use",
@@ -3230,13 +3195,6 @@
     "http": "POST /v1/tool-navigation/video-download/jobs",
     "sdk": "client.tools.post_video_download_job",
     "document": "/docs.html?page=sdk-reference-tools#post-video-download-job",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "PUT /v1/tool-navigation/codex-source",
-    "sdk": "client.tools.put_codex_source",
-    "document": "/docs.html?page=sdk-reference-tools#put-codex-source",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },

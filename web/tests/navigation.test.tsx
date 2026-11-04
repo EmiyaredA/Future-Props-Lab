@@ -147,7 +147,6 @@ test("uses home as the default and parses deep application routes", () => {
   expect(parsePage("/tools")).toBe("tools");
   expect(parsePage("/tools/video-frame-exporter")).toBe("video-frame-exporter");
   expect(parsePage("/tools/video-downloader")).toBe("video-downloader");
-  expect(parsePage("/tools/codex-model-source")).toBe("codex-model-source");
   expect(parsePage("/apps/audio-annotation")).toBe("audio-annotation-projects");
   expect(parsePage("/apps/audio-annotation/projects/project-1")).toBe(
     "audio-annotation-editor",
@@ -166,7 +165,6 @@ test("uses home as the default and parses deep application routes", () => {
   expect(pathFor("tools")).toBe("/tools");
   expect(pathFor("video-frame-exporter")).toBe("/tools/video-frame-exporter");
   expect(pathFor("video-downloader")).toBe("/tools/video-downloader");
-  expect(pathFor("codex-model-source")).toBe("/tools/codex-model-source");
   expect(pathFor("audio-annotation-projects")).toBe("/apps/audio-annotation");
   expect(pathFor("audio-annotation-editor", "project-1")).toBe(
     "/apps/audio-annotation/projects/project-1",

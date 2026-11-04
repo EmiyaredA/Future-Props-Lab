@@ -64,6 +64,8 @@ for (const theme of ["light", "dark"] as const) {
       await expect(
         page.getByRole("progressbar", { name: "正在加载…", exact: true }),
       ).toBeVisible();
+      await expect(page.locator(".fpl-loading-character img")).toBeVisible();
+      await expect(page.locator(".fpl-loading-character video")).toHaveCount(0);
       await page.screenshot({ path: info.outputPath(`loading-${theme}.png`) });
     } finally {
       release();
@@ -129,5 +131,115 @@ for (const theme of ["light", "dark"] as const) {
       path: info.outputPath(`applications-${theme}.png`),
       fullPage: true,
     });
+  });
+}
+
+for (const theme of ["light", "dark"] as const) {
+  test(`Kurisu page and region loading: ${theme}`, async ({ page }, info) => {
+    await page.setViewportSize({
+      width: theme === "light" ? 1280 : 390,
+      height: 900,
+    });
+    await page.addInitScript(
+      (value) => localStorage.setItem("future_props_theme", value),
+      theme,
+    );
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    let releaseModule!: () => void;
+    let releaseData!: () => void;
+    const moduleGate = new Promise<void>((resolve) => {
+      releaseModule = resolve;
+    });
+    const dataGate = new Promise<void>((resolve) => {
+      releaseData = resolve;
+    });
+    await page.route(
+      "**/src/features/creative-workshop/CreativeWorkshopPage.tsx",
+      async (route) => {
+        await moduleGate;
+        await route.continue();
+      },
+    );
+    await page.route("**/v1/creative-workshop/items?*", async (route) => {
+      await dataGate;
+      await route.fulfill({ json: { items: [], next_cursor: null } });
+    });
+    try {
+      await page.goto("/creative-workshop", { waitUntil: "domcontentloaded" });
+      for (const variant of ["page", "region"] as const) {
+        const loading = page.locator(`.fpl-loading--${variant}.is-visible`);
+        const character = loading.locator(".fpl-loading-character");
+        const video = character.locator("video");
+        await expect(character).toHaveAttribute("data-playing", "true");
+        await expect(video).toBeVisible();
+        expect(
+          await video.evaluate((element: HTMLVideoElement) => element.duration),
+        ).toBeCloseTo(19 / 24, 2);
+        expect(
+          await character.evaluate(
+            (element) => element.getBoundingClientRect().height,
+          ),
+        ).toBeCloseTo(
+          (await loading
+            .locator(".fpl-loading-scene")
+            .evaluate((element) => element.getBoundingClientRect().width)) *
+            0.45,
+          1,
+        );
+        await expect(loading.locator(".fpl-scene-prop")).toHaveCount(8);
+        await expect(loading.getByRole("progressbar")).not.toHaveAttribute(
+          "aria-valuenow",
+        );
+        await expect
+          .poll(() =>
+            video.evaluate(
+              (element: HTMLVideoElement) =>
+                element.getVideoPlaybackQuality().totalVideoFrames,
+            ),
+          )
+          .toBeGreaterThan(48);
+        const transparency = await video.evaluate(
+          (element: HTMLVideoElement) => {
+            const canvas = document.createElement("canvas");
+            canvas.width = element.videoWidth;
+            canvas.height = element.videoHeight;
+            const context = canvas.getContext("2d")!;
+            context.drawImage(element, 0, 0);
+            const pixels = context.getImageData(
+              0,
+              0,
+              canvas.width,
+              canvas.height,
+            ).data;
+            return {
+              cornerAlpha: pixels[3],
+              hasCharacter: pixels.some(
+                (value, index) => index % 4 === 3 && value > 0,
+              ),
+            };
+          },
+        );
+        expect(transparency).toEqual({ cornerAlpha: 0, hasCharacter: true });
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= innerWidth,
+          ),
+        ).toBe(true);
+        await page.screenshot({
+          path: info.outputPath(`kurisu-${variant}-${theme}.png`),
+        });
+        if (variant === "page") releaseModule();
+      }
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await expect(page.locator(".fpl-loading--region video")).toHaveCount(0);
+      await expect(
+        page.locator(".fpl-loading--region .fpl-loading-character img"),
+      ).toBeVisible();
+      releaseData();
+      await expect(page.locator(".fpl-loading--region")).toHaveCount(0);
+    } finally {
+      releaseModule();
+      releaseData();
+    }
   });
 }

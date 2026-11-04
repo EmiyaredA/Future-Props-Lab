@@ -8,7 +8,7 @@ const definition = {
   shell: "agent-workbench",
   shellConfig: {
     subtitle: "本机编程会话",
-    backSubtitle: "浏览全部应用",
+    backSubtitle: "返回云控",
     navigation: [
       {
         page: "agent-workbench-session",
@@ -25,21 +25,18 @@ const definition = {
     ],
   },
   matchPath(path: string) {
-    if (/^\/apps\/agent-workbench\/sources\/?$/.test(path))
+    if (/^\/(?:agents|apps\/agent-workbench)\/sources\/?$/.test(path))
       return { page: "agent-workbench-sources" };
-    const match = /^\/apps\/agent-workbench(?:\/sessions\/([^/]+))?\/?$/.exec(
-      path,
-    );
+    const match =
+      /^\/(?:agents|apps\/agent-workbench)(?:\/sessions\/([^/]+))?\/?$/.exec(
+        path,
+      );
     if (match) return { page: "agent-workbench-session", projectId: match[1] };
   },
   pathFor(page: string, id?: string) {
-    if (page === "agent-workbench-sources")
-      return "/apps/agent-workbench/sources";
+    if (page === "agent-workbench-sources") return "/agents/sources";
     if (page === "agent-workbench-session")
-      return (
-        "/apps/agent-workbench" +
-        (id ? `/sessions/${encodeURIComponent(id)}` : "")
-      );
+      return "/agents" + (id ? `/sessions/${encodeURIComponent(id)}` : "");
   },
   pages: {
     workspace: () =>

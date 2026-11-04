@@ -8,8 +8,8 @@
 }
 
 .realtime-chat-titlebar {
-  min-height: 70px;
-  padding-inline: 22px;
+  min-height: 60px;
+  padding-inline: 18px;
 }
 
 .realtime-chat-titlebar .chat-title-copy {
@@ -20,7 +20,7 @@
 
 .realtime-chat-titlebar .chat-title-copy strong {
   color: var(--text-strong);
-  font-size: 15px;
+  font-size: 13px;
 }
 
 .realtime-chat-titlebar .chat-model-name {
@@ -254,7 +254,7 @@
 
 .realtime-chat-empty strong {
   color: var(--text-strong);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .realtime-chat-empty span {
@@ -262,13 +262,13 @@
 }
 
 .realtime-composer-wrap {
-  padding: 10px 22px 12px;
+  padding: 8px 18px 10px;
   background: linear-gradient(transparent, var(--bg) 18%);
 }
 
 .realtime-voice-composer {
   width: min(790px, 100%);
-  min-height: 70px;
+  min-height: 60px;
   margin: auto;
   padding: 10px;
   display: grid;

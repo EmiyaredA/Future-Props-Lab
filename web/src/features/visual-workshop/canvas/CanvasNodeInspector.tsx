@@ -1,3 +1,4 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { LoadingState } from "@shared/ui/LoadingState";
@@ -15,7 +16,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { Image, LoaderCircle, Music, Upload, Video, X } from "lucide-react";
+import { Image, Music, Upload, Video, X } from "lucide-react";
 import {
   fileQueryKeys,
   getFiles,
@@ -398,11 +399,7 @@ export function CanvasNodeInspector({
             disabled={upload.isPending}
             onClick={() => input.current?.click()}
           >
-            {upload.isPending ? (
-              <LoaderCircle className="spinning" aria-hidden />
-            ) : (
-              <Upload aria-hidden />
-            )}
+            {upload.isPending ? null : <Upload aria-hidden />}
             {upload.isPending ? (
               <LoadingState variant="inline" label="正在上传…" />
             ) : (
@@ -420,7 +417,7 @@ export function CanvasNodeInspector({
               role="status"
             >
               <strong>
-                {taskActivity(task.data) && <GenerationSpinner size={12} />}
+                {taskActivity(task.data) && <GenerationSpinner />}
                 生成任务 · {taskActivity(task.data)?.label ?? task.data.status}
               </strong>
               {taskActivity(task.data)?.progress !== undefined && (
@@ -440,7 +437,7 @@ export function CanvasNodeInspector({
               role="status"
             >
               <strong>
-                {batchActivity(batch.data) && <GenerationSpinner size={12} />}
+                {batchActivity(batch.data) && <GenerationSpinner />}
                 {batch.data.grid_size === 4 ? "4" : "9"} 宫格 ·{" "}
                 {batch.data.batch_kind === "composition"
                   ? "节点合成"
@@ -475,8 +472,7 @@ export function CanvasNodeInspector({
           <div className="canvas-inspector-assets">
             {loading ? (
               <span className="canvas-inspector-state">
-                <LoaderCircle className="spinning" aria-hidden />{" "}
-                正在读取项目素材…
+                <LoadingScene /> 正在读取项目素材…
               </span>
             ) : files.length ? (
               files.map((file) => (

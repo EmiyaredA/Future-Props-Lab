@@ -1,3 +1,4 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { LoadingState } from "@shared/ui/LoadingState";
 import "./conversation.css";
 import { useLayoutEffect, useRef, useState } from "react";
@@ -9,7 +10,6 @@ import {
   ArrowDown,
   ChevronDown,
   FileCode2,
-  LoaderCircle,
   Send,
   UserRound,
 } from "lucide-react";
@@ -234,7 +234,7 @@ export function ConversationView({
         )}
         {history.isPending && (
           <div className="aw-empty">
-            <LoaderCircle className="aw-spin" />
+            <LoadingScene />
             正在读取会话…
           </div>
         )}

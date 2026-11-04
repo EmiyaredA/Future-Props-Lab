@@ -195,13 +195,12 @@ test("Agent workbench APP/CLI reading, filters, source consent and responsive th
   await page.addInitScript(() =>
     localStorage.setItem("future_props_theme", "light"),
   );
-  await page.goto("/apps");
-  await page.getByRole("button", { name: "开发辅助", exact: true }).click();
+  await page.goto("/cloud-control");
   await page
     .getByRole("button", { name: "打开Agent 工作台", exact: true })
     .click();
-  await expect(page).toHaveURL(/\/apps\/agent-workbench$/);
-  await page.goto("/apps/agent-workbench/sessions/fixture-0");
+  await expect(page).toHaveURL(/\/agents$/);
+  await page.goto("/agents/sessions/fixture-0");
   await page.getByRole("button", { name: "深色", exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await expectPalette(page);

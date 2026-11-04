@@ -23,19 +23,6 @@ def test_assistant_reference_documents_browser_session_requirements():
         assert "不接受 Management API Key" in description
 
 
-def test_local_codex_reference_names_session_and_admin_restrictions():
-    paths = [
-        path
-        for path in app.openapi()["paths"]
-        if path.startswith("/v1/tool-navigation/codex-source")
-    ]
-    assert paths
-    for path in paths:
-        description = auth_for(path)
-        assert "平台管理员 Session" in description
-        assert "不接受 Management API Key 或 Agent 通道" in description
-
-
 def test_generated_automation_reference_documents_resource_links():
     mapping = json.loads((ROOT / "sdk/python/operations.json").read_text())
     document = build()[ROOT / "web/src/docs/articles/sdk/sdk-reference-automation.md"]

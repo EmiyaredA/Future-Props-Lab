@@ -1,6 +1,8 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useMutation, useQueries, useQuery } from "@tanstack/react-query";
-import { Check, LoaderCircle, Search, X } from "lucide-react";
+import { Check, Search, X } from "lucide-react";
+import { LoadingState } from "@shared/ui/LoadingState";
 import {
   fileQueryKeys,
   getFiles,
@@ -303,8 +305,8 @@ export function ProjectMediaSourceDialog({
 
         <div className="generation-source-results">
           {loading ? (
-            <div className="generation-source-state" role="status">
-              <LoaderCircle className="spinning" aria-hidden /> 正在读取素材…
+            <div className="generation-source-state">
+              <LoadingState label="正在读取素材…" />
             </div>
           ) : failed ? (
             <div className="generation-source-state is-error" role="alert">
@@ -377,9 +379,7 @@ export function ProjectMediaSourceDialog({
               }
               onClick={confirm}
             >
-              {importMutation.isPending ? (
-                <LoaderCircle className="spinning" aria-hidden />
-              ) : null}
+              {importMutation.isPending ? <LoadingScene /> : null}
               {mode === "cross" ? "导入并选择" : "确认选择"}
             </button>
           </div>

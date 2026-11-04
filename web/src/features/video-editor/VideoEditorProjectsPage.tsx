@@ -2,15 +2,7 @@ import { LoadingState } from "@shared/ui/LoadingState";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { useState } from "react";
-import {
-  Maximize2,
-  Pencil,
-  Plus,
-  RefreshCcw,
-  Search,
-  Trash2,
-  X,
-} from "lucide-react";
+import { Maximize2, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { ApiError } from "@platform/api/client";
 import {
   ProjectEditorDialog,
@@ -126,7 +118,6 @@ export function VideoEditorProjectsPage({
       ) : null}
       {projects.isLoading ? (
         <div className="workshop-state">
-          <RefreshCcw className="spinning" aria-hidden />
           <LoadingState label="正在读取剪辑工程" variant="inline" />
         </div>
       ) : projects.isError ? (

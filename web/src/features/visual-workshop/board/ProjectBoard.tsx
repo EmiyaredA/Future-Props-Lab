@@ -476,7 +476,7 @@ export function ProjectBoard({
               {c.canvasQuery.isError ? (
                 "项目加载失败"
               ) : (
-                <LoadingState variant="inline" label="正在加载项目…" />
+                <LoadingState label="正在加载项目…" />
               )}
             </p>
           ) : tab === "status" ? (
@@ -507,7 +507,7 @@ export function ProjectBoard({
                       className={`board-state-badge is-${statusKeys[selectedStatus]}`}
                     >
                       {selectedStatus === "生成中" ? (
-                        <GenerationSpinner size={12} />
+                        <GenerationSpinner />
                       ) : (
                         <SelectedStatusIcon size={12} />
                       )}

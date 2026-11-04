@@ -135,7 +135,7 @@ function StatusCard({
           <div className="board-progress">
             <div>
               <span>
-                <GenerationSpinner size={12} />
+                <GenerationSpinner />
                 {activity?.label ?? "生成中"}
               </span>
               {activity?.progress !== undefined && (

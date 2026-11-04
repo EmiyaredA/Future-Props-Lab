@@ -189,7 +189,7 @@ export function EvidenceViewer({
                     (source.error ? (
                       "素材加载失败"
                     ) : (
-                      <LoadingState variant="inline" label="正在加载素材…" />
+                      <LoadingState label="正在加载素材…" />
                     ))}
                 </pre>
               )}

@@ -183,7 +183,6 @@ export function GalgameWorkshopOverviewPage({
       ) : null}
       {loading ? (
         <div className="workshop-state">
-          <RefreshCcw className="spinning" aria-hidden />
           <LoadingState label="正在读取工程概览" variant="inline" />
         </div>
       ) : failed ? (

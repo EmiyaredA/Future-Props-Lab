@@ -70,11 +70,11 @@ native_headers = {
 receipts = ReceiptStore(state.parent / "receipts", readonly_operations=OPERATIONS)
 
 
-def actor_headers(method, path, *, owner="alpha", local=True):
+def actor_headers(method, path, *, owner="alpha", local=True, role="admin"):
     token = issue_context(
         Actor(
             owner,
-            "user",
+            role,
             "session",
             ("studio:read", "studio:private_read", "studio:write"),
             session_id="session-" + owner,
@@ -98,6 +98,9 @@ async def journey():
                 await client.post("/_native/v1/claim", json={"wait_seconds": 0})
             ).status_code == 403
             assert (await client.get("/v1/agent-workbench/sources")).status_code == 401
+            path = "/v1/agent-workbench/sources"
+            ordinary = await client.get(path, headers=actor_headers("GET", path, role="user"))
+            assert ordinary.status_code == 403
             stop = asyncio.Event()
 
             async def collector():

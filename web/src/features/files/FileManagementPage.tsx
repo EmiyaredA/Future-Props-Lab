@@ -1,11 +1,7 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  FolderSync,
-  LoaderCircle,
-} from "lucide-react";
+import { AlertTriangle, CheckCircle2, FolderSync } from "lucide-react";
 import { AssetBrowser } from "@features/files/AssetBrowser";
 import {
   getStorageLayoutStatus,
@@ -26,7 +22,7 @@ function bytesLabel(value: number) {
 
 export function FileManagementPage({
   initialKind,
-  canOpenLocalFolder = true,
+  canOpenLocalFolder = false,
 }: {
   initialKind?: string;
   canOpenLocalFolder?: boolean;
@@ -67,7 +63,7 @@ export function FileManagementPage({
         <section className="file-storage-migration" aria-live="polite">
           <span className="file-storage-migration-icon">
             {migrate.isPending ? (
-              <LoaderCircle className="spinning" aria-hidden />
+              <LoadingScene />
             ) : issues.length ? (
               <AlertTriangle aria-hidden />
             ) : (
@@ -118,7 +114,6 @@ export function FileManagementPage({
         onOpenLocalFolder={
           canOpenLocalFolder ? () => openFolder.mutate() : undefined
         }
-        pageHeading
         openingLocalFolder={openFolder.isPending}
       />
     </section>

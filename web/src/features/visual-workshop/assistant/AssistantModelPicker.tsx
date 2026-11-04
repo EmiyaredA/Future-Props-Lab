@@ -1,10 +1,10 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useMemo, useState } from "react";
 import {
   Check,
   Eye,
   Image as ImageIcon,
-  LoaderCircle,
   MessageSquareText,
   SlidersHorizontal,
   Video,
@@ -230,8 +230,7 @@ export function AssistantModelPicker({
             <div className="assistant-model-list">
               {loading ? (
                 <div className="assistant-model-state">
-                  <LoaderCircle className="spinning" aria-hidden />{" "}
-                  正在读取模型…
+                  <LoadingScene /> 正在读取模型…
                 </div>
               ) : visibleModels.length ? (
                 visibleModels.map((model) => (

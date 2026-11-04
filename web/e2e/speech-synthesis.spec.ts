@@ -200,7 +200,7 @@ test("speech workbench plays real audio, seeks, saves and keeps the draft after 
   await expect(
     page.getByRole("article", { name: "选中的生成结果" }),
   ).toContainText("今天的天气很好");
-  await expect(page.locator(".speech-history audio")).toHaveCount(1);
+  await expect(page.locator(".speech-output audio")).toHaveCount(1);
 });
 
 test("selected design is responsive in both themes", async ({ page }) => {
@@ -222,21 +222,22 @@ test("selected design is responsive in both themes", async ({ page }) => {
         .locator(".model-test-workspace-header")
         .scrollIntoViewIfNeeded();
       await expect(page.getByText("00:08", { exact: true })).toBeAttached();
-      const layout = await page
-        .locator(".speech-workbench")
-        .evaluate((node) => {
-          const left = node
-            .querySelector(".speech-composer")!
-            .getBoundingClientRect();
-          const right = node
-            .querySelector(".speech-history")!
-            .getBoundingClientRect();
-          return {
-            sameRow: Math.abs(left.top - right.top) < 1,
-            stacked: right.top >= left.bottom,
-          };
-        });
-      expect(width === 1600 ? layout.sameRow : layout.stacked).toBe(true);
+      if (width > 1200) {
+        const bounds = await page
+          .locator(".speech-history, .speech-output, .speech-composer")
+          .evaluateAll((nodes) =>
+            nodes.map((el) => el.getBoundingClientRect().x),
+          );
+        expect(bounds[0]).toBeLessThan(bounds[1]);
+        expect(bounds[1]).toBeLessThan(bounds[2]);
+      } else {
+        await page
+          .getByRole("button", { name: "测试结果", exact: true })
+          .click();
+        await expect(page.locator(".speech-output")).toBeVisible();
+        await expect(page.locator(".speech-composer")).toBeHidden();
+        await expect(page.locator(".speech-history")).toBeHidden();
+      }
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= innerWidth,
@@ -265,6 +266,10 @@ test("selected design is responsive in both themes", async ({ page }) => {
         });
       }
       // Long content stays within its own scroll area and never pushes the result out horizontally.
+      if (width <= 1200)
+        await page
+          .getByRole("button", { name: "参数与资源", exact: true })
+          .click();
       await page
         .getByLabel("目标文字", { exact: true })
         .fill("一段较长的配音文稿。".repeat(100));
@@ -276,6 +281,18 @@ test("selected design is responsive in both themes", async ({ page }) => {
           () => document.documentElement.scrollWidth <= innerWidth,
         ),
       ).toBe(true);
+      if (width <= 1200) {
+        await page
+          .getByRole("button", { name: "历史记录", exact: true })
+          .click();
+        await expect(page.locator(".speech-history")).toBeVisible();
+        await page
+          .getByRole("button", { name: "参数与资源", exact: true })
+          .click();
+        await expect(page.getByLabel("目标文字", { exact: true })).toHaveValue(
+          "一段较长的配音文稿。".repeat(100),
+        );
+      }
       await page.getByLabel("目标文字", { exact: true }).fill(text);
     }
   }

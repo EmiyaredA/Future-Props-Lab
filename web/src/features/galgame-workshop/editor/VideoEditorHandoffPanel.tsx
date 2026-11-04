@@ -1,6 +1,7 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ExternalLink, Layers3, LoaderCircle } from "lucide-react";
+import { ExternalLink, Layers3 } from "lucide-react";
 import {
   cancelGalgameVideoEditorHandoff,
   createGalgameVideoEditorHandoff,
@@ -65,11 +66,7 @@ export function VideoEditorHandoffPanel({
         disabled={disabled || create.isPending}
         onClick={() => create.mutate()}
       >
-        {create.isPending ? (
-          <LoaderCircle className="spinning" aria-hidden />
-        ) : (
-          <Layers3 aria-hidden />
-        )}
+        {create.isPending ? <LoadingScene /> : <Layers3 aria-hidden />}
         发送到视频剪辑工坊
       </button>
       <small>创建新的冻结分层工程，不会覆盖之前的剪辑。</small>

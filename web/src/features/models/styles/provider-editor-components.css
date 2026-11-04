@@ -394,12 +394,6 @@
   height: 11px;
 }
 
-.remove-attachment .lucide-loader-circle,
-.attachment-uploading svg,
-.attachment-button .lucide-loader-circle {
-  animation: model-attachment-spin 0.9s linear infinite;
-}
-
 .attachment-uploading {
   min-height: 58px;
   padding: 0 12px;
@@ -441,12 +435,6 @@
   width: 17px;
   height: 17px;
   stroke-width: 1.9;
-}
-
-@keyframes model-attachment-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .send-button {

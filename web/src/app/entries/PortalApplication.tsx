@@ -4,15 +4,16 @@ import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { useStudioSession } from "@app/StudioSession";
 import { HomePage } from "@features/home/HomePage";
 import { ApplicationCenterRoute } from "@features/applications/ApplicationCenterRoute";
-import { APPLICATION_DEFINITIONS } from "@features/applications/definitions";
+import {
+  AGENT_WORKBENCH_DEFINITION,
+  APPLICATION_DEFINITIONS,
+} from "@features/applications/definitions";
+import { CloudControlPage } from "@features/cloud-control/CloudControlPage";
 import { IndependentShell } from "./IndependentShell";
 import { guardedNavigation } from "./navigation";
 import "./portal.css";
 
-const applications = APPLICATION_DEFINITIONS.map((app) => ({
-  ...app,
-  path: app.id === "agent-workbench" ? "/agents" : app.path,
-}));
+const applications = APPLICATION_DEFINITIONS;
 
 function PortalContents() {
   const localBrowser = useRuntimeAccess();
@@ -25,7 +26,12 @@ function PortalContents() {
   return (
     <IndependentShell title="Future Props Lab">
       <div className="portal-scroll">
-        {/^\/apps\/?$/.test(location.pathname) ? (
+        {/^\/cloud-control\/?$/.test(location.pathname) ? (
+          <CloudControlPage
+            onOpen={open}
+            workbench={AGENT_WORKBENCH_DEFINITION}
+          />
+        ) : /^\/apps\/?$/.test(location.pathname) ? (
           <ApplicationCenterRoute applications={applications} onOpen={open} />
         ) : (
           <HomePage

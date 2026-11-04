@@ -5,6 +5,7 @@ from urllib.parse import unquote, urlsplit
 
 from fastapi import APIRouter, HTTPException, Request, Response
 
+from app.capabilities.identity.permissions import CLOUD_CONTROL_PERMISSION, requires_cloud_control
 from app.capabilities.identity.route_permissions import route_permission
 from app.capabilities.identity.session_policy import MANAGEMENT_SESSION, STUDIO_SESSION
 from app.console.governance.automation_access import automation_allowed
@@ -97,6 +98,11 @@ async def authorize(request: Request):
                 raise HTTPException(403, "browser_session_required")
         elif not principal.allows(permission):
             raise HTTPException(403, "insufficient_permission")
+        if requires_cloud_control(path):
+            if principal.auth_kind != "session":
+                raise HTTPException(403, "browser_session_required")
+            if not principal.allows(CLOUD_CONTROL_PERMISSION):
+                raise HTTPException(403, "insufficient_permission")
         actor = Actor(
             user_id=principal.user_id,
             purpose="management" if management else "studio",

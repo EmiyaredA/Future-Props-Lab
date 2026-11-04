@@ -1,9 +1,9 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import {
   Download,
   FolderInput,
   FolderOpen,
-  LoaderCircle,
   MoreHorizontal,
   Upload,
 } from "lucide-react";
@@ -39,11 +39,7 @@ export function FileLibraryActions({
           collisionPadding={12}
         >
           <Menu.Item disabled={busy} onSelect={onExport}>
-            {busy ? (
-              <LoaderCircle className="spin" aria-hidden />
-            ) : (
-              <Download aria-hidden />
-            )}
+            {busy ? <LoadingScene /> : <Download aria-hidden />}
             导出当前目录
           </Menu.Item>
           <Menu.Item disabled={busy} onSelect={onImportZip}>

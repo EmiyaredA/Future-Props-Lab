@@ -1,3 +1,4 @@
+import { useModelCompactPanels } from "@features/models/workspace/useModelCompactPanels";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { useId, useRef, useState } from "react";
@@ -9,7 +10,6 @@ import {
   ChevronRight,
   FileAudio2,
   FolderOpen,
-  LoaderCircle,
   LockKeyhole,
   RefreshCw,
   Upload,
@@ -57,6 +57,7 @@ function SpeechWorkspace({
   onSelectMode,
   onSelectModel,
 }: SpeechPanelProps) {
+  const compact = useModelCompactPanels("generation");
   const canUse = useAccountPermission("models.use");
   const canWrite = useAccountPermission("content.write");
   const fileInput = useRef<HTMLInputElement>(null);
@@ -85,6 +86,7 @@ function SpeechWorkspace({
     onCreated: (taskId) => {
       setSelectedTask(taskId);
       setAutoPlay(false);
+      compact.setPanel("result");
     },
   });
   const history = (tasks.data?.items ?? []).filter(
@@ -92,11 +94,13 @@ function SpeechWorkspace({
   );
   const focused =
     history.find((task) => task.id === selectedTask) ?? history[0];
-  const previous = history.filter((task) => task.id !== focused?.id);
   const inputDisabled =
     draft.busy || !selected || options.isError || !canUse || !canWrite;
   return (
-    <section className="page model-speech-test">
+    <section
+      className="model-test-page model-speech-test"
+      data-compact-panel={compact.panel}
+    >
       <TransferFeedback progress={draft.transferProgress} />
 
       <ModelTestWorkspaceHeader
@@ -125,16 +129,111 @@ function SpeechWorkspace({
           .map((m) => ({ value: m.value, label: m.label }))}
         onSelectModel={onSelectModel}
       />
-      <div className="speech-workbench">
+      {compact.tabs}
+      <div className="speech-workbench generation-test-grid">
+        <aside
+          className="speech-history generation-test-history"
+          aria-label="生成记录"
+        >
+          <header className="speech-heading">
+            <div className="speech-history-title">
+              <h2>生成记录</h2>
+              <button
+                className="speech-icon-button"
+                aria-label="刷新生成记录"
+                type="button"
+                disabled={tasks.isFetching}
+                onClick={() => void tasks.refetch()}
+              >
+                <RefreshCw size={16} aria-hidden />
+              </button>
+            </div>
+            <p>{history.length} 条记录</p>
+          </header>
+          {tasks.isPending && (
+            <LoadingState
+              label="正在读取生成记录…"
+              variant="region"
+              className="speech-help"
+            />
+          )}
+          {tasks.isError && (
+            <p className="speech-feedback is-error" role="alert">
+              生成记录读取失败：{tasks.error.message}。请刷新记录重试。
+            </p>
+          )}
+          {!!history.length && (
+            <div className="speech-history-list" aria-label="语音生成历史">
+              {history.slice(0, historyLimit).map((task) => (
+                <button
+                  className={`speech-history-row${task.id === focused?.id ? " is-active" : ""}`}
+                  aria-pressed={task.id === focused?.id}
+                  type="button"
+                  key={task.id}
+                  aria-label={`试听生成记录：${String(task.request_payload.text ?? "未命名文稿")}`}
+                  onClick={() => {
+                    setSelectedTask(task.id);
+                    setAutoPlay(task.result_available);
+                    compact.setPanel("result");
+                  }}
+                >
+                  <span className="speech-history-icon">
+                    <AudioLines size={19} aria-hidden />
+                  </span>
+                  <span className="speech-history-copy">
+                    <strong>
+                      {String(task.request_payload.text ?? "未命名文稿")}
+                    </strong>
+                    <small>{speechTaskStatus(task.status)}</small>
+                  </span>
+                  <ChevronRight size={15} aria-hidden />
+                </button>
+              ))}
+              {history.length > historyLimit && (
+                <button
+                  className="speech-text-button"
+                  type="button"
+                  onClick={() => setHistoryLimit((count) => count + 5)}
+                >
+                  显示更多记录
+                </button>
+              )}
+            </div>
+          )}
+        </aside>
+        <main
+          className="speech-output generation-test-result"
+          aria-label="语音合成结果"
+        >
+          <header className="speech-heading">
+            <h2>合成结果</h2>
+            <p>生成完成后可试听、下载或保存到文件库。</p>
+          </header>
+          {!tasks.isPending && !tasks.isError && !focused && (
+            <div className="speech-history-empty">
+              <AudioLines size={32} aria-hidden />
+              <h3>等待第一段声音</h3>
+              <p>填写参数面板中的文稿与参考音色，生成结果会显示在这里。</p>
+            </div>
+          )}
+          {focused && (
+            <SpeechSynthesisResult
+              key={focused.id}
+              task={focused}
+              autoPlay={autoPlay}
+            />
+          )}
+        </main>
         <form
-          className="speech-composer"
+          className="speech-composer generation-test-settings"
+          aria-label="语音合成参数"
           onSubmit={(event) => {
             event.preventDefault();
             void draft.submit();
           }}
         >
           <header className="speech-heading">
-            <h1>语音合成</h1>
+            <h2>语音合成</h2>
             <p>使用参考录音的音色，为文字生成配音。</p>
           </header>
           {options.isPending && (
@@ -292,15 +391,7 @@ function SpeechWorkspace({
               type="submit"
               disabled={!draft.canSubmit}
             >
-              {draft.busy ? (
-                <LoaderCircle
-                  size={19}
-                  className="speech-spinner"
-                  aria-hidden
-                />
-              ) : (
-                <AudioLines size={19} aria-hidden />
-              )}
+              {draft.busy ? null : <AudioLines size={19} aria-hidden />}
               {draft.busy ? (
                 <LoadingState variant="inline" label="正在处理…" />
               ) : (
@@ -334,85 +425,6 @@ function SpeechWorkspace({
             </p>
           )}
         </form>
-        <aside className="speech-history" aria-label="生成记录">
-          <header className="speech-heading">
-            <div className="speech-history-title">
-              <h2>生成记录</h2>
-              <button
-                className="speech-icon-button"
-                aria-label="刷新生成记录"
-                type="button"
-                disabled={tasks.isFetching}
-                onClick={() => void tasks.refetch()}
-              >
-                <RefreshCw size={16} aria-hidden />
-              </button>
-            </div>
-            <p>生成完成后可试听、下载或保存到文件库。</p>
-          </header>
-          {tasks.isPending && (
-            <LoadingState
-              label="正在读取生成记录…"
-              variant="region"
-              className="speech-help"
-            />
-          )}
-          {tasks.isError && (
-            <p className="speech-feedback is-error" role="alert">
-              生成记录读取失败：{tasks.error.message}。请刷新记录重试。
-            </p>
-          )}
-          {!tasks.isPending && !tasks.isError && !focused && (
-            <div className="speech-history-empty">
-              <AudioLines size={32} aria-hidden />
-              <h3>等待第一段声音</h3>
-              <p>填写左侧文稿与参考音色，生成结果会显示在这里。</p>
-            </div>
-          )}
-          {focused && (
-            <SpeechSynthesisResult
-              key={focused.id}
-              task={focused}
-              autoPlay={autoPlay}
-            />
-          )}
-          {!!previous.length && (
-            <div className="speech-history-list" aria-label="较早的生成记录">
-              {previous.slice(0, historyLimit).map((task) => (
-                <button
-                  className="speech-history-row"
-                  type="button"
-                  key={task.id}
-                  aria-label={`试听生成记录：${String(task.request_payload.text ?? "未命名文稿")}`}
-                  onClick={() => {
-                    setSelectedTask(task.id);
-                    setAutoPlay(task.result_available);
-                  }}
-                >
-                  <span className="speech-history-icon">
-                    <AudioLines size={19} aria-hidden />
-                  </span>
-                  <span className="speech-history-copy">
-                    <strong>
-                      {String(task.request_payload.text ?? "未命名文稿")}
-                    </strong>
-                    <small>{speechTaskStatus(task.status)}</small>
-                  </span>
-                  <ChevronRight size={15} aria-hidden />
-                </button>
-              ))}
-              {previous.length > historyLimit && (
-                <button
-                  className="speech-text-button"
-                  type="button"
-                  onClick={() => setHistoryLimit((count) => count + 5)}
-                >
-                  显示更多记录
-                </button>
-              )}
-            </div>
-          )}
-        </aside>
       </div>
       {libraryOpen && (
         <LibraryPicker

@@ -314,10 +314,6 @@
   font-size: 13px;
 }
 
-.ve-segment-progress-spinner {
-  animation: ve-segment-spin 900ms linear infinite;
-}
-
 .ve-segment-progress-bar {
   height: 7px;
   overflow: hidden;
@@ -356,12 +352,6 @@
   font-style: normal;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-@keyframes ve-segment-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .ve-segment-dialog > footer {

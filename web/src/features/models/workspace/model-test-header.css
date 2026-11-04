@@ -1,0 +1,30 @@
+.model-test-workspace-header {
+  --model-test-control-height: 32px;
+}
+.model-test-workspace-header div.model-test-mode-tabs {
+  flex-wrap: nowrap;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.model-test-workspace-header .model-test-mode-tabs button {
+  min-height: var(--model-test-control-height);
+  flex-shrink: 0;
+  font-size: 12px;
+}
+.model-test-workspace-header .model-test-header-model .custom-select-trigger {
+  min-height: var(--model-test-control-height);
+  font-size: 12px;
+}
+.model-test-workspace-header .custom-select-trigger-content {
+  flex: 1;
+}
+@media (pointer: coarse) {
+  .model-test-workspace-header {
+    --model-test-control-height: 44px;
+  }
+  :is(.model-test-page, .model-speech-test) :is(button, .custom-select-trigger),
+  .model-test-page .compact-panel-tabs button {
+    min-height: 44px;
+  }
+}

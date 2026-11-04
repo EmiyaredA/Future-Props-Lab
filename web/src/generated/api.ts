@@ -6670,41 +6670,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/tool-navigation/codex-source": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Codex Source */
-        get: operations["get_codex_source_v1_tool_navigation_codex_source_get"];
-        /** Put Codex Source */
-        put: operations["put_codex_source_v1_tool_navigation_codex_source_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/tool-navigation/codex-source/restore": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Post Codex Source Restore */
-        post: operations["post_codex_source_restore_v1_tool_navigation_codex_source_restore_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/tool-navigation/state": {
         parameters: {
             query?: never;
@@ -6716,57 +6681,6 @@ export interface paths {
         get: operations["get_state_v1_tool_navigation_state_get"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/tool-navigation/storage-usage": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Storage Usage */
-        get: operations["get_storage_usage_v1_tool_navigation_storage_usage_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/tool-navigation/storage-usage/analyze": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Analyze Storage Directory */
-        post: operations["analyze_storage_directory_v1_tool_navigation_storage_usage_analyze_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/tool-navigation/storage-usage/open-directory": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Open Directory */
-        post: operations["open_directory_v1_tool_navigation_storage_usage_open_directory_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10177,52 +10091,6 @@ export interface components {
              * @enum {string}
              */
             type: "applyClipMerge" | "undoClipMerge";
-        };
-        /** CodexSourceRestore */
-        CodexSourceRestore: {
-            /** Expected Revision */
-            expected_revision: string;
-        };
-        /** CodexSourceState */
-        CodexSourceState: {
-            /** Backup Available */
-            backup_available: boolean;
-            /** Base Url */
-            base_url: string;
-            /** Config Path */
-            config_path: string;
-            /** Env Key */
-            env_key: string;
-            /** Managed */
-            managed: boolean;
-            /** Model */
-            model: string;
-            /** Provider */
-            provider: string;
-            /** Revision */
-            revision: string;
-        };
-        /** CodexSourceUpdate */
-        CodexSourceUpdate: {
-            /**
-             * Base Url
-             * @default
-             */
-            base_url: string;
-            /**
-             * Env Key
-             * @default
-             */
-            env_key: string;
-            /** Expected Revision */
-            expected_revision: string;
-            /**
-             * Model
-             * @default
-             */
-            model: string;
-            /** Source */
-            source: string;
         };
         /** ColorRule */
         ColorRule: {
@@ -20096,27 +19964,6 @@ export interface components {
              */
             type: "splitClip";
         };
-        /** StorageAnalyzer */
-        StorageAnalyzer: {
-            /** Installed */
-            installed: boolean;
-            /** Version */
-            version?: string | null;
-        };
-        /** StorageCapacity */
-        StorageCapacity: {
-            /** Free Bytes */
-            free_bytes: number;
-            /** Total Bytes */
-            total_bytes: number;
-            /** Used Bytes */
-            used_bytes: number;
-        };
-        /** StorageDirectoryIn */
-        StorageDirectoryIn: {
-            /** Directory */
-            directory: string;
-        };
         /** StorageLayoutIssueOut */
         StorageLayoutIssueOut: {
             /** Asset Id */
@@ -20194,36 +20041,6 @@ export interface components {
              * @constant
              */
             target_version: 2;
-        };
-        /** StorageOpenReceipt */
-        StorageOpenReceipt: {
-            /** Directory */
-            directory: string;
-            /**
-             * Submitted
-             * @default true
-             */
-            submitted: boolean;
-        };
-        /** StorageShortcut */
-        StorageShortcut: {
-            /** Available */
-            available: boolean;
-            /** Directory */
-            directory: string;
-            /** Id */
-            id: string;
-            /** Label */
-            label: string;
-        };
-        /** StorageUsageState */
-        StorageUsageState: {
-            analyzer: components["schemas"]["StorageAnalyzer"];
-            capacity: components["schemas"]["StorageCapacity"];
-            /** Directory */
-            directory: string;
-            /** Shortcuts */
-            shortcuts: components["schemas"]["StorageShortcut"][];
         };
         /** Structure */
         Structure: {
@@ -39725,92 +39542,6 @@ export interface operations {
             };
         };
     };
-    get_codex_source_v1_tool_navigation_codex_source_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CodexSourceState"];
-                };
-            };
-        };
-    };
-    put_codex_source_v1_tool_navigation_codex_source_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CodexSourceUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CodexSourceState"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    post_codex_source_restore_v1_tool_navigation_codex_source_restore_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CodexSourceRestore"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CodexSourceState"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     get_state_v1_tool_navigation_state_get: {
         parameters: {
             query?: never;
@@ -39827,103 +39558,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ToolNavigationStateOut"];
-                };
-            };
-        };
-    };
-    get_storage_usage_v1_tool_navigation_storage_usage_get: {
-        parameters: {
-            query?: {
-                directory?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StorageUsageState"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    analyze_storage_directory_v1_tool_navigation_storage_usage_analyze_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["StorageDirectoryIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StorageOpenReceipt"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    open_directory_v1_tool_navigation_storage_usage_open_directory_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["StorageDirectoryIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StorageOpenReceipt"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

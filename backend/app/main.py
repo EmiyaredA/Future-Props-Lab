@@ -62,6 +62,7 @@ from app.console.governance.provisioning import create_account
 from app.console.governance.runtime_quotas import acquire, attach, recover_admissions, release
 from app.console.governance.service import AccountError
 from app.console.governance.visual_acceptance_access import acceptance_actor_allowed
+from app.console.governance.workbench_access import workbench_actor_allowed
 from app.demo_runtime.runtime import mock_transport, tool_reply
 from app.integrations.external.catalog import ExternalConnections
 from app.integrations.http_bindings import IntegrationBindings
@@ -134,7 +135,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
     await local_models.recover()
     supervisor = RunnerSupervisor(
         (
-            WorkbenchSyncRunner(),
+            WorkbenchSyncRunner(actor_allowed=workbench_actor_allowed),
             InterviewPreparationRunner(interview_actor_allowed),
             ArticleSyncRunner(external_sync_actor_allowed),
             ModelTemplateSyncRunner(),

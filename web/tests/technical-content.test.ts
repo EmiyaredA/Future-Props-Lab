@@ -29,18 +29,21 @@ describe("technical documentation library", () => {
       (doc) => doc.group === "各应用实现",
     );
     expect(applications.map((doc) => doc.id).sort()).toEqual(
-      APPLICATION_DEFINITIONS.map((app) => app.id).sort(),
+      [
+        "agent-workbench",
+        ...APPLICATION_DEFINITIONS.map((app) => app.id),
+      ].sort(),
     );
     expect(TECHNICAL_LIBRARY.documents.length - applications.length).toBe(21);
     expect(TECHNICAL_LIBRARY.documents).toHaveLength(
-      APPLICATION_DEFINITIONS.length + 21,
+      APPLICATION_DEFINITIONS.length + 22,
     );
     expect(new Set(TECHNICAL_LIBRARY.documents.map((doc) => doc.id)).size).toBe(
       TECHNICAL_LIBRARY.documents.length,
     );
     expect(TECHNICAL_LIBRARY.documents.map((doc) => doc.order)).toEqual(
       Array.from(
-        { length: APPLICATION_DEFINITIONS.length + 21 },
+        { length: APPLICATION_DEFINITIONS.length + 22 },
         (_, index) => index,
       ),
     );

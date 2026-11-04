@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AgentWorkbenchPage } from "@features/agent-workbench/AgentWorkbenchPage";
 import { RuntimeAccessProvider } from "@features/accounts/RuntimeAccessProvider";
+import { CloudControlAccess } from "@features/cloud-control/CloudControlAccess";
 import { useStudioSession } from "@app/StudioSession";
 import { IndependentShell } from "./IndependentShell";
 import { guardedNavigation } from "./navigation";
@@ -41,28 +42,33 @@ export default function AgentsApplication() {
   return (
     <RuntimeAccessProvider>
       <IndependentShell title="Agent 工作台">
-        {sources || match ? (
-          <AgentWorkbenchPage
-            key={me.user.id}
-            scopeKey={me.user.id}
-            sessionId={match?.[1]}
-            sourcesPage={sources}
-            onOpenSession={(id) =>
-              navigate(
-                "/agents" + (id ? "/sessions/" + encodeURIComponent(id) : ""),
-              )
-            }
-            onSources={() => navigate("/agents/sources")}
-            onBack={() =>
-              guardedNavigation(() => window.location.assign("/apps"), true)
-            }
-          />
-        ) : (
-          <section className="independent-not-found">
-            <h1>页面不存在</h1>
-            <a href="/agents">返回工作台</a>
-          </section>
-        )}
+        <CloudControlAccess>
+          {sources || match ? (
+            <AgentWorkbenchPage
+              key={me.user.id}
+              scopeKey={me.user.id}
+              sessionId={match?.[1]}
+              sourcesPage={sources}
+              onOpenSession={(id) =>
+                navigate(
+                  "/agents" + (id ? "/sessions/" + encodeURIComponent(id) : ""),
+                )
+              }
+              onSources={() => navigate("/agents/sources")}
+              onBack={() =>
+                guardedNavigation(
+                  () => window.location.assign("/cloud-control"),
+                  true,
+                )
+              }
+            />
+          ) : (
+            <section className="independent-not-found">
+              <h1>页面不存在</h1>
+              <a href="/agents">返回工作台</a>
+            </section>
+          )}
+        </CloudControlAccess>
       </IndependentShell>
     </RuntimeAccessProvider>
   );

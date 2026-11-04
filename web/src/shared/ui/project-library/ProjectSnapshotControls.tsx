@@ -1,5 +1,6 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { useRef, type ChangeEvent } from "react";
-import { Download, FolderOpen, LoaderCircle, Upload } from "lucide-react";
+import { Download, FolderOpen, Upload } from "lucide-react";
 
 export function ProjectSnapshotImportButton({
   pending,
@@ -22,11 +23,7 @@ export function ProjectSnapshotImportButton({
         disabled={pending}
         onClick={() => input.current?.click()}
       >
-        {pending ? (
-          <LoaderCircle className="spinning" aria-hidden />
-        ) : (
-          <Upload aria-hidden />
-        )}
+        {pending ? <LoadingScene /> : <Upload aria-hidden />}
         {pending ? "正在导入…" : "导入快照"}
       </button>
       <input
@@ -63,11 +60,7 @@ export function ProjectSnapshotCardActions({
         disabled={exporting}
         onClick={onExport}
       >
-        {exporting ? (
-          <LoaderCircle className="spinning" aria-hidden />
-        ) : (
-          <Download aria-hidden />
-        )}
+        {exporting ? <LoadingScene /> : <Download aria-hidden />}
       </button>
       <button
         type="button"
@@ -76,11 +69,7 @@ export function ProjectSnapshotCardActions({
         disabled={opening}
         onClick={onOpenFolder}
       >
-        {opening ? (
-          <LoaderCircle className="spinning" aria-hidden />
-        ) : (
-          <FolderOpen aria-hidden />
-        )}
+        {opening ? <LoadingScene /> : <FolderOpen aria-hidden />}
       </button>
     </>
   );

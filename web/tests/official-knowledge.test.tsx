@@ -15,10 +15,10 @@ afterEach(() => vi.restoreAllMocks());
 describe("bundled official knowledge", () => {
   it("covers every application with substantive, uniquely addressed chapters and valid links", async () => {
     expect(OFFICIAL_KNOWLEDGE_BASES).toHaveLength(
-      APPLICATION_DEFINITIONS.length + 2,
+      APPLICATION_DEFINITIONS.length + 3,
     );
     expect(new Set(OFFICIAL_KNOWLEDGE_BASES.map((item) => item.id)).size).toBe(
-      APPLICATION_DEFINITIONS.length + 2,
+      APPLICATION_DEFINITIONS.length + 3,
     );
     expect(
       OFFICIAL_KNOWLEDGE_BASES.flatMap((item) =>
@@ -31,10 +31,10 @@ describe("bundled official knowledge", () => {
         library.documents.length,
       );
       expect(library.documents.length).toBe(
-        library.applicationId
+        library.applicationId || library.id === "agent-workbench"
           ? 5
           : library.id === "technical"
-            ? APPLICATION_DEFINITIONS.length + 21
+            ? APPLICATION_DEFINITIONS.length + 22
             : 12,
       );
       for (const doc of library.documents) {
@@ -90,13 +90,13 @@ describe("bundled official knowledge", () => {
       }
     }
     expect(new Set(sourcePaths).size).toBe(
-      APPLICATION_DEFINITIONS.length * 6 + 33,
+      APPLICATION_DEFINITIONS.length * 6 + 39,
     );
     const files = import.meta.glob(
       "../src/features/thought-workshop/official/content/**/*.md",
     );
     expect(Object.keys(files)).toHaveLength(
-      APPLICATION_DEFINITIONS.length * 6 + 33,
+      APPLICATION_DEFINITIONS.length * 6 + 39,
     );
   });
 

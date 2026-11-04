@@ -1,0 +1,8 @@
+.cloud-control-page {
+  max-width: 1400px;
+  min-width: 0;
+}
+.cloud-control-page :is(a, button):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}

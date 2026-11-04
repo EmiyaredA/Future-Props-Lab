@@ -102,7 +102,7 @@ export function MaterialTree({
             className="board-material-running"
             aria-label={`${node.title}生成中`}
           >
-            <GenerationSpinner size={13} />
+            <GenerationSpinner />
           </span>
         ) : (
           node.final_version && (

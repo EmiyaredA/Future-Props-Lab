@@ -35,7 +35,7 @@
 .transcription-section-head,
 .transcription-settings-head,
 .transcription-result-head {
-  padding: 14px;
+  padding: 12px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -97,7 +97,7 @@
 
 .transcription-task-list > button {
   width: 100%;
-  padding: 12px 14px;
+  padding: 10px 12px;
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr);
   gap: 10px;

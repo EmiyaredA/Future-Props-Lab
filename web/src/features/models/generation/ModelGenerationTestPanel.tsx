@@ -13,7 +13,6 @@ import {
   CheckCircle2,
   Download,
   Image,
-  LoaderCircle,
   Paperclip,
   RotateCcw,
   Search,
@@ -979,11 +978,7 @@ export function ModelGenerationTestPanel({
                   !selectedOption
                 }
               >
-                {createMutation.isPending ? (
-                  <LoaderCircle className="spinning" aria-hidden />
-                ) : (
-                  <Sparkles aria-hidden />
-                )}
+                {createMutation.isPending ? null : <Sparkles aria-hidden />}
                 {createMutation.isPending ? (
                   <LoadingState variant="inline" label="正在上传并提交…" />
                 ) : (

@@ -139,12 +139,6 @@
   font-size: 12px;
 }
 
-.frame-export-loading svg,
-.frame-export-refreshing svg,
-.frame-export-dialog .spin {
-  animation: frame-export-spin 0.9s linear infinite;
-}
-
 .frame-export-refreshing {
   position: absolute;
   inset: 0;
@@ -367,12 +361,6 @@
 .frame-export-dialog button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
-}
-
-@keyframes frame-export-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 @media (max-width: 720px) {

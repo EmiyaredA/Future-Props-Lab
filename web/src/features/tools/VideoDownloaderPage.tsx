@@ -1,3 +1,4 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
@@ -13,7 +14,6 @@ import {
   ExternalLink,
   FolderOpen,
   Link2,
-  LoaderCircle,
   RefreshCw,
   ShieldCheck,
   X,
@@ -525,7 +525,7 @@ export function VideoDownloaderPage({ onBack }: { onBack: () => void }) {
                 ) : null}
                 {job.status === "failed" ? <CircleAlert aria-hidden /> : null}
                 {job.status === "queued" || job.status === "running" ? (
-                  <LoaderCircle className="video-download-spin" aria-hidden />
+                  <LoadingScene />
                 ) : null}
                 <strong>{statusLabel(job.status)}</strong>
               </div>

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "openapi_sha256": "69f6eecc42ddd37462c68f066bbdca2d3496aec2b671ecdc02be1448e4f39dfd",
+  "openapi_sha256": "467ee2656e2fc6ba1436d40a987dbd7742d254a598ad7a186c72d48dd74ff230",
   "operations": [
     {
       "service": "identity",
@@ -2931,46 +2931,10 @@
       "operation_id": "apply_template_v1_thought_workshop_templates__template_id__apply_post"
     },
     {
-      "service": "agent-runtime",
-      "method": "GET",
-      "path": "/v1/tool-navigation/codex-source",
-      "operation_id": "get_codex_source_v1_tool_navigation_codex_source_get"
-    },
-    {
-      "service": "agent-runtime",
-      "method": "PUT",
-      "path": "/v1/tool-navigation/codex-source",
-      "operation_id": "put_codex_source_v1_tool_navigation_codex_source_put"
-    },
-    {
-      "service": "agent-runtime",
-      "method": "POST",
-      "path": "/v1/tool-navigation/codex-source/restore",
-      "operation_id": "post_codex_source_restore_v1_tool_navigation_codex_source_restore_post"
-    },
-    {
       "service": "tools",
       "method": "GET",
       "path": "/v1/tool-navigation/state",
       "operation_id": "get_state_v1_tool_navigation_state_get"
-    },
-    {
-      "service": "tools",
-      "method": "GET",
-      "path": "/v1/tool-navigation/storage-usage",
-      "operation_id": "get_storage_usage_v1_tool_navigation_storage_usage_get"
-    },
-    {
-      "service": "tools",
-      "method": "POST",
-      "path": "/v1/tool-navigation/storage-usage/analyze",
-      "operation_id": "analyze_storage_directory_v1_tool_navigation_storage_usage_analyze_post"
-    },
-    {
-      "service": "tools",
-      "method": "POST",
-      "path": "/v1/tool-navigation/storage-usage/open-directory",
-      "operation_id": "open_directory_v1_tool_navigation_storage_usage_open_directory_post"
     },
     {
       "service": "tools",

@@ -1,11 +1,5 @@
 .visual-generation-spinner {
   flex-shrink: 0;
-  animation: visual-generation-spin 900ms linear infinite;
-}
-@keyframes visual-generation-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 .visual-generation-activity {
   padding: 0 0 3px;

@@ -1,5 +1,6 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { useState } from "react";
-import { LoaderCircle, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import { saveNodeOutput, type VisualCanvasNode } from "../api";
 import { visualWorkshopQueryKeys } from "../queryKeys";
 import type { BoardController } from "./boardTypes";
@@ -61,11 +62,7 @@ export function TextWorkbench({
           disabled={pending}
           onClick={() => void save()}
         >
-          {pending ? (
-            <LoaderCircle size={14} className="spinning" />
-          ) : (
-            <Save size={14} />
-          )}
+          {pending ? <LoadingScene /> : <Save size={14} />}
           保存文本版本
         </button>
       </footer>

@@ -41,9 +41,20 @@ def require_local_browser(request: Request, principal) -> None:
 
 
 class WebsiteTransport:
-    def __init__(self, app, *, local_port: int, public_access=None, automation_policy=None):
+    def __init__(
+        self,
+        app,
+        *,
+        local_port: int,
+        frontend_origin=None,
+        public_access=None,
+        automation_policy=None,
+    ):
         self.app, self.local_port, self.public_access = app, local_port, public_access
         self.automation_policy = automation_policy
+        if frontend_origin not in {None, "http://127.0.0.1:3000"}:
+            raise ValueError("Unsupported local frontend origin")
+        self.frontend_origin = frontend_origin
         self.api_paths = None
 
     async def __call__(self, scope, receive, send):
@@ -54,7 +65,7 @@ class WebsiteTransport:
         headers = Headers(scope=scope)
         host = f"127.0.0.1:{self.local_port}"
         local = scope.get("server") == ("127.0.0.1", self.local_port)
-        safe_origin = headers.get("origin") in {None, f"http://{host}"}
+        safe_origin = headers.get("origin") in {None, f"http://{host}", self.frontend_origin}
         if not public and (not local or headers.get("host") != host or not safe_origin):
             if scope["type"] == "websocket":
                 await send({"type": "websocket.close", "code": 1008})
@@ -102,7 +113,13 @@ class WebsiteTransport:
 
 
 def attach_website(
-    app, *, web_root: Path, local_port: int, public_access=None, automation_policy=None
+    app,
+    *,
+    web_root: Path,
+    local_port: int,
+    frontend_origin=None,
+    public_access=None,
+    automation_policy=None,
 ):
     if not (web_root / "index.html").is_file():
         raise ValueError("网站资源缺失，请先运行 npm run build:studio")
@@ -111,6 +128,7 @@ def attach_website(
     app.add_middleware(
         WebsiteTransport,
         local_port=local_port,
+        frontend_origin=frontend_origin,
         public_access=public_access,
         automation_policy=automation_policy,
     )

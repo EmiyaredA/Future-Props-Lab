@@ -1,14 +1,8 @@
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
+import { LoadingState } from "@shared/ui/LoadingState";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Check,
-  CheckSquare2,
-  Film,
-  LoaderCircle,
-  Square,
-  X,
-} from "lucide-react";
+import { Check, CheckSquare2, Film, Square, X } from "lucide-react";
 import {
   cancelGalgameVideoExport,
   createGalgameVideoExport,
@@ -600,8 +594,7 @@ export function VideoExportDialog({
               </div>
             ) : previewUpdating || preview.isFetching ? (
               <p className="galgame-video-export-loading">
-                <LoaderCircle className="spinning" aria-hidden />
-                正在检查最新导出设置…
+                <LoadingState label="正在检查最新导出设置…" />
               </p>
             ) : decision ? (
               <div className="galgame-video-decision">

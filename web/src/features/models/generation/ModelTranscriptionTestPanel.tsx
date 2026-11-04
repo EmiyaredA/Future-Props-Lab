@@ -1,3 +1,4 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { useModelCompactPanels } from "@features/models/workspace/useModelCompactPanels";
@@ -11,7 +12,6 @@ import {
   FileAudio2,
   FileInput,
   FolderOpen,
-  LoaderCircle,
   Mic2,
   Search,
   Trash2,
@@ -392,7 +392,7 @@ export function ModelTranscriptionTestPanel({
                         onClick={() => importMutation.mutate(activeTask)}
                       >
                         {importMutation.isPending ? (
-                          <LoaderCircle className="spinning" aria-hidden />
+                          <LoadingScene />
                         ) : (
                           <FileInput aria-hidden />
                         )}
@@ -416,7 +416,7 @@ export function ModelTranscriptionTestPanel({
               <AudioPlayer task={activeTask} />
               {pendingStatuses.includes(activeTask.status) ? (
                 <div className="transcription-empty">
-                  <LoaderCircle className="spinning" aria-hidden />
+                  <LoadingScene />
                   <strong>{statusLabels[activeTask.status]}</strong>
                   <span>任务会在后台继续执行，刷新页面也不会丢失。</span>
                 </div>
@@ -745,11 +745,7 @@ export function ModelTranscriptionTestPanel({
             disabled={createMutation.isPending || (!localFile && !libraryFile)}
             onClick={() => createMutation.mutate()}
           >
-            {createMutation.isPending ? (
-              <LoaderCircle className="spinning" aria-hidden />
-            ) : (
-              <Mic2 aria-hidden />
-            )}
+            {createMutation.isPending ? <LoadingScene /> : <Mic2 aria-hidden />}
             {createMutation.isPending ? "正在创建任务" : "开始识别"}
           </button>
         </aside>

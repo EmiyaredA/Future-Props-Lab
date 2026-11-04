@@ -257,7 +257,7 @@ test.each(["image", "video", "audio"] as const)(
     expect(button).toBeDisabled();
     expect(button).toHaveTextContent("生成中");
     expect(
-      button?.querySelector(".visual-generation-spinner"),
+      button?.querySelector(".fpl-loading-scene--inline"),
     ).toBeInTheDocument();
   },
 );

@@ -27,6 +27,7 @@ async def valid_auth(db, principal):
     now = utc_now()
     return (
         user.status == "active"
+        and user.platform_role == "admin"
         and not user.must_change_password
         and auth.revoked_at is None
         and auth.idle_expires_at > now

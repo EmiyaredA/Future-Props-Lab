@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { LoadingState } from "@shared/ui/LoadingState";
 import {
   configureStdio,
   getCreative,
@@ -68,7 +69,11 @@ export function Detail({
     }
   };
   if (!item)
-    return <p className="creative-empty">{error || "正在加载方案详情…"}</p>;
+    return error ? (
+      <p className="creative-empty">{error}</p>
+    ) : (
+      <LoadingState label="正在加载方案详情…" />
+    );
   return (
     <>
       <div className="creative-section-heading">

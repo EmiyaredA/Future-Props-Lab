@@ -160,7 +160,6 @@ test("application center filters and records recent application access", async (
     "desktop-pet",
   );
   for (const [name, asset] of [
-    ["Agent 工作台", "agent-workbench"],
     ["思绪工坊", "thought-workshop"],
     ["视觉创作工坊", "visual-workshop"],
     ["Galgame 工坊", "galgame-workshop"],

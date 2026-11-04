@@ -1159,25 +1159,6 @@ SVG 先通过已有预览转换；动画图片读取第一帧。需要公共文�
 创建，不接受客户端路径。结果为 WAV，沿用任务查询、下载、日志及保存到文件库接口。
 提交中断失败，不自动重提或回退云端；安装缺失和停用返回 409。
 
-## 空间占用工具
-
-`/v1/tool-navigation/storage-usage` 仅支持 macOS 桌面私有传输、平台超级管理员
-浏览器 Session；非桌面环境返回 404，其他身份返回 403，不开放 Management API Key 或 Agent 通道。
-
-- `GET /v1/tool-navigation/storage-usage?directory=绝对目录路径`：省略目录时使用当前系统用户主目录。
-  返回 `analyzer`（`installed`、`version`）、规范化 `directory`、`capacity`
-  （`total_bytes`、`used_bytes`、`free_bytes`）及 `shortcuts`。容量属于目录所在文件系统，
-  不代表目录大小或 macOS 分类统计，不递归扫描。目录失效、不可读及容量读取失败返回 422。
-- `POST /v1/tool-navigation/storage-usage/analyze`：请求体 `{ "directory": "/absolute/path" }`，
-  由已安装且 bundle 标识有效的 GrandPerspective 打开目录并分析。
-- `POST /v1/tool-navigation/storage-usage/open-directory`：同一请求体，在 Finder 打开目录。
-  两个打开接口均返回 `{ "directory": "/absolute/path", "submitted": true }`，仅代表打开请求已发送。
-  安装缺失、目录无效、调用失败或超时返回 422；超时可能已打开应用，需要用户检查后手动重试。
-
-路径、容量和扫描内容不持久化。快捷入口为主目录、下载、应用程序与启动磁盘；目录选择器支持外接磁盘。
-SDK 的 `client.tools.get_storage_usage`、`client.tools.analyze_storage_directory` 与
-`client.tools.open_storage_directory` 保留相同接口与身份限制，通常的 API Key 连接不能调用。
-
 ## 视频剪辑连续片段合并
 
 项目路径 `/v1/video-editor/projects/{project_id}/clip-merges` 支持 POST 创建、GET 列表；`/{task_id}` 支持 GET 详情，`/{task_id}/cancel` 支持 POST 取消。创建提交 `expectedRevision`、`requestId`、`clipIds`（2～100 个唯一视频片段 ID）和 `name`。相同请求幂等返回任务，不同载荷复用 requestId 返回 422。版本冲突返回 409；Workspace 或项目不匹配按不存在处理。

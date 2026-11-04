@@ -560,14 +560,6 @@
   line-height: 1.9;
   margin: 10px;
 }
-.aw-spin {
-  animation: aw-rotate 1s linear infinite;
-}
-@keyframes aw-rotate {
-  to {
-    transform: rotate(360deg);
-  }
-}
 .aw-mobile-list {
   display: none;
 }

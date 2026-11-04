@@ -9,6 +9,7 @@ export type StudioPage =
   | "creative-workshop-editor"
   | "creative-workshop-detail"
   | "apps"
+  | "cloud-control"
   | "files"
   | "tools"
   | "integrations-tool-apis"
@@ -17,8 +18,6 @@ export type StudioPage =
   | "integrations-external-connections"
   | "video-frame-exporter"
   | "video-downloader"
-  | "codex-model-source"
-  | "storage-usage"
   | "model-test"
   | "code-agents"
   | "model-service"
@@ -131,6 +130,7 @@ export function parseRoute(
 }
 
 function parsePathRoute(pathname: string): AppRoute {
+  if (/^\/cloud-control\/?$/.test(pathname)) return { page: "cloud-control" };
   const community = pathname.match(
     /^\/apps\/thought-workshop\/community(?:\/([^/]+)(?:\/documents\/([^/]+))?)?\/?$/,
   );
@@ -193,10 +193,6 @@ function parsePathRoute(pathname: string): AppRoute {
     return { page: "video-frame-exporter" };
   if (pathname.startsWith("/tools/video-downloader"))
     return { page: "video-downloader" };
-  if (pathname.startsWith("/tools/codex-model-source"))
-    return { page: "codex-model-source" };
-  if (pathname.startsWith("/tools/storage-usage"))
-    return { page: "storage-usage" };
   if (pathname.startsWith("/tools")) return { page: "tools" };
   if (/^\/model-test(?:\/|$)/.test(pathname)) return { page: "model-test" };
   if (pathname.startsWith("/model-call-logs"))
@@ -214,8 +210,8 @@ export function pathFor(
   const applicationPath = applicationPathFor(page, projectId, documentId);
   if (applicationPath) return applicationPath;
   const paths: Record<AppPage, string> = {
-    "agent-workbench-session": "/apps/agent-workbench",
-    "agent-workbench-sources": "/apps/agent-workbench/sources",
+    "agent-workbench-session": "/agents",
+    "agent-workbench-sources": "/agents/sources",
     "interview-assistant-session": "/apps/interview-assistant",
     "presentation-workshop-projects": "/apps/presentation-workshop",
     "presentation-workshop-templates": "/apps/presentation-workshop/templates",
@@ -240,6 +236,7 @@ export function pathFor(
       ? `/creative-workshop/item/${encodeURIComponent(projectId)}`
       : "/creative-workshop",
     apps: "/apps",
+    "cloud-control": "/cloud-control",
     files: "/files",
     tools: "/tools",
     "integrations-tool-apis": "/integrations/tool-apis",
@@ -248,8 +245,6 @@ export function pathFor(
     "integrations-external-connections": "/integrations/external-connections",
     "video-frame-exporter": "/tools/video-frame-exporter",
     "video-downloader": "/tools/video-downloader",
-    "codex-model-source": "/tools/codex-model-source",
-    "storage-usage": "/tools/storage-usage",
     "model-test": "/model-test",
     "code-agents": "/code-agents",
     "model-service": "/model-service",

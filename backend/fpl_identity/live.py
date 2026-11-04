@@ -7,7 +7,12 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from app.capabilities.identity.permissions import role_permissions, role_scopes
+from app.capabilities.identity.permissions import (
+    CLOUD_CONTROL_PERMISSION,
+    requires_cloud_control,
+    role_permissions,
+    role_scopes,
+)
 from app.console.models.accounts import AuthSession, ManagementApiKey, User
 from app.runtime.time import utc_now
 from fpl_runtime.claims import verify_context
@@ -101,6 +106,11 @@ async def live(request: Request, body: LiveRequest):
         )
     except (jwt.InvalidTokenError, ValueError, TypeError):
         return {"active": False}
+    if requires_cloud_control(body.path) and (
+        actor.auth_kind != "session"
+        or CLOUD_CONTROL_PERMISSION not in role_permissions(actor.platform_role)
+    ):
+        return {"active": False}
     async with request.app.state.database.sessions() as session:
         return {"active": await active_actor(session, actor)}
 
@@ -111,7 +121,7 @@ class TaskAuthorizationRequest(BaseModel):
     permission: str = Field(max_length=100)
 
 
-TASK_PERMISSIONS = {"agents": frozenset({"content.read"})}
+TASK_PERMISSIONS = {"agents": frozenset({CLOUD_CONTROL_PERMISSION})}
 
 
 @router.post("/_internal/v1/tasks/authorize")

@@ -74,7 +74,10 @@ export function useWorkbench(
       stream.close();
       setConnection("closed");
     };
-    stream.addEventListener("auth_expired", close);
+    stream.addEventListener("auth_expired", () => {
+      close();
+      window.dispatchEvent(new Event("future-props:permissions-changed"));
+    });
     const focus = () => refresh();
     window.addEventListener("focus", focus);
     window.addEventListener("future-props:auth-required", close);

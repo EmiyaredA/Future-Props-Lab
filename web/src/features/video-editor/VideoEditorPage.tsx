@@ -191,7 +191,13 @@ export function VideoEditorPage({
     retry: false,
   });
   if (editor.project.isLoading || editor.timeline.isLoading)
-    return <div className="ve-editor-state">正在装配剪辑工作区…</div>;
+    return (
+      <LoadingState
+        label="正在装配剪辑工作区…"
+        variant="page"
+        className="ve-editor-state"
+      />
+    );
   if (!editor.project.data || !editor.timeline.data)
     return <div className="ve-editor-state">剪辑项目无法读取。</div>;
   const project = editor.project.data;

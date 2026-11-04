@@ -17,6 +17,7 @@ from app.apps.agent_workbench.schemas import (
     WorkbenchSourceOut,
     WorkbenchSourcePatch,
 )
+from app.capabilities.identity.permissions import CLOUD_CONTROL_PERMISSION
 from app.runtime.website import require_local_browser
 from fpl_runtime.http_dependencies import OwnerDep, SessionDep, StudioAuth
 
@@ -24,6 +25,8 @@ from fpl_runtime.http_dependencies import OwnerDep, SessionDep, StudioAuth
 async def require_workbench_session(principal: StudioAuth, session: SessionDep):
     if principal.auth_kind != "session":
         raise HTTPException(403, "工作台必须使用浏览器 Session")
+    if not principal.allows(CLOUD_CONTROL_PERMISSION):
+        raise HTTPException(403, "云控仅限管理员访问")
     await session.rollback()
     return principal
 

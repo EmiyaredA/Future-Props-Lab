@@ -22,6 +22,8 @@
 `shared/ui/LoadingState`、`ResponsiveImage`、`ImagePreview` 负责无业务归属的反馈与显示，不持有业务任务状态。
 `shared/lib/imageSources` 负责预览 URL，`imageVariants.ts` 由脚本生成。
 
+`shared/ui/LoadingScene` 拥有整页、区域与行内的同源琥珀仪表视觉；`LoadingCharacter` 拥有人物播放、暂停、静态回退及动态效果偏好，二者不持有业务状态。`web/public/brand/loading/` 保存仪表 SVG、八张道具 WebP、红莉栖小跑透明视频与首帧；二进制资产由 Git LFS 和生产资源 SHA-256 检查维护。`app/bootLoading.ts` 在 React 挂载前控制同源 HTML 加载场景并在成功或失败时清理。
+
 `capabilities/asset_store/thumbnails.py` 拥有受限解码、方向校正、透明 WebP 与原子落盘；身份、社区和创作用例先授权后调用。
 `scripts/generate_image_variants.py` 生成 `web/public/brand/thumbnails/` 下的摘要命名静态派生图和清单，构建执行过期检查。
 接口、入口清单与验收约定见 [`../reference/loading-and-images.md`](../reference/loading-and-images.md)。
@@ -124,7 +126,7 @@
 
 `runtime/website.py` 拥有可信本机 socket、SPA 静态托管和来源校验；`runtime/remote_web.py` 拥有公网 Host／Origin、浏览器 Session／受控 API Key 和缓存边界。`capabilities/web_access/` 拥有公网回环监听器、专用 SSH 重连和状态；附加 lifespan 关闭，不重复初始化数据库或 Runner。
 
-`scripts/website/serve.py` 在导入数据库前检查配置和迁移、持有目标与原桌面数据锁；`service.py` 管理用户级 LaunchAgent，`development.py` 隔离开发配置、密钥与数据库，`install_client.py` 核验原客户端授权并安装用户级 fpl 命令，`configure.py` 在停机快照约束下发布网站配置，`data_transfer.py` 拥有停机快照、SHA256、只读 SQLite 核验和文件发布回滚，`cleanup.py` 只清理受控缓存与有正式关联副本的临时媒体。相邻独立工具入口供 Amadeus／面试准备子进程调用，不启动主应用。
+`scripts/website/serve.py` 在导入数据库前检查配置和迁移、持有目标与原桌面数据锁；`application.py` 在每个重载 worker 导入数据库前复查迁移，并装配网站与公网生命周期；`service.py` 管理同一个用户级 LaunchAgent，`development.py` 持有单例启动锁、沿用现有 TOML 和数据、按后端就绪顺序启动固定 9001/3000 热加载前后端并统一清理进程，`install_client.py` 核验原客户端授权并安装用户级 fpl 命令，`configure.py` 在停机快照约束下发布网站配置，`data_transfer.py` 拥有停机快照、SHA256、只读 SQLite 核验和文件发布回滚，`cleanup.py` 只清理受控缓存与有正式关联副本的临时媒体。相邻独立工具入口供 Amadeus／面试准备子进程调用，不启动主应用。
 
 `console/governance/automation.py` 校验资源归属并返回网站路径；`automation_operations.json` 维护 SDK／MCP 白名单，`automation_access.py` 将其编译为本机／公网共用的入口策略；`console/routes/automation.py` 负责发现和本机管理员访问控制。`sdk/python/src/future_props_lab/website.py` 保存受保护客户端连接，`cli.py` 提供 fpl。
 
@@ -174,7 +176,7 @@ Future-Props-Lab/
 │   │   └── creative_workshop/ # 跨账号公开创作版本、草稿、安装事务与文件校验
 │   ├── apps/          # 已垂直切片的产品 App
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台、调用日志及自有 models/schemas/routes
-│   ├── tool_navigation/ # 工具目录状态、桌面 Codex 模型源与抖音/B站视频下载；自有 models/schemas/routes
+│   ├── tool_navigation/ # 工具目录状态与抖音/B站视频下载；自有 models/schemas/routes
 │   ├── integrations/ # 账号工具 API、MCP、Skill、外部连接；自有 models/schemas/routes
 │   └── demo_runtime/  # 固定演示 Mock 运行时；自有 schemas/routes
 ├── db/migrations/
@@ -275,12 +277,13 @@ Future-Props-Lab/
 - 后端不增加通用 `services/`、`domain/`、`platform/` 或 `product/` 分层。需要拆分大型模块
   时，按具体业务能力在所属功能包内命名，避免同一职责出现多个事实源。
 - 工具目录由 Web 静态注册表维护；后端 `tool_navigation/` 持久化稳定工具 ID 对应的收藏与
-  最近使用状态，不复制工具名称、分类或外部网址。其 Codex 模型源用例仅在桌面私有传输内
-  读取和修改当前用户的 `CODEX_HOME/config.toml`，不进入账号数据库。视频下载用例调用本机
-  `yt-dlp`/`ffmpeg`，仅允许抖音与哔哩哔哩链接，任务与临时文件保存在运行时目录，可选写入文件库。
-  空间占用用例仅向 macOS 桌面端平台管理员 Session 提供本机容量读取、GrandPerspective
-  目录分析与 Finder 打开；不递归扫描、不保存目录或扫描结果，不开放 Agent 通道。
-  本机网页登录后显式输入 Mac 目录路径，Web 工具页通过正式 API 调用本机用例；公网入口不得调用。
+  最近使用状态，不复制工具名称、分类或外部网址。空间占用与 Codex 模型源页面和主机操作 API 已移除。
+  视频下载用例调用本机 `yt-dlp`/`ffmpeg`，仅允许抖音与哔哩哔哩链接，任务与临时文件保存在运行时目录，可选写入文件库。
+- `web/src/features/cloud-control/` 拥有管理员专属云控入口与权限门禁；导航置于应用之后，工作台从应用目录和首页分组移至 `/agents`。
+  API、SSE 与后台采集同时检查 `cloud-control.access`，身份降级后保留原账号副本和检查点。
+  当前网站保留兼容装配，独立服务实现保留在服务化分支并由其统一验收切换。
+`web/src/features/applications/ApplicationCard.tsx` 拥有应用目录与云控共用的紧凑入口卡片；布局、品牌图、简介和能力标签沿用应用目录样式，入口元数据由各装配入口显式传入。
+
 - `integrations/` 拥有独立于工具导航的账号集成目录：`tool_apis/` 管理受限 HTTP 调用配置，
   `mcp/` 管理 Streamable HTTP/stdio 连接与工具快照，`skills/` 管理安全 ZIP 导入和不可变版本，
   `checks/` 只保存脱敏验证元数据。v1 只负责管理、发现和按需验证，不接入 Agent Harness 执行。

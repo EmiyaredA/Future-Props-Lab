@@ -176,7 +176,7 @@ export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
         {permissions.canWrite && view !== "local" && (
           <button
             type="button"
-            className="btn primary"
+            className={`btn primary${view === "directory" ? " mc-add-model" : ""}`}
             disabled={busy}
             onClick={
               view === "directory"

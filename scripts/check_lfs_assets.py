@@ -17,6 +17,17 @@ BACKEND_ASSETS = (
     Path("backend/app/capabilities/media_rendering/assets/NotoSansSC-Medium.ttf"),
 )
 WEB_ASSETS = (
+    Path("web/public/brand/loading/kurisu-run.webp"),
+    Path("web/public/brand/loading/time-machine.webp"),
+    Path("web/public/brand/loading/metal-upa.webp"),
+    Path("web/public/brand/loading/dr-pepper.webp"),
+    Path("web/public/brand/loading/pocket-watch.webp"),
+    Path("web/public/brand/loading/divergence-meter.webp"),
+    Path("web/public/brand/loading/flip-phone.webp"),
+    Path("web/public/brand/loading/phonewave.webp"),
+    Path("web/public/brand/loading/gel-banana.webp"),
+    Path("web/public/brand/loading/kurisu-run.webm"),
+    Path("web/public/brand/loading/kurisu-run.png"),
     Path("web/public/brand/home/kurisu-idle.webm"),
     Path("web/public/brand/home/kurisu-idle.png"),
     Path("web/public/presentation-templates/html-template.png"),
@@ -36,6 +47,39 @@ WEB_ASSETS = (
     Path("web/public/voice-vad/ort-wasm-simd-threaded.wasm"),
 )
 EXPECTED_SHA256 = {
+    Path(
+        "web/public/brand/loading/kurisu-run.webp"
+    ): "8f8b059ce99a4ae7e100551417515e16fc1d36bfa2926fbfd0ce72f8a3b10d85",
+    Path(
+        "web/public/brand/loading/time-machine.webp"
+    ): "58167e6287c6bef52c27c3557b53bb142e82aa9842c5a3d6bfad2be9d631a0e1",
+    Path(
+        "web/public/brand/loading/metal-upa.webp"
+    ): "694b68aac09b16ac7a3860cfa1b405a4ce31ef2f8a504e4f91d522ccb9d989e1",
+    Path(
+        "web/public/brand/loading/dr-pepper.webp"
+    ): "f91268d91ab332eaccd987c6720cf6e03e92469153b5f0c2c4b84d8fad2dbaf7",
+    Path(
+        "web/public/brand/loading/pocket-watch.webp"
+    ): "71533ba03e36c59d0c70ab7e00bbf2aa84c2f81ffcde974df98f27bd267f7ef9",
+    Path(
+        "web/public/brand/loading/divergence-meter.webp"
+    ): "1525c21b83f59a21167168b2f1a5cf56230354cef7e90ee4f1ca83f5cca90ff1",
+    Path(
+        "web/public/brand/loading/flip-phone.webp"
+    ): "35468fae7ed4fafbd14e780749e6919d6c4d1164edd661094053dee51b2b7056",
+    Path(
+        "web/public/brand/loading/phonewave.webp"
+    ): "398a33a022f00d386c7bbec6719ec082977626e87aa5347f3d02c6c995dd6a81",
+    Path(
+        "web/public/brand/loading/gel-banana.webp"
+    ): "f6093c10b8d0efd073ddec44da74666b2be00c1bbf716bbe640e952452cdde12",
+    Path("web/public/brand/loading/kurisu-run.webm"): (
+        "2731db585e6b7115f1cc660dade90cf5d3860746a5ab52888a3f27cc6ed51830"
+    ),
+    Path("web/public/brand/loading/kurisu-run.png"): (
+        "45057d66398f8073ea903da2545b31d78161be11993202b7e9be78a775a1b689"
+    ),
     Path(
         "web/public/brand/home/kurisu-idle.webm"
     ): "10717cdea36065ed9e6a0360a7174ff1a79b7dea9523939376980b5f74219132",
@@ -264,7 +308,7 @@ def main() -> None:
     if args.web or args.all:
         require_materialized(
             WEB_ASSETS,
-            "web/public/presentation-templates/*,web/public/voice-vad/*,web/public/brand/home/*,web/public/brand/thought-workshop-mark.png,"
+            "web/public/presentation-templates/*,web/public/voice-vad/*,web/public/brand/home/*,web/public/brand/loading/*,web/public/brand/thought-workshop-mark.png,"
             "web/public/brand/presentation-workshop-mark.png,"
             "web/public/brand/audio-annotation-mark.png,"
             "web/public/brand/director-desk-mark.png,web/public/brand/agent-workbench-mark.png,"

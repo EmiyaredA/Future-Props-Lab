@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   Circle,
   ExternalLink,
-  LoaderCircle,
   Play,
   Plus,
   Power,
@@ -196,9 +195,7 @@ export function LocalModelDetails({
             disabled={primary.disabled}
             onClick={primary.action}
           >
-            {pending ? (
-              <LoaderCircle size={17} className="lm-spinner" aria-hidden />
-            ) : primary.label === "去测试" ? (
+            {pending ? null : primary.label === "去测试" ? (
               <Play size={17} aria-hidden />
             ) : primary.label === "添加到当前空间" ? (
               <Plus size={17} aria-hidden />

@@ -405,9 +405,6 @@
   white-space: nowrap;
   border: 0;
 }
-.interview-assistant .spin {
-  animation: ia-spin 1.5s linear infinite;
-}
 @media (max-width: 1200px) {
   .interview-assistant .room-title {
     display: none;
@@ -583,11 +580,6 @@
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
-  }
-}
-@keyframes ia-spin {
-  to {
-    transform: rotate(360deg);
   }
 }
 @keyframes ia-breathe {

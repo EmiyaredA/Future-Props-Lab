@@ -666,7 +666,7 @@ export const PLATFORM_READING: Record<
   },
   "agent-workbench/overview": {
     summary:
-      "在桌面打开「应用 → 开发辅助 → Agent 工作台」。先查看来源，再阅读会话；这里展示已有 Codex、Claude Code、OpenCode、DeepSeek H",
+      "以管理员账号在网站打开「云控 → Agent 工作台」。先查看来源，再阅读会话；这里展示已有 Codex、Claude Code、OpenCode、DeepSeek H",
     related: [
       { libraryId: "agent-workbench", documentId: "workflow" },
       { libraryId: "agent-workbench", documentId: "storage" },

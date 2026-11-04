@@ -10,6 +10,7 @@ from starlette.datastructures import Headers
 from starlette.responses import JSONResponse
 
 from app.apps.agent_workbench.models import WorkbenchCheckpoint, WorkbenchSource
+from app.capabilities.identity.permissions import CLOUD_CONTROL_PERMISSION
 from app.runtime.config import get_settings
 from app.runtime.ownership import bind_owner
 
@@ -101,7 +102,9 @@ async def verify_follow(database, identity, worker, lease):
             "endpoint": source.endpoint,
             "authorization_revision": subscription.authorization_revision,
         }
-    permission = await identity.owner_permission(owner=context["owner"], permission="content.read")
+    permission = await identity.owner_permission(
+        owner=context["owner"], permission=CLOUD_CONTROL_PERMISSION
+    )
     if permission.get("available") is False:
         raise HTTPException(503, "native_identity_unavailable")
     if permission.get("allowed") is not True:

@@ -5,7 +5,6 @@ import {
   Check,
   ChevronRight,
   CircleHelp,
-  LoaderCircle,
   Plus,
   RefreshCw,
   ShieldCheck,
@@ -185,7 +184,6 @@ export function InterviewAssistantPage({
       )}
       {loading ? (
         <div className="evaluating" role="status">
-          <LoaderCircle className="spin" />
           <LoadingState label="正在读取已保存场次…" variant="region" />
         </div>
       ) : practice ? (

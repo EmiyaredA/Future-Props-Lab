@@ -623,20 +623,11 @@
   outline: 2px solid #a69cff;
   outline-offset: 2px;
 }
-
-.ve-asset-download-pending {
-  animation: ve-asset-download-spin 1s linear infinite;
-}
 .ve-asset-download-error {
   margin: 4px 6px;
   color: var(--danger);
   font-size: 11px;
   overflow-wrap: anywhere;
-}
-@keyframes ve-asset-download-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .ve-asset-download-pending {

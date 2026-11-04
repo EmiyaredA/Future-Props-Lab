@@ -1,13 +1,8 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { useMemo, useState } from "react";
-import {
-  ArrowDown,
-  ArrowUp,
-  GripVertical,
-  LoaderCircle,
-  X,
-} from "lucide-react";
+import { ArrowDown, ArrowUp, GripVertical, X } from "lucide-react";
 import type {
   ImageCompositionInput,
   VisualCanvasNode,
@@ -265,7 +260,7 @@ export function ImageGridCompositionDialog({
             onClick={() => void submit()}
             disabled={!canSubmit || busy}
           >
-            {busy ? <LoaderCircle className="spinning" aria-hidden /> : null}
+            {busy ? <LoadingScene /> : null}
             生成合成图
           </button>
         </footer>

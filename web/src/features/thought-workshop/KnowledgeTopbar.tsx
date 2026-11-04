@@ -1,3 +1,4 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { openAmadeus } from "@platform/assistant";
 import { Fragment, type Ref } from "react";
 import {
@@ -11,7 +12,6 @@ import {
   Image as ImageIcon,
   Info,
   ListTree,
-  LoaderCircle,
   Pencil,
   Plus,
   RotateCcw,
@@ -258,7 +258,7 @@ export function KnowledgeTopbar({
                 {noteChrome.state === "saved" ? (
                   <Check size={15} aria-hidden="true" />
                 ) : noteChrome.state === "saving" ? (
-                  <LoaderCircle size={15} aria-hidden="true" />
+                  <LoadingScene />
                 ) : (
                   <CircleAlert size={15} aria-hidden="true" />
                 )}

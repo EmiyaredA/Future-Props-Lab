@@ -1,23 +1,19 @@
-<!-- docs: {"group":"tools","order":2,"title":"本机 Codex 模型源","lead":"在桌面版查看与切换本机模型源，保留可恢复的配置备份。","evidence":["web/src/features/tools/CodexModelSourcePage.tsx","backend/app/tool_navigation/codex_source_routes.py","backend/app/tool_navigation/codex_source.py","tests/test_codex_source.py"]} -->
+<!-- docs: {"group":"tools","order":2,"title":"已移除的主机工具","lead":"空间占用与 Codex 模型源已移除，旧链接不再提供主机操作。","evidence":["web/src/features/tools/catalog.ts","backend/app/api.py","tests/test_tool_navigation.py","web/tests/cloud-control.test.tsx"]} -->
 
-# 本机 Codex 模型源
+# 已移除的主机工具
 
-从「工具导航 → Codex 模型源」打开。该工具只向 macOS 桌面版的平台管理员开放，使用登录 Session；管理 API Key 和本地 Agent 通道不能调用它。
+空间占用与 Codex 模型源已从产品中移除。工具导航、收藏与最近使用中不再展示这两个工具；相应页面、主机操作接口和 SDK 方法也不再提供。
 
-## 查看与修改
+## 旧链接与记录
 
-页面读取运行环境的 `CODEX_HOME/config.toml`，默认位于用户目录下 `.codex/config.toml`。选择 OpenAI 官方源或兼容 Responses API 的自定义源，填写基础地址与模型 ID，再检查并保存。
+通过原工具链接访问时，只会进入现有工具目录，不会读取目录、磁盘容量或 Codex 配置。旧的收藏和使用记录按有效工具目录过滤；已有记录不会成为重新执行主机操作的入口。
 
-工具管理固定的 `fpl_custom` 供应商配置，保留无关设置。它不终止 Codex 进程，也不直接修改正在运行的桌面端内部状态。
+可返回「工具导航」选择视频帧导出、视频下载等仍然提供的工具。完成标志是目录与侧栏都不再出现已移除的条目。
 
-## 密钥和生效方式
+## 电脑上的配置与程序
 
-自定义源的密钥通过环境变量名引用，不在页面输入或保存 API Key 明文。该环境变量必须由启动 Codex 的进程提供；仅填写变量名称不会自动创建密钥。
+移除产品功能不会修改电脑上的 Codex 配置，不恢复旧配置备份，也不会卸载已经安装的 GrandPerspective。相关程序与文件仍由其自身维护。
 
-保存后按页面提示重启 Codex；已有会话还可能需要重新选择模型。端点和模型是否可用取决于实际服务及权限，不由配置保存成功保证。
+## 云控中的 Agent 工作台
 
-## 备份、恢复与冲突
-
-首次写入前保存原始配置备份。恢复原始文件会覆盖之后的手工修改，操作前先检查提示并保留自己需要的内容。
-
-配置按文件修订值检测并发；其他程序改动后，旧页面保存或恢复会被拒绝。重新读取当前状态、核对差异后再操作，不反复提交旧值。
+管理员可以通过「云控 → Agent 工作台」阅读已绑定的本机 Agent 会话。工作台使用入口 `/agents`，与此前的 Codex 模型源工具具有不同职责，不提供这项已移除的配置修改操作。

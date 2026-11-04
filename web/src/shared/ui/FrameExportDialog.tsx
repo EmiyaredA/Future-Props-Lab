@@ -1,3 +1,4 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import {
   useEffect,
@@ -7,7 +8,7 @@ import {
   useState,
   type CSSProperties,
 } from "react";
-import { Download, ImageDown, LoaderCircle, X } from "lucide-react";
+import { Download, ImageDown, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import {
   buildFrameFileName,
@@ -222,7 +223,7 @@ export function FrameExportDialog({
             <div className="frame-export-preview">
               {loading && !previewUrl ? (
                 <span className="frame-export-loading">
-                  <LoaderCircle aria-hidden /> 正在锁定当前画面…
+                  <LoadingScene /> 正在锁定当前画面…
                 </span>
               ) : previewUrl && snapshot ? (
                 <>
@@ -237,7 +238,7 @@ export function FrameExportDialog({
               )}
               {loading && previewUrl ? (
                 <span className="frame-export-refreshing">
-                  <LoaderCircle aria-hidden /> 正在刷新所选画面…
+                  <LoadingScene /> 正在刷新所选画面…
                 </span>
               ) : null}
             </div>
@@ -343,7 +344,7 @@ export function FrameExportDialog({
           >
             {saving ? (
               <>
-                <LoaderCircle className="spin" aria-hidden /> 正在导出…
+                <LoadingScene /> 正在导出…
               </>
             ) : (
               <>

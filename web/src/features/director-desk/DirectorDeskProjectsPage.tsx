@@ -6,7 +6,6 @@ import {
   Maximize2,
   Pencil,
   Plus,
-  RefreshCcw,
   Search,
   Trash2,
   Upload,
@@ -182,7 +181,6 @@ export function DirectorDeskProjectsPage({
       ) : null}
       {projects.isLoading ? (
         <div className="workshop-state">
-          <RefreshCcw className="spinning" aria-hidden />
           <LoadingState label="正在读取预演工程" variant="inline" />
         </div>
       ) : projects.isError ? (

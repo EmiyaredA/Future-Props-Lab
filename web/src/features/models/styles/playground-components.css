@@ -44,7 +44,7 @@
 
 .generation-history-head,
 .generation-settings-head {
-  padding: 14px;
+  padding: 12px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -414,7 +414,7 @@
 }
 
 .generation-result-prompt {
-  padding: 14px 18px 16px;
+  padding: 12px 16px 14px;
   border-top: 1px solid var(--border);
   background: var(--surface);
 }

@@ -14,10 +14,10 @@ from PIL import Image
 from pypdf import PdfWriter
 from tests.test_account_system import create_test_account, login_and_change_password, unsafe_headers
 
-from app.capabilities.asset_store import file_previews as legacy_previews
+from app.capabilities.asset_store import file_previews
 from app.capabilities.asset_store.file_previews import PreviewSource, media_thumbnail
 from app.capabilities.asset_store.library import AssetError
-from app.capabilities.media_rendering import preview_metadata as file_previews
+from app.capabilities.media_rendering import preview_metadata as preview_operations
 from app.main import app
 
 pytestmark = [pytest.mark.asyncio, pytest.mark.real_auth]
@@ -109,7 +109,7 @@ async def test_text_documents_are_bounded_and_do_not_interpret_html(clients, suf
     body = response.json()
     assert body["kind"] == "text" and body["truncated"]
     assert "<script>unsafe()</script> 中文内容" in body["text"]
-    assert len(body["text"].encode()) <= file_previews.TEXT_LIMIT
+    assert len(body["text"].encode()) <= preview_operations.TEXT_LIMIT
     assert "�" not in body["text"]
 
 
@@ -121,7 +121,7 @@ async def test_empty_utf16_and_gb18030_documents(tmp_path):
     ]:
         source = tmp_path / "notes.txt"
         source.write_bytes(data)
-        assert file_previews._text_preview(source).text == expected
+        assert preview_operations._text_preview(source).text == expected
 
 
 async def test_encrypted_and_broken_pdf_can_be_downloaded(clients):
@@ -211,7 +211,7 @@ async def test_atomic_concurrent_generation_revision_and_timeout_cleanup(tmp_pat
     async def timed_out(*_args):
         raise TimeoutError()
 
-    monkeypatch.setattr(file_previews, "pdf_worker", timed_out)
+    monkeypatch.setattr(preview_operations, "pdf_worker", timed_out)
     with pytest.raises(AssetError, match="预览生成失败"):
         await media_thumbnail(settings, replace(info, revision=3), source, 128, 1)
     assert not list((tmp_path / "owner").rglob("*.tmp"))
@@ -241,14 +241,14 @@ async def test_pdf_timeout_and_cancellation_terminate_worker(tmp_path, monkeypat
         processes.append(process)
         return process
 
-    monkeypatch.setattr(file_previews.asyncio, "create_subprocess_exec", spawn)
-    monkeypatch.setattr(file_previews, "PDF_TIMEOUT_SECONDS", 0.01)
+    monkeypatch.setattr(preview_operations.asyncio, "create_subprocess_exec", spawn)
+    monkeypatch.setattr(preview_operations, "PDF_TIMEOUT_SECONDS", 0.01)
     with pytest.raises(TimeoutError):
-        await file_previews.pdf_worker(tmp_path / "any.pdf", "info")
+        await preview_operations.pdf_worker(tmp_path / "any.pdf", "info")
     assert processes[-1].killed and processes[-1].waited
 
-    monkeypatch.setattr(file_previews, "PDF_TIMEOUT_SECONDS", 30)
-    task = asyncio.create_task(file_previews.pdf_worker(tmp_path / "any.pdf", "info"))
+    monkeypatch.setattr(preview_operations, "PDF_TIMEOUT_SECONDS", 30)
+    task = asyncio.create_task(preview_operations.pdf_worker(tmp_path / "any.pdf", "info"))
     await asyncio.sleep(0)
     task.cancel()
     with pytest.raises(asyncio.CancelledError):
@@ -265,10 +265,10 @@ async def test_corrupt_derived_metadata_is_rebuilt_from_original(tmp_path, monke
     async def authorized(*_args):
         return info, source
 
-    monkeypatch.setattr(legacy_previews, "authorized_source", authorized)
-    result = await legacy_previews.preview_metadata(None, settings, "owner", info.id)
+    monkeypatch.setattr(file_previews, "authorized_source", authorized)
+    result = await file_previews.preview_metadata(None, settings, "owner", info.id)
     assert result.text == "实际正文"
     cached = file_previews.cache_root(settings, info) / "1-preview-v1.json"
     cached.write_text("damaged derived json", encoding="utf-8")
-    recovered = await legacy_previews.preview_metadata(None, settings, "owner", info.id)
+    recovered = await file_previews.preview_metadata(None, settings, "owner", info.id)
     assert recovered == result

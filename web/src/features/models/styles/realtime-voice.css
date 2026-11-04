@@ -18,10 +18,10 @@
 }
 .realtime-voice-settings {
   min-width: 0;
-  padding: 18px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   border-right: 1px solid var(--border);
   background: color-mix(in srgb, var(--surface-soft) 68%, var(--surface));
   overflow-y: auto;

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { TransferProgress } from "@platform/api/transfer";
 import { formatFileSize } from "@shared/lib/fileSize";
+import { LoadingScene } from "./LoadingScene";
 import "./loading-state.css";
 
 export function ProgressBar({
@@ -38,12 +39,14 @@ export function LoadingState({
   progress,
   delay = 150,
   className = "",
+  paused = false,
 }: {
   label?: string;
   variant?: "page" | "region" | "inline";
   progress?: TransferProgress;
   delay?: number;
   className?: string;
+  paused?: boolean;
 }) {
   const [visible, setVisible] = useState(delay === 0);
   const [seconds, setSeconds] = useState(0);
@@ -70,17 +73,27 @@ export function LoadingState({
       aria-live="polite"
       aria-busy="true"
     >
-      <span className="fpl-loading-orbit" aria-hidden="true">
-        <i />
-        <i />
-        <i />
-      </span>
+      {visible ? (
+        <LoadingScene variant={variant} paused={paused} />
+      ) : (
+        <span
+          className={`fpl-loading-scene fpl-loading-scene--${variant}`}
+          aria-hidden="true"
+        />
+      )}
       <span className="fpl-loading-copy">
         <span className="fpl-loading-label">
           {progress?.phase === "processing" ? "服务端处理中…" : label}
         </span>
+        {variant === "page" && !progress ? (
+          <span className="fpl-loading-detail">数据准备中，请稍候</span>
+        ) : null}
         <span aria-hidden={variant === "inline" ? true : undefined}>
-          <ProgressBar value={percent} label={label} />
+          <ProgressBar
+            value={percent}
+            label={label}
+            className={progress ? "" : "fpl-loading-dots"}
+          />
         </span>
         {progress && progress.phase === "transferring" ? (
           <span className="fpl-loading-metrics" aria-live="off">

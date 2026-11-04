@@ -34,21 +34,13 @@ function item(toolId: string, changes: Record<string, unknown> = {}) {
   };
 }
 
-function renderPage(
-  onOpenInternal = vi.fn(),
-  canManageCodex = false,
-  canManageStorage = false,
-) {
+function renderPage(onOpenInternal = vi.fn()) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   render(
     <QueryClientProvider client={client}>
-      <ToolNavigationPage
-        onOpenInternal={onOpenInternal}
-        canManageCodex={canManageCodex}
-        canManageStorage={canManageStorage}
-      />
+      <ToolNavigationPage onOpenInternal={onOpenInternal} />
     </QueryClientProvider>,
   );
   return { onOpenInternal };
@@ -141,36 +133,13 @@ test("opens the internal video downloader and records usage", async () => {
   expect(recordToolUse).toHaveBeenCalledWith("video-downloader");
 });
 
-test("shows the Codex model source only to desktop administrators", async () => {
-  const user = userEvent.setup();
-  const onOpenInternal = vi.fn();
-  renderPage(onOpenInternal, true);
-  await screen.findByText("还没有收藏工具");
-  await user.click(screen.getByRole("button", { name: "打开Codex 模型源" }));
-  expect(onOpenInternal).toHaveBeenCalledWith("/tools/codex-model-source");
-});
-
-test("finds, favorites and opens storage usage for authorized desktop users", async () => {
-  const user = userEvent.setup();
-  const { onOpenInternal } = renderPage(vi.fn(), false, true);
-  await screen.findByText("还没有收藏工具");
-  await user.click(screen.getByRole("button", { name: "效率工具" }));
-  await user.type(
-    screen.getByRole("textbox", { name: "搜索工具" }),
-    "GrandPerspective",
-  );
-  await user.click(screen.getByRole("button", { name: "收藏空间占用" }));
-  await waitFor(() =>
-    expect(setToolFavorite).toHaveBeenCalledWith("storage-usage", true),
-  );
-  await user.click(screen.getByRole("button", { name: "打开空间占用" }));
-  expect(onOpenInternal).toHaveBeenCalledWith("/tools/storage-usage");
-  expect(recordToolUse).toHaveBeenCalledWith("storage-usage");
-});
-
-test("hides storage cards, favorites and recent entries without desktop access", async () => {
+test("omits retired host tools from cards, favorites and recent entries", async () => {
   vi.mocked(getToolNavigationState).mockResolvedValue({
     items: [
+      item("codex-model-source", {
+        is_favorite: true,
+        last_used_at: "2026-10-20T08:00:00Z",
+      }),
       item("storage-usage", {
         is_favorite: true,
         last_used_at: "2026-10-20T08:00:00Z",
@@ -180,6 +149,7 @@ test("hides storage cards, favorites and recent entries without desktop access",
   renderPage();
   await screen.findByText("还没有收藏工具");
   expect(screen.queryByText("空间占用")).toBeNull();
+  expect(screen.queryByText("Codex 模型源")).toBeNull();
 });
 
 test("does not present first-party applications or features as tool cards", async () => {

@@ -107,7 +107,7 @@ export const OFFICIAL_KNOWLEDGE_BASES: readonly OfficialKnowledgeBase[] = [
   TECHNICAL_LIBRARY,
   ...applicationLibraries.map(([id, name, description]) => ({
     id,
-    applicationId: id,
+    applicationId: id === "agent-workbench" ? undefined : id,
     title: `${name}官方文档`,
     description,
     documents: applicationChapters.map(([chapter, title, group], order) => ({

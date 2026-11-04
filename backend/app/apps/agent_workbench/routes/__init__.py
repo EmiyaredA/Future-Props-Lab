@@ -26,6 +26,8 @@ from ..schemas import (
 async def require_workbench_session(principal: StudioAuth, session: SessionDep):
     if principal.auth_kind != "session":
         raise HTTPException(403, "工作台必须使用浏览器 Session")
+    if not principal.allows("cloud-control.access"):
+        raise HTTPException(403, "云控仅限管理员访问")
     await session.rollback()
     return principal
 

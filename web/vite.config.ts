@@ -143,6 +143,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: webPort,
+      strictPort: true,
       fs: {
         allow: [
           resolve(__dirname, ".."),
@@ -150,9 +151,9 @@ export default defineConfig(({ mode }) => {
         ],
       },
       proxy: {
-        "/v1": { target: apiTarget, ws: true },
-        "/health": apiTarget,
-        "/ready": apiTarget,
+        "/v1": { target: apiTarget, ws: true, changeOrigin: true },
+        "/health": { target: apiTarget, changeOrigin: true },
+        "/ready": { target: apiTarget, changeOrigin: true },
       },
     },
   };

@@ -1,8 +1,11 @@
 import { recoverPage } from "./recovery";
+import { startBootLoading } from "./bootLoading";
 import "./recovery.css";
 
 // Keep this entry independent of React and feature modules: import failures must stay visible.
-void import("./main").catch((error: unknown) => {
+const stopBootLoading = startBootLoading();
+void import("./main").then(stopBootLoading).catch((error: unknown) => {
+  stopBootLoading();
   const root = document.getElementById("root")!;
   const panel = document.createElement("section");
   panel.className = "fpl-recovery";

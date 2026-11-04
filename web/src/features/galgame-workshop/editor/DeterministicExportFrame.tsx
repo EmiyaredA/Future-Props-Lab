@@ -1,7 +1,8 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Image, LoaderCircle, RefreshCcw } from "lucide-react";
+import { Image, RefreshCcw } from "lucide-react";
 import {
   previewGalgameVideoExportFrame,
   type GalgameVideoExportPreviewRequest,
@@ -54,7 +55,7 @@ export function DeterministicExportFrame({
       </header>
       {frame.isFetching ? (
         <p>
-          <LoaderCircle className="spinning" aria-hidden /> 正在合成精确帧…
+          <LoadingScene /> 正在合成精确帧…
         </p>
       ) : url ? (
         <ResponsiveImage src={url} alt="当前导出设置生成的精确首帧" />

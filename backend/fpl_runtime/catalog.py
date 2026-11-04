@@ -22,7 +22,7 @@ SERVICES = (
         ("deployment", "public_access"),
     ),
     Service("identity", "账号与登录", ("/login", "/account")),
-    Service("portal", "FPL 门户", ("/", "/home", "/apps", "/docs.html", "/docs")),
+    Service("portal", "FPL 门户", ("/", "/home", "/apps", "/cloud-control", "/docs.html", "/docs")),
     Service("agents", "Agent 工作台", ("/agents",), ("identity",), ("agent_sources",)),
     Service("remote", "远程控制", ("/remote",), ("identity",), ("remote_files",)),
     Service(

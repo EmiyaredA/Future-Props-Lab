@@ -2,7 +2,7 @@ import { LoadingState } from "@shared/ui/LoadingState";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { useEffect, useRef, useState } from "react";
-import { LoaderCircle, RotateCcw } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import {
   uploadManagedFile,
   invalidateFileScope,
@@ -201,10 +201,7 @@ export function CanvasImageCrop({
       ) : (
         <div className="image-crop-loading">
           {!error && !loadError ? (
-            <>
-              <LoaderCircle className="spinning" size={20} />
-              正在加载原图…
-            </>
+            <LoadingState label="正在加载原图…" />
           ) : (
             <span>无法加载裁剪图片</span>
           )}
@@ -244,7 +241,7 @@ export function CanvasImageCrop({
           disabled={busy || !image || !rect || Boolean(loadError)}
           onClick={() => void save()}
         >
-          {busy ? <LoaderCircle size={16} className="spinning" /> : null}
+          {busy ? null : null}
           {busy ? (
             <LoadingState variant="inline" label="正在保存…" />
           ) : uploaded ? (

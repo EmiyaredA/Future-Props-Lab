@@ -60,7 +60,16 @@ def create_app(*, state_root, catalog, public_key, web_root=None, version="devel
         attach_web(
             app,
             release,
-            pages=("/", "/home", "/home/", "/apps", "/apps/", "/docs.html"),
+            pages=(
+                "/",
+                "/home",
+                "/home/",
+                "/apps",
+                "/apps/",
+                "/cloud-control",
+                "/cloud-control/",
+                "/docs.html",
+            ),
             resource_aliases={"/docs/{path:path}": "docs/"},
         )
     app.add_middleware(SignedIdentity, service="portal", public_key=public_key, catalog=catalog)

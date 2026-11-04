@@ -1,5 +1,6 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { useEffect, useState } from "react";
-import { LoaderCircle, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { DeviceCheck, Interview } from "./Interview";
 import { Review } from "./Review";
@@ -85,7 +86,7 @@ export function Practice({
           <Sparkles size={34} />
           <h1>整理这次对话里的收获</h1>
           <p>关联实际回答，生成文字规则反馈。</p>
-          <LoaderCircle className="spin" />
+          <LoadingScene />
           <small>模拟复盘，不进行模型评分</small>
         </div>
       )}

@@ -1,6 +1,6 @@
 import "./studio-shell.css";
 import { useEffect, useState, type ReactNode } from "react";
-import { Bot } from "lucide-react";
+import { Bot, MonitorCog } from "lucide-react";
 import {
   StudioCollapsedRail,
   type StudioRailEntry,
@@ -173,6 +173,7 @@ function StudioChrome({
   children?: ReactNode;
 }) {
   const canReadLogs = useAccountPermission("logs.read");
+  const canAccessCloud = useAccountPermission("cloud-control.access");
   const narrow = useNarrowViewport();
   const [secondaryCollapsed, setSecondaryCollapsed] = useState(
     loadSecondaryCollapsed,
@@ -181,9 +182,7 @@ function StudioChrome({
   const toolsActive =
     page === "tools" ||
     page === "video-frame-exporter" ||
-    page === "video-downloader" ||
-    page === "codex-model-source" ||
-    page === "storage-usage";
+    page === "video-downloader";
   const integrationsActive = page.startsWith("integrations-");
   const infrastructurePages: StudioPage[] = [
     "code-agents",
@@ -246,6 +245,18 @@ function StudioChrome({
       active: page === "apps",
       page: "apps",
     },
+    ...(canAccessCloud
+      ? [
+          {
+            id: "cloud-control",
+            label: "云控",
+            shortLabel: "云控",
+            icon: <MonitorCog aria-hidden />,
+            active: page === "cloud-control",
+            page: "cloud-control",
+          } satisfies PrimarySection,
+        ]
+      : []),
     {
       id: "files",
       label: "文件管理",

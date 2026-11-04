@@ -1,3 +1,4 @@
+import { LoadingScene } from "@shared/ui/LoadingScene";
 import { ProgressBar } from "@shared/ui/LoadingState";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
@@ -9,7 +10,6 @@ import {
   CircleX,
   Film,
   Layers3,
-  LoaderCircle,
   Volume2,
   X,
 } from "lucide-react";
@@ -464,10 +464,7 @@ export function VideoEditorSegmentExportDialog({
             <div className="ve-segment-progress" aria-live="polite">
               <div className="ve-segment-progress-heading">
                 {taskActive ? (
-                  <LoaderCircle
-                    className="ve-segment-progress-spinner"
-                    aria-hidden
-                  />
+                  <LoadingScene />
                 ) : trackedTask.status === "completed" ? (
                   <CircleCheck aria-hidden />
                 ) : (

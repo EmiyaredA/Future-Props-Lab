@@ -4,18 +4,18 @@
 
 配置按 `[storage]`、`[security]`、`[http]`、`[limits]`、`[integrations]` 分组：
 
-| TOML 字段 | 兼容的进程环境变量 |
-| --- | --- |
-| `storage.database_path` | `FPL_DATABASE_PATH` |
-| `security.secrets_key` | `FPL_SECRETS_KEY` |
-| `http.cors_origins`（字符串数组） | `CORS_ORIGINS`（逗号分隔） |
-| `http.auth_cookie_secure`（布尔值） | `FPL_AUTH_COOKIE_SECURE` |
-| `remote_web.enabled`（布尔值，默认 false） | `FPL_REMOTE_WEB_ENABLED` |
-| `remote_web.origin`（精确 HTTPS 来源） | `FPL_REMOTE_WEB_ORIGIN` |
-| `remote_web.port`（1024–65535，默认 28081） | `FPL_REMOTE_WEB_PORT` |
-| `remote_web.web_root`（正式构建绝对路径） | `FPL_REMOTE_WEB_ROOT` |
-| `limits.<名称>`（正整数） | 下文各容量/文件数变量去掉 `FPL_` 并小写 |
-| `integrations.temp_media_upload_url` | `FPL_TEMP_MEDIA_UPLOAD_URL` |
+| TOML 字段                                               | 兼容的进程环境变量                                 |
+| ------------------------------------------------------- | -------------------------------------------------- |
+| `storage.database_path`                                 | `FPL_DATABASE_PATH`                                |
+| `security.secrets_key`                                  | `FPL_SECRETS_KEY`                                  |
+| `http.cors_origins`（字符串数组）                       | `CORS_ORIGINS`（逗号分隔）                         |
+| `http.auth_cookie_secure`（布尔值）                     | `FPL_AUTH_COOKIE_SECURE`                           |
+| `remote_web.enabled`（布尔值，默认 false）              | `FPL_REMOTE_WEB_ENABLED`                           |
+| `remote_web.origin`（精确 HTTPS 来源）                  | `FPL_REMOTE_WEB_ORIGIN`                            |
+| `remote_web.port`（1024–65535，默认 28081）             | `FPL_REMOTE_WEB_PORT`                              |
+| `remote_web.web_root`（正式构建绝对路径）               | `FPL_REMOTE_WEB_ROOT`                              |
+| `limits.<名称>`（正整数）                               | 下文各容量/文件数变量去掉 `FPL_` 并小写            |
+| `integrations.temp_media_upload_url`                    | `FPL_TEMP_MEDIA_UPLOAD_URL`                        |
 | `integrations.mcp_stdio_allowed_commands`（字符串数组） | `FPL_MCP_STDIO_ALLOWED_COMMANDS`（系统路径分隔符） |
 
 优先级：显式程序参数 > 进程环境变量 > TOML > 默认值。`FPL_CONFIG_FILE` 可为测试或部署指定独立
@@ -60,7 +60,7 @@ Web 的 `VITE_API_BASE` 是执行 `npm run build` 时读取的构建变量，不
 - `FPL_AUTH_COOKIE_SECURE`：Session/CSRF Cookie 的 Secure 标志；本机 HTTP 开发默认 `false`，HTTPS 环境必须设为 `true`。
 - `CORS_ORIGINS`：允许访问 API 的 Studio 来源，逗号分隔。
 
-标准启动命令固定将后端监听在 `127.0.0.1:9000`，Web 开发服务监听在 `0.0.0.0:3000`。监听地址和端口不是受支持的 TOML 配置项；临时诊断需要改端口时，应直接向对应开发命令传参，并同步配置 Web API 地址。
+`npm start`、`npm run dev` 和后台服务统一使用回环前端 `127.0.0.1:3000` 与后端 `127.0.0.1:9001`，端口占用时拒绝启动，不另选端口。启动器沿用现有 TOML 中的数据路径与密钥，只为当前后端进程固定监听端口和本机前端 Origin；公网继续使用独立回环入口与已发布静态资源。自动测试显式使用临时隔离配置与端口，不通过日常启动器连接现有数据库。
 
 模型 API Key、工具 API 密钥、MCP Bearer Token 与 stdio 环境变量只以密文落库，列表接口仅返回
 已配置标志、尾部提示或环境变量名称。生产部署必须自行备份 `security.secrets_key`，且不得把真实配置或备份

@@ -5,6 +5,7 @@ from datetime import timedelta
 from sqlalchemy import select, text
 
 from app.apps.agent_workbench.models import WorkbenchChange, WorkbenchOperation, WorkbenchSource
+from app.capabilities.identity.permissions import CLOUD_CONTROL_PERMISSION
 from app.runtime.ids import new_id
 from app.runtime.ownership import bind_owner
 from app.runtime.polling_runner import PollingTaskRunner
@@ -44,7 +45,7 @@ class CollectionSupervisor(PollingTaskRunner):
         online = seen is not None and seen > utc_now() - timedelta(seconds=45)
         for source in sources:
             permission = await self.identity.owner_permission(
-                owner=source.owner_user_id, permission="content.read"
+                owner=source.owner_user_id, permission=CLOUD_CONTROL_PERMISSION
             )
             if permission.get("allowed") is True:
                 await self.ensure(source, permission["revision"])
