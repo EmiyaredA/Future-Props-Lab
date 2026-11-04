@@ -1,8 +1,13 @@
 """Creative-scoped writes protect public item ownership and private installations."""
 
+from dataclasses import dataclass
+from pathlib import Path
+
 from sqlalchemy import event, exists, inspect, select
 
+from app.console.creative_workshop.files import resolve_file
 from app.console.creative_workshop.models import CreativeItem, CreativeRelease
+from app.integrations.skills.archive import SkillArchiveStager
 from fpl_runtime.database import Database, ServiceSession, ServiceStorageError
 
 from .fence_records import CreativeInstallFence
@@ -146,7 +151,41 @@ def protect_public_roots(session, _context, _instances):
             raise ServiceStorageError("不能修改其他账号的公开版本")
 
 
-def creative_database(state_root):
+@dataclass(frozen=True)
+class CreativeStorageSettings:
+    runtime_path: Path
+    fpl_skill_archive_max_bytes: int
+    fpl_skill_expanded_max_bytes: int
+    fpl_skill_max_files: int
+
+
+@dataclass(frozen=True)
+class CreativeArchiveStaging:
+    settings: CreativeStorageSettings
+
+    async def stage(self, owner, upload):
+        root = resolve_file(owner, "creative-workshop/.staging", settings=self.settings)
+        return await SkillArchiveStager(root, self.settings).stage(upload)
+
+
+def creative_database(
+    state_root,
+    *,
+    skill_archive_max_bytes=20 * 1024 * 1024,
+    skill_expanded_max_bytes=50 * 1024 * 1024,
+    skill_max_files=500,
+):
+    limits = (skill_archive_max_bytes, skill_expanded_max_bytes, skill_max_files)
+    if any(type(limit) is not int or limit < 1 for limit in limits):
+        raise ValueError("Skill 归档大小限制无效")
     database = Database("creative", state_root, models=MODELS, account_models=ACCOUNT_MODELS)
-    database.sessions.configure(sync_session_class=CreativeSession)
+    settings = CreativeStorageSettings(database.root, *limits)
+    database.sessions.configure(
+        sync_session_class=CreativeSession,
+        info={
+            **database.sessions.kw["info"],
+            "creative_file_settings": settings,
+            "creative_archives": CreativeArchiveStaging(settings),
+        },
+    )
     return database

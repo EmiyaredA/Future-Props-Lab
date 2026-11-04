@@ -4,12 +4,13 @@ import io
 import re
 import shutil
 from pathlib import Path
+from typing import Protocol
 from uuid import uuid4
 
 from PIL import Image, UnidentifiedImageError
 
 from app.capabilities.asset_store.incoming import IncomingFile
-from app.runtime.config import Settings, get_settings
+from app.runtime.config import get_settings
 
 MAX_COVER_BYTES = 5 * 1024 * 1024
 PRIVATE_FILE_NAMES = {".env", ".npmrc", "id_rsa", "id_ed25519", "credentials.json", "secrets.json"}
@@ -24,10 +25,24 @@ class CreativeFileError(ValueError):
     pass
 
 
-def resolve_file(owner_user_id: str, relative: str, *, settings: Settings | None = None) -> Path:
+class CreativeFileSettings(Protocol):
+    @property
+    def runtime_path(self) -> Path: ...
+
+    @property
+    def fpl_skill_archive_max_bytes(self) -> int: ...
+
+
+def resolve_file(
+    owner_user_id: str, relative: str, *, settings: CreativeFileSettings | None = None
+) -> Path:
     settings = settings or get_settings()
-    # Validate the account identifier without accepting account directory symlinks.
-    settings.account_path(owner_user_id)
+    if (
+        not owner_user_id
+        or owner_user_id in {".", ".."}
+        or Path(owner_user_id).name != owner_user_id
+    ):
+        raise CreativeFileError("账号标识无效")
     root = settings.runtime_path
     parts = ("accounts", owner_user_id, *Path(relative).parts)
     if not relative or Path(relative).is_absolute() or any(part in {".", ".."} for part in parts):
@@ -42,7 +57,9 @@ def resolve_file(owner_user_id: str, relative: str, *, settings: Settings | None
     return path
 
 
-async def save_cover(owner_user_id: str, upload: IncomingFile) -> str:
+async def save_cover(
+    owner_user_id: str, upload: IncomingFile, *, settings: CreativeFileSettings | None = None
+) -> str:
     payload = bytearray()
     try:
         while chunk := await upload.read(1024 * 1024):
@@ -65,7 +82,7 @@ async def save_cover(owner_user_id: str, upload: IncomingFile) -> str:
             canvas = Image.new("RGB", (1200, 675), "#f8ede5")
             canvas.paste(image, ((1200 - image.width) // 2, (675 - image.height) // 2))
             relative = f"creative-workshop/covers/{uuid4().hex}.webp"
-            target = resolve_file(owner_user_id, relative)
+            target = resolve_file(owner_user_id, relative, settings=settings)
             target.parent.mkdir(parents=True, exist_ok=True)
             canvas.save(target, format="WEBP", quality=88, method=5)
             return relative
@@ -74,15 +91,20 @@ async def save_cover(owner_user_id: str, upload: IncomingFile) -> str:
 
 
 async def save_skill_draft(
-    owner_user_id: str, item_id: str, upload: IncomingFile, *, archive_parser
+    owner_user_id: str,
+    item_id: str,
+    upload: IncomingFile,
+    *,
+    archive_parser,
+    settings: CreativeFileSettings | None = None,
 ) -> tuple[str, dict]:
+    stage_root = resolve_file(owner_user_id, "creative-workshop/.staging", settings=settings)
     staged = await archive_parser.stage(owner_user_id, upload)
-    stage_root = resolve_file(owner_user_id, "creative-workshop/.staging")
     stage = staged.directory
     if stage.is_symlink() or not stage.resolve().is_relative_to(stage_root.resolve()):
         raise CreativeFileError("Skill 暂存目录无效")
     relative = f"creative-workshop/skill-drafts/{item_id}/{uuid4().hex}"
-    target = resolve_file(owner_user_id, relative)
+    target = resolve_file(owner_user_id, relative, settings=settings)
     target.parent.mkdir(parents=True, exist_ok=True)
     try:
         staged.directory.rename(target)
@@ -98,8 +120,14 @@ async def save_skill_draft(
     }
 
 
-def copy_skill_release(owner_user_id: str, source_relative: str, release_id: str) -> str:
-    source = resolve_file(owner_user_id, source_relative)
+def copy_skill_release(
+    owner_user_id: str,
+    source_relative: str,
+    release_id: str,
+    *,
+    settings: CreativeFileSettings | None = None,
+) -> str:
+    source = resolve_file(owner_user_id, source_relative, settings=settings)
     if not (source / "SKILL.md").is_file():
         raise CreativeFileError("Skill 文件不可用")
     for path in source.rglob("*"):
@@ -112,7 +140,7 @@ def copy_skill_release(owner_user_id: str, source_relative: str, release_id: str
         if path.stat().st_size <= 2 * 1024 * 1024 and PRIVATE_TEXT.search(path.read_bytes()):
             raise CreativeFileError("Skill 文件疑似包含密钥，请移除后重试")
     relative = f"creative-workshop/skill-releases/{release_id}"
-    target = resolve_file(owner_user_id, relative)
+    target = resolve_file(owner_user_id, relative, settings=settings)
     target.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(source, target)
     return relative

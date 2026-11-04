@@ -88,7 +88,7 @@
 
 `llm/admission.py` 定义不可变的额度申请、释放、任务保留与派生任务接纳绑定；模型 HTTP 与实时语音从自己的 ASGI 应用取得它，恢复网站显式安装原治理实现。`llm/inference/receipts.py` 只依赖 Models 任务记录，负责账号限定的请求回执与摘要冲突校验，避免为重放检查导入素材能力。独立账本、队列和跨服务任务授权仍须单独实现，缺少绑定不允许回退单体数据库。
 
-`backend/fpl_creative/` 拥有 Creative 自有表和安装操作 outbox 的独立迁移及账号写入会话边界；公开阅读不授予其他账号写入权。`console/creative_workshop/` 通过显式作者、来源、归档和安装端口解耦旧站依赖，恢复网站只在装配入口注入旧适配器。上传和发布使用 CAS，提交结果未知时保留文件。独立浏览器入口可单独构建；目标安装、认证授权与完整服务装配尚未就绪，不视为可部署。
+`backend/fpl_creative/` 拥有 Creative 自有表和安装操作 outbox 的独立迁移及账号写入会话边界；公开阅读不授予其他账号写入权。`console/creative_workshop/` 通过显式作者、来源、归档和安装端口解耦旧站依赖，恢复网站只在装配入口注入旧适配器。上传和发布使用 CAS，提交结果未知时保留文件。独立 Creative 会话从其自有状态目录解析封面及 Skill 草稿与发布文件，复用显式指定根目录和限制的 Skill 暂存校验。独立浏览器入口可单独构建；目标安装、认证授权与完整服务装配尚未就绪，不视为可部署。
 
 `backend/fpl_integrations/` 拥有独立工具、MCP、Skills、外部连接 HTTP 装配、自有迁移和执行回执。`fpl_runtime/integration_intents.py` / `integration_client.py` 将来源账号请求、资源与输入摘要绑定到 Identity 固定执行意图；Models 自有验证额度和演示安装回执保留跨服务幂等，不读取 Integrations 数据库。飞书同步由私有固定步骤协议执行，未知供应商响应不能自动重放。Skills 文件按本服务已提交记录恢复。`native_mcp.py` / `native_http.py` 对接主动连接的 Mac MCP worker，容器不持有主机命令、个人环境或目录。`deploy/integrations.compose.yaml` 只挂载所属状态、只读配置与用途限定凭据，外联使用单独网络；是否启用由 TOML 中明确选定的镜像决定。完整容器、原生与浏览器验收仍为正式切换前置条件。
 

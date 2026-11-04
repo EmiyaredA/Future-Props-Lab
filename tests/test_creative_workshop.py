@@ -343,7 +343,8 @@ async def test_cover_upload_rechecks_revision_after_file_staging(monkeypatch):
         relative = "creative-workshop/covers/cas.webp"
         target = resolve_file(owner, relative)
 
-        async def staged(_owner, _upload):
+        async def staged(_owner, _upload, *, settings=None):
+            assert settings is None
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(b"synthetic cover")
             async with SessionLocal() as other:
@@ -380,7 +381,8 @@ async def test_cover_commit_response_loss_preserves_committed_file(monkeypatch):
         relative = "creative-workshop/covers/committed.webp"
         target = resolve_file(owner, relative)
 
-        async def staged(_owner, _upload):
+        async def staged(_owner, _upload, *, settings=None):
+            assert settings is None
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(b"committed cover")
             return relative
@@ -432,8 +434,9 @@ async def test_skill_upload_commit_response_loss_keeps_committed_archive(monkeyp
         relative = f"creative-workshop/skill-drafts/{item.id}/draft"
         target = resolve_file(owner, relative)
 
-        async def staged(_owner, _item_id, _upload, *, archive_parser):
+        async def staged(_owner, _item_id, _upload, *, archive_parser, settings=None):
             del archive_parser
+            assert settings is None
             target.mkdir(parents=True, exist_ok=True)
             (target / "SKILL.md").write_text("# Synthetic Skill")
             return relative, {"name": "synthetic", "content_sha256": "a" * 64}

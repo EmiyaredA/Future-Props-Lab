@@ -4,9 +4,12 @@ import os
 import sqlite3
 import subprocess
 import sys
+from io import BytesIO
 from pathlib import Path
+from zipfile import ZipFile
 
 import pytest
+from PIL import Image
 from sqlalchemy import insert, select, update
 
 from app.console.creative_workshop.models import CreativeInstallation, CreativeItem, CreativeRelease
@@ -15,6 +18,63 @@ from fpl_creative.models import MODELS
 from fpl_creative.storage import creative_database
 from fpl_runtime.database import ServiceStorageError
 from fpl_runtime.migrations import apply, check
+
+
+async def test_creative_catalog_uses_owned_cover_and_skill_directories(tmp_path, monkeypatch):
+    from app.capabilities.identity.principal import StudioPrincipal
+    from app.console.creative_workshop import files
+    from app.console.creative_workshop.catalog import CreativeCatalog
+    from app.console.creative_workshop.schemas import CreativeDraftIn
+    from app.console.creative_workshop.sources import MemoryIncoming
+
+    def reject_legacy_settings():
+        pytest.fail("Independent Creative attempted to load legacy storage settings")
+
+    class Authors:
+        async def name(self, *, item_id, author_id):
+            assert item_id
+            return author_id
+
+    monkeypatch.setattr(files, "get_settings", reject_legacy_settings)
+    apply(tmp_path / "service.db", "creative", MIGRATIONS)
+    database = creative_database(tmp_path)
+    image = BytesIO()
+    Image.new("RGB", (320, 180), "white").save(image, format="PNG")
+    archive = BytesIO()
+    skill = "---\nname: owned-skill\ndescription: An owned example\n---\n\nUsage."
+    with ZipFile(archive, "w") as zipped:
+        zipped.writestr("SKILL.md", skill)
+    actor = StudioPrincipal(
+        user_id="alice",
+        platform_role="user",
+        auth_kind="session",
+        must_change_password=False,
+        scopes=frozenset({"studio:read", "studio:private_read", "studio:write"}),
+    )
+    try:
+        async with database.sessions(
+            info={"owner_user_id": "alice", "creative_authors": Authors()}
+        ) as session:
+            catalog = CreativeCatalog(session, actor)
+            draft = await catalog.create(
+                CreativeDraftIn(kind="skill", title="Owned cover", summary="An owned example")
+            )
+            updated = await catalog.upload_cover(
+                draft.id, draft.revision, MemoryIncoming(image.getvalue())
+            )
+            cover = await catalog.cover_file(updated.id, draft=True)
+            file_root = tmp_path / "accounts" / "alice" / "creative-workshop"
+            assert cover.is_relative_to(file_root)
+            assert cover.is_file()
+            updated = await catalog.upload_skill(
+                draft.id, updated.revision, MemoryIncoming(archive.getvalue())
+            )
+            published = await catalog.publish(draft.id, updated.revision)
+            assert published.status == "published"
+            release = file_root / "skill-releases" / published.current_release_id
+            assert (release / "SKILL.md").read_text() == skill
+    finally:
+        await database.close()
 
 
 def test_creative_owned_migration_replays_and_refuses_another_service(tmp_path):

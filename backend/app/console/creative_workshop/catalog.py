@@ -12,6 +12,7 @@ from app.capabilities.identity.principal import StudioPrincipal
 from app.console.creative_workshop.archives import archives
 from app.console.creative_workshop.authors import authors
 from app.console.creative_workshop.files import (
+    CreativeFileSettings,
     copy_skill_release,
     resolve_file,
     save_cover,
@@ -146,6 +147,9 @@ class CreativeCatalog:
         self.principal = principal
         # Resolve the mandatory port before any operation can commit a draft.
         self.author_directory = authors(session)
+        self.file_settings: CreativeFileSettings | None = session.info.get("creative_file_settings")
+        if session.info.get("service_id") == "creative" and self.file_settings is None:
+            raise RuntimeError("创意工坊未配置自有文件目录")
 
     def _can_write(self) -> None:
         if not self.principal.allows("content.write"):
@@ -284,8 +288,12 @@ class CreativeCatalog:
     async def get(self, item_id: str, *, draft: bool = False) -> CreativeItemOut:
         if draft:
             return await self._out(await self._owned(item_id), use_draft=True)
-        item = await self.session.get(CreativeItem, item_id)
-        if item is None or item.status != "published":
+        item = await self.session.scalar(
+            select(CreativeItem)
+            .where(CreativeItem.id == item_id, CreativeItem.status == "published")
+            .execution_options(populate_existing=True)
+        )
+        if item is None:
             raise CreativeError("公开创作不存在", 404, "not_found")
         return await self._out(item)
 
@@ -328,7 +336,7 @@ class CreativeCatalog:
         relative = item.draft_cover_path if draft else (release.cover_path if release else "")
         if not relative:
             raise CreativeError("封面不存在", 404, "not_found")
-        path = resolve_file(item.origin_owner_user_id, relative)
+        path = resolve_file(item.origin_owner_user_id, relative, settings=self.file_settings)
         if not path.is_file():
             raise CreativeError("封面文件不可用", 404, "not_found")
         if size is not None:
@@ -340,7 +348,9 @@ class CreativeCatalog:
         item, release = await self._viewable_release(release_id)
         if not release.cover_path:
             raise CreativeError("封面不存在", 404, "not_found")
-        path = resolve_file(item.origin_owner_user_id, release.cover_path)
+        path = resolve_file(
+            item.origin_owner_user_id, release.cover_path, settings=self.file_settings
+        )
         if not path.is_file():
             raise CreativeError("封面文件不可用", 404, "not_found")
         if size is not None:
@@ -357,7 +367,7 @@ class CreativeCatalog:
             raise CreativeError("草稿已在其他位置更新", 409, "revision_conflict")
         owner = item.origin_owner_user_id
         await self.session.rollback()
-        relative = await save_cover(owner, upload)
+        relative = await save_cover(owner, upload, settings=self.file_settings)
         commit_started = False
         try:
             result = await self.session.execute(
@@ -380,7 +390,7 @@ class CreativeCatalog:
         except BaseException:
             await self.session.rollback()
             if not commit_started:
-                resolve_file(owner, relative).unlink(missing_ok=True)
+                resolve_file(owner, relative, settings=self.file_settings).unlink(missing_ok=True)
             raise
         return await self.get(item_id, draft=True)
 
@@ -396,7 +406,11 @@ class CreativeCatalog:
         owner = item.origin_owner_user_id
         await self.session.rollback()
         relative, manifest = await save_skill_draft(
-            owner, item_id, upload, archive_parser=archives(self.session)
+            owner,
+            item_id,
+            upload,
+            archive_parser=archives(self.session),
+            settings=self.file_settings,
         )
         commit_started = False
         try:
@@ -422,7 +436,9 @@ class CreativeCatalog:
         except BaseException:
             await self.session.rollback()
             if not commit_started:
-                shutil.rmtree(resolve_file(owner, relative), ignore_errors=True)
+                shutil.rmtree(
+                    resolve_file(owner, relative, settings=self.file_settings), ignore_errors=True
+                )
             raise
         return await self.get(item_id, draft=True)
 
@@ -518,7 +534,9 @@ class CreativeCatalog:
         commit_started = False
         try:
             if kind == "skill":
-                skill_path = copy_skill_release(owner, draft_skill, release.id)
+                skill_path = copy_skill_release(
+                    owner, draft_skill, release.id, settings=self.file_settings
+                )
                 release.skill_path = skill_path
             result = await self.session.execute(
                 update(CreativeItem)
@@ -542,7 +560,9 @@ class CreativeCatalog:
         except BaseException:
             await self.session.rollback()
             if skill_path and not commit_started:
-                shutil.rmtree(resolve_file(owner, skill_path), ignore_errors=True)
+                shutil.rmtree(
+                    resolve_file(owner, skill_path, settings=self.file_settings), ignore_errors=True
+                )
             raise
         return await self.get(item_id)
 
@@ -583,7 +603,8 @@ class CreativeCatalog:
         except ValueError as exc:
             raise CreativeError(str(exc)) from exc
         if archive is not None and (
-            kind != "skill" or len(archive) > get_settings().fpl_skill_archive_max_bytes
+            kind != "skill"
+            or len(archive) > (self.file_settings or get_settings()).fpl_skill_archive_max_bytes
         ):
             raise CreativeError("创作来源数据无效")
         item_id = new_id()
@@ -592,7 +613,11 @@ class CreativeCatalog:
         skill_path, manifest = "", dict(snapshot.manifest)
         if archive is not None:
             skill_path, manifest = await save_skill_draft(
-                owner, item_id, MemoryIncoming(archive), archive_parser=archives(self.session)
+                owner,
+                item_id,
+                MemoryIncoming(archive),
+                archive_parser=archives(self.session),
+                settings=self.file_settings,
             )
         item = CreativeItem(
             id=item_id,
@@ -613,7 +638,9 @@ class CreativeCatalog:
         except BaseException:
             await self.session.rollback()
             if skill_path and not commit_started:
-                shutil.rmtree(resolve_file(owner, skill_path), ignore_errors=True)
+                shutil.rmtree(
+                    resolve_file(owner, skill_path, settings=self.file_settings), ignore_errors=True
+                )
             raise
         await self.session.refresh(item)
         return await self._out(item, use_draft=True)
