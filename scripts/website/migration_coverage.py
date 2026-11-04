@@ -9,6 +9,7 @@ from pathlib import Path
 from fpl_assets.migration_records import DATASETS as ASSETS
 from fpl_director.migration_records import DATASETS as DIRECTOR
 from fpl_galgame.migration_records import DATASETS as GALGAME
+from fpl_galgame.migration_records import OPERATIONS as GALGAME_RECEIPTS
 from fpl_identity.credential_migration import DATASETS as IDENTITY
 from fpl_models.catalog_migration import DATASETS as MODELS
 from fpl_models.settings_migration import DEFAULT_PREFIX, POLICIES
@@ -21,6 +22,7 @@ from fpl_runtime.migration_batches import MigrationPlan
 from fpl_tools.navigation_migration import DATASET as TOOLS
 from fpl_video.migration_records import DATASETS as VIDEO
 from fpl_visual.migration_records import DATASETS as VISUAL
+from fpl_visual.migration_records import OPERATIONS as VISUAL_RECEIPTS
 
 from .legacy_snapshot import CONFIG, DATABASE, MANIFEST, RUNTIME, digest, directory, private_config
 
@@ -84,13 +86,20 @@ def platform_partitions(database, partition):
     return result, pending
 
 
+OPERATION_DATASETS = {
+    "presentation": PRESENTATION_RECEIPTS,
+    "galgame": GALGAME_RECEIPTS.name,
+    "visual": VISUAL_RECEIPTS.name,
+}
+
+
 def operation_partitions(database):
     counts = dict(
         database.execute(
             "SELECT resource_kind, count(*) FROM project_operation_receipts GROUP BY resource_kind"
         )
     )
-    return counts, sum(count for kind, count in counts.items() if kind != "presentation")
+    return counts, sum(count for kind, count in counts.items() if kind not in OPERATION_DATASETS)
 
 
 def coverage(snapshot, catalog):
@@ -138,7 +147,7 @@ def coverage(snapshot, catalog):
             if partition is not None:
                 item["partitions"], item["pending_records"] = partition
                 if name == "project_operation_receipts":
-                    item["datasets"] = {"presentation": PRESENTATION_RECEIPTS}
+                    item["datasets"] = OPERATION_DATASETS
             output.append(item)
     snapshot.check()
     pending = [

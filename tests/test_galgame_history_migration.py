@@ -12,20 +12,25 @@ from uuid import UUID, uuid4
 import httpx
 import pytest
 from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from PIL import Image
 from scripts.website import legacy_snapshot
 from scripts.website.migrate_assets import ASSET_RECORDS, transfer_asset_blobs
 from scripts.website.migrate_galgame_history import PINS, RECORDS, migrate
 from scripts.website.migration_transfer import pages, transfer
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from tests.test_creative_project_certification import CREDENTIALS
+from tests.test_creative_project_certification import PROJECTS as OWNERS
 from tests.test_tools_navigation_migration import available_ports, listener
 from tests.test_website_legacy_snapshot import PASSWORD, REVISION, ROOT, configuration, website
 
 from app.apps.galgame_workshop.models import GalgameVideoEditorHandoffTask, GalgameVideoExportTask
 from fpl_assets.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
 from fpl_galgame.migrations.registry import MIGRATIONS as GALGAME_MIGRATIONS
+from fpl_runtime.claims import HEADER, Actor, issue_context
 from fpl_runtime.migration_batches import MigrationPlan
 from fpl_runtime.migrations import apply
+from fpl_runtime.routing import RouteCatalog
 
 PROJECTS = "/v1/galgame-workshop/projects"
 
@@ -66,10 +71,21 @@ def seed_project(client, origin):
         json={"expected_revision": story["revision"], "document": document},
     )
     assert saved.status_code == 200, saved.text
+    operation_path = path + "/story/operations"
+    edit = {
+        "request_id": "legacy-story-edit",
+        "expected_revision": saved.json()["revision"],
+        "settings": {"synopsis": "历史编辑回执"},
+        "operations": [
+            {"action": "update", "entity": "chapter", "id": "chapter-1", "value": {"title": "历史"}}
+        ],
+    }
+    edited = client.post(operation_path, headers=safe, json=edit)
+    assert edited.status_code == 200, edited.text
     snapshot = client.post(
         path + "/story/portrait-upgrade",
         headers=safe,
-        json={"expectedStoryRevision": saved.json()["revision"]},
+        json={"expectedStoryRevision": edited.json()["revision"]},
     )
     assert snapshot.status_code == 200, snapshot.text
     current = client.put(
@@ -101,6 +117,7 @@ def seed_project(client, origin):
         f"/v1/files/{asset['id']}/download",
         histories[0],
         video.json()["id"],
+        (operation_path, edit, edited.json()),
     )
 
 
@@ -199,7 +216,7 @@ def test_galgame_history_preserves_revision_metadata_and_original_rollback(tmp_p
         timeout=30,
     )
     with website(config, source_port) as (client, origin):
-        owner, path, story, png, content_path, saved_snapshot, video_id = seed_project(
+        owner, path, story, png, content_path, saved_snapshot, video_id, edit = seed_project(
             client, origin
         )
     asyncio.run(
@@ -277,11 +294,14 @@ def test_galgame_history_preserves_revision_metadata_and_original_rollback(tmp_p
             "galgame.video-exports": 1,
             "galgame.video-handoffs": 1,
             "galgame.story-pins": 1,
+            "galgame.operation-receipts": 1,
         }
-        handoffs = next(pages(client, game_target, headers, plan, owner, RECORDS[-1]))
+        handoff_dataset = next(item for item in RECORDS if item.name == "galgame.video-handoffs")
+        handoffs = next(pages(client, game_target, headers, plan, owner, handoff_dataset))
         row = handoffs.batch.records[0]
         assert row.output_project_id == video_id and row.revision == 8
         assert row.snapshot_id == saved_snapshot["id"]
+    asyncio.run(verify_edit_replay(tmp_path / "galgame", "galgame", owner, *edit))
     recovered = tmp_path / "recovered"
     legacy_snapshot.restore(snapshot, recovered, REVISION, proof["manifest_sha256"])
     recovered_config = recovered / "backend/acceptance-config.toml"
@@ -298,3 +318,45 @@ def test_galgame_history_preserves_revision_metadata_and_original_rollback(tmp_p
         assert login.status_code == 200, login.text
         assert client.get(path + "/story").json() == story
         assert client.get(content_path).content == png
+
+
+async def verify_edit_replay(state, service, owner, path, edit, original):
+    key = Ed25519PrivateKey.generate()
+    factory, *_ = OWNERS[service]
+    app = factory(
+        state_root=state,
+        public_key=key.public_key(),
+        credential=CREDENTIALS[service],
+        catalog=RouteCatalog.read(ROOT / "deploy/contracts/ownership.json"),
+        run_worker=False,
+    )
+
+    def headers(user_id):
+        actor = Actor(
+            str(user_id),
+            "user",
+            "session",
+            ("studio:read", "studio:private_read", "studio:write"),
+            session_id="isolated-replay",
+        )
+        return {
+            HEADER: issue_context(
+                actor, service=service, method="POST", path=path, private_key=key, key_id="test"
+            )
+        }
+
+    async with (
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url=f"http://{service}"
+        ) as api,
+    ):
+        reply = await api.post(path, headers=headers(owner), json=edit)
+        assert reply.status_code == 200 and reply.json() == original, reply.text
+        different = await api.post(
+            path,
+            headers=headers(owner),
+            json={**edit, "expected_revision": original["revision"]},
+        )
+        assert different.status_code == 409 and different.json()["code"] == "idempotency_conflict"
+        assert (await api.post(path, headers=headers(uuid4()), json=edit)).status_code == 404

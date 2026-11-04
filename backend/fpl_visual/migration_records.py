@@ -12,9 +12,12 @@ from app.apps.visual_workshop.schemas.workshop import (
     VisualWorkshopProjectKind,
     VisualWorkshopProjectStatus,
 )
+from fpl_runtime.edit_receipt_migration import EditReceiptBatch, EditReceiptTransfer
 from fpl_runtime.migration_batches import MigrationBatch, MigrationPage
 from fpl_runtime.project_history_migration import ProjectDataset
 from fpl_runtime.project_history_records import HistoryRecord, Identifier, ProjectRecord
+
+from .models import VisualMigrationReceipt
 
 
 class VisualProjectRecord(ProjectRecord):
@@ -98,4 +101,18 @@ DATASETS = (
         project=VisualWorkshopProject,
         owns_record=False,
     ),
+)
+
+
+class OperationReceipts(EditReceiptBatch):
+    dataset: Literal["visual.operation-receipts"]
+
+
+OPERATIONS = EditReceiptTransfer(
+    "visual",
+    VisualWorkshopProject,
+    VisualCanvasDocument,
+    VisualCanvasDocumentOut,
+    OperationReceipts,
+    VisualMigrationReceipt,
 )

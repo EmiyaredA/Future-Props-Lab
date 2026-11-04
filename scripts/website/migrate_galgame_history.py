@@ -7,14 +7,18 @@ from pathlib import Path
 import httpx
 
 from fpl_galgame.migration_application import PREFIX
-from fpl_galgame.migration_records import DATASETS
+from fpl_galgame.migration_records import DATASETS, OPERATIONS
+from fpl_runtime.edit_receipt_migration import SUFFIX
 from fpl_runtime.galgame_migration import PINS_DATASET, PINS_PATH, StoryPinPage
 from fpl_runtime.migration_batches import MigrationPlan
 
 from .migrate_assets import verify_originals
 from .migration_transfer import DatasetTransfer, inventory, loopback, project_datasets, transfer
 
-RECORDS = project_datasets(PREFIX, DATASETS)
+RECORDS = (
+    *project_datasets(PREFIX, DATASETS),
+    DatasetTransfer(OPERATIONS.name, f"{PREFIX}/{SUFFIX}", OPERATIONS.page, "id", page_size=1),
+)
 PINS = DatasetTransfer(PINS_DATASET, PINS_PATH, StoryPinPage, "id", page_size=1)
 
 

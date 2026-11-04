@@ -6,15 +6,19 @@ from pathlib import Path
 
 import httpx
 
+from fpl_runtime.edit_receipt_migration import SUFFIX
 from fpl_runtime.migration_batches import MigrationPlan
 from fpl_runtime.visual_migration import CANVAS_PINS_DATASET, CANVAS_PINS_PATH, CanvasPinPage
 from fpl_visual.migration_application import PREFIX
-from fpl_visual.migration_records import DATASETS
+from fpl_visual.migration_records import DATASETS, OPERATIONS
 
 from .migrate_assets import verify_originals
 from .migration_transfer import DatasetTransfer, loopback, project_datasets, transfer
 
-RECORDS = project_datasets(PREFIX, DATASETS)
+RECORDS = (
+    *project_datasets(PREFIX, DATASETS),
+    DatasetTransfer(OPERATIONS.name, f"{PREFIX}/{SUFFIX}", OPERATIONS.page, "id", page_size=1),
+)
 PINS = DatasetTransfer(CANVAS_PINS_DATASET, CANVAS_PINS_PATH, CanvasPinPage, "id", page_size=1)
 
 

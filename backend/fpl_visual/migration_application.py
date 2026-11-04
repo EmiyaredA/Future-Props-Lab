@@ -2,11 +2,12 @@
 
 from functools import partial
 
+from app.runtime.project_operations import ProjectOperationReceipt
 from fpl_runtime.migration_apps import export_app, import_app, mount_dataset
 from fpl_runtime.project_history_migration import CURSOR, mount_project_history
 from fpl_runtime.visual_migration import CANVAS_PINS_PATH, CanvasPinBatch, CanvasPinPage
 
-from .migration_records import DATASETS
+from .migration_records import DATASETS, OPERATIONS
 from .migration_references import export_canvas_pins, inventory_pins
 from .migrations.registry import MIGRATIONS
 from .models import VisualMigrationReceipt
@@ -19,6 +20,7 @@ def mount(app, plan, sessions, *, source=None):
     mount_project_history(
         app, plan, sessions, PREFIX, DATASETS, VisualMigrationReceipt, source=source
     )
+    OPERATIONS.mount(app, plan, sessions, PREFIX, source=source)
     if source is not None:
         mount_dataset(
             app,
@@ -40,6 +42,10 @@ def create_export_app(*, plan, source_path):
 
 
 def create_import_app(*, plan, state_root):
-    models = (*[dataset.model for dataset in DATASETS], VisualMigrationReceipt)
+    models = (
+        *[dataset.model for dataset in DATASETS],
+        ProjectOperationReceipt,
+        VisualMigrationReceipt,
+    )
     app, database = import_app(plan, state_root, "visual", models, MIGRATIONS, **TRANSPORT)
     return mount(app, plan, database.sessions)

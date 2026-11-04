@@ -14,7 +14,9 @@ from app.apps.galgame_workshop.models import (
     GalgameStorySnapshot,
     GalgameWorkshopProject,
 )
+from app.apps.galgame_workshop.schemas.story import GalgameStoryDocumentOut
 from app.apps.galgame_workshop.story.document_values import normalize_story_document
+from fpl_runtime.edit_receipt_migration import EditReceiptBatch, EditReceiptTransfer
 from fpl_runtime.migration_batches import MigrationBatch, MigrationPage
 from fpl_runtime.project_history_migration import ProjectDataset
 from fpl_runtime.project_history_records import (
@@ -25,6 +27,7 @@ from fpl_runtime.project_history_records import (
 )
 
 from .migration_jobs import JOB_DATASETS
+from .models import GalgameMigrationReceipt
 
 
 def valid_story(document):
@@ -170,4 +173,18 @@ DATASETS = (
         owns_record=False,
     ),
     *JOB_DATASETS,
+)
+
+
+class OperationReceipts(EditReceiptBatch):
+    dataset: Literal["galgame.operation-receipts"]
+
+
+OPERATIONS = EditReceiptTransfer(
+    "galgame",
+    GalgameWorkshopProject,
+    GalgameStoryDocument,
+    GalgameStoryDocumentOut,
+    OperationReceipts,
+    GalgameMigrationReceipt,
 )

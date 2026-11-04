@@ -1,5 +1,6 @@
 """Rehearse the Visual Canvas, output and placement history transfer."""
 
+import asyncio
 import json
 import os
 import subprocess
@@ -15,7 +16,7 @@ from scripts.website import legacy_snapshot
 from scripts.website.migrate_assets import ASSET_RECORDS, transfer_asset_blobs
 from scripts.website.migrate_visual_history import PINS, RECORDS, migrate
 from scripts.website.migration_transfer import pages, transfer
-from tests.test_galgame_history_migration import open_peers
+from tests.test_galgame_history_migration import open_peers, verify_edit_replay
 from tests.test_tools_navigation_migration import available_ports
 from tests.test_website_legacy_snapshot import PASSWORD, REVISION, ROOT, configuration, website
 
@@ -71,6 +72,17 @@ def seed_project(client, origin):
         },
     )
     assert canvas.status_code == 200, canvas.text
+    operation_path = path + "/canvas/operations"
+    edit = {
+        "request_id": "legacy-canvas-edit",
+        "expected_revision": canvas.json()["revision"],
+        "operations": [
+            {"action": "update", "entity": "node", "id": "paint", "value": {"title": "Historical"}}
+        ],
+    }
+    edited = client.post(operation_path, headers=safe, json=edit)
+    assert edited.status_code == 200, edited.text
+    canvas = edited
     for asset_id in asset_ids:
         canvas = client.post(
             path + "/nodes/paint/outputs",
@@ -81,7 +93,15 @@ def seed_project(client, origin):
             },
         )
         assert canvas.status_code == 200, canvas.text
-    return owner, path, canvas.json(), asset_ids, blobs, placements
+    return (
+        owner,
+        path,
+        canvas.json(),
+        asset_ids,
+        blobs,
+        placements,
+        (operation_path, edit, edited.json()),
+    )
 
 
 def test_visual_history_preserves_canvas_output_placement_and_rollback(tmp_path):
@@ -110,7 +130,7 @@ def test_visual_history_preserves_canvas_output_placement_and_rollback(tmp_path)
         timeout=30,
     )
     with website(config, source_port) as (client, origin):
-        owner, path, canvas, ids, blobs, placements = seed_project(client, origin)
+        owner, path, canvas, ids, blobs, placements, edit = seed_project(client, origin)
     snapshot = tmp_path / "snapshot"
     proof = legacy_snapshot.create(runtime, config, snapshot, REVISION)
     source_db = snapshot / ".runtime" / legacy_snapshot.DATABASE
@@ -160,7 +180,9 @@ def test_visual_history_preserves_canvas_output_placement_and_rollback(tmp_path)
             "visual.canvases": 1,
             "visual.outputs": 3,
             "visual.canvas-pins": 1,
+            "visual.operation-receipts": 1,
         }
+    asyncio.run(verify_edit_replay(tmp_path / "visual", "visual", owner, *edit))
     recovered = tmp_path / "recovered"
     legacy_snapshot.restore(snapshot, recovered, REVISION, proof["manifest_sha256"])
     recovered_config = recovered / "backend/acceptance-config.toml"
