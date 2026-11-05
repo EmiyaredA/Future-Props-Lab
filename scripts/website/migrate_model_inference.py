@@ -100,6 +100,7 @@ def transfer_inference_originals(client, plan, source, target):
 def transfer_model_originals(client, plan, source, target):
     count = relationship_count(client, plan, source, target, TEST_RELATIONSHIPS)
     return {
+        "dataset": "models.originals",
         "inference": transfer_inference_originals(client, plan, source, target),
         "test_attachments": transfer_originals(client, plan, source, target, ATTACHMENTS),
         "test_tasks": {

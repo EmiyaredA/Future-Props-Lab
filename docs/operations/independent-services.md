@@ -408,6 +408,20 @@ uv run python -m scripts.website.legacy_snapshot restore \
 
 隔离恢复以原配置为凭据来源，另建启动投影，仅调整隔离数据库路径和监听端口并关闭公网。使用旧站同一启动器读回登录态、账号、工具记录、头像原件与桌面空闲偏好。验证链路还将同一快照经回环维护接口导入 Identity、Tools 与 Remote，重复提交核对原回执，再从原快照启动旧站。正式演练还需覆盖其余数据集、已发布网页、跨服务关系、网关凭据与公网恢复。
 
+### 整站维护接口迁移
+
+为同一份计划启动各服务的回环维护入口。每个进程使用独立端口。导出只读取封存快照，导入只挂载对应目标服务的状态目录，普通业务入口保持停写。
+
+维护地址以 JSON 对象保存，键名为各所有者的 `<service>-source` 和 `<service>-target`。需要成对登记的服务为 `identity`、`assets`、`models`、`integrations`、`thought`、`creative`、`director`、`annotation`、`presentation`、`motion`、`video`、`visual`、`galgame`、`interview`、`agents`、`amadeus`、`tools`、`remote`。另登记 `rendering-target`。地址清单权限为 0600，验收目录权限为 0700。
+
+```sh
+uv run python -m scripts.website.migrate_site \
+  --plan "$plan" --snapshot "$sealed_snapshot" --manifest-sha256 "$manifest_sha256" \
+  --endpoints "$maintenance_addresses" --evidence "$transfer_evidence_dir"
+```
+
+入口先核验来源及非空表覆盖，再迁移身份和素材原件，最后恢复跨服务关联。每个步骤通过后持久保存记录数、摘要和关系核验结果。中断后以同一计划及验收目录重跑，已落盘的批次返回原回执，工具重新核对目标读回结果。源表漏项、目标摘要变化、记录数差异或封存文件变化会阻止 `transfer.json` 标记完成。该报告用于确认数据迁移，恢复旧站和正式入口验收分别留证。
+
 ### Remote 桌面连接
 
 运行 `npm run services:build -- remote --build` 并加载 `deploy/remote.compose.yaml`，为 Remote 指定专用卷、Identity 公钥、服务凭据和只读传输配置。网关只把签名上下文转交 Remote。连接票据仅能使用一次，绑定账号、会话、可信入口与当前 TOTP 登记代。撤销会话或重设验证器会阻止旧连接继续传输。
