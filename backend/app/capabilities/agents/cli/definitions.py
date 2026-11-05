@@ -1,9 +1,8 @@
 """Names and minimum probe contracts shared by service and Mac CLI consumers."""
 
 from dataclasses import dataclass
-from typing import Literal
 
-AgentId = Literal["codex", "claude-code", "opencode", "dsh", "pi"]
+from fpl_runtime.agent_ids import AgentId as AgentId
 
 
 @dataclass(frozen=True)

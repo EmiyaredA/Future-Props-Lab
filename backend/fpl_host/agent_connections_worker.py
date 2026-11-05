@@ -135,7 +135,12 @@ class ConnectionWorker:
 
 
 async def visual_acceptance_status(*, probe):
-    from app.capabilities.agents.cli.catalog import DEFINITIONS, connection, inspect_executable
+    from app.capabilities.agents.cli.catalog import (
+        DEFINITIONS,
+        connection,
+        execution_signature,
+        inspect_executable,
+    )
     from app.runtime.config import get_cloud_settings
 
     settings = get_cloud_settings()
@@ -149,7 +154,12 @@ async def visual_acceptance_status(*, probe):
         else:
             result = await inspect_executable(agent, path)
             available, message = result["available"], result["message"]
-        return AcceptanceAgentStatus(id=agent, available=available, message=message)
+        return AcceptanceAgentStatus(
+            id=agent,
+            available=available,
+            message=message,
+            signature=execution_signature(agent, path) if available else None,
+        )
 
     return AcceptanceAgentCatalog(
         items=list(await asyncio.gather(*(check(agent) for agent in DEFINITIONS)))
@@ -159,6 +169,8 @@ async def visual_acceptance_status(*, probe):
 async def serve(args, credential):
     from app.console.governance.code_agent_connections import enable_connection
     from app.console.governance.code_agents import catalog
+
+    from .visual_review_worker import VisualReviewWorker
 
     transport = NativeTransport(
         base_url=args.bridge, credential=credential, service="agent-runtime"
@@ -170,7 +182,13 @@ async def serve(args, credential):
         enable=enable_connection,
         acceptance_status=visual_acceptance_status,
     )
-    await worker.run()
+    reviews = VisualReviewWorker(
+        NativeTransport(base_url=args.bridge, credential=credential, service="agent-runtime"),
+        args.state_root / "visual-review",
+    )
+    async with asyncio.TaskGroup() as tasks:
+        tasks.create_task(worker.run())
+        tasks.create_task(reviews.run())
 
 
 def main():

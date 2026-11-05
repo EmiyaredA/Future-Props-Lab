@@ -1,3 +1,5 @@
+"""Structured agent findings and evidence validation shared by Visual and Agent Runtime."""
+
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field

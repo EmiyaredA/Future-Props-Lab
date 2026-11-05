@@ -34,6 +34,7 @@ from .video_segments import bundle_grant as segment_bundle_grant
 from .video_snapshot import archive_grant as video_archive_grant
 from .video_snapshot import snapshot_grant as video_snapshot_grant
 from .visual_acceptance_assets import acceptance_asset_grant
+from .visual_agent_review import agent_review_grant
 from .visual_assistant import assistant_grant
 from .visual_catalog import acceptance_agent_grant, visual_catalog_grant
 from .visual_composition import composition_grant
@@ -193,6 +194,8 @@ def target_permission_path(grant):
 
 
 def permitted(grant, catalog):
+    if grant.caller == "agent-runtime" and agent_review_grant(grant):
+        return True
     original = catalog.match(grant.source_method, grant.source_path)
     if original is None or original.service != grant.caller:
         return False
@@ -240,6 +243,7 @@ def permitted(grant, catalog):
         or composition_grant(grant)
         or sample_grant(grant)
         or review_model_grant(grant)
+        or agent_review_grant(grant)
         or visual_generation_model_grant(grant)
         or visual_generation_asset_grant(grant)
         or visual_generation_plan_grant(grant)

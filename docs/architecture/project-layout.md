@@ -170,9 +170,11 @@ Visual 生成模型资格、参数校验和供应商请求组装由 `app/llm/vis
 
 Visual 验收取样由 `fpl_visual/acceptance_samples.py` 核对记录及版本。Rendering 的 `visual_samples.py` 根据已校验的原视频版本和实际解码时间戳提取 PNG。Assets 的 `visual_evidence_upload.py` 校验整组帧的长度与摘要，在验收记录提交后公开原件。逐验收记录的证据保留集合随所属项目删除，兼容站的历史保留集合仍按工程核验。
 
-Visual 的公开验收目录由 `fpl_visual/acceptance_options.py` 装配。固定视觉模型由 Models 核对账号与配置，Mac 上的五种 CLI 由 Agent Runtime 的只读租约探测。Identity 限定授权来源，目录响应只包含可用状态和展示字段。 节点验收资料由 `acceptance/context_values.py` 从所属画布和生成记录计算，并从 Assets 读取精确的工程素材投影。方案绑定在 Visual 中按版本更新，项目汇总复用相同的资料指纹。
+Visual 的公开验收目录由 `fpl_visual/acceptance_options.py` 装配。固定视觉模型由 Models 核对账号与配置，Mac 上的五种 CLI 由 Agent Runtime 通过独立只读租约探测。Identity 限定授权来源，目录响应只包含可用状态和展示字段。 节点验收资料由 `acceptance/context_values.py` 从所属画布和生成记录计算，并从 Assets 读取精确的工程素材投影。方案绑定在 Visual 中按版本更新，项目汇总复用相同的资料指纹。
 
 Visual 节点验收的 `review_submission.py` 按画布、方案绑定和资料指纹冻结运行计划，在同一源事务记录初始素材引用。`review_runner.py` 复核执行账号，`review_baseline.py` 保存逐来源取样及 Assets 回执，`review_media.py` 负责受控证据流，Rendering 负责规范化 JPEG 编码。Models 的 `visual_review_attempts.py` 保存固定模型运行摘要、调用日志和可重放结果。
+
+Visual 的 `review_agent.py` 冻结已保留的 Mac 任务媒体和固定连接签名，`review_authority_http.py` 复核该精确运行是否仍可执行。Agent Runtime 的 `review_host.py` 保存不可重派的原生租约并代理 Assets 原件流。`fpl_host/visual_review_worker.py` 在 Mac 的隔离任务目录执行现有 CLI 适配器与专用媒体工具，回传报告和经摘要校验的追加帧。Agent Runtime 的暂存清理只处理已到期租约的已知文件。
 
 Visual 的 Canvas、工程与历史输出由 `fpl_visual/migration_application.py` 导出及导入。 Visual 与 Galgame 复用 `fpl_runtime/edit_receipt_migration.py`，在 Canvas 或 Story 导入后分账号保留历史操作回执和原响应。迁移阻止跨归属、缺少源文档或回执版本超出当前文档的记录。Canvas 文件保留集合包含当前节点及旧输出，Assets 逐文件校验回执后提交。库内放置通过 Assets 维护入口保留原名称、目录、标识和版本。 Visual 的 `migration_generation.py` 逐账号保留历史生成任务和批次，核对画布或输出的任务来源与批次成员归属。 `migration_acceptance.py` 保留验收定义、历史结果、修复草稿和证据关联，Assets 在核对原件与工程范围后重建验收素材保留集合。
 

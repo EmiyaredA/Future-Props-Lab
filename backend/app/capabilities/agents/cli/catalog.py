@@ -153,3 +153,12 @@ async def inspect_connection(settings, agent_id, *, discover_models=True):
         except (ValueError, OSError, TimeoutError, TypeError, KeyError, AttributeError):
             result["models"] = []
     return result
+
+
+def execution_signature(kind, executable):
+    """Freeze a configured connection without returning its local executable path."""
+    import hashlib
+    import json
+
+    data = {"kind": kind, "executable": executable}
+    return hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()

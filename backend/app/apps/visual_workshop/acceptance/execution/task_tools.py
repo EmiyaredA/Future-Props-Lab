@@ -6,15 +6,14 @@ import hashlib
 import json
 import os
 import sys
-from io import BytesIO
 from pathlib import Path
 from uuid import uuid4
 
 from mcp.server import MCPServer
 from mcp.types import ImageContent, TextContent
-from PIL import Image
 
 from app.capabilities.media_rendering.inspection import inspect_media
+from app.capabilities.media_rendering.review_images import review_jpeg
 from app.capabilities.media_rendering.video_frames import extract_frame
 from app.capabilities.media_rendering.video_sampling import source_frame_time
 
@@ -58,11 +57,7 @@ class MediaTools:
 
     def picture(self, item):
         path = self.checked(item)
-        with Image.open(path) as image:
-            image.thumbnail((1024, 1024))
-            image = image.convert("RGB")
-            output = BytesIO()
-            image.save(output, format="JPEG", quality=85)
+        jpeg = review_jpeg(path)
         self.read_ids.add(item["id"])
         self.persist()
         return [
@@ -79,7 +74,7 @@ class MediaTools:
             ImageContent(
                 type="image",
                 mimeType="image/jpeg",
-                data=base64.b64encode(output.getvalue()).decode(),
+                data=base64.b64encode(jpeg).decode(),
             ),
         ]
 

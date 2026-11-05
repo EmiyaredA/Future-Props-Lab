@@ -15,6 +15,7 @@ from app.runtime.time import utc_now
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
 from fpl_runtime.project_errors import ProjectResourceError
 
+from .review_agent import ReviewAgent
 from .review_baseline import ReviewBaseline, ReviewChanged
 from .review_dispatch_records import VisualReviewDispatch
 from .review_model import ReviewModel
@@ -88,7 +89,8 @@ class ReviewRunner(PollingTaskRunner):
                 await db.delete(dispatch)
                 await db.commit()
                 return
-            if run.created_at + timedelta(minutes=15) < utc_now():
+            deadline = run.created_at + timedelta(minutes=15)
+            if deadline < utc_now():
                 await db.rollback()
                 await self.finish(owner, identity, error="验收超过十五分钟，请手动重试")
                 return
@@ -109,16 +111,21 @@ class ReviewRunner(PollingTaskRunner):
             baseline = ReviewBaseline(self.state, db, dispatch, project_id)
             current = await baseline.prepare(current)
 
-        async def evaluate():
-            images = []
-            for evidence in current.evidence:
-                images.append(
-                    await baseline.media.model_image(project_id, identity, evidence.model_dump())
-                )
-            model = ReviewModel(self.state.capabilities, assertion, source)
-            return await model.execute(project_id, current, executor["model"], images)
+            async def evaluate():
+                if executor["kind"] == "code_agent":
+                    agent = ReviewAgent(self.state.capabilities, assertion, source)
+                    return await agent.execute(db, baseline, current, executor, deadline)
+                images = []
+                for evidence in current.evidence:
+                    images.append(
+                        await baseline.media.model_image(
+                            project_id, identity, evidence.model_dump()
+                        )
+                    )
+                model = ReviewModel(self.state.capabilities, assertion, source)
+                return await model.execute(project_id, current, executor["model"], images)
 
-        outcome = await fenced(evaluate, verify)
+            outcome = await fenced(evaluate, verify)
         if outcome["status"] == "running":
             return
         await verify()
@@ -170,6 +177,9 @@ async def fenced(evaluate, verify):
 
 
 def apply_outcome(row, outcome):
+    if outcome.get("kind") == "code_agent":
+        apply_agent_outcome(row, outcome["report"])
+        return
     suggestions = {item["criterion_id"]: item for item in outcome["results"]["results"]}
     results = deepcopy(row.results)
     for result in results:
@@ -189,4 +199,22 @@ def apply_outcome(row, outcome):
             for key in ("results", "usage", "latency_ms", "provider_kind", "model_slug")
         },
     }
+    row.status = "completed"
+
+
+def apply_agent_outcome(row, report):
+    findings = {item["criterion_id"]: item for item in report["findings"]}
+    results = deepcopy(row.results)
+    for result in results:
+        finding = findings.get(result["criterion_id"])
+        if finding is not None:
+            result.update(
+                {
+                    key: finding[key]
+                    for key in ("suggestion", "explanation", "evidence_ids", "start_ms", "end_ms")
+                }
+            )
+    row.results = results
+    row.snapshot = {**row.snapshot, "check_results": deepcopy(results)}
+    row.execution_result = {"kind": "code_agent", "report": report}
     row.status = "completed"

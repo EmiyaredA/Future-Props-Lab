@@ -73,6 +73,10 @@ class ReviewBaseline:
         return result
 
     async def sample(self, run, identity, mode):
+        async with self.media.render(self.project_id, run.id, identity, mode=mode) as response:
+            return await self.publish_frames(run, identity, response, mode=mode)
+
+    async def publish_frames(self, run, identity, response, *, mode=None, native_frame=None):
         project_id = self.project_id
         retained = sorted(
             await self.db.scalars(
@@ -82,35 +86,39 @@ class ReviewBaseline:
             )
         )
         await self.db.rollback()
-        async with self.media.render(project_id, run.id, identity, mode=mode) as response:
-            media, length = evidence_manifest(response, project_id, identity)
-            info = json.loads(response.headers[MEDIA_HEADER])
-            change = PrepareReferenceChange(
-                request_id=uuid4().hex,
-                resource_kind="acceptance",
-                resource_id=evidence_resource(run.id),
-                expected_resource_revision=run.revision,
-                asset_ids=retained,
-                visual_evidence=media,
+        media, length = evidence_manifest(response, project_id, identity)
+        info = json.loads(response.headers[MEDIA_HEADER]) if mode == "review-output" else {}
+        if native_frame is not None and (
+            len(media.frames) != 1
+            or media.frames[0].content_sha256 != native_frame.sha256
+            or media.frames[0].byte_size != native_frame.byte_size
+            or media.frames[0].position_ms != native_frame.position_ms
+        ):
+            raise ValueError("原生追加帧回执与证据流不一致")
+        change = PrepareReferenceChange(
+            request_id=uuid4().hex,
+            resource_kind="acceptance",
+            resource_id=evidence_resource(run.id),
+            expected_resource_revision=run.revision,
+            asset_ids=retained,
+            visual_evidence=media,
+        )
+        try:
+            prepared = await self.references.prepare(
+                owner=self.owner,
+                assertion=self.assertion,
+                source_method="POST",
+                source_path=self.source,
+                change=change,
             )
-            try:
-                prepared = await self.references.prepare(
-                    owner=self.owner,
-                    assertion=self.assertion,
-                    source_method="POST",
-                    source_path=self.source,
-                    change=change,
-                )
-            except BaseException:
-                await self.references.abandon_preparation(self.db, self.owner, change)
-                raise
-            try:
-                assets = await stage_evidence(
-                    self.references.client, prepared, response, length, media
-                )
-            except BaseException:
-                await self.references.abort_after_rollback(self.db, prepared)
-                raise
+        except BaseException:
+            await self.references.abandon_preparation(self.db, self.owner, change)
+            raise
+        try:
+            assets = await stage_evidence(self.references.client, prepared, response, length, media)
+        except BaseException:
+            await self.references.abort_after_rollback(self.db, prepared)
+            raise
 
         async def apply():
             row = await self.locked_run(run.revision)
@@ -126,7 +134,7 @@ class ReviewBaseline:
                 )
                 evidence.append(
                     {
-                        "id": new_id(),
+                        "id": native_frame.id if native_frame is not None else new_id(),
                         "asset_id": asset.id,
                         "source_asset_id": identity,
                         "position_ms": frame.position_ms,
