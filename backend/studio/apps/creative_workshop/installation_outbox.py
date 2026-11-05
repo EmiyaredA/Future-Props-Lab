@@ -38,6 +38,7 @@ class InstallIntent:
     request_fingerprint: str
     state: str
     receipt: dict | None
+    accepted_now: bool = False
 
 
 def _intent(row):
@@ -185,7 +186,7 @@ class InstallationOutbox:
             result = _intent(row)
             # If acknowledgement is lost, the next call observes the same persisted UUID.
             await session.commit()
-            return result
+            return replace(result, accepted_now=True)
 
     async def require_current(
         self, owner: str, request: CreativeInstallPreviewIn, batch: CreativeInstallBatch

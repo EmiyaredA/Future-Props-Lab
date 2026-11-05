@@ -283,8 +283,10 @@ async def test_coordinator_recovers_lost_target_response_without_resubmission(tm
     class Target:
         stored = None
         calls = 0
+        lookups = 0
 
         async def receipt(self, _source_authorization, _batch):
+            self.lookups += 1
             return self.stored
 
         async def install(self, _source_authorization, batch):
@@ -318,6 +320,7 @@ async def test_coordinator_recovers_lost_target_response_without_resubmission(tm
         first = batch()
         with pytest.raises(TimeoutError):
             await coordinator.install(object(), request, first)
+        assert target.lookups == 0
         assert (await outbox.get("alice", "release")).state == "pending"
         from sqlalchemy import update
 
@@ -332,6 +335,7 @@ async def test_coordinator_recovers_lost_target_response_without_resubmission(tm
         assert result.resources[0]["resource_id"] == "integration"
         assert (await outbox.get("alice", "release")).batch == first
         assert target.calls == 1
+        assert target.lookups == 1
     finally:
         await database.close()
 
@@ -370,6 +374,7 @@ async def test_coordinator_fails_closed_on_authorization_and_receipt_faults(tmp_
             await coordinator.install(object(), request, batch())
         assert await outbox.get("alice", "release") is None
         auth.valid = True
+        await outbox.accept("alice", request, batch())
         with pytest.raises(TimeoutError):
             await coordinator.install(object(), request, batch())
         assert not target.install_called
@@ -398,6 +403,8 @@ async def test_coordinator_never_settles_unverified_receipt_or_revoked_actor(tmp
         async def receipt(self, source, _batch):
             assert source is marker
             return {"untrusted": True}
+
+        install = receipt
 
         async def verify_receipt(self, source, selected, _response):
             assert source is marker

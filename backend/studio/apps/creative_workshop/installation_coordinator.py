@@ -120,9 +120,13 @@ class InstallationCoordinator:
         if intent.state == "completed":
             receipt = intent.receipt
         elif intent.state == "pending":
-            # A failed or timed-out lookup raises; it must never be interpreted as
-            # an absent receipt. Both calls use the exact stored operation UUID.
-            response = await self.target.receipt(source_authorization, intent.batch)
+            # A newly persisted UUID can go directly to the idempotent target.
+            # Reused UUIDs require a receipt lookup before any resubmission.
+            response = (
+                None
+                if intent.accepted_now
+                else await self.target.receipt(source_authorization, intent.batch)
+            )
             if response is None:
                 await self.outbox.require_current(owner, request, intent.batch)
                 response = await self.target.install(source_authorization, intent.batch)
