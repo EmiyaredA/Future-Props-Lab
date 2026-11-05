@@ -6,6 +6,7 @@ import os
 import secrets
 import sys
 import tempfile
+from contextlib import suppress
 from pathlib import Path
 
 from app.runtime.config import REPO_ROOT
@@ -34,6 +35,7 @@ class ToolRelay:
             task = asyncio.current_task()
             self.handlers.add(task)
             self.connections.add(writer)
+            call_id = None
             try:
                 data = json.loads(await asyncio.wait_for(reader.readline(), 10))
                 if self.closed or not secrets.compare_digest(data.get("token", ""), self.token):
@@ -65,6 +67,17 @@ class ToolRelay:
                 raise
             except Exception:
                 response = {"error": "工具失败；请检查权限、参数与资源当前状态，不要重试未知写入"}
+                if call_id:
+                    with suppress(Exception):
+                        await self.emit(
+                            "tool_result",
+                            {
+                                "tool_call_id": call_id,
+                                "name": data.get("name", ""),
+                                "status": "failed",
+                                "result": response,
+                            },
+                        )
             try:
                 writer.write(json.dumps(response, ensure_ascii=False).encode() + b"\n")
                 await writer.drain()

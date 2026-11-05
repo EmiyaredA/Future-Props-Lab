@@ -1825,6 +1825,97 @@
         "title": "ActionOut",
         "type": "object"
       },
+      "ActivityDetails": {
+        "properties": {
+          "answers": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Answers",
+            "type": "array"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
+          },
+          "file": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActivityFile"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "enum": [
+              "file",
+              "search",
+              "web",
+              "question",
+              "command",
+              "duration"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "questions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Questions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "ActivityDetails",
+        "type": "object"
+      },
+      "ActivityFile": {
+        "properties": {
+          "line": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "title": "ActivityFile",
+        "type": "object"
+      },
       "AddClipOperation": {
         "properties": {
           "clip": {
@@ -2355,9 +2446,31 @@
             "title": "Kind",
             "type": "string"
           },
+          "offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offset"
+          },
           "preview": {
             "title": "Preview",
             "type": "string"
+          },
+          "sequence": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sequence"
           },
           "status": {
             "title": "Status",
@@ -5556,6 +5669,29 @@
               }
             ],
             "title": "Project Label"
+          },
+          "queue": {
+            "items": {
+              "$ref": "#/components/schemas/QueuedTurn"
+            },
+            "title": "Queue",
+            "type": "array"
+          },
+          "queue_paused": {
+            "default": false,
+            "title": "Queue Paused",
+            "type": "boolean"
+          },
+          "steerable_turn_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Steerable Turn Id"
           },
           "turns": {
             "items": {
@@ -18596,6 +18732,128 @@
         "title": "HandoffOut",
         "type": "object"
       },
+      "HistoryBlock": {
+        "properties": {
+          "call_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Call Id"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActivityDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "tool_name": {
+            "default": "",
+            "title": "Tool Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "text"
+        ],
+        "title": "HistoryBlock",
+        "type": "object"
+      },
+      "HistoryPresentation": {
+        "properties": {
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryBlock"
+            },
+            "title": "Blocks",
+            "type": "array"
+          },
+          "call_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Call Id"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActivityDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Id"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "turn_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Turn Id"
+          }
+        },
+        "title": "HistoryPresentation",
+        "type": "object"
+      },
       "IdlePreference": {
         "additionalProperties": false,
         "properties": {
@@ -19474,6 +19732,75 @@
           "excerpt"
         ],
         "title": "InputReference",
+        "type": "object"
+      },
+      "InstructionCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "request_id": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 16000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "text"
+        ],
+        "title": "InstructionCreate",
+        "type": "object"
+      },
+      "InstructionOut": {
+        "properties": {
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "sequence": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sequence"
+          },
+          "status": {
+            "enum": [
+              "sending",
+              "accepted",
+              "rejected",
+              "unknown"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "text",
+          "status",
+          "offset"
+        ],
+        "title": "InstructionOut",
         "type": "object"
       },
       "IntegrationCheckOut": {
@@ -28391,6 +28718,24 @@
         "title": "QuestionOut",
         "type": "object"
       },
+      "QueuedTurn": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "prompt"
+        ],
+        "title": "QueuedTurn",
+        "type": "object"
+      },
       "QuotaLimit": {
         "properties": {
           "realtime_voice": {
@@ -31325,6 +31670,46 @@
           "field_id"
         ],
         "title": "Sort",
+        "type": "object"
+      },
+      "SourcePreview": {
+        "properties": {
+          "diff": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Diff"
+          },
+          "line": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "text"
+        ],
+        "title": "SourcePreview",
         "type": "object"
       },
       "Specification": {
@@ -35221,9 +35606,78 @@
         "title": "TrimClipOperation",
         "type": "object"
       },
+      "TurnActivity": {
+        "properties": {
+          "call_id": {
+            "title": "Call Id",
+            "type": "string"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActivityDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "sequence": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sequence"
+          },
+          "source_available": {
+            "default": false,
+            "title": "Source Available",
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "completed",
+              "failed",
+              "unknown"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "call_id",
+          "name",
+          "offset",
+          "status"
+        ],
+        "title": "TurnActivity",
+        "type": "object"
+      },
       "TurnCreate": {
         "additionalProperties": false,
         "properties": {
+          "mode": {
+            "default": "immediate",
+            "enum": [
+              "immediate",
+              "queue"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
           "request_id": {
             "maxLength": 80,
             "minLength": 1,
@@ -35247,6 +35701,13 @@
       },
       "TurnOut": {
         "properties": {
+          "activity": {
+            "items": {
+              "$ref": "#/components/schemas/TurnActivity"
+            },
+            "title": "Activity",
+            "type": "array"
+          },
           "answer": {
             "title": "Answer",
             "type": "string"
@@ -35273,6 +35734,13 @@
             "title": "Id",
             "type": "string"
           },
+          "instructions": {
+            "items": {
+              "$ref": "#/components/schemas/InstructionOut"
+            },
+            "title": "Instructions",
+            "type": "array"
+          },
           "position": {
             "title": "Position",
             "type": "integer"
@@ -35284,6 +35752,17 @@
           "revision": {
             "title": "Revision",
             "type": "integer"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
           },
           "status": {
             "title": "Status",
@@ -41172,6 +41651,9 @@
             ],
             "title": "Parent Id"
           },
+          "presentation": {
+            "$ref": "#/components/schemas/HistoryPresentation"
+          },
           "role": {
             "title": "Role",
             "type": "string"
@@ -41234,6 +41716,17 @@
               }
             ],
             "title": "Next Cursor"
+          },
+          "next_cursor_native_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor Native Id"
           },
           "selected_branch": {
             "anyOf": [
@@ -42801,6 +43294,85 @@
         ]
       }
     },
+    "/v1/agent-workbench/chats/{chat_id}/queue/resume": {
+      "post": {
+        "operationId": "resume_queue_v1_agent_workbench_chats__chat_id__queue_resume_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "chat_id",
+            "required": true,
+            "schema": {
+              "title": "Chat Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resume Queue",
+        "tags": [
+          "agent-workbench"
+        ]
+      }
+    },
+    "/v1/agent-workbench/chats/{chat_id}/queue/{turn_id}": {
+      "delete": {
+        "operationId": "remove_queued_v1_agent_workbench_chats__chat_id__queue__turn_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "chat_id",
+            "required": true,
+            "schema": {
+              "title": "Chat Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "turn_id",
+            "required": true,
+            "schema": {
+              "title": "Turn Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Queued",
+        "tags": [
+          "agent-workbench"
+        ]
+      }
+    },
     "/v1/agent-workbench/chats/{chat_id}/turns": {
       "post": {
         "operationId": "send_turn_v1_agent_workbench_chats__chat_id__turns_post",
@@ -42911,6 +43483,129 @@
           }
         },
         "summary": "Decide",
+        "tags": [
+          "agent-workbench"
+        ]
+      }
+    },
+    "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/instructions": {
+      "post": {
+        "operationId": "insert_instruction_v1_agent_workbench_chats__chat_id__turns__turn_id__instructions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "chat_id",
+            "required": true,
+            "schema": {
+              "title": "Chat Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "turn_id",
+            "required": true,
+            "schema": {
+              "title": "Turn Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstructionCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Insert Instruction",
+        "tags": [
+          "agent-workbench"
+        ]
+      }
+    },
+    "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/source": {
+      "get": {
+        "operationId": "preview_source_v1_agent_workbench_chats__chat_id__turns__turn_id__source_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "chat_id",
+            "required": true,
+            "schema": {
+              "title": "Chat Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "turn_id",
+            "required": true,
+            "schema": {
+              "title": "Turn Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "call_id",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "title": "Call Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourcePreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Source",
         "tags": [
           "agent-workbench"
         ]
@@ -43616,6 +44311,23 @@
                 }
               ],
               "title": "Branch"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before_native_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 255,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before Native Id"
             }
           }
         ],

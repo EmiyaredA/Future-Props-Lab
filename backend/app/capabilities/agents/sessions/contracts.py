@@ -18,6 +18,7 @@ class SessionInfo:
     parent_id: str | None = None
     archived: bool = False
     updated_at: str = ""
+    turn_id: str | None = None
 
 
 @dataclass
@@ -31,6 +32,7 @@ class Entry:
     parent_id: str | None = None
     tool_name: str = ""
     attachments: list[dict] = field(default_factory=list)
+    presentation: dict = field(default_factory=dict)
 
 
 @dataclass

@@ -8,11 +8,15 @@ from fastapi import HTTPException
 from jsonschema import ValidationError, validate
 
 from app.capabilities.agents.cli.dialogue import run_dialogue
+from app.capabilities.agents.cli.instructions import LiveInstructions
 from app.capabilities.agents.cli.transport import CliError
+from app.capabilities.identity.permissions import role_scopes
+from app.capabilities.identity.principal import StudioPrincipal
 from app.console.governance.code_agents import resolve_connection
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.ids import new_id
+from app.runtime.operation_receipts import OperationError
 
 from . import commands, project_files, storage
 
@@ -35,12 +39,102 @@ def tool(name, description, **properties):
 class WorkbenchRuns:
     def __init__(self):
         self.tasks = {}
+        self.active_turns = {}
+        self.followups = set()
         self.file_writes = asyncio.Lock()
+        self.closed = False
 
     def start(self, principal, local, chat_id, turn_id):
-        task = asyncio.create_task(Turn(principal, local, chat_id, turn_id, self.file_writes).run())
+        turn = Turn(principal, local, chat_id, turn_id, self.file_writes)
+        self.active_turns[turn_id] = turn
+        task = asyncio.create_task(self.run(turn))
         self.tasks[turn_id] = task
-        task.add_done_callback(lambda _: self.tasks.pop(turn_id, None))
+        task.add_done_callback(lambda _: self.forget(turn_id))
+
+    def forget(self, turn_id):
+        self.tasks.pop(turn_id, None)
+        self.active_turns.pop(turn_id, None)
+
+    async def run(self, turn):
+        if await turn.run() == "completed" and not self.closed:
+            await self.advance(turn.owner, turn.chat_id)
+
+    def steerable(self, turn_id):
+        turn = self.active_turns.get(turn_id)
+        return bool(turn and turn.instructions.ready)
+
+    def ready_turn(self, owner, chat_id):
+        return next(
+            (
+                turn.turn_id
+                for turn in self.active_turns.values()
+                if (turn.owner, turn.chat_id) == (owner, chat_id) and turn.instructions.ready
+            ),
+            None,
+        )
+
+    async def advance(self, owner, chat_id):
+        while not self.closed:
+            async with SessionLocal() as db:
+                head = await storage.next_queued(db, owner, chat_id)
+                if not head:
+                    return
+                turn_id, session_id, local = head.id, head.queued_session_id, head.queued_local
+                principal = StudioPrincipal(
+                    user_id=owner,
+                    auth_kind="session",
+                    platform_role="admin",
+                    must_change_password=False,
+                    scopes=role_scopes("admin"),
+                    session_id=session_id,
+                )
+                try:
+                    agent_id = (await storage.get_chat(db, owner, chat_id)).agent_id
+                    await db.rollback()
+                    await resolve_connection(agent_id, probe=False)
+                    if await storage.claim_queue(db, principal, chat_id, turn_id, local=local):
+                        self.start(principal, local, chat_id, turn_id)
+                        return
+                except (HTTPException, OperationError):
+                    if await storage.pause_queue(
+                        db, owner, chat_id, head_id=turn_id, session_id=session_id, local=local
+                    ):
+                        return
+
+    async def steer(self, db, principal, local, chat_id, turn_id, body):
+        key = (principal.user_id, chat_id, turn_id)
+        turn = self.active_turns.get(turn_id)
+        if turn and turn.key == key:
+            async with turn.transcript_lock:
+                await turn.flush()
+        item, created = await storage.reserve_instruction(
+            db, principal, key, body, local=local, ready=lambda: self.steerable(turn_id)
+        )
+        if not created:
+            return item
+        turn = self.active_turns.get(turn_id)
+
+        async def deliver():
+            status = "rejected"
+            if turn:
+                try:
+                    async with SessionLocal() as session:
+                        await turn.authority(session)
+                        row = await storage.get_turn(session, *key)
+                        eligible = row.status == "running"
+                    if eligible:
+                        status = await turn.instructions.submit(
+                            "steer:" + item.request_id, item.text
+                        )
+                except (HTTPException, OperationError):
+                    pass
+            async with SessionLocal() as session:
+                return await storage.settle_instruction(session, key, item.request_id, status)
+
+        task = asyncio.create_task(deliver())
+        self.followups.add(task)
+        task.add_done_callback(self.followups.discard)
+        return await asyncio.shield(task)
 
     async def cancel(self, db, owner, chat_id, turn_id):
         key = (owner, chat_id, turn_id)
@@ -55,11 +149,12 @@ class WorkbenchRuns:
             await storage.finish_turn(session, key, "cancelled", only_cancelling=True)
 
     async def close(self):
+        self.closed = True
         tasks = list(self.tasks.values())
         for task in tasks:
             if not task.cancelling():
                 task.cancel()
-        await asyncio.gather(*tasks, return_exceptions=True)
+        await asyncio.gather(*tasks, *self.followups, return_exceptions=True)
 
 
 class Turn:
@@ -68,6 +163,8 @@ class Turn:
         self.owner, self.chat_id, self.turn_id = principal.user_id, chat_id, turn_id
         self.key = (self.owner, chat_id, turn_id)
         self.tool_lock = asyncio.Lock()
+        self.transcript_lock = asyncio.Lock()
+        self.instructions = LiveInstructions()
         self.file_writes = file_writes
         self.pending_text = ""
         self.last_flush = 0.0
@@ -92,13 +189,20 @@ class Turn:
         self.last_flush = asyncio.get_running_loop().time()
 
     async def emit(self, kind, payload):
-        if kind == "assistant_delta":
-            self.pending_text += payload["text"]
-            if asyncio.get_running_loop().time() - self.last_flush >= 0.15:
+        async with self.transcript_lock:
+            if kind == "assistant_delta":
+                self.pending_text += payload["text"]
+                if asyncio.get_running_loop().time() - self.last_flush >= 0.15:
+                    await self.flush()
+            elif kind in ("tool_call", "tool_result"):
                 await self.flush()
+                async with SessionLocal() as db:
+                    await storage.record_activity(db, self.key, kind, payload)
 
     async def approve(self, kind, title, preview, operation):
         identity = new_id()
+        async with self.transcript_lock:
+            await self.flush()
         async with SessionLocal() as db:
             await storage.propose_approval(
                 db, self.key, dict(id=identity, kind=kind, title=title, preview=preview)
@@ -140,11 +244,19 @@ class Turn:
                     await storage.settle_approval(db, self.key, identity, status)
 
     def tools(self, project):
+        read = tool(
+            "read_file", "Read a UTF-8 file. An optional line anchors the source preview.", path=500
+        )
+        read["inputSchema"]["properties"]["line"] = {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100_000,
+        }
         options = [
             tool(
                 "list_files", "List a directory relative to this project; use . for root", path=500
             ),
-            tool("read_file", "Read a UTF-8 file relative to this project", path=500),
+            read,
             tool("write_file", "Propose a UTF-8 file write for approval", path=500, content=131072),
         ]
         if commands.available() and project.commands:
@@ -251,7 +363,14 @@ class Turn:
                 turns = await storage.recent_turns(db, self.owner, self.chat_id, 12)
                 current = next(row for row in turns if row.id == self.turn_id)
                 history = [
-                    {"user": row.prompt, "assistant": row.answer, "status": row.status}
+                    {
+                        "user": row.prompt,
+                        "assistant": row.answer,
+                        "status": row.status,
+                        "instructions": [
+                            x.text for x in row.instructions if x.status == "accepted"
+                        ],
+                    }
                     for row in turns
                     if row.position < current.position
                 ]
@@ -275,6 +394,7 @@ class Turn:
                     self.emit,
                     runtime_path=get_settings().runtime_path,
                     tool_timeout=900,
+                    instructions=self.instructions,
                 )
             )
             watch = asyncio.create_task(self.watch())
@@ -300,6 +420,8 @@ class Turn:
         except Exception:
             status, error = "failed", "Agent 运行失败或授权已失效，请检查连接后继续"
         finally:
+            self.instructions.close()
             await self.flush()
             async with SessionLocal() as db:
-                await storage.finish_turn(db, self.key, status, error)
+                outcome = await storage.finish_turn(db, self.key, status, error)
+        return outcome

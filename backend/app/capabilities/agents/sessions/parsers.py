@@ -6,6 +6,8 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
+from app.capabilities.agents.activity import positive_int, question_answers, tool_details
+
 from .attachments import reference
 from .contracts import Entry, SessionInfo
 
@@ -62,7 +64,45 @@ def update(info, entry):
     return entry
 
 
+def native_id(value):
+    return value if isinstance(value, str) and value else None
+
+
+def answer_details(value):
+    answers = question_answers(value)
+    return {"details": {"kind": "question", "answers": answers}} if answers else {}
+
+
+def duration_entry(key, ordinal, at, turn_id, duration):
+    duration = positive_int(duration)
+    return (
+        [
+            Entry(
+                key,
+                ordinal,
+                "assistant",
+                "duration",
+                "",
+                at,
+                presentation={
+                    "turn_id": turn_id,
+                    "details": {"kind": "duration", "duration_ms": duration},
+                },
+            )
+        ]
+        if duration
+        else []
+    )
+
+
 def blocks(content, *, key, ordinal, role, at, parent=None):
+    result = content_blocks(content, key=key, ordinal=ordinal, role=role, at=at, parent=parent)
+    for entry in result:
+        entry.presentation["message_id"] = key
+    return result
+
+
+def content_blocks(content, *, key, ordinal, role, at, parent):
     if isinstance(content, str):
         return [Entry(key, ordinal, role, "message", content, at, parent)]
     result = []
@@ -70,11 +110,11 @@ def blocks(content, *, key, ordinal, role, at, parent=None):
         if not isinstance(block, dict):
             continue
         kind = block.get("type", "")
-        native_id = f"{key}:{index}"
+        block_id = f"{key}:{index}"
         if kind in {"text", "input_text", "output_text", "thinking"}:
             result.append(
                 Entry(
-                    native_id,
+                    block_id,
                     ordinal + index,
                     role,
                     "thinking" if kind == "thinking" else "message",
@@ -86,33 +126,43 @@ def blocks(content, *, key, ordinal, role, at, parent=None):
         elif kind in {"tool_use", "toolCall"}:
             result.append(
                 Entry(
-                    native_id,
+                    block_id,
                     ordinal + index,
                     "assistant",
                     "tool_call",
                     json.dumps(block.get("input", block.get("arguments", {})), ensure_ascii=False),
                     at,
                     parent,
-                    block.get("name", ""),
+                    block.get("name") or "",
+                    presentation={
+                        "call_id": native_id(block.get("id")),
+                        "details": tool_details(
+                            block.get("name"), block.get("input", block.get("arguments"))
+                        ),
+                    },
                 )
             )
         elif kind == "tool_result":
             result.append(
                 Entry(
-                    native_id,
+                    block_id,
                     ordinal + index,
                     "tool",
                     "tool_result",
                     text(block.get("content")),
                     at,
                     parent,
-                    str(block.get("tool_use_id", "")),
+                    presentation={
+                        "call_id": native_id(block.get("tool_use_id")),
+                        "status": "failed" if block.get("is_error") is True else None,
+                        **answer_details(block.get("content")),
+                    },
                 )
             )
         elif kind in {"image", "image_url", "input_image", "file"}:
             result.append(
                 Entry(
-                    native_id,
+                    block_id,
                     ordinal + index,
                     role,
                     "message",
@@ -144,6 +194,17 @@ def codex(record, ordinal, info, _locator):
         return []
     if kind == "turn_context":
         info.model = payload.get("model", "")
+        info.turn_id = native_id(payload.get("turn_id")) or info.turn_id
+        return []
+    if kind == "event_msg":
+        event = payload.get("type")
+        if event in {"task_started", "turn_started"}:
+            info.turn_id = native_id(payload.get("turn_id"))
+        elif event in {"task_complete", "turn_completed", "turn_aborted"}:
+            turn_id, info.turn_id = native_id(payload.get("turn_id")) or info.turn_id, None
+            return duration_entry(
+                f"duration:{ordinal}", ordinal, at, turn_id, payload.get("duration_ms")
+            )
         return []
     if kind != "response_item":
         return []
@@ -166,15 +227,52 @@ def codex(record, ordinal, info, _locator):
                 "tool_call",
                 str(payload.get("arguments", payload.get("input", ""))),
                 at,
-                tool_name=payload.get("name", ""),
+                tool_name=payload.get("name") or "",
+                presentation={
+                    "call_id": native_id(payload.get("call_id")),
+                    "details": tool_details(
+                        payload.get("name"), payload.get("arguments", payload.get("input"))
+                    ),
+                },
+            )
+        ]
+    elif ptype == "web_search_call":
+        action = payload.get("action")
+        action = action if isinstance(action, dict) else {}
+        entries = [
+            Entry(
+                f"web:{key}",
+                ordinal,
+                "assistant",
+                "tool_call",
+                "",
+                at,
+                tool_name="web_search",
+                presentation={
+                    "details": tool_details("web_search", action),
+                    "status": "completed" if payload.get("status") == "completed" else None,
+                },
             )
         ]
     elif ptype in {"function_call_output", "custom_tool_call_output"}:
         entries = [
-            Entry(f"result:{key}", ordinal, "tool", "tool_result", text(payload.get("output")), at)
+            Entry(
+                f"result:{key}",
+                ordinal,
+                "tool",
+                "tool_result",
+                text(payload.get("output")),
+                at,
+                presentation={
+                    "call_id": native_id(payload.get("call_id")),
+                    **answer_details(payload.get("output")),
+                },
+            )
         ]
     else:
         entries = []
+    for entry in entries:
+        entry.presentation["turn_id"] = native_id(payload.get("turn_id")) or info.turn_id
     return [update(info, entry) for entry in entries]
 
 
@@ -206,6 +304,16 @@ def claude(record, ordinal, info, locator):
         at=timestamp(record.get("timestamp")),
         parent=record.get("parentUuid"),
     )
+    tool_result = record.get("toolUseResult")
+    results = [entry for entry in entries if entry.kind == "tool_result"]
+    if len(results) == 1 and isinstance(tool_result, dict):
+        details = answer_details(tool_result).get("details")
+        duration = positive_int(tool_result.get("durationMs"))
+        if details or duration:
+            results[0].presentation["details"] = {
+                **(details or results[0].presentation.get("details") or {"kind": "duration"}),
+                "duration_ms": duration,
+            }
     return [update(info, entry) for entry in entries]
 
 
@@ -249,7 +357,22 @@ def pi(record, ordinal, info, _locator):
                     text(message.get("content", message.get("output", ""))),
                     at,
                     parent,
-                    message.get("toolName", ""),
+                    message.get("toolName") or "",
+                    presentation={
+                        "call_id": native_id(message.get("toolCallId")),
+                        "status": "failed" if message.get("isError") is True else None,
+                        **(
+                            answer_details(message.get("details"))
+                            if role == "toolResult"
+                            else {
+                                "details": tool_details(
+                                    "bash",
+                                    {"command": message.get("command")},
+                                    duration=message.get("durationMs"),
+                                )
+                            }
+                        ),
+                    },
                 ),
             )
         ]
@@ -268,6 +391,21 @@ def pi(record, ordinal, info, _locator):
         at,
         parent,
         next((e.tool_name for e in entries if e.tool_name), ""),
+        attachments=[attachment for entry in entries for attachment in entry.attachments],
+        presentation={
+            "message_id": key,
+            "blocks": [
+                {
+                    "kind": e.kind,
+                    "text": e.text,
+                    "tool_name": e.tool_name,
+                    "call_id": e.presentation.get("call_id"),
+                    "status": e.presentation.get("status"),
+                    "details": e.presentation.get("details"),
+                }
+                for e in entries
+            ],
+        },
     )
     return [update(info, combined)]
 
@@ -287,6 +425,11 @@ def dsh(record, ordinal, info, _locator):
     if kind in {"request/context", "model/selection"}:
         info.model = data.get("model") or info.model
     key = str(record.get("seq", ordinal))
+    if kind == "turn/start":
+        info.turn_id = native_id(data.get("turnId") or data.get("turn_id"))
+    turn_id = native_id(data.get("turnId") or data.get("turn_id")) or info.turn_id
+    if kind == "turn/end":
+        info.turn_id = None
     reason = data.get("reason")
     if kind == "turn/end" and isinstance(reason, dict) and reason.get("kind") == "error":
         failure = reason.get("error")
@@ -305,9 +448,12 @@ def dsh(record, ordinal, info, _locator):
                     "error",
                     ": ".join(filter(None, [code, message])) or "原端执行失败",
                     at,
+                    presentation={"turn_id": turn_id},
                 ),
             )
         ]
+    if kind == "turn/end":
+        return duration_entry(f"duration:{key}", ordinal, at, turn_id, data.get("durationMs"))
     if kind == "tool/call":
         return [
             update(
@@ -319,7 +465,12 @@ def dsh(record, ordinal, info, _locator):
                     "tool_call",
                     json.dumps(data.get("arguments", {}), ensure_ascii=False),
                     at,
-                    tool_name=data.get("name", ""),
+                    tool_name=data.get("name") or "",
+                    presentation={
+                        "call_id": native_id(data.get("callId") or data.get("call_id")),
+                        "turn_id": turn_id,
+                        "details": tool_details(data.get("name"), data.get("arguments")),
+                    },
                 ),
             )
         ]
@@ -331,7 +482,24 @@ def dsh(record, ordinal, info, _locator):
     )
     role = kind.split("/")[0]
     if role == "tool":
-        entries = [Entry(key, ordinal, role, "tool_result", text(content), at)]
+        entries = [
+            Entry(
+                key,
+                ordinal,
+                role,
+                "tool_result",
+                text(content),
+                at,
+                presentation={
+                    "call_id": native_id(data.get("callId") or data.get("call_id")),
+                    "turn_id": turn_id,
+                    "status": "failed" if data.get("isError") is True else None,
+                    **answer_details(data.get("result", content)),
+                },
+            )
+        ]
     else:
         entries = blocks(content, key=key, ordinal=ordinal, role=role, at=at)
+    for entry in entries:
+        entry.presentation["turn_id"] = turn_id
     return [update(info, entry) for entry in entries]

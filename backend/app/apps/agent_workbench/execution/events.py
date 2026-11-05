@@ -9,7 +9,7 @@ from ..events import valid_auth
 from .storage import get_chat, latest_turn_version
 
 
-async def stream(request, principal, chat_id):
+async def stream(request, principal, chat_id, ready=None):
     previous = None
     owner = principal.user_id
     while not await request.is_disconnected():
@@ -18,6 +18,8 @@ async def stream(request, principal, chat_id):
                 break
             await get_chat(db, owner, chat_id)
             version = await latest_turn_version(db, owner, chat_id)
+        if ready:
+            version = (version, ready(owner, chat_id))
         if version != previous:
             previous = version
             yield f"event: change\ndata: {json.dumps(version)}\n\n"

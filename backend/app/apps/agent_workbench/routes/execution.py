@@ -11,7 +11,7 @@ from app.runtime.config import get_cloud_settings
 from app.runtime.operation_receipts import OperationError
 from app.runtime.website import require_local_browser
 
-from ..execution import events, projects, storage
+from ..execution import events, projects, source_preview, storage
 from ..execution.schemas import (
     ApprovalDecision,
     ChatCreate,
@@ -19,8 +19,11 @@ from ..execution.schemas import (
     ChatOut,
     DirectoryListing,
     ExecutionCatalog,
+    InstructionCreate,
+    InstructionOut,
     ProjectChoice,
     ProjectDirectory,
+    SourcePreview,
     TurnCreate,
     TurnOut,
 )
@@ -80,8 +83,10 @@ async def create_chat(request: Request, body: ChatCreate, db: SessionDep, princi
 
 
 @router.get("/chats/{chat_id}", response_model=ChatDetail)
-async def detail(chat_id: str, db: SessionDep, principal: StudioAuth):
-    return await storage.detail(db, principal.user_id, chat_id)
+async def detail(request: Request, chat_id: str, db: SessionDep, principal: StudioAuth):
+    return await storage.detail(
+        db, principal.user_id, chat_id, request.app.state.workbench_runs.steerable
+    )
 
 
 @router.post("/chats/{chat_id}/turns", response_model=TurnOut, status_code=202)
@@ -94,11 +99,57 @@ async def send_turn(
 ):
     await require_unlocked(db, principal, local=local(request))
     chat = await storage.get_chat(db, principal.user_id, chat_id)
-    await require_agent(chat.agent_id)
+    if body.mode == "immediate":
+        await require_agent(chat.agent_id)
     turn, created = await storage.create_turn(db, principal, chat_id, body, local=local(request))
-    if created:
-        request.app.state.workbench_runs.start(principal, local(request), chat_id, turn.id)
+    runs = request.app.state.workbench_runs
+    if turn.status == "queued":
+        await runs.advance(principal.user_id, chat_id)
+    elif created:
+        runs.start(principal, local(request), chat_id, turn.id)
     return turn
+
+
+@router.delete("/chats/{chat_id}/queue/{turn_id}", status_code=204)
+async def remove_queued(
+    request: Request, chat_id: str, turn_id: str, db: SessionDep, principal: StudioAuth
+):
+    await storage.change_queue(db, principal, chat_id, local=local(request), remove_id=turn_id)
+    await request.app.state.workbench_runs.advance(principal.user_id, chat_id)
+
+
+@router.post("/chats/{chat_id}/queue/resume", status_code=204)
+async def resume_queue(request: Request, chat_id: str, db: SessionDep, principal: StudioAuth):
+    await storage.change_queue(db, principal, chat_id, local=local(request))
+    await request.app.state.workbench_runs.advance(principal.user_id, chat_id)
+
+
+@router.post("/chats/{chat_id}/turns/{turn_id}/instructions", response_model=InstructionOut)
+async def insert_instruction(
+    request: Request,
+    chat_id: str,
+    turn_id: str,
+    body: InstructionCreate,
+    db: SessionDep,
+    principal: StudioAuth,
+):
+    return await request.app.state.workbench_runs.steer(
+        db, principal, local(request), chat_id, turn_id, body
+    )
+
+
+@router.get("/chats/{chat_id}/turns/{turn_id}/source", response_model=SourcePreview)
+async def preview_source(
+    request: Request,
+    response: Response,
+    chat_id: str,
+    turn_id: str,
+    call_id: Annotated[str, Query(min_length=1, max_length=255)],
+    db: SessionDep,
+    principal: StudioAuth,
+):
+    response.headers["Cache-Control"] = "no-store"
+    return await source_preview.read(db, principal, chat_id, turn_id, call_id, local=local(request))
 
 
 @router.post("/chats/{chat_id}/turns/{turn_id}/stop", status_code=204)
@@ -127,7 +178,7 @@ async def stream(request: Request, chat_id: str, db: SessionDep, principal: Stud
     await storage.get_chat(db, principal.user_id, chat_id)
     await db.rollback()
     return StreamingResponse(
-        events.stream(request, principal, chat_id),
+        events.stream(request, principal, chat_id, request.app.state.workbench_runs.ready_turn),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
     )

@@ -91,6 +91,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
         await reconcile_snapshot_imports(session, AssetStorage(settings))
     async with SessionLocal() as session:
         await interrupt_workbench_runs(session)
+    lifespan_app.state.workbench_runs = WorkbenchRuns()
     await recover_admissions()
     await recover_interrupted_visual_assistant_runs()
     await recover_interrupted_model_test_runs()

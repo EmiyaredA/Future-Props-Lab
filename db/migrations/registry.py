@@ -124,6 +124,7 @@ from db.migrations.versions import (
     r0120_cloud_control,
     r0121_cloud_desktop_sessions,
     r0122_workbench_projects,
+    r0123_workbench_turns,
 )
 
 
@@ -574,5 +575,7 @@ MIGRATIONS += (
 )
 
 MIGRATIONS += (Migration(r0122_workbench_projects.MIGRATION_ID, r0122_workbench_projects.SQL),)
+
+MIGRATIONS += (Migration(r0123_workbench_turns.MIGRATION_ID, r0123_workbench_turns.SQL),)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

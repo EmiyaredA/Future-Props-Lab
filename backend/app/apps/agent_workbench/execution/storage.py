@@ -4,18 +4,29 @@ import asyncio
 import time
 
 from fastapi import HTTPException
-from sqlalchemy import func, select, text
+from sqlalchemy import func, select, text, update
 
+from app.capabilities.agents.activity import positive_int, tool_details
 from app.capabilities.agents.cli.catalog import DEFINITIONS, inspect_connection
 from app.console.cloud_control.access import allowed, require_unlocked
 from app.runtime.config import get_cloud_settings
 from app.runtime.ids import new_id
 
-from . import projects
+from . import project_files, projects
 from .models import WorkbenchChat, WorkbenchTurn
-from .schemas import AgentChoice, ChatDetail, ChatOut, ExecutionCatalog, ProjectChoice, TurnOut
+from .schemas import (
+    AgentChoice,
+    ChatDetail,
+    ChatOut,
+    ExecutionCatalog,
+    InstructionOut,
+    ProjectChoice,
+    QueuedTurn,
+    TurnOut,
+)
 
 ACTIVE = ("running", "waiting_approval", "cancelling")
+MAX_QUEUE = 20
 
 
 async def begin(db):
@@ -92,11 +103,25 @@ async def list_chats(db, owner):
     ]
 
 
+def chat_turns(owner, chat_id):
+    return select(WorkbenchTurn).where(
+        WorkbenchTurn.owner_user_id == owner, WorkbenchTurn.chat_id == chat_id
+    )
+
+
+def queued_turns(owner, chat_id):
+    return (
+        chat_turns(owner, chat_id)
+        .where(WorkbenchTurn.status == "queued")
+        .order_by(WorkbenchTurn.position)
+    )
+
+
 async def recent_turns(db, owner, chat_id, limit=50) -> list[TurnOut]:
     rows = (
         await db.scalars(
-            select(WorkbenchTurn)
-            .where(WorkbenchTurn.owner_user_id == owner, WorkbenchTurn.chat_id == chat_id)
+            chat_turns(owner, chat_id)
+            .where(WorkbenchTurn.status.not_in(("queued", "removed")))
             .order_by(WorkbenchTurn.position.desc())
             .limit(limit)
         )
@@ -105,25 +130,36 @@ async def recent_turns(db, owner, chat_id, limit=50) -> list[TurnOut]:
 
 
 async def latest_turn_version(db, owner, chat_id):
-    row = (
+    chat = await get_chat(db, owner, chat_id)
+    versions = (
         await db.execute(
-            select(WorkbenchTurn.id, WorkbenchTurn.revision)
-            .where(WorkbenchTurn.owner_user_id == owner, WorkbenchTurn.chat_id == chat_id)
+            chat_turns(owner, chat_id)
+            .with_only_columns(WorkbenchTurn.id, WorkbenchTurn.revision)
+            .where(WorkbenchTurn.status != "removed")
             .order_by(WorkbenchTurn.position.desc())
-            .limit(1)
+            .limit(50 + MAX_QUEUE)
         )
-    ).one_or_none()
-    return (row.id, row.revision) if row else ()
+    ).all()
+    return (chat.queue_paused, tuple(tuple(row) for row in versions))
 
 
-async def detail(db, owner, chat_id):
+async def detail(db, owner, chat_id, ready=None):
     chat = await get_chat(db, owner, chat_id)
     labels = await projects.labels(db, owner, {chat.project_id})
+    turns = await recent_turns(db, owner, chat_id)
+    queue = (await db.scalars(queued_turns(owner, chat_id))).all()
+    steerable = next(
+        (turn.id for turn in turns if turn.status == "running" and ready and ready(turn.id)),
+        None,
+    )
     return ChatDetail(
         **ChatOut.model_validate(chat)
         .model_copy(update={"project_label": labels.get(chat.project_id)})
         .model_dump(),
-        turns=await recent_turns(db, owner, chat_id),
+        turns=turns,
+        queue=[QueuedTurn.model_validate(row) for row in queue],
+        queue_paused=bool(queue and chat.queue_paused),
+        steerable_turn_id=steerable,
     )
 
 
@@ -202,8 +238,14 @@ async def create_turn(db, principal, chat_id, body, *, local):
             WorkbenchTurn.status.in_(ACTIVE),
         )
     )
-    if active:
-        raise HTTPException(409, "请等待当前消息完成")
+    queued = (await db.scalars(queued_turns(owner, chat_id))).all()
+    if body.mode == "immediate" and (active or queued):
+        raise HTTPException(409, "当前会话有正在运行或等待的消息")
+    if len(queued) >= MAX_QUEUE:
+        raise HTTPException(409, "待执行队列已满")
+    chat = await get_chat(db, owner, chat_id)
+    if not queued:
+        chat.queue_paused = False
     position = await db.scalar(
         select(func.max(WorkbenchTurn.position)).where(
             WorkbenchTurn.chat_id == chat_id,
@@ -218,13 +260,91 @@ async def create_turn(db, principal, chat_id, body, *, local):
         position=(position or 0) + 1,
         prompt=body.text,
         answer="",
-        status="running",
+        status="queued" if body.mode == "queue" else "running",
+        started_at=int(time.time()) if body.mode == "immediate" else None,
+        queued_session_id=principal.session_id if body.mode == "queue" else None,
+        queued_local=local,
         approvals=[],
         revision=1,
     )
     db.add(turn)
     await db.commit()
     return TurnOut.model_validate(turn), True
+
+
+async def change_queue(db, principal, chat_id, *, local, remove_id=None):
+    owner = principal.user_id
+    project, _ = await checked_project(db, principal, chat_id=chat_id, local=local)
+    await check_binding(db, principal, project, local=local, chat_id=chat_id, write=True)
+    chat = await get_chat(db, owner, chat_id)
+    if remove_id:
+        row = await get_turn(db, owner, chat_id, remove_id)
+        if row.status == "removed":
+            await db.rollback()
+            return
+        if row.status != "queued":
+            raise HTTPException(409, "此消息已开始执行")
+        row.status = "removed"
+        row.queued_session_id = None
+        row.revision += 1
+    else:
+        active = await db.scalar(chat_turns(owner, chat_id).where(WorkbenchTurn.status.in_(ACTIVE)))
+        if active:
+            raise HTTPException(409, "请等待当前轮结束后继续队列")
+        rows = (await db.scalars(queued_turns(owner, chat_id))).all()
+        for row in rows:
+            row.queued_session_id, row.queued_local = principal.session_id, local
+        chat.queue_paused = False
+    await db.commit()
+
+
+async def next_queued(db, owner, chat_id):
+    chat = await get_chat(db, owner, chat_id)
+    active = await db.scalar(chat_turns(owner, chat_id).where(WorkbenchTurn.status.in_(ACTIVE)))
+    if not chat.queue_paused and not active:
+        return await db.scalar(queued_turns(owner, chat_id).limit(1))
+    return None
+
+
+async def claim_queue(db, principal, chat_id, turn_id, *, local):
+    owner = principal.user_id
+    project, _ = await checked_project(db, principal, chat_id=chat_id, local=local)
+    await check_binding(db, principal, project, local=local, chat_id=chat_id, write=True)
+    chat = await get_chat(db, owner, chat_id)
+    head = await db.scalar(queued_turns(owner, chat_id).limit(1))
+    active = await db.scalar(chat_turns(owner, chat_id).where(WorkbenchTurn.status.in_(ACTIVE)))
+    if (
+        chat.queue_paused
+        or active
+        or not head
+        or head.id != turn_id
+        or head.queued_session_id != principal.session_id
+        or head.queued_local != local
+    ):
+        await db.rollback()
+        return False
+    head.status = "running"
+    head.started_at = int(time.time())
+    head.queued_session_id = None
+    head.revision += 1
+    await db.commit()
+    return True
+
+
+async def pause_queue(db, owner, chat_id, *, head_id, session_id, local):
+    await begin(db)
+    head = await db.scalar(queued_turns(owner, chat_id).limit(1))
+    if head and (head.id, head.queued_session_id, head.queued_local) == (
+        head_id,
+        session_id,
+        local,
+    ):
+        chat = await get_chat(db, owner, chat_id)
+        chat.queue_paused = True
+        await db.commit()
+        return True
+    await db.rollback()
+    return False
 
 
 async def get_turn(db, owner, chat_id, turn_id):
@@ -285,7 +405,15 @@ async def propose_approval(db, key, approval):
         raise ValueError("运行无法接受更多审批")
     row.status = "waiting_approval"
     row.revision += 1
-    row.approvals = [*row.approvals, {**approval, "status": "pending"}]
+    row.approvals = [
+        *row.approvals,
+        {
+            **approval,
+            "status": "pending",
+            "offset": len(row.answer),
+            "sequence": next_activity_sequence(row),
+        },
+    ]
     await db.commit()
 
 
@@ -323,6 +451,7 @@ async def request_cancellation(db, key, *, running_task):
     if row.status not in ACTIVE:
         await db.rollback()
         return False
+    (await get_chat(db, *key[:2])).queue_paused = True
     if not running_task:
         end_turn(row, "interrupted", "运行已中断，请核对操作结果")
     elif row.status != "cancelling":
@@ -338,7 +467,12 @@ async def finish_turn(db, key, status, error=None, *, only_cancelling=False):
     eligible = ("cancelling",) if only_cancelling else ACTIVE
     if row.status in eligible:
         end_turn(row, "cancelled" if row.status == "cancelling" else status, error)
+        if row.status != "completed":
+            (await get_chat(db, *key[:2])).queue_paused = True
         await db.commit()
+        return row.status
+    await db.rollback()
+    return None
 
 
 def end_turn(turn, status, error=None):
@@ -356,6 +490,14 @@ def end_turn(turn, status, error=None):
         }
         for approval in turn.approvals
     ]
+    turn.instructions = [
+        {**item, "status": "unknown"} if item["status"] == "sending" else item
+        for item in turn.instructions
+    ]
+    turn.activity = [
+        {**item, "status": "unknown"} if item["status"] == "running" else item
+        for item in turn.activity
+    ]
     turn.revision += 1
 
 
@@ -363,4 +505,135 @@ async def interrupt_all(db):
     rows = (await db.scalars(select(WorkbenchTurn).where(WorkbenchTurn.status.in_(ACTIVE)))).all()
     for row in rows:
         end_turn(row, "interrupted", "服务已重启，请核对结果后继续")
+    await db.execute(
+        update(WorkbenchChat)
+        .where(
+            WorkbenchChat.id.in_(
+                select(WorkbenchTurn.chat_id).where(WorkbenchTurn.status == "queued")
+            )
+        )
+        .values(queue_paused=True)
+    )
+    await db.commit()
+
+
+async def reserve_instruction(db, principal, key, body, *, local, ready):
+    project, _ = await checked_project(db, principal, chat_id=key[1], local=local)
+    await check_binding(db, principal, project, local=local, chat_id=key[1], write=True)
+    row = await get_turn(db, *key)
+    for item in row.instructions:
+        if item["request_id"] == body.request_id:
+            if item["text"] != body.text:
+                raise HTTPException(409, "请求标识已用于其他指令")
+            await db.rollback()
+            return InstructionOut.model_validate(item), False
+    if row.status != "running" or not ready():
+        raise HTTPException(409, "当前轮无法接收插入指令")
+    if len(row.instructions) >= 16 or any(x["status"] == "sending" for x in row.instructions):
+        raise HTTPException(409, "请等待正在发送的指令，或将新消息加入队列")
+    item = InstructionOut(
+        request_id=body.request_id,
+        text=body.text,
+        status="sending",
+        offset=len(row.answer),
+        sequence=next_activity_sequence(row),
+    )
+    row.instructions = [*row.instructions, item.model_dump()]
+    row.revision += 1
+    await db.commit()
+    return item, True
+
+
+async def settle_instruction(db, key, identity, status):
+    await begin(db)
+    row = await get_turn(db, *key)
+    item = next(entry for entry in row.instructions if entry["request_id"] == identity)
+    if item["status"] in ("sending", "unknown") and item["status"] != status:
+        item = {**item, "status": status}
+        row.instructions = [
+            item if entry["request_id"] == identity else entry for entry in row.instructions
+        ]
+        row.revision += 1
+        await db.commit()
+    else:
+        await db.rollback()
+    return InstructionOut.model_validate(item)
+
+
+def managed_activity_details(name, payload):
+    if name not in {"read_file", "write_file", "run_command"}:
+        return None
+    details = tool_details(name, payload)
+    target = details.get("file") if details else None
+    if target:
+        try:
+            project_files.path_parts(target["path"])
+        except ValueError:
+            return None
+    return details
+
+
+def next_activity_sequence(turn):
+    return len(turn.activity) + len(turn.instructions) + len(turn.approvals)
+
+
+async def record_activity(db, key, kind, payload):
+    await begin(db)
+    row = await get_turn(db, *key)
+    if row.status not in ("running", "waiting_approval"):
+        return
+    call_id = str(payload["tool_call_id"])[:255]
+    activities = list(row.activity)
+    index = next((i for i, item in enumerate(activities) if item["call_id"] == call_id), None)
+    if kind == "tool_call" and index is None and len(activities) < 100:
+        name = str(payload["tool_name"])[:120]
+        activities.append(
+            {
+                "call_id": call_id,
+                "name": name,
+                "details": managed_activity_details(name, payload.get("arguments")),
+                "opened_at_ms": int(time.time() * 1000),
+                "sequence": next_activity_sequence(row),
+                "status": "running",
+                "offset": len(row.answer),
+            }
+        )
+    elif kind == "tool_result" and index is not None:
+        result = payload.get("result")
+        failed = payload.get("status") != "completed" or (
+            isinstance(result, dict)
+            and ("error" in result or result.get("status") == "rejected" or result.get("exit_code"))
+        )
+        previous = activities[index]
+        details = previous.get("details") or {}
+        target = details.get("file") or {}
+        path = target.get("path")
+        source_available = (
+            not failed
+            and previous["name"] in {"read_file", "write_file"}
+            and isinstance(path, str)
+            and isinstance(result, dict)
+            and result.get("path") == path
+            and (
+                isinstance(result.get("content"), str)
+                if previous["name"] == "read_file"
+                else isinstance(result.get("sha256"), str)
+            )
+        )
+        started = previous.get("opened_at_ms")
+        elapsed = (
+            positive_int(int(time.time() * 1000) - started) if isinstance(started, int) else None
+        )
+        activities[index] = {
+            **previous,
+            "status": "failed" if failed else "completed",
+            "source_available": source_available,
+            "details": {**(details or {"kind": "duration"}), "duration_ms": elapsed}
+            if elapsed
+            else previous.get("details"),
+        }
+    else:
+        return
+    row.activity = activities
+    row.revision += 1
     await db.commit()

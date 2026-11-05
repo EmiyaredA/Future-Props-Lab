@@ -1,139 +1,20 @@
 import { LoadingScene } from "@shared/ui/LoadingScene";
 import { LoadingState } from "@shared/ui/LoadingState";
-import "./conversation.css";
 import { useLayoutEffect, useRef, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import rehypeHighlight from "rehype-highlight";
-import {
-  ArrowDown,
-  ChevronDown,
-  FileCode2,
-  Send,
-  UserRound,
-} from "lucide-react";
+import { ArrowDown, FileCode2 } from "lucide-react";
 import { AgentLogo } from "@features/code-agents";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import {
   getHistory,
-  displayTime,
   agentName,
   type Conversation,
   type HistoryEntry,
+  type HistoryCursor,
 } from "./api";
+import { HistoryTranscript } from "./HistoryTranscript";
 import { workbenchKeys } from "./queryKeys";
-
-export function WorkbenchMessage({
-  entry,
-  agent,
-  sessionId,
-}: {
-  entry: Pick<HistoryEntry, "text" | "kind" | "role" | "attachments"> &
-    Partial<Pick<HistoryEntry, "timestamp" | "tool_name">>;
-  agent: Conversation["agent_id"];
-  sessionId?: string;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const body = expanded ? entry.text : entry.text.slice(0, 24000);
-  const tool = ["tool_call", "tool_result", "thinking"].includes(entry.kind);
-  return (
-    <article className={`aw-message is-${entry.role}`}>
-      <div className="aw-message-avatar">
-        {entry.role === "user" ? (
-          <UserRound size={20} />
-        ) : (
-          <AgentLogo id={agent} size={22} />
-        )}
-      </div>
-      <div className="aw-message-content">
-        <div className="aw-message-byline">
-          <strong>
-            {entry.kind === "error"
-              ? "原端错误"
-              : entry.role === "user"
-                ? "我"
-                : entry.role === "tool"
-                  ? "工具结果"
-                  : entry.role === "system"
-                    ? "会话记录"
-                    : agentName(agent)}
-          </strong>
-          {entry.timestamp && <time>{displayTime(entry.timestamp)}</time>}
-        </div>
-        {tool ? (
-          <details className="aw-tool">
-            <summary>
-              <ChevronDown size={15} />
-              <FileCode2 size={16} />
-              <span>
-                {entry.tool_name ||
-                  (entry.kind === "thinking"
-                    ? "思考过程"
-                    : entry.kind === "tool_call"
-                      ? "工具调用"
-                      : "工具结果")}
-              </span>
-            </summary>
-            <pre>{body}</pre>
-          </details>
-        ) : (
-          <div className="aw-prose">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={[
-                [rehypeHighlight, { detect: false, ignoreMissing: true }],
-              ]}
-              skipHtml
-              components={{
-                img: () => <span className="aw-subtle">[图片引用]</span>,
-                a: ({ children, href }) =>
-                  /^https?:\/\//.test(href ?? "") ? (
-                    <a href={href} target="_blank" rel="noreferrer noopener">
-                      {children}
-                    </a>
-                  ) : (
-                    <span>{children}</span>
-                  ),
-              }}
-            >
-              {body}
-            </ReactMarkdown>
-          </div>
-        )}
-        {entry.text.length > 24000 && (
-          <button className="aw-link" onClick={() => setExpanded(!expanded)}>
-            {expanded
-              ? "收起长内容"
-              : `展开完整内容（${entry.text.length.toLocaleString()} 字符）`}
-          </button>
-        )}
-        {sessionId &&
-          entry.attachments.map((attachment) => {
-            const id = String(attachment.id ?? "");
-            const base = String(import.meta.env.VITE_API_BASE || "").replace(
-              /\/$/,
-              "",
-            );
-            return (
-              <a
-                className="aw-link"
-                key={id}
-                href={`${base}/v1/agent-workbench/sessions/${encodeURIComponent(sessionId)}/attachments/${encodeURIComponent(id)}`}
-              >
-                下载附件：{String(attachment.name ?? "文件")}
-              </a>
-            );
-          })}
-        {["compaction", "branch_summary"].includes(entry.kind) && (
-          <span className="aw-badge">
-            {entry.kind === "compaction" ? "上下文压缩" : "分支摘要"}
-          </span>
-        )}
-      </div>
-    </article>
-  );
-}
+import "./conversation.css";
 
 export function ConversationView({
   item,
@@ -148,13 +29,24 @@ export function ConversationView({
   const [atBottom, setAtBottom] = useState(true);
   const [hasNew, setHasNew] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
-  const olderHeight = useRef<number | null>(null);
+  const anchor = useRef<{
+    ids: string[];
+    offset: number;
+    height: number;
+  } | null>(null);
   const history = useInfiniteQuery({
     queryKey: workbenchKeys.history(owner, item.id, branch),
     queryFn: ({ pageParam, signal }) =>
       getHistory(item.id, pageParam, branch, signal),
-    initialPageParam: undefined as number | undefined,
-    getNextPageParam: (page) => page.next_cursor ?? undefined,
+    initialPageParam: undefined as HistoryCursor | undefined,
+    getNextPageParam: (page) =>
+      page.next_cursor == null
+        ? undefined
+        : {
+            ordinal: page.next_cursor,
+            nativeId: page.next_cursor_native_id ?? undefined,
+            branch: page.selected_branch ?? undefined,
+          },
     refetchOnWindowFocus: !paused,
   });
   const pages = history.data?.pages ?? [];
@@ -164,15 +56,31 @@ export function ConversationView({
     .forEach((page) =>
       page.items.forEach((entry) => unique.set(entry.id, entry)),
     );
-  const messages = [...unique.values()].sort((a, b) => a.ordinal - b.ordinal);
+  const messages = [...unique.values()].sort(
+    (a, b) =>
+      a.ordinal - b.ordinal ||
+      (a.native_id < b.native_id ? -1 : a.native_id > b.native_id ? 1 : 0),
+  );
   const version = history.dataUpdatedAt;
   const seenVersion = useRef(0);
   useLayoutEffect(() => {
     const node = scroller.current;
     if (!node) return;
-    if (olderHeight.current !== null) {
-      node.scrollTop += node.scrollHeight - olderHeight.current;
-      olderHeight.current = null;
+    if (anchor.current) {
+      const { ids, offset, height } = anchor.current;
+      const entry = [
+        ...node.querySelectorAll<HTMLElement>("[data-entry-id]"),
+      ].find(
+        (element) =>
+          element.dataset.entryId?.split(" ").some((id) => ids.includes(id)) &&
+          element.getClientRects().length,
+      );
+      node.scrollTop += entry
+        ? entry.getBoundingClientRect().top -
+          node.getBoundingClientRect().top -
+          offset
+        : node.scrollHeight - height;
+      anchor.current = null;
     } else if (atBottom) {
       node.scrollTop = node.scrollHeight;
     } else if (version && seenVersion.current !== version) setHasNew(true);
@@ -199,6 +107,7 @@ export function ConversationView({
             }))}
             onChange={(id) => {
               setBranch(id);
+              setHasNew(false);
               setAtBottom(true);
             }}
           />
@@ -223,8 +132,23 @@ export function ConversationView({
             className="aw-load"
             disabled={history.isFetchingNextPage}
             onClick={() => {
-              olderHeight.current = scroller.current?.scrollHeight ?? null;
-              void history.fetchNextPage();
+              const node = scroller.current;
+              if (node) {
+                const top = node.getBoundingClientRect().top;
+                const entry = [
+                  ...node.querySelectorAll<HTMLElement>("[data-entry-id]"),
+                ].find(
+                  (element) => element.getBoundingClientRect().bottom > top,
+                );
+                anchor.current = {
+                  ids: entry?.dataset.entryId?.split(" ") ?? [],
+                  offset: entry ? entry.getBoundingClientRect().top - top : 0,
+                  height: node.scrollHeight,
+                };
+              }
+              void history.fetchNextPage().then((result) => {
+                if (result.isFetchNextPageError) anchor.current = null;
+              });
             }}
           >
             {history.isFetchingNextPage ? (
@@ -255,14 +179,11 @@ export function ConversationView({
             <p>同步到完整记录后会自动显示。部分工具仅在一轮结束后保存内容。</p>
           </div>
         )}
-        {messages.map((entry) => (
-          <WorkbenchMessage
-            key={entry.id}
-            entry={entry}
-            agent={item.agent_id}
-            sessionId={item.id}
-          />
-        ))}
+        <HistoryTranscript
+          key={branch ?? "latest"}
+          messages={messages}
+          item={item}
+        />
       </div>
       {hasNew && (
         <button className="aw-new" onClick={toBottom}>
@@ -270,28 +191,10 @@ export function ConversationView({
           有新内容
         </button>
       )}
-      <footer className="aw-composer">
-        <textarea
-          aria-label="继续对话（待接入）"
-          disabled
-          placeholder="当前支持查看与同步，继续对话待接入"
-          rows={2}
-        />
-        <div>
-          <span>
-            <AgentLogo id={item.agent_id} size={16} />
-            {item.native_model || agentName(item.agent_id)}
-            <span className="aw-badge">只读</span>
-          </span>
-          <button disabled className="aw-send" aria-label="发送（待接入）">
-            <Send size={18} />
-          </button>
-        </div>
-        <p>
-          {paused
-            ? "已暂停当前视图跟随，原 Agent 继续运行。"
-            : "新增内容自动同步。原会话的运行与权限由原端管理。"}
-        </p>
+      <footer className="aw-readonly">
+        <AgentLogo id={item.agent_id} size={15} />
+        <span>{item.native_model || agentName(item.agent_id)}</span>
+        <span>· 只读 · {paused ? "已暂停当前视图跟随" : "自动同步"}</span>
       </footer>
     </>
   );
