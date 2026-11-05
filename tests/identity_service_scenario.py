@@ -744,6 +744,7 @@ async def scenario():
                 "registration_redemptions",
                 "identity_account_events",
                 "identity_model_audit_receipts",
+                "identity_visual_generation_approvals",
                 "identity_model_audit_intents",
                 "identity_integration_intents",
                 "identity_certification_audit_receipts",

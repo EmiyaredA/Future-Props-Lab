@@ -440,7 +440,10 @@ async def test_models_all_owned_runners_start_and_stop_with_independent_schema(c
     try:
         await asyncio.sleep(0.05)
         assert supervisor.is_healthy, supervisor.health
-        assert len(supervisor.runners) == 7
+        assert len(supervisor.runners) == 8
+        assert any(
+            runner.runner_name == "visual-assistant-model-expiry" for runner in supervisor.runners
+        )
     finally:
         await supervisor.stop()
     assert all(not status.running for status in supervisor.health)
