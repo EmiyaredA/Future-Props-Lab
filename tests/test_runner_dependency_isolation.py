@@ -26,9 +26,10 @@ async def test_workbench_queue_reads_use_the_factory_of_the_owning_runner(monkey
         await asyncio.sleep(0)
         return None
 
-    monkeypatch.setattr(runner.storage, "next_queued", next_queued)
-    first = runner.WorkbenchRuns(sessions_for("first"), SimpleNamespace())
-    second = runner.WorkbenchRuns(sessions_for("second"), SimpleNamespace())
+    monkeypatch.setattr(runner.transcripts, "next_queued", next_queued)
+    settings = SimpleNamespace()
+    first = runner.WorkbenchRuns(sessions_for("first"), settings, load_settings=lambda: settings)
+    second = runner.WorkbenchRuns(sessions_for("second"), settings, load_settings=lambda: settings)
     await asyncio.gather(first.advance("alice", "one"), second.advance("bob", "two"))
     assert sorted(reads) == [("first", "alice", "one"), ("second", "bob", "two")]
     assert sorted(closed) == ["first", "second"]

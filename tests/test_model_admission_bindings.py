@@ -228,6 +228,8 @@ async def test_realtime_admission_is_explicit_and_releases_after_handshake_failu
     socket = SimpleNamespace(app=request.app)
     socket.headers = {"origin": "http://models", "host": "models"}
     socket.app.state.database = SimpleNamespace(sessions=lambda: None)
+    socket.app.state.settings = SimpleNamespace(cors_origin_list=())
+    socket.app.state.model_decrypt = lambda value: value
     closed = []
 
     async def close(**options):
@@ -245,6 +247,7 @@ async def test_realtime_admission_is_explicit_and_releases_after_handshake_failu
 
     async def run(_socket, **options):
         assert options["owner_user_id"] == "alpha"
+        assert options["decrypt"] is socket.app.state.model_decrypt
         raise RuntimeError("provider failed")
 
     socket.accept, socket.close, socket.send_json = accept, close, send_json
