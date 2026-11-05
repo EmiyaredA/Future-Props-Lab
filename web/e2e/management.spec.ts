@@ -135,3 +135,70 @@ test("public management hides host mutations and logs", async ({ page }) => {
   );
   expect(actions).toHaveLength(0);
 });
+
+test("local management can start, cancel and retry a model installation", async ({
+  page,
+}) => {
+  await mock(page, true);
+  let state = {
+    id: "qwen3-tts-0.6b-base",
+    label: "Qwen3-TTS 0.6B Base",
+    repository: "mlx-community/Qwen3-TTS-12Hz-0.6B-Base-bf16",
+    license: "Apache-2.0",
+    model_revision: "fixed",
+    download_bytes: 2520000000,
+    required_disk_bytes: 7200000000,
+    compatible: true,
+    status: "not_installed",
+    enabled: false,
+    loaded: false,
+    busy: false,
+    progress: 0,
+    revision: 0,
+  };
+  const actions: string[] = [];
+  await page.route("**/v1/platform/demo-services", (route) =>
+    route.fulfill({ json: [] }),
+  );
+  await page.route("**/v1/model-providers", (route) =>
+    route.fulfill({
+      json: {
+        revision: 1,
+        suppliers: [],
+        providers: [],
+        default_model_ids: {},
+      },
+    }),
+  );
+  await page.route("**/v1/local-models", (route) =>
+    route.fulfill({ json: { can_manage: true, items: [state] } }),
+  );
+  await page.route("**/v1/platform/local-models/*/actions", async (route) => {
+    const body = route.request().postDataJSON();
+    expect(body.expected_revision).toBe(state.revision);
+    actions.push(body.action);
+    const status =
+      body.action === "cancel"
+        ? "cancelled"
+        : actions.length === 1
+          ? "installing"
+          : "installed";
+    state = {
+      ...state,
+      status,
+      enabled: status === "installed",
+      progress: status === "installed" ? 100 : status === "installing" ? 10 : 0,
+      revision: state.revision + 1,
+    };
+    await route.fulfill({ json: state });
+  });
+  await page.goto("/management/services");
+  const install = page.getByRole("button", { name: "下载安装", exact: true });
+  await expect(install).toBeVisible();
+  expect(actions).toEqual([]);
+  await install.click();
+  await page.getByRole("button", { name: "取消安装", exact: true }).click();
+  await page.getByRole("button", { name: "重试安装", exact: true }).click();
+  await expect(page.getByText("服务已启用", { exact: true })).toBeVisible();
+  expect(actions).toEqual(["install", "cancel", "install"]);
+});

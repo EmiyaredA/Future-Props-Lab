@@ -1,10 +1,9 @@
 import { expect, test } from "@playwright/test";
 
-test("local TTS is opt-in, supports cancellation and connects to speech testing", async ({
+test("an installed local TTS remains opt-in and connects to speech testing", async ({
   page,
 }) => {
-  let installs = 0;
-  let state = {
+  const state = {
     id: "qwen3-tts-0.6b-base",
     label: "Qwen3-TTS 0.6B Base",
     repository: "mlx-community/Qwen3-TTS-12Hz-0.6B-Base-bf16",
@@ -13,12 +12,12 @@ test("local TTS is opt-in, supports cancellation and connects to speech testing"
     download_bytes: 2520000000,
     required_disk_bytes: 7200000000,
     compatible: true,
-    status: "not_installed",
-    enabled: false,
+    status: "installed",
+    enabled: true,
     loaded: false,
     busy: false,
-    progress: 0,
-    revision: 0,
+    progress: 100,
+    revision: 3,
   };
   let catalog = {
     revision: 1,
@@ -27,32 +26,17 @@ test("local TTS is opt-in, supports cancellation and connects to speech testing"
     default_model_ids: {},
   };
   let tasks: object[] = [];
-  const calls: string[] = [];
+  const attachments: string[] = [];
   await page.route("**/v1/model-providers", (route) =>
     route.fulfill({ json: catalog }),
   );
   await page.route("**/v1/local-models", (route) =>
     route.fulfill({ json: { can_manage: true, items: [state] } }),
   );
-  await page.route("**/v1/platform/local-models/*/actions", async (route) => {
-    const body = route.request().postDataJSON();
-    calls.push(body.action);
-    expect(body.expected_revision).toBe(state.revision);
-    if (body.action === "install") {
-      installs += 1;
-      state = {
-        ...state,
-        status: installs === 1 ? "installing" : "installed",
-        progress: installs === 1 ? 10 : 100,
-        enabled: installs > 1,
-        revision: state.revision + 1,
-      };
-    } else
-      state = { ...state, status: "cancelled", revision: state.revision + 1 };
-    await route.fulfill({ json: state });
-  });
   await page.route("**/v1/local-models/attach", async (route) => {
-    expect(route.request().postDataJSON().expected_catalog_revision).toBe(1);
+    const body = route.request().postDataJSON();
+    attachments.push(body.model_id);
+    expect(body.expected_catalog_revision).toBe(1);
     catalog = {
       ...catalog,
       revision: 2,
@@ -144,21 +128,18 @@ test("local TTS is opt-in, supports cancellation and connects to speech testing"
   );
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/model-service");
-  expect(calls).toEqual([]);
   await page.getByRole("tab", { name: "本地模型", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: /Qwen3-TTS 0.6B/ }),
   ).toBeVisible();
-  expect(calls).toEqual([]);
-  await page.getByRole("button", { name: "下载安装", exact: true }).click();
-  await page.getByRole("button", { name: "取消安装", exact: true }).click();
-  await page.getByRole("button", { name: "重试安装", exact: true }).click();
+  expect(attachments).toEqual([]);
   await page
     .getByRole("button", { name: "添加到当前空间", exact: true })
     .click();
   await expect(
     page.getByText("已添加到当前空间；现有默认模型保持原设置。"),
   ).toBeVisible();
+  expect(attachments).toEqual([state.id]);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -168,6 +149,7 @@ test("local TTS is opt-in, supports cancellation and connects to speech testing"
   await expect(
     page.getByRole("tab", { name: "语音合成", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
+  await page.getByRole("button", { name: "参数与资源", exact: true }).click();
   await page
     .getByLabel("目标文字", { exact: true })
     .fill("这是一段本地语音测试。");
@@ -178,6 +160,7 @@ test("local TTS is opt-in, supports cancellation and connects to speech testing"
     buffer: Buffer.from("fixture"),
   });
   await page.getByRole("button", { name: "生成语音", exact: true }).click();
+  await page.getByRole("button", { name: "测试结果", exact: true }).click();
   await expect(
     page.getByRole("link", { name: "下载 WAV", exact: true }),
   ).toBeVisible();
@@ -295,6 +278,9 @@ test("local model workbench matches the selected design in both themes and respo
         .check();
       await expect(
         page.getByRole("button", { name: "下载安装", exact: true }),
+      ).toHaveCount(0);
+      await expect(
+        page.getByText("安装和运行管理由平台管理员在本机管理端操作。"),
       ).toBeVisible();
       await page
         .getByRole("radio", { name: installed.label, exact: true })
