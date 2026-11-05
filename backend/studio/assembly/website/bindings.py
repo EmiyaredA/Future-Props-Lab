@@ -77,12 +77,14 @@ from studio.host.project_files.video_execution import _run_yt_dlp
 from studio.host.session_collection.access import LocalSourceAccess
 from studio.runtime.http.rate_limit import AttemptLimiter
 from studio.runtime.secrets import SecretCipher
+from studio.runtime.tasks.reactive_tools.approval import ApprovalBroker
 from studio.runtime.time import utc_now
 
 
 def bind_components(app, settings, database):
     bind_creative(app, settings)
     app.state.auth_attempts = AttemptLimiter()
+    app.state.assistant_approvals = ApprovalBroker()
     app.state.cloud_factors = CloudFactors(
         FactorRecords(database.sessions, clock=utc_now),
         cipher=SecretCipher(settings.fpl_secrets_key),

@@ -9,7 +9,6 @@ from uuid import uuid4
 import httpx
 from sqlalchemy import select, update
 
-from app.capabilities.agents.harness import AgentEvent, AgentHarness, AgentMessage, RunStatus
 from app.runtime.credentials import decrypt_secret
 from studio.apps.model_service.providers.agent import HttpAgentAdapter
 from studio.apps.model_service.storage.models.call_log import LlmCallLog
@@ -29,7 +28,10 @@ from studio.apps.visual_workshop.storage.models import (
     VisualAssistantConversation,
     VisualAssistantMessage,
 )
+from studio.contracts.agent_runtime.dialogue import AgentMessage
 from studio.runtime.database.ownership import bind_owner
+from studio.runtime.tasks.reactive_tools.loop import ReactiveToolLoop
+from studio.runtime.tasks.reactive_tools.types import AgentEvent, RunStatus
 from studio.runtime.time import utc_now
 
 
@@ -157,6 +159,7 @@ async def assistant_events(
     sessions,
     admission=None,
     transport_resolver,
+    approvals,
 ) -> AsyncIterator[bytes]:
     sequence = 0
     trace_id = str(uuid4())
@@ -175,7 +178,8 @@ async def assistant_events(
         sessions=sessions,
     )
     adapter = build_model_adapter(prepared, key, transport_resolver=transport_resolver)
-    harness = AgentHarness(
+    harness = ReactiveToolLoop(
+        approvals=approvals,
         adapter=adapter,
         definition=definition,
         scope={

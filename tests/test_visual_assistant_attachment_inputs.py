@@ -10,7 +10,6 @@ from tests.test_independent_project_catalog import authorize
 from tests.test_visual_compositions_service import png
 from tests.test_visual_node_review_service import review_mesh
 
-from app.capabilities.agents.harness import ToolExecutionContext
 from studio.apps.visual_workshop.assistant.assistant_canvas_actions import AssistantCanvasActions
 from studio.contracts.asset_library.references import PrepareReferenceChange
 from studio.contracts.identity.claims import HEADER
@@ -23,6 +22,7 @@ from studio.contracts.visual_workshop.visual_assistant import (
     approval_path,
 )
 from studio.runtime.http.capability_client import CapabilityDenied
+from studio.runtime.tasks.reactive_tools.types import ToolExecutionContext
 
 
 async def test_visual_assistant_reads_only_prepared_project_attachments(

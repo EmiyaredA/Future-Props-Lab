@@ -7,11 +7,11 @@ import pytest
 from pydantic import ValidationError
 from sqlalchemy import delete, func, select
 
-from app.capabilities.agents.harness import ToolExecutionContext
 from app.runtime.credentials import encrypt_secret
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.visual_workshop.assistant.tools import visual_agent_tools
 from studio.apps.visual_workshop.storage.models import VisualGenerationTask
+from studio.runtime.tasks.reactive_tools.types import ToolExecutionContext
 from website_test_support import SessionLocal, app
 
 

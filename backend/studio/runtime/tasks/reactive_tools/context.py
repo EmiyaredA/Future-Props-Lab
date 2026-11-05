@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.capabilities.agents.harness.types import ContextFragment
+from studio.runtime.tasks.reactive_tools.types import ContextFragment
 
 
 class ContextCompiler:

@@ -139,6 +139,7 @@ def test_migrated_packages_have_one_source_owner():
         ROOT / "backend/app/console/cloud_control",
         ROOT / "backend/app/capabilities/web_access",
         ROOT / "backend/app/capabilities/agents/sessions",
+        ROOT / "backend/app/capabilities/agents/harness",
     ):
         assert not list(directory.rglob("*.py")), f"stale implementation in {directory}"
 
@@ -184,6 +185,17 @@ def test_session_collection_parent_and_history_contracts_do_not_load_adapters():
     for name in ("session_history.py", "activity.py"):
         for dependency in imports(STUDIO / "contracts/agent_workbench" / name):
             assert not dependency.startswith(("studio.host", "studio.apps", "app"))
+
+
+def test_tool_loop_requires_injected_approval_lifecycle():
+    directory = STUDIO / "runtime/tasks/reactive_tools"
+    assert not list(imports(directory / "__init__.py"))
+    for path in directory.glob("*.py"):
+        tree = ast.parse(path.read_text())
+        assert not any(
+            isinstance(node, (ast.Assign, ast.AnnAssign)) and isinstance(node.value, ast.Call)
+            for node in tree.body
+        ), f"{path} creates a process object at import"
 
 
 def test_runtime_mechanisms_do_not_import_application_implementations():

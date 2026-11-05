@@ -140,6 +140,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
         await supervisor.start()
         yield
     finally:
+        await lifespan_app.state.assistant_approvals.close()
         await lifespan_app.state.video_downloads.close()
         await lifespan_app.state.amadeus_actions.close()
         await lifespan_app.state.code_agent_runs.close()

@@ -2,12 +2,12 @@
 
 from sqlalchemy import select
 
-from app.capabilities.agents.harness import ContextFragment, Observation
 from studio.apps.visual_workshop.assistant_tool_values import compact_node, json_text
 from studio.apps.visual_workshop.generation_common import generation_task_out
 from studio.apps.visual_workshop.projects import Projects
 from studio.apps.visual_workshop.storage.models import VisualGenerationTask
 from studio.contracts.visual_workshop.visual_assistant import CanvasAssetSearch
+from studio.runtime.tasks.reactive_tools.types import ContextFragment, Observation
 
 CANVAS_CONTEXT_LIMIT = 32_000
 

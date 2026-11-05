@@ -3,7 +3,6 @@
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
-from app.capabilities.agents.harness.approval import ApprovalConflictError, ApprovalNotFoundError
 from studio.apps.visual_workshop.assistant.assistant_peers import AssistantPeers
 from studio.apps.visual_workshop.assistant.assistant_stream import AssistantStream
 from studio.apps.visual_workshop.assistant.assistant_submission import AssistantSubmission
@@ -19,6 +18,10 @@ from studio.apps.visual_workshop.schemas.workshop import (
 )
 from studio.contracts.visual_workshop.visual_assistant import SOURCE
 from studio.runtime.http.dependencies import OwnerDep, SessionDep
+from studio.runtime.tasks.reactive_tools.approval import (
+    ApprovalConflictError,
+    ApprovalNotFoundError,
+)
 
 router = APIRouter(
     prefix=SOURCE + "/{project_id}/conversations",

@@ -5,18 +5,6 @@ from collections.abc import AsyncIterator
 
 import pytest
 
-from app.capabilities.agents.harness import (
-    AgentDefinition,
-    AgentEvent,
-    AgentHarness,
-    ApprovalBroker,
-    ContextCompiler,
-    ContextFragment,
-    Observation,
-    RunBudgets,
-    RunStatus,
-    ToolBinding,
-)
 from studio.apps.model_service.providers.agent import (
     AgentMessage,
     ModelEvent,
@@ -24,6 +12,18 @@ from studio.apps.model_service.providers.agent import (
     ModelTurnEnd,
     ToolCall,
     Usage,
+)
+from studio.runtime.tasks.reactive_tools.approval import ApprovalBroker, ApprovalResolution
+from studio.runtime.tasks.reactive_tools.context import ContextCompiler
+from studio.runtime.tasks.reactive_tools.loop import ReactiveToolLoop
+from studio.runtime.tasks.reactive_tools.types import (
+    AgentDefinition,
+    AgentEvent,
+    ContextFragment,
+    Observation,
+    RunBudgets,
+    RunStatus,
+    ToolBinding,
 )
 
 
@@ -55,7 +55,8 @@ async def test_harness_completes_a_plain_streamed_reply() -> None:
         [[ModelTextDelta("分析"), ModelTextDelta("完成"), ModelTurnEnd(usage=Usage(4, 2, 6))]]
     )
     events: list[AgentEvent] = []
-    harness = AgentHarness(
+    harness = ReactiveToolLoop(
+        approvals=ApprovalBroker(),
         adapter=adapter,
         definition=AgentDefinition(id="plain", model="test", instructions="回答问题"),
         scope={},
@@ -93,7 +94,8 @@ async def test_harness_runs_a_read_tool_and_returns_the_observation_to_the_model
             [ModelTextDelta("画布已读取"), ModelTurnEnd()],
         ]
     )
-    harness = AgentHarness(
+    harness = ReactiveToolLoop(
+        approvals=ApprovalBroker(),
         adapter=adapter,
         definition=AgentDefinition(
             id="tools",
@@ -119,8 +121,26 @@ async def test_harness_runs_a_read_tool_and_returns_the_observation_to_the_model
     )
 
 
+class DirectApprovals:
+    """An alternate test port with no dependency on the concrete broker's state."""
+
+    async def wait(self, *, proposal_canvas_revision, on_registered, **_kwargs):
+        self.revision = proposal_canvas_revision
+        self.resolution = None
+        await on_registered()
+        assert self.resolution is not None
+        return self.resolution
+
+    async def resolve(self, *, decision, authorization=None, **_kwargs):
+        self.resolution = ApprovalResolution(decision, self.revision, authorization)
+
+    async def cancel_run(self, _run_id):
+        self.resolution = None
+
+
 @pytest.mark.asyncio
-async def test_approval_uses_the_proposal_revision_instead_of_rebasing() -> None:
+@pytest.mark.parametrize("approval_kind", ["broker", "replacement"])
+async def test_approval_uses_the_proposal_revision_instead_of_rebasing(approval_kind) -> None:
     approved_revisions: list[int | None] = []
 
     async def write_tool(_arguments, context):
@@ -135,14 +155,14 @@ async def test_approval_uses_the_proposal_revision_instead_of_rebasing() -> None
             {"canvas_revision": 8},
         )
 
-    broker = ApprovalBroker()
+    broker = ApprovalBroker() if approval_kind == "broker" else DirectApprovals()
     adapter = ScriptedAdapter(
         [
             [ModelTurnEnd((ToolCall("write-1", "apply_canvas_changes", {"operations": []}),))],
             [ModelTextDelta("修改完成"), ModelTurnEnd()],
         ]
     )
-    harness = AgentHarness(
+    harness = ReactiveToolLoop(
         adapter=adapter,
         approvals=broker,
         definition=AgentDefinition(
@@ -195,7 +215,7 @@ async def test_rejected_approval_is_returned_to_the_model_without_running_the_to
             [ModelTextDelta("已保留原画布"), ModelTurnEnd()],
         ]
     )
-    harness = AgentHarness(
+    harness = ReactiveToolLoop(
         adapter=adapter,
         approvals=broker,
         definition=AgentDefinition(
@@ -265,7 +285,8 @@ async def test_harness_recompiles_context_for_each_model_round() -> None:
             [ModelTextDelta("完成"), ModelTurnEnd()],
         ]
     )
-    harness = AgentHarness(
+    harness = ReactiveToolLoop(
+        approvals=ApprovalBroker(),
         adapter=adapter,
         definition=AgentDefinition(
             id="live-context",

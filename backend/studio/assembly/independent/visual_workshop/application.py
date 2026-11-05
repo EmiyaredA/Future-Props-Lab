@@ -8,7 +8,6 @@ import httpx
 from fastapi import Depends, HTTPException
 from sqlalchemy import text
 
-from app.capabilities.agents.harness import ApprovalBroker
 from studio.apps.asset_library.clients.archive_transfer import (
     ArchiveTransport,
     SnapshotArchiveAsset,
@@ -82,6 +81,7 @@ from studio.runtime.http.capability_client import CapabilityClient
 from studio.runtime.http.request_limit import RequestLimit
 from studio.runtime.http.web import attach_web, load_release
 from studio.runtime.messaging.timed_peer import TimedPeer
+from studio.runtime.tasks.reactive_tools.approval import ApprovalBroker
 
 PAGES = (
     "/apps/visual-workshop",
@@ -283,6 +283,7 @@ def create_app(
                         await archive_delivery.start()
                 yield
             finally:
+                await app.state.assistant_approvals.close()
                 if app.state.generation_runner is not None:
                     await app.state.generation_runner.stop()
                 await assistant_dispatches.stop()

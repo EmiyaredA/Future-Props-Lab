@@ -7,13 +7,6 @@ from uuid import uuid4
 from pydantic import TypeAdapter, ValidationError
 from sqlalchemy import or_, select
 
-from app.capabilities.agents.harness import (
-    AgentDefinition,
-    ContextFragment,
-    Observation,
-    ToolBinding,
-    ToolExecutionContext,
-)
 from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference
 from studio.apps.visual_workshop.assistant_tool_values import apply_operations as _apply_operations
@@ -33,6 +26,13 @@ from studio.apps.visual_workshop.schemas.workshop import (
 from studio.apps.visual_workshop.storage.models import VisualGenerationTask, VisualWorkshopProject
 from studio.apps.visual_workshop.website.generation import GenerationError, VisualGeneration
 from studio.runtime.database.ownership import bind_owner
+from studio.runtime.tasks.reactive_tools.types import (
+    AgentDefinition,
+    ContextFragment,
+    Observation,
+    ToolBinding,
+    ToolExecutionContext,
+)
 
 CANVAS_CONTEXT_LIMIT = 32_000
 _generation_input = TypeAdapter(GenerationTaskCreateIn)

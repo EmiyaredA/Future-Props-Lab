@@ -7,7 +7,6 @@ from time import monotonic
 import httpx
 from anyio import CancelScope
 
-from app.capabilities.agents.harness import AgentEvent, AgentHarness, RunResult, RunStatus
 from studio.apps.visual_workshop.assistant.assistant_canvas_actions import AssistantCanvasActions
 from studio.apps.visual_workshop.assistant.assistant_generation_action import (
     AssistantGenerationAction,
@@ -18,6 +17,8 @@ from studio.apps.visual_workshop.assistant_tool_values import build_visual_agent
 from studio.apps.visual_workshop.assistant_values import sse_frame
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 from studio.runtime.project_errors import ProjectResourceError
+from studio.runtime.tasks.reactive_tools.loop import ReactiveToolLoop
+from studio.runtime.tasks.reactive_tools.types import AgentEvent, RunResult, RunStatus
 
 RECHECK_SECONDS = 1.0
 KEEPALIVE_SECONDS = 10.0
@@ -303,7 +304,7 @@ def build_harness(state, turn, peers):
         video_model_id=turn.video_model_id,
         video_model_slug=turn.video_model_slug,
     )
-    return AgentHarness(
+    return ReactiveToolLoop(
         adapter=turn.peer,
         definition=definition,
         scope={

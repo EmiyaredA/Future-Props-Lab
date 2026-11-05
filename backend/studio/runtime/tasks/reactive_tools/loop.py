@@ -5,15 +5,16 @@ from collections.abc import Callable
 from dataclasses import replace
 from uuid import uuid4
 
-from app.capabilities.agents.harness.approval import ApprovalBroker, approval_broker
-from app.capabilities.agents.harness.phases import (
+from studio.contracts.agent_runtime.dialogue import AgentMessage, ModelAdapter, Usage
+from studio.runtime.tasks.reactive_tools.approval import ApprovalPort
+from studio.runtime.tasks.reactive_tools.phases import (
     approval_phase,
     emit_event,
     execute_tool_phase,
     model_turn_phase,
     propose_tools_phase,
 )
-from app.capabilities.agents.harness.types import (
+from studio.runtime.tasks.reactive_tools.types import (
     AgentDefinition,
     AgentEvent,
     EventListener,
@@ -23,7 +24,6 @@ from app.capabilities.agents.harness.types import (
     RunStatus,
     ToolBinding,
 )
-from studio.contracts.agent_runtime.dialogue import AgentMessage, ModelAdapter, Usage
 
 
 async def _maybe_emit(listener: EventListener | None, event: AgentEvent) -> None:
@@ -37,13 +37,13 @@ class ReactiveToolLoop:
         adapter: ModelAdapter,
         definition: AgentDefinition,
         scope: dict[str, object],
-        approvals: ApprovalBroker | None = None,
+        approvals: ApprovalPort,
         run_id: str | None = None,
     ) -> None:
         self.adapter = adapter
         self.definition = definition
         self.scope = dict(scope)
-        self.approvals = approvals or approval_broker
+        self.approvals = approvals
         self.run_id = run_id or str(uuid4())
         self._abort = asyncio.Event()
         self._running = False
@@ -320,7 +320,3 @@ class ReactiveToolLoop:
             raise
         finally:
             self._running = False
-
-
-class AgentHarness(ReactiveToolLoop):
-    """Business-facing harness using the first built-in reactive strategy."""

@@ -444,7 +444,7 @@ Future-Props-Lab/
 - `web/src/features/accounts/` 拥有管理中台、个人资料、安全与密钥。`AccountMenu` 提供账号入口，
   `AccountPanel` 与 `useAccountPanel` 装配设置弹窗，`RuntimeQuotasPage` 管理账号和实例额度，`TemplateSyncTarget` 选择共享模型的目标账号。
   `platform/auth/AccountAccess.tsx` 提供账号 ID 与有效权限；`AccountStorageUpgrade` 显示维护升级状态。
-- `capabilities/agents/harness/` 提供业务无关的 Agent Definition、消息/工具调用/Usage/适配器契约、上下文预算、
+- `studio/runtime/tasks/reactive_tools/` 提供业务无关的 Agent Definition、消息/工具调用/Usage/适配器契约、上下文预算、
   Reactive 工具循环、Policy、Verifier、事件订阅、取消和内存审批；`phases.py` 原子化上下文编译、
   模型回合、工具提案、执行与审批阶段并保持事件顺序；不拥有项目数据，也不提供通用
   `/v1/agents` 管理接口。`studio/apps/model_service/providers/chat_completions.py` 拥有 OpenAI 兼容文本协议的供应商集合、默认地址与 DeepSeek 非思考请求选项；诊断、流式对话、Agent 与日志复现复用该契约。
@@ -1057,3 +1057,7 @@ Amadeus 的会话文件路径由装配明确提供给 `storage/files.py` 和 Ski
 ### Agent 本机会话采集边界
 
 `studio/host/session_collection/` 归并原生 JSONL、SQLite、本机 OpenCode HTTP 和受限附件读取，和已有采集 worker、检查点日志共处同一主机边界。`studio/contracts/agent_workbench/session_history.py` 定义历史快照及只读适配协议，`activity.py` 定义允许展示的活动字段与协议归一化；服务端投影只依赖这两份公开协议。删除旧 sessions 父包的动态重导出，调用方直接导入具体契约或本机适配；各独立镜像继续禁止打包 Host。采集仍只读，原生文件、字节检查点、账号绑定和本机执行授权不改变。
+
+### 工具循环与审批等待生命周期
+
+`studio/runtime/tasks/reactive_tools/` 保存原 Harness 的通用循环、上下文预算、工具阶段和进程内审批协调机制。模型消息协议继续由 `studio/contracts/agent_runtime/dialogue.py` 提供；业务审批持久化和任务结算仍属于业务应用或 Agent Runtime 服务。`ReactiveToolLoop` 必须接收 `ApprovalPort`，不创建默认审批单例；网站和独立视觉服务分别装配审批对象，关闭时取消全部等待句柄，重启后不得从内存恢复为批准。移除原父包集中重导出和无行为的 Harness 子类，调用方明确导入所需模块。

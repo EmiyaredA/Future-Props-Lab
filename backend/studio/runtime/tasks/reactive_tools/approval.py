@@ -4,7 +4,7 @@ import asyncio
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from time import monotonic
-from typing import Any, Literal
+from typing import Any, Literal, Protocol
 
 
 class ApprovalNotFoundError(Exception):
@@ -32,10 +32,32 @@ class PendingApproval:
     future: asyncio.Future[ApprovalResolution]
 
 
+class ApprovalPort(Protocol):
+    """Process-local rendezvous; the business owner authorizes and persists decisions.
+
+    Waiters never survive restart. Cancellation and shutdown must wake them without
+    treating the action as approved; a replacement may not rebase a proposal's revision.
+    """
+
+    async def wait(
+        self,
+        *,
+        run_id: str,
+        approval_id: str,
+        scope: dict[str, Any],
+        proposal_canvas_revision: int,
+        timeout_seconds: float,
+        on_registered: Callable[[], Awaitable[None]] | None = None,
+    ) -> ApprovalResolution: ...
+
+    async def cancel_run(self, run_id: str) -> None: ...
+
+
 class ApprovalBroker:
     def __init__(self) -> None:
         self._pending: dict[tuple[str, str], PendingApproval] = {}
         self._lock = asyncio.Lock()
+        self._closed = False
 
     async def wait(
         self,
@@ -58,6 +80,8 @@ class ApprovalBroker:
         )
         key = (run_id, approval_id)
         async with self._lock:
+            if self._closed:
+                raise RuntimeError("审批协调器已关闭")
             if key in self._pending:
                 raise ApprovalConflictError("审批请求已存在")
             self._pending[key] = pending
@@ -108,5 +132,11 @@ class ApprovalBroker:
                 if not pending.future.done():
                     pending.future.cancel()
 
-
-approval_broker = ApprovalBroker()
+    async def close(self) -> None:
+        """Release pending process handles; durable action recovery belongs to its owner."""
+        async with self._lock:
+            self._closed = True
+            for pending in self._pending.values():
+                if not pending.future.done():
+                    pending.future.cancel()
+            self._pending.clear()

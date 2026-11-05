@@ -17,7 +17,6 @@ from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario
 from tests.test_creative_project_certification import CREDENTIALS, PROJECTS
 from tests.test_independent_project_catalog import authorize
 
-from app.capabilities.agents.harness import ToolExecutionContext
 from studio.apps.agent_runtime.storage.migrations.registry import (
     MIGRATIONS as AGENT_RUNTIME_MIGRATIONS,
 )
@@ -104,6 +103,7 @@ from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database
 from studio.runtime.http.capability_client import CapabilityClient, CapabilityDenied
 from studio.runtime.messaging.timed_peer import TimedPeer
+from studio.runtime.tasks.reactive_tools.types import ToolExecutionContext
 
 
 class LostVisualArchiveReceipt(httpx.AsyncBaseTransport):

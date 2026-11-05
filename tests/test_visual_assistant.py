@@ -10,8 +10,6 @@ import pytest
 from PIL import Image
 from sqlalchemy import delete, select
 
-from app.capabilities.agents.harness import approval_broker
-from app.capabilities.agents.harness.approval import ApprovalResolution
 from app.runtime.credentials import encrypt_secret
 from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.model_service.providers.agent import ModelTextDelta, ModelTurnEnd, ToolCall, Usage
@@ -21,6 +19,7 @@ from studio.apps.visual_workshop.assistant import stream as assistant_stream
 from studio.apps.visual_workshop.assistant.conversations import VisualAssistantConversations
 from studio.apps.visual_workshop.schemas.workshop import VisualAssistantSendIn
 from studio.config.settings import get_settings
+from studio.runtime.tasks.reactive_tools.approval import ApprovalResolution
 from website_test_support import SessionLocal, app
 
 
@@ -728,6 +727,7 @@ async def test_visual_agent_approval_updates_canvas_and_persists_steps(
                 yield ModelTextDelta("已按确认更新画布。")
                 yield ModelTurnEnd(usage=Usage(20, 8, 28))
 
+    approval_broker = app.state.assistant_approvals
     original_wait = approval_broker.wait
 
     async def auto_approve(**kwargs):

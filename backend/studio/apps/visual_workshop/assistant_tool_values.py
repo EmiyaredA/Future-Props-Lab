@@ -4,7 +4,7 @@ import json
 from typing import Any
 from uuid import uuid4
 
-from app.capabilities.agents.harness import AgentDefinition, RunBudgets, ToolBinding
+from studio.runtime.tasks.reactive_tools.types import AgentDefinition, RunBudgets, ToolBinding
 
 TEXT_NODE_LIMIT = 4_000
 

@@ -7,9 +7,16 @@ from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from uuid import uuid4
 
-from app.capabilities.agents.harness.approval import ApprovalBroker
-from app.capabilities.agents.harness.context import ContextCompiler
-from app.capabilities.agents.harness.types import (
+from studio.contracts.agent_runtime.dialogue import (
+    AgentMessage,
+    ModelAdapter,
+    ModelTextDelta,
+    ModelTurnEnd,
+    ModelUsageUpdate,
+)
+from studio.runtime.tasks.reactive_tools.approval import ApprovalPort
+from studio.runtime.tasks.reactive_tools.context import ContextCompiler
+from studio.runtime.tasks.reactive_tools.types import (
     AgentDefinition,
     AgentEvent,
     EventListener,
@@ -17,13 +24,6 @@ from app.capabilities.agents.harness.types import (
     ProposedAction,
     ToolBinding,
     ToolExecutionContext,
-)
-from studio.contracts.agent_runtime.dialogue import (
-    AgentMessage,
-    ModelAdapter,
-    ModelTextDelta,
-    ModelTurnEnd,
-    ModelUsageUpdate,
 )
 
 
@@ -267,7 +267,7 @@ async def execute_tool_phase(
 async def approval_phase(
     actions: list[ProposedAction],
     *,
-    approvals: ApprovalBroker,
+    approvals: ApprovalPort,
     listener: EventListener,
     run_id: str,
     round_index: int,

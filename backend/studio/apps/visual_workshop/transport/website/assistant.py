@@ -3,11 +3,6 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
-from app.capabilities.agents.harness.approval import (
-    ApprovalConflictError,
-    ApprovalNotFoundError,
-    approval_broker,
-)
 from studio.apps.model_service.call_logs.credentials import snapshot_from_principal
 from studio.apps.model_service.transport.website.model_capacity import spawned_task_admission
 from studio.apps.visual_workshop.assistant.attachments import AssistantAssetError
@@ -28,6 +23,10 @@ from studio.apps.visual_workshop.schemas.workshop import (
     VisualAssistantSendIn,
 )
 from studio.assembly.http_dependencies import SessionDep, StudioAuth
+from studio.runtime.tasks.reactive_tools.approval import (
+    ApprovalConflictError,
+    ApprovalNotFoundError,
+)
 
 router = APIRouter(
     prefix="/visual-workshop/projects/{project_id}/conversations",
@@ -151,6 +150,7 @@ async def stream_message(
             admission=admission,
             sessions=request.app.state.database.sessions,
             transport_resolver=request.app.state.model_provider_transports.resolve,
+            approvals=request.app.state.assistant_approvals,
         ),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
@@ -162,6 +162,7 @@ async def stream_message(
     response_model=VisualAssistantApprovalOut,
 )
 async def resolve_approval(
+    request: Request,
     session: SessionDep,
     project_id: str,
     conversation_id: str,
@@ -171,7 +172,7 @@ async def resolve_approval(
 ) -> VisualAssistantApprovalOut:
     try:
         await VisualAssistantConversations(session).get(project_id, conversation_id)
-        await approval_broker.resolve(
+        await request.app.state.assistant_approvals.resolve(
             run_id=run_id,
             approval_id=approval_id,
             scope={"project_id": project_id, "conversation_id": conversation_id},

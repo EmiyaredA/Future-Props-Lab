@@ -4,7 +4,6 @@ from uuid import uuid4
 
 from pydantic import TypeAdapter, ValidationError
 
-from app.capabilities.agents.harness import Observation
 from studio.apps.visual_workshop.assistant.assistant_canvas_actions import changed, require_approval
 from studio.apps.visual_workshop.generation.generation_intake import GenerationIntake
 from studio.apps.visual_workshop.generation_common import GenerationError
@@ -12,6 +11,7 @@ from studio.apps.visual_workshop.node_placement import automatic_node_position
 from studio.apps.visual_workshop.projects import Projects
 from studio.apps.visual_workshop.schemas.workshop import GenerationTaskCreateIn, VisualCanvasNode
 from studio.runtime.project_errors import ProjectResourceError
+from studio.runtime.tasks.reactive_tools.types import Observation
 
 TASK = TypeAdapter(GenerationTaskCreateIn)
 NODE = TypeAdapter(VisualCanvasNode)

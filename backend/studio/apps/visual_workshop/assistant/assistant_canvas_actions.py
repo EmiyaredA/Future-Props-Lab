@@ -1,6 +1,5 @@
 """Apply an authorized assistant proposal to the exact approved Canvas revision."""
 
-from app.capabilities.agents.harness import Observation
 from studio.apps.visual_workshop.assistant_tool_values import apply_operations
 from studio.apps.visual_workshop.canvas_writes import CanvasWrites
 from studio.apps.visual_workshop.projects import Projects
@@ -8,6 +7,7 @@ from studio.apps.visual_workshop.schemas.workshop import VisualCanvasDocumentPut
 from studio.contracts.visual_workshop.visual_assistant import approval_path
 from studio.runtime.project_errors import ProjectResourceError
 from studio.runtime.revisions import RevisionConflictError
+from studio.runtime.tasks.reactive_tools.types import Observation
 
 
 def require_approval(context, scope):

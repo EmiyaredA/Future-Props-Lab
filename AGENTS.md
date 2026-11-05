@@ -102,6 +102,9 @@
 - Agent 原生会话格式、受限附件、只读文件与本机 OpenCode 读取归 `studio/host/session_collection/`；
   历史快照和活动展示协议归 `studio/contracts/agent_workbench/`。服务只能消费公开契约与采集回执，
   不加载 Host 解析器；父包不通过懒加载转发符号。
+- 通用工具循环、上下文预算和进程内审批等待归 `studio/runtime/tasks/reactive_tools/`。
+  循环必须接收审批端口；应用装配创建并在关闭时清理协调器，不在模块导入时创建单例。
+  持久审批、业务授权、最终状态和重启恢复仍由所属应用负责，通用循环不得代为裁决。
 - Amadeus 使用当前页面侧栏和显式账号上下文接口，不依赖原生窗口或 IPC。下载与演示窗口使用浏览器能力，并保留弹窗阻止反馈和未保存保护。
 - Web 保持 `app/ + features/ + shared/ + platform/ + generated/`：`app/` 负责入口、壳与路由，
   `features/` 拥有业务页面和用例，`shared/` 放无业务归属的复用 UI，`platform/` 放 API 与认证
