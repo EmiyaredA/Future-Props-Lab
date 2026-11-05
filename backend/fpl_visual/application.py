@@ -9,7 +9,7 @@ from fastapi import Depends
 
 from app.apps.visual_workshop.acceptance.review_routes import router as review_router
 from app.apps.visual_workshop.acceptance.standard_routes import router as standard_router
-from app.apps.visual_workshop.generation_routes import router as generation_records_router
+from app.apps.visual_workshop.generation_routes import reads as generation_records_router
 from app.apps.visual_workshop.models import VisualWorkshopProject
 from app.capabilities.asset_store.project_snapshots import cleanup_snapshot_staging
 from app.deps import require_studio_auth
@@ -20,7 +20,9 @@ from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.reference_runtime import install_reference_runtime
 from fpl_runtime.request_limit import RequestLimit
+from fpl_runtime.timed_peer import TimedPeer
 from fpl_runtime.video_segment_handoff import VISUAL_HANDOFFS, asset_peer, visual_peer
+from fpl_runtime.visual_generation import PEER_DOMAIN
 from fpl_runtime.visual_snapshot import ARCHIVE_DOMAIN, ARCHIVE_PREFIX, ARCHIVE_PURPOSE, IMPORT
 from fpl_runtime.web import attach_web, load_release
 
@@ -31,6 +33,8 @@ from .catalog_http import acceptance as acceptance_catalog_router
 from .catalog_http import generation as generation_catalog_router
 from .composition_http import router as composition_router
 from .composition_runner import CompositionRunner
+from .generation_http import router as generation_router
+from .generation_runner import GenerationRunner
 from .migrations.registry import MIGRATIONS
 from .models import MODELS, VisualCanvasReferenceMutation, VisualCertificationReceipt
 from .outputs_http import router as outputs_router
@@ -64,6 +68,7 @@ def create_app(
     web_root=None,
     schema_path=None,
     archive_key=None,
+    generation_key=None,
 ):
     if bool(video_segment_key) != bool(segment_assets_key):
         raise ValueError("Visual 分段交接需要独立的 Video 和 Assets 对等凭据")
@@ -110,6 +115,20 @@ def create_app(
     app.state.capabilities = CapabilityClient(
         service="visual", credential=credential, catalog=catalog, transport=transport
     )
+    if generation_key is not None and generation_key in {
+        credential,
+        archive_key,
+        video_segment_key,
+        segment_assets_key,
+    }:
+        raise ValueError("Visual 生成对等凭据必须独立")
+    app.state.visual_generation_peer = (
+        TimedPeer(generation_key, domain=PEER_DOMAIN) if generation_key is not None else None
+    )
+    app.state.generation_runner = (
+        GenerationRunner(app.state) if generation_key is not None else None
+    )
+    app.include_router(generation_router)
     app.state.snapshot_settings = SnapshotSettings(state_root.resolve())
     app.state.snapshot_imports = None
     archive_delivery = None
@@ -164,10 +183,14 @@ def create_app(
             try:
                 if run_worker:
                     await composition_runner.start()
+                    if app.state.generation_runner is not None:
+                        await app.state.generation_runner.start()
                     if archive_delivery is not None:
                         await archive_delivery.start()
                 yield
             finally:
+                if app.state.generation_runner is not None:
+                    await app.state.generation_runner.stop()
                 await composition_runner.stop()
                 if archive_delivery is not None:
                     await archive_delivery.stop()

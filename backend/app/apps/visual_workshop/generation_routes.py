@@ -12,7 +12,8 @@ from app.apps.visual_workshop.schemas.generation import (
 from app.apps.visual_workshop.schemas.workshop import GenerationTaskListOut, GenerationTaskOut
 from app.deps import SessionDep
 
-router = APIRouter(prefix="/visual-workshop", tags=["visual-generation"])
+reads = APIRouter(prefix="/visual-workshop", tags=["visual-generation"])
+writes = APIRouter(prefix="/visual-workshop", tags=["visual-generation"])
 
 
 def generation_error(exc: GenerationError) -> HTTPException:
@@ -26,7 +27,7 @@ def generation_error(exc: GenerationError) -> HTTPException:
     )
 
 
-@router.get("/generation-tasks", response_model=GenerationTaskListOut)
+@reads.get("/generation-tasks", response_model=GenerationTaskListOut)
 async def list_generation_tasks(
     session: SessionDep,
     project_id: str | None = None,
@@ -54,7 +55,7 @@ async def list_generation_tasks(
         raise generation_error(exc) from None
 
 
-@router.get("/generation-tasks/{task_id}", response_model=GenerationTaskOut)
+@reads.get("/generation-tasks/{task_id}", response_model=GenerationTaskOut)
 async def get_generation_task(session: SessionDep, task_id: str) -> GenerationTaskOut:
     try:
         return await GenerationRecords(session).get(task_id)
@@ -62,7 +63,7 @@ async def get_generation_task(session: SessionDep, task_id: str) -> GenerationTa
         raise generation_error(exc) from None
 
 
-@router.get("/generation-batches/{batch_id}", response_model=GenerationBatchOut)
+@reads.get("/generation-batches/{batch_id}", response_model=GenerationBatchOut)
 async def get_generation_batch(session: SessionDep, batch_id: str) -> GenerationBatchOut:
     try:
         return await GenerationRecords(session).get_batch(batch_id)
@@ -70,7 +71,7 @@ async def get_generation_batch(session: SessionDep, batch_id: str) -> Generation
         raise generation_error(exc) from None
 
 
-@router.get("/generation-batches", response_model=GenerationBatchListOut)
+@reads.get("/generation-batches", response_model=GenerationBatchListOut)
 async def list_generation_batches(
     session: SessionDep,
     project_id: str | None = None,
@@ -86,7 +87,7 @@ async def list_generation_batches(
         raise generation_error(exc) from None
 
 
-@router.post(
+@writes.post(
     "/generation-tasks/{task_id}/retry-materialization",
     response_model=GenerationTaskOut,
 )
@@ -97,9 +98,14 @@ async def retry_materialization(session: SessionDep, task_id: str) -> Generation
         raise generation_error(exc) from None
 
 
-@router.post("/generation-tasks/{task_id}/cancel", response_model=GenerationTaskOut)
+@writes.post("/generation-tasks/{task_id}/cancel", response_model=GenerationTaskOut)
 async def cancel_generation_task(session: SessionDep, task_id: str, body: GenerationCancelIn):
     try:
         return await GenerationRecords(session).cancel(task_id, body.expected_revision)
     except GenerationError as exc:
         raise generation_error(exc) from None
+
+
+router = APIRouter()
+router.include_router(reads)
+router.include_router(writes)

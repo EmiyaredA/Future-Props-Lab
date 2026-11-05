@@ -43,7 +43,7 @@ class ProviderRetention:
                         VisualProviderTask.owner_user_id, VisualProviderTask.result_metadata
                     ).where(VisualProviderTask.result_metadata.is_not(None))
                 )
-                if value
+                if value and not value.get("delivered")
             }
         await run_sync(self.remove_orphans, inputs, outputs)
         await self.retire_inputs()

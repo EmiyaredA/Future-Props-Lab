@@ -184,3 +184,21 @@ async def download_visual_provider_result(
         filename=metadata["filename"],
         headers={"Cache-Control": "private, no-store", "X-Fpl-Content-Sha256": metadata["sha256"]},
     )
+
+
+@router.post(TASKS + "/result/{sha256}/acknowledge")
+async def acknowledge_visual_provider_result(
+    request: Request,
+    project_id: str,
+    plan_id: str,
+    digest: str,
+    task_id: str,
+    sha256: str,
+):
+    owner = peer_owner(request, f"{PLANS}/{project_id}/{plan_id}/{digest}")
+    try:
+        return await request.app.state.visual_generation_results.acknowledge(
+            owner, project_id, plan_id, digest, task_id, sha256
+        )
+    except VisualGenerationValidationError as exc:
+        raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None

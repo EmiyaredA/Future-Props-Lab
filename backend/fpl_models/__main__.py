@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from fpl_runtime.locking import service_lock
+from fpl_runtime.timed_peer import load_peer_key
 
 
 def parser():
@@ -131,6 +132,9 @@ def run(options):
         integration_intents = IntegrationIntentClient(service="models", credential=credential)
         app = create_app(
             settings=settings,
+            visual_generation_key=load_peer_key(
+                Path("/run/fpl/visual-generation-key"), excluded=(credential,)
+            ),
             catalog=catalog,
             public_key=public,
             identity=LiveAuthorization(service="models", credential=credential),

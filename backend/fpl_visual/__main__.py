@@ -24,6 +24,7 @@ def deployed_application(**settings):
         web_root=web if has_web else None,
         schema_path=Path("/app/deploy/contracts/openapi.json") if has_web else None,
         **settings,
+        generation_key=load_peer_key(Path("/run/fpl/visual-generation-key")),
         archive_key=load_peer_key(Path("/run/fpl/visual-archive-key")),
         video_segment_key=load_peer_key(Path("/run/fpl/video-segment-visual-key")),
         segment_assets_key=load_peer_key(Path("/run/fpl/visual-segment-assets-key")),

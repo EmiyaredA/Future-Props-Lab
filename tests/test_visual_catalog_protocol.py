@@ -40,6 +40,9 @@ from fpl_models.visual_generation_intake import VisualGenerationIntake
 from fpl_models.visual_generation_records import VisualProviderTask
 from fpl_models.visual_generation_results import VisualGenerationResults
 from fpl_models.visual_generation_runner import VisualGenerationRunner
+from fpl_rendering.application import create_app as create_rendering
+from fpl_rendering.migrations.registry import MIGRATIONS as RENDERING_MIGRATIONS
+from fpl_rendering.settings import RenderingSettings
 from fpl_runtime.agent_connections import (
     AcceptanceAgentCatalog,
     AcceptanceAgentStatus,
@@ -153,9 +156,8 @@ async def test_visual_catalog_delegates_exact_paths_and_excludes_other_accounts(
     models.state.capabilities = CapabilityClient(
         service="models", credential=credential, catalog=CATALOG, transport=case.mesh
     )
-    models.state.visual_generation_peer = TimedPeer(
-        "isolated-visual-generation-peer-" * 2, domain=PEER_DOMAIN
-    )
+    generation_key = "isolated-visual-generation-peer-" * 2
+    models.state.visual_generation_peer = TimedPeer(generation_key, domain=PEER_DOMAIN)
     models.state.visual_generation_intake = VisualGenerationIntake(models.state)
     models.state.visual_generation_runner = VisualGenerationRunner(models.state)
     models.state.visual_generation_results = VisualGenerationResults(models.state)
@@ -167,6 +169,7 @@ async def test_visual_catalog_delegates_exact_paths_and_excludes_other_accounts(
     transport = LostVisualArchiveReceipt(case.mesh)
     visual = factory(
         archive_key=archive_key,
+        generation_key=generation_key,
         state_root=root,
         public_key=case.key.public_key(),
         catalog=CATALOG,
@@ -236,6 +239,8 @@ async def test_visual_catalog_delegates_exact_paths_and_excludes_other_accounts(
         ).status_code == 403
         await verify_fixed_acceptance(case, visual, http, models, database, tmp_path)
         await verify_node_context(case, visual, http, entries[0]["id"], transport)
+        await verify_native_generation(case, visual, http, models.state, selection, monkeypatch)
+
         await verify_conversations(case, visual, http)
         logged_out = await case.browser.post(
             "/v1/auth/logout",
@@ -411,6 +416,130 @@ async def verify_provider_result(case, http, models, body, task_id, monkeypatch)
         headers=models.visual_generation_peer.headers("GET", content_path, case.owner),
     )
     assert foreign.status_code == 404
+
+
+async def verify_native_generation(case, visual, http, models, choice, monkeypatch):
+    from PIL import Image
+
+    data = io.BytesIO()
+    Image.new("RGB", (64, 64), "orange").save(data, "PNG")
+    original = data.getvalue()
+    calls = []
+
+    async def submit(_inputs, **options):
+        calls.append(options["payload"]["prompt"])
+        return ImmediateGenerationResult("https://media.example.test/native-image")
+
+    async def materialize(**options):
+        options["target"].write_bytes(original)
+        return len(original), "image", "image/png", ".png"
+
+    monkeypatch.setattr("fpl_models.visual_generation_runner.submit_visual_generation", submit)
+    monkeypatch.setattr("fpl_models.visual_generation_runner.download_generated_media", materialize)
+
+    async def send(method, path, *, service="visual", **kwargs):
+        return await http.request(
+            method,
+            f"http://{service}" + path,
+            headers=await authorize(case, service, method, path),
+            **kwargs,
+        )
+
+    prefix = "/v1/visual-workshop/projects"
+    project = await send("POST", prefix, json={"title": "Provider generation", "kind": "canvas"})
+    assert project.status_code == 200, project.text
+    root = prefix + "/" + project.json()["id"]
+    create = root + "/generation-tasks"
+    body = {"kind": "image", "model_id": choice.model_id, "prompt": "Create an orange tile"}
+    task = await send("POST", create, json=body)
+    assert task.status_code == 200, task.text
+    queued = task.json()
+    assert queued["status"] == "queued" and queued["provider_id"] == choice.provider_id
+    runner = visual.state.generation_runner
+    await models.visual_generation_runner.process_once()
+    assert calls == []
+    await runner.process_once()
+    await models.visual_generation_runner.process_once()
+    await runner.process_once()
+    path = "/v1/visual-workshop/generation-tasks/" + queued["id"]
+    result = await send("GET", path)
+    assert result.status_code == 200, result.text
+    output = result.json()
+    assert output["status"] == "completed" and output["result_asset_id"]
+    read = await send("GET", f"/v1/files/{output['result_asset_id']}/content", service="assets")
+    assert read.status_code == 200 and read.content == original
+    history = await send("GET", root + f"/nodes/{output['canvas_node_id']}/outputs")
+    assert history.json()["items"][0]["generation_task_id"] == queued["id"]
+    assert calls == [body["prompt"]]
+
+    cancel = await send("POST", create, json=body)
+    assert cancel.status_code == 200, cancel.text
+    second = cancel.json()
+    cancelled = await send(
+        "POST",
+        "/v1/visual-workshop/generation-tasks/" + second["id"] + "/cancel",
+        json={"expected_revision": second["revision"]},
+    )
+    assert cancelled.status_code == 200, cancelled.text
+    assert cancelled.json()["status"] == "cancelled"
+    await models.visual_generation_runner.process_once()
+    assert calls == [body["prompt"]]
+    await verify_native_batch(case, visual, models, send, root, choice, calls)
+
+
+async def verify_native_batch(case, visual, models, send, root, choice, calls):
+    key = "visual-generation-test-rendering-" * 2
+    case.identity.state.identity_options["service_credentials"]["rendering"] = key
+    db_path = models.database.root.parent / "rendering" / "service.db"
+    apply(db_path, "rendering", RENDERING_MIGRATIONS)
+    rendering = create_rendering(
+        settings=RenderingSettings(db_path),
+        public_key=case.key.public_key(),
+        catalog=CATALOG,
+        identity=LiveAuthorization(service="rendering", credential=key, transport=case.mesh),
+        capabilities=CapabilityClient(
+            service="rendering", credential=key, catalog=CATALOG, transport=case.mesh
+        ),
+        run_worker=False,
+    )
+    case.mesh.apps["rendering"] = rendering
+    async with rendering.router.lifespan_context(rendering):
+        body = {
+            "grid_size": 4,
+            "grid_output": "composite",
+            "model_id": choice.model_id,
+            "prompt": "Generate a grid input",
+            "seed": 17,
+        }
+        created = await send("POST", root + "/generation-batches", json=body)
+        assert created.status_code == 200, created.text
+        batch = created.json()
+        assert batch["status"] == "queued" and len(batch["child_task_ids"]) == 4
+        runner = visual.state.generation_runner
+        await runner.process_once()
+        for _ in range(4):
+            await models.visual_generation_runner.process_once()
+            await runner.process_once()
+        await visual.state.composition_runner.process_once()
+        result = await send("GET", "/v1/visual-workshop/generation-batches/" + batch["id"])
+        assert result.status_code == 200, result.text
+        result = result.json()
+        assert result["status"] == "completed" and result["completed_count"] == 4
+        artifact = await send(
+            "GET", f"/v1/files/{result['result_asset_id']}/content", service="assets"
+        )
+        assert artifact.status_code == 200
+        from PIL import Image
+
+        with Image.open(io.BytesIO(artifact.content)) as image:
+            assert image.size == (140, 140) and image.getpixel((10, 10)) == (255, 165, 0)
+        children = [
+            (await send("GET", "/v1/visual-workshop/generation-tasks/" + identity)).json()
+            for identity in batch["child_task_ids"]
+        ]
+        assert [row["request_payload"]["seed"] for row in children] == [17, 18, 19, 20]
+        assert all(row["status"] == "completed" for row in children)
+        assert calls.count(body["prompt"]) == 4
 
 
 async def verify_fixed_acceptance(case, visual, http, models, database, root):

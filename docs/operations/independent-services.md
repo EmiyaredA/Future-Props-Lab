@@ -531,6 +531,8 @@ Motion 与 Video 启动检查覆盖归属清单中的 21 和 38 项操作。七�
 
 Visual ZIP 导入使用 `deploy/visual-snapshots.compose.yaml`，与 `deploy/project-owners.compose.yaml` 一起加载。将独立的 `FPL_VISUAL_ARCHIVE_KEY` 以受保护的文件挂载到 Visual 和 Assets，分别运行两者的 `migrate`。副本公开前核验原件摘要、目录、画布、输出历史、验收关联和同账号模型绑定。结算回执中断时，启动同版本 Visual 与 Assets 以恢复原批次。导入完成后可以再次从同一 ZIP 创建新的项目副本。
 
+Visual 生成任务与批次需要 `deploy/visual-generation.compose.yaml`。将独立的 `FPL_VISUAL_GENERATION_KEY` 只读挂载给 Visual 和 Models，分别运行两者的 `migrate`。Visual 按画布版本提交任务，Models 保存执行计划和供应商回执，Assets 只在画布结果事务确认后公开原件。图片和视频继续按原账号等待队列与执行额度运行。未确认的结果保持可恢复，已提交但结果未知的供应商任务禁止重提。
+
 ### Galgame 工坊的浏览器版本与故事验收
 
 运行 `npm run services:build:web -- galgame`，将清单目录传给 `npm run services:build -- galgame --build --web-release`。在 `deploy/project-owners.compose.yaml` 中使用 Galgame 专属状态目录和 Identity 凭据。项目列表、总览、编辑和已保存 Story 预演由 Galgame 镜像提供，旧版本写请求返回 409。

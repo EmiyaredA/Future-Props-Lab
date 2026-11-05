@@ -199,6 +199,7 @@ async def test_all_video_entry_points_inline_ark_audio_and_preserve_provider_neu
     monkeypatch,
 ):
     from app.apps.visual_workshop import generation_runner as visual_runner
+    from app.llm import visual_generation_submission as visual_submission
     from app.llm.inference import runner as inference_runner
     from app.llm.playground import generation_runner as test_runner
 
@@ -214,7 +215,7 @@ async def test_all_video_entry_points_inline_ark_audio_and_preserve_provider_neu
     async def forbidden_upload(*_args, **_kwargs):
         raise AssertionError("Ark audio must not use the temporary upload service")
 
-    monkeypatch.setattr(visual_runner, "submit_generation_task", submit)
+    monkeypatch.setattr(visual_submission, "submit_generation_task", submit)
     monkeypatch.setattr(test_runner, "submit_generation_task", submit)
     monkeypatch.setattr(inference_runner, "submit_generation_task", submit)
     visual = visual_runner.VisualGenerationRunner()

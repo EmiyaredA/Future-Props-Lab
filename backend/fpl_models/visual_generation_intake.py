@@ -9,8 +9,9 @@ from sqlalchemy import select, text
 from app.llm.visual_generation_model import VisualGenerationValidationError
 from app.runtime.time import utc_now
 
-from .admission import check_capacity
+from .admission import settle
 from .visual_generation_preflight import normalize, original_files, verify_selection
+from .visual_generation_queue import admit
 from .visual_generation_records import VisualProviderBatch, VisualProviderTask
 
 
@@ -91,13 +92,6 @@ class VisualGenerationIntake:
                         raise batch_conflict()
                     return receipt(prior, await self.tasks(session, identity))
                 await verify_selection(session, self.state, owner, plan)
-                await check_capacity(
-                    session,
-                    owner=owner,
-                    role=actor.platform_role,
-                    voice=False,
-                    weight=len(plan.tasks),
-                )
                 batch = VisualProviderBatch(
                     id=identity,
                     owner_user_id=owner,
@@ -127,6 +121,7 @@ class VisualGenerationIntake:
                 ]
                 session.add_all(tasks)
                 await session.flush()
+                await admit(session, owner, actor.platform_role, tasks)
                 committing = True
                 await session.commit()
                 return receipt(batch, tasks)
@@ -169,6 +164,8 @@ class VisualGenerationIntake:
                         task.updated_at = utc_now()
             elif (batch.state, decision) not in {("active", "activate"), ("aborted", "abort")}:
                 raise batch_conflict()
+            if decision == "abort":
+                await settle(session)
             await session.commit()
         if directory is not None:
             shutil.rmtree(directory, ignore_errors=True)

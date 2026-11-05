@@ -27,6 +27,8 @@ from app.runtime.polling_runner import PollingTaskRunner
 from app.runtime.time import utc_now
 from fpl_runtime.library_assets import LibraryAssetDescription
 
+from .admission import settle
+from .visual_generation_queue import claim
 from .visual_generation_records import VisualProviderBatch, VisualProviderTask
 from .visual_generation_retention import ProviderRetention
 
@@ -81,6 +83,8 @@ class VisualGenerationRunner(PollingTaskRunner):
             active_statuses=ACTIVE,
             task_subject="visual provider task",
             prepare_claim=self.prepare_claim,
+            claim_admission=claim,
+            terminal_settlement=settle,
         )
         self.driver = GenerationTaskDriver(
             store=self.store,
@@ -233,5 +237,6 @@ class VisualGenerationRunner(PollingTaskRunner):
             row.status, row.progress = "completed", 100
             row.revision += 1
             row.updated_at = utc_now()
+            await settle(session)
             await session.commit()
             return True

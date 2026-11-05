@@ -8,7 +8,8 @@ from sqlalchemy import select, text
 from app.apps.visual_workshop.canvas_asset_values import existing_assets, expected_assets
 from app.apps.visual_workshop.canvas_documents import CanvasDocuments
 from app.apps.visual_workshop.canvas_values import canvas_out
-from app.apps.visual_workshop.models import VisualGenerationBatch
+from app.apps.visual_workshop.generation_records import ACTIVE_TASK_STATUSES
+from app.apps.visual_workshop.models import VisualGenerationBatch, VisualGenerationTask
 from app.apps.visual_workshop.operation_values import transform
 from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from app.apps.visual_workshop.outputs.mutations import OutputMutations
@@ -113,6 +114,25 @@ class CanvasWrites:
         identities.update(
             item["asset_id"] for items in active for item in (items or ()) if item.get("asset_id")
         )
+        requests = await self.session.scalars(
+            select(VisualGenerationTask.request_payload).where(
+                VisualGenerationTask.project_id == project_id,
+                VisualGenerationTask.owner_user_id == self.owner,
+                VisualGenerationTask.status.in_(ACTIVE_TASK_STATUSES),
+            )
+        )
+        for payload in requests:
+            identities.update(
+                asset_id
+                for field in ("reference_asset_ids", "audio_asset_ids", "video_asset_ids")
+                for asset_id in (payload.get(field) or ())
+                if asset_id
+            )
+            identities.update(
+                payload[field]
+                for field in ("reference_asset_id", "first_frame_asset_id", "last_frame_asset_id")
+                if payload.get(field)
+            )
         return identities
 
     async def put(self, project_id, body):

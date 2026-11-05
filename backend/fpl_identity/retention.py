@@ -265,6 +265,9 @@ class RetentionAuthorization:
         expected_permission = (
             "community.access" if publication_source or community else "content.write"
         )
+        upload = body.change.visual_upload
+        if upload is not None and upload.from_model_request(body.source_method, body.source_path):
+            expected_permission = "models.use"
         handoff = body.caller == "video" and handoff_target(body.source_method, body.source_path)
         if not handoff and (
             operation is None
@@ -450,7 +453,7 @@ class RetentionAuthorization:
         permitted = (
             actor.auth_kind == "session" and principal.permits("studio:read")
             if publication_source or community
-            else principal.allows("content.write") and principal.permits("studio:write")
+            else principal.allows(expected_permission) and principal.permits("studio:write")
         )
         if not permitted or (community is not None and actor.user_id != community.actor_id):
             raise HTTPException(403, "retention_source_forbidden")

@@ -21,6 +21,7 @@ from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailabl
 from fpl_runtime.project_errors import ProjectResourceError
 
 from .canvas_writes import conflict
+from .generation_dispatch_records import VisualGenerationDispatch
 from .projects import Projects
 from .reference_backlog import pending_outcomes
 from .segment_handoffs import require_canvas_unreserved
@@ -57,6 +58,17 @@ class ProjectDeletion:
                 is not None
             ):
                 raise ProjectResourceError("项目仍有运行中的任务", "project_tasks_pending", 409)
+        unconfirmed = await self.session.scalar(
+            select(VisualGenerationDispatch.task_id)
+            .join(VisualGenerationTask, VisualGenerationTask.id == VisualGenerationDispatch.task_id)
+            .where(
+                VisualGenerationTask.project_id == project_id,
+                VisualGenerationDispatch.remote_output_sha256.is_not(None),
+            )
+            .limit(1)
+        )
+        if unconfirmed is not None:
+            raise ProjectResourceError("生成结果正在结算", "project_tasks_pending", 409)
         pending = await self.session.scalar(
             select(VisualAssistantMessage.id)
             .join(

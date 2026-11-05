@@ -2,15 +2,18 @@
 
 from sqlalchemy import text
 
+from app.llm.generation_state import can_recover_generation_result
 from app.llm.visual_generation_model import VisualGenerationValidationError
 from app.runtime.time import utc_now
 
+from .admission import settle
 from .visual_generation_records import VisualProviderTask
 
 
 def task_view(row):
     metadata = dict(row.result_metadata or {})
     metadata.pop("key", None)
+    metadata.pop("delivered", None)
     return {
         "task_id": row.id,
         "status": row.status,
@@ -19,7 +22,7 @@ def task_view(row):
         "execution_info": row.execution_info,
         "error_message": row.error_message,
         "revision": row.revision,
-        "can_retry_materialization": row.status == "failed" and bool(row.result_url),
+        "can_retry_materialization": can_recover_generation_result(row),
         "result": metadata or None,
     }
 
@@ -60,15 +63,17 @@ class VisualGenerationResults:
                     )
                 row.status = "cancelled"
             else:
-                if row.status != "failed" or not row.result_url:
+                if not can_recover_generation_result(row):
                     raise VisualGenerationValidationError(
                         "生成结果不能重试落盘", code="retry_unavailable", status=409
                     )
                 row.last_retry_revision = expected
-                row.status = "processing"
+                row.status = "processing" if row.result_url else "pending"
             row.error_message = None
             row.revision += 1
             row.updated_at = utc_now()
+            if action == "cancel":
+                await settle(session)
             await session.commit()
             return task_view(row)
 
@@ -76,7 +81,7 @@ class VisualGenerationResults:
         async with self.sessions(info={"owner_user_id": owner}) as session:
             row = await self.row(session, project, identity, digest, task_id)
             metadata = dict(row.result_metadata or {})
-        if not metadata or metadata.get("sha256") != sha256:
+        if not metadata or metadata.get("delivered") or metadata.get("sha256") != sha256:
             raise VisualGenerationValidationError("生成结果不存在", code="not_found", status=404)
         root = self.state.visual_generation_runner.output_root(owner)
         path = root / metadata["key"]
@@ -90,3 +95,21 @@ class VisualGenerationResults:
                 "生成结果原件暂不可用", code="result_unavailable", status=503
             )
         return path, metadata
+
+    async def acknowledge(self, owner, project, identity, digest, task_id, sha256):
+        async with self.sessions(info={"owner_user_id": owner}) as session:
+            await session.execute(text("BEGIN IMMEDIATE"))
+            row = await self.row(session, project, identity, digest, task_id)
+            metadata = dict(row.result_metadata or {})
+            if row.status != "completed" or metadata.get("sha256") != sha256:
+                raise VisualGenerationValidationError(
+                    "生成结果不存在", code="not_found", status=404
+                )
+            metadata["delivered"] = True
+            row.result_metadata = metadata
+            await session.commit()
+        root = self.state.visual_generation_runner.output_root(owner)
+        path = root / metadata["key"]
+        if not path.is_symlink() and path.resolve().is_relative_to(root):
+            path.unlink(missing_ok=True)
+        return {"state": "acknowledged"}

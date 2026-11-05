@@ -44,7 +44,7 @@ async def upload_bytes(file):
         yield chunk
 
 
-async def describe(file, kind, *, composition_batch_id=None):
+async def describe(file, kind, *, composition_batch_id=None, generation_task_id=None):
     checksum = hashlib.sha256()
     size = 0
     async for chunk in upload_bytes(file):
@@ -62,6 +62,7 @@ async def describe(file, kind, *, composition_batch_id=None):
             byte_size=size,
             content_sha256=checksum.hexdigest(),
             composition_batch_id=composition_batch_id,
+            generation_task_id=generation_task_id,
         )
     except ValueError as exc:
         raise OutputError("上传文件名、格式或内容无效", code="invalid_file_content") from exc
@@ -160,7 +161,16 @@ class Uploads:
             raise ProjectResourceError("上传结果未确认", "visual_upload_unconfirmed", 503) from exc
 
     async def stage_and_commit(
-        self, current, expected, file, kind, apply, *, composition_batch_id=None
+        self,
+        current,
+        expected,
+        file,
+        kind,
+        apply,
+        *,
+        composition_batch_id=None,
+        generation_task_id=None,
+        required_asset_ids=(),
     ):
         if current.revision != expected:
             raise conflict(expected, current)
@@ -171,7 +181,12 @@ class Uploads:
         carried.update(asset_id for asset_id, _ in expected_assets(current.nodes))
         for identity in await pending_outcomes(self.session, project_id):
             await self._deliver(identity)
-        description = await describe(file, kind, composition_batch_id=composition_batch_id)
+        description = await describe(
+            file,
+            kind,
+            composition_batch_id=composition_batch_id,
+            generation_task_id=generation_task_id,
+        )
         change = PrepareReferenceChange(
             request_id=uuid4().hex,
             resource_kind="canvas",
@@ -184,6 +199,10 @@ class Uploads:
         )
         prepared = await self._prepare(change)
         try:
+            if set(required_asset_ids) & prepared.unavailable_asset_ids:
+                raise ProjectResourceError(
+                    "生成结果引用的素材已不可用", "generation_reference_missing", 409
+                )
             assets = await self._stage(prepared, file, description)
         except BaseException:
             await self.references.abort_after_rollback(self.session, prepared)

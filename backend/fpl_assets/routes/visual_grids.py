@@ -39,7 +39,7 @@ async def authorize(request, digest, expected):
         )
     except (jwt.InvalidTokenError, ValueError, TypeError):
         raise HTTPException(401, "visual_grid_grant_required") from None
-    if actor.purpose != "studio" or "content.write" not in effective_permissions(
+    if actor.purpose != "studio" or not {"content.write", "models.use"} & effective_permissions(
         actor.platform_role, frozenset(actor.scopes)
     ):
         raise HTTPException(403, "visual_grid_assets_forbidden")

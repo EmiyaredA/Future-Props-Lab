@@ -5189,6 +5189,18 @@
       "model": "VideoMigrationReceipt"
     },
     {
+      "table": "visual_generation_decisions",
+      "service": "visual",
+      "module": "fpl_visual.generation_dispatch_records",
+      "model": "VisualGenerationDecision"
+    },
+    {
+      "table": "visual_generation_dispatches",
+      "service": "visual",
+      "module": "fpl_visual.generation_dispatch_records",
+      "model": "VisualGenerationDispatch"
+    },
+    {
       "table": "visual_certification_receipts",
       "service": "visual",
       "module": "fpl_visual.models",

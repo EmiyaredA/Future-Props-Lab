@@ -6,7 +6,7 @@ from sqlalchemy import select, text
 
 from app.apps.visual_workshop.canvas_values import canvas_out
 from app.apps.visual_workshop.generation_common import GenerationError
-from app.apps.visual_workshop.models import VisualGenerationBatch
+from app.apps.visual_workshop.models import VisualGenerationBatch, VisualGenerationTask
 from app.apps.visual_workshop.outputs.recording import register_output
 from app.runtime.polling_runner import PollingTaskRunner
 from app.runtime.revisions import RevisionConflictError
@@ -99,6 +99,9 @@ class CompositionRunner(PollingTaskRunner):
     async def publish(self, db, owner, batch, dispatch, image):
         project, node_id, identity = batch.project_id, batch.generation_node_id, batch.id
         source_items = batch.source_items
+        if batch.batch_kind == "generation":
+            first = await db.get(VisualGenerationTask, batch.child_task_ids[0])
+            source_items = first.request_payload.get("input_snapshot", [])
         projects = Projects(db, owner)
         current = canvas_out(await projects.canvas_row(project))
         self.require_node(

@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .library_assets import ID, LibraryAssetDescription, LibraryAssetQuery
 from .motion_preview import DIGEST, FrameFile, FrameScope, sha256
+from .visual_generation import generation_source
 
 ASSETS = "/_internal/v1/visual-grid-assets"
 RENDER = "/_internal/v1/visual-grid"
@@ -27,7 +28,11 @@ def retry_source(batch):
 
 
 def composition_source(method, path, project, batch):
-    return method == "POST" and path in {create_source(project), retry_source(batch)}
+    source = generation_source(method, path)
+    return method == "POST" and (
+        path in {create_source(project), retry_source(batch)}
+        or (source is not None and source[1] == project and source[2] == "batches")
+    )
 
 
 class GridAssetQuery(LibraryAssetQuery):
@@ -110,4 +115,10 @@ def composition_grant(grant):
         return False
     return bool(
         target and composition_source(grant.source_method, grant.source_path, target[1], target[2])
+    )
+
+
+def model_grid_grant(grant):
+    return bool(
+        generation_source(grant.source_method, grant.source_path) and composition_grant(grant)
     )
