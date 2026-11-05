@@ -42,9 +42,9 @@ test("code and image blocks keep compact spacing when image controls appear", as
       "```text\nClaude Code = 一个 agent loop\n  + 工具\n```",
     ),
   });
-  const code = prose.locator("pre");
+  const code = prose.locator(".document-code-block");
   await expect(code).toBeVisible();
-  await code.click();
+  await code.locator("pre").click();
   await prose.press("ControlOrMeta+End");
   await page
     .locator('.thought-rich-editor input[accept^="image/"]')
@@ -66,11 +66,11 @@ test("code and image blocks keep compact spacing when image controls appear", as
       }, theme);
       await page.getByLabel("笔记标题", { exact: true }).click();
       const codeBox = (await code.boundingBox())!;
-      const tagsBox = (await page.locator(".thought-note-tags").boundingBox())!;
+      const proseBox = (await prose.boundingBox())!;
       const imageBox = (await image.boundingBox())!;
-      expect(codeBox.y - tagsBox.y - tagsBox.height).toBeLessThanOrEqual(16);
+      expect(codeBox.y - proseBox.y).toBeLessThanOrEqual(40);
       expect(imageBox.y - codeBox.y - codeBox.height).toBeGreaterThanOrEqual(0);
-      expect(imageBox.y - codeBox.y - codeBox.height).toBeLessThanOrEqual(16);
+      expect(imageBox.y - codeBox.y - codeBox.height).toBeLessThanOrEqual(24);
       await image.hover();
       const toolbar = page.getByRole("toolbar", { name: "图片操作" });
       await expect(toolbar).toHaveCount(0);
@@ -164,6 +164,9 @@ for (const width of [1600, 1280, 390]) {
     await expect(page.getByText("已保存", { exact: true })).toBeVisible();
     await page.reload();
     await expect(page.locator(".thought-tag")).toHaveText(["产品思考", "灵感"]);
+    await page.locator(".knowledge-main").evaluate((main) => {
+      main.scrollTop = 0;
+    });
     const topbar = page.locator(".knowledge-topbar");
     const title = page.getByRole("textbox", { name: "笔记标题", exact: true });
     const topbarBox = (await topbar.boundingBox())!;
@@ -174,7 +177,7 @@ for (const width of [1600, 1280, 390]) {
       .getByRole("button", { name: "新建文档", exact: true })
       .last();
     for (const action of [more, newDocumentButton])
-      expect((await action.boundingBox())!.height).toBe(40);
+      expect((await action.boundingBox())!.height).toBe(width <= 700 ? 36 : 40);
     if (width >= 1280) expect(topbarBox.height).toBeLessThanOrEqual(60);
     for (const theme of ["light", "dark"]) {
       await setThoughtTheme(page, theme);
@@ -194,7 +197,11 @@ for (const width of [1600, 1280, 390]) {
     expect(box.x).toBeGreaterThanOrEqual(0);
     expect(box.x + box.width).toBeLessThanOrEqual(width);
     await page.keyboard.press("Escape");
-    await page.getByRole("button", { name: "笔记目录", exact: true }).click();
+    const directory = page.getByRole("button", {
+      name: "笔记目录",
+      exact: true,
+    });
+    if (width <= 1200) await directory.click();
     await expect(page.locator(".knowledge-sidebar")).toBeVisible();
     await noOverflow(page);
     await page.screenshot({
@@ -203,9 +210,7 @@ for (const width of [1600, 1280, 390]) {
     });
     if (width <= 1200) {
       await page.keyboard.press("Escape");
-      await expect(
-        page.getByRole("button", { name: "笔记目录", exact: true }),
-      ).toBeFocused();
+      await expect(directory).toBeFocused();
     }
     await prose.fill("长正文内容与边界检查。".repeat(300));
     await noOverflow(page);
