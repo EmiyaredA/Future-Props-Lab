@@ -21,3 +21,5 @@ Visual 用应用内审批队列运行原六个工具和原 SSE 封装。模型�
 ## Verification
 
 隔离测试通过真实 SSE 帧和审批 HTTP 验证批准写入、错对话、陈旧画布、权限撤销和 Models 日志。旧站与服务目录的公共契约继续使用同一份 OpenAPI。
+
+同一候选的六个服务镜像加封闭供应商夹具在独立 Compose 项目启动，Chromium 提交并批准画布写入，Visual、Models 与 Identity 重启后读回同一画布和历史。
