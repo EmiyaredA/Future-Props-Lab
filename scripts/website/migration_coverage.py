@@ -12,6 +12,7 @@ from studio.apps.director_desk.storage.migration_records import DATASETS as DIRE
 from studio.apps.galgame_workshop.storage.migration_records import DATASETS as GALGAME
 from studio.apps.galgame_workshop.storage.migration_records import OPERATIONS as GALGAME_RECEIPTS
 from studio.apps.identity.credential_migration import DATASETS as IDENTITY
+from studio.apps.integrations.storage.catalog_migration import DATASETS as INTEGRATIONS
 from studio.apps.model_service.catalog_migration import DATASETS as MODELS
 from studio.apps.model_service.settings_migration import DEFAULT_PREFIX, POLICIES
 from studio.apps.motion_compositor.storage.migration_records import DATASETS as MOTION
@@ -32,7 +33,15 @@ ROOT = Path(__file__).resolve().parents[2]
 TRANSFER = {
     **{
         dataset.model.__tablename__: dataset.name
-        for dataset in (*IDENTITY, *ASSETS, *DIRECTOR, *MODELS, *PRESENTATION, *AGENTS)
+        for dataset in (
+            *IDENTITY,
+            *ASSETS,
+            *DIRECTOR,
+            *MODELS,
+            *PRESENTATION,
+            *AGENTS,
+            *INTEGRATIONS,
+        )
     },
     **{
         dataset.model.__tablename__: dataset.name

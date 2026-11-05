@@ -592,3 +592,9 @@ Assets 元数据和原件经 SHA256 验收后，执行 `uv run python -m scripts
 在 `fpl_deployment_environment` 明确配置每个选定服务的镜像、状态目录和只读挂载，管理启动器按已登记的清单顺序装配。Visual 和 Galgame 共用项目所有者清单，需要一并选定镜像。Creative 需要 Integrations，Remote 需要 Guacamole 配套镜像。项目快照、原生 worker、交接密钥和云控投影按各自配置选择对应挂载。只使用 TOML 提供的 Compose 值。
 
 启动前先运行 `uv run python scripts/management/start.py --config "$isolated_config" --check`。检查选定服务数据库和 Compose 配置，不执行迁移和容器启停。Remote 与 Guacamole 同属业务启停组，Guacamole 无独立网站入口。只有网关和管理端绑定本机入口。
+
+### Integrations 目录与原密钥校验
+
+隔离目标先显式应用 Integrations 的 0011 迁移。通过 `studio.assembly.independent.integrations.cli` 启动 `migration-export` 和 `migration-import`，分别传入封存源数据库和目标自有状态目录。导入入口的 `--config` 仅接受当前用户独占的普通 TOML，指定目标数据库并保留原加密密钥。运行 `uv run python -m scripts.website.migrate_integrations_catalog --plan "$plan" --source "$integrations_source" --target "$integrations_target"`，传输 Tool API、MCP 服务和已发现工具、外部连接与检查历史。密钥不符或 MCP 环境密文和键名清单不一致会阻止该批次。重复执行会核对同一批次和目标数据摘要。
+
+Skill 版本和文件仍由单独的数据集与原件核验覆盖。整站切换前核对完整来源覆盖报告。

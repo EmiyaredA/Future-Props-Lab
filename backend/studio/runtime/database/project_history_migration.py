@@ -31,6 +31,7 @@ class ProjectDataset:
     cursor_pattern: str = CURSOR
     projection: Callable | None = None
     validate: Callable | None = None
+    parent_key: str = "project_id"
 
     @property
     def suffix(self):
@@ -44,7 +45,9 @@ class ProjectDataset:
     def select(self, *columns):
         query = select(*columns).select_from(self.model)
         if self.project is not None:
-            query = query.join(self.project, self.project.id == self.model.project_id, isouter=True)
+            query = query.join(
+                self.project, self.project.id == getattr(self.model, self.parent_key), isouter=True
+            )
         return query
 
     def key_for(self, value):
@@ -126,7 +129,7 @@ async def ingest(sessions, dataset, receipt_model, batch):
             return receipt
         for record in batch.records:
             if dataset.project is not None:
-                project = await session.get(dataset.project, record.project_id)
+                project = await session.get(dataset.project, getattr(record, dataset.parent_key))
                 if project is None or project.owner_user_id != owner:
                     raise blocked("migration_project_owner_conflict")
             if dataset.validate is not None:

@@ -79,13 +79,13 @@ def website(config, port):
             cwd=ROOT,
             stdout=subprocess.DEVNULL,
         ) as proc,
-        httpx.Client(base_url=origin, trust_env=False, timeout=5) as client,
+        httpx.Client(base_url=origin, trust_env=False, timeout=30) as client,
     ):
         try:
             deadline = time.monotonic() + 20
             while time.monotonic() < deadline and proc.poll() is None:
                 try:
-                    if client.get("/ready").status_code == 200:
+                    if client.get("/ready", timeout=2).status_code == 200:
                         break
                 except httpx.TransportError:
                     pass

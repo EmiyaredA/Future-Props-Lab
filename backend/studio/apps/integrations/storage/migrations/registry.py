@@ -7,6 +7,7 @@ from studio.apps.integrations.storage.migrations.versions.v0007 import SQL as SQ
 from studio.apps.integrations.storage.migrations.versions.v0008 import SQL as SQL_0008
 from studio.apps.integrations.storage.migrations.versions.v0009 import SQL as SQL_0009
 from studio.apps.integrations.storage.migrations.versions.v0010 import SQL as SQL_0010
+from studio.apps.integrations.storage.migrations.versions.v0011 import SQL as SQL_0011
 from studio.runtime.database.migrations import Migration
 
 MIGRATIONS = (
@@ -19,4 +20,5 @@ MIGRATIONS = (
     Migration("0008_creative_receipts", SQL_0008),
     Migration("0009_creative_cancellations", SQL_0009),
     Migration("0010_amadeus_tool_calls", SQL_0010),
+    Migration("0011_import_receipts", SQL_0011),
 )

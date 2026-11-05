@@ -3,15 +3,23 @@
 import argparse
 import json
 import os
+import stat
 import sys
 from pathlib import Path
 
+from studio.runtime.database.project_history_migration import (
+    add_maintenance_options,
+    handle_maintenance,
+)
 from studio.runtime.lifecycle.locking import service_lock
 
 
 def parser():
     result = argparse.ArgumentParser(description="FPL Integrations")
-    result.add_argument("command", choices=("serve", "migrate"))
+    result.add_argument(
+        "command", choices=("serve", "migrate", "migration-export", "migration-import")
+    )
+    add_maintenance_options(result)
     result.add_argument("--config", type=Path, default=Path("/run/fpl/config.toml"))
     result.add_argument("--state-root", type=Path, default=Path("/state"))
     result.add_argument("--public-key", type=Path, default=Path("/run/fpl/identity-public.pem"))
@@ -25,6 +33,26 @@ def parser():
     result.add_argument("--creative-install-credentials", type=Path)
     result.add_argument("--port", type=int, default=8080)
     return result
+
+
+def import_from_config(config, *, plan, state_root):
+    from studio.config import read_config
+
+    from .maintenance import create_import_app
+
+    info = config.lstat()
+    if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o077:
+        raise ValueError("Integrations 迁移配置必须是本用户独占的普通文件")
+    settings = read_config(config)
+    database = settings.get("fpl_database_path")
+    key = settings.get("fpl_secrets_key")
+    if (
+        not isinstance(database, str)
+        or Path(database).resolve() != state_root.resolve() / "service.db"
+        or not isinstance(key, str)
+    ):
+        raise ValueError("Integrations 迁移需要目标数据库及原加密密钥")
+    return create_import_app(plan=plan, state_root=state_root, secret_key=key)
 
 
 def run(options):
@@ -111,7 +139,20 @@ def run(options):
 
 if __name__ == "__main__":
     try:
-        run(parser().parse_args())
+        arguments = parser()
+        options = arguments.parse_args()
+        if options.command.startswith("migration-"):
+            from functools import partial
+
+            from .maintenance import create_export_app
+
+            handle_maintenance(
+                arguments, options, create_export_app, partial(import_from_config, options.config)
+            )
+        elif options.migration_plan is not None or options.legacy_db is not None:
+            arguments.error("迁移计划与源快照仅用于维护入口")
+        else:
+            run(options)
     except (ValueError, RuntimeError) as exc:
         print(str(exc), file=sys.stderr)
         raise SystemExit(1) from None

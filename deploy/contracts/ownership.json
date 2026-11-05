@@ -4547,6 +4547,12 @@
       "model": "AmadeusToolCall"
     },
     {
+      "table": "integrations_import_receipts",
+      "service": "integrations",
+      "module": "studio.apps.integrations.storage.catalog_migration",
+      "model": "IntegrationsImportReceipt"
+    },
+    {
       "table": "integration_creative_install_receipts",
       "service": "integrations",
       "module": "studio.apps.integrations.storage.creative_records",

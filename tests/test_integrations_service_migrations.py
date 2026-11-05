@@ -6,6 +6,7 @@ import pytest
 from sqlalchemy import select
 
 from studio.apps.integrations.records import ExternalExecution
+from studio.apps.integrations.storage.catalog_migration import IntegrationsImportReceipt
 from studio.apps.integrations.storage.migrations.registry import MIGRATIONS
 from studio.apps.integrations.storage.service_models import MODELS
 from studio.runtime.database.migrations import apply, check
@@ -23,7 +24,9 @@ def test_integrations_append_only_owned_schema_has_no_foreign_service_tables(tmp
     with sqlite3.connect(f"file:{path}?mode=ro", uri=True) as db:
         assert db.execute("SELECT * FROM _fpl_service_schema ORDER BY position").fetchone() == first
         tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-        assert tables == {model.__tablename__ for model in MODELS} | {"_fpl_service_schema"}
+        assert tables == {model.__tablename__ for model in (*MODELS, IntegrationsImportReceipt)} | {
+            "_fpl_service_schema"
+        }
         assert not tables.intersection(
             {"users", "visual_assets", "runtime_admissions", "thought_notes"}
         )
