@@ -166,7 +166,10 @@ test("application center filters and records recent application access", async (
     ["视频剪辑工坊", "video-editor"],
   ]) {
     expect(
-      screen.getByRole("button", { name: `打开${name}` }).querySelector("img"),
+      screen
+        .getByRole("button", { name: `打开${name}` })
+        .closest("article")
+        ?.querySelector(".application-icon img"),
     ).toHaveAttribute(
       "src",
       publicImageSources(`/brand/${asset}-mark.png`).src,

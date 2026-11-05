@@ -1,5 +1,4 @@
 import { useId, useState } from "react";
-import { ChevronDown } from "lucide-react";
 import {
   servicePhaseLabels,
   serviceStatusTime,
@@ -38,7 +37,6 @@ export function ApplicationServiceStatus({
       >
         <span className="application-status-dot" aria-hidden />
         <span>{label}</span>
-        <ChevronDown size={12} aria-hidden />
       </button>
       {phase !== "running" &&
         (!checking || !!value || unavailable) &&

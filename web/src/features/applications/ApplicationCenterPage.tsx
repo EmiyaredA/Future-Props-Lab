@@ -150,34 +150,36 @@ export function ApplicationCenterPage({
             const Icon = app.icon;
             return (
               <article className="application-card" key={app.id}>
+                <span className="application-icon">
+                  {app.brandImage ? (
+                    <ResponsiveImage
+                      src={programAsset(app.brandImage)}
+                      width={48}
+                      height={48}
+                      alt=""
+                      draggable={false}
+                    />
+                  ) : (
+                    <Icon aria-hidden />
+                  )}
+                </span>
                 <button
                   type="button"
+                  className="application-card-open"
                   aria-label={`打开${app.name}`}
+                  title={app.name}
                   onClick={() => open(app)}
                 >
-                  <span className="application-icon">
-                    {app.brandImage ? (
-                      <ResponsiveImage
-                        src={programAsset(app.brandImage)}
-                        width={48}
-                        height={48}
-                        alt=""
-                        draggable={false}
-                      />
-                    ) : (
-                      <Icon aria-hidden />
-                    )}
-                  </span>
-                  <span className="application-copy">
-                    <strong>{app.name}</strong>
-                    <small title={app.description}>{app.description}</small>
-                    <span className="application-capabilities">
-                      {app.capabilities.slice(0, 2).map((item) => (
-                        <em key={item}>{item}</em>
-                      ))}
-                    </span>
-                  </span>
+                  {app.name}
                 </button>
+                <div className="application-copy">
+                  <small title={app.description}>{app.description}</small>
+                  <span className="application-capabilities">
+                    {app.capabilities.slice(0, 2).map((item) => (
+                      <em key={item}>{item}</em>
+                    ))}
+                  </span>
+                </div>
                 <ApplicationServiceStatus
                   name={app.name}
                   value={services?.services.find(
