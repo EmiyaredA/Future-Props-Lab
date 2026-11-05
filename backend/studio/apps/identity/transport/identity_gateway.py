@@ -59,7 +59,7 @@ class GatewayTransport:
         origins = self.management_origins if management else self.origins
         origin = origins.get(ingress)
         if (not management and path.startswith("/v1/platform/")) or (
-            management and path == "/v1/auth/register"
+            path == "/v1/auth/register" and (management or ingress == "public")
         ):
             await PlainTextResponse("Not Found", 404)(scope, receive, send)
             return
@@ -87,6 +87,8 @@ class GatewayTransport:
             if message["type"] == "http.response.start":
                 outgoing = MutableHeaders(scope=message)
                 outgoing["Cache-Control"] = "no-store"
+                if ingress == "local" and not management and path == "/v1/auth/me":
+                    outgoing["X-Fpl-Invite-Registration"] = "allowed"
                 if ingress == "public":
                     message["headers"] = [
                         (

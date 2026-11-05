@@ -14,7 +14,8 @@ export type AccountSessionContext = {
   logout: () => Promise<void>;
 };
 
-export const getMe = async () => unwrap(await api.GET("/v1/auth/me"));
+export const requestCurrentSession = () => api.GET("/v1/auth/me");
+export const getMe = async () => unwrap(await requestCurrentSession());
 
 export const login = async (username: string, password: string) =>
   unwrap(await api.POST("/v1/auth/login", { body: { username, password } }));

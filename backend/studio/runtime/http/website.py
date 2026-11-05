@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from fastapi import HTTPException, Request
-from starlette.datastructures import Headers
+from starlette.datastructures import Headers, MutableHeaders
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import HTMLResponse, PlainTextResponse
 from starlette.staticfiles import StaticFiles
@@ -192,6 +192,13 @@ class WebsiteTransport:
                 return
 
         async def observe(message):
+            if (
+                message["type"] == "http.response.start"
+                and not public
+                and scope.get("method") == "GET"
+                and scope["path"] == "/v1/auth/me"
+            ):
+                MutableHeaders(scope=message)["X-Fpl-Invite-Registration"] = "allowed"
             if (
                 message["type"] == "http.response.start"
                 and 200 <= message["status"] < 300

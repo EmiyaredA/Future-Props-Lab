@@ -14,7 +14,7 @@ const databasePath =
 
 export default defineConfig({
   testDir: "./e2e",
-  testIgnore: "management.spec.ts",
+  testIgnore: ["management.spec.ts", "platform-governance.spec.ts"],
   outputDir: process.env.FPL_E2E_OUTPUT || "test-results",
   globalSetup: "./e2e/global-setup.ts",
   timeout: 30_000,

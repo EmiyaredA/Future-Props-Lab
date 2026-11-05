@@ -208,6 +208,9 @@ async def scenario():
         async with httpx.AsyncClient(
             transport=transport, base_url="http://127.0.0.1:19000", headers=headers
         ) as client:
+            signed_out = await client.get("/v1/auth/me")
+            assert signed_out.status_code == 401
+            assert signed_out.headers["X-Fpl-Invite-Registration"] == "allowed"
             login = await client.post(
                 "/v1/auth/login", json={"username": "identity-admin", "password": password}
             )
@@ -717,6 +720,9 @@ async def scenario():
         async with httpx.AsyncClient(
             transport=transport, base_url="http://127.0.0.1:19000"
         ) as direct:
+            signed_out = await direct.get("/v1/auth/me", headers={"X-Fpl-Ingress": "local"})
+            assert signed_out.status_code == 403
+            assert "X-Fpl-Invite-Registration" not in signed_out.headers
             response = await direct.post(
                 "/v1/auth/login",
                 headers={"X-Fpl-Ingress": "local"},
@@ -728,6 +734,10 @@ async def scenario():
             base_url="https://studio.example.test",
             headers={**headers, "X-Fpl-Ingress": "public"},
         ) as public:
+            signed_out = await public.get("/v1/auth/me")
+            assert signed_out.status_code == 401
+            assert "X-Fpl-Invite-Registration" not in signed_out.headers
+            assert (await public.post("/v1/auth/register", json={})).status_code == 404
             login = await public.post(
                 "/v1/auth/login", json={"username": "identity-admin", "password": password}
             )

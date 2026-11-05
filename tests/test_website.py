@@ -188,9 +188,12 @@ async def public_client(site):
 
 async def test_site_shares_accounts_and_projects_without_native_transport(website):
     local = website.local
+    assert (await local.get("/v1/auth/me")).headers["X-Fpl-Invite-Registration"] == "allowed"
     assert (await local.get("/v1/automation/runtime")).json() == {"local_browser": True}
     public = await public_client(website)
     try:
+        assert "X-Fpl-Invite-Registration" not in (await public.get("/v1/auth/me")).headers
+        assert (await public.post("/v1/auth/register", json={})).status_code == 404
         assert (await public.get("/v1/automation/runtime")).json() == {"local_browser": False}
         project = await local.post(
             "/v1/visual-workshop/projects", json={"title": "Original account", "kind": "image"}

@@ -111,6 +111,7 @@ async def scenario():
             )
             browser.headers["X-CSRF-Token"] = browser.cookies["fpl_management_csrf"]
             assert (await browser.get("/v1/platform/accounts")).status_code == 200
+            assert "X-Fpl-Invite-Registration" not in (await browser.get("/v1/auth/me")).headers
             token = browser.cookies["fpl_management_session"]
             async with httpx.AsyncClient(
                 transport=identity_transport,

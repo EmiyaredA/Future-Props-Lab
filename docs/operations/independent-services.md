@@ -42,6 +42,16 @@ npm run services:test:docker -- --image fpl/identity:VERSION --gateway-image fpl
 
 所有 Compose 调用显式使用 `--env-file /dev/null`。业务服务仅连接内部网络，没有宿主发布端口；Gateway 另连入口 bridge，仅发布浏览器两个入口及原生采集专用的 127.0.0.1:29090 入口。每个服务只绑定自己的数据目录及最小只读配置，禁止用户主目录和 Docker Socket。Gateway 的官方 Caddy 二进制带低端口文件能力，当前显式保留该单项容器能力以保证可执行，其余能力均移除。
 
+### 管理中台浏览器验收
+
+完整 Compose 启动并创建隔离管理员后，由测试启动器把两个回环入口和测试账号传给 Playwright。使用下列环境变量运行 `npm run test:e2e:management --workspace web`。
+
+- `FPL_E2E_MANAGEMENT_ORIGIN` 与 `FPL_E2E_STUDIO_ORIGIN` 分别指向本次 Compose 的管理和业务回环入口。
+- `FPL_E2E_MANAGEMENT_USERNAME` 与 `FPL_E2E_MANAGEMENT_PASSWORD` 由启动器传入测试子进程。
+- `FPL_E2E_OUTPUT` 指向本次验收目录，保存各页面的桌面及手机截图。
+
+该模式使用实际网关和服务，验证八个管理页面、管理会话隔离、邀请码一次性展示、业务入口注册、普通账号的访问限制和兑换记录。运行结束后由 Compose 启动器销毁该测试环境。日常开发可直接运行同一命令，使用独立前端的模拟响应测试。
+
 ## 工作台与原生采集验收
 
 ```sh

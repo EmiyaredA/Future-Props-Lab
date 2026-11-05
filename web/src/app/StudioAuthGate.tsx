@@ -14,7 +14,7 @@ import {
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AUTH_REQUIRED_EVENT } from "@platform/api/studioAuth";
-import { ApiError } from "@platform/api/client";
+import { ApiError, unwrap } from "@platform/api/client";
 import { BrandMark } from "@shared/ui/BrandMark";
 import {
   type AuthMe,
@@ -23,15 +23,13 @@ import {
 } from "@app/StudioSession";
 import {
   changePassword,
-  getMe,
   login as loginAccount,
   logout as logoutAccount,
+  requestCurrentSession,
 } from "@features/accounts/api";
 import { useResourceBroadcastSync } from "@app/useResourceBroadcastSync";
 
 type Status = "checking" | "signed-out" | "signed-in";
-const registrationAllowed = import.meta.env.MODE !== "studio";
-
 const noSessionState = () => {};
 
 export function StudioAuthGate({
@@ -54,6 +52,7 @@ export function StudioAuthGate({
   }, [userId]);
   identityRef.current = me;
   const [registration, setRegistration] = useState(false);
+  const [registrationAllowed, setRegistrationAllowed] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
   const [registrationEmail, setRegistrationEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -66,8 +65,13 @@ export function StudioAuthGate({
   const refresh = useCallback(async () => {
     const request = ++identityRequest.current;
     try {
-      const current = await getMe();
+      const result = await requestCurrentSession();
+      const allowRegistration =
+        result.response.headers.get("X-Fpl-Invite-Registration") === "allowed";
+      setRegistrationAllowed(allowRegistration);
+      if (!allowRegistration) setRegistration(false);
       if (request !== identityRequest.current) return;
+      const current = await unwrap(result);
       const previous = identityRef.current;
       if (
         previous &&
