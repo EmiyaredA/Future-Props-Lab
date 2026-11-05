@@ -518,3 +518,24 @@ def test_thought_sync_operations_receive_ports_instead_of_request_or_state():
     source = (base / "sync_artifacts.py").read_text()
     assert "metadata(session" not in source
     assert "session.info" not in source
+
+
+def test_visual_provider_components_do_not_discover_peers_from_application_state():
+    base = STUDIO / "apps/model_service/visual"
+    for filename in (
+        "visual_generation_intake.py",
+        "visual_generation_runner.py",
+        "visual_generation_results.py",
+        "visual_generation_retention.py",
+        "visual_generation_preflight.py",
+    ):
+        tree = ast.parse((base / filename).read_text())
+        for node in ast.walk(tree):
+            if isinstance(node, ast.arg):
+                assert node.arg != "state", filename
+            if isinstance(node, ast.Attribute):
+                assert node.attr != "visual_generation_runner", filename
+                if isinstance(node.value, ast.Name) and node.value.id == "self":
+                    assert node.attr not in {"state", "intake"}, filename
+    storage = STUDIO / "apps/model_service/storage/visual_generation_files.py"
+    assert not any(name.startswith("studio.apps.model_service.visual") for name in imports(storage))

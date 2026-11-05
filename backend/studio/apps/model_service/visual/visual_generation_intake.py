@@ -8,6 +8,7 @@ from sqlalchemy import select, text
 
 from studio.apps.model_service.admission.admission import settle
 from studio.apps.model_service.catalog.visual_generation import VisualGenerationValidationError
+from studio.apps.model_service.storage.visual_generation_batches import batch_conflict, load_batch
 from studio.apps.model_service.storage.visual_generation_records import (
     VisualProviderBatch,
     VisualProviderTask,
@@ -21,12 +22,6 @@ from studio.apps.model_service.visual.visual_generation_queue import admit
 from studio.runtime.time import utc_now
 
 
-def batch_conflict():
-    return VisualGenerationValidationError(
-        "模型生成批次状态或摘要不匹配", code="visual_generation_batch_conflict", status=409
-    )
-
-
 def receipt(batch, tasks):
     return {
         "plan_id": batch.id,
@@ -36,25 +31,10 @@ def receipt(batch, tasks):
 
 
 class VisualGenerationIntake:
-    def __init__(self, state):
-        self.state = state
-        self.sessions = state.database.sessions
-        self.root = state.database.root / ".visual-generation"
-
-    def staging_root(self, owner):
-        root = self.root / owner / "inputs"
-        if root.is_symlink() or not root.resolve().is_relative_to(self.state.database.root):
-            raise VisualGenerationValidationError(
-                "生成素材暂存目录不可用", code="visual_generation_staging_unavailable", status=503
-            )
-        root.mkdir(mode=0o700, parents=True, exist_ok=True)
-        return root
-
-    async def batch(self, session, project, identity, digest):
-        row = await session.get(VisualProviderBatch, identity)
-        if row is not None and (row.project_id, row.plan_sha256) != (project, digest):
-            raise batch_conflict()
-        return row
+    def __init__(self, sessions, *, files, originals_client, check_authority, temporary_upload_url):
+        self.sessions, self.files = sessions, files
+        self.originals_client, self.check_authority = originals_client, check_authority
+        self.temporary_upload_url = temporary_upload_url
 
     @staticmethod
     async def tasks(session, identity):
@@ -70,20 +50,20 @@ class VisualGenerationIntake:
         owner = actor.user_id
         identity = str(plan.plan_id)
         async with self.sessions(info={"owner_user_id": owner}) as session:
-            prior = await self.batch(session, plan.project_id, identity, plan.digest)
+            prior = await load_batch(session, plan.project_id, identity, plan.digest)
             if prior is not None:
                 if prior.state == "aborted":
                     raise batch_conflict()
                 return receipt(prior, await self.tasks(session, identity))
-            await verify_selection(session, self.state, owner, plan)
-        directory = Path(mkdtemp(prefix="plan-", dir=self.staging_root(owner)))
+            await verify_selection(
+                session, owner, plan, temporary_upload_url=self.temporary_upload_url
+            )
+        directory = Path(mkdtemp(prefix="plan-", dir=self.files.staging_root(owner)))
         committing = False
         try:
-            paths = await original_files(self.state, plan, originals_token, directory)
-            payloads = await normalize(self.state, plan, paths)
-            active = await self.state.identity.status(
-                assertion=assertion, method="POST", path=plan.path
-            )
+            paths = await original_files(self.originals_client, plan, originals_token, directory)
+            payloads = await normalize(plan, paths, temporary_upload_url=self.temporary_upload_url)
+            active = await self.check_authority(assertion=assertion, method="POST", path=plan.path)
             if active is not True:
                 raise VisualGenerationValidationError(
                     "生成批次授权已结束",
@@ -92,12 +72,14 @@ class VisualGenerationIntake:
                 )
             async with self.sessions(info={"owner_user_id": owner}) as session:
                 await session.execute(text("BEGIN IMMEDIATE"))
-                prior = await self.batch(session, plan.project_id, identity, plan.digest)
+                prior = await load_batch(session, plan.project_id, identity, plan.digest)
                 if prior is not None:
                     if prior.state == "aborted":
                         raise batch_conflict()
                     return receipt(prior, await self.tasks(session, identity))
-                await verify_selection(session, self.state, owner, plan)
+                await verify_selection(
+                    session, owner, plan, temporary_upload_url=self.temporary_upload_url
+                )
                 batch = VisualProviderBatch(
                     id=identity,
                     owner_user_id=owner,
@@ -139,7 +121,7 @@ class VisualGenerationIntake:
         directory = None
         async with self.sessions(info={"owner_user_id": owner}) as session:
             await session.execute(text("BEGIN IMMEDIATE"))
-            batch = await self.batch(session, project, identity, digest)
+            batch = await load_batch(session, project, identity, digest)
             if batch is None:
                 if decision != "abort":
                     raise batch_conflict()
@@ -161,7 +143,7 @@ class VisualGenerationIntake:
                 else:
                     batch.state = "aborted"
                     if batch.input_key:
-                        directory = self.staging_root(owner) / batch.input_key
+                        directory = self.files.staging_root(owner) / batch.input_key
                     batch.source_assertion = batch.source_path = batch.input_key = None
                     batch.input_assets = []
                     for task in tasks:
@@ -176,15 +158,3 @@ class VisualGenerationIntake:
         if directory is not None:
             shutil.rmtree(directory, ignore_errors=True)
         return {"state": batch.state}
-
-    def path_for(self, batch, asset_id):
-        directory = self.staging_root(batch.owner_user_id) / batch.input_key
-        path = directory / asset_id
-        if (
-            directory.is_symlink()
-            or path.is_symlink()
-            or not path.resolve().is_relative_to(self.root.resolve())
-            or not path.is_file()
-        ):
-            raise ValueError("生成参考素材文件已不存在")
-        return path

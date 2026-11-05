@@ -4,6 +4,7 @@ from sqlalchemy import text
 
 from studio.apps.model_service.admission.admission import settle
 from studio.apps.model_service.catalog.visual_generation import VisualGenerationValidationError
+from studio.apps.model_service.storage.visual_generation_batches import load_batch
 from studio.apps.model_service.storage.visual_generation_records import VisualProviderTask
 from studio.contracts.model_service.generation_recovery import can_recover_generation_result
 from studio.runtime.time import utc_now
@@ -27,13 +28,11 @@ def task_view(row):
 
 
 class VisualGenerationResults:
-    def __init__(self, state):
-        self.state = state
-        self.sessions = state.database.sessions
-        self.intake = state.visual_generation_intake
+    def __init__(self, sessions, *, files):
+        self.sessions, self.files = sessions, files
 
     async def row(self, session, project, identity, digest, task_id):
-        batch = await self.intake.batch(session, project, identity, digest)
+        batch = await load_batch(session, project, identity, digest)
         task = await session.get(VisualProviderTask, task_id)
         if batch is None or batch.state != "active" or task is None or task.batch_id != identity:
             raise VisualGenerationValidationError("生成任务不存在", code="not_found", status=404)
@@ -82,7 +81,7 @@ class VisualGenerationResults:
             metadata = dict(row.result_metadata or {})
         if not metadata or metadata.get("delivered") or metadata.get("sha256") != sha256:
             raise VisualGenerationValidationError("生成结果不存在", code="not_found", status=404)
-        root = self.state.visual_generation_runner.output_root(owner)
+        root = self.files.output_root(owner)
         path = root / metadata["key"]
         if (
             path.is_symlink()
@@ -107,7 +106,7 @@ class VisualGenerationResults:
             metadata["delivered"] = True
             row.result_metadata = metadata
             await session.commit()
-        root = self.state.visual_generation_runner.output_root(owner)
+        root = self.files.output_root(owner)
         path = root / metadata["key"]
         if not path.is_symlink() and path.resolve().is_relative_to(root):
             path.unlink(missing_ok=True)

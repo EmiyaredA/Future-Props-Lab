@@ -74,12 +74,22 @@ class ProviderMedia:
 class VisualGenerationRunner(PollingTaskRunner):
     runner_name = "visual-provider-generation"
 
-    def __init__(self, state, *, decrypt: Callable[[str], str]):
+    def __init__(
+        self,
+        sessions,
+        *,
+        files,
+        check_authority,
+        temporary_upload_url,
+        maximum_output_bytes,
+        decrypt: Callable[[str], str],
+    ):
         super().__init__()
-        self.state = state
-        self.sessions = state.database.sessions
-        self.intake = state.visual_generation_intake
-        self.retention = ProviderRetention(self.sessions, self.intake)
+        self.sessions, self.files = sessions, files
+        self.check_authority = check_authority
+        self.temporary_upload_url = temporary_upload_url
+        self.maximum_output_bytes = maximum_output_bytes
+        self.retention = ProviderRetention(sessions, files)
         self.zealman = ZealmanLiveMonitor()
         self.store = GenerationTaskStore(
             session_factory=self.sessions,
@@ -128,9 +138,7 @@ class VisualGenerationRunner(PollingTaskRunner):
             if batch is None or batch.state != "active" or not batch.source_assertion:
                 return None
             source = batch.source_assertion, batch.source_path
-        active = await self.state.identity.status(
-            assertion=source[0], method="POST", path=source[1]
-        )
+        active = await self.check_authority(assertion=source[0], method="POST", path=source[1])
         if active is None:
             return None
 
@@ -156,8 +164,11 @@ class VisualGenerationRunner(PollingTaskRunner):
                 data["id"]: LibraryAssetDescription.model_validate(data)
                 for data in batch.input_assets
             }
-            paths = {identity: self.intake.path_for(batch, identity) for identity in assets}
-        media = ProviderMedia(paths, assets, self.state.settings.fpl_temp_media_upload_url)
+            paths = {
+                identity: self.files.input_path(batch.owner_user_id, batch.input_key, identity)
+                for identity in assets
+            }
+        media = ProviderMedia(paths, assets, self.temporary_upload_url)
         return await submit_visual_generation(
             VisualGenerationInputs(media.local_reference, media.data_uri, media.temporary_url),
             provider_kind=task.provider_kind,
@@ -189,29 +200,20 @@ class VisualGenerationRunner(PollingTaskRunner):
             provider_task_id=task.provider_task_id,
         )
 
-    def output_root(self, owner):
-        directory = self.intake.root / owner / "outputs"
-        if directory.is_symlink() or not directory.resolve().is_relative_to(
-            self.intake.root.resolve()
-        ):
-            raise ValueError("模型生成结果目录不可用")
-        directory.mkdir(mode=0o700, parents=True, exist_ok=True)
-        return directory
-
     async def materialize(self, task_id, result_url):
         async with self.sessions() as session:
             row = await self.store.load(session, task_id)
             if row is None or row.status != "processing":
                 return
             owner, kind = row.owner_user_id, row.generation_kind
-        directory = self.output_root(owner)
+        directory = self.files.output_root(owner)
         key = uuid4().hex
         temporary, output = directory / (key + ".tmp"), directory / key
         try:
             size, media_kind, mime, suffix = await download_generated_media(
                 url=result_url,
                 target=temporary,
-                max_bytes=self.state.settings.fpl_visual_asset_max_bytes,
+                max_bytes=self.maximum_output_bytes,
             )
             if media_kind != kind:
                 raise ValueError("生成结果与任务类型不匹配")

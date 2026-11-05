@@ -27,8 +27,8 @@ def unfinished_inputs():
 
 
 class ProviderRetention:
-    def __init__(self, sessions, intake):
-        self.sessions, self.intake = sessions, intake
+    def __init__(self, sessions, files):
+        self.sessions, self.files = sessions, files
 
     async def recover(self):
         async with self.sessions(info={"allow_system_reads": True}) as session:
@@ -52,7 +52,7 @@ class ProviderRetention:
         await self.retire_inputs()
 
     def remove_orphans(self, inputs, outputs):
-        root = self.intake.root
+        root = self.files.root
         if root.is_symlink() or not root.is_dir():
             return
         for account in root.iterdir():
@@ -107,9 +107,9 @@ class ProviderRetention:
                 )
                 if batch is None:
                     continue
-                path = self.intake.staging_root(owner) / batch.input_key
+                path = self.files.staging_root(owner) / batch.input_key
                 batch.input_key = batch.source_assertion = batch.source_path = None
                 batch.input_assets = []
                 await session.commit()
-            if not path.is_symlink() and path.resolve().is_relative_to(self.intake.root.resolve()):
+            if not path.is_symlink() and path.resolve().is_relative_to(self.files.root.resolve()):
                 await run_sync(partial(shutil.rmtree, path, ignore_errors=True))

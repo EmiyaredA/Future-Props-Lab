@@ -47,6 +47,7 @@ from studio.apps.model_service.storage.models.model_test import (
 )
 from studio.apps.model_service.storage.native_models import NativeModelBroker
 from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.apps.model_service.storage.visual_generation_files import VisualGenerationFiles
 from studio.apps.model_service.stream_access import access_check
 from studio.apps.model_service.template_sync import TemplateSynchronization
 from studio.apps.model_service.templates.policy import initialize_account_catalog
@@ -324,11 +325,25 @@ def create_app(
         if visual_generation_key is not None
         else None
     )
-    app.state.visual_generation_intake = VisualGenerationIntake(app.state)
-    app.state.visual_generation_runner = VisualGenerationRunner(
-        app.state, decrypt=SecretCipher(settings.fpl_secrets_key).decrypt
+    generation_files = VisualGenerationFiles(database.root)
+    app.state.visual_generation_intake = VisualGenerationIntake(
+        database.sessions,
+        files=generation_files,
+        originals_client=app.state.capabilities.client,
+        check_authority=app.state.identity.status,
+        temporary_upload_url=app.state.settings.fpl_temp_media_upload_url,
     )
-    app.state.visual_generation_results = VisualGenerationResults(app.state)
+    app.state.visual_generation_runner = VisualGenerationRunner(
+        database.sessions,
+        files=generation_files,
+        check_authority=app.state.identity.status,
+        temporary_upload_url=app.state.settings.fpl_temp_media_upload_url,
+        maximum_output_bytes=app.state.settings.fpl_visual_asset_max_bytes,
+        decrypt=SecretCipher(settings.fpl_secrets_key).decrypt,
+    )
+    app.state.visual_generation_results = VisualGenerationResults(
+        database.sessions, files=generation_files
+    )
     app.state.visual_review_attempts = VisualReviewAttempts(
         database.sessions, settings, decrypt=SecretCipher(settings.fpl_secrets_key).decrypt
     )

@@ -26,7 +26,7 @@ REFERENCE_MIME_TYPES = {
 }
 
 
-async def original_files(state, plan, token, directory):
+async def original_files(client, plan, token, directory):
     if plan.scope is None:
         return {}
     scope = plan.scope
@@ -38,7 +38,7 @@ async def original_files(state, plan, token, directory):
         )
     path = scope.path(plan.project_id, str(plan.plan_id))
     try:
-        async with state.capabilities.client.stream(
+        async with client.stream(
             "POST",
             "http://assets:8080" + path,
             headers={HEADER: token, "Accept-Encoding": "identity"},
@@ -80,7 +80,7 @@ async def original_files(state, plan, token, directory):
         ) from exc
 
 
-async def verify_selection(session, state, owner, plan):
+async def verify_selection(session, owner, plan, *, temporary_upload_url):
     choice = plan.model
     args = plan.tasks[0].arguments
     model, provider = await select_visual_model(
@@ -92,7 +92,7 @@ async def verify_selection(session, state, owner, plan):
         provider_kind=provider.kind,
         provider_name=provider.name,
         model_slug=model.slug,
-        temporary_upload_configured=bool(state.settings.fpl_temp_media_upload_url),
+        temporary_upload_configured=bool(temporary_upload_url),
     )
     if current != choice:
         raise VisualGenerationValidationError(
@@ -118,7 +118,7 @@ def reference_rules(asset, kind, mimes, limit):
     return asset
 
 
-async def normalize(state, plan, paths):
+async def normalize(plan, paths, *, temporary_upload_url):
     assets = {item.id: item for item in plan.assets.items}
     limits = {"image": 30 * 1024**2, "audio": 15 * 1024**2, "video": plan.assets.max_video_bytes}
 
@@ -135,7 +135,7 @@ async def normalize(state, plan, paths):
                 SeedanceReference(asset.media_kind, asset.mime_type, paths[asset.id])
                 for asset in files
             ],
-            state.settings.fpl_temp_media_upload_url,
+            temporary_upload_url,
         )
 
     return {

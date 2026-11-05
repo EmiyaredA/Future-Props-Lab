@@ -33,6 +33,7 @@ from studio.apps.model_service.generation.outcomes import SUBMISSION_INTERRUPTED
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.apps.model_service.storage.visual_generation_files import VisualGenerationFiles
 from studio.apps.model_service.storage.visual_generation_records import VisualProviderTask
 from studio.apps.model_service.transport.visual_catalog_http import router
 from studio.apps.model_service.transport.visual_generation_http import router as visual_model_router
@@ -177,11 +178,25 @@ async def test_visual_catalog_delegates_exact_paths_and_excludes_other_accounts(
     )
     generation_key = "isolated-visual-generation-peer-" * 2
     models.state.visual_generation_peer = TimedPeer(generation_key, domain=PEER_DOMAIN)
-    models.state.visual_generation_intake = VisualGenerationIntake(models.state)
-    models.state.visual_generation_runner = VisualGenerationRunner(
-        models.state, decrypt=lambda _: "fixture"
+    generation_files = VisualGenerationFiles(database.root)
+    models.state.visual_generation_intake = VisualGenerationIntake(
+        database.sessions,
+        files=generation_files,
+        originals_client=models.state.capabilities.client,
+        check_authority=models.state.identity.status,
+        temporary_upload_url=models.state.settings.fpl_temp_media_upload_url,
     )
-    models.state.visual_generation_results = VisualGenerationResults(models.state)
+    models.state.visual_generation_runner = VisualGenerationRunner(
+        database.sessions,
+        files=generation_files,
+        check_authority=models.state.identity.status,
+        temporary_upload_url=models.state.settings.fpl_temp_media_upload_url,
+        maximum_output_bytes=models.state.settings.fpl_visual_asset_max_bytes,
+        decrypt=lambda _: "fixture",
+    )
+    models.state.visual_generation_results = VisualGenerationResults(
+        database.sessions, files=generation_files
+    )
     models.include_router(router)
     models.include_router(visual_model_router)
     case.mesh.apps["models"] = models

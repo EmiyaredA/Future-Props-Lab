@@ -161,6 +161,9 @@
   不允许默认全局配置回退。旧 `app/runtime/` 已移除，生产代码不得导入旧运行时。
 - 图片/视频后台任务的状态转换由 `studio/apps/model_service/generation/driver.GenerationTaskDriver` 唯一编排；各功能
   只提供任务存取、素材组装/落盘和调用日志钩子。`submitting` 中断必须安全失败，禁止自动重提。
+- Models 的视觉生成提交、执行、结果读取与清理各自接收会话、文件、授权及传输依赖，
+  不持有应用状态容器或借用另一组件的生命周期。文件布局归 `storage/visual_generation_files.py`，
+  批次身份和摘要读取归 `storage/visual_generation_batches.py`；结果读取不依赖 Runner 实例。
 - 媒体本地适配通过 `studio/deployment/media_modules.py` 逐模块登记可打包范围，不开放媒体存储或用例；
   预览并发由装配实例持有，禁止模块全局信号量。
 - 确定性时间线画面与视频渲染由 `backend/studio/apps/media_rendering/local/` 统一拥有；Galgame 直接导出不得
