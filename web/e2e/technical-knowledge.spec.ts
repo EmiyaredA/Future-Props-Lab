@@ -4,6 +4,7 @@ import { unzipSync, strFromU8 } from "fflate";
 import { TECHNICAL_LIBRARY } from "../src/features/thought-workshop/official/technicalCatalog";
 import { newDocument, pickNoteMore, saveNote } from "./thought-helpers";
 import { importAndPublish, legacyTarget } from "./official-import-helpers";
+import { setResponsiveTheme } from "./responsive-capture";
 
 const png = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAI0lEQVR4nGN8Wh3JQApgIkk1w6gG4gATkergYFQDMYDkUAIAeAUB2WkfhqEAAAAASUVORK5CYII=",
