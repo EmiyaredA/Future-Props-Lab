@@ -107,8 +107,9 @@ test("project topbar uses a compact accessible action menu", async ({
     await expect(
       topbar.getByRole("button", { name: "导入", exact: true }),
     ).toHaveCount(0);
-    expect((await trigger.boundingBox())!.height).toBe(40);
-    expect((await createDocument.boundingBox())!.height).toBe(40);
+    const controlHeight = width <= 700 ? 36 : 40;
+    expect((await trigger.boundingBox())!.height).toBe(controlHeight);
+    expect((await createDocument.boundingBox())!.height).toBe(controlHeight);
     if (width >= 1280)
       expect((await topbar.boundingBox())!.height).toBeLessThanOrEqual(60);
     expect(
@@ -123,7 +124,13 @@ test("project topbar uses a compact accessible action menu", async ({
       exact: true,
     });
     await expect(menu).toBeVisible();
-    await expect(menu.getByRole("menuitem")).toHaveCount(7);
+    await expect(menu.getByRole("menuitem")).toHaveCount(9);
+    await expect(
+      menu.getByRole("menuitem", { name: "导出整库 HTML" }),
+    ).toBeVisible();
+    await expect(
+      menu.getByRole("menuitem", { name: "发布到知识社区" }),
+    ).toBeVisible();
     await expect(menu.getByRole("separator")).toHaveCount(2);
     await expect(menu.getByRole("menuitem", { name: "导入" })).toBeFocused();
     await page.keyboard.press("End");
