@@ -62,7 +62,12 @@ from studio.apps.tools.video_downloads.local_jobs import VideoDownloads
 from studio.apps.video_editor.assistant_operations import apply_assistant_timeline_batch
 from studio.apps.video_editor.legacy_project_layouts import LegacyVideoLayouts
 from studio.apps.video_editor.legacy_timeline_assets import LegacyTimelineAssets
-from studio.assembly.annotation import document_editor, project_creator
+from studio.assembly.annotation import (
+    document_editor,
+    project_creator,
+    project_deleter,
+    saved_audio,
+)
 from studio.assembly.website.account_provisioning import create_account
 from studio.assembly.website.creative import bind_creative
 from studio.assembly.website.desktop import DesktopConnection
@@ -115,6 +120,8 @@ def bind_components(app, settings, database):
     )
     app.state.annotation_document_editor = document_editor
     app.state.annotation_project_creator = project_creator
+    app.state.annotation_project_deleter = project_deleter
+    app.state.annotation_saved_audio = saved_audio
     app.state.annotation_projects = lambda _request, session: ProjectRecords(
         session, sources=LegacyAnnotationSources(session, settings)
     )

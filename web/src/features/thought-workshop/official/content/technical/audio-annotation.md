@@ -53,7 +53,7 @@ erDiagram
 
 ## 片段编辑与转写结果怎样汇入项目
 
-项目拥有音频身份、说话人、毫秒片段、文本与情绪；播放器当前进度和选中片段属于视图。projects 与 operations 负责归属和编辑校验，转写能力提供识别结果，exports 提供项目数据、字幕或片段交付。模型返回的文本仍需与明确音频区间关联，不能直接改变另一段正在编辑的草稿。
+项目拥有音频身份、说话人、毫秒片段、文本与情绪；播放器当前进度和选中片段属于视图。CreateProject、DeleteProject 与 EditDocument 负责创建、删除和编辑规则，SavedAudio 通过快照、裁切与识别端口提供项目数据、字幕或片段交付。模型返回的文本仍需与明确音频区间关联，不能直接改变另一段正在编辑的草稿。
 
 一次修改说话人应命中稳定 ID 并保留时间区间，保存时比较项目版本；导出消费确认内容。重叠语音允许多个关联，不能因为界面当前只选中一个人就删除另一标签。SRT 与项目 JSON 保留信息不同，导出字幕不等于迁移全部工程。
 
@@ -72,4 +72,4 @@ erDiagram
 
 1. `backend/studio/apps/audio_annotation/schemas/document.py`
 2. `backend/studio/apps/audio_annotation/transcription.py`
-3. `backend/studio/apps/audio_annotation/exports.py`
+3. `backend/studio/apps/audio_annotation/use_cases/saved_audio.py`

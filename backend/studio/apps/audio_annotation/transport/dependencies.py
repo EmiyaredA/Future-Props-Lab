@@ -1,7 +1,6 @@
 """HTTP dependency declarations; the entrypoint supplies concrete adapters."""
 
 from collections.abc import Awaitable, Callable
-from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, Request
@@ -9,7 +8,9 @@ from fastapi import Depends, Request
 from studio.apps.audio_annotation.ports import ProjectOperations
 from studio.apps.audio_annotation.schemas.document import AudioAnnotationSegmentTranscriptionOut
 from studio.apps.audio_annotation.use_cases.create_project import CreateProject
+from studio.apps.audio_annotation.use_cases.delete_project import DeleteProject
 from studio.apps.audio_annotation.use_cases.edit_document import EditDocument
+from studio.apps.audio_annotation.use_cases.saved_audio import SavedAudio
 from studio.assembly.http_dependencies import OwnerDep, SessionDep
 
 
@@ -38,11 +39,20 @@ def segment_transcriber(request: Request, session: SessionDep):
     return request.app.state.annotation_transcriber(request, session)
 
 
-def staging_directory(request: Request) -> Path | None:
-    return request.app.state.annotation_staging
-
-
 TranscriberDep = Annotated[
     Callable[..., Awaitable[AudioAnnotationSegmentTranscriptionOut]], Depends(segment_transcriber)
 ]
-StagingDep = Annotated[Path | None, Depends(staging_directory)]
+
+
+def project_deleter(request: Request, session: SessionDep) -> DeleteProject:
+    return request.app.state.annotation_project_deleter(request, session)
+
+
+DeleterDep = Annotated[DeleteProject, Depends(project_deleter)]
+
+
+def saved_audio(request: Request, session: SessionDep) -> SavedAudio:
+    return request.app.state.annotation_saved_audio(request, session)
+
+
+SavedAudioDep = Annotated[SavedAudio, Depends(saved_audio)]

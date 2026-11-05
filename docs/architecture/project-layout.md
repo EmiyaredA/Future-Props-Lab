@@ -497,7 +497,9 @@ Future-Props-Lab/
   `use_cases/create_project.py` 共用创建、JSON 导入和任务转录导入；`rules/audio.py` 与
   `rules/documents.py` 拥有音频限制、文档校验和转录转换。`clients/creation_inputs.py` 管理
   媒体探测与转录借用，业务端口不暴露路径。`storage/projects.py` 原子提交项目、文档、波形
-  和素材引用投递；查询、删除与旧导出适配仍在后续解耦范围，不能视作整项迁移完成。
+  和素材引用投递；`DeleteProject` 先校验快照，再由存储重验 CAS 并删除子记录与引用投递；原音频保留。
+  `SavedAudio` 只消费已保存快照，裁切适配与识别适配通过显式端口注入，识别结果不自动写回文档。
+  旧站素材来源及直接上传识别适配仍在后续解耦范围。
 - 应用目录同样由 Web 静态注册表维护， 应用最近访问记录只保存在浏览器本地。视觉创作工坊、
   Galgame 工坊、视频剪辑工坊、演示工坊、思绪工坊与录音标注工坊通过应用模块配置品牌、导航和 active 规则，共用 `app/layout/WorkshopShell`；侧栏展示由 `shared/ui/WorkshopSidebar.tsx` 统一拥有，
   包括品牌、返回卡片、图标导航和主题切换。思绪工坊复用该展示组件，知识库状态与目录仍由功能模块管理；录音标注工坊与演示工坊同样 `supportsProjects: true`，但只引用公共文件库、不拥有独立项目存储根。
@@ -885,7 +887,8 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 - `web/src/features/models/inference/`：调用日志页中的独立任务查询、下载、转存与结果落盘重试入口；缓存键归属 models/queryKeys.ts。
 - `web/src/docs/articles/sdk/`：公开 SDK 教程及生成方法参考；开发文档仍经已授权接口加载。
 - `backend/studio/apps/thought_workshop/markdown_conversion.py` 与 `content_exports.py`：受控 Markdown 转换、静态 HTML 和含素材导出；`schemas/conversion.py` 描述正式契约。
-- `backend/studio/apps/audio_annotation/exports.py`：项目 JSON、SRT、已保存片段裁切与识别用例。
+- `backend/studio/apps/audio_annotation/use_cases/saved_audio.py`：已保存版本的导出、裁切与识别用例；
+  `rules/export_document.py` 输出 JSON/SRT，`clients/saved_audio.py` 管理媒体借用与临时文件。
 - `backend/studio/apps/media_rendering/use_cases/read_media.py`：账号文件的逐帧提取与派生输出结算；确定性音频裁切与视频取帧实现位于 `studio/apps/media_rendering/local/audio_clip.py`、`video_frames.py`；HTTP 适配在 `studio/apps/media_rendering/transport/website/video_frames.py`。
 - `web/src/docs/DocsExamples.tsx`、`DocsReadingProgress.tsx`：受控代码切换与阅读进度；目标阅读入口使用 `rendering/` 的 CardGroup；模块参考按业务模块分包，保留完整搜索内容。
 - `sdk/python/src/future_props_lab/workshop_examples.py` 与 `sdk/python/workflows.json`：六个工坊可执行流程及业务证据，公开文档从样例源码生成；验收边界见 `docs/architecture/sdk-automation-coverage.md`。

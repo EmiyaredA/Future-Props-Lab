@@ -4,7 +4,6 @@ from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import Response
 from pydantic import ValidationError
 
-from studio.apps.audio_annotation.exports import clip, export_document, transcribe_saved
 from studio.apps.audio_annotation.schemas.document import (
     STABLE_ID_PATTERN,
     AudioAnnotationDocumentOut,
@@ -26,12 +25,13 @@ from studio.apps.audio_annotation.schemas.operations import (
 from studio.apps.audio_annotation.sources import AudioAnnotationError
 from studio.apps.audio_annotation.transport.dependencies import (
     CreatorDep,
+    DeleterDep,
     DocumentEditorDep,
     ProjectsDep,
-    StagingDep,
+    SavedAudioDep,
     TranscriberDep,
 )
-from studio.assembly.http_dependencies import SessionDep, StudioAuth
+from studio.assembly.http_dependencies import StudioAuth
 from studio.runtime.database.operation_receipts import OperationError
 
 router = APIRouter(prefix="/audio-annotation", tags=["audio-annotation"])
@@ -123,12 +123,12 @@ async def patch_project(
 
 @router.delete("/projects/{project_id}")
 async def delete_project(
-    projects: ProjectsDep,
+    projects: DeleterDep,
     project_id: str,
     expected_revision: int = Query(ge=0),
 ) -> dict[str, bool]:
     try:
-        await projects.delete(project_id, expected_revision)
+        await projects.execute(project_id, expected_revision)
     except AudioAnnotationError as exc:
         raise _error(exc) from None
     return {"deleted": True}
@@ -172,14 +172,12 @@ async def apply_annotation_operations(
 
 @router.get("/projects/{project_id}/export", response_class=Response, responses=BINARY)
 async def export_annotation(
-    projects: ProjectsDep,
+    audio: SavedAudioDep,
     project_id: str,
     expected_revision: int = Query(ge=0),
     format: Literal["json", "srt"] = "json",
 ):
-    content, mime, filename = await call_export(
-        export_document(projects, project_id, expected_revision, format)
-    )
+    content, mime, filename = await call_export(audio.export(project_id, expected_revision, format))
     return Response(
         content,
         media_type=mime,
@@ -191,16 +189,12 @@ async def export_annotation(
     "/projects/{project_id}/segments/{segment_id}/audio", response_class=Response, responses=BINARY
 )
 async def download_segment_audio(
-    session: SessionDep,
-    projects: ProjectsDep,
-    staging: StagingDep,
+    audio: SavedAudioDep,
     project_id: str,
     segment_id: str,
     expected_revision: int = Query(ge=0),
 ):
-    content, _ = await call_export(
-        clip(session, projects, project_id, segment_id, expected_revision, staging)
-    )
+    content, _ = await call_export(audio.clip(project_id, segment_id, expected_revision))
     return Response(
         content,
         media_type="audio/wav",
@@ -213,17 +207,12 @@ async def download_segment_audio(
     response_model=AudioAnnotationSegmentTranscriptionOut,
 )
 async def transcribe_saved_segment(
-    session: SessionDep,
-    projects: ProjectsDep,
-    transcriber: TranscriberDep,
-    staging: StagingDep,
+    audio: SavedAudioDep,
     project_id: str,
     segment_id: str,
     body: SavedSegmentTranscriptionIn,
 ):
-    return await call_export(
-        transcribe_saved(session, projects, project_id, segment_id, body, transcriber, staging)
-    )
+    return await call_export(audio.transcribe(project_id, segment_id, body))
 
 
 @router.post(

@@ -23,8 +23,7 @@ from studio.apps.audio_annotation.schemas.document import (
     AudioAnnotationWaveformOut,
     AudioAnnotationWaveformPutIn,
 )
-from studio.apps.audio_annotation.sources import AnnotationAudio
-from studio.apps.audio_annotation.sources import AudioAnnotationError as AudioAnnotationError
+from studio.apps.audio_annotation.sources import AnnotationAudio, AudioAnnotationError
 from studio.runtime.database.operation_receipts import forget
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import iso_utc, utc_now
@@ -186,14 +185,9 @@ class ProjectRecords:
         await self.session.commit()
         return await self.get(project_id)
 
-    async def delete(self, project_id: str, expected_revision: int) -> None:
+    async def commit_deletion(self, project_id: str, expected_revision: int) -> None:
         project = await self._project(project_id)
         owner_user_id = project.owner_user_id
-        if project.revision != expected_revision:
-            current = await self.get(project_id)
-            raise RevisionConflictError(
-                expected_revision, current.revision, current.model_dump(mode="json")
-            )
         prepared = None
         if self.references is not None:
             await self.session.rollback()

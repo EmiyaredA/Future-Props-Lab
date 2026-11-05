@@ -21,12 +21,14 @@ from studio.apps.audio_annotation.storage.migrations.registry import MIGRATIONS
 from studio.apps.audio_annotation.storage.projects import ProjectRecords
 from studio.apps.audio_annotation.storage.service_models import MODELS
 from studio.apps.audio_annotation.use_cases.create_project import CreateProject
+from studio.apps.audio_annotation.use_cases.delete_project import DeleteProject
 from studio.apps.identity.storage.models.accounts import User
 from studio.assembly.website.models import WebsiteSession
 from studio.contracts.asset_library.descriptions import LibraryAssetDescription
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database
 from studio.runtime.database.website import WebsiteDatabase
+from studio.runtime.revisions import RevisionConflictError
 
 
 def audio(owner="alice"):
@@ -81,6 +83,18 @@ class Inputs:
 class MemoryProjects:
     def __init__(self):
         self.records = []
+
+    async def get(self, project_id):
+        for row in self.records:
+            if row.id == project_id:
+                return row.model_copy(deep=True)
+        raise AudioAnnotationError("not found", code="not_found", status=404)
+
+    async def commit_deletion(self, project_id, expected_revision):
+        current = await self.get(project_id)
+        if current.revision != expected_revision:
+            raise RevisionConflictError(expected_revision, current.revision, current.model_dump())
+        self.records = [row for row in self.records if row.id != project_id]
 
     async def commit_creation(self, **values):
         asset = values["asset"]
@@ -213,3 +227,34 @@ async def test_creation_lease_is_closed_when_atomic_store_fails(case, monkeypatc
         )
     assert case.inputs.published == case.inputs.closed == 1
     assert not await records(case)
+
+
+async def test_deletion_keeps_source_and_rejects_stale_or_missing_project(case):
+    project = await case.creator.create(
+        AudioAnnotationProjectCreateIn(title="Delete", asset_id="source-audio")
+    )
+    operation = DeleteProject(case.store)
+    with pytest.raises(RevisionConflictError):
+        await operation.execute(project.id, 1)
+    assert (await case.store.get(project.id)).revision == 0
+    await operation.execute(project.id, 0)
+    with pytest.raises(AudioAnnotationError) as error:
+        await operation.execute(project.id, 0)
+    assert error.value.status == 404
+    assert (await case.inputs.describe(project.asset_id)).id == project.asset_id
+
+
+async def test_deletion_port_rechecks_revision_after_use_case_read(case, monkeypatch):
+    project = await case.creator.create(
+        AudioAnnotationProjectCreateIn(title="Concurrent", asset_id="source-audio")
+    )
+    original = case.store.commit_deletion
+
+    async def competing_revision(project_id, expected_revision):
+        # A mismatched CAS must never remove the resource, even after a successful read.
+        await original(project_id, expected_revision + 1)
+
+    monkeypatch.setattr(case.store, "commit_deletion", competing_revision)
+    with pytest.raises(RevisionConflictError):
+        await DeleteProject(case.store).execute(project.id, 0)
+    assert (await case.store.get(project.id)).id == project.id
