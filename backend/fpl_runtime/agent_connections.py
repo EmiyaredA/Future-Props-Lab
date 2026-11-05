@@ -34,6 +34,7 @@ class AcceptanceAgentStatus(BaseModel):
     id: AgentId
     available: bool
     message: str = Field(max_length=300)
+    signature: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
 
 class AcceptanceAgentCatalog(BaseModel):

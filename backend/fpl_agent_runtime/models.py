@@ -13,3 +13,8 @@ class RuntimeBase(DeclarativeBase):
 class ConnectionJob(NativeJobFields, RuntimeBase):
     __tablename__ = "agent_runtime_connection_jobs"
     __table_args__ = (UniqueConstraint("owner_user_id", "request_id"),)
+
+
+class VisualReviewJob(NativeJobFields, RuntimeBase):
+    __tablename__ = "agent_runtime_visual_review_jobs"
+    __table_args__ = (UniqueConstraint("owner_user_id", "request_id"),)

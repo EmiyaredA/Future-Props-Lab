@@ -4511,6 +4511,12 @@
       "model": "ConnectionJob"
     },
     {
+      "table": "agent_runtime_visual_review_jobs",
+      "service": "agent-runtime",
+      "module": "fpl_agent_runtime.models",
+      "model": "VisualReviewJob"
+    },
+    {
       "table": "agent_native_jobs",
       "service": "agents",
       "module": "fpl_agents.models",

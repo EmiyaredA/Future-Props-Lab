@@ -41,6 +41,7 @@ from .models import MODELS, VisualCanvasReferenceMutation, VisualCertificationRe
 from .outputs_http import router as outputs_router
 from .projects_http import router as project_router
 from .repair_routes import router as repair_router
+from .review_authority_http import router as review_authority_router
 from .review_runner import ReviewRunner
 from .segment_handoff_routes import router as segment_handoff_router
 from .segment_handoffs import SegmentHandoffs
@@ -112,6 +113,7 @@ def create_app(
     app.include_router(acceptance_options_router)
     app.include_router(acceptance_nodes_router)
     app.include_router(samples_router)
+    app.include_router(review_authority_router)
     app.state.snapshot_authorization = LiveAuthorization(
         service="visual", credential=credential, transport=transport
     )

@@ -164,7 +164,7 @@ def video_file(tmp_path):
     return path.read_bytes()
 
 
-async def create_run(send, app, video):
+async def create_run(send, app, video, *, scheme="motion-transfer:api"):
     project = await send(
         "POST", "/v1/visual-workshop/projects", json={"title": "Fixed vision", "kind": "canvas"}
     )
@@ -218,7 +218,7 @@ async def create_run(send, app, video):
     selected = await send(
         "PUT",
         node + "/acceptance",
-        json={"expected_revision": 0, "scheme_id": "motion-transfer:api"},
+        json={"expected_revision": 0, "scheme_id": scheme},
     )
     assert selected.status_code == 200, selected.text
     assert selected.json()["issues"] == []

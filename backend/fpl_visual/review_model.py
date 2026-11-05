@@ -14,7 +14,7 @@ from fpl_runtime.visual_review import (
     ReviewModelRun,
 )
 
-from .acceptance_options import selected_scheme
+from .acceptance_options import agent_scheme, agents, selected_scheme
 
 
 class ReviewModel:
@@ -67,13 +67,11 @@ class ReviewModel:
 
 
 async def plan_executor(request, scheme):
+    if scheme != "motion-transfer:api":
+        return await plan_native_agent(request, scheme)
     status = await selected_scheme(request, scheme, probe=True)
-    if not status.available or status.kind != "model_api":
-        raise AcceptanceError(
-            status.message if not status.available else "独立验收执行器暂不可用",
-            "executor_unavailable",
-            409,
-        )
+    if not status.available:
+        raise AcceptanceError(status.message, "executor_unavailable", 409)
     model = ReviewModel(
         request.app.state.capabilities, request.state.service_assertion, request.url.path
     )
@@ -88,5 +86,23 @@ async def plan_executor(request, scheme):
             "connection_label": status.connection_label,
             "model_id": plan.model_id,
             "connection_signature": plan.signature,
+        },
+    }
+
+
+async def plan_native_agent(request, scheme):
+    catalog = await agents(request, probe=True)
+    status = agent_scheme(scheme, catalog)
+    agent = scheme.removeprefix("motion-transfer:")
+    selected = catalog.get(agent)
+    if not status.available or selected is None or selected.signature is None:
+        raise AcceptanceError(status.message, "executor_unavailable", 409)
+    return {
+        "kind": "code_agent",
+        "agent": agent,
+        "projection": {
+            "connection_label": status.connection_label,
+            "model_id": None,
+            "connection_signature": selected.signature,
         },
     }

@@ -33,6 +33,7 @@ from fpl_runtime.video_frames import frame_grant as video_frame_grant
 from fpl_runtime.video_segment_handoff import target_grant as segment_target_grant
 from fpl_runtime.video_snapshot import snapshot_grant as video_snapshot_grant
 from fpl_runtime.visual_acceptance_assets import acceptance_asset_grant
+from fpl_runtime.visual_agent_review import agent_review_grant
 from fpl_runtime.visual_assistant import assistant_grant
 from fpl_runtime.visual_catalog import acceptance_agent_grant, visual_catalog_grant
 from fpl_runtime.visual_composition import composition_grant, model_grid_grant
@@ -97,7 +98,14 @@ async def authorize_delegation(app, body, credential):
         session_id=actor.session_id,
         api_key_id=actor.api_key_id,
     )
-    source_permission = route_permission(body.source_method, body.source_path)
+    review = agent_review_grant(grant)
+    source_permission = (
+        "models.use"
+        if review and body.caller == "agent-runtime"
+        else route_permission(body.source_method, body.source_path)
+    )
+    if review and not principal.allows("content.write"):
+        raise HTTPException(403, "source_permission_denied")
     community_directory = (
         source_permission == "community.access"
         and body.caller == "thought"
@@ -159,6 +167,7 @@ async def authorize_delegation(app, body, credential):
                     or visual_generation_plan_grant(grant)
                     or model_grid_grant(grant)
                     or review_model_grant(grant)
+                    or review
                     or baseline_grant(grant)
                 )
                 else route_permission(body.target_method, target_permission_path(grant))

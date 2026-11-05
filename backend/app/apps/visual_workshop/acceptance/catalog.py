@@ -2,7 +2,7 @@
 
 import os
 
-from app.capabilities.agents.cli.catalog import DEFINITIONS, connection
+from app.capabilities.agents.cli.catalog import DEFINITIONS, connection, execution_signature
 from app.capabilities.agents.cli.process import probe
 from app.console.governance.code_agents import authorized
 from app.llm.visual_catalog import fixed_acceptance_model as fixed_model
@@ -55,13 +55,7 @@ async def catalog(session, owner_user_id, user_id):
 
 
 def connection_signature(scheme_id, settings, pair=None):
-    import hashlib
-    import json
-
-    def fingerprint(value):
-        return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
-
     if pair:
         return fixed_connection_signature(pair)
     kind, path, _ = cli_configuration(settings, scheme_id)
-    return fingerprint({"kind": kind, "executable": path})
+    return execution_signature(kind, path)

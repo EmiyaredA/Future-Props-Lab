@@ -29,6 +29,7 @@ from fpl_runtime.request_limit import RequestLimit
 from fpl_runtime.video_segment_handoff import ASSET_HANDOFFS
 from fpl_runtime.video_segment_handoff import asset_peer as visual_segment_peer
 from fpl_runtime.visual_acceptance_assets import PREFIX as VISUAL_ACCEPTANCE_FILES
+from fpl_runtime.visual_agent_review import MAX_JOB_BYTES, SOURCES
 from fpl_runtime.visual_assistant import ASSET_PREFIX as CONVERSATION_FILES
 from fpl_runtime.visual_assistant import MAX_QUERY_BYTES as MAX_CONVERSATION_QUERY_BYTES
 from fpl_runtime.visual_composition import ASSETS as VISUAL_GRID_ASSETS
@@ -75,6 +76,7 @@ from .routes.video_segment_bundles import router as video_segment_bundles_router
 from .routes.video_segment_handoffs import router as video_segment_handoffs_router
 from .routes.video_segment_outputs import router as video_segment_outputs_router
 from .routes.visual_acceptance import router as visual_acceptance_router
+from .routes.visual_agent_media import router as visual_agent_media_router
 from .routes.visual_archives import router as visual_archives_router
 from .routes.visual_assistant import router as conversation_assets_router
 from .routes.visual_generation import router as visual_generation_router
@@ -244,6 +246,8 @@ def create_app(
     app.include_router(visual_grids_router)
     app.add_middleware(RequestLimit, prefix=VISUAL_GRID_ASSETS, maximum=MAX_VISUAL_GRID_BYTES)
     app.include_router(visual_sample_assets_router)
+    app.include_router(visual_agent_media_router)
+    app.add_middleware(RequestLimit, prefix=SOURCES, maximum=MAX_JOB_BYTES)
     app.add_middleware(RequestLimit, prefix=VISUAL_SAMPLE_ASSETS, maximum=MAX_VISUAL_SAMPLE_REQUEST)
     app.include_router(visual_snapshot_router)
     app.add_middleware(

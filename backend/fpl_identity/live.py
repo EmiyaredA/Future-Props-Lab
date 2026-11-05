@@ -51,6 +51,16 @@ from fpl_runtime.video_handoff import handoff_target
 from fpl_runtime.video_segments import bundle_target as segment_bundle_target
 from fpl_runtime.video_snapshot import archive_target as video_archive_target
 from fpl_runtime.visual_acceptance_assets import acceptance_asset_target
+from fpl_runtime.visual_agent_review import (
+    asset_target as review_asset_target,
+)
+from fpl_runtime.visual_agent_review import frame_target as review_frame_target
+from fpl_runtime.visual_agent_review import (
+    job_target as review_job_target,
+)
+from fpl_runtime.visual_agent_review import (
+    status_target as review_status_target,
+)
 from fpl_runtime.visual_assistant import attachment_target
 from fpl_runtime.visual_catalog import AGENT_ACCEPTANCE_TARGET
 from fpl_runtime.visual_catalog import catalog_target as visual_catalog_target
@@ -207,6 +217,15 @@ async def live(request: Request, body: LiveRequest):
         private_output
         or (body.service, body.method, body.path)
         == ("agent-runtime", "GET", AGENT_ACCEPTANCE_TARGET)
+        or (
+            body.service == "agent-runtime"
+            and (
+                review_job_target(body.method, body.path)
+                or review_frame_target(body.method, body.path)
+            )
+        )
+        or (body.service == "assets" and review_asset_target(body.method, body.path))
+        or (body.service == "visual" and review_status_target(body.method, body.path))
         or private_models
         or private_external
         or private_thought_upload

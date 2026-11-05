@@ -1,5 +1,6 @@
 """Persist intent before execution and results before acknowledgement; never repeat unknown work."""
 
+import asyncio
 import hashlib
 import json
 import os
@@ -64,7 +65,7 @@ class ReceiptStore:
         finally:
             Path(temporary).unlink(missing_ok=True)
 
-    def execute(self, lease: NativeLease, action):
+    def begin(self, lease):
         path = self._path(lease)
         digest = command_digest(lease)
         if path.is_symlink():
@@ -74,39 +75,62 @@ class ReceiptStore:
             if document["command_sha256"] != digest:
                 raise ValueError("同一任务 ID 的操作或账号发生变化")
             if document["lease"]["lease_id"] != str(lease.lease_id):
-                return NativeOutcome(
+                return None, NativeOutcome(
                     status="unknown",
                     error_code="lease_changed",
                     message="已有执行意图；拒绝用新租约重复执行",
                 )
             if document.get("outcome") is not None:
-                return NativeOutcome.model_validate(document["outcome"])
+                return None, NativeOutcome.model_validate(document["outcome"])
             outcome = NativeOutcome(
                 status="unknown",
                 error_code="execution_interrupted",
                 message="执行已开始但没有持久结果，必须核对原动作后恢复",
             )
-        else:
-            document = {
-                "version": 1,
-                "command_sha256": digest,
-                "lease": lease.model_dump(mode="json"),
-                "outcome": None,
-                "acknowledged": False,
-            }
-            self.publish(path, document)
-            try:
-                result = action(lease.operation, lease.payload)
-                outcome = NativeOutcome(status="completed", result=result)
-            except Exception as exc:
-                outcome = NativeOutcome(
-                    status=("failed" if lease.operation in self.readonly_operations else "unknown"),
-                    error_code=type(exc).__name__,
-                    message="原生操作未能生成确定结果",
-                )
-        document["outcome"] = outcome.model_dump(mode="json")
+            self.finish(lease, document, outcome)
+            return None, outcome
+        document = {
+            "version": 1,
+            "command_sha256": digest,
+            "lease": lease.model_dump(mode="json"),
+            "outcome": None,
+            "acknowledged": False,
+        }
         self.publish(path, document)
+        return document, None
+
+    def finish(self, lease, document, outcome):
+        document["outcome"] = outcome.model_dump(mode="json")
+        self.publish(self._path(lease), document)
         return outcome
+
+    def failure(self, lease, exc):
+        return NativeOutcome(
+            status="failed" if lease.operation in self.readonly_operations else "unknown",
+            error_code=type(exc).__name__,
+            message="原生操作未能生成确定结果",
+        )
+
+    def execute(self, lease: NativeLease, action):
+        document, existing = self.begin(lease)
+        if existing is not None:
+            return existing
+        try:
+            result = action(lease.operation, lease.payload)
+            outcome = NativeOutcome(status="completed", result=result)
+        except Exception as exc:
+            outcome = self.failure(lease, exc)
+        return self.finish(lease, document, outcome)
+
+    async def execute_async(self, lease: NativeLease, action):
+        document, existing = await asyncio.to_thread(self.begin, lease)
+        if existing is not None:
+            return existing
+        try:
+            outcome = await action(lease)
+        except Exception as exc:
+            outcome = self.failure(lease, exc)
+        return await asyncio.to_thread(self.finish, lease, document, outcome)
 
     def pending(self):
         for path in sorted(self.root.glob("*.json")):

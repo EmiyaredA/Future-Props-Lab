@@ -3,7 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal, Protocol
 
-AgentId = Literal["codex", "claude-code", "opencode", "dsh", "pi"]
+from fpl_runtime.agent_ids import AgentId as AgentId
+
 Origin = Literal["app", "cli", "unknown"]
 
 
