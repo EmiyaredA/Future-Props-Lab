@@ -3,23 +3,20 @@
 import json
 from uuid import uuid4
 
-from fastapi import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from tests.test_community_asset_protocol import scenario  # noqa: F401
 from tests.test_visual_node_review_service import review_mesh
 
-from app.apps.visual_workshop.schemas.workshop import VisualAssistantSendIn
 from app.llm.models import LlmCallLog
 from fpl_models.assistant_model_http import router
 from fpl_models.assistant_model_runs import AssistantModelRuns
-from fpl_runtime.http_dependencies import OwnerDep, SessionDep
 from fpl_runtime.project_errors import ProjectResourceError
 from fpl_runtime.timed_peer import TimedPeer
 from fpl_runtime.visual_assistant import SOURCE
 from fpl_runtime.visual_assistant_model import SETTLEMENT_DOMAIN, RecoveredAssistantSettlement
 from fpl_visual.assistant_dispatch_records import VisualAssistantDispatch
-from fpl_visual.assistant_submission import AssistantSubmission
+from fpl_visual.assistant_stream import AssistantStream
 
 SECRET = "isolated-assistant-settlement-credential-" * 2
 
@@ -27,6 +24,7 @@ SECRET = "isolated-assistant-settlement-credential-" * 2
 async def test_assistant_source_and_model_settlement_recover_without_persisting_actor_tokens(
     scenario,  # noqa: F811
     tmp_path,
+    monkeypatch,
 ):
     case = scenario
     peer = TimedPeer(SECRET, domain=SETTLEMENT_DOMAIN)
@@ -44,24 +42,18 @@ async def test_assistant_source_and_model_settlement_recover_without_persisting_
             dispatches = app.state.assistant_dispatches
             dispatches.peer = peer
 
-            @app.post(SOURCE + "/{project}/conversations/{conversation}/messages/stream")
-            async def prepare(
-                request: Request,
-                project: str,
-                conversation: str,
-                body: VisualAssistantSendIn,
-                owner: OwnerDep,
-                session: SessionDep,
-            ):
-                turn = await AssistantSubmission(request, session, owner, dispatches).start(
-                    project, conversation, body
-                )
-                return {
-                    "run_id": turn.scope.run_id,
-                    "message_id": turn.message_id,
-                    "revision": turn.revision,
-                    "provider_message": turn.messages[-1].text,
-                }
+            async def interrupted_events(stream):
+                turn = stream.turn
+                yield json.dumps(
+                    {
+                        "run_id": turn.scope.run_id,
+                        "message_id": turn.message_id,
+                        "revision": turn.revision,
+                        "provider_message": turn.messages[-1].text,
+                    }
+                ).encode()
+
+            monkeypatch.setattr(AssistantStream, "events", interrupted_events)
 
             project = await send("POST", SOURCE, json={"title": "Assistant", "kind": "canvas"})
             assert project.status_code == 200, project.text

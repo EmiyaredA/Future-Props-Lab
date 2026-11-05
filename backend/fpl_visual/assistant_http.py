@@ -1,17 +1,24 @@
 """Visual's published assistant conversation and model option endpoints."""
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
 
 from app.apps.visual_workshop.schemas.workshop import (
+    VisualAssistantApprovalIn,
+    VisualAssistantApprovalOut,
     VisualAssistantConversationListOut,
     VisualAssistantConversationOut,
     VisualAssistantConversationPatchIn,
     VisualAssistantModelOptionListOut,
+    VisualAssistantSendIn,
 )
+from app.capabilities.agents.harness.approval import ApprovalConflictError, ApprovalNotFoundError
 from fpl_runtime.http_dependencies import OwnerDep, SessionDep
 from fpl_runtime.visual_assistant import SOURCE
 
 from .assistant_peers import AssistantPeers
+from .assistant_stream import AssistantStream
+from .assistant_submission import AssistantSubmission
 from .conversations import Conversations
 
 router = APIRouter(
@@ -83,3 +90,68 @@ async def delete_conversation(
         project_id, conversation_id, expected_revision
     )
     return {"deleted": True}
+
+
+@router.post("/{conversation_id}/messages/stream")
+async def stream_message(
+    request: Request,
+    session: SessionDep,
+    project_id: str,
+    conversation_id: str,
+    body: VisualAssistantSendIn,
+    owner_user_id: OwnerDep,
+) -> StreamingResponse:
+    state = request.app.state
+    if state.assistant_dispatches.peer is None:
+        raise HTTPException(503, "visual_assistant_settlement_unavailable")
+    submission = AssistantSubmission(request, session, owner_user_id, state.assistant_dispatches)
+    turn = await submission.start(project_id, conversation_id, body)
+    return StreamingResponse(
+        AssistantStream(state, turn, submission.peers).events(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@router.post(
+    "/{conversation_id}/runs/{run_id}/approvals/{approval_id}",
+    response_model=VisualAssistantApprovalOut,
+)
+async def resolve_approval(
+    request: Request,
+    session: SessionDep,
+    project_id: str,
+    conversation_id: str,
+    run_id: str,
+    approval_id: str,
+    body: VisualAssistantApprovalIn,
+    owner_user_id: OwnerDep,
+) -> VisualAssistantApprovalOut:
+    await conversations(request, session, owner_user_id).row(project_id, conversation_id)
+    await session.rollback()
+    assertion = request.state.service_assertion
+    active = await request.app.state.snapshot_authorization.status(
+        assertion=assertion, method=request.method, path=request.url.path
+    )
+    if active is not True:
+        raise HTTPException(
+            401 if active is False else 503, "visual_assistant_approval_authority_ended"
+        )
+    try:
+        await request.app.state.assistant_approvals.resolve(
+            run_id=run_id,
+            approval_id=approval_id,
+            scope={
+                "owner_user_id": owner_user_id,
+                "project_id": project_id,
+                "conversation_id": conversation_id,
+            },
+            decision=body.decision,
+            canvas_revision=body.canvas_revision,
+            authorization=assertion,
+        )
+    except ApprovalNotFoundError as exc:
+        raise HTTPException(404, {"code": "approval_not_found", "message": str(exc)}) from None
+    except ApprovalConflictError as exc:
+        raise HTTPException(409, {"code": "approval_conflict", "message": str(exc)}) from None
+    return VisualAssistantApprovalOut()

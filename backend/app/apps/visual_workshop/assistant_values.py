@@ -1,5 +1,7 @@
 """Serialize Visual assistant records without provider or storage access."""
 
+import json
+
 from app.apps.visual_workshop.models import VisualAssistantAction, VisualAssistantMessage
 from app.apps.visual_workshop.schemas.workshop import (
     VisualAssistantActionOut,
@@ -57,3 +59,13 @@ def message_out(
         assets=[asset_out(item) for item in assets or []],
         actions=actions or [],
     )
+
+
+def sse_frame(event_type: str, sequence: int, payload: dict) -> bytes:
+    envelope = {
+        "type": event_type,
+        "schema_version": 2,
+        "sequence": sequence,
+        "payload": payload,
+    }
+    return f"data: {json.dumps(envelope, ensure_ascii=False)}\n\n".encode()

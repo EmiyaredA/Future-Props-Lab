@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
-import json
 import time
 from collections.abc import AsyncIterator
 from uuid import uuid4
@@ -20,6 +19,7 @@ from app.apps.visual_workshop.assistant.conversations import (
     message_out,
 )
 from app.apps.visual_workshop.assistant.tools import build_visual_agent_definition
+from app.apps.visual_workshop.assistant_values import sse_frame as _event
 from app.apps.visual_workshop.models import (
     VisualAssistantAction,
     VisualAssistantConversation,
@@ -44,16 +44,6 @@ def build_model_adapter(prepared: PreparedAssistantGeneration, api_key: str) -> 
         api_key=api_key,
         transport=mock_transport(prepared.base_url),
     )
-
-
-def _event(event_type: str, sequence: int, payload: dict) -> bytes:
-    envelope = {
-        "type": event_type,
-        "schema_version": 2,
-        "sequence": sequence,
-        "payload": payload,
-    }
-    return f"data: {json.dumps(envelope, ensure_ascii=False)}\n\n".encode()
 
 
 async def _settle(

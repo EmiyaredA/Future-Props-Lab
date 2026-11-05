@@ -5,12 +5,14 @@ import json
 from contextlib import asynccontextmanager
 
 import httpx
-from fastapi import Depends
+from fastapi import Depends, HTTPException
+from sqlalchemy import text
 
 from app.apps.visual_workshop.acceptance.review_routes import router as review_router
 from app.apps.visual_workshop.acceptance.standard_routes import router as standard_router
 from app.apps.visual_workshop.generation_routes import reads as generation_records_router
 from app.apps.visual_workshop.models import VisualWorkshopProject
+from app.capabilities.agents.harness import ApprovalBroker
 from app.capabilities.asset_store.project_snapshots import cleanup_snapshot_staging
 from app.deps import require_studio_auth
 from fpl_runtime.archive_transport import ArchiveTransport, SnapshotArchiveAsset
@@ -84,6 +86,31 @@ def create_app(
     ):
         raise ValueError("Visual 分段交接凭据必须独立")
 
+    async def ready(instance):
+        if not all(
+            (web_root, archive_key, generation_key, assistant_settlement_key, video_segment_key)
+        ):
+            raise HTTPException(503, "visual_production_dependencies_missing")
+        state = instance.state
+        if not state.public_routes_complete:
+            raise HTTPException(503, "visual_route_coverage_incomplete")
+        if run_worker and not all(
+            runner.is_healthy
+            for runner in (
+                state.project_certifications,
+                state.reference_delivery,
+                state.snapshot_imports.delivery,
+                state.generation_runner,
+                state.composition_runner,
+                state.review_runner,
+                state.assistant_dispatches,
+            )
+        ):
+            raise HTTPException(503, "visual_runner_unavailable")
+        async with state.database.sessions() as db:
+            await db.execute(text("SELECT 1"))
+        return {"status": "ready", "service": "visual"}
+
     app = create_certification_app(
         service="visual",
         root=state_root,
@@ -96,6 +123,7 @@ def create_app(
         catalog=catalog,
         transport=transport,
         run_worker=run_worker,
+        ready_probe=ready,
     )
     install_reference_runtime(
         app,
@@ -138,6 +166,7 @@ def create_app(
     )
     assistant_dispatches = AssistantDispatches(app.state, settlement_peer)
     app.state.assistant_dispatches = assistant_dispatches
+    app.state.assistant_approvals = ApprovalBroker()
     if generation_key is not None and generation_key in {
         credential,
         archive_key,
@@ -195,6 +224,14 @@ def create_app(
     app.state.composition_runner = composition_runner
     review_runner = ReviewRunner(app.state)
     app.state.review_runner = review_runner
+    mounted = {
+        (method.upper(), path)
+        for path, operations in app.openapi()["paths"].items()
+        if path.startswith("/v1/")
+        for method in operations
+    }
+    declared = {(op.method, op.path) for op in catalog.operations if op.service == "visual"}
+    app.state.public_routes_complete = bool(declared) and declared == mounted
     lifespan = app.router.lifespan_context
 
     @asynccontextmanager
