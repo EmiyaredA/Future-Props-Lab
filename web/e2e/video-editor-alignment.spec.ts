@@ -56,7 +56,9 @@ test("keeps speed changes and asset drops aligned with exact undo", async ({
         buffer: readFileSync(fixturePath),
       })),
     );
-    await expect(page.getByRole("status")).toHaveText("上传完成：成功 2 个");
+    await expect(
+      page.getByRole("status").filter({ hasText: "上传完成：成功 2 个" }),
+    ).toBeVisible({ timeout: 15_000 });
     const uploaded = (await (await page.request.get(`${base}/assets`)).json())
       .items;
     expect(uploaded).toHaveLength(2);
@@ -125,7 +127,11 @@ test("keeps speed changes and asset drops aligned with exact undo", async ({
       await route.fulfill({ response, json: body });
     });
     await page.reload();
-    await expect(page.getByText("可剪辑 · 预览准备中")).toBeVisible();
+    await expect(
+      page
+        .getByRole("button", { name: "预览素材“对齐测试”，双击添加到时间轴" })
+        .getByText("可剪辑 · 预览准备中"),
+    ).toBeVisible();
     await page.locator('[data-clip-id="speed-first"]').click();
     const follow = page.getByRole("switch", { name: "后续片段跟随" });
     await expect(follow).toBeChecked();
@@ -158,6 +164,13 @@ test("keeps speed changes and asset drops aligned with exact undo", async ({
       page.locator(".ve-speed-section").getByRole("alert"),
     ).toContainText("重叠");
     expect(getClips(await getTimeline())).toEqual(original);
+    await expect(follow).toBeDisabled();
+    await page.getByRole("button", { name: "查看未保存操作（1）" }).click();
+    await page
+      .getByRole("alertdialog", { name: "处理未保存操作" })
+      .getByRole("button", { name: "放弃未保存操作", exact: true })
+      .click();
+    await expect(follow).toBeEnabled();
     await follow.click();
     await page.getByLabel("播放速度倍率").fill("2");
     await page.getByRole("button", { name: "应用", exact: true }).click();

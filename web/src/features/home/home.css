@@ -518,7 +518,7 @@
     border-radius: 14px;
   }
   .home-header-copy {
-    max-width: calc(100% - 76px);
+    max-width: calc(100% - 84px);
   }
   .home-header h1 {
     font-size: 25px;

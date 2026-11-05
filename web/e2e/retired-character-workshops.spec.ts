@@ -48,8 +48,11 @@ test("bundled homepage Kurisu works across themes and responsive widths", async 
   await expect(page.locator(".home-hero-pet img")).toBeVisible();
   await page.goto("/apps");
   await expect(
-    page.getByRole("button", { name: "打开Agent 工作台" }).locator("img"),
-  ).toHaveAttribute("src", "/brand/agent-workbench-mark.png");
+    page.getByRole("button", { name: "打开演示工坊", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "打开Agent 工作台", exact: true }),
+  ).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "打开Live2D 工坊" }),
   ).toHaveCount(0);
