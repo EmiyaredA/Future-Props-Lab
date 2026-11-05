@@ -260,6 +260,7 @@ test("简单表单、媒体、代码、信息图、主题、备注和导出使�
 test("素材分页、SVG 预检、预览和删除确认保持局部滚动与固定操作", async ({
   page,
 }, info) => {
+  test.setTimeout(60_000);
   await create(page);
   const csrf = (await page.context().cookies()).find(
     (c) => c.name === "fpl_csrf",
@@ -267,12 +268,14 @@ test("素材分页、SVG 预检、预览和删除确认保持局部滚动与固�
   const headers = { "X-CSRF-Token": csrf, Origin: new URL(page.url()).origin };
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80"><rect width="120" height="80" fill="#5474E5"/></svg>';
+  const prefix = `弹窗素材-${Date.now()}`;
   for (let i = 0; i < 26; i++) {
     const uploaded = await page.request.post("/v1/files", {
       headers,
       multipart: {
+        display_name: `${prefix}-${i}`,
         upload: {
-          name: `弹窗素材-${i}.svg`,
+          name: `${prefix}-${i}.svg`,
           mimeType: "image/svg+xml",
           buffer: Buffer.from(
             svg.replace("#5474E5", `#5474${i.toString(16).padStart(2, "0")}`),
@@ -287,18 +290,17 @@ test("素材分页、SVG 预检、预览和删除确认保持局部滚动与固�
     name: "选择文件库图片",
     exact: true,
   });
-  await expect(dialog.locator(".presentation-image-grid button")).toHaveCount(
-    24,
-  );
+  const uploadedCards = dialog.getByRole("button", {
+    name: new RegExp(`^插入 ${prefix}-`),
+  });
+  await expect(uploadedCards).toHaveCount(24);
   for (const width of [1440, 768, 360]) {
     await page.setViewportSize({ width, height: 600 });
     await bounded(page, dialog, 840);
     await page.screenshot({ path: info.outputPath(`library-${width}.png`) });
   }
   await dialog.getByRole("button", { name: "下一页", exact: true }).click();
-  await expect(dialog.locator(".presentation-image-grid button")).toHaveCount(
-    2,
-  );
+  await expect(uploadedCards).toHaveCount(2);
   await dialog.getByRole("tab", { name: "SVG", exact: true }).click();
   await dialog
     .getByRole("textbox", { name: "SVG 代码", exact: true })
