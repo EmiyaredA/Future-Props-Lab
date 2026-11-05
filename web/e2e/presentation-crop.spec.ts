@@ -101,6 +101,7 @@ test("旧文稿图片等比填充，裁剪撤销保存重开与放映保持一�
   await page.getByRole("button", { name: "保存文稿", exact: true }).click();
   await expect(page.locator(".presentation-save-state")).toHaveText("已保存");
   const before = await (await page.request.get(endpoint)).json();
+  expect(before.document).toEqual(project.document);
   writes = 0;
   await page.reload();
   await proportional(image);
@@ -112,7 +113,7 @@ test("旧文稿图片等比填充，裁剪撤销保存重开与放映保持一�
   expect(writes).toBe(0);
   const unchanged = await (await page.request.get(endpoint)).json();
   expect(unchanged.revision).toBe(before.revision);
-  expect(unchanged.document).toEqual(document);
+  expect(unchanged.document).toEqual(before.document);
   await image.click();
   await page.getByLabel("裁剪左侧", { exact: true }).fill("20");
   await proportional(image);
