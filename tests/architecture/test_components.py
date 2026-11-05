@@ -27,6 +27,7 @@ def test_interview_file_scope_is_explicit():
     "application",
     [
         "asset_library",
+        "galgame_workshop",
         "model_service",
         "motion_compositor",
         "presentation_workshop",
@@ -37,9 +38,22 @@ def test_migrated_apps_never_select_process_global_configuration(application):
     violations = []
     for path in (STUDIO / "apps" / application).rglob("*.py"):
         for node in ast.walk(ast.parse(path.read_text())):
-            if isinstance(node, ast.Name) and node.id == "get_settings":
+            if (
+                isinstance(node, ast.ImportFrom)
+                and node.module
+                in {
+                    "studio.config",
+                    "studio.config.settings",
+                }
+                and any(
+                    alias.name in {"get_settings", "get_cloud_settings"} for alias in node.names
+                )
+            ):
                 violations.append(str(path.relative_to(ROOT)))
-            if isinstance(node, ast.Attribute) and node.attr == "get_settings":
+            if isinstance(node, ast.Attribute) and node.attr in {
+                "get_settings",
+                "get_cloud_settings",
+            }:
                 violations.append(str(path.relative_to(ROOT)))
     assert not violations, violations
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Request, status
 
 from studio.apps.galgame_workshop.schemas import (
     GalgameVideoEditorHandoffCreateIn,
@@ -19,10 +19,12 @@ router = APIRouter()
     status_code=status.HTTP_202_ACCEPTED,
 )
 async def create_handoff(
-    session: SessionDep, project_id: str, body: GalgameVideoEditorHandoffCreateIn
+    request: Request, session: SessionDep, project_id: str, body: GalgameVideoEditorHandoffCreateIn
 ) -> GalgameVideoEditorHandoffTaskOut:
     try:
-        return await GalgameVideoEditorHandoffs(session).create(project_id, body)
+        return await GalgameVideoEditorHandoffs(session, request.app.state.settings).create(
+            project_id, body
+        )
     except AssetError as exc:
         raise _asset_error(exc) from None
 
@@ -32,10 +34,12 @@ async def create_handoff(
     response_model=GalgameVideoEditorHandoffTaskListOut,
 )
 async def list_handoffs(
-    session: SessionDep, project_id: str
+    request: Request, session: SessionDep, project_id: str
 ) -> GalgameVideoEditorHandoffTaskListOut:
     try:
-        return await GalgameVideoEditorHandoffs(session).list(project_id)
+        return await GalgameVideoEditorHandoffs(session, request.app.state.settings).list(
+            project_id
+        )
     except AssetError as exc:
         raise _asset_error(exc) from None
 
@@ -45,10 +49,12 @@ async def list_handoffs(
     response_model=GalgameVideoEditorHandoffTaskOut,
 )
 async def get_handoff(
-    session: SessionDep, project_id: str, task_id: str
+    request: Request, session: SessionDep, project_id: str, task_id: str
 ) -> GalgameVideoEditorHandoffTaskOut:
     try:
-        return await GalgameVideoEditorHandoffs(session).get(project_id, task_id)
+        return await GalgameVideoEditorHandoffs(session, request.app.state.settings).get(
+            project_id, task_id
+        )
     except AssetError as exc:
         raise _asset_error(exc) from None
 
@@ -58,9 +64,11 @@ async def get_handoff(
     response_model=GalgameVideoEditorHandoffTaskOut,
 )
 async def cancel_handoff(
-    session: SessionDep, project_id: str, task_id: str
+    request: Request, session: SessionDep, project_id: str, task_id: str
 ) -> GalgameVideoEditorHandoffTaskOut:
     try:
-        return await GalgameVideoEditorHandoffs(session).cancel(project_id, task_id)
+        return await GalgameVideoEditorHandoffs(session, request.app.state.settings).cancel(
+            project_id, task_id
+        )
     except AssetError as exc:
         raise _asset_error(exc) from None

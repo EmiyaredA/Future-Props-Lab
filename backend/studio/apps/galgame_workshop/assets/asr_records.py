@@ -76,7 +76,7 @@ class AsrRecords:
         ready = bool(row.asr_model_id and await self.model_ready(row.asr_model_id))
         return settings_out(row, ready)
 
-    async def get_settings(self, project_id: str) -> GalgameAsrSettingsOut:
+    async def read_settings(self, project_id: str) -> GalgameAsrSettingsOut:
         return await self._settings_out(await self._settings(project_id))
 
     async def patch_settings(

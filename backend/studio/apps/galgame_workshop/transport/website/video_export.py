@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Request, status
 from fastapi.responses import FileResponse, Response
 
 from studio.apps.galgame_workshop.schemas import (
@@ -14,7 +14,6 @@ from studio.apps.galgame_workshop.schemas import (
 from studio.apps.galgame_workshop.transport.website._shared import _asset_error
 from studio.apps.galgame_workshop.video.video_export import GalgameVideoExports
 from studio.assembly.http_dependencies import SessionDep
-from studio.config.settings import get_settings
 from studio.contracts.asset_library.errors import AssetError
 from studio.runtime.files.names import download_filename
 
@@ -26,22 +25,25 @@ router = APIRouter()
     response_model=GalgameVideoExportPreviewOut,
 )
 async def preview_video_export(
+    request: Request,
     session: SessionDep,
     project_id: str,
     body: GalgameVideoExportPreviewIn,
 ) -> GalgameVideoExportPreviewOut:
     try:
-        return await GalgameVideoExports(session, get_settings()).preview(project_id, body)
+        return await GalgameVideoExports(session, request.app.state.settings).preview(
+            project_id, body
+        )
     except AssetError as exc:
         raise _asset_error(exc) from None
 
 
 @router.post("/{project_id}/video-exports/frame")
 async def exact_video_export_frame(
-    session: SessionDep, project_id: str, body: GalgameVideoExportFrameIn
+    request: Request, session: SessionDep, project_id: str, body: GalgameVideoExportFrameIn
 ) -> Response:
     try:
-        png = await GalgameVideoExports(session, get_settings()).frame(project_id, body)
+        png = await GalgameVideoExports(session, request.app.state.settings).frame(project_id, body)
     except AssetError as exc:
         raise _asset_error(exc) from None
     return Response(png, media_type="image/png", headers={"Cache-Control": "private, no-store"})
@@ -53,12 +55,15 @@ async def exact_video_export_frame(
     status_code=status.HTTP_202_ACCEPTED,
 )
 async def create_video_export(
+    request: Request,
     session: SessionDep,
     project_id: str,
     body: GalgameVideoExportCreateIn,
 ) -> GalgameVideoExportTaskOut:
     try:
-        return await GalgameVideoExports(session, get_settings()).create(project_id, body)
+        return await GalgameVideoExports(session, request.app.state.settings).create(
+            project_id, body
+        )
     except AssetError as exc:
         raise _asset_error(exc) from None
 
@@ -67,9 +72,11 @@ async def create_video_export(
     "/{project_id}/video-exports",
     response_model=GalgameVideoExportTaskListOut,
 )
-async def list_video_exports(session: SessionDep, project_id: str) -> GalgameVideoExportTaskListOut:
+async def list_video_exports(
+    request: Request, session: SessionDep, project_id: str
+) -> GalgameVideoExportTaskListOut:
     try:
-        return await GalgameVideoExports(session, get_settings()).list(project_id)
+        return await GalgameVideoExports(session, request.app.state.settings).list(project_id)
     except AssetError as exc:
         raise _asset_error(exc) from None
 
@@ -79,10 +86,12 @@ async def list_video_exports(session: SessionDep, project_id: str) -> GalgameVid
     response_model=GalgameVideoExportTaskOut,
 )
 async def get_video_export(
-    session: SessionDep, project_id: str, export_id: str
+    request: Request, session: SessionDep, project_id: str, export_id: str
 ) -> GalgameVideoExportTaskOut:
     try:
-        return await GalgameVideoExports(session, get_settings()).get(project_id, export_id)
+        return await GalgameVideoExports(session, request.app.state.settings).get(
+            project_id, export_id
+        )
     except AssetError as exc:
         raise _asset_error(exc) from None
 
@@ -92,20 +101,22 @@ async def get_video_export(
     response_model=GalgameVideoExportTaskOut,
 )
 async def cancel_video_export(
-    session: SessionDep, project_id: str, export_id: str
+    request: Request, session: SessionDep, project_id: str, export_id: str
 ) -> GalgameVideoExportTaskOut:
     try:
-        return await GalgameVideoExports(session, get_settings()).cancel(project_id, export_id)
+        return await GalgameVideoExports(session, request.app.state.settings).cancel(
+            project_id, export_id
+        )
     except AssetError as exc:
         raise _asset_error(exc) from None
 
 
 @router.get("/{project_id}/video-exports/{export_id}/download")
 async def download_video_export(
-    session: SessionDep, project_id: str, export_id: str
+    request: Request, session: SessionDep, project_id: str, export_id: str
 ) -> FileResponse:
     try:
-        asset, path = await GalgameVideoExports(session, get_settings()).output(
+        asset, path = await GalgameVideoExports(session, request.app.state.settings).output(
             project_id, export_id
         )
     except AssetError as exc:

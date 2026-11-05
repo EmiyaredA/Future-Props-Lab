@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Request, status
 
 from studio.apps.galgame_workshop.assets.annotation_import import GalgameAnnotationImports
 from studio.apps.galgame_workshop.schemas import (
@@ -10,14 +10,13 @@ from studio.apps.galgame_workshop.schemas import (
 )
 from studio.apps.galgame_workshop.transport.website._shared import _asset_error
 from studio.assembly.http_dependencies import OwnerDep, SessionDep
-from studio.config.settings import get_settings
 from studio.contracts.asset_library.errors import AssetError
 
 router = APIRouter()
 
 
-def _imports(session: SessionDep, owner_user_id: str) -> GalgameAnnotationImports:
-    return GalgameAnnotationImports(session, owner_user_id, get_settings())
+def _imports(request: Request, session: SessionDep, owner_user_id: str) -> GalgameAnnotationImports:
+    return GalgameAnnotationImports(session, owner_user_id, request.app.state.settings)
 
 
 @router.post(
@@ -25,13 +24,14 @@ def _imports(session: SessionDep, owner_user_id: str) -> GalgameAnnotationImport
     response_model=GalgameAnnotationImportPreviewOut,
 )
 async def preview_annotation_import(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     project_id: str,
     body: GalgameAnnotationImportIn,
 ) -> GalgameAnnotationImportPreviewOut:
     try:
-        return await _imports(session, owner_user_id).preview(project_id, body)
+        return await _imports(request, session, owner_user_id).preview(project_id, body)
     except AssetError as exc:
         raise _asset_error(exc) from None
 
@@ -42,13 +42,14 @@ async def preview_annotation_import(
     status_code=status.HTTP_202_ACCEPTED,
 )
 async def create_annotation_import(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     project_id: str,
     body: GalgameAnnotationImportIn,
 ) -> GalgameAnnotationImportTaskOut:
     try:
-        return await _imports(session, owner_user_id).create(project_id, body)
+        return await _imports(request, session, owner_user_id).create(project_id, body)
     except AssetError as exc:
         raise _asset_error(exc) from None
 
@@ -58,12 +59,13 @@ async def create_annotation_import(
     response_model=GalgameAnnotationImportTaskOut,
 )
 async def get_annotation_import(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     project_id: str,
     import_id: str,
 ) -> GalgameAnnotationImportTaskOut:
     try:
-        return await _imports(session, owner_user_id).get(project_id, import_id)
+        return await _imports(request, session, owner_user_id).get(project_id, import_id)
     except AssetError as exc:
         raise _asset_error(exc) from None

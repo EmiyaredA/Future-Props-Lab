@@ -18,13 +18,15 @@ from studio.apps.galgame_workshop.story.story import GalgameStoryDocuments
 from studio.apps.galgame_workshop.task_views import handoff_out
 from studio.apps.galgame_workshop.video.video_export import GalgameVideoExports
 from studio.apps.media_rendering.local.galgame.compiler import COMPILER_VERSION
+from studio.config.settings import Settings
 from studio.contracts.asset_library.errors import AssetError
 from studio.runtime.time import utc_now
 
 
 class GalgameVideoEditorHandoffs:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, settings: Settings) -> None:
         self.session = session
+        self.settings = settings
 
     async def _project(self, project_id: str) -> GalgameWorkshopProject:
         project = await self.session.get(GalgameWorkshopProject, project_id)
@@ -52,7 +54,9 @@ class GalgameVideoEditorHandoffs:
                 )
             return handoff_out(existing)
         preview_body = GalgameVideoExportPreviewIn.model_validate(submitted)
-        preview = await GalgameVideoExports(self.session).preview(project_id, preview_body)
+        preview = await GalgameVideoExports(self.session, self.settings).preview(
+            project_id, preview_body
+        )
         if preview.preview_fingerprint != body.preview_fingerprint:
             raise AssetError(
                 "导出预览已失效，请重新检查后再发送到剪辑工坊",

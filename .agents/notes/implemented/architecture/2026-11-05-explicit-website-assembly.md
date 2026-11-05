@@ -50,3 +50,11 @@ operations, and folder reveal take configuration from the serving application.
 The project layout adapter receives the assembled storage. Video Editor joins
 the guard against process-global configuration selection. The targeted video and
 motion tests passed 68 cases, and architecture and assembly checks passed 43.
+
+## Galgame adapter follow-up
+
+Website project, asset, readiness, annotation import, export and video handoff
+operations receive the serving application's settings. The Galgame ASR record
+reader has a separate domain method name. The shared HTTP error mapper imports
+only the exceptions it maps. The Galgame and repository regressions passed 155
+tests.

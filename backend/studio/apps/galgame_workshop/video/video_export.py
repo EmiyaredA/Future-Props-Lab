@@ -33,7 +33,7 @@ from studio.apps.media_rendering.local.galgame.compiler import (
 )
 from studio.apps.media_rendering.local.galgame.lip_sync import prepare_audio_envelopes
 from studio.apps.media_rendering.local.render_capacity import galgame_capacity
-from studio.config.settings import Settings, get_settings
+from studio.config.settings import Settings
 from studio.contracts.asset_library.errors import AssetError
 from studio.runtime.time import utc_now
 
@@ -41,9 +41,9 @@ __all__ = ["EXPORT_PACKAGING_POLICY", "GalgameVideoExports"]
 
 
 class GalgameVideoExports:
-    def __init__(self, session: AsyncSession, settings: Settings | None = None) -> None:
+    def __init__(self, session: AsyncSession, settings: Settings) -> None:
         self.session = session
-        self.settings = settings or get_settings()
+        self.settings = settings
         self.storage = AssetStorage(self.settings)
 
     async def _project(self, project_id: str) -> GalgameWorkshopProject:

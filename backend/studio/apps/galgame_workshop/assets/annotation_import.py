@@ -25,19 +25,17 @@ from studio.apps.galgame_workshop.storage.models import (
 )
 from studio.apps.galgame_workshop.story.story import GalgameStoryDocuments
 from studio.apps.galgame_workshop.task_views import annotation_task_out as _task_out
-from studio.config.settings import Settings, get_settings
+from studio.config.settings import Settings
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.galgame_workshop.galgame_annotation_source import AnnotationSource
 from studio.runtime.files.digests import sha256_file
 
 
 class GalgameAnnotationImports:
-    def __init__(
-        self, session: AsyncSession, owner_user_id: str, settings: Settings | None = None
-    ) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str, settings: Settings) -> None:
         self.session = session
         self.owner_user_id = owner_user_id
-        self.settings = settings or get_settings()
+        self.settings = settings
         self.storage = AssetStorage(self.settings)
 
     async def _target(self, project_id: str) -> GalgameWorkshopProject:

@@ -73,7 +73,7 @@ async def get_asr_settings(
     _owner: OwnerDep,
 ) -> GalgameAsrSettingsOut:
     try:
-        return await asr_records(request, session).get_settings(project_id)
+        return await asr_records(request, session).read_settings(project_id)
     except AssetError as exc:
         raise _asset_error(exc) from None
 

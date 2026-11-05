@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from pydantic import ValidationError
 
 from studio.apps.galgame_workshop.errors import (
@@ -32,7 +32,6 @@ from studio.apps.galgame_workshop.story.story_migrations import GalgameStoryMigr
 from studio.apps.galgame_workshop.story.story_patches import GalgameStoryPatches
 from studio.apps.galgame_workshop.transport.website._shared import _invalid_story, _not_found
 from studio.assembly.http_dependencies import OwnerDep, SessionDep
-from studio.config.settings import get_settings
 from studio.runtime.database.operation_receipts import OperationError
 
 router = APIRouter()
@@ -150,10 +149,12 @@ async def import_legacy_story(
 
 @router.get("/{project_id}/story/report", response_model=GalgameStoryRouteReportOut)
 async def get_story_report(
-    session: SessionDep, owner_user_id: OwnerDep, project_id: str
+    request: Request, session: SessionDep, owner_user_id: OwnerDep, project_id: str
 ) -> GalgameStoryRouteReportOut:
     try:
-        return await GalgameReadiness(session, get_settings(), owner_user_id).report(project_id)
+        return await GalgameReadiness(session, request.app.state.settings, owner_user_id).report(
+            project_id
+        )
     except (
         GalgameWorkshopProjectNotFoundError,
         GalgameStoryDocumentNotFoundError,

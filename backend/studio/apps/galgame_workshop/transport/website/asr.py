@@ -23,7 +23,7 @@ router = APIRouter()
 @router.get("/{project_id}/assets/asr/settings", response_model=GalgameAsrSettingsOut)
 async def get_asr_settings(session: SessionDep, project_id: str) -> GalgameAsrSettingsOut:
     try:
-        return await GalgameAsrService(session).get_settings(project_id)
+        return await GalgameAsrService(session).read_settings(project_id)
     except AssetError as exc:
         raise _asset_error(exc) from None
 

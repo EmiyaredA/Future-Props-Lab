@@ -23,7 +23,7 @@ from studio.apps.galgame_workshop.storage.models import (
     GalgameWorkshopProject,
 )
 from studio.apps.galgame_workshop.story.story import default_story_document
-from studio.config.settings import get_settings
+from studio.config.settings import Settings
 from studio.runtime.database.operation_receipts import forget
 from studio.runtime.database.project_files import creating_project_layout, deleting_project_layout
 from studio.runtime.database.project_records import (
@@ -36,10 +36,11 @@ from studio.runtime.time import utc_now
 
 
 class GalgameWorkshopProjects:
-    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str, *, settings: Settings) -> None:
         self.session = session
         self.owner_user_id = owner_user_id
-        self.storage = AssetStorage(get_settings())
+        self.settings = settings
+        self.storage = AssetStorage(settings)
 
     async def list(self) -> GalgameWorkshopProjectListOut:
         rows = await list_owned_projects(self.session, GalgameWorkshopProject, self.owner_user_id)
@@ -86,9 +87,9 @@ class GalgameWorkshopProjects:
     ) -> GalgameWorkshopProjectOut:
         await self._row(project_id)
         if body.status == "completed":
-            report = await GalgameReadiness(
-                self.session, get_settings(), self.owner_user_id
-            ).report(project_id)
+            report = await GalgameReadiness(self.session, self.settings, self.owner_user_id).report(
+                project_id
+            )
             if not report.ready:
                 raise GalgameStoryNotReadyError(report)
         values: dict[str, object] = {

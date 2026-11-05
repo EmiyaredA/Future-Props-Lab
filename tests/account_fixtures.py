@@ -41,6 +41,8 @@ def switch_desktop_account(backend):
 
 async def clear_private_projects(owner="test-user"):
     """Fixture cleanup uses the same ordered reference deletion as business writes."""
+    from functools import partial
+
     from sqlalchemy import delete, select
 
     from studio.apps.galgame_workshop.storage.models import GalgameWorkshopProject
@@ -50,7 +52,7 @@ async def clear_private_projects(owner="test-user"):
     from studio.apps.visual_workshop.storage.models import VisualWorkshopProject
     from studio.apps.visual_workshop.website.projects import VisualWorkshopProjects
     from studio.assembly.website.models import TENANT_MODELS
-    from website_test_support import SessionLocal
+    from website_test_support import SessionLocal, app
 
     dependents = {
         "thought_sync_tasks",
@@ -69,7 +71,7 @@ async def clear_private_projects(owner="test-user"):
         await session.commit()
     for model, use_case in [
         (VideoEditorProject, VideoEditorProjects),
-        (GalgameWorkshopProject, GalgameWorkshopProjects),
+        (GalgameWorkshopProject, partial(GalgameWorkshopProjects, settings=app.state.settings)),
         (VisualWorkshopProject, VisualWorkshopProjects),
     ]:
         async with SessionLocal() as reader:
