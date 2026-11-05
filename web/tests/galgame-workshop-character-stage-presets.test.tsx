@@ -241,6 +241,16 @@ beforeEach(() => {
   );
 });
 
+// Keep accessible-name queries inside the active editor panel. Searching the
+// entire editor repeatedly makes jsdom recalculate styles for unrelated controls.
+function characterControls() {
+  const panel = document.querySelector<HTMLElement>(
+    ".galgame-character-workspace",
+  );
+  if (!panel) throw new Error("missing character workspace");
+  return within(panel);
+}
+
 test("edits independent two-dimensional character position presets", async () => {
   const user = userEvent.setup();
   vi.mocked(getGalgameStoryDocument).mockResolvedValueOnce({
@@ -308,7 +318,9 @@ test("edits independent two-dimensional character position presets", async () =>
   await openAssetSection(user, "角色");
 
   expect(screen.getByText("1 项")).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "位置与尺寸" }));
+  await user.click(
+    characterControls().getByRole("button", { name: "位置与尺寸" }),
+  );
   const stage = screen.getByRole("application", {
     name: "位置与尺寸舞台预览",
   });
@@ -378,18 +390,24 @@ test("edits independent two-dimensional character position presets", async () =>
     { timeout: 2000 },
   );
 
-  await user.click(screen.getByRole("button", { name: "左上角" }));
+  await user.click(characterControls().getByRole("button", { name: "左上角" }));
   await waitFor(() => {
     const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
     expect(saved?.settings?.characterStage?.anchor).toBe("topLeft");
   });
 
-  await user.click(screen.getByRole("button", { name: "新增位置" }));
+  await user.click(
+    characterControls().getByRole("button", { name: "新增位置" }),
+  );
   await user.type(screen.getByLabelText("新增位置预设名称"), "近景");
   await user.keyboard("{Enter}");
-  const customPosition = screen.getByRole("button", { name: /近景 50，50/ });
+  const customPosition = characterControls().getByRole("button", {
+    name: /近景 50，50/,
+  });
   expect(customPosition).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "删除位置预设" })).toBeEnabled();
+  expect(
+    characterControls().getByRole("button", { name: "删除位置预设" }),
+  ).toBeEnabled();
 
   await user.click(customPosition);
   await user.keyboard("{F2}");
@@ -397,13 +415,17 @@ test("edits independent two-dimensional character position presets", async () =>
   await user.clear(presetName);
   await user.type(presetName, "近景改名{Enter}");
   expect(
-    screen.getByRole("button", { name: /近景改名 50，50/ }),
+    characterControls().getByRole("button", { name: /近景改名 50，50/ }),
   ).toBeInTheDocument();
 
-  await user.click(screen.getByRole("button", { name: /^设为默认位置$/ }));
-  await user.click(screen.getByRole("button", { name: "删除位置预设" }));
+  await user.click(
+    characterControls().getByRole("button", { name: /^设为默认位置$/ }),
+  );
+  await user.click(
+    characterControls().getByRole("button", { name: "删除位置预设" }),
+  );
   expect(
-    screen.queryByRole("button", { name: /近景改名/ }),
+    characterControls().queryByRole("button", { name: /近景改名/ }),
   ).not.toBeInTheDocument();
 
   const height = screen.getByRole("spinbutton", {
@@ -448,11 +470,17 @@ test("opens stage settings for the currently selected character", async () => {
   await screen.findByText("纵向切片");
   await openAssetSection(user, "角色");
   await user.click(
-    screen.getByRole("button", { name: /角色乙 0 个表情 · 0 处引用/ }),
+    characterControls().getByRole("button", {
+      name: /角色乙 0 个表情 · 0 处引用/,
+    }),
   );
-  await user.click(screen.getByRole("button", { name: "位置与尺寸" }));
+  await user.click(
+    characterControls().getByRole("button", { name: "位置与尺寸" }),
+  );
 
-  expect(screen.getByRole("button", { name: /角色乙 跟随全局/ })).toBeVisible();
+  expect(
+    characterControls().getByRole("button", { name: /角色乙 跟随全局/ }),
+  ).toBeVisible();
   expect(
     localStorage.getItem(
       "future_props_galgame_character_stage_scope:project-1",
@@ -477,12 +505,18 @@ test("creates and removes an independent character stage scheme", async () => {
   renderEditor();
   await screen.findByText("纵向切片");
   await openAssetSection(user, "角色");
-  await user.click(screen.getByRole("button", { name: "位置与尺寸" }));
-  await user.click(screen.getByRole("button", { name: /全局 固定/ }));
+  await user.click(
+    characterControls().getByRole("button", { name: "位置与尺寸" }),
+  );
+  await user.click(
+    characterControls().getByRole("button", { name: /全局 固定/ }),
+  );
   await user.click(screen.getByRole("option", { name: /调查员 跟随全局/ }));
   expect(screen.getByText("当前角色正在跟随全局方案。")).toBeVisible();
 
-  await user.click(screen.getAllByRole("button", { name: /创建独立方案/ })[0]);
+  await user.click(
+    characterControls().getAllByRole("button", { name: /创建独立方案/ })[0],
+  );
   await waitFor(() => {
     const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
     expect(
@@ -501,8 +535,12 @@ test("creates and removes an independent character stage scheme", async () => {
   await user.click(
     within(assetNavigation).getByRole("button", { name: "角色" }),
   );
-  await user.click(screen.getByRole("button", { name: "位置与尺寸" }));
-  expect(screen.getByRole("button", { name: /调查员 独立/ })).toBeVisible();
+  await user.click(
+    characterControls().getByRole("button", { name: "位置与尺寸" }),
+  );
+  expect(
+    characterControls().getByRole("button", { name: /调查员 独立/ }),
+  ).toBeVisible();
 
   fireEvent.change(screen.getByLabelText("默认画面高度"), {
     target: { value: "135" },
@@ -516,7 +554,9 @@ test("creates and removes an independent character stage scheme", async () => {
     expect(saved?.settings?.characterStage?.defaultHeightPercent).toBe(100);
   });
 
-  await user.click(screen.getByRole("button", { name: "删除角色独立方案" }));
+  await user.click(
+    characterControls().getByRole("button", { name: "删除角色独立方案" }),
+  );
   await user.click(screen.getByRole("button", { name: /^删除独立方案$/ }));
   await waitFor(() => {
     const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
@@ -575,7 +615,9 @@ test("shows the selected portrait's real stage footprint for each anchor", async
   const { container } = renderEditor();
   await screen.findByText("纵向切片");
   await openAssetSection(user, "角色");
-  await user.click(screen.getByRole("button", { name: "位置与尺寸" }));
+  await user.click(
+    characterControls().getByRole("button", { name: "位置与尺寸" }),
+  );
 
   await waitFor(() => {
     const footprint = container.querySelector<HTMLElement>(
@@ -598,7 +640,9 @@ test("shows the selected portrait's real stage footprint for each anchor", async
     transform: "translate(-50%, -50%) scaleX(1)",
   });
 
-  await user.click(screen.getByRole("button", { name: "底部居中" }));
+  await user.click(
+    characterControls().getByRole("button", { name: "底部居中" }),
+  );
   expect(container.querySelector(".galgame-stage-preview-actor")).toHaveClass(
     "is-bottomCenter",
   );
@@ -606,7 +650,7 @@ test("shows the selected portrait's real stage footprint for each anchor", async
     transform: "translate(-50%, -100%) scaleX(1)",
   });
 
-  await user.click(screen.getByRole("button", { name: "左上角" }));
+  await user.click(characterControls().getByRole("button", { name: "左上角" }));
   expect(container.querySelector(".galgame-stage-preview-actor")).toHaveClass(
     "is-topLeft",
   );
@@ -708,8 +752,12 @@ test("separates character attribute templates, values, preview, and resource ref
   await screen.findByText("纵向切片");
   await openAssetSection(user, "角色");
 
-  await user.click(screen.getByRole("button", { name: "属性模板" }));
-  await user.click(screen.getByRole("button", { name: "新增属性" }));
+  await user.click(
+    characterControls().getByRole("button", { name: "属性模板" }),
+  );
+  await user.click(
+    characterControls().getByRole("button", { name: "新增属性" }),
+  );
   await waitFor(
     () => {
       const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
@@ -721,15 +769,23 @@ test("separates character attribute templates, values, preview, and resource ref
   );
 
   await user.click(
-    screen.getByRole("button", { name: /调查员 0 个表情 · 2 处引用/ }),
+    characterControls().getByRole("button", {
+      name: /调查员 0 个表情 · 2 处引用/,
+    }),
   );
-  await user.click(screen.getByRole("button", { name: /角色属性/ }));
+  await user.click(
+    characterControls().getByRole("button", { name: /角色属性/ }),
+  );
   expect(screen.getByRole("textbox", { name: "属性 1值" })).toBeVisible();
 
-  await user.click(screen.getByRole("button", { name: /资源引用 2/ }));
+  await user.click(
+    characterControls().getByRole("button", { name: /资源引用 2/ }),
+  );
   expect(screen.getByText("保持警惕。")).toBeVisible();
   expect(screen.getByText("角色登场 / 调整")).toBeVisible();
-  expect(screen.getByRole("button", { name: "删除角色" })).toBeDisabled();
+  expect(
+    characterControls().getByRole("button", { name: "删除角色" }),
+  ).toBeDisabled();
 });
 
 test("opens selected characters with a blank expression detail and compact role tabs", async () => {
@@ -830,7 +886,7 @@ test("opens selected characters with a blank expression detail and compact role 
   expect(defaultPreviewPortrait).toBeInTheDocument();
   expect(screen.queryByDisplayValue("平静")).not.toBeInTheDocument();
 
-  await user.click(screen.getByRole("button", { name: /惊讶$/ }));
+  await user.click(characterControls().getByRole("button", { name: /惊讶$/ }));
   expect(screen.getByText("对白头像已关闭")).toBeVisible();
   await user.click(screen.getByRole("checkbox", { name: "对白头像" }));
   await waitFor(() => {
@@ -923,10 +979,9 @@ test("opens selected characters with a blank expression detail and compact role 
   expect(
     rendered.container.querySelector(".galgame-character-workspace"),
   ).toHaveClass("is-expression-detail");
-  expect(screen.getByRole("button", { name: "资源引用" })).toHaveAttribute(
-    "aria-expanded",
-    "false",
-  );
+  expect(
+    characterControls().getByRole("button", { name: "资源引用" }),
+  ).toHaveAttribute("aria-expanded", "false");
   fireEvent.change(
     within(expressionSettings).getByRole("slider", {
       name: "播放帧率滑杆",
@@ -1038,19 +1093,27 @@ test("opens selected characters with a blank expression detail and compact role 
     }),
   ).toBeVisible();
 
-  await user.click(screen.getByRole("button", { name: /立绘皮肤/ }));
+  await user.click(
+    characterControls().getByRole("button", { name: /立绘皮肤/ }),
+  );
   expect(screen.getByText("让立绘在不同外观之间切换")).toBeVisible();
-  await user.click(screen.getByRole("button", { name: "添加皮肤" }));
+  await user.click(
+    characterControls().getByRole("button", { name: "添加皮肤" }),
+  );
   expect(screen.getByRole("textbox", { name: "皮肤名称" })).toHaveValue(
     "皮肤 1",
   );
 
-  await user.click(screen.getByRole("button", { name: /显示名/ }));
-  expect(screen.getByRole("button", { name: /主名称 调查员/ })).toBeVisible();
-  await user.click(screen.getByRole("button", { name: "别名" }));
+  await user.click(characterControls().getByRole("button", { name: /显示名/ }));
+  expect(
+    characterControls().getByRole("button", { name: /主名称 调查员/ }),
+  ).toBeVisible();
+  await user.click(characterControls().getByRole("button", { name: "别名" }));
   expect(screen.getByLabelText("显示名方案名称")).toHaveValue("别名 1");
 
-  await user.click(screen.getByRole("button", { name: /角色属性/ }));
+  await user.click(
+    characterControls().getByRole("button", { name: /角色属性/ }),
+  );
   const attributeInput = screen.getByRole("spinbutton", {
     name: "好感度值",
   });
@@ -1067,7 +1130,9 @@ test("opens selected characters with a blank expression detail and compact role 
   expect(attributeInput).toHaveValue(0);
 
   fireEvent.change(attributeInput, { target: { value: "9" } });
-  await user.click(screen.getByRole("button", { name: "恢复默认" }));
+  await user.click(
+    characterControls().getByRole("button", { name: "恢复默认" }),
+  );
   await waitFor(() => {
     const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
     expect(saved?.characters?.[0].attributes?.affection).toBe(0);
