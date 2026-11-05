@@ -6,6 +6,7 @@ import sqlite3
 from contextlib import closing
 from pathlib import Path
 
+from fpl_agents.migration_shapes import DATASETS as AGENTS
 from fpl_assets.migration_records import DATASETS as ASSETS
 from fpl_director.migration_records import DATASETS as DIRECTOR
 from fpl_galgame.migration_records import DATASETS as GALGAME
@@ -30,7 +31,7 @@ ROOT = Path(__file__).resolve().parents[2]
 TRANSFER = {
     **{
         dataset.model.__tablename__: dataset.name
-        for dataset in (*IDENTITY, *ASSETS, *DIRECTOR, *MODELS, *PRESENTATION)
+        for dataset in (*IDENTITY, *ASSETS, *DIRECTOR, *MODELS, *PRESENTATION, *AGENTS)
     },
     **{
         dataset.model.__tablename__: dataset.name
@@ -130,6 +131,8 @@ def coverage(snapshot, catalog):
                 status = "transfer_pending" if partition[1] else "dataset_registered"
             elif name in TRANSFER:
                 status = "dataset_registered"
+            elif name == "agent_workbench_search":
+                status = "rebuild_registered"
             elif name in derived:
                 status = "rebuild_pending"
             elif count:

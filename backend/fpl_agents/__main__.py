@@ -11,7 +11,11 @@ from fpl_runtime.locking import service_lock
 
 def parser():
     result = argparse.ArgumentParser(description="FPL Agents service")
-    result.add_argument("command", choices=("serve", "migrate"))
+    result.add_argument(
+        "command", choices=("serve", "migrate", "migration-export", "migration-import")
+    )
+    result.add_argument("--migration-plan", type=Path)
+    result.add_argument("--legacy-db", type=Path)
     result.add_argument("--config", type=Path, default=Path("/run/fpl/config.toml"))
     result.add_argument("--state-root", type=Path, default=Path("/state"))
     result.add_argument("--public-key", type=Path, default=Path("/run/fpl/identity-public.pem"))
@@ -90,7 +94,14 @@ def run(options):
 
 if __name__ == "__main__":
     try:
-        run(parser().parse_args())
+        from fpl_runtime.project_history_migration import handle_maintenance
+
+        from .migration_application import create_export_app, create_import_app
+
+        arguments = parser()
+        options = arguments.parse_args()
+        if not handle_maintenance(arguments, options, create_export_app, create_import_app):
+            run(options)
     except (ValueError, RuntimeError) as exc:
         print(str(exc), file=sys.stderr)
         raise SystemExit(1) from None

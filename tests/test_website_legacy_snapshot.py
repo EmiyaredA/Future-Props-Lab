@@ -131,7 +131,7 @@ def migrate_rehearsal(snapshot_db, parent, account, manifest_sha256):
     assert receipts["pending_records"] == receipts["record_count"] - 2
     assert receipts["status"] == "transfer_pending"
     assert indexed["presentation_template_assets"]["dataset"] == "presentation.template-references"
-    assert indexed["agent_workbench_search"]["status"] == "rebuild_pending"
+    assert indexed["agent_workbench_search"]["status"] == "rebuild_registered"
     assert indexed["model_catalog_state"]["dataset"] == "models.catalog-state"
     assert "interview_rooms" in report["pending_tables"]
     with pytest.raises(ValueError, match="清单摘要"):

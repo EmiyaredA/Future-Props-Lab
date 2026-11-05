@@ -4541,6 +4541,12 @@
       "model": "VisualReviewJob"
     },
     {
+      "table": "agents_import_receipts",
+      "service": "agents",
+      "module": "fpl_agents.migration_application",
+      "model": "AgentsImportReceipt"
+    },
+    {
       "table": "agent_native_jobs",
       "service": "agents",
       "module": "fpl_agents.models",

@@ -575,3 +575,7 @@ Galgame 快照 ZIP 导入使用 `deploy/galgame-snapshots.compose.yaml`，与 `d
 ### Agent 工作台的项目发现
 
 启动前应用 Agents 的 0004 迁移，并叠加 `deploy/agents-execution.compose.yaml`。将 `FPL_AGENTS_EXECUTION_WORKERS` 指向独立执行凭据文件。Mac 的 `fpl_host.workbench_worker` 通过同版本回环网关领取任务，使用可信本机 TOML 核对允许的目录、项目和 CLI。公网仅能看到当前账号授权的预设项目，创建对话需有效的云控解锁。登记目录仅允许可信本机入口。另需应用 Agents 的 0005 迁移。执行 worker 同时轮询目录和轮次通道。运行撤权、失败或服务重启时队列暂停，用户重新解锁后可恢复。源码预览只为持有相应活动的账号从受管项目读取。
+
+### Agent 工作台历史维护
+
+应用 Agents 的 0006 迁移后，使用同一迁移计划分别启动 `python -m fpl_agents migration-export` 与 `python -m fpl_agents migration-import` 的独立回环端口。导出端只接受已封存的兼容数据库，目标端只挂载 Agents 状态目录。执行 `uv run python -m scripts.website.migrate_agents_history` 并传入计划和两端地址。重复执行复用同批回执。核对账号归属、历史记录和重建索引摘要后，才启动普通业务入口。旧待执行队列需重新授权后恢复。
