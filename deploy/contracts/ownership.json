@@ -5015,6 +5015,12 @@
       "model": "VisualProviderTask"
     },
     {
+      "table": "model_visual_review_attempts",
+      "service": "models",
+      "module": "fpl_models.visual_review_records",
+      "model": "VisualReviewAttempt"
+    },
+    {
       "table": "motion_reference_mutations",
       "service": "motion",
       "module": "fpl_motion.models",

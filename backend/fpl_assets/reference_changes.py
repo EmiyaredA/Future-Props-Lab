@@ -99,8 +99,9 @@ class ReferenceChanges:
                 )
             )
             evidence = change.visual_evidence
-            if evidence is not None:
-                await check_project_scope(session, "visual", evidence.project_id)
+            review_project = evidence.project_id if evidence else change.visual_review_project
+            if review_project is not None:
+                await check_project_scope(session, "visual", review_project)
             if change.visual_conversation_project is not None:
                 await check_project_scope(session, "visual", change.visual_conversation_project)
             file_change = change.resource_kind in VIDEO_FILE_CHANGES
@@ -125,10 +126,10 @@ class ReferenceChanges:
                 if row.scope_project_id not in {None, change.visual_conversation_project}:
                     raise failure("project_conversation_scope", "对话不属于当前项目")
                 row.scope_project_id = change.visual_conversation_project
-            if evidence is not None:
-                if row.scope_project_id not in {None, evidence.project_id}:
+            if review_project is not None:
+                if row.scope_project_id not in {None, review_project}:
                     raise failure("project_evidence_scope", "验收证据不属于当前项目")
-                row.scope_project_id = evidence.project_id
+                row.scope_project_id = review_project
             if change.expected_resource_revision < row.resource_revision:
                 raise failure("resource_revision_conflict", "源资源版本已过期")
             active = await session.scalar(
@@ -225,9 +226,9 @@ class ReferenceChanges:
                         )
                     )
                 )
-            elif requested and evidence is not None:
+            elif requested and review_project is not None:
                 candidates = await scoped_assets(
-                    session, evidence.project_id, requested, include_private=False
+                    session, review_project, requested, include_private=False
                 )
                 present = {asset.id for asset, _ in candidates}
             elif requested and describe_canvas:

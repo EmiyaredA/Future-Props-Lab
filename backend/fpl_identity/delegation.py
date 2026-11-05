@@ -41,7 +41,8 @@ from fpl_runtime.visual_generation import (
     visual_generation_model_grant,
     visual_generation_plan_grant,
 )
-from fpl_runtime.visual_samples import sample_grant
+from fpl_runtime.visual_review import review_model_grant
+from fpl_runtime.visual_samples import baseline_grant, sample_grant
 from fpl_runtime.visual_snapshot import archive_grant as visual_archive_grant
 from fpl_runtime.visual_snapshot import snapshot_grant as visual_snapshot_grant
 
@@ -146,7 +147,7 @@ async def authorize_delegation(app, body, credential):
             or galgame_archive_grant(grant)
             or visual_archive_grant(grant)
             or (composition_grant(grant) and not model_grid_grant(grant))
-            or sample_grant(grant)
+            or (sample_grant(grant) and not baseline_grant(grant))
             or galgame_export_grant(grant)
             or galgame_handoff_grant(grant)
             else (
@@ -157,6 +158,8 @@ async def authorize_delegation(app, body, credential):
                     or visual_generation_asset_grant(grant)
                     or visual_generation_plan_grant(grant)
                     or model_grid_grant(grant)
+                    or review_model_grant(grant)
+                    or baseline_grant(grant)
                 )
                 else route_permission(body.target_method, target_permission_path(grant))
             )

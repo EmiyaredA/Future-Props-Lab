@@ -533,6 +533,8 @@ Visual ZIP 导入使用 `deploy/visual-snapshots.compose.yaml`，与 `deploy/pro
 
 Visual 生成任务与批次需要 `deploy/visual-generation.compose.yaml`。将独立的 `FPL_VISUAL_GENERATION_KEY` 只读挂载给 Visual 和 Models，分别运行两者的 `migrate`。Visual 按画布版本提交任务，Models 保存执行计划和供应商回执，Assets 只在画布结果事务确认后公开原件。图片和视频继续按原账号等待队列与执行额度运行。未确认的结果保持可恢复，已提交但结果未知的供应商任务禁止重提。
 
+视觉验收的固定模型回执使用 Models 的 0018 迁移。Models 只返回固定连接的公开投影，保留同账号同运行 ID 的精确请求摘要、结果和调用日志。中断后未知的供应商调用禁止重提。Rendering 通过 Assets 的同项目版本化原件进行基础取样，自动取样与手动区间取样分别授权。
+
 ### Galgame 工坊的浏览器版本与故事验收
 
 运行 `npm run services:build:web -- galgame`，将清单目录传给 `npm run services:build -- galgame --build --web-release`。在 `deploy/project-owners.compose.yaml` 中使用 Galgame 专属状态目录和 Identity 凭据。项目列表、总览、编辑和已保存 Story 预演由 Galgame 镜像提供，旧版本写请求返回 409。

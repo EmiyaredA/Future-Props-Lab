@@ -101,6 +101,7 @@ class PrepareReferenceChange(BaseModel):
     galgame_project_removal: Literal[True] | None = None
     visual_upload: VisualUpload | None = None
     visual_evidence: VisualEvidenceUpload | None = None
+    visual_review_project: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]{1,128}$")
     visual_project_removal: list[str] | None = Field(default=None, max_length=10000)
     visual_conversation_project: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]{1,128}$")
 
@@ -157,6 +158,14 @@ class PrepareReferenceChange(BaseModel):
             or self.carried_asset_ids is not None
         ):
             raise ValueError("Visual 验收证据范围无效")
+        if self.visual_review_project is not None and (
+            self.resource_kind != "acceptance"
+            or self.expected_resource_revision != -1
+            or self.visual_evidence is not None
+            or self.metadata_asset_ids is not None
+            or self.carried_asset_ids is not None
+        ):
+            raise ValueError("Visual 验收记录范围无效")
         if self.visual_conversation_project is not None and self.resource_kind != "conversation":
             raise ValueError("Visual 对话范围无效")
         return self
@@ -182,5 +191,6 @@ class PrepareReferenceChange(BaseModel):
             or self.visual_conversation_project is not None
             or self.visual_upload is not None
             or self.visual_evidence is not None
+            or self.visual_review_project is not None
         ):
             raise ValueError("Visual 变更范围与所属服务不符")

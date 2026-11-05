@@ -3,6 +3,7 @@
 import asyncio
 import json
 from pathlib import Path
+from subprocess import SubprocessError
 from tempfile import TemporaryDirectory
 
 import jwt
@@ -13,6 +14,8 @@ from starlette.background import BackgroundTask
 
 from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.identity.permissions import effective_permissions
+from app.capabilities.media_rendering.inspection import inspect_media, verify_video
+from app.capabilities.media_rendering.sample_positions import review_positions
 from app.capabilities.media_rendering.video_frames import extract_frame
 from app.capabilities.media_rendering.video_sampling import source_frame_time
 from fpl_runtime.claims import HEADER, verify_context
@@ -20,6 +23,7 @@ from fpl_runtime.framed_media import content_length, stream_files
 from fpl_runtime.visual_samples import (
     FRAMES_HEADER,
     INPUT_HEADER,
+    MEDIA_HEADER,
     RENDER,
     EvidenceFrame,
     SamplePlan,
@@ -67,11 +71,12 @@ def tokens(request, body, project, run):
         )
     except (jwt.InvalidTokenError, ValueError, TypeError):
         raise HTTPException(401, "visual_sample_grant_required") from None
+    permissions = effective_permissions(actor.platform_role, frozenset(actor.scopes))
     if (
         actor != owner
         or actor.purpose != "studio"
-        or "content.write"
-        not in effective_permissions(actor.platform_role, frozenset(actor.scopes))
+        or "content.write" not in permissions
+        or (body.mode != "interval" and "models.use" not in permissions)
     ):
         raise HTTPException(403, "visual_sample_scope_forbidden")
     return actor.user_id, token, input_token
@@ -99,7 +104,20 @@ async def extract(source, requested, directory):
     return frames, files
 
 
+async def sample_positions(source, plan):
+    if plan.mode == "interval":
+        return {}, plan.positions_ms
+    metadata = await inspect_media(source, "video")
+    if plan.mode == "review-output":
+        await verify_video(source)
+        positions = review_positions(metadata["duration_ms"])
+    else:
+        positions = [0, max(0, metadata["duration_ms"] // 2)]
+    return metadata, positions
+
+
 @router.post(RENDER + "/{project_id}/{run_id}/{digest}/{source_digest}")
+@router.post(RENDER + "/{project_id}/{run_id}/{digest}/{source_digest}/{review_mode}")
 async def sample_visual_frames(request: Request, project_id: str, run_id: str, body: SamplePlan):
     owner, token, input_token = tokens(request, body, project_id, run_id)
     await require_active(request, token)
@@ -126,10 +144,10 @@ async def sample_visual_frames(request: Request, project_id: str, run_id: str, b
                 operation="visual_sample",
             )
             try:
-                frames, files = await extract(
-                    originals[body.source.id], body.positions_ms, directory
-                )
-            except (ValueError, RuntimeError, OSError) as exc:
+                source = originals[body.source.id]
+                metadata, requested = await sample_positions(source, body)
+                frames, files = await extract(source, requested, directory)
+            except (ValueError, RuntimeError, OSError, SubprocessError) as exc:
                 raise HTTPException(422, "visual_sample_video_unavailable") from exc
         await require_active(request, token)
         return StreamingResponse(
@@ -140,6 +158,7 @@ async def sample_visual_frames(request: Request, project_id: str, run_id: str, b
                 FRAMES_HEADER: json.dumps(
                     [frame.model_dump() for frame in frames], separators=(",", ":")
                 ),
+                **({MEDIA_HEADER: json.dumps(metadata, separators=(",", ":"))} if metadata else {}),
                 "Cache-Control": "private, no-store",
             },
             background=BackgroundTask(temp.cleanup),

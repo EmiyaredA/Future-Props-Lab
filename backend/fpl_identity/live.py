@@ -58,6 +58,7 @@ from fpl_runtime.visual_composition import grid_asset_target, grid_render_target
 from fpl_runtime.visual_generation import generation_asset_target
 from fpl_runtime.visual_generation import model_target as visual_generation_model_target
 from fpl_runtime.visual_generation import plan_target as visual_generation_plan_target
+from fpl_runtime.visual_review import model_target as visual_review_model_target
 from fpl_runtime.visual_samples import asset_target as visual_sample_asset_target
 from fpl_runtime.visual_samples import render_target as visual_sample_render_target
 from fpl_runtime.visual_snapshot import archive_target as visual_archive_target
@@ -156,6 +157,7 @@ async def live(request: Request, body: LiveRequest):
         or visual_snapshot_model_target(body.method, body.path)
         or visual_generation_model_target(body.method, body.path)
         or visual_generation_plan_target(body.method, body.path)
+        or visual_review_model_target(body.method, body.path)
         or visual_snapshot_resolution_target(body.method, body.path)
         or asr_model_target(body.method, body.path)
         or galgame_asr_catalog_target(body.method, body.path)

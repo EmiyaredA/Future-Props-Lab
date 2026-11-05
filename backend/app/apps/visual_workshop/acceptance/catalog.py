@@ -6,6 +6,7 @@ from app.capabilities.agents.cli.catalog import DEFINITIONS, connection
 from app.capabilities.agents.cli.process import probe
 from app.console.governance.code_agents import authorized
 from app.llm.visual_catalog import fixed_acceptance_model as fixed_model
+from app.llm.visual_review import fixed_connection_signature
 from app.runtime.config import get_settings
 
 from .schemes import SCHEMES, catalog_out, scheme_out
@@ -61,16 +62,6 @@ def connection_signature(scheme_id, settings, pair=None):
         return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
 
     if pair:
-        model, provider = pair
-        return fingerprint(
-            {
-                "model_id": model.id,
-                "slug": model.slug,
-                "provider_id": provider.id,
-                "kind": provider.kind,
-                "updated_at": str(provider.updated_at),
-                "model_updated_at": str(model.updated_at),
-            }
-        )
+        return fixed_connection_signature(pair)
     kind, path, _ = cli_configuration(settings, scheme_id)
     return fingerprint({"kind": kind, "executable": path})

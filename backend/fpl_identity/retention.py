@@ -26,6 +26,7 @@ from fpl_runtime.retention_authority import (
 from fpl_runtime.video_assets import SOURCE as VIDEO
 from fpl_runtime.video_handoff import handoff_target
 from fpl_runtime.visual_assistant import conversation_retention
+from fpl_runtime.visual_review import start_source as visual_review_start
 from fpl_runtime.visual_samples import evidence_resource, sample_source
 
 from .live import active_actor
@@ -266,6 +267,11 @@ class RetentionAuthorization:
         expected_permission = (
             "community.access" if publication_source or community else "content.write"
         )
+        review_start = visual_review_start(body.source_method, body.source_path)
+        review = body.change.visual_review_project
+        evidence = body.change.visual_evidence
+        if review_start and (review or evidence is not None):
+            expected_permission = "models.use"
         upload = body.change.visual_upload
         if upload is not None and upload.from_model_request(body.source_method, body.source_path):
             expected_permission = "models.use"
@@ -288,15 +294,26 @@ class RetentionAuthorization:
             and not conversation_retention(body)
         ):
             raise HTTPException(403, "retention_resource_mismatch")
-        if body.change.visual_evidence is not None:
+        if evidence is not None:
             sample = sample_source(body.source_method, body.source_path)
-            if (
-                body.caller != "visual"
-                or not sample
-                or (sample[1], evidence_resource(sample[2]))
-                != (body.change.visual_evidence.project_id, body.change.resource_id)
-            ):
+            matching = (
+                sample
+                and (sample[1], evidence_resource(sample[2]))
+                == (evidence.project_id, body.change.resource_id)
+            ) or (
+                review_start
+                and review_start[1] == evidence.project_id
+                and body.change.resource_id.startswith("run-")
+            )
+            if body.caller != "visual" or not matching:
                 raise HTTPException(403, "retention_resource_mismatch")
+        if review is not None and (
+            body.caller != "visual"
+            or not review_start
+            or review_start[1] != review
+            or not body.change.resource_id.startswith("run-")
+        ):
+            raise HTTPException(403, "retention_resource_mismatch")
         if body.caller == "galgame" and not (
             (body.change.resource_kind == "story" and _galgame_story_source(body))
             or _galgame_file_source(body)
@@ -465,7 +482,15 @@ class RetentionAuthorization:
             if publication_source or community
             else principal.allows(expected_permission) and principal.permits("studio:write")
         )
-        if not permitted or (community is not None and actor.user_id != community.actor_id):
+        if (
+            not permitted
+            or (community is not None and actor.user_id != community.actor_id)
+            or (
+                review_start
+                and (review or evidence is not None)
+                and not principal.allows("content.write")
+            )
+        ):
             raise HTTPException(403, "retention_source_forbidden")
         if body.source_path == "/v1/thought-workshop/community/official-import" and (
             actor.auth_kind != "session" or actor.platform_role != "admin"

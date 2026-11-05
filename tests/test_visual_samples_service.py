@@ -1,10 +1,12 @@
 """Verify real frame sampling, atomic evidence and lost receipt recovery."""
 
 import io
+import json
 import subprocess
 from uuid import uuid4
 
 import httpx
+import pytest
 from PIL import Image
 from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario  # noqa: F401
 from tests.test_creative_project_certification import CREDENTIALS
@@ -15,9 +17,20 @@ from app.apps.visual_workshop.acceptance.models import AcceptanceRun, Acceptance
 from fpl_rendering.application import create_app as create_rendering
 from fpl_rendering.migrations.registry import MIGRATIONS as RENDERING_MIGRATIONS
 from fpl_rendering.settings import RenderingSettings
-from fpl_runtime.capability_client import CapabilityClient
+from fpl_runtime.capability_client import CapabilityClient, CapabilityDenied
+from fpl_runtime.claims import HEADER
+from fpl_runtime.delegation import RequestGrant
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.migrations import apply
+from fpl_runtime.visual_samples import (
+    ASSET_PURPOSE,
+    FRAMES_HEADER,
+    INPUT_HEADER,
+    MEDIA_HEADER,
+    RENDER_PURPOSE,
+    SampleAssetQuery,
+    SamplePlan,
+)
 from fpl_visual.application import create_app as create_visual
 from fpl_visual.migrations.registry import MIGRATIONS as VISUAL_MIGRATIONS
 
@@ -133,6 +146,7 @@ async def test_native_video_samples_are_scoped_and_resume_publication(scenario, 
         run = await seed_review(visual, case.viewer, project, output)
         review = root + "/acceptance/runs/" + run
         sample = review + "/samples"
+        await check_baseline(http, case, visual.state.capabilities, root, run, source, sample)
         body = {"expected_revision": 0, "start_ms": 0, "end_ms": 650}
         assert (await send("POST", sample, json={**body, "end_ms": 1600})).status_code == 422
         assert (
@@ -222,3 +236,51 @@ async def seed_review(visual, owner, project, output):
         )
         await db.commit()
     return run
+
+
+async def check_baseline(http, case, peer, root, run, source, sample):
+    project = root.rsplit("/", 1)[1]
+    start = root + "/nodes/output-video/acceptance/runs"
+    original = (await authorize(case, "visual", "POST", start))[HEADER]
+
+    async def grant(purpose, service, target):
+        return await peer.authorize_request(
+            original, RequestGrant("visual", purpose, "POST", start, service, "POST", target)
+        )
+
+    query = SampleAssetQuery(asset_ids=[source])
+    metadata = query.path(project, run)
+    token = await grant(ASSET_PURPOSE, "assets", metadata)
+    reply = await http.post(
+        "http://assets" + metadata, headers={HEADER: token}, json=query.model_dump()
+    )
+    assert reply.status_code == 200, reply.text
+    for mode, expected in (
+        ("review-output", list(range(0, 1500, 125))),
+        ("review-reference", [0, 750]),
+    ):
+        plan = SamplePlan(source=reply.json(), mode=mode)
+        target = plan.path(project, run)
+        input_token = await grant(ASSET_PURPOSE, "assets", plan.scope.path(project, run))
+        token = await grant(RENDER_PURPOSE, "rendering", target)
+        rendered = await http.post(
+            "http://rendering" + target,
+            headers={HEADER: token, INPUT_HEADER: input_token},
+            json=plan.model_dump(),
+        )
+        assert rendered.status_code == 200, rendered.text
+        assert json.loads(rendered.headers[MEDIA_HEADER]) == {
+            "width": 96,
+            "height": 64,
+            "duration_ms": 1500,
+            "has_audio": False,
+        }
+        times = [frame["position_ms"] for frame in json.loads(rendered.headers[FRAMES_HEADER])]
+        assert times == expected
+    manual_token = (await authorize(case, "visual", "POST", sample))[HEADER]
+    with pytest.raises(CapabilityDenied) as wrong_source:
+        await peer.authorize_request(
+            manual_token,
+            RequestGrant("visual", RENDER_PURPOSE, "POST", sample, "rendering", "POST", target),
+        )
+    assert wrong_source.value.status == 403

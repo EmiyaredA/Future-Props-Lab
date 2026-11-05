@@ -55,6 +55,7 @@ from fpl_runtime.request_limit import RequestLimit
 from fpl_runtime.timed_peer import TimedPeer
 from fpl_runtime.visual_generation import MAX_PLAN_BYTES, PEER_DOMAIN, PLANS
 from fpl_runtime.visual_generation import MODEL as VISUAL_GENERATION_MODEL
+from fpl_runtime.visual_review import MAX_MODEL_REQUEST, MODEL_RUN
 from fpl_runtime.visual_snapshot import MAX_LAYOUT_BYTES, MODEL_RESOLVE
 from fpl_runtime.visual_snapshot import MAX_QUERY_BYTES as MAX_VISUAL_SNAPSHOT_QUERY_BYTES
 from fpl_runtime.visual_snapshot import MODELS as VISUAL_SNAPSHOT_MODELS
@@ -92,6 +93,8 @@ from .visual_generation_http import router as visual_generation_router
 from .visual_generation_intake import VisualGenerationIntake
 from .visual_generation_results import VisualGenerationResults
 from .visual_generation_runner import VisualGenerationRunner
+from .visual_review_attempts import VisualReviewAttempts
+from .visual_review_http import router as visual_review_router
 from .writing import router as writing_router
 
 
@@ -226,6 +229,7 @@ def create_app(
             check(database.path, "models", MIGRATIONS)
             await require_private_references(database.sessions)
             await ledger.recover()
+            await app.state.visual_review_attempts.recover()
             await recover_interrupted_model_test_runs(database.sessions)
             await recover_transcription_attempts(database.sessions)
             if galgame_asr_staging.is_symlink() or not galgame_asr_staging.resolve().is_relative_to(
@@ -273,6 +277,7 @@ def create_app(
     app.state.visual_generation_intake = VisualGenerationIntake(app.state)
     app.state.visual_generation_runner = VisualGenerationRunner(app.state)
     app.state.visual_generation_results = VisualGenerationResults(app.state)
+    app.state.visual_review_attempts = VisualReviewAttempts(app.state)
     if visual_generation_key is not None:
         supervisor = RunnerSupervisor((*supervisor.runners, app.state.visual_generation_runner))
 
@@ -337,6 +342,8 @@ def create_app(
     app.include_router(annotation_transcription_router)
     app.include_router(visual_catalog_router)
     app.include_router(visual_generation_router)
+    app.include_router(visual_review_router)
+    app.add_middleware(RequestLimit, prefix=MODEL_RUN, maximum=MAX_MODEL_REQUEST)
     app.add_middleware(RequestLimit, prefix=VISUAL_GENERATION_MODEL, maximum=16 * 1024)
     app.add_middleware(RequestLimit, prefix=PLANS, maximum=MAX_PLAN_BYTES)
     app.add_middleware(
