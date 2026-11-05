@@ -1,7 +1,25 @@
-from sqlalchemy import JSON, ForeignKey
+from sqlalchemy import JSON, ForeignKey, Index, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.runtime.orm_base import Base, external_id
+
+
+class WorkbenchProject(Base):
+    __tablename__ = "workbench_projects"
+    __table_args__ = (UniqueConstraint("owner_user_id", "root"),)
+
+    id: Mapped[str] = mapped_column(primary_key=True)
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey(external_id("users"), ondelete="CASCADE"))
+    root: Mapped[str]
+    last_used_at: Mapped[int]
+
+
+Index(
+    "ix_workbench_projects_recent",
+    WorkbenchProject.owner_user_id,
+    WorkbenchProject.last_used_at.desc(),
+    WorkbenchProject.id,
+)
 
 
 class WorkbenchChat(Base):

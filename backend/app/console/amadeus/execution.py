@@ -2,20 +2,16 @@
 
 import asyncio
 import json
-import os
-import sys
 import time
-from pathlib import Path
 
-from app.capabilities.agents.cli.conversation import claude, codex
-from app.capabilities.agents.cli.native import converse
+from app.capabilities.agents.cli.dialogue import run_dialogue
 from app.console.amadeus.files import work_root
 from app.console.amadeus.runs import Runs
 from app.console.amadeus.schemas import RunEventIn, RunOut
 from app.console.amadeus.skills import load_skill
 from app.console.amadeus.tool_bridge import TOOLS, ToolBridge
 from app.console.governance.code_agents import resolve
-from app.runtime.config import REPO_ROOT
+from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.ids import new_id
 from app.runtime.ownership import bind_owner
@@ -97,7 +93,7 @@ class CodeAgentRuns:
                 if kind != "assistant_delta":
                     await persist(kind, payload)
 
-        bridge = ToolBridge(app, headers, principal, run, self.sessions, emit)
+        bridge = ToolBridge(app, headers, principal, run, self.sessions)
         transport = None
         paused = None
         status, error = "completed", None
@@ -159,43 +155,19 @@ class CodeAgentRuns:
             )
             if len(prompt) > 400_000:
                 raise ValueError("对话上下文过长，请新建会话并携带摘要")
-            # Reuse the packaged watchdog so a killed backend cannot orphan model work.
-            if getattr(sys, "frozen", False):
-                binary = (
-                    Path(sys.executable).resolve().parent.parent
-                    / "fpl-acceptance-tools"
-                    / "fpl-acceptance-tools"
+            transport = asyncio.create_task(
+                run_dialogue(
+                    run.agent_id,
+                    path,
+                    run.agent_model,
+                    prompt,
+                    TOOLS,
+                    bridge.call,
+                    emit,
+                    root=root,
+                    runtime_path=get_settings().runtime_path,
                 )
-                watchdog = [str(binary), "--run-agent", str(os.getpid())]
-            else:
-                watchdog = [
-                    sys.executable,
-                    str(REPO_ROOT / "scripts/website/acceptance_tools.py"),
-                    "--run-agent",
-                    str(os.getpid()),
-                ]
-            if run.agent_id == "codex":
-                future = codex(
-                    path, root, run.agent_model, prompt, TOOLS, bridge.call, emit, watchdog=watchdog
-                )
-            else:
-                config = await bridge.start()
-                if run.agent_id == "claude-code":
-                    future = claude(
-                        path, root, run.agent_model, prompt, config, emit, watchdog=watchdog
-                    )
-                else:
-                    future = converse(
-                        run.agent_id,
-                        path,
-                        root,
-                        run.agent_model,
-                        prompt,
-                        config,
-                        emit,
-                        watchdog=watchdog,
-                    )
-            transport = asyncio.create_task(future)
+            )
             paused = asyncio.create_task(bridge.paused.wait())
             done, _ = await asyncio.wait(
                 [transport, paused], timeout=900, return_when=asyncio.FIRST_COMPLETED
@@ -229,7 +201,7 @@ class CodeAgentRuns:
                     if task and not task.done() and not task.cancelling():
                         task.cancel()
                 await asyncio.gather(*(t for t in (transport, paused) if t), return_exceptions=True)
-                await bridge.close()
+                bridge.close()
                 if pending_text:
                     try:
                         await persist(

@@ -434,6 +434,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/agent-workbench/execution/directories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Directories */
+        get: operations["directories_v1_agent_workbench_execution_directories_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agent-workbench/execution/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register Project */
+        post: operations["register_project_v1_agent_workbench_execution_projects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/agent-workbench/operations/{operation_id}": {
         parameters: {
             query?: never;
@@ -10336,6 +10370,8 @@ export interface components {
             id: string;
             /** Project Id */
             project_id: string;
+            /** Project Label */
+            project_label?: string | null;
             /** Turns */
             turns: components["schemas"]["TurnOut"][];
         };
@@ -10352,6 +10388,8 @@ export interface components {
             id: string;
             /** Project Id */
             project_id: string;
+            /** Project Label */
+            project_label?: string | null;
         };
         /** CheckpointIn */
         CheckpointIn: {
@@ -10421,8 +10459,6 @@ export interface components {
             guacd_ready: boolean;
             /** Host Label */
             host_label: string;
-            /** Projects */
-            projects: components["schemas"]["SetupProject"][];
             /** Public Desktop Vnc Only */
             public_desktop_vnc_only: boolean;
             /** Public Enabled */
@@ -10436,8 +10472,6 @@ export interface components {
         CloudSetupUpdate: {
             /** Host Label */
             host_label: string;
-            /** Projects */
-            projects: string[];
             /** Public Enabled */
             public_enabled: boolean;
             /** Revision */
@@ -11364,6 +11398,22 @@ export interface components {
             /** Result */
             result: unknown;
         };
+        /** DirectoryChoice */
+        DirectoryChoice: {
+            /** Label */
+            label: string;
+            /** Root */
+            root: string;
+        };
+        /** DirectoryListing */
+        DirectoryListing: {
+            /** Items */
+            items: components["schemas"]["DirectoryChoice"][];
+            /** Parent */
+            parent: string | null;
+            /** Selectable */
+            selectable: boolean;
+        };
         /** DocumentOut */
         DocumentOut: {
             document: components["schemas"]["MotionComposition"];
@@ -11465,10 +11515,19 @@ export interface components {
         ExecutionCatalog: {
             /** Agents */
             agents: components["schemas"]["AgentChoice"][];
+            /**
+             * Can Select Directory
+             * @default false
+             */
+            can_select_directory: boolean;
             /** Enabled */
             enabled: boolean;
             /** Projects */
             projects: components["schemas"]["ProjectChoice"][];
+            /** Recent Projects */
+            recent_projects?: components["schemas"]["RecentProject"][];
+            /** Suggested Directories */
+            suggested_directories?: components["schemas"]["DirectoryChoice"][];
         };
         /** Experience */
         Experience: {
@@ -18825,6 +18884,11 @@ export interface components {
             /** Title */
             title: string;
         };
+        /** ProjectDirectory */
+        ProjectDirectory: {
+            /** Root */
+            root: string;
+        };
         /** ProjectFolderOpenOut */
         ProjectFolderOpenOut: {
             /**
@@ -19247,6 +19311,15 @@ export interface components {
         ReauthIn: {
             /** Password */
             password: string;
+        };
+        /** RecentProject */
+        RecentProject: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Root */
+            root: string;
         };
         /** RecordPage */
         RecordPage: {
@@ -20131,15 +20204,6 @@ export interface components {
              * @enum {string}
              */
             type: "setTransition";
-        };
-        /** SetupProject */
-        SetupProject: {
-            /** Label */
-            label: string;
-            /** Root */
-            root: string;
-            /** Selected */
-            selected: boolean;
         };
         /** SkillCatalogOut */
         SkillCatalogOut: {
@@ -25070,6 +25134,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExecutionCatalog"];
+                };
+            };
+        };
+    };
+    directories_v1_agent_workbench_execution_directories_get: {
+        parameters: {
+            query?: {
+                parent?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectoryListing"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    register_project_v1_agent_workbench_execution_projects_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectDirectory"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectChoice"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

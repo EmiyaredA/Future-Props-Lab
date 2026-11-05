@@ -2,17 +2,22 @@
 
 import asyncio
 import json
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
 from app.apps.agent_workbench.execution import transcripts
+from app.apps.agent_workbench.execution.projects import registered_labels
 from app.apps.agent_workbench.execution.schemas import (
     ApprovalDecision,
     ChatCreate,
     ChatDetail,
     ChatOut,
+    DirectoryListing,
     ExecutionCatalog,
+    ProjectChoice,
+    ProjectDirectory,
     TurnCreate,
     TurnOut,
 )
@@ -34,13 +39,25 @@ async def catalog():
 
 @router.get("/chats", response_model=list[ChatOut])
 async def list_chats(db: SessionDep, principal: StudioAuth):
-    return await transcripts.list_chats(db, principal.user_id)
+    return await transcripts.list_chats(db, principal.user_id, load_labels=registered_labels)
 
 
 def unavailable():
     return HTTPException(
         503, {"code": "workbench_execution_unavailable", "message": "项目执行能力尚未就绪"}
     )
+
+
+@router.get("/execution/directories", response_model=DirectoryListing)
+async def directories(
+    parent: Annotated[str | None, Query(max_length=4096)] = None,  # noqa: ARG001
+):
+    raise unavailable()
+
+
+@router.post("/execution/projects", response_model=ProjectChoice)
+async def register_project(_body: ProjectDirectory):
+    raise unavailable()
 
 
 @router.post("/chats", response_model=ChatOut, status_code=201)
@@ -50,7 +67,7 @@ async def create_chat(_body: ChatCreate):
 
 @router.get("/chats/{chat_id}", response_model=ChatDetail)
 async def detail(chat_id: str, db: SessionDep, principal: StudioAuth):
-    return await transcripts.detail(db, principal.user_id, chat_id)
+    return await transcripts.detail(db, principal.user_id, chat_id, load_labels=registered_labels)
 
 
 @router.post("/chats/{chat_id}/turns", response_model=TurnOut, status_code=202)
@@ -87,8 +104,7 @@ async def updates(request, owner, chat_id):
         except HTTPException:
             break
         async with request.app.state.database.sessions(info={"owner_user_id": owner}) as db:
-            turns = await transcripts.recent_turns(db, owner, chat_id, 1)
-            version = (turns[0].id, turns[0].revision) if turns else ()
+            version = await transcripts.latest_turn_version(db, owner, chat_id)
         if version != previous:
             previous = version
             yield f"event: change\ndata: {json.dumps(version)}\n\n"

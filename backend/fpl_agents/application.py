@@ -10,7 +10,7 @@ from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.apps.agent_workbench.change_stream import stream_events
-from app.apps.agent_workbench.execution.models import WorkbenchChat, WorkbenchTurn
+from app.apps.agent_workbench.execution.models import WorkbenchChat, WorkbenchProject, WorkbenchTurn
 from app.apps.agent_workbench.execution.transcripts import recover_owned_turns
 from app.apps.agent_workbench.models import (
     WorkbenchChange,
@@ -45,6 +45,7 @@ from .routes import router
 from .supervisor import CollectionSupervisor
 
 MODELS = (
+    WorkbenchProject,
     WorkbenchChat,
     WorkbenchTurn,
     WorkbenchSource,

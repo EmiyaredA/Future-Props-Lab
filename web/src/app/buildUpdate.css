@@ -1,0 +1,36 @@
+.fpl-build-update {
+  position: fixed;
+  z-index: 10000;
+  inset-inline-start: 50%;
+  inset-block-end: max(16px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  max-width: calc(100vw - 32px);
+  width: max-content;
+  padding: 8px 12px;
+  border: 1px solid var(--border, #777);
+  border-radius: 10px;
+  background: var(--surface, #fff);
+  color: var(--text, #222);
+  box-shadow: var(--shadow, 0 2px 12px #0003);
+  font:
+    14px system-ui,
+    sans-serif;
+}
+
+.fpl-build-update button {
+  padding: 5px 9px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.fpl-build-update button:focus-visible {
+  outline: 2px solid var(--accent, currentColor);
+  outline-offset: 2px;
+}

@@ -5,7 +5,7 @@ from __future__ import annotations
 from sqlalchemy import event
 from sqlalchemy.orm import Session, with_loader_criteria
 
-from app.apps.agent_workbench.execution.models import WorkbenchChat, WorkbenchTurn
+from app.apps.agent_workbench.execution.models import WorkbenchChat, WorkbenchProject, WorkbenchTurn
 from app.apps.agent_workbench.models import (
     WorkbenchChange,
     WorkbenchOperation,
@@ -260,6 +260,7 @@ TENANT_MODELS = (
     CloudUnlock,
     DesktopPreference,
     WorkbenchChat,
+    WorkbenchProject,
     WorkbenchTurn,
     WorkbenchSource,
     WorkbenchSession,

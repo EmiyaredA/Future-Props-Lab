@@ -28,6 +28,25 @@ class ProjectChoice(BaseModel):
     label: str
 
 
+class ProjectDirectory(Input):
+    root: str = Field(min_length=1, max_length=4096)
+
+
+class DirectoryChoice(BaseModel):
+    root: str
+    label: str
+
+
+class RecentProject(ProjectChoice):
+    root: str
+
+
+class DirectoryListing(BaseModel):
+    parent: str | None
+    selectable: bool
+    items: list[DirectoryChoice]
+
+
 class AgentChoice(ProjectChoice):
     id: AgentId
     available: bool
@@ -38,6 +57,9 @@ class ExecutionCatalog(BaseModel):
     enabled: bool
     projects: list[ProjectChoice]
     agents: list[AgentChoice]
+    can_select_directory: bool = False
+    recent_projects: list[RecentProject] = Field(default_factory=list)
+    suggested_directories: list[DirectoryChoice] = Field(default_factory=list)
 
 
 class ChatOut(BaseModel):
@@ -47,6 +69,7 @@ class ChatOut(BaseModel):
     project_id: str
     agent_id: AgentId
     created_at: int
+    project_label: str | None = None
 
 
 class ApprovalOut(BaseModel):

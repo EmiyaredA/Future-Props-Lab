@@ -194,6 +194,20 @@ async def journey():
                     response.text
                 )
             assert (await client.get("/ready")).status_code == 503
+            directories = "/v1/agent-workbench/execution/directories"
+            denied = await client.get(
+                directories,
+                headers=actor_headers("GET", directories),
+                params={"parent": "/fixture/project"},
+            )
+            assert denied.status_code == 503, denied.text
+            register = "/v1/agent-workbench/execution/projects"
+            denied = await client.post(
+                register,
+                headers=actor_headers("POST", register),
+                json={"root": "/fixture/project"},
+            )
+            assert denied.status_code == 503, denied.text
             chats_path = "/v1/agent-workbench/chats"
             assert (
                 await client.get(chats_path, headers=actor_headers("GET", chats_path))
@@ -256,6 +270,7 @@ async def journey():
                 )
                 assert "users" not in tables and "visual_workshop_projects" not in tables
                 assert "agent_workbench_sessions" in tables
+                assert "workbench_projects" in tables
     assert (native_root / "reference.bin").read_bytes() == b"private native attachment"
 
 

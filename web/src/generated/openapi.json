@@ -5577,6 +5577,17 @@
             "title": "Project Id",
             "type": "string"
           },
+          "project_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Label"
+          },
           "turns": {
             "items": {
               "$ref": "#/components/schemas/TurnOut"
@@ -5619,6 +5630,17 @@
           "project_id": {
             "title": "Project Id",
             "type": "string"
+          },
+          "project_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Label"
           }
         },
         "required": [
@@ -5803,13 +5825,6 @@
             "title": "Host Label",
             "type": "string"
           },
-          "projects": {
-            "items": {
-              "$ref": "#/components/schemas/SetupProject"
-            },
-            "title": "Projects",
-            "type": "array"
-          },
           "public_desktop_vnc_only": {
             "title": "Public Desktop Vnc Only",
             "type": "boolean"
@@ -5842,8 +5857,7 @@
           "public_desktop_vnc_only",
           "enrolled",
           "guacd_ready",
-          "screen_sharing_ready",
-          "projects"
+          "screen_sharing_ready"
         ],
         "title": "CloudSetup",
         "type": "object"
@@ -5856,14 +5870,6 @@
             "minLength": 1,
             "title": "Host Label",
             "type": "string"
-          },
-          "projects": {
-            "items": {
-              "type": "string"
-            },
-            "maxItems": 80,
-            "title": "Projects",
-            "type": "array"
           },
           "public_enabled": {
             "title": "Public Enabled",
@@ -5878,8 +5884,7 @@
         "required": [
           "revision",
           "host_label",
-          "public_enabled",
-          "projects"
+          "public_enabled"
         ],
         "title": "CloudSetupUpdate",
         "type": "object"
@@ -8233,6 +8238,57 @@
         "title": "DirectorToolOut",
         "type": "object"
       },
+      "DirectoryChoice": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "root": {
+            "title": "Root",
+            "type": "string"
+          }
+        },
+        "required": [
+          "root",
+          "label"
+        ],
+        "title": "DirectoryChoice",
+        "type": "object"
+      },
+      "DirectoryListing": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DirectoryChoice"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "parent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent"
+          },
+          "selectable": {
+            "title": "Selectable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "parent",
+          "selectable",
+          "items"
+        ],
+        "title": "DirectoryListing",
+        "type": "object"
+      },
       "DocumentOut": {
         "properties": {
           "document": {
@@ -8442,6 +8498,11 @@
             "title": "Agents",
             "type": "array"
           },
+          "can_select_directory": {
+            "default": false,
+            "title": "Can Select Directory",
+            "type": "boolean"
+          },
           "enabled": {
             "title": "Enabled",
             "type": "boolean"
@@ -8451,6 +8512,20 @@
               "$ref": "#/components/schemas/ProjectChoice"
             },
             "title": "Projects",
+            "type": "array"
+          },
+          "recent_projects": {
+            "items": {
+              "$ref": "#/components/schemas/RecentProject"
+            },
+            "title": "Recent Projects",
+            "type": "array"
+          },
+          "suggested_directories": {
+            "items": {
+              "$ref": "#/components/schemas/DirectoryChoice"
+            },
+            "title": "Suggested Directories",
             "type": "array"
           }
         },
@@ -27856,6 +27931,22 @@
         "title": "ProjectCreateIn",
         "type": "object"
       },
+      "ProjectDirectory": {
+        "additionalProperties": false,
+        "properties": {
+          "root": {
+            "maxLength": 4096,
+            "minLength": 1,
+            "title": "Root",
+            "type": "string"
+          }
+        },
+        "required": [
+          "root"
+        ],
+        "title": "ProjectDirectory",
+        "type": "object"
+      },
       "ProjectFolderOpenOut": {
         "properties": {
           "opened": {
@@ -28911,6 +29002,29 @@
           "password"
         ],
         "title": "ReauthIn",
+        "type": "object"
+      },
+      "RecentProject": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "root": {
+            "title": "Root",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "root"
+        ],
+        "title": "RecentProject",
         "type": "object"
       },
       "RecordPage": {
@@ -31167,29 +31281,6 @@
           "edge"
         ],
         "title": "SetTransitionOperation",
-        "type": "object"
-      },
-      "SetupProject": {
-        "properties": {
-          "label": {
-            "title": "Label",
-            "type": "string"
-          },
-          "root": {
-            "title": "Root",
-            "type": "string"
-          },
-          "selected": {
-            "title": "Selected",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "label",
-          "root",
-          "selected"
-        ],
-        "title": "SetupProject",
         "type": "object"
       },
       "SkillCatalogOut": {
@@ -43458,6 +43549,97 @@
           }
         },
         "summary": "Catalog",
+        "tags": [
+          "agent-workbench"
+        ]
+      }
+    },
+    "/v1/agent-workbench/execution/directories": {
+      "get": {
+        "operationId": "directories_v1_agent_workbench_execution_directories_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "parent",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 4096,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Parent"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectoryListing"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Directories",
+        "tags": [
+          "agent-workbench"
+        ]
+      }
+    },
+    "/v1/agent-workbench/execution/projects": {
+      "post": {
+        "operationId": "register_project_v1_agent_workbench_execution_projects_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectDirectory"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectChoice"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register Project",
         "tags": [
           "agent-workbench"
         ]

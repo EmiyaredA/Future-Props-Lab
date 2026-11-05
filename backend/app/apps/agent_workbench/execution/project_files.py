@@ -4,24 +4,11 @@ import hashlib
 import os
 import secrets
 import stat
-from contextlib import ExitStack, contextmanager
-from pathlib import Path, PurePosixPath
+from pathlib import PurePosixPath
 
-from fastapi import HTTPException
-
-from app.console.cloud_control.project_paths import validate_project_root, visible
-from app.runtime.config import get_cloud_settings
+from app.runtime.safe_paths import directory_fd, visible
 
 MAX_FILE_BYTES = 128 * 1024
-
-
-def project_for(project_id, owner):
-    settings = get_cloud_settings()
-    project = settings.fpl_cloud_control_projects.get(project_id)
-    if project is None or owner not in project.user_ids:
-        raise HTTPException(404, "项目未授权")
-    validate_project_root(project.root, settings)
-    return project
 
 
 def path_parts(relative, *, allow_root=False):
@@ -39,18 +26,9 @@ def path_parts(relative, *, allow_root=False):
     return path.parts
 
 
-@contextmanager
-def directory_fd(root, parts=()):
-    with ExitStack() as stack:
-        parent = None
-        for part in (*Path(root).parts, *parts):
-            parent = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent)
-            stack.callback(os.close, parent)
-        yield parent
-
-
-def list_files(root, path):
-    with directory_fd(root, path_parts(path, allow_root=True)) as folder:
+def list_files(root, path, *, expected_root=None):
+    parts = path_parts(path, allow_root=True)
+    with directory_fd(root, parts, expected_root=expected_root) as folder:
         items = []
         with os.scandir(folder) as entries:
             for entry in entries:
@@ -83,9 +61,9 @@ def _read(folder, name):
         return body, info.st_mode & 0o777
 
 
-def read_file(root, relative):
+def read_file(root, relative, *, expected_root=None):
     *parents, name = path_parts(relative)
-    with directory_fd(root, parents) as folder:
+    with directory_fd(root, parents, expected_root=expected_root) as folder:
         content, _ = _read(folder, name)
     return None if content is None else content.decode("utf-8")
 
@@ -94,12 +72,12 @@ def digest(content):
     return None if content is None else hashlib.sha256(content.encode()).hexdigest()
 
 
-def write_file(root, relative, content, expected):
+def write_file(root, relative, content, expected, *, expected_root=None):
     *parents, name = path_parts(relative)
     body = content.encode()
     if len(body) > MAX_FILE_BYTES or b"\x00" in body:
         raise ValueError("文件不是受支持的文本")
-    with directory_fd(root, parents) as folder:
+    with directory_fd(root, parents, expected_root=expected_root) as folder:
         current, mode = _read(folder, name)
         temporary = ".fpl-write-" + secrets.token_hex(12)
         descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL, mode, dir_fd=folder)

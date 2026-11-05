@@ -49,6 +49,7 @@
     "start": "uv run python scripts/website/development.py",
     "services:start": "uv run python scripts/management/start.py",
     "website:service": "uv run python scripts/website/service.py",
+    "codex:login": "uv run python scripts/website/codex_login.py",
     "website:service:independent": "uv run python scripts/management/service.py",
     "services:contracts:generate": "uv run python scripts/website/service_contracts.py",
     "services:contracts:check": "uv run python scripts/website/service_contracts.py --check",

@@ -23,7 +23,9 @@ async def executor_status(
         await resolve(
             session, owner_user_id, user_id, "codex", "interview_preparation", probe=False
         )
-        status = await inspect_connection(get_settings(), "codex", discover_models=False)
+        status = await inspect_connection(
+            get_settings(), "codex", discover_models=False, app_server=False
+        )
         return InterviewExecutorOut(
             available=status["available"],
             code=status["status"],

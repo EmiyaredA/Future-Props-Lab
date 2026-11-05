@@ -12,7 +12,7 @@ from contextlib import suppress
 from functools import cache
 from pathlib import Path
 
-from app.console.cloud_control.project_paths import PRIVATE_NAMES, PRIVATE_SUFFIXES
+from app.runtime.safe_paths import PRIVATE_NAMES, PRIVATE_SUFFIXES
 
 SANDBOX = Path("/usr/bin/sandbox-exec")
 MAX_OUTPUT = 64 * 1024

@@ -1,14 +1,16 @@
 """The daily launcher shares existing configuration; automated tests stay isolated."""
 
+import hashlib
 import json
 import signal
 import socket
 import subprocess
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
-from scripts.website import application, development, service
+from scripts.website import application, development, frontend, service
 
 
 def test_daily_environment_reuses_toml_without_copying_data_or_replacing_keys(
@@ -79,6 +81,48 @@ def test_occupied_port_fails_instead_of_silently_switching(monkeypatch):
     monkeypatch.setattr(socket, "socket", Mock(return_value=sock))
     with pytest.raises(RuntimeError, match="3000.*不会另选端口"):
         development.check_ports()
+
+
+def test_failed_frontend_build_keeps_serving_last_verified_release(tmp_path, monkeypatch):
+    html = b"<html>good</html>"
+
+    def build(_command, *, env, **_kwargs):
+        directory = Path(env["FPL_WEB_DIST_DIR"])
+        directory.mkdir()
+        files = [
+            {"path": "index.html", "bytes": len(html), "sha256": hashlib.sha256(html).hexdigest()}
+        ]
+        build_id = hashlib.sha256(json.dumps(files, separators=(",", ":")).encode()).hexdigest()
+        metadata = json.dumps({"build_id": build_id}).encode()
+        files.append(
+            {
+                "path": "build.json",
+                "bytes": len(metadata),
+                "sha256": hashlib.sha256(metadata).hexdigest(),
+            }
+        )
+        (directory / "index.html").write_bytes(html)
+        (directory / "build.json").write_bytes(metadata)
+        (directory / "manifest.json").write_text(json.dumps({"build_id": build_id, "files": files}))
+        return subprocess.CompletedProcess([], 0)
+
+    monkeypatch.setattr(frontend.subprocess, "run", build)
+    frontend.rebuild(tmp_path)
+    current = tmp_path / frontend.CURRENT
+    first = current.resolve()
+    html = b"<html>new</html>"
+    frontend.rebuild(tmp_path)
+    active = current.resolve()
+    assert first != active
+    assert (current.parent / "retired" / first.name).is_file()
+    assert not (current.parent / "retired" / active.name).exists()
+    monkeypatch.setattr(
+        frontend.subprocess, "run", Mock(side_effect=subprocess.CalledProcessError(1, "npm"))
+    )
+    with pytest.raises(subprocess.CalledProcessError):
+        frontend.rebuild(tmp_path)
+    assert current.resolve() == active
+    assert (current / "index.html").read_bytes() == b"<html>new</html>"
 
 
 def test_shutdown_drains_parents_then_cleans_remaining_process_groups(monkeypatch):

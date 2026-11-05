@@ -1,13 +1,44 @@
 """Trusted website ingress and SPA hosting, independent of any native shell."""
 
+import asyncio
+import fcntl
+import json
+import os
 import re
+from contextlib import contextmanager
 from pathlib import Path
 
 from fastapi import HTTPException, Request
 from starlette.datastructures import Headers
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from starlette.responses import PlainTextResponse
+from starlette.responses import HTMLResponse, PlainTextResponse
 from starlette.staticfiles import StaticFiles
+
+from .website_releases import retired_releases
+
+HASHED_ASSET = re.compile(r"/assets/(?:[\w.-]+/)*[\w.-]+-[\w-]{8,}\.[\w.-]+", re.ASCII)
+
+
+@contextmanager
+def pin_release(path):
+    descriptor = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        fcntl.flock(descriptor, fcntl.LOCK_SH | fcntl.LOCK_NB)
+        if not path.is_dir():
+            raise FileNotFoundError(path)
+        yield
+    finally:
+        os.close(descriptor)
+
+
+def listed_asset(release, asset):
+    try:
+        manifest = json.loads((release / "manifest.json").read_text())
+        return manifest["build_id"] == release.name and any(
+            entry["path"] == asset for entry in manifest["files"]
+        )
+    except (OSError, ValueError, TypeError, KeyError):
+        return False
 
 
 def path_pattern(path):
@@ -33,6 +64,73 @@ class WebsiteStaticFiles(StaticFiles):
             raise
 
 
+class BuildStaticFiles(WebsiteStaticFiles):
+    def file_response(self, full_path, stat_result, scope, status_code=200):
+        path = Path(full_path)
+        if path.suffix == ".html" and path.parent == Path(self.directory):
+            build_id = json.loads(path.with_name("build.json").read_text())["build_id"]
+            html = path.read_text().replace(
+                "</head>", f'<meta name="fpl-build" content="{build_id}" />\n</head>', 1
+            )
+            return HTMLResponse(
+                "" if scope["method"] == "HEAD" else html,
+                headers={"Cache-Control": "no-cache", "Content-Length": str(len(html.encode()))},
+            )
+        response = super().file_response(full_path, stat_result, scope, status_code)
+        if path.name in {"build.json", "manifest.json"}:
+            response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
+class CurrentWebsite:
+    """Serve current pages and allow retained releases to supply hashed assets."""
+
+    def __init__(self, directory):
+        self.directory = directory
+
+    async def __call__(self, scope, receive, send):
+        while True:
+            active = self.directory.resolve()
+            try:
+                with pin_release(active):
+                    await BuildStaticFiles(directory=active, html=True)(scope, receive, send)
+                    return
+            except StarletteHTTPException as exc:
+                if exc.status_code != 404 or not await self.retired_asset(scope, receive, send):
+                    raise
+                return
+            except (FileNotFoundError, BlockingIOError):
+                if active == self.directory.resolve():
+                    raise
+                await asyncio.sleep(0)
+
+    async def retired_asset(self, scope, receive, send):
+        path = scope["path"]
+        if scope["method"] not in {"GET", "HEAD"} or not HASHED_ASSET.fullmatch(path):
+            return False
+        if any(part.startswith(".") for part in path[1:].split("/")):
+            return False
+        builds = self.directory.parent / "builds"
+        retained, _ = retired_releases(self.directory.resolve(), builds)
+        for release in retained:
+            try:
+                with pin_release(release):
+                    # Recheck eligibility after pinning. Collection can run during lookup.
+                    current, _ = retired_releases(self.directory.resolve(), builds)
+                    if release not in current or not await asyncio.to_thread(
+                        listed_asset, release, path[1:]
+                    ):
+                        continue
+                    await WebsiteStaticFiles(directory=release)(scope, receive, send)
+                    return True
+            except (FileNotFoundError, BlockingIOError):
+                continue
+            except StarletteHTTPException as exc:
+                if exc.status_code != 404:
+                    raise
+        return False
+
+
 def require_local_browser(request: Request, principal) -> None:
     if not getattr(request.state, "website_local", False):
         raise HTTPException(403, detail="此操作仅支持本机网站入口")
@@ -47,6 +145,7 @@ class WebsiteTransport:
         *,
         local_port: int,
         frontend_origin=None,
+        frontend_port=None,
         public_access=None,
         automation_policy=None,
     ):
@@ -55,6 +154,7 @@ class WebsiteTransport:
         if frontend_origin not in {None, "http://127.0.0.1:3000"}:
             raise ValueError("Unsupported local frontend origin")
         self.frontend_origin = frontend_origin
+        self.frontend_port = frontend_port
         self.api_paths = None
 
     async def __call__(self, scope, receive, send):
@@ -63,8 +163,9 @@ class WebsiteTransport:
             return
         public = self.public_access is not None and self.public_access.accepts(scope)
         headers = Headers(scope=scope)
-        host = f"127.0.0.1:{self.local_port}"
-        local = scope.get("server") == ("127.0.0.1", self.local_port)
+        server = scope.get("server")
+        local = server in {("127.0.0.1", self.local_port), ("127.0.0.1", self.frontend_port)}
+        host = f"127.0.0.1:{server[1]}" if local else None
         safe_origin = headers.get("origin") in {None, f"http://{host}", self.frontend_origin}
         if not public and (not local or headers.get("host") != host or not safe_origin):
             if scope["type"] == "websocket":
@@ -118,6 +219,8 @@ def attach_website(
     web_root: Path,
     local_port: int,
     frontend_origin=None,
+    frontend_port=None,
+    static=None,
     public_access=None,
     automation_policy=None,
 ):
@@ -129,7 +232,8 @@ def attach_website(
         WebsiteTransport,
         local_port=local_port,
         frontend_origin=frontend_origin,
+        frontend_port=frontend_port,
         public_access=public_access,
         automation_policy=automation_policy,
     )
-    app.mount("/", WebsiteStaticFiles(directory=web_root, html=True), name="website")
+    app.mount("/", static or WebsiteStaticFiles(directory=web_root, html=True), name="website")

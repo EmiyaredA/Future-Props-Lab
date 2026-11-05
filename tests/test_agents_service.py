@@ -18,7 +18,7 @@ def test_independent_workbench_and_scoped_native_protocol(tmp_path):
             "AGENTS_TEST_ROOT": str(state),
             "FPL_DATABASE_PATH": str(state / "service.db"),
             "FPL_CONFIG_FILE": str(state / "absent.toml"),
-            "PYTHONPATH": str(ROOT / "backend"),
+            "PYTHONPATH": os.pathsep.join((str(ROOT / "backend"), str(ROOT))),
         },
         capture_output=True,
         text=True,

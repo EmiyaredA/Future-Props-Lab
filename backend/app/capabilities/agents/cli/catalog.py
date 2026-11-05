@@ -1,6 +1,7 @@
 """Connection definitions and side-effect-free probes shared by all CLI consumers."""
 
 import asyncio
+import logging
 import os
 import re
 import shutil
@@ -8,9 +9,13 @@ import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from .codex_profile import AUTH_ARGS, CodexLoginRequired, profile_environment, profile_path
+from .conversation import codex_models, probe_codex
 from .definitions import DEFINITIONS as DEFINITIONS
 from .definitions import AgentId as AgentId
-from .transport import _stop, environment
+from .transport import CliError, _stop, environment
+
+logger = logging.getLogger(__name__)
 
 
 def settings_prefix(agent_id):
@@ -53,11 +58,11 @@ def connection(settings, agent_id):
     return True, str(Path(found).absolute()) if found else "", ""
 
 
-async def _probe_output(path, args, *, timeout=10):
+async def _probe_output(path, args, *, timeout=10, env=None):
     process = await asyncio.create_subprocess_exec(
         path,
         *args,
-        env=environment(),
+        env=environment() if env is None else env,
         start_new_session=True,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.DEVNULL,
@@ -70,7 +75,7 @@ async def _probe_output(path, args, *, timeout=10):
         await _stop(process)
 
 
-async def inspect_executable(agent_id, path):
+async def inspect_executable(agent_id, path, *, codex_profile=None):
     definition = DEFINITIONS[agent_id]
     result = dict(
         id=agent_id,
@@ -100,7 +105,13 @@ async def inspect_executable(agent_id, path):
         if code or not version or tuple(map(int, version.groups())) < definition.minimum:
             return {**result, "status": "unsupported_version", "message": "CLI 版本不支持受限执行"}
         result["version"] = version[0].decode()
-        if agent_id == "dsh":
+        if codex_profile is not None:
+            code, _ = await _probe_output(
+                path, (*AUTH_ARGS, *definition.auth_args), env=profile_environment(codex_profile)
+            )
+            if code:
+                raise CodexLoginRequired("请在本机为 FPL 的 Codex 单独登录")
+        elif agent_id == "dsh":
             home = Path(os.environ.get("DSH_HOME") or Path.home() / ".dsh")
             credential = home / ".credentials.yaml"
             code = 0 if credential.is_file() and credential.stat().st_size else 1
@@ -122,37 +133,60 @@ async def inspect_executable(agent_id, path):
                 "message": "请在终端登录 CLI 后重新检测",
             }
         return {**result, "available": True, "status": "ready", "message": "已连接"}
+    except CodexLoginRequired as exc:
+        return {**result, "status": "not_authenticated", "message": str(exc)}
+    except CliError as exc:
+        return {**result, "status": "probe_failed", "message": str(exc)}
     except (OSError, TimeoutError, ValueError):
         return {**result, "status": "probe_failed", "message": "CLI 检测失败，请检查安装与登录状态"}
 
 
-async def inspect_connection(settings, agent_id, *, discover_models=True):
+async def inspect_connection(settings, agent_id, *, discover_models=True, app_server=True):
     definition = DEFINITIONS[agent_id]
-    enabled, path, message = connection(settings, agent_id)
     result = dict(
         id=agent_id,
         name=definition.name,
-        executable=path,
+        executable="",
         version="",
         models=[],
         available=False,
         status="disabled",
-        message=message,
-        enabled=enabled,
+        message="",
+        enabled=True,
     )
-    if message or not enabled:
+    try:
+        enabled, path, message = connection(settings, agent_id)
+        result.update(executable=path, message=message, enabled=enabled)
+        if message or not enabled:
+            return result
+        if sys.platform != "darwin":
+            return {
+                **result,
+                "status": "unsupported_platform",
+                "message": "首期仅支持 macOS 桌面版",
+            }
+        profile = (
+            profile_path(settings.runtime_path) if agent_id == "codex" and app_server else None
+        )
+        result = await inspect_executable(agent_id, path, codex_profile=profile)
+        if profile is not None and result["available"]:
+            async with probe_codex(path, profile) as request:
+                if discover_models:
+                    try:
+                        result["models"] = await asyncio.wait_for(codex_models(request), 10)
+                    except (CliError, OSError, ValueError, TimeoutError) as exc:
+                        logger.warning("Codex model discovery failed (%s)", type(exc).__name__)
         return result
-    if sys.platform != "darwin":
-        return {**result, "status": "unsupported_platform", "message": "首期仅支持 macOS 桌面版"}
-    result = await inspect_executable(agent_id, path)
-    if discover_models and agent_id == "codex" and result["available"]:
-        from .conversation import codex_models
-
-        try:
-            result["models"] = await asyncio.wait_for(codex_models(path), 10)
-        except (ValueError, OSError, TimeoutError, TypeError, KeyError, AttributeError):
-            result["models"] = []
-    return result
+    except Exception as exc:
+        logger.warning("CLI detection failed for %s (%s)", agent_id, type(exc).__name__)
+        return {
+            **result,
+            "available": False,
+            "status": "probe_failed",
+            "message": str(exc)
+            if isinstance(exc, CliError)
+            else "CLI 检测失败，请检查安装与登录状态",
+        }
 
 
 def execution_signature(kind, executable):

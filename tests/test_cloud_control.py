@@ -1,19 +1,26 @@
 import asyncio
+import base64
+import io
 import os
 import sys
-from contextlib import aclosing
+from contextlib import aclosing, asynccontextmanager
+from pathlib import Path
+from threading import Event
+from types import SimpleNamespace
 from uuid import uuid4
 
 import httpx
 import pytest
+from PIL import Image
 
-from app.apps.agent_workbench.execution import project_files, runner, storage
+from app.apps.agent_workbench.execution import events, project_files, projects, runner, storage
 from app.apps.agent_workbench.routes import execution
 from app.console.cloud_control import access, desktop
 from app.console.governance.provisioning import create_account
 from app.main import app
 from app.runtime.config import CloudProject, get_settings
 from app.runtime.db import SessionLocal
+from db.migrations import runner as migration_runner
 
 pytestmark = pytest.mark.real_auth
 PASSWORD = "Cloud-Control-Isolated-Test-2026!"
@@ -21,7 +28,7 @@ CLOUD = "/v1/cloud-control"
 WORKBENCH = "/v1/agent-workbench"
 
 
-async def admin_client(local=True):
+async def admin_client(local=True, *, role="admin"):
     async def dispatch(scope, receive, send):
         scope["state"] = {"website_local": local}
         await app(scope, receive, send)
@@ -32,7 +39,7 @@ async def admin_client(local=True):
             db,
             username=username,
             display_name=username,
-            platform_role="admin",
+            platform_role=role,
             password=PASSWORD,
         )
     client = httpx.AsyncClient(
@@ -87,7 +94,8 @@ async def test_totp_unlock_requires_csrf_rejects_replay_and_logout_revokes(monke
         ).status_code == 401
 
 
-async def test_guacd_handshake_uses_fixed_target_and_stream_frames():
+@pytest.mark.parametrize("local", [True, False])
+async def test_guacd_handshake_uses_fixed_target_and_stream_frames(local):
     reader = asyncio.StreamReader()
     reader.feed_data(
         desktop.instruction("args", "VERSION_1_5_0", "hostname", "port", "password", "disable-copy")
@@ -108,7 +116,11 @@ async def test_guacd_handshake_uses_fixed_target_and_stream_frames():
     writer = Writer()
     settings = get_settings()
     source = desktop.GuacdReader(reader)
-    await desktop.handshake(source, writer, settings, "fixture")
+    await desktop.handshake(source, writer, settings, "fixture", local=local)
+    image_types = (
+        ("image/png", "image/jpeg") if local else ("image/png", "image/jpeg", "image/webp")
+    )
+    assert desktop.instruction("image", *image_types) in writer.output
     assert writer.output.startswith(desktop.instruction("select", "vnc"))
     assert (
         desktop.instruction(
@@ -123,6 +135,109 @@ async def test_guacd_handshake_uses_fixed_target_and_stream_frames():
     )
     assert (await source.next())[0] == ["name", "远程"]
     assert desktop.parse_instruction("4.mo") is None
+
+
+async def test_desktop_tunnel_ping_keeps_guacd_alive_without_keyboard_activity():
+    pings = iter((1, 5, 6, 10))
+    now = 0
+    replies = []
+    upstream = []
+    ping = "0.,4.ping,1.1;"
+
+    class Socket:
+        async def receive_text(self):
+            nonlocal now
+            now = next(pings, None)
+            if now is None:
+                raise EOFError
+            return ping
+
+        async def send_text(self, message):
+            replies.append(message)
+
+    class Writer:
+        def write(self, message):
+            upstream.append(message)
+
+        async def drain(self):
+            pass
+
+    inputs = desktop.DesktopInput(lambda: now)
+    with pytest.raises(EOFError):
+        await desktop.browser_input(Socket(), Writer(), inputs, desktop.DesktopTransfer())
+    assert replies == [ping] * 4
+    assert upstream == [desktop.instruction("nop")] * 2
+    assert inputs.last_activity == 0
+
+
+async def test_public_first_frame_compacts_interleaved_png_tiles():
+    png = io.BytesIO()
+    Image.effect_noise((256, 256), 60).save(png, "PNG")
+    encoded = base64.b64encode(png.getvalue()).decode()
+    half = len(encoded) // 2
+    startup = desktop.PublicDesktopImages()
+    messages = [
+        ("img", "1", "14", "0", "image/png", "0", "0"),
+        ("img", "2", "14", "0", "image/png", "256", "0"),
+        ("blob", "1", encoded[:half]),
+        ("blob", "2", encoded[:half]),
+        ("blob", "2", encoded[half:]),
+        ("end", "2"),
+        ("blob", "1", encoded[half:]),
+        ("end", "1"),
+        ("sync", "1"),
+    ]
+    cursor_sync = desktop.instruction("sync", "0").decode()
+    assert await startup.output(["sync", "0"], cursor_sync) == [cursor_sync]
+    output = []
+    for fields in messages:
+        output.extend(await startup.output(list(fields), desktop.instruction(*fields).decode()))
+    assert sum(map(len, output)) < len(encoded)
+    decoded = [desktop.parse_instruction(raw)[0] for raw in output]
+    headers = [fields for fields in decoded if fields[0] == "img"]
+    assert [fields[4:] for fields in headers] == [
+        ["image/webp", "0", "0"],
+        ["image/webp", "256", "0"],
+    ]
+    for stream in ("1", "2"):
+        chunks = [fields[2] for fields in decoded if fields[:2] == ["blob", stream]]
+        with Image.open(io.BytesIO(base64.b64decode("".join(chunks)))) as image:
+            assert image.size == (256, 256)
+    assert [fields for fields in decoded if fields[0] in {"end", "sync"}] == [
+        ["end", "2"],
+        ["end", "1"],
+        ["sync", "1"],
+    ]
+
+
+async def test_public_desktop_compacts_large_updates_after_the_first_frame():
+    images = desktop.PublicDesktopImages()
+
+    async def send_tile(data, sync):
+        fields = [
+            ("img", "1", "14", "0", "image/webp", "0", "0"),
+            ("blob", "1", base64.b64encode(data).decode()),
+            ("end", "1"),
+            ("sync", sync),
+        ]
+        source = [desktop.instruction(*item).decode() for item in fields]
+        output = []
+        for item, raw in zip(fields, source, strict=True):
+            output.extend(await images.output(list(item), raw))
+        return source, output
+
+    small = io.BytesIO()
+    Image.new("RGB", (32, 32), "blue").save(small, "WEBP")
+    source, output = await send_tile(small.getvalue(), "1")
+    assert output == source
+    source, output = await send_tile(small.getvalue(), "2")
+    assert output == source
+
+    large = io.BytesIO()
+    Image.effect_noise((512, 512), 60).save(large, "WEBP", lossless=True)
+    source, output = await send_tile(large.getvalue(), "3")
+    assert sum(map(len, output)) < sum(map(len, source)) // 2
+    assert output[-1] == source[-1]
 
 
 def test_file_tools_reject_private_paths_and_changes_after_approval(tmp_path):
@@ -144,6 +259,36 @@ def test_file_tools_reject_private_paths_and_changes_after_approval(tmp_path):
     assert (root / "main.txt").read_text() == "other edit"
 
 
+def test_project_migration_preserves_existing_chat_binding(tmp_path, monkeypatch):
+    database = tmp_path / "previous-workbench.db"
+    with monkeypatch.context() as patch:
+        patch.setattr(migration_runner, "MIGRATIONS", migration_runner.MIGRATIONS[:-1])
+        patch.setattr(migration_runner, "LATEST_MIGRATION_ID", "0121_cloud_desktop_sessions")
+        migration_runner.apply_migrations(database)
+    with migration_runner.connect_database(database) as connection:
+        connection.executescript("""
+            INSERT INTO users (id, username, username_normalized, password_hash, platform_role)
+                VALUES ('owner', 'owner', 'owner', 'test', 'admin');
+            INSERT INTO workbench_chats (id, owner_user_id, project_id, agent_id, created_at)
+                VALUES ('chat', 'owner', 'legacy-project', 'codex', 1);
+            INSERT INTO workbench_turns (
+                id, owner_user_id, chat_id, client_id, position, prompt, answer, status,
+                approvals, revision
+            ) VALUES (
+                'turn', 'owner', 'chat', 'client', 1, 'prompt', 'answer', 'completed', '[]', 2
+            );
+        """)
+    assert migration_runner.apply_migrations(database) == ("0122_workbench_projects", True)
+    assert migration_runner.apply_migrations(database) == ("0122_workbench_projects", False)
+    with migration_runner.connect_database(database) as connection:
+        assert connection.execute("SELECT project_id FROM workbench_chats").fetchone() == (
+            "legacy-project",
+        )
+        assert connection.execute("SELECT answer FROM workbench_turns").fetchone() == ("answer",)
+        assert connection.execute("SELECT count(*) FROM workbench_projects").fetchone() == (0,)
+        assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+
+
 async def await_turn(client, path, status):
     for _ in range(100):
         result = await client.get(path)
@@ -155,6 +300,186 @@ async def await_turn(client, path, status):
     pytest.fail(f"Expected {status}, got {turns}")
 
 
+async def test_local_project_picker_keeps_recent_projects_private(monkeypatch, tmp_path):
+    client, owner = await admin_client()
+    other, other_id = await admin_client()
+    remote, remote_id = await admin_client(local=False)
+    member, member_id = await admin_client(role="user")
+    configure(monkeypatch, owner, other_id, remote_id, member_id)
+    monkeypatch.setattr(get_settings(), "fpl_cloud_control_public_desktop_vnc_only", False)
+    root = tmp_path.resolve() / "home"
+    anchor = root / "Projects"
+    project = anchor / "work"
+    child = project / "subproject"
+    child.mkdir(parents=True)
+    legacy = tmp_path.resolve() / "legacy"
+    legacy.mkdir()
+    monkeypatch.setattr(
+        get_settings(),
+        "fpl_cloud_control_projects",
+        {"legacy": CloudProject(label="Legacy", root=str(legacy), user_ids=[owner])},
+    )
+    (anchor / ".hidden").mkdir()
+    (anchor / "secrets").mkdir()
+    (anchor / "alias").symlink_to(project)
+    (anchor / "document.txt").touch()
+    monkeypatch.setattr(Path, "home", lambda: root)
+
+    async def inspect(*_args, **_kwargs):
+        return {"enabled": False}
+
+    async def connection(*_args, **_kwargs):
+        return "/fixture/cli"
+
+    monkeypatch.setattr(storage, "inspect_connection", inspect)
+    monkeypatch.setattr(execution, "resolve_connection", connection)
+    directories = WORKBENCH + "/execution/directories"
+    registry = WORKBENCH + "/execution/projects"
+    catalog = WORKBENCH + "/execution/catalog"
+    async with aclosing(client), aclosing(other), aclosing(remote), aclosing(member):
+        for forbidden in (remote, member):
+            assert (await forbidden.get(directories)).status_code == 403
+            assert (await forbidden.post(registry, json={"root": str(project)})).status_code == 403
+        assert (await remote.get(catalog)).json()["suggested_directories"] == []
+        assert (await client.get(directories)).json()["items"] == [
+            {"root": str(anchor), "label": "项目"}
+        ]
+        listing = await client.get(directories, params={"parent": str(anchor)})
+        assert listing.headers["cache-control"] == "no-store"
+        parent = listing.json()
+        assert parent == {
+            "parent": None,
+            "selectable": False,
+            "items": [{"root": str(project), "label": "work"}],
+        }
+        leaf = (await client.get(directories, params={"parent": str(project)})).json()
+        assert leaf["selectable"] and leaf["parent"] == str(anchor)
+        assert leaf["items"] == [{"root": str(child), "label": "subproject"}]
+        assert (await client.get(directories, params={"parent": str(root)})).status_code == 409
+        for invalid in (
+            anchor,
+            anchor / "alias",
+            anchor / "secrets",
+            anchor / "work" / ".." / "work",
+        ):
+            assert (await client.post(registry, json={"root": str(invalid)})).status_code == 409
+        registrations = await asyncio.gather(
+            *(client.post(registry, json={"root": str(project)}) for _ in range(3))
+        )
+        assert all(created.status_code == 200 for created in registrations)
+        selected = registrations[0].json()
+        assert all(created.json() == selected for created in registrations)
+        assert (await client.post(registry, json={"root": str(project) + "/"})).json() == selected
+        assert (await other.get(catalog)).json()["recent_projects"] == []
+        assert (await other.post(registry, json={"root": str(project)})).json()["id"] != selected[
+            "id"
+        ]
+        assert (await client.get(catalog)).json()["recent_projects"] == [
+            {**selected, "root": str(project)}
+        ]
+        body = {"project_id": selected["id"], "agent_id": "codex"}
+        assert (await client.post(WORKBENCH + "/chats", json=body)).status_code == 403
+        await enroll(client)
+        await enroll(other)
+        assert (await other.post(WORKBENCH + "/chats", json=body)).status_code == 404
+        opened = await client.post(WORKBENCH + "/chats", json=body)
+        assert opened.status_code == 201, opened.text
+        path = f"{WORKBENCH}/chats/{opened.json()['id']}"
+        remote.cookies.update(client.cookies)
+        remote.headers["X-CSRF-Token"] = client.headers["X-CSRF-Token"]
+        assert (await remote.get(catalog)).json()["recent_projects"] == []
+        assert (
+            await remote.post(WORKBENCH + "/chats", json={**body, "project_id": "legacy"})
+        ).status_code == 201
+        assert (await remote.post(WORKBENCH + "/chats", json=body)).status_code == 404
+        assert (
+            await remote.post(path + "/turns", json={"request_id": "public", "text": "hi"})
+        ).status_code == 404
+        project.rename(anchor / "moved")
+        assert (await client.get(catalog)).json()["recent_projects"] == []
+        assert (await client.get(path)).json()["project_label"] == "work"
+        failed = await client.post(path + "/turns", json={"request_id": "moved", "text": "hi"})
+        assert failed.status_code == 409
+
+
+async def test_slow_project_check_releases_sqlite_and_rechecks_binding(monkeypatch, tmp_path):
+    client, owner = await admin_client()
+    configure(monkeypatch, owner)
+    settings = get_settings()
+    roots = {name: tmp_path / name for name in ("slow", "fast")}
+    for root in roots.values():
+        root.mkdir()
+    bindings = {
+        name: CloudProject(label=name, root=str(root.resolve()), user_ids=[owner])
+        for name, root in roots.items()
+    }
+    monkeypatch.setattr(settings, "fpl_cloud_control_projects", bindings)
+    check = projects.validate_project_root
+    loop = asyncio.get_running_loop()
+    entered, release = asyncio.Event(), Event()
+
+    def slow_check(root, current_settings):
+        if root == bindings["slow"].root:
+            loop.call_soon_threadsafe(entered.set)
+            assert release.wait(10)
+        return check(root, current_settings)
+
+    async def connection(*_args, **_kwargs):
+        return "/fixture/cli"
+
+    monkeypatch.setattr(projects, "validate_project_root", slow_check)
+    monkeypatch.setattr(execution, "resolve_connection", connection)
+    async with aclosing(client):
+        await enroll(client)
+        path = WORKBENCH + "/chats"
+        slow = asyncio.create_task(
+            client.post(path, json={"project_id": "slow", "agent_id": "codex"})
+        )
+        try:
+            await asyncio.wait_for(entered.wait(), 3)
+            fast = await asyncio.wait_for(
+                client.post(path, json={"project_id": "fast", "agent_id": "codex"}), 3
+            )
+            assert fast.status_code == 201, fast.text
+            monkeypatch.setattr(
+                settings, "fpl_cloud_control_projects", {**bindings, "slow": bindings["fast"]}
+            )
+        finally:
+            release.set()
+            result = await slow
+        assert result.status_code == 409, result.text
+
+
+async def test_execution_stream_releases_session_before_sending(monkeypatch):
+    open_sessions = 0
+
+    @asynccontextmanager
+    async def session():
+        nonlocal open_sessions
+        open_sessions += 1
+        try:
+            yield object()
+        finally:
+            open_sessions -= 1
+
+    async def authorized(*_args):
+        return True
+
+    async def version(*_args):
+        return ("turn", 1)
+
+    monkeypatch.setattr(events, "SessionLocal", session)
+    monkeypatch.setattr(events, "valid_auth", authorized)
+    monkeypatch.setattr(events, "get_chat", authorized)
+    monkeypatch.setattr(events, "latest_turn_version", version)
+    request = SimpleNamespace(is_disconnected=lambda: asyncio.sleep(0, result=False))
+    async with aclosing(events.stream(request, SimpleNamespace(user_id="owner"), "chat")) as stream:
+        assert (await anext(stream)).startswith("event: change")
+        assert open_sessions == 0
+        assert (await anext(stream)).startswith(": heartbeat")
+        assert open_sessions == 0
+
+
 @pytest.mark.parametrize("agent", ["codex", "claude-code", "opencode", "dsh", "pi"])
 async def test_managed_chat_keeps_context_and_executes_approved_file_once(
     monkeypatch,
@@ -164,7 +489,8 @@ async def test_managed_chat_keeps_context_and_executes_approved_file_once(
     client, owner = await admin_client()
     other, other_id = await admin_client()
     configure(monkeypatch, owner, other_id)
-    root = tmp_path.resolve()
+    root = tmp_path.resolve() / "work"
+    root.mkdir()
     monkeypatch.setattr(
         get_settings(),
         "fpl_cloud_control_projects",
@@ -177,30 +503,27 @@ async def test_managed_chat_keeps_context_and_executes_approved_file_once(
     async def resolve(*_args, **_kwargs):
         return "/fixture/cli"
 
-    async def codex(_executable, _root, _model, prompt, _tools, call, emit, **_kwargs):
+    async def dialogue(kind, _executable, _model, prompt, _tools, call, emit, **_kwargs):
+        assert kind == agent
         captured.append(prompt)
-        if len(captured) != 2:
+        if kind == "codex" and len(captured) != 2:
             await call("write_file", {"path": "hello.txt", "content": "approved"})
         await emit("assistant_delta", {"text": "hello"})
 
-    async def claude(_executable, _root, _model, prompt, _config, emit, **_kwargs):
-        captured.append(prompt)
-        await emit("assistant_delta", {"text": "hello"})
-
-    async def converse(_agent, *args, **kwargs):
-        await claude(*args, **kwargs)
-
     monkeypatch.setattr(execution, "resolve_connection", resolve)
     monkeypatch.setattr(runner, "resolve_connection", resolve)
-    monkeypatch.setattr(runner, "codex", codex)
-    monkeypatch.setattr(runner, "claude", claude)
-    monkeypatch.setattr(runner, "converse", converse)
+    monkeypatch.setattr(runner, "run_dialogue", dialogue)
     async with aclosing(client), aclosing(other):
         await enroll(client)
+        identity = "project"
+        if agent == "pi":
+            picked = await client.post(WORKBENCH + "/execution/projects", json={"root": str(root)})
+            assert picked.status_code == 200, picked.text
+            identity = picked.json()["id"]
         response = await client.post(
             WORKBENCH + "/chats",
             json={
-                "project_id": "project",
+                "project_id": identity,
                 "agent_id": agent,
             },
         )
@@ -236,6 +559,49 @@ async def test_managed_chat_keeps_context_and_executes_approved_file_once(
             assert (await client.post(path + f"/turns/{pending['id']}/stop")).status_code == 204
             stopped = await await_turn(client, path, "cancelled")
             assert stopped["approvals"][0]["status"] == "expired"
+
+            assert (
+                await client.post(path + "/turns", json={"request_id": "swap", "text": "swap"})
+            ).status_code == 202
+            pending = await await_turn(client, path, "waiting_approval")
+            original = root.rename(root.with_name("old-work"))
+            root.mkdir()
+            identity = pending["approvals"][0]["id"]
+            approval = f"{path}/turns/{pending['id']}/approvals/{identity}"
+            assert (await client.post(approval, json={"approved": True})).status_code == 204
+            done = await await_turn(client, path, "completed")
+            assert done["approvals"][0]["status"] == "failed"
+            assert not (root / "hello.txt").exists()
+            assert (original / "hello.txt").read_text() == "approved"
+
+            loop = asyncio.get_running_loop()
+            entered, release = asyncio.Event(), Event()
+            write = project_files.write_file
+
+            def delayed_write(*args, **kwargs):
+                loop.call_soon_threadsafe(entered.set)
+                assert release.wait(10)
+                return write(*args, **kwargs)
+
+            monkeypatch.setattr(project_files, "write_file", delayed_write)
+            assert (
+                await client.post(path + "/turns", json={"request_id": "writing", "text": "write"})
+            ).status_code == 202
+            pending = await await_turn(client, path, "waiting_approval")
+            identity = pending["approvals"][0]["id"]
+            turn_path = f"{path}/turns/{pending['id']}"
+            assert (
+                await client.post(turn_path + f"/approvals/{identity}", json={"approved": True})
+            ).status_code == 204
+            try:
+                await asyncio.wait_for(entered.wait(), 3)
+                stop = asyncio.create_task(client.post(turn_path + "/stop"))
+                await await_turn(client, path, "cancelling")
+            finally:
+                release.set()
+            assert (await stop).status_code == 204
+            stopped = await await_turn(client, path, "cancelled")
+            assert stopped["approvals"][0]["status"] == "unknown"
 
 
 async def desktop_asgi(client, origin, *, local=True):
@@ -421,6 +787,8 @@ async def test_local_setup_is_scoped_and_applies_without_restart(monkeypatch, tm
     file.write_text(
         f'[security]\nsecrets_key = "{get_settings().fpl_secrets_key}"\n# keep\n'
         f"[cloud_control]\npublic_desktop_vnc_only = {str(vnc_only).lower()}\n"
+        '[cloud_control.projects.legacy]\nlabel = "Legacy"\n'
+        f'root = "{tmp_path.resolve()}/example"\nuser_ids = ["legacy-user"]\n'
     )
     monkeypatch.setattr(config, "CONFIG_FILE", file)
     monkeypatch.setattr(setup, "CONFIG_FILE", file)
@@ -442,7 +810,6 @@ async def test_local_setup_is_scoped_and_applies_without_restart(monkeypatch, tm
             "revision": first["revision"],
             "host_label": "Mac test",
             "public_enabled": False,
-            "projects": [str(project)],
         }
         if not vnc_only:
             blocked = await client.put(CLOUD + "/settings", json={**body, "public_enabled": True})
@@ -454,6 +821,10 @@ async def test_local_setup_is_scoped_and_applies_without_restart(monkeypatch, tm
         assert saved.json()["guacd_ready"]
         assert saved.json()["public_enabled"] is vnc_only
         assert "# keep" in file.read_text()
+        assert "projects" not in first and "projects" not in saved.json()
+        assert config.get_cloud_settings().fpl_cloud_control_projects["legacy"].user_ids == [
+            "legacy-user"
+        ]
         assert (await client.put(CLOUD + "/settings", json=body)).status_code == 409
         status = (await client.get(CLOUD + "/status")).json()
         assert status["enabled"] and status["desktop_authorized"]

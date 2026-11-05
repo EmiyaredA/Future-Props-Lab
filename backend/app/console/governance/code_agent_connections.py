@@ -17,7 +17,7 @@ async def enable_connection(agent_id, *, before_publish=None):
     enabled_field = f"{prefix}_enabled"
     executable_field = f"{prefix}_executable"
     probe_settings = settings.model_copy(update={f"fpl_code_agents_{enabled_field}": True})
-    status = await inspect_connection(probe_settings, agent_id, discover_models=False)
+    status = await inspect_connection(probe_settings, agent_id)
     if not status["available"]:
         raise HTTPException(409, status["message"])
 

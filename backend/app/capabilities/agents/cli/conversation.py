@@ -2,9 +2,12 @@
 
 import asyncio
 import json
+from contextlib import asynccontextmanager
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
-from .model_connection import connection_overrides, toml_value
+from .codex_profile import AUTH_ARGS, profile_environment
+from .model_connection import toml_value
 from .transport import MAX_BYTES, CliError, close_transport, environment, spawn_transport
 
 
@@ -30,7 +33,7 @@ def recorded_result(result):
 
 
 def codex_command(executable, root, model=""):
-    args = [executable, "--ignore-user-config", "--ignore-rules"]
+    args = [executable, "app-server", "--listen", "stdio://", *AUTH_ARGS]
     settings = {
         "approval_policy": "never",
         "sandbox_mode": "read-only",
@@ -42,37 +45,84 @@ def codex_command(executable, root, model=""):
         "features.apps": False,
         "features.plugins": False,
         "features.multi_agent": False,
+        "features.multi_agent_v2": False,
         "features.memories": False,
         "features.skill_mcp_dependency_install": False,
+        "features.skip_host_skill_discovery": True,
+        "features.skill_search": False,
+        "features.image_generation": False,
+        "features.view_image": False,
         "tools.view_image": False,
         "project_doc_max_bytes": 0,
     }
-    overrides, _ = connection_overrides()
-    settings = {**overrides, **settings}
     for key, value in settings.items():
         args += ["-c", f"{key}={toml_value(value)}"]
-    return [*args, "app-server"], {"cwd": str(root), "model": model or None, "ephemeral": True}
+    return args, {"cwd": str(root), "model": model or None, "ephemeral": True}
 
 
-async def codex(executable, root, model, prompt, tools, call_tool, emit, *, watchdog=()):
-    args, thread_params = codex_command(executable, root, model)
-    process = await spawn_transport(
-        *watchdog,
-        *args,
-        cwd=root,
-        env=connection_overrides()[1],
-        start_new_session=True,
-        stdin=asyncio.subprocess.PIPE,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.DEVNULL,
-        limit=MAX_BYTES,
-    )
+@asynccontextmanager
+async def codex_process(executable, profile, model="", *, watchdog=()):
+    env = profile_environment(profile)
+    with TemporaryDirectory(prefix="fpl-codex-work-") as directory:
+        root = Path(directory).resolve()
+        args, thread_params = codex_command(executable, root, model)
+        process = await spawn_transport(
+            *watchdog,
+            *args,
+            cwd=root,
+            env=env,
+            start_new_session=True,
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL,
+            limit=MAX_BYTES,
+        )
+        try:
+            yield process, thread_params
+        finally:
+            await close_transport(process)
+
+
+async def send_codex(process, value):
+    try:
+        process.stdin.write(json.dumps(value).encode() + b"\n")
+        await process.stdin.drain()
+    except (OSError, RuntimeError):
+        raise CliError("Codex app-server 提前退出，请检查专用登录和 CLI 版本") from None
+
+
+def verify_codex_policy(value):
+    config = value.get("config", {})
+    features = config.get("features", {})
+    if (
+        config.get("sandbox_mode") != "read-only"
+        or config.get("approval_policy") != "never"
+        or config.get("web_search") != "disabled"
+        or config.get("cli_auth_credentials_store") != "file"
+        or config.get("mcp_servers")
+        or features.get("skip_host_skill_discovery") is not True
+        or any(
+            features.get(name) is not False
+            for name in ("shell_tool", "hooks", "plugins", "apps", "multi_agent", "skill_search")
+        )
+    ):
+        raise CliError("Codex app-server 未通过 FPL 隔离设置校验")
+
+
+async def codex(executable, profile, model, prompt, tools, call_tool, emit, *, watchdog=()):
+    async with codex_process(executable, profile, model, watchdog=watchdog) as (
+        process,
+        thread_params,
+    ):
+        await codex_turn(process, thread_params, prompt, tools, call_tool, emit)
+
+
+async def codex_turn(process, thread_params, prompt, tools, call_tool, emit):
     sequence = 0
     total = 0
 
     async def send(value):
-        process.stdin.write(json.dumps(value).encode() + b"\n")
-        await process.stdin.drain()
+        await send_codex(process, value)
 
     async def receive():
         nonlocal total
@@ -152,71 +202,75 @@ async def codex(executable, root, model, prompt, tools, call_tool, emit, *, watc
                 }
             )
 
-    try:
-        await rpc(
-            "initialize",
-            {
-                "clientInfo": {"name": "future_props_lab", "version": "1"},
-                "capabilities": {"experimentalApi": True},
-            },
-        )
-        await send({"method": "initialized"})
-        thread_params["dynamicTools"] = [
-            {"name": t["name"], "description": t["description"], "inputSchema": t["inputSchema"]}
-            for t in tools
-        ]
-        thread = await rpc("thread/start", thread_params)
-        thread_id = thread["thread"]["id"]
-        await rpc(
-            "turn/start", {"threadId": thread_id, "input": [{"type": "text", "text": prompt}]}
-        )
-        while True:
-            item = await receive()
-            if item.get("method") == "turn/completed":
-                if item.get("params", {}).get("turn", {}).get("status") != "completed":
-                    raise CliError("Codex 任务未完成")
-                return
-            await event(item)
-    finally:
-        await close_transport(process)
+    await initialize_codex(rpc, send)
+    thread_params["dynamicTools"] = [
+        {"name": t["name"], "description": t["description"], "inputSchema": t["inputSchema"]}
+        for t in tools
+    ]
+    thread = await rpc("thread/start", thread_params)
+    thread_id = thread["thread"]["id"]
+    await rpc("turn/start", {"threadId": thread_id, "input": [{"type": "text", "text": prompt}]})
+    while True:
+        item = await receive()
+        if item.get("method") == "turn/completed":
+            if item.get("params", {}).get("turn", {}).get("status") != "completed":
+                raise CliError("Codex 任务未完成")
+            return
+        await event(item)
 
 
-async def codex_models(executable):
-    """Model discovery never creates a thread or submits an inference request."""
-    args, _ = codex_command(executable, Path.cwd())
-    process = await spawn_transport(
-        *args,
-        env=connection_overrides()[1],
-        start_new_session=True,
-        stdin=asyncio.subprocess.PIPE,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.DEVNULL,
-        limit=MAX_BYTES,
+async def initialize_codex(rpc, send):
+    await rpc(
+        "initialize",
+        {
+            "clientInfo": {"name": "future_props_lab", "version": "1"},
+            "capabilities": {"experimentalApi": True},
+        },
     )
+    await send({"method": "initialized"})
+    verify_codex_policy(await rpc("config/read", {"includeLayers": False}))
 
-    async def request(identity, method, params):
-        process.stdin.write(
-            json.dumps({"id": identity, "method": method, "params": params}).encode() + b"\n"
-        )
-        await process.stdin.drain()
-        while line := await asyncio.wait_for(process.stdout.readline(), 5):
-            item = json.loads(line)
-            if item.get("id") == identity:
-                return item.get("result", {})
-        return {}
 
-    try:
-        await request(1, "initialize", {"clientInfo": {"name": "future_props_lab", "version": "1"}})
-        process.stdin.write(b'{"method":"initialized"}\n')
-        await process.stdin.drain()
-        value = await request(2, "model/list", {"limit": 100})
-        return [
-            {"id": m["model"], "label": m.get("displayName", m["model"])}
-            for m in value.get("data", [])
-            if isinstance(m.get("model"), str) and not m.get("hidden")
-        ]
-    finally:
-        await close_transport(process)
+@asynccontextmanager
+async def probe_codex(executable, profile):
+    """Validate the same policy as a turn, without starting a thread."""
+    async with codex_process(executable, profile) as (process, _):
+        sequence = 0
+
+        async def send(value):
+            await send_codex(process, value)
+
+        async def request(method, params):
+            nonlocal sequence
+            sequence += 1
+            await send({"id": sequence, "method": method, "params": params})
+            while line := await asyncio.wait_for(process.stdout.readline(), 5):
+                item = json.loads(line)
+                if not isinstance(item, dict):
+                    raise CliError("Codex app-server 协议检测失败")
+                if item.get("id") == sequence and "method" not in item:
+                    if not isinstance(item.get("result"), dict):
+                        raise CliError("Codex app-server 协议检测失败")
+                    return item["result"]
+            raise CliError("Codex app-server 提前退出，请检查专用登录和 CLI 版本")
+
+        async with asyncio.timeout(10):
+            await initialize_codex(request, send)
+        yield request
+
+
+async def codex_models(request):
+    value = await request("model/list", {"limit": 100})
+    if not isinstance(value.get("data"), list):
+        raise CliError("Codex app-server 未返回模型列表")
+    return [
+        {
+            "id": m["model"],
+            "label": m["displayName"] if isinstance(m.get("displayName"), str) else m["model"],
+        }
+        for m in value["data"]
+        if isinstance(m, dict) and isinstance(m.get("model"), str) and not m.get("hidden")
+    ]
 
 
 async def claude(executable, root, model, prompt, tool_config, emit, *, watchdog=()):

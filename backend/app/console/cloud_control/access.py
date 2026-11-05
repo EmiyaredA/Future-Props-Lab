@@ -76,8 +76,8 @@ async def desktop_authorized(db, principal, *, local):
     return bool(await db.scalar(query))
 
 
-async def unlock_expiry(db, principal, *, local):
-    if not allowed(principal, local=local):
+async def unlock_expiry(db, principal, *, local, settings=None):
+    if not _allowed(settings or get_cloud_settings(), principal, local=local, desktop=False):
         return 0
     row = await db.scalar(
         select(CloudUnlock.expires_at).where(
@@ -88,8 +88,8 @@ async def unlock_expiry(db, principal, *, local):
     return row if row and row > time.time() else 0
 
 
-async def require_unlocked(db, principal, *, local):
-    if not await unlock_expiry(db, principal, local=local):
+async def require_unlocked(db, principal, *, local, settings=None):
+    if not await unlock_expiry(db, principal, local=local, settings=settings):
         raise HTTPException(403, "请先验证密码及动态验证码")
 
 

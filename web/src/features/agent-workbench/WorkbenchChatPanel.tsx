@@ -15,6 +15,7 @@ import { AgentLogo } from "@features/code-agents";
 import { agentName, getSessions } from "./api";
 import { ChatTranscript } from "./ChatTranscript";
 import { ConversationView } from "./ConversationView";
+import { ProjectPicker } from "./ProjectPicker";
 import { useWorkbench } from "./useWorkbench";
 import {
   createChat,
@@ -25,6 +26,7 @@ import {
   sendTurn,
   stopTurn,
   type ChatCreate,
+  type ProjectChoice,
   type TurnCreate,
 } from "./executionApi";
 import { workbenchKeys as keys } from "./queryKeys";
@@ -81,7 +83,7 @@ export function WorkbenchChatPanel({
   });
   const [history, setHistory] = useState(false);
   const [nativeId, setNativeId] = useState<string>();
-  const [project, setProject] = useState("");
+  const [project, setProject] = useState<ProjectChoice>();
   const [agent, setAgent] = useState<ChatCreate["agent_id"]>();
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState(false);
@@ -169,7 +171,7 @@ export function WorkbenchChatPanel({
       let target = id;
       if (!target) {
         if (!project || !agent) return;
-        target = (await createChat({ project_id: project, agent_id: agent }))
+        target = (await createChat({ project_id: project.id, agent_id: agent }))
           .id;
         setId(target);
         void cache.invalidateQueries({ queryKey: keys.chats(owner) });
@@ -186,11 +188,14 @@ export function WorkbenchChatPanel({
 
   const projects = catalog.data?.projects ?? [];
   const agents = catalog.data?.agents ?? [];
-  const projectChoice = projects.find((item) => item.id === project);
+  const canSelectDirectory = !!catalog.data?.can_select_directory;
+  const projectChoice = canSelectDirectory
+    ? project
+    : projects.find((item) => item.id === project?.id);
   const agentChoice = agents.find(
     (item) => item.id === agent && item.available,
   );
-  const hasProjects = projects.length > 0;
+  const hasProjects = canSelectDirectory || projects.length > 0;
   const hasAgents = agents.some((item) => item.available);
   const ready = enabled && !catalog.error && hasProjects && hasAgents;
   const selectedAgent = chat?.agent_id ?? agentChoice?.id;
@@ -255,7 +260,8 @@ export function WorkbenchChatPanel({
             >
               <AgentLogo id={entry.agent_id} size={17} />
               {agentName(entry.agent_id)} ·{" "}
-              {projects.find((item) => item.id === entry.project_id)?.label ??
+              {entry.project_label ??
+                projects.find((item) => item.id === entry.project_id)?.label ??
                 entry.project_id}
               <time>{new Date(entry.created_at * 1000).toLocaleString()}</time>
             </button>
@@ -288,27 +294,46 @@ export function WorkbenchChatPanel({
               </span>
               <span className="cloud-chat-selection">
                 <FolderOpen size={15} aria-hidden="true" />
-                {projects.find((item) => item.id === selectedProject)?.label ??
+                {chat?.project_label ??
+                  projects.find((item) => item.id === selectedProject)?.label ??
                   selectedProject ??
                   "读取项目…"}
               </span>
             </div>
-          ) : ready ? (
+          ) : enabled && catalog.data?.enabled ? (
             <div className="cloud-chat-context cloud-chat-choices">
-              <CustomSelect
-                value={projectChoice?.id ?? ""}
-                options={[
-                  { value: "", label: "选择项目", disabled: true },
-                  ...projects.map((item) => ({
-                    value: item.id,
-                    label: item.label,
-                  })),
-                ]}
-                ariaLabel="选择项目"
-                leadingIcon={<FolderOpen size={15} aria-hidden="true" />}
-                disabled={pending}
-                onChange={setProject}
-              />
+              {canSelectDirectory ? (
+                <ProjectPicker
+                  owner={owner}
+                  catalog={catalog.data}
+                  selected={projectChoice}
+                  disabled={pending}
+                  onSelect={(choice) => {
+                    setProject(choice);
+                    setError("");
+                    void cache.invalidateQueries({
+                      queryKey: keys.executionCatalog(owner),
+                    });
+                  }}
+                />
+              ) : (
+                <CustomSelect
+                  value={projectChoice?.id ?? ""}
+                  options={[
+                    { value: "", label: "选择项目", disabled: true },
+                    ...projects.map((item) => ({
+                      value: item.id,
+                      label: item.label,
+                    })),
+                  ]}
+                  ariaLabel="选择项目"
+                  leadingIcon={<FolderOpen size={15} aria-hidden="true" />}
+                  disabled={pending || !hasProjects}
+                  onChange={(value) =>
+                    setProject(projects.find((item) => item.id === value))
+                  }
+                />
+              )}
               <CustomSelect
                 value={agentChoice?.id ?? ""}
                 options={[
@@ -370,7 +395,11 @@ export function WorkbenchChatPanel({
                       ) : (
                         <FolderOpen size={15} aria-hidden="true" />
                       )}
-                      {hasProjects ? "项目已授权" : "勾选要使用的项目并保存"}
+                      {projectChoice
+                        ? "已选择项目"
+                        : hasProjects
+                          ? "可在上方选择项目目录"
+                          : "此入口暂无可用项目"}
                     </li>
                     <li data-ready={hasAgents}>
                       {hasAgents ? (
@@ -398,7 +427,7 @@ export function WorkbenchChatPanel({
                   >
                     重试加载
                   </button>
-                ) : !ready && onSetup && (!enabled || !catalog.isPending) ? (
+                ) : !enabled && onSetup ? (
                   <button
                     className="btn cloud-chat-setup"
                     type="button"

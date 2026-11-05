@@ -7,6 +7,8 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
     "cloud-control.access": (
         ("GET", "/v1/cloud-control/status"),
         ("GET", "/v1/agent-workbench/execution/catalog"),
+        ("GET", "/v1/agent-workbench/execution/directories"),
+        ("POST", "/v1/agent-workbench/execution/projects"),
         ("GET", "/v1/agent-workbench/chats"),
         ("POST", "/v1/agent-workbench/chats"),
         ("GET", "/v1/agent-workbench/chats/{chat_id}"),

@@ -10,7 +10,10 @@ from fpl_runtime.cloud_authority import DESKTOP_SOCKET as DESKTOP_SOCKET
 from . import desktop_bridge
 from .access import desktop_authorized
 from .desktop_bridge import DesktopInput as DesktopInput
+from .desktop_bridge import DesktopTransfer as DesktopTransfer
 from .desktop_bridge import GuacdReader as GuacdReader
+from .desktop_bridge import PublicDesktopImages as PublicDesktopImages
+from .desktop_bridge import browser_input as browser_input
 from .desktop_bridge import handshake as handshake
 from .desktop_bridge import instruction as instruction
 from .desktop_bridge import parse_instruction as parse_instruction

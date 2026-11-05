@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "openapi_sha256": "bb7c6d8010ca42b6262f15cb243f22e8067dd148e5f19d23b961f1f01b50fed3",
+  "openapi_sha256": "9ece4b13a21f4bd401194cec4446d4c48b93b7bd0e85299bcd9a21854b7e98c3",
   "operations": [
     {
       "service": "identity",
@@ -169,6 +169,18 @@
       "method": "GET",
       "path": "/v1/agent-workbench/execution/catalog",
       "operation_id": "catalog_v1_agent_workbench_execution_catalog_get"
+    },
+    {
+      "service": "agents",
+      "method": "GET",
+      "path": "/v1/agent-workbench/execution/directories",
+      "operation_id": "directories_v1_agent_workbench_execution_directories_get"
+    },
+    {
+      "service": "agents",
+      "method": "POST",
+      "path": "/v1/agent-workbench/execution/projects",
+      "operation_id": "register_project_v1_agent_workbench_execution_projects_post"
     },
     {
       "service": "agents",
@@ -3676,6 +3688,12 @@
     }
   ],
   "tables": [
+    {
+      "table": "workbench_projects",
+      "service": "agents",
+      "module": "app.apps.agent_workbench.execution.models",
+      "model": "WorkbenchProject"
+    },
     {
       "table": "workbench_chats",
       "service": "agents",

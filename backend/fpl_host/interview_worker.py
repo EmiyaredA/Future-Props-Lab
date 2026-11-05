@@ -32,7 +32,9 @@ UNAVAILABLE = WorkerStatus(available=False, code="executor_unavailable")
 async def check_codex():
     try:
         executable()
-        status = await inspect_connection(get_settings(), "codex", discover_models=False)
+        status = await inspect_connection(
+            get_settings(), "codex", discover_models=False, app_server=False
+        )
         if status["available"]:
             return WorkerStatus(available=True, code="ready", version=status["version"])
     except (OperationError, ValidationError, OSError):

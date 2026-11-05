@@ -42,12 +42,6 @@ class IdlePreference(BaseModel):
     revision: int = Field(ge=0)
 
 
-class SetupProject(BaseModel):
-    label: str
-    root: str
-    selected: bool
-
-
 class CloudSetup(BaseModel):
     revision: str
     host_label: str
@@ -57,7 +51,6 @@ class CloudSetup(BaseModel):
     enrolled: bool
     guacd_ready: bool
     screen_sharing_ready: bool | None
-    projects: list[SetupProject]
 
 
 class CloudSetupUpdate(BaseModel):
@@ -66,4 +59,3 @@ class CloudSetupUpdate(BaseModel):
     revision: str = Field(pattern=r"^[a-f0-9]{64}$")
     host_label: str = Field(min_length=1, max_length=80)
     public_enabled: bool
-    projects: list[str] = Field(max_length=80)

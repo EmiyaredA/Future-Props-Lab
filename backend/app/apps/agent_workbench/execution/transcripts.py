@@ -20,7 +20,7 @@ async def get_chat(db, owner, chat_id):
     return chat
 
 
-async def list_chats(db, owner):
+async def list_chats(db, owner, *, load_labels=None):
     rows = (
         await db.scalars(
             select(WorkbenchChat)
@@ -29,7 +29,11 @@ async def list_chats(db, owner):
             .limit(100)
         )
     ).all()
-    return [ChatOut.model_validate(row) for row in rows]
+    labels = await load_labels(db, owner, {row.project_id for row in rows}) if load_labels else {}
+    return [
+        ChatOut.model_validate(row).model_copy(update={"project_label": labels.get(row.project_id)})
+        for row in rows
+    ]
 
 
 async def recent_turns(db, owner, chat_id, limit=50):
@@ -41,14 +45,29 @@ async def recent_turns(db, owner, chat_id, limit=50):
             .limit(limit)
         )
     ).all()
-    return list(reversed(rows))
+    return [TurnOut.model_validate(row) for row in reversed(rows)]
 
 
-async def detail(db, owner, chat_id):
+async def latest_turn_version(db, owner, chat_id):
+    row = (
+        await db.execute(
+            select(WorkbenchTurn.id, WorkbenchTurn.revision)
+            .where(WorkbenchTurn.owner_user_id == owner, WorkbenchTurn.chat_id == chat_id)
+            .order_by(WorkbenchTurn.position.desc())
+            .limit(1)
+        )
+    ).one_or_none()
+    return (row.id, row.revision) if row else ()
+
+
+async def detail(db, owner, chat_id, *, load_labels=None):
     chat = await get_chat(db, owner, chat_id)
+    labels = await load_labels(db, owner, {chat.project_id}) if load_labels else {}
     return ChatDetail(
-        **ChatOut.model_validate(chat).model_dump(),
-        turns=[TurnOut.model_validate(row) for row in await recent_turns(db, owner, chat_id)],
+        **ChatOut.model_validate(chat)
+        .model_copy(update={"project_label": labels.get(chat.project_id)})
+        .model_dump(),
+        turns=await recent_turns(db, owner, chat_id),
     )
 
 
