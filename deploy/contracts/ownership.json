@@ -4307,6 +4307,12 @@
       "model": "AudioAnnotationWaveform"
     },
     {
+      "table": "annotation_import_receipts",
+      "service": "annotation",
+      "module": "studio.apps.audio_annotation.storage.migration_records",
+      "model": "AnnotationImportReceipt"
+    },
+    {
       "table": "annotation_reference_mutations",
       "service": "annotation",
       "module": "studio.apps.audio_annotation.storage.service_models",

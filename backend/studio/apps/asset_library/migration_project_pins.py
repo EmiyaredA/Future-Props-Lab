@@ -9,6 +9,18 @@ from sqlalchemy.exc import IntegrityError
 
 from app.capabilities.asset_store.models import VisualAsset
 from studio.apps.asset_library.storage.service_models import AssetReferencePin, AssetReferenceSet
+from studio.contracts.asset_library.annotation import MAX_AUDIO_BYTES
+from studio.contracts.audio_annotation.migration import (
+    PINS_DATASET as ANNOTATION_PINS_DATASET,
+)
+from studio.contracts.audio_annotation.migration import (
+    PINS_PATH as ANNOTATION_PINS_PATH,
+)
+from studio.contracts.audio_annotation.migration import (
+    AnnotationPin,
+    AnnotationPinBatch,
+    AnnotationPinPage,
+)
 from studio.contracts.galgame_workshop.galgame_migration import (
     PINS_DATASET,
     PINS_PATH,
@@ -160,6 +172,8 @@ async def ingest(sessions, dataset, service, kind, batch):
                     if kind in {"knowledge-base", "publication"}
                     else (*media, "document")
                 )
+            if service == "annotation":
+                media = ("audio",)
             if kind in {"conversation", "acceptance"}:
                 parent = await db.scalar(
                     select(AssetReferenceSet.id).where(
@@ -173,6 +187,8 @@ async def ingest(sessions, dataset, service, kind, batch):
                 if parent is None:
                     raise HTTPException(409, {"code": "migration_reference_project_missing"})
             allowed = LIBRARY if scope is None else or_(LIBRARY, scope == project_id)
+            if service == "annotation":
+                allowed = allowed & (VisualAsset.byte_size <= MAX_AUDIO_BYTES)
             present = set(
                 await db.scalars(
                     select(VisualAsset.id).where(
@@ -250,6 +266,22 @@ def mount_project_pins(
             page, sessions, plan, dataset, service, kind, record_type, batch_type, page_type
         ),
         ingest=partial(ingest, sessions, dataset, service, kind),
+    )
+
+
+def mount_annotation_references(app, plan, sessions):
+    mount_project_pins(
+        app,
+        plan,
+        sessions,
+        prefix=ANNOTATION_PINS_PATH,
+        dataset=ANNOTATION_PINS_DATASET,
+        service="annotation",
+        kind="project",
+        cursor=CURSOR,
+        record_type=AnnotationPin,
+        batch_type=AnnotationPinBatch,
+        page_type=AnnotationPinPage,
     )
 
 

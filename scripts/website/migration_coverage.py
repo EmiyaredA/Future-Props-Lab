@@ -8,6 +8,8 @@ from pathlib import Path
 
 from studio.apps.agent_workbench.migration_shapes import DATASETS as AGENTS
 from studio.apps.asset_library.storage.migration_records import DATASETS as ASSETS
+from studio.apps.audio_annotation.storage.migration_records import DATASETS as ANNOTATION
+from studio.apps.audio_annotation.storage.migration_records import OPERATIONS as ANNOTATION_RECEIPTS
 from studio.apps.creative_workshop.storage.migration_catalog import DATASETS as CREATIVE
 from studio.apps.director_desk.storage.migration_records import DATASETS as DIRECTOR
 from studio.apps.galgame_workshop.storage.migration_records import DATASETS as GALGAME
@@ -48,7 +50,8 @@ TRANSFER = {
     },
     **{
         dataset.model.__tablename__: dataset.name
-        for dataset in (*MOTION, *VIDEO, *GALGAME, *VISUAL)
+        for dataset in (*MOTION, *VIDEO, *GALGAME, *VISUAL, *ANNOTATION)
+        if dataset is not ANNOTATION_RECEIPTS
     },
     **{
         dataset.orm.__tablename__: dataset.name
@@ -119,6 +122,7 @@ OPERATION_DATASETS = {
     "galgame": GALGAME_RECEIPTS.name,
     "visual": VISUAL_RECEIPTS.name,
     "thought": NOTE_RECEIPTS.name,
+    "annotation": ANNOTATION_RECEIPTS.name,
 }
 
 

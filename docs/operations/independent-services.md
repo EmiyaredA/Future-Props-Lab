@@ -606,3 +606,9 @@ Assets 元数据和原件经 SHA256 验收后，执行 `uv run python -m scripts
 隔离目标先显式应用 Creative 的 0005 迁移。用同一份计划通过 `studio.assembly.independent.creative_workshop.cli` 分别启动 `migration-export` 和 `migration-import`。执行 `uv run python -m scripts.website.migrate_creative_catalog --plan "$plan" --source "$creative_source" --target "$creative_target"`，保存原作者、版本、安装历史、封面和 Skill 原件，并核验版本关系、文件摘要与回执。
 
 Creative 和 Integrations 的目录与原件均读回验收后，保留封存源上的 Integrations 导出监听器。执行 `uv run python -m scripts.website.migrate_creative_installations --plan "$plan" --source "$creative_target" --target "$integrations_target" --legacy "$integrations_source"`。此步骤恢复已安装能力和待配置 stdio MCP 的关联，核对组合安装与单项安装、封存源资源归属及目标存在状态。封存源已删除的资源保留原安装历史。目标漏导、跨账号关联或镜像记录不一致时停止验收。同一计划可重放并核对原回执。
+
+### 录音标注历史与音频引用
+
+先显式应用 Annotation 的 0002 迁移。在同一隔离计划下，通过 `studio.assembly.independent.audio_annotation.cli` 启动封存源的 `migration-export` 和目标的 `migration-import`，并执行 `uv run python -m scripts.website.migrate_annotation --plan "$plan" --source "$annotation_source" --target "$annotation_target"`。按项目、文档、波形和编辑回执的顺序迁入并读回。每个项目必须同时具有文档和波形。
+
+完成 Assets 原件传输及 SHA256 核验后，执行 `uv run python -m scripts.website.migrate_annotation_references --plan "$plan" --source "$annotation_source" --target "$assets_target"`。每个项目仅保留原账号库内的一份合规音频。目标验证文件回执及引用修订，重复提交同一批次时核对原回执。

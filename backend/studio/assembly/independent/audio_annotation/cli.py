@@ -12,12 +12,19 @@ from studio.apps.audio_annotation.storage.migrations.registry import MIGRATIONS
 from studio.assembly.independent.audio_annotation.application import create_app
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.runtime.database.migrations import apply
+from studio.runtime.database.project_history_migration import (
+    add_maintenance_options,
+    handle_maintenance,
+)
 from studio.runtime.lifecycle.locking import service_lock
 
 
 def main():
     parser = argparse.ArgumentParser(description="FPL Annotation")
-    parser.add_argument("command", choices=("serve", "migrate"))
+    parser.add_argument(
+        "command", choices=("serve", "migrate", "migration-export", "migration-import")
+    )
+    add_maintenance_options(parser)
     parser.add_argument("--state-root", type=Path, default=Path("/state"))
     parser.add_argument("--public-key", type=Path, default=Path("/run/fpl/identity-public.pem"))
     parser.add_argument(
@@ -28,6 +35,13 @@ def main():
     parser.add_argument("--port", type=int, default=8080)
     parser.add_argument("--identity-token", type=Path, default=Path("/run/fpl/identity-token"))
     options = parser.parse_args()
+    if options.command.startswith("migration-"):
+        from .maintenance import create_export_app, create_import_app
+
+        handle_maintenance(parser, options, create_export_app, create_import_app)
+        return
+    if options.migration_plan is not None or options.legacy_db is not None:
+        parser.error("迁移计划与源快照仅用于维护入口")
     if options.command == "migrate":
         with service_lock(options.state_root):
             apply(options.state_root / "service.db", "annotation", MIGRATIONS)
