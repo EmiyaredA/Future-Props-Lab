@@ -38,3 +38,11 @@ and file-layout coupling; deeper transaction/use-case decomposition remains sepa
 file-boundary coverage. File tests cover component recreation, account isolation, invalid segments
 and symlink rejection. The Visual cross-service protocol is rerun with the explicit constructors.
 OpenAPI, ownership metadata and all service source-closure entries are checked independently.
+
+## Assembly follow-up
+
+Models constructs the visual intake, runner, and result reader only when the
+Visual peer key is configured. Other Models deployments can provide the
+ordinary capabilities port without exposing an HTTP client for visual originals.
+The targeted Models, Visual, Integration and Annotation regressions passed
+37 tests, including the no-peer Models assembly and owner-scoped original import.

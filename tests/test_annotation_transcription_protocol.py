@@ -2,7 +2,6 @@
 
 import io
 from contextlib import asynccontextmanager
-from types import SimpleNamespace
 from uuid import uuid4
 
 import httpx
@@ -33,7 +32,7 @@ from studio.apps.model_service.transport.website.models.model_test_transcription
     router as task_router,
 )
 from studio.assembly.independent.audio_annotation.application import create_app
-from studio.config.settings import get_settings
+from studio.config.settings import Settings, get_settings
 from studio.contracts.model_service.annotation import PREFIX
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database
@@ -56,6 +55,7 @@ async def owned_models(case, path):
     app.state.annotation_model_transcription = lambda session: AnnotationTranscription(
         session, decrypt=cipher.decrypt
     )
+    app.state.settings = Settings(_config_file=None, fpl_database_path=str(database.path))
     app.state.database = database
     app.state.identity_public_key = case.key.public_key()
     app.state.identity = live
@@ -196,18 +196,9 @@ async def test_models_verify_exact_wav_and_replay_a_finished_attempt(
 async def test_completed_task_original_import_replays_assets_receipt(
     scenario,  # noqa: F811
     tmp_path,
-    monkeypatch,
 ):
     case = scenario
-    inputs = tmp_path / "model-originals"
-    inputs.mkdir()
     data = audio()
-    source = inputs / "model-task.wav"
-    source.write_bytes(data)
-    monkeypatch.setattr(
-        "studio.apps.model_service.playground.transcription.get_settings",
-        lambda: SimpleNamespace(account_model_test_path=lambda *_parts: inputs),
-    )
     case.identity.state.identity_options["service_credentials"]["annotation"] = TOKEN
     assets_live = LiveAuthorization(service="assets", credential=ASSETS_SECRET, transport=case.mesh)
     case.assets.state.identity = assets_live
@@ -227,12 +218,16 @@ async def test_completed_task_original_import_replays_assets_receipt(
 
     async with (
         assets_live.client,
-        owned_models(case, tmp_path / "models") as (_model_app, models, _model),
+        owned_models(case, tmp_path / "models") as (model_app, models, _model),
         app.router.lifespan_context(app),
         httpx.AsyncClient(
             base_url="http://annotation", transport=httpx.ASGITransport(app=app)
         ) as api,
     ):
+        inputs = model_app.state.settings.account_model_test_path(case.viewer, "references")
+        inputs.mkdir(parents=True)
+        source = inputs / "model-task.wav"
+        source.write_bytes(data)
         async with models.sessions(info={"owner_user_id": case.viewer}) as db:
             db.add(
                 ModelTestTranscriptionTask(

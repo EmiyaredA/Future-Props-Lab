@@ -327,25 +327,27 @@ def create_app(
         if visual_generation_key is not None
         else None
     )
-    generation_files = VisualGenerationFiles(database.root)
-    app.state.visual_generation_intake = VisualGenerationIntake(
-        database.sessions,
-        files=generation_files,
-        originals_client=app.state.capabilities.client,
-        check_authority=app.state.identity.status,
-        temporary_upload_url=app.state.settings.fpl_temp_media_upload_url,
-    )
-    app.state.visual_generation_runner = VisualGenerationRunner(
-        database.sessions,
-        files=generation_files,
-        check_authority=app.state.identity.status,
-        temporary_upload_url=app.state.settings.fpl_temp_media_upload_url,
-        maximum_output_bytes=app.state.settings.fpl_visual_asset_max_bytes,
-        decrypt=SecretCipher(settings.fpl_secrets_key).decrypt,
-    )
-    app.state.visual_generation_results = VisualGenerationResults(
-        database.sessions, files=generation_files
-    )
+    if visual_generation_key is not None:
+        generation_files = VisualGenerationFiles(database.root)
+        app.state.visual_generation_intake = VisualGenerationIntake(
+            database.sessions,
+            files=generation_files,
+            originals_client=capabilities.client,
+            check_authority=identity.status,
+            temporary_upload_url=settings.fpl_temp_media_upload_url,
+        )
+        app.state.visual_generation_runner = VisualGenerationRunner(
+            database.sessions,
+            files=generation_files,
+            check_authority=identity.status,
+            temporary_upload_url=settings.fpl_temp_media_upload_url,
+            maximum_output_bytes=settings.fpl_visual_asset_max_bytes,
+            decrypt=SecretCipher(settings.fpl_secrets_key).decrypt,
+        )
+        app.state.visual_generation_results = VisualGenerationResults(
+            database.sessions, files=generation_files
+        )
+        supervisor = RunnerSupervisor((*supervisor.runners, app.state.visual_generation_runner))
     app.state.visual_review_attempts = VisualReviewAttempts(
         database.sessions, settings, decrypt=SecretCipher(settings.fpl_secrets_key).decrypt
     )
@@ -360,8 +362,6 @@ def create_app(
         else None
     )
     app.state.assistant_model_runs = assistant_runs
-    if visual_generation_key is not None:
-        supervisor = RunnerSupervisor((*supervisor.runners, app.state.visual_generation_runner))
 
     app.state.model_catalog_bindings = CatalogBindings(
         defaults=OwnedCatalogDefaults,
