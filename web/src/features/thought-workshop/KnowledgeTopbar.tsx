@@ -218,7 +218,19 @@ export function KnowledgeTopbar({
         ) : null}
         {noteMode ? (
           <>
-            <nav className="knowledge-breadcrumb" aria-label="文档路径">
+            <nav
+              className="knowledge-breadcrumb"
+              aria-label="文档路径"
+              onFocus={({ currentTarget, target }) => {
+                const path = currentTarget.getBoundingClientRect();
+                const item = target.getBoundingClientRect();
+                if (item.left < path.left) {
+                  currentTarget.scrollLeft += item.left - path.left;
+                } else if (item.right > path.right) {
+                  currentTarget.scrollLeft += item.right - path.right;
+                }
+              }}
+            >
               {projectTitle ? (
                 <>
                   <button title={projectTitle} onClick={onOpenProject}>

@@ -4,6 +4,7 @@ import asyncio
 import os
 from hashlib import sha256
 from pathlib import Path
+from subprocess import CalledProcessError
 from uuid import uuid4
 
 from sqlalchemy import select
@@ -42,9 +43,14 @@ def _render_frame(
     cached = _cached_frame(cache)
     if cached is not None:
         return cached
-    payload = render_plan_frame(
-        plan, time_us=time_us, width=width, without_chroma_clip_id=without_chroma_clip_id
-    )
+    try:
+        payload = render_plan_frame(
+            plan, time_us=time_us, width=width, without_chroma_clip_id=without_chroma_clip_id
+        )
+    except (CalledProcessError, FileNotFoundError) as exc:
+        if not cache.parent.is_dir():
+            raise VideoEditorNotFoundError("剪辑工程不存在") from exc
+        raise
     # Parallel requests for the same frame must not share a temporary filename.
     temporary = cache.with_suffix(f".{uuid4().hex}.tmp")
     try:

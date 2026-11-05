@@ -77,6 +77,15 @@ test("document paths follow parents while browsing views omit redundant breadcru
       await expect(
         path.getByRole("button", { name: titles[1], exact: true }),
       ).toBeInViewport();
+      if (width === 390) {
+        await path.evaluate((nav) => {
+          nav.scrollLeft = nav.scrollWidth;
+          nav.querySelector("button")!.focus({ preventScroll: true });
+        });
+        await expect(path.getByRole("button").first()).toBeInViewport({
+          ratio: 0.95,
+        });
+      }
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= innerWidth + 2,

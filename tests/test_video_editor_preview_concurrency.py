@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import threading
 from concurrent.futures import ThreadPoolExecutor
+from subprocess import CalledProcessError
 
 import httpx
 import pytest
@@ -13,6 +14,7 @@ from studio.apps.media_rendering.local.inputs import RenderPlan
 from studio.apps.media_rendering.local.text_layer import TEXT_RENDER_VERSION
 from studio.apps.media_rendering.local.video_sampling import VIDEO_SAMPLING_VERSION
 from studio.apps.video_editor import frames
+from studio.apps.video_editor.errors import VideoEditorNotFoundError
 from studio.apps.video_editor.schemas import VideoEditorTimelineDocument
 from studio.config.settings import get_settings
 from website_test_support import app, engine
@@ -158,6 +160,29 @@ def test_frame_finishing_after_project_deletion_does_not_recreate_cache(monkeypa
         == b"finished-frame"
     )
     assert not derived.exists()
+
+
+@pytest.mark.parametrize(
+    ("deleted", "expected_error"), [(True, VideoEditorNotFoundError), (False, CalledProcessError)]
+)
+def test_frame_decode_error_distinguishes_removed_project(
+    monkeypatch, tmp_path, deleted, expected_error
+):
+    derived = tmp_path / "derived"
+    derived.mkdir()
+
+    def render(*_args, **_kwargs):
+        if deleted:
+            derived.rmdir()
+        raise CalledProcessError(1, ["ffprobe"])
+
+    monkeypatch.setattr(frames, "render_plan_frame", render)
+    plan = RenderPlan(VideoEditorTimelineDocument.model_validate({"tracks": []}), {})
+    with pytest.raises(expected_error):
+        frames._render_frame(
+            derived / "frame.png", plan, time_us=0, width=960, without_chroma_clip_id=None
+        )
+    assert derived.exists() is not deleted
 
 
 @pytest.mark.asyncio
