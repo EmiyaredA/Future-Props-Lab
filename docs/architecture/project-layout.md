@@ -1106,3 +1106,7 @@ Models 的 `storage/visual_generation_files.py` 拥有生成任务的账号输�
 架构验收集中在 `tests/architecture/`：`test_repository.py` 负责依赖方向、源码体量与工程入口，`test_ownership.py` 检查目录所有权，`test_components.py` 守住已迁移组件的显式装配与纯契约边界。pytest 从 `tests/` 递归发现这些用例，继续使用根级隔离配置 fixture。其余测试目录按后续业务批次归位。
 
 面试助手的 `Rooms` 与网站任务准备显式接收文件根目录，两种 HTTP 装配各自绑定该值，独立服务不再将文件配置放入 Session.info。上传在提交开始前失败会清理暂存；提交确认未知时保留私人原件，后续快照核对记录，删除所属场次统一清理，避免已提交材料缺失。
+
+兼容网站的浏览器入口为 `web/src/app/entries/website-bootstrap.ts`，先建立不依赖 React 的加载失败反馈，再动态载入 `website.tsx` 装配认证、QueryClient 与页面壳。独立 HTML 和兼容网站都从 `entries/` 启动；URL 与页面组合继续归 `routing/`，启动移动不增加新路由。
+
+Web 通用 UI 验收放在 `web/tests/shared/`，API、SSE、下载与传输验收放在 `web/tests/platform/`；共用初始化仍由 `web/tests/setup.ts` 提供。Vitest 的递归发现规则覆盖两个目录；业务测试随所属 feature 批次迁移。

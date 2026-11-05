@@ -137,6 +137,8 @@
 - Web 的 `app/routing/` 负责页面组合与浏览器导航控制器，`app/layout/` 保留展示壳；
   未保存拦截、历史回退和 Agent 导航共享 `useWebsiteNavigation`，生命周期结束必须移除监听。
   URL 类型与解析契约继续由 `app/routes.ts` 拥有，不将导航控制器放入业务 feature。
+- 浏览器启动入口归 `app/entries/`；兼容网站先通过 `website-bootstrap.ts` 建立加载失败反馈，
+  再加载 `website.tsx` 的 React 装配。通用 UI 与浏览器 API 测试分别归 `web/tests/shared/` 与 `web/tests/platform/`。
 - Web 的 `platform/` 与 `shared/` 不得依赖 `features/` 或 `app/`，`features/` 不得依赖
   `app/`；业务代码不得堆回 `web/src/` 根目录。生产请求通过 OpenAPI 生成类型访问后端，
   `generated/` 文件不得手工编辑。

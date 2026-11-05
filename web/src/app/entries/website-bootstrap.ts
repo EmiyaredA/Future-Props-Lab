@@ -1,10 +1,10 @@
-import { recoverPage } from "./recovery";
-import { startBootLoading } from "./bootLoading";
-import "./recovery.css";
+import { recoverPage } from "@app/recovery";
+import { startBootLoading } from "@app/bootLoading";
+import "@app/recovery.css";
 
 // Keep this entry independent of React and feature modules: import failures must stay visible.
 const stopBootLoading = startBootLoading();
-void import("./main").then(stopBootLoading).catch((error: unknown) => {
+void import("./website").then(stopBootLoading).catch((error: unknown) => {
   stopBootLoading();
   const root = document.getElementById("root")!;
   const panel = document.createElement("section");
