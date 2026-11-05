@@ -10,6 +10,7 @@ from studio.apps.agent_workbench.execution import (
     projects,
     source_preview,
     storage,
+    transcripts,
 )
 from studio.apps.agent_workbench.execution.schemas import (
     ApprovalDecision,
@@ -90,7 +91,7 @@ async def register_project(
 
 @router.get("/chats", response_model=list[ChatOut])
 async def list_chats(db: SessionDep, principal: StudioAuth):
-    return await storage.list_chats(db, principal.user_id)
+    return await transcripts.list_chats(db, principal.user_id, load_labels=projects.labels)
 
 
 @router.post("/chats", response_model=ChatOut, status_code=201)
@@ -102,8 +103,12 @@ async def create_chat(request: Request, body: ChatCreate, db: SessionDep, princi
 
 @router.get("/chats/{chat_id}", response_model=ChatDetail)
 async def detail(request: Request, chat_id: str, db: SessionDep, principal: StudioAuth):
-    return await storage.detail(
-        db, principal.user_id, chat_id, request.app.state.workbench_runs.steerable
+    return await transcripts.detail(
+        db,
+        principal.user_id,
+        chat_id,
+        ready=request.app.state.workbench_runs.steerable,
+        load_labels=projects.labels,
     )
 
 
@@ -116,7 +121,7 @@ async def send_turn(
     principal: StudioAuth,
 ):
     await require_unlocked(db, principal, local=local(request))
-    chat = await storage.get_chat(db, principal.user_id, chat_id)
+    chat = await transcripts.get_chat(db, principal.user_id, chat_id)
     if body.mode == "immediate":
         await require_agent(chat.agent_id)
     turn, created = await storage.create_turn(db, principal, chat_id, body, local=local(request))
@@ -193,7 +198,7 @@ async def decide(
 
 @router.get("/chats/{chat_id}/events", response_class=StreamingResponse)
 async def stream(request: Request, chat_id: str, db: SessionDep, principal: StudioAuth):
-    await storage.get_chat(db, principal.user_id, chat_id)
+    await transcripts.get_chat(db, principal.user_id, chat_id)
     await db.rollback()
     return StreamingResponse(
         request.app.state.workbench_turn_stream(request, principal, chat_id),

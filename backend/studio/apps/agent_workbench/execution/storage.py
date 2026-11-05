@@ -4,36 +4,21 @@ import asyncio
 import time
 
 from fastapi import HTTPException
-from sqlalchemy import select, text, update
 
 from app.capabilities.agents.cli.catalog import DEFINITIONS, inspect_connection
-from studio.apps.agent_workbench.execution import projects
+from studio.apps.agent_workbench.execution import projects, transcripts, turn_records
 from studio.apps.agent_workbench.execution.models import WorkbenchChat, WorkbenchTurn
 from studio.apps.agent_workbench.execution.schemas import (
     AgentChoice,
-    ChatDetail,
     ChatOut,
     ExecutionCatalog,
     InstructionOut,
     ProjectChoice,
-    QueuedTurn,
-    TurnOut,
 )
-from studio.apps.agent_workbench.execution.transcripts import end_turn
 from studio.apps.agent_workbench.execution.turn_activity import next_activity_sequence
-from studio.apps.agent_workbench.execution.turn_records import store_turn
-from studio.apps.agent_workbench.rules.turn_endings import completion
 from studio.apps.identity.storage.cloud_access import allowed, require_unlocked
 from studio.config.settings import get_cloud_settings
 from studio.runtime.ids import new_id
-
-ACTIVE = ("running", "waiting_approval", "cancelling")
-MAX_QUEUE = 20
-
-
-async def begin(db):
-    await db.rollback()
-    await db.execute(text("BEGIN IMMEDIATE"))
 
 
 async def catalog(db, principal, local):
@@ -78,93 +63,6 @@ async def catalog(db, principal, local):
     )
 
 
-async def get_chat(db, owner, chat_id):
-    chat = await db.scalar(
-        select(WorkbenchChat).where(
-            WorkbenchChat.id == chat_id, WorkbenchChat.owner_user_id == owner
-        )
-    )
-    if chat is None:
-        raise HTTPException(404, "会话不存在")
-    return chat
-
-
-async def list_chats(db, owner):
-    rows = (
-        await db.scalars(
-            select(WorkbenchChat)
-            .where(WorkbenchChat.owner_user_id == owner)
-            .order_by(WorkbenchChat.created_at.desc(), WorkbenchChat.id.desc())
-            .limit(100)
-        )
-    ).all()
-    labels = await projects.labels(db, owner, {row.project_id for row in rows})
-    return [
-        ChatOut.model_validate(row).model_copy(update={"project_label": labels.get(row.project_id)})
-        for row in rows
-    ]
-
-
-def chat_turns(owner, chat_id):
-    return select(WorkbenchTurn).where(
-        WorkbenchTurn.owner_user_id == owner, WorkbenchTurn.chat_id == chat_id
-    )
-
-
-def queued_turns(owner, chat_id):
-    return (
-        chat_turns(owner, chat_id)
-        .where(WorkbenchTurn.status == "queued")
-        .order_by(WorkbenchTurn.position)
-    )
-
-
-async def recent_turns(db, owner, chat_id, limit=50) -> list[TurnOut]:
-    rows = (
-        await db.scalars(
-            chat_turns(owner, chat_id)
-            .where(WorkbenchTurn.status.not_in(("queued", "removed")))
-            .order_by(WorkbenchTurn.position.desc())
-            .limit(limit)
-        )
-    ).all()
-    return [TurnOut.model_validate(row) for row in reversed(rows)]
-
-
-async def latest_turn_version(db, owner, chat_id):
-    chat = await get_chat(db, owner, chat_id)
-    versions = (
-        await db.execute(
-            chat_turns(owner, chat_id)
-            .with_only_columns(WorkbenchTurn.id, WorkbenchTurn.revision)
-            .where(WorkbenchTurn.status != "removed")
-            .order_by(WorkbenchTurn.position.desc())
-            .limit(50 + MAX_QUEUE)
-        )
-    ).all()
-    return (chat.queue_paused, tuple(tuple(row) for row in versions))
-
-
-async def detail(db, owner, chat_id, ready=None):
-    chat = await get_chat(db, owner, chat_id)
-    labels = await projects.labels(db, owner, {chat.project_id})
-    turns = await recent_turns(db, owner, chat_id)
-    queue = (await db.scalars(queued_turns(owner, chat_id))).all()
-    steerable = next(
-        (turn.id for turn in turns if turn.status == "running" and ready and ready(turn.id)),
-        None,
-    )
-    return ChatDetail(
-        **ChatOut.model_validate(chat)
-        .model_copy(update={"project_label": labels.get(chat.project_id)})
-        .model_dump(),
-        turns=turns,
-        queue=[QueuedTurn.model_validate(row) for row in queue],
-        queue_paused=bool(queue and chat.queue_paused),
-        steerable_turn_id=steerable,
-    )
-
-
 async def checked_project(db, principal, *, local, project_id=None, chat_id=None):
     """Snapshot the authorized binding, then release SQLite before touching disk."""
     await db.rollback()
@@ -172,7 +70,7 @@ async def checked_project(db, principal, *, local, project_id=None, chat_id=None
     await require_unlocked(db, principal, local=local, settings=settings)
     owner = principal.user_id
     if chat_id is not None:
-        chat = await get_chat(db, owner, chat_id)
+        chat = await transcripts.get_chat(db, owner, chat_id)
         project_id, agent_id = chat.project_id, chat.agent_id
     else:
         agent_id = None
@@ -186,12 +84,12 @@ async def check_binding(db, principal, project, *, local, chat_id=None, write=Fa
     # session and project binding are then verified in the same transaction.
     settings = await asyncio.to_thread(get_cloud_settings)
     if write:
-        await begin(db)
+        await turn_records.begin(db)
     await require_unlocked(db, principal, local=local, settings=settings)
     owner = principal.user_id
     identity = project.identity
     if chat_id is not None:
-        chat = await get_chat(db, owner, chat_id)
+        chat = await transcripts.get_chat(db, owner, chat_id)
         identity = chat.project_id
     current = await projects.binding(db, identity, owner, local=local, settings=settings)
     if not project.matches_binding(current):
@@ -220,16 +118,18 @@ async def create_turn(db, principal, chat_id, body, *, local):
     owner = principal.user_id
     project, _ = await checked_project(db, principal, chat_id=chat_id, local=local)
     await check_binding(db, principal, project, local=local, chat_id=chat_id, write=True)
-    return await store_turn(db, owner, chat_id, body, local=local, session_id=principal.session_id)
+    return await turn_records.store_turn(
+        db, owner, chat_id, body, local=local, session_id=principal.session_id
+    )
 
 
 async def change_queue(db, principal, chat_id, *, local, remove_id=None):
     owner = principal.user_id
     project, _ = await checked_project(db, principal, chat_id=chat_id, local=local)
     await check_binding(db, principal, project, local=local, chat_id=chat_id, write=True)
-    chat = await get_chat(db, owner, chat_id)
+    chat = await transcripts.get_chat(db, owner, chat_id)
     if remove_id:
-        row = await get_turn(db, owner, chat_id, remove_id)
+        row = await transcripts.get_turn(db, owner, chat_id, remove_id)
         if row.status == "removed":
             await db.rollback()
             return
@@ -239,31 +139,29 @@ async def change_queue(db, principal, chat_id, *, local, remove_id=None):
         row.queued_session_id = None
         row.revision += 1
     else:
-        active = await db.scalar(chat_turns(owner, chat_id).where(WorkbenchTurn.status.in_(ACTIVE)))
+        active = await db.scalar(
+            transcripts.chat_turns(owner, chat_id).where(
+                WorkbenchTurn.status.in_(transcripts.ACTIVE)
+            )
+        )
         if active:
             raise HTTPException(409, "请等待当前轮结束后继续队列")
-        rows = (await db.scalars(queued_turns(owner, chat_id))).all()
+        rows = (await db.scalars(transcripts.queued_turns(owner, chat_id))).all()
         for row in rows:
             row.queued_session_id, row.queued_local = principal.session_id, local
         chat.queue_paused = False
     await db.commit()
 
 
-async def next_queued(db, owner, chat_id):
-    chat = await get_chat(db, owner, chat_id)
-    active = await db.scalar(chat_turns(owner, chat_id).where(WorkbenchTurn.status.in_(ACTIVE)))
-    if not chat.queue_paused and not active:
-        return await db.scalar(queued_turns(owner, chat_id).limit(1))
-    return None
-
-
 async def claim_queue(db, principal, chat_id, turn_id, *, local):
     owner = principal.user_id
     project, _ = await checked_project(db, principal, chat_id=chat_id, local=local)
     await check_binding(db, principal, project, local=local, chat_id=chat_id, write=True)
-    chat = await get_chat(db, owner, chat_id)
-    head = await db.scalar(queued_turns(owner, chat_id).limit(1))
-    active = await db.scalar(chat_turns(owner, chat_id).where(WorkbenchTurn.status.in_(ACTIVE)))
+    chat = await transcripts.get_chat(db, owner, chat_id)
+    head = await db.scalar(transcripts.queued_turns(owner, chat_id).limit(1))
+    active = await db.scalar(
+        transcripts.chat_turns(owner, chat_id).where(WorkbenchTurn.status.in_(transcripts.ACTIVE))
+    )
     if (
         chat.queue_paused
         or active
@@ -283,14 +181,14 @@ async def claim_queue(db, principal, chat_id, turn_id, *, local):
 
 
 async def pause_queue(db, owner, chat_id, *, head_id, session_id, local):
-    await begin(db)
-    head = await db.scalar(queued_turns(owner, chat_id).limit(1))
+    await turn_records.begin(db)
+    head = await db.scalar(transcripts.queued_turns(owner, chat_id).limit(1))
     if head and (head.id, head.queued_session_id, head.queued_local) == (
         head_id,
         session_id,
         local,
     ):
-        chat = await get_chat(db, owner, chat_id)
+        chat = await transcripts.get_chat(db, owner, chat_id)
         chat.queue_paused = True
         await db.commit()
         return True
@@ -298,155 +196,22 @@ async def pause_queue(db, owner, chat_id, *, head_id, session_id, local):
     return False
 
 
-async def get_turn(db, owner, chat_id, turn_id):
-    row = await db.scalar(
-        select(WorkbenchTurn).where(
-            WorkbenchTurn.id == turn_id,
-            WorkbenchTurn.chat_id == chat_id,
-            WorkbenchTurn.owner_user_id == owner,
-        )
-    )
-    if row is None:
-        raise HTTPException(404, "轮次不存在")
-    return row
-
-
-def change_approval(turn, identity, status):
-    turn.approvals = [
-        {**approval, "status": status} if approval["id"] == identity else approval
-        for approval in turn.approvals
-    ]
-    turn.revision += 1
-
-
 async def decide(db, principal, chat_id, turn_id, approval_id, approved, *, local):
     owner = principal.user_id
     project, _ = await checked_project(db, principal, chat_id=chat_id, local=local)
     await check_binding(db, principal, project, local=local, chat_id=chat_id, write=True)
-    turn = await get_turn(db, owner, chat_id, turn_id)
-    approval = next((item for item in turn.approvals if item["id"] == approval_id), None)
-    if not approval:
-        raise HTTPException(404, "审批不存在")
-    decision = "approved" if approved else "rejected"
-    if approval["status"] == decision:
-        await db.rollback()
-        return
-    if turn.status != "waiting_approval" or approval["status"] != "pending":
-        raise HTTPException(409, "审批已处理或失效")
-    change_approval(turn, approval_id, decision)
-    await db.commit()
-
-
-async def append_answer(db, key, delta):
-    await begin(db)
-    row = await get_turn(db, *key)
-    if row.status in ("running", "waiting_approval"):
-        row.answer = (row.answer + delta)[:100_000]
-        row.revision += 1
-        await db.commit()
-
-
-async def propose_approval(db, key, approval):
-    await begin(db)
-    row = await get_turn(db, *key)
-    preview_bytes = len(approval["preview"].encode()) + sum(
-        len(item["preview"].encode()) for item in row.approvals
-    )
-    if row.status != "running" or len(row.approvals) >= 16 or preview_bytes > 128 * 1024:
-        raise ValueError("运行无法接受更多审批")
-    row.status = "waiting_approval"
-    row.revision += 1
-    row.approvals = [
-        *row.approvals,
-        {
-            **approval,
-            "status": "pending",
-            "offset": len(row.answer),
-            "sequence": next_activity_sequence(row),
-        },
-    ]
-    await db.commit()
-
-
-def approval_status(row, identity):
-    return next((item["status"] for item in row.approvals if item["id"] == identity), None)
-
-
-async def read_approval_status(db, key, identity):
-    return approval_status(await get_turn(db, *key), identity)
+    await turn_records.record_decision(db, owner, chat_id, turn_id, approval_id, approved)
 
 
 async def consume_approval(db, key, identity, principal, project, *, local):
     await check_binding(db, principal, project, local=local, chat_id=key[1], write=True)
-    row = await get_turn(db, *key)
-    status = approval_status(row, identity)
-    if row.status != "waiting_approval" or status not in ("approved", "rejected"):
-        raise ValueError("审批已失效")
-    row.status = "running"
-    change_approval(row, identity, "executing" if status == "approved" else "rejected")
-    await db.commit()
-    return status == "approved"
-
-
-async def settle_approval(db, key, identity, status):
-    await begin(db)
-    row = await get_turn(db, *key)
-    if row.status == "running" and approval_status(row, identity) == "executing":
-        change_approval(row, identity, status)
-        await db.commit()
-
-
-async def request_cancellation(db, key, *, running_task):
-    await begin(db)
-    row = await get_turn(db, *key)
-    if row.status not in ACTIVE:
-        await db.rollback()
-        return False
-    (await get_chat(db, *key[:2])).queue_paused = True
-    if not running_task:
-        end_turn(row, "interrupted", "运行已中断，请核对操作结果")
-    elif row.status != "cancelling":
-        row.status = "cancelling"
-        row.revision += 1
-    await db.commit()
-    return running_task
-
-
-async def finish_turn(db, key, status, error=None, *, only_cancelling=False):
-    await begin(db)
-    row = await get_turn(db, *key)
-    eligible = ("cancelling",) if only_cancelling else ACTIVE
-    if row.status in eligible:
-        ending = completion(row.status, status, error)
-        end_turn(row, ending.status, ending.error)
-        if row.status != "completed":
-            (await get_chat(db, *key[:2])).queue_paused = True
-        await db.commit()
-        return row.status
-    await db.rollback()
-    return None
-
-
-async def interrupt_all(db):
-    rows = (await db.scalars(select(WorkbenchTurn).where(WorkbenchTurn.status.in_(ACTIVE)))).all()
-    for row in rows:
-        end_turn(row, "interrupted", "服务已重启，请核对结果后继续")
-    await db.execute(
-        update(WorkbenchChat)
-        .where(
-            WorkbenchChat.id.in_(
-                select(WorkbenchTurn.chat_id).where(WorkbenchTurn.status == "queued")
-            )
-        )
-        .values(queue_paused=True)
-    )
-    await db.commit()
+    return await turn_records.reserve_approval(db, key, identity)
 
 
 async def reserve_instruction(db, principal, key, body, *, local, ready):
     project, _ = await checked_project(db, principal, chat_id=key[1], local=local)
     await check_binding(db, principal, project, local=local, chat_id=key[1], write=True)
-    row = await get_turn(db, *key)
+    row = await transcripts.get_turn(db, *key)
     for item in row.instructions:
         if item["request_id"] == body.request_id:
             if item["text"] != body.text:
@@ -471,8 +236,8 @@ async def reserve_instruction(db, principal, key, body, *, local, ready):
 
 
 async def settle_instruction(db, key, identity, status):
-    await begin(db)
-    row = await get_turn(db, *key)
+    await turn_records.begin(db)
+    row = await transcripts.get_turn(db, *key)
     item = next(entry for entry in row.instructions if entry["request_id"] == identity)
     if item["status"] in ("sending", "unknown") and item["status"] != status:
         item = {**item, "status": status}

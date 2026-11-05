@@ -7,7 +7,7 @@ from fastapi import FastAPI
 
 from db.migrations import apply_migrations
 from studio.apps.agent_workbench.execution.runner import WorkbenchRuns
-from studio.apps.agent_workbench.execution.storage import interrupt_all as interrupt_workbench_runs
+from studio.apps.agent_workbench.execution.transcripts import recover_owned_turns
 from studio.apps.agent_workbench.sync.runner import WorkbenchSyncRunner
 from studio.apps.amadeus.execution.website_dialogue import CodeAgentRuns
 from studio.apps.amadeus.execution.website_runs import recover_interrupted_amadeus_runs
@@ -75,8 +75,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
     async with sessions() as session:
         await reconcile_project_trash(session, AssetStorage(settings))
         await reconcile_snapshot_imports(session, AssetStorage(settings))
-    async with sessions() as session:
-        await interrupt_workbench_runs(session)
+    await recover_owned_turns(sessions)
     lifespan_app.state.workbench_runs = WorkbenchRuns(sessions=sessions, settings=settings)
     await recover_admissions(sessions=sessions)
     await recover_interrupted_visual_assistant_runs(sessions=sessions)

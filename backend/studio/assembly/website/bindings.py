@@ -8,7 +8,7 @@ from functools import partial
 from app.console.governance.code_agent_connections import enable_connection
 from app.console.governance.code_agents import catalog as code_agent_catalog
 from studio.apps.agent_workbench.execution.runner import WorkbenchRuns
-from studio.apps.agent_workbench.execution.storage import latest_turn_version
+from studio.apps.agent_workbench.execution.transcripts import latest_turn_version
 from studio.apps.agent_workbench.storage.change_events import SqlChangeEvents
 from studio.apps.agent_workbench.storage.turn_versions import SqlTurnVersions
 from studio.apps.agent_workbench.transport.change_events import stream_events

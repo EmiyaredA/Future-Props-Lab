@@ -9,7 +9,7 @@ from app.capabilities.agents.cli.dialogue import run_dialogue
 from app.capabilities.agents.cli.instructions import LiveInstructions
 from app.capabilities.agents.cli.transport import CliError
 from app.console.governance.code_agents import resolve_connection
-from studio.apps.agent_workbench.execution import storage, turn_activity
+from studio.apps.agent_workbench.execution import storage, transcripts, turn_activity, turn_records
 from studio.apps.agent_workbench.execution.project_tools import ProjectTools
 from studio.contracts.identity.permissions import role_scopes
 from studio.contracts.identity.principal import StudioPrincipal
@@ -62,7 +62,7 @@ class WorkbenchRuns:
     async def advance(self, owner, chat_id):
         while not self.closed:
             async with self.sessions() as db:
-                head = await storage.next_queued(db, owner, chat_id)
+                head = await transcripts.next_queued(db, owner, chat_id)
                 if not head:
                     return
                 turn_id, session_id, local = head.id, head.queued_session_id, head.queued_local
@@ -75,7 +75,7 @@ class WorkbenchRuns:
                     session_id=session_id,
                 )
                 try:
-                    agent_id = (await storage.get_chat(db, owner, chat_id)).agent_id
+                    agent_id = (await transcripts.get_chat(db, owner, chat_id)).agent_id
                     await db.rollback()
                     await resolve_connection(agent_id, probe=False)
                     if await storage.claim_queue(db, principal, chat_id, turn_id, local=local):
@@ -106,7 +106,7 @@ class WorkbenchRuns:
                 try:
                     async with self.sessions() as session:
                         await turn.authority(session)
-                        row = await storage.get_turn(session, *key)
+                        row = await transcripts.get_turn(session, *key)
                         eligible = row.status == "running"
                     if eligible:
                         status = await turn.instructions.submit(
@@ -125,14 +125,14 @@ class WorkbenchRuns:
     async def cancel(self, db, owner, chat_id, turn_id):
         key = (owner, chat_id, turn_id)
         task = self.tasks.get(turn_id)
-        if not await storage.request_cancellation(db, key, running_task=bool(task)):
+        if not await turn_records.request_cancellation(db, key, running_task=bool(task)):
             return
         if not task.done():
             if not task.cancelling():
                 task.cancel()
             await asyncio.gather(task, return_exceptions=True)
         async with self.sessions() as session:
-            await storage.finish_turn(session, key, "cancelled", only_cancelling=True)
+            await turn_records.finish_turn(session, key, "cancelled", only_cancelling=True)
 
     async def close(self):
         self.closed = True
@@ -170,7 +170,7 @@ class Turn:
         if not self.pending_text:
             return
         async with self.sessions() as db:
-            await storage.append_answer(db, self.key, self.pending_text)
+            await turn_records.append_answer(db, self.key, self.pending_text)
         self.pending_text = ""
         self.last_flush = asyncio.get_running_loop().time()
 
@@ -190,13 +190,13 @@ class Turn:
         async with self.transcript_lock:
             await self.flush()
         async with self.sessions() as db:
-            await storage.propose_approval(
+            await turn_records.propose_approval(
                 db, self.key, dict(id=identity, kind=kind, title=title, preview=preview)
             )
 
         while True:
             async with self.sessions() as db:
-                decision = await storage.read_approval_status(db, self.key, identity)
+                decision = await turn_records.read_approval_status(db, self.key, identity)
             if decision != "pending":
                 break
             await asyncio.sleep(0.3)
@@ -227,7 +227,7 @@ class Turn:
             # The side effect and receipt cannot commit together; cancellation leaves it unknown.
             if not asyncio.current_task().cancelling():
                 async with self.sessions() as db:
-                    await storage.settle_approval(db, self.key, identity, status)
+                    await turn_records.settle_approval(db, self.key, identity, status)
 
     async def tool_project(self):
         async with self.sessions() as db:
@@ -245,7 +245,7 @@ class Turn:
         try:
             async with self.sessions() as db:
                 agent, project, executable = await self.authority(db, probe=True)
-                turns = await storage.recent_turns(db, self.owner, self.chat_id, 12)
+                turns = await transcripts.recent_turns(db, self.owner, self.chat_id, 12)
                 current = next(row for row in turns if row.id == self.turn_id)
                 history = [
                     {
@@ -308,5 +308,5 @@ class Turn:
             self.instructions.close()
             await self.flush()
             async with self.sessions() as db:
-                outcome = await storage.finish_turn(db, self.key, status, error)
+                outcome = await turn_records.finish_turn(db, self.key, status, error)
         return outcome

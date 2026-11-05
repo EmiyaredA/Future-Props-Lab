@@ -20,6 +20,8 @@ from studio.apps.agent_workbench.execution import (
     projects,
     runner,
     storage,
+    transcripts,
+    turn_records,
 )
 from studio.apps.agent_workbench.transport import (
     turn_events as events,
@@ -809,7 +811,7 @@ async def test_restart_expires_pending_approval_and_preserves_unknown_result():
             )
             await db.commit()
         async with SessionLocal() as db:
-            await storage.interrupt_all(db)
+            await transcripts.interrupt_all(db, owner)
         chat = (await client.get(f"{WORKBENCH}/chats/{identity}")).json()
         turn = chat["turns"][0]
         assert turn["status"] == "interrupted" and turn["answer"] == "partial"
@@ -1108,7 +1110,7 @@ async def test_workbench_queue_is_fifo_idempotent_and_pauses_on_stop_or_restart(
         await started("first")
         async with SessionLocal() as db:
             chat_id = result.json()["id"]
-            before_queue = await storage.latest_turn_version(db, owner, chat_id)
+            before_queue = await transcripts.latest_turn_version(db, owner, chat_id)
 
         second = await send("second")
         assert await send("second") == second
@@ -1125,10 +1127,10 @@ async def test_workbench_queue_is_fifo_idempotent_and_pauses_on_stop_or_restart(
         assert (await client.post(endpoint, json=instruction)).json()["status"] == "accepted"
         assert accepted == [instruction["text"]]
         async with SessionLocal() as db:
-            queued_version = await storage.latest_turn_version(db, owner, chat_id)
+            queued_version = await transcripts.latest_turn_version(db, owner, chat_id)
             assert queued_version != before_queue
-            await storage.append_answer(db, (owner, chat_id, first), "more")
-            assert await storage.latest_turn_version(db, owner, chat_id) != queued_version
+            await turn_records.append_answer(db, (owner, chat_id, first), "more")
+            assert await transcripts.latest_turn_version(db, owner, chat_id) != queued_version
         assert (await other.delete(f"{path}/queue/{removed}")).status_code in (403, 404)
         assert (await client.delete(f"{path}/queue/{removed}")).status_code == 204
         gates["first"].set()
@@ -1141,7 +1143,7 @@ async def test_workbench_queue_is_fifo_idempotent_and_pauses_on_stop_or_restart(
         assert snapshot["turns"][-1]["status"] == "cancelled"
 
         async with SessionLocal() as db:
-            await storage.interrupt_all(db)
+            await transcripts.interrupt_all(db, owner)
         assert (await client.post(f"{path}/queue/resume")).status_code == 204
         await started("third")
         gates["third"].set()

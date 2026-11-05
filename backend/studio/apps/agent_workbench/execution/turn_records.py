@@ -167,6 +167,7 @@ async def request_cancellation(db, key, *, running_task):
     if row.status not in ACTIVE:
         await db.rollback()
         return False
+    (await get_chat(db, *key[:2])).queue_paused = True
     if not running_task:
         end_turn(row, "interrupted", "运行已中断，请核对操作结果")
     elif row.status != "cancelling":
@@ -183,4 +184,9 @@ async def finish_turn(db, key, status, error=None, *, only_cancelling=False):
     if row.status in eligible:
         ending = completion(row.status, status, error)
         end_turn(row, ending.status, ending.error)
+        if ending.status != "completed":
+            (await get_chat(db, *key[:2])).queue_paused = True
         await db.commit()
+        return ending.status
+    await db.rollback()
+    return None

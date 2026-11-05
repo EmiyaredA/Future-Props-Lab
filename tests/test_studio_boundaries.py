@@ -396,3 +396,30 @@ def test_compatibility_settings_are_not_application_internal_models():
         "assembly/website/models.py",
         "deployment/contracts.py",
     }
+
+
+def test_workbench_website_does_not_duplicate_shared_turn_records():
+    path = STUDIO / "apps/agent_workbench/execution/storage.py"
+    definitions = {
+        node.name
+        for node in ast.parse(path.read_text()).body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+    shared = {
+        "get_chat",
+        "get_turn",
+        "list_chats",
+        "detail",
+        "recent_turns",
+        "latest_turn_version",
+        "append_answer",
+        "propose_approval",
+        "read_approval_status",
+        "settle_approval",
+        "request_cancellation",
+        "finish_turn",
+        "interrupt_all",
+    }
+    assert not definitions & shared
+    lifecycle = (STUDIO / "assembly/website/lifecycle.py").read_text()
+    assert "await recover_owned_turns(sessions)" in lifecycle

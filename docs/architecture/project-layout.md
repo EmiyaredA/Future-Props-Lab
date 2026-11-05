@@ -267,7 +267,7 @@ Galgame 剪辑交接由 `studio/apps/galgame_workshop/handoff_jobs.py`、`handof
 `transport/website/` 只保留网站特有执行协议。来源分配与原生跟随验证接收显式启用策略，
 共同的路由工厂接收两种入口各自的请求依赖，保持会话缓存及账号绑定，保留浏览器 Session 和云控权限限制。
 
-Agents 的 `execution_discovery.py` 拥有账号项目发现、登记和创建对话的 Mac 任务边界，`execution_native_http.py` 装配专用回环凭据与租约。`studio/contracts/agent_workbench/execution.py` 保存范围与结果契约。`studio/host/workbench_worker.py` 在受信 Mac 核对项目根与 CLI 签名。工作台的 `execution/turn_records.py` 保存兼容站和独立服务共用的轮次事务原语。 `execution/project_tools.py` 持有项目文件与命令工具，运行端提供实时授权和审批回调。
+Agents 的 `execution_discovery.py` 拥有账号项目发现、登记和创建对话的 Mac 任务边界，`execution_native_http.py` 装配专用回环凭据与租约。`studio/contracts/agent_workbench/execution.py` 保存范围与结果契约。`studio/host/workbench_worker.py` 在受信 Mac 核对项目根与 CLI 签名。工作台的 `execution/turn_records.py` 保存兼容站和独立服务共用的轮次、回答、审批与收尾事务。`execution/transcripts.py` 统一账号读取与恢复；网站的 `execution/storage.py` 仅保留带本机项目授权的操作，不能复制共用读取和状态转换。 `execution/project_tools.py` 持有项目文件与命令工具，运行端提供实时授权和审批回调。
 
 `studio/host/deployment_preflight.py` 在主机启动或 `--check` 时，只读检查本次选中服务各自数据库的服务归属、迁移前缀与 checksum；仅管理端模式不要求未启动的业务服务。未知已配置服务及缺少状态目录时拒绝部署，不创建数据库或应用迁移。启动动作与管理 worker 在所有预检成功后才执行。
 
