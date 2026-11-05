@@ -28,16 +28,20 @@ def sample_source(method, path):
 
 class SampleAssetQuery(LibraryAssetQuery):
     asset_ids: list[str] = Field(min_length=1, max_length=1)
+    media_kind: Literal["image", "video"] = "video"
 
     def path(self, project, run):
-        return f"{ASSETS}/{project}/{run}/metadata/{self.digest}"
+        kind = "image-metadata" if self.media_kind == "image" else "metadata"
+        return f"{ASSETS}/{project}/{run}/{kind}/{self.digest}"
 
 
 class SampleFileScope(FrameScope):
     files: tuple[FrameFile, ...] = Field(min_length=1, max_length=1)
+    media_kind: Literal["image", "video"] = "video"
 
     def path(self, project, run):
-        return f"{ASSETS}/{project}/{run}/original/{self.digest}"
+        kind = "image-original" if self.media_kind == "image" else "original"
+        return f"{ASSETS}/{project}/{run}/{kind}/{self.digest}"
 
 
 class SamplePlan(BaseModel):
@@ -45,12 +49,13 @@ class SamplePlan(BaseModel):
 
     source: LibraryAssetDescription
     positions_ms: list[int] = Field(default_factory=list, max_length=12)
-    mode: Literal["interval", "review-output", "review-reference"] = "interval"
+    mode: Literal["interval", "review-output", "review-reference", "review-image"] = "interval"
 
     @model_validator(mode="after")
     def canonical_positions(self):
-        if self.source.media_kind != "video" or self.source.byte_size <= 0:
-            raise ValueError("验收取样仅支持非空视频")
+        kind = "image" if self.mode == "review-image" else "video"
+        if self.source.media_kind != kind or self.source.byte_size <= 0:
+            raise ValueError("验收取样媒体与模式不匹配")
         if (self.mode == "interval") != bool(self.positions_ms):
             raise ValueError("取样模式与时间范围不匹配")
         if self.positions_ms != sorted(set(self.positions_ms)) or any(
@@ -65,7 +70,10 @@ class SamplePlan(BaseModel):
 
     @property
     def scope(self):
-        return SampleFileScope(files=(FrameFile(id=self.source.id, revision=self.source.revision),))
+        return SampleFileScope(
+            files=(FrameFile(id=self.source.id, revision=self.source.revision),),
+            media_kind=self.source.media_kind,
+        )
 
     def path(self, project, run):
         suffix = "" if self.mode == "interval" else f"/{self.mode}"
@@ -105,13 +113,14 @@ class VisualEvidenceUpload(BaseModel):
 
 def asset_target(method, path):
     return method == "POST" and re.fullmatch(
-        rf"{ASSETS}/({ID})/({ID})/(metadata|original)/({DIGEST})", path
+        rf"{ASSETS}/({ID})/({ID})/(metadata|original|image-metadata|image-original)/({DIGEST})",
+        path,
     )
 
 
 def render_target(method, path):
     return method == "POST" and re.fullmatch(
-        rf"{RENDER}/({ID})/({ID})/({DIGEST})/({DIGEST})(?:/(review-output|review-reference))?",
+        rf"{RENDER}/({ID})/({ID})/({DIGEST})/({DIGEST})(?:/(review-output|review-reference|review-image))?",
         path,
     )
 
@@ -125,6 +134,8 @@ def sample_grant(grant):
         return False
     if (grant.purpose, grant.target_service) == (ASSET_PURPOSE, "assets"):
         target = asset_target(grant.target_method, grant.target_path)
+        if target and target[3].startswith("image-") and not start:
+            return False
     elif (grant.purpose, grant.target_service) == (RENDER_PURPOSE, "rendering"):
         target = render_target(grant.target_method, grant.target_path)
         if target and bool(start) != bool(target[5]):

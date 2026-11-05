@@ -1,16 +1,22 @@
 """Published owned Visual node review context and scheme selection."""
 
-from fastapi import APIRouter, Request
+import httpx
+from fastapi import APIRouter, HTTPException, Request
 
 from app.apps.visual_workshop.acceptance.http_errors import errors
 from app.apps.visual_workshop.acceptance.node_schemas import (
     AcceptanceSummaryOut,
     NodeAcceptanceOut,
     NodeAcceptanceSelectIn,
+    NodeAcceptanceStartIn,
 )
+from app.apps.visual_workshop.acceptance.schemas import AcceptanceRunOut
 from app.deps import SessionDep, StudioAuth
+from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
 
 from .acceptance_context import AcceptanceContext
+from .review_model import plan_executor
+from .review_submission import ReviewSubmission
 
 router = APIRouter(prefix="/v1/visual-workshop/projects", tags=["visual-workshop"])
 
@@ -55,3 +61,25 @@ async def select_node_acceptance(
             .nodes(session, principal)
             .select(project_id, node_id, body)
         )
+
+
+@router.post("/{project_id}/nodes/{node_id}/acceptance/runs", response_model=AcceptanceRunOut)
+async def start_node_acceptance(
+    project_id: str,
+    node_id: str,
+    body: NodeAcceptanceStartIn,
+    request: Request,
+    session: SessionDep,
+    principal: StudioAuth,
+):
+    if not principal.allows("content.write"):
+        raise HTTPException(403, "需要内容写入权限")
+    with errors():
+        try:
+            return await ReviewSubmission(request, session, principal, plan_executor).start(
+                project_id, node_id, body
+            )
+        except CapabilityDenied as exc:
+            raise HTTPException(exc.status, "验收授权已撤销") from exc
+        except (CapabilityUnavailable, httpx.HTTPError) as exc:
+            raise HTTPException(503, "验收依赖暂不可用") from exc

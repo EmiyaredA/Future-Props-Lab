@@ -1,4 +1,4 @@
-"""Provide the exact project video for one authenticated Visual review sample."""
+"""Provide exact project media for one authenticated Visual review."""
 
 import jwt
 from fastapi import APIRouter, HTTPException, Request
@@ -44,6 +44,10 @@ async def owner_for(request, expected):
 
 
 @router.post(
+    ASSETS + "/{project_id}/{run_id}/image-metadata/{digest}",
+    response_model=LibraryAssetDescription,
+)
+@router.post(
     ASSETS + "/{project_id}/{run_id}/metadata/{digest}", response_model=LibraryAssetDescription
 )
 async def visual_sample_asset(
@@ -54,11 +58,12 @@ async def visual_sample_asset(
     async with state.database.sessions(info={"owner_user_id": owner}) as session:
         await check_project_scope(session, "visual", project_id)
         rows = await scoped_assets(session, project_id, body.asset_ids, include_private=False)
-        if len(rows) != 1 or rows[0][0].media_kind != "video":
-            raise AssetError("验收源视频不存在", code="not_found", status=404)
+        if len(rows) != 1 or rows[0][0].media_kind != body.media_kind:
+            raise AssetError("验收源素材不存在", code="not_found", status=404)
         return LibraryAssetDescription.model_validate(rows[0][0], from_attributes=True)
 
 
+@router.post(ASSETS + "/{project_id}/{run_id}/image-original/{digest}")
 @router.post(ASSETS + "/{project_id}/{run_id}/original/{digest}")
 async def visual_sample_original(
     request: Request, project_id: str, run_id: str, body: SampleFileScope
@@ -66,7 +71,9 @@ async def visual_sample_original(
     owner = await owner_for(request, body.path(project_id, run_id))
     state = request.app.state
     async with state.database.sessions(info={"owner_user_id": owner}) as session:
-        files = await originals(session, state.settings, project_id, body.files, media_kind="video")
+        files = await originals(
+            session, state.settings, project_id, body.files, media_kind=body.media_kind
+        )
     return StreamingResponse(
         stream_files(files),
         media_type="application/octet-stream",

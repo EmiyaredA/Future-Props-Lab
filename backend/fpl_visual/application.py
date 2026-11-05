@@ -41,6 +41,7 @@ from .models import MODELS, VisualCanvasReferenceMutation, VisualCertificationRe
 from .outputs_http import router as outputs_router
 from .projects_http import router as project_router
 from .repair_routes import router as repair_router
+from .review_runner import ReviewRunner
 from .segment_handoff_routes import router as segment_handoff_router
 from .segment_handoffs import SegmentHandoffs
 from .segment_target_routes import router as segment_target_router
@@ -172,6 +173,8 @@ def create_app(
         attach_web(app, release, pages=PAGES)
     composition_runner = CompositionRunner(app.state)
     app.state.composition_runner = composition_runner
+    review_runner = ReviewRunner(app.state)
+    app.state.review_runner = review_runner
     lifespan = app.router.lifespan_context
 
     @asynccontextmanager
@@ -185,6 +188,7 @@ def create_app(
             try:
                 if run_worker:
                     await composition_runner.start()
+                    await review_runner.start()
                     if app.state.generation_runner is not None:
                         await app.state.generation_runner.start()
                     if archive_delivery is not None:
@@ -193,6 +197,7 @@ def create_app(
             finally:
                 if app.state.generation_runner is not None:
                     await app.state.generation_runner.stop()
+                await review_runner.stop()
                 await composition_runner.stop()
                 if archive_delivery is not None:
                     await archive_delivery.stop()

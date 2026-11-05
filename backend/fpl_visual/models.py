@@ -34,6 +34,7 @@ from fpl_runtime.migration_receipts import ImportReceiptFields
 from fpl_runtime.reference_records import ReferenceMutationFields
 
 from .generation_dispatch_records import VisualGenerationDecision, VisualGenerationDispatch
+from .review_dispatch_records import VisualReviewDispatch
 
 
 class VisualCertificationReceipt(CertificationReceiptFields, CertificationRecordsBase):
@@ -99,6 +100,7 @@ class VisualCompositionDispatch(CanvasRetentionBase):
 
 
 MODELS = (
+    VisualReviewDispatch,
     VisualGenerationDecision,
     VisualGenerationDispatch,
     VisualCompositionDispatch,

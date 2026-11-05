@@ -11,7 +11,9 @@ MODEL_PLAN = "/_internal/v1/visual-review/model-plan"
 MODEL_RUN = "/_internal/v1/visual-review/model-runs"
 PLAN_PURPOSE = "visual.review-model-plan"
 RUN_PURPOSE = "visual.review-model-run"
-MAX_MODEL_REQUEST = 24 * 1024**2
+MAX_REVIEW_IMAGES = 12 + 2 * 40
+MAX_IMAGE_BASE64 = 2 * 1024**2
+MAX_MODEL_REQUEST = MAX_REVIEW_IMAGES * MAX_IMAGE_BASE64 + 2 * 1024**2
 
 
 def start_source(method, path):
@@ -36,7 +38,7 @@ class ReviewImage(BaseModel):
     asset_id: str = Field(pattern=rf"^{ID}$")
     source_asset_id: str = Field(pattern=rf"^{ID}$")
     position_ms: int | None = Field(default=None, ge=0)
-    jpeg_base64: str = Field(min_length=4, max_length=2 * 1024**2)
+    jpeg_base64: str = Field(min_length=4, max_length=MAX_IMAGE_BASE64)
 
     def evidence(self):
         return self.model_dump(exclude={"jpeg_base64"})
@@ -49,7 +51,7 @@ class ReviewModelRun(BaseModel):
     run_id: str = Field(pattern=rf"^{ID}$")
     model: ReviewModelPlan
     criteria: list[dict] = Field(min_length=1, max_length=40)
-    evidence: list[ReviewImage] = Field(min_length=1, max_length=24)
+    evidence: list[ReviewImage] = Field(min_length=1, max_length=MAX_REVIEW_IMAGES)
     coverage: str = Field(max_length=16000)
     prompt: str = Field(max_length=20000)
 

@@ -1,11 +1,9 @@
 """Apply rendered evidence only to the exact owned review revision."""
 
-import json
 from copy import deepcopy
 from uuid import uuid4
 
 import httpx
-from pydantic import TypeAdapter
 from sqlalchemy import select, text
 
 from app.apps.visual_workshop.acceptance.models import AcceptanceAssetReference
@@ -17,41 +15,11 @@ from app.runtime.ids import new_id
 from app.runtime.revisions import RevisionConflictError
 from fpl_runtime.asset_references import PrepareReferenceChange
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
-from fpl_runtime.claims import HEADER
-from fpl_runtime.delegation import RequestGrant
-from fpl_runtime.framed_media import SIZE
-from fpl_runtime.library_assets import LibraryAssetDescription
-from fpl_runtime.visual_samples import (
-    ASSET_PURPOSE,
-    FRAMES_HEADER,
-    INPUT_HEADER,
-    RENDER_PURPOSE,
-    SampleAssetQuery,
-    SamplePlan,
-    VisualEvidenceUpload,
-    evidence_resource,
-)
+from fpl_runtime.visual_samples import evidence_resource
 
 from .models import VisualCanvasReferenceMutation
 from .reference_backlog import pending_outcomes
-from .uploads import UploadedAsset
-
-ASSETS = TypeAdapter(list[UploadedAsset])
-
-
-def unavailable():
-    return AcceptanceError("验收取样暂不可用", "visual_sample_unavailable", 503)
-
-
-def check(response):
-    if response.status_code in {401, 403, 404, 409, 413, 422, 429}:
-        data = response.json()
-        raise AcceptanceError(
-            data.get("title") or "验收取样失败",
-            data.get("code") or "visual_sample_failed",
-            response.status_code,
-        )
-    response.raise_for_status()
+from .review_media import ReviewMedia, evidence_manifest, stage_evidence, unavailable
 
 
 class AcceptanceSamples:
@@ -60,35 +28,9 @@ class AcceptanceSamples:
         self.runs = Runs(session, owner)
         self.state = request.app.state
         self.source, self.assertion = request.url.path, request.state.service_assertion
-        self.peer = self.state.capabilities
+        self.media = ReviewMedia(self.state.capabilities, self.assertion, self.source)
         self.references = self.state.reference_mutations
         self.delivery = self.state.reference_delivery
-
-    async def grant(self, purpose, service, path):
-        try:
-            return await self.peer.authorize_request(
-                self.assertion,
-                RequestGrant("visual", purpose, "POST", self.source, service, "POST", path),
-            )
-        except CapabilityDenied as exc:
-            raise AcceptanceError(
-                "验收取样授权已结束", "visual_sample_authority_ended", exc.status
-            ) from exc
-
-    async def metadata(self, project, run, identity):
-        query = SampleAssetQuery(asset_ids=[identity])
-        path = query.path(project, run)
-        token = await self.grant(ASSET_PURPOSE, "assets", path)
-        reply = await self.peer.client.post(
-            "http://assets:8080" + path,
-            headers={HEADER: token},
-            json=query.model_dump(),
-        )
-        check(reply)
-        source = LibraryAssetDescription.model_validate_json(reply.content)
-        if source.id != identity:
-            raise ValueError("sample video identity changed")
-        return source
 
     @staticmethod
     def validate(row, body):
@@ -139,23 +81,12 @@ class AcceptanceSamples:
         for identity in await pending_outcomes(self.session, project):
             await self.deliver(identity)
         try:
-            source = await self.metadata(project, run_id, source_id)
-            plan = SamplePlan(
-                source=source, positions_ms=positions(duration, body.start_ms, body.end_ms)
-            )
-            target = plan.path(project, run_id)
-            token = await self.grant(RENDER_PURPOSE, "rendering", target)
-            original = await self.grant(ASSET_PURPOSE, "assets", plan.scope.path(project, run_id))
-            async with self.peer.client.stream(
-                "POST",
-                "http://rendering:8080" + target,
-                headers={HEADER: token, INPUT_HEADER: original, "Accept-Encoding": "identity"},
-                json=plan.model_dump(),
-                timeout=httpx.Timeout(300, connect=5),
+            async with self.media.render(
+                project,
+                run_id,
+                source_id,
+                positions_ms=positions(duration, body.start_ms, body.end_ms),
             ) as response:
-                if response.status_code != 200:
-                    await response.aread()
-                    check(response)
                 return await self.commit(
                     response,
                     project,
@@ -172,18 +103,7 @@ class AcceptanceSamples:
     async def commit(
         self, response, project, run_id, body, source_id, resource, revision, retained
     ):
-        media = VisualEvidenceUpload(
-            project_id=project,
-            source_asset_id=source_id,
-            frames=json.loads(response.headers[FRAMES_HEADER]),
-        )
-        length = sum(SIZE.size + item.byte_size for item in media.frames)
-        if (
-            response.headers.get("Content-Type") != "application/octet-stream"
-            or response.headers.get("Content-Encoding", "identity") != "identity"
-            or int(response.headers["Content-Length"]) != length
-        ):
-            raise ValueError("sample frame stream changed")
+        media, length = evidence_manifest(response, project, source_id)
         change = PrepareReferenceChange(
             request_id=uuid4().hex,
             resource_kind="acceptance",
@@ -210,7 +130,7 @@ class AcceptanceSamples:
                     ) from exc
             raise unavailable() from exc
         try:
-            assets = await self.stage(prepared, response, length, media)
+            assets = await stage_evidence(self.references.client, prepared, response, length, media)
         except BaseException:
             await self.references.abort_after_rollback(self.session, prepared)
             raise
@@ -241,36 +161,6 @@ class AcceptanceSamples:
         result = await self.references.commit_source(self.session, prepared, apply)
         await self.deliver(prepared.request_id)
         return result
-
-    async def stage(self, prepared, source, length, media):
-        client = self.references.client
-        path = (
-            client.assets_url + f"/_internal/v1/visual-evidence-upload/{prepared.asset_intent_id}"
-        )
-        headers = {"Authorization": "Bearer " + prepared.authority}
-        try:
-            reply = await client.client.post(
-                path,
-                headers={**headers, "Content-Length": str(length)},
-                content=source.aiter_bytes(1024 * 1024),
-                timeout=180,
-            )
-        except httpx.TransportError:
-            reply = await client.client.get(path, headers=headers)
-        check(reply)
-        assets = ASSETS.validate_python(reply.json()["items"])
-        if len({row.id for row in assets}) != len(media.frames):
-            raise ValueError("unexpected evidence asset count")
-        for row, frame in zip(assets, media.frames, strict=True):
-            if (
-                row.original_filename != frame.filename
-                or row.revision != 0
-                or row.media_kind != "image"
-                or row.mime_type != "image/png"
-                or row.byte_size != frame.byte_size
-            ):
-                raise ValueError("evidence file metadata changed")
-        return assets
 
     async def deliver(self, identity):
         try:

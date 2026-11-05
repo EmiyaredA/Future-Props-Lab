@@ -5,14 +5,13 @@ from time import monotonic
 from sqlalchemy import select, update
 
 from app.apps.visual_workshop.acceptance.media import (
-    check_specifications,
     extract_evidence,
     flush_evidence,
     image_input,
     metadata,
 )
 from app.apps.visual_workshop.acceptance.models import AcceptanceRun
-from app.apps.visual_workshop.acceptance.sample_values import positions
+from app.apps.visual_workshop.acceptance.sample_values import check_specifications, positions
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.inspection import inspect_media, verify_video

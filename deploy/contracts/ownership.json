@@ -5241,6 +5241,12 @@
       "service": "visual",
       "module": "fpl_visual.models",
       "model": "VisualCompositionDispatch"
+    },
+    {
+      "table": "visual_review_dispatches",
+      "service": "visual",
+      "module": "fpl_visual.review_dispatch_records",
+      "model": "VisualReviewDispatch"
     }
   ],
   "pages": [

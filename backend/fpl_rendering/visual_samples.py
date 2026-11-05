@@ -9,17 +9,19 @@ from tempfile import TemporaryDirectory
 import jwt
 from anyio.to_thread import run_sync
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from starlette.background import BackgroundTask
 
 from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.identity.permissions import effective_permissions
 from app.capabilities.media_rendering.inspection import inspect_media, verify_video
+from app.capabilities.media_rendering.review_images import review_jpeg
 from app.capabilities.media_rendering.sample_positions import review_positions
 from app.capabilities.media_rendering.video_frames import extract_frame
 from app.capabilities.media_rendering.video_sampling import source_frame_time
 from fpl_runtime.claims import HEADER, verify_context
 from fpl_runtime.framed_media import content_length, stream_files
+from fpl_runtime.visual_review import MAX_IMAGE_BASE64
 from fpl_runtime.visual_samples import (
     FRAMES_HEADER,
     INPUT_HEADER,
@@ -145,10 +147,21 @@ async def sample_visual_frames(request: Request, project_id: str, run_id: str, b
             )
             try:
                 source = originals[body.source.id]
+                if body.mode == "review-image":
+                    jpeg = await run_sync(review_jpeg, source)
+                    if len(jpeg) > MAX_IMAGE_BASE64 // 4 * 3:
+                        raise ValueError("验收图片证据超过限制")
+                    await require_active(request, token)
+                    await asyncio.to_thread(temp.cleanup)
+                    return Response(
+                        jpeg,
+                        media_type="image/jpeg",
+                        headers={"Cache-Control": "private, no-store"},
+                    )
                 metadata, requested = await sample_positions(source, body)
                 frames, files = await extract(source, requested, directory)
             except (ValueError, RuntimeError, OSError, SubprocessError) as exc:
-                raise HTTPException(422, "visual_sample_video_unavailable") from exc
+                raise HTTPException(422, "visual_sample_media_unavailable") from exc
         await require_active(request, token)
         return StreamingResponse(
             stream_files(files),

@@ -1,13 +1,12 @@
 import asyncio
 from uuid import uuid4
 
-from PIL import Image
-
 from app.apps.visual_workshop.acceptance.models import AcceptanceAssetReference
 from app.capabilities.agents.harness.contracts import ImageInput
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
 from app.capabilities.media_rendering.inspection import inspect_media
+from app.capabilities.media_rendering.review_images import review_jpeg
 from app.capabilities.media_rendering.video_frames import extract_frame
 from app.capabilities.media_rendering.video_sampling import source_frame_time
 from app.runtime.ids import new_id
@@ -74,20 +73,11 @@ async def extract_evidence(session, settings, run, source_id, times):
 
 async def image_input(storage, row):
     import base64
-    from io import BytesIO
 
-    def encode():
-        with Image.open(storage.path_for(row)) as image:
-            image.thumbnail((1024, 1024))
-            image = image.convert("RGB")
-            result = BytesIO()
-            image.save(result, format="JPEG", quality=85)
-            data = result.getvalue()
-        return ImageInput(
-            mime_type="image/jpeg", data_base64=base64.b64encode(data).decode(), byte_size=len(data)
-        )
-
-    return await asyncio.to_thread(encode)
+    data = await asyncio.to_thread(review_jpeg, storage.path_for(row))
+    return ImageInput(
+        mime_type="image/jpeg", data_base64=base64.b64encode(data).decode(), byte_size=len(data)
+    )
 
 
 async def flush_evidence(session):
@@ -96,30 +86,6 @@ async def flush_evidence(session):
     if pending:
         await session.flush(pending)
     await session.flush()
-
-
-def check_specifications(metadata, config):
-    failures = []
-    for name, field in (("宽度", "width"), ("高度", "height")):
-        target = config.get("min_" + field)
-        if target and metadata[field] < target:
-            failures.append(f"{name}小于 {target}")
-    if config.get("ratio"):
-        width, height = map(int, config["ratio"].split(":"))
-        if abs(metadata["width"] / metadata["height"] - width / height) > 0.02:
-            failures.append("画幅不符合要求")
-    duration = metadata.get("duration_ms", 0) / 1000
-    if config.get("min_duration") is not None and duration < config["min_duration"]:
-        failures.append("时长不足")
-    if config.get("max_duration") is not None and duration > config["max_duration"]:
-        failures.append("时长过长")
-    if config.get("require_audio") and not metadata.get("has_audio"):
-        failures.append("缺少音轨")
-    return (
-        ("failed", "；".join(failures))
-        if failures
-        else ("passed", "文件可解码，已启用的规格条件均满足。")
-    )
 
 
 async def metadata(session, settings, run):
