@@ -7,10 +7,14 @@ from pydantic import TypeAdapter
 from studio.apps.model_service.storage.migration_originals import (
     ATTACHMENTS,
     INFERENCE,
+    PLAYGROUND_TASKS,
     Original,
     receipt_for,
 )
-from studio.apps.model_service.transport.migration_originals_http import RELATIONSHIPS
+from studio.apps.model_service.transport.migration_originals_http import (
+    RELATIONSHIPS,
+    TEST_RELATIONSHIPS,
+)
 from studio.contracts.management.migration_batches import BatchReceipt
 
 from .migration_transfer import loopback
@@ -72,24 +76,34 @@ def transfer_originals(client, plan, source, target, scope):
     }
 
 
-def transfer_inference_originals(client, plan, source, target):
+def relationship_count(client, plan, source, target, route):
     source, target = loopback(source), loopback(target)
     headers = {"X-Fpl-Migration-Token": plan.token.get_secret_value()}
     relations = []
     for address in (source, target):
-        response = client.get(address + RELATIONSHIPS, headers=headers)
+        response = client.get(address + route, headers=headers)
         response.raise_for_status()
         relations.append(response.json())
     if relations[0] != relations[1]:
-        raise ValueError("推理输入关联验收计数不符")
+        raise ValueError("模型任务输入关联验收计数不符")
+    return relations[0]["record_count"]
+
+
+def transfer_inference_originals(client, plan, source, target):
+    count = relationship_count(client, plan, source, target, RELATIONSHIPS)
     return {
         **transfer_originals(client, plan, source, target, INFERENCE),
-        "task_count": relations[0]["record_count"],
+        "task_count": count,
     }
 
 
 def transfer_model_originals(client, plan, source, target):
+    count = relationship_count(client, plan, source, target, TEST_RELATIONSHIPS)
     return {
         "inference": transfer_inference_originals(client, plan, source, target),
         "test_attachments": transfer_originals(client, plan, source, target, ATTACHMENTS),
+        "test_tasks": {
+            **transfer_originals(client, plan, source, target, PLAYGROUND_TASKS),
+            "generation_task_count": count,
+        },
     }

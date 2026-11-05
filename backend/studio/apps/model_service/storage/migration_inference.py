@@ -82,23 +82,23 @@ class InferenceAssets(MigrationBatch[InferenceAsset]):
     dataset: Literal["models.inference-assets"]
 
 
-async def validate_task(session, item):
+async def validate_model_links(session, item, *, domain="inference"):
     owner = session.info["owner_user_id"]
     if item.provider_id:
         provider = await session.get(ModelProvider, item.provider_id)
         if provider is None or provider.owner_user_id != owner:
-            raise blocked("migration_inference_provider_conflict")
+            raise blocked(f"migration_{domain}_provider_conflict")
     if item.model_id:
         model = await session.get(ModelEntry, item.model_id)
         if model is None or (model.owner_user_id, model.provider_id) != (owner, item.provider_id):
-            raise blocked("migration_inference_model_conflict")
+            raise blocked(f"migration_{domain}_model_conflict")
     if item.log_id:
         # Logs can be removed independently by their owner. Reject an existing
         # log under a different account while retaining a historical deleted ID.
         logs = LlmCallLog.__table__.c
         actual = await session.scalar(select(logs.owner_user_id).where(logs.id == item.log_id))
         if actual is not None and actual != owner:
-            raise blocked("migration_inference_log_conflict")
+            raise blocked(f"migration_{domain}_log_conflict")
 
 
 async def validate_asset(session, item):
@@ -159,7 +159,7 @@ DATASETS = (
         InferenceTask,
         InferenceTasks,
         MigrationPage[InferenceTasks],
-        validate=validate_task,
+        validate=validate_model_links,
     ),
     ProjectDataset(
         "models.inference-assets",

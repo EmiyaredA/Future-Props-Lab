@@ -12,12 +12,14 @@ from studio.apps.model_service.storage.migration_originals import (
     ModelOriginals,
     Original,
 )
+from studio.apps.model_service.storage.migration_playground_tasks import verify_references
 from studio.contracts.management.migration_batches import BatchReceipt
 from studio.contracts.management.project_history import Identifier
 from studio.runtime.database.project_history_migration import blocked
 from studio.runtime.http.migration_admission import MigrationAdmission
 
 RELATIONSHIPS = "/v1/migration/models/inference-relationships"
+TEST_RELATIONSHIPS = "/v1/migration/models/test-generation-relationships"
 
 
 def check_source(source):
@@ -28,11 +30,18 @@ def check_source(source):
             raise blocked("migration_source_changed") from None
 
 
-def mount_inference_relationships(app, sessions, *, source=None):
+def mount_relationships(app, sessions, *, source=None):
     @app.get(RELATIONSHIPS)
     async def relationships():
         check_source(source)
         result = await verify_inputs(sessions)
+        check_source(source)
+        return result
+
+    @app.get(TEST_RELATIONSHIPS)
+    async def test_references():
+        check_source(source)
+        result = await verify_references(sessions)
         check_source(source)
         return result
 

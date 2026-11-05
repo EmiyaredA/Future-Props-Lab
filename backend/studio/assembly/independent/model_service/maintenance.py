@@ -13,17 +13,24 @@ from studio.apps.model_service.catalog_migration import (
     inventory,
 )
 from studio.apps.model_service.storage.migration_history import DATASETS as HISTORY
-from studio.apps.model_service.storage.migration_originals import ATTACHMENTS, INFERENCE
+from studio.apps.model_service.storage.migration_originals import (
+    ATTACHMENTS,
+    INFERENCE,
+    PLAYGROUND_TASKS,
+)
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
 from studio.apps.model_service.transport.migration_originals_http import (
-    mount_inference_relationships,
     mount_originals,
+    mount_relationships,
 )
 from studio.runtime.database.migration_apps import export_app, import_app, mount_dataset
 from studio.runtime.database.project_history_migration import mount_project_history
 
 PREFIX = "/v1/migration/models"
-TRANSPORT = {"maximum": 32 * 1024 * 1024, "streaming_prefix": INFERENCE.prefix + "/"}
+TRANSPORT = {
+    "maximum": 32 * 1024 * 1024,
+    "streaming_prefix": (INFERENCE.prefix + "/", PLAYGROUND_TASKS.prefix + "/"),
+}
 
 
 def mount_catalog(app, plan, sessions, *, source=None, cipher=None):
@@ -62,8 +69,8 @@ def mount_catalog(app, plan, sessions, *, source=None, cipher=None):
 
 def mount_history(app, plan, sessions, *, root, source=None):
     mount_project_history(app, plan, sessions, PREFIX, HISTORY, ModelsImportReceipt, source=source)
-    mount_inference_relationships(app, sessions, source=source)
-    for scope in (INFERENCE, ATTACHMENTS):
+    mount_relationships(app, sessions, source=source)
+    for scope in (INFERENCE, ATTACHMENTS, PLAYGROUND_TASKS):
         mount_originals(app, plan, sessions, scope, root=root, source=source)
 
 

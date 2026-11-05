@@ -7,7 +7,7 @@ from typing import Annotated, Literal
 from uuid import uuid5
 
 from pydantic import Field
-from sqlalchemy import select, text
+from sqlalchemy import select, text, union_all
 
 from studio.apps.model_service.catalog_migration import ModelsImportReceipt
 from studio.apps.model_service.storage.models.model_inference import (
@@ -17,6 +17,9 @@ from studio.apps.model_service.storage.models.model_inference import (
 from studio.apps.model_service.storage.models.model_test import (
     ModelTestAttachment,
     ModelTestConversation,
+    ModelTestGenerationAsset,
+    ModelTestGenerationTask,
+    ModelTestTranscriptionTask,
 )
 from studio.contracts.management.migration_batches import BatchReceipt
 from studio.contracts.management.project_history import HistoryRecord, Identifier
@@ -32,7 +35,7 @@ FILE_KEY = r"[a-f0-9]{32}"
 OUTPUT_KEY = rf"(?:{FILE_KEY}|native-[a-f0-9]{{8}}(?:-[a-f0-9]{{4}}){{3}}-[a-f0-9]{{12}})"
 StorageKey = Annotated[str, Field(pattern=f"^{FILE_KEY}$")]
 OutputKey = Annotated[str, Field(pattern=f"^{OUTPUT_KEY}$")]
-Kind = Literal["inputs", "outputs", "attachments"]
+Kind = Literal["inputs", "outputs", "attachments", "generated", "references"]
 
 
 @dataclass(frozen=True)
@@ -52,6 +55,7 @@ class OriginalSet:
 
 INFERENCE = OriginalSet("inference", "model-inference", ("inputs", "outputs"))
 ATTACHMENTS = OriginalSet("test-attachment", "model-test", ("attachments",))
+PLAYGROUND_TASKS = OriginalSet("test-task", "model-test", ("generated", "references"))
 
 
 class Original(HistoryRecord):
@@ -85,6 +89,23 @@ def records_for(kind, owner):
         return select(model.id, model.storage_key, model.byte_size).where(
             model.owner_user_id == owner
         )
+    if kind == "generated":
+        model = ModelTestGenerationTask
+        return select(model.id, model.result_storage_key, model.result_byte_size).where(
+            model.owner_user_id == owner, model.result_storage_key != ""
+        )
+    if kind == "references":
+        asset = ModelTestGenerationAsset
+        task = ModelTestTranscriptionTask
+        records = union_all(
+            select(asset.id, asset.storage_key, asset.byte_size).where(
+                asset.owner_user_id == owner
+            ),
+            select(task.id, task.input_storage_key, task.input_byte_size).where(
+                task.owner_user_id == owner
+            ),
+        ).subquery()
+        return select(records.c.id, records.c.storage_key, records.c.byte_size)
     model = ModelInferenceTask
     return select(model.id, model.result_storage_key, model.result_byte_size).where(
         model.owner_user_id == owner, model.result_storage_key != ""
@@ -133,6 +154,8 @@ class ModelOriginals:
         }
         if len(expected) != len(records):
             raise ValueError("模型文件记录指向重复原件")
+        if len({identifier for identifier, _, _ in records}) != len(records):
+            raise ValueError("模型文件清单存在重复标识")
         found = []
         for path in inventory_directory(checked_path(root, kind)):
             if path not in expected:
@@ -150,9 +173,14 @@ class ModelOriginals:
     def is_staging(kind, path):
         if path.is_symlink():
             return False
-        if kind == "attachments" and path.name == ".tmp" and path.is_dir():
+        if (
+            kind in {"attachments", "generated", "references"}
+            and path.name == ".tmp"
+            and path.is_dir()
+        ):
+            pattern = rf"{FILE_KEY}(?:\.tmp)?" if kind == "references" else FILE_KEY
             return all(
-                re.fullmatch(FILE_KEY, item.name) and not item.is_symlink() and item.is_file()
+                re.fullmatch(pattern, item.name) and not item.is_symlink() and item.is_file()
                 for item in path.iterdir()
             )
         return kind == "outputs" and re.fullmatch(rf"{FILE_KEY}\.tmp", path.name) and path.is_file()

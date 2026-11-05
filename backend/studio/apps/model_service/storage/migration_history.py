@@ -7,6 +7,7 @@ from pydantic import Field, JsonValue
 
 from studio.apps.model_service.storage.migration_inference import DATASETS as INFERENCE
 from studio.apps.model_service.storage.migration_playground import DATASETS as PLAYGROUND
+from studio.apps.model_service.storage.migration_playground_tasks import DATASETS as TEST_TASKS
 from studio.apps.model_service.storage.models.call_log import LlmCallLog
 from studio.contracts.management.migration_batches import MigrationBatch, MigrationPage
 from studio.contracts.management.project_history import HistoryRecord, Identifier
@@ -42,4 +43,5 @@ DATASETS = (
     ProjectDataset("models.call-logs", LlmCallLog, Call, Calls, MigrationPage[Calls]),
     *INFERENCE,
     *PLAYGROUND,
+    *TEST_TASKS,
 )

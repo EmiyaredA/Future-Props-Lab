@@ -18,19 +18,82 @@ from tests.test_tools_navigation_migration import available_ports, listener
 
 from db.migrations.runner import apply_migrations
 from studio.apps.model_service.playground.attachments import AttachmentError, ModelTestAttachments
+from studio.apps.model_service.playground.generation_runner import ModelTestGenerationRunner
 from studio.apps.model_service.playground.recovery import recover_interrupted_model_test_runs
 from studio.apps.model_service.playground.service import ModelTestService
-from studio.apps.model_service.storage.migration_originals import ATTACHMENTS
+from studio.apps.model_service.playground.transcription_runner import ModelTestTranscriptionRunner
+from studio.apps.model_service.storage.migration_originals import ATTACHMENTS, PLAYGROUND_TASKS
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
 from studio.apps.model_service.storage.models.model_test import (
     ModelTestAttachment,
     ModelTestConversation,
+    ModelTestGenerationTask,
     ModelTestMessage,
+    ModelTestTranscriptionTask,
 )
+from studio.apps.model_service.transport.migration_originals_http import TEST_RELATIONSHIPS
 from studio.config.settings import Settings
 from studio.contracts.management.migration_batches import MigrationPlan
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database
+
+
+def seed_tasks(db, root, owner):
+    generation, uncertain, reference, transcription = (str(uuid4()) for _ in range(4))
+    generated_key, reference_key, transcription_key = (uuid4().hex for _ in range(3))
+    paths = []
+    for folder, key, content in (
+        ("generated", generated_key, b"generated video" * (3 * 1024 * 1024)),
+        ("references", reference_key, b"original image"),
+        ("references", transcription_key, b"transcription original"),
+    ):
+        path = root / folder / key
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+        paths.append(path)
+    db.executemany(
+        """INSERT INTO model_test_generation_tasks (
+             id, owner_user_id, provider_kind, generation_kind, provider_name, model_slug,
+             request_payload, status, progress, result_storage_key, result_byte_size,
+             result_filename, result_mime_type, revision, created_at, updated_at
+           ) VALUES (?, ?, 'volcengine_video', 'video', 'fixture', 'fixture', ?, ?, ?, ?, ?,
+                     ?, ?, 2, '2025-01-01 00:00:00', '2025-01-01 00:00:00')""",
+        [
+            (
+                generation,
+                str(owner),
+                json.dumps({"first_frame_asset_id": reference}),
+                "completed",
+                100,
+                generated_key,
+                paths[0].stat().st_size,
+                "result.mp4",
+                "video/mp4",
+            ),
+            (uncertain, str(owner), "{}", "submitting", 0, None, None, None, None),
+        ],
+    )
+    db.execute(
+        """INSERT INTO model_test_generation_assets (
+             id, owner_user_id, task_id, role, position, original_filename, storage_key,
+             media_kind, mime_type, byte_size, created_at
+           ) VALUES (?, ?, ?, 'reference_image', 0, 'original.png', ?,
+                     'image', 'image/png', ?, '2025-01-01 00:00:00')""",
+        (reference, str(owner), generation, reference_key, paths[1].stat().st_size),
+    )
+    db.execute(
+        """INSERT INTO model_test_transcription_tasks (
+             id, owner_user_id, provider_kind, provider_name, model_slug, source_kind,
+             input_storage_key, input_filename, input_mime_type, input_byte_size, language,
+             request_options, status, result_text, result_segments, result_detail,
+             revision, created_at, updated_at
+           ) VALUES (?, ?, 'openai', 'fixture', 'fixture', 'upload', ?, 'input.wav', 'audio/wav',
+                     ?, 'auto', '{}', 'running', 'partial', '[]', '{}', 1,
+                     '2025-01-01 00:00:00', '2025-01-01 00:00:00')""",
+        (transcription, str(owner), transcription_key, paths[2].stat().st_size),
+    )
+    return uncertain, transcription, paths
 
 
 def seed(legacy, owner, other):
@@ -82,7 +145,8 @@ def seed(legacy, owner, other):
                 (identifier, conversation, message_id, key, path.stat().st_size),
             )
             attachments.append((identifier, path))
-    return conversation, foreign_message, attachments
+        tasks = seed_tasks(database, originals.parent, owner)
+    return conversation, foreign_message, attachments, tasks
 
 
 async def verify_playground(target, owner, other, conversation, attachments):
@@ -115,10 +179,36 @@ async def verify_playground(target, owner, other, conversation, attachments):
         await database.close()
 
 
+async def verify_task_recovery(target, owner, source_root, tasks):
+    uncertain, transcription, originals = tasks
+    database = Database(
+        "models", target, models=(ModelTestGenerationTask, ModelTestTranscriptionTask, LlmCallLog)
+    )
+    settings = Settings(fpl_database_path=str(database.path))
+    generation = ModelTestGenerationRunner(database.sessions, settings=settings)
+    try:
+        await generation.recover()
+        await ModelTestTranscriptionRunner(database.sessions, settings=settings).recover()
+        async with database.sessions(info={"owner_user_id": str(owner)}) as session:
+            generation_row = await session.get(ModelTestGenerationTask, uncertain)
+            transcription_row = await session.get(ModelTestTranscriptionTask, transcription)
+            assert (generation_row.status, generation_row.revision) == ("failed", 3)
+            assert (transcription_row.status, transcription_row.revision) == ("failed", 2)
+            assert transcription_row.result_text == "partial"
+            for row in (generation_row, transcription_row):
+                log = await session.get(LlmCallLog, row.log_id)
+                assert (log.owner_user_id, log.status) == (str(owner), "error")
+        for original in originals:
+            assert digest(target / original.relative_to(source_root)) == digest(original)
+    finally:
+        await generation.stop()
+        await database.close()
+
+
 def test_playground_migration_preserves_drafts_and_recovers_partial_message(tmp_path):
     owner, other = uuid4(), uuid4()
     legacy = tmp_path / "legacy.db"
-    conversation, foreign_message, attachments = seed(legacy, owner, other)
+    conversation, foreign_message, attachments, tasks = seed(legacy, owner, other)
     plan = MigrationPlan(
         run_id=uuid4(),
         source_revision="a" * 40,
@@ -148,6 +238,7 @@ def test_playground_migration_preserves_drafts_and_recovers_partial_message(tmp_
         + "\n"
     )
     conversations, messages, records = HISTORY[3:6]
+    generations, references, transcriptions = HISTORY[6:9]
     src_port, dst_port = available_ports()
     options = {
         "module": "studio.assembly.independent.model_service.cli",
@@ -188,6 +279,17 @@ def test_playground_migration_preserves_drafts_and_recovers_partial_message(tmp_
             assert rejected.status_code == 409
             assert rejected.json()["code"] == "migration_model_test_attachment_message_conflict"
             assert transfer(client, plan, source, destination, records)["record_count"] == 2
+            assert transfer(client, plan, source, destination, generations)["record_count"] == 2
+            incomplete = client.get(destination + TEST_RELATIONSHIPS, headers=headers)
+            assert incomplete.status_code == 409
+            assert incomplete.json()["code"] == "migration_model_test_references_unresolved"
+            assert transfer(client, plan, source, destination, references)["record_count"] == 1
+            assert transfer(client, plan, source, destination, transcriptions)["record_count"] == 1
+            originals = manifest(
+                client, source, owner, headers, complete=True, scope=PLAYGROUND_TASKS
+            )
+            assert len(originals) == 3
+            assert originals[0].kind == "generated" and originals[0].size > 32 * 1024 * 1024
             files = manifest(client, source, owner, headers, complete=True, scope=ATTACHMENTS)
             assert len(files) == 2
             item = files[0]
@@ -208,6 +310,9 @@ def test_playground_migration_preserves_drafts_and_recovers_partial_message(tmp_
         with target_listener() as destination:
             report = transfer_model_originals(client, plan, source, destination)
             assert report["test_attachments"]["record_count"] == 2
+            assert report["test_tasks"]["record_count"] == 3
+            assert report["test_tasks"]["generation_task_count"] == 2
             assert transfer_model_originals(client, plan, source, destination) == report
     asyncio.run(verify_playground(target, owner, other, conversation, attachments))
+    asyncio.run(verify_task_recovery(target, owner, tmp_path, tasks))
     assert digest(legacy) == plan.source_database_sha256
