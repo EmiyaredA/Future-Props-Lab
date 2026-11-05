@@ -244,7 +244,9 @@ async def cancel_run(
     try:
         runs = Runs(session, principal)
         await runs.mark_cancelling(conversation_id, run_id)
-        await cancel_actions_for_run(session, principal, run_id)
+        await cancel_actions_for_run(
+            session, principal, run_id, execution=request.app.state.amadeus_actions
+        )
         from app.console.amadeus.execution import runtime
 
         await runtime(request.app).cancel(run_id)
@@ -347,7 +349,14 @@ async def run_action(
     action_id: str,
 ) -> ActionOut:
     try:
-        return await execute_action(session, principal, conversation_id, action_id, request)
+        return await execute_action(
+            session,
+            principal,
+            conversation_id,
+            action_id,
+            request,
+            execution=request.app.state.amadeus_actions,
+        )
     except OperationError as exc:
         raise _error(exc) from None
 
@@ -375,6 +384,7 @@ async def run_action_stream(
                     action_id,
                     request,
                     output_callback=lambda chunk: queue.put_nowait(chunk),
+                    execution=request.app.state.amadeus_actions,
                 )
             finally:
                 queue.put_nowait(None)
@@ -402,10 +412,20 @@ async def run_action_stream(
     "/conversations/{conversation_id}/actions/{action_id}/cancel", response_model=ActionOut
 )
 async def stop_action(
-    session: SessionDep, principal: StudioAuth, conversation_id: str, action_id: str
+    request: Request,
+    session: SessionDep,
+    principal: StudioAuth,
+    conversation_id: str,
+    action_id: str,
 ) -> ActionOut:
     try:
-        return await cancel_action(session, principal, conversation_id, action_id)
+        return await cancel_action(
+            session,
+            principal,
+            conversation_id,
+            action_id,
+            execution=request.app.state.amadeus_actions,
+        )
     except OperationError as exc:
         raise _error(exc) from None
 

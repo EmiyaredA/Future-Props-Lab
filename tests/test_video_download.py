@@ -11,13 +11,6 @@ from app.main import app
 from app.tool_navigation import video_download as vd
 
 
-@pytest.fixture(autouse=True)
-def _reset_jobs():
-    vd.reset_jobs_for_tests()
-    yield
-    vd.reset_jobs_for_tests()
-
-
 def test_validate_video_url_accepts_douyin_and_bilibili() -> None:
     assert vd.validate_video_url("https://www.bilibili.com/video/BV1xx411c7mD").endswith(
         "BV1xx411c7mD"
@@ -110,12 +103,6 @@ def test_job_create_requires_destination() -> None:
 
 @pytest.mark.asyncio
 async def test_deps_and_job_lifecycle(monkeypatch, tmp_path: Path) -> None:
-    def jobs_root(settings=None):
-        del settings
-        return tmp_path
-
-    monkeypatch.setattr(vd, "_jobs_root", jobs_root)
-
     def fake_probe() -> vd.VideoDownloadDepsOut:
         return vd.VideoDownloadDepsOut(
             ready=True,
@@ -125,7 +112,7 @@ async def test_deps_and_job_lifecycle(monkeypatch, tmp_path: Path) -> None:
             ffmpeg=vd.BinaryStatus(name="ffmpeg", ok=True, path="/bin/ffmpeg", version="ffmpeg 7"),
         )
 
-    def fake_run(
+    async def fake_run(
         *, url: str, quality: str, work_dir: Path, cookies_from_browser: str | None
     ) -> None:
         assert "bilibili.com" in url
@@ -150,9 +137,10 @@ async def test_deps_and_job_lifecycle(monkeypatch, tmp_path: Path) -> None:
             byte_size=media.stat().st_size,
         )
 
-    monkeypatch.setattr(vd, "probe_deps", fake_probe)
-    monkeypatch.setattr(vd, "_run_yt_dlp", fake_run)
-    monkeypatch.setattr(vd, "_ingest_library", fake_ingest)
+    downloads = vd.VideoDownloads(
+        root=tmp_path, download=fake_run, ingest=fake_ingest, probe=fake_probe
+    )
+    monkeypatch.setattr(app.state, "video_downloads", downloads)
 
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
@@ -207,8 +195,8 @@ async def test_deps_and_job_lifecycle(monkeypatch, tmp_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_missing_deps_block_job_creation(monkeypatch) -> None:
     monkeypatch.setattr(
-        vd,
-        "probe_deps",
+        app.state.video_downloads,
+        "probe",
         lambda: vd.VideoDownloadDepsOut(
             ready=False,
             yt_dlp=vd.BinaryStatus(name="yt-dlp", ok=False, hint="安装 yt-dlp"),

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.runtime.db import SessionLocal
 from studio.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from studio.apps.video_editor.schemas.timeline import VideoEditorTimelineBatchIn
 from studio.apps.video_editor.timeline import VideoEditorTimelines
@@ -13,7 +12,7 @@ from studio.runtime.database.ownership import bind_owner
 
 
 async def apply_assistant_timeline_batch(
-    owner_user_id: str, action_id: str, project_id: str, arguments: dict[str, Any]
+    owner_user_id: str, action_id: str, project_id: str, arguments: dict[str, Any], *, sessions
 ) -> dict[str, Any]:
     body = VideoEditorTimelineBatchIn.model_validate(
         {
@@ -23,7 +22,7 @@ async def apply_assistant_timeline_batch(
         }
     )
     try:
-        async with SessionLocal() as session:
+        async with sessions() as session:
             bind_owner(session, owner_user_id)
             outcome = await VideoEditorTimelines(session, owner_user_id).apply(project_id, body)
     except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:

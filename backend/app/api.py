@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends
 
 from app.capabilities.asset_store.routes import image_crop, media_info, video_frames
-from app.console.amadeus.actions import register_video_executor
 from app.console.routes.account_management import router as management_router
 from app.console.routes.accounts import router as accounts_router
 from app.console.routes.amadeus import require_amadeus_session
@@ -55,7 +54,6 @@ from studio.apps.thought_workshop.transport.website.community_tables import (
 from studio.apps.thought_workshop.transport.website.external_sync import (
     router as article_sync_router,
 )
-from studio.apps.video_editor.assistant_operations import apply_assistant_timeline_batch
 from studio.apps.video_editor.transport.website.compatibility import router as video_editor_router
 from studio.apps.visual_workshop.acceptance.review_routes import router as visual_review_router
 from studio.apps.visual_workshop.acceptance.routes import router as visual_acceptance_router
@@ -69,8 +67,6 @@ from studio.apps.visual_workshop.transport.website.generation import (
     router as visual_generation_router,
 )
 from studio.apps.visual_workshop.transport.website.outputs import router as visual_outputs_router
-
-register_video_executor(apply_assistant_timeline_batch)
 
 api_router = APIRouter(prefix="/v1")
 api_router.include_router(cloud_control_router)

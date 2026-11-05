@@ -599,7 +599,14 @@ async def test_amadeus_read_only_principal_cannot_execute_approved_write() -> No
     async with SessionLocal() as session:
         bind_owner(session, "test-user")
         with pytest.raises(OperationError) as error:
-            await execute_action(session, principal, conversation_id, action["id"], None)
+            await execute_action(
+                session,
+                principal,
+                conversation_id,
+                action["id"],
+                None,
+                execution=app.state.amadeus_actions,
+            )
         assert error.value.status == 403
 
 

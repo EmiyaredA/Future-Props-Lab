@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass, field
 from typing import Any
 
 from sqlalchemy import select, update
@@ -21,14 +22,24 @@ from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now
 
 VideoExecutor = Callable[[str, str, str, dict[str, Any]], Awaitable[dict[str, Any]]]
-_video_executor: VideoExecutor | None = None
-_running_tasks: dict[str, asyncio.Task] = {}
 
 
-def register_video_executor(executor: VideoExecutor) -> None:
-    """Installed once by API composition; console does not depend on an App package."""
-    global _video_executor
-    _video_executor = executor
+@dataclass
+class ActionExecution:
+    """Process-owned handles; persisted action records remain the source of truth.
+
+    Shutdown cancels active operations and waits for their final settlement before
+    the owning database closes. Non-script cancellation keeps an unknown result.
+    """
+
+    video: VideoExecutor
+    running: dict[str, asyncio.Task] = field(default_factory=dict)
+
+    async def close(self):
+        tasks = tuple(self.running.values())
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
 
 
 def _out(row: AmadeusAction) -> ActionOut:
@@ -52,6 +63,8 @@ async def execute_action(
     action_id: str,
     request,
     output_callback: Callable[[str], None] | None = None,
+    *,
+    execution: ActionExecution,
 ) -> ActionOut:
     owner = await session.scalar(
         select(AmadeusConversation).where(
@@ -117,7 +130,7 @@ async def execute_action(
     await session.commit()
     task = asyncio.current_task()
     if task is not None:
-        _running_tasks[action_id] = task
+        execution.running[action_id] = task
     try:
         if name.startswith("tool_api:"):
             result = await ToolApiCatalog(
@@ -146,9 +159,7 @@ async def execute_action(
                 str(args.get("expected_sha256", "")),
             )
         elif name == "video_timeline_batch":
-            if _video_executor is None:
-                raise OperationError("视频工具不可用", "unsupported_tool", 503)
-            result = await _video_executor(
+            result = await execution.video(
                 principal.owner_user_id, row.id, str(args.get("project_id", "")), args
             )
         elif name.startswith("fpl_operation:"):
@@ -190,7 +201,7 @@ async def execute_action(
         status = "failed"
         result = {"message": "工具执行失败；请检查配置或连接状态"}
     finally:
-        _running_tasks.pop(action_id, None)
+        execution.running.pop(action_id, None)
         row = await session.scalar(select(AmadeusAction).where(AmadeusAction.id == action_id))
         row.status = status
         row.result_json = result
@@ -199,7 +210,9 @@ async def execute_action(
     return _out(row)
 
 
-async def cancel_action(session, principal, conversation_id: str, action_id: str) -> ActionOut:
+async def cancel_action(
+    session, principal, conversation_id: str, action_id: str, *, execution: ActionExecution
+) -> ActionOut:
     owner = await session.scalar(
         select(AmadeusConversation.id).where(
             AmadeusConversation.id == conversation_id,
@@ -221,7 +234,7 @@ async def cancel_action(session, principal, conversation_id: str, action_id: str
         raise OperationError("操作不存在", "not_found", 404)
     if row.status != "running":
         raise OperationError("操作当前没有运行", "action_not_running", 409)
-    task = _running_tasks.get(action_id)
+    task = execution.running.get(action_id)
     if task is None:
         row.status = "unknown"
         row.result_json = {"message": "执行进程已结束，结果待核实"}
@@ -237,7 +250,9 @@ async def cancel_action(session, principal, conversation_id: str, action_id: str
     return _out(row)
 
 
-async def cancel_actions_for_run(session, principal, run_id: str) -> None:
+async def cancel_actions_for_run(
+    session, principal, run_id: str, *, execution: ActionExecution
+) -> None:
     """Invalidate pending approvals and stop process-owned work for one run."""
     rows = (
         await session.scalars(
@@ -252,7 +267,7 @@ async def cancel_actions_for_run(session, principal, run_id: str) -> None:
     now = utc_now()
     for row in rows:
         if row.status == "running":
-            task = _running_tasks.get(row.id)
+            task = execution.running.get(row.id)
             if task is not None:
                 task.cancel()
             else:

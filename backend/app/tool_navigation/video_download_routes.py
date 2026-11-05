@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
 
 from app.deps import OwnerDep
@@ -11,10 +11,6 @@ from app.tool_navigation.video_download import (
     VideoDownloadError,
     VideoDownloadJobCreate,
     VideoDownloadJobOut,
-    create_job,
-    get_job,
-    job_file,
-    probe_deps,
 )
 
 router = APIRouter(prefix="/tool-navigation/video-download", tags=["tool-navigation"])
@@ -28,17 +24,18 @@ def _http_error(exc: VideoDownloadError) -> HTTPException:
 
 
 @router.get("/deps", response_model=VideoDownloadDepsOut)
-def get_video_download_deps() -> VideoDownloadDepsOut:
-    return probe_deps()
+def get_video_download_deps(request: Request) -> VideoDownloadDepsOut:
+    return request.app.state.video_downloads.probe()
 
 
 @router.post("/jobs", response_model=VideoDownloadJobOut)
 async def post_video_download_job(
     body: VideoDownloadJobCreate,
+    request: Request,
     owner_user_id: OwnerDep,
 ) -> VideoDownloadJobOut:
     try:
-        return create_job(body, owner_user_id=owner_user_id)
+        return request.app.state.video_downloads.create_job(body, owner_user_id=owner_user_id)
     except VideoDownloadError as exc:
         raise _http_error(exc) from exc
     except ValueError as exc:
@@ -46,9 +43,13 @@ async def post_video_download_job(
 
 
 @router.get("/jobs/{job_id}", response_model=VideoDownloadJobOut)
-def get_video_download_job(job_id: str, owner_user_id: OwnerDep) -> VideoDownloadJobOut:
+def get_video_download_job(
+    job_id: str, request: Request, owner_user_id: OwnerDep
+) -> VideoDownloadJobOut:
     try:
-        return get_job(job_id, owner_user_id=owner_user_id).to_out()
+        return request.app.state.video_downloads.get_job(
+            job_id, owner_user_id=owner_user_id
+        ).to_out()
     except VideoDownloadError as exc:
         raise _http_error(exc) from exc
 
@@ -64,9 +65,13 @@ def get_video_download_job(job_id: str, owner_user_id: OwnerDep) -> VideoDownloa
         }
     },
 )
-def download_video_download_file(job_id: str, owner_user_id: OwnerDep) -> FileResponse:
+def download_video_download_file(
+    job_id: str, request: Request, owner_user_id: OwnerDep
+) -> FileResponse:
     try:
-        path, filename = job_file(job_id, owner_user_id=owner_user_id)
+        path, filename = request.app.state.video_downloads.job_file(
+            job_id, owner_user_id=owner_user_id
+        )
     except VideoDownloadError as exc:
         raise _http_error(exc) from exc
     return FileResponse(path, filename=filename, media_type="application/octet-stream")

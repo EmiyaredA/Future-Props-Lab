@@ -992,3 +992,5 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 面试执行器状态由两种装配分别注入 HTTP 与后台 Runner，不再通过 Session 元信息查找。远程桌面授权复核显式绑定会话工厂与可热更新的配置读取器。
 
 演示模型与示例工具共用 `app/demo_runtime/engine.py` 的实例化执行组件；兼容网站的已登记设置读取留在治理存储适配中，独立模型服务注入自有设置存储。调用计数、排空和日志均归当前实例，不再存在模块级演示运行单例。
+
+Amadeus 动作句柄与下载任务分别由装配创建的 `ActionExecution`、`VideoDownloads` 实例持有。视频时间线和素材入库适配显式接收会话工厂；关闭数据库前先完成动作结算及已接受下载。

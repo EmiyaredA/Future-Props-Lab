@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from functools import partial
@@ -22,6 +23,7 @@ from app.capabilities.asset_store.layout_migration import (
 )
 from app.capabilities.asset_store.project_snapshots import cleanup_snapshot_staging
 from app.capabilities.asset_store.storage import AssetStorage
+from app.console.amadeus.actions import ActionExecution
 from app.console.amadeus.execution import CodeAgentRuns
 from app.console.amadeus.runs import recover_interrupted_amadeus_runs
 from app.console.cloud_control.desktop import DesktopConnection
@@ -77,6 +79,10 @@ from app.llm.playground.recovery import recover_interrupted_model_test_runs
 from app.llm.playground.transcription_runner import ModelTestTranscriptionRunner
 from app.llm.provider_transports import ProviderTransports
 from app.runtime.db import SessionLocal, close_website_database
+from app.tool_navigation.video_download import VideoDownloads
+from app.tool_navigation.video_download_dependencies import probe_deps
+from app.tool_navigation.video_download_execution import _run_yt_dlp
+from app.tool_navigation.video_download_library import ingest_library
 from db.migrations import apply_migrations
 from db.migrations.registry import LATEST_MIGRATION_ID
 from studio.apps.agent_workbench.events import stream_events
@@ -105,6 +111,7 @@ from studio.apps.thought_workshop.legacy_asset_metadata import LegacyAssetMetada
 from studio.apps.thought_workshop.legacy_writing import LegacyWritingModels
 from studio.apps.thought_workshop.website.account_directory import DirectoryBindings
 from studio.apps.thought_workshop.writing import WritingBindings
+from studio.apps.video_editor.assistant_operations import apply_assistant_timeline_batch
 from studio.apps.video_editor.legacy_project_layouts import LegacyVideoLayouts
 from studio.apps.video_editor.legacy_timeline_assets import LegacyTimelineAssets
 from studio.apps.video_editor.runner import VideoEditorRunner
@@ -199,6 +206,8 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
         await supervisor.start()
         yield
     finally:
+        await lifespan_app.state.video_downloads.close()
+        await lifespan_app.state.amadeus_actions.close()
         await lifespan_app.state.code_agent_runs.close()
         await lifespan_app.state.workbench_runs.close()
         await supervisor.stop()
@@ -214,6 +223,15 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.state.database = SimpleNamespace(sessions=SessionLocal)
+app.state.video_downloads = VideoDownloads(
+    root=settings.runtime_path / "tool-navigation" / "video-download",
+    download=lambda **kwargs: asyncio.to_thread(_run_yt_dlp, **kwargs),
+    ingest=partial(ingest_library, sessions=SessionLocal, settings=settings),
+    probe=probe_deps,
+)
+app.state.amadeus_actions = ActionExecution(
+    partial(apply_assistant_timeline_batch, sessions=SessionLocal)
+)
 app.state.demo_runtime = DemoRuntime(partial(read_demo_configuration, sessions=SessionLocal))
 app.state.interview_executor_status = partial(
     executor_status, sessions=SessionLocal, settings=settings
