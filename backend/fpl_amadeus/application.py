@@ -1,6 +1,7 @@
 """Amadeus-owned records, lifecycle recovery and verified account requests."""
 
 from contextlib import asynccontextmanager
+from weakref import WeakValueDictionary
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -24,11 +25,12 @@ from fpl_runtime.capability_client import CapabilityClient
 from fpl_runtime.database import Database
 from fpl_runtime.locking import service_lock
 from fpl_runtime.migrations import check
-from fpl_runtime.request_limit import RequestLimit
 
+from .file_http import router as file_router
 from .migrations.registry import MIGRATIONS
 from .models import MODELS
 from .record_http import router
+from .request_limits import AmadeusRequestLimits
 
 
 async def recover(database):
@@ -67,9 +69,11 @@ def create_app(*, state_root, catalog, public_key, credential, transport=None):
     )
     app.state.database = database
     app.state.capabilities = capabilities
+    app.state.file_locks = WeakValueDictionary()
     app.include_router(router)
+    app.include_router(file_router)
+    app.add_middleware(AmadeusRequestLimits)
     app.add_middleware(SignedIdentity, service="amadeus", public_key=public_key, catalog=catalog)
-    app.add_middleware(RequestLimit, prefix="/v1/amadeus/", maximum=8 * 1024 * 1024)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(OperationalError, storage_operational_error_handler)

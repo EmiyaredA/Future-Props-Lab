@@ -1,5 +1,7 @@
 """Amadeus record operations with independently owned sessions."""
 
+import asyncio
+
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
@@ -146,9 +148,11 @@ async def delete_conversation(
     conversation_id: str,
     expected_revision: int = Query(ge=0),
 ) -> dict[str, bool]:
-    await Conversations(session, principal, files_root=request.app.state.database.root).delete(
-        conversation_id, expected_revision
-    )
+    app = request.app.state
+    async with app.file_locks.setdefault((principal.user_id, conversation_id), asyncio.Lock()):
+        await Conversations(session, principal, files_root=app.database.root).delete(
+            conversation_id, expected_revision
+        )
     return {"deleted": True}
 
 

@@ -1,5 +1,7 @@
 """Exercise independently owned Amadeus history and restart without Identity tables."""
 
+import asyncio
+import hashlib
 import json
 from dataclasses import replace
 from pathlib import Path
@@ -137,3 +139,73 @@ async def test_amadeus_record_contracts_ownership_and_recovery(
             )
             assert deleted.status_code == 200, deleted.text
         assert not folder.exists()
+
+
+async def test_amadeus_import_stream_and_file_cas(
+    scenario,  # noqa: F811
+    tmp_path,
+    monkeypatch,
+):
+    case = scenario
+    apply(tmp_path / "service.db", "amadeus", MIGRATIONS)
+    app = create_app(
+        state_root=tmp_path,
+        catalog=CATALOG,
+        public_key=case.key.public_key(),
+        credential="isolated-amadeus-service-credential-" * 2,
+    )
+    async with (
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://amadeus") as api,
+    ):
+
+        async def send(method, path, **kwargs):
+            return await api.request(
+                method, path, headers=await authorize(case, "amadeus", method, path), **kwargs
+            )
+
+        created = await send("POST", SOURCE)
+        assert created.status_code == 200, created.text
+        identity = created.json()["id"]
+        root = f"{SOURCE}/{identity}"
+        contents = b"x" * (9 * 1024 * 1024)
+        upload = {"upload": ("original.bin", contents, "application/octet-stream")}
+        reply = await send("POST", root + "/imports", files=upload)
+        assert reply.status_code == 200, reply.text
+        digest = hashlib.sha256(contents).hexdigest()
+        assert reply.json()["sha256"] == digest
+        original = await send("GET", root + "/files/imports/original.bin")
+        assert original.status_code == 200 and original.content == contents
+        assert original.headers["Content-Length"] == str(len(contents))
+        assert (await send("POST", root + "/imports", files=upload)).status_code == 409
+
+        path = root + "/files/outputs/response.txt"
+        first = await send("PUT", path, json={"content": "Original"})
+        assert first.status_code == 200, first.text
+        headers = await authorize(case, "amadeus", "PUT", path)
+        replies = await asyncio.gather(
+            *(
+                api.put(
+                    path,
+                    headers=headers,
+                    json={
+                        "content": text,
+                        "expected_sha256": first.json()["sha256"],
+                    },
+                )
+                for text in ("A", "B")
+            )
+        )
+        assert sorted(result.status_code for result in replies) == [200, 409]
+        files = await send("GET", root + "/files")
+        assert len(files.json()["items"]) == 2
+
+        monkeypatch.setattr("fpl_amadeus.request_limits.MAX_MULTIPART_BYTES", 1024)
+        over = await send(
+            "POST",
+            root + "/imports",
+            files={"upload": ("oversize.bin", b"x" * 2048, "application/octet-stream")},
+        )
+        assert over.status_code == 413
+        assert (await send("GET", root + "/files/imports/oversize.bin")).status_code == 404
+        assert not list((tmp_path / "accounts").rglob(".amadeus-*.tmp"))
