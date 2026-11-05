@@ -277,7 +277,7 @@ Models 的 `backend/studio/apps/model_service/catalog_migration.py` 按账号传
 Assets 的 `backend/studio/assembly/independent/asset_library/maintenance.py` 装配文件夹、素材记录及原件的回环维护入口。`backend/studio/apps/asset_library/library_reads.py` 提供账号文件库查询，音频标注通过专用签名协议读取元数据和对应修订的音频，并为项目准备素材引用。`backend/studio/assembly/independent/audio_annotation/application.py` 装配自有项目、文档、波形和回执，兼容应用通过同一业务入口绑定旧站数据端口。
 面试助手的 `backend/studio/apps/interview_assistant/` 独立装配签名接口、场次数据库及私有材料目录。兼容站仍由现有 Codex runner 执行。独立面试助手通过 `backend/studio/host/agent_execution/interview_worker.py` 领取固定准备任务，并通过 Identity 复核账号权限。
 导演台的 `backend/studio/assembly/independent/director_desk/maintenance.py` 装配回环维护入口，按账号迁移原项目、动作及其文件。
-独立 Amadeus 由 `backend/studio/apps/amadeus/` 装配，拥有六张对话、运行、消息、问题、动作和事件记录表。共享记录与恢复规则位于 `app/console/amadeus/run_records.py` 和 `run_recovery.py`，兼容站在 `runs.py` 绑定原 CLI 连接。 `skill_pins.py` 固定对话加载的 Skill 版本并校验来源原件，`studio/apps/integrations/amadeus_skill_archive.py` 装配受控的同账号快照，`app/console/amadeus/skill_files.py` 按原路径读取固定版本文件。`native_host.py` 保存精确原生任务与回执，`studio/host/amadeus_worker.py` 通过专用回环入口核验本机 Finder 租约并探测脚本沙箱。`dialogue_runs.py` 持久化对话进度和工具审批，`studio/host/amadeus_dialogue.py` 拥有实际 CLI 连接与进程，`deploy/images/amadeus/` 锁定独立的工具 Schema 验证依赖。门户复用页面侧栏并按侧栏容器宽度布局。
+独立 Amadeus 由 `backend/studio/apps/amadeus/` 装配，拥有六张对话、运行、消息、问题、动作和事件记录表。共享记录与恢复规则位于 `studio/apps/amadeus/storage/runs.py` 和 `storage/recovery.py`，兼容站在 `execution/website_runs.py` 绑定原 CLI 连接。 `skill_pins.py` 固定对话加载的 Skill 版本并校验来源原件，`studio/apps/integrations/amadeus_skill_archive.py` 装配受控的同账号快照，`studio/apps/amadeus/storage/skill_files.py` 按原路径读取固定版本文件。`native_host.py` 保存精确原生任务与回执，`studio/host/agent_execution/amadeus_worker.py` 通过专用回环入口核验本机 Finder 租约并探测脚本沙箱。`dialogue_runs.py` 持久化对话进度和工具审批，`studio/host/agent_execution/amadeus_dialogue.py` 拥有实际 CLI 连接与进程，`deploy/images/amadeus/` 锁定独立的工具 Schema 验证依赖。门户复用页面侧栏并按侧栏容器宽度布局。
 
 Remote 的 `backend/studio/apps/remote_desktop/` 拥有桌面偏好、短期连接票据与 WebSocket。 `studio/host/cloud_projection.py` 按归属发布 Mac 云控策略，`studio/config/cloud_projection.py` 核对当前提交和服务自己的 TOML 摘要。Remote 维护受认证的设置租约与结果，`studio/host/cloud_setup_worker.py` 在 Mac 按配置修订保存并发布投影。
 共享 `app/console/cloud_control/desktop_bridge.py` 负责 Guacamole 协议，旧站与 Remote 分别注入自己的授权和连接端口。历史偏好由 `studio/apps/remote_desktop/preference_migration.py` 在回环维护入口导入，Identity 的 `credential_migration.py` 保留加密 TOTP 登记与归属会话。
@@ -364,7 +364,6 @@ Future-Props-Lab/
 │   ├── runtime/       # 尚未迁出的凭据适配
 │   ├── capabilities/  # 有契约的共享能力：agents、web_access
 │   ├── console/       # 尚未迁出的治理与助手用例
-│   │   └── amadeus/   # 助手会话、引用快照、审批执行、沙箱脚本与模型桥接
 ├── db/migrations/
 │   ├── versions/      # 只追加、不可改写的 SQLite migration
 │   ├── registry.py    # 有序 migration 注册表与最新版本
@@ -407,11 +406,11 @@ Future-Props-Lab/
   `db/migrations/runner.py` 使用同一格式解析数据库路径，不依赖运行时 `app`。
   `scripts/migrate_config.py` 仅转换配置，不访问数据库；网站启动器在数据库初始化前读取 TOML，历史 .env 转换须由运维显式执行。
 
-- `console/amadeus/` 拥有 `/v1/amadeus` 的会话、消息引用快照、Agent/Plan 运行、持久提问、参数摘要审批与执行记录；
+- `studio/apps/amadeus/` 拥有 `/v1/amadeus` 的会话、消息引用快照、Agent/Plan 运行、持久提问、参数摘要审批与执行记录；
   视频时间线执行由 `apps/video_editor/assistant_operations.py` 提供公共入口，在 `studio/assembly/website/routes.py` 装配，
   避免 Console 反向依赖工坊实现。`fpl_operations.py` 只允许调用自动化白名单明确登记的业务 HTTP 操作，
   由原路由重新校验账号、权限和资源版本。
-  `console/routes/amadeus.py` 只暴露协议。会话文件存于
+  `studio/apps/amadeus/transport/website.py` 只暴露兼容网站协议。会话文件存于
   `accounts/<user-id>/amadeus/<conversation-id>/{imports,scripts,outputs,tmp}/`，按账号
   读取隔离，文件访问拒绝符号链接和目录穿越。新运行通过 `execution.py` 持有官方 CLI，`tool_bridge.py` 以短期任务工具授权连接正式 API；旧模型轮次与浏览器事件写接口返回 410。
   `web/src/features/amadeus/` 拥有独立 `amadeus.html` 界面、Code Agent 选择、运行状态重连、对话时间线与控件选取；
@@ -1036,3 +1035,9 @@ Gateway 的公开输入类型、白名单及路由规则在 `studio/contracts/ga
 Portal 的 `use_cases/documents.py` 先验证开发文档权限，随后读取注入的 `DocumentSource`。`storage/documents.py` 仅访问安装程序的工程文档白名单；网站与独立服务均从装配入口绑定根目录。它不迁移或改写受保护产品文档。协议位于 `contracts/portal/documents.py`。
 
 原平台路由按业务拆为 Model Service 的 `transport/website/quotas.py`、Portal 的 `transport/website.py` 与 Identity 的 `transport/website/project_markers.py`。兼容站认证标记操作显式接收项目注册表，保持原账号校验、CAS 和审计事务。部署 TOML 的锁、校验与原子发布由 `management/config_updates.py` 拥有，配置键与落盘格式不变。
+
+Amadeus 的会话文件路径由装配明确提供给 `storage/files.py` 和 Skill 文件适配，不读取全局配置。
+`host/agent_execution/amadeus_scripts.py` 负责沙箱进程，`host/project_files/amadeus_folders.py` 负责 Finder；
+模型调用与日志属于 `apps/model_service/amadeus_turn.py`，显式接收加密器、传输和会话工厂。
+网站与独立装配共用会话、消息、审批、提问、运行记录与恢复实现；网站执行协调和独立租约协调
+仍分别适配当前执行方式，尚需后续统一业务端口，不能仅据此标记整个迁移完成。

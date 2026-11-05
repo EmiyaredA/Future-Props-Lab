@@ -3713,42 +3713,6 @@
   ],
   "tables": [
     {
-      "table": "amadeus_conversations",
-      "service": "amadeus",
-      "module": "app.console.amadeus.models",
-      "model": "AmadeusConversation"
-    },
-    {
-      "table": "amadeus_messages",
-      "service": "amadeus",
-      "module": "app.console.amadeus.models",
-      "model": "AmadeusMessage"
-    },
-    {
-      "table": "amadeus_actions",
-      "service": "amadeus",
-      "module": "app.console.amadeus.models",
-      "model": "AmadeusAction"
-    },
-    {
-      "table": "amadeus_runs",
-      "service": "amadeus",
-      "module": "app.console.amadeus.models",
-      "model": "AmadeusRun"
-    },
-    {
-      "table": "amadeus_questions",
-      "service": "amadeus",
-      "module": "app.console.amadeus.models",
-      "model": "AmadeusQuestion"
-    },
-    {
-      "table": "amadeus_run_events",
-      "service": "amadeus",
-      "module": "app.console.amadeus.models",
-      "model": "AmadeusRunEvent"
-    },
-    {
       "table": "cloud_control_factors",
       "service": "identity",
       "module": "app.console.cloud_control.models",
@@ -3873,6 +3837,42 @@
       "service": "amadeus",
       "module": "studio.apps.amadeus.storage.migration_history",
       "model": "AmadeusImportReceipt"
+    },
+    {
+      "table": "amadeus_conversations",
+      "service": "amadeus",
+      "module": "studio.apps.amadeus.storage.models",
+      "model": "AmadeusConversation"
+    },
+    {
+      "table": "amadeus_messages",
+      "service": "amadeus",
+      "module": "studio.apps.amadeus.storage.models",
+      "model": "AmadeusMessage"
+    },
+    {
+      "table": "amadeus_actions",
+      "service": "amadeus",
+      "module": "studio.apps.amadeus.storage.models",
+      "model": "AmadeusAction"
+    },
+    {
+      "table": "amadeus_runs",
+      "service": "amadeus",
+      "module": "studio.apps.amadeus.storage.models",
+      "model": "AmadeusRun"
+    },
+    {
+      "table": "amadeus_questions",
+      "service": "amadeus",
+      "module": "studio.apps.amadeus.storage.models",
+      "model": "AmadeusQuestion"
+    },
+    {
+      "table": "amadeus_run_events",
+      "service": "amadeus",
+      "module": "studio.apps.amadeus.storage.models",
+      "model": "AmadeusRunEvent"
     },
     {
       "table": "amadeus_native_jobs",

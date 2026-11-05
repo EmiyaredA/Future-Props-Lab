@@ -12,8 +12,7 @@ from uuid import UUID
 
 import httpx
 
-from app.console.amadeus.files import work_root
-from app.console.amadeus.scripts import run_script, sandbox_available
+from studio.apps.amadeus.storage.files import work_root
 from studio.contracts.agent_workbench.native import NativeLease, NativeOutcome
 from studio.contracts.amadeus.amadeus_native import (
     DIALOGUE,
@@ -23,6 +22,7 @@ from studio.contracts.amadeus.amadeus_native import (
     ScriptScope,
 )
 from studio.host.agent_execution.amadeus_dialogue import AgentConnections, DialogueWorker
+from studio.host.agent_execution.amadeus_scripts import run_script, sandbox_available
 from studio.host.receipts import ReceiptStore
 from studio.host.transport import LeaseEnded, NativeTransport, ProtocolConflict
 from studio.runtime.database.operation_receipts import OperationError

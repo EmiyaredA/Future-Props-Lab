@@ -1,6 +1,6 @@
 """Apply an approved timeline batch through Video's existing versioned receipt."""
 
-from app.console.amadeus.fpl_operations import RegisteredRevisionConflict
+from studio.apps.amadeus.clients.website_operations import RegisteredRevisionConflict
 
 from .operation_calls import call_registered
 

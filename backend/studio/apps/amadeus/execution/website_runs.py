@@ -1,8 +1,8 @@
 """Bind Amadeus run records to the compatibility site's connection registry."""
 
-from app.console.amadeus.run_records import RunRecords
-from app.console.amadeus.run_recovery import recover_runs
 from app.console.governance.code_agents import resolve
+from studio.apps.amadeus.storage.recovery import recover_runs
+from studio.apps.amadeus.storage.runs import RunRecords
 
 
 class Runs(RunRecords):

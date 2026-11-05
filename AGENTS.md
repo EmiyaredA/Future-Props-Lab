@@ -97,6 +97,8 @@
 - 网站静态资源通过 `build:studio` 构建清单、哈希与压缩文件；云端仅托管程序。`/v1`、私人素材、SSE 不进入共享缓存，HTML 回退不覆盖未知 API 和缺失资源。公网启动要求构建匹配。
 - Amadeus 新对话由已登记的 Codex、Claude Code、OpenCode、DeepSeek Harness 或 Pi CLI 执行；FPL 后端持有运行、事件、审批和恢复，CLI 仅获得任务工具授权，不继承个人工具或通用 Shell。连接部署配置归 TOML，由可信本机管理员启用；有效账号可在有权访问的功能中使用已启用的连接。固定业务任务共用连接注册表并保留自有任务边界，云控仍仅管理员可访问。外部 CLI 的模型和认证配置按白名单读取，执行配置、插件和工具目录不直接继承。
 - CLI/SDK/MCP 使用网站地址和 Management API Key。`studio/contracts/gateway/automation_operations.json` 维护业务白名单，`/v1/automation` 提供能力发现与有归属校验的资源链接；不控制浏览器标签页，不开放账号治理、密钥管理或任意系统命令。客户端凭据目录 0700、文件 0600，不通过参数或日志传递密钥。
+- Amadeus 共享记录和恢复归 `studio/apps/amadeus/storage/`，公开协议归 `contracts/amadeus/`。
+  会话文件适配必须显式接收根目录；Finder 与脚本进程适配归 Host，禁止回退全局配置。
 - Amadeus 使用当前页面侧栏和显式账号上下文接口，不依赖原生窗口或 IPC。下载与演示窗口使用浏览器能力，并保留弹窗阻止反馈和未保存保护。
 - Web 保持 `app/ + features/ + shared/ + platform/ + generated/`：`app/` 负责入口、壳与路由，
   `features/` 拥有业务页面和用例，`shared/` 放无业务归属的复用 UI，`platform/` 放 API 与认证

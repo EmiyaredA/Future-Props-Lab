@@ -5,7 +5,7 @@ from functools import lru_cache
 
 from fastapi import APIRouter, HTTPException, Query, Request
 
-from app.console.amadeus.fpl_operations import catalog_from_schema
+from studio.apps.amadeus.clients.website_operations import catalog_from_schema
 from studio.apps.amadeus.operation_calls import call_registered
 from studio.config import REPO_ROOT
 from studio.runtime.http.dependencies import StudioAuth

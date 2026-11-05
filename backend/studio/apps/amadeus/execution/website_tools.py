@@ -6,24 +6,25 @@ from pathlib import Path
 
 import httpx
 
-from app.console.amadeus.conversations import Conversations
-from app.console.amadeus.files import list_files, read_file_bytes
-from app.console.amadeus.fpl_operations import call_operation, operation_catalog
-from app.console.amadeus.questions import Questions
-from app.console.amadeus.runs import Runs
-from app.console.amadeus.schemas import ActionIn, QuestionIn
-from app.console.amadeus.skills import read_skill_file
-from app.console.amadeus.tool_contracts import TOOLS as TOOLS
-from app.console.amadeus.tool_contracts import validate_tool
 from app.console.governance.code_agents import resolve
+from studio.apps.amadeus.clients.website_operations import call_operation, operation_catalog
+from studio.apps.amadeus.execution.website_runs import Runs
+from studio.apps.amadeus.storage.conversations import Conversations
+from studio.apps.amadeus.storage.files import list_files, read_file_bytes
+from studio.apps.amadeus.storage.questions import Questions
+from studio.apps.amadeus.storage.skill_import import read_skill_file
+from studio.contracts.amadeus.conversations import ActionIn, QuestionIn
+from studio.contracts.amadeus.tools import TOOLS as TOOLS
+from studio.contracts.amadeus.tools import validate_tool
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.database.ownership import bind_owner
 
 
 class ToolBridge:
-    def __init__(self, app, headers, principal, run, sessions):
+    def __init__(self, app, headers, principal, run, sessions, *, files_root):
         self.app, self.headers, self.principal = app, headers, principal
         self.run, self.sessions = run, sessions
+        self.files_root = files_root
         self.paused = asyncio.Event()
         self.closed = False
 
@@ -75,12 +76,18 @@ class ToolBridge:
                     ]
                 }
             if name == "files":
-                return list_files(row.owner_user_id, row.conversation_id)
+                return list_files(
+                    row.owner_user_id, row.conversation_id, files_root=self.files_root
+                )
             if name == "read_file":
                 import base64
 
                 data = read_file_bytes(
-                    row.owner_user_id, row.conversation_id, args["kind"], args["name"]
+                    row.owner_user_id,
+                    row.conversation_id,
+                    args["kind"],
+                    args["name"],
+                    files_root=self.files_root,
                 )
                 if len(data) > 1024 * 1024:
                     raise OperationError("文件过大，请使用文件下载接口")
@@ -112,6 +119,7 @@ class ToolBridge:
                         identity,
                         args["version"],
                         args["path"],
+                        files_root=self.files_root,
                     )
                 return snapshot
             if name == "integrations":

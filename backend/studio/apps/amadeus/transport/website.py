@@ -7,19 +7,25 @@ from urllib.parse import quote
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import Response, StreamingResponse
 
-from app.console.amadeus.actions import cancel_action, cancel_actions_for_run, execute_action
-from app.console.amadeus.conversations import Conversations
-from app.console.amadeus.files import (
+from studio.apps.amadeus.clients.website_operations import call_operation, operation_catalog
+from studio.apps.amadeus.execution.website_actions import (
+    cancel_action,
+    cancel_actions_for_run,
+    execute_action,
+)
+from studio.apps.amadeus.execution.website_runs import Runs
+from studio.apps.amadeus.storage.conversations import Conversations
+from studio.apps.amadeus.storage.files import (
     MAX_FILE_BYTES,
     list_files,
-    open_work_folder,
     read_file_bytes,
     write_file,
 )
-from app.console.amadeus.fpl_operations import call_operation, operation_catalog
-from app.console.amadeus.questions import Questions
-from app.console.amadeus.runs import Runs
-from app.console.amadeus.schemas import (
+from studio.apps.amadeus.storage.questions import Questions
+from studio.apps.amadeus.storage.skill_import import load_skill, read_skill_file
+from studio.apps.integrations.transport.bindings import skill_catalog
+from studio.assembly.http_dependencies import SessionDep, StudioAuth
+from studio.contracts.amadeus.conversations import (
     ActionDecisionIn,
     ActionIn,
     ActionOut,
@@ -44,9 +50,8 @@ from app.console.amadeus.schemas import (
     RunFinishIn,
     RunOut,
 )
-from app.console.amadeus.scripts import sandbox_available
-from app.console.amadeus.skills import load_skill, read_skill_file
-from studio.assembly.http_dependencies import SessionDep, StudioAuth
+from studio.host.agent_execution.amadeus_scripts import sandbox_available
+from studio.host.project_files.amadeus_folders import open_work_folder
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.http.website import require_local_browser
 
@@ -116,7 +121,7 @@ async def create_run(
     body: RunCreateIn,
 ) -> RunDetailOut:
     try:
-        from app.console.amadeus.execution import runtime
+        from studio.apps.amadeus.execution.website_dialogue import runtime
 
         result = await Runs(session, principal).create(conversation_id, body)
         runtime(request.app).start(request.app, request.headers, principal, result.run)
@@ -247,7 +252,7 @@ async def cancel_run(
         await cancel_actions_for_run(
             session, principal, run_id, execution=request.app.state.amadeus_actions
         )
-        from app.console.amadeus.execution import runtime
+        from studio.apps.amadeus.execution.website_dialogue import runtime
 
         await runtime(request.app).cancel(run_id)
         return await runs.detail(conversation_id, run_id)
@@ -286,13 +291,16 @@ async def patch_conversation(
     responses={409: {"model": ConversationRevisionConflictOut}},
 )
 async def delete_conversation(
+    request: Request,
     session: SessionDep,
     principal: StudioAuth,
     conversation_id: str,
     expected_revision: int = Query(ge=0),
 ) -> dict[str, bool]:
     try:
-        await Conversations(session, principal).delete(conversation_id, expected_revision)
+        await Conversations(
+            session, principal, files_root=request.app.state.settings.runtime_path
+        ).delete(conversation_id, expected_revision)
         return {"deleted": True}
     except OperationError as exc:
         raise _error(exc) from None
@@ -473,11 +481,17 @@ async def model_turn_stream(
 
 @router.get("/conversations/{conversation_id}/files", response_model=FileListOut)
 async def files_list(
-    session: SessionDep, principal: StudioAuth, conversation_id: str
+    request: Request, session: SessionDep, principal: StudioAuth, conversation_id: str
 ) -> FileListOut:
     try:
         await Conversations(session, principal)._get(conversation_id)
-        return FileListOut(items=list_files(principal.owner_user_id, conversation_id))
+        return FileListOut(
+            items=list_files(
+                principal.owner_user_id,
+                conversation_id,
+                files_root=request.app.state.settings.runtime_path,
+            )
+        )
     except OperationError as exc:
         raise _error(exc) from None
 
@@ -494,7 +508,11 @@ async def files_open_folder(
     require_local_browser(request, principal)
     try:
         await Conversations(session, principal)._get(conversation_id)
-        open_work_folder(principal.owner_user_id, conversation_id)
+        open_work_folder(
+            principal.owner_user_id,
+            conversation_id,
+            files_root=request.app.state.settings.runtime_path,
+        )
         return {"opened": True}
     except OperationError as exc:
         raise _error(exc) from None
@@ -502,11 +520,22 @@ async def files_open_folder(
 
 @router.get("/conversations/{conversation_id}/files/{kind}/{name}", response_class=Response)
 async def file_download(
-    session: SessionDep, principal: StudioAuth, conversation_id: str, kind: str, name: str
+    request: Request,
+    session: SessionDep,
+    principal: StudioAuth,
+    conversation_id: str,
+    kind: str,
+    name: str,
 ) -> Response:
     try:
         await Conversations(session, principal)._get(conversation_id)
-        data = read_file_bytes(principal.owner_user_id, conversation_id, kind, name)
+        data = read_file_bytes(
+            principal.owner_user_id,
+            conversation_id,
+            kind,
+            name,
+            files_root=request.app.state.settings.runtime_path,
+        )
         return Response(
             data, headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(name)}"}
         )
@@ -516,6 +545,7 @@ async def file_download(
 
 @router.put("/conversations/{conversation_id}/files/{kind}/{name}", response_model=FileOut)
 async def file_write(
+    request: Request,
     session: SessionDep,
     principal: StudioAuth,
     conversation_id: str,
@@ -533,6 +563,7 @@ async def file_write(
                 name,
                 body.content.encode(),
                 body.expected_sha256,
+                files_root=request.app.state.settings.runtime_path,
             )
         )
     except OperationError as exc:
@@ -541,7 +572,11 @@ async def file_write(
 
 @router.post("/conversations/{conversation_id}/imports", response_model=FileOut)
 async def import_file(
-    session: SessionDep, principal: StudioAuth, conversation_id: str, upload: UploadFile = File(...)
+    request: Request,
+    session: SessionDep,
+    principal: StudioAuth,
+    conversation_id: str,
+    upload: UploadFile = File(...),
 ) -> FileOut:
     try:
         await Conversations(session, principal)._get(conversation_id)
@@ -554,6 +589,7 @@ async def import_file(
                 upload.filename or "import",
                 content,
                 "",
+                files_root=request.app.state.settings.runtime_path,
             )
         )
     except OperationError as exc:
@@ -564,11 +600,22 @@ async def import_file(
 
 @router.post("/conversations/{conversation_id}/skills/{skill_id}/load")
 async def skill_load(
-    session: SessionDep, principal: StudioAuth, conversation_id: str, skill_id: str
+    request: Request,
+    session: SessionDep,
+    principal: StudioAuth,
+    conversation_id: str,
+    skill_id: str,
 ) -> dict[str, str]:
     try:
         await Conversations(session, principal)._get(conversation_id)
-        return await load_skill(session, principal.owner_user_id, conversation_id, skill_id)
+        return await load_skill(
+            session,
+            principal.owner_user_id,
+            conversation_id,
+            skill_id,
+            catalog=skill_catalog(request, session, principal.owner_user_id),
+            files_root=request.app.state.settings.runtime_path,
+        )
     except OperationError as exc:
         raise _error(exc) from None
 
@@ -577,6 +624,7 @@ async def skill_load(
     "/conversations/{conversation_id}/skills/{skill_id}/{version}/files/{relative_path:path}"
 )
 async def skill_file_read(
+    request: Request,
     session: SessionDep,
     principal: StudioAuth,
     conversation_id: str,
@@ -592,6 +640,7 @@ async def skill_file_read(
             skill_id,
             version,
             relative_path,
+            files_root=request.app.state.settings.runtime_path,
         )
     except OperationError as exc:
         raise _error(exc) from None

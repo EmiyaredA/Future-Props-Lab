@@ -13,7 +13,7 @@ import sys
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 
-from app.console.amadeus.files import read_file_bytes, work_root
+from studio.apps.amadeus.storage.files import read_file_bytes, work_root
 from studio.config.settings import REPO_ROOT
 from studio.runtime.database.operation_receipts import OperationError
 
@@ -58,7 +58,7 @@ async def run_script(
     arguments: dict,
     on_output: Callable[[str], Awaitable[None] | None] | None = None,
     *,
-    files_root: Path | None = None,
+    files_root: Path,
 ) -> dict:
     sandbox = Path("/usr/bin/sandbox-exec")
     if sys.platform != "darwin" or not sandbox.is_file():

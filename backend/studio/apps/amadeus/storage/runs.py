@@ -7,8 +7,8 @@ import json
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 
-from app.console.amadeus.conversations import Conversations
-from app.console.amadeus.models import (
+from studio.apps.amadeus.storage.conversations import Conversations
+from studio.apps.amadeus.storage.models import (
     AmadeusAction,
     AmadeusConversation,
     AmadeusMessage,
@@ -16,7 +16,7 @@ from app.console.amadeus.models import (
     AmadeusRun,
     AmadeusRunEvent,
 )
-from app.console.amadeus.schemas import (
+from studio.contracts.amadeus.conversations import (
     RunCreateIn,
     RunDetailOut,
     RunEventIn,

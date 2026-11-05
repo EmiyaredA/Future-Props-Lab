@@ -16,19 +16,19 @@ import pytest
 from sqlalchemy import select
 
 import integration_test_support as integration_dependencies
-from app.console.amadeus.conversations import Conversations
-from app.console.amadeus.files import read_file_bytes, work_root, write_file
-from app.console.amadeus.model_bridge import stream_model_turn
-from app.console.amadeus.runs import recover_interrupted_amadeus_runs
-from app.console.amadeus.schemas import ModelTurnIn
-from app.console.amadeus.scripts import run_script
 from app.runtime.credentials import encrypt_secret
+from studio.apps.amadeus.execution.website_runs import recover_interrupted_amadeus_runs
+from studio.apps.amadeus.storage.conversations import Conversations
+from studio.apps.amadeus.storage.files import read_file_bytes, work_root, write_file
 from studio.apps.identity.storage.models.accounts import User
+from studio.apps.model_service.amadeus_turn import stream_model_turn
 from studio.apps.model_service.storage.models.call_log import LlmCallLog
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.assembly.website.models import bind_owner
+from studio.contracts.amadeus.conversations import ModelTurnIn
+from studio.host.agent_execution.amadeus_scripts import run_script
 from studio.runtime.database.operation_receipts import OperationError
-from website_test_support import SessionLocal, app
+from website_test_support import SessionLocal, app, settings
 
 
 @pytest.mark.asyncio
@@ -43,7 +43,7 @@ async def test_amadeus_routes_work_without_native_shell():
 async def test_amadeus_model_bridge_streams_text_and_tool_calls(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from app.console.amadeus import model_bridge
+    from studio.apps.model_service import amadeus_turn as model_bridge
     from studio.apps.model_service.demonstration import execution as runtime
 
     async def get_mock_model(*_args: object) -> tuple[SimpleNamespace, SimpleNamespace]:
@@ -59,7 +59,6 @@ async def test_amadeus_model_bridge_streams_text_and_tool_calls(
             pass
 
     monkeypatch.setattr(model_bridge, "get_model", get_mock_model)
-    monkeypatch.setattr(model_bridge, "decrypt_secret", lambda _value: "")
     demo = runtime.DemoRuntime(demo_configuration)
     request = ModelTurnIn(
         model_id="mock",
@@ -85,6 +84,7 @@ async def test_amadeus_model_bridge_streams_text_and_tool_calls(
             request,
             sessions=SessionLocal,
             transport_resolver=demo.mock_transport,
+            cipher=app.state.model_template_cipher,
         )
     ]
     assert events[-1]["type"] == "end"
@@ -117,6 +117,7 @@ async def test_amadeus_model_bridge_streams_text_and_tool_calls(
             followup,
             sessions=SessionLocal,
             transport_resolver=demo.mock_transport,
+            cipher=app.state.model_template_cipher,
         )
     ]
     assert "这是本地测试模型的确定性回复" in "".join(
@@ -182,6 +183,7 @@ async def test_amadeus_model_bridge_settles_after_request_session_rollback(
                 request,
                 sessions=SessionLocal,
                 transport_resolver=lambda _url: None,
+                cipher=app.state.model_template_cipher,
             )
         ]
     assert [event["type"] for event in events] == ["delta", "end"]
@@ -421,7 +423,8 @@ async def test_amadeus_registered_fpl_operations_read_and_approved_write() -> No
 async def test_amadeus_skill_keeps_loaded_version(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    from app.console.amadeus import files, skill_files, skills
+    from studio.apps.amadeus.storage import files, skill_files
+    from studio.apps.amadeus.storage import skill_import as skills
 
     source = tmp_path / "source"
     for version in ("v1", "v2"):
@@ -451,29 +454,69 @@ async def test_amadeus_skill_keeps_loaded_version(
 
     monkeypatch.setattr(files, "work_root", lambda *_args, **_kwargs: tmp_path / "session")
     first = await skills.load_skill(
-        Session(), "test-user", "conversation", "skill", catalog=Catalog()
+        Session(),
+        "test-user",
+        "conversation",
+        "skill",
+        catalog=Catalog(),
+        files_root=settings.runtime_path,
     )
     state["default"] = "v2"
     again = await skills.load_skill(
-        Session(), "test-user", "conversation", "skill", catalog=Catalog()
+        Session(),
+        "test-user",
+        "conversation",
+        "skill",
+        catalog=Catalog(),
+        files_root=settings.runtime_path,
     )
     assert (first["version"], first["content"]) == ("v1", "v1")
     assert (again["version"], again["content"]) == ("v1", "v1")
     (tmp_path / "session" / "skills" / "skill" / "v1" / "guide.txt").write_text("固定版本附属文件")
-    resource = skills.read_skill_file("test-user", "conversation", "skill", "v1", "guide.txt")
+    resource = skills.read_skill_file(
+        "test-user", "conversation", "skill", "v1", "guide.txt", files_root=settings.runtime_path
+    )
     assert resource["content"] == "固定版本附属文件"
     with pytest.raises(OperationError, match="文件不存在"):
-        skills.read_skill_file("test-user", "conversation", "skill", "v1", "missing.txt")
+        skills.read_skill_file(
+            "test-user",
+            "conversation",
+            "skill",
+            "v1",
+            "missing.txt",
+            files_root=settings.runtime_path,
+        )
     with pytest.raises(OperationError, match="路径无效"):
-        skills.read_skill_file("test-user", "conversation", "skill", "v1", "../v2/SKILL.md")
+        skills.read_skill_file(
+            "test-user",
+            "conversation",
+            "skill",
+            "v1",
+            "../v2/SKILL.md",
+            files_root=settings.runtime_path,
+        )
     (tmp_path / "session" / "skills" / "skill" / "v1" / "binary.txt").write_bytes(b"\xff")
     with pytest.raises(OperationError, match="不是 UTF-8"):
-        skills.read_skill_file("test-user", "conversation", "skill", "v1", "binary.txt")
+        skills.read_skill_file(
+            "test-user",
+            "conversation",
+            "skill",
+            "v1",
+            "binary.txt",
+            files_root=settings.runtime_path,
+        )
     (tmp_path / "session" / "skills" / "skill" / "v1" / "large.txt").write_bytes(
         b"x" * (skill_files.MAX_SKILL_FILE_BYTES + 1)
     )
     with pytest.raises(OperationError, match="超过 1 MiB"):
-        skills.read_skill_file("test-user", "conversation", "skill", "v1", "large.txt")
+        skills.read_skill_file(
+            "test-user",
+            "conversation",
+            "skill",
+            "v1",
+            "large.txt",
+            files_root=settings.runtime_path,
+        )
 
 
 @pytest.mark.asyncio
@@ -527,7 +570,7 @@ async def test_amadeus_cancel_marks_external_result_unknown(
 async def test_amadeus_script_execution_streams_output(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from app.console.amadeus import actions
+    from studio.apps.amadeus.execution import website_actions as actions
 
     await _test_user()
 
@@ -536,7 +579,10 @@ async def test_amadeus_script_execution_streams_output(
         _conversation_id: str,
         _arguments: dict,
         on_output=None,
+        *,
+        files_root,
     ) -> dict[str, object]:
+        assert files_root == settings.runtime_path
         on_output("第一步\n")
         await asyncio.sleep(0)
         on_output("第二步\n")
@@ -577,7 +623,7 @@ async def test_amadeus_script_execution_streams_output(
 
 @pytest.mark.asyncio
 async def test_amadeus_read_only_principal_cannot_execute_approved_write() -> None:
-    from app.console.amadeus.actions import execute_action
+    from studio.apps.amadeus.execution.website_actions import execute_action
 
     await _test_user()
     async with httpx.AsyncClient(
@@ -744,7 +790,7 @@ async def test_amadeus_browser_cannot_author_run_events_or_finalize() -> None:
 
 @pytest.mark.asyncio
 async def test_amadeus_startup_recovery_interrupts_run_without_replay() -> None:
-    from app.console.amadeus.models import AmadeusAction, AmadeusRun
+    from studio.apps.amadeus.storage.models import AmadeusAction, AmadeusRun
     from studio.runtime.ids import new_id
 
     await _test_user()
@@ -821,7 +867,9 @@ async def test_amadeus_approval_binds_arguments_and_runs_once() -> None:
         completed = await client.post(root + f"/actions/{action['id']}/execute")
         assert completed.status_code == 200, completed.text
         assert completed.json()["status"] == "completed"
-        saved = read_file_bytes("test-user", conversation["id"], "scripts", "hello.py")
+        saved = read_file_bytes(
+            "test-user", conversation["id"], "scripts", "hello.py", files_root=settings.runtime_path
+        )
         assert saved == b"print('hello')"
         again = await client.post(root + f"/actions/{action['id']}/execute")
         assert again.status_code == 409
@@ -835,20 +883,58 @@ async def test_amadeus_files_reject_traversal_symlinks_and_stale_writes(tmp_path
     ) as client:
         conversation_id = (await client.post("/v1/amadeus/conversations")).json()["id"]
     with pytest.raises(OperationError):
-        write_file("test-user", conversation_id, "imports", "../outside", b"bad", "")
-    item = write_file("test-user", conversation_id, "imports", "safe.txt", b"first", "")
+        write_file(
+            "test-user",
+            conversation_id,
+            "imports",
+            "../outside",
+            b"bad",
+            "",
+            files_root=settings.runtime_path,
+        )
+    item = write_file(
+        "test-user",
+        conversation_id,
+        "imports",
+        "safe.txt",
+        b"first",
+        "",
+        files_root=settings.runtime_path,
+    )
     assert item["sha256"] == hashlib.sha256(b"first").hexdigest()
     with pytest.raises(OperationError) as conflict:
-        write_file("test-user", conversation_id, "imports", "safe.txt", b"second", "")
+        write_file(
+            "test-user",
+            conversation_id,
+            "imports",
+            "safe.txt",
+            b"second",
+            "",
+            files_root=settings.runtime_path,
+        )
     assert conflict.value.status == 409
     outside = tmp_path / "secret.txt"
     outside.write_text("private")
-    link = work_root("test-user", conversation_id) / "imports" / "link.txt"
+    link = (
+        work_root("test-user", conversation_id, files_root=settings.runtime_path)
+        / "imports"
+        / "link.txt"
+    )
     os.symlink(outside, link)
     with pytest.raises(OperationError):
-        read_file_bytes("test-user", conversation_id, "imports", "link.txt")
+        read_file_bytes(
+            "test-user", conversation_id, "imports", "link.txt", files_root=settings.runtime_path
+        )
     with pytest.raises(OperationError):
-        write_file("test-user", conversation_id, "imports", "link.txt", b"bad", "")
+        write_file(
+            "test-user",
+            conversation_id,
+            "imports",
+            "link.txt",
+            b"bad",
+            "",
+            files_root=settings.runtime_path,
+        )
     assert outside.read_text() == "private"
 
 
@@ -961,7 +1047,7 @@ async def test_amadeus_script_sandbox_reads_only_conversation_files(
         runner = Path("desktop/build/runner/fpl-script-runner/fpl-script-runner").resolve()
         if not runner.is_file():
             pytest.skip("packaged runner not built")
-        from app.console.amadeus import scripts
+        from studio.host.agent_execution import amadeus_scripts as scripts
 
         monkeypatch.setattr(scripts, "_runner", lambda: (runner, [], runner.parent))
     await _test_user()
@@ -970,7 +1056,11 @@ async def test_amadeus_script_sandbox_reads_only_conversation_files(
     ) as client:
         conversation_id = (await client.post("/v1/amadeus/conversations")).json()["id"]
         other_id = (await client.post("/v1/amadeus/conversations")).json()["id"]
-    other = work_root("test-user", other_id) / "imports" / "private.txt"
+    other = (
+        work_root("test-user", other_id, files_root=settings.runtime_path)
+        / "imports"
+        / "private.txt"
+    )
     other.parent.mkdir(parents=True)
     other.write_text("private")
     script = (
@@ -996,8 +1086,18 @@ async def test_amadeus_script_sandbox_reads_only_conversation_files(
         "    print('process-denied')\n"
         "Path('outputs/result.txt').write_text('done')\n"
     ).encode()
-    work_root("test-user", conversation_id).joinpath("outputs").mkdir(parents=True)
-    write_file("test-user", conversation_id, "scripts", "check.py", script, "")
+    work_root("test-user", conversation_id, files_root=settings.runtime_path).joinpath(
+        "outputs"
+    ).mkdir(parents=True)
+    write_file(
+        "test-user",
+        conversation_id,
+        "scripts",
+        "check.py",
+        script,
+        "",
+        files_root=settings.runtime_path,
+    )
     result = await run_script(
         "test-user",
         conversation_id,
@@ -1006,6 +1106,7 @@ async def test_amadeus_script_sandbox_reads_only_conversation_files(
             "name": "check.py",
             "sha256": hashlib.sha256(script).hexdigest(),
         },
+        files_root=settings.runtime_path,
     )
     assert result["exit_code"] == 0, result["output"]
     assert "sandbox-ok" in result["output"]
@@ -1013,7 +1114,12 @@ async def test_amadeus_script_sandbox_reads_only_conversation_files(
     assert "outside-readable" not in result["output"]
     assert "network-denied" in result["output"]
     assert "process-denied" in result["output"]
-    assert read_file_bytes("test-user", conversation_id, "outputs", "result.txt") == b"done"
+    assert (
+        read_file_bytes(
+            "test-user", conversation_id, "outputs", "result.txt", files_root=settings.runtime_path
+        )
+        == b"done"
+    )
 
 
 @pytest.mark.asyncio
@@ -1029,7 +1135,7 @@ async def test_amadeus_script_timeout_terminates_process_group(
     )
     if probe.returncode:
         pytest.skip("host process forbids sandbox-exec")
-    from app.console.amadeus import scripts
+    from studio.host.agent_execution import amadeus_scripts as scripts
 
     monkeypatch.setattr(scripts, "SCRIPT_TIMEOUT_SECONDS", 0.2)
     await _test_user()
@@ -1038,10 +1144,19 @@ async def test_amadeus_script_timeout_terminates_process_group(
     ) as client:
         conversation_id = (await client.post("/v1/amadeus/conversations")).json()["id"]
     script = b"import time\ntime.sleep(10)\n"
-    write_file("test-user", conversation_id, "scripts", "slow.py", script, "")
+    write_file(
+        "test-user",
+        conversation_id,
+        "scripts",
+        "slow.py",
+        script,
+        "",
+        files_root=settings.runtime_path,
+    )
     with pytest.raises(TimeoutError):
         await run_script(
             "test-user",
             conversation_id,
             {"kind": "python", "name": "slow.py", "sha256": hashlib.sha256(script).hexdigest()},
+            files_root=settings.runtime_path,
         )

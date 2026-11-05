@@ -6,8 +6,8 @@ from functools import partial
 from anyio.to_thread import run_sync
 from fastapi import HTTPException
 
-from app.console.amadeus.files import write_file
 from studio.apps.amadeus.storage.action_records import WORK_FILES, ActionRecords
+from studio.apps.amadeus.storage.files import write_file
 from studio.contracts.amadeus.amadeus_native import ScriptScope
 from studio.runtime.database.operation_receipts import OperationError
 

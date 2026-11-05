@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Request
 
-from app.console.amadeus.schemas import RunCreateIn, RunDetailOut
+from studio.contracts.amadeus.conversations import RunCreateIn, RunDetailOut
 from studio.runtime.http.dependencies import SessionDep, StudioAuth
 
 router = APIRouter(prefix="/v1/amadeus", tags=["amadeus"])

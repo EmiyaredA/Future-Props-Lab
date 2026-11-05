@@ -11,9 +11,9 @@ from uuid import uuid5
 from pydantic import Field, model_validator
 from sqlalchemy import select, text
 
-from app.console.amadeus.files import KINDS, MAX_FILE_BYTES, work_root
-from app.console.amadeus.models import AmadeusConversation
+from studio.apps.amadeus.storage.files import KINDS, MAX_FILE_BYTES, work_root
 from studio.apps.amadeus.storage.migration_history import AmadeusImportReceipt
+from studio.apps.amadeus.storage.models import AmadeusConversation
 from studio.contracts.amadeus.amadeus_skills import ID, VERSION
 from studio.contracts.management.migration_batches import BatchReceipt
 from studio.contracts.management.project_history import HistoryRecord, Identifier

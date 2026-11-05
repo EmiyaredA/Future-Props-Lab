@@ -13,8 +13,8 @@ from sqlalchemy import update
 
 from app.capabilities.agents.cli.catalog import connection, inspect_connection
 from app.capabilities.agents.cli.codex_profile import profile_path
-from app.console.amadeus.models import AmadeusConversation
 from app.console.governance.code_agents import resolve_connection
+from studio.apps.amadeus.storage.models import AmadeusConversation
 from studio.assembly.website.models import bind_owner
 from studio.config.settings import get_settings
 from studio.runtime.database.operation_receipts import OperationError

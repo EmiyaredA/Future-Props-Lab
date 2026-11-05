@@ -4,13 +4,13 @@ import asyncio
 from functools import partial
 
 from app.capabilities.agents.sessions.access import LocalSourceAccess
-from app.console.amadeus.actions import ActionExecution
-from app.console.amadeus.execution import CodeAgentRuns
 from app.console.cloud_control.desktop import DesktopConnection
 from app.console.governance.code_agent_connections import enable_connection
 from app.console.governance.code_agents import catalog as code_agent_catalog
 from studio.apps.agent_workbench.events import stream_events
 from studio.apps.agent_workbench.execution.runner import WorkbenchRuns
+from studio.apps.amadeus.execution.website_actions import ActionExecution
+from studio.apps.amadeus.execution.website_dialogue import CodeAgentRuns
 from studio.apps.asset_library.storage.layout.account_upgrade import upgrade_pending
 from studio.apps.audio_annotation.legacy_sources import LegacyAnnotationSources
 from studio.apps.audio_annotation.projects import AudioAnnotationProjects
@@ -93,7 +93,7 @@ def bind_components(app, settings, database):
         probe=probe_deps,
     )
     app.state.amadeus_actions = ActionExecution(
-        partial(apply_assistant_timeline_batch, sessions=sessions)
+        partial(apply_assistant_timeline_batch, sessions=sessions), files_root=settings.runtime_path
     )
     app.state.demo_runtime = DemoRuntime(partial(read_demo_configuration, sessions=sessions))
     app.state.interview_executor_status = partial(

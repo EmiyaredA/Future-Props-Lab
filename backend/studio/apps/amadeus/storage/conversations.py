@@ -7,15 +7,15 @@ import shutil
 
 from sqlalchemy import delete, select, update
 
-from app.console.amadeus.files import work_root
-from app.console.amadeus.models import (
+from studio.apps.amadeus.storage.files import work_root
+from studio.apps.amadeus.storage.models import (
     AmadeusAction,
     AmadeusConversation,
     AmadeusMessage,
     AmadeusQuestion,
     AmadeusRun,
 )
-from app.console.amadeus.schemas import (
+from studio.contracts.amadeus.conversations import (
     ActionDecisionIn,
     ActionIn,
     ActionOut,
@@ -203,6 +203,8 @@ class Conversations:
         )
         if running is not None:
             raise OperationError("请先停止正在执行的操作", "action_running", 409)
+        if self.files_root is None:
+            raise ValueError("Conversation deletion requires explicit file storage")
         folder = work_root(self.principal.owner_user_id, identity, files_root=self.files_root)
         if folder.is_symlink():
             raise OperationError("会话目录不安全", "unsafe_path", 409)

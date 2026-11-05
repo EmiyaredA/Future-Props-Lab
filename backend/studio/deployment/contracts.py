@@ -162,7 +162,7 @@ def table_owner(module, table):
         return "tools"
     if module.startswith("app.console.cloud_control."):
         return "remote" if table == "cloud_desktop_preferences" else "identity"
-    if module.startswith(("app.console.amadeus.", "studio.apps.amadeus.")):
+    if module.startswith("studio.apps.amadeus."):
         return "amadeus"
     if module.startswith("studio.apps.creative_workshop."):
         return "creative"

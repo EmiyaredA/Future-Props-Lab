@@ -6,11 +6,11 @@ from uuid import UUID
 from fastapi import HTTPException
 from sqlalchemy import select, update
 
-from app.console.amadeus.dialogue_prompt import dialogue_prompt
-from app.console.amadeus.files import work_root
-from app.console.amadeus.models import AmadeusAction
-from app.console.amadeus.run_records import RunRecords
-from app.console.amadeus.skill_files import skill_root
+from studio.apps.amadeus.rules.dialogue_prompt import dialogue_prompt
+from studio.apps.amadeus.storage.files import work_root
+from studio.apps.amadeus.storage.models import AmadeusAction
+from studio.apps.amadeus.storage.runs import RunRecords
+from studio.apps.amadeus.storage.skill_files import skill_root
 from studio.contracts.amadeus.amadeus_native import DialogueScope
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.time import utc_now

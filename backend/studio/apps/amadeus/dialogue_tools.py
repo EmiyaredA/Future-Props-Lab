@@ -7,16 +7,16 @@ from uuid import uuid4
 
 from anyio.to_thread import run_sync
 
-from app.console.amadeus.conversations import Conversations
-from app.console.amadeus.files import list_files, open_work_file
-from app.console.amadeus.fpl_operations import catalog_from_schema, operation_request
-from app.console.amadeus.questions import Questions
-from app.console.amadeus.run_records import RunRecords
-from app.console.amadeus.schemas import ActionIn, QuestionIn
-from app.console.amadeus.skill_files import read_skill_file
-from app.console.amadeus.tool_contracts import validate_tool
+from studio.apps.amadeus.clients.website_operations import catalog_from_schema, operation_request
+from studio.apps.amadeus.storage.conversations import Conversations
+from studio.apps.amadeus.storage.files import list_files, open_work_file
+from studio.apps.amadeus.storage.questions import Questions
+from studio.apps.amadeus.storage.runs import RunRecords
+from studio.apps.amadeus.storage.skill_files import read_skill_file
 from studio.apps.amadeus.transport.operation_http import published_catalog
 from studio.contracts.amadeus.amadeus_native import DialogueToolResult
+from studio.contracts.amadeus.conversations import ActionIn, QuestionIn
+from studio.contracts.amadeus.tools import validate_tool
 from studio.runtime.database.operation_receipts import OperationError
 
 from .operation_calls import call_registered

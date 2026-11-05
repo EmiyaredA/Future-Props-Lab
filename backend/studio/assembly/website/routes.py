@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends
 
-from app.console.routes.amadeus import require_amadeus_session
-from app.console.routes.amadeus import router as amadeus_router
 from app.console.routes.cloud_control import router as cloud_control_router
 from app.console.routes.code_agents import router as code_agents_router
 from studio.apps.agent_workbench.transport.website import router as agent_workbench_router
+from studio.apps.amadeus.transport.website import require_amadeus_session
+from studio.apps.amadeus.transport.website import router as amadeus_router
 from studio.apps.asset_library.transport.website.files import router as file_management_router
 from studio.apps.audio_annotation.routes import router as audio_annotation_router
 from studio.apps.creative_workshop.transport.catalog_http import router as creative_workshop_router

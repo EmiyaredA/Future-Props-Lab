@@ -6,15 +6,12 @@ import fcntl
 import hashlib
 import os
 import stat
-import subprocess
-import sys
 import uuid
 from pathlib import Path
 
 from anyio import AsyncFile
 from anyio.to_thread import run_sync
 
-from studio.config.settings import get_settings
 from studio.contracts.asset_library.incoming import IncomingFile
 from studio.runtime.database.operation_receipts import OperationError
 
@@ -22,11 +19,9 @@ KINDS = frozenset({"imports", "scripts", "outputs"})
 MAX_FILE_BYTES = 50 * 1024 * 1024
 
 
-def work_root(owner_user_id: str, conversation_id: str, *, files_root: Path | None = None) -> Path:
+def work_root(owner_user_id: str, conversation_id: str, *, files_root: Path) -> Path:
     if Path(conversation_id).name != conversation_id or conversation_id in {"", ".", ".."}:
         raise OperationError("会话 ID 无效")
-    if files_root is None:
-        return get_settings().account_path(owner_user_id) / "amadeus" / conversation_id
     if Path(owner_user_id).name != owner_user_id or owner_user_id in {"", ".", ".."}:
         raise OperationError("账号 ID 无效")
     path = files_root.resolve()
@@ -43,7 +38,7 @@ def work_file(
     kind: str,
     name: str,
     *,
-    files_root: Path | None = None,
+    files_root: Path,
 ) -> Path:
     if (
         kind not in KINDS
@@ -63,8 +58,10 @@ def work_file(
     return target
 
 
-def read_file(owner_user_id: str, conversation_id: str, kind: str, name: str) -> Path:
-    target = work_file(owner_user_id, conversation_id, kind, name)
+def read_file(
+    owner_user_id: str, conversation_id: str, kind: str, name: str, *, files_root: Path
+) -> Path:
+    target = work_file(owner_user_id, conversation_id, kind, name, files_root=files_root)
     if not target.is_file():
         raise OperationError("文件不存在", "not_found", 404)
     return target
@@ -76,7 +73,7 @@ def _directory_fd(
     kind: str,
     *,
     create: bool,
-    files_root: Path | None = None,
+    files_root: Path,
 ) -> int:
     root = work_root(owner_user_id, conversation_id, files_root=files_root)
     try:
@@ -110,7 +107,7 @@ def open_work_file(
     kind: str,
     name: str,
     *,
-    files_root: Path | None = None,
+    files_root: Path,
 ):
     work_file(owner_user_id, conversation_id, kind, name, files_root=files_root)
     try:
@@ -143,16 +140,14 @@ def read_file_bytes(
     kind: str,
     name: str,
     *,
-    files_root: Path | None = None,
+    files_root: Path,
 ) -> bytes:
     file, _size = open_work_file(owner_user_id, conversation_id, kind, name, files_root=files_root)
     with file:
         return file.read(MAX_FILE_BYTES + 1)
 
 
-def list_files(
-    owner_user_id: str, conversation_id: str, *, files_root: Path | None = None
-) -> list[dict]:
+def list_files(owner_user_id: str, conversation_id: str, *, files_root: Path) -> list[dict]:
     root = work_root(owner_user_id, conversation_id, files_root=files_root)
     result = []
     for kind in sorted(KINDS):
@@ -187,22 +182,6 @@ def list_files(
     return result
 
 
-def open_work_folder(owner_user_id: str, conversation_id: str) -> None:
-    if sys.platform != "darwin":
-        raise OperationError("只支持 macOS 桌面打开会话目录", "unsupported_platform", 409)
-    root = work_root(owner_user_id, conversation_id)
-    if root.is_symlink():
-        raise OperationError("会话目录不安全")
-    root.mkdir(parents=True, exist_ok=True, mode=0o700)
-    subprocess.Popen(
-        ["/usr/bin/open", str(root)],
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        start_new_session=True,
-    )
-
-
 def write_file(
     owner_user_id: str,
     conversation_id: str,
@@ -211,7 +190,7 @@ def write_file(
     content: bytes,
     expected_sha256: str,
     *,
-    files_root: Path | None = None,
+    files_root: Path,
 ) -> dict:
     if kind not in {"scripts", "outputs", "imports"}:
         raise OperationError("文件类别无效")

@@ -9,9 +9,14 @@ from fastapi import APIRouter, File, Request, UploadFile
 from fastapi.responses import Response, StreamingResponse
 from starlette.background import BackgroundTask
 
-from app.console.amadeus.conversations import Conversations
-from app.console.amadeus.files import import_work_file, list_files, open_work_file, write_file
-from app.console.amadeus.schemas import FileListOut, FileOut, FileWriteIn
+from studio.apps.amadeus.storage.conversations import Conversations
+from studio.apps.amadeus.storage.files import (
+    import_work_file,
+    list_files,
+    open_work_file,
+    write_file,
+)
+from studio.contracts.amadeus.conversations import FileListOut, FileOut, FileWriteIn
 from studio.runtime.http.dependencies import SessionDep, StudioAuth
 
 router = APIRouter(prefix="/v1/amadeus", tags=["amadeus"])

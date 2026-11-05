@@ -7,7 +7,7 @@ from io import StringIO
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 
-from app.console.amadeus.schemas import ActionOut
+from studio.contracts.amadeus.conversations import ActionOut
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.http.dependencies import StudioAuth
 

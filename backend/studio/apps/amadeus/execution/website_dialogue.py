@@ -4,13 +4,13 @@ import asyncio
 import time
 
 from app.capabilities.agents.cli.dialogue import run_dialogue
-from app.console.amadeus.dialogue_prompt import dialogue_prompt
-from app.console.amadeus.files import work_root
-from app.console.amadeus.runs import Runs
-from app.console.amadeus.schemas import RunEventIn, RunOut
-from app.console.amadeus.skills import load_skill
-from app.console.amadeus.tool_bridge import TOOLS, ToolBridge
 from app.console.governance.code_agents import resolve
+from studio.apps.amadeus.execution.website_runs import Runs
+from studio.apps.amadeus.execution.website_tools import TOOLS, ToolBridge
+from studio.apps.amadeus.rules.dialogue_prompt import dialogue_prompt
+from studio.apps.amadeus.storage.files import work_root
+from studio.apps.amadeus.storage.skill_import import load_skill
+from studio.contracts.amadeus.conversations import RunEventIn, RunOut
 from studio.runtime.database.ownership import bind_owner
 from studio.runtime.ids import new_id
 
@@ -93,7 +93,9 @@ class CodeAgentRuns:
                 if kind != "assistant_delta":
                     await persist(kind, payload)
 
-        bridge = ToolBridge(app, headers, principal, run, self.sessions)
+        bridge = ToolBridge(
+            app, headers, principal, run, self.sessions, files_root=self.settings.runtime_path
+        )
         transport = None
         paused = None
         status, error = "completed", None
@@ -117,6 +119,7 @@ class CodeAgentRuns:
                             run.conversation_id,
                             identity,
                             catalog=self.skills(session, run.owner_user_id),
+                            files_root=self.settings.runtime_path,
                         )
             if skill_snapshots:
                 async with self.sessions() as session:
@@ -129,7 +132,9 @@ class CodeAgentRuns:
                         "skills": skill_snapshots,
                     }
                     await session.commit()
-            root = work_root(run.owner_user_id, run.conversation_id)
+            root = work_root(
+                run.owner_user_id, run.conversation_id, files_root=self.settings.runtime_path
+            )
             if root.is_symlink():
                 raise ValueError("会话目录不安全")
             root.mkdir(parents=True, exist_ok=True, mode=0o700)

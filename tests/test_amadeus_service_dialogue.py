@@ -7,9 +7,9 @@ from tests.test_amadeus_service_native import CREDENTIAL, INGRESS, WORKER, MacBr
 from tests.test_community_asset_protocol import CATALOG, scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 
-from app.console.amadeus.tool_contracts import SCHEMAS
 from studio.apps.amadeus.storage.migrations.registry import MIGRATIONS
 from studio.assembly.independent.amadeus.application import create_app
+from studio.contracts.amadeus.tools import SCHEMAS
 from studio.host.agent_execution.amadeus_dialogue import DialogueWorker
 from studio.host.agent_execution.amadeus_worker import AmadeusWorker
 from studio.host.transport import NativeTransport

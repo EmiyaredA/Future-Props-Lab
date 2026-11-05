@@ -17,8 +17,12 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 from tests.test_tools_navigation_migration import available_ports, listener
 
-from app.console.amadeus.files import read_file_bytes, work_root
-from app.console.amadeus.models import (
+from db.migrations import apply_migrations
+from studio.apps.amadeus.storage.files import read_file_bytes, work_root
+from studio.apps.amadeus.storage.migration_history import DATASETS, LINKS
+from studio.apps.amadeus.storage.migration_originals import PREFIX as ORIGINALS
+from studio.apps.amadeus.storage.migrations.registry import MIGRATIONS
+from studio.apps.amadeus.storage.models import (
     AmadeusAction,
     AmadeusConversation,
     AmadeusMessage,
@@ -26,11 +30,7 @@ from app.console.amadeus.models import (
     AmadeusRun,
     AmadeusRunEvent,
 )
-from app.console.amadeus.skill_files import read_skill_file
-from db.migrations import apply_migrations
-from studio.apps.amadeus.storage.migration_history import DATASETS, LINKS
-from studio.apps.amadeus.storage.migration_originals import PREFIX as ORIGINALS
-from studio.apps.amadeus.storage.migrations.registry import MIGRATIONS
+from studio.apps.amadeus.storage.skill_files import read_skill_file
 from studio.apps.identity.storage.models.accounts import User
 from studio.assembly.independent.amadeus.application import create_app
 from studio.assembly.independent.amadeus.maintenance import PREFIX, RELATIONSHIPS

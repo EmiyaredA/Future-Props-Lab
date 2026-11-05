@@ -16,12 +16,12 @@ from app.capabilities.agents.cli.catalog import (
     inspect_connection,
 )
 from app.capabilities.agents.cli.dialogue import run_dialogue
-from app.console.amadeus.files import work_root
-from app.console.amadeus.tool_contracts import TOOLS
+from studio.apps.amadeus.storage.files import work_root
 from studio.config import read_config
 from studio.config.settings import Settings
 from studio.contracts.agent_workbench.native import NativeOutcome
 from studio.contracts.amadeus.amadeus_native import DialoguePlan, DialogueScope
+from studio.contracts.amadeus.tools import TOOLS
 from studio.host.transport import LeaseEnded, ProtocolConflict
 from studio.runtime.database.operation_receipts import OperationError
 

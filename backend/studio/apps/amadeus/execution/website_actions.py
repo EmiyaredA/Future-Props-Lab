@@ -5,17 +5,18 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy import select, update
 
-from app.console.amadeus.files import write_file
-from app.console.amadeus.fpl_operations import call_operation
-from app.console.amadeus.models import AmadeusAction, AmadeusConversation, AmadeusRun
-from app.console.amadeus.schemas import ActionOut
-from app.console.amadeus.scripts import run_script
 from app.console.governance.code_agents import resolve
+from studio.apps.amadeus.clients.website_operations import call_operation
+from studio.apps.amadeus.storage.files import write_file
+from studio.apps.amadeus.storage.models import AmadeusAction, AmadeusConversation, AmadeusRun
 from studio.apps.integrations.transport.bindings import mcp_catalog, tool_catalog
+from studio.contracts.amadeus.conversations import ActionOut
+from studio.host.agent_execution.amadeus_scripts import run_script
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now
@@ -32,6 +33,7 @@ class ActionExecution:
     """
 
     video: VideoExecutor
+    files_root: Path
     running: dict[str, asyncio.Task] = field(default_factory=dict)
 
     async def close(self):
@@ -154,6 +156,7 @@ async def execute_action(
                 filename,
                 content.encode(),
                 str(args.get("expected_sha256", "")),
+                files_root=execution.files_root,
             )
         elif name == "video_timeline_batch":
             result = await execution.video(
@@ -169,7 +172,11 @@ async def execute_action(
             )
         else:
             result = await run_script(
-                principal.owner_user_id, conversation_id, args, output_callback
+                principal.owner_user_id,
+                conversation_id,
+                args,
+                output_callback,
+                files_root=execution.files_root,
             )
         status = "failed" if name == "run_script" and result["exit_code"] != 0 else "completed"
     except asyncio.CancelledError:

@@ -13,7 +13,7 @@ from zipfile import BadZipFile, ZipFile
 import httpx
 from anyio.to_thread import run_sync
 
-from app.console.amadeus.skill_files import skill_path_parts
+from studio.apps.amadeus.storage.skill_files import skill_path_parts
 from studio.contracts.amadeus.amadeus_skills import HEADER as SKILL_HEADER
 from studio.contracts.amadeus.amadeus_skills import PURPOSE, SKILL_SOURCE, VERSION, SkillPin
 from studio.contracts.identity.claims import HEADER

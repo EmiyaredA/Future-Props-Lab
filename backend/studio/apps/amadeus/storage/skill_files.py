@@ -5,14 +5,14 @@ import re
 import stat
 from pathlib import Path
 
-from app.console.amadeus import files
+from studio.apps.amadeus.storage import files
 from studio.contracts.amadeus.amadeus_skills import ID, VERSION
 from studio.runtime.database.operation_receipts import OperationError
 
 MAX_SKILL_FILE_BYTES = 1024 * 1024
 
 
-def skill_root(owner_user_id, conversation_id, skill_id, *, files_root=None):
+def skill_root(owner_user_id, conversation_id, skill_id, *, files_root):
     if re.fullmatch(ID, skill_id) is None:
         raise OperationError("Skill ID 无效", "invalid_path", 422)
     root = files.work_root(owner_user_id, conversation_id, files_root=files_root)
@@ -40,7 +40,7 @@ def read_skill_file(
     version: str,
     relative_path: str,
     *,
-    files_root: Path | None = None,
+    files_root: Path,
 ) -> dict[str, str | int]:
     if re.fullmatch(VERSION, version) is None:
         raise OperationError("Skill 版本无效", "invalid_path", 422)

@@ -5,14 +5,6 @@ from __future__ import annotations
 from sqlalchemy import event
 from sqlalchemy.orm import Session, with_loader_criteria
 
-from app.console.amadeus.models import (
-    AmadeusAction,
-    AmadeusConversation,
-    AmadeusMessage,
-    AmadeusQuestion,
-    AmadeusRun,
-    AmadeusRunEvent,
-)
 from app.console.cloud_control.models import CloudFactor, CloudUnlock
 from app.console.cloud_control.preference_models import DesktopPreference
 from studio.apps.agent_workbench.execution.models import (
@@ -25,6 +17,14 @@ from studio.apps.agent_workbench.storage.models import (
     WorkbenchOperation,
     WorkbenchSession,
     WorkbenchSource,
+)
+from studio.apps.amadeus.storage.models import (
+    AmadeusAction,
+    AmadeusConversation,
+    AmadeusMessage,
+    AmadeusQuestion,
+    AmadeusRun,
+    AmadeusRunEvent,
 )
 from studio.apps.asset_library.storage.layout.upgrade_records import AccountStorageUpgradeRoot
 from studio.apps.asset_library.storage.models import VisualAsset, VisualAssetFolder

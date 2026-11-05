@@ -12,13 +12,13 @@ from sqlalchemy import select
 from tests.test_community_asset_protocol import CATALOG, scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 
-from app.console.amadeus.models import (
+from studio.apps.amadeus.storage.migrations.registry import MIGRATIONS
+from studio.apps.amadeus.storage.models import (
     AmadeusAction,
     AmadeusConversation,
     AmadeusMessage,
     AmadeusRun,
 )
-from studio.apps.amadeus.storage.migrations.registry import MIGRATIONS
 from studio.assembly.independent.amadeus.application import create_app
 from studio.contracts.identity.claims import HEADER, issue_context, verify_context
 from studio.runtime.database.migrations import apply

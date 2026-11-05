@@ -2,9 +2,9 @@
 
 from sqlalchemy import exists, select, update
 
-from app.console.amadeus.conversations import Conversations, action_arguments_sha256
-from app.console.amadeus.models import AmadeusAction, AmadeusRun
-from app.console.amadeus.schemas import ActionOut
+from studio.apps.amadeus.storage.conversations import Conversations, action_arguments_sha256
+from studio.apps.amadeus.storage.models import AmadeusAction, AmadeusRun
+from studio.contracts.amadeus.conversations import ActionOut
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.time import utc_now
 

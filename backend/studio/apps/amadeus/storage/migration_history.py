@@ -9,7 +9,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import DeclarativeBase
 
-from app.console.amadeus.models import (
+from studio.apps.amadeus.storage.models import (
     AmadeusAction,
     AmadeusConversation,
     AmadeusMessage,

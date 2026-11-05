@@ -3,7 +3,7 @@
 from sqlalchemy import UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase
 
-from app.console.amadeus.models import (
+from studio.apps.amadeus.storage.models import (
     AmadeusAction,
     AmadeusConversation,
     AmadeusMessage,

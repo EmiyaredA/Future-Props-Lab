@@ -1,1 +1,0 @@
-"""Account-scoped website assistant."""

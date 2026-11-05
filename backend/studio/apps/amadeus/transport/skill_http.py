@@ -6,9 +6,9 @@ from functools import partial
 from anyio.to_thread import run_sync
 from fastapi import APIRouter, Request
 
-from app.console.amadeus.conversations import Conversations
-from app.console.amadeus.skill_files import read_skill_file, skill_root
 from studio.apps.amadeus.skill_pins import SkillSource, load_pin
+from studio.apps.amadeus.storage.conversations import Conversations
+from studio.apps.amadeus.storage.skill_files import read_skill_file, skill_root
 from studio.runtime.http.dependencies import SessionDep, StudioAuth
 
 router = APIRouter(prefix="/v1/amadeus", tags=["amadeus"])

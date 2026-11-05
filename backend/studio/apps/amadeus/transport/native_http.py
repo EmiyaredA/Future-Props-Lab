@@ -6,11 +6,11 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.console.amadeus.conversations import Conversations
-from app.console.amadeus.files import work_root
-from app.console.amadeus.schemas import RunEventIn
+from studio.apps.amadeus.storage.conversations import Conversations
+from studio.apps.amadeus.storage.files import work_root
 from studio.contracts.agent_workbench.native import NativeLease, NativeOutcome
 from studio.contracts.amadeus.amadeus_native import AmadeusPoll, DialogueToolInput, FinderScope
+from studio.contracts.amadeus.conversations import RunEventIn
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.http.dependencies import SessionDep, StudioAuth
 

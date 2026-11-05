@@ -5,10 +5,11 @@ import asyncio
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
-from app.console.amadeus.conversations import Conversations
-from app.console.amadeus.questions import Questions
-from app.console.amadeus.run_records import RunRecords as Runs
-from app.console.amadeus.schemas import (
+from studio.apps.amadeus.storage.action_records import ActionRecords
+from studio.apps.amadeus.storage.conversations import Conversations
+from studio.apps.amadeus.storage.questions import Questions
+from studio.apps.amadeus.storage.runs import RunRecords as Runs
+from studio.contracts.amadeus.conversations import (
     ActionDecisionIn,
     ActionIn,
     ActionOut,
@@ -29,7 +30,6 @@ from app.console.amadeus.schemas import (
     RunFinishIn,
     RunOut,
 )
-from studio.apps.amadeus.storage.action_records import ActionRecords
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.http.dependencies import SessionDep, StudioAuth
 

@@ -4,7 +4,7 @@ import base64
 
 import pytest
 
-from app.console.amadeus import model_bridge
+from studio.apps.model_service import amadeus_turn as model_bridge
 from studio.runtime.database.operation_receipts import OperationError
 
 

@@ -9,15 +9,15 @@ from sqlalchemy import select
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.console.amadeus.models import AmadeusAction, AmadeusRun
-from app.console.amadeus.run_records import ACTIVE
-from app.console.amadeus.run_recovery import recover_runs
 from studio.apps.amadeus.action_execution import ActionExecution
 from studio.apps.amadeus.dialogue_runs import DialogueRuns
 from studio.apps.amadeus.native_host import AmadeusHost
 from studio.apps.amadeus.request_limits import AmadeusNativeRequestLimits, AmadeusRequestLimits
 from studio.apps.amadeus.storage.action_records import recover_actions
 from studio.apps.amadeus.storage.migrations.registry import MIGRATIONS
+from studio.apps.amadeus.storage.models import AmadeusAction, AmadeusRun
+from studio.apps.amadeus.storage.recovery import recover_runs
+from studio.apps.amadeus.storage.runs import ACTIVE
 from studio.apps.amadeus.storage.service_models import MODELS
 from studio.apps.amadeus.tool_calls import ToolCalls
 from studio.apps.amadeus.transport.action_http import router as action_router

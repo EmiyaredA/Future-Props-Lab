@@ -9,12 +9,11 @@ from collections.abc import AsyncIterator
 from time import monotonic
 from uuid import uuid4
 
-from app.console.amadeus.schemas import ModelTurnIn
-from app.runtime.credentials import decrypt_secret
 from studio.apps.model_service.inference.catalog import get_model
 from studio.apps.model_service.providers.agent import HttpAgentAdapter
 from studio.apps.model_service.storage.models.call_log import LlmCallLog
 from studio.contracts.agent_runtime.dialogue import AgentMessage, ImageInput, ToolCall, ToolSpec
+from studio.contracts.amadeus.conversations import ModelTurnIn
 from studio.contracts.model_service.credential_snapshot import CredentialSnapshot
 from studio.runtime.database.operation_receipts import OperationError
 
@@ -83,6 +82,7 @@ async def stream_model_turn(
     *,
     sessions,
     transport_resolver,
+    cipher,
 ) -> AsyncIterator[str]:
     model, provider = await get_model(session, owner_user_id, body.model_id, "text")
     if any(item.get("images") for item in body.messages) and "vision" not in model.capabilities:
@@ -94,7 +94,7 @@ async def stream_model_turn(
     adapter = HttpAgentAdapter(
         kind=provider_kind,
         base_url=provider.base_url,
-        api_key=decrypt_secret(provider.api_key_ciphertext),
+        api_key=cipher.decrypt(provider.api_key_ciphertext) if provider.api_key_ciphertext else "",
         transport=transport_resolver(provider.base_url),
     )
     image_groups = _message_images(body.messages)

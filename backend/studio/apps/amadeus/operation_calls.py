@@ -4,7 +4,11 @@ import json
 
 import httpx
 
-from app.console.amadeus.fpl_operations import RESPONSE_LIMIT, operation_request, operation_result
+from studio.apps.amadeus.clients.website_operations import (
+    RESPONSE_LIMIT,
+    operation_request,
+    operation_result,
+)
 from studio.contracts.amadeus.amadeus_native import RUN_SOURCE
 from studio.contracts.identity.approved_operations import MAX_BODY, PURPOSE, request_digest
 from studio.contracts.identity.claims import HEADER

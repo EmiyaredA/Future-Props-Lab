@@ -4,7 +4,7 @@ import re
 
 from starlette.exceptions import HTTPException
 
-from app.console.amadeus.files import MAX_FILE_BYTES
+from studio.apps.amadeus.storage.files import MAX_FILE_BYTES
 from studio.runtime.http.request_limit import RequestLimit
 
 IMPORT = re.compile(r"/v1/amadeus/conversations/[^/]+/imports")

@@ -5,13 +5,13 @@ from __future__ import annotations
 import asyncio
 import shutil
 
-from app.console.amadeus import files
-from app.console.amadeus.skill_files import read_skill_file as read_skill_file
+from studio.apps.amadeus.storage import files
+from studio.apps.amadeus.storage.skill_files import read_skill_file as read_skill_file
 from studio.runtime.database.operation_receipts import OperationError
 
 
 async def load_skill(
-    session, owner_user_id: str, conversation_id: str, skill_id: str, *, catalog
+    session, owner_user_id: str, conversation_id: str, skill_id: str, *, catalog, files_root
 ) -> dict[str, str]:
     try:
         skill = await catalog.get(skill_id)
@@ -19,7 +19,9 @@ async def load_skill(
         raise OperationError("Skill 不存在", "not_found", 404) from exc
     if not skill.enabled:
         raise OperationError("Skill 尚未启用", "skill_unavailable", 409)
-    skill_root = files.work_root(owner_user_id, conversation_id) / "skills" / skill_id
+    skill_root = (
+        files.work_root(owner_user_id, conversation_id, files_root=files_root) / "skills" / skill_id
+    )
     if skill_root.is_symlink():
         raise OperationError("会话目录不安全", "skill_unavailable", 409)
     pinned = [path for path in skill_root.iterdir() if path.is_dir()] if skill_root.is_dir() else []

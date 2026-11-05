@@ -2,8 +2,8 @@
 
 from sqlalchemy import select, update
 
-from app.console.amadeus.models import AmadeusAction, AmadeusMessage, AmadeusRun
-from app.console.amadeus.run_records import ACTIVE
+from studio.apps.amadeus.storage.models import AmadeusAction, AmadeusMessage, AmadeusRun
+from studio.apps.amadeus.storage.runs import ACTIVE
 from studio.runtime.time import utc_now
 
 
