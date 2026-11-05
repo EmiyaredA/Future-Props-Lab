@@ -17,7 +17,7 @@ from studio.apps.audio_annotation.schemas.document import (
     AudioAnnotationWaveformOut,
     AudioAnnotationWaveformPutIn,
 )
-from studio.apps.audio_annotation.sources import AnnotationAudio, TranscriptionSource
+from studio.apps.audio_annotation.sources import AnnotationAudio
 
 
 class AudioSources(Protocol):
@@ -32,10 +32,6 @@ class AudioSources(Protocol):
     async def describe_many(self, asset_ids: set[str]) -> dict[str, AnnotationAudio]: ...
 
     def open(self, audio: AnnotationAudio) -> AbstractAsyncContextManager[Path]: ...
-
-    def transcription(self, task_id: str) -> AbstractAsyncContextManager[TranscriptionSource]: ...
-
-    async def publish_original(self, source: TranscriptionSource) -> AnnotationAudio: ...
 
 
 class ProjectOperations(Protocol):

@@ -284,7 +284,8 @@ def test_annotation_image_keeps_entrypoint_and_excludes_legacy_adapters():
     assert "studio.apps.audio_annotation.storage.document_edits" in closure
     assert "studio" in closure
     assert "studio.assembly.website.application" not in closure
-    assert "studio.apps.audio_annotation.legacy_sources" not in closure
+    assert "studio.assembly.website.annotation_sources" not in closure
+    assert "studio.assembly.website.annotation_imports" not in closure
 
 
 def test_identity_image_includes_migrated_configuration():

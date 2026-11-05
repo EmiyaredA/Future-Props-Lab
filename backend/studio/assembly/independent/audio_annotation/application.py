@@ -11,6 +11,7 @@ from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from studio.apps.audio_annotation.clients.asset_library import Inputs, ProjectReferences
+from studio.apps.audio_annotation.clients.creation_inputs import AudioCreationInputs
 from studio.apps.audio_annotation.clients.model_service import SegmentTranscription
 from studio.apps.audio_annotation.routes import router
 from studio.apps.audio_annotation.sources import AudioAnnotationError
@@ -93,6 +94,9 @@ def create_app(
     app.state.database = database
     app.state.annotation_document_editor = document_editor
     app.state.annotation_project_creator = project_creator
+    app.state.annotation_creation_inputs = lambda _request, _session, sources: AudioCreationInputs(
+        sources
+    )
     app.state.annotation_project_deleter = project_deleter
     app.state.annotation_saved_audio = saved_audio
     app.state.annotation_projects = lambda connection, session: ProjectRecords(

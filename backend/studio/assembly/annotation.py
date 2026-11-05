@@ -1,6 +1,5 @@
 """Bind Annotation editing to its request-owned SQLite session."""
 
-from studio.apps.audio_annotation.clients.creation_inputs import AudioCreationInputs
 from studio.apps.audio_annotation.clients.saved_audio import LocalClips, SegmentRecognition
 from studio.apps.audio_annotation.storage.document_edits import SqlDocumentEdits
 from studio.apps.audio_annotation.use_cases.create_project import CreateProject
@@ -20,7 +19,7 @@ def project_creator(request, session, owner):
     records = request.app.state.annotation_projects(request, session)
     return CreateProject(
         owner=owner,
-        inputs=AudioCreationInputs(records.sources),
+        inputs=request.app.state.annotation_creation_inputs(request, session, records.sources),
         store=records,
         ids=new_id,
     )

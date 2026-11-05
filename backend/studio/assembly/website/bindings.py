@@ -12,7 +12,6 @@ from studio.apps.agent_workbench.execution.runner import WorkbenchRuns
 from studio.apps.amadeus.execution.website_actions import ActionExecution
 from studio.apps.amadeus.execution.website_dialogue import CodeAgentRuns
 from studio.apps.asset_library.storage.layout.account_upgrade import upgrade_pending
-from studio.apps.audio_annotation.legacy_sources import LegacyAnnotationSources
 from studio.apps.audio_annotation.storage.projects import ProjectRecords
 from studio.apps.audio_annotation.transcription import legacy_transcribe
 from studio.apps.director_desk.agent_session import DirectorEditorSessions
@@ -69,6 +68,8 @@ from studio.assembly.annotation import (
     saved_audio,
 )
 from studio.assembly.website.account_provisioning import create_account
+from studio.assembly.website.annotation_imports import WebsiteCreationInputs
+from studio.assembly.website.annotation_sources import WebsiteAnnotationSources
 from studio.assembly.website.creative import bind_creative
 from studio.assembly.website.desktop import DesktopConnection
 from studio.assembly.website.integrations import integration_bindings
@@ -120,10 +121,13 @@ def bind_components(app, settings, database):
     )
     app.state.annotation_document_editor = document_editor
     app.state.annotation_project_creator = project_creator
+    app.state.annotation_creation_inputs = lambda _request, session, sources: WebsiteCreationInputs(
+        sources=sources, session=session, settings=settings
+    )
     app.state.annotation_project_deleter = project_deleter
     app.state.annotation_saved_audio = saved_audio
     app.state.annotation_projects = lambda _request, session: ProjectRecords(
-        session, sources=LegacyAnnotationSources(session, settings)
+        session, sources=WebsiteAnnotationSources(session, settings)
     )
     app.state.annotation_transcriber = lambda _request, session: partial(legacy_transcribe, session)
     app.state.annotation_staging = None
