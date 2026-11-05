@@ -1,0 +1,45 @@
+# Enable the trusted Mac setup coordinator and mount only owner-specific settings.
+x-cloud-settings-commit: &cloud-settings-commit
+  type: bind
+  source: ${FPL_CLOUD_SETTINGS_COMMIT_DIR:?Select the committed cloud settings directory}
+  target: /run/fpl/cloud-settings/committed
+  read_only: true
+  bind:
+    create_host_path: false
+
+services:
+  identity:
+    environment:
+      FPL_IDENTITY_CLOUD_PROJECTION_DIR: /run/fpl/cloud-settings/identity
+      FPL_CLOUD_SETTINGS_COMMIT_DIR: /run/fpl/cloud-settings/committed
+    volumes:
+      - <<: *cloud-settings-commit
+      - type: bind
+        source: ${FPL_IDENTITY_CLOUD_PROJECTION_DIR:?Select the Identity-only cloud projection}
+        target: /run/fpl/cloud-settings/identity
+        read_only: true
+        bind:
+          create_host_path: false
+  remote:
+    environment:
+      FPL_REMOTE_CLOUD_PROJECTION_DIR: /run/fpl/cloud-settings/remote
+      FPL_CLOUD_SETTINGS_COMMIT_DIR: /run/fpl/cloud-settings/committed
+    volumes:
+      - <<: *cloud-settings-commit
+      - type: bind
+        source: ${FPL_REMOTE_CLOUD_PROJECTION_DIR:?Select the Remote-only cloud projection}
+        target: /run/fpl/cloud-settings/remote
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${FPL_REMOTE_SETUP_OPTIONS:?Select the Remote native setup credentials}
+        target: /run/fpl/remote-setup.json
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/ready', timeout=2)"]
+      interval: 15s
+      timeout: 3s
+      retries: 3

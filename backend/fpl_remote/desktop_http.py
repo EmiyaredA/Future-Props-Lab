@@ -13,6 +13,7 @@ from app.console.cloud_control.schemas import (
     IdlePreference,
 )
 from app.runtime.website import require_local_browser
+from fpl_config import ConfigurationError
 from fpl_runtime.claims import HEADER, verify_context
 from fpl_runtime.cloud_authority import DESKTOP_COOKIE, DESKTOP_SOCKET, TICKET_SECONDS
 from fpl_runtime.http_dependencies import SessionDep, StudioAuth
@@ -37,9 +38,16 @@ async def authority(request):
 async def status(request: Request, db: SessionDep, principal: StudioAuth):
     current = await authority(request)
     minutes, revision = await preferences.desktop_preferences(db, principal.user_id)
+    state = request.app.state
+    label = state.remote_settings.host_label
+    if state.cloud_projection is not None:
+        try:
+            label = state.cloud_projection.read()["fpl_cloud_control_host_label"]
+        except ConfigurationError:
+            raise HTTPException(503, "remote_cloud_projection_unavailable") from None
     return CloudStatus(
         enabled=current.enabled,
-        host_label=request.app.state.remote_settings.host_label,
+        host_label=label,
         desktop_configured=current.desktop_configured,
         desktop_authorized=current.desktop_authorized,
         idle_minutes=minutes,
@@ -136,10 +144,17 @@ async def desktop_socket(socket: WebSocket):
 @router.get("/settings", response_model=CloudSetup)
 async def settings_view(request: Request, principal: StudioAuth):
     require_local_browser(request, principal)
-    raise HTTPException(503, "云控配置协调器尚未就绪")
+    return await require_setup(request).run(request, principal.user_id)
 
 
 @router.put("/settings", response_model=CloudSetup)
-async def settings_save(request: Request, _body: CloudSetupUpdate, principal: StudioAuth):
+async def settings_save(request: Request, body: CloudSetupUpdate, principal: StudioAuth):
     require_local_browser(request, principal)
-    raise HTTPException(503, "云控配置协调器尚未就绪")
+    return await require_setup(request).run(request, principal.user_id, body)
+
+
+def require_setup(request):
+    setup = request.app.state.cloud_setup
+    if setup is None:
+        raise HTTPException(503, "云控配置协调器尚未就绪")
+    return setup

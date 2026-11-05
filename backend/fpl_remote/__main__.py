@@ -1,15 +1,18 @@
 """Launch the dedicated Remote process with its read-only transport projection."""
 
 import argparse
+import os
 from pathlib import Path
 
 import uvicorn
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
+from fpl_config.cloud_projection import CloudProjection
 from fpl_runtime.locking import service_lock
 from fpl_runtime.migration_batches import MigrationPlan
 from fpl_runtime.migrations import apply
+from fpl_runtime.native_ingress import NativeWorkerOptions
 from fpl_runtime.routing import RouteCatalog
 
 from .application import create_app
@@ -33,6 +36,7 @@ def main():
     parser.add_argument("--schema", type=Path, default=Path("/app/deploy/contracts/openapi.json"))
     parser.add_argument("--guacd-host", choices=("guacd", "127.0.0.1"), default="guacd")
     parser.add_argument("--port", type=int, default=8080)
+    parser.add_argument("--setup-options", type=Path, default=Path("/run/fpl/remote-setup.json"))
     parser.add_argument("--migration-plan", type=Path)
     parser.add_argument("--legacy-db", type=Path)
     options = parser.parse_args()
@@ -60,6 +64,18 @@ def main():
     public_key = load_pem_public_key(options.public_key.read_bytes())
     if not isinstance(public_key, Ed25519PublicKey):
         parser.error("Identity 公钥类型无效")
+    setup = (
+        NativeWorkerOptions.model_validate_json(options.setup_options.read_bytes())
+        if options.setup_options.is_file()
+        else None
+    )
+    projection = None
+    if setup is not None:
+        projection = CloudProjection(
+            "remote",
+            Path(os.environ["FPL_REMOTE_CLOUD_PROJECTION_DIR"]),
+            Path(os.environ["FPL_CLOUD_SETTINGS_COMMIT_DIR"]),
+        )
     app = create_app(
         state_root=options.state_root,
         settings=RemoteSettings.read(options.config, guacd_host=options.guacd_host),
@@ -67,6 +83,8 @@ def main():
         credential=options.identity_token.read_text().strip(),
         catalog=RouteCatalog.read(options.catalog),
         schema_path=options.schema,
+        setup_options=setup,
+        cloud_projection=projection,
     )
     uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)
 

@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
+from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -18,17 +19,22 @@ from app.problem_details import (
     storage_operational_error_handler,
     validation_exception_handler,
 )
+from fpl_config import ConfigurationError
 from fpl_runtime.authentication import SignedIdentity
 from fpl_runtime.cloud_authority import DESKTOP_SOCKET
 from fpl_runtime.database import Database
 from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.locking import service_lock
 from fpl_runtime.migrations import check
+from fpl_runtime.native_ingress import NativeIngress
 from fpl_runtime.protocol_hash import public_contract
 from fpl_runtime.request_limit import RequestLimit
 
 from .desktop_http import router
 from .migrations.registry import MIGRATIONS
+from .models import RemoteSetupJob
+from .setup_host import SetupHost
+from .setup_native_http import router as setup_native_router
 
 
 def create_app(
@@ -41,8 +47,14 @@ def create_app(
     schema_path=None,
     transport=None,
     connect_upstream=None,
+    setup_options=None,
+    cloud_projection=None,
 ):
-    database = Database("remote", state_root, models=(DesktopPreference,))
+    if (setup_options is None) != (cloud_projection is None) or (
+        setup_options is not None and setup_options.identity_credential != credential
+    ):
+        raise ValueError("Remote 设置通道与归属配置未匹配")
+    database = Database("remote", state_root, models=(DesktopPreference, RemoteSetupJob))
     identity = LiveAuthorization(service="remote", credential=credential, transport=transport)
 
     async def current_access(principal, _local, assertion, epoch):
@@ -82,6 +94,11 @@ def create_app(
     app.state.database = database
     app.state.cloud_desktop = desktop
     app.state.remote_settings = settings
+    app.state.cloud_projection = cloud_projection
+    app.state.cloud_setup = SetupHost(database, identity) if setup_options else None
+    app.include_router(setup_native_router)
+    app.add_middleware(NativeIngress, options=setup_options, state_key="remote_worker")
+    app.add_middleware(RequestLimit, prefix="/_native/", maximum=32 * 1024)
     app.state.cloud_identity = identity
     app.state.identity_public_key = public_key
     app.include_router(router, prefix="/v1")
@@ -107,6 +124,14 @@ def create_app(
 
     @app.get("/ready")
     async def ready():
-        raise HTTPException(503, "remote_cutover_incomplete")
+        if app.state.cloud_setup is None or not app.state.cloud_setup.ready:
+            raise HTTPException(503, "remote_setup_worker_unavailable")
+        try:
+            cloud_projection.read()
+        except ConfigurationError:
+            raise HTTPException(503, "remote_cloud_projection_unavailable") from None
+        async with database.sessions() as db:
+            await db.execute(text("SELECT 1"))
+        return {"status": "ready", "service": "remote"}
 
     return app

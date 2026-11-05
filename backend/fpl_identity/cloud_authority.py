@@ -17,6 +17,7 @@ from fpl_runtime.cloud_authority import (
     CloudAuthorityQuery,
     permits_cloud_authority,
 )
+from fpl_runtime.cloud_setup import SETTINGS_PATH
 
 from .live import active_actor
 
@@ -74,7 +75,10 @@ async def cloud_authority(request: Request, response: Response, body: CloudAutho
         return CloudAuthority(
             active=True,
             enabled=enabled,
-            enrolled=enabled and bool(factor),
+            enrolled=bool(factor)
+            and (
+                enabled or (actor.local and body.service == "remote" and body.path == SETTINGS_PATH)
+            ),
             factor_epoch=hashlib.sha256(factor.encode()).hexdigest() if factor else None,
             unlocked_until=await access.unlock_expiry(db, principal, local=actor.local),
             desktop_configured=access.allowed(principal, local=actor.local, desktop=True),

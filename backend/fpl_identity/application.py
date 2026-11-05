@@ -21,7 +21,8 @@ from app.problem_details import (
     storage_operational_error_handler,
     validation_exception_handler,
 )
-from app.runtime.config import get_settings
+from app.runtime.config import get_cloud_settings, get_settings
+from fpl_config import ConfigurationError
 from fpl_runtime.database import Database
 from fpl_runtime.migrations import check
 from fpl_runtime.project_certification import MAX_BODY as CERTIFICATION_BODY
@@ -189,6 +190,10 @@ def create_app(
     @app.get("/ready")
     async def ready():
         check(database.path, "identity", MIGRATIONS)
+        try:
+            get_cloud_settings()
+        except ConfigurationError:
+            raise HTTPException(503, "identity_cloud_projection_unavailable") from None
         async with database.sessions() as session:
             await session.execute(text("SELECT 1"))
         return {"status": "ready", "service": "identity"}

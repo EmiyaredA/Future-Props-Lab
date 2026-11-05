@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from fpl_config import CONFIG_FILE, ConfigurationError, read_config
+from fpl_config.cloud_projection import CloudProjection
 
 REPO_ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[3]))
 
@@ -293,8 +294,19 @@ def get_cloud_settings() -> Settings:
     try:
         info = CONFIG_FILE.stat()
     except FileNotFoundError:
-        return base
-    return base.model_copy(update=_cloud_overrides(info.st_ino, info.st_mtime_ns, info.st_size))
+        configured = {}
+    else:
+        configured = _cloud_overrides(info.st_ino, info.st_mtime_ns, info.st_size)
+    policy = os.getenv("FPL_IDENTITY_CLOUD_PROJECTION_DIR")
+    commit = os.getenv("FPL_CLOUD_SETTINGS_COMMIT_DIR")
+    if policy:
+        if not commit:
+            raise ConfigurationError("Identity 缺少云控配置提交目录")
+        configured = {
+            **configured,
+            **CloudProjection("identity", Path(policy), Path(commit)).read(),
+        }
+    return base.model_copy(update=configured)
 
 
 @lru_cache(maxsize=1)

@@ -14,9 +14,9 @@ from .access import enrolled
 from .schemas import CloudSetup
 
 
-def assert_setup_account(settings, principal):
+def assert_setup_account(settings, owner):
     ids = set(filter(None, settings.fpl_cloud_control_admin_user_ids.split(os.pathsep)))
-    if ids and principal.user_id not in ids:
+    if ids and owner not in ids:
         raise HTTPException(403, "该账号未获准管理云控配置")
 
 
@@ -35,14 +35,18 @@ async def probe_port(port, *, vnc=False):
 async def read_setup(db, principal):
     raw = config_bytes(CONFIG_FILE)
     settings = get_cloud_settings()
-    assert_setup_account(settings, principal)
+    assert_setup_account(settings, principal.user_id)
     has_factor = await enrolled(db, principal.user_id)
     await db.rollback()
+    return await read_snapshot(CONFIG_FILE, raw, settings, has_factor)
+
+
+async def read_snapshot(path, raw, settings, has_factor):
     guacd, sharing = await asyncio.gather(
         probe_port(settings.fpl_cloud_control_guacd_port),
         probe_port(settings.fpl_cloud_control_vnc_port, vnc=True),
     )
-    if config_bytes(CONFIG_FILE) != raw:
+    if config_bytes(path) != raw:
         raise HTTPException(409, "配置已变更，请刷新后重试")
     return CloudSetup(
         revision=revision(raw),
@@ -62,7 +66,7 @@ async def read_setup(db, principal):
 
 async def save_setup(db, principal, body):
     settings = get_cloud_settings()
-    assert_setup_account(settings, principal)
+    assert_setup_account(settings, principal.user_id)
     owner = principal.user_id
     if (
         body.public_enabled
@@ -71,6 +75,11 @@ async def save_setup(db, principal, body):
     ):
         raise HTTPException(409, "请先在本机登记验证器")
     await db.rollback()
+    await asyncio.to_thread(replace_config, CONFIG_FILE, body.revision, setup_edit(owner, body))
+    return await read_setup(db, principal)
+
+
+def setup_edit(owner, body):
     label = body.host_label.strip()
     if not label:
         raise HTTPException(422, "请填写主机名称")
@@ -83,5 +92,4 @@ async def save_setup(db, principal, body):
         cloud["admin_user_ids"] = list(dict.fromkeys([*cloud.get("admin_user_ids", []), owner]))
         cloud.pop("vnc_password", None)
 
-    await asyncio.to_thread(replace_config, CONFIG_FILE, body.revision, edit)
-    return await read_setup(db, principal)
+    return edit

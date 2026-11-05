@@ -5099,10 +5099,10 @@
       "model": "PresentationMigrationReceipt"
     },
     {
-      "table": "remote_desktop_import_receipts",
+      "table": "remote_setup_jobs",
       "service": "remote",
       "module": "fpl_remote.models",
-      "model": "DesktopPreferenceImportReceipt"
+      "model": "RemoteSetupJob"
     },
     {
       "table": "motion_render_jobs",

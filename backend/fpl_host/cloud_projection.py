@@ -38,7 +38,10 @@ class CloudPublisher:
                 raise ValueError("云控投影必须保存在本机用户专用目录")
 
     def prepare(self, raw):
-        parsed = tomllib.loads(raw.decode())
+        try:
+            parsed = tomllib.loads(raw.decode())
+        except (UnicodeError, tomllib.TOMLDecodeError):
+            raise ConfigurationError("Mac 云控配置格式无效") from None
         flatten(parsed)
         cloud = parsed.get("cloud_control", {})
         releases = {}
