@@ -122,6 +122,7 @@ def test_studio_namespace_initializers_do_not_import_applications():
 def test_migrated_packages_have_one_source_owner():
     assert not (STUDIO / "apps/agent_workbench/events.py").exists()
     assert not (STUDIO / "apps/agent_workbench/execution/events.py").exists()
+    assert not (STUDIO / "apps/agent_workbench/change_stream.py").exists()
     assert (STUDIO / "config/__init__.py").is_file()
     assert (STUDIO / "apps/audio_annotation/use_cases/edit_document.py").is_file()
     for directory in (

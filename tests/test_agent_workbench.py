@@ -13,11 +13,12 @@ from sqlalchemy import event, insert, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from db.migrations import apply_migrations
-from studio.apps.agent_workbench.change_stream import event_page
+from studio.apps.agent_workbench.storage.change_events import SqlChangeEvents, read_page
 from studio.apps.agent_workbench.storage.models import WorkbenchCheckpoint, WorkbenchSession
 from studio.apps.agent_workbench.sync.projection import apply_batch
 from studio.apps.agent_workbench.sync.runner import WorkbenchSyncRunner
 from studio.apps.agent_workbench.transport.service import create_router
+from studio.apps.agent_workbench.use_cases.history_subscription import selected_changes
 from studio.apps.identity.storage.models.accounts import User
 from studio.apps.identity.website_access.workbench import workbench_actor_allowed
 from studio.assembly.http_dependencies import (
@@ -607,10 +608,10 @@ async def test_cas_pause_unbind_clear_and_event_replay(store, tmp_path):
         assert not await apply_batch(
             sessions, source["id"], "alpha", 0, "record.jsonl", checkpoint.state, batch
         )
-        events = await event_page(db, "alpha", 0)
-        assert any(event["session_id"] == item["id"] for event in events)
-        assert await event_page(db, "beta", 0) == []
-        assert (await event_page(db, "alpha", 10**9))[0]["kind"] == "reset"
+        events = selected_changes(await read_page(db, "alpha", 0), 0)
+        assert any(event.session_id == item["id"] for event in events)
+        assert selected_changes(await read_page(db, "beta", 0), 0) == ()
+        assert selected_changes(await read_page(db, "alpha", 10**9), 10**9)[0].kind == "reset"
     assert (await client.delete(url + "?expected_revision=1")).status_code == 204
     assert (await client.get("/v1/agent-workbench/sources")).json() == []
     assert (
@@ -730,7 +731,7 @@ async def test_archive_duplicates_and_same_inode_rewrite(store, tmp_path):
 async def test_stream_reauthorizes_after_session_revocation(store):
     from datetime import timedelta
 
-    from studio.apps.agent_workbench.change_stream import stream_events
+    from studio.apps.agent_workbench.transport.change_events import stream_events
     from studio.apps.identity.storage.models.accounts import AuthSession
     from studio.runtime.time import utc_now
 
@@ -766,7 +767,7 @@ async def test_stream_reauthorizes_after_session_revocation(store):
         ConnectedRequest(),
         principal,
         0,
-        sessions=sessions,
+        changes=SqlChangeEvents(sessions),
         authorizer=WorkbenchStreamAuthorization(sessions, clock=utc_now).check,
     )
     assert "connected" in await anext(stream)

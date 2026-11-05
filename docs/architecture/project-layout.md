@@ -258,7 +258,7 @@ Galgame 剪辑交接由 `studio/apps/galgame_workshop/handoff_jobs.py`、`handof
 
 `studio/apps/asset_library/storage/folders.py` 复用同属文件能力的文件夹 CAS、名称和深度规则；`storage/context.py` 允许显式注入项目验证。新 Assets 数据库将外部项目 ID 视为不透明标识，仅保留自有表外键；旧迁移与数据库外键保持原样，迁移期单体继续使用旧适配。`studio/contracts/asset_library/references.py` 维护受限消费方、资源种类和版本化引用消息，不接受客户端指定归属。
 
-`backend/studio/apps/agent_workbench/` 装配独立工作台，拥有自有迁移、原生任务、来源订阅、投影回执、协调器与私有协议；复用工作台的阅读、搜索、CAS 和投影用例，不加载账号 ORM 或 Mac 解析器。`studio/runtime/http/dependencies.py` 只消费签名身份；`change_stream.py` 使用显式实时授权与数据库会话。Identity 的 `storage/workbench_access.py` 拥有兼容网站 Session 复核；旧工作台身份包装模块已删除。
+`backend/studio/apps/agent_workbench/` 装配独立工作台，拥有自有迁移、原生任务、来源订阅、投影回执、协调器与私有协议；复用工作台的阅读、搜索、CAS 和投影用例，不加载账号 ORM 或 Mac 解析器。`studio/runtime/http/dependencies.py` 只消费签名身份；`use_cases/history_subscription.py` 通过显式授权和事件读取端口处理游标重置与积压恢复，`storage/change_events.py` 返回不可变账号快照，`transport/change_events.py` 保持 SSE 编码。Identity 的 `storage/workbench_access.py` 拥有兼容网站 Session 复核；旧工作台身份包装模块已删除。
 
 `use_cases/observe_turns.py` 共用网站与独立服务的轮次版本订阅规则，`storage/turn_versions.py`
 在会话关闭后返回持久版本及执行器的临时就绪提示，`transport/turn_events.py` 保持既有 SSE 编码。

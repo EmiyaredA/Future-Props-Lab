@@ -7,10 +7,11 @@ from functools import partial
 
 from app.console.governance.code_agent_connections import enable_connection
 from app.console.governance.code_agents import catalog as code_agent_catalog
-from studio.apps.agent_workbench.change_stream import stream_events
 from studio.apps.agent_workbench.execution.runner import WorkbenchRuns
 from studio.apps.agent_workbench.execution.storage import latest_turn_version
+from studio.apps.agent_workbench.storage.change_events import SqlChangeEvents
 from studio.apps.agent_workbench.storage.turn_versions import SqlTurnVersions
+from studio.apps.agent_workbench.transport.change_events import stream_events
 from studio.apps.agent_workbench.transport.turn_events import stream_turns
 from studio.apps.amadeus.execution.website_actions import ActionExecution
 from studio.apps.amadeus.execution.website_dialogue import CodeAgentRuns
@@ -206,7 +207,7 @@ def bind_components(app, settings, database):
     app.state.workbench_native = LocalSourceAccess()
     workbench_authorizer = WorkbenchStreamAuthorization(sessions, clock=utc_now).check
     app.state.workbench_event_stream = partial(
-        stream_events, sessions=sessions, authorizer=workbench_authorizer
+        stream_events, changes=SqlChangeEvents(sessions), authorizer=workbench_authorizer
     )
     app.state.account_creator = create_account
     app.state.account_storage_check = upgrade_pending

@@ -11,7 +11,6 @@ from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from studio.apps.agent_workbench.authorization import NativeTransport
-from studio.apps.agent_workbench.change_stream import stream_events
 from studio.apps.agent_workbench.execution.models import (
     WorkbenchChat,
     WorkbenchProject,
@@ -24,6 +23,7 @@ from studio.apps.agent_workbench.execution.transcripts import (
 from studio.apps.agent_workbench.execution_discovery import ExecutionDiscovery
 from studio.apps.agent_workbench.execution_turns import ExecutionTurns
 from studio.apps.agent_workbench.native_access import NativeSourceAccess
+from studio.apps.agent_workbench.storage.change_events import SqlChangeEvents
 from studio.apps.agent_workbench.storage.migrations.registry import MIGRATIONS
 from studio.apps.agent_workbench.storage.models import (
     WorkbenchChange,
@@ -42,6 +42,7 @@ from studio.apps.agent_workbench.storage.service_models import (
 )
 from studio.apps.agent_workbench.storage.turn_versions import SqlTurnVersions
 from studio.apps.agent_workbench.supervisor import CollectionSupervisor
+from studio.apps.agent_workbench.transport.change_events import stream_events
 from studio.apps.agent_workbench.transport.execution_http import router as execution_router
 from studio.apps.agent_workbench.transport.execution_native_http import router as execution_native
 from studio.apps.agent_workbench.transport.native_api import router as native_router
@@ -176,7 +177,7 @@ def create_app(
     app.state.workbench_reauthorize = reauthorize
     app.state.workbench_event_stream = partial(
         stream_events,
-        sessions=database.sessions,
+        changes=SqlChangeEvents(database.sessions),
         authorizer=authorize_events,
     )
 
