@@ -39,6 +39,7 @@ from fpl_runtime.integration_client import IntegrationAuthorizationUnavailable
 from fpl_runtime.migrations import check
 from fpl_runtime.request_limit import RequestLimit
 
+from .amadeus_skill_http import router as amadeus_skill_router
 from .creative_http import CreativeRequestLimit
 from .creative_http import router as creative_router
 from .creative_installations import CreativeInstallations
@@ -166,6 +167,7 @@ def create_app(
     app.include_router(creative_preview_router)
     app.include_router(creative_sources_router)
     app.include_router(creative_stdio_router)
+    app.include_router(amadeus_skill_router)
     app.state.integration_validation_recovery = recovery
     app.state.supervisor = supervisor
 

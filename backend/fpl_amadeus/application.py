@@ -32,6 +32,7 @@ from .models import MODELS
 from .operation_http import router as operation_router
 from .record_http import router
 from .request_limits import AmadeusRequestLimits
+from .skill_http import router as skill_router
 
 
 async def recover(database):
@@ -74,6 +75,7 @@ def create_app(*, state_root, catalog, public_key, credential, transport=None):
     app.include_router(router)
     app.include_router(file_router)
     app.include_router(operation_router)
+    app.include_router(skill_router)
     app.add_middleware(AmadeusRequestLimits)
     app.add_middleware(SignedIdentity, service="amadeus", public_key=public_key, catalog=catalog)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)

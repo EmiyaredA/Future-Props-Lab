@@ -3,6 +3,7 @@
 import re
 from dataclasses import dataclass
 
+from .amadeus_skills import skill_pin_grant
 from .annotation_assets import audio_asset_grant
 from .annotation_task_sources import task_read_grant, task_upload_grant
 from .annotation_transcription import segment_grant
@@ -138,6 +139,8 @@ def model_library_output(grant):
 
 
 def target_permission_path(grant):
+    if skill_pin_grant(grant):
+        return "/v1/integrations/skills"
     if (
         handoff_grant(grant)
         or reveal_grant(grant)
@@ -258,7 +261,7 @@ def permitted(grant, catalog):
         return True
     if preview_grant(grant) or source_transfer_grant(grant) or stdio_grant(grant):
         return True
-    if task_read_grant(grant) or task_upload_grant(grant):
+    if skill_pin_grant(grant) or task_read_grant(grant) or task_upload_grant(grant):
         return True
     if segment_grant(grant) or writing_grant(grant) or read_grant(grant) or close_grant(grant):
         return True

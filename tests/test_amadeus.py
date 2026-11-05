@@ -395,7 +395,7 @@ async def test_amadeus_registered_fpl_operations_read_and_approved_write() -> No
 async def test_amadeus_skill_keeps_loaded_version(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    from app.console.amadeus import skills
+    from app.console.amadeus import files, skill_files, skills
 
     source = tmp_path / "source"
     for version in ("v1", "v2"):
@@ -424,7 +424,7 @@ async def test_amadeus_skill_keeps_loaded_version(
             pass
 
     monkeypatch.setattr(skills, "SkillCatalog", Catalog)
-    monkeypatch.setattr(skills, "work_root", lambda *_args: tmp_path / "session")
+    monkeypatch.setattr(files, "work_root", lambda *_args, **_kwargs: tmp_path / "session")
     first = await skills.load_skill(Session(), "test-user", "conversation", "skill")
     state["default"] = "v2"
     again = await skills.load_skill(Session(), "test-user", "conversation", "skill")
@@ -441,7 +441,7 @@ async def test_amadeus_skill_keeps_loaded_version(
     with pytest.raises(OperationError, match="不是 UTF-8"):
         skills.read_skill_file("test-user", "conversation", "skill", "v1", "binary.txt")
     (tmp_path / "session" / "skills" / "skill" / "v1" / "large.txt").write_bytes(
-        b"x" * (skills.MAX_SKILL_FILE_BYTES + 1)
+        b"x" * (skill_files.MAX_SKILL_FILE_BYTES + 1)
     )
     with pytest.raises(OperationError, match="超过 1 MiB"):
         skills.read_skill_file("test-user", "conversation", "skill", "v1", "large.txt")

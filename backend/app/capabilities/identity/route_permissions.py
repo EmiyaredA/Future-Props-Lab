@@ -1,6 +1,6 @@
 """Explicit business operation inventory. New routes require an authorization decision."""
 
-import re
+from fpl_runtime.routing import operation_pattern
 
 OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
     "docs.developer": (("GET", "/v1/account/developer-documents"),),
@@ -686,14 +686,7 @@ ROUTE_PERMISSIONS = {
 PARAMETERIZED_POLICIES = [
     (
         method,
-        re.compile(
-            "^"
-            + "".join(
-                "[^/]+" if part.startswith("{") else re.escape(part)
-                for part in re.split(r"(\{[^}]+\})", path)
-            )
-            + "$"
-        ),
+        operation_pattern(path),
         permission,
     )
     for (method, path), permission in ROUTE_PERMISSIONS.items()

@@ -369,7 +369,7 @@ Mac worker 从 `uv run python -m fpl_host.agent_connections_worker` 启动，显
 
 ### Amadeus 记录服务
 
-运行 `npm run services:build -- amadeus --build` 并加载 `deploy/amadeus.compose.yaml`，为 Amadeus 提供独立状态目录、Identity 公钥和专属凭据。先显式执行 0001 迁移。三容器隔离运行 `fpl-amadeus-records-df66597c64` 验证网关账号鉴权、会话修订、旧模型协议的 410 响应和重启后的记录读回。当前装配包含 25 项公开操作，含分块导入、账号文件清单、按摘要保存、原件下载和登记业务操作的目录与读取。跨服务读取沿用同版本自动化白名单，并经 Identity 获取精确到目标方法和路径的身份凭据。批准动作、Skill 固定版本、Finder 与 Mac CLI 接线仍需通过就绪检查。
+运行 `npm run services:build -- amadeus --build` 并加载 `deploy/amadeus.compose.yaml`，为 Amadeus 提供独立状态目录、Identity 公钥和专属凭据。先显式执行 0001 迁移。三容器隔离运行 `fpl-amadeus-records-df66597c64` 验证网关账号鉴权、会话修订、旧模型协议的 410 响应和重启后的记录读回。当前装配包含 27 项公开操作，含分块导入、账号文件清单、按摘要保存、原件下载和登记业务操作的目录与读取。跨服务读取沿用同版本自动化白名单，并经 Identity 获取精确到目标方法和路径的身份凭据。Skill 通过同账号已启用版本的精确授权获取，校验 ZIP 摘要和文件清单后原子固定在对话目录。批准动作、Finder 与 Mac CLI 接线仍需通过就绪检查。
 
 ### 旧站快照及恢复目录演练
 

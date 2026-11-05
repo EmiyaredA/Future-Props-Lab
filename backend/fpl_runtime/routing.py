@@ -5,8 +5,16 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from .amadeus_skills import SKILL_FILE_ROUTE
 from .catalog import service_by_id
 from .cloud_authority import DESKTOP_SOCKET
+
+
+def operation_pattern(path):
+    template = re.escape(path)
+    if path == SKILL_FILE_ROUTE:
+        template = template.replace(re.escape("{relative_path}"), ".+")
+    return re.compile("^" + re.sub(r"\\\{[^}]+\\\}", "[^/]+", template) + "$")
 
 
 @dataclass(frozen=True)
@@ -17,7 +25,7 @@ class Operation:
     operation_id: str
 
     def pattern(self):
-        return re.compile("^" + re.sub(r"\\\{[^}]+\\\}", "[^/]+", re.escape(self.path)) + "$")
+        return operation_pattern(self.path)
 
 
 @dataclass(frozen=True)

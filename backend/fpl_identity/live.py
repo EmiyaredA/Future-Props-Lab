@@ -149,6 +149,7 @@ async def live(request: Request, body: LiveRequest):
             or annotation_upload_target(body.path)
         )
     )
+    from fpl_runtime.amadeus_skills import pin_target as amadeus_skill_target
     from fpl_runtime.community_uploads import upload_target as community_upload_target
     from fpl_runtime.creative_preview import preview_target
     from fpl_runtime.creative_source_evidence import source_transfer_target
@@ -188,6 +189,7 @@ async def live(request: Request, body: LiveRequest):
         or preview_target(body.method, body.path)
         or source_transfer_target(body.method, body.path)
         or stdio_target(body.method, body.path)
+        or amadeus_skill_target(body.method, body.path)
     )
     private_thought_upload = body.service == "assets" and (
         is_upload_target(body.method, body.path)
