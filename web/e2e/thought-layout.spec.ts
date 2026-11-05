@@ -162,9 +162,17 @@ for (const width of [1600, 1280, 390]) {
       .getByRole("textbox", { name: "笔记标签", exact: true })
       .press("ControlOrMeta+s");
     await expect(page.getByText("已保存", { exact: true })).toBeVisible();
+    const reading = page.waitForResponse(
+      (response) =>
+        response.request().method() === "GET" &&
+        new URL(response.url()).pathname ===
+          "/v1/thought-workshop/preferences/reading",
+    );
     await page.reload();
+    expect((await reading).ok()).toBeTruthy();
     await expect(page.locator(".thought-tag")).toHaveText(["产品思考", "灵感"]);
-    await page.locator(".knowledge-main").evaluate((main) => {
+    await page.locator(".knowledge-main").evaluate(async (main) => {
+      await new Promise(requestAnimationFrame);
       main.scrollTop = 0;
     });
     const topbar = page.locator(".knowledge-topbar");

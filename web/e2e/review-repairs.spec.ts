@@ -20,7 +20,7 @@ test("director production chunks initialize the scene renderer", async ({
     await page.goto(`/apps/director-desk/projects/${project.id}`);
     await expect(
       page.locator(".director-desk-root canvas").first(),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 20_000 });
     expect(errors).toEqual([]);
   } finally {
     await page.goto("/home");

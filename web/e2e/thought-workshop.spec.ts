@@ -13,13 +13,9 @@ test("rich notes persist and archives import", async ({ page }, testInfo) => {
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/apps");
   await page.getByRole("button", { name: "效率协作", exact: true }).click();
-  await page
-    .locator("article")
-    .filter({ hasText: "思绪工坊" })
-    .getByRole("button")
-    .click();
+  await page.getByRole("button", { name: "打开思绪工坊", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "我的知识库", exact: true }),
+    page.getByRole("heading", { name: "我的知识库", exact: true, level: 1 }),
   ).toBeVisible();
   await newDocument(page);
   const title = `笔记验收 ${Date.now()}`;
@@ -32,7 +28,7 @@ test("rich notes persist and archives import", async ({ page }, testInfo) => {
   await prose.pressSequentially("/");
   await page
     .locator(".thought-insert-menu")
-    .getByRole("option", { name: /表格/ })
+    .getByRole("option", { name: /^表格 插入/ })
     .click();
   await expect(prose.locator("table")).toBeVisible();
   await test.step("保存并刷新，确认富文本保留", async () => {
@@ -60,7 +56,7 @@ test("rich notes persist and archives import", async ({ page }, testInfo) => {
   });
   await test.step("导出并导回知识库备份", async () => {
     const backupPromise = page.waitForEvent("download");
-    await pickProjectMore(page, "导出知识库");
+    await pickProjectMore(page, "备份知识库");
     const backup = await backupPromise;
     const path = await backup.path();
     expect(path).toBeTruthy();

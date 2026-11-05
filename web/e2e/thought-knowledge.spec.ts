@@ -1,5 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
-import { newDocument, saveNote, setThoughtTheme } from "./thought-helpers";
+import {
+  newDocument,
+  pickProjectMore,
+  saveNote,
+  setThoughtTheme,
+} from "./thought-helpers";
 
 async function expectSingleNavigation(page: Page) {
   await expect(
@@ -374,10 +379,17 @@ test("knowledge cards, editable home, parent documents, moves, old links and res
     .getByRole("button", { name: "一份有层次的设计笔记操作", exact: true })
     .click();
   await page.getByRole("menuitem", { name: "删除", exact: true }).click();
+  const movedToTrash = page.waitForResponse(
+    (response) =>
+      response.request().method() === "DELETE" &&
+      new URL(response.url()).pathname ===
+        `/v1/thought-workshop/notes/${documentId}`,
+  );
   await page
     .getByRole("alertdialog")
     .getByRole("button", { name: "确认", exact: true })
     .click();
+  expect((await movedToTrash).ok()).toBeTruthy();
   await expect(page.getByLabel("笔记标题", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "文档回收站", exact: true }).click();
   await expect(results).toContainText("一份有层次的设计笔记");
@@ -444,7 +456,7 @@ test("knowledge cards, editable home, parent documents, moves, old links and res
       });
     }
     if (width === 390) {
-      await page.getByRole("button", { name: "目录", exact: true }).click();
+      await page.getByRole("button", { name: "笔记目录", exact: true }).click();
       await expect(
         page.getByRole("dialog", { name: "知识库导航" }),
       ).toBeVisible();
@@ -492,20 +504,35 @@ test("knowledge cards, editable home, parent documents, moves, old links and res
       });
       await page.keyboard.press("Escape");
       await expect(
-        page.getByRole("button", { name: "目录", exact: true }),
+        page.getByRole("button", { name: "笔记目录", exact: true }),
       ).toBeFocused();
     }
   }
-  await page
-    .getByRole("button", { name: "知识库更多操作", exact: true })
-    .click();
-  await page.getByRole("menuitem", { name: "重命名", exact: true }).click();
+  const renameLibrary = async (title: string) => {
+    await page.getByRole("button", { name: "笔记目录", exact: true }).click();
+    await page
+      .getByRole("dialog", { name: "知识库导航" })
+      .getByRole("button", { name: "全部文档", exact: true })
+      .click();
+    await pickProjectMore(page, "重命名");
+    await page.getByRole("dialog").getByRole("textbox").fill(title);
+    const saved = page.waitForResponse(
+      (response) =>
+        response.request().method() === "PUT" &&
+        new URL(response.url()).pathname ===
+          `/v1/thought-workshop/knowledge-bases/${projectId}`,
+    );
+    await page.getByRole("button", { name: "确认", exact: true }).click();
+    expect((await saved).ok()).toBeTruthy();
+    await page.goto(projectUrl);
+    await expect(
+      page
+        .getByRole("navigation", { name: "文档路径" })
+        .getByRole("button", { name: title, exact: true }),
+    ).toBeVisible();
+  };
   const longTitle = "长标题与边界检查".repeat(12);
-  await page.getByRole("dialog").getByRole("textbox").fill(longTitle);
-  await page.getByRole("button", { name: "确认", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: longTitle, exact: true }),
-  ).toBeVisible();
+  await renameLibrary(longTitle);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth + 2,
@@ -516,12 +543,7 @@ test("knowledge cards, editable home, parent documents, moves, old links and res
     path: info.outputPath("long-title-390-dark.png"),
     fullPage: true,
   });
-  await page
-    .getByRole("button", { name: "知识库更多操作", exact: true })
-    .click();
-  await page.getByRole("menuitem", { name: "重命名", exact: true }).click();
-  await page.getByRole("dialog").getByRole("textbox").fill(libraryTitle);
-  await page.getByRole("button", { name: "确认", exact: true }).click();
+  await renameLibrary(libraryTitle);
   await page.setViewportSize({ width: 1600, height: 1000 });
   await page.getByRole("button", { name: "我的知识库", exact: true }).click();
   await page

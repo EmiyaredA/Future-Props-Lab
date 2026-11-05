@@ -156,12 +156,17 @@ test("keeps vertical clip dragging stable across tracks and saves the drop", asy
 test("builds a deterministic image, black-card, and title edit", async ({
   page,
 }, info) => {
+  const projectTitle = `确定性剪辑 ${Date.now()}`;
   await page.goto("/apps/video-editor");
   await page
     .locator(".workshop-app-chrome")
     .getByRole("button", { name: "新建剪辑" })
     .click();
   await expect(page.getByText("视频剪辑工坊 · revision")).toBeVisible();
+  const title = page.getByRole("textbox", { name: "项目名称" });
+  await title.fill(projectTitle);
+  await title.press("Enter");
+  await expect(title).toHaveValue(projectTitle);
 
   await page.getByLabel("上传素材（可多选）").setInputFiles({
     name: "pixel.png",
@@ -206,7 +211,10 @@ test("builds a deterministic image, black-card, and title edit", async ({
   await expect(page.getByRole("dialog")).toBeHidden();
 
   await page.goto("/apps/video-editor");
-  await expect(page.locator(".workshop-project-card")).toHaveCount(1);
+  const project = page.locator(".workshop-project-card").filter({
+    has: page.getByRole("heading", { name: projectTitle, exact: true }),
+  });
+  await expect(project).toBeVisible();
   await page.screenshot({
     path: info.outputPath("video-editor-projects.jpg"),
     type: "jpeg",
