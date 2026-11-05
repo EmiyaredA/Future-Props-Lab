@@ -227,8 +227,9 @@ export function CustomSelect({
               tabIndex={-1}
               key={option.value}
               onClick={() => choose(index)}
-              onMouseEnter={() => {
-                if (!option.disabled) setActiveIndex(index);
+              onPointerMove={(event) => {
+                if (event.pointerType !== "touch" && !option.disabled)
+                  setActiveIndex(index);
               }}
             >
               {renderOption ? (

@@ -14,7 +14,17 @@ test("publishes a tool draft and installs a fixed copy", async ({ page }) => {
   await page
     .getByLabel("URL", { exact: true })
     .fill("https://example.com/weather");
-  await page.getByRole("button", { name: "保存草稿", exact: true }).click();
+  const saveDraft = page.getByRole("button", { name: "保存草稿", exact: true });
+  const saveResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === "PATCH" &&
+      /^\/v1\/creative-workshop\/items\/[^/]+$/.test(
+        new URL(response.url()).pathname,
+      ),
+  );
+  await saveDraft.click();
+  expect((await saveResponse).ok()).toBeTruthy();
+  await expect(saveDraft).toBeEnabled();
   await page.getByRole("button", { name: "我的创作", exact: true }).click();
   await expect(page.getByText("E2E 天气工具")).toBeVisible();
   await expect(page.locator(".creative-status--draft")).toBeVisible();

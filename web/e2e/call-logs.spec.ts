@@ -157,7 +157,15 @@ test("filters retain labels through container breakpoints and long options", asy
   );
   await credentials.focus();
   await page.keyboard.press("ArrowDown");
+  await expect(option).toBeFocused();
   await page.keyboard.press("Home");
+  const allCredentials = page.getByRole("option", {
+    name: "全部调用凭据",
+    exact: true,
+  });
+  await expect(allCredentials).toBeFocused();
+  // Reopening the menu beneath a stationary pointer can fire a hover event.
+  await option.dispatchEvent("mouseover");
   await page.keyboard.press("Enter");
   await expect(credentials).toHaveAttribute("title", "全部调用凭据");
   await expect(credentials).toBeFocused();
