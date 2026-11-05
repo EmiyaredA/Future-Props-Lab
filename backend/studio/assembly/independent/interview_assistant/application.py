@@ -100,12 +100,6 @@ def create_app(
         else None
     )
     host = InterviewHost(database, identity)
-    database.sessions.configure(
-        info={
-            **database.sessions.kw["info"],
-            "interview_files_root": database.root,
-        }
-    )
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -132,6 +126,7 @@ def create_app(
     app.state.database = database
     app.state.lease_expiry = None
     app.state.interview_host = host
+    app.state.interview_files_root = database.root
     app.state.interview_executor_status = host.status
     app.add_middleware(RequestLimit, prefix="/_native/", maximum=3 * 1024 * 1024)
     app.add_middleware(NativeIngress, options=options, state_key="interview_worker")

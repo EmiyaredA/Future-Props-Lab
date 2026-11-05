@@ -18,11 +18,12 @@ class InterviewPreparationRunner(PollingTaskRunner):
     runner_name = "interview-preparation"
     poll_interval_seconds = 1.0
 
-    def __init__(self, actor_allowed, executor=None, *, sessions, executor_status):
+    def __init__(self, actor_allowed, executor=None, *, sessions, executor_status, state_root):
         super().__init__()
         self.actor_allowed = actor_allowed
         self.executor = executor or CodexExecutor()
         self.sessions = sessions
+        self.state_root = state_root
         self.executor_status = executor_status
 
     async def recover(self):
@@ -188,7 +189,7 @@ class InterviewPreparationRunner(PollingTaskRunner):
             status = await self.executor_status(task.user_id, task.owner_user_id)
             if not status.available:
                 raise OperationError(status.message, status.code, 409)
-            root = task_context(task)
+            root = task_context(task, state_root=self.state_root)
             await self.event(identifier, "started", "已冻结 JD、简历原件与补充说明，正在交给 Codex")
             document, searches = await self.executor.run(
                 task,

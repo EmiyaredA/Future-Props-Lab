@@ -307,7 +307,7 @@ def test_interview_migrates_history_with_verified_originals_and_safe_startup(tmp
         async with app.router.lifespan_context(app):
             async with app.state.database.sessions(info={"owner_user_id": str(owner)}) as session:
                 principal = SimpleNamespace(owner_user_id=str(owner), user_id=str(owner))
-                use = Rooms(session, principal)
+                use = Rooms(session, principal, state_root=app.state.interview_files_root)
                 result = await use.create(InterviewCreateIn.model_validate(create))
                 assert result.id == room["id"]
                 assert result.active_bundle_id == delivered

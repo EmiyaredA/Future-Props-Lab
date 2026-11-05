@@ -102,6 +102,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
             ),
             InterviewPreparationRunner(
                 interview_actor_allowed,
+                state_root=settings.runtime_path,
                 sessions=sessions,
                 executor_status=lifespan_app.state.interview_executor_status,
             ),

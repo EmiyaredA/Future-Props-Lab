@@ -87,7 +87,10 @@ async def test_fictional_docx_real_codex_research(monkeypatch):
             return True
 
         await InterviewPreparationRunner(
-            allowed, sessions=SessionLocal, executor_status=app.state.interview_executor_status
+            allowed,
+            sessions=SessionLocal,
+            state_root=app.state.interview_files_root,
+            executor_status=app.state.interview_executor_status,
         ).execute(task["id"])
         room = (await client.get(base)).json()
         target = Path(__file__).resolve().parents[1] / ".local/interview-assistant/live-smoke"

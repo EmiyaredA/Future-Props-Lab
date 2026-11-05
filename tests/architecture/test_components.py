@@ -12,6 +12,17 @@ ROOT = Path(__file__).resolve().parents[2]
 STUDIO = ROOT / "backend/studio"
 
 
+def test_interview_file_scope_is_explicit():
+    files = STUDIO / "apps/interview_assistant/files.py"
+    rooms = STUDIO / "apps/interview_assistant/rooms.py"
+    assert "get_settings" not in files.read_text()
+    assert "session.info" not in rooms.read_text()
+    for node in ast.walk(ast.parse(files.read_text())):
+        if isinstance(node, ast.FunctionDef) and node.name in {"room_root", "material_path"}:
+            index = [arg.arg for arg in node.args.kwonlyargs].index("state_root")
+            assert node.args.kw_defaults[index] is None
+
+
 def test_models_never_select_process_global_configuration():
     violations = []
     for path in (STUDIO / "apps/model_service").rglob("*.py"):

@@ -129,6 +129,7 @@ def bind_components(app, settings, database):
         partial(apply_assistant_timeline_batch, sessions=sessions), files_root=settings.runtime_path
     )
     app.state.demo_runtime = DemoRuntime(partial(read_demo_configuration, sessions=sessions))
+    app.state.interview_files_root = settings.runtime_path
     app.state.interview_executor_status = partial(
         executor_status, sessions=sessions, settings=settings
     )

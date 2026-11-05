@@ -178,6 +178,7 @@ async def test_real_flow_snapshot_receipt_bundle_and_export(client):
         allowed,
         FakeExecutor(),
         sessions=SessionLocal,
+        state_root=app.state.interview_files_root,
         executor_status=app.state.interview_executor_status,
     ).execute(task["id"])
     result = (await client.get(f"/v1/interview-assistant/rooms/{room['id']}")).json()
@@ -217,6 +218,7 @@ async def test_cancel_retry_late_completion_and_empty_material(client):
         allowed,
         FakeExecutor(cancel_during_completion),
         sessions=SessionLocal,
+        state_root=app.state.interview_files_root,
         executor_status=app.state.interview_executor_status,
     ).execute(old["id"])
     room = (await client.get(f"/v1/interview-assistant/rooms/{room['id']}")).json()
@@ -227,10 +229,14 @@ async def test_cancel_retry_late_completion_and_empty_material(client):
         allowed,
         FakeExecutor(),
         sessions=SessionLocal,
+        state_root=app.state.interview_files_root,
         executor_status=app.state.interview_executor_status,
     ).execute(queued["tasks"][0]["id"])
     await runner.InterviewPreparationRunner(
-        allowed, sessions=SessionLocal, executor_status=app.state.interview_executor_status
+        allowed,
+        sessions=SessionLocal,
+        state_root=app.state.interview_files_root,
+        executor_status=app.state.interview_executor_status,
     ).finish(old["id"], "succeeded", "late", {})
     room = (await client.get(f"/v1/interview-assistant/rooms/{room['id']}")).json()
     assert room["active_bundle_id"] == queued["tasks"][0]["id"]
@@ -243,6 +249,7 @@ async def test_bad_reference_needs_input_preserves_previous_version_and_restart(
         allowed,
         FakeExecutor(),
         sessions=SessionLocal,
+        state_root=app.state.interview_files_root,
         executor_status=app.state.interview_executor_status,
     )
     await worker.execute(room["tasks"][0]["id"])
@@ -257,6 +264,7 @@ async def test_bad_reference_needs_input_preserves_previous_version_and_restart(
         allowed,
         FakeExecutor(bad),
         sessions=SessionLocal,
+        state_root=app.state.interview_files_root,
         executor_status=app.state.interview_executor_status,
     ).execute(queued["tasks"][0]["id"])
     room = (await client.get(f"/v1/interview-assistant/rooms/{room['id']}")).json()
@@ -377,7 +385,7 @@ async def test_acceptance_requires_actual_reads_search_and_correct_snapshot(clie
     room, _ = await prepare(client, await create(client))
     async with SessionLocal() as session:
         task = await session.get(InterviewPreparation, room["tasks"][0]["id"])
-        root = task_context(task)
+        root = task_context(task, state_root=app.state.interview_files_root)
         bundle = PreparationBundle.model_validate(bundle_for(task))
         problems = acceptance(bundle, task.id, task.input_hash, root, 0)
         assert any("未读取" in problem for problem in problems)
@@ -432,7 +440,7 @@ async def test_codex_subprocess_consumes_jsonl_and_structured_delivery(
     room, _ = await prepare(client, await create(client))
     async with SessionLocal() as session:
         task = await session.get(InterviewPreparation, room["tasks"][0]["id"])
-        root = task_context(task)
+        root = task_context(task, state_root=app.state.interview_files_root)
         expected = bundle_for(task)
     (root / "expected.json").write_text(__import__("json").dumps(expected))
     fake = tmp_path / "fake-codex"
@@ -486,7 +494,7 @@ async def test_cancellation_terminates_the_cli_process_group(client, tmp_path, m
     room, _ = await prepare(client, await create(client))
     async with SessionLocal() as session:
         task = await session.get(InterviewPreparation, room["tasks"][0]["id"])
-        root = task_context(task)
+        root = task_context(task, state_root=app.state.interview_files_root)
     fake = tmp_path / "waiting-codex"
     fake.write_text(
         f"#!{sys.executable}\n"

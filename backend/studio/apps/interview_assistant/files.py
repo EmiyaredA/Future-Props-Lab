@@ -5,7 +5,6 @@ import os
 import re
 from pathlib import Path
 
-from studio.config.settings import get_settings
 from studio.contracts.asset_library.incoming import IncomingFile
 from studio.runtime.database.operation_receipts import OperationError
 
@@ -13,11 +12,10 @@ MAX_FILE_BYTES = 10 * 1024 * 1024
 IDENTIFIER = re.compile(r"^[A-Za-z0-9_-]{1,100}$")
 
 
-def room_root(owner_user_id: str, room_id: str, *, state_root: Path | None = None) -> Path:
+def room_root(owner_user_id: str, room_id: str, *, state_root: Path) -> Path:
     if not all(IDENTIFIER.fullmatch(value) for value in (owner_user_id, room_id)):
         raise OperationError("文件标识无效")
-    data = state_root if state_root is not None else get_settings().database_path.parent
-    root = data / "accounts" / owner_user_id / "interview-assistant" / room_id
+    root = state_root / "accounts" / owner_user_id / "interview-assistant" / room_id
     cursor = root
     while cursor != cursor.parent:
         if cursor.is_symlink():
@@ -32,7 +30,7 @@ def material_path(
     material_id: str,
     filename: str,
     *,
-    state_root: Path | None = None,
+    state_root: Path,
 ) -> Path:
     if not IDENTIFIER.fullmatch(material_id):
         raise OperationError("文件标识无效")

@@ -44,12 +44,18 @@ def cli_environment() -> dict[str, str]:
     return {key: value for key, value in os.environ.items() if key in names}
 
 
-def task_context(task) -> Path:
-    root = room_root(task.owner_user_id, task.room_id) / "attempts" / task.id
+def task_context(task, *, state_root: Path) -> Path:
+    root = room_root(task.owner_user_id, task.room_id, state_root=state_root) / "attempts" / task.id
     material = task.snapshot["material"]
     original = None
     if material:
-        path = material_path(task.owner_user_id, task.room_id, material["id"], material["filename"])
+        path = material_path(
+            task.owner_user_id,
+            task.room_id,
+            material["id"],
+            material["filename"],
+            state_root=state_root,
+        )
         original = path.read_bytes()
     return frozen_context(root, task.snapshot, original)
 

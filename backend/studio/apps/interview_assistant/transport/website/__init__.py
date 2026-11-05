@@ -39,36 +39,53 @@ async def get_interview_executor(request: Request, principal: StudioAuth, sessio
 
 
 @router.get("/rooms", response_model=InterviewRoomList)
-async def list_interview_rooms(session: SessionDep, principal: StudioAuth):
+async def list_interview_rooms(request: Request, session: SessionDep, principal: StudioAuth):
     with errors():
-        return InterviewRoomList(items=await Rooms(session, principal).list())
+        return InterviewRoomList(
+            items=await Rooms(
+                session, principal, state_root=request.app.state.interview_files_root
+            ).list()
+        )
 
 
 @router.post("/rooms", response_model=InterviewRoomOut, status_code=201)
 async def create_interview_room(
-    body: InterviewCreateIn, session: SessionDep, principal: StudioAuth
+    request: Request, body: InterviewCreateIn, session: SessionDep, principal: StudioAuth
 ):
     with errors():
-        return await Rooms(session, principal).create(body)
+        return await Rooms(
+            session, principal, state_root=request.app.state.interview_files_root
+        ).create(body)
 
 
 @router.get("/rooms/{room_id}", response_model=InterviewRoomOut)
-async def get_interview_room(room_id: str, session: SessionDep, principal: StudioAuth):
+async def get_interview_room(
+    request: Request, room_id: str, session: SessionDep, principal: StudioAuth
+):
     with errors():
-        return await Rooms(session, principal).get(room_id)
+        return await Rooms(
+            session, principal, state_root=request.app.state.interview_files_root
+        ).get(room_id)
 
 
 @router.delete("/rooms/{room_id}")
 async def delete_interview_room(
-    room_id: str, session: SessionDep, principal: StudioAuth, expected_revision: int = Query(ge=0)
+    request: Request,
+    room_id: str,
+    session: SessionDep,
+    principal: StudioAuth,
+    expected_revision: int = Query(ge=0),
 ) -> dict[str, bool]:
     with errors():
-        await Rooms(session, principal).delete(room_id, expected_revision)
+        await Rooms(session, principal, state_root=request.app.state.interview_files_root).delete(
+            room_id, expected_revision
+        )
         return {"deleted": True}
 
 
 @router.post("/rooms/{room_id}/materials", response_model=InterviewRoomOut)
 async def upload_interview_material(
+    request: Request,
     room_id: str,
     session: SessionDep,
     principal: StudioAuth,
@@ -76,7 +93,9 @@ async def upload_interview_material(
     file: UploadFile = File(...),
 ):
     with errors():
-        return await Rooms(session, principal).upload(room_id, expected_revision, file)
+        return await Rooms(
+            session, principal, state_root=request.app.state.interview_files_root
+        ).upload(room_id, expected_revision, file)
 
 
 @router.get(
@@ -91,10 +110,12 @@ async def upload_interview_material(
     },
 )
 async def download_interview_material(
-    room_id: str, material_id: str, session: SessionDep, principal: StudioAuth
+    request: Request, room_id: str, material_id: str, session: SessionDep, principal: StudioAuth
 ):
     with errors():
-        path, filename = await Rooms(session, principal).material(room_id, material_id)
+        path, filename = await Rooms(
+            session, principal, state_root=request.app.state.interview_files_root
+        ).material(room_id, material_id)
         return FileResponse(path, filename=filename, media_type="application/octet-stream")
 
 
@@ -112,11 +133,14 @@ async def prepare_interview(
         )
         if not status.available:
             raise OperationError(status.message, status.code, 409)
-        return await Rooms(session, principal).prepare(room_id, body)
+        return await Rooms(
+            session, principal, state_root=request.app.state.interview_files_root
+        ).prepare(room_id, body)
 
 
 @router.post("/rooms/{room_id}/preparations/{task_id}/cancel", response_model=InterviewRoomOut)
 async def cancel_interview_preparation(
+    request: Request,
     room_id: str,
     task_id: str,
     body: InterviewRevisionIn,
@@ -124,24 +148,30 @@ async def cancel_interview_preparation(
     principal: StudioAuth,
 ):
     with errors():
-        return await Rooms(session, principal).cancel(room_id, task_id, body.expected_revision)
+        return await Rooms(
+            session, principal, state_root=request.app.state.interview_files_root
+        ).cancel(room_id, task_id, body.expected_revision)
 
 
 @router.get("/rooms/{room_id}/preparations/{task_id}/events", response_model=InterviewTaskProgress)
 async def get_interview_progress(
-    room_id: str, task_id: str, session: SessionDep, principal: StudioAuth
+    request: Request, room_id: str, task_id: str, session: SessionDep, principal: StudioAuth
 ):
     with errors():
-        task = await Rooms(session, principal).task(room_id, task_id)
+        task = await Rooms(
+            session, principal, state_root=request.app.state.interview_files_root
+        ).task(room_id, task_id)
         return InterviewTaskProgress.model_validate(task, from_attributes=True)
 
 
 @router.get("/rooms/{room_id}/preparations/{task_id}/bundle", response_model=PreparationBundle)
 async def get_interview_bundle(
-    room_id: str, task_id: str, session: SessionDep, principal: StudioAuth
+    request: Request, room_id: str, task_id: str, session: SessionDep, principal: StudioAuth
 ):
     with errors():
-        return await Rooms(session, principal).bundle(room_id, task_id)
+        return await Rooms(
+            session, principal, state_root=request.app.state.interview_files_root
+        ).bundle(room_id, task_id)
 
 
 @router.get(
@@ -156,6 +186,7 @@ async def get_interview_bundle(
     },
 )
 async def export_interview_bundle(
+    request: Request,
     room_id: str,
     task_id: str,
     session: SessionDep,
@@ -164,7 +195,9 @@ async def export_interview_bundle(
 ):
     with errors():
         bundle = PreparationBundle.model_validate(
-            await Rooms(session, principal).bundle(room_id, task_id)
+            await Rooms(
+                session, principal, state_root=request.app.state.interview_files_root
+            ).bundle(room_id, task_id)
         )
         content = bundle.model_dump_json(indent=2) if format == "json" else markdown(bundle)
         extension = "json" if format == "json" else "md"

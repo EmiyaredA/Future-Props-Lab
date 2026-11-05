@@ -38,9 +38,9 @@ def task_out(row):
 
 
 class Rooms:
-    def __init__(self, session, principal: StudioPrincipal):
+    def __init__(self, session, principal: StudioPrincipal, *, state_root):
         self.session, self.principal = session, principal
-        self.state_root = session.info.get("interview_files_root")
+        self.state_root = state_root
 
     async def get_row(self, room_id):
         row = await self.session.scalar(
@@ -161,6 +161,7 @@ class Rooms:
             self.principal.owner_user_id, room_id, identifier, filename, state_root=self.state_root
         )
         exclusive_write(path, data)
+        committing = False
         try:
             await self.cas(room_id, expected)
             self.session.add(
@@ -172,9 +173,14 @@ class Rooms:
                     size=len(data),
                 )
             )
+            committing = True
             await self.session.commit()
         except BaseException:
-            path.unlink(missing_ok=True)
+            # A lost acknowledgement can mean the row already owns the immutable file.
+            # Preserve uncertain uploads; the next snapshot reveals whether it committed.
+            # Any unreferenced copy stays private until the owning room is deleted.
+            if not committing:
+                path.unlink(missing_ok=True)
             raise
         return await self.get(room_id)
 
