@@ -9,7 +9,7 @@ import { textClipOperations, type TextPreset } from "./textModel";
 import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
 import { useVideoEditorLayout } from "./useVideoEditorLayout";
 import { VideoEditorSeparator } from "./VideoEditorSeparator";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -98,6 +98,7 @@ export function VideoEditorPage({
   const [draggingAsset, setDraggingAsset] = useState<VideoEditorAsset>();
   const [previewingAssetId, setPreviewingAssetId] = useState<string>();
   const [contentViewportWidthPx, setContentViewportWidthPx] = useState(0);
+  const timelineScroller = useRef<HTMLDivElement>(null);
   const [subtitleImport, setSubtitleImport] = useState<{
     fileName: string;
     result?: SubtitleParseResult;
@@ -121,7 +122,7 @@ export function VideoEditorPage({
     const nextZoom = clampTimelineZoom(value, zoomMin);
     editor.setTimelineScrollLeft(
       timelineScrollLeftAfterZoom(
-        editor.timelineScrollLeft,
+        timelineScroller.current?.scrollLeft ?? editor.timelineScrollLeft,
         editor.playheadUs,
         editor.zoom,
         nextZoom,
@@ -854,6 +855,7 @@ export function VideoEditorPage({
           </div>
         </div>
         <VideoEditorTimeline
+          scrollerRef={timelineScroller}
           onCheckGaps={() => setGapPanelOpen(true)}
           onRequestClipMerge={
             editor.canWrite

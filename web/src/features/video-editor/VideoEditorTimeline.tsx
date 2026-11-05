@@ -6,6 +6,7 @@ import {
   useState,
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
+  type RefObject,
 } from "react";
 import { VideoEditorTimelineTools } from "./VideoEditorTimelineTools";
 import { formatTime, newTrack, snapUs } from "./editorModel";
@@ -42,13 +43,13 @@ import type {
   VideoEditorOperation,
   VideoEditorTimeline as Timeline,
 } from "./types";
-
 export function VideoEditorTimeline({
   timeline,
   assets,
   playheadUs,
   setPlayheadUs,
   zoom,
+  scrollerRef,
   scrollLeft,
   onScrollLeftChange,
   scrollTop = 0,
@@ -83,6 +84,7 @@ export function VideoEditorTimeline({
   playheadUs: number;
   setPlayheadUs: (value: number) => void;
   zoom: number;
+  scrollerRef?: RefObject<HTMLDivElement | null>;
   scrollLeft: number;
   onScrollLeftChange: (value: number) => void;
   scrollTop?: number;
@@ -127,7 +129,8 @@ export function VideoEditorTimeline({
 }) {
   const waveformUrls = useAudioWaveformUrls(assets);
   const assetById = new Map(assets.map((asset) => [asset.id, asset]));
-  const scroller = useRef<HTMLDivElement>(null);
+  const fallbackScroller = useRef<HTMLDivElement>(null);
+  const scroller = scrollerRef ?? fallbackScroller;
   const canvas = useRef<HTMLDivElement>(null);
   const [selectionBox, setSelectionBox] = useState<{
     x: number;
@@ -144,16 +147,14 @@ export function VideoEditorTimeline({
     if (!node) return;
     if (Math.abs(node.scrollLeft - scrollLeft) > 0.5)
       node.scrollLeft = scrollLeft;
-    // Zooming out can shorten the scroll range. Publish the browser's clamped
-    // offset before the next zoom uses it as the playhead anchor.
     if (Math.abs(node.scrollLeft - scrollLeft) > 0.5)
       onScrollLeftChange(node.scrollLeft);
-  }, [scrollLeft, zoom, onScrollLeftChange]);
+  }, [scroller, scrollLeft, zoom, onScrollLeftChange]);
   useLayoutEffect(() => {
     const node = scroller.current;
     if (node && Math.abs(node.scrollTop - scrollTop) > 0.5)
       node.scrollTop = scrollTop;
-  }, [scrollTop]);
+  }, [scroller, scrollTop]);
   useLayoutEffect(() => {
     const node = scroller.current;
     if (!node || !onContentViewportWidthChange) return;
@@ -166,7 +167,7 @@ export function VideoEditorTimeline({
     const observer = new ResizeObserver(publish);
     observer.observe(node);
     return () => observer.disconnect();
-  }, [onContentViewportWidthChange, trackHeaderWidth]);
+  }, [scroller, onContentViewportWidthChange, trackHeaderWidth]);
   const fps = timeline.document.settings?.fps ?? 30;
   const tracks = [...(timeline.document.tracks ?? [])].sort(
     (a, b) => a.order - b.order,

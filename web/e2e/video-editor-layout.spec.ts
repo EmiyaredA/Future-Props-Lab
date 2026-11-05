@@ -376,10 +376,17 @@ test("anchors timeline zoom at the playhead and persists clamped scroll offsets"
     // offset and use it for the next zoom without drifting back to a stale one.
     await slider.fill("80");
     await page.getByRole("button", { name: "跳到结尾" }).click();
-    await scroller.evaluate((node) => {
+    const scrollerHandle = await scroller.elementHandle();
+    await slider.evaluate((input: HTMLInputElement, node) => {
       node.scrollLeft = node.scrollWidth;
-    });
-    await slider.fill("30");
+      const setValue = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value",
+      )!.set!;
+      setValue.call(input, "30");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    }, scrollerHandle);
+    await expect(slider).toHaveValue("30");
     await expect
       .poll(() =>
         scroller.evaluate((node) =>
