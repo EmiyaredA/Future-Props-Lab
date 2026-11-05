@@ -3,6 +3,7 @@
 import pytest
 
 from fpl_host import deployment_preflight
+from fpl_runtime.catalog import BY_ID
 
 
 def test_all_selected_service_databases_are_checked_without_writing(monkeypatch, tmp_path):
@@ -12,21 +13,14 @@ def test_all_selected_service_databases_are_checked_without_writing(monkeypatch,
         "check",
         lambda path, name, registry: seen.append((path, name, registry)),
     )
+    owners = BY_ID.keys() - {"amadeus"}
     environment = {
-        f"FPL_{name.upper()}_{field}": value
-        for name in ("identity", "management", "models", "assets", "integrations")
+        f"FPL_{name.upper().replace('-', '_')}_{field}": value
+        for name in owners
         for field, value in (("IMAGE", "test-image"), ("STATE", name))
     }
-    deployment_preflight.check_selected_databases(
-        environment, ["assets", "integrations", "visual"], tmp_path
-    )
-    assert {name for _, name, _ in seen} == {
-        "identity",
-        "management",
-        "models",
-        "assets",
-        "integrations",
-    }
+    deployment_preflight.check_selected_databases(environment, owners, tmp_path)
+    assert {name for _, name, _ in seen} == owners
     assert all(path == tmp_path / name / "service.db" and registry for path, name, registry in seen)
     assert not list(tmp_path.iterdir())
 
@@ -54,10 +48,10 @@ def test_unknown_configured_service_and_missing_state_fail_closed(monkeypatch, t
     environment = {
         "FPL_IDENTITY_STATE": "identity",
         "FPL_MANAGEMENT_STATE": "management",
-        "FPL_VISUAL_IMAGE": "visual",
+        "FPL_UNREGISTERED_IMAGE": "test",
     }
     with pytest.raises(ValueError, match="尚未提供"):
-        deployment_preflight.check_selected_databases(environment, ["visual"], tmp_path)
+        deployment_preflight.check_selected_databases(environment, ["unregistered"], tmp_path)
     del environment["FPL_MANAGEMENT_STATE"]
     with pytest.raises(ValueError, match="状态目录"):
         deployment_preflight.check_selected_databases(environment, [], tmp_path)
