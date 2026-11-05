@@ -62,6 +62,7 @@ from fpl_runtime.visual_agent_review import (
     status_target as review_status_target,
 )
 from fpl_runtime.visual_assistant import attachment_target
+from fpl_runtime.visual_assistant import input_target as assistant_input_target
 from fpl_runtime.visual_assistant import model_target as assistant_model_target
 from fpl_runtime.visual_catalog import AGENT_ACCEPTANCE_TARGET
 from fpl_runtime.visual_catalog import catalog_target as visual_catalog_target
@@ -240,6 +241,7 @@ async def live(request: Request, body: LiveRequest):
         or (body.service == "assets" and galgame_frame_inputs_target(body.method, body.path))
         or (body.service == "assets" and galgame_export_inputs_target(body.method, body.path))
         or (body.service == "assets" and attachment_target(body.method, body.path))
+        or (body.service == "assets" and assistant_input_target(body.method, body.path))
         or (body.service == "assets" and acceptance_asset_target(body.method, body.path))
         or (body.service == "assets" and visual_snapshot_asset_target(body.method, body.path))
         or (body.service == "assets" and generation_asset_target(body.method, body.path))

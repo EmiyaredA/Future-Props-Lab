@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from pathlib import Path
 from uuid import uuid4
 
-from pypdf import PdfReader
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,6 +29,7 @@ from app.apps.visual_workshop.schemas.workshop import (
     VisualAssistantConversationSummaryOut,
     VisualAssistantModelOptionListOut,
 )
+from app.capabilities.asset_store.assistant_media import read_pdf
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.llm.assistant_catalog import (
@@ -49,8 +48,6 @@ from app.runtime.config import Settings, get_settings
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import iso_utc, utc_now
 
-MAX_DOCUMENT_CHARS = 50_000
-MAX_PDF_PAGES = 50
 CANVAS_CONTEXT_LIMIT = 32_000
 TEXT_NODE_LIMIT = 4_000
 
@@ -390,31 +387,7 @@ class VisualAssistantConversations(VisualAssistantAttachmentMixin):
             inputs.append(ChatMessageInput(role=row.role, text=text, images=images))
         return inputs, has_images
 
-    @staticmethod
-    def _read_pdf(path: Path) -> tuple[str, str | None]:
-        try:
-            reader = PdfReader(path)
-            if reader.is_encrypted:
-                try:
-                    if reader.decrypt("") == 0:
-                        return "", "PDF 已加密，无法提取正文"
-                except Exception:
-                    return "", "PDF 已加密，无法提取正文"
-            parts: list[str] = []
-            for page in reader.pages[:MAX_PDF_PAGES]:
-                parts.append(page.extract_text() or "")
-            text = "\n".join(parts).strip()
-            if not text:
-                return "", "PDF 未提取到可读正文"
-            warnings: list[str] = []
-            if len(reader.pages) > MAX_PDF_PAGES:
-                warnings.append(f"PDF 仅读取前 {MAX_PDF_PAGES} 页")
-            if len(text) > MAX_DOCUMENT_CHARS:
-                text = text[:MAX_DOCUMENT_CHARS]
-                warnings.append(f"PDF 正文已截断为 {MAX_DOCUMENT_CHARS} 字符")
-            return text, "；".join(warnings) or None
-        except Exception:
-            return "", "PDF 解析失败，已仅提供文件元数据"
+    _read_pdf = staticmethod(read_pdf)
 
     async def _canvas_context(self, project: VisualWorkshopProject) -> tuple[str, dict[str, int]]:
         canvas = await self.session.get(VisualCanvasDocument, project.id)

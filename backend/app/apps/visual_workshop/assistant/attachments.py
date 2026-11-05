@@ -3,9 +3,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
-from io import BytesIO
 
-from PIL import Image, UnidentifiedImageError
 from sqlalchemy import select
 
 from app.apps.visual_workshop.schemas.workshop import (
@@ -14,25 +12,24 @@ from app.apps.visual_workshop.schemas.workshop import (
     VisualAssistantTextPart,
 )
 from app.capabilities.agents.harness.contracts import ImageInput
+from app.capabilities.asset_store.assistant_media import (
+    ALLOWED_IMAGE_TYPES,
+    ALLOWED_MEDIA_KINDS,
+    MAX_IMAGE_BYTES,
+    read_document,
+    read_image,
+)
+from app.capabilities.asset_store.assistant_media import (
+    AssistantAssetError as AssistantAssetError,
+)
 from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualProjectAssetReference,
 )
 from app.capabilities.asset_store.policy import download_filename
 
-MAX_IMAGE_BYTES = 8 * 1024 * 1024
 MAX_ATTACHMENTS = 5
-MAX_DOCUMENT_CHARS = 50_000
 MAX_MESSAGE_DOCUMENT_CHARS = 100_000
-ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"}
-ALLOWED_MEDIA_KINDS = {"image", "video", "audio", "document"}
-
-
-class AssistantAssetError(Exception):
-    def __init__(self, message: str, *, code: str = "invalid_asset", status: int = 422) -> None:
-        super().__init__(message)
-        self.code = code
-        self.status = status
 
 
 class VisualAssistantAttachmentMixin:
@@ -123,35 +120,11 @@ class VisualAssistantAttachmentMixin:
         return "".join(chunks).strip()
 
     async def _images(self, assets: list[VisualAsset]) -> tuple[ImageInput, ...]:
-        def avif_as_png(content: bytes, display_name: str) -> bytes:
-            try:
-                with Image.open(BytesIO(content)) as image:
-                    if str(image.format or "").upper() != "AVIF":
-                        raise AssistantAssetError(f"AVIF 图片内容无效：{display_name}")
-                    image.load()
-                    has_alpha = image.mode in {"RGBA", "LA"} or "transparency" in image.info
-                    converted = image.convert("RGBA" if has_alpha else "RGB")
-                    output = BytesIO()
-                    converted.save(output, format="PNG", optimize=True)
-                    return output.getvalue()
-            except AssistantAssetError:
-                raise
-            except (Image.DecompressionBombError, UnidentifiedImageError, OSError, ValueError):
-                raise AssistantAssetError(f"AVIF 图片内容无效：{display_name}") from None
-
         async def encode(asset: VisualAsset) -> ImageInput:
             path = self.storage.path_for(asset)
-            if not path.is_file():
-                raise AssistantAssetError(
-                    f"图片内容不存在：{asset.display_name}",
-                    code="file_missing",
-                    status=409,
-                )
-            content = await asyncio.to_thread(path.read_bytes)
-            mime_type = asset.mime_type
-            if mime_type == "image/avif":
-                content = await asyncio.to_thread(avif_as_png, content, asset.display_name)
-                mime_type = "image/png"
+            content, mime_type = await asyncio.to_thread(
+                read_image, path, asset.mime_type, asset.display_name
+            )
             return ImageInput(
                 mime_type=mime_type,
                 data_base64=base64.b64encode(content).decode("ascii"),
@@ -176,21 +149,7 @@ class VisualAssistantAttachmentMixin:
 
     async def _document_text(self, asset: VisualAsset) -> tuple[str, str | None]:
         path = self.storage.path_for(asset)
-        if not path.is_file():
-            return "", f"附件内容不存在：{asset.display_name}"
-        if asset.mime_type == "application/pdf":
-            return await asyncio.to_thread(self._read_pdf, path)
-        if asset.mime_type in {"text/plain", "text/markdown"}:
-            try:
-                text = await asyncio.to_thread(path.read_text, encoding="utf-8")
-            except (OSError, UnicodeDecodeError):
-                return "", f"文本附件无法按 UTF-8 读取：{asset.display_name}"
-            warning = None
-            if len(text) > MAX_DOCUMENT_CHARS:
-                text = text[:MAX_DOCUMENT_CHARS]
-                warning = f"文本正文已截断为 {MAX_DOCUMENT_CHARS} 字符"
-            return text, warning
-        return "", "此文档类型暂不支持正文提取"
+        return await asyncio.to_thread(read_document, path, asset.mime_type, asset.display_name)
 
     async def _message_input(
         self,

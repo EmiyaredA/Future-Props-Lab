@@ -7,12 +7,16 @@ from app.capabilities.identity.permissions import effective_permissions
 from fpl_runtime.claims import HEADER, verify_context
 from fpl_runtime.visual_assistant import (
     ASSET_PREFIX,
+    INPUT_PREFIX,
+    AttachmentInput,
+    AttachmentInputQuery,
     AttachmentMetadata,
     AttachmentQuery,
     attachment_target,
+    input_target,
 )
 
-from ..conversation_files import attachments
+from ..conversation_files import attachment_inputs, attachments
 
 router = APIRouter(include_in_schema=False)
 
@@ -25,12 +29,31 @@ async def read_attachments(
     request: Request, project_id: str, conversation_id: str, digest: str, body: AttachmentQuery
 ):
     path = request.url.path
-    if (
-        attachment_target("POST", path) is None
-        or "cookie" in request.headers
-        or "origin" in request.headers
-        or body.digest != digest
-    ):
+    if not attachment_target("POST", path) or body.digest != digest:
+        raise HTTPException(403, "private_conversation_attachment_query_required")
+    owner = await owner_for(request)
+    async with request.app.state.database.sessions(info={"owner_user_id": owner}) as session:
+        return await attachments(session, project_id, conversation_id, body.asset_ids)
+
+
+@router.post(
+    INPUT_PREFIX + "/{project_id}/{conversation_id}/{digest}",
+    response_model=list[AttachmentInput],
+)
+async def read_inputs(
+    request: Request, project_id: str, conversation_id: str, digest: str, body: AttachmentInputQuery
+):
+    if not input_target("POST", request.url.path) or body.digest != digest:
+        raise HTTPException(403, "private_conversation_attachment_query_required")
+    owner = await owner_for(request)
+    return await attachment_inputs(
+        request.app.state, owner, project_id, conversation_id, body.asset_ids
+    )
+
+
+async def owner_for(request):
+    path = request.url.path
+    if "cookie" in request.headers or "origin" in request.headers:
         raise HTTPException(403, "private_conversation_attachment_query_required")
     token = request.headers.get(HEADER, "")
     state = request.app.state
@@ -49,5 +72,4 @@ async def read_attachments(
         raise HTTPException(
             401 if active is False else 503, "conversation_attachment_authority_ended"
         )
-    async with state.database.sessions(info={"owner_user_id": actor.user_id}) as session:
-        return await attachments(session, project_id, conversation_id, body.asset_ids)
+    return actor.user_id

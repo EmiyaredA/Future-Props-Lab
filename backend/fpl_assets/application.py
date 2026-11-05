@@ -31,6 +31,7 @@ from fpl_runtime.video_segment_handoff import asset_peer as visual_segment_peer
 from fpl_runtime.visual_acceptance_assets import PREFIX as VISUAL_ACCEPTANCE_FILES
 from fpl_runtime.visual_agent_review import MAX_JOB_BYTES, SOURCES
 from fpl_runtime.visual_assistant import ASSET_PREFIX as CONVERSATION_FILES
+from fpl_runtime.visual_assistant import INPUT_PREFIX as ASSISTANT_INPUTS
 from fpl_runtime.visual_assistant import MAX_QUERY_BYTES as MAX_CONVERSATION_QUERY_BYTES
 from fpl_runtime.visual_composition import ASSETS as VISUAL_GRID_ASSETS
 from fpl_runtime.visual_composition import MAX_PLAN_BYTES as MAX_VISUAL_GRID_BYTES
@@ -240,6 +241,7 @@ def create_app(
     app.include_router(visual_upload_router)
     app.include_router(project_reveal_router)
     app.include_router(conversation_assets_router)
+    app.add_middleware(RequestLimit, prefix=ASSISTANT_INPUTS, maximum=16 * 1024)
     app.include_router(visual_acceptance_router)
     app.include_router(visual_generation_router)
     app.add_middleware(RequestLimit, prefix=VISUAL_GENERATION_ASSETS, maximum=32 * 1024)

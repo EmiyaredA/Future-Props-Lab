@@ -25,7 +25,7 @@ from fpl_runtime.retention_authority import (
 )
 from fpl_runtime.video_assets import SOURCE as VIDEO
 from fpl_runtime.video_handoff import handoff_target
-from fpl_runtime.visual_assistant import conversation_retention
+from fpl_runtime.visual_assistant import conversation_retention, message_source
 from fpl_runtime.visual_review import start_source as visual_review_start
 from fpl_runtime.visual_samples import evidence_resource, sample_source
 
@@ -267,6 +267,9 @@ class RetentionAuthorization:
         expected_permission = (
             "community.access" if publication_source or community else "content.write"
         )
+        assistant_message = message_source(body.source_method, body.source_path)
+        if assistant_message and body.change.visual_conversation_project is not None:
+            expected_permission = "models.use"
         review_start = visual_review_start(body.source_method, body.source_path)
         review = body.change.visual_review_project
         evidence = body.change.visual_evidence

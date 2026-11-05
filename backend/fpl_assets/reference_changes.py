@@ -18,6 +18,7 @@ from fpl_runtime.thought_assets import AssetDescription
 
 from . import galgame_file_changes, video_file_changes, visual_project_removal, visual_upload_stages
 from .canvas_retention import canvas_files
+from .conversation_files import validate_retained_attachments
 from .galgame_project_removal import prepare_project_removal
 from .models import AssetReferencePin, AssetReferenceSet, PreparedAssetPin, ReferenceIntent
 from .references import check_removal_fence, protect_pending_removals
@@ -225,6 +226,10 @@ class ReferenceChanges:
                             VisualAsset.media_kind.in_(("image", "audio", "video")),
                         )
                     )
+                )
+            elif requested and change.visual_conversation_project is not None:
+                present = await validate_retained_attachments(
+                    session, row, change.visual_conversation_project, requested
                 )
             elif requested and review_project is not None:
                 candidates = await scoped_assets(

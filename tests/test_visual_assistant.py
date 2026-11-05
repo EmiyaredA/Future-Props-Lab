@@ -588,14 +588,14 @@ async def test_visual_assistant_builds_safe_context_for_documents_and_media(
         pages = [FakePage()] * 51
 
     monkeypatch.setattr(
-        "app.apps.visual_workshop.assistant.conversations.PdfReader", lambda _path: FakeReader()
+        "app.capabilities.asset_store.assistant_media.PdfReader", lambda _path: FakeReader()
     )
     pdf_text, warning = VisualAssistantConversations._read_pdf(tmp_path / "sample.pdf")
     assert pdf_text.startswith("PDF 正文")
     assert warning == "PDF 仅读取前 50 页"
 
     monkeypatch.setattr(
-        "app.apps.visual_workshop.assistant.conversations.PdfReader",
+        "app.capabilities.asset_store.assistant_media.PdfReader",
         lambda _path: (_ for _ in ()).throw(ValueError("broken")),
     )
     pdf_text, warning = VisualAssistantConversations._read_pdf(tmp_path / "broken.pdf")

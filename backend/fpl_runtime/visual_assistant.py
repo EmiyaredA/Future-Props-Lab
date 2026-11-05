@@ -2,7 +2,7 @@
 
 import re
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from .library_assets import ID, LibraryAssetQuery
 from .motion_preview import DIGEST
@@ -12,6 +12,8 @@ MAX_QUERY_BYTES = 2 * 1024 * 1024
 SOURCE = "/v1/visual-workshop/projects"
 MODEL_TARGET = "/_internal/v1/visual-catalog/assistant"
 ASSET_PREFIX = "/_internal/v1/visual-conversation-assets"
+INPUT_PREFIX = "/_internal/v1/visual-conversation-inputs"
+INPUT_PURPOSE = "visual.assistant-attachment-input.read"
 MODEL_RUNS = "/_internal/v1/visual-assistant/model-runs"
 MODEL_RUN_PURPOSE = "visual.assistant-model.execute"
 MODEL_PURPOSE = "visual.assistant-models.read"
@@ -39,6 +41,21 @@ class AttachmentQuery(LibraryAssetQuery):
 def assistant_grant(grant):
     if grant.caller != "visual":
         return False
+    message = message_source(grant.source_method, grant.source_path)
+    if message:
+        if (grant.purpose, grant.target_service, grant.target_method, grant.target_path) == (
+            MODEL_PURPOSE,
+            "models",
+            "GET",
+            MODEL_TARGET,
+        ):
+            return True
+        target = input_target(grant.target_method, grant.target_path)
+        return bool(
+            target
+            and target.groups()[:2] == message.groups()
+            and (grant.purpose, grant.target_service) == (INPUT_PURPOSE, "assets")
+        )
     source = conversation_source(grant.source_path)
     if source is None:
         return False
@@ -61,8 +78,16 @@ def assistant_grant(grant):
 
 
 def conversation_retention(body):
-    source = conversation_source(body.source_path)
     change = body.change
+    message = message_source(body.source_method, body.source_path)
+    if message:
+        return (
+            change.visual_conversation_project == message[1]
+            and change.resource_id == message[2]
+            and change.expected_resource_revision >= 0
+            and bool(change.asset_ids)
+        )
+    source = conversation_source(body.source_path)
     if source is None or change.asset_ids or change.visual_conversation_project != source[1]:
         return False
     if body.source_method == "POST":
@@ -104,3 +129,30 @@ def model_grant(grant):
     source = message_source(grant.source_method, grant.source_path)
     target = model_target(grant.target_method, grant.target_path)
     return bool(source and target and source.groups() == target.groups()[:2])
+
+
+class AttachmentInputQuery(LibraryAssetQuery):
+    asset_ids: list[str] = Field(min_length=1, max_length=5)
+
+    def path(self, project_id, conversation_id):
+        return f"{INPUT_PREFIX}/{project_id}/{conversation_id}/{self.digest}"
+
+
+class AttachmentImage(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    mime_type: str
+    data_base64: str
+    byte_size: int = Field(ge=1)
+
+
+class AttachmentInput(AttachmentMetadata):
+    original_filename: str
+    media_kind: str
+    image: AttachmentImage | None = None
+    text: str = ""
+    warning: str | None = None
+
+
+def input_target(method, path):
+    return method == "POST" and re.fullmatch(rf"{INPUT_PREFIX}/({ID})/({ID})/({DIGEST})", path)
