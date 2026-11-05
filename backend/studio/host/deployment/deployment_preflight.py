@@ -43,11 +43,12 @@ def check_selected_databases(environment, business_services, root, *, only_manag
     if environment.get("FPL_MODELS_IMAGE"):
         selected.add("models")
     if not only_management:
-        selected.update(
-            service
-            for service in business_services
-            if environment.get(service_env(service, "IMAGE"))
-        )
+        for service in business_services:
+            if service not in MIGRATION_MODULES:
+                raise ValueError(f"所选服务尚未提供独立迁移检查：{service}")
+            if not environment.get(service_env(service, "IMAGE")):
+                raise ValueError(f"所选服务缺少发布镜像：{service}")
+            selected.add(service)
     for service in sorted(selected):
         module = MIGRATION_MODULES.get(service)
         if module is None:

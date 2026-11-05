@@ -113,3 +113,13 @@ def test_launcher_does_not_invoke_compose_when_selected_database_fails(monkeypat
     with pytest.raises(ValueError, match="outdated isolated schema"):
         start.main()
     assert calls == []
+
+
+def test_selected_service_without_pinned_image_fails_before_opening_any_database(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setattr(
+        deployment_preflight, "check", lambda *_args: pytest.fail("must fail before reading")
+    )
+    with pytest.raises(ValueError, match="缺少发布镜像：tools"):
+        deployment_preflight.check_selected_databases({}, ["tools"], tmp_path)

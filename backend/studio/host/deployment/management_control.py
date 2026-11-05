@@ -9,6 +9,7 @@ import time
 from pathlib import Path
 
 from studio.contracts.gateway.catalog import BY_ID
+from studio.host.deployment.compose_selection import resolve_files
 from studio.host.deployment.service_observation import ServiceObserver
 
 PROTECTED = frozenset({"identity", "management", "models"})
@@ -50,34 +51,22 @@ class DeploymentControl:
             for key, value in environment.items()
         ):
             raise ValueError("Compose 环境配置无效")
-        self.prefix = [
-            "docker",
-            "compose",
-            "--env-file",
-            "/dev/null",
-            "--file",
-            str(self.compose_file),
-        ]
-        overlay = self.compose_file.parent / "management.compose.yaml"
-        if overlay.is_file():
-            self.prefix.extend(["--file", str(overlay)])
-        if environment.get("FPL_MODELS_IMAGE"):
-            model_overlay = self.compose_file.parent / "models.compose.yaml"
-            if not model_overlay.is_file() or model_overlay.is_symlink():
-                raise ValueError("已选择 Models 镜像但缺少匹配的服务部署清单")
-            self.prefix.extend(["--file", str(model_overlay)])
-        if environment.get("FPL_INTEGRATIONS_IMAGE"):
-            integration_overlay = self.compose_file.parent / "integrations.compose.yaml"
-            if not integration_overlay.is_file() or integration_overlay.is_symlink():
-                raise ValueError("已选择 Integrations 镜像但缺少匹配的服务部署清单")
-            self.prefix.extend(["--file", str(integration_overlay)])
-        if environment.get("FPL_THOUGHT_IMAGE"):
-            thought_overlay = self.compose_file.parent / "thought.compose.yaml"
-            if not thought_overlay.is_file() or thought_overlay.is_symlink():
-                raise ValueError("已选择 Thought 镜像但缺少匹配的服务部署清单")
-            self.prefix.extend(["--file", str(thought_overlay)])
+        self.prefix = ["docker", "compose", "--env-file", "/dev/null"]
+        for path in resolve_files(self.compose_file, environment):
+            self.prefix.extend(["--file", str(path)])
         self.prefix.extend(["--project-name", project_name])
-        self.services, self.env = tuple(services), {**os.environ, **environment}
+        self.services = tuple(services)
+        self.compose_services = (
+            ("guacd", *self.services)
+            if "remote" in self.services and environment.get("FPL_GUACD_IMAGE")
+            else self.services
+        )
+        self.env = {
+            key: value
+            for key, value in os.environ.items()
+            if not key.startswith(("FPL_", "COMPOSE_"))
+        }
+        self.env.update(environment)
         self.env["COMPOSE_DISABLE_ENV_FILE"] = "true"
         self.tunnels, self.runner = tunnels, runner
         self.clock = clock
@@ -103,7 +92,7 @@ class DeploymentControl:
         return result.stdout
 
     def states(self):
-        raw = self.run(["ps", "--all", "--format", "json", *self.services])
+        raw = self.run(["ps", "--all", "--format", "json", *self.compose_services])
         try:
             rows = json.loads(raw or "[]")
             if isinstance(rows, dict):
@@ -115,13 +104,13 @@ class DeploymentControl:
                 "unhealthy" if row.get("Health") == "unhealthy" else row.get("State", "unknown")
             )
             for row in rows
-            if row.get("Service") in self.services
+            if row.get("Service") in self.compose_services
         }
 
     async def snapshot(self):
         try:
             states = await asyncio.to_thread(self.states)
-            running = len(states) == len(self.services) and all(
+            running = len(states) == len(self.compose_services) and all(
                 value == "running" for value in states.values()
             )
             stopped = all(value in {"exited", "created", "dead"} for value in states.values())
@@ -136,7 +125,9 @@ class DeploymentControl:
                 elif stopped and self.expected_running is not True:
                     self.phase, self.error = "stopped", ""
                 else:
-                    missing = [name for name in self.services if states.get(name) != "running"]
+                    missing = [
+                        name for name in self.compose_services if states.get(name) != "running"
+                    ]
                     self.phase = "failed"
                     self.error = "以下服务未就绪：" + ", ".join(missing) + "；其他服务继续运行"
         except (RuntimeError, ValueError, KeyError):
@@ -161,7 +152,7 @@ class DeploymentControl:
         states = await asyncio.to_thread(self.states)
         active = [
             name
-            for name in self.services
+            for name in self.compose_services
             if states.get(name) in {"running", "restarting", "unhealthy"}
         ]
         if active:
@@ -198,7 +189,7 @@ class DeploymentControl:
                     await self.stop()
                 if action == "force_stop":
                     await asyncio.to_thread(
-                        self.run, ["kill", "--signal", "SIGKILL", *self.services]
+                        self.run, ["kill", "--signal", "SIGKILL", *self.compose_services]
                     )
                     self.phase, self.force, self.expected_running = "stopped", False, False
                 if action in {"start", "restart"}:
@@ -214,7 +205,7 @@ class DeploymentControl:
                                 "--wait",
                                 "--wait-timeout",
                                 "30",
-                                *self.services,
+                                *self.compose_services,
                             ],
                             40,
                         )
@@ -232,7 +223,7 @@ class DeploymentControl:
                 if payload:
                     raise ValueError("日志读取不接受文件路径")
                 output = await asyncio.to_thread(
-                    self.run, ["logs", "--no-color", "--tail", "80", *self.services]
+                    self.run, ["logs", "--no-color", "--tail", "80", *self.compose_services]
                 )
                 return {"lines": [redact(line) for line in output[-65536:].splitlines()[-200:]]}
             raise ValueError("未登记的管理命令")

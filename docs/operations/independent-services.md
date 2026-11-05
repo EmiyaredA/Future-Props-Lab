@@ -585,3 +585,10 @@ Galgame 快照 ZIP 导入使用 `deploy/galgame-snapshots.compose.yaml`，与 `d
 隔离目标先显式应用 Thought 的 0006 迁移。用同一份账号计划启动 `python -m studio.assembly.independent.thought_workshop.cli migration-export` 和 `migration-import`。导出端只读封存的旧站数据库，导入端只挂目标 Thought 数据目录。执行 `uv run python -m scripts.website.migrate_thought_documents --plan "$plan" --source "$thought_source" --target "$thought_target"`，逐批核对记录数、版本、文档关系和文件链接摘要。目标重启后可用同一命令续跑，已导入批次返回原回执。
 
 Assets 元数据和原件经 SHA256 验收后，执行 `uv run python -m scripts.website.migrate_thought_references --plan "$plan" --source "$thought_source" --target "$assets_target"`，重建知识库、文档、模板和发布封面的保留记录。原件缺失、归属冲突或回执摘要不符会停止转移。外部同步、社区收藏和上传、官方导入来源及通用业务回执仍须通过来源覆盖检查，切换以整站验收结果为准。
+
+
+### 管理启动器选择完整服务组
+
+在 `fpl_deployment_environment` 明确配置每个选定服务的镜像、状态目录和只读挂载，管理启动器按已登记的清单顺序装配。Visual 和 Galgame 共用项目所有者清单，需要一并选定镜像。Creative 需要 Integrations，Remote 需要 Guacamole 配套镜像。项目快照、原生 worker、交接密钥和云控投影按各自配置选择对应挂载。只使用 TOML 提供的 Compose 值。
+
+启动前先运行 `uv run python scripts/management/start.py --config "$isolated_config" --check`。检查选定服务数据库和 Compose 配置，不执行迁移和容器启停。Remote 与 Guacamole 同属业务启停组，Guacamole 无独立网站入口。只有网关和管理端绑定本机入口。

@@ -429,3 +429,112 @@ def test_thought_overlay_is_selected_only_by_explicit_release_configuration(tmp_
         tunnels={},
     )
     assert selected.prefix.count(str(overlay)) == 1
+
+
+def test_management_composes_every_registered_service_and_explicit_feature(monkeypatch):
+    import re
+
+    from studio.contracts.gateway.catalog import BY_ID
+
+    deploy = ROOT / "deploy"
+    overlays = set(deploy.glob("*.compose.yaml"))
+    base = deploy / "compose.yaml"
+    environment = {
+        key: "fixture"
+        for path in overlays | {base}
+        for key in re.findall(r"\$\{(FPL_[A-Z0-9_]+)", path.read_text())
+    }
+    monkeypatch.setenv("FPL_GALGAME_ARCHIVE_KEY", "ambient")
+    monkeypatch.setenv("COMPOSE_PROFILES", "ambient")
+    control = DeploymentControl(
+        compose_file=base,
+        project_name="isolated-full-stack",
+        services=sorted(set(BY_ID) - {"identity", "management", "models"}),
+        environment=environment,
+        tunnels={},
+    )
+    files = [
+        Path(control.prefix[i + 1]) for i, item in enumerate(control.prefix) if item == "--file"
+    ]
+    assert files[0] == base
+    assert len(files) == len(overlays) + 1
+    assert set(files[1:]) == overlays
+    assert files.index(deploy / "project-owners.compose.yaml") < files.index(
+        deploy / "visual-assistant.compose.yaml"
+    )
+    assert files.index(deploy / "remote.compose.yaml") < files.index(
+        deploy / "remote-guacd.compose.yaml"
+    )
+    assert "guacd" in control.compose_services and "guacd" not in control.services
+    assert control.env["FPL_GALGAME_ARCHIVE_KEY"] == "fixture"
+    assert "COMPOSE_PROFILES" not in control.env
+    assert control.env["COMPOSE_DISABLE_ENV_FILE"] == "true"
+    del environment["FPL_GALGAME_ARCHIVE_KEY"]
+    reduced = DeploymentControl(
+        compose_file=base,
+        project_name="isolated-full-stack",
+        services=control.services,
+        environment=environment,
+        tunnels={},
+    )
+    assert str(deploy / "galgame-snapshots.compose.yaml") not in reduced.prefix
+    assert "FPL_GALGAME_ARCHIVE_KEY" not in reduced.env
+
+
+@pytest.mark.parametrize(
+    ("environment", "failure"),
+    [
+        ({"FPL_VISUAL_IMAGE": "fixture"}, "缺少配套服务镜像"),
+        ({"FPL_REMOTE_IMAGE": "fixture"}, "缺少配套 Guacamole 镜像"),
+        ({"FPL_CREATIVE_IMAGE": "fixture"}, "缺少配套 Integrations 镜像"),
+        ({"FPL_VIDEO_SEGMENT_VISUAL_KEY": "fixture"}, "部署配置不完整"),
+        ({"FPL_TOOLS_NATIVE_CONFIG": "fixture"}, "缺少配套服务镜像"),
+    ],
+)
+def test_incomplete_compose_release_fails_before_host_commands(environment, failure):
+    with pytest.raises(ValueError, match=failure):
+        DeploymentControl(
+            compose_file=ROOT / "deploy" / "compose.yaml",
+            project_name="isolated-full-stack",
+            services=["portal"],
+            environment=environment,
+            tunnels={},
+            runner=lambda *_args, **_kwargs: pytest.fail("Docker must not run"),
+        )
+
+
+async def test_remote_companion_follows_business_start_and_stop():
+    commands = []
+    active = set()
+
+    def runner(command, **_kwargs):
+        output = ""
+        if "up" in command:
+            index = command.index("--wait-timeout")
+            active.update(command[index + 2 :])
+        elif "kill" in command:
+            index = command.index("--signal")
+            active.difference_update(command[index + 2 :])
+        elif "ps" in command:
+            output = json.dumps([{"Service": name, "State": "running"} for name in sorted(active)])
+        commands.append(command)
+        return SimpleNamespace(returncode=0, stdout=output)
+
+    async def allow():
+        return None
+
+    control = DeploymentControl(
+        compose_file=ROOT / "deploy" / "compose.yaml",
+        project_name="isolated-remote",
+        services=["remote"],
+        environment={"FPL_REMOTE_IMAGE": "fixture", "FPL_GUACD_IMAGE": "fixture"},
+        tunnels={},
+        runner=runner,
+    )
+    started = await control.execute("management.application", {"action": "start"}, allow)
+    assert started["phase"] == "running"
+    assert active == {"remote", "guacd"}
+    stopped = await control.execute("management.application", {"action": "stop"}, allow)
+    assert stopped["phase"] == "stopped"
+    assert not active
+    assert any("kill" in command and "guacd" in command for command in commands)
