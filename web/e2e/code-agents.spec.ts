@@ -1,34 +1,21 @@
 import { expect, test } from "@playwright/test";
+import { setResponsiveTheme } from "./responsive-capture";
 
-test("Code Agents navigation, scoped grants, keyboard and responsive themes", async ({
+test("Code Agents navigation, local detection, keyboard and responsive themes", async ({
   page,
 }, testInfo) => {
-  let revision = 0;
-  let grants: Array<{ user_id: string; agent_id: string; purpose: string }> =
-    [];
-  let managed: string[] = [];
+  const retiredGrants: string[] = [];
   let detections = 0;
   await page.route("**/v1/code-agents**", async (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith("/grants")) {
-      if (route.request().method() === "PUT") {
-        const body = route.request().postDataJSON();
-        expect(body.expected_revision).toBe(revision);
-        revision++;
-        grants = body.grants;
-        managed = body.managed;
-      }
-      await route.fulfill({
-        json: {
-          revision,
-          grants,
-          managed,
-          legacy: [],
-          accounts: [{ id: "fixture-user", name: "测试账号" }],
-        },
-      });
+      retiredGrants.push(path);
+      await route.abort();
     } else {
-      if (path.endsWith("/detect")) detections++;
+      if (path.endsWith("/detect")) {
+        expect(route.request().method()).toBe("POST");
+        detections++;
+      }
       await route.fulfill({
         json: {
           items: [
@@ -78,7 +65,9 @@ test("Code Agents navigation, scoped grants, keyboard and responsive themes", as
   await expect(
     page.getByRole("heading", { name: "模型与智能体", exact: true }),
   ).toBeVisible();
-  await expect(page.getByLabel("授权账号")).toBeVisible();
+  await expect(
+    page.getByRole("group", { name: "本机编程智能体" }),
+  ).toBeVisible();
   const models = page.getByRole("tab", { name: "模型服务", exact: true });
   const agents = page.getByRole("tab", { name: "编程智能体", exact: true });
   await agents.focus();
@@ -105,27 +94,15 @@ test("Code Agents navigation, scoped grants, keyboard and responsive themes", as
     page.getByText("opencode auth login", { exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Codex 已连接", exact: true }).click();
-  await page.getByLabel("授权账号").focus();
-  await page.keyboard.press("Space");
-  await page.keyboard.press("Enter");
-  const amadeus = page.getByRole("switch", {
-    name: "测试账号 · Codex · Amadeus 授权",
-    exact: true,
-  });
-  await amadeus.click();
-  await expect(amadeus).toHaveAttribute("aria-checked", "true");
-  await expect(amadeus).toBeEnabled();
-  await amadeus.click();
-  await expect(amadeus).toHaveAttribute("aria-checked", "false");
+  await expect(page.getByRole("article", { name: "Codex 连接" })).toBeVisible();
+  await expect(page.getByLabel("授权账号")).toHaveCount(0);
   await page.getByRole("button", { name: "重新检测", exact: true }).focus();
   await page.keyboard.press("Enter");
   await expect.poll(() => detections).toBe(1);
   for (const theme of ["light", "dark"]) {
     for (const width of [390, 768, 1280, 1600]) {
       await page.setViewportSize({ width, height: 1000 });
-      await page.evaluate((value) => {
-        document.documentElement.dataset.theme = value;
-      }, theme);
+      await setResponsiveTheme(page, theme);
       await expect(
         page.getByRole("heading", { name: "模型与智能体", exact: true }),
       ).toBeVisible();
@@ -141,19 +118,6 @@ test("Code Agents navigation, scoped grants, keyboard and responsive themes", as
           (element) => element.scrollWidth <= element.clientWidth,
         ),
       ).toBe(true);
-      if (width >= 1280) {
-        await expect
-          .poll(async () => {
-            const account = await page.getByLabel("授权账号").boundingBox();
-            const config = await page
-              .getByRole("button", { name: "展开配置", exact: true })
-              .boundingBox();
-            return Math.abs(
-              account!.x + account!.width - config!.x - config!.width,
-            );
-          })
-          .toBeLessThan(1);
-      }
       await page.screenshot({
         path: testInfo.outputPath(`code-agents-${theme}-${width}.png`),
         fullPage: true,
@@ -162,7 +126,8 @@ test("Code Agents navigation, scoped grants, keyboard and responsive themes", as
     }
   }
   await page.getByRole("button", { name: "展开配置", exact: true }).click();
-  await expect(page.getByText("需要桌面版", { exact: true })).toBeVisible();
+  await expect(page.getByText(/在网站账号设置中创建 API 密钥/)).toBeVisible();
+  expect(retiredGrants).toEqual([]);
   await expect(
     page.getByRole("button", { name: "复制 codex MCP 配置" }),
   ).toBeVisible();
