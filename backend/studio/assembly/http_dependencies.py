@@ -7,12 +7,12 @@ from fastapi import Depends, Request, WebSocket
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import HTTPConnection
 
-from app.capabilities.identity.http_context import client_ip as client_ip
-from app.capabilities.identity.http_context import forbidden as _forbidden
-from app.capabilities.identity.http_context import (
+from studio.assembly.identity_http import client_ip as client_ip
+from studio.assembly.identity_http import forbidden as _forbidden
+from studio.assembly.identity_http import (
     require_recent_reauthentication as require_recent_reauthentication,
 )
-from app.capabilities.identity.http_context import unauthorized as _unauthorized
+from studio.assembly.identity_http import unauthorized as _unauthorized
 from studio.contracts.identity.claims import Actor
 from studio.contracts.identity.principal import StudioPrincipal
 from studio.contracts.identity.route_permissions import route_permission

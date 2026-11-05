@@ -165,7 +165,10 @@ def table_owner(module, table):
         return "amadeus"
     if module.startswith("app.console.creative_workshop."):
         return "creative"
-    if module in {"app.console.models.accounts", "app.console.models.platform_governance"}:
+    if module in {
+        "studio.apps.identity.storage.models.accounts",
+        "app.console.models.platform_governance",
+    }:
         # Platform settings are explicitly partitioned by key during transfer.
         return "identity"
     if table == "project_operation_receipts":

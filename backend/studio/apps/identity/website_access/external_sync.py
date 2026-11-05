@@ -2,7 +2,7 @@
 
 from sqlalchemy import select
 
-from app.console.models import ManagementApiKey, User
+from studio.apps.identity.storage.models.accounts import ManagementApiKey, User
 from studio.runtime.time import utc_now
 
 

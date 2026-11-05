@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_identity_source_closure_does_not_package_unrelated_business():
     closure = source_closure(ROOT, "identity")
     assert "studio.assembly.independent.identity.application" in closure
-    assert "app.console.governance.account_creation" in closure
+    assert "studio.apps.identity.registration.accounts" in closure
     for name in closure:
         if public_client_module(name):
             continue
@@ -152,7 +152,7 @@ def test_renderer_packages_only_owned_media_processing_and_no_foreign_storage():
     "module",
     [
         "studio.runtime.database.website",
-        "app.console.models.accounts",
+        "studio.apps.identity.storage.models.accounts",
         "app.capabilities.asset_store.storage",
         "studio.apps.thought_workshop.storage.models",
     ],
@@ -192,7 +192,7 @@ def test_models_overlay_owns_state_and_has_provider_egress_without_host_mounts()
     "module",
     [
         "studio.runtime.database.website",
-        "app.console.models.accounts",
+        "studio.apps.identity.storage.models.accounts",
         "studio.apps.model_service.storage.models",
         "studio.host.session_collection.collector",
     ],

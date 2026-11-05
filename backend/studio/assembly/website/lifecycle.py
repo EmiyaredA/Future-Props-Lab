@@ -15,11 +15,6 @@ from app.capabilities.asset_store.storage import AssetStorage
 from app.console.amadeus.execution import CodeAgentRuns
 from app.console.amadeus.runs import recover_interrupted_amadeus_runs
 from app.console.file_library.library_folder_archive import cleanup_library_folder_archive_staging
-from app.console.governance.external_sync_access import external_sync_actor_allowed
-from app.console.governance.interview_executor_access import interview_actor_allowed
-from app.console.governance.profile import reconcile_profile_avatars
-from app.console.governance.visual_acceptance_access import acceptance_actor_allowed
-from app.console.governance.workbench_access import workbench_actor_allowed
 from db.migrations import apply_migrations
 from studio.apps.agent_workbench.execution.runner import WorkbenchRuns
 from studio.apps.agent_workbench.execution.storage import interrupt_all as interrupt_workbench_runs
@@ -30,6 +25,11 @@ from studio.apps.galgame_workshop.assets.annotation_import_runner import (
 from studio.apps.galgame_workshop.assets.asr import GalgameAsrRunner
 from studio.apps.galgame_workshop.video.video_export_runner import GalgameVideoExportRunner
 from studio.apps.galgame_workshop.video.video_handoff_runner import GalgameVideoEditorHandoffRunner
+from studio.apps.identity.profile import reconcile_profile_avatars
+from studio.apps.identity.website_access.external_sync import external_sync_actor_allowed
+from studio.apps.identity.website_access.interview import interview_actor_allowed
+from studio.apps.identity.website_access.visual_acceptance import acceptance_actor_allowed
+from studio.apps.identity.website_access.workbench import workbench_actor_allowed
 from studio.apps.interview_assistant.runner import InterviewPreparationRunner
 from studio.apps.model_service.admission.website_queue import (
     claim_visual_capacity,

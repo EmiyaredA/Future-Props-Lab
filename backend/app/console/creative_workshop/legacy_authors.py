@@ -1,6 +1,6 @@
 """Recovery-site author adapter; independent Creative never imports Identity ORM."""
 
-from app.console.models.accounts import User
+from studio.apps.identity.storage.models.accounts import User
 
 
 class LegacyCreativeAuthors:

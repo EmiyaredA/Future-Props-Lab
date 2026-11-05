@@ -11,8 +11,8 @@ from uuid import uuid4
 from fastapi import HTTPException
 from sqlalchemy import select
 
-from app.console.governance.profile import AVATAR_MAX_BYTES, CONTENT_TYPES
-from app.console.models.accounts import User
+from studio.apps.identity.profile import AVATAR_MAX_BYTES, CONTENT_TYPES
+from studio.apps.identity.storage.models.accounts import User
 
 DIGEST_PATTERN = r"^[a-f0-9]{64}$"
 

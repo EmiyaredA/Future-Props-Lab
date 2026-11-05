@@ -3,11 +3,11 @@
 from sqlalchemy import select, text, update
 
 from app.console.governance.settings_records import read_setting
-from app.console.models import AuthSession, ManagementApiKey, User
-from app.console.schemas.platform_governance import RuntimeQuotas
+from studio.apps.identity.storage.models.accounts import AuthSession, ManagementApiKey, User
 from studio.apps.model_service.storage.models.runtime_admission import RuntimeAdmission as Admission
 from studio.assembly.website.models import RUNTIME_QUOTA_TASK_MODELS
 from studio.contracts.identity.errors import AccountError
+from studio.contracts.model_service.schemas.runtime_quotas import RuntimeQuotas
 from studio.runtime.time import utc_now
 
 TASK_MODELS = {

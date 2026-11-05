@@ -11,8 +11,8 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import delete, select
 
-from app.console.models import User
 from app.runtime.credentials import encrypt_secret
+from studio.apps.identity.storage.models.accounts import User
 from studio.apps.model_service.admission.website_queue import (
     claim_visual_capacity,
     visual_queue_candidates,

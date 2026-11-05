@@ -210,7 +210,7 @@ async def run():
 asyncio.run(run())
 for name in ('studio.assembly.website.application',
              'studio.assembly.website.models','studio.runtime.database.website',
-             'app.console.models.accounts',
+             'studio.apps.identity.storage.models.accounts',
              'app.integrations.models','app.capabilities.asset_store.models'):
  assert name not in sys.modules, name
 """,

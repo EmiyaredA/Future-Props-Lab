@@ -4,10 +4,10 @@ from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Request
 
-from app.console.schemas.project_certification import CertificationIn, CertificationOut
 from studio.apps.identity.clients.certification import CertificationRejected
 from studio.assembly.http_dependencies import StudioAuth
 from studio.contracts.identity.certification import CertificationCommand, Kind
+from studio.contracts.identity.project_markers import CertificationIn, CertificationOut
 from studio.runtime.http.capability_client import CapabilityUnavailable
 
 router = APIRouter(tags=["platform-governance"])

@@ -9,7 +9,7 @@ import httpx
 import pytest
 from tests.thought_helpers import create_note
 
-from app.console.models import User
+from studio.apps.identity.storage.models.accounts import User
 from studio.apps.thought_workshop.multitable.schemas import Snapshot
 from studio.apps.thought_workshop.multitable.validation import validate_snapshot
 from website_test_support import SessionLocal, app

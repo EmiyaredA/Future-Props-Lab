@@ -3803,46 +3803,10 @@
       "model": "CreativeInstallation"
     },
     {
-      "table": "users",
-      "service": "identity",
-      "module": "app.console.models.accounts",
-      "model": "User"
-    },
-    {
-      "table": "auth_sessions",
-      "service": "identity",
-      "module": "app.console.models.accounts",
-      "model": "AuthSession"
-    },
-    {
-      "table": "management_api_keys",
-      "service": "identity",
-      "module": "app.console.models.accounts",
-      "model": "ManagementApiKey"
-    },
-    {
-      "table": "security_audit_events",
-      "service": "identity",
-      "module": "app.console.models.accounts",
-      "model": "SecurityAuditEvent"
-    },
-    {
       "table": "platform_settings",
       "service": "identity",
       "module": "app.console.models.platform_governance",
       "model": "PlatformSetting"
-    },
-    {
-      "table": "registration_invite_codes",
-      "service": "identity",
-      "module": "app.console.models.platform_governance",
-      "model": "RegistrationInviteCode"
-    },
-    {
-      "table": "registration_redemptions",
-      "service": "identity",
-      "module": "app.console.models.platform_governance",
-      "model": "RegistrationRedemption"
     },
     {
       "table": "integration_external_connections",
@@ -4377,6 +4341,42 @@
       "service": "gateway",
       "module": "studio.apps.gateway.storage.service_models",
       "model": "ChangeReceipt"
+    },
+    {
+      "table": "users",
+      "service": "identity",
+      "module": "studio.apps.identity.storage.models.accounts",
+      "model": "User"
+    },
+    {
+      "table": "auth_sessions",
+      "service": "identity",
+      "module": "studio.apps.identity.storage.models.accounts",
+      "model": "AuthSession"
+    },
+    {
+      "table": "management_api_keys",
+      "service": "identity",
+      "module": "studio.apps.identity.storage.models.accounts",
+      "model": "ManagementApiKey"
+    },
+    {
+      "table": "security_audit_events",
+      "service": "identity",
+      "module": "studio.apps.identity.storage.models.accounts",
+      "model": "SecurityAuditEvent"
+    },
+    {
+      "table": "registration_invite_codes",
+      "service": "identity",
+      "module": "studio.apps.identity.storage.models.registration",
+      "model": "RegistrationInviteCode"
+    },
+    {
+      "table": "registration_redemptions",
+      "service": "identity",
+      "module": "studio.apps.identity.storage.models.registration",
+      "model": "RegistrationRedemption"
     },
     {
       "table": "identity_account_events",

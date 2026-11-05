@@ -1,6 +1,6 @@
 """Legacy collector authorization; independent Agents obtains this decision from Identity."""
 
-from app.console.models.accounts import User
+from studio.apps.identity.storage.models.accounts import User
 from studio.contracts.identity.permissions import CLOUD_CONTROL_PERMISSION, role_permissions
 
 

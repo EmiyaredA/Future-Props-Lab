@@ -17,7 +17,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from tests.test_tools_navigation_migration import available_ports, listener
 
-from app.console.models.accounts import User
 from app.integrations.external.models import ExternalConnection
 from app.integrations.models import (
     IntegrationCheck,
@@ -31,6 +30,7 @@ from app.integrations.skills.archive import SkillArchiveStorage
 from app.integrations.skills.catalog import SkillCatalog
 from app.runtime.credentials import SecretCipher
 from db.migrations import apply_migrations
+from studio.apps.identity.storage.models.accounts import User
 from studio.apps.integrations.storage.migrations.registry import MIGRATIONS
 from studio.apps.integrations.storage.service_models import MODELS
 from studio.assembly.independent.integrations.maintenance import DATASETS, PREFIX

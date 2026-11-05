@@ -4,8 +4,9 @@ from datetime import timedelta
 
 from fastapi import HTTPException, Request
 
-from app.capabilities.identity.security import REAUTH_MINUTES
+from studio.contracts.identity.authentication import REAUTH_MINUTES
 from studio.contracts.identity.principal import StudioPrincipal
+from studio.contracts.identity.session_policy import STUDIO_SESSION
 from studio.runtime.time import utc_now
 
 
@@ -32,3 +33,7 @@ def require_recent_reauthentication(principal: StudioPrincipal) -> None:
         minutes=REAUTH_MINUTES
     ):
         raise forbidden("reauthentication_required", "请重新验证密码")
+
+
+def session_policy(request):
+    return getattr(request.state, "session_policy", STUDIO_SESSION)

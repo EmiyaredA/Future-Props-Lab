@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, Request, Response, WebSocket
 
-from app.capabilities.identity.rate_limit import allow_attempt
 from app.console.cloud_control import access, preferences, setup
 from app.console.cloud_control.desktop import DESKTOP_COOKIE, DESKTOP_SOCKET
 from app.console.cloud_control.schemas import (
@@ -68,7 +67,7 @@ async def connect(request: Request, body: DesktopLogin, db: SessionDep, principa
                 "message": "请先验证云控访问权限",
             },
         )
-    if not allow_attempt(f"cloud-vnc:{principal.user_id}", 8):
+    if not request.app.state.auth_attempts.allow(f"cloud-vnc:{principal.user_id}", 8):
         raise HTTPException(429, "连接尝试过多，请稍后重试")
     ticket = request.app.state.cloud_desktop.issue(
         principal, local, body.password.get_secret_value()

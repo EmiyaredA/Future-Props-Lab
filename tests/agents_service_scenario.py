@@ -23,7 +23,7 @@ assert (
     "studio.assembly.website.application" not in sys.modules
     and "studio.assembly.website.models" not in sys.modules
 )
-assert "app.console.models.accounts" not in sys.modules
+assert "studio.apps.identity.storage.models.accounts" not in sys.modules
 assert "studio.runtime.database.website" not in sys.modules
 assert not any(
     name.startswith(

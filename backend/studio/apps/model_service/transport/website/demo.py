@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 
-from app.console.routes.auth import _browser_auth, _platform_auth
+from studio.apps.identity.transport.website.auth import _browser_auth, _platform_auth
 from studio.apps.model_service.demonstration import website_management as governance
 from studio.apps.model_service.demonstration.execution import completion_sse
 from studio.apps.model_service.transport.website.model_capacity import ModelCapacity

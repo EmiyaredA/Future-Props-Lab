@@ -12,9 +12,9 @@ from sqlalchemy import update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.identity.avatar_previews import avatar_thumbnail
-from app.console.governance.service import AccountError, add_audit_event
-from app.console.models import User
+from studio.apps.identity.credentials.operations import AccountError, add_audit_event
+from studio.apps.identity.profile_images import avatar_thumbnail
+from studio.apps.identity.storage.models.accounts import User
 from studio.config.settings import get_settings
 from studio.runtime.files.image_sizes import ThumbnailSize
 from studio.runtime.time import utc_now

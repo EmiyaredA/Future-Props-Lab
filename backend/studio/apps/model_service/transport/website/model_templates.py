@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
 
-from app.console.routes.auth import _platform_auth
+from studio.apps.identity.transport.website.auth import _platform_auth
 from studio.apps.model_service.templates.website import get_template, save_template
 from studio.apps.model_service.templates.website_sync import (
     job_view,

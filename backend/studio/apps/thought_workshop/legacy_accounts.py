@@ -4,10 +4,10 @@ from dataclasses import replace
 
 from sqlalchemy import or_, select
 
-from app.capabilities.identity.passwords import normalize_username
-from app.console.models.accounts import User
+from studio.apps.identity.storage.models.accounts import User
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.contracts.identity.account_directory import AccountProfile
+from studio.contracts.identity.usernames import normalize_username
 
 
 class LegacyAccountDirectory:

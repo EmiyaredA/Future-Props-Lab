@@ -8,8 +8,8 @@ import httpx
 import pytest
 from tests.account_fixtures import account_record
 
-from app.console.models import User
 from studio.apps.audio_annotation.projects import AudioAnnotationError, AudioAnnotationProjects
+from studio.apps.identity.storage.models.accounts import User
 from studio.apps.model_service.providers.transcription import TranscriptionResult, TranscriptSegment
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.model_service.storage.models.model_test import ModelTestTranscriptionTask

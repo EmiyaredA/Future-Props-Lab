@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import or_, select
 
-from app.console.models.accounts import User
+from studio.apps.identity.storage.models.accounts import User
 from studio.contracts.identity.account_directory import (
     AccountProfile,
     CallerProfile,

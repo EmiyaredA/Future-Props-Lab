@@ -208,12 +208,9 @@ def _resolve_web_module(source: Path, specifier: str) -> Path | None:
 
 def test_workspace_models_are_registered_for_tenant_scoping() -> None:
     from app.capabilities.asset_store.upgrade_records import AccountStorageUpgradeRoot
-    from app.console.models import (
-        ManagementApiKey,
-        ModelTemplateSyncItem,
-        RuntimeAdmission,
-        SecurityAuditEvent,
-    )
+    from studio.apps.identity.storage.models.accounts import ManagementApiKey, SecurityAuditEvent
+    from studio.apps.model_service.storage.models.model_templates import ModelTemplateSyncItem
+    from studio.apps.model_service.storage.models.runtime_admission import RuntimeAdmission
     from studio.assembly.website.models import TENANT_MODELS
     from studio.runtime.database.orm_base import Base
 
@@ -321,7 +318,7 @@ def test_backend_routes_do_not_own_persistence() -> None:
 
 
 def test_management_api_key_mutations_require_browser_session_auth() -> None:
-    path = BACKEND_APP / "console" / "routes" / "accounts.py"
+    path = REPO_ROOT / "backend/studio/apps/identity/transport/website/accounts.py"
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     handlers = {
         node.name: node
@@ -581,9 +578,9 @@ def test_transcription_consumers_do_not_depend_on_playground() -> None:
 
 
 def test_account_service_does_not_own_catalog_provisioning() -> None:
-    imports = _python_imports(BACKEND_APP / "console" / "governance" / "service.py")
+    imports = _python_imports(REPO_ROOT / "backend/studio/apps/identity/credentials/operations.py")
     assert not any(_matches_module(module, "studio.apps.model_service") for module in imports)
-    assert (BACKEND_APP / "console" / "governance" / "provisioning.py").is_file()
+    assert (REPO_ROOT / "backend/studio/assembly/website/account_provisioning.py").is_file()
 
 
 def test_public_files_have_independent_ownership() -> None:
@@ -655,7 +652,7 @@ def test_runtime_assembly_entrypoints_exist() -> None:
     assert (REPO_ROOT / "backend/studio/assembly/website/routes.py").is_file()
     assert (REPO_ROOT / "backend/studio/contracts/identity/principal.py").is_file()
     assert (BACKEND_APP / "capabilities" / "asset_store" / "storage.py").is_file()
-    assert (BACKEND_APP / "console" / "governance" / "provisioning.py").is_file()
+    assert (REPO_ROOT / "backend/studio/assembly/website/account_provisioning.py").is_file()
     assert (BACKEND_APP / "console" / "file_library" / "library_folder_archive.py").is_file()
 
 
@@ -881,7 +878,7 @@ def test_documented_core_directories_exist() -> None:
         "backend/app/capabilities",
         "backend/app/capabilities/agents",
         "backend/app/capabilities/asset_store",
-        "backend/app/capabilities/identity",
+        "backend/studio/apps/identity/credentials",
         "backend/app/capabilities/media_rendering",
         "backend/studio/apps/model_service/transcription",
         "backend/app/console",

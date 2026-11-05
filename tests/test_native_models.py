@@ -469,7 +469,7 @@ import studio.host.local_models.models_worker
 for name in ('studio.runtime.database.website',
     'studio.apps.model_service.storage.models',
     'studio.apps.model_service.storage.service_models',
-    'app.console.models.accounts'):
+    'studio.apps.identity.storage.models.accounts'):
     assert name not in sys.modules, name
 """
     result = subprocess.run(

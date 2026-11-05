@@ -6,11 +6,10 @@ from datetime import timedelta
 
 from fastapi import HTTPException, Request, Response
 
-from app.capabilities.identity.security import SESSION_ABSOLUTE_DAYS
-from app.capabilities.identity.session_policy import STUDIO_SESSION, SessionPolicy
-from app.console.governance.profile import avatar_url
-from app.console.governance.service import audit_page
-from app.console.schemas.accounts import (
+from studio.apps.identity.credentials.operations import audit_page
+from studio.apps.identity.profile import avatar_url
+from studio.assembly.http_dependencies import SessionDep, authenticate_studio_request
+from studio.contracts.identity.accounts import (
     AccountOut,
     ApiKeyOut,
     AuthMeOut,
@@ -18,8 +17,9 @@ from app.console.schemas.accounts import (
     SecurityAuditEventOut,
     SecurityAuditListOut,
 )
-from studio.assembly.http_dependencies import SessionDep, authenticate_studio_request
+from studio.contracts.identity.authentication import SESSION_ABSOLUTE_DAYS
 from studio.contracts.identity.permissions import role_permissions
+from studio.contracts.identity.session_policy import STUDIO_SESSION, SessionPolicy
 
 
 def _user_out(user) -> CurrentUserOut:
@@ -66,11 +66,13 @@ def _key_out(key) -> ApiKeyOut:
 
 
 def _set_cookies(
-    response: Response, token: str, csrf: str, policy: SessionPolicy = STUDIO_SESSION
+    response: Response,
+    token: str,
+    csrf: str,
+    policy: SessionPolicy = STUDIO_SESSION,
+    *,
+    secure: bool,
 ) -> None:
-    from studio.config.settings import get_settings
-
-    secure = get_settings().auth_cookie_secure
     max_age = int(timedelta(days=SESSION_ABSOLUTE_DAYS).total_seconds())
     response.set_cookie(
         policy.session_cookie,
@@ -92,10 +94,9 @@ def _set_cookies(
     )
 
 
-def _clear_cookies(response: Response, policy: SessionPolicy = STUDIO_SESSION) -> None:
-    from studio.config.settings import get_settings
-
-    secure = get_settings().auth_cookie_secure
+def _clear_cookies(
+    response: Response, policy: SessionPolicy = STUDIO_SESSION, *, secure: bool
+) -> None:
     response.delete_cookie(policy.session_cookie, path="/", secure=secure, samesite="lax")
     response.delete_cookie(policy.csrf_cookie, path="/", secure=secure, samesite="lax")
 

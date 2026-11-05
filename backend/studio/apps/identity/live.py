@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from app.console.models.accounts import AuthSession, ManagementApiKey, User
+from studio.apps.identity.storage.models.accounts import AuthSession, ManagementApiKey, User
 from studio.contracts.asset_library.reveal import reveal_target
 from studio.contracts.audio_annotation.task_sources import upload_target as annotation_upload_target
 from studio.contracts.galgame_workshop.galgame_annotation_source import annotation_target

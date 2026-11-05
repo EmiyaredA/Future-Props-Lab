@@ -19,13 +19,13 @@ from app.console.creative_workshop.schemas import (
     CreativeInstallPreviewIn,
     CreativeStdioSetupIn,
 )
-from app.console.models import User
 from app.integrations.models import (
     McpIntegration,
     SkillIntegration,
     SkillVersion,
     ToolApiIntegration,
 )
+from studio.apps.identity.storage.models.accounts import User
 from studio.contracts.identity.principal import StudioPrincipal
 from website_test_support import SessionLocal
 

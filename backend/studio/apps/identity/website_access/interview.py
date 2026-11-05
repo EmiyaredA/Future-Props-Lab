@@ -1,6 +1,6 @@
 """Revalidate the account that owns a persisted execution."""
 
-from app.console.models import User
+from studio.apps.identity.storage.models.accounts import User
 
 
 async def interview_actor_allowed(session, owner_user_id, user_id):

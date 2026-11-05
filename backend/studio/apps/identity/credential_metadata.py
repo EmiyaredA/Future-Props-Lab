@@ -2,7 +2,7 @@
 
 from fastapi import HTTPException
 
-from app.console.models.accounts import ManagementApiKey
+from studio.apps.identity.storage.models.accounts import ManagementApiKey
 
 
 async def credential_metadata(session, principal):

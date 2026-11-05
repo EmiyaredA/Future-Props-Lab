@@ -27,7 +27,7 @@ def test_shared_dependency_import_does_not_open_legacy_configuration_or_account_
             (
                 "import sys; import studio.assembly.http_dependencies; "
                 "assert 'studio.runtime.database.website' not in sys.modules; "
-                "assert 'app.console.models.accounts' not in sys.modules; "
+                "assert 'studio.apps.identity.storage.models.accounts' not in sys.modules; "
                 "assert 'studio.assembly.website.application' not in sys.modules"
             ),
         ],

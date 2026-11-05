@@ -2,15 +2,21 @@ from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, Query, Request
 
-from app.console.governance.account_creation import create_managed_account
-from app.console.governance.management import (
+from studio.apps.identity.account_management import (
     account_page,
     reset_account_password,
     update_account,
 )
-from app.console.governance.service import AccountError
-from app.console.routes.auth import _account_out, _audit_response, _browser_auth, _platform_auth
-from app.console.schemas.accounts import (
+from studio.apps.identity.credentials.operations import AccountError
+from studio.apps.identity.registration.accounts import create_managed_account
+from studio.apps.identity.transport.website.auth import (
+    _account_out,
+    _audit_response,
+    _browser_auth,
+    _platform_auth,
+)
+from studio.assembly.http_dependencies import SessionDep, client_ip
+from studio.contracts.identity.accounts import (
     AccountCreatedOut,
     AccountCreateIn,
     AccountListOut,
@@ -20,7 +26,6 @@ from app.console.schemas.accounts import (
     ResetPasswordOut,
     SecurityAuditListOut,
 )
-from studio.assembly.http_dependencies import SessionDep, client_ip
 from studio.runtime.http.account_errors import error_detail
 
 router = APIRouter(tags=["account-management"])

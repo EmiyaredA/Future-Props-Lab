@@ -35,7 +35,7 @@ from studio.runtime.http.problem_details import http_exception_handler, revision
 from studio.runtime.revisions import RevisionConflictError
 
 assert "studio.runtime.database.website" not in sys.modules
-assert "app.console.models.accounts" not in sys.modules
+assert "studio.apps.identity.storage.models.accounts" not in sys.modules
 assert not any(name.startswith("app.apps.") for name in sys.modules)
 state = Path(os.environ["CATALOG_TEST_ROOT"]).resolve()
 assert state.is_relative_to(Path(tempfile.gettempdir()).resolve())
@@ -171,7 +171,7 @@ async def scenario():
             assert db.execute("PRAGMA integrity_check").fetchone() == ("ok",)
         assert (
             "studio.runtime.database.website" not in sys.modules
-            and "app.console.models.accounts" not in sys.modules
+            and "studio.apps.identity.storage.models.accounts" not in sys.modules
         )
     finally:
         await database.close()

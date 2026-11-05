@@ -2,7 +2,7 @@
 
 ## Studio 组件归属迁移
 
-所有原 `backend/fpl_*` 包已迁出，源码统一进入 `backend/studio/`。原 `backend/app/apps/` 的十个业务切片也已归并到对应应用。`backend/app/` 暂时保留素材、账号治理、Agent 等尚未归并的实现；这部分和逐用例解耦仍属于后续迁移，不能把命名空间迁移视为整个方案验收完成。
+所有原 `backend/fpl_*` 包已迁出，源码统一进入 `backend/studio/`。原 `backend/app/apps/` 的十个业务切片也已归并到对应应用。`backend/app/` 暂时保留素材、部分治理、Agent 等尚未归并的实现；这部分和逐用例解耦仍属于后续迁移，不能把命名空间迁移视为整个方案验收完成。
 
 已落地的目录骨架如下（以仓库根目录下为第一级，展开至第四级）：
 
@@ -148,7 +148,7 @@ backend/
 
 `studio/contracts/identity/delegation.py` 限定调用方、来源操作、用途和目标地址；`capability_client.py` 使用原请求断言换取目标签名，不传递完整浏览器凭据。Identity 的 `delegation.py` 复核原账号会话并拒绝注销后的委托。`protocol_hash.py` 计算单服务公开操作及可达 schema 的契约哈希；`web.py` 核验程序清单、静态资源与对应服务契约，并阻止本应用旧页面写入。
 
-`backend/studio/apps/identity/` 装配独立账号 ASGI 应用、账号事件、显式维护入口及自有 `migrations/`；不加载门户、工坊或模型 ORM。`console/governance/account_creation.py` 接受显式事务初始化回调，旧 `provisioning.py` 仅承担单体目录初始化适配；账号与注册路由使用装配时注入的用例。 `credential_migration.py` 拥有历史账号、Studio 会话和 Management API Key 批次，`avatar_migration.py` 与 `avatar_files.py` 校验并恢复原头像文件。
+`backend/studio/apps/identity/` 装配独立账号 ASGI 应用、账号事件、显式维护入口及自有 `migrations/`；不加载门户、工坊或模型 ORM。`studio/apps/identity/registration/accounts.py` 接受显式事务初始化回调，旧 `provisioning.py` 仅承担单体目录初始化适配；账号与注册路由使用装配时注入的用例。 `credential_migration.py` 拥有历史账号、Studio 会话和 Management API Key 批次，`avatar_migration.py` 与 `avatar_files.py` 校验并恢复原头像文件。
 `studio/runtime/database/migration_apps.py` 装配独立回环维护进程，`scripts/website/migration_transfer.py` 负责传输与读回核验。
 
 `backend/studio/apps/portal/` 装配独立门户与文档 API，仅拥有服务迁移标识，不持有账号或工坊数据，不启动其他 Runner。启动只读取经过分组校验的存储配置和 Identity 公钥；多余配置字段会拒绝，门户没有解密用途，不取得 FPL 加密密钥。开发者文档在构建时按现有允许列表封装，通过原浏览器 Session 与固定 `docs.developer` 权限读取；HTTP 路径、操作 ID、标签和 schema 保持兼容。
@@ -187,7 +187,7 @@ backend/
 
 `studio/apps/model_service/quotas.py` 使用追加的 `0005_quota_policy` 保存独立 CAS 策略；协议类型归 `studio/apps/model_service/schemas/runtime_quotas.py`，旧治理 schema 只作兼容导出。`admission.py` 持有同步调用与三个 Models 任务种类的额度生命周期：全局统计仅返回固定自有表的汇总，恢复任务没有账本也计入占用；任务关联与创建同事务，重放不可改绑。`studio/apps/model_service/generation/outcomes.py` 共享供应商提交中断结果标记，未知与缺失任务不会因超时被当作已完成。额度不等于执行授权；排队授权、Runner 结算与治理审计仍待完整装配。
 
-`console/schemas/registration.py` 独立拥有注册／邀请码协议，`developer_documents.py` 拥有只读开发文档协议。Identity 和 Portal 直接使用各自协议文件，不能通过旧 `platform_governance.py` 聚合兼容导出间接加载模型模块。
+`studio/contracts/identity/registration.py` 独立拥有注册／邀请码协议，`developer_documents.py` 拥有只读开发文档协议。Identity 和 Portal 直接使用各自协议文件，不能通过旧 `platform_governance.py` 聚合兼容导出间接加载模型模块。
 
 `studio/apps/model_service/task_records.py` 明确自有任务种类与不可变输入摘要；`execution_authority.py` 使用追加的 `0006_task_authorizations` 将原始签名请求与任务创建同事务保存。出队前复核原始账号授权，事务内只检查短期决定与当前输入；缺失／失效来源拒绝提交，Identity 暂不可用延后。`request_admission.py` 通过 `studio/apps/model_service/admission/bindings.py` 的每请求 provider 包装额度关联，不共享请求可变状态。`GenerationTaskStore` 的显式准备回调在写事务外运行，终态结算回调仅在本服务短事务中执行；旧网站未安装这些新适配器，保持恢复契约。
 
@@ -353,7 +353,7 @@ Future-Props-Lab/
 ├── backend/app/
 │   ├── problem_details.py # 统一协议错误映射
 │   ├── runtime/       # 尚未迁出的凭据适配
-│   ├── capabilities/  # 有契约的共享能力：identity、asset_store（VisualAsset ORM + files/媒体 schemas/routes）、agents、media_rendering
+│   ├── capabilities/  # 有契约的共享能力：asset_store（VisualAsset ORM + files/媒体 schemas/routes）、agents、media_rendering
 │   ├── console/       # Studio 治理、库级文件用例；自有 models/routes/schemas
 │   │   ├── amadeus/   # 助手会话、引用快照、审批执行、沙箱脚本与模型桥接
 │   │   └── creative_workshop/ # 跨账号公开创作版本、草稿、安装事务与文件校验
@@ -415,7 +415,7 @@ Future-Props-Lab/
 
 - `studio/apps/model_service/credential_snapshot.py` 保存纯调用归因快照，不导入账号 ORM 或数据库。`studio/apps/model_service/http_credentials.py` 让模型 HTTP 入口读取与当前 Principal 匹配的已验证 Identity 上下文中的 API Key ID、显示名与前缀，不跨库读取账号或密钥；实时语音仅接受已经认证的浏览器 Principal。恢复网站在装配时显式安装 `studio/apps/model_service/call_logs/credentials.py` 中的账号查询，使用当前应用的会话，LLM 模块不直接导入单体全局数据库工厂。归因只用于日志，不能代替授权。
 - `runtime/task_records.py` 拥有内部 Runner 的账号查找与绑定：在无绑定时只读解析本服务任务归属，随后按该账号读取；已有绑定不可覆盖。生成／转录恢复先枚举受影响账号，再分别提交状态与日志，系统读取不授予系统写入。`studio/apps/model_service/inference/storage.py` 管理本服务推理输入与输出，启动核对只读取 Models 自有记录与目录，不扫描 Identity 表、不跟随链接、不递归清理或修改其他应用文件。
-- `studio/runtime/http/dependencies.py` 从当前 ASGI 应用取得显式会话工厂，业务身份仅消费已验证签名上下文。`console/governance/database_auth.py` 拥有浏览器 Cookie、CSRF、API Key、Session 用途和原实时语音认证的账号数据校验；Identity 与恢复网站在装配时明确安装该适配器，其他应用不加载账号 ORM 或旧数据库。`capabilities/identity/http_context.py` 提供无存储依赖的协议错误、客户端地址和最近重新认证前置条件。缺少绑定不能触发单体数据库回退。
+- `studio/runtime/http/dependencies.py` 从当前 ASGI 应用取得显式会话工厂，业务身份仅消费已验证签名上下文。`studio/apps/identity/transport/database_auth.py` 拥有浏览器 Cookie、CSRF、API Key、Session 用途和原实时语音认证的账号数据校验；Identity 与恢复网站在装配时明确安装该适配器，其他应用不加载账号 ORM 或旧数据库。`studio/assembly/identity_http.py` 提供无存储依赖的协议错误、客户端地址和最近重新认证前置条件。缺少绑定不能触发单体数据库回退。
 - `studio/apps/model_service/catalog/` 拥有供应商分组、接入连接与模型目录。`supplier_records.py` 提供账号限定的
   分组读取及安全输出，`suppliers.py` 通过目录统一 CAS 执行分组写入；协议边界位于
   `studio/apps/model_service/transport/website/models/suppliers.py`。供应商不持有密钥或启停状态，连接通过 `supplier_id` 显式归组。
@@ -431,11 +431,11 @@ Future-Props-Lab/
 - 后端采用功能模块优先结构。`studio/assembly/website/` 负责装配；各包 `routes/` 只负责认证、请求校验、调用功能
   边界和响应映射，不直接导入 SQLAlchemy、ORM 模型或 migration。查询、写入和事务由
   `studio/apps/model_service/catalog/`、`studio/apps/model_service/playground/`、`studio/apps/model_service/call_logs/` 等所属能力负责。
-- `console/governance/provisioning.py` 是 HTTP 管理接口和离线账号命令共用的账号开通用例；账号、审计事件与账号模型目录在同一事务内提交或回滚。`console/governance/service.py`
+- `studio/assembly/website/account_provisioning.py` 是 HTTP 管理接口和离线账号命令共用的账号开通用例；账号、审计事件与账号模型目录在同一事务内提交或回滚。`studio/apps/identity/credentials/operations.py`
   不依赖模型目录实现。
 - `capabilities/identity/permissions.py` 拥有固定角色与密钥范围交集，`capabilities/identity/route_permissions.py` 显式登记业务操作。
   `governance_transactions.py` 在短写事务中重验操作者并执行 CAS；`management.py` 拥有平台身份与账号状态授权，`errors.py` 和 `error_views.py` 定义领域错误与安全快照。
-  `console/routes/account_management.py` 只适配管理查询、创建和审计协议。
+  `studio/apps/identity/transport/website/account_management.py` 只适配管理查询、创建和审计协议。
 - `web/src/features/accounts/` 拥有管理中台、个人资料、安全与密钥。`AccountMenu` 提供账号入口，
   `AccountPanel` 与 `useAccountPanel` 装配设置弹窗，`RuntimeQuotasPage` 管理账号和实例额度，`TemplateSyncTarget` 选择共享模型的目标账号。
   `platform/auth/AccountAccess.tsx` 提供账号 ID 与有效权限；`AccountStorageUpgrade` 显示维护升级状态。
@@ -471,7 +471,7 @@ Future-Props-Lab/
   `blocks.py` 接收明确的文档内容与图片素材，`feishu_verification.py` 核验远端块结果，
   不读取思绪工坊 ORM。`/docx/` 链接直接作为文档标识；知识库 `/wiki/` 链接只提取节点标识，经飞书开放接口解析为 docx 后再读写。服务器不请求用户粘贴的主机。
   `apps/thought_workshop/external_sync/` 拥有文章绑定、内容导出快照、持久任务和步骤核验；
-  `console/governance/external_sync_access.py` 为执行器提供当前操作者权限检查。
+  `studio/apps/identity/website_access/external_sync.py` 为执行器提供当前操作者权限检查。
   `features/integrations/external/` 提供集成中心配置，`features/thought-workshop/external-sync/`
   提供文章同步侧栏和移动弹层；共享 `shared/ui/FeishuMark.tsx` 从 `web/public/providers/` 读取本地品牌标识。
   迁移 `r0088_external_article_sync` 追加五张表；全局唯一目标绑定和
@@ -489,7 +489,7 @@ Future-Props-Lab/
   Galgame 工坊、视频剪辑工坊、演示工坊、思绪工坊与录音标注工坊通过应用模块配置品牌、导航和 active 规则，共用 `app/layout/WorkshopShell`；侧栏展示由 `shared/ui/WorkshopSidebar.tsx` 统一拥有，
   包括品牌、返回卡片、图标导航和主题切换。思绪工坊复用该展示组件，知识库状态与目录仍由功能模块管理；录音标注工坊与演示工坊同样 `supportsProjects: true`，但只引用公共文件库、不拥有独立项目存储根。
   `web/src/features/interview-assistant/` 拥有面试助手，入口为 `/apps/interview-assistant`，复用应用壳。`api.ts` 与 `queryKeys.ts` 消费生成契约并按账号／账号区分缓存；`usePreparation.ts` 管理场次恢复、原件提交和真实进度；`PreparationPanel.tsx` 与 `BundleView.tsx` 展示资料版本、来源和问题依据。`Practice.tsx`、`session.ts`、`useInterviewSession.ts` 管理仅本页内存中的文字练习与规则复盘，固定使用已验收资料的首轮问题；不采集音视频。`assets/` 中的候选人为生成的虚构示意图，使用 Git LFS。
-  `backend/studio/apps/interview_assistant/` 拥有私有场次、材料、输入快照、Codex 准备任务和交付契约；`routes/` 只适配 HTTP，`rooms.py` 执行权限、回执和 CAS，`runner.py` 通过现有 Runner 生命周期串行执行准备、处理中断并拒绝过期结果。`codex.py` 白名单读取模型连接、冻结上下文并消费 JSONL；`task_tools.py` 是不依赖运行时配置、ORM 或 HTTP 的文档／草稿 MCP，`process_watchdog.py` 负责父进程退出和超时终止。二者经 `scripts/website/interview_tools.py` 独立打包为 `fpl-interview-tools`，不复用服务进程凭据。`console/governance/interview_executor_access.py` 提供后台账号／成员权限重验，在主入口注入执行器。
+  `backend/studio/apps/interview_assistant/` 拥有私有场次、材料、输入快照、Codex 准备任务和交付契约；`routes/` 只适配 HTTP，`rooms.py` 执行权限、回执和 CAS，`runner.py` 通过现有 Runner 生命周期串行执行准备、处理中断并拒绝过期结果。`codex.py` 白名单读取模型连接、冻结上下文并消费 JSONL；`task_tools.py` 是不依赖运行时配置、ORM 或 HTTP 的文档／草稿 MCP，`process_watchdog.py` 负责父进程退出和超时终止。二者经 `scripts/website/interview_tools.py` 独立打包为 `fpl-interview-tools`，不复用服务进程凭据。`studio/apps/identity/website_access/interview.py` 提供后台账号／成员权限重验，在主入口注入执行器。
   后端 `capabilities/asset_store/` 负责公共文件元数据、文件夹、存储校验、项目引用，以及三个工坊创建/删除时数据库与
   文件目录的一致性补偿，
   `apps/visual_workshop/` 负责真实项目、revisioned 节点画布、项目对话与图片/视频异步生成任务，
@@ -954,7 +954,7 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 
 `backend/studio/apps/visual_workshop/acceptance/` 拥有只读动作迁移定义、节点方案 CAS 绑定、自动生成依据、不可变输出验收记录、人工结论、证据、返修和快照兼容。`execution/` 负责无凭据任务包、专用媒体 MCP 和 Agent 报告转换。`runner.py` 复用短事务及 RunnerSupervisor，模型 API 与 Agent 专属结果分别保存。生成快照与上传版本的节点设置明确区分，验收不参与生成、上传、画布保存及最终输出采用的门禁。
 
-`backend/app/capabilities/agents/cli/` 拥有 Codex、Claude Code、OpenCode、DeepSeek Harness 和 Pi 的非交互执行。`transport.py` 维护受控环境与进程生命周期，`conversation.py` 维护原有 Codex/Claude 对话协议，`native.py` 维护 OpenCode JSON 事件、Harness ACP 与 Pi RPC，`isolation.py` 只继承模型连接与认证配置并生成临时执行配置；旁置 `.mjs` 资源提供 Pi 的唯一任务工具桥与 Harness 的不可放宽工具 guard，桌面构建显式打包。不包含验收业务。`console/governance/visual_acceptance_access.py` 复核提交者的有效权限；桌面 `acceptance_tools_entry.py` 独立打包媒体工具，不传递 FPL 凭据。
+`backend/app/capabilities/agents/cli/` 拥有 Codex、Claude Code、OpenCode、DeepSeek Harness 和 Pi 的非交互执行。`transport.py` 维护受控环境与进程生命周期，`conversation.py` 维护原有 Codex/Claude 对话协议，`native.py` 维护 OpenCode JSON 事件、Harness ACP 与 Pi RPC，`isolation.py` 只继承模型连接与认证配置并生成临时执行配置；旁置 `.mjs` 资源提供 Pi 的唯一任务工具桥与 Harness 的不可放宽工具 guard，桌面构建显式打包。不包含验收业务。`studio/apps/identity/website_access/visual_acceptance.py` 复核提交者的有效权限；桌面 `acceptance_tools_entry.py` 独立打包媒体工具，不传递 FPL 凭据。
 
 `web/src/features/visual-workshop/acceptance/` 的项目入口只提供只读模板与节点汇总；画布和看板共用 `NodeAcceptancePanel`，节点负责方案选择、启动、报告、人工确认及返修复验。验收状态、生成状态和最终输出分别展示。查询键由 `queryKeys.ts` 维护；[配置与执行边界](../operations/node-acceptance.md) 说明固定连接与历史 API 兼容。
 
@@ -1006,3 +1006,11 @@ OpenAPI 导出只构造 HTTP 协议层。测试通过 `tests/website_test_suppor
 `studio/host/local_models/` 拥有下载、独立环境安装、受控 MLX worker 和进程生命周期，worker 脚本与依赖锁从本适配目录定位。模型目录与管理用例留在 Model Service。独立镜像不携带 Mac 执行代码，通过既有租约协议联系主机 worker。
 
 取消规则由所属业务决定；`runtime/database/task_records.transition_task` 只执行带 ID、revision 和调用方谓词的原子更新，不提交事务。模型和视觉任务分别提供自身状态条件。可恢复结果判断是纯数据契约，不使视觉服务加载模型 ORM 或供应商适配器。目录归并尚不代表全部用例已完成 Session 与全局配置解耦。
+
+## 账号、会话与身份边界
+
+账号、Session、Management API Key 与审计 ORM 位于 `studio/apps/identity/storage/models/accounts.py`，邀请码和兑换记录位于同目录 `registration.py`。凭据操作归 `credentials/`，注册原子操作归 `registration/`，HTTP 入口归 `transport/website/`。账号、注册、Cookie/会话策略与用户名规范化是 `studio/contracts/identity/` 的公开契约；HTTP 前置条件由 `assembly/identity_http.py` 适配，普通消费者不因类型校验加载账号存储。
+
+`assembly/website/account_provisioning.py` 注入兼容站模型目录初始化回调，仍与账号创建共用原事务；独立 Identity 使用持久目录事件。原 Console 模型聚合转发和平台协议聚合转发已移除。`platform_settings` 保持原表及已登记键分区，不归入账号私有状态。
+
+登录、注册与远程桌面的短期尝试窗口由每个应用显式构造 `runtime/http/rate_limit.AttemptLimiter`。同实例的协议适配与桌面连接共用该实例；桌面认证成功清除当前实例对应键，不影响其他应用。Cookie 安全属性和允许的请求来源在装配中绑定。窗口只限流，不代替数据库中的账号、Session 和 TOTP 授权事实。

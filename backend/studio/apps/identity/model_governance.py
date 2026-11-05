@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from starlette.responses import JSONResponse
 
-from app.console.models.accounts import User
+from studio.apps.identity.storage.models.accounts import User
 from studio.contracts.identity.claims import verify_context
 
 from .catalog_events import require_models

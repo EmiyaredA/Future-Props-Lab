@@ -1,6 +1,5 @@
 from sqlalchemy import delete, select, text
 
-from app.capabilities.identity.passwords import normalize_username
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.knowledge import KnowledgeBases
 from studio.apps.thought_workshop.publication.access import (
@@ -22,6 +21,7 @@ from studio.apps.thought_workshop.publication.models import (
 from studio.apps.thought_workshop.publication.schemas import ArticleConfig, PublicationConfig
 from studio.apps.thought_workshop.storage.models import ThoughtNote
 from studio.apps.thought_workshop.website.account_directory import profiles
+from studio.contracts.identity.usernames import normalize_username
 from studio.runtime.database.ownership import bind_owner
 from studio.runtime.ids import new_id
 from studio.runtime.revisions import RevisionConflictError

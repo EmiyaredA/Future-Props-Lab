@@ -22,7 +22,7 @@ assert (
     "studio.assembly.website.application" not in sys.modules
     and "studio.assembly.website.models" not in sys.modules
 )
-assert "app.console.models.accounts" not in sys.modules
+assert "studio.apps.identity.storage.models.accounts" not in sys.modules
 assert not any(name.startswith(("app.apps.", "studio.apps.model_service.")) for name in sys.modules)
 
 state = Path(os.environ["GATEWAY_TEST_ROOT"])

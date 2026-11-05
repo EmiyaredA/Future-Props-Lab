@@ -2,9 +2,9 @@
 
 from sqlalchemy import select
 
-from app.console.models import AuthSession, User
 from studio.apps.agent_workbench.change_stream import event_page as event_page
 from studio.apps.agent_workbench.change_stream import stream_events as authenticated_stream
+from studio.apps.identity.storage.models.accounts import AuthSession, User
 from studio.runtime.database.ownership import bind_owner
 from studio.runtime.time import utc_now
 

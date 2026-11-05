@@ -14,11 +14,6 @@ from app.console.creative_workshop.legacy_install import LegacyCreativeInstaller
 from app.console.creative_workshop.legacy_sources import LegacyCreativeSources
 from app.console.governance.code_agent_connections import enable_connection
 from app.console.governance.code_agents import catalog as code_agent_catalog
-from app.console.governance.database_auth import (
-    authenticate_database_request,
-    authenticate_database_websocket,
-)
-from app.console.governance.provisioning import create_account
 from app.integrations.external.catalog import ExternalConnections
 from app.integrations.http_bindings import IntegrationBindings
 from app.integrations.mcp import McpCatalog
@@ -34,6 +29,10 @@ from studio.apps.audio_annotation.legacy_sources import LegacyAnnotationSources
 from studio.apps.audio_annotation.projects import AudioAnnotationProjects
 from studio.apps.audio_annotation.transcription import legacy_transcribe
 from studio.apps.director_desk.agent_session import DirectorEditorSessions
+from studio.apps.identity.transport.database_auth import (
+    authenticate_database_request,
+    authenticate_database_websocket,
+)
 from studio.apps.interview_assistant.executor_status import executor_status
 from studio.apps.model_service.admission.bindings import AdmissionBindings
 from studio.apps.model_service.admission.website_queue import admit_generation_tasks
@@ -64,10 +63,13 @@ from studio.apps.video_editor.assistant_operations import apply_assistant_timeli
 from studio.apps.video_editor.legacy_project_layouts import LegacyVideoLayouts
 from studio.apps.video_editor.legacy_timeline_assets import LegacyTimelineAssets
 from studio.assembly.annotation import document_editor
+from studio.assembly.website.account_provisioning import create_account
 from studio.config.settings import get_cloud_settings
+from studio.runtime.http.rate_limit import AttemptLimiter
 
 
 def bind_components(app, settings, database):
+    app.state.auth_attempts = AttemptLimiter()
     sessions = database.sessions
     app.state.video_downloads = VideoDownloads(
         root=settings.runtime_path / "tool-navigation" / "video-download",
@@ -93,7 +95,9 @@ def bind_components(app, settings, database):
         can_enable=can_enable
     )
     app.state.code_agent_enable = lambda _request, agent_id: enable_connection(agent_id)
-    app.state.studio_http_auth = authenticate_database_request
+    app.state.studio_http_auth = partial(
+        authenticate_database_request, allowed_origins=tuple(settings.cors_origin_list)
+    )
     app.state.studio_socket_auth = authenticate_database_websocket
     app.state.integration_bindings = IntegrationBindings(
         tool_apis=lambda _request, session, owner: ToolApiCatalog(
@@ -155,6 +159,6 @@ def bind_components(app, settings, database):
     app.state.account_storage_check = upgrade_pending
     app.state.code_agent_runs = CodeAgentRuns(sessions=sessions, settings=settings)
     app.state.cloud_desktop = DesktopConnection(
-        sessions=sessions, settings_reader=get_cloud_settings
+        sessions=sessions, settings_reader=get_cloud_settings, attempts=app.state.auth_attempts
     )
     app.state.workbench_runs = WorkbenchRuns(sessions=sessions, settings=settings)

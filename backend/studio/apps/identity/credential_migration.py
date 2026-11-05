@@ -13,11 +13,19 @@ from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import undefer
 
-from app.capabilities.identity.passwords import normalize_username
 from app.console.cloud_control.models import CloudFactor, CloudUnlock
-from app.console.models.accounts import AuthSession, ManagementApiKey, SecurityAuditEvent, User
-from app.console.models.platform_governance import RegistrationInviteCode, RegistrationRedemption
+from studio.apps.identity.storage.models.accounts import (
+    AuthSession,
+    ManagementApiKey,
+    SecurityAuditEvent,
+    User,
+)
+from studio.apps.identity.storage.models.registration import (
+    RegistrationInviteCode,
+    RegistrationRedemption,
+)
 from studio.apps.identity.storage.service_models import IdentityImportReceipt
+from studio.contracts.identity.usernames import normalize_username
 from studio.contracts.management.migration_batches import (
     MAX_RECORDS,
     BatchReceipt,

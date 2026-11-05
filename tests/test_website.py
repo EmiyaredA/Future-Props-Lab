@@ -14,7 +14,7 @@ from scripts.website import frontend
 from scripts.website.serve import authenticate_browser
 
 from app.console.governance.automation_access import automation_allowed
-from app.console.governance.provisioning import create_account
+from studio.assembly.website.account_provisioning import create_account
 from studio.assembly.website.routes import api_router
 from studio.runtime.http.remote_web import RemoteWeb
 from studio.runtime.http.website import CurrentWebsite, WebsiteTransport, pin_release

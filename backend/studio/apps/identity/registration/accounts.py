@@ -3,14 +3,11 @@
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from app.capabilities.identity.passwords import (
-    generate_temporary_password,
-    hash_password,
-    normalize_username,
-)
-from app.console.governance.governance_transactions import begin_governance, require_platform_admin
-from app.console.governance.service import AccountError, add_audit_event
-from app.console.models import User
+from studio.apps.identity.credentials.operations import AccountError, add_audit_event
+from studio.apps.identity.credentials.passwords import generate_temporary_password, hash_password
+from studio.apps.identity.storage.governance import begin_governance, require_platform_admin
+from studio.apps.identity.storage.models.accounts import User
+from studio.contracts.identity.usernames import normalize_username
 
 
 async def create_account(

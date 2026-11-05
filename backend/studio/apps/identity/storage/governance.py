@@ -5,7 +5,7 @@ from dataclasses import replace
 from sqlalchemy import text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.console.models import AuthSession, ManagementApiKey, User
+from studio.apps.identity.storage.models.accounts import AuthSession, ManagementApiKey, User
 from studio.contracts.identity.errors import AccountError
 from studio.contracts.identity.permissions import role_scopes
 from studio.contracts.identity.principal import StudioPrincipal

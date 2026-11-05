@@ -113,7 +113,7 @@ FORBIDDEN_IDENTITY = (
     "studio.apps.model_service",
     "app.capabilities.asset_store",
     "app.capabilities.agents",
-    "app.console.governance.provisioning",
+    "studio.assembly.website.account_provisioning",
 )
 
 FORBIDDEN_AGENTS = (

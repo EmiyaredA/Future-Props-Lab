@@ -5,33 +5,32 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.identity.passwords import (
+from studio.apps.identity.credentials.passwords import (
     generate_temporary_password,
     hash_password,
-    normalize_username,
     validate_password,
     verify_password,
 )
-from app.capabilities.identity.security import (
-    SESSION_ABSOLUTE_DAYS,
-    SESSION_IDLE_HOURS,
+from studio.apps.identity.credentials.session_secrets import (
     hash_secret,
     new_management_api_key,
     new_session_secrets,
 )
-from app.console.governance.governance_transactions import (
+from studio.apps.identity.storage.governance import (
     begin_governance,
     cas,
     revoke_account_credentials,
 )
-from app.console.models import (
+from studio.apps.identity.storage.models.accounts import (
     AuthSession,
     ManagementApiKey,
     SecurityAuditEvent,
     User,
 )
+from studio.contracts.identity.authentication import SESSION_ABSOLUTE_DAYS, SESSION_IDLE_HOURS
 from studio.contracts.identity.errors import AccountError
 from studio.contracts.identity.principal import StudioPrincipal
+from studio.contracts.identity.usernames import normalize_username
 from studio.runtime.time import utc_now
 
 

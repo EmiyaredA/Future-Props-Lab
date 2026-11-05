@@ -20,11 +20,11 @@ from sqlalchemy.orm import Session
 from tests.test_tools_navigation_migration import available_ports, listener
 
 from app.capabilities.asset_store.models import VisualAsset
-from app.console.models.accounts import User
 from app.integrations.external.models import ExternalConnection
 from app.runtime.credentials import SecretCipher
 from db.migrations import apply_migrations
 from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
+from studio.apps.identity.storage.models.accounts import User
 from studio.apps.integrations.storage.migrations.registry import (
     MIGRATIONS as INTEGRATION_MIGRATIONS,
 )

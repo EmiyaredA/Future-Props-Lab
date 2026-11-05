@@ -4,7 +4,7 @@ import jwt
 from fastapi import APIRouter, HTTPException, Request
 from sqlalchemy import text
 
-from app.console.models.accounts import SecurityAuditEvent, User
+from studio.apps.identity.storage.models.accounts import SecurityAuditEvent, User
 from studio.apps.identity.storage.service_models import CertificationAuditDelivery
 from studio.contracts.identity.certification import (
     PREFIX,

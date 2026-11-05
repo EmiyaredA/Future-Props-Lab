@@ -3,17 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, File, Form, HTTPException, Query, Request, Response, UploadFile
 from fastapi.responses import FileResponse
 
-from app.capabilities.identity.rate_limit import allow_attempt, clear_attempts
-from app.capabilities.identity.session_policy import session_policy
-from app.console.governance.profile import (
-    apply_avatar,
-    avatar_path,
-    avatar_preview,
-    delete_avatar,
-    stage_avatar,
-    update_profile,
-)
-from app.console.governance.service import (
+from studio.apps.identity.credentials.operations import (
     AccountError,
     account_directory,
     change_password,
@@ -30,7 +20,15 @@ from app.console.governance.service import (
     revoke_other_sessions,
     revoke_session,
 )
-from app.console.routes.auth import (
+from studio.apps.identity.profile import (
+    apply_avatar,
+    avatar_path,
+    avatar_preview,
+    delete_avatar,
+    stage_avatar,
+    update_profile,
+)
+from studio.apps.identity.transport.website.auth import (
     _audit_response,
     _browser_auth,
     _clear_cookies,
@@ -39,7 +37,9 @@ from app.console.routes.auth import (
     _set_cookies,
     _user_out,
 )
-from app.console.schemas.accounts import (
+from studio.assembly.http_dependencies import SessionDep, client_ip
+from studio.assembly.identity_http import session_policy
+from studio.contracts.identity.accounts import (
     AccountAvatarDeleteIn,
     AccountDirectoryOut,
     AccountProfilePatchIn,
@@ -58,7 +58,6 @@ from app.console.schemas.accounts import (
     RevokeApiKeyIn,
     SecurityAuditListOut,
 )
-from studio.assembly.http_dependencies import SessionDep, client_ip
 from studio.runtime.files.image_sizes import ThumbnailSize
 from studio.runtime.files.raster import RasterPreviewError
 
@@ -71,7 +70,9 @@ async def login(request: Request, response: Response, session: SessionDep, body:
     normalized = body.username.strip().lower()
     ip_key = f"login:ip:{ip}"
     user_key = f"login:user:{ip}:{normalized}"
-    if not allow_attempt(ip_key, 30) or not allow_attempt(user_key, 5):
+    if not request.app.state.auth_attempts.allow(
+        ip_key, 30
+    ) or not request.app.state.auth_attempts.allow(user_key, 5):
         raise HTTPException(429, detail={"code": "login_rate_limited", "message": "请稍后重试"})
     result = await complete_login(
         session,
@@ -87,8 +88,14 @@ async def login(request: Request, response: Response, session: SessionDep, body:
             detail={"code": "invalid_credentials", "message": "用户名或密码错误"},
         )
     user, auth_session, token, csrf = result
-    clear_attempts(ip_key, user_key)
-    _set_cookies(response, token, csrf, session_policy(request))
+    request.app.state.auth_attempts.clear(ip_key, user_key)
+    _set_cookies(
+        response,
+        token,
+        csrf,
+        session_policy(request),
+        secure=request.app.state.settings.auth_cookie_secure,
+    )
     pending = await request.app.state.account_storage_check(session)
     return _login_out(
         user,
@@ -114,9 +121,9 @@ async def me(request: Request, session: SessionDep):
 async def reauth(request: Request, session: SessionDep, body: ReauthIn):
     principal = await _browser_auth(request, session, forced=True)
     ip = client_ip(request)
-    if not allow_attempt(f"reauth:ip:{ip}", 30) or not allow_attempt(
-        f"reauth:user:{ip}:{principal.user_id}", 5
-    ):
+    if not request.app.state.auth_attempts.allow(
+        f"reauth:ip:{ip}", 30
+    ) or not request.app.state.auth_attempts.allow(f"reauth:user:{ip}:{principal.user_id}", 5):
         raise HTTPException(429, detail={"code": "login_rate_limited"})
     if not await reauthenticate(session, principal, password=body.password, client_ip=ip):
         raise HTTPException(401, detail={"code": "invalid_credentials"})
@@ -139,7 +146,13 @@ async def change_current_password(
     except (AccountError, ValueError) as exc:
         code = exc.code if isinstance(exc, AccountError) else "password_rejected"
         raise HTTPException(422, detail={"code": code, "message": str(exc)}) from exc
-    _set_cookies(response, token, csrf, session_policy(request))
+    _set_cookies(
+        response,
+        token,
+        csrf,
+        session_policy(request),
+        secure=request.app.state.settings.auth_cookie_secure,
+    )
     response.status_code = 204
     return response
 
@@ -148,7 +161,9 @@ async def change_current_password(
 async def logout(request: Request, response: Response, session: SessionDep):
     principal = await _browser_auth(request, session, forced=True)
     await complete_logout(session, principal, client_ip=client_ip(request))
-    _clear_cookies(response, session_policy(request))
+    _clear_cookies(
+        response, session_policy(request), secure=request.app.state.settings.auth_cookie_secure
+    )
     response.status_code = 204
     return response
 

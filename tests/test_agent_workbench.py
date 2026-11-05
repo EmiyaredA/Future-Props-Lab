@@ -14,14 +14,14 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.capabilities.agents.sessions import get_adapter
 from app.capabilities.agents.sessions.access import LocalSourceAccess
-from app.console.governance.workbench_access import workbench_actor_allowed
-from app.console.models import User
 from db.migrations import apply_migrations
 from studio.apps.agent_workbench.events import event_page
 from studio.apps.agent_workbench.storage.models import WorkbenchCheckpoint, WorkbenchSession
 from studio.apps.agent_workbench.sync.projection import apply_batch
 from studio.apps.agent_workbench.sync.runner import WorkbenchSyncRunner
 from studio.apps.agent_workbench.transport.website import router
+from studio.apps.identity.storage.models.accounts import User
+from studio.apps.identity.website_access.workbench import workbench_actor_allowed
 from studio.assembly.http_dependencies import SessionDep, db_session, require_studio_auth
 from studio.assembly.website.models import bind_owner
 from studio.config.settings import get_settings
@@ -707,8 +707,8 @@ async def test_archive_duplicates_and_same_inode_rewrite(store, tmp_path):
 async def test_stream_reauthorizes_after_session_revocation(store):
     from datetime import timedelta
 
-    from app.console.models import AuthSession
     from studio.apps.agent_workbench.events import stream_events
+    from studio.apps.identity.storage.models.accounts import AuthSession
     from studio.runtime.time import utc_now
 
     sessions, _ = store

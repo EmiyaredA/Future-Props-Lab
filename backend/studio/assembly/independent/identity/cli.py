@@ -119,9 +119,9 @@ def run(options):
 async def bootstrap(state):
     from sqlalchemy import func, select
 
-    from app.capabilities.identity.passwords import validate_password
-    from app.console.models.accounts import User
     from studio.apps.identity.accounts import create_account
+    from studio.apps.identity.credentials.passwords import validate_password
+    from studio.apps.identity.storage.models.accounts import User
     from studio.assembly.independent.identity.application import MODELS
     from studio.runtime.database.sessions import Database
 

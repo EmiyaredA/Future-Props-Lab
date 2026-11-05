@@ -4,7 +4,7 @@ from uuid import uuid4
 import httpx
 import pytest
 
-from app.console.governance.provisioning import create_account
+from studio.assembly.website.account_provisioning import create_account
 from studio.contracts.identity.permissions import role_permissions, role_scopes
 from studio.contracts.identity.principal import StudioPrincipal
 from studio.contracts.identity.route_permissions import ROUTE_PERMISSIONS

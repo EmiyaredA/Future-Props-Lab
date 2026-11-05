@@ -12,9 +12,12 @@ sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "backend"))
 os.environ["FPL_STUDIO_TOKEN"] = ""
 
-from app.console.governance.provisioning import create_account  # noqa: E402
-from app.console.governance.service import change_password, complete_login  # noqa: E402
 from db.migrations import apply_migrations  # noqa: E402
+from studio.apps.identity.credentials.operations import (  # noqa: E402
+    change_password,
+    complete_login,
+)
+from studio.assembly.website.account_provisioning import create_account  # noqa: E402
 from studio.assembly.website.models import WebsiteSession  # noqa: E402
 from studio.config.settings import get_settings  # noqa: E402
 from studio.contracts.identity.principal import StudioPrincipal  # noqa: E402

@@ -6,6 +6,8 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BACKEND_APP = REPO_ROOT / "backend" / "app"
+STUDIO_APPS = REPO_ROOT / "backend/studio/apps"
+CONTRACTS = REPO_ROOT / "backend/studio/contracts"
 
 
 def test_presentation_workshop_lives_under_apps() -> None:
@@ -106,12 +108,12 @@ def test_galgame_workshop_lives_under_apps() -> None:
 
 
 def test_llm_owns_models_schemas_and_routes() -> None:
-    assert (BACKEND_APP / "llm" / "models" / "model_service.py").is_file()
-    assert (BACKEND_APP / "llm" / "schemas" / "model_service.py").is_file()
+    assert (STUDIO_APPS / "model_service/storage/models" / "model_service.py").is_file()
+    assert (CONTRACTS / "model_service/schemas" / "model_service.py").is_file()
     assert (REPO_ROOT / "backend/studio/contracts/model_service/generation_tasks.py").is_file()
-    assert (BACKEND_APP / "llm" / "schemas" / "realtime_voice.py").is_file()
-    assert (BACKEND_APP / "llm" / "routes" / "models" / "catalog.py").is_file()
-    assert (BACKEND_APP / "llm" / "routes" / "model_inference.py").is_file()
+    assert (CONTRACTS / "model_service/schemas" / "realtime_voice.py").is_file()
+    assert (STUDIO_APPS / "model_service/transport/website" / "models" / "catalog.py").is_file()
+    assert (STUDIO_APPS / "model_service/transport/website" / "model_inference.py").is_file()
     for name in (
         "model_service.py",
         "model_supplier.py",
@@ -158,35 +160,22 @@ def test_tool_navigation_owns_models_schemas_and_routes() -> None:
 
 
 def test_demo_runtime_owns_schemas_and_routes() -> None:
-    assert (BACKEND_APP / "demo_runtime" / "schemas.py").is_file()
-    assert (BACKEND_APP / "demo_runtime" / "routes.py").is_file()
+    assert (CONTRACTS / "model_service/demo.py").is_file()
+    assert (STUDIO_APPS / "model_service/transport/website/demo.py").is_file()
     assert not (BACKEND_APP / "schemas" / "demo_runtime.py").exists()
     assert not (BACKEND_APP / "routes" / "demo_runtime.py").exists()
 
 
-def test_console_owns_routes_and_schemas() -> None:
-    console_routes = (
-        "auth.py",
-        "accounts.py",
-        "account_management.py",
-        "platform_governance.py",
-        "automation.py",
-        "file_management.py",
-    )
-    console_schemas = (
-        "accounts.py",
-        "automation.py",
-        "platform_governance.py",
-    )
-    for name in console_routes:
-        assert (BACKEND_APP / "console" / "routes" / name).is_file()
-        if name != "auth.py":
-            assert not (BACKEND_APP / "routes" / name).exists()
-    for name in console_schemas:
-        assert (BACKEND_APP / "console" / "schemas" / name).is_file()
-        assert not (BACKEND_APP / "schemas" / name).exists()
-    assert not (BACKEND_APP / "routes" / "image_crop.py").exists()
-    assert not (BACKEND_APP / "routes" / "video_frames.py").exists()
+def test_identity_owns_account_routes_and_contracts() -> None:
+    for name in ("auth", "accounts", "account_management", "registration"):
+        assert (STUDIO_APPS / "identity/transport/website" / (name + ".py")).is_file()
+        assert not (BACKEND_APP / "console/routes" / (name + ".py")).exists()
+    for name in ("accounts", "registration", "project_markers"):
+        assert (CONTRACTS / "identity" / (name + ".py")).is_file()
+    for name in ("platform_governance.py", "automation.py", "file_management.py"):
+        assert (BACKEND_APP / "console/routes" / name).is_file()
+    assert (BACKEND_APP / "console/schemas/automation.py").is_file()
+    assert not (BACKEND_APP / "console/schemas/platform_governance.py").exists()
 
 
 def test_asset_store_owns_media_routes_and_schemas() -> None:
@@ -198,15 +187,15 @@ def test_asset_store_owns_media_routes_and_schemas() -> None:
     assert not (BACKEND_APP / "schemas" / "video_frames.py").exists()
 
 
-def test_console_owns_account_models_and_llm_owns_model_governance_records() -> None:
-    for name in (
-        "accounts.py",
-        "platform_governance.py",
-    ):
-        assert (BACKEND_APP / "console" / "models" / name).is_file()
+def test_identity_and_models_own_their_records() -> None:
+    for name in ("accounts.py", "registration.py"):
+        assert (STUDIO_APPS / "identity/storage/models" / name).is_file()
+    assert not (BACKEND_APP / "console/models/accounts.py").exists()
+    # The compatibility website retains one partitioned settings table.
+    assert (BACKEND_APP / "console/models/platform_governance.py").is_file()
     for name in ("model_templates.py", "runtime_admission.py"):
-        assert (BACKEND_APP / "llm" / "models" / name).is_file()
-        assert not (BACKEND_APP / "console" / "models" / name).exists()
+        assert (STUDIO_APPS / "model_service/storage/models" / name).is_file()
+        assert not (BACKEND_APP / "console/models" / name).exists()
     assert not (BACKEND_APP / "models").exists()
     assert not (BACKEND_APP / "schemas").exists()
 
@@ -218,7 +207,7 @@ def test_asset_store_owns_files_models_and_schemas() -> None:
 
 
 def test_transcription_owns_schemas() -> None:
-    assert (BACKEND_APP / "capabilities" / "transcription" / "schemas.py").is_file()
+    assert (CONTRACTS / "model_service/transcription.py").is_file()
 
 
 def test_runtime_owns_project_operations_and_defaults() -> None:

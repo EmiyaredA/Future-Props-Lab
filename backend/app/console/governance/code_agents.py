@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 from app.capabilities.agents.cli.catalog import DEFINITIONS, AgentId, connection, inspect_connection
 from app.capabilities.agents.cli.contracts import AgentOut, CatalogOut
-from app.console.models import User
+from studio.apps.identity.storage.models.accounts import User
 from studio.config.settings import get_cloud_settings
 from studio.runtime.database.operation_receipts import OperationError
 

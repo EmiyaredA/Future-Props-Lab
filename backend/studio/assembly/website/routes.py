@@ -1,8 +1,6 @@
 from fastapi import APIRouter, Depends
 
 from app.capabilities.asset_store.routes import image_crop, media_info, video_frames
-from app.console.routes.account_management import router as management_router
-from app.console.routes.accounts import router as accounts_router
 from app.console.routes.amadeus import require_amadeus_session
 from app.console.routes.amadeus import router as amadeus_router
 from app.console.routes.automation import router as automation_router
@@ -11,7 +9,6 @@ from app.console.routes.code_agents import router as code_agents_router
 from app.console.routes.creative_workshop import router as creative_workshop_router
 from app.console.routes.file_management import router as file_management_router
 from app.console.routes.platform_governance import router as platform_governance_router
-from app.console.routes.registration import router as registration_router
 from app.integrations.external.routes import router as external_connections_router
 from app.integrations.routes import router as integrations_router
 from app.tool_navigation.routes import router as tool_navigation_router
@@ -20,6 +17,9 @@ from studio.apps.agent_workbench.transport.website import router as agent_workbe
 from studio.apps.audio_annotation.routes import router as audio_annotation_router
 from studio.apps.director_desk.transport.website import router as director_desk_router
 from studio.apps.galgame_workshop.transport.website import router as galgame_workshop_router
+from studio.apps.identity.transport.website.account_management import router as management_router
+from studio.apps.identity.transport.website.accounts import router as accounts_router
+from studio.apps.identity.transport.website.registration import router as registration_router
 from studio.apps.interview_assistant.transport.website import router as interview_assistant_router
 from studio.apps.model_service.transport.website.demo import call_router as demo_call_router
 from studio.apps.model_service.transport.website.demo import router as demo_runtime_router

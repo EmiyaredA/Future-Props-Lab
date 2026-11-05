@@ -15,11 +15,11 @@ from tests.test_community_asset_protocol import (
     scenario,  # noqa: F401
 )
 
-from app.console.models.accounts import SecurityAuditEvent
 from studio.apps.creative_workshop.storage.migrations.registry import MIGRATIONS as CREATIVE
 from studio.apps.galgame_workshop.storage.migrations.registry import MIGRATIONS as GALGAME
 from studio.apps.galgame_workshop.storage.models import GalgameWorkshopProject
 from studio.apps.identity.accounts import create_account
+from studio.apps.identity.storage.models.accounts import SecurityAuditEvent
 from studio.apps.visual_workshop.storage.migrations.registry import MIGRATIONS as VISUAL
 from studio.apps.visual_workshop.storage.models import VisualWorkshopProject
 from studio.assembly.independent.creative_workshop.application import create_app as creative_app

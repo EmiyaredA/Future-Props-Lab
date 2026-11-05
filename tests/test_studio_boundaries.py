@@ -126,6 +126,9 @@ def test_migrated_packages_have_one_source_owner():
         ROOT / "backend/fpl_config",
         ROOT / "backend/fpl_annotation",
         ROOT / "backend/app/apps/audio_annotation",
+        ROOT / "backend/app/llm",
+        ROOT / "backend/app/demo_runtime",
+        ROOT / "backend/app/capabilities/identity",
     ):
         assert not list(directory.rglob("*.py")), f"stale implementation in {directory}"
 

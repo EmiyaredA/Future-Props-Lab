@@ -1,6 +1,6 @@
 """Explicit isolated account records for storage-layer tests."""
 
-from app.console.models import User
+from studio.apps.identity.storage.models.accounts import User
 
 
 def account_record(*, id, name):

@@ -6,8 +6,8 @@ from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.console.governance.service import AccountError
 from db.migrations.registry import LATEST_MIGRATION_ID
+from studio.apps.identity.credentials.operations import AccountError
 from studio.assembly.website.routes import api_router
 from studio.runtime.http.problem_details import (
     account_exception_handler,

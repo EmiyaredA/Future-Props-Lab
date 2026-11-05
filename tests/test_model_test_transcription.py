@@ -8,7 +8,7 @@ import pytest
 from sqlalchemy import select
 from tests.account_fixtures import account_record
 
-from app.console.models import User
+from studio.apps.identity.storage.models.accounts import User
 from studio.apps.model_service.playground.transcription import (
     ModelTestTranscription,
     ModelTestTranscriptionError,

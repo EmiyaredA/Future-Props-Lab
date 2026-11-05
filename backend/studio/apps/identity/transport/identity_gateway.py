@@ -6,7 +6,7 @@ from urllib.parse import urlsplit
 from starlette.datastructures import Headers, MutableHeaders
 from starlette.responses import PlainTextResponse
 
-from app.capabilities.identity.session_policy import MANAGEMENT_SESSION, STUDIO_SESSION
+from studio.contracts.identity.session_policy import MANAGEMENT_SESSION, STUDIO_SESSION
 
 
 class GatewayTransport:

@@ -24,18 +24,7 @@ from app.console.cloud_control.preference_models import DesktopPreference
 from app.console.creative_workshop.models import (
     CreativeInstallation,
 )
-from app.console.models import (
-    AuthSession,
-    ManagementApiKey,
-    ModelTemplateSyncItem,
-    ModelTemplateSyncJob,
-    PlatformSetting,
-    RegistrationInviteCode,
-    RegistrationRedemption,
-    RuntimeAdmission,
-    SecurityAuditEvent,
-    User,
-)
+from app.console.models.platform_governance import PlatformSetting
 from app.integrations.external.models import ExternalConnection
 from app.integrations.models import (
     IntegrationCheck,
@@ -77,6 +66,16 @@ from studio.apps.galgame_workshop.storage.models import (
     GalgameVideoExportTask,
     GalgameWorkshopProject,
 )
+from studio.apps.identity.storage.models.accounts import (
+    AuthSession,
+    ManagementApiKey,
+    SecurityAuditEvent,
+    User,
+)
+from studio.apps.identity.storage.models.registration import (
+    RegistrationInviteCode,
+    RegistrationRedemption,
+)
 from studio.apps.interview_assistant.storage.models import InterviewPreparation, InterviewRoom
 from studio.apps.model_service.storage.models.call_log import LlmCallLog
 from studio.apps.model_service.storage.models.model_inference import (
@@ -89,12 +88,17 @@ from studio.apps.model_service.storage.models.model_service import (
     ModelProvider,
 )
 from studio.apps.model_service.storage.models.model_supplier import ModelSupplier
+from studio.apps.model_service.storage.models.model_templates import (
+    ModelTemplateSyncItem,
+    ModelTemplateSyncJob,
+)
 from studio.apps.model_service.storage.models.model_test import (
     ModelTestConversation,
     ModelTestGenerationAsset,
     ModelTestGenerationTask,
     ModelTestTranscriptionTask,
 )
+from studio.apps.model_service.storage.models.runtime_admission import RuntimeAdmission
 from studio.apps.motion_compositor.storage.models import (
     MotionDocument,
     MotionOperationBatch,

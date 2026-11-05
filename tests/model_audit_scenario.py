@@ -6,7 +6,7 @@ from uuid import uuid4
 import httpx
 from sqlalchemy import select
 
-from app.console.models.accounts import SecurityAuditEvent
+from studio.apps.identity.storage.models.accounts import SecurityAuditEvent
 from studio.apps.identity.storage.service_models import ModelAuditDelivery, ModelAuditIntent
 from studio.apps.model_service.audit.audit import add_child_event, add_event
 from studio.apps.model_service.audit.audit_client import ModelAuditClient

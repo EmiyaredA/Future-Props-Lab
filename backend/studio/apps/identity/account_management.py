@@ -3,14 +3,18 @@
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.console.governance.governance_transactions import (
+from studio.apps.identity.credentials.operations import (
+    AccountError,
+    add_audit_event,
+    reset_password,
+)
+from studio.apps.identity.storage.governance import (
     begin_governance,
     cas,
     require_platform_admin,
     revoke_account_credentials,
 )
-from app.console.governance.service import AccountError, add_audit_event, reset_password
-from app.console.models import User
+from studio.apps.identity.storage.models.accounts import User
 from studio.contracts.identity.principal import StudioPrincipal
 
 

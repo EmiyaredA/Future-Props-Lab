@@ -9,9 +9,9 @@ import pytest
 
 from app.capabilities.asset_store.account_upgrade import _copy_root
 from app.capabilities.asset_store.storage import AssetStorage
-from app.console.governance.provisioning import create_account
-from app.console.models import User
 from db.migrations.registry import MIGRATIONS
+from studio.apps.identity.storage.models.accounts import User
+from studio.assembly.website.account_provisioning import create_account
 from studio.config.settings import Settings
 from website_test_support import SessionLocal, app
 

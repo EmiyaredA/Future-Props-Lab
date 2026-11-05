@@ -893,7 +893,7 @@ async def test_connections_bindings_and_jobs_are_workspace_scoped(remote):
         ).status_code == 404
         assert (await other.get(prefix)).status_code == 404
         assert (await other.get(prefix + "/tasks/" + task["id"])).status_code == 404
-        from app.console.governance.external_sync_access import external_sync_actor_allowed
+        from studio.apps.identity.website_access.external_sync import external_sync_actor_allowed
 
         await ArticleSyncRunner(
             external_sync_actor_allowed, remote.transport, sessions=SessionLocal
@@ -906,7 +906,7 @@ async def test_connections_bindings_and_jobs_are_workspace_scoped(remote):
 async def test_other_account_cannot_sync_and_disabled_owner_stops_queued_job(remote):
     from tests.test_workspace_governance import client_account
 
-    from app.console.governance.external_sync_access import external_sync_actor_allowed
+    from studio.apps.identity.website_access.external_sync import external_sync_actor_allowed
 
     owner, _, owner_id, _ = await client_account()
     other, *_ = await client_account()

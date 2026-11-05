@@ -6,7 +6,7 @@ import jwt
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 
-from app.console.models.accounts import User
+from studio.apps.identity.storage.models.accounts import User
 from studio.contracts.creative_workshop.creative_authors import (
     PATH,
     CreativeAuthorName,

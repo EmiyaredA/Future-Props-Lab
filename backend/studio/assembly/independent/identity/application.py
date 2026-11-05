@@ -1,6 +1,7 @@
 """Account-only ASGI application, with its own SQLite and lifecycle."""
 
 from contextlib import asynccontextmanager
+from functools import partial
 from urllib.parse import urlsplit
 
 from fastapi import APIRouter, FastAPI, HTTPException
@@ -10,10 +11,7 @@ from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.console.cloud_control.models import CloudFactor, CloudUnlock
-from app.console.governance.database_auth import authenticate_database_request
-from app.console.models.accounts import AuthSession, ManagementApiKey, SecurityAuditEvent, User
-from app.console.models.platform_governance import RegistrationInviteCode, RegistrationRedemption
-from app.console.routes import account_management, accounts, cloud_totp, registration
+from app.console.routes import cloud_totp
 from studio.apps.identity.account_directory import router as account_directory_router
 from studio.apps.identity.accounts import create_account
 from studio.apps.identity.authorization import router as authorization_router
@@ -30,6 +28,16 @@ from studio.apps.identity.model_governance import router as model_governance_rou
 from studio.apps.identity.project_certification import router as certification_router
 from studio.apps.identity.retention_api import router as retention_router
 from studio.apps.identity.storage.migrations.registry import MIGRATIONS
+from studio.apps.identity.storage.models.accounts import (
+    AuthSession,
+    ManagementApiKey,
+    SecurityAuditEvent,
+    User,
+)
+from studio.apps.identity.storage.models.registration import (
+    RegistrationInviteCode,
+    RegistrationRedemption,
+)
 from studio.apps.identity.storage.service_models import (
     AccountEvent,
     CertificationAuditDelivery,
@@ -38,11 +46,13 @@ from studio.apps.identity.storage.service_models import (
     ModelAuditIntent,
     VisualGenerationApproval,
 )
+from studio.apps.identity.transport.database_auth import authenticate_database_request
 from studio.apps.identity.transport.identity_gateway import GatewayTransport
 from studio.apps.identity.transport.integration_intent_http import (
     router as integration_intent_router,
 )
 from studio.apps.identity.transport.model_audit_http import router as model_audit_router
+from studio.apps.identity.transport.website import account_management, accounts, registration
 from studio.config import ConfigurationError
 from studio.config.settings import get_cloud_settings, get_settings
 from studio.contracts.identity.certification import MAX_BODY as CERTIFICATION_BODY
@@ -56,6 +66,7 @@ from studio.runtime.http.problem_details import (
     storage_operational_error_handler,
     validation_exception_handler,
 )
+from studio.runtime.http.rate_limit import AttemptLimiter
 from studio.runtime.http.request_limit import RequestLimit
 
 MODELS = (
@@ -91,8 +102,9 @@ def create_app(
     management_local_origin="http://127.0.0.1:9002",
     management_public_origin="",
 ):
+    settings = get_settings()
     database = Database("identity", state_root, models=MODELS, account_models=())
-    if get_settings().database_path != database.path:
+    if settings.database_path != database.path:
         raise ValueError("Identity 配置必须指向自己的数据目录")
 
     @asynccontextmanager
@@ -111,13 +123,18 @@ def create_app(
         redoc_url=None,
         openapi_url=None,
     )
+    app.state.settings = settings
     app.state.service_id = "identity"
     app.state.database = database
+    app.state.auth_attempts = AttemptLimiter()
     app.state.integration_intents = IntegrationIntents(
         database, private_key.public_key(), catalog, private_key=private_key, key_id=key_id
     )
     app.state.model_audit_inbox = ModelAuditInbox(database, private_key.public_key(), catalog)
-    app.state.studio_http_auth = authenticate_database_request
+    app.state.studio_http_auth = partial(
+        authenticate_database_request,
+        allowed_origins=tuple(settings.cors_origin_list),
+    )
     app.state.account_creator = create_account
 
     async def no_storage_upgrade(_session):

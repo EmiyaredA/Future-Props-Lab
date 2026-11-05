@@ -19,26 +19,26 @@ from starlette.datastructures import Headers, UploadFile
 from tests.test_community_asset_protocol import CATALOG, GATEWAY_SECRET, PASSWORD
 from tests.test_tools_navigation_migration import available_ports, listener
 
-from app.capabilities.identity.security import CSRF_COOKIE, SESSION_COOKIE
-from app.capabilities.identity.session_policy import MANAGEMENT_SESSION
 from app.console.cloud_control.access import start_enrollment, totp, verify
-from app.console.governance.account_creation import create_account
-from app.console.governance.profile import apply_avatar, stage_avatar
-from app.console.governance.registration import change_invite, create_invite, register
-from app.console.governance.service import complete_login, create_api_key
-from app.console.schemas.registration import (
+from db.migrations import apply_migrations
+from studio.apps.identity.avatar_migration import AVATAR_PATH, DIGEST_HEADER
+from studio.apps.identity.credentials.operations import complete_login, create_api_key
+from studio.apps.identity.profile import apply_avatar, stage_avatar
+from studio.apps.identity.registration.accounts import create_account
+from studio.apps.identity.registration.invitations import change_invite, create_invite, register
+from studio.apps.identity.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.identity.application import create_app
+from studio.config.settings import get_settings
+from studio.contracts.identity.authentication import CSRF_COOKIE, SESSION_COOKIE
+from studio.contracts.identity.claims import HEADER, verify_context
+from studio.contracts.identity.permissions import role_scopes
+from studio.contracts.identity.principal import StudioPrincipal
+from studio.contracts.identity.registration import (
     RegistrationIn,
     RegistrationInviteAction,
     RegistrationInviteIn,
 )
-from db.migrations import apply_migrations
-from studio.apps.identity.avatar_migration import AVATAR_PATH, DIGEST_HEADER
-from studio.apps.identity.storage.migrations.registry import MIGRATIONS
-from studio.assembly.independent.identity.application import create_app
-from studio.config.settings import get_settings
-from studio.contracts.identity.claims import HEADER, verify_context
-from studio.contracts.identity.permissions import role_scopes
-from studio.contracts.identity.principal import StudioPrincipal
+from studio.contracts.identity.session_policy import MANAGEMENT_SESSION
 from studio.contracts.management.migration_batches import MigrationPlan
 from studio.runtime.database.migrations import apply
 from studio.runtime.time import utc_now

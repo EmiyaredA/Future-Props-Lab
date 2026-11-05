@@ -1,10 +1,6 @@
-from app.console.governance.governance_transactions import (
-    begin_governance,
-    cas,
-    require_platform_admin,
-)
-from app.console.governance.service import add_audit_event
 from app.console.models.platform_governance import PlatformSetting
+from studio.apps.identity.credentials.operations import add_audit_event
+from studio.apps.identity.storage.governance import begin_governance, cas, require_platform_admin
 from studio.contracts.identity.errors import AccountError
 
 

@@ -12,7 +12,3 @@ class SessionPolicy:
 
 STUDIO_SESSION = SessionPolicy()
 MANAGEMENT_SESSION = SessionPolicy("management", "fpl_management_session", "fpl_management_csrf")
-
-
-def session_policy(request):
-    return getattr(request.state, "session_policy", STUDIO_SESSION)

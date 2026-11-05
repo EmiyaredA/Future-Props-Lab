@@ -6,7 +6,7 @@ from typing import Protocol
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.console.models.accounts import ManagementApiKey
+from studio.apps.identity.storage.models.accounts import ManagementApiKey
 from studio.apps.model_service.call_logs.record_attribution import (
     snapshot_from_row as snapshot_from_row,
 )

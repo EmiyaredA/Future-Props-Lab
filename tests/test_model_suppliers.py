@@ -4,7 +4,7 @@ from uuid import uuid4
 import httpx
 import pytest
 
-from app.console.governance.provisioning import create_account
+from studio.assembly.website.account_provisioning import create_account
 from website_test_support import SessionLocal, app
 
 pytestmark = [pytest.mark.asyncio, pytest.mark.real_auth]

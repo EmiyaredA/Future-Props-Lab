@@ -6,7 +6,7 @@ import jwt
 from fastapi import HTTPException
 from sqlalchemy import func, select, text
 
-from app.console.models.accounts import SecurityAuditEvent, User
+from studio.apps.identity.storage.models.accounts import SecurityAuditEvent, User
 from studio.apps.identity.storage.service_models import ModelAuditDelivery, ModelAuditIntent
 from studio.contracts.identity.claims import verify_context
 from studio.contracts.identity.permissions import effective_permissions

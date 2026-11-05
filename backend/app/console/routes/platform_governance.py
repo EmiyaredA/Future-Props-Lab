@@ -7,16 +7,15 @@ from fastapi import APIRouter, Request, Response
 from app.console.governance.developer_docs import developer_documents
 from app.console.governance.platform_settings import write_setting
 from app.console.governance.settings_records import read_setting
-from app.console.routes.auth import _browser_auth, _platform_auth
-from app.console.schemas.platform_governance import (
-    CertificationIn,
-    CertificationOut,
-    DeveloperDocumentsOut,
+from app.console.schemas.developer_documents import DeveloperDocumentsOut
+from studio.apps.identity.transport.website.auth import _browser_auth, _platform_auth
+from studio.assembly.http_dependencies import SessionDep, client_ip
+from studio.contracts.identity.project_markers import CertificationIn, CertificationOut
+from studio.contracts.model_service.schemas.runtime_quotas import (
     RuntimeQuotas,
     RuntimeQuotasIn,
     RuntimeQuotasOut,
 )
-from studio.assembly.http_dependencies import SessionDep, client_ip
 
 router = APIRouter(tags=["platform-governance"])
 

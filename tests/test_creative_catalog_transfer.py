@@ -18,7 +18,6 @@ from tests.test_creative_integration_installations import granted
 from tests.test_tools_navigation_migration import available_ports, listener
 
 from app.console.creative_workshop.models import CreativeInstallation, CreativeItem, CreativeRelease
-from app.console.models.accounts import User
 from app.integrations.models import McpIntegration, ToolApiIntegration
 from db.migrations import apply_migrations
 from studio.apps.creative_workshop.storage.file_paths import creative_database
@@ -26,6 +25,7 @@ from studio.apps.creative_workshop.storage.migration_catalog import DATASETS
 from studio.apps.creative_workshop.storage.migration_originals import PREFIX as ORIGINALS
 from studio.apps.creative_workshop.storage.migrations.registry import MIGRATIONS
 from studio.apps.creative_workshop.storage.stdio_records import record_setup
+from studio.apps.identity.storage.models.accounts import User
 from studio.apps.integrations.creative_installations import CreativeInstallations
 from studio.apps.integrations.storage.creative_records import CreativeInstallReceipt
 from studio.apps.integrations.storage.migrations.registry import (

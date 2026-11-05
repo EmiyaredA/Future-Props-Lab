@@ -32,6 +32,7 @@ from studio.runtime.http.problem_details import (
     storage_operational_error_handler,
     validation_exception_handler,
 )
+from studio.runtime.http.rate_limit import AttemptLimiter
 from studio.runtime.http.request_limit import RequestLimit
 from studio.runtime.lifecycle.locking import service_lock
 
@@ -71,9 +72,13 @@ def create_app(
             options.guacd_host, options.fpl_cloud_control_guacd_port
         )
 
+    attempts = AttemptLimiter()
     connector = connect_upstream or dial
     desktop = DesktopConnection(
-        settings=lambda: settings, access=current_access, connect_upstream=connector
+        settings=lambda: settings,
+        access=current_access,
+        connect_upstream=connector,
+        attempts=attempts,
     )
 
     async def guacd_ready():
@@ -102,6 +107,7 @@ def create_app(
         title="FPL Remote", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan
     )
     app.state.database = database
+    app.state.auth_attempts = attempts
     app.state.cloud_desktop = desktop
     app.state.remote_settings = settings
     app.state.cloud_projection = cloud_projection

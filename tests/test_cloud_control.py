@@ -15,10 +15,10 @@ import pytest
 from PIL import Image
 
 from app.console.cloud_control import access, desktop
-from app.console.governance.provisioning import create_account
 from db.migrations import runner as migration_runner
 from studio.apps.agent_workbench.execution import events, project_files, projects, runner, storage
 from studio.apps.agent_workbench.transport.website import execution
+from studio.assembly.website.account_provisioning import create_account
 from studio.config.settings import CloudProject, get_settings
 from website_test_support import SessionLocal, app
 

@@ -113,8 +113,8 @@
   编辑批处理回执与传输形状归属 `studio/runtime/database/project_operations.py`、`studio/runtime/operation_batches.py`。
 - Story 总校验保持纯函数分层：身份/角色、素材、国际化、时间轴、流程与表现层规则归属
   `apps/galgame_workshop/schemas/story_validation.py`；Pydantic Story 入口只负责迁移适配和统一调用。
-- 鉴权原语归属 `capabilities/identity/`；账号、Session、审计、Management API Key 与平台资源分配归属
-  `console/governance/`。仅有 `admin` 和 `user` 两种平台角色。管理员不具有其他账号私人数据的读取权。
+- 身份契约归属 `studio/contracts/identity/`；账号、Session、审计、Management API Key 与注册归属
+  `studio/apps/identity/`。跨应用不加载账号 ORM；兼容网站的模型初始化由装配绑定。仅有 `admin` 和 `user` 两种平台角色。管理员不具有其他账号私人数据的读取权。
   `StudioPrincipal.user_id` 是私人数据唯一归属来源，`owner_user_id` 与它相同；业务请求不得接受客户端指定归属。
   路由通过 `OwnerDep` 传递账号，根资源保存 `owner_user_id`，子资源继承已经校验的根资源归属。
   不存在 Workspace、成员角色、动态权限矩阵、账号切换空间或 `default` 回退；后台执行器从持久任务恢复账号。

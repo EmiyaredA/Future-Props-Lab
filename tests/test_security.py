@@ -1,8 +1,12 @@
 import pytest
 from pydantic import ValidationError
 
-from app.capabilities.identity.passwords import hash_password, validate_password, verify_password
-from app.capabilities.identity.security import new_management_api_key
+from studio.apps.identity.credentials.passwords import (
+    hash_password,
+    validate_password,
+    verify_password,
+)
+from studio.apps.identity.credentials.session_secrets import new_management_api_key
 from studio.config.settings import Settings
 from studio.contracts.model_service.schemas.model_service import ProviderIn
 from studio.runtime.http.outbound_urls import (

@@ -39,9 +39,10 @@ async def _dial(settings):
 
 
 class DesktopConnection(desktop_bridge.DesktopConnection):
-    def __init__(self, *, sessions, settings_reader):
+    def __init__(self, *, sessions, settings_reader, attempts):
         super().__init__(
             settings=settings_reader,
             access=partial(_access, sessions=sessions),
             connect_upstream=_dial,
+            attempts=attempts,
         )

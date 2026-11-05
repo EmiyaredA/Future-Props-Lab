@@ -5,16 +5,16 @@ import httpx
 import pytest
 from sqlalchemy import func, select
 
-from app.capabilities.identity.passwords import normalize_username
-from app.capabilities.identity.security import hash_secret
-from app.console.governance.provisioning import create_account
-from app.console.models import (
+from studio.apps.identity.credentials.session_secrets import hash_secret
+from studio.apps.identity.storage.models.accounts import (
     AuthSession,
     ManagementApiKey,
     SecurityAuditEvent,
     User,
 )
 from studio.apps.model_service.storage.models.model_service import ModelProvider
+from studio.assembly.website.account_provisioning import create_account
+from studio.contracts.identity.usernames import normalize_username
 from studio.runtime.time import utc_now
 from website_test_support import SessionLocal, app
 
@@ -47,7 +47,7 @@ async def test_account_provisioning_rolls_back_when_catalog_seed_fails(
         raise RuntimeError("seed failed")
 
     monkeypatch.setattr(
-        "app.console.governance.provisioning.ensure_account_model_catalog", fail_seed
+        "studio.assembly.website.account_provisioning.ensure_account_model_catalog", fail_seed
     )
     async with SessionLocal() as session:
         with pytest.raises(RuntimeError, match="seed failed"):

@@ -1,11 +1,11 @@
 from sqlalchemy import select
 
-from app.console.governance.governance_transactions import begin_governance
 from app.console.governance.platform_settings import write_setting
-from app.console.governance.service import add_audit_event
 from app.console.governance.settings_records import read_setting
 from app.integrations.models import ToolApiIntegration
 from app.runtime.credentials import encrypt_secret
+from studio.apps.identity.credentials.operations import add_audit_event
+from studio.apps.identity.storage.governance import begin_governance
 from studio.apps.model_service.catalog.legacy import legacy_catalog
 from studio.apps.model_service.demonstration.execution import (
     DEFAULT_CONFIG,

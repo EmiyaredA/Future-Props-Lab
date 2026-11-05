@@ -365,7 +365,7 @@ from studio.apps.model_service.transport.website.models.model_test_generation im
 for module in ('studio.runtime.database.website',
     'studio.assembly.website.models',
     'app.capabilities.asset_store.models',
-    'app.console.models.accounts', 'studio.apps.visual_workshop.storage.models'):
+    'studio.apps.identity.storage.models.accounts', 'studio.apps.visual_workshop.storage.models'):
     assert module not in sys.modules, module
 """
     result = subprocess.run(

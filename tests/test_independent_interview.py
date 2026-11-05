@@ -90,7 +90,7 @@ async def test_native_interview_worker_delivers_once_after_lost_receipt(scenario
     import pytest
     from tests.test_interview_preparation import FakeExecutor
 
-    from app.console.models.accounts import User
+    from studio.apps.identity.storage.models.accounts import User
     from studio.contracts.agent_workbench.native import NativeLease
     from studio.contracts.interview_assistant.execution import WorkerStatus
     from studio.host.agent_execution.interview_worker import InterviewWorker

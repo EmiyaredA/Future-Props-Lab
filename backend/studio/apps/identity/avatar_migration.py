@@ -7,7 +7,7 @@ from uuid import UUID
 from fastapi import HTTPException, Request, Response
 from pydantic import BaseModel
 
-from app.console.governance.profile import AVATAR_MAX_BYTES
+from studio.apps.identity.profile import AVATAR_MAX_BYTES
 from studio.runtime.http.migration_admission import MigrationAdmission
 
 from .avatar_files import avatar_path, inventory_files, lookup, read_file, store_file

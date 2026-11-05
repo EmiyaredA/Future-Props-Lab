@@ -5,7 +5,7 @@ import httpx
 import pytest
 from sqlalchemy import select
 
-from app.console.models import User
+from studio.apps.identity.storage.models.accounts import User
 from studio.apps.model_service.storage.models.model_service import ModelProvider
 from studio.apps.model_service.templates.website_sync import ModelTemplateSyncRunner
 from test_workspace_governance import client_account

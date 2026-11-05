@@ -2,14 +2,10 @@
 
 from sqlalchemy import select
 
-from app.console.governance.governance_transactions import (
-    begin_governance,
-    cas,
-    require_platform_admin,
-)
-from app.console.governance.service import add_audit_event
 from app.console.governance.settings_records import read_setting
 from app.console.models.platform_governance import PlatformSetting
+from studio.apps.identity.credentials.operations import add_audit_event
+from studio.apps.identity.storage.governance import begin_governance, cas, require_platform_admin
 from studio.apps.model_service.admission.website_quotas import ACTIVE, TASK_MODELS
 from studio.apps.model_service.catalog.legacy_defaults import LegacyCatalogDefaults
 from studio.apps.model_service.catalog.template_reconciliation import (

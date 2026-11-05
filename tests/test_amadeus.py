@@ -21,8 +21,8 @@ from app.console.amadeus.model_bridge import stream_model_turn
 from app.console.amadeus.runs import recover_interrupted_amadeus_runs
 from app.console.amadeus.schemas import ModelTurnIn
 from app.console.amadeus.scripts import run_script
-from app.console.models.accounts import User
 from app.runtime.credentials import encrypt_secret
+from studio.apps.identity.storage.models.accounts import User
 from studio.apps.model_service.storage.models.call_log import LlmCallLog
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.assembly.website.models import bind_owner

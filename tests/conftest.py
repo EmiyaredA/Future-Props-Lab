@@ -28,7 +28,7 @@ async def authenticated_business_routes(request: pytest.FixtureRequest, monkeypa
     if request.node.get_closest_marker("real_auth") or "website_test_support" not in sys.modules:
         yield
         return
-    from app.console.models import User
+    from studio.apps.identity.storage.models.accounts import User
     from studio.apps.model_service.storage.models.model_service import ModelCatalogState
     from studio.apps.model_service.transport.website.model_capacity import model_capacity
     from studio.assembly.http_dependencies import SessionDep, require_studio_auth

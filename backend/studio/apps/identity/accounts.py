@@ -2,8 +2,8 @@
 
 from sqlalchemy import select, update
 
-from app.console.governance.account_creation import create_account as create_account_record
-from app.console.models.accounts import User
+from studio.apps.identity.registration.accounts import create_account as create_account_record
+from studio.apps.identity.storage.models.accounts import User
 from studio.apps.identity.storage.service_models import AccountEvent
 from studio.runtime.time import utc_now
 

@@ -46,6 +46,7 @@ async def test_two_factories_own_separate_storage_and_lifecycle_components(tmp_p
         first, second = apps
         for component in (
             "database",
+            "auth_attempts",
             "amadeus_actions",
             "demo_runtime",
             "video_downloads",
@@ -56,6 +57,9 @@ async def test_two_factories_own_separate_storage_and_lifecycle_components(tmp_p
             first.state.database.sessions.kw["bind"]
             is not second.state.database.sessions.kw["bind"]
         )
+        assert first.state.auth_attempts.allow("login:owner", 1)
+        assert not first.state.auth_attempts.allow("login:owner", 1)
+        assert second.state.auth_attempts.allow("login:owner", 1)
         # Constructing the engine is lazy: no connection or database file exists yet.
         assert not (tmp_path / "a.db").exists()
         assert not (tmp_path / "b.db").exists()

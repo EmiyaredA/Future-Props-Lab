@@ -1,7 +1,7 @@
 """Monolith account provisioning, including the legacy atomic model catalog."""
 
-from app.console.governance.account_creation import create_account as create_identity_account
-from app.console.governance.account_creation import (
+from studio.apps.identity.registration.accounts import create_account as create_identity_account
+from studio.apps.identity.registration.accounts import (
     create_managed_account as create_identity_managed_account,
 )
 from studio.apps.model_service.catalog.seed import ensure_account_model_catalog

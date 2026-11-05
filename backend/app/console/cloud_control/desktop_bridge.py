@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from PIL import Image, ImageFilter
 from starlette.websockets import WebSocketDisconnect
 
-from app.capabilities.identity.rate_limit import clear_attempts
 from studio.contracts.identity.cloud_authority import (
     DESKTOP_COOKIE,
     TICKET_SECONDS,
@@ -327,7 +326,7 @@ class PublicDesktopImages:
         return await asyncio.to_thread(compact_desktop_frame, pending)
 
 
-async def browser_output(socket, reader, owner, ticket, settings, transfer, *, local):
+async def browser_output(socket, reader, owner, ticket, settings, transfer, *, local, attempts):
     first_frame = True
     deadline = asyncio.get_running_loop().time() + 10
     images = None if local else PublicDesktopImages()
@@ -350,7 +349,7 @@ async def browser_output(socket, reader, owner, ticket, settings, transfer, *, l
             return reason
         if first_frame and fields[0] == "sync":
             ticket.password = ""
-            clear_attempts(f"cloud-vnc:{owner}")
+            attempts.clear(f"cloud-vnc:{owner}")
             first_frame = False
         messages = await images.output(fields, raw) if images else [raw]
         for message in messages:
@@ -381,7 +380,8 @@ class DesktopTicket:
 
 
 class DesktopConnection:
-    def __init__(self, *, settings, access, connect_upstream):
+    def __init__(self, *, settings, access, connect_upstream, attempts):
+        self.attempts = attempts
         self.settings = settings
         self.access = access
         self.connect_upstream = connect_upstream
@@ -477,7 +477,14 @@ class DesktopConnection:
                 asyncio.create_task(browser_input(socket, writer, inputs, transfer)),
                 asyncio.create_task(
                     browser_output(
-                        socket, reader, principal.user_id, ticket, settings, transfer, local=local
+                        socket,
+                        reader,
+                        principal.user_id,
+                        ticket,
+                        settings,
+                        transfer,
+                        local=local,
+                        attempts=self.attempts,
                     )
                 ),
                 watcher,

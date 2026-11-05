@@ -7,16 +7,14 @@ from fastapi import HTTPException, Request, WebSocket
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.identity.http_context import forbidden, unauthorized
-from app.capabilities.identity.security import (
+from studio.apps.identity.credentials.session_secrets import hash_secret
+from studio.apps.identity.storage.models.accounts import AuthSession, ManagementApiKey, User
+from studio.assembly.identity_http import forbidden, session_policy, unauthorized
+from studio.contracts.identity.authentication import (
     SESSION_ACTIVITY_WRITE_SECONDS,
     SESSION_COOKIE,
     SESSION_IDLE_HOURS,
-    hash_secret,
 )
-from app.capabilities.identity.session_policy import session_policy
-from app.console.models import AuthSession, ManagementApiKey, User
-from studio.config.settings import get_settings
 from studio.contracts.identity.permissions import role_scopes
 from studio.contracts.identity.principal import StudioPrincipal
 from studio.runtime.database.ownership import bind_owner
@@ -25,7 +23,9 @@ from studio.runtime.time import utc_now
 UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
 
-def validate_session_request(request: Request, auth_session: AuthSession) -> None:
+def validate_session_request(
+    request: Request, auth_session: AuthSession, *, allowed_origins
+) -> None:
     if request.method not in UNSAFE_METHODS:
         return
     csrf_cookie = request.cookies.get(session_policy(request).csrf_cookie, "")
@@ -39,7 +39,7 @@ def validate_session_request(request: Request, auth_session: AuthSession) -> Non
         raise forbidden("csrf_failed", "CSRF 校验失败")
     origin = request.headers.get("Origin", "").rstrip("/")
     request_origin = f"{request.url.scheme}://{request.url.netloc}".rstrip("/")
-    allowed = {*get_settings().cors_origin_list, request_origin}
+    allowed = {*allowed_origins, request_origin}
     if not origin or origin not in allowed:
         raise forbidden("origin_not_allowed", "请求来源不受信任")
 
@@ -71,6 +71,7 @@ async def authenticate_database_request(
     session: AsyncSession,
     *,
     required_scope: str,
+    allowed_origins: tuple[str, ...],
     allow_forced_password_change: bool = False,
 ) -> StudioPrincipal:
     now = utc_now()
@@ -97,7 +98,7 @@ async def authenticate_database_request(
             )
         if purpose != session_policy(request).purpose:
             raise unauthorized()
-        validate_session_request(request, auth)
+        validate_session_request(request, auth, allowed_origins=allowed_origins)
         if user.must_change_password and not allow_forced_password_change:
             raise forbidden("password_change_required", "必须先修改临时密码")
         if (now - auth.last_seen_at).total_seconds() >= SESSION_ACTIVITY_WRITE_SECONDS:

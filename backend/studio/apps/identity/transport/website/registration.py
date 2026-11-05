@@ -2,8 +2,7 @@
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 
-from app.capabilities.identity.rate_limit import allow_attempt
-from app.console.governance.registration import (
+from studio.apps.identity.registration.invitations import (
     change_invite,
     create_invite,
     invite_page,
@@ -11,9 +10,10 @@ from app.console.governance.registration import (
     register,
     reveal_invite,
 )
-from app.console.routes.auth import _login_out, _platform_auth, _set_cookies
-from app.console.schemas.accounts import AuthMeOut
-from app.console.schemas.registration import (
+from studio.apps.identity.transport.website.auth import _login_out, _platform_auth, _set_cookies
+from studio.assembly.http_dependencies import SessionDep, client_ip, require_recent_reauthentication
+from studio.contracts.identity.accounts import AuthMeOut
+from studio.contracts.identity.registration import (
     RedemptionPage,
     RegistrationIn,
     RegistrationInviteAction,
@@ -24,7 +24,6 @@ from app.console.schemas.registration import (
     RegistrationInvitePatch,
     SecretOut,
 )
-from studio.assembly.http_dependencies import SessionDep, client_ip, require_recent_reauthentication
 
 router = APIRouter(tags=["platform-governance"])
 
@@ -97,7 +96,7 @@ async def registration(
     request: Request, response: Response, session: SessionDep, body: RegistrationIn
 ):
     ip = client_ip(request)
-    if not allow_attempt(f"register:ip:{ip}", 10):
+    if not request.app.state.auth_attempts.allow(f"register:ip:{ip}", 10):
         raise HTTPException(429, {"code": "registration_rate_limited", "message": "请稍后重试"})
     account_creator = request.app.state.account_creator
     try:
@@ -111,7 +110,7 @@ async def registration(
     except ValueError as exc:
         raise HTTPException(422, {"code": "registration_invalid", "message": str(exc)}) from exc
     user, auth, token, csrf = result
-    _set_cookies(response, token, csrf)
+    _set_cookies(response, token, csrf, secure=request.app.state.settings.auth_cookie_secure)
     pending = await request.app.state.account_storage_check(session)
     return _login_out(
         user,

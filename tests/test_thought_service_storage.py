@@ -65,7 +65,7 @@ from studio.apps.thought_workshop import assistant
 assert len(MODELS) == 33
 for name in ('studio.assembly.website.models',
     'studio.runtime.database.website',
-    'app.console.models.accounts',
+    'studio.apps.identity.storage.models.accounts',
              'studio.apps.model_service.storage.models', 'app.capabilities.asset_store.models'):
     assert name not in sys.modules, name
 """,
@@ -161,7 +161,7 @@ async def run():
     await database.close()
     for name in ("studio.runtime.database.website",
         "studio.assembly.website.models",
-        "app.console.models.accounts",
+        "studio.apps.identity.storage.models.accounts",
         "studio.apps.model_service.storage.models",
                  "app.capabilities.asset_store.models"):
         assert name not in sys.modules, name
@@ -229,7 +229,7 @@ async def run():
     await database.close()
     for name in ("studio.runtime.database.website",
         "studio.assembly.website.models",
-        "app.console.models.accounts",
+        "studio.apps.identity.storage.models.accounts",
         "studio.apps.model_service.storage.models",
                  "app.capabilities.asset_store.models"):
         assert name not in sys.modules, name
