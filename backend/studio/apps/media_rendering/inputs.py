@@ -6,8 +6,8 @@ from contextlib import asynccontextmanager
 from email.message import Message
 from pathlib import Path
 
-from app.capabilities.media_rendering.preview_metadata import PreviewSource
 from studio.contracts.asset_library.errors import AssetError
+from studio.contracts.asset_library.media_content import MediaDescription
 from studio.runtime.http.capability_client import CapabilityUnavailable
 
 
@@ -54,7 +54,7 @@ async def input_file(*, settings, capabilities, owner, assertion, method, path, 
                     target.write(chunk)
             if received != size:
                 raise CapabilityUnavailable("来源文件传输未完成")
-        yield PreviewSource(asset_id, revision, owner, kind, mime, filename), source
+        yield MediaDescription(asset_id, revision, owner, kind, mime, filename), source
     finally:
         source.unlink(missing_ok=True)
         with contextlib.suppress(OSError):

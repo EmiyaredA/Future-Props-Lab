@@ -68,6 +68,7 @@ from studio.apps.video_editor.legacy_project_layouts import LegacyVideoLayouts
 from studio.apps.video_editor.legacy_timeline_assets import LegacyTimelineAssets
 from studio.assembly.annotation import document_editor
 from studio.assembly.website.account_provisioning import create_account
+from studio.assembly.website.media import bind_media
 from studio.assembly.website.models import AUTOMATION_ROOTS, CERTIFIABLE_PROJECT_ROOTS
 from studio.config import REPO_ROOT
 from studio.config.settings import get_cloud_settings
@@ -82,6 +83,7 @@ def bind_components(app, settings, database):
     )
     app.state.certifiable_projects = CERTIFIABLE_PROJECT_ROOTS
     sessions = database.sessions
+    bind_media(app, settings, sessions)
     app.state.video_downloads = VideoDownloads(
         root=settings.runtime_path / "tool-navigation" / "video-download",
         download=lambda **kwargs: asyncio.to_thread(_run_yt_dlp, **kwargs),

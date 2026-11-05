@@ -242,8 +242,8 @@ async def test_cancelled_grid_waits_for_writer_before_removing_output(instance, 
     import asyncio
     import threading
 
-    from app.capabilities.media_rendering.preview_metadata import PreviewSource
     from studio.apps.media_rendering import previews
+    from studio.contracts.asset_library.media_content import MediaDescription
     from studio.contracts.media_rendering.video_frames import VideoFramesIn
 
     app, _client, _private, _inputs, _identity = instance
@@ -261,7 +261,7 @@ async def test_cancelled_grid_waits_for_writer_before_removing_output(instance, 
     monkeypatch.setattr(previews, "render_image_grid", render)
     task = asyncio.create_task(
         app.state.media.frames(
-            PreviewSource("video", 0, "alpha", "video", "video/mp4", "clip.mp4"),
+            MediaDescription("video", 0, "alpha", "video", "video/mp4", "clip.mp4"),
             Path("unused synthetic source"),
             VideoFramesIn(positions_ms=[0, 1, 2, 3], output="grid"),
         )

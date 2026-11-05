@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from app.capabilities.asset_store.routes import image_crop, media_info, video_frames
+from app.capabilities.asset_store.routes import video_frames
 from app.console.routes.amadeus import require_amadeus_session
 from app.console.routes.amadeus import router as amadeus_router
 from app.console.routes.cloud_control import router as cloud_control_router
@@ -21,6 +21,7 @@ from studio.apps.identity.transport.website.accounts import router as accounts_r
 from studio.apps.identity.transport.website.project_markers import router as project_markers_router
 from studio.apps.identity.transport.website.registration import router as registration_router
 from studio.apps.interview_assistant.transport.website import router as interview_assistant_router
+from studio.apps.media_rendering.transport.website import image_crop, media_info
 from studio.apps.model_service.transport.website.demo import call_router as demo_call_router
 from studio.apps.model_service.transport.website.demo import router as demo_runtime_router
 from studio.apps.model_service.transport.website.local_models import router as local_models_router

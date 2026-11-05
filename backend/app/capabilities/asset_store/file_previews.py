@@ -2,20 +2,20 @@
 
 from app.capabilities.asset_store.assets import VisualAssets
 from app.capabilities.media_rendering.preview_metadata import (
-    PreviewSource,
     cache_root,
     describe_preview,
     media_thumbnail,
     preview_kind,
 )
+from studio.contracts.asset_library.media_content import MediaDescription
 
-__all__ = ["PreviewSource", "cache_root", "media_thumbnail", "preview_kind", "preview_metadata"]
+__all__ = ["cache_root", "media_thumbnail", "preview_kind", "preview_metadata"]
 
 
 async def authorized_source(session, settings, owner_user_id: str, asset_id: str):
     row, path = await VisualAssets(session, settings, owner_user_id).content(asset_id)
-    info = PreviewSource(
-        **{name: getattr(row, name) for name in PreviewSource.__dataclass_fields__}
+    info = MediaDescription(
+        **{name: getattr(row, name) for name in MediaDescription.__dataclass_fields__}
     )
     await session.rollback()
     return info, path

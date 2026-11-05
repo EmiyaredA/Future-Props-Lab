@@ -15,9 +15,10 @@ from pypdf import PdfWriter
 from tests.test_account_system import create_test_account, login_and_change_password, unsafe_headers
 
 from app.capabilities.asset_store import file_previews
-from app.capabilities.asset_store.file_previews import PreviewSource, media_thumbnail
+from app.capabilities.asset_store.file_previews import media_thumbnail
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.media_rendering import preview_metadata as preview_operations
+from studio.contracts.asset_library.media_content import MediaDescription
 from website_test_support import app
 
 pytestmark = [pytest.mark.asyncio, pytest.mark.real_auth]
@@ -197,7 +198,7 @@ async def test_atomic_concurrent_generation_revision_and_timeout_cleanup(tmp_pat
     source = tmp_path / "input.pdf"
     source.write_bytes(pdf_bytes())
     settings = SimpleNamespace(account_path=lambda owner: tmp_path / owner)
-    info = PreviewSource("file", 1, "owner", "document", "application/pdf", "input.pdf")
+    info = MediaDescription("file", 1, "owner", "document", "application/pdf", "input.pdf")
     targets = await asyncio.gather(
         *(media_thumbnail(settings, info, source, 128, 1) for _ in range(4))
     )
@@ -260,7 +261,7 @@ async def test_corrupt_derived_metadata_is_rebuilt_from_original(tmp_path, monke
     source = tmp_path / "notes.md"
     source.write_text("实际正文", encoding="utf-8")
     settings = SimpleNamespace(account_path=lambda owner: tmp_path / owner)
-    info = PreviewSource("notes", 1, "owner", "document", "text/markdown", "notes.md")
+    info = MediaDescription("notes", 1, "owner", "document", "text/markdown", "notes.md")
 
     async def authorized(*_args):
         return info, source

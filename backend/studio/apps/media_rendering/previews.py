@@ -63,17 +63,13 @@ class MediaPreviews:
     async def metadata(self, info, source):
         return await describe_preview(self.settings, info, source)
 
-    async def video_info(self, info, source):
-        if info.media_kind != "video":
-            raise AssetError("格式检查只支持视频文件")
+    async def video_info(self, _info, source):
         try:
             return await inspect_video_info(source)
         except (OSError, ValueError, TimeoutError) as exc:
             raise AssetError("视频格式信息暂时无法读取", code="media_info_unavailable") from exc
 
-    async def crop(self, info, source, body):
-        if info.media_kind != "image" or info.mime_type == "image/svg+xml":
-            raise AssetError("裁剪需要栅格图片；SVG 请先通过预览接口转换")
+    async def crop(self, _info, source, body):
 
         def render():
             with Image.open(source) as original:

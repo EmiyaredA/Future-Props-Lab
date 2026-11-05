@@ -1,8 +1,7 @@
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Request, Response
 
-from app.capabilities.asset_store.image_crop import crop_image
-from app.capabilities.asset_store.library import AssetError
-from studio.assembly.http_dependencies import OwnerDep, SessionDep
+from studio.assembly.http_dependencies import OwnerDep
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.media_rendering.image_crop import ImageCropIn
 
 router = APIRouter(tags=["file-management"])
@@ -16,11 +15,11 @@ router = APIRouter(tags=["file-management"])
 async def crop_file_image(
     asset_id: str,
     body: ImageCropIn,
-    session: SessionDep,
+    request: Request,
     owner_user_id: OwnerDep,
 ):
     try:
-        content = await crop_image(session, owner_user_id, asset_id, body)
+        content = await request.app.state.media_reads(request).crop(owner_user_id, asset_id, body)
     except AssetError as exc:
         raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
     return Response(

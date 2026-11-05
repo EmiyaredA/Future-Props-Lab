@@ -70,6 +70,14 @@ async def authenticated_business_routes(request: pytest.FixtureRequest, monkeypa
     async def acquire_capacity(*_args, **_kwargs):
         return None
 
+    class BusinessMediaAccess:
+        async def ensure_active(self):
+            pass
+
+    # This fixture already bypasses HTTP identity for business tests. Keep the
+    # post-processing check under the same explicit bypass; real_auth tests use it.
+    monkeypatch.setattr(app.state, "media_authorization", lambda _request: BusinessMediaAccess())
+
     monkeypatch.setattr(
         app.state, "model_admission", replace(app.state.model_admission, acquire=acquire_capacity)
     )

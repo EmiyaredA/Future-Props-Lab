@@ -41,6 +41,7 @@ from studio.apps.media_rendering.video_frames import router as video_frame_route
 from studio.apps.media_rendering.video_media_jobs import VideoJobs
 from studio.apps.media_rendering.visual_grids import router as visual_grid_router
 from studio.apps.media_rendering.visual_samples import router as visual_samples_router
+from studio.assembly.independent.media_rendering.reads import bind_media_reads
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.motion_compositor.motion_exports import ExportPeer
 from studio.contracts.video_editor.video_exports import output_peer
@@ -149,6 +150,7 @@ def create_app(
     app.state.settings, app.state.database = settings, database
     app.state.identity, app.state.capabilities = identity, capabilities
     app.state.media = MediaPreviews(settings)
+    bind_media_reads(app)
     app.state.identity_public_key = public_key
     app.state.motion_frame_slots = asyncio.Semaphore(2)
     app.state.galgame_frame_slots = asyncio.Semaphore(2)

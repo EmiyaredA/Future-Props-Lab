@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from app.capabilities.asset_store.assets import VisualAssets
-from app.capabilities.asset_store.file_previews import PreviewSource, media_thumbnail
+from app.capabilities.asset_store.file_previews import media_thumbnail
 from app.capabilities.asset_store.image_thumbnails import (
     ThumbnailSource as ThumbnailSource,
 )
@@ -17,6 +17,7 @@ from app.capabilities.asset_store.image_thumbnails import (
     derived_thumbnail as derived_thumbnail,
 )
 from studio.contracts.asset_library.errors import AssetError
+from studio.contracts.asset_library.media_content import MediaDescription
 from studio.runtime.files.image_sizes import ThumbnailSize as ThumbnailSize
 
 
@@ -27,8 +28,8 @@ async def thumbnail(
     row, source = await assets.content(asset_id)
     # Capture the authorized resource before ending the short read transaction.
     if row.media_kind != "image":
-        info = PreviewSource(
-            **{name: getattr(row, name) for name in PreviewSource.__dataclass_fields__}
+        info = MediaDescription(
+            **{name: getattr(row, name) for name in MediaDescription.__dataclass_fields__}
         )
         await session.rollback()
         return await media_thumbnail(settings, info, source, size, page), "image/webp"

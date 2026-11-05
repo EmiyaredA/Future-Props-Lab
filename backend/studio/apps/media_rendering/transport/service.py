@@ -94,7 +94,7 @@ async def preview_thumbnail(
 
 @router.get("/files/{asset_id}/media-info", response_model=VideoMediaInfoOut)
 async def video_media_info(asset_id: str, request: Request, owner_user_id: OwnerDep):
-    return await execute(request, owner_user_id, asset_id, "video_info")
+    return await request.app.state.media_reads(request).video_info(owner_user_id, asset_id)
 
 
 @router.post(
@@ -108,7 +108,7 @@ async def crop_file_image(
     request: Request,
     owner_user_id: OwnerDep,
 ):
-    content = await execute(request, owner_user_id, asset_id, "crop", body)
+    content = await request.app.state.media_reads(request).crop(owner_user_id, asset_id, body)
     return Response(
         content,
         media_type="image/png",

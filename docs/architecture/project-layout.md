@@ -964,7 +964,7 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 
 ### 视频透明检查与格式信息
 
-`capabilities/media_rendering/media_info.py` 拥有有界只读媒体探测，`animated_image.py` 拥有 GIF 的黑底 MP4 与透明 WebM 转换。`capabilities/asset_store/media_info.py` 及对应 routes/schemas 拥有账号校验与格式接口；`visual_workshop/outputs/` 拥有检查素材关联、原子上传与快照。Web `visual-workshop/board/VideoOutputPreview.tsx` 拥有视频格式、纯色衬底及全屏检查，`output-preview.css` 保存共用输出画面样式；预览状态不进入画布。迁移 `0115_visual_output_inspection` 仅追加检查素材引用。
+`capabilities/media_rendering/media_info.py` 拥有有界只读媒体探测，`animated_image.py` 拥有 GIF 的黑底 MP4 与透明 WebM 转换。`studio/apps/media_rendering/use_cases/read_media.py` 统一裁切与格式读取的账号、类型及处理后授权规则；`ports.py` 定义素材借用、执行器与授权接口。`asset_library/storage/media_sources.py` 在独立短查询后提供脱离 ORM 的描述，Rendering 的 `clients/media_sources.py` 提供绑定请求的 HTTP 来源；`processing.py` 使用同一处理器。两种装配分别位于 `assembly/website/media.py` 与 `assembly/independent/media_rendering/reads.py`。原素材包中的裁切和媒体信息业务实现已移除，网站协议归 `media_rendering/transport/website/`。`runtime/files/borrowed_media.py` 只在 I/O 边界复用本地文件，其他流通过有界暂存适配，取消与错误均清理。`visual_workshop/outputs/` 拥有检查素材关联、原子上传与快照。Web `visual-workshop/board/VideoOutputPreview.tsx` 拥有视频格式、纯色衬底及全屏检查，`output-preview.css` 保存共用输出画面样式；预览状态不进入画布。迁移 `0115_visual_output_inspection` 仅追加检查素材引用。
 
 ### 角色工坊退役验收
 

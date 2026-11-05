@@ -4,13 +4,13 @@ import asyncio
 import json
 import os
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 from uuid import uuid4
 from weakref import WeakKeyDictionary
 
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.files import FilePreviewOut
+from studio.contracts.asset_library.media_content import MediaDescription
 
 from .file_previews import (
     audio_waveform,
@@ -31,17 +31,7 @@ def _capacity() -> asyncio.Semaphore:
     return _capacities[loop]
 
 
-@dataclass(frozen=True)
-class PreviewSource:
-    id: str
-    revision: int
-    owner_user_id: str
-    media_kind: str
-    mime_type: str
-    original_filename: str
-
-
-def preview_kind(info: PreviewSource) -> str:
+def preview_kind(info: MediaDescription) -> str:
     if info.media_kind in {"image", "video", "audio"}:
         return info.media_kind
     if info.mime_type == "application/pdf":
@@ -51,7 +41,7 @@ def preview_kind(info: PreviewSource) -> str:
     return "unsupported"
 
 
-def cache_root(settings, info: PreviewSource) -> Path:
+def cache_root(settings, info: MediaDescription) -> Path:
     return settings.account_path(info.owner_user_id) / "previews" / info.id
 
 
@@ -94,7 +84,7 @@ def _text_preview(source: Path) -> FilePreviewOut:
     return FilePreviewOut(kind="text", text=text, truncated=truncated)
 
 
-async def describe_preview(settings, info: PreviewSource, source: Path) -> FilePreviewOut:
+async def describe_preview(settings, info: MediaDescription, source: Path) -> FilePreviewOut:
     kind = preview_kind(info)
     if kind in {"unsupported", "image"}:
         return FilePreviewOut(kind=kind)
@@ -139,7 +129,7 @@ def _save_metadata(target: Path, result: FilePreviewOut) -> None:
 
 
 async def media_thumbnail(
-    settings, info: PreviewSource, source: Path, size: int, page: int
+    settings, info: MediaDescription, source: Path, size: int, page: int
 ) -> Path:
     kind = preview_kind(info)
     if kind not in {"video", "audio", "pdf"}:
