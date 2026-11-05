@@ -3,37 +3,15 @@
 import asyncio
 from typing import Literal
 
-from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from app.capabilities.agents.cli.catalog import DEFINITIONS, AgentId, connection, inspect_connection
+from app.capabilities.agents.cli.contracts import AgentOut, CatalogOut
 from app.console.models import User
 from app.runtime.config import get_cloud_settings
 from app.runtime.operation_receipts import OperationError
 
 Purpose = Literal["amadeus", "visual_acceptance", "interview_preparation", "agent_workbench"]
-
-
-class ModelOption(BaseModel):
-    id: str
-    label: str
-
-
-class AgentOut(BaseModel):
-    id: AgentId
-    name: str
-    executable: str
-    version: str
-    enabled: bool
-    available: bool
-    status: str
-    message: str
-    models: list[ModelOption] = Field(default_factory=list)
-
-
-class CatalogOut(BaseModel):
-    items: list[AgentOut]
-    can_enable: bool = False
 
 
 async def authorized(session, owner_user_id, user_id, agent_id: AgentId, purpose: Purpose):
@@ -70,12 +48,12 @@ async def resolve_connection(agent_id, *, settings=None, probe=True, app_server=
     return path
 
 
-async def catalog(principal, *, can_enable=False):
+async def catalog(*, can_enable=False):
     settings = get_cloud_settings()
     connections = await asyncio.gather(
         *(inspect_connection(settings, identity) for identity in DEFINITIONS)
     )
-    if principal.platform_role != "admin":
+    if not can_enable:
         for item in connections:
             item["executable"] = ""
     return CatalogOut(items=[AgentOut(**item) for item in connections], can_enable=can_enable)

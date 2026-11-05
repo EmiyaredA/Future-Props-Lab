@@ -9,15 +9,15 @@ from typing import Any, Protocol
 from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.llm.generation_runtime.poll_recovery import POLL_RETRY_PREFIX, is_transient_poll_error
+from app.llm.generation_state import POLL_RETRY_PREFIX, cancel_queued, is_transient_poll_error
 from app.llm.local_models.catalog import credential_ready
 from app.llm.models import ModelProvider
 from app.llm.task_execution import TaskExecutionInfo
-from app.orm import bind_owner, require_owner_id
+from app.llm.task_outcomes import SUBMISSION_INTERRUPTED_MESSAGE, TaskClaimRejected
 from app.runtime.credentials import decrypt_secret
+from app.runtime.ownership import require_owner_id
+from app.runtime.task_records import load_runner_task, recovery_accounts
 from app.runtime.time import utc_now
-
-SUBMISSION_INTERRUPTED_MESSAGE = "应用在提交供应商任务期间中断；为避免重复计费，请重新生成"
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,6 +53,8 @@ PollHook = Callable[[GenerationTaskContext], Awaitable[ProviderTaskStatus]]
 MaterializeHook = Callable[[str, str], Awaitable[None]]
 ErrorMapper = Callable[[Exception], str]
 ClaimAdmission = Callable[[AsyncSession, Any], Awaitable[bool]]
+PrepareClaim = Callable[[str], Awaitable[ClaimAdmission | None]]
+TerminalSettlement = Callable[[AsyncSession], Awaitable[Any]]
 
 
 class GenerationTaskStore:
@@ -67,6 +69,8 @@ class GenerationTaskStore:
         task_subject: str,
         terminal_hook: TerminalHook | None = None,
         claim_admission: ClaimAdmission | None = None,
+        prepare_claim: PrepareClaim | None = None,
+        terminal_settlement: TerminalSettlement | None = None,
     ) -> None:
         self.session_factory = session_factory
         self.task_type = task_type
@@ -74,40 +78,38 @@ class GenerationTaskStore:
         self.task_subject = task_subject
         self.terminal_hook = terminal_hook
         self.claim_admission = claim_admission
+        self.prepare_claim = prepare_claim
+        self.terminal_settlement = terminal_settlement
 
     async def load(self, session: AsyncSession, task_id: str) -> Any | None:
-        task = await session.get(self.task_type, task_id)
-        if task is not None:
-            bind_owner(
-                session,
-                require_owner_id(task.owner_user_id, subject=self.task_subject),
-            )
-        return task
+        return await load_runner_task(session, self.task_type, task_id, subject=self.task_subject)
 
     async def recover_submitting(self) -> None:
-        async with self.session_factory() as session:
-            rows = list(
-                (
-                    await session.execute(
-                        select(self.task_type).where(self.task_type.status == "submitting")
+        owners = await recovery_accounts(
+            self.session_factory, self.task_type, statuses=("submitting",)
+        )
+        for owner in owners:
+            async with self.session_factory(info={"owner_user_id": owner}) as session:
+                rows = list(
+                    await session.scalars(
+                        select(self.task_type).where(
+                            self.task_type.owner_user_id == owner,
+                            self.task_type.status == "submitting",
+                        )
                     )
                 )
-                .scalars()
-                .all()
-            )
-            for row in rows:
-                require_owner_id(row.owner_user_id, subject=self.task_subject)
-                row.status = "failed"
-                row.error_message = SUBMISSION_INTERRUPTED_MESSAGE
-                row.revision += 1
-                row.updated_at = utc_now()
-                self._on_terminal(session, row)
-            await session.commit()
+                for row in rows:
+                    row.status = "failed"
+                    row.error_message = SUBMISSION_INTERRUPTED_MESSAGE
+                    row.revision += 1
+                    row.updated_at = utc_now()
+                    await self._on_terminal(session, row)
+                await session.commit()
 
     async def active_task_ids(
         self, *, limit: int = 40, statuses: Collection[str] | None = None
     ) -> list[str]:
-        async with self.session_factory() as session:
+        async with self.session_factory(info={"allow_system_reads": True}) as session:
             return list(
                 (
                     await session.execute(
@@ -126,8 +128,12 @@ class GenerationTaskStore:
             )
 
     async def claim(self, task_id: str) -> GenerationTaskContext | None:
+        # Identity/network work finishes before the SQLite writer transaction starts.
+        prepared = await self.prepare_claim(task_id) if self.prepare_claim else None
+        if self.prepare_claim is not None and prepared is None:
+            return None
         async with self.session_factory() as session:
-            if self.claim_admission is not None:
+            if self.claim_admission is not None or prepared is not None:
                 await session.execute(text("BEGIN IMMEDIATE"))
             task = await self.load(session, task_id)
             if task is None or task.status not in self.active_statuses:
@@ -140,10 +146,30 @@ class GenerationTaskStore:
                 await session.rollback()
                 return context
 
+            if status == "queued" and prepared is not None:
+                try:
+                    allowed = await prepared(session, task)
+                except TaskClaimRejected as exc:
+                    task.status = "failed"
+                    task.error_message = str(exc)[:4000]
+                    task.revision += 1
+                    task.updated_at = utc_now()
+                    await self._on_terminal(session, task)
+                    await session.commit()
+                    return None
+                if not allowed:
+                    await session.rollback()
+                    return None
+
             provider = (
                 await session.get(ModelProvider, task.provider_id) if task.provider_id else None
             )
-            if provider is None or not provider.enabled or not credential_ready(provider):
+            if (
+                provider is None
+                or provider.owner_user_id != owner_user_id
+                or not provider.enabled
+                or not credential_ready(provider)
+            ):
                 await session.rollback()
                 raise ValueError("供应商已停用、删除或缺少 API Key")
             context = self._context(
@@ -266,7 +292,7 @@ class GenerationTaskStore:
                 await session.rollback()
                 return
             await session.refresh(task)
-            self._on_terminal(session, task)
+            await self._on_terminal(session, task)
             await session.commit()
 
     def _context(
@@ -290,9 +316,11 @@ class GenerationTaskStore:
             owner_user_id=owner_user_id,
         )
 
-    def _on_terminal(self, session: AsyncSession, task: Any) -> None:
+    async def _on_terminal(self, session: AsyncSession, task: Any) -> None:
         if self.terminal_hook is not None:
             self.terminal_hook(session, task)
+        if self.terminal_settlement is not None:
+            await self.terminal_settlement(session)
 
 
 class GenerationTaskDriver:
@@ -320,24 +348,7 @@ class GenerationTaskDriver:
 
     @staticmethod
     async def cancel_queued(session: AsyncSession, task: Any, revision: int) -> bool:
-        task_type = type(task)
-        result = await session.execute(
-            update(task_type)
-            .where(
-                task_type.id == task.id,
-                task_type.revision == revision,
-                task_type.status == "queued",
-                task_type.provider_task_id.is_(None),
-                task_type.generation_kind.in_(("image", "video")),
-            )
-            .values(
-                status="cancelled",
-                revision=revision + 1,
-                updated_at=utc_now(),
-                completed_at=utc_now(),
-            )
-        )
-        return result.rowcount == 1
+        return await cancel_queued(session, task, revision)
 
     async def recover(self) -> None:
         await self.store.recover_submitting()

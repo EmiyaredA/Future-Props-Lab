@@ -26,6 +26,7 @@ from app.capabilities.asset_store.layout_migration import (
     StorageLayoutMigration,
 )
 from app.capabilities.asset_store.schemas.files import (
+    FILE_CONTENT_HEADERS,
     FilePreviewOut,
     LibraryAssetImportIn,
     LibraryFolderImportOut,
@@ -350,7 +351,7 @@ async def preview_file_metadata(
     return result
 
 
-@router.get("/files/{asset_id}/content")
+@router.get("/files/{asset_id}/content", responses={200: {"headers": FILE_CONTENT_HEADERS}})
 async def preview_file(session: SessionDep, owner_user_id: OwnerDep, asset_id: str) -> FileResponse:
     try:
         row, path = await _assets(session, owner_user_id).content(asset_id)
@@ -363,6 +364,8 @@ async def preview_file(session: SessionDep, owner_user_id: OwnerDep, asset_id: s
         content_disposition_type="inline",
         headers={
             "X-Content-Type-Options": "nosniff",
+            "X-Fpl-File-Revision": str(row.revision),
+            "X-Fpl-File-Kind": row.media_kind,
             **(
                 {
                     "Content-Security-Policy": (

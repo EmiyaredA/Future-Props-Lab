@@ -11,10 +11,10 @@ from app.console.amadeus.schemas import RunEventIn, RunOut
 from app.console.amadeus.skills import load_skill
 from app.console.amadeus.tool_bridge import TOOLS, ToolBridge
 from app.console.governance.code_agents import resolve
-from app.orm import bind_owner
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.ids import new_id
+from app.runtime.ownership import bind_owner
 
 
 class OwnedRun(RunOut):

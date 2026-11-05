@@ -101,6 +101,10 @@ async def _request(client: httpx.AsyncClient) -> tuple[dict, dict, dict, dict]:
         )
         await session.commit()
 
+    return target, source, source_asset, _import_body(story, source, source_asset, source_bytes)
+
+
+def _import_body(story, source, source_asset, source_bytes):
     document = story["document"]
     document["entryChapterId"] = "chapter-import"
     document["characters"] = [
@@ -199,7 +203,7 @@ async def _request(client: httpx.AsyncClient) -> tuple[dict, dict, dict, dict]:
         },
         "document": document,
     }
-    return target, source, source_asset, body
+    return body
 
 
 async def _cleanup(

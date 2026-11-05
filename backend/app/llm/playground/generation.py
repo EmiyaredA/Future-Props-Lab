@@ -5,9 +5,7 @@ from pathlib import Path
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.library import AssetError
-from app.capabilities.asset_store.thumbnails import ThumbnailSize, derived_thumbnail
-from app.llm.call_logs.credentials import CredentialSnapshot
+from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.models import (
     ModelEntry,
     ModelProvider,
@@ -34,6 +32,8 @@ from app.llm.schemas.model_test import (
     ModelTestVideoGenerationIn,
 )
 from app.runtime.config import Settings, get_settings
+from app.runtime.image_sizes import ThumbnailSize
+from app.runtime.raster import RasterPreviewError, derived_thumbnail
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.task_admission import TaskAdmission
 from app.runtime.time import iso_utc, utc_now
@@ -482,8 +482,8 @@ class ModelTestGeneration:
             )
             try:
                 path = await derived_thumbnail(path, target, size)
-            except AssetError as exc:
-                raise ModelTestGenerationError(str(exc), code=exc.code, status=exc.status) from exc
+            except RasterPreviewError as exc:
+                raise ModelTestGenerationError(str(exc), code=exc.code, status=422) from exc
         return row, path
 
     def _result_path(self, row: ModelTestGenerationTask) -> Path | None:

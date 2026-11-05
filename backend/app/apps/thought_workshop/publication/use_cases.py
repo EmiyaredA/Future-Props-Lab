@@ -1,21 +1,21 @@
 """Public entry point: each community operation owns an independent session."""
 
 from sqlalchemy import delete, select, text
-from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.apps.thought_workshop.directory import Directory
 from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.models import ThoughtNote
 
-from . import assets, catalog, content, mutations
+from . import catalog, content, mutations
 from .access import bind_source, publication, require_source_manager
 from .models import CommunityFavorite, OfficialSource
 from .schemas import CommunityManagement, FavoritesOut
+from .sessions import source_sessions
 
 
 class Community:
     def __init__(self, request_session, principal):
-        self.sessions = async_sessionmaker(request_session.bind, expire_on_commit=False)
+        self.sessions = source_sessions(request_session)
         self.principal = principal
 
     async def run(self, operation, *args):
@@ -66,20 +66,6 @@ class Community:
 
     async def permissions(self, id, body):
         return await self.run(mutations.permissions, id, body)
-
-    async def asset(self, id, asset, note=None, size=None):
-        return await self.run(assets.content, id, asset, note, False, size)
-
-    async def cover(self, id, size=None):
-        async with self.sessions() as session:
-            await session.execute(text("BEGIN"))
-            pub = await publication(session, id)
-            return await assets.content(
-                session, self.principal, id, pub.cover_asset_id, cover=True, size=size
-            )
-
-    async def upload(self, id, note, incoming):
-        return await self.run(assets.upload, id, note, incoming)
 
     async def backlinks(self, id, note, offset, limit):
         return await self.run(content.backlinks, id, note, offset, limit)

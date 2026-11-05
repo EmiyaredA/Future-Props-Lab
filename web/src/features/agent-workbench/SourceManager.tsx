@@ -1,5 +1,6 @@
 import { useRuntimeAccess } from "@features/accounts";
 import "./sources.css";
+import { useUnsavedNavigation } from "@shared/ui/useUnsavedNavigation";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -65,8 +66,15 @@ export function SourceManager({
   const selected = sources.find(
     (s) => s.agent_id === agent && s.root === root && s.endpoint === endpoint,
   );
+  const navigation = useUnsavedNavigation({
+    dirty: !selected && Boolean(root || label || endpoint || consent),
+    busy,
+    title: "离开来源设置？",
+    description: "来源尚未绑定，离开将放弃当前填写。",
+  });
   return (
     <div className="aw-source-manager">
+      {navigation.dialog}
       <div className="aw-section-heading">
         <Cable size={25} />
         <div>
@@ -79,14 +87,16 @@ export function SourceManager({
           <button
             key={item.id}
             className={agent === item.id ? "is-active" : ""}
-            onClick={() => {
-              setAgent(item.id);
-              setRoot("");
-              setLabel("");
-              setEndpoint("");
-              setKind("files");
-              setConsent(false);
-            }}
+            onClick={() =>
+              navigation.action(() => {
+                setAgent(item.id);
+                setRoot("");
+                setLabel("");
+                setEndpoint("");
+                setKind("files");
+                setConsent(false);
+              })
+            }
           >
             <AgentLogo id={item.id} size={25} />
             <strong>{item.name}</strong>
@@ -120,12 +130,14 @@ export function SourceManager({
               key={item.root}
               className={root === item.root ? "is-active" : ""}
               disabled={!item.exists || busy}
-              onClick={() => {
-                setKind("files");
-                setRoot(item.root);
-                setEndpoint("");
-                setLabel(item.label);
-              }}
+              onClick={() =>
+                navigation.action(() => {
+                  setKind("files");
+                  setRoot(item.root);
+                  setEndpoint("");
+                  setLabel(item.label);
+                })
+              }
             >
               <FolderOpen size={16} />
               <span>
@@ -160,11 +172,14 @@ export function SourceManager({
               { value: "files", label: "只读本机存储" },
               { value: "server", label: "连接已运行的本机实例" },
             ]}
-            onChange={(next) => {
-              setKind(next);
-              setRoot("");
-              setEndpoint("");
-            }}
+            onChange={(next) =>
+              navigation.action(() => {
+                setKind(next);
+                setRoot("");
+                setEndpoint("");
+                setConsent(false);
+              })
+            }
           />
         )}
         <label>

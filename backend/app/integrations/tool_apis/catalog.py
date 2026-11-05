@@ -12,7 +12,7 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.demo_runtime.runtime import TOOL_BASE_URL, tool_reply
+from app.demo_runtime.engine import TOOL_BASE_URL
 from app.integrations.checks import list_recent_checks, record_check
 from app.integrations.common import (
     DuplicateIntegrationError,
@@ -28,9 +28,10 @@ from app.integrations.schemas import (
     ToolApiUpdateIn,
     ToolApiValidationOut,
 )
-from app.orm import require_owner_id
-from app.runtime.credentials import decrypt_secret, encrypt_secret
+from app.runtime.config import get_settings
+from app.runtime.credentials import SecretCipher
 from app.runtime.outbound_urls import require_safe_integration_http_url
+from app.runtime.ownership import require_owner_id
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.secret_hints import encrypted_secret_hint
 from app.runtime.time import iso_utc, utc_now
@@ -40,7 +41,7 @@ RESPONSE_LIMIT = 1024 * 1024
 PREVIEW_LIMIT = 32 * 1024
 
 
-def _out(row: ToolApiIntegration) -> ToolApiOut:
+def _out(row: ToolApiIntegration, hint=encrypted_secret_hint) -> ToolApiOut:
     return ToolApiOut(
         id=row.id,
         name=row.name,
@@ -50,7 +51,7 @@ def _out(row: ToolApiIntegration) -> ToolApiOut:
         auth_kind=row.auth_kind,
         auth_header_name=row.auth_header_name,
         has_secret=bool(row.secret_ciphertext),
-        secret_hint=encrypted_secret_hint(row.secret_ciphertext),
+        secret_hint=hint(row.secret_ciphertext),
         parameters_schema=dict(row.parameters_schema or {}),
         query_template=dict(row.query_template or {}),
         body_template=row.body_template,
@@ -102,9 +103,13 @@ async def _invoke(
     secret: str,
     inputs: dict[str, Any],
     transport: httpx.AsyncBaseTransport | None,
+    *,
+    demo_tools=None,
 ) -> tuple[int, str, str]:
     if snapshot.url.startswith(TOOL_BASE_URL + "/"):
-        reply = await tool_reply(snapshot.url.rsplit("/", 1)[-1], inputs)
+        if demo_tools is None:
+            raise ValueError("演示工具调用尚未装配")
+        reply = await demo_tools(snapshot.url.rsplit("/", 1)[-1], inputs)
         return 200, "application/json", json.dumps(reply, ensure_ascii=False)
     url = await require_safe_integration_http_url(snapshot.url)
     params = _render(snapshot.query_template, inputs)
@@ -118,6 +123,7 @@ async def _invoke(
     async with httpx.AsyncClient(
         timeout=timeout,
         follow_redirects=False,
+        trust_env=False,
         transport=transport,
     ) as client:
         async with client.stream(
@@ -144,10 +150,19 @@ class ToolApiCatalog:
         owner_user_id: str,
         *,
         transport: httpx.AsyncBaseTransport | None = None,
+        demo_tools=None,
+        execution=None,
+        cipher=None,
     ) -> None:
+        self.cipher = cipher or SecretCipher(get_settings().fpl_secrets_key)
         self.session = session
         self.owner_user_id = require_owner_id(owner_user_id, subject="integration catalog")
         self.transport = transport
+        self.demo_tools = demo_tools
+        self.execution = execution
+
+    def _out(self, row):
+        return _out(row, self.cipher.hint)
 
     async def _get(self, integration_id: str) -> ToolApiIntegration:
         row = await self.session.get(ToolApiIntegration, integration_id)
@@ -156,21 +171,32 @@ class ToolApiCatalog:
         return row
 
     async def get(self, integration_id: str) -> ToolApiOut:
-        return _out(await self._get(integration_id))
+        return self._out(await self._get(integration_id))
 
     async def execute(
         self, integration_id: str, inputs: dict[str, Any], expected_revision: int
     ) -> dict[str, Any]:
         """Call one enabled Tool API without mutating its configuration/check history."""
         row = await self._get(integration_id)
-        snapshot = _out(row)
+        snapshot = self._out(row)
         if not snapshot.enabled or snapshot.revision != expected_revision:
             raise ValueError("工具已停用或配置已变更")
         validate(instance=inputs, schema=snapshot.parameters_schema)
-        secret = decrypt_secret(row.secret_ciphertext) if row.secret_ciphertext else ""
+        secret = self.cipher.decrypt(row.secret_ciphertext) if row.secret_ciphertext else ""
         await self.session.rollback()
         status_code, content_type, preview = await asyncio.wait_for(
-            _invoke(snapshot, secret, inputs, self.transport), timeout=30.0
+            _invoke(
+                snapshot,
+                secret,
+                inputs,
+                self.transport,
+                **(
+                    {"demo_tools": self.demo_tools}
+                    if self.demo_tools is not None and snapshot.url.startswith(TOOL_BASE_URL + "/")
+                    else {}
+                ),
+            ),
+            timeout=30.0,
         )
         if not 200 <= status_code < 300:
             raise ValueError(f"远端返回 HTTP {status_code}")
@@ -207,7 +233,7 @@ class ToolApiCatalog:
             ).scalar_one()
         )
         return ToolApiCatalogOut(
-            items=[_out(row) for row in rows],
+            items=[self._out(row) for row in rows],
             overview=IntegrationOverviewOut(
                 primary_count=sum(row.enabled for row in rows),
                 failed_count=sum(row.status == "failed" for row in rows),
@@ -225,7 +251,7 @@ class ToolApiCatalog:
             url=body.url,
             auth_kind=body.auth_kind,
             auth_header_name=body.auth_header_name,
-            secret_ciphertext=encrypt_secret(body.secret) if body.secret else "",
+            secret_ciphertext=self.cipher.encrypt(body.secret) if body.secret else "",
             parameters_schema=body.parameters_schema,
             query_template=body.query_template,
             body_template=body.body_template,
@@ -240,19 +266,19 @@ class ToolApiCatalog:
             await self.session.rollback()
             raise DuplicateIntegrationError("工具 API 名称已存在") from exc
         await self.session.refresh(row)
-        return _out(row)
+        return self._out(row)
 
     async def update(self, integration_id: str, body: ToolApiUpdateIn) -> ToolApiOut:
         current = await self._get(integration_id)
         if current.revision != body.expected_revision:
             raise RevisionConflictError(
-                body.expected_revision, current.revision, _out(current).model_dump(mode="json")
+                body.expected_revision, current.revision, self._out(current).model_dump(mode="json")
             )
         secret = current.secret_ciphertext
         if body.clear_secret:
             secret = ""
         if body.secret:
-            secret = encrypt_secret(body.secret)
+            secret = self.cipher.encrypt(body.secret)
         result = await self.session.execute(
             update(ToolApiIntegration)
             .where(
@@ -285,7 +311,7 @@ class ToolApiCatalog:
             await self.session.rollback()
             latest = await self._get(integration_id)
             raise RevisionConflictError(
-                body.expected_revision, latest.revision, _out(latest).model_dump(mode="json")
+                body.expected_revision, latest.revision, self._out(latest).model_dump(mode="json")
             )
         try:
             await self.session.commit()
@@ -298,7 +324,7 @@ class ToolApiCatalog:
         current = await self._get(integration_id)
         if current.revision != expected_revision:
             raise RevisionConflictError(
-                expected_revision, current.revision, _out(current).model_dump(mode="json")
+                expected_revision, current.revision, self._out(current).model_dump(mode="json")
             )
         await self.session.execute(
             delete(IntegrationCheck).where(
@@ -318,13 +344,13 @@ class ToolApiCatalog:
             await self.session.rollback()
             latest = await self._get(integration_id)
             raise RevisionConflictError(
-                expected_revision, latest.revision, _out(latest).model_dump(mode="json")
+                expected_revision, latest.revision, self._out(latest).model_dump(mode="json")
             )
         await self.session.commit()
 
     async def validate(self, integration_id: str, inputs: dict[str, Any]) -> ToolApiValidationOut:
         row = await self._get(integration_id)
-        snapshot = _out(row)
+        snapshot = self._out(row)
         secret_ciphertext = row.secret_ciphertext
         await self.session.rollback()
         started = monotonic()
@@ -335,11 +361,28 @@ class ToolApiCatalog:
         summary = ""
         secret = ""
         try:
-            secret = decrypt_secret(secret_ciphertext) if secret_ciphertext else ""
+            secret = self.cipher.decrypt(secret_ciphertext) if secret_ciphertext else ""
             validate(instance=inputs, schema=snapshot.parameters_schema)
-            status_code, content_type, preview = await asyncio.wait_for(
-                _invoke(snapshot, secret, inputs, self.transport),
-                timeout=30.0,
+
+            async def invoke():
+                return await asyncio.wait_for(
+                    _invoke(
+                        snapshot,
+                        secret,
+                        inputs,
+                        self.transport,
+                        **(
+                            {"demo_tools": self.demo_tools}
+                            if self.demo_tools is not None
+                            and snapshot.url.startswith(TOOL_BASE_URL + "/")
+                            else {}
+                        ),
+                    ),
+                    timeout=30.0,
+                )
+
+            status_code, content_type, preview = await (
+                self.execution.run(snapshot, inputs, invoke) if self.execution else invoke()
             )
             preview = redact_sensitive(preview, [secret])
             ok = 200 <= status_code < 300

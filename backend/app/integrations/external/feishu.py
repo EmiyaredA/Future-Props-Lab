@@ -31,7 +31,7 @@ class FeishuClient:
         if self._token and monotonic() < self._expires:
             return self._token
         async with httpx.AsyncClient(
-            transport=self.transport, timeout=30, follow_redirects=False
+            transport=self.transport, timeout=30, follow_redirects=False, trust_env=False
         ) as client:
             response = await client.post(
                 BASE + "/auth/v3/tenant_access_token/internal",
@@ -76,7 +76,7 @@ class FeishuClient:
         for attempt in range(2):
             token = await self.token()
             async with httpx.AsyncClient(
-                transport=self.transport, timeout=60, follow_redirects=False
+                transport=self.transport, timeout=60, follow_redirects=False, trust_env=False
             ) as client:
                 response = await client.request(
                     method, BASE + path, headers={"Authorization": "Bearer " + token}, **kwargs

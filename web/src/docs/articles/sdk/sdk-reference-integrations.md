@@ -26,6 +26,7 @@
 | [skill_version_markdown](#skill-version-markdown) | `GET /v1/integrations/skills/{skill_id}/versions/{version}/skill-md` |
 | [tool_apis](#tool-apis) | `GET /v1/integrations/tool-apis` |
 | [tool_api](#tool-api) | `GET /v1/integrations/tool-apis/{integration_id}` |
+| [validation_attempts](#validation-attempts) | `GET /v1/integrations/validation-attempts` |
 | [update_connection](#update-connection) | `PATCH /v1/integrations/external-connections/{connection_id}` |
 | [update_mcp](#update-mcp) | `PATCH /v1/integrations/mcp/{integration_id}` |
 | [update_skill](#update-skill) | `PATCH /v1/integrations/skills/{skill_id}` |
@@ -39,6 +40,7 @@
 | [add_skill_version](#add-skill-version) | `POST /v1/integrations/skills/{skill_id}/versions` |
 | [create_tool_api](#create-tool-api) | `POST /v1/integrations/tool-apis` |
 | [validate_tool_api](#validate-tool-api) | `POST /v1/integrations/tool-apis/{integration_id}/validate` |
+| [reconcile_validation](#reconcile-validation) | `POST /v1/integrations/validation-attempts/{attempt_id}/reconcile` |
 
 ## delete_mcp {#delete-mcp}
 
@@ -366,6 +368,25 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `ToolApiOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## validation_attempts {#validation-attempts}
+
+`client.integrations.validation_attempts(...)`
+
+**接口**：`GET /v1/integrations/validation-attempts`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`configuration.manage`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `offset` | query | integer | 否 |
+
+**响应**：
+- `200` · `application/json` · `ValidationAttemptListOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -702,5 +723,24 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `ToolApiValidationOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## reconcile_validation {#reconcile-validation}
+
+`client.integrations.reconcile_validation(...)`
+
+**接口**：`POST /v1/integrations/validation-attempts/{attempt_id}/reconcile`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`configuration.manage`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `attempt_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `ValidationReconcileOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。

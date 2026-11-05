@@ -18,6 +18,7 @@ from app.apps.agent_workbench.routes import router
 from app.apps.agent_workbench.sync.projection import apply_batch
 from app.apps.agent_workbench.sync.runner import WorkbenchSyncRunner
 from app.capabilities.agents.sessions import get_adapter
+from app.capabilities.agents.sessions.access import LocalSourceAccess
 from app.capabilities.identity.principal import StudioPrincipal
 from app.console.governance.workbench_access import workbench_actor_allowed
 from app.console.models import User
@@ -121,6 +122,7 @@ async def store(tmp_path):
             )
         await db.commit()
     application = FastAPI()
+    application.state.workbench_native = LocalSourceAccess()
     application.include_router(router, prefix="/v1")
 
     async def session_dependency():
@@ -221,6 +223,14 @@ async def test_history_incremental_restart_search_and_private_sources(store, tmp
             "/v1/agent-workbench/sources",
             headers={"x-private": "yes", "x-owner": "beta"},
             json={"agent_id": "codex", "label": "other", "root": str(child)},
+        )
+    ).status_code == 409
+    # Changing the parser must not let another account claim the same native files.
+    assert (
+        await client.post(
+            "/v1/agent-workbench/sources",
+            headers={"x-private": "yes", "x-owner": "beta"},
+            json={"agent_id": "claude-code", "label": "other parser", "root": str(child)},
         )
     ).status_code == 409
     assert (

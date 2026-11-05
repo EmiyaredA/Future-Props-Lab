@@ -14,14 +14,8 @@ from app.apps.motion_compositor.schemas import (
     ProjectOut,
     ProjectPatchIn,
 )
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.project_transactions import (
-    creating_project_layout,
-    deleting_project_layout,
-)
-from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.motion_document import MotionComposition
-from app.runtime.config import get_settings
+from app.runtime.ids import new_id
 from app.runtime.project_records import (
     delete_revisioned_project,
     load_owned_project,
@@ -36,6 +30,10 @@ class MotionNotFound(Exception):
 
 
 class MotionInvalid(Exception):
+    pass
+
+
+class MotionUnavailable(Exception):
     pass
 
 
@@ -182,7 +180,7 @@ class MotionProjects:
     def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
         self.session = session
         self.owner_user_id = owner_user_id
-        self.storage = AssetStorage(get_settings())
+        self.resources = session.info["motion_project_resources"](session, owner_user_id)
 
     async def row(self, project_id: str) -> MotionProject:
         return await load_owned_project(
@@ -209,16 +207,10 @@ class MotionProjects:
         return project_out(await self.row(project_id))
 
     async def create(self, body: ProjectCreateIn) -> ProjectOut:
-        row = MotionProject(owner_user_id=self.owner_user_id, title=body.title)
-        self.session.add(row)
-        await self.session.flush()
-        async with creating_project_layout(
-            self.session,
-            self.storage,
-            "motion-compositor",
-            row.id,
-            owner_user_id=self.owner_user_id,
-        ):
+        row = MotionProject(id=new_id(), owner_user_id=self.owner_user_id, title=body.title)
+        async with self.resources.create_layout(row.id):
+            self.session.add(row)
+            await self.session.flush()
             self.session.add(
                 MotionDocument(
                     project_id=row.id,
@@ -247,14 +239,12 @@ class MotionProjects:
         return await self.get(project_id)
 
     async def delete(self, project_id: str, expected_revision: int) -> None:
-        await self.row(project_id)
-        async with deleting_project_layout(
-            self.session,
-            self.storage,
-            "motion-compositor",
-            project_id,
-            owner_user_id=self.owner_user_id,
-        ):
+        current = await self.row(project_id)
+        if current.revision != expected_revision:
+            raise RevisionConflictError(
+                expected_revision, current.revision, project_out(current).model_dump(mode="json")
+            )
+        async with self.resources.delete_layout(project_id, expected_revision):
             await delete_revisioned_project(
                 self.session,
                 MotionProject,
@@ -272,31 +262,6 @@ class MotionProjects:
         return DocumentOut(
             revision=row.revision, document=MotionComposition.model_validate(row.document)
         )
-
-    async def _validate_assets(self, project_id: str, document: MotionComposition) -> None:
-        ids = {layer.asset_id for layer in document.layers if layer.asset_id}
-        if not ids:
-            return
-        rows = list(
-            (
-                await self.session.execute(
-                    select(VisualAsset).where(
-                        VisualAsset.id.in_(ids),
-                        VisualAsset.motion_compositor_project_id == project_id,
-                        VisualAsset.owner_user_id == self.owner_user_id,
-                    )
-                )
-            ).scalars()
-        )
-        assets = {row.id: row for row in rows}
-        if set(assets) != ids:
-            raise MotionInvalid("文档引用了不属于此项目的素材")
-        if any(
-            assets[layer.asset_id].media_kind != layer.kind
-            for layer in document.layers
-            if layer.asset_id
-        ):
-            raise MotionInvalid("素材类型与图层类型不一致")
 
     async def apply(self, project_id: str, body: OperationBatchIn) -> DocumentOut:
         await self.row(project_id)
@@ -368,7 +333,7 @@ class MotionProjects:
             else:
                 raise MotionInvalid("不支持的编辑操作")
         document = MotionComposition.model_validate(result)
-        await self._validate_assets(project_id, document)
+        await self.resources.validate_assets(project_id, document)
         serialized = document.model_dump(mode="json", by_alias=True)
         write = await self.session.execute(
             update(MotionDocument)

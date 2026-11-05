@@ -11,11 +11,11 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.incoming import IncomingFile
-from app.capabilities.asset_store.library import AssetError
-from app.capabilities.asset_store.thumbnails import ThumbnailSize, derived_thumbnail
 from app.llm.models import ModelTestAttachment, ModelTestConversation
 from app.llm.schemas.model_test import ModelTestAttachmentListOut, ModelTestAttachmentOut
 from app.runtime.config import Settings
+from app.runtime.image_sizes import ThumbnailSize
+from app.runtime.raster import RasterPreviewError, derived_thumbnail
 from app.runtime.time import iso_utc
 
 MAX_ATTACHMENTS_PER_MESSAGE = 5
@@ -243,8 +243,8 @@ class ModelTestAttachments:
             )
             try:
                 path = await derived_thumbnail(path, target, size)
-            except AssetError as exc:
-                raise AttachmentError(str(exc), code=exc.code, status=exc.status) from exc
+            except RasterPreviewError as exc:
+                raise AttachmentError(str(exc), code=exc.code, status=422) from exc
         return row, path
 
     async def encoded(self, row: ModelTestAttachment) -> str:

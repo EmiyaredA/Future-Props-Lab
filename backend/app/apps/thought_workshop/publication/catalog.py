@@ -1,9 +1,9 @@
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import load_only
 
+from app.apps.thought_workshop.account_directory import author as find_author
 from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
 from app.apps.thought_workshop.schemas.workshop import ThoughtNoteSummary
-from app.console.models import User
 
 from .access import (
     can_certify,
@@ -81,7 +81,7 @@ async def visible(session, principal, pub, query="", include_content=False):
 async def output(session, principal, pub, rows=None, manager=None):
     if rows is None:
         rows, manager = await visible(session, principal, pub)
-    author = await session.get(User, pub.publisher_id)
+    author = await find_author(session, pub.publisher_id)
     favorite = await session.get(CommunityFavorite, (principal.user_id, "community/" + pub.id))
     if not favorite:
         favorite = (

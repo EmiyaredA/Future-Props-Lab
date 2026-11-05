@@ -1,0 +1,66 @@
+# Overlay for Creative acceptance. Combine with compose.yaml and integrations.compose.yaml.
+services:
+  creative:
+    image: ${FPL_CREATIVE_IMAGE:?Build and select a Creative release}
+    user: "${FPL_SERVICE_UID}:${FPL_SERVICE_GID}"
+    init: true
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    cpus: 1
+    mem_limit: 768m
+    stop_grace_period: 45s
+    tmpfs:
+      - /tmp:mode=1777,size=64m
+    command: [serve, --creative-install-credentials, /run/fpl/creative-install.json]
+    volumes:
+      - type: bind
+        source: ${FPL_CREATIVE_STATE:?Select isolated Creative state}
+        target: /state
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${FPL_IDENTITY_PUBLIC_KEY:?Select Identity public key}
+        target: /run/fpl/identity-public.pem
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${FPL_CREATIVE_IDENTITY_TOKEN:?Select the Creative identity credential}
+        target: /run/fpl/identity-token
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${FPL_CREATIVE_INSTALL_CREDENTIALS:?Select protected installation credentials}
+        target: /run/fpl/creative-install.json
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/ready', timeout=2)"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+    networks: [private]
+  integrations:
+    command: [serve, --creative-install-credentials, /run/fpl/creative-install.json]
+    volumes:
+      - type: bind
+        source: ${FPL_CREATIVE_INSTALL_CREDENTIALS:?Select protected installation credentials}
+        target: /run/fpl/creative-install.json
+        read_only: true
+        bind:
+          create_host_path: false
+  gateway:
+    command: [serve, --creative-bridge-ingress, /run/fpl/creative-bridge-ingress]
+    tmpfs:
+      - /run/fpl-bridge:mode=0700,uid=${FPL_SERVICE_UID},gid=${FPL_SERVICE_GID},size=1m
+    volumes:
+      - type: bind
+        source: ${FPL_CREATIVE_BRIDGE_INGRESS:?Select the owner-only Creative bridge credential}
+        target: /run/fpl/creative-bridge-ingress
+        read_only: true
+        bind:
+          create_host_path: false

@@ -1,30 +1,25 @@
 from __future__ import annotations
 
 import asyncio
-import re
-import unicodedata
-from difflib import SequenceMatcher
 
 import httpx
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.apps.galgame_workshop.assets.asr_records import AsrRecords, transcription_task_out
+from app.apps.galgame_workshop.assets.transcript_records import write_transcript
+from app.apps.galgame_workshop.assets.voice_matching import match_dialogue
 from app.apps.galgame_workshop.models import (
     GalgameAssetMetadata,
     GalgameAssetSettings,
     GalgameAssetTranscriptionTask,
-    GalgameWorkshopProject,
 )
 from app.apps.galgame_workshop.schemas import (
-    GalgameAsrSettingsOut,
-    GalgameAsrSettingsPatchIn,
     GalgameStoryDocumentPutIn,
     GalgameTranscriptionCreateIn,
     GalgameTranscriptionTaskListOut,
-    GalgameTranscriptionTaskOut,
     GalgameTranscriptPatchIn,
     GalgameVoiceMatchIn,
-    GalgameVoiceMatchItem,
     GalgameVoiceMatchOut,
 )
 from app.apps.galgame_workshop.story.story import GalgameStoryDocuments
@@ -40,126 +35,19 @@ from app.llm.providers.senseaudio_asr import (
     SenseAudioAsrFileTooLarge,
 )
 from app.llm.providers.transcription import transcribe_model_audio
-from app.orm import bind_owner
+from app.llm.transcription_catalog import supports_asr, transcription_model_ready
 from app.runtime.config import Settings, get_settings
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal
+from app.runtime.ownership import bind_owner
 from app.runtime.polling_runner import PollingTaskRunner
-from app.runtime.revisions import RevisionConflictError
 from app.runtime.task_admission import TaskAdmission
-from app.runtime.time import iso_utc, utc_now
+from app.runtime.time import utc_now
 
 
-def _task_out(row: GalgameAssetTranscriptionTask) -> GalgameTranscriptionTaskOut:
-    return GalgameTranscriptionTaskOut(
-        id=row.id,
-        assetId=row.asset_id,
-        providerName=row.provider_name,
-        modelSlug=row.model_slug,
-        language=row.language,
-        force=row.force,
-        status=row.status,
-        resultText=row.result_text,
-        resultSegments=list(row.result_segments or []),
-        error=row.error,
-        revision=row.revision,
-        createdAt=iso_utc(row.created_at),
-        startedAt=iso_utc(row.started_at) if row.started_at else None,
-        finishedAt=iso_utc(row.finished_at) if row.finished_at else None,
-    )
-
-
-def _model_supports_asr(model: ModelEntry, provider: ModelProvider | None) -> bool:
-    return bool(
-        provider is not None
-        and provider.kind in {"openai", "senseaudio_asr", "senseaudio_asr_pro"}
-        and provider.enabled
-        and model.enabled
-        and (
-            "speech_recognition" in list(model.capabilities or [])
-            or "speech_recognition" in list(model.categories or [])
-        )
-    )
-
-
-class GalgameAsrService:
+class GalgameAsrService(AsrRecords):
     def __init__(self, session: AsyncSession) -> None:
-        self.session = session
-
-    async def _project(self, project_id: str) -> None:
-        if await self.session.get(GalgameWorkshopProject, project_id) is None:
-            raise AssetError("项目不存在", code="not_found", status=404)
-
-    async def _settings(self, project_id: str) -> GalgameAssetSettings:
-        await self._project(project_id)
-        row = await self.session.get(GalgameAssetSettings, project_id)
-        if row is None:
-            row = GalgameAssetSettings(project_id=project_id)
-            self.session.add(row)
-            await self.session.commit()
-            await self.session.refresh(row)
-        return row
-
-    async def _settings_out(self, row: GalgameAssetSettings) -> GalgameAsrSettingsOut:
-        model = await self.session.get(ModelEntry, row.asr_model_id) if row.asr_model_id else None
-        provider = (
-            await self.session.get(ModelProvider, model.provider_id) if model is not None else None
-        )
-        return GalgameAsrSettingsOut(
-            modelId=row.asr_model_id,
-            modelReady=bool(model and _model_supports_asr(model, provider)),
-            defaultLanguage=row.default_language,
-            concurrency=row.concurrency,
-            revision=row.revision,
-        )
-
-    async def get_settings(self, project_id: str) -> GalgameAsrSettingsOut:
-        return await self._settings_out(await self._settings(project_id))
-
-    async def patch_settings(
-        self, project_id: str, body: GalgameAsrSettingsPatchIn
-    ) -> GalgameAsrSettingsOut:
-        await self._settings(project_id)
-        if body.model_id is not None:
-            model = await self.session.get(ModelEntry, body.model_id)
-            provider = (
-                await self.session.get(ModelProvider, model.provider_id)
-                if model is not None
-                else None
-            )
-            if model is None or not _model_supports_asr(model, provider):
-                raise AssetError(
-                    "只能选择已启用的 OpenAI 兼容或 SenseAudio 语音识别模型",
-                    code="asr_model_unavailable",
-                )
-        values: dict[str, object] = {
-            "revision": body.expected_revision + 1,
-            "updated_at": utc_now(),
-        }
-        if "model_id" in body.model_fields_set:
-            values["asr_model_id"] = body.model_id
-        if body.default_language is not None:
-            values["default_language"] = body.default_language
-        if body.concurrency is not None:
-            values["concurrency"] = body.concurrency
-        result = await self.session.execute(
-            update(GalgameAssetSettings)
-            .where(
-                GalgameAssetSettings.project_id == project_id,
-                GalgameAssetSettings.revision == body.expected_revision,
-            )
-            .values(**values)
-        )
-        if result.rowcount != 1:
-            await self.session.rollback()
-            current = await self._settings(project_id)
-            raise RevisionConflictError(
-                body.expected_revision,
-                current.revision,
-                (await self._settings_out(current)).model_dump(mode="json", by_alias=True),
-            )
-        await self.session.commit()
-        return await self._settings_out(await self._settings(project_id))
+        super().__init__(session, lambda model_id: transcription_model_ready(session, model_id))
 
     async def create_tasks(
         self,
@@ -177,7 +65,7 @@ class GalgameAsrService:
         provider = (
             await self.session.get(ModelProvider, model.provider_id) if model is not None else None
         )
-        if model is None or not _model_supports_asr(model, provider):
+        if model is None or not supports_asr(model, provider):
             raise AssetError("语音识别模型尚未就绪", code="asr_model_unavailable")
         query = (
             select(VisualAsset, GalgameAssetMetadata)
@@ -215,23 +103,9 @@ class GalgameAsrService:
         await self.session.commit()
         for task in tasks:
             await self.session.refresh(task)
-        return GalgameTranscriptionTaskListOut(items=[_task_out(task) for task in tasks])
-
-    async def list_tasks(self, project_id: str) -> GalgameTranscriptionTaskListOut:
-        await self._project(project_id)
-        rows = list(
-            (
-                await self.session.execute(
-                    select(GalgameAssetTranscriptionTask)
-                    .where(GalgameAssetTranscriptionTask.project_id == project_id)
-                    .order_by(GalgameAssetTranscriptionTask.created_at.desc())
-                    .limit(500)
-                )
-            )
-            .scalars()
-            .all()
+        return GalgameTranscriptionTaskListOut(
+            items=[transcription_task_out(task) for task in tasks]
         )
-        return GalgameTranscriptionTaskListOut(items=[_task_out(row) for row in rows])
 
     async def patch_transcript(
         self, project_id: str, asset_id: str, body: GalgameTranscriptPatchIn
@@ -246,39 +120,7 @@ class GalgameAsrService:
             or asset.media_kind != "audio"
         ):
             raise AssetError("语音素材不存在", code="not_found", status=404)
-        result = await self.session.execute(
-            update(GalgameAssetMetadata)
-            .where(
-                GalgameAssetMetadata.asset_id == asset_id,
-                GalgameAssetMetadata.transcript_revision == body.expected_revision,
-            )
-            .values(
-                transcript=body.text.strip(),
-                transcript_language=body.language or metadata.transcript_language,
-                transcript_status="ready",
-                transcript_source="manual",
-                transcript_revision=body.expected_revision + 1,
-                transcript_segments=[],
-                updated_at=utc_now(),
-            )
-        )
-        if result.rowcount != 1:
-            await self.session.rollback()
-            current = await self.session.get(GalgameAssetMetadata, asset_id)
-            raise RevisionConflictError(
-                body.expected_revision,
-                current.transcript_revision if current else 0,
-                {"assetId": asset_id, "transcript": current.transcript if current else None},
-            )
-        await self.session.commit()
-        await self.session.refresh(metadata)
-        return {
-            "assetId": asset_id,
-            "transcript": metadata.transcript,
-            "language": metadata.transcript_language,
-            "source": metadata.transcript_source,
-            "revision": metadata.transcript_revision,
-        }
+        return await write_transcript(self.session, metadata, asset_id, body)
 
     async def match_dialogue(
         self, project_id: str, body: GalgameVoiceMatchIn
@@ -296,63 +138,7 @@ class GalgameAsrService:
         if body.asset_ids is not None:
             query = query.where(VisualAsset.id.in_(body.asset_ids))
         voice_rows = (await self.session.execute(query.order_by(VisualAsset.display_name))).all()
-        payload = story.document.model_dump(mode="json", by_alias=True)
-        dialogue_blocks: list[tuple[dict[str, object], str]] = []
-        for chapter in payload["chapters"]:
-            for fragment in chapter["fragments"]:
-                for block in fragment["blocks"]:
-                    if block.get("type") == "dialogue" and str(block.get("text", "")).strip():
-                        dialogue_blocks.append((block, str(block["text"])))
-        story_asset_by_file = {
-            asset["fileId"]: asset for asset in payload["assets"] if asset["type"] == "audio"
-        }
-        requested_block_ids = set(body.block_ids) if body.block_ids is not None else None
-        candidates: list[tuple[float, str, str, dict[str, object], VisualAsset]] = []
-        for asset, metadata in voice_rows:
-            normalized_transcript = _normalized_text(metadata.transcript or "")
-            if not normalized_transcript:
-                continue
-            for block, text in dialogue_blocks:
-                if requested_block_ids is not None and str(block["id"]) not in requested_block_ids:
-                    continue
-                similarity = SequenceMatcher(
-                    None, normalized_transcript, _normalized_text(text)
-                ).ratio()
-                if similarity >= body.minimum_similarity:
-                    candidates.append(
-                        (-similarity, asset.display_name.casefold(), str(block["id"]), block, asset)
-                    )
-        candidates.sort(key=lambda item: (item[0], item[1], item[2]))
-        used_assets: set[str] = set()
-        used_blocks: set[str] = set()
-        matches: list[GalgameVoiceMatchItem] = []
-        for negative_similarity, _filename, block_id, block, asset in candidates:
-            if asset.id in used_assets or block_id in used_blocks:
-                continue
-            story_asset = story_asset_by_file.get(asset.id)
-            if story_asset is None:
-                story_asset = {
-                    "id": f"voice-{asset.id}",
-                    "type": "audio",
-                    "role": "voiceLine",
-                    "label": asset.display_name,
-                    "fileId": asset.id,
-                    "status": "ready",
-                }
-                payload["assets"].append(story_asset)
-                story_asset_by_file[asset.id] = story_asset
-            elif story_asset.get("role") != "voiceLine":
-                continue
-            block["voiceAssetId"] = story_asset["id"]
-            used_assets.add(asset.id)
-            used_blocks.add(block_id)
-            matches.append(
-                GalgameVoiceMatchItem(
-                    assetId=asset.id,
-                    blockId=block_id,
-                    similarity=round(-negative_similarity, 6),
-                )
-            )
+        payload, matches, unmatched = match_dialogue(story.document, voice_rows, body)
         saved = await GalgameStoryDocuments(self.session).put(
             project_id,
             GalgameStoryDocumentPutIn.model_validate(
@@ -365,15 +151,8 @@ class GalgameAsrService:
         return GalgameVoiceMatchOut(
             storyRevision=saved.revision,
             matches=matches,
-            unmatchedAssetIds=[
-                asset.id for asset, _metadata in voice_rows if asset.id not in used_assets
-            ],
+            unmatchedAssetIds=unmatched,
         )
-
-
-def _normalized_text(value: str) -> str:
-    normalized = unicodedata.normalize("NFKC", value).casefold()
-    return re.sub(r"[\W_]+", "", normalized, flags=re.UNICODE)
 
 
 class GalgameAsrRunner(PollingTaskRunner):
@@ -464,7 +243,7 @@ class GalgameAsrRunner(PollingTaskRunner):
                     asset is None
                     or metadata is None
                     or model is None
-                    or not _model_supports_asr(model, provider)
+                    or not supports_asr(model, provider)
                 ):
                     task.status = "failed"
                     task.error = "素材、供应商或模型已不可用"

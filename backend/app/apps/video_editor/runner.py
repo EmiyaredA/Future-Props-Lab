@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import subprocess
 import threading
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -10,193 +9,30 @@ from typing import Literal
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.apps.video_editor.asset_bakes import insert_baked_asset_in_organization
+from app.apps.video_editor.bake_organization import insert_baked_asset_in_organization
 from app.apps.video_editor.clip_merging.runner import process_clip_merge
-from app.apps.video_editor.media import probe_media
 from app.apps.video_editor.models import (
     VideoEditorAssetMetadata,
     VideoEditorProject,
     VideoEditorTask,
 )
-from app.apps.video_editor.rendering import PRESETS
 from app.apps.video_editor.schemas import parse_timeline_document
 from app.apps.video_editor.segment_runner import VideoEditorSegmentTaskRunner
 from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from app.capabilities.media_rendering.chroma_key import apply_chroma_key
+from app.capabilities.media_rendering.chroma_key import bake_image
 from app.capabilities.media_rendering.render_engine import RenderCancelled, render_document
 from app.capabilities.media_rendering.timeline_document import VideoEditorChromaKey
-from app.orm import bind_owner, require_owner_id
+from app.capabilities.media_rendering.video_bake_document import bake_video_document
+from app.capabilities.media_rendering.video_derivatives import prepare_media, probe_media
+from app.capabilities.media_rendering.video_output import verify_video_output
 from app.runtime.config import Settings, get_settings
 from app.runtime.db import SessionLocal
+from app.runtime.ownership import bind_owner, require_owner_id
 from app.runtime.polling_runner import PollingTaskRunner
 from app.runtime.time import utc_now
-
-
-def _run(args: list[str]) -> None:
-    try:
-        result = subprocess.run(args, check=True, capture_output=True, text=True)
-    except FileNotFoundError as exc:
-        raise RuntimeError(f"缺少媒体处理程序：{args[0]}") from exc
-    except subprocess.CalledProcessError as exc:
-        raise RuntimeError((exc.stderr or "媒体处理失败")[-4000:]) from exc
-    if result.returncode:
-        raise RuntimeError((result.stderr or "媒体处理失败")[-4000:])
-
-
-def _fraction(value: object) -> float:
-    text = str(value or "0")
-    numerator, separator, denominator = text.partition("/")
-    if not separator:
-        return float(numerator or 0)
-    divisor = float(denominator or 0)
-    return float(numerator or 0) / divisor if divisor else 0.0
-
-
-def _prepare_media(
-    source: Path, asset: VisualAsset, derived: Path, probe: dict | None = None
-) -> tuple[dict, str | None, str | None, str | None, str]:
-    fingerprint = sha256_file(source)
-    proxy: str | None = None
-    thumbnail: str | None = None
-    waveform: str | None = None
-    if asset.media_kind == "font":
-        return {"mediaKind": "font"}, proxy, thumbnail, waveform, fingerprint
-    probe = probe if probe is not None else probe_media(source)
-    if asset.media_kind == "video":
-        video_stream = next(
-            (item for item in probe.get("streams", []) if item.get("codec_type") == "video"), {}
-        )
-        alpha = str(video_stream.get("pix_fmt") or "").startswith(
-            ("yuva", "rgba", "bgra", "argb", "abgr")
-        )
-        proxy = f"{asset.id}-proxy.{'webm' if alpha else 'mp4'}"
-        thumbnail = f"{asset.id}-thumbnail.png"
-        proxy_args = [
-            "ffmpeg",
-            "-hide_banner",
-            "-loglevel",
-            "error",
-            "-i",
-            str(source),
-            "-vf",
-            "scale=960:540:force_original_aspect_ratio=decrease,pad=960:540:(ow-iw)/2:(oh-ih)/2:color=black@0",
-        ]
-        if alpha:
-            proxy_args.extend(
-                [
-                    "-c:v",
-                    "libvpx-vp9",
-                    "-crf",
-                    "30",
-                    "-b:v",
-                    "0",
-                    "-pix_fmt",
-                    "yuva420p",
-                    "-auto-alt-ref",
-                    "0",
-                    "-c:a",
-                    "libopus",
-                ]
-            )
-        else:
-            proxy_args.extend(
-                [
-                    "-c:v",
-                    "libx264",
-                    "-preset",
-                    "veryfast",
-                    "-crf",
-                    "24",
-                    "-pix_fmt",
-                    "yuv420p",
-                    "-c:a",
-                    "aac",
-                    "-ar",
-                    "48000",
-                    "-movflags",
-                    "+faststart",
-                ]
-            )
-        proxy_args.extend(["-y", str(derived / proxy)])
-        _run(proxy_args)
-        _run(
-            [
-                "ffmpeg",
-                "-hide_banner",
-                "-loglevel",
-                "error",
-                "-ss",
-                "0",
-                "-i",
-                str(source),
-                "-frames:v",
-                "1",
-                "-vf",
-                "scale=480:-2",
-                "-y",
-                str(derived / thumbnail),
-            ]
-        )
-    elif asset.media_kind == "image":
-        thumbnail = f"{asset.id}-thumbnail.png"
-        _run(
-            [
-                "ffmpeg",
-                "-hide_banner",
-                "-loglevel",
-                "error",
-                "-i",
-                str(source),
-                "-vf",
-                "scale=480:-2",
-                "-frames:v",
-                "1",
-                "-y",
-                str(derived / thumbnail),
-            ]
-        )
-    elif asset.media_kind == "audio":
-        proxy = f"{asset.id}-proxy.m4a"
-        waveform = f"{asset.id}-waveform.png"
-        _run(
-            [
-                "ffmpeg",
-                "-hide_banner",
-                "-loglevel",
-                "error",
-                "-i",
-                str(source),
-                "-vn",
-                "-c:a",
-                "aac",
-                "-ar",
-                "48000",
-                "-b:a",
-                "128k",
-                "-y",
-                str(derived / proxy),
-            ]
-        )
-        _run(
-            [
-                "ffmpeg",
-                "-hide_banner",
-                "-loglevel",
-                "error",
-                "-i",
-                str(source),
-                "-filter_complex",
-                "showwavespic=s=1200x160:colors=7c6cff",
-                "-frames:v",
-                "1",
-                "-y",
-                str(derived / waveform),
-            ]
-        )
-    return probe, proxy, thumbnail, waveform, fingerprint
 
 
 class VideoEditorRunner(PollingTaskRunner):
@@ -325,7 +161,7 @@ class VideoEditorRunner(PollingTaskRunner):
                     set_task=self._set,
                     cancel_watch=self._cancel_watch,
                     raise_if_cancelled=self._raise_if_cancelled,
-                    prepare_media=_prepare_media,
+                    prepare_media=prepare_media,
                 )
             elif kind == "asset_bake":
                 await self._process_asset_bake(task_id)
@@ -381,7 +217,7 @@ class VideoEditorRunner(PollingTaskRunner):
             )
             derived.mkdir(parents=True, exist_ok=True)
             probe, proxy, thumbnail, waveform, fingerprint = await asyncio.to_thread(
-                _prepare_media, source, asset, derived, probe
+                prepare_media, source, asset.id, asset.media_kind, derived, probe
             )
             metadata = await session.get(VideoEditorAssetMetadata, asset_id)
             assert metadata is not None
@@ -479,46 +315,9 @@ class VideoEditorRunner(PollingTaskRunner):
                 )
             finally:
                 watch.cancel()
-            probe = await asyncio.to_thread(probe_media, output)
-            width, height, fps = PRESETS[str(payload["preset"])]
-            video = next(
-                (
-                    stream
-                    for stream in probe.get("streams", [])
-                    if stream.get("codec_type") == "video"
-                ),
-                None,
+            probe = await asyncio.to_thread(
+                verify_video_output, output, str(payload["preset"]), int(detail["durationUs"])
             )
-            audio = next(
-                (
-                    stream
-                    for stream in probe.get("streams", [])
-                    if stream.get("codec_type") == "audio"
-                ),
-                None,
-            )
-            if not video or not audio:
-                raise RuntimeError("成片缺少 H.264 画面或 AAC 音轨")
-            if (
-                video.get("codec_name") != "h264"
-                or audio.get("codec_name") != "aac"
-                or video.get("width") != width
-                or video.get("height") != height
-                or video.get("pix_fmt") != "yuv420p"
-                or int(audio.get("sample_rate") or 0) != 48_000
-            ):
-                raise RuntimeError("成片规格校验失败")
-            expected_duration_us = int(detail["durationUs"])
-            expected_frames = round(expected_duration_us / 1_000_000 * fps)
-            actual_frames = int(video.get("nb_frames") or 0)
-            actual_fps = _fraction(video.get("avg_frame_rate"))
-            duration_delta_us = abs(int(probe.get("durationUs") or 0) - expected_duration_us)
-            if (
-                actual_frames != expected_frames
-                or abs(actual_fps - fps) > 0.001
-                or duration_delta_us > max(round(1_000_000 / fps), 2_000)
-            ):
-                raise RuntimeError("成片帧数、帧率或时长校验失败")
             async with self.session_factory() as session:
                 bind_owner(session, owner_user_id)
                 project = await session.get(VideoEditorProject, project_id)
@@ -560,8 +359,6 @@ class VideoEditorRunner(PollingTaskRunner):
     async def _process_asset_bake(self, task_id: str) -> None:
         from uuid import uuid4
 
-        from PIL import Image
-
         async with self.session_factory() as session:
             task = await self._get(session, task_id)
             if task is None:
@@ -597,76 +394,15 @@ class VideoEditorRunner(PollingTaskRunner):
                     output = temp_root / "baked.png"
                     await self._set(task_id, progress=20)
 
-                    def bake_image() -> None:
-                        layer = Image.open(source).convert("RGBA")
-                        keyed = apply_chroma_key(layer, chroma)
-                        keyed.save(output, format="PNG")
-
-                    await asyncio.to_thread(bake_image)
+                    probe = await asyncio.to_thread(bake_image, source, output, chroma)
                     await self._raise_if_cancelled(task_id)
                     content_type = "image/png"
                     filename = f"{display_name}-baked-{task_id[:8]}.png"
                     extensions = {".png"}
-                    probe: dict = {
-                        "mediaKind": "image",
-                        "durationUs": 5_000_000,
-                        "streams": [{"codec_type": "video", "width": 0, "height": 0}],
-                    }
-                    with Image.open(output) as baked:
-                        probe["streams"][0]["width"] = baked.width
-                        probe["streams"][0]["height"] = baked.height
                 else:
                     output = temp_root / "baked.mp4"
-                    document = parse_timeline_document(
-                        {
-                            "settings": {
-                                "width": 1920,
-                                "height": 1080,
-                                "fps": 30,
-                                "backgroundColor": "#000000",
-                            },
-                            "tracks": [
-                                {
-                                    "id": "bake-visual",
-                                    "kind": "visual",
-                                    "name": "画面",
-                                    "order": 0,
-                                    "locked": False,
-                                    "hidden": False,
-                                    "muted": False,
-                                    "clips": [
-                                        {
-                                            "id": str(uuid4()),
-                                            "trackId": "bake-visual",
-                                            "kind": "video",
-                                            "name": display_name,
-                                            "timelineStartUs": 0,
-                                            "durationUs": max(1, duration_us),
-                                            "sourceInUs": 0,
-                                            "assetId": source_asset_id,
-                                            "fitMode": "contain",
-                                            "volume": 1,
-                                            "muted": True,
-                                            "chromaKey": chroma.model_dump(
-                                                mode="json", by_alias=True
-                                            ),
-                                            "transform": {
-                                                "x": 960,
-                                                "y": 540,
-                                                "scaleX": 1,
-                                                "scaleY": 1,
-                                                "rotation": 0,
-                                                "opacity": 1,
-                                                "anchor": "center",
-                                                "brightness": 1,
-                                            },
-                                            "keyframes": [],
-                                        }
-                                    ],
-                                }
-                            ],
-                            "assetOrganization": {"folders": [], "rootAssetIds": []},
-                        }
+                    document = bake_video_document(
+                        source_asset_id, display_name, duration_us, str(uuid4()), chroma
                     )
                     loop = asyncio.get_running_loop()
 

@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from sqlalchemy import select
 
 from app.apps.thought_workshop.errors import ThoughtError
@@ -7,6 +9,7 @@ from app.apps.thought_workshop.multitable.content import project as project_cont
 from app.apps.thought_workshop.notes import Notes, note_out
 from app.apps.thought_workshop.schemas.document import file_ids
 from app.apps.thought_workshop.schemas.workshop import ThoughtNotePut
+from app.runtime.revisions import RevisionConflictError
 
 from .access import article, bind_source, capabilities, missing, publication
 from .catalog import directory as catalog_directory
@@ -29,10 +32,26 @@ async def get_note(session, principal, pub_id, note_id):
     return CommunityNote(note=projected, **capabilities(role), permission_revision=c.revision)
 
 
-async def save_note(session, principal, pub_id, note_id, body):
-    await begin_write(session)
+@dataclass(frozen=True)
+class NoteEdit:
+    owner: str
+    publication_revision: int
+    article_revision: int
+    role: str
+    visible_note_ids: frozenset[str]
+    body: ThoughtNotePut
+
+    def project(self, value):
+        return value.model_copy(
+            update={
+                "parent_id": value.parent_id if value.parent_id in self.visible_note_ids else None
+            }
+        )
+
+
+async def authorize_note_edit(session, principal, pub_id, note_id, body):
     pub = await publication(session, pub_id)
-    c, current, role = await article(session, principal, pub, note_id, level="edit")
+    config, current, role = await article(session, principal, pub, note_id, level="edit")
     validated = body.validated(current)
     # Retaining existing references is allowed; introducing a hidden file or note is not.
     allowed = file_ids(current.document) | set(
@@ -45,23 +64,46 @@ async def save_note(session, principal, pub_id, note_id, body):
     if not file_ids(validated.document) <= allowed:
         raise missing()
     rows, _ = await visible(session, principal, pub)
-    readable = {n.id for n, _, _ in rows}
+    edit = NoteEdit(
+        pub.owner_user_id,
+        pub.revision,
+        config.revision,
+        role,
+        frozenset(note.id for note, _, _ in rows),
+        ThoughtNotePut(**validated.model_dump(), expected_revision=body.expected_revision),
+    )
+    if current.revision != body.expected_revision:
+        raise RevisionConflictError(
+            body.expected_revision,
+            current.revision,
+            edit.project(note_out(current)).model_dump(mode="json"),
+        )
     introduced = reference_ids(validated.document) - reference_ids(current.document)
     if introduced:
         targets = await resolve(session, principal, pub_id, list(introduced))
         if any(not target.available for target in targets):
             raise missing()
-    bind_source(session, pub)
-    value = await Notes(session, pub.owner_user_id, principal.user_id).put(
-        note_id,
-        ThoughtNotePut(**validated.model_dump(), expected_revision=body.expected_revision),
-        commit=False,
+    return edit
+
+
+async def write_note_edit(session, principal, pub_id, note_id, edit):
+    bind_source(session, await publication(session, pub_id))
+    value = await Notes(session, edit.owner, principal.user_id).put(
+        note_id, edit.body, commit=False
     )
+    return CommunityNote(
+        note=edit.project(value),
+        **capabilities(edit.role),
+        permission_revision=edit.article_revision,
+    )
+
+
+async def save_note(session, principal, pub_id, note_id, body):
+    await begin_write(session)
+    edit = await authorize_note_edit(session, principal, pub_id, note_id, body)
+    result = await write_note_edit(session, principal, pub_id, note_id, edit)
     await session.commit()
-    projected = value.model_copy(
-        update={"parent_id": value.parent_id if value.parent_id in readable else None}
-    )
-    return CommunityNote(note=projected, **capabilities(role), permission_revision=c.revision)
+    return result
 
 
 async def snapshot(session, principal, pub_id):
@@ -79,7 +121,7 @@ async def snapshot(session, principal, pub_id):
         }
         for target in targets:
             try:
-                _, target_pub, _ = await TableAccess(session, principal).access(
+                _, target_pub, _, _ = await TableAccess(session, principal).access(
                     pub_id, target, parent.id
                 )
             except ThoughtError as error:

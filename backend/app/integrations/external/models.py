@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.runtime.ids import new_id
@@ -13,9 +13,7 @@ class ExternalConnection(Base):
     __table_args__ = (UniqueConstraint("owner_user_id", "name"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    owner_user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     provider: Mapped[str] = mapped_column(String(24), default="feishu")
     name: Mapped[str] = mapped_column(String(120))
     app_id: Mapped[str] = mapped_column(String(120))

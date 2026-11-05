@@ -1,16 +1,14 @@
 from fastapi import APIRouter, HTTPException, Request, Response, WebSocket
 
 from app.capabilities.identity.rate_limit import allow_attempt
-from app.console.cloud_control import access, setup
+from app.console.cloud_control import access, preferences, setup
 from app.console.cloud_control.desktop import DESKTOP_COOKIE, DESKTOP_SOCKET
 from app.console.cloud_control.schemas import (
     CloudSetup,
     CloudSetupUpdate,
     CloudStatus,
     DesktopLogin,
-    Enrollment,
     IdlePreference,
-    VerificationCode,
 )
 from app.deps import (
     SessionDep,
@@ -20,6 +18,8 @@ from app.deps import (
 )
 from app.runtime.config import get_cloud_settings
 from app.runtime.website import require_local_browser
+
+from .cloud_totp import router as totp_router
 
 router = APIRouter(prefix="/cloud-control", tags=["cloud-control"])
 
@@ -35,7 +35,7 @@ async def status(request: Request, response: Response, db: SessionDep, principal
     local = local_request(request)
     enabled = access.allowed(principal, local=local)
     enrolled = await access.enrolled(db, principal.user_id) if enabled else False
-    minutes, revision = await access.desktop_preferences(db, principal.user_id)
+    minutes, revision = await preferences.desktop_preferences(db, principal.user_id)
     return CloudStatus(
         enabled=enabled,
         host_label=settings.fpl_cloud_control_host_label,
@@ -49,45 +49,10 @@ async def status(request: Request, response: Response, db: SessionDep, principal
     )
 
 
-@router.post("/totp/enroll", response_model=Enrollment)
-async def enroll(request: Request, response: Response, db: SessionDep, principal: StudioAuth):
-    require_local_browser(request, principal)
-    access.require_enabled(principal, local=True)
-    require_recent_reauthentication(principal)
-    response.headers["Cache-Control"] = "no-store"
-    return Enrollment(secret=await access.start_enrollment(db, principal.user_id))
-
-
-@router.post("/totp/confirm", status_code=204)
-async def confirm(
-    request: Request,
-    body: VerificationCode,
-    db: SessionDep,
-    principal: StudioAuth,
-):
-    require_local_browser(request, principal)
-    access.require_enabled(principal, local=True)
-    require_recent_reauthentication(principal)
-    await access.verify(db, principal, body.code, enroll=True)
-    request.app.state.cloud_desktop.revoke(principal.user_id)
-
-
-@router.post("/totp/verify", status_code=204)
-async def verify(
-    request: Request,
-    body: VerificationCode,
-    db: SessionDep,
-    principal: StudioAuth,
-):
-    access.require_enabled(principal, local=local_request(request), desktop=body.desktop)
-    require_recent_reauthentication(principal)
-    await access.verify(db, principal, body.code, desktop=body.desktop)
-
-
 @router.put("/desktop/idle", response_model=IdlePreference)
 async def save_idle(request: Request, body: IdlePreference, db: SessionDep, principal: StudioAuth):
     access.require_enabled(principal, local=local_request(request), desktop=True)
-    minutes, revision = await access.save_desktop_preferences(db, principal.user_id, body)
+    minutes, revision = await preferences.save_desktop_preferences(db, principal.user_id, body)
     request.app.state.cloud_desktop.update_idle(principal.user_id)
     return IdlePreference(idle_minutes=minutes, revision=revision)
 
@@ -159,3 +124,6 @@ async def settings_save(
     require_local_browser(request, principal)
     require_recent_reauthentication(principal)
     return await setup.save_setup(db, principal, body)
+
+
+router.include_router(totp_router)

@@ -7,13 +7,6 @@ test("website assistant and local-only access controls across themes and viewpor
   await page.route("**/v1/automation/runtime", (route) =>
     route.fulfill({ json: { local_browser: local } }),
   );
-  await page.route("**/v1/automation/access", (route) =>
-    route.fulfill({
-      json: {
-        public: { phase: "off", url: "https://studio.example.test", error: "" },
-      },
-    }),
-  );
   await page.route("**/v1/amadeus/conversations", (route) =>
     route.fulfill({ json: { items: [] } }),
   );
@@ -34,12 +27,11 @@ test("website assistant and local-only access controls across themes and viewpor
       await page.getByRole("button", { name: "账号菜单", exact: true }).click();
       await expect(
         page.getByRole("menuitem", { name: "本地与公网访问" }),
-      ).toBeVisible();
-      await page.getByRole("menuitem", { name: "本地与公网访问" }).click();
+      ).toHaveCount(0);
       await expect(
-        page.getByRole("dialog", { name: "本地与公网访问" }),
-      ).toBeVisible();
-      await page.getByRole("button", { name: "关闭", exact: true }).click();
+        page.getByRole("menuitem", { name: "管理中台" }),
+      ).toHaveCount(0);
+      await page.keyboard.press("Escape");
       await page
         .getByRole("button", { name: "打开 Amadeus", exact: true })
         .click();

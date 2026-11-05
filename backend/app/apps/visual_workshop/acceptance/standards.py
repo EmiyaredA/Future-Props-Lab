@@ -1,8 +1,5 @@
 from sqlalchemy import delete, select
 
-from app.apps.visual_workshop.acceptance.access import (
-    project,
-)
 from app.apps.visual_workshop.acceptance.models import (
     AcceptanceAssetReference,
     AcceptanceRepairDraft,
@@ -18,6 +15,8 @@ from app.apps.visual_workshop.acceptance.schemas import (
     AcceptanceTemplateOut,
 )
 from app.apps.visual_workshop.acceptance.templates import builtin_templates
+
+from .project_access import project
 
 
 class Standards:

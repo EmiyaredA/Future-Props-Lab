@@ -62,6 +62,9 @@ async def test_sensitive_validation_preview_requires_its_existing_permission(
     try:
 
         async def identity(_session: SessionDep) -> StudioPrincipal:
+            from app.runtime.ownership import bind_owner
+
+            bind_owner(_session, "test-user")
             return StudioPrincipal(
                 platform_role="admin" if privileged else "user",
                 user_id="test-user",

@@ -139,11 +139,17 @@ export const restoreNote = async (note: NoteSummary) => {
     }),
   );
 };
-export async function uploadImage(file: File, transfer: TransferOptions = {}) {
+type UploadTransferOptions = TransferOptions & { requestId?: string };
+
+export async function uploadImage(
+  file: File,
+  transfer: UploadTransferOptions = {},
+) {
   const uploadTransfer = createUploadTransfer(transfer.onProgress);
 
   return unwrap(
     await api.POST("/v1/thought-workshop/images", {
+      headers: { "Idempotency-Key": transfer.requestId ?? crypto.randomUUID() },
       fetch: uploadTransfer.fetch,
       body: { upload: file as unknown as string },
       bodySerializer() {
@@ -156,12 +162,13 @@ export async function uploadImage(file: File, transfer: TransferOptions = {}) {
 }
 export async function uploadAttachment(
   file: File,
-  transfer: TransferOptions = {},
+  transfer: UploadTransferOptions = {},
 ) {
   const uploadTransfer = createUploadTransfer(transfer.onProgress);
 
   return unwrap(
     await api.POST("/v1/thought-workshop/attachments", {
+      headers: { "Idempotency-Key": transfer.requestId ?? crypto.randomUUID() },
       fetch: uploadTransfer.fetch,
       body: { upload: file as unknown as string },
       bodySerializer() {

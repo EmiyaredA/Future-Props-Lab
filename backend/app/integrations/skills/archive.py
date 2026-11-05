@@ -7,6 +7,7 @@ import stat
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
+from typing import Protocol
 from uuid import uuid4
 
 import yaml
@@ -29,10 +30,22 @@ class StagedSkillArchive:
     expanded_bytes: int
 
 
-class SkillArchiveStorage:
-    def __init__(self, settings: Settings, owner_user_id: str) -> None:
-        self.settings = settings
-        self.root = settings.account_skill_path(owner_user_id)
+class SkillArchiveLimits(Protocol):
+    @property
+    def fpl_skill_archive_max_bytes(self) -> int: ...
+
+    @property
+    def fpl_skill_expanded_max_bytes(self) -> int: ...
+
+    @property
+    def fpl_skill_max_files(self) -> int: ...
+
+
+class SkillArchiveStager:
+    def __init__(self, root: Path, limits: SkillArchiveLimits) -> None:
+        if root.resolve() != root:
+            raise ValueError("Skill storage cannot follow symbolic links")
+        self.root, self.limits = root, limits
 
     async def stage(self, upload: IncomingFile) -> StagedSkillArchive:
         self.root.mkdir(parents=True, exist_ok=True)
@@ -45,8 +58,8 @@ class SkillArchiveStorage:
             with archive_path.open("xb") as destination:
                 while chunk := await upload.read(1024 * 1024):
                     size += len(chunk)
-                    if size > self.settings.fpl_skill_archive_max_bytes:
-                        limit = self.settings.fpl_skill_archive_max_bytes
+                    if size > self.limits.fpl_skill_archive_max_bytes:
+                        limit = self.limits.fpl_skill_archive_max_bytes
                         raise IntegrationValidationError(
                             f"Skill ZIP 超过 {limit} 字节限制（{limit / 1024**2:g} MiB）"
                         )
@@ -70,13 +83,13 @@ class SkillArchiveStorage:
             raise IntegrationValidationError("上传文件不是有效 ZIP") from exc
         with archive:
             files = [item for item in archive.infolist() if not item.is_dir()]
-            if not files or len(files) > self.settings.fpl_skill_max_files:
+            if not files or len(files) > self.limits.fpl_skill_max_files:
                 raise IntegrationValidationError(
-                    f"Skill 文件数量必须在 1 到 {self.settings.fpl_skill_max_files} 之间"
+                    f"Skill 文件数量必须在 1 到 {self.limits.fpl_skill_max_files} 之间"
                 )
             expanded = sum(item.file_size for item in files)
-            if expanded > self.settings.fpl_skill_expanded_max_bytes:
-                limit = self.settings.fpl_skill_expanded_max_bytes
+            if expanded > self.limits.fpl_skill_expanded_max_bytes:
+                limit = self.limits.fpl_skill_expanded_max_bytes
                 raise IntegrationValidationError(
                     f"Skill 解压后超过 {limit} 字节限制（{limit / 1024**2:g} MiB）"
                 )
@@ -175,6 +188,19 @@ class SkillArchiveStorage:
                 f"SKILL.md 的 description 必须为 1 到 {SKILL_DESCRIPTION_MAX_LENGTH} 个字符"
             )
         return name, description
+
+
+class SkillArchiveStorage(SkillArchiveStager):
+    def __init__(self, settings: Settings, owner_user_id: str) -> None:
+        if (
+            not owner_user_id
+            or Path(owner_user_id).name != owner_user_id
+            or owner_user_id in {".", ".."}
+        ):
+            raise ValueError("Skill storage requires an account ID")
+        root = settings.runtime_path / "accounts" / owner_user_id / "integrations" / "skills"
+        super().__init__(root, settings)
+        self.settings = settings
 
     def final_path(self, skill_id: str, version: str) -> Path:
         return (self.root / skill_id / version).resolve()

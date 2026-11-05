@@ -5,6 +5,7 @@ from datetime import UTC
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.apps.thought_workshop.asset_metadata import metadata
 from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.history import History
 from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
@@ -15,7 +16,6 @@ from app.apps.thought_workshop.schemas.knowledge import (
     KnowledgeBaseOut,
     KnowledgeBasePut,
 )
-from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import utc_now
 
@@ -76,17 +76,8 @@ class KnowledgeBases:
     async def cover(self, asset_id: str | None) -> None:
         if asset_id is None:
             return
-        row = await self.session.scalar(
-            select(VisualAsset).where(
-                VisualAsset.id == asset_id,
-                VisualAsset.owner_user_id == self.owner_user_id,
-                VisualAsset.media_kind == "image",
-                VisualAsset.project_id.is_(None),
-                VisualAsset.galgame_project_id.is_(None),
-                VisualAsset.video_editor_project_id.is_(None),
-            )
-        )
-        if row is None:
+        rows = await metadata(self.session, self.owner_user_id).describe({asset_id})
+        if rows[asset_id].media_kind != "image":
             raise ThoughtError("封面图片不存在", 404, "not_found")
 
     async def reserve(
@@ -108,12 +99,26 @@ class KnowledgeBases:
             raise RevisionConflictError(expected, current.revision, current.model_dump(mode="json"))
         return await self.get(project_id, include_deleted=include_deleted)
 
-    async def create(self, body: KnowledgeBaseIn) -> KnowledgeBaseOut:
-        await self.cover(body.cover_asset_id)
-        row = ThoughtKnowledgeBase(owner_user_id=self.owner_user_id, **body.model_dump())
+    async def create(
+        self,
+        body: KnowledgeBaseIn,
+        *,
+        project_id: str | None = None,
+        home_note_id: str | None = None,
+        commit: bool = True,
+        cover_validated: bool = False,
+    ) -> KnowledgeBaseOut:
+        if not cover_validated:
+            await self.cover(body.cover_asset_id)
+        row = ThoughtKnowledgeBase(
+            id=project_id,
+            owner_user_id=self.owner_user_id,
+            **body.model_dump(),
+        )
         self.session.add(row)
         await self.session.flush()
         home = ThoughtNote(
+            id=home_note_id,
             owner_user_id=self.owner_user_id,
             knowledge_base_id=row.id,
             is_home=True,
@@ -124,15 +129,25 @@ class KnowledgeBases:
         await self.session.flush()
         row.home_note_id = home.id
         await History(self.session).append(home, self.author_id, "create")
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
         return await self.output(await self.get(row.id))
 
-    async def put(self, project_id: str, body: KnowledgeBasePut) -> KnowledgeBaseOut:
-        await self.cover(body.cover_asset_id)
+    async def put(
+        self,
+        project_id: str,
+        body: KnowledgeBasePut,
+        *,
+        commit: bool = True,
+        cover_validated: bool = False,
+    ) -> KnowledgeBaseOut:
+        if not cover_validated:
+            await self.cover(body.cover_asset_id)
         row = await self.reserve(project_id, body.expected_revision)
         for key, value in body.model_dump(exclude={"expected_revision"}).items():
             setattr(row, key, value)
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
         return await self.output(await self.get(project_id))
 
     async def transition(self, project_id: str, expected: int, restore: bool) -> KnowledgeBaseOut:

@@ -2327,6 +2327,37 @@
         "title": "ApiKeyOut",
         "type": "object"
       },
+      "ApplicationState": {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Error",
+            "type": "string"
+          },
+          "force_stop_available": {
+            "default": false,
+            "title": "Force Stop Available",
+            "type": "boolean"
+          },
+          "phase": {
+            "default": "unavailable",
+            "enum": [
+              "stopped",
+              "starting",
+              "running",
+              "stopping",
+              "failed",
+              "unavailable"
+            ],
+            "title": "Phase",
+            "type": "string"
+          }
+        },
+        "title": "ApplicationState",
+        "type": "object"
+      },
       "ApprovalDecision": {
         "additionalProperties": false,
         "properties": {
@@ -7658,6 +7689,70 @@
         "title": "DemoServiceOut",
         "type": "object"
       },
+      "DeploymentServiceState": {
+        "additionalProperties": false,
+        "properties": {
+          "exit_code": {
+            "anyOf": [
+              {
+                "maximum": 255.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exit Code"
+          },
+          "phase": {
+            "$ref": "#/components/schemas/ServicePhase"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 64,
+            "pattern": "^[a-z_]*$",
+            "title": "Reason",
+            "type": "string"
+          },
+          "service_id": {
+            "$ref": "#/components/schemas/ServiceId"
+          }
+        },
+        "required": [
+          "service_id",
+          "phase"
+        ],
+        "title": "DeploymentServiceState",
+        "type": "object"
+      },
+      "DeploymentServicesOut": {
+        "additionalProperties": false,
+        "properties": {
+          "observed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed At"
+          },
+          "services": {
+            "items": {
+              "$ref": "#/components/schemas/DeploymentServiceState"
+            },
+            "maxItems": 23,
+            "title": "Services",
+            "type": "array"
+          }
+        },
+        "title": "DeploymentServicesOut",
+        "type": "object"
+      },
       "DesktopLogin": {
         "additionalProperties": false,
         "properties": {
@@ -8307,6 +8402,44 @@
           "revisions"
         ],
         "title": "DuplicateSnapshot",
+        "type": "object"
+      },
+      "EndpointState": {
+        "additionalProperties": false,
+        "properties": {
+          "build_id": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Build Id",
+            "type": "string"
+          },
+          "error": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Error",
+            "type": "string"
+          },
+          "phase": {
+            "default": "unavailable",
+            "enum": [
+              "off",
+              "connecting",
+              "ready",
+              "reconnecting",
+              "failed",
+              "unavailable"
+            ],
+            "title": "Phase",
+            "type": "string"
+          },
+          "url": {
+            "default": "",
+            "maxLength": 2048,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "title": "EndpointState",
         "type": "object"
       },
       "EndpointStatus": {
@@ -20795,6 +20928,107 @@
         "title": "LoginIn",
         "type": "object"
       },
+      "ManagementAccessAction": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "public_start",
+              "public_stop",
+              "check"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "request_id": {
+            "format": "uuid",
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "action"
+        ],
+        "title": "ManagementAccessAction",
+        "type": "object"
+      },
+      "ManagementApplicationAction": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "start",
+              "stop",
+              "restart",
+              "force_stop"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "request_id": {
+            "format": "uuid",
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "action"
+        ],
+        "title": "ManagementApplicationAction",
+        "type": "object"
+      },
+      "ManagementJob": {
+        "properties": {
+          "error_code": {
+            "default": "",
+            "title": "Error Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "message": {
+            "default": "",
+            "title": "Message",
+            "type": "string"
+          },
+          "operation": {
+            "title": "Operation",
+            "type": "string"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "operation",
+          "revision"
+        ],
+        "title": "ManagementJob",
+        "type": "object"
+      },
       "McpCatalogOut": {
         "properties": {
           "items": {
@@ -30108,6 +30342,35 @@
         "title": "RunOut",
         "type": "object"
       },
+      "RuntimeContext": {
+        "properties": {
+          "local_browser": {
+            "title": "Local Browser",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "local_browser"
+        ],
+        "title": "RuntimeContext",
+        "type": "object"
+      },
+      "RuntimeLogs": {
+        "properties": {
+          "lines": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Lines",
+            "type": "array"
+          }
+        },
+        "required": [
+          "lines"
+        ],
+        "title": "RuntimeLogs",
+        "type": "object"
+      },
       "RuntimeQuotas": {
         "properties": {
           "admin": {
@@ -30730,6 +30993,143 @@
           "audioClipId"
         ],
         "title": "SeparateClipOperation",
+        "type": "object"
+      },
+      "ServiceId": {
+        "enum": [
+          "gateway",
+          "management",
+          "identity",
+          "portal",
+          "agents",
+          "remote",
+          "visual",
+          "thought",
+          "galgame",
+          "video",
+          "motion",
+          "presentation",
+          "annotation",
+          "director",
+          "interview",
+          "creative",
+          "assets",
+          "models",
+          "rendering",
+          "agent-runtime",
+          "integrations",
+          "amadeus",
+          "tools"
+        ],
+        "title": "ServiceId",
+        "type": "string"
+      },
+      "ServiceIssue": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "phase": {
+            "$ref": "#/components/schemas/ServicePhase"
+          },
+          "service_id": {
+            "$ref": "#/components/schemas/ServiceId"
+          }
+        },
+        "required": [
+          "service_id",
+          "label",
+          "phase"
+        ],
+        "title": "ServiceIssue",
+        "type": "object"
+      },
+      "ServicePhase": {
+        "enum": [
+          "running",
+          "starting",
+          "stopped",
+          "paused",
+          "restarting",
+          "unhealthy",
+          "failed",
+          "unreachable",
+          "not_deployed",
+          "unknown",
+          "degraded"
+        ],
+        "title": "ServicePhase",
+        "type": "string"
+      },
+      "ServiceStatusOut": {
+        "properties": {
+          "checked_at": {
+            "format": "date-time",
+            "title": "Checked At",
+            "type": "string"
+          },
+          "dependencies": {
+            "items": {
+              "$ref": "#/components/schemas/ServiceIssue"
+            },
+            "title": "Dependencies",
+            "type": "array"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "phase": {
+            "$ref": "#/components/schemas/ServicePhase"
+          },
+          "service_id": {
+            "$ref": "#/components/schemas/ServiceId"
+          }
+        },
+        "required": [
+          "service_id",
+          "phase",
+          "label",
+          "detail",
+          "checked_at"
+        ],
+        "title": "ServiceStatusOut",
+        "type": "object"
+      },
+      "ServicesStatusOut": {
+        "properties": {
+          "checked_at": {
+            "format": "date-time",
+            "title": "Checked At",
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "monolith",
+              "independent"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "services": {
+            "items": {
+              "$ref": "#/components/schemas/ServiceStatusOut"
+            },
+            "title": "Services",
+            "type": "array"
+          }
+        },
+        "required": [
+          "mode",
+          "checked_at",
+          "services"
+        ],
+        "title": "ServicesStatusOut",
         "type": "object"
       },
       "SetAssetOrganizationOperation": {
@@ -35400,6 +35800,75 @@
         "title": "UpdateTransitionOperation",
         "type": "object"
       },
+      "ValidationAttemptListOut": {
+        "properties": {
+          "has_more": {
+            "default": false,
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationAttemptOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "ValidationAttemptListOut",
+        "type": "object"
+      },
+      "ValidationAttemptOut": {
+        "properties": {
+          "connection_id": {
+            "title": "Connection Id",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "mcp.validate",
+              "tool.validate"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "released": {
+            "title": "Released",
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "unknown",
+              "completed",
+              "not-started"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "connection_id",
+          "status",
+          "released",
+          "created_at"
+        ],
+        "title": "ValidationAttemptOut",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -35438,6 +35907,33 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "ValidationReconcileOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "released": {
+            "title": "Released",
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "completed",
+              "not-started"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "released"
+        ],
+        "title": "ValidationReconcileOut",
         "type": "object"
       },
       "VerificationCode": {
@@ -46582,68 +47078,6 @@
         ]
       }
     },
-    "/v1/automation/access": {
-      "get": {
-        "operationId": "access_status_v1_automation_access_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AccessStatus"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Access Status",
-        "tags": [
-          "automation"
-        ]
-      }
-    },
-    "/v1/automation/access/actions": {
-      "post": {
-        "operationId": "access_action_v1_automation_access_actions_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AccessAction"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AccessStatus"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Access Action",
-        "tags": [
-          "automation"
-        ]
-      }
-    },
     "/v1/automation/capabilities": {
       "get": {
         "operationId": "capabilities_v1_automation_capabilities_get",
@@ -46751,6 +47185,27 @@
           }
         },
         "summary": "Runtime",
+        "tags": [
+          "automation"
+        ]
+      }
+    },
+    "/v1/automation/services": {
+      "get": {
+        "operationId": "service_status_v1_automation_services_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServicesStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Service Status",
         "tags": [
           "automation"
         ]
@@ -49666,7 +50121,29 @@
                 "schema": {}
               }
             },
-            "description": "Successful Response"
+            "description": "Successful Response",
+            "headers": {
+              "X-Fpl-File-Kind": {
+                "description": "Owned file media kind",
+                "schema": {
+                  "enum": [
+                    "image",
+                    "video",
+                    "audio",
+                    "font",
+                    "document"
+                  ],
+                  "type": "string"
+                }
+              },
+              "X-Fpl-File-Revision": {
+                "description": "Owned file metadata revision",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            }
           },
           "422": {
             "content": {
@@ -53811,6 +54288,93 @@
         ]
       }
     },
+    "/v1/integrations/validation-attempts": {
+      "get": {
+        "operationId": "validation_attempts_v1_integrations_validation_attempts_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationAttemptListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Validation Attempts",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/v1/integrations/validation-attempts/{attempt_id}/reconcile": {
+      "post": {
+        "operationId": "reconcile_validation_v1_integrations_validation_attempts__attempt_id__reconcile_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attempt_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Attempt Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReconcileOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reconcile Validation",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
     "/v1/interview-assistant/executor": {
       "get": {
         "operationId": "get_interview_executor_v1_interview_assistant_executor_get",
@@ -54783,6 +55347,276 @@
         "summary": "Attach Model",
         "tags": [
           "local-models"
+        ]
+      }
+    },
+    "/v1/management/access/{target}": {
+      "get": {
+        "operationId": "access_v1_management_access__target__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "target",
+            "required": true,
+            "schema": {
+              "enum": [
+                "business",
+                "management"
+              ],
+              "title": "Target",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndpointState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Access",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/v1/management/access/{target}/actions": {
+      "post": {
+        "operationId": "access_action_v1_management_access__target__actions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "target",
+            "required": true,
+            "schema": {
+              "enum": [
+                "business",
+                "management"
+              ],
+              "title": "Target",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManagementAccessAction"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementJob"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Access Action",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/v1/management/application": {
+      "get": {
+        "operationId": "application_v1_management_application_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Application",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/v1/management/application/actions": {
+      "post": {
+        "operationId": "application_action_v1_management_application_actions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManagementApplicationAction"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementJob"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Application Action",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/v1/management/application/logs": {
+      "get": {
+        "operationId": "application_logs_v1_management_application_logs_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeLogs"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Application Logs",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/v1/management/jobs/{job_id}": {
+      "get": {
+        "operationId": "read_job_v1_management_jobs__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementJob"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Job",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/v1/management/runtime": {
+      "get": {
+        "operationId": "runtime_v1_management_runtime_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeContext"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Runtime",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/v1/management/service-status": {
+      "get": {
+        "operationId": "service_status_v1_management_service_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentServicesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Service Status",
+        "tags": [
+          "management"
         ]
       }
     },
@@ -60948,6 +61782,29 @@
     "/v1/thought-workshop/attachments": {
       "post": {
         "operationId": "attachments_v1_thought_workshop_attachments_post",
+        "parameters": [
+          {
+            "description": "独立 Thought 服务用于上传重试；恢复网站暂不去重。",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9_-]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "独立 Thought 服务用于上传重试；恢复网站暂不去重。",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -62523,6 +63380,29 @@
     "/v1/thought-workshop/images": {
       "post": {
         "operationId": "upload_image_v1_thought_workshop_images_post",
+        "parameters": [
+          {
+            "description": "独立 Thought 服务用于上传重试；恢复网站暂不去重。",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9_-]+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "独立 Thought 服务用于上传重试；恢复网站暂不去重。",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "multipart/form-data": {

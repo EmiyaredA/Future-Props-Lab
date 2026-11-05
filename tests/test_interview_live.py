@@ -11,7 +11,7 @@ import httpx
 import pytest
 
 from app.apps.interview_assistant import routes
-from app.apps.interview_assistant.codex import executor_status
+from app.apps.interview_assistant.executor_status import executor_status
 from app.apps.interview_assistant.runner import InterviewPreparationRunner
 from app.main import app
 from app.runtime.config import get_settings

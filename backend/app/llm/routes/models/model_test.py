@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 
-from app.capabilities.asset_store.thumbnails import ThumbnailSize
-from app.deps import OwnerDep, SessionDep, StudioAuth
-from app.llm.call_logs.credentials import snapshot_from_principal
+from app.deps import OwnerDep, SessionDep
 from app.llm.catalog.service import ResourceNotFoundError
+from app.llm.http_credentials import CallCredentialDep
 from app.llm.playground.attachments import AttachmentError, ModelTestAttachments
 from app.llm.playground.service import (
     ConversationBusyError,
@@ -17,6 +16,7 @@ from app.llm.playground.service import (
     RegenerateUnavailableError,
 )
 from app.llm.playground.stream import generation_events
+from app.llm.provider_transports import provider_options
 from app.llm.schemas.model_test import (
     ModelTestAttachmentListOut,
     ModelTestConversationCreateIn,
@@ -26,7 +26,9 @@ from app.llm.schemas.model_test import (
     ModelTestRegenerateIn,
     ModelTestSendIn,
 )
+from app.llm.stream_access import stream_access
 from app.runtime.config import get_settings
+from app.runtime.image_sizes import ThumbnailSize
 
 router = APIRouter(prefix="/model-test/conversations", tags=["model-test"])
 
@@ -159,14 +161,14 @@ async def attachment_content(
 
 @router.post("/{conversation_id}/messages/stream")
 async def stream_message(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     conversation_id: str,
     body: ModelTestSendIn,
-    principal: StudioAuth,
+    credential: CallCredentialDep,
 ) -> StreamingResponse:
     try:
-        credential = await snapshot_from_principal(session, principal)
         prepared = await _service(session, owner_user_id).prepare_send(
             conversation_id,
             body.expected_revision,
@@ -182,7 +184,12 @@ async def stream_message(
     ) as exc:
         raise _translate(exc) from None
     return StreamingResponse(
-        generation_events(prepared),
+        generation_events(
+            prepared,
+            session_factory=request.app.state.database.sessions,
+            check_access=stream_access(request),
+            transport_options=provider_options(request, prepared.base_url),
+        ),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
@@ -190,14 +197,14 @@ async def stream_message(
 
 @router.post("/{conversation_id}/regenerate/stream")
 async def regenerate_message(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     conversation_id: str,
     body: ModelTestRegenerateIn,
-    principal: StudioAuth,
+    credential: CallCredentialDep,
 ) -> StreamingResponse:
     try:
-        credential = await snapshot_from_principal(session, principal)
         prepared = await _service(session, owner_user_id).prepare_regenerate(
             conversation_id, body.expected_revision, credential=credential
         )
@@ -210,7 +217,12 @@ async def regenerate_message(
     ) as exc:
         raise _translate(exc) from None
     return StreamingResponse(
-        generation_events(prepared),
+        generation_events(
+            prepared,
+            session_factory=request.app.state.database.sessions,
+            check_access=stream_access(request),
+            transport_options=provider_options(request, prepared.base_url),
+        ),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

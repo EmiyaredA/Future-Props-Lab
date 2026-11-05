@@ -4,7 +4,7 @@ from sqlalchemy import JSON, DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.runtime.ids import new_id
-from app.runtime.orm_base import Base
+from app.runtime.orm_base import Base, external_id
 from app.runtime.time import utc_now
 
 
@@ -15,7 +15,7 @@ class PresentationProject(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey(external_id("users"), ondelete="CASCADE"))
     title: Mapped[str] = mapped_column(String(120))
     # Versioned scene JSON; 0101 upgrades document metadata without changing project revisions.
     document: Mapped[dict] = mapped_column(JSON)
@@ -32,5 +32,5 @@ class PresentationAssetReference(Base):
         ForeignKey("presentation_projects.id", ondelete="CASCADE"), primary_key=True
     )
     asset_id: Mapped[str] = mapped_column(
-        ForeignKey("visual_assets.id", ondelete="RESTRICT"), primary_key=True
+        ForeignKey(external_id("visual_assets"), ondelete="RESTRICT"), primary_key=True
     )

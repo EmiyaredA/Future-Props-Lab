@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.director_desk.models import DirectorDeskProject
@@ -20,6 +20,7 @@ from app.runtime.project_records import (
     load_owned_project,
     patch_revisioned_project,
 )
+from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import utc_now
 
 
@@ -111,11 +112,19 @@ class DirectorDeskProjects:
         await self.session.commit()
         return await self.get(project_id)
 
-    async def delete(self, project_id: str, revision: int) -> None:
-        await self.row(project_id)
+    async def delete(
+        self, project_id: str, revision: int, *, storage: AssetStorage | None = None
+    ) -> None:
+        await self.session.rollback()
+        await self.session.execute(text("BEGIN IMMEDIATE"))
+        row = await self.row(project_id)
+        if row.revision != revision:
+            raise RevisionConflictError(
+                revision, row.revision, project_out(row).model_dump(mode="json")
+            )
         async with deleting_project_layout(
             self.session,
-            AssetStorage(get_settings()),
+            storage if storage is not None else AssetStorage(get_settings()),
             "director-desk",
             project_id,
             owner_user_id=self.owner_user_id,

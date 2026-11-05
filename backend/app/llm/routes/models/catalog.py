@@ -1,15 +1,13 @@
 from fastapi import APIRouter, HTTPException, Query
 
-from app.deps import OwnerDep, SessionDep, StudioAuth
-from app.llm.call_logs.credentials import snapshot_from_principal
-from app.llm.catalog import ModelCatalogService
+from app.deps import OwnerDep, SessionDep
 from app.llm.catalog.defaults import update_defaults
+from app.llm.catalog.http_bindings import CatalogDep, DefaultsDep
 from app.llm.catalog.service import (
     CatalogResourceBusyError,
     DuplicateModelError,
     ResourceNotFoundError,
 )
-from app.llm.diagnostics import DiagnosticCallError, test_model
 from app.llm.schemas.model_service import (
     DeleteMutationOut,
     ModelCatalogOut,
@@ -20,7 +18,6 @@ from app.llm.schemas.model_service import (
     ProviderEnabledIn,
     ProviderIn,
     ProviderMutationOut,
-    TestModelOut,
 )
 
 router = APIRouter(tags=["models"])
@@ -31,19 +28,19 @@ def _not_found(exc: ResourceNotFoundError) -> HTTPException:
 
 
 @router.get("/model-providers", response_model=ModelCatalogOut)
-async def list_providers(session: SessionDep) -> ModelCatalogOut:
-    return await ModelCatalogService(session).catalog()
+async def list_providers(catalog: CatalogDep) -> ModelCatalogOut:
+    return await catalog.catalog()
 
 
 @router.get("/model-categories", response_model=ModelCategoryListOut)
-async def list_model_categories(session: SessionDep) -> ModelCategoryListOut:
-    return ModelCatalogService(session).categories()
+async def list_model_categories(catalog: CatalogDep) -> ModelCategoryListOut:
+    return catalog.categories()
 
 
 @router.post("/model-providers", response_model=ProviderMutationOut)
-async def create_provider(session: SessionDep, body: ProviderIn) -> ProviderMutationOut:
+async def create_provider(catalog: CatalogDep, body: ProviderIn) -> ProviderMutationOut:
     try:
-        revision, provider = await ModelCatalogService(session).create_provider(body)
+        revision, provider = await catalog.create_provider(body)
     except ResourceNotFoundError as exc:
         raise _not_found(exc) from None
     return ProviderMutationOut(revision=revision, provider=provider)
@@ -51,10 +48,10 @@ async def create_provider(session: SessionDep, body: ProviderIn) -> ProviderMuta
 
 @router.patch("/model-providers/{provider_id}", response_model=ProviderMutationOut)
 async def update_provider(
-    session: SessionDep, provider_id: str, body: ProviderIn
+    catalog: CatalogDep, provider_id: str, body: ProviderIn
 ) -> ProviderMutationOut:
     try:
-        revision, provider = await ModelCatalogService(session).update_provider(provider_id, body)
+        revision, provider = await catalog.update_provider(provider_id, body)
     except ResourceNotFoundError as exc:
         raise _not_found(exc) from None
     except CatalogResourceBusyError as exc:
@@ -64,10 +61,10 @@ async def update_provider(
 
 @router.post("/model-providers/{provider_id}/enabled", response_model=ProviderMutationOut)
 async def set_provider_enabled(
-    session: SessionDep, provider_id: str, body: ProviderEnabledIn
+    catalog: CatalogDep, provider_id: str, body: ProviderEnabledIn
 ) -> ProviderMutationOut:
     try:
-        revision, provider = await ModelCatalogService(session).set_provider_enabled(
+        revision, provider = await catalog.set_provider_enabled(
             provider_id, body.enabled, body.expected_catalog_revision
         )
     except ResourceNotFoundError as exc:
@@ -79,14 +76,12 @@ async def set_provider_enabled(
 
 @router.delete("/model-providers/{provider_id}", response_model=DeleteMutationOut)
 async def delete_provider(
-    session: SessionDep,
+    catalog: CatalogDep,
     provider_id: str,
     expected_catalog_revision: int = Query(ge=0),
 ) -> DeleteMutationOut:
     try:
-        revision = await ModelCatalogService(session).delete_provider(
-            provider_id, expected_catalog_revision
-        )
+        revision = await catalog.delete_provider(provider_id, expected_catalog_revision)
     except ResourceNotFoundError as exc:
         raise _not_found(exc) from None
     except CatalogResourceBusyError as exc:
@@ -95,9 +90,9 @@ async def delete_provider(
 
 
 @router.post("/model-providers/{provider_id}/models", response_model=ModelMutationOut)
-async def add_model(session: SessionDep, provider_id: str, body: ModelEntryIn) -> ModelMutationOut:
+async def add_model(catalog: CatalogDep, provider_id: str, body: ModelEntryIn) -> ModelMutationOut:
     try:
-        revision, model = await ModelCatalogService(session).add_model(provider_id, body)
+        revision, model = await catalog.add_model(provider_id, body)
     except ResourceNotFoundError as exc:
         raise _not_found(exc) from None
     except DuplicateModelError as exc:
@@ -108,9 +103,9 @@ async def add_model(session: SessionDep, provider_id: str, body: ModelEntryIn) -
 
 
 @router.patch("/model-entries/{model_id}", response_model=ModelMutationOut)
-async def update_model(session: SessionDep, model_id: str, body: ModelEntryIn) -> ModelMutationOut:
+async def update_model(catalog: CatalogDep, model_id: str, body: ModelEntryIn) -> ModelMutationOut:
     try:
-        revision, model = await ModelCatalogService(session).update_model(model_id, body)
+        revision, model = await catalog.update_model(model_id, body)
     except ResourceNotFoundError as exc:
         raise _not_found(exc) from None
     except DuplicateModelError as exc:
@@ -122,14 +117,12 @@ async def update_model(session: SessionDep, model_id: str, body: ModelEntryIn) -
 
 @router.delete("/model-entries/{model_id}", response_model=DeleteMutationOut)
 async def delete_model(
-    session: SessionDep,
+    catalog: CatalogDep,
     model_id: str,
     expected_catalog_revision: int = Query(ge=0),
 ) -> DeleteMutationOut:
     try:
-        revision = await ModelCatalogService(session).delete_model(
-            model_id, expected_catalog_revision
-        )
+        revision = await catalog.delete_model(model_id, expected_catalog_revision)
     except ResourceNotFoundError as exc:
         raise _not_found(exc) from None
     except CatalogResourceBusyError as exc:
@@ -137,23 +130,14 @@ async def delete_model(
     return DeleteMutationOut(deleted=True, revision=revision)
 
 
-@router.post("/model-entries/{model_id}/test", response_model=TestModelOut)
-async def run_model_test(session: SessionDep, model_id: str, principal: StudioAuth) -> TestModelOut:
-    try:
-        credential = await snapshot_from_principal(session, principal)
-        return await test_model(session, model_id, credential=credential)
-    except ResourceNotFoundError as exc:
-        raise _not_found(exc) from None
-    except DiagnosticCallError as exc:
-        detail = {"code": "model_test_failed", "message": str(exc)}
-        if exc.log_id:
-            detail["log_id"] = exc.log_id
-        raise HTTPException(exc.status_code, detail) from None
-
-
 @router.put("/model-catalog/defaults", response_model=ModelCatalogOut)
-async def defaults(session: SessionDep, owner_user_id: OwnerDep, body: ModelDefaultsIn):
+async def defaults(
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    body: ModelDefaultsIn,
+    defaults_store: DefaultsDep,
+):
     try:
-        return await update_defaults(session, owner_user_id, body)
+        return await update_defaults(session, owner_user_id, body, defaults_store=defaults_store)
     except ValueError as exc:
         raise HTTPException(422, {"code": "invalid_default_model", "message": str(exc)}) from None

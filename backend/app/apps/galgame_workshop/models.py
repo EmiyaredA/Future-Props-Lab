@@ -16,7 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.runtime.ids import new_id
-from app.runtime.orm_base import Base
+from app.runtime.orm_base import Base, external_id
 from app.runtime.time import utc_now
 
 
@@ -85,7 +85,7 @@ class GalgameProjectAssetReference(Base):
         ForeignKey("galgame_workshop_projects.id", ondelete="CASCADE"),
     )
     asset_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="RESTRICT")
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="RESTRICT")
     )
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
 
@@ -97,7 +97,7 @@ class GalgameAssetMetadata(Base):
     )
 
     asset_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="CASCADE"), primary_key=True
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="CASCADE"), primary_key=True
     )
     project_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("galgame_workshop_projects.id", ondelete="CASCADE")
@@ -127,7 +127,7 @@ class GalgameAssetSettings(Base):
         primary_key=True,
     )
     asr_model_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("model_entries.id", ondelete="SET NULL")
+        String(36), ForeignKey(external_id("model_entries"), ondelete="SET NULL")
     )
     default_language: Mapped[str] = mapped_column(String(16), default="auto")
     concurrency: Mapped[int] = mapped_column(Integer, default=2)
@@ -152,7 +152,7 @@ class GalgameAssetTranscriptionTask(Base):
         String(36), ForeignKey("galgame_workshop_projects.id", ondelete="CASCADE")
     )
     asset_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="CASCADE")
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="CASCADE")
     )
     provider_id: Mapped[str | None] = mapped_column(String(36))
     provider_name: Mapped[str] = mapped_column(String(120), default="")
@@ -204,7 +204,7 @@ class GalgameAnnotationImportTask(Base):
         String(36), ForeignKey("galgame_workshop_projects.id", ondelete="CASCADE")
     )
     source_project_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("audio_annotation_projects.id", ondelete="RESTRICT")
+        String(36), ForeignKey(external_id("audio_annotation_projects"), ondelete="RESTRICT")
     )
     request_id: Mapped[str] = mapped_column(String(64))
     expected_source_revision: Mapped[int] = mapped_column(Integer)
@@ -248,7 +248,7 @@ class GalgameVideoExportTask(Base):
     progress: Mapped[int] = mapped_column(Integer, default=0)
     result_detail: Mapped[dict] = mapped_column(JSON, default=dict)
     output_asset_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="SET NULL")
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="SET NULL")
     )
     cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False)
     error: Mapped[str | None] = mapped_column(Text)
@@ -286,7 +286,7 @@ class GalgameVideoEditorHandoffTask(Base):
     progress: Mapped[int] = mapped_column(Integer, default=0)
     result_detail: Mapped[dict] = mapped_column(JSON, default=dict)
     output_project_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("video_editor_projects.id", ondelete="SET NULL")
+        String(36), ForeignKey(external_id("video_editor_projects"), ondelete="SET NULL")
     )
     cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False)
     error: Mapped[str | None] = mapped_column(Text)

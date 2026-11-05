@@ -4,22 +4,38 @@
 
 ## 按结果选择应用
 
-| 你要得到的结果                 | 应用                                                                                                 | 建议先完成的小任务       |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------- | ------------------------ |
-| 幻灯片、放映、可编辑 PPTX      | [演示工坊](/apps/thought-workshop/official-knowledge-bases/presentation-workshop/documents/overview) | 三页产品介绍             |
-| 文档、附件、历史、UML 与信息图 | [思绪工坊](/apps/thought-workshop/official-knowledge-bases/thought-workshop/documents/overview)      | 一篇带标题和画板的说明   |
-| 图片或视频生成、素材节点关系   | [视觉创作工坊](/apps/thought-workshop/official-knowledge-bases/visual-workshop/documents/overview)   | 一张参考图的一次生成     |
-| 角色演出、分支剧情、路线视频   | [Galgame 工坊](/apps/thought-workshop/official-knowledge-bases/galgame-workshop/documents/overview)  | 能从头试玩到结束的短片段 |
-| 多轨画面、字幕、声音与成片     | [视频剪辑工坊](/apps/thought-workshop/official-knowledge-bases/video-editor/documents/overview)      | 带声音的短视频           |
-| 二维动画、路径遮罩、透明镜头   | [特效制作工坊](/apps/thought-workshop/official-knowledge-bases/motion-compositor/documents/overview) | 一段短动画               |
-| 录音分段、说话人、情绪与字幕   | [录音标注工坊](/apps/thought-workshop/official-knowledge-bases/audio-annotation/documents/overview)  | 一段已校对的短录音       |
-| 三维布景、走位、摄影机预演     | [导演台](/apps/thought-workshop/official-knowledge-bases/director-desk/documents/overview)           | 一个镜头的可复核预演     |
+| 你要得到的结果                    | 应用                                                                                                 | 建议先完成的小任务         |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------- | -------------------------- |
+| 本机 APP / CLI 编程会话记录与同步 | Agent 工作台                                                                                         | 绑定一个来源并查看已有会话 |
+| 幻灯片、放映、可编辑 PPTX         | [演示工坊](/apps/thought-workshop/official-knowledge-bases/presentation-workshop/documents/overview) | 三页产品介绍               |
+| 文档、附件、历史、UML 与信息图    | [思绪工坊](/apps/thought-workshop/official-knowledge-bases/thought-workshop/documents/overview)      | 一篇带标题和画板的说明     |
+| 图片或视频生成、素材节点关系      | [视觉创作工坊](/apps/thought-workshop/official-knowledge-bases/visual-workshop/documents/overview)   | 一张参考图的一次生成       |
+| 角色演出、分支剧情、路线视频      | [Galgame 工坊](/apps/thought-workshop/official-knowledge-bases/galgame-workshop/documents/overview)  | 能从头试玩到结束的短片段   |
+| 多轨画面、字幕、声音与成片        | [视频剪辑工坊](/apps/thought-workshop/official-knowledge-bases/video-editor/documents/overview)      | 带声音的短视频             |
+| 二维动画、路径遮罩、透明镜头      | [特效制作工坊](/apps/thought-workshop/official-knowledge-bases/motion-compositor/documents/overview) | 一段短动画                 |
+| 录音分段、说话人、情绪与字幕      | [录音标注工坊](/apps/thought-workshop/official-knowledge-bases/audio-annotation/documents/overview)  | 一段已校对的短录音         |
+| 三维布景、走位、摄影机预演        | [导演台](/apps/thought-workshop/official-knowledge-bases/director-desk/documents/overview)           | 一个镜头的可复核预演       |
 
-## 在云控查看已有编程会话
+## 查看应用服务状态
 
-Agent 工作台已移出应用目录，仅管理员可以访问；入口 `/agents` 保持独立服务运行。
+1. 打开「应用」，查看每张卡片下方的状态；页面每 5 秒自动检查，也可点击「刷新状态」。
+2. 点击状态，展开具体说明、依赖服务和最近检查时间；再次点击收起。
+3. 如果刷新失败，页面显示「状态暂不可读」。展开后可以核对上次结果，但上次的「运行中」不代表当前已恢复。
 
-1. 在 FPL 网站用管理员账号打开「云控 → Agent 工作台 → 来源」。
+| 状态                     | 含义与可验证结果                                                         |
+| ------------------------ | ------------------------------------------------------------------------ |
+| 运行中                   | 应用服务已就绪；单体迁移期会注明由当前网站进程承载。                     |
+| 启动中、重启中           | 正在等待启动检查或进程重启；后续检查应更新结果。                         |
+| 已停止、已暂停、未部署   | 主机观测确认了对应生命周期，不由一次连接失败推断。                       |
+| 健康检查失败、运行异常   | 展开说明可查看未就绪、异常退出或部署响应不匹配等原因。                   |
+| 功能受限                 | 应用进程可用，部分依赖尚未就绪；展开查看是哪项依赖。                     |
+| 服务无响应、状态暂不可读 | 当前无法确认可用性；可能是服务、Mac 或访问通道中断，等待连接恢复后刷新。 |
+
+**完成标志：** 能找到目标应用的状态、具体原因和检查时间。状态表示应用服务及其依赖的可用性；模型凭证和单个任务的结果仍在对应应用内查看。
+
+## 查看已有编程会话
+
+1. 在 FPL 网站打开「应用 → 开发辅助 → Agent 工作台 → 来源」。
 2. 选择 Codex、Claude Code、OpenCode、DeepSeek Harness 或 Pi，选择实际会话目录，确认允许当前账号保存阅读副本，再绑定来源。
 3. 返回「会话」，选择已有 APP 或 CLI 记录，核对项目路径、来源依据和最后同步时间。没有可靠标记时显示「来源待确认」。
 4. 在原 APP 或 CLI 中产生新记录，观察工作台更新。上翻后使用「有新内容」回到底部；「暂停跟随」只影响当前视图，原 Agent 继续运行。

@@ -13,7 +13,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.assets import MAX_FOLDER_DEPTH
+from app.capabilities.asset_store.folders import MAX_FOLDER_DEPTH
 from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.library import AssetError, AssetLibrary
 from app.capabilities.asset_store.models import (

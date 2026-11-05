@@ -19,20 +19,14 @@ from app.capabilities.media_rendering.timeline_document import (
     VideoEditorTimelineDocument,
     VideoEditorTimelineTransition,
 )
+from app.capabilities.media_rendering.timeline_ranges import (
+    timeline_duration_us as timeline_duration_us,
+)
+from app.capabilities.media_rendering.timeline_ranges import track_frame_sources, visible_tracks
+from app.capabilities.media_rendering.timeline_ranges import visual_gaps as visual_gaps
 
 # Invalidate exact-frame caches when compositing geometry changes.
 FRAME_COMPOSITOR_VERSION = 4
-
-
-def timeline_duration_us(document: VideoEditorTimelineDocument) -> int:
-    return max(
-        (
-            clip.timeline_start_us + clip.duration_us
-            for track in document.tracks
-            for clip in track.clips
-        ),
-        default=0,
-    )
 
 
 def _curve(progress: float, interpolation: str) -> float:
@@ -143,28 +137,6 @@ def clip_edge_visual(clip: VideoEditorClip, local_us: int) -> ClipEdgeVisual | N
     return None
 
 
-def visual_gaps(document: VideoEditorTimelineDocument) -> list[tuple[int, int]]:
-    end = timeline_duration_us(document)
-    intervals = sorted(
-        (
-            clip.timeline_start_us,
-            clip.timeline_start_us + clip.duration_us,
-        )
-        for track in document.tracks
-        if track.kind in {"visual", "mixed"} and not track.hidden
-        for clip in track.clips
-    )
-    gaps: list[tuple[int, int]] = []
-    cursor = 0
-    for start, stop in intervals:
-        if start > cursor:
-            gaps.append((cursor, start))
-        cursor = max(cursor, stop)
-    if cursor < end:
-        gaps.append((cursor, end))
-    return gaps
-
-
 @dataclass
 class FrameSource:
     image_for_clip: Callable[[VideoEditorClip, int], Image.Image | None]
@@ -211,34 +183,10 @@ class TimelineFrameRenderer:
             (settings.width, settings.height),
             ImageColor.getrgb(settings.background_color) + (0 if self.transparent else 255,),
         )
-        tracks = sorted(
-            (
-                track
-                for track in self.document.tracks
-                if track.kind in {"visual", "mixed"} and not track.hidden
-            ),
-            key=lambda track: track.order,
-            reverse=True,
-        )
-        for track in tracks:
-            clips = sorted(track.clips, key=lambda item: item.timeline_start_us)
-            clips_by_id = {clip.id: clip for clip in clips}
-            transitions = [
-                item
-                for item in self.document.transitions
-                if item.placement == "between"
-                and item.from_clip_id
-                and item.to_clip_id
-                and item.from_clip_id in clips_by_id
-                and item.to_clip_id in clips_by_id
-            ]
-            active_transitions = [
-                item
-                for item in transitions
-                if clips_by_id[item.to_clip_id].timeline_start_us - max(1, item.duration_us // 2)
-                <= time_us
-                < clips_by_id[item.to_clip_id].timeline_start_us + max(1, item.duration_us // 2)
-            ]
+        for track in visible_tracks(self.document):
+            clips, transitions, active_transitions = track_frame_sources(
+                track, self.document.transitions, time_us
+            )
             handled_between: set[str] = set()
             seam_drawn_clips: set[str] = set()
 

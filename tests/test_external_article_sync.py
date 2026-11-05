@@ -468,7 +468,7 @@ async def test_embedded_multitable_previews_as_a_static_table(client, remote):
                     "table_id": table["id"],
                     "records": [
                         {
-                            "id": "record1",
+                            "id": uuid4().hex,
                             "position": 0,
                             "values": {table["fields"][0]["id"]: "比较结果"},
                         }

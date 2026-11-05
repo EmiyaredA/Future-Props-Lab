@@ -126,7 +126,8 @@ from app.console.amadeus.models import (
     AmadeusRun,
     AmadeusRunEvent,
 )
-from app.console.cloud_control.models import CloudFactor, CloudUnlock, DesktopPreference
+from app.console.cloud_control.models import CloudFactor, CloudUnlock
+from app.console.cloud_control.preference_models import DesktopPreference
 from app.console.creative_workshop.models import (
     CreativeInstallation,
 )

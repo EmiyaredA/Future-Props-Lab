@@ -26,9 +26,7 @@ class VisualAssetFolder(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
-    project_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("visual_workshop_projects.id", ondelete="CASCADE")
-    )
+    project_id: Mapped[str | None] = mapped_column(String(36))
     parent_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("visual_asset_folders.id", ondelete="CASCADE")
     )
@@ -54,18 +52,10 @@ class VisualAsset(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
-    project_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("visual_workshop_projects.id", ondelete="CASCADE")
-    )
-    galgame_project_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("galgame_workshop_projects.id", ondelete="CASCADE")
-    )
-    video_editor_project_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("video_editor_projects.id", ondelete="CASCADE")
-    )
-    motion_compositor_project_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("motion_compositor_projects.id", ondelete="CASCADE")
-    )
+    project_id: Mapped[str | None] = mapped_column(String(36))
+    galgame_project_id: Mapped[str | None] = mapped_column(String(36))
+    video_editor_project_id: Mapped[str | None] = mapped_column(String(36))
+    motion_compositor_project_id: Mapped[str | None] = mapped_column(String(36))
     folder_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("visual_asset_folders.id", ondelete="CASCADE")
     )
@@ -81,29 +71,12 @@ class VisualAsset(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
 
 
-class VisualProjectAssetReference(Base):
-    __tablename__ = "visual_project_asset_references"
-    __table_args__ = (
-        Index(
-            "ix_visual_project_asset_references_folder",
-            "project_id",
-            "folder_id",
-            "updated_at",
-        ),
-    )
+# Legacy imports keep their public name without loading a Visual model in Assets.
+def __getattr__(name):
+    if name != "VisualProjectAssetReference":
+        raise AttributeError(name)
+    from importlib import import_module
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
-    project_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("visual_workshop_projects.id", ondelete="CASCADE")
-    )
-    asset_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="RESTRICT")
-    )
-    folder_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("visual_asset_folders.id", ondelete="CASCADE")
-    )
-    display_name: Mapped[str] = mapped_column(String(255))
-    revision: Mapped[int] = mapped_column(Integer, default=0)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
+    return import_module(
+        "app.apps.visual_workshop.asset_references.models"
+    ).VisualProjectAssetReference

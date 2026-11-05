@@ -2,7 +2,7 @@ import math
 import wave
 from pathlib import Path
 
-from app.apps.galgame_workshop.video.video_lip_sync import (
+from app.capabilities.media_rendering.galgame.lip_sync import (
     HOP_US,
     _LipTracker,
     analyze_audio_envelope,
@@ -62,7 +62,7 @@ def test_audio_envelope_cache_is_reused(tmp_path: Path, monkeypatch) -> None:
         selected_fragment_ids={"main"},
     )
     monkeypatch.setattr(
-        "app.apps.galgame_workshop.video.video_lip_sync.analyze_audio_envelope",
+        "app.capabilities.media_rendering.galgame.lip_sync.analyze_audio_envelope",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("cache miss")),
     )
     second = prepare_audio_envelopes(

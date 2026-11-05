@@ -342,6 +342,11 @@ export function McpPanel({
       )
         void refresh();
     },
+    onSettled: () => {
+      void client.invalidateQueries({
+        queryKey: integrationKeys.validationAttemptsRoot,
+      });
+    },
   });
   const remove = useMutation({
     mutationFn: deleteMcpServer,

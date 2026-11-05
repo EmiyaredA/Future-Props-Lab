@@ -472,7 +472,7 @@ async def test_audio_annotation_transcribes_selected_range_to_target_language_an
         return TranscriptionResult(text="  日本語の書き起こし。  ")
 
     monkeypatch.setattr(
-        "app.apps.audio_annotation.transcription.transcribe_model_audio",
+        "app.llm.annotation_transcription.transcribe_model_audio",
         fake_transcribe,
     )
     transport = httpx.ASGITransport(app=app)
@@ -578,7 +578,7 @@ async def test_audio_annotation_transcribes_selected_range_to_target_language_an
             )
 
         monkeypatch.setattr(
-            "app.apps.audio_annotation.transcription.transcribe_model_audio",
+            "app.llm.annotation_transcription.transcribe_model_audio",
             incomplete_translation,
         )
         untranslated = await client.post(
@@ -600,7 +600,7 @@ async def test_audio_annotation_transcribes_selected_range_to_target_language_an
             raise httpx.ReadTimeout("timed out")
 
         monkeypatch.setattr(
-            "app.apps.audio_annotation.transcription.transcribe_model_audio",
+            "app.llm.annotation_transcription.transcribe_model_audio",
             failing_transcribe,
         )
         failed = await client.post(
@@ -626,7 +626,7 @@ async def test_audio_annotation_transcribes_selected_range_to_target_language_an
             return TranscriptionResult(text="   ")
 
         monkeypatch.setattr(
-            "app.apps.audio_annotation.transcription.transcribe_model_audio",
+            "app.llm.annotation_transcription.transcribe_model_audio",
             empty_transcribe,
         )
         empty = await client.post(
@@ -1100,10 +1100,10 @@ async def test_transcription_import_reports_missing_source_and_cleans_failed_cop
         files_before = set(library_root.iterdir()) if library_root.exists() else set()
         original_duration = AudioAnnotationProjects._duration
 
-        def fail_after_copy(self: AudioAnnotationProjects, asset) -> int:
+        async def fail_after_copy(self: AudioAnnotationProjects, asset) -> int:
             if asset.original_filename == "cleanup-copy.wav":
                 raise AudioAnnotationError("模拟项目创建失败", code="simulated_failure")
-            return original_duration(self, asset)
+            return await original_duration(self, asset)
 
         monkeypatch.setattr(AudioAnnotationProjects, "_duration", fail_after_copy)
         failed = await client.post(

@@ -1,0 +1,16 @@
+# Add this overlay with project-owners.compose.yaml to enable portable snapshot imports.
+x-galgame-archive-key: &galgame-archive-key
+  type: bind
+  source: ${FPL_GALGAME_ARCHIVE_KEY:?Select a Galgame-to-Assets archive key}
+  target: /run/fpl/galgame-archive-key
+  read_only: true
+  bind:
+    create_host_path: false
+
+services:
+  galgame:
+    volumes:
+      - <<: *galgame-archive-key
+  assets:
+    volumes:
+      - <<: *galgame-archive-key

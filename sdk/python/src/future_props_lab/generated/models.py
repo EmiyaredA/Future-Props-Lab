@@ -378,6 +378,11 @@ class ApiKeyOut(WireModel):
     revoked_at: datetime | None = Field(default=..., alias='revoked_at')
     scopes: list[str] = Field(default=..., alias='scopes')
 
+class ApplicationState(WireModel):
+    error: str = Field(default='', alias='error', max_length=500)
+    force_stop_available: bool = Field(default=False, alias='force_stop_available')
+    phase: Literal['stopped', 'starting', 'running', 'stopping', 'failed', 'unavailable'] = Field(default='unavailable', alias='phase')
+
 class ApprovalDecision(WireModel):
     approved: bool = Field(default=..., alias='approved')
 
@@ -1252,6 +1257,16 @@ class DemoServiceOut(WireModel):
     state: str = Field(default=..., alias='state')
     value: DemoConfig = Field(default=..., alias='value')
 
+class DeploymentServiceState(WireModel):
+    exit_code: int | None = Field(default=None, alias='exit_code')
+    phase: ServicePhase = Field(default=..., alias='phase')
+    reason: str = Field(default='', alias='reason', max_length=64)
+    service_id: ServiceId = Field(default=..., alias='service_id')
+
+class DeploymentServicesOut(WireModel):
+    observed_at: datetime | None = Field(default=None, alias='observed_at')
+    services: list[DeploymentServiceState] | None = Field(default=None, alias='services', max_length=23)
+
 class DesktopLogin(WireModel):
     password: str = Field(default=..., alias='password', repr=False, min_length=1, max_length=128)
 
@@ -1368,6 +1383,12 @@ class DuplicateOut(WireModel):
 class DuplicateSnapshot(WireModel):
     knowledge_revision: int = Field(default=..., alias='knowledge_revision')
     revisions: dict[str, int] = Field(default=..., alias='revisions')
+
+class EndpointState(WireModel):
+    build_id: str = Field(default='', alias='build_id', max_length=100)
+    error: str = Field(default='', alias='error', max_length=500)
+    phase: Literal['off', 'connecting', 'ready', 'reconnecting', 'failed', 'unavailable'] = Field(default='unavailable', alias='phase')
+    url: str = Field(default='', alias='url', max_length=2048)
 
 class EndpointStatus(WireModel):
     error: str = Field(default='', alias='error')
@@ -3238,6 +3259,23 @@ class LoginIn(WireModel):
     password: str = Field(default=..., alias='password', repr=False)
     username: str = Field(default=..., alias='username')
 
+class ManagementAccessAction(WireModel):
+    action: Literal['public_start', 'public_stop', 'check'] = Field(default=..., alias='action')
+    request_id: str = Field(default=..., alias='request_id')
+
+class ManagementApplicationAction(WireModel):
+    action: Literal['start', 'stop', 'restart', 'force_stop'] = Field(default=..., alias='action')
+    request_id: str = Field(default=..., alias='request_id')
+
+class ManagementJob(WireModel):
+    error_code: str = Field(default='', alias='error_code')
+    id: str = Field(default=..., alias='id')
+    message: str = Field(default='', alias='message')
+    operation: str = Field(default=..., alias='operation')
+    result: dict[str, Any] | None = Field(default=None, alias='result')
+    revision: int = Field(default=..., alias='revision')
+    status: str = Field(default=..., alias='status')
+
 class McpCatalogOut(WireModel):
     items: list[McpOut] = Field(default=..., alias='items')
     overview: IntegrationOverviewOut = Field(default=..., alias='overview')
@@ -4685,6 +4723,12 @@ class RunOut(WireModel):
     status: str = Field(default=..., alias='status')
     updated_at: datetime = Field(default=..., alias='updated_at')
 
+class RuntimeContext(WireModel):
+    local_browser: bool = Field(default=..., alias='local_browser')
+
+class RuntimeLogs(WireModel):
+    lines: list[str] = Field(default=..., alias='lines')
+
 class RuntimeQuotas(WireModel):
     admin: QuotaLimit = Field(default={'realtime_voice': 2, 'total': 4}, alias='admin')
     generation_queue: GenerationQueueLimits | None = Field(default=None, alias='generation_queue')
@@ -4795,6 +4839,30 @@ class SeparateClipOperation(WireModel):
     clip_id: str = Field(default=..., alias='clipId')
     type: Literal['separateClip'] = Field(default=..., alias='type')
     visual_track_id: str = Field(default=..., alias='visualTrackId')
+
+class ServiceId(RootModel[Literal['gateway', 'management', 'identity', 'portal', 'agents', 'remote', 'visual', 'thought', 'galgame', 'video', 'motion', 'presentation', 'annotation', 'director', 'interview', 'creative', 'assets', 'models', 'rendering', 'agent-runtime', 'integrations', 'amadeus', 'tools']]):
+    pass
+
+class ServiceIssue(WireModel):
+    label: str = Field(default=..., alias='label')
+    phase: ServicePhase = Field(default=..., alias='phase')
+    service_id: ServiceId = Field(default=..., alias='service_id')
+
+class ServicePhase(RootModel[Literal['running', 'starting', 'stopped', 'paused', 'restarting', 'unhealthy', 'failed', 'unreachable', 'not_deployed', 'unknown', 'degraded']]):
+    pass
+
+class ServiceStatusOut(WireModel):
+    checked_at: datetime = Field(default=..., alias='checked_at')
+    dependencies: list[ServiceIssue] | None = Field(default=None, alias='dependencies')
+    detail: str = Field(default=..., alias='detail')
+    label: str = Field(default=..., alias='label')
+    phase: ServicePhase = Field(default=..., alias='phase')
+    service_id: ServiceId = Field(default=..., alias='service_id')
+
+class ServicesStatusOut(WireModel):
+    checked_at: datetime = Field(default=..., alias='checked_at')
+    mode: Literal['monolith', 'independent'] = Field(default=..., alias='mode')
+    services: list[ServiceStatusOut] = Field(default=..., alias='services')
 
 class SetAssetOrganizationOperation(WireModel):
     organization: VideoEditorAssetOrganization = Field(default=..., alias='organization')
@@ -5525,12 +5593,29 @@ class UpdateTransitionOperation(WireModel):
     transition_id: str = Field(default=..., alias='transitionId', min_length=1, max_length=64)
     type: Literal['updateTransition'] = Field(default=..., alias='type')
 
+class ValidationAttemptListOut(WireModel):
+    has_more: bool = Field(default=False, alias='has_more')
+    items: list[ValidationAttemptOut] = Field(default=..., alias='items')
+
+class ValidationAttemptOut(WireModel):
+    connection_id: str = Field(default=..., alias='connection_id')
+    created_at: datetime = Field(default=..., alias='created_at')
+    id: str = Field(default=..., alias='id')
+    kind: Literal['mcp.validate', 'tool.validate'] = Field(default=..., alias='kind')
+    released: bool = Field(default=..., alias='released')
+    status: Literal['unknown', 'completed', 'not-started'] = Field(default=..., alias='status')
+
 class ValidationError(WireModel):
     ctx: dict[str, Any] | None = Field(default=None, alias='ctx')
     input: Any | None = Field(default=None, alias='input')
     loc: list[str | int] = Field(default=..., alias='loc')
     msg: str = Field(default=..., alias='msg')
     type: str = Field(default=..., alias='type')
+
+class ValidationReconcileOut(WireModel):
+    id: str = Field(default=..., alias='id')
+    released: bool = Field(default=..., alias='released')
+    status: Literal['completed', 'not-started'] = Field(default=..., alias='status')
 
 class VerificationCode(WireModel):
     code: str = Field(default=..., alias='code')
@@ -6481,6 +6566,7 @@ AnnotationSplitOperation.model_rebuild()
 ApiKeyCreateIn.model_rebuild()
 ApiKeyCreatedOut.model_rebuild()
 ApiKeyOut.model_rebuild()
+ApplicationState.model_rebuild()
 ApprovalDecision.model_rebuild()
 ApprovalOut.model_rebuild()
 ArticleBindingInput.model_rebuild()
@@ -6624,6 +6710,8 @@ DemoInstallIn.model_rebuild()
 DemoInstallOut.model_rebuild()
 DemoLog.model_rebuild()
 DemoServiceOut.model_rebuild()
+DeploymentServiceState.model_rebuild()
+DeploymentServicesOut.model_rebuild()
 DesktopLogin.model_rebuild()
 DeveloperDocumentOut.model_rebuild()
 DeveloperDocumentsOut.model_rebuild()
@@ -6649,6 +6737,7 @@ DocumentOut.model_rebuild()
 DuplicateIn.model_rebuild()
 DuplicateOut.model_rebuild()
 DuplicateSnapshot.model_rebuild()
+EndpointState.model_rebuild()
 EndpointStatus.model_rebuild()
 Enrollment.model_rebuild()
 ExecutionCatalog.model_rebuild()
@@ -6909,6 +6998,9 @@ LocalModelAttachIn.model_rebuild()
 LocalModelOut.model_rebuild()
 LocalModelsOut.model_rebuild()
 LoginIn.model_rebuild()
+ManagementAccessAction.model_rebuild()
+ManagementApplicationAction.model_rebuild()
+ManagementJob.model_rebuild()
 McpCatalogOut.model_rebuild()
 McpCreateIn.model_rebuild()
 McpOut.model_rebuild()
@@ -7106,6 +7198,8 @@ RunEventIn.model_rebuild()
 RunEventOut.model_rebuild()
 RunFinishIn.model_rebuild()
 RunOut.model_rebuild()
+RuntimeContext.model_rebuild()
+RuntimeLogs.model_rebuild()
 RuntimeQuotas.model_rebuild()
 RuntimeQuotasIn.model_rebuild()
 RuntimeQuotasOut.model_rebuild()
@@ -7123,6 +7217,11 @@ SeedImportInput.model_rebuild()
 SeedPreview.model_rebuild()
 SelectOption.model_rebuild()
 SeparateClipOperation.model_rebuild()
+ServiceId.model_rebuild()
+ServiceIssue.model_rebuild()
+ServicePhase.model_rebuild()
+ServiceStatusOut.model_rebuild()
+ServicesStatusOut.model_rebuild()
 SetAssetOrganizationOperation.model_rebuild()
 SetAudioTransitionOperation.model_rebuild()
 SetClipSpeedOperation.model_rebuild()
@@ -7220,7 +7319,10 @@ UpdateClipOperation.model_rebuild()
 UpdateSettingsOperation.model_rebuild()
 UpdateTrackOperation.model_rebuild()
 UpdateTransitionOperation.model_rebuild()
+ValidationAttemptListOut.model_rebuild()
+ValidationAttemptOut.model_rebuild()
 ValidationError.model_rebuild()
+ValidationReconcileOut.model_rebuild()
 VerificationCode.model_rebuild()
 VideoCapabilitiesOut.model_rebuild()
 VideoDownloadAssetOut.model_rebuild()

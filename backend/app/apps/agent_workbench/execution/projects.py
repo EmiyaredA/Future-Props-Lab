@@ -210,13 +210,17 @@ def check_project_directory(project, settings):
         raise HTTPException(409, "项目目录不可用") from None
 
 
-async def labels(db, owner, identities):
+async def registered_labels(db, owner, identities):
     rows = await db.execute(
         select(WorkbenchProject.id, WorkbenchProject.root).where(
             WorkbenchProject.owner_user_id == owner, WorkbenchProject.id.in_(identities)
         )
     )
-    result = {identity: label_for(root) for identity, root in rows}
+    return {identity: label_for(root) for identity, root in rows}
+
+
+async def labels(db, owner, identities):
+    result = await registered_labels(db, owner, identities)
     legacy = get_cloud_settings().fpl_cloud_control_projects
     for identity in identities - result.keys():
         project = legacy.get(identity)

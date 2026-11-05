@@ -1,13 +1,11 @@
 """Publication-scoped access checks, independent of the active account."""
 
-from dataclasses import replace
-
 from sqlalchemy import select
 
+from app.apps.thought_workshop.account_directory import directory, profiles
 from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
-from app.console.models import User
-from app.orm import bind_owner
+from app.runtime.ownership import bind_owner
 
 from .models import ArticleMember, Publication, PublishedArticle
 
@@ -17,10 +15,7 @@ def missing():
 
 
 async def current_actor(session, principal):
-    user = await session.get(User, principal.user_id, populate_existing=True)
-    if user is None or user.status != "active":
-        raise missing()
-    return replace(principal, platform_role=user.platform_role)
+    return await directory(session).current(principal)
 
 
 async def manages_source(session, principal, owner_user_id):
@@ -104,16 +99,24 @@ async def article(session, principal, pub, note_id, *, level="read", inactive=Fa
 
 
 async def members(session, pub_id, note_id):
-    rows = (
-        await session.execute(
-            select(ArticleMember, User)
-            .join(User, User.id == ArticleMember.user_id)
-            .where(ArticleMember.publication_id == pub_id, ArticleMember.note_id == note_id)
+    rows = list(
+        await session.scalars(
+            select(ArticleMember).where(
+                ArticleMember.publication_id == pub_id,
+                ArticleMember.note_id == note_id,
+            )
         )
-    ).all()
+    )
+    users = {user.id: user for user in await profiles(session, ids={row.user_id for row in rows})}
     return [
-        dict(username=u.username, user_id=u.id, display_name=u.display_name, role=m.role)
-        for m, u in rows
+        dict(
+            username=users[row.user_id].username,
+            user_id=row.user_id,
+            display_name=users[row.user_id].display_name,
+            role=row.role,
+        )
+        for row in rows
+        if row.user_id in users
     ]
 
 

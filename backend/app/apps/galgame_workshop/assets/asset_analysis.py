@@ -1,14 +1,22 @@
 from __future__ import annotations
 
-from sqlalchemy import or_, select
+from pathlib import PurePosixPath
+
+from sqlalchemy import select
 
 from app.apps.galgame_workshop.assets.asset_support import (
+    CATEGORY_DIRECTORIES,
+    ProjectAssetFile,
+    _deduplicated_name,
     _default_category,
     _default_virtual_path,
     galgame_asset_out,
+    normalize_import_filename,
 )
 from app.apps.galgame_workshop.models import GalgameAssetMetadata, GalgameStoryDocument
 from app.apps.galgame_workshop.schemas import (
+    GalgameAssetImportPreviewItem,
+    GalgameAssetImportPreviewOut,
     GalgameAssetOverviewItem,
     GalgameAssetOverviewOut,
     GalgameAssetPackagingPolicy,
@@ -23,11 +31,51 @@ from app.apps.galgame_workshop.schemas import (
     GalgameStoryShowCgBlock,
     GalgameStoryVideoBlock,
 )
-from app.apps.galgame_workshop.story.story import normalize_story_document
-from app.capabilities.asset_store.models import VisualAsset
+from app.apps.galgame_workshop.story.document_values import normalize_story_document
+
+
+def plan_uploads(filenames, category, existing_paths):
+    directory = CATEGORY_DIRECTORIES[category]
+    used = {
+        PurePosixPath(path).name.casefold()
+        for path in existing_paths
+        if PurePosixPath(path).parent.as_posix() == directory
+    }
+    items: list[GalgameAssetImportPreviewItem] = []
+    for raw_name in filenames:
+        normalized, reasons = normalize_import_filename(raw_name)
+        final_name, renamed_for_duplicate = _deduplicated_name(normalized, used)
+        if renamed_for_duplicate:
+            reasons.append("同名文件已追加序号")
+        items.append(
+            GalgameAssetImportPreviewItem(
+                originalName=raw_name,
+                finalName=final_name,
+                virtualPath=f"{directory}/{final_name}",
+                reasons=reasons,
+            )
+        )
+    return GalgameAssetImportPreviewOut(items=items)
 
 
 class GalgameAssetAnalysisMixin:
+    async def import_preview(
+        self, project_id: str, filenames: list[str], category: str
+    ) -> GalgameAssetImportPreviewOut:
+        await self._project(project_id)
+        existing_paths = list(
+            (
+                await self.session.execute(
+                    select(GalgameAssetMetadata.virtual_path).where(
+                        GalgameAssetMetadata.project_id == project_id
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        return plan_uploads(filenames, category, existing_paths)
+
     async def overview(self, project_id: str) -> GalgameAssetOverviewOut:
         await self._project(project_id)
         story_row = await self.session.get(GalgameStoryDocument, project_id)
@@ -35,17 +83,9 @@ class GalgameAssetAnalysisMixin:
         referenced_file_ids = (
             {asset.file_id for asset in document.assets} if document is not None else set()
         )
-        asset_scope = VisualAsset.galgame_project_id == project_id
-        if referenced_file_ids:
-            asset_scope = or_(asset_scope, VisualAsset.id.in_(referenced_file_ids))
-        rows_with_metadata = (
-            await self.session.execute(
-                select(VisualAsset, GalgameAssetMetadata)
-                .outerjoin(GalgameAssetMetadata, GalgameAssetMetadata.asset_id == VisualAsset.id)
-                .where(asset_scope)
-                .order_by(VisualAsset.updated_at.desc(), VisualAsset.created_at.desc())
-            )
-        ).all()
+        rows_with_metadata = await self.asset_records(
+            project_id, referenced_file_ids, newest_first=True
+        )
         rows = [row for row, _metadata in rows_with_metadata]
         if document is None:
             items = [
@@ -385,28 +425,8 @@ class GalgameAssetAnalysisMixin:
         await self._project(project_id)
         story_row = await self.session.get(GalgameStoryDocument, project_id)
         document = normalize_story_document(story_row.document) if story_row else None
-        rows_with_metadata = (
-            await self.session.execute(
-                select(VisualAsset, GalgameAssetMetadata)
-                .outerjoin(GalgameAssetMetadata, GalgameAssetMetadata.asset_id == VisualAsset.id)
-                .where(VisualAsset.galgame_project_id == project_id)
-            )
-        ).all()
-        if document is not None:
-            known_ids = {row.id for row, _metadata in rows_with_metadata}
-            external_ids = {asset.file_id for asset in document.assets} - known_ids
-            if external_ids:
-                external_rows = (
-                    await self.session.execute(
-                        select(VisualAsset, GalgameAssetMetadata)
-                        .outerjoin(
-                            GalgameAssetMetadata,
-                            GalgameAssetMetadata.asset_id == VisualAsset.id,
-                        )
-                        .where(VisualAsset.id.in_(external_ids))
-                    )
-                ).all()
-                rows_with_metadata.extend(external_rows)
+        referenced = {asset.file_id for asset in document.assets} if document else set()
+        rows_with_metadata = await self.asset_records(project_id, referenced, newest_first=False)
         references_by_file = (
             self._story_references_by_file(document) if document is not None else {}
         )
@@ -415,7 +435,7 @@ class GalgameAssetAnalysisMixin:
     def _package_manifest_from(
         self,
         document: GalgameStoryProject | None,
-        rows_with_metadata: list[tuple[VisualAsset, GalgameAssetMetadata | None]],
+        rows_with_metadata: list[tuple[ProjectAssetFile, GalgameAssetMetadata | None]],
         references_by_file: dict[str, list[dict[str, object]]],
     ) -> GalgamePackageManifestOut:
         items: list[GalgamePackageManifestItem] = []
@@ -434,7 +454,7 @@ class GalgameAssetAnalysisMixin:
             virtual_path = (
                 metadata.virtual_path if metadata is not None else _default_virtual_path(row)
             )
-            path_exists = self.storage.path_for(row).is_file()
+            path_exists = self._file_exists(row)
             if referenced and policy == "exclude":
                 issues.append(
                     GalgamePackageManifestIssue(

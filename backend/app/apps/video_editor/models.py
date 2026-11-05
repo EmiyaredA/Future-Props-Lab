@@ -6,7 +6,7 @@ from sqlalchemy import JSON, DateTime, ForeignKey, Index, Integer, String, Text,
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.runtime.ids import new_id
-from app.runtime.orm_base import Base
+from app.runtime.orm_base import Base, external_id
 from app.runtime.time import utc_now
 
 
@@ -65,7 +65,7 @@ class VideoEditorAssetMetadata(Base):
     __table_args__ = (Index("ix_video_editor_asset_project", "project_id", "created_at"),)
 
     asset_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="CASCADE"), primary_key=True
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="CASCADE"), primary_key=True
     )
     project_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("video_editor_projects.id", ondelete="CASCADE")
@@ -105,7 +105,7 @@ class VideoEditorTask(Base):
     snapshot_document: Mapped[dict] = mapped_column(JSON, default=dict)
     result_detail: Mapped[dict] = mapped_column(JSON, default=dict)
     output_asset_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="SET NULL")
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="SET NULL")
     )
     error: Mapped[str | None] = mapped_column(Text)
     cancel_requested: Mapped[bool] = mapped_column(default=False)

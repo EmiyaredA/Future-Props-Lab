@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import json
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.apps.presentation_workshop.asset_references import document_references
-from app.apps.presentation_workshop.models import PresentationAssetReference, PresentationProject
+from app.apps.presentation_workshop.models import PresentationProject
+from app.apps.presentation_workshop.project_errors import PresentationError as PresentationError
 from app.apps.presentation_workshop.schemas.document import (
     PresentationDocument,
     PresentationProjectIn,
@@ -17,23 +17,15 @@ from app.apps.presentation_workshop.schemas.document import (
 )
 from app.apps.presentation_workshop.templates.models import PresentationTemplate
 from app.apps.presentation_workshop.templates.resolver import resolve_document
-from app.capabilities.asset_store import AssetStorage
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.svg import normalize_svg
-from app.runtime.config import get_settings
+from app.runtime.ids import new_id
 from app.runtime.operation_receipts import forget
 from app.runtime.project_records import (
     delete_revisioned_project,
     load_owned_project,
     patch_revisioned_project,
 )
+from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import utc_now
-
-
-class PresentationError(Exception):
-    def __init__(self, message: str, status: int = 422, code: str = "invalid_presentation"):
-        super().__init__(message)
-        self.status, self.code = status, code
 
 
 def project_out(row: PresentationProject) -> PresentationProjectOut:
@@ -75,6 +67,8 @@ def summary_slide(row):
 class Presentations:
     def __init__(self, session: AsyncSession, owner_user_id: str):
         self.session, self.owner_user_id = session, owner_user_id
+        self.asset_access = session.info["presentation_project_assets"](session, owner_user_id)
+        self.retention = session.info.get("presentation_retention")
 
     async def row(self, project_id: str) -> PresentationProject:
         return await load_owned_project(
@@ -151,62 +145,8 @@ class Presentations:
             ],
         )
 
-    async def assets(self, document: PresentationDocument) -> list[VisualAsset]:
-        references = document_references(document)
-        ids = set(references)
-        if not ids:
-            return []
-        rows = list(
-            await self.session.scalars(
-                select(VisualAsset).where(
-                    VisualAsset.id.in_(ids),
-                    VisualAsset.owner_user_id == self.owner_user_id,
-                    VisualAsset.project_id.is_(None),
-                    VisualAsset.galgame_project_id.is_(None),
-                    VisualAsset.video_editor_project_id.is_(None),
-                    VisualAsset.motion_compositor_project_id.is_(None),
-                    VisualAsset.media_kind.in_(["image", "audio", "video"]),
-                )
-            )
-        )
-        if {row.id for row in rows} != ids:
-            raise PresentationError("图片不存在或不属于当前账号的公共文件库", 404, "not_found")
-        by_id = {row.id: row for row in rows}
-        for row in rows:
-            if references[row.id] != {row.media_kind}:
-                raise PresentationError("素材类型与引用用途不匹配", 422, "invalid_asset_type")
-        for slide in document.slides:
-            for element in slide.elements:
-                if not element.asset_id:
-                    continue
-                row = by_id[element.asset_id]
-                expected_kind = element.kind if element.kind in {"audio", "video"} else "image"
-                if row.media_kind != expected_kind or (
-                    expected_kind == "image"
-                    and (element.kind in {"vector", "formula"})
-                    != (row.mime_type == "image/svg+xml")
-                ):
-                    raise PresentationError(
-                        "素材类型与图片／矢量元素不匹配", 422, "invalid_asset_type"
-                    )
-                if element.vector_color:
-                    source = AssetStorage(get_settings()).path_for(row)
-                    if not normalize_svg(source.read_text())["monochrome"]:
-                        raise PresentationError(
-                            "多色 SVG 不支持统一改色", 422, "invalid_vector_color"
-                        )
-        return rows
-
-    async def references(self, project_id: str, document: PresentationDocument):
-        assets = await self.assets(document)
-        await self.session.execute(
-            delete(PresentationAssetReference).where(
-                PresentationAssetReference.project_id == project_id
-            )
-        )
-        self.session.add_all(
-            PresentationAssetReference(project_id=project_id, asset_id=a.id) for a in assets
-        )
+    async def assets(self, document):
+        return await self.asset_access.assets(document)
 
     async def normalize_template_source(self, document):
         sources = {
@@ -236,20 +176,50 @@ class Presentations:
             if identity is None:
                 document.template.template_id = None
 
+    async def _prepare(self, project_id, expected, document=None):
+        if self.retention is None:
+            return None
+        await self.session.rollback()
+        assets = await self.assets(document) if document is not None else ()
+        return await self.retention.prepare(project_id, expected, [asset.id for asset in assets])
+
+    async def _abort(self, prepared):
+        await self.session.rollback()
+        if prepared is not None:
+            await self.retention.abort(self.session, prepared)
+
     async def create(self, body: PresentationProjectIn) -> PresentationProjectOut:
         await self.normalize_template_source(body.document)
-        await self.assets(body.document)
+        project_id = new_id()
+        prepared = await self._prepare(project_id, -1, body.document)
+        legacy_assets = await self.assets(body.document) if prepared is None else ()
         row = PresentationProject(
-            owner_user_id=self.owner_user_id, title=body.title, document=body.document.model_dump()
+            id=project_id,
+            owner_user_id=self.owner_user_id,
+            title=body.title,
+            document=body.document.model_dump(),
         )
-        self.session.add(row)
-        await self.session.flush()
-        await self.references(row.id, body.document)
+        try:
+            self.session.add(row)
+            await self.session.flush()
+            if prepared is None:
+                await self.asset_access.references(project_id, legacy_assets)
+            else:
+                await self.retention.record(self.session, prepared, resource_revision=row.revision)
+            result = project_out(row)
+        except BaseException:
+            await self._abort(prepared)
+            raise
         await self.session.commit()
-        return await self.get(row.id)
+        return result
 
     async def put(
-        self, project_id: str, body: PresentationProjectPut, *, commit: bool = True
+        self,
+        project_id: str,
+        body: PresentationProjectPut,
+        *,
+        before_write=None,
+        record_operation=None,
     ) -> PresentationProjectOut:
         current = await self.row(project_id)
         if body.document.source_version < 5 and current.document.get("version", 3) >= 5:
@@ -270,44 +240,77 @@ class Presentations:
             raise PresentationError(
                 "当前文稿包含新版内容，请更新客户端后保存", 422, "document_downgrade"
             )
+        if current.revision != body.expected_revision:
+            raise RevisionConflictError(
+                body.expected_revision,
+                current.revision,
+                project_out(current).model_dump(mode="json"),
+            )
         await self.normalize_template_source(body.document)
-        await patch_revisioned_project(
-            self.session,
-            PresentationProject,
-            project_id,
-            self.owner_user_id,
-            expected_revision=body.expected_revision,
-            values={
-                "title": body.title,
-                "document": body.document.model_dump(),
-                "revision": body.expected_revision + 1,
-                "updated_at": utc_now(),
-            },
-            load_current=lambda: self.get(project_id),
-        )
+        prepared = await self._prepare(project_id, body.expected_revision, body.document)
+        legacy_assets = await self.assets(body.document) if prepared is None else ()
         try:
-            await self.references(project_id, body.document)
-            if commit:
-                await self.session.commit()
-        except Exception:
-            await self.session.rollback()
+            if before_write is not None:
+                await before_write()
+            await patch_revisioned_project(
+                self.session,
+                PresentationProject,
+                project_id,
+                self.owner_user_id,
+                expected_revision=body.expected_revision,
+                values={
+                    "title": body.title,
+                    "document": body.document.model_dump(),
+                    "revision": body.expected_revision + 1,
+                    "updated_at": utc_now(),
+                },
+                load_current=lambda: self.get(project_id),
+            )
+            if prepared is None:
+                await self.asset_access.references(project_id, legacy_assets)
+            result = await self.get(project_id)
+            if prepared is not None:
+                await self.retention.record(
+                    self.session, prepared, resource_revision=result.revision
+                )
+            if record_operation is not None:
+                record_operation(result)
+        except BaseException:
+            await self._abort(prepared)
             raise
-        return await self.get(project_id)
+        await self.session.commit()
+        return result
 
     async def delete(self, project_id: str, revision: int):
-        await self.row(project_id)
-        await delete_revisioned_project(
-            self.session,
-            PresentationProject,
-            project_id,
-            self.owner_user_id,
-            expected_revision=revision,
-            load_current=lambda: self.get(project_id),
-        )
-        await forget(
-            self.session,
-            owner_user_id=self.owner_user_id,
-            kind="presentation",
-            resource_id=project_id,
-        )
+        current = await self.row(project_id)
+        if current.revision != revision:
+            raise RevisionConflictError(
+                revision, current.revision, project_out(current).model_dump(mode="json")
+            )
+        prepared = await self._prepare(project_id, revision)
+        try:
+            await delete_revisioned_project(
+                self.session,
+                PresentationProject,
+                project_id,
+                self.owner_user_id,
+                expected_revision=revision,
+                load_current=lambda: self.get(project_id),
+            )
+            await forget(
+                self.session,
+                owner_user_id=self.owner_user_id,
+                kind="presentation",
+                resource_id=project_id,
+            )
+            if prepared is not None:
+                await self.retention.record(
+                    self.session,
+                    prepared,
+                    resource_revision=revision + 1,
+                    deleted=True,
+                )
+        except BaseException:
+            await self._abort(prepared)
+            raise
         await self.session.commit()

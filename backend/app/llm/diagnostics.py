@@ -7,10 +7,10 @@ import httpx
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.llm.call_logs.credentials import CredentialSnapshot
 from app.llm.catalog.service import ModelCatalogService, ResourceNotFoundError
+from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.models import LlmCallLog, ModelProvider
-from app.llm.providers import invoke_diagnostic
+from app.llm.providers.text import invoke_diagnostic
 from app.llm.schemas.model_service import TestModelOut
 from app.runtime.credentials import decrypt_secret
 
@@ -38,7 +38,11 @@ def _redact(value):
 
 
 async def test_model(
-    session: AsyncSession, model_id: str, credential: CredentialSnapshot | None = None
+    session: AsyncSession,
+    model_id: str,
+    credential: CredentialSnapshot | None = None,
+    *,
+    transport_options=None,
 ) -> TestModelOut:
     catalog = ModelCatalogService(session)
     model = await catalog.get_model(model_id)
@@ -79,6 +83,7 @@ async def test_model(
             base_url=provider.base_url,
             api_key=key,
             model=model.slug,
+            **(transport_options(provider.base_url) if transport_options else {}),
         )
         log.response_payload = _redact(result.response_payload)
         log.prompt_tokens = result.prompt_tokens

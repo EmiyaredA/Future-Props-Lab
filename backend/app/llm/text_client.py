@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.llm.call_logs.credentials import CredentialSnapshot
+from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.inference.catalog import get_model
 from app.llm.models import LlmCallLog
 from app.llm.providers.streaming import ChatMessageInput, TextDelta, stream_text_completion

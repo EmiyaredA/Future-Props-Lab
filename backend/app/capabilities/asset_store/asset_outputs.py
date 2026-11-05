@@ -1,11 +1,23 @@
+from datetime import datetime
+from typing import Protocol
+
 from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualAssetFolder,
-    VisualProjectAssetReference,
 )
 from app.capabilities.asset_store.policy import display_name_without_original_extension
 from app.capabilities.asset_store.schemas.files import VisualAssetFolderOut, VisualAssetOut
 from app.runtime.time import iso_utc
+
+
+class AssetReferenceView(Protocol):
+    id: str
+    project_id: str
+    folder_id: str | None
+    display_name: str
+    revision: int
+    created_at: datetime
+    updated_at: datetime
 
 
 def folder_out(row: VisualAssetFolder) -> VisualAssetFolderOut:
@@ -23,7 +35,7 @@ def folder_out(row: VisualAssetFolder) -> VisualAssetFolderOut:
 def asset_out(
     row: VisualAsset,
     *,
-    reference: VisualProjectAssetReference | None = None,
+    reference: AssetReferenceView | None = None,
 ) -> VisualAssetOut:
     display_name = reference.display_name if reference else row.display_name
     return VisualAssetOut(

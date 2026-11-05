@@ -45,3 +45,7 @@ def redact_structure(value: Any, secrets: list[str]) -> Any:
             for key, item in value.items()
         }
     return value
+
+
+class IntegrationNotStarted(RuntimeError):
+    """A configured operation was rejected before any outbound execution was dispatched."""

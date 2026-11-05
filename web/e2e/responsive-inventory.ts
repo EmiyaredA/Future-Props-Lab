@@ -17,12 +17,6 @@ export const responsiveOwners = {
   "agent-workbench-session": "shell",
   "agent-workbench-sources": "shell",
   "interview-assistant-session": "shell",
-  "management-accounts": "shell",
-  "management-audit": "shell",
-  "management-invites": "shell",
-  "management-settings": "shell",
-  "management-services": "shell",
-  "management-quotas": "shell",
   home: "shell",
   "creative-workshop": "shell",
   "creative-workshop-mine": "shell",
@@ -73,6 +67,58 @@ export const responsiveOwners = {
   "director-desk-editor": "editors",
 } satisfies Record<AppPage, "shell" | "editors" | "thought">;
 export const publicSurfaces = ["login", "account-settings", "docs"] as const;
+export const independentApplications = {
+  creative: [
+    "/creative-workshop",
+    "/creative-workshop/mine",
+    "/creative-workshop/new",
+    "/creative-workshop/edit/:id",
+    "/creative-workshop/item/:id",
+  ],
+  models: ["/model-service", "/model-test", "/model-call-logs"],
+  integrations: [
+    "/integrations",
+    "/integrations/mcp",
+    "/integrations/skills",
+    "/integrations/external-connections",
+  ],
+  assets: ["/files"],
+  "agent-runtime": ["/code-agents"],
+  annotation: ["/apps/audio-annotation", "/apps/audio-annotation/projects/:id"],
+  presentation: [
+    "/apps/presentation-workshop",
+    "/apps/presentation-workshop/templates",
+    "/apps/presentation-workshop/templates/:id",
+    "/apps/presentation-workshop/projects/:id",
+  ],
+  video: [
+    "/apps/video-editor",
+    "/apps/video-editor/tasks",
+    "/apps/video-editor/projects/:id/editor",
+  ],
+  visual: [
+    "/apps/visual-workshop",
+    "/apps/visual-workshop/tasks",
+    "/apps/visual-workshop/projects/:id/canvas",
+    "/apps/visual-workshop/projects/:id/assets",
+  ],
+  galgame: [
+    "/apps/galgame-workshop",
+    "/apps/galgame-workshop/projects/:id/overview",
+    "/apps/galgame-workshop/projects/:id/editor",
+    "/apps/galgame-workshop/projects/:id/preview",
+  ],
+  motion: [
+    "/apps/motion-compositor",
+    "/apps/motion-compositor/projects/:id/editor",
+  ],
+  interview: ["/apps/interview-assistant"],
+  director: ["/apps/director-desk", "/apps/director-desk/projects/:id"],
+  tools: ["/tools", "/tools/video-frame-exporter", "/tools/video-downloader"],
+  portal: ["/", "/home", "/apps", "/docs.html"],
+  agents: ["/agents", "/agents/sources", "/agents/sessions/:id"],
+} as const;
+
 export const staticPaths = [
   "/apps/agent-workbench",
   "/apps/agent-workbench/sources",
@@ -111,6 +157,7 @@ export const staticPaths = [
   "/apps/visual-workshop/tasks",
   "/apps/galgame-workshop",
   "/apps/presentation-workshop",
+  "/apps/presentation-workshop/templates",
   "/apps/video-editor",
   "/apps/video-editor/tasks",
   "/apps/motion-compositor",
@@ -128,3 +175,16 @@ export const viewports = [
   { width: 1920, height: 1080 },
   { width: 844, height: 390 },
 ];
+
+// Independent management HTML and all its routes are covered by management.spec.ts.
+export const managementSurfaces = [
+  "/management.html",
+  "/management/accounts",
+  "/management/invites",
+  "/management/settings",
+  "/management/services",
+  "/management/quotas",
+  "/management/audit",
+  "/management/application",
+  "/management/access",
+] as const;

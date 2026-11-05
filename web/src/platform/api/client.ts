@@ -1,3 +1,7 @@
+import {
+  addApplicationBuild,
+  observeApplicationBuild,
+} from "./applicationBuild";
 import createClient from "openapi-fetch";
 import {
   measureResponse,
@@ -44,8 +48,10 @@ export async function requestApi(
   init: TransferRequestInit = {},
 ): Promise<Response> {
   const { signal, onProgress, ...requestInit } = init;
-  const request = applySessionHeaders(
-    new Request(apiUrl(path), { ...requestInit, credentials: "include" }),
+  const request = addApplicationBuild(
+    applySessionHeaders(
+      new Request(apiUrl(path), { ...requestInit, credentials: "include" }),
+    ),
   );
   const response =
     requestInit.body instanceof FormData && onProgress
@@ -57,6 +63,7 @@ export async function requestApi(
       : signal
         ? await fetch(request, { signal })
         : await fetch(request);
+  observeApplicationBuild(response);
   if (response.status === 401) notifyAuthRequired();
   if (!response.ok) {
     const problem = await responseProblem(response);
@@ -127,9 +134,10 @@ export async function fetchApiDownload(
 }
 api.use({
   async onRequest({ request }) {
-    return applySessionHeaders(request);
+    return addApplicationBuild(applySessionHeaders(request));
   },
   async onResponse({ response }) {
+    observeApplicationBuild(response);
     if (response.status === 401) notifyAuthRequired();
     if (response.status === 403) {
       const problem = parseProblemDetail(

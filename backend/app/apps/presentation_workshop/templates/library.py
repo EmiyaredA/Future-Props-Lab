@@ -1,6 +1,6 @@
 """Template and example transactions, tenant checks and protected references."""
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import func, select
 
 from app.apps.presentation_workshop.projects import PresentationError, Presentations
 from app.apps.presentation_workshop.schemas.document import (
@@ -16,12 +16,11 @@ from app.apps.presentation_workshop.templates.contracts import (
 )
 from app.apps.presentation_workshop.templates.models import (
     PresentationExample,
-    PresentationExampleAsset,
     PresentationTemplate,
-    PresentationTemplateAsset,
 )
 from app.apps.presentation_workshop.templates.native_scene import default_page
 from app.apps.presentation_workshop.templates.schema import TemplateBinding
+from app.runtime.ids import new_id
 from app.runtime.project_records import (
     delete_revisioned_project,
     load_owned_project,
@@ -49,23 +48,16 @@ class TemplateLibrary:
     def __init__(self, session, owner_user_id):
         self.session, self.owner_user_id = session, owner_user_id
         self.projects = Presentations(session, owner_user_id)
+        self.retention = session.info.get("presentation_retention")
 
     def kinds(self, kind):
         if kind == "templates":
-            return (
-                PresentationTemplate,
-                PresentationTemplateOut,
-                PresentationTemplateList,
-                PresentationTemplateAsset,
-                "template_id",
-            )
-        return (
-            PresentationExample,
-            PresentationExampleOut,
-            PresentationExampleList,
-            PresentationExampleAsset,
-            "example_id",
-        )
+            return PresentationTemplate, PresentationTemplateOut, PresentationTemplateList
+        return PresentationExample, PresentationExampleOut, PresentationExampleList
+
+    def output(self, kind, row):
+        out = self.kinds(kind)[1]
+        return out(**{key: getattr(row, key) for key in out.model_fields})
 
     async def row(self, kind, identity):
         model, *_ = self.kinds(kind)
@@ -80,11 +72,10 @@ class TemplateLibrary:
     async def get(self, kind, identity):
         row = await self.row(kind, identity)
         await self.session.refresh(row)
-        out = self.kinds(kind)[1]
-        return out(**{key: getattr(row, key) for key in out.model_fields})
+        return self.output(kind, row)
 
     async def list(self, kind, query="", offset=0, limit=24):
-        model, out, listing, *_ = self.kinds(kind)
+        model, _, listing = self.kinds(kind)
         filters = [model.owner_user_id == self.owner_user_id]
         if query.strip():
             filters.append(model.title.contains(query.strip(), autoescape=True))
@@ -98,33 +89,64 @@ class TemplateLibrary:
         )
         return listing(
             total=total or 0,
-            items=[out(**{key: getattr(row, key) for key in out.model_fields}) for row in rows],
+            items=[self.output(kind, row) for row in rows],
         )
 
-    async def references(self, kind, identity, body):
-        _, _, _, ref, owner = self.kinds(kind)
-        document = (
+    @staticmethod
+    def document(kind, body):
+        return (
             template_document(body.definition, body.title) if kind == "templates" else body.document
         )
-        assets = await self.projects.assets(document)
-        await self.session.execute(delete(ref).where(getattr(ref, owner) == identity))
-        self.session.add_all(ref(**{owner: identity, "asset_id": asset.id}) for asset in assets)
 
-    async def create(self, kind, body, *, commit=True):
-        model = self.kinds(kind)[0]
+    async def prepare(self, kind, identity, expected, document):
+        if self.retention is not None:
+            await self.session.rollback()
+        assets = await self.projects.assets(document) if document is not None else ()
+        if self.retention is None:
+            return None, assets
+        prepared = await self.retention.prepare(
+            identity, expected, [asset.id for asset in assets], kind=kind.removesuffix("s")
+        )
+        return prepared, ()
+
+    async def settle(self, kind, identity, outcome, *, revision, deleted=False):
+        prepared, assets = outcome
+        if prepared is not None:
+            await self.retention.record(
+                self.session, prepared, resource_revision=revision, deleted=deleted
+            )
+        elif not deleted:
+            await self.projects.asset_access.library_references(kind, identity, assets)
+
+    async def abort(self, outcomes):
+        await self.session.rollback()
+        for prepared, _ in outcomes:
+            if prepared is not None:
+                await self.retention.abort(self.session, prepared)
+
+    async def create_rows(self, records):
+        outcomes = []
+        results = []
+        try:
+            for kind, identity, body in records:
+                outcomes.append(await self.prepare(kind, identity, -1, self.document(kind, body)))
+            for (kind, identity, body), outcome in zip(records, outcomes, strict=True):
+                model = self.kinds(kind)[0]
+                row = model(id=identity, owner_user_id=self.owner_user_id, **body.model_dump())
+                self.session.add(row)
+                await self.session.flush()
+                await self.settle(kind, identity, outcome, revision=row.revision)
+                results.append(self.output(kind, row))
+        except BaseException:
+            await self.abort(outcomes)
+            raise
+        await self.session.commit()
+        return results
+
+    async def create(self, kind, body):
         if kind == "examples":
             await self.projects.normalize_template_source(body.document)
-        row = model(owner_user_id=self.owner_user_id, **body.model_dump())
-        self.session.add(row)
-        try:
-            await self.session.flush()
-            await self.references(kind, row.id, body)
-            if commit:
-                await self.session.commit()
-        except Exception:
-            await self.session.rollback()
-            raise
-        return await self.get(kind, row.id)
+        return (await self.create_rows([(kind, new_id(), body)]))[0]
 
     async def put(self, kind, identity, body):
         current = await self.row(kind, identity)
@@ -152,9 +174,17 @@ class TemplateLibrary:
             raise PresentationError(
                 "当前示例包含模板数据，请更新客户端后保存", 422, "document_downgrade"
             )
+        if current.revision != body.expected_revision:
+            snapshot = self.output(kind, current)
+            raise RevisionConflictError(
+                body.expected_revision, snapshot.revision, snapshot.model_dump(mode="json")
+            )
         model = self.kinds(kind)[0]
         if kind == "examples":
             await self.projects.normalize_template_source(body.document)
+        outcome = await self.prepare(
+            kind, identity, body.expected_revision, self.document(kind, body)
+        )
         try:
             await patch_revisioned_project(
                 self.session,
@@ -169,23 +199,35 @@ class TemplateLibrary:
                 },
                 load_current=lambda: self.get(kind, identity),
             )
-            await self.references(kind, identity, body)
-            await self.session.commit()
-        except Exception:
-            await self.session.rollback()
+            result = await self.get(kind, identity)
+            await self.settle(kind, identity, outcome, revision=result.revision)
+        except BaseException:
+            await self.abort([outcome])
             raise
-        return await self.get(kind, identity)
+        await self.session.commit()
+        return result
 
     async def delete(self, kind, identity, revision):
-        await self.row(kind, identity)
-        await delete_revisioned_project(
-            self.session,
-            self.kinds(kind)[0],
-            identity,
-            self.owner_user_id,
-            expected_revision=revision,
-            load_current=lambda: self.get(kind, identity),
-        )
+        current = await self.row(kind, identity)
+        if current.revision != revision:
+            snapshot = self.output(kind, current)
+            raise RevisionConflictError(
+                revision, snapshot.revision, snapshot.model_dump(mode="json")
+            )
+        outcome = await self.prepare(kind, identity, revision, None)
+        try:
+            await delete_revisioned_project(
+                self.session,
+                self.kinds(kind)[0],
+                identity,
+                self.owner_user_id,
+                expected_revision=revision,
+                load_current=lambda: self.get(kind, identity),
+            )
+            await self.settle(kind, identity, outcome, revision=revision + 1, deleted=True)
+        except BaseException:
+            await self.abort([outcome])
+            raise
         await self.session.commit()
 
     async def create_document(self, kind, identity, body):
@@ -221,23 +263,22 @@ class TemplateLibrary:
         )
 
     async def import_bundle(self, body):
-
-        try:
-            template = await self.create("templates", body.template, commit=False)
-            document = body.example.document.model_copy(deep=True)
-            document.version = 5 if template.definition.version == 2 else max(4, document.version)
-            document.template = TemplateBinding(
-                template_id=template.id,
-                template_revision=template.revision,
-                name=template.title,
-                snapshot=template.definition,
-            )
-            document = PresentationDocument.model_validate(document.model_dump())
-            example = await self.create(
-                "examples", body.example.model_copy(update={"document": document}), commit=False
-            )
-            await self.session.commit()
-            return TemplateBundleOut(template=template, example=example)
-        except Exception:
-            await self.session.rollback()
-            raise
+        template_id = new_id()
+        document = body.example.document.model_copy(deep=True)
+        await self.projects.normalize_template_source(document)
+        definition = body.template.definition
+        document.version = 5 if definition.version == 2 else max(4, document.version)
+        document.template = TemplateBinding(
+            template_id=template_id,
+            template_revision=0,
+            name=body.template.title,
+            snapshot=definition,
+        )
+        document = PresentationDocument.model_validate(document.model_dump())
+        template, example = await self.create_rows(
+            [
+                ("templates", template_id, body.template),
+                ("examples", new_id(), body.example.model_copy(update={"document": document})),
+            ]
+        )
+        return TemplateBundleOut(template=template, example=example)

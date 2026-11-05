@@ -66,19 +66,23 @@ def copy_tree(source, target):
     shutil.copytree(source, target, symlinks=True, copy_function=copy_file, ignore=ignore)
 
 
-def verify_database(path):
+def verify_database(path, *, expected_migrations=None):
     wal = path.with_name(path.name + "-wal")
     if wal.exists() and wal.stat().st_size:
         raise ValueError("SQLite 仍有未结算 WAL，请正常停止应用后重试；迁移工具不写数据库")
-    with sqlite3.connect(path.resolve().as_uri() + "?mode=ro&immutable=1", uri=True) as database:
+    with contextlib.closing(
+        sqlite3.connect(path.resolve().as_uri() + "?mode=ro&immutable=1", uri=True)
+    ) as database:
         if database.execute("PRAGMA integrity_check").fetchall() != [("ok",)]:
             raise ValueError("SQLite integrity check failed")
         if database.execute("PRAGMA foreign_key_check").fetchall():
             raise ValueError("SQLite foreign key check failed")
-        return [
-            row[0]
-            for row in database.execute("SELECT migration_id FROM schema_migrations ORDER BY rowid")
-        ]
+        ledger = database.execute(
+            "SELECT migration_id, checksum FROM schema_migrations ORDER BY rowid"
+        ).fetchall()
+        if expected_migrations is not None and ledger != expected_migrations:
+            raise ValueError("网站迁移注册表与源版本不一致")
+        return [row[0] for row in ledger]
 
 
 def locked(path):

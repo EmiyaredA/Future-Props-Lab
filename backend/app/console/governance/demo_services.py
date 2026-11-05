@@ -15,7 +15,7 @@ from app.demo_runtime.runtime import (
     status,
 )
 from app.integrations.models import ToolApiIntegration
-from app.llm.catalog.service import ModelCatalogService
+from app.llm.catalog.legacy import legacy_catalog
 from app.llm.models import ModelEntry, ModelProvider
 from app.runtime.credentials import encrypt_secret
 
@@ -88,7 +88,7 @@ async def install(session, principal, service_id, expected_catalog_revision, cli
         )
     if exists:
         raise AccountError("demo_service_already_installed")
-    revision = await ModelCatalogService(session)._bump(expected_catalog_revision)
+    revision = await legacy_catalog(session).advance_revision(expected_catalog_revision)
     if service_id == "mock_model":
         provider = ModelProvider(
             owner_user_id=principal.owner_user_id,

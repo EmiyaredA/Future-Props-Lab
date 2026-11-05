@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import select
-from sqlalchemy.dialects.sqlite import insert
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.runtime.ownership import require_owner_id
@@ -44,55 +43,37 @@ class ToolNavigationState:
         )
         return ToolNavigationStateOut(items=[_item_out(row) for row in rows])
 
+    async def _lock_item(self, tool_id: str, now) -> ToolNavigationItem:
+        # Use the account-checked ORM in both deployments. The write lock covers
+        # lookup and mutation so a concurrent use cannot overwrite a favorite.
+        await self.session.execute(text("BEGIN IMMEDIATE"))
+        owner = self.owner_user_id
+        row = await self.session.get(ToolNavigationItem, (owner, tool_id), populate_existing=True)
+        if row is None:
+            row = ToolNavigationItem(
+                owner_user_id=owner,
+                tool_id=tool_id,
+                is_favorite=False,
+                use_count=0,
+                updated_at=now,
+            )
+            self.session.add(row)
+        return row
+
     async def set_favorite(self, tool_id: str, *, is_favorite: bool) -> ToolNavigationItemOut:
         now = utc_now()
-        favorite_updated_at = now if is_favorite else None
-        statement = insert(ToolNavigationItem).values(
-            owner_user_id=self.owner_user_id,
-            tool_id=tool_id,
-            is_favorite=is_favorite,
-            favorite_updated_at=favorite_updated_at,
-            use_count=0,
-            updated_at=now,
-        )
-        await self.session.execute(
-            statement.on_conflict_do_update(
-                index_elements=[ToolNavigationItem.owner_user_id, ToolNavigationItem.tool_id],
-                set_={
-                    "is_favorite": is_favorite,
-                    "favorite_updated_at": favorite_updated_at,
-                    "updated_at": now,
-                },
-            )
-        )
+        row = await self._lock_item(tool_id, now)
+        row.is_favorite = is_favorite
+        row.favorite_updated_at = now if is_favorite else None
+        row.updated_at = now
         await self.session.commit()
-        return await self._get(tool_id)
+        return _item_out(row)
 
     async def record_use(self, tool_id: str) -> ToolNavigationItemOut:
         now = utc_now()
-        statement = insert(ToolNavigationItem).values(
-            owner_user_id=self.owner_user_id,
-            tool_id=tool_id,
-            is_favorite=False,
-            last_used_at=now,
-            use_count=1,
-            updated_at=now,
-        )
-        await self.session.execute(
-            statement.on_conflict_do_update(
-                index_elements=[ToolNavigationItem.owner_user_id, ToolNavigationItem.tool_id],
-                set_={
-                    "last_used_at": now,
-                    "use_count": ToolNavigationItem.use_count + 1,
-                    "updated_at": now,
-                },
-            )
-        )
+        row = await self._lock_item(tool_id, now)
+        row.use_count += 1
+        row.last_used_at = now
+        row.updated_at = now
         await self.session.commit()
-        return await self._get(tool_id)
-
-    async def _get(self, tool_id: str) -> ToolNavigationItemOut:
-        row = await self.session.get(ToolNavigationItem, (self.owner_user_id, tool_id))
-        if row is None:  # pragma: no cover - protected by the upsert paths
-            raise RuntimeError("工具状态写入失败")
         return _item_out(row)

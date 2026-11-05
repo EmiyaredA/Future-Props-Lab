@@ -2,7 +2,7 @@ from contextlib import contextmanager
 
 from fastapi import HTTPException
 
-from .access import AcceptanceError
+from .project_access import AcceptanceError
 
 
 @contextmanager

@@ -11,7 +11,7 @@ from sqlalchemy import delete
 
 from app.apps.galgame_workshop.assets import asset_analysis as asset_analysis_module
 from app.apps.galgame_workshop.assets.asr import GalgameAsrRunner
-from app.apps.galgame_workshop.assets.assets import normalize_import_filename
+from app.apps.galgame_workshop.assets.asset_support import normalize_import_filename
 from app.apps.galgame_workshop.models import (
     GalgameAssetMetadata,
     GalgameAssetSettings,

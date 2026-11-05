@@ -9,9 +9,13 @@ import {
   SlidersHorizontal,
   Server,
   ShieldCheck,
+  Activity,
+  Globe,
 } from "lucide-react";
 import { BrandMark } from "@shared/ui/BrandMark";
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
+import { LocalModelAdministration } from "./management/LocalModelAdministration";
+import { RuntimePage } from "./management/RuntimePage";
 import { AccountPanel } from "./AccountPanel";
 import { AccountMenu } from "./AccountMenu";
 import type { AccountSessionContext } from "./api";
@@ -31,7 +35,9 @@ export type ManagementPage =
   | "management-invites"
   | "management-settings"
   | "management-services"
-  | "management-quotas";
+  | "management-quotas"
+  | "management-application"
+  | "management-access";
 export function ManagementConsole({
   page,
   session,
@@ -90,6 +96,8 @@ export function ManagementConsole({
     false,
   );
   const links = [
+    ["management-application", "应用运行", "启停、状态与应用日志", Activity],
+    ["management-access", "访问管理", "本机与两个公网入口", Globe],
     ["management-accounts", "账号管理", "账号身份与登录资格", Users],
     ["management-invites", "邀请码管理", "注册名额与有效期", Ticket],
     ["management-settings", "全局设置", "角色默认模型模板", SlidersHorizontal],
@@ -103,7 +111,7 @@ export function ManagementConsole({
         <h1>需要平台管理员权限</h1>
         <p>此页面用于管理平台账号、共享资源和安全审计。</p>
         <button className="btn" onClick={() => guarded(onBack)}>
-          返回工作台
+          应用运行
         </button>
       </main>
     );
@@ -161,7 +169,7 @@ export function ManagementConsole({
           <ThemeToggle />
           <button className="management-back" onClick={() => guarded(onBack)}>
             <ArrowLeft size={19} />
-            返回工作台
+            应用运行
           </button>
         </footer>
       </aside>
@@ -181,14 +189,25 @@ export function ManagementConsole({
           </span>
           <AccountMenu session={session} />
         </div>
-        {page === "management-accounts" ? (
+        {page === "management-application" || page === "management-access" ? (
+          <RuntimePage
+            key={session.me.user.id}
+            ownerId={session.me.user.id}
+            section={
+              page === "management-application" ? "application" : "access"
+            }
+          />
+        ) : page === "management-accounts" ? (
           <ManagedAccountsPage userId={session.me.user.id} />
         ) : page === "management-invites" ? (
           <RegistrationInvitesPage />
         ) : page === "management-settings" ? (
           <ModelTemplatesPage />
         ) : page === "management-services" ? (
-          <DemoServicesPage />
+          <>
+            <DemoServicesPage />
+            <LocalModelAdministration />
+          </>
         ) : page === "management-quotas" ? (
           <RuntimeQuotasPage />
         ) : (

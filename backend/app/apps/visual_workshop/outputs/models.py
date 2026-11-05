@@ -4,7 +4,7 @@ from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Tex
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.runtime.ids import new_id
-from app.runtime.orm_base import Base
+from app.runtime.orm_base import Base, external_id
 from app.runtime.time import utc_now
 
 
@@ -23,10 +23,10 @@ class VisualNodeOutput(Base):
     version: Mapped[int] = mapped_column(Integer)
     kind: Mapped[str] = mapped_column(String(16))
     asset_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="RESTRICT")
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="RESTRICT")
     )
     inspection_asset_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="RESTRICT")
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="RESTRICT")
     )
     text: Mapped[str | None] = mapped_column(Text)
     source: Mapped[str] = mapped_column(String(16))

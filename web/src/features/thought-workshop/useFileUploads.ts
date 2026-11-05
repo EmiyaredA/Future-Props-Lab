@@ -8,6 +8,7 @@ import { useDocumentAccess } from "./DocumentAccess";
 export type UploadEntry = {
   id: number;
   file: File;
+  requestId: string;
   position: number;
   status: "waiting" | "uploading" | "failed";
   error?: string;
@@ -57,7 +58,10 @@ export function useFileUploads(editor: Editor | null) {
             entry.file.type.startsWith("image/") ||
             /\.(png|jpe?g|webp|gif)$/i.test(entry.file.name)
           ) {
-            const result = await uploadImage(entry.file, { onProgress });
+            const result = await uploadImage(entry.file, {
+              onProgress,
+              requestId: entry.requestId,
+            });
             content = {
               type: "image",
               attrs: {
@@ -67,7 +71,10 @@ export function useFileUploads(editor: Editor | null) {
               },
             };
           } else {
-            const result = await uploadAttachment(entry.file, { onProgress });
+            const result = await uploadAttachment(entry.file, {
+              onProgress,
+              requestId: entry.requestId,
+            });
             content = {
               type: "attachment",
               attrs: {
@@ -101,6 +108,7 @@ export function useFileUploads(editor: Editor | null) {
         ...files.map((file) => ({
           id: sequence.current++,
           file,
+          requestId: crypto.randomUUID(),
           position,
           status: "waiting" as const,
         })),

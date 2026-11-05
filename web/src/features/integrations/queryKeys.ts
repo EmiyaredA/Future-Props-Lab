@@ -1,5 +1,8 @@
 export const integrationKeys = {
   all: ["integrations"] as const,
+  validationAttemptsRoot: ["integrations", "validation-attempts"] as const,
+  validationAttempts: (offset: number) =>
+    ["integrations", "validation-attempts", offset] as const,
   catalog: (kind: string) => ["integrations", kind] as const,
   detail: (kind: string, id: string) =>
     ["integrations", kind, "detail", id] as const,

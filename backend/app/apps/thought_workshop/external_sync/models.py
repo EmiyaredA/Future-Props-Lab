@@ -14,7 +14,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.runtime.ids import new_id
-from app.runtime.orm_base import Base
+from app.runtime.orm_base import Base, external_id
 from app.runtime.time import utc_now
 
 
@@ -23,11 +23,13 @@ class ArticleSyncBinding(Base):
     __table_args__ = (UniqueConstraint("note_id"), UniqueConstraint("target_key"))
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     owner_user_id: Mapped[str] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
+        String(36), ForeignKey(external_id("users"), ondelete="CASCADE"), index=True
     )
-    note_id: Mapped[str] = mapped_column(ForeignKey("thought_notes.id", ondelete="CASCADE"))
+    note_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("thought_notes.id", ondelete="CASCADE")
+    )
     connection_id: Mapped[str] = mapped_column(
-        ForeignKey("integration_external_connections.id", ondelete="RESTRICT")
+        String(36), ForeignKey(external_id("integration_external_connections"), ondelete="RESTRICT")
     )
     document_id: Mapped[str] = mapped_column(String(200))
     target_key: Mapped[str] = mapped_column(String(240))
@@ -52,7 +54,7 @@ class ArticleSyncTask(Base):
     )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     owner_user_id: Mapped[str] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
+        String(36), ForeignKey(external_id("users"), ondelete="CASCADE"), index=True
     )
     note_id: Mapped[str] = mapped_column(String(36), index=True)
     binding_id: Mapped[str] = mapped_column(String(36))
@@ -76,7 +78,7 @@ class ArticleSyncStep(Base):
     __tablename__ = "thought_sync_steps"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     task_id: Mapped[str] = mapped_column(
-        ForeignKey("thought_sync_tasks.id", ondelete="CASCADE"), index=True
+        String(36), ForeignKey("thought_sync_tasks.id", ondelete="CASCADE"), index=True
     )
     kind: Mapped[str] = mapped_column(String(32))
     status: Mapped[str] = mapped_column(String(24), default="pending")
@@ -87,8 +89,8 @@ class ArticleSyncStep(Base):
 class ArticleSyncAsset(Base):
     __tablename__ = "thought_sync_assets"
     task_id: Mapped[str] = mapped_column(
-        ForeignKey("thought_sync_tasks.id", ondelete="CASCADE"), primary_key=True
+        String(36), ForeignKey("thought_sync_tasks.id", ondelete="CASCADE"), primary_key=True
     )
     asset_id: Mapped[str] = mapped_column(
-        ForeignKey("visual_assets.id", ondelete="RESTRICT"), primary_key=True
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="RESTRICT"), primary_key=True
     )

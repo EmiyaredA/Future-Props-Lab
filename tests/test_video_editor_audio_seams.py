@@ -8,16 +8,16 @@ import numpy as np
 import pytest
 from sqlalchemy import select
 
-from app.apps.video_editor.audio_matching import (
-    SAMPLE_RATE,
-    VideoEditorAudioMatching,
-    rank_audio_seams,
-)
+from app.apps.video_editor.audio_matching import VideoEditorAudioMatching
 from app.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from app.apps.video_editor.models import VideoEditorAssetMetadata
 from app.apps.video_editor.schemas import VideoEditorTimelineBatchIn
 from app.apps.video_editor.schemas.audio_seam import AudioSeamCandidatesIn
 from app.apps.video_editor.timeline import apply_operations
+from app.capabilities.media_rendering.audio_matching import (
+    SAMPLE_RATE,
+    rank_audio_seams,
+)
 from app.main import app
 from app.runtime.db import SessionLocal
 

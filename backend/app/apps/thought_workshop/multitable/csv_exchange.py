@@ -58,7 +58,9 @@ def preview(source):
     return CsvPreview(headers=headers, rows=rows[:20], total=len(rows), errors=errors[:200])
 
 
-async def import_csv(use_case: Multitable, note_id, table_id, body):
+async def import_csv(
+    use_case: Multitable, note_id, table_id, body, *, before_write=None, after_write=None
+):
     table = body.table or (await use_case.table(note_id, table_id))[0]
     if table.id != table_id:
         raise ThoughtError("CSV 数据表 ID 不匹配", 422, "invalid_csv")
@@ -108,6 +110,8 @@ async def import_csv(use_case: Multitable, note_id, table_id, body):
         note_id,
         BatchIn(expected_revision=body.expected_revision, operations=operations),
         checkpoint=True,
+        before_write=before_write,
+        after_write=after_write,
     )
 
 

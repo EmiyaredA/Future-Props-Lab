@@ -14,6 +14,7 @@ from app.console.amadeus.models import AmadeusAction, AmadeusConversation, Amade
 from app.console.amadeus.schemas import ActionOut
 from app.console.amadeus.scripts import run_script
 from app.console.governance.code_agents import resolve
+from app.demo_runtime.runtime import tool_reply
 from app.integrations.mcp.catalog import McpCatalog
 from app.integrations.tool_apis.catalog import ToolApiCatalog
 from app.runtime.operation_receipts import OperationError
@@ -120,9 +121,9 @@ async def execute_action(
         _running_tasks[action_id] = task
     try:
         if name.startswith("tool_api:"):
-            result = await ToolApiCatalog(session, principal.owner_user_id).execute(
-                name.removeprefix("tool_api:"), args.get("input", {}), args["revision"]
-            )
+            result = await ToolApiCatalog(
+                session, principal.owner_user_id, demo_tools=tool_reply
+            ).execute(name.removeprefix("tool_api:"), args.get("input", {}), args["revision"])
         elif name.startswith("mcp:"):
             parts = name.split(":", 2)
             if len(parts) != 3:

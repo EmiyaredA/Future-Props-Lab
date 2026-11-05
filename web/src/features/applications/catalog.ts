@@ -1,8 +1,10 @@
 import type { LucideIcon } from "lucide-react";
+import type { components } from "@generated/api";
 
 export type ApplicationCategory = "visual" | "productivity" | "development";
 export type ApplicationDefinition = {
   id: string;
+  serviceId: components["schemas"]["ServiceId"];
   name: string;
   description: string;
   category: ApplicationCategory;

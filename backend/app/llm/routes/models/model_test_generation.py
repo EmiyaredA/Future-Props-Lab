@@ -5,9 +5,8 @@ from typing import Annotated
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 
-from app.capabilities.asset_store.thumbnails import ThumbnailSize
-from app.deps import OwnerDep, SessionDep, StudioAuth
-from app.llm.call_logs.credentials import snapshot_from_principal
+from app.deps import OwnerDep, SessionDep
+from app.llm.http_credentials import CallCredentialDep
 from app.llm.playground.generation import ModelTestGeneration, ModelTestGenerationError
 from app.llm.playground.generation_assets import (
     GenerationAssetError,
@@ -24,12 +23,21 @@ from app.llm.schemas.model_test import (
     ModelTestGenerationTaskListOut,
     ModelTestGenerationTaskOut,
 )
+from app.runtime.image_sizes import ThumbnailSize
 
 router = APIRouter(prefix="/model-test", tags=["model-test"])
 
 
-def _assets(session: SessionDep, owner_user_id: str) -> ModelTestGenerationAssets:
-    return ModelTestGenerationAssets(session, owner_user_id)
+def _assets(
+    session: SessionDep, owner_user_id: str, request: Request | None = None
+) -> ModelTestGenerationAssets:
+    return ModelTestGenerationAssets(
+        session,
+        owner_user_id,
+        legacy_references=getattr(request.app.state, "model_generation_legacy_references", None)
+        if request
+        else None,
+    )
 
 
 def _generation(session: SessionDep, owner_user_id: str) -> ModelTestGeneration:
@@ -79,19 +87,27 @@ async def cleanup_generation_assets(
     response_model=ModelTestGenerationAssetBackfillStatusOut,
 )
 async def generation_asset_backfill_status(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
 ) -> ModelTestGenerationAssetBackfillStatusOut:
-    return await _assets(session, owner_user_id).backfill_status()
+    try:
+        return await _assets(session, owner_user_id, request).backfill_status()
+    except GenerationAssetError as exc:
+        raise _translate_asset(exc) from None
 
 
 @router.post("/generation-assets/backfill", response_model=ModelTestGenerationAssetBackfillOut)
 async def backfill_generation_assets(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     limit: int = Query(default=50, ge=1, le=100),
 ) -> ModelTestGenerationAssetBackfillOut:
-    return await _assets(session, owner_user_id).backfill(limit)
+    try:
+        return await _assets(session, owner_user_id, request).backfill(limit)
+    except GenerationAssetError as exc:
+        raise _translate_asset(exc) from None
 
 
 @router.get("/generation-options", response_model=ModelTestGenerationOptionListOut)
@@ -107,10 +123,9 @@ async def create_generation_task(
     session: SessionDep,
     owner_user_id: OwnerDep,
     body: ModelTestGenerationCreateIn,
-    principal: StudioAuth,
+    credential: CallCredentialDep,
 ) -> ModelTestGenerationTaskOut:
     try:
-        credential = await snapshot_from_principal(session, principal)
         result = await _generation(session, owner_user_id).create(
             body, admission=task_admission(request, session, "model"), credential=credential
         )

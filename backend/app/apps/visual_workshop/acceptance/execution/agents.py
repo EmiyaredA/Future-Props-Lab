@@ -6,7 +6,7 @@ import sys
 from copy import deepcopy
 from pathlib import Path
 
-from app.capabilities.agents.cli import execute, probe
+from app.capabilities.agents.cli.process import execute, probe
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
 from app.console.governance.code_agents import authorized

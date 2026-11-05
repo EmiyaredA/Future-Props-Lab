@@ -276,3 +276,15 @@ class SvgPreviewOut(BaseModel):
     width: float
     height: float
     monochrome: bool
+
+
+FILE_CONTENT_HEADERS = {
+    "X-Fpl-File-Revision": {
+        "description": "Owned file metadata revision",
+        "schema": {"type": "integer", "minimum": 0},
+    },
+    "X-Fpl-File-Kind": {
+        "description": "Owned file media kind",
+        "schema": {"type": "string", "enum": ["image", "video", "audio", "font", "document"]},
+    },
+}

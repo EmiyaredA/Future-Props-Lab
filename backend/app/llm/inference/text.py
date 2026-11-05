@@ -4,15 +4,16 @@ from time import monotonic
 from uuid import uuid4
 
 from app.capabilities.agents.harness.contracts import ImageInput
-from app.llm.call_logs.credentials import CredentialSnapshot
+from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.inference.assets import InferenceAssets, root
 from app.llm.inference.catalog import get_model
 from app.llm.models import LlmCallLog
 from app.llm.providers.streaming import ChatMessageInput, stream_text_completion
 from app.llm.schemas.model_inference import InferenceTextEvent, InferenceTextOut
+from app.runtime.authorized_stream import authorized_stream
 from app.runtime.credentials import decrypt_secret
-from app.runtime.db import SessionLocal
 from app.runtime.operation_receipts import OperationError
+from app.runtime.ownership import bind_owner
 
 
 async def prepare(session, owner_user_id, body):
@@ -54,7 +55,14 @@ async def prepare(session, owner_user_id, body):
 
 
 async def events(
-    owner_user_id, body, args, *, transport=None, credential: CredentialSnapshot | None = None
+    owner_user_id,
+    body,
+    args,
+    *,
+    session_factory,
+    transport=None,
+    check_access=None,
+    credential: CredentialSnapshot | None = None,
 ):
     started, log_id = monotonic(), str(uuid4())
     text, usage, finish_reason, error = "", {}, None, None
@@ -62,7 +70,8 @@ async def events(
     snap = credential or CredentialSnapshot()
     try:
         yield InferenceTextEvent(type="start", log_id=log_id)
-        async for delta in stream_text_completion(**args, transport=transport):
+        source = stream_text_completion(**args, transport=transport)
+        async for delta in authorized_stream(source, check_access):
             if delta.text:
                 text += delta.text
                 yield InferenceTextEvent(type="delta", text=delta.text)
@@ -79,7 +88,8 @@ async def events(
     finally:
 
         async def settle():
-            async with SessionLocal() as session:
+            async with session_factory() as session:
+                bind_owner(session, owner_user_id)
                 session.add(
                     LlmCallLog(
                         id=log_id,

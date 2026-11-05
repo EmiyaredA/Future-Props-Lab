@@ -1,0 +1,16 @@
+# Add this overlay with project-owners.compose.yaml to enable portable snapshot imports.
+x-visual-archive-key: &visual-archive-key
+  type: bind
+  source: ${FPL_VISUAL_ARCHIVE_KEY:?Select a Visual-to-Assets archive key}
+  target: /run/fpl/visual-archive-key
+  read_only: true
+  bind:
+    create_host_path: false
+
+services:
+  visual:
+    volumes:
+      - <<: *visual-archive-key
+  assets:
+    volumes:
+      - <<: *visual-archive-key

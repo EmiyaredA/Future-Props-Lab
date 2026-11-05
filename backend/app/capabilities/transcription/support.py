@@ -2,16 +2,13 @@ from __future__ import annotations
 
 import httpx
 
+from app.capabilities.transcription.catalog_values import TranscriptionModel, TranscriptionProvider
 from app.capabilities.transcription.parameters import parameter_capabilities
-from app.orm import CATALOG_MODELS
 
 # Keep SenseAudio limits local so capabilities/transcription does not import llm.
 MAX_ASR_FILE_BYTES = 10 * 1024 * 1024
 MAX_PRO_ASR_FILE_BYTES = 100 * 1024 * 1024
 SENSEAUDIO_ASR_KINDS = frozenset({"senseaudio_asr", "senseaudio_asr_pro"})
-
-ModelEntry = CATALOG_MODELS["entry"]
-ModelProvider = CATALOG_MODELS["provider"]
 
 
 def _max_asr_file_bytes(*, pro: bool = False) -> int:
@@ -34,7 +31,9 @@ _LANGUAGE_ALIASES = {
 }
 
 
-def model_supports_transcription(model: ModelEntry, provider: ModelProvider | None) -> bool:
+def model_supports_transcription(
+    model: TranscriptionModel, provider: TranscriptionProvider | None
+) -> bool:
     declared = {
         *[str(value) for value in list(model.capabilities or [])],
         *[str(value) for value in list(model.categories or [])],
@@ -48,15 +47,15 @@ def model_supports_transcription(model: ModelEntry, provider: ModelProvider | No
     )
 
 
-def max_transcription_input_bytes(provider: ModelProvider) -> int:
+def max_transcription_input_bytes(provider: TranscriptionProvider) -> int:
     if provider.kind in SENSEAUDIO_ASR_KINDS:
         return _max_asr_file_bytes(pro=provider.kind == "senseaudio_asr_pro")
     return MAX_ASR_FILE_BYTES
 
 
 def resolve_transcription_language(
-    model: ModelEntry,
-    provider: ModelProvider,
+    model: TranscriptionModel,
+    provider: TranscriptionProvider,
     language_tag: str | None,
 ) -> str:
     options = parameter_capabilities(model, provider).language_options
@@ -67,8 +66,8 @@ def resolve_transcription_language(
 
 
 def resolve_transcription_target_language(
-    model: ModelEntry,
-    provider: ModelProvider,
+    model: TranscriptionModel,
+    provider: TranscriptionProvider,
     language_tag: str | None,
 ) -> str | None:
     if not language_tag:

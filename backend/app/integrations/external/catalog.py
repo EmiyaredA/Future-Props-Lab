@@ -4,7 +4,8 @@ import httpx
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 
-from app.runtime.credentials import decrypt_secret, encrypt_secret
+from app.runtime.config import get_settings
+from app.runtime.credentials import SecretCipher
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import iso_utc, utc_now
 
@@ -30,7 +31,8 @@ def connection_out(row) -> ExternalConnectionOut:
 
 
 class ExternalConnections:
-    def __init__(self, session, owner_user_id, transport=None):
+    def __init__(self, session, owner_user_id, transport=None, *, cipher=None):
+        self.cipher = cipher or SecretCipher(get_settings().fpl_secrets_key)
         self.session, self.owner_user_id, self.transport = session, owner_user_id, transport
 
     async def get(self, id):
@@ -54,7 +56,7 @@ class ExternalConnections:
     async def save(self, body, id=None):
         row = await self.get(id) if id else None
         secret = (
-            encrypt_secret(body.app_secret)
+            self.cipher.encrypt(body.app_secret)
             if body.app_secret
             else row.secret_ciphertext
             if row
@@ -108,7 +110,7 @@ class ExternalConnections:
 
     async def client(self, id, *, expected_revision=None):
         row = await self.require_enabled(id, expected_revision=expected_revision)
-        credentials = ConnectionCredentials(row.app_id, decrypt_secret(row.secret_ciphertext))
+        credentials = ConnectionCredentials(row.app_id, self.cipher.decrypt(row.secret_ciphertext))
         await self.session.rollback()
         return FeishuClient(credentials, self.transport)
 

@@ -6,9 +6,9 @@ from datetime import timedelta
 
 from fastapi import HTTPException, Request, Response
 
-from app.capabilities.asset_store.account_upgrade import upgrade_pending
 from app.capabilities.identity.permissions import role_permissions
-from app.capabilities.identity.security import CSRF_COOKIE, SESSION_ABSOLUTE_DAYS, SESSION_COOKIE
+from app.capabilities.identity.security import SESSION_ABSOLUTE_DAYS
+from app.capabilities.identity.session_policy import STUDIO_SESSION, SessionPolicy
 from app.console.governance.profile import avatar_url
 from app.console.governance.service import audit_page
 from app.console.schemas.accounts import (
@@ -65,13 +65,15 @@ def _key_out(key) -> ApiKeyOut:
     )
 
 
-def _set_cookies(response: Response, token: str, csrf: str) -> None:
+def _set_cookies(
+    response: Response, token: str, csrf: str, policy: SessionPolicy = STUDIO_SESSION
+) -> None:
     from app.runtime.config import get_settings
 
     secure = get_settings().auth_cookie_secure
     max_age = int(timedelta(days=SESSION_ABSOLUTE_DAYS).total_seconds())
     response.set_cookie(
-        SESSION_COOKIE,
+        policy.session_cookie,
         token,
         httponly=True,
         secure=secure,
@@ -80,7 +82,7 @@ def _set_cookies(response: Response, token: str, csrf: str) -> None:
         max_age=max_age,
     )
     response.set_cookie(
-        CSRF_COOKIE,
+        policy.csrf_cookie,
         csrf,
         httponly=False,
         secure=secure,
@@ -90,12 +92,12 @@ def _set_cookies(response: Response, token: str, csrf: str) -> None:
     )
 
 
-def _clear_cookies(response: Response) -> None:
+def _clear_cookies(response: Response, policy: SessionPolicy = STUDIO_SESSION) -> None:
     from app.runtime.config import get_settings
 
     secure = get_settings().auth_cookie_secure
-    response.delete_cookie(SESSION_COOKIE, path="/", secure=secure, samesite="lax")
-    response.delete_cookie(CSRF_COOKIE, path="/", secure=secure, samesite="lax")
+    response.delete_cookie(policy.session_cookie, path="/", secure=secure, samesite="lax")
+    response.delete_cookie(policy.csrf_cookie, path="/", secure=secure, samesite="lax")
 
 
 async def _browser_auth(request: Request, session: SessionDep, *, forced: bool = False):
@@ -117,10 +119,9 @@ async def _platform_auth(request: Request, session: SessionDep):
     return principal
 
 
-async def _login_out(session, user, auth_session, *, maintenance=False):
-
+def _login_out(user, auth_session, *, maintenance=False):
     return AuthMeOut(
-        storage_upgrade_required=maintenance or await upgrade_pending(session),
+        storage_upgrade_required=maintenance,
         user=_user_out(user),
         permission_keys=sorted(role_permissions(user.platform_role)),
         must_change_password=user.must_change_password,

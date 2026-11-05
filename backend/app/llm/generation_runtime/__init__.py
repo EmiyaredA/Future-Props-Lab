@@ -12,7 +12,6 @@ from app.llm.generation_runtime.media import (
     generated_type,
     read_data_uri,
 )
-from app.llm.generation_runtime.poll_recovery import can_recover_generation_result
 from app.llm.generation_runtime.provider_tasks import (
     poll_generation_task,
     safe_generation_error,
@@ -20,6 +19,7 @@ from app.llm.generation_runtime.provider_tasks import (
     upload_temporary_reference,
     validate_provider_content,
 )
+from app.llm.generation_state import can_recover_generation_result
 
 __all__ = [
     "ClaimAdmission",

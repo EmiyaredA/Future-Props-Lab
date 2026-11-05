@@ -1,0 +1,8 @@
+.portal-scroll {
+  height: 100%;
+  overflow: auto;
+  min-width: 0;
+}
+.portal-scroll > .page {
+  margin-inline: auto;
+}

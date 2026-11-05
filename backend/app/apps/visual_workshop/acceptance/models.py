@@ -4,7 +4,7 @@ from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Tex
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.runtime.ids import new_id
-from app.runtime.orm_base import Base
+from app.runtime.orm_base import Base, external_id
 from app.runtime.time import utc_now
 
 
@@ -80,7 +80,7 @@ class AcceptanceAssetReference(Base):
     __tablename__ = "visual_acceptance_asset_references"
     owner_id: Mapped[str] = mapped_column(String(36), primary_key=True)
     asset_id: Mapped[str] = mapped_column(
-        ForeignKey("visual_assets.id", ondelete="RESTRICT"), primary_key=True
+        ForeignKey(external_id("visual_assets"), ondelete="RESTRICT"), primary_key=True
     )
     project_id: Mapped[str] = mapped_column(
         ForeignKey("visual_workshop_projects.id", ondelete="CASCADE"), index=True

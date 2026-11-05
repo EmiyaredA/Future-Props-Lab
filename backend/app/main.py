@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from types import SimpleNamespace
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
@@ -15,17 +16,32 @@ from app.api import api_router
 from app.apps.agent_workbench.execution.runner import WorkbenchRuns
 from app.apps.agent_workbench.execution.storage import interrupt_all as interrupt_workbench_runs
 from app.apps.agent_workbench.sync.runner import WorkbenchSyncRunner
+from app.apps.audio_annotation.legacy_sources import LegacyAnnotationSources
+from app.apps.audio_annotation.transcription import legacy_transcribe
+from app.apps.director_desk.agent_session import DirectorEditorSessions
 from app.apps.galgame_workshop.assets.annotation_import_runner import GalgameAnnotationImportRunner
 from app.apps.galgame_workshop.assets.asr import GalgameAsrRunner
 from app.apps.galgame_workshop.video.video_export_runner import GalgameVideoExportRunner
 from app.apps.galgame_workshop.video.video_handoff_runner import GalgameVideoEditorHandoffRunner
+from app.apps.interview_assistant.executor_status import executor_status
 from app.apps.interview_assistant.runner import InterviewPreparationRunner
+from app.apps.motion_compositor.legacy_project_resources import LegacyProjectResources
 from app.apps.motion_compositor.runner import MotionExportRunner
+from app.apps.presentation_workshop.exchange.legacy_import import import_legacy_presentation
+from app.apps.presentation_workshop.legacy_project_assets import LegacyProjectAssets
+from app.apps.thought_workshop.account_directory import DirectoryBindings
 from app.apps.thought_workshop.external_sync.runner import ArticleSyncRunner
+from app.apps.thought_workshop.legacy_accounts import LegacyAccountDirectory
+from app.apps.thought_workshop.legacy_asset_metadata import LegacyAssetMetadata
+from app.apps.thought_workshop.legacy_writing import LegacyWritingModels
+from app.apps.thought_workshop.writing import WritingBindings
+from app.apps.video_editor.legacy_project_layouts import LegacyVideoLayouts
+from app.apps.video_editor.legacy_timeline_assets import LegacyTimelineAssets
 from app.apps.video_editor.runner import VideoEditorRunner
 from app.apps.visual_workshop.acceptance.runner import AcceptanceRunner
 from app.apps.visual_workshop.assistant import recover_interrupted_visual_assistant_runs
 from app.apps.visual_workshop.generation_runner import VisualGenerationRunner
+from app.capabilities.agents.sessions.access import LocalSourceAccess
 from app.capabilities.asset_store.account_upgrade import upgrade_pending
 from app.capabilities.asset_store.layout_migration import (
     reconcile_project_trash,
@@ -36,24 +52,56 @@ from app.capabilities.asset_store.storage import AssetStorage
 from app.console.amadeus.execution import CodeAgentRuns
 from app.console.amadeus.runs import recover_interrupted_amadeus_runs
 from app.console.cloud_control.desktop import DesktopConnection
+from app.console.creative_workshop.legacy_archives import LegacyCreativeArchives
+from app.console.creative_workshop.legacy_authors import LegacyCreativeAuthors
+from app.console.creative_workshop.legacy_install import LegacyCreativeInstaller
+from app.console.creative_workshop.legacy_sources import LegacyCreativeSources
 from app.console.file_library.library_folder_archive import cleanup_library_folder_archive_staging
+from app.console.governance.code_agent_connections import enable_connection
+from app.console.governance.code_agents import catalog as code_agent_catalog
+from app.console.governance.database_auth import (
+    authenticate_database_request,
+    authenticate_database_websocket,
+)
 from app.console.governance.external_sync_access import external_sync_actor_allowed
-from app.console.governance.generation_queue import claim_visual_capacity, visual_queue_candidates
+from app.console.governance.generation_queue import (
+    admit_generation_tasks,
+    claim_visual_capacity,
+    visual_queue_candidates,
+)
 from app.console.governance.interview_executor_access import interview_actor_allowed
 from app.console.governance.model_template_sync import ModelTemplateSyncRunner
 from app.console.governance.profile import reconcile_profile_avatars
-from app.console.governance.runtime_quotas import recover_admissions
+from app.console.governance.provisioning import create_account
+from app.console.governance.runtime_quotas import acquire, attach, recover_admissions, release
 from app.console.governance.service import AccountError
 from app.console.governance.visual_acceptance_access import acceptance_actor_allowed
 from app.console.governance.workbench_access import workbench_actor_allowed
+from app.demo_runtime.runtime import mock_transport, tool_reply
+from app.integrations.external.catalog import ExternalConnections
+from app.integrations.http_bindings import IntegrationBindings
+from app.integrations.mcp import McpCatalog
+from app.integrations.skills.catalog import SkillCatalog
+from app.integrations.tool_apis import ToolApiCatalog
+from app.llm.admission import AdmissionBindings
+from app.llm.call_logs.credentials import snapshot_from_principal
+from app.llm.catalog.http_bindings import CatalogBindings
+from app.llm.catalog.legacy_defaults import LegacyCatalogDefaults
+from app.llm.catalog.legacy_usage import LegacyCatalogTaskUsage
 from app.llm.inference.runner import InferenceRunner
+from app.llm.legacy_library_inputs import LegacyLibraryInputs
+from app.llm.legacy_library_outputs import LegacyLibraryOutputs
+from app.llm.library_inputs import LibraryInputBindings
+from app.llm.library_outputs import LibraryOutputBindings
 from app.llm.local_models.catalog import local_root
 from app.llm.local_models.installer import Installer
 from app.llm.local_models.management import LocalModels
 from app.llm.local_models.runtime import LocalRuntime
 from app.llm.playground.generation_runner import ModelTestGenerationRunner
+from app.llm.playground.legacy_generation_references import LegacyGenerationReferences
 from app.llm.playground.recovery import recover_interrupted_model_test_runs
 from app.llm.playground.transcription_runner import ModelTestTranscriptionRunner
+from app.llm.provider_transports import ProviderTransports
 from app.problem_details import (
     account_exception_handler,
     http_exception_handler,
@@ -62,7 +110,7 @@ from app.problem_details import (
     validation_exception_handler,
 )
 from app.runtime.config import get_settings
-from app.runtime.db import SessionLocal, engine
+from app.runtime.db import SessionLocal, close_website_database
 from app.runtime.polling_runner import RunnerSupervisor
 from app.runtime.revisions import RevisionConflictError
 from db.migrations import apply_migrations
@@ -81,7 +129,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
         try:
             yield
         finally:
-            await engine.dispose()
+            await close_website_database()
         return
     cleanup_snapshot_staging(settings)
     cleanup_library_folder_archive_staging(settings)
@@ -93,7 +141,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
         await interrupt_workbench_runs(session)
     await recover_admissions()
     await recover_interrupted_visual_assistant_runs()
-    await recover_interrupted_model_test_runs()
+    await recover_interrupted_model_test_runs(SessionLocal)
     await recover_interrupted_amadeus_runs()
     lifespan_app.state.code_agent_runs = CodeAgentRuns()
     installer = Installer(local_root(settings))
@@ -111,9 +159,11 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
                 claim_admission=claim_visual_capacity, queue_candidates=visual_queue_candidates
             ),
             AcceptanceRunner(actor_allowed=acceptance_actor_allowed),
-            ModelTestGenerationRunner(),
-            InferenceRunner(local_runtime=local_runtime),
-            ModelTestTranscriptionRunner(),
+            ModelTestGenerationRunner(
+                SessionLocal, legacy_references=app.state.model_generation_legacy_references
+            ),
+            InferenceRunner(SessionLocal, local_runtime=local_runtime),
+            ModelTestTranscriptionRunner(SessionLocal),
             GalgameAsrRunner(),
             GalgameAnnotationImportRunner(),
             GalgameVideoExportRunner(),
@@ -133,7 +183,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
         await supervisor.stop()
         await local_models.close()
         lifespan_app.state.runner_supervisor = None
-        await engine.dispose()
+        await close_website_database()
 
 
 app = FastAPI(
@@ -142,6 +192,65 @@ app = FastAPI(
     description="未来道具研究所模型目录与调用观测 API",
     lifespan=lifespan,
 )
+app.state.database = SimpleNamespace(sessions=SessionLocal)
+app.state.director_editor = DirectorEditorSessions(SessionLocal)
+app.state.code_agent_catalog = lambda _request, *, can_enable: code_agent_catalog(
+    can_enable=can_enable
+)
+app.state.code_agent_enable = lambda _request, agent_id: enable_connection(agent_id)
+app.state.studio_http_auth = authenticate_database_request
+app.state.studio_socket_auth = authenticate_database_websocket
+app.state.integration_bindings = IntegrationBindings(
+    tool_apis=lambda _request, session, owner: ToolApiCatalog(
+        session, owner, demo_tools=tool_reply
+    ),
+    mcp=lambda _request, session, owner: McpCatalog(session, owner),
+    skills=lambda _request, session, owner: SkillCatalog(session, owner),
+    external=lambda _request, session, owner: ExternalConnections(session, owner),
+)
+app.state.model_catalog_bindings = CatalogBindings(
+    defaults=LegacyCatalogDefaults,
+    task_usage=LegacyCatalogTaskUsage,
+)
+app.state.model_credential_reader = snapshot_from_principal
+app.state.model_admission = AdmissionBindings(acquire, release, attach, admit_generation_tasks)
+app.state.model_provider_transports = ProviderTransports(resolve=mock_transport)
+app.state.model_library_outputs = LibraryOutputBindings(
+    for_request=lambda _request, session, owner: LegacyLibraryOutputs(session, settings, owner)
+)
+app.state.model_generation_legacy_references = LegacyGenerationReferences(get_settings())
+app.state.model_library_inputs = LibraryInputBindings(
+    for_request=lambda _request, session, owner: LegacyLibraryInputs(session, settings, owner)
+)
+
+SessionLocal.configure(
+    info={
+        **SessionLocal.kw.get("info", {}),
+        "thought_asset_metadata_factory": LegacyAssetMetadata,
+        "interview_executor_status": executor_status,
+        "annotation_sources": LegacyAnnotationSources,
+        "presentation_project_assets": LegacyProjectAssets,
+        "motion_project_resources": LegacyProjectResources,
+        "video_project_layouts": LegacyVideoLayouts,
+        "video_timeline_assets": LegacyTimelineAssets,
+        "presentation_import": import_legacy_presentation,
+        "annotation_transcribe": legacy_transcribe,
+        "creative_authors_factory": LegacyCreativeAuthors,
+        "creative_archives_factory": LegacyCreativeArchives,
+        "creative_sources_factory": LegacyCreativeSources,
+        "creative_installer_factory": LegacyCreativeInstaller,
+    }
+)
+
+app.state.thought_directory = DirectoryBindings(
+    for_request=lambda _request, session, _principal: LegacyAccountDirectory(session)
+)
+app.state.thought_writing = WritingBindings(
+    for_request=lambda _request, owner: LegacyWritingModels(SessionLocal, owner)
+)
+app.state.workbench_native = LocalSourceAccess()
+app.state.account_creator = create_account
+app.state.account_storage_check = upgrade_pending
 app.state.code_agent_runs = CodeAgentRuns()
 app.state.cloud_desktop = DesktopConnection()
 app.state.workbench_runs = WorkbenchRuns()

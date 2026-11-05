@@ -1,11 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from app.capabilities.agents.cli.catalog import AgentId
-from app.console.governance.code_agent_connections import enable_connection
-from app.console.governance.code_agents import (
-    CatalogOut,
-    catalog,
-)
+from app.capabilities.agents.cli.contracts import CatalogOut
+from app.capabilities.agents.cli.definitions import AgentId
 from app.deps import StudioAuth, require_recent_reauthentication
 from app.runtime.website import require_local_browser
 
@@ -15,6 +11,15 @@ def require_browser(principal: StudioAuth):
         raise HTTPException(403, {"code": "browser_session_required"})
 
 
+def can_manage_connections(request: Request, principal) -> bool:
+    return (
+        getattr(request.state, "website_local", False)
+        and principal.is_platform_admin
+        and principal.auth_kind == "session"
+        and principal.allows("configuration.manage")
+    )
+
+
 router = APIRouter(
     prefix="/code-agents", tags=["code-agents"], dependencies=[Depends(require_browser)]
 )
@@ -22,10 +27,8 @@ router = APIRouter(
 
 @router.get("", response_model=CatalogOut)
 async def list_code_agents(request: Request, principal: StudioAuth):
-    return await catalog(
-        principal,
-        can_enable=getattr(request.state, "website_local", False)
-        and principal.allows("configuration.manage"),
+    return await request.app.state.code_agent_catalog(
+        request, can_enable=can_manage_connections(request, principal)
     )
 
 
@@ -37,5 +40,7 @@ async def detect_code_agents(request: Request, principal: StudioAuth):
 @router.post("/{agent_id}/enable", status_code=204)
 async def enable_code_agent(agent_id: AgentId, request: Request, principal: StudioAuth):
     require_local_browser(request, principal)
+    if not can_manage_connections(request, principal):
+        raise HTTPException(403, {"code": "platform_admin_required"})
     require_recent_reauthentication(principal)
-    await enable_connection(agent_id)
+    await request.app.state.code_agent_enable(request, agent_id)

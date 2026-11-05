@@ -3,6 +3,8 @@
 from app.apps.presentation_workshop.templates.resolver import resolve_document
 from app.apps.presentation_workshop.templates.schema import effective_template
 
+from .project_errors import PresentationError
+
 
 def document_references(document):
     references = {}
@@ -68,3 +70,26 @@ def rendered_asset_ids(document):
                 if identity
             )
     return result
+
+
+async def validate_assets(document, rows, *, monochrome):
+    references = document_references(document)
+    by_id = {row.id: row for row in rows}
+    if set(by_id) != set(references):
+        raise PresentationError("图片不存在或不属于当前账号的公共文件库", 404, "not_found")
+    if any(references[row.id] != {row.media_kind} for row in rows):
+        raise PresentationError("素材类型与引用用途不匹配", 422, "invalid_asset_type")
+    for slide in document.slides:
+        for element in slide.elements:
+            if not element.asset_id:
+                continue
+            row = by_id[element.asset_id]
+            expected_kind = element.kind if element.kind in {"audio", "video"} else "image"
+            if row.media_kind != expected_kind or (
+                expected_kind == "image"
+                and (element.kind in {"vector", "formula"}) != (row.mime_type == "image/svg+xml")
+            ):
+                raise PresentationError("素材类型与图片／矢量元素不匹配", 422, "invalid_asset_type")
+            if element.vector_color and not await monochrome(row):
+                raise PresentationError("多色 SVG 不支持统一改色", 422, "invalid_vector_color")
+    return rows

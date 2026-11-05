@@ -1,8 +1,9 @@
+import { programAsset } from "@platform/programAsset";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { useEffect, useRef, useState } from "react";
 
-const POSTER = "/brand/home/kurisu-idle.png";
-const ANIMATION = "/brand/home/kurisu-idle.webm";
+const POSTER = programAsset("/brand/home/kurisu-idle.png");
+const ANIMATION = programAsset("/brand/home/kurisu-idle.webm");
 
 export function HomeHeroPet() {
   const videoRef = useRef<HTMLVideoElement>(null);

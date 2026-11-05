@@ -1729,6 +1729,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/integrations/validation-attempts",
+    "sdk": "client.integrations.validation_attempts",
+    "document": "/docs.html?page=sdk-reference-integrations#validation-attempts",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "PATCH /v1/integrations/external-connections/{connection_id}",
     "sdk": "client.integrations.update_connection",
     "document": "/docs.html?page=sdk-reference-integrations#update-connection",
@@ -1816,6 +1823,13 @@
     "http": "POST /v1/integrations/tool-apis/{integration_id}/validate",
     "sdk": "client.integrations.validate_tool_api",
     "document": "/docs.html?page=sdk-reference-integrations#validate-tool-api",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/integrations/validation-attempts/{attempt_id}/reconcile",
+    "sdk": "client.integrations.reconcile_validation",
+    "document": "/docs.html?page=sdk-reference-integrations#reconcile-validation",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },

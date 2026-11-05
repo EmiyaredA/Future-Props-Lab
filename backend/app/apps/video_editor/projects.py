@@ -11,13 +11,7 @@ from app.apps.video_editor.schemas import (
     VideoEditorProjectOut,
     VideoEditorProjectPatchIn,
 )
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.project_transactions import (
-    creating_project_layout,
-    deleting_project_layout,
-)
-from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
-from app.runtime.config import get_settings
+from app.runtime.ids import new_id
 from app.runtime.project_records import (
     delete_revisioned_project,
     load_owned_project,
@@ -92,7 +86,6 @@ class VideoEditorProjects:
     def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
         self.session = session
         self.owner_user_id = owner_user_id
-        self.storage = AssetStorage(get_settings())
 
     async def row(self, project_id: str) -> VideoEditorProject:
         return await load_owned_project(
@@ -121,19 +114,19 @@ class VideoEditorProjects:
         return project_out(await self.row(project_id))
 
     async def create(self, body: VideoEditorProjectCreateIn) -> VideoEditorProjectOut:
-        row = VideoEditorProject(owner_user_id=self.owner_user_id, title=body.title, status="draft")
-        self.session.add(row)
-        await self.session.flush()
-        async with creating_project_layout(
-            self.session,
-            self.storage,
-            "video-editor",
-            row.id,
-            owner_user_id=self.owner_user_id,
-        ):
-            self.session.add(VideoEditorTimeline(project_id=row.id, document=default_timeline()))
+        row = VideoEditorProject(
+            id=new_id(), owner_user_id=self.owner_user_id, title=body.title, status="draft"
+        )
+        resources = self.session.info["video_project_layouts"](self.session, self.owner_user_id)
+        async with resources.create_layout(row.id):
+            await self.add_project(row)
         await self.session.refresh(row)
         return project_out(row)
+
+    async def add_project(self, row: VideoEditorProject) -> None:
+        self.session.add(row)
+        await self.session.flush()
+        self.session.add(VideoEditorTimeline(project_id=row.id, document=default_timeline()))
 
     async def patch(
         self, project_id: str, body: VideoEditorProjectPatchIn
@@ -161,28 +154,8 @@ class VideoEditorProjects:
 
     async def delete(self, project_id: str, expected_revision: int) -> None:
         await self.row(project_id)
-        assets = (
-            (
-                await self.session.execute(
-                    select(VisualAsset).where(VisualAsset.video_editor_project_id == project_id)
-                )
-            )
-            .scalars()
-            .all()
-        )
-        legacy = [
-            self.storage.path_for(asset)
-            for asset in assets
-            if asset.storage_version < TARGET_STORAGE_VERSION
-        ]
-        async with deleting_project_layout(
-            self.session,
-            self.storage,
-            "video-editor",
-            project_id,
-            owner_user_id=self.owner_user_id,
-            legacy_paths=legacy,
-        ):
+        resources = self.session.info["video_project_layouts"](self.session, self.owner_user_id)
+        async with resources.delete_layout(project_id, expected_revision):
             await delete_revisioned_project(
                 self.session,
                 VideoEditorProject,

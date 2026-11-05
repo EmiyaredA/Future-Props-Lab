@@ -10,13 +10,13 @@ from app.apps.video_editor.models import (
     VideoEditorTimeline,
 )
 from app.apps.video_editor.projects import VideoEditorProjects
-from app.apps.video_editor.rendering import task_out
 from app.apps.video_editor.schemas import (
     VideoEditorSegmentExportCreateIn,
     VideoEditorTaskListOut,
     VideoEditorTaskOut,
-    parse_timeline_document,
 )
+from app.apps.video_editor.segment_selection import segment_selection
+from app.apps.video_editor.task_reads import task_out
 from app.apps.visual_workshop.models import (
     VisualCanvasDocument,
     VisualWorkshopProject,
@@ -80,22 +80,8 @@ class VideoEditorSegmentExports:
             if target_canvas is None:
                 raise VideoEditorValidationError("目标工作坊画布不存在", code="target_not_found")
 
-        document = parse_timeline_document(timeline.document)
-        clips = {
-            clip.id: clip
-            for track in document.tracks
-            for clip in track.clips
-            if clip.kind == "video"
-        }
-        selected = []
-        for item in body.segments:
-            clip = clips.get(item.clip_id)
-            if clip is None or not clip.asset_id:
-                raise VideoEditorValidationError(
-                    f"视频片段 {item.clip_id} 不存在", code="clip_not_found"
-                )
-            selected.append((item, clip))
-        asset_ids = {clip.asset_id for _item, clip in selected if clip.asset_id}
+        detail_segments = segment_selection(timeline.document, body.segments)
+        asset_ids = {item["assetId"] for item in detail_segments}
         rows = list(
             (
                 await self.session.execute(
@@ -117,19 +103,6 @@ class VideoEditorSegmentExports:
         ):
             raise VideoEditorValidationError("部分视频素材尚未处理完成", code="asset_not_ready")
 
-        detail_segments = [
-            {
-                "clipId": clip.id,
-                "name": item.name,
-                "sourceInUs": clip.source_in_us,
-                "playbackRate": clip.playback_rate or 1,
-                "durationUs": clip.duration_us,
-                "assetId": clip.asset_id,
-                "status": "queued",
-                "progress": 0,
-            }
-            for item, clip in selected
-        ]
         task = VideoEditorTask(
             owner_user_id=self.owner_user_id,
             project_id=project_id,

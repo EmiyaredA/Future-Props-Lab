@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime
 from typing import Any, Literal
 
 from jsonschema import Draft202012Validator, SchemaError
@@ -331,3 +332,23 @@ class SkillUpdateIn(SkillTagsIn):
 
 class DeleteOut(BaseModel):
     deleted: bool = True
+
+
+class ValidationAttemptOut(BaseModel):
+    id: str
+    kind: Literal["mcp.validate", "tool.validate"]
+    connection_id: str
+    status: Literal["unknown", "completed", "not-started"]
+    released: bool
+    created_at: datetime
+
+
+class ValidationAttemptListOut(BaseModel):
+    items: list[ValidationAttemptOut]
+    has_more: bool = False
+
+
+class ValidationReconcileOut(BaseModel):
+    id: str
+    status: Literal["completed", "not-started"]
+    released: bool

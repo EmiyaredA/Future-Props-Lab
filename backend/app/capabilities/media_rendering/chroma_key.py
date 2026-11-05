@@ -1,5 +1,7 @@
 """Deterministic color-distance matte shared by frame and video exports."""
 
+from pathlib import Path
+
 from PIL import Image, ImageChops, ImageFilter, ImageMath
 
 from app.capabilities.media_rendering.timeline_document import VideoEditorChromaKey
@@ -68,3 +70,15 @@ def apply_chroma_key(layer: Image.Image, key: VideoEditorChromaKey) -> Image.Ima
             ]
             matte_alpha = ImageChops.darker(matte_alpha, ImageChops.invert(screen))
     return Image.merge("RGBA", (*channels, ImageChops.multiply(original_alpha, matte_alpha)))
+
+
+def bake_image(source: Path, output: Path, chroma: VideoEditorChromaKey) -> dict:
+    with Image.open(source) as original:
+        keyed = apply_chroma_key(original, chroma)
+        keyed.save(output, format="PNG")
+        width, height = keyed.size
+    return {
+        "mediaKind": "image",
+        "durationUs": 5_000_000,
+        "streams": [{"codec_type": "video", "width": width, "height": height}],
+    }

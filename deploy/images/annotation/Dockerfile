@@ -1,0 +1,15 @@
+FROM python:3.11-slim-bookworm@sha256:94a8fee35252d06ab75856f15f12c7bae67b10e8a6da93c7fded82b2610926cd
+WORKDIR /app
+RUN apt-get -o Acquire::Retries=3 update && apt-get -o Acquire::Retries=3 install --yes --no-install-recommends ffmpeg=7:5.1.9-0+deb12u1 && rm -rf /var/lib/apt/lists/*
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir --require-hashes -r /app/requirements.txt
+COPY backend/ /app/backend/
+COPY web/ /app/web/
+COPY deploy/contracts/ /app/deploy/contracts/
+ENV PYTHONPATH=/app/backend PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+RUN python -m fpl_annotation --help
+ARG FPL_SERVICE_VERSION
+ENV FPL_SERVICE_VERSION=$FPL_SERVICE_VERSION
+EXPOSE 8080
+ENTRYPOINT ["python", "-m", "fpl_annotation"]
+CMD ["serve"]

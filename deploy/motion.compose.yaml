@@ -1,0 +1,67 @@
+# Isolated Motion application. Production readiness includes historical migration.
+services:
+  assets:
+    volumes:
+      - type: bind
+        source: ${FPL_MOTION_ARCHIVE_KEY:?Select the protected Motion archive peer key}
+        target: /run/fpl/motion-archive-key
+        read_only: true
+        bind:
+          create_host_path: false
+  rendering:
+    volumes:
+      - type: bind
+        source: ${FPL_MOTION_EXPORT_KEY:?Select the protected Motion Rendering peer key}
+        target: /run/fpl/motion-export-key
+        read_only: true
+        bind:
+          create_host_path: false
+  motion:
+    image: ${FPL_MOTION_IMAGE:?Build and select a Motion release}
+    user: "${FPL_SERVICE_UID}:${FPL_SERVICE_GID}"
+    init: true
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    cpus: 1
+    mem_limit: 512m
+    stop_grace_period: 45s
+    tmpfs:
+      - /tmp:mode=1777,size=32m
+    volumes:
+      - type: bind
+        source: ${FPL_MOTION_STATE:?Select isolated Motion state}
+        target: /state
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${FPL_IDENTITY_PUBLIC_KEY:?Select Identity public key}
+        target: /run/fpl/identity-public.pem
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${FPL_MOTION_IDENTITY_TOKEN:?Select the Motion Identity credential}
+        target: /run/fpl/identity-token
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${FPL_MOTION_ARCHIVE_KEY:?Select the protected Motion archive peer key}
+        target: /run/fpl/motion-archive-key
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${FPL_MOTION_EXPORT_KEY:?Select the protected Motion Rendering peer key}
+        target: /run/fpl/motion-export-key
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+    networks: [private]

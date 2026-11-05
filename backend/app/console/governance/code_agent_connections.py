@@ -10,7 +10,7 @@ from app.runtime.config import get_cloud_settings
 from fpl_config import CONFIG_FILE
 
 
-async def enable_connection(agent_id):
+async def enable_connection(agent_id, *, before_publish=None):
     expected = revision(config_bytes(CONFIG_FILE))
     settings = get_cloud_settings()
     prefix = settings_prefix(agent_id)
@@ -26,6 +26,8 @@ async def enable_connection(agent_id):
         agents[enabled_field] = True
         agents[executable_field] = status["executable"]
 
+    if before_publish is not None:
+        await before_publish()
     await asyncio.to_thread(replace_config, CONFIG_FILE, expected, edit)
     enabled, executable, _ = connection(get_cloud_settings(), agent_id)
     if not enabled or executable != status["executable"]:

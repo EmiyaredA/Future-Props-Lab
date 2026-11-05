@@ -1,55 +1,30 @@
-"""Read-only pinned model definitions. Importing this module never downloads anything."""
-
-import json
-import platform
-from functools import lru_cache
-from pathlib import Path
+"""Model definitions and explicit deployment readiness; no host probes in containers."""
 
 from app.llm.models.local_models import LocalModelInstallation
 from app.runtime.operation_receipts import OperationError
 
-HERE = Path(__file__).parent
-LANGUAGES = [
-    "Chinese",
-    "English",
-    "Japanese",
-    "Korean",
-    "German",
-    "French",
-    "Russian",
-    "Portuguese",
-    "Spanish",
-    "Italian",
-]
+from .manifest import HERE as HERE
+from .manifest import LANGUAGES as LANGUAGES
+from .manifest import compatible as compatible
+from .manifest import definition as definition
+from .manifest import local_root as local_root
+from .manifest import manifest as manifest
 
 
-@lru_cache
-def manifest():
-    return json.loads((HERE / "manifest.json").read_text())
-
-
-def definition(model_id):
-    for item in manifest()["models"]:
-        if item["id"] == model_id:
-            return item
-    raise OperationError("本地模型不存在", "not_found", 404)
-
-
-def compatible():
-    return (
-        platform.system() == "Darwin"
-        and platform.machine() == "arm64"
-        and tuple(map(int, platform.mac_ver()[0].split(".")[:2])) >= (15, 0)
-    )
-
-
-def local_root(settings):
-    runtime = settings.runtime_path
-    return (runtime.parent if runtime.name == "runtime" else runtime) / "local-models"
+async def host_compatible(session):
+    adapter = session.info.get("native_model_readiness")
+    if adapter is not None:
+        return await adapter.host_compatible(session)
+    return False if session.info.get("service_id") == "models" else compatible()
 
 
 async def require_ready(session, model_id):
     definition(model_id)
+    adapter = session.info.get("native_model_readiness")
+    if adapter is not None:
+        return await adapter.require_ready(session, model_id)
+    if session.info.get("service_id") == "models":
+        raise OperationError("原生模型状态尚未绑定", "native_model_worker_unavailable", 503)
     if not compatible():
         raise OperationError("本地语音需要受支持的 Apple Silicon Mac", "unsupported_platform", 409)
     row = await session.get(LocalModelInstallation, model_id, populate_existing=True)

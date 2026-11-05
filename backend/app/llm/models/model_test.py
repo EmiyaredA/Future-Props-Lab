@@ -187,9 +187,7 @@ class ModelTestTranscriptionTask(Base):
     provider_name: Mapped[str] = mapped_column(String(120))
     model_slug: Mapped[str] = mapped_column(String(160))
     source_kind: Mapped[str] = mapped_column(String(16))
-    source_asset_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="SET NULL")
-    )
+    source_asset_id: Mapped[str | None] = mapped_column(String(36))
     input_storage_key: Mapped[str] = mapped_column(String(64), unique=True)
     input_filename: Mapped[str] = mapped_column(String(255))
     input_mime_type: Mapped[str] = mapped_column(String(120))

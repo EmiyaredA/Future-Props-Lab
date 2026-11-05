@@ -1,0 +1,66 @@
+# Add to the isolated Creative acceptance deployment. Full project readiness is gated.
+x-project-owner: &project-owner
+  user: "${FPL_SERVICE_UID}:${FPL_SERVICE_GID}"
+  init: true
+  restart: unless-stopped
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  cpus: 1
+  mem_limit: 768m
+  stop_grace_period: 45s
+  tmpfs:
+    - /tmp:mode=1777,size=64m
+  healthcheck:
+    test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)"]
+    interval: 15s
+    timeout: 3s
+    retries: 3
+  networks: [private]
+
+x-identity-public-key: &identity-public-key
+  type: bind
+  source: ${FPL_IDENTITY_PUBLIC_KEY:?Select Identity public key}
+  target: /run/fpl/identity-public.pem
+  read_only: true
+  bind:
+    create_host_path: false
+
+services:
+  visual:
+    <<: *project-owner
+    image: ${FPL_VISUAL_IMAGE:?Build and select a Visual release}
+    volumes:
+      - <<: *identity-public-key
+      - type: bind
+        source: ${FPL_VISUAL_STATE:?Select isolated Visual state}
+        target: /state
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${FPL_VISUAL_IDENTITY_TOKEN:?Select the Visual identity credential}
+        target: /run/fpl/identity-token
+        read_only: true
+        bind:
+          create_host_path: false
+  galgame:
+    <<: *project-owner
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/ready', timeout=2)"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+    image: ${FPL_GALGAME_IMAGE:?Build and select a Galgame release}
+    volumes:
+      - <<: *identity-public-key
+      - type: bind
+        source: ${FPL_GALGAME_STATE:?Select isolated Galgame state}
+        target: /state
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${FPL_GALGAME_IDENTITY_TOKEN:?Select the Galgame identity credential}
+        target: /run/fpl/identity-token
+        read_only: true
+        bind:
+          create_host_path: false

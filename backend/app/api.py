@@ -5,16 +5,24 @@ from app.apps.audio_annotation.routes import router as audio_annotation_router
 from app.apps.director_desk.routes import router as director_desk_router
 from app.apps.galgame_workshop.routes import router as galgame_workshop_router
 from app.apps.interview_assistant.routes import router as interview_assistant_router
-from app.apps.motion_compositor.routes import router as motion_compositor_router
-from app.apps.presentation_workshop.routes import router as presentation_workshop_router
-from app.apps.thought_workshop.routes import conversion as thought_conversion
+from app.apps.motion_compositor.routes.compatibility import router as motion_compositor_router
+from app.apps.presentation_workshop.routes.compatibility import (
+    router as presentation_workshop_router,
+)
+from app.apps.thought_workshop import content_exports_http as thought_conversion
+from app.apps.thought_workshop.external_sync.records_http import router as sync_records_router
 from app.apps.thought_workshop.routes import router as thought_workshop_router
 from app.apps.thought_workshop.routes.community import router as community_router
 from app.apps.thought_workshop.routes.community_tables import router as community_tables_router
 from app.apps.thought_workshop.routes.external_sync import router as article_sync_router
 from app.apps.video_editor.assistant_operations import apply_assistant_timeline_batch
-from app.apps.video_editor.routes import router as video_editor_router
+from app.apps.video_editor.routes.compatibility import router as video_editor_router
+from app.apps.visual_workshop.acceptance.review_routes import router as visual_review_router
 from app.apps.visual_workshop.acceptance.routes import router as visual_acceptance_router
+from app.apps.visual_workshop.acceptance.standard_routes import router as visual_standard_router
+from app.apps.visual_workshop.generation_routes import (
+    router as visual_generation_records_router,
+)
 from app.apps.visual_workshop.routes import router as visual_workshop_router
 from app.apps.visual_workshop.routes.assistant import router as visual_assistant_router
 from app.apps.visual_workshop.routes.generation import router as visual_generation_router
@@ -31,6 +39,7 @@ from app.console.routes.code_agents import router as code_agents_router
 from app.console.routes.creative_workshop import router as creative_workshop_router
 from app.console.routes.file_management import router as file_management_router
 from app.console.routes.platform_governance import router as platform_governance_router
+from app.console.routes.registration import router as registration_router
 from app.demo_runtime.routes import call_router as demo_call_router
 from app.demo_runtime.routes import router as demo_runtime_router
 from app.deps import require_studio_auth
@@ -43,6 +52,7 @@ from app.llm.routes.model_templates import router as model_templates_router
 from app.llm.routes.models import (
     call_logs,
     catalog,
+    diagnostics,
     model_test,
     model_test_generation,
     model_test_realtime,
@@ -61,16 +71,21 @@ api_router.include_router(local_models_router, dependencies=[Depends(require_stu
 api_router.include_router(interview_assistant_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(external_connections_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(article_sync_router, dependencies=[Depends(require_studio_auth)])
+api_router.include_router(sync_records_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(amadeus_router, dependencies=[Depends(require_amadeus_session)])
 api_router.include_router(automation_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(accounts_router)
 api_router.include_router(demo_runtime_router)
 api_router.include_router(demo_call_router)
 api_router.include_router(platform_governance_router)
+api_router.include_router(registration_router)
 api_router.include_router(model_templates_router)
 api_router.include_router(management_router)
 api_router.include_router(
     catalog.router, dependencies=[Depends(require_studio_auth), ModelCapacity]
+)
+api_router.include_router(
+    diagnostics.router, dependencies=[Depends(require_studio_auth), ModelCapacity]
 )
 api_router.include_router(
     suppliers.router, dependencies=[Depends(require_studio_auth), ModelCapacity]
@@ -114,6 +129,9 @@ api_router.include_router(
 )
 api_router.include_router(
     visual_generation_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
+)
+api_router.include_router(
+    visual_generation_records_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
 )
 api_router.include_router(
     galgame_workshop_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
@@ -160,6 +178,12 @@ api_router.include_router(community_tables_router, prefix="/thought-workshop")
 
 api_router.include_router(
     visual_acceptance_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
+)
+api_router.include_router(
+    visual_standard_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
+)
+api_router.include_router(
+    visual_review_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
 )
 
 api_router.include_router(code_agents_router)

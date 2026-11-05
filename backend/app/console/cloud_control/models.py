@@ -25,11 +25,3 @@ class CloudUnlock(Base):
     ticket_hash: Mapped[str | None]
     ticket_until: Mapped[int]
     desktop_verified: Mapped[bool] = mapped_column(default=False)
-
-
-class DesktopPreference(Base):
-    __tablename__ = "cloud_desktop_preferences"
-
-    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), primary_key=True)
-    idle_minutes: Mapped[int]
-    revision: Mapped[int]

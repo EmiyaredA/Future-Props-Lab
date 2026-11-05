@@ -2,7 +2,7 @@ from dataclasses import asdict, replace
 
 from sqlalchemy import bindparam, delete, select, text
 
-from app.orm import bind_owner
+from app.runtime.ownership import bind_owner
 from app.runtime.time import utc_now
 
 from ..models import (
@@ -14,10 +14,13 @@ from ..models import (
 )
 
 
-async def apply_batch(sessions, source_id, owner, revision, locator, expected_state, batch):
+async def apply_batch(
+    sessions, source_id, owner, revision, locator, expected_state, batch, *, receipt=None
+):
     """Persist entries and the corresponding source cursor atomically; fence unbind/pause."""
     async with sessions() as db:
         bind_owner(db, owner)
+        await db.execute(text("BEGIN IMMEDIATE"))
         source = await db.scalar(
             select(WorkbenchSource).where(
                 WorkbenchSource.id == source_id, WorkbenchSource.owner_user_id == owner
@@ -25,6 +28,8 @@ async def apply_batch(sessions, source_id, owner, revision, locator, expected_st
         )
         if not source or not source.enabled or source.revision != revision:
             return False
+        if receipt is not None and await receipt.already_recorded(db):
+            return True
         checkpoint = await db.scalar(
             select(WorkbenchCheckpoint).where(
                 WorkbenchCheckpoint.source_id == source_id, WorkbenchCheckpoint.locator == locator
@@ -167,5 +172,7 @@ async def apply_batch(sessions, source_id, owner, revision, locator, expected_st
         conversation.last_synced_at = utc_now()
         if changed:
             db.add(WorkbenchChange(owner_user_id=owner, session_id=conversation.id, kind="session"))
+        if receipt is not None:
+            await receipt.record(db)
         await db.commit()
         return True

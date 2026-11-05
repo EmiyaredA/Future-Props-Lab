@@ -1,4 +1,4 @@
-import { ApplicationCard } from "./ApplicationCard";
+import { programAsset } from "@platform/programAsset";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { FormEvent, useMemo, useState } from "react";
 import { Clock3, Search, Tag } from "lucide-react";
@@ -10,6 +10,8 @@ import {
   type ApplicationDefinition,
 } from "@features/applications/catalog";
 import "@features/applications/applications.css";
+import { ApplicationServiceStatus } from "./ApplicationServiceStatus";
+import { serviceStatusTime, type ServicesStatus } from "./serviceStatus";
 
 const RECENT_KEY = "future-props-recent-applications";
 
@@ -33,9 +35,17 @@ function rememberApplication(id: string) {
 export function ApplicationCenterPage({
   onOpen,
   applications,
+  services,
+  checking = false,
+  unavailable = false,
+  onRefresh,
 }: {
   onOpen: (path: string) => void;
-  applications: ApplicationDefinition[];
+  applications: readonly ApplicationDefinition[];
+  services?: ServicesStatus;
+  checking?: boolean;
+  unavailable?: boolean;
+  onRefresh?: () => void;
 }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<"all" | ApplicationCategory>("all");
@@ -119,11 +129,66 @@ export function ApplicationCenterPage({
           </button>
         ))}
       </div>
+      <div className="applications-status-bar">
+        <span>
+          {unavailable
+            ? "状态暂不可读"
+            : checking
+              ? "正在检查服务…"
+              : `最近检查 ${serviceStatusTime(services?.checked_at)}`}
+        </span>
+        <span>每 5 秒自动检查</span>
+        {onRefresh && (
+          <button type="button" onClick={onRefresh} disabled={checking}>
+            刷新状态
+          </button>
+        )}
+      </div>
       <div className="applications-layout">
         <div className="application-grid" aria-live="polite">
-          {filtered.map((app) => (
-            <ApplicationCard key={app.id} application={app} onOpen={open} />
-          ))}
+          {filtered.map((app) => {
+            const Icon = app.icon;
+            return (
+              <article className="application-card" key={app.id}>
+                <button
+                  type="button"
+                  aria-label={`打开${app.name}`}
+                  onClick={() => open(app)}
+                >
+                  <span className="application-icon">
+                    {app.brandImage ? (
+                      <ResponsiveImage
+                        src={programAsset(app.brandImage)}
+                        width={48}
+                        height={48}
+                        alt=""
+                        draggable={false}
+                      />
+                    ) : (
+                      <Icon aria-hidden />
+                    )}
+                  </span>
+                  <span className="application-copy">
+                    <strong>{app.name}</strong>
+                    <small title={app.description}>{app.description}</small>
+                    <span className="application-capabilities">
+                      {app.capabilities.slice(0, 2).map((item) => (
+                        <em key={item}>{item}</em>
+                      ))}
+                    </span>
+                  </span>
+                </button>
+                <ApplicationServiceStatus
+                  name={app.name}
+                  value={services?.services.find(
+                    (value) => value.service_id === app.serviceId,
+                  )}
+                  checking={checking}
+                  unavailable={unavailable}
+                />
+              </article>
+            );
+          })}
           {filtered.length === 0 ? (
             <div className="application-empty">
               <Search aria-hidden />
@@ -145,7 +210,7 @@ export function ApplicationCenterPage({
                   <span>
                     {app.brandImage ? (
                       <ResponsiveImage
-                        src={app.brandImage}
+                        src={programAsset(app.brandImage)}
                         width={38}
                         height={38}
                         alt=""

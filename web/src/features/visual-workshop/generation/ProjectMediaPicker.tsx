@@ -463,7 +463,11 @@ export function ProjectMediaPicker({
         <Upload aria-hidden />
       )}
       <span className={minimal ? "sr-only" : undefined}>
-        {upload.isPending ? "上传中" : "上传"}
+        {upload.isPending ? (
+          <LoadingState variant="inline" label="上传中" />
+        ) : (
+          "上传"
+        )}
       </span>
     </button>
   );

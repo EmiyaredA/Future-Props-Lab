@@ -1,20 +1,10 @@
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
-import { useRuntimeAccess } from "./useRuntimeAccess";
-import { lazy, Suspense } from "react";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import {
-  Globe,
-  ChevronDown,
-  LogOut,
-  Settings,
-  ShieldCheck,
-} from "lucide-react";
+import { ChevronDown, LogOut, Settings } from "lucide-react";
 import type { AccountSessionContext } from "./api";
 import { avatarSrc } from "./avatarSrc";
 import "./account-navigation.css";
-
-const WebsiteAccessDialog = lazy(() => import("./WebsiteAccessDialog"));
 
 export function AccountActionMenu({
   label,
@@ -161,8 +151,6 @@ export function AccountActionMenu({
 export function AccountMenu({ session }: { session: AccountSessionContext }) {
   const { me } = session;
   const [error, setError] = useState("");
-  const localBrowser = useRuntimeAccess();
-  const [accessOpen, setAccessOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const avatar = (
     <span className="account-identity-avatar">
@@ -197,35 +185,12 @@ export function AccountMenu({ session }: { session: AccountSessionContext }) {
           </>
         }
         items={[
-          ...(localBrowser && me.user.is_platform_admin
-            ? [
-                {
-                  label: "本地与公网访问",
-                  icon: <Globe size={18} />,
-                  action: () => setAccessOpen(true),
-                },
-              ]
-            : []),
           {
             label: "账号设置",
             icon: <Settings size={18} />,
             action: () =>
               window.dispatchEvent(new Event("future-props:open-account")),
           },
-          ...(me.user.is_platform_admin
-            ? [
-                {
-                  label: "管理中台",
-                  icon: <ShieldCheck size={18} />,
-                  action: () =>
-                    window.dispatchEvent(
-                      new CustomEvent("future-props:navigate", {
-                        detail: "/management/accounts",
-                      }),
-                    ),
-                },
-              ]
-            : []),
           {
             label: pending ? "正在退出…" : "退出登录",
             icon: <LogOut size={18} />,
@@ -242,11 +207,6 @@ export function AccountMenu({ session }: { session: AccountSessionContext }) {
           },
         ]}
       />
-      {accessOpen && (
-        <Suspense fallback={null}>
-          <WebsiteAccessDialog onClose={() => setAccessOpen(false)} />
-        </Suspense>
-      )}
       {error ? (
         <p className="account-menu-error" role="alert">
           {error}

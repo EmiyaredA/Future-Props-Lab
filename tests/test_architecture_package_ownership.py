@@ -32,7 +32,7 @@ def test_audio_annotation_lives_under_apps() -> None:
 def test_thought_workshop_lives_under_apps() -> None:
     assert (BACKEND_APP / "apps" / "thought_workshop" / "models.py").is_file()
     assert (BACKEND_APP / "apps" / "thought_workshop" / "routes" / "__init__.py").is_file()
-    assert (BACKEND_APP / "apps" / "thought_workshop" / "routes" / "conversion.py").is_file()
+    assert (BACKEND_APP / "apps" / "thought_workshop" / "content_exports_http.py").is_file()
     assert not (BACKEND_APP / "thought_workshop").exists()
     assert not (BACKEND_APP / "models" / "thought_workshop.py").exists()
     assert not (BACKEND_APP / "routes" / "thought_workshop.py").exists()
@@ -184,14 +184,15 @@ def test_asset_store_owns_media_routes_and_schemas() -> None:
     assert not (BACKEND_APP / "schemas" / "video_frames.py").exists()
 
 
-def test_console_owns_models() -> None:
+def test_console_owns_account_models_and_llm_owns_model_governance_records() -> None:
     for name in (
         "accounts.py",
         "platform_governance.py",
-        "model_templates.py",
-        "runtime_admission.py",
     ):
         assert (BACKEND_APP / "console" / "models" / name).is_file()
+    for name in ("model_templates.py", "runtime_admission.py"):
+        assert (BACKEND_APP / "llm" / "models" / name).is_file()
+        assert not (BACKEND_APP / "console" / "models" / name).exists()
     assert not (BACKEND_APP / "models").exists()
     assert not (BACKEND_APP / "schemas").exists()
 

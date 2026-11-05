@@ -1,17 +1,9 @@
+import { AGENT_WORKBENCH_DEFINITION } from "@features/applications";
 import { MessagesSquare, Cable } from "lucide-react";
 import { defineApplicationModule } from "@features/applications";
 
 const definition = {
-  definition: {
-    id: "agent-workbench",
-    name: "Agent 工作台",
-    category: "development",
-    description: "查看本机 APP 与 CLI 的已有编程会话，实时跟随新增内容。",
-    capabilities: ["会话", "编程", "实时同步"],
-    path: "/agents",
-    icon: MessagesSquare,
-    brandImage: "/brand/agent-workbench-mark.png",
-  },
+  definition: AGENT_WORKBENCH_DEFINITION,
   supportsProjects: false,
   shell: "agent-workbench",
   shellConfig: {

@@ -12,6 +12,7 @@ from app.apps.galgame_workshop.models import (
     GalgameStoryDocument,
     GalgameWorkshopProject,
 )
+from app.apps.galgame_workshop.project_values import project_out as project_out
 from app.apps.galgame_workshop.readiness import GalgameReadiness
 from app.apps.galgame_workshop.schemas import (
     GalgameWorkshopProjectCreateIn,
@@ -30,22 +31,11 @@ from app.runtime.config import get_settings
 from app.runtime.operation_receipts import forget
 from app.runtime.project_records import (
     delete_revisioned_project,
+    list_owned_projects,
     load_owned_project,
     patch_revisioned_project,
 )
-from app.runtime.time import iso_utc, utc_now
-
-
-def project_out(row: GalgameWorkshopProject) -> GalgameWorkshopProjectOut:
-    return GalgameWorkshopProjectOut(
-        id=row.id,
-        title=row.title,
-        is_official=row.is_official,
-        status=row.status,  # type: ignore[arg-type]
-        revision=row.revision,
-        created_at=iso_utc(row.created_at),
-        updated_at=iso_utc(row.updated_at),
-    )
+from app.runtime.time import utc_now
 
 
 class GalgameWorkshopProjects:
@@ -55,20 +45,7 @@ class GalgameWorkshopProjects:
         self.storage = AssetStorage(get_settings())
 
     async def list(self) -> GalgameWorkshopProjectListOut:
-        rows = (
-            (
-                await self.session.execute(
-                    select(GalgameWorkshopProject)
-                    .where(GalgameWorkshopProject.owner_user_id == self.owner_user_id)
-                    .order_by(
-                        GalgameWorkshopProject.updated_at.desc(),
-                        GalgameWorkshopProject.created_at.desc(),
-                    )
-                )
-            )
-            .scalars()
-            .all()
-        )
+        rows = await list_owned_projects(self.session, GalgameWorkshopProject, self.owner_user_id)
         return GalgameWorkshopProjectListOut(items=[project_out(row) for row in rows])
 
     async def _row(self, project_id: str) -> GalgameWorkshopProject:

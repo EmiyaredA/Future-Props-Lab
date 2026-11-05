@@ -58,6 +58,8 @@ ALLOWED_FILES: dict[str, tuple[str, set[str]]] = {
     ".json": ("document", {"application/json", "text/json", "text/plain"}),
 }
 
+REFERENCE_IMAGE_MIME_TYPES = frozenset({"image/jpeg", "image/png", "image/webp", "image/gif"})
+
 GALGAME_EXTENSIONS = {
     ".jpg",
     ".jpeg",

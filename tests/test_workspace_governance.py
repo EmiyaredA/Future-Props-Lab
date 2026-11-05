@@ -93,9 +93,24 @@ def test_every_business_operation_has_an_explicit_policy():
         if path not in {"/health", "/ready"}
         and not path.startswith(("/v1/account", "/v1/auth", "/v1/platform", "/v1/public-workspace"))
     }
-    local_management = {("POST", "/v1/platform/local-models/{model_id}/actions")}
-    directory = {("GET", "/v1/account/directory")}
-    assert actual | local_management | directory == set(ROUTE_PERMISSIONS)
+    from fpl_deployment.contracts import operation_owner
+
+    model_governance = {
+        (method.upper(), path)
+        for path, methods in paths.items()
+        for method in methods
+        if path.startswith("/v1/platform/") and operation_owner(path) == "models"
+    }
+    directory = {
+        ("GET", "/v1/account/directory"),
+        ("GET", "/v1/account/developer-documents"),
+        ("POST", "/v1/account/demo-services/{service_id}/install"),
+        ("PATCH", "/v1/account/project-certification/{kind}/{project_id}"),
+    }
+    from fpl_management.routes import router
+
+    management = {(method, route.path) for route in router.routes for method in route.methods}
+    assert actual | model_governance | directory | management == set(ROUTE_PERMISSIONS)
 
 
 @pytest.mark.asyncio

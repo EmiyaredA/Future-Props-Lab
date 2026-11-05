@@ -3,6 +3,7 @@
 import re
 
 OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
+    "docs.developer": (("GET", "/v1/account/developer-documents"),),
     "cloud-control.access": (
         ("GET", "/v1/cloud-control/status"),
         ("GET", "/v1/agent-workbench/execution/catalog"),
@@ -251,6 +252,8 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("POST", "/v1/visual-workshop/projects/{project_id}/open-folder"),
     ),
     "content.read": (
+        ("GET", "/v1/automation/services"),
+        ("GET", "/v1/management/service-status"),
         ("GET", "/v1/automation/capabilities"),
         ("GET", "/v1/automation/runtime"),
         ("GET", "/v1/automation/changes"),
@@ -497,6 +500,8 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("POST", "/v1/visual-workshop/projects/{project_id}/generation-tasks"),
     ),
     "configuration.manage": (
+        ("GET", "/v1/integrations/validation-attempts"),
+        ("POST", "/v1/integrations/validation-attempts/{attempt_id}/reconcile"),
         ("POST", "/v1/code-agents/{agent_id}/enable"),
         ("GET", "/v1/automation/access"),
         ("POST", "/v1/automation/access/actions"),
@@ -603,6 +608,18 @@ OPERATIONS["community.access"] += (
 )
 
 OPERATIONS["configuration.manage"] += (
+    ("POST", "/v1/account/demo-services/{service_id}/install"),
+    ("GET", "/v1/platform/runtime-quotas"),
+    ("PATCH", "/v1/platform/runtime-quotas"),
+    ("GET", "/v1/platform/demo-services"),
+    ("PUT", "/v1/platform/demo-services/{service_id}"),
+    ("POST", "/v1/platform/demo-services/{service_id}/actions"),
+    ("GET", "/v1/platform/model-service-templates/{role}"),
+    ("PUT", "/v1/platform/model-service-templates/{role}"),
+    ("POST", "/v1/platform/model-service-templates/{role}/preview"),
+    ("GET", "/v1/platform/model-service-templates/sync-jobs/{job_id}"),
+    ("POST", "/v1/platform/model-service-templates/sync-jobs/{job_id}/start"),
+    ("GET", "/v1/platform/model-service-templates/{role}/sync-jobs"),
     ("GET", "/v1/integrations/external-connections"),
     ("POST", "/v1/integrations/external-connections"),
     ("PATCH", "/v1/integrations/external-connections/{connection_id}"),
@@ -643,6 +660,20 @@ OPERATIONS["content.write"] += (
 OPERATIONS["models.use"] += (
     ("POST", "/v1/visual-workshop/projects/{project_id}/acceptance/runs"),
     ("POST", "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance/runs"),
+)
+
+OPERATIONS["configuration.manage"] += (
+    ("GET", "/v1/management/runtime"),
+    ("GET", "/v1/management/application"),
+    ("POST", "/v1/management/application/actions"),
+    ("GET", "/v1/management/application/logs"),
+    ("GET", "/v1/management/access/{target}"),
+    ("POST", "/v1/management/access/{target}/actions"),
+    ("GET", "/v1/management/jobs/{job_id}"),
+)
+
+OPERATIONS["projects.certify"] = (
+    ("PATCH", "/v1/account/project-certification/{kind}/{project_id}"),
 )
 
 ROUTE_PERMISSIONS = {

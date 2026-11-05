@@ -27,13 +27,20 @@ import {
   login as loginAccount,
   logout as logoutAccount,
 } from "@features/accounts/api";
-import { clearRetainedRealtimeVoiceState } from "@features/models/realtime/realtimeVoiceMemory";
 import { useResourceBroadcastSync } from "@app/useResourceBroadcastSync";
 
 type Status = "checking" | "signed-out" | "signed-in";
 const registrationAllowed = import.meta.env.MODE !== "studio";
 
-export function StudioAuthGate({ children }: { children: ReactNode }) {
+const noSessionState = () => {};
+
+export function StudioAuthGate({
+  children,
+  onIdentityReset = noSessionState,
+}: {
+  children: ReactNode;
+  onIdentityReset?: () => void;
+}) {
   const queryClient = useQueryClient();
   const identityRef = useRef<AuthMe | null>(null);
   const identityRequest = useRef(0);
@@ -68,7 +75,7 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
           JSON.stringify(previous.permission_keys) !==
             JSON.stringify(current.permission_keys))
       ) {
-        clearRetainedRealtimeVoiceState();
+        onIdentityReset();
         await queryClient.cancelQueries();
         queryClient.clear();
       }
@@ -85,13 +92,13 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
         setStatus("signed-out");
       }
     }
-  }, [queryClient]);
+  }, [queryClient, onIdentityReset]);
 
   useEffect(() => {
     void refresh();
     const signedOut = () => {
       identityRequest.current += 1;
-      clearRetainedRealtimeVoiceState();
+      onIdentityReset();
       queryClient.clear();
       identityRef.current = null;
       setMe(null);
@@ -116,7 +123,7 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
       );
       window.removeEventListener(AUTH_REQUIRED_EVENT, signedOut);
     };
-  }, [queryClient, refresh]);
+  }, [queryClient, refresh, onIdentityReset]);
 
   const login = async (event: FormEvent) => {
     event.preventDefault();
@@ -135,7 +142,7 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
       setInviteCode("");
       setRegistrationEmail("");
       setRegistration(false);
-      clearRetainedRealtimeVoiceState();
+      onIdentityReset();
       setMe(current);
       setStatus("signed-in");
       setUsername("");
@@ -177,13 +184,13 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
         await logoutAccount();
         identityRequest.current += 1;
         identityRef.current = null;
-        clearRetainedRealtimeVoiceState();
+        onIdentityReset();
         queryClient.clear();
         setMe(null);
         setStatus("signed-out");
       },
     };
-  }, [me, queryClient, refresh]);
+  }, [me, queryClient, refresh, onIdentityReset]);
 
   if (status === "checking") {
     return (

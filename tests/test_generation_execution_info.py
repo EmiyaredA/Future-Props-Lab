@@ -3,7 +3,7 @@ import json
 import pytest
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.apps.visual_workshop.generation import generation_task_out
+from app.apps.visual_workshop.generation_common import generation_task_out
 from app.apps.visual_workshop.models import VisualGenerationTask
 from app.llm.generation_runtime import GenerationTaskStore
 from app.llm.task_execution import TaskExecutionInfo

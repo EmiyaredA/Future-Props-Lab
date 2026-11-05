@@ -1,0 +1,14 @@
+.git
+.local
+.runtime
+.venv
+node_modules
+**/node_modules
+**/__pycache__
+backend/config.toml
+backend/web-access
+.env
+.env.*
+mihomo.gz
+**/test-results
+**/playwright-report

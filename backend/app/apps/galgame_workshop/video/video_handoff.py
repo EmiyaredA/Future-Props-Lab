@@ -15,29 +15,11 @@ from app.apps.galgame_workshop.schemas import (
     GalgameVideoExportPreviewIn,
 )
 from app.apps.galgame_workshop.story.story import GalgameStoryDocuments
-from app.apps.galgame_workshop.video.video_compiler import COMPILER_VERSION
+from app.apps.galgame_workshop.task_views import handoff_out
 from app.apps.galgame_workshop.video.video_export import GalgameVideoExports
 from app.capabilities.asset_store import AssetError
-from app.runtime.time import iso_utc, utc_now
-
-
-def handoff_out(row: GalgameVideoEditorHandoffTask) -> GalgameVideoEditorHandoffTaskOut:
-    detail = dict(row.result_detail or {})
-    return GalgameVideoEditorHandoffTaskOut(
-        id=row.id,
-        projectId=row.project_id,
-        requestId=row.request_id,
-        storyRevision=row.story_revision,
-        status=row.status,
-        progress=row.progress,
-        outputProjectId=row.output_project_id,
-        trackCount=max(0, int(detail.get("trackCount", 0))),
-        assetCount=max(0, int(detail.get("assetCount", 0))),
-        error=row.error,
-        revision=row.revision,
-        createdAt=iso_utc(row.created_at),
-        updatedAt=iso_utc(row.updated_at),
-    )
+from app.capabilities.media_rendering.galgame.compiler import COMPILER_VERSION
+from app.runtime.time import utc_now
 
 
 class GalgameVideoEditorHandoffs:

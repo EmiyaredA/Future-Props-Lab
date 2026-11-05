@@ -2,13 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 from types import SimpleNamespace
-from urllib.parse import urlsplit
 
 from fastapi import HTTPException
-from sqlalchemy import select, text, update
+from sqlalchemy import or_, select, text, update
 from sqlalchemy.exc import IntegrityError
 
-from app.capabilities.agents.sessions import candidates
 from app.runtime.config import get_settings
 
 from .models import WorkbenchChange, WorkbenchOperation, WorkbenchSource
@@ -23,10 +21,6 @@ def source_out(row):
         else "log_follow"
     )
     return result
-
-
-def source_candidates():
-    return candidates()
 
 
 async def get_source(session, owner, source_id):
@@ -51,45 +45,10 @@ async def list_sources(session, owner):
     return [source_out(row) for row in rows]
 
 
-def validated_location(body):
-    if body.endpoint:
-        try:
-            url = urlsplit(body.endpoint)
-            port = url.port
-        except ValueError as exc:
-            raise HTTPException(422, "本机实例地址无效") from exc
-        if (
-            body.agent_id != "opencode"
-            or url.scheme != "http"
-            or url.hostname not in {"127.0.0.1", "::1"}
-            or url.username
-            or url.password
-            or url.path not in {"", "/"}
-            or url.query
-            or url.fragment
-            or not port
-        ):
-            raise HTTPException(422, "仅允许明确选择的本机 OpenCode HTTP 实例（不含凭据）")
-        return "", body.endpoint.rstrip("/")
-    try:
-        path = Path(body.root).expanduser()
-    except (ValueError, RuntimeError) as exc:
-        raise HTTPException(422, "来源目录无效") from exc
-    if not path.is_absolute() or path.is_symlink():
-        raise HTTPException(422, "请选择绝对路径的真实会话目录")
-    try:
-        root = path.resolve(strict=True)
-    except (OSError, ValueError, RuntimeError) as exc:
-        raise HTTPException(422, "来源目录不可用") from exc
-    if not root.is_dir() or root in {Path.home(), Path(root.anchor)}:
-        raise HTTPException(422, "请选择具体的会话目录，不能扫描整个用户目录或磁盘")
-    return str(root), ""
-
-
-async def create_source(session, owner, body):
+async def create_source(session, owner, body, *, location):
     if not get_settings().fpl_agent_workbench_enabled:
         raise HTTPException(403, "部署未启用 Agent 工作台")
-    root, endpoint = validated_location(body)
+    root, endpoint = location
     # Serialize overlapping allocations. The core-table query is an allocation
     # check only; no other account's metadata crosses the response boundary.
     await session.rollback()
@@ -98,7 +57,10 @@ async def create_source(session, owner, body):
         (
             await session.execute(
                 select(WorkbenchSource.__table__).where(
-                    WorkbenchSource.__table__.c.agent_id == body.agent_id
+                    or_(
+                        WorkbenchSource.__table__.c.agent_id == body.agent_id,
+                        WorkbenchSource.__table__.c.owner_user_id != owner,
+                    )
                 )
             )
         )

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from typing import Annotated
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
@@ -24,6 +23,10 @@ from app.apps.galgame_workshop.schemas import (
     GalgameStoryStageExpressionPatchOut,
 )
 from app.apps.galgame_workshop.schemas.operations import GalgameOperationsIn
+from app.apps.galgame_workshop.story.migration_inventory import (
+    MAX_STORY_IMPORT_BYTES,
+    decode_legacy_story,
+)
 from app.apps.galgame_workshop.story.operations import apply_operations as galgame_operations
 from app.apps.galgame_workshop.story.story import GalgameStoryDocuments
 from app.apps.galgame_workshop.story.story_migrations import GalgameStoryMigrations
@@ -33,7 +36,6 @@ from app.runtime.config import get_settings
 from app.runtime.operation_receipts import OperationError
 
 router = APIRouter()
-MAX_STORY_IMPORT_BYTES = 10 * 1024 * 1024
 
 
 @router.get("/{project_id}/story", response_model=GalgameStoryDocumentOut)
@@ -129,13 +131,7 @@ async def import_legacy_story(
     file: Annotated[UploadFile, File()],
 ) -> GalgameStoryDocumentOut:
     try:
-        payload = await file.read(MAX_STORY_IMPORT_BYTES + 1)
-        if len(payload) > MAX_STORY_IMPORT_BYTES:
-            raise GalgameStoryDocumentInvalidError("Story 导入文件不能超过 10 MB")
-        try:
-            document = json.loads(payload.decode("utf-8-sig"))
-        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise GalgameStoryDocumentInvalidError("Story 导入文件不是有效的 UTF-8 JSON") from exc
+        document = decode_legacy_story(await file.read(MAX_STORY_IMPORT_BYTES + 1))
         return await GalgameStoryMigrations(session, owner_user_id).import_legacy(
             project_id,
             expected_revision=expected_revision,

@@ -31,11 +31,10 @@ from app.integrations.schemas import (
     McpUpdateIn,
     McpValidationOut,
 )
-from app.orm import require_owner_id
 from app.runtime.config import get_settings
-from app.runtime.credentials import decrypt_secret, encrypt_secret
+from app.runtime.credentials import SecretCipher
+from app.runtime.ownership import require_owner_id
 from app.runtime.revisions import RevisionConflictError
-from app.runtime.secret_hints import encrypted_secret_hint
 from app.runtime.time import iso_utc, utc_now
 
 
@@ -50,8 +49,16 @@ def _tool_out(row: McpDiscoveredTool) -> McpToolOut:
 
 class McpCatalog:
     def __init__(
-        self, session: AsyncSession, owner_user_id: str, *, client: McpDiscoveryClient | None = None
+        self,
+        session: AsyncSession,
+        owner_user_id: str,
+        *,
+        client: McpDiscoveryClient | None = None,
+        execution=None,
+        cipher=None,
     ) -> None:
+        self.cipher = cipher or SecretCipher(get_settings().fpl_secrets_key)
+        self.execution = execution
         self.session = session
         self.owner_user_id = require_owner_id(owner_user_id, subject="integration catalog")
         self.client = client or OfficialMcpDiscoveryClient(get_settings())
@@ -83,7 +90,7 @@ class McpCatalog:
             command=row.command,
             arguments=list(row.arguments or []),
             has_bearer_token=bool(row.bearer_ciphertext),
-            bearer_hint=encrypted_secret_hint(row.bearer_ciphertext),
+            bearer_hint=self.cipher.hint(row.bearer_ciphertext),
             environment_keys=list(row.environment_keys or []),
             tags=list(row.tags or []),
             enabled=row.enabled,
@@ -126,9 +133,11 @@ class McpCatalog:
             row.environment_ciphertext,
         )
         await self.session.rollback()
-        bearer = decrypt_secret(bearer_ciphertext) if bearer_ciphertext else ""
+        bearer = self.cipher.decrypt(bearer_ciphertext) if bearer_ciphertext else ""
         environment = (
-            json.loads(decrypt_secret(environment_ciphertext)) if environment_ciphertext else {}
+            json.loads(self.cipher.decrypt(environment_ciphertext))
+            if environment_ciphertext
+            else {}
         )
         result = await asyncio.wait_for(
             self.client.call(
@@ -202,9 +211,10 @@ class McpCatalog:
             ),
         )
 
-    @staticmethod
-    def _encrypted_environment(environment: dict[str, str]) -> str:
-        return encrypt_secret(json.dumps(environment, ensure_ascii=False)) if environment else ""
+    def _encrypted_environment(self, environment: dict[str, str]) -> str:
+        return (
+            self.cipher.encrypt(json.dumps(environment, ensure_ascii=False)) if environment else ""
+        )
 
     async def create(self, body: McpCreateIn) -> McpOut:
         row = McpIntegration(
@@ -215,7 +225,7 @@ class McpCatalog:
             url=body.url,
             command=body.command,
             arguments=body.arguments,
-            bearer_ciphertext=encrypt_secret(body.bearer_token) if body.bearer_token else "",
+            bearer_ciphertext=self.cipher.encrypt(body.bearer_token) if body.bearer_token else "",
             environment_ciphertext=self._encrypted_environment(body.environment),
             environment_keys=sorted(body.environment),
             tags=body.tags,
@@ -244,7 +254,7 @@ class McpCatalog:
         if body.clear_bearer_token:
             bearer = ""
         if body.bearer_token:
-            bearer = encrypt_secret(body.bearer_token)
+            bearer = self.cipher.encrypt(body.bearer_token)
         if body.clear_environment:
             environment = ""
             environment_keys = []
@@ -341,20 +351,28 @@ class McpCatalog:
         bearer = ""
         environment: dict[str, str] = {}
         try:
-            bearer = decrypt_secret(bearer_ciphertext) if bearer_ciphertext else ""
+            bearer = self.cipher.decrypt(bearer_ciphertext) if bearer_ciphertext else ""
             environment = (
-                json.loads(decrypt_secret(environment_ciphertext)) if environment_ciphertext else {}
+                json.loads(self.cipher.decrypt(environment_ciphertext))
+                if environment_ciphertext
+                else {}
             )
-            discovery = await asyncio.wait_for(
-                self.client.discover(
-                    transport=snapshot.transport,
-                    url=snapshot.url,
-                    command=snapshot.command,
-                    arguments=snapshot.arguments,
-                    bearer_token=bearer,
-                    environment=environment,
-                ),
-                timeout=30.0,
+
+            async def invoke():
+                return await asyncio.wait_for(
+                    self.client.discover(
+                        transport=snapshot.transport,
+                        url=snapshot.url,
+                        command=snapshot.command,
+                        arguments=snapshot.arguments,
+                        bearer_token=bearer,
+                        environment=environment,
+                    ),
+                    timeout=30.0,
+                )
+
+            discovery = await (
+                self.execution.run(snapshot, {}, invoke) if self.execution else invoke()
             )
             ok = True
             summary = f"连接成功，发现 {len(discovery.tools)} 个工具"

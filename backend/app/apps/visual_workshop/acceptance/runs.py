@@ -1,6 +1,5 @@
 from sqlalchemy import select
 
-from app.apps.visual_workshop.acceptance.access import AcceptanceError, cas, project
 from app.apps.visual_workshop.acceptance.models import (
     AcceptanceRun,
 )
@@ -8,9 +7,10 @@ from app.apps.visual_workshop.acceptance.schemas import (
     AcceptanceRunListOut,
     AcceptanceRunOut,
 )
-from app.llm.models import ModelEntry, ModelProvider
-from app.llm.providers.chat_completions import TEXT_PROVIDER_KINDS
 from app.runtime.time import iso_utc
+
+from .project_access import AcceptanceError, project
+from .record_revisions import cas
 
 
 def run_out(row):
@@ -33,28 +33,6 @@ def run_out(row):
         scheme_id=row.scheme_id,
         execution_result=row.execution_result or {},
     )
-
-
-async def review_models(session, owner_user_id):
-    rows = (
-        await session.execute(
-            select(ModelEntry, ModelProvider)
-            .join(ModelProvider, ModelProvider.id == ModelEntry.provider_id)
-            .where(
-                ModelEntry.owner_user_id == owner_user_id,
-                ModelProvider.owner_user_id == owner_user_id,
-                ModelEntry.enabled.is_(True),
-                ModelProvider.enabled.is_(True),
-                ModelProvider.kind.in_(TEXT_PROVIDER_KINDS),
-            )
-        )
-    ).all()
-    return [
-        (model, provider)
-        for model, provider in rows
-        if {"chat", "vision"} <= set(model.capabilities or [])
-        and bool(provider.api_key_ciphertext or provider.base_url)
-    ]
 
 
 class Runs:

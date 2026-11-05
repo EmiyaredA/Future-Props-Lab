@@ -20,7 +20,13 @@ function bytesLabel(value: number) {
   return `${(value / 1024 / 1024 / 1024).toFixed(1)} GB`;
 }
 
-export function FileManagementPage({ initialKind }: { initialKind?: string }) {
+export function FileManagementPage({
+  initialKind,
+  canOpenLocalFolder = false,
+}: {
+  initialKind?: string;
+  canOpenLocalFolder?: boolean;
+}) {
   const client = useQueryClient();
   const [progress, setProgress] = useState<StorageLayoutMigration>();
   const layout = useQuery({
@@ -105,7 +111,9 @@ export function FileManagementPage({ initialKind }: { initialKind?: string }) {
       )}
       <AssetBrowser
         initialKind={initialKind}
-        onOpenLocalFolder={() => openFolder.mutate()}
+        onOpenLocalFolder={
+          canOpenLocalFolder ? () => openFolder.mutate() : undefined
+        }
         openingLocalFolder={openFolder.isPending}
       />
     </section>

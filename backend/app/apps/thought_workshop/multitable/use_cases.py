@@ -4,11 +4,11 @@ from copy import deepcopy
 
 from sqlalchemy import select, update
 
+from app.apps.thought_workshop.asset_metadata import metadata
 from app.apps.thought_workshop.errors import ThoughtError
 from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
 from app.apps.thought_workshop.notes import Notes
 from app.apps.thought_workshop.publication.lifecycle import touch_note
-from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import utc_now
 
@@ -96,35 +96,27 @@ class Multitable:
         )
         if result.rowcount != 1:
             await self.session.rollback()
-            structure = await self.structure(note_id)
-            current = await snapshot(self.session, note_id)
-            raise RevisionConflictError(
-                expected,
-                structure.revision,
-                {
-                    "structure": structure.model_dump(mode="json"),
-                    "records": current.model_dump(mode="json")["records"],
-                },
-            )
+            await self.conflict(note_id, expected)
         return await self.note(n.id)
 
-    async def validate_refs(self, state, before):
+    async def conflict(self, note_id, expected):
+        structure = await self.structure(note_id)
+        current = await snapshot(self.session, note_id)
+        raise RevisionConflictError(
+            expected,
+            structure.revision,
+            {
+                "structure": structure.model_dump(mode="json"),
+                "records": current.model_dump(mode="json")["records"],
+            },
+        )
+
+    async def validate_asset_refs(self, state):
         ids = asset_ids(state)
         if ids:
-            found = set(
-                await self.session.scalars(
-                    select(VisualAsset.id).where(
-                        VisualAsset.id.in_(ids),
-                        VisualAsset.owner_user_id == self.owner_user_id,
-                        VisualAsset.project_id.is_(None),
-                        VisualAsset.galgame_project_id.is_(None),
-                        VisualAsset.video_editor_project_id.is_(None),
-                    )
-                )
-            )
-            if found != ids:
-                raise ThoughtError("附件不存在或不可访问", 404, "not_found")
+            await metadata(self.session, self.owner_user_id).describe(ids)
 
+    async def validate_local_refs(self, state, before):
         def notes(s):
             return {
                 id
@@ -207,11 +199,32 @@ class Multitable:
         if introduced - members.keys():
             raise ThoughtError("只能选择当前账号的成员", 422, "invalid_member")
 
-    async def commit(self, n, expected, before, after, *, checkpoint=False):
+    async def commit(
+        self,
+        n,
+        expected,
+        before,
+        after,
+        *,
+        checkpoint=False,
+        before_write=None,
+        after_write=None,
+        prepared_assets=False,
+    ):
         validate_snapshot(after)
         await self.validate_people(before, after)
-        await self.validate_refs(after, before)
+        if prepared_assets and before_write is None:
+            raise ValueError("已准备的素材验证需要写入前回调")
+        if not prepared_assets:
+            await self.validate_asset_refs(after)
+        if before_write is not None:
+            note_id = n.id
+            await before_write(before, after)
+            n = await self.note(note_id)
+        if prepared_assets:
+            await self.validate_asset_refs(after)
         n = await self.reserve(n, expected)
+        await self.validate_local_refs(after, before)
         await persist(self.session, n.id, before, after)
         await journal(self.session, n, before, after, self.author_id, checkpoint)
         text = "\n".join(
@@ -235,13 +248,26 @@ class Multitable:
             .values(updated_at=utc_now())
         )
         await touch_note(self.session, n.id)
+        if after_write is not None:
+            await after_write(n.revision)
         await self.session.commit()
         return BatchOut(structure=await self.structure(n.id))
 
     async def apply(
-        self, note_id, body, *, checkpoint=False, allowed_assets=None, allowed_notes=None
+        self,
+        note_id,
+        body,
+        *,
+        checkpoint=False,
+        allowed_assets=None,
+        allowed_notes=None,
+        before_write=None,
+        after_write=None,
+        prepared_assets=False,
     ):
         n = await self.note(note_id)
+        if n.revision != body.expected_revision:
+            await self.conflict(note_id, body.expected_revision)
         before = await snapshot(self.session, note_id)
         after = deepcopy(before)
         changed = {}
@@ -294,7 +320,16 @@ class Multitable:
             }
             if not (new_refs - old_refs) <= allowed_notes:
                 raise ThoughtError("引用文档不可访问", 404, "not_found")
-        result = await self.commit(n, body.expected_revision, before, after, checkpoint=checkpoint)
+        result = await self.commit(
+            n,
+            body.expected_revision,
+            before,
+            after,
+            checkpoint=checkpoint,
+            before_write=before_write,
+            after_write=after_write,
+            prepared_assets=prepared_assets,
+        )
         result.records = changed
         return result
 
@@ -316,8 +351,16 @@ class Multitable:
             raise ThoughtError("表格历史不存在", 404, "not_found")
         return await historical(self.session, note_id, revision)
 
-    async def restore(self, note_id, revision, expected):
+    async def restore(self, note_id, revision, expected, *, before_write=None, after_write=None):
         n = await self.note(note_id)
         before = await snapshot(self.session, note_id)
         after = await self.history_snapshot(note_id, revision)
-        return await self.commit(n, expected, before, after, checkpoint=True)
+        return await self.commit(
+            n,
+            expected,
+            before,
+            after,
+            checkpoint=True,
+            before_write=before_write,
+            after_write=after_write,
+        )

@@ -1,0 +1,99 @@
+.independent-app {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: var(--visible-height, 100dvh);
+  background: var(--surface);
+}
+.independent-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 18px;
+  flex: none;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.independent-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  font-weight: 700;
+  color: var(--text-strong);
+  text-decoration: none;
+}
+.independent-header nav {
+  display: flex;
+  gap: 14px;
+  margin-left: 14px;
+  align-items: center;
+}
+.independent-header nav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.independent-header a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+.independent-account {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+.independent-account .theme-toggle {
+  width: auto;
+  padding: 2px;
+}
+.independent-account .theme-toggle button {
+  min-height: 28px;
+  padding: 2px 9px;
+  font-size: 12px;
+}
+.independent-content {
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+}
+.independent-not-found {
+  padding: 32px;
+}
+@media (max-width: 600px) {
+  .independent-header {
+    gap: 8px;
+    padding: 9px 12px;
+  }
+  .independent-header nav {
+    order: 3;
+    flex-basis: 100%;
+    margin-left: 0;
+    justify-content: center;
+  }
+  .independent-account {
+    gap: 8px;
+  }
+  .independent-account .theme-toggle span {
+    display: none;
+  }
+  .independent-account .theme-toggle button {
+    min-width: 30px;
+    padding: 3px;
+  }
+}
+
+.independent-update {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 16px;
+  flex: none;
+  background: var(--warning-soft);
+  color: var(--warning);
+}

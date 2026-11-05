@@ -53,6 +53,7 @@ async def clear_private_projects(owner="test-user"):
     from app.runtime.db import SessionLocal
 
     dependents = {
+        "thought_sync_tasks",
         "thought_knowledge_bases",
         "audio_annotation_projects",
         "presentation_projects",

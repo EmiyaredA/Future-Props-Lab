@@ -82,6 +82,26 @@ class Settings(BaseSettings):
         except ValidationError:
             raise ConfigurationError("配置校验失败，请检查加密密钥、地址和容量限制") from None
 
+    fpl_deployment_compose_file: str = ""
+    fpl_deployment_project_name: str = "future-props-lab"
+    fpl_deployment_environment: dict[str, str] = Field(default_factory=dict)
+    fpl_management_host_base_url: str = "http://127.0.0.1:29092/management"
+    fpl_management_host_credential_file: str = ""
+    fpl_management_host_state_root: str = ".runtime/management-host"
+    fpl_management_host_business_services: str = ""
+    fpl_management_host_credentials_root: str = "backend/web-access/credentials"
+    fpl_management_host_auto_start: bool = True
+    fpl_management_remote_port: int = Field(default=28083, ge=1024, le=65535)
+    fpl_management_remote_ssh_host: str = ""
+    fpl_management_remote_ssh_user: str = ""
+    fpl_management_remote_ssh_port: int = Field(default=22, ge=1, le=65535)
+    fpl_management_remote_remote_port: int = Field(default=28082, ge=1024, le=65535)
+    fpl_management_remote_identity_id: str = ""
+    fpl_management_remote_known_hosts_id: str = ""
+    fpl_management_remote_enabled: bool = False
+    fpl_management_local_origin: str = "http://127.0.0.1:9002"
+    fpl_management_public_origin: str = ""
+
     fpl_website_port: int = Field(default=9000, ge=1024, le=65535)
     fpl_website_web_root: str = ".local/studio-release"
     fpl_website_public_enabled: bool = False

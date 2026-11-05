@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import os
 import shutil
 from dataclasses import dataclass
@@ -12,8 +13,6 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.incoming import IncomingFile
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
 from app.llm.models import ModelTestGenerationAsset, ModelTestGenerationTask
 from app.llm.schemas.model_test import (
     ModelTestGenerationAssetBackfillOut,
@@ -50,9 +49,20 @@ ALLOWED_REFERENCES: dict[str, tuple[str, set[str]]] = {
 }
 
 
-def _reference_ids(payload: dict, field: str) -> list[str]:
+def reference_ids(payload: dict, field: str) -> list[str]:
     value = payload.get(field)
     return [value] if isinstance(value, str) else value or []
+
+
+async def copy_reference(source, target):
+    task = asyncio.create_task(asyncio.to_thread(shutil.copyfile, source, target))
+    try:
+        await asyncio.shield(task)
+    except asyncio.CancelledError:
+        # Finish the writer before the enclosing rollback removes its staged file.
+        with contextlib.suppress(Exception):
+            await task
+        raise
 
 
 class GenerationAssetError(Exception):
@@ -105,12 +115,17 @@ def _looks_like(kind: str, head: bytes) -> bool:
 
 class ModelTestGenerationAssets:
     def __init__(
-        self, session: AsyncSession, owner_user_id: str, settings: Settings | None = None
+        self,
+        session: AsyncSession,
+        owner_user_id: str,
+        settings: Settings | None = None,
+        *,
+        legacy_references=None,
     ) -> None:
         self.session = session
         self.owner_user_id = owner_user_id
         self.settings = settings or get_settings()
-        self.storage = AssetStorage(self.settings)
+        self.legacy_references = legacy_references
 
     def _root(self, owner_user_id: str | None = None) -> Path:
         return self.settings.account_model_test_path(
@@ -125,6 +140,8 @@ class ModelTestGenerationAssets:
         temp_dir.mkdir(parents=True, exist_ok=True)
         created: list[tuple[ModelTestGenerationAsset, Path]] = []
         cleanup_paths: set[Path] = set()
+        committing = False
+        await self.session.rollback()
         try:
             for upload in files:
                 filename = Path(upload.filename or "").name
@@ -174,16 +191,18 @@ class ModelTestGenerationAssets:
                 self.session.add(row)
                 created.append((row, final_path))
                 await upload.close()
+            committing = True
             await self.session.commit()
             for row, _path in created:
                 await self.session.refresh(row)
             return ModelTestGenerationAssetListOut(
                 items=[generation_asset_out(row) for row, _path in created]
             )
-        except Exception:
+        except BaseException:
             await self.session.rollback()
-            for path in cleanup_paths:
-                path.unlink(missing_ok=True)
+            if not committing:
+                for path in cleanup_paths:
+                    path.unlink(missing_ok=True)
             for upload in files:
                 await upload.close()
             raise
@@ -359,6 +378,7 @@ class ModelTestGenerationAssets:
             prepared: list[tuple[ModelTestGenerationAsset, Path, Path]] = []
             cleanup_paths: set[Path] = set()
             payload = dict(task.request_payload)
+            committing = False
             try:
                 await self.session.rollback()
                 root = self._root(task.owner_user_id)
@@ -374,7 +394,7 @@ class ModelTestGenerationAssets:
                         temp_path = temp_dir / storage_key
                         final_path = root / storage_key
                         cleanup_paths.add(temp_path)
-                        await asyncio.to_thread(shutil.copyfile, source.path, temp_path)
+                        await copy_reference(source.path, temp_path)
                         row = ModelTestGenerationAsset(
                             owner_user_id=self.owner_user_id,
                             id=str(uuid4()),
@@ -417,13 +437,15 @@ class ModelTestGenerationAssets:
                 for _row, temp_path, final_path in prepared:
                     os.replace(temp_path, final_path)
                     cleanup_paths.add(final_path)
+                committing = True
                 await self.session.commit()
                 processed += 1
                 copied += len(prepared)
-            except Exception:
+            except BaseException:
                 await self.session.rollback()
-                for path in cleanup_paths:
-                    path.unlink(missing_ok=True)
+                if not committing:
+                    for path in cleanup_paths:
+                        path.unlink(missing_ok=True)
                 raise
         remaining = (await self.backfill_status()).pending_tasks
         return ModelTestGenerationAssetBackfillOut(
@@ -473,37 +495,8 @@ class ModelTestGenerationAssets:
     async def _legacy_assets(
         self, task: LegacyTaskSnapshot
     ) -> dict[str, list[LegacyAssetSource]] | None:
-        payload = dict(task.request_payload)
-        ids = [
-            str(item)
-            for field, _role, _kind in ROLE_FIELDS
-            for item in _reference_ids(payload, field)
-        ]
-        rows = list(
-            (await self.session.execute(select(VisualAsset).where(VisualAsset.id.in_(ids))))
-            .scalars()
-            .all()
-        )
-        by_id = {row.id: row for row in rows}
-        result: dict[str, list[LegacyAssetSource]] = {}
-        for field, _role, expected_kind in ROLE_FIELDS:
-            items: list[LegacyAssetSource] = []
-            for asset_id in _reference_ids(payload, field):
-                row = by_id.get(str(asset_id))
-                if row is None or row.media_kind != expected_kind:
-                    return None
-                path = self.storage.path_for(row)
-                if not path.is_file():
-                    return None
-                items.append(
-                    LegacyAssetSource(
-                        id=row.id,
-                        original_filename=row.original_filename,
-                        media_kind=row.media_kind,
-                        mime_type=row.mime_type,
-                        byte_size=row.byte_size,
-                        path=path,
-                    )
-                )
-            result[field] = items
-        return result
+        if self.legacy_references is None:
+            raise GenerationAssetError(
+                "历史参考素材尚未转移到模型服务", code="legacy_references_unavailable", status=503
+            )
+        return await self.legacy_references.assets(self.session, task)

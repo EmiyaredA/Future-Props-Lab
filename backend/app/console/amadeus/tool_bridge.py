@@ -15,8 +15,8 @@ from app.console.amadeus.runs import Runs
 from app.console.amadeus.schemas import ActionIn, QuestionIn
 from app.console.amadeus.skills import read_skill_file
 from app.console.governance.code_agents import resolve
-from app.orm import bind_owner
 from app.runtime.operation_receipts import OperationError
+from app.runtime.ownership import bind_owner
 
 
 def definition(name, description, properties=None, required=()):

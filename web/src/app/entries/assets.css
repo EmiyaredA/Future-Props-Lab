@@ -1,0 +1,11 @@
+.file-service-scroll {
+  height: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 24px;
+}
+@media (max-width: 720px) {
+  .file-service-scroll {
+    padding: 14px;
+  }
+}

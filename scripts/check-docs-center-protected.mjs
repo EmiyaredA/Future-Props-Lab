@@ -8,15 +8,35 @@ const protectedPaths = [
 ];
 
 const baseRef = process.env.DOCS_CENTER_BASE_REF?.trim();
-const args = ["diff", "--name-only"];
-if (baseRef) args.push(baseRef, "HEAD");
-args.push("--", ...protectedPaths);
-
-let changed;
+const isProtected = (path) => protectedPaths.some(
+  (root) => path === root || path.startsWith(root + "/"),
+);
+let changed = "";
 try {
-  changed = execFileSync("git", args, { encoding: "utf8" }).trim();
+  if (baseRef) {
+    const commits = execFileSync("git", ["rev-list", "--reverse", `${baseRef}..HEAD`], {
+      encoding: "utf8",
+    }).trim().split("\n").filter(Boolean);
+    for (const commit of commits) {
+      const parents = execFileSync("git", ["rev-list", "--parents", "-n", "1", commit], {
+        encoding: "utf8",
+      }).trim().split(" ");
+      // Normal merges have no combined diff; conflict resolutions still need checking.
+      const paths = execFileSync("git", [
+        "diff-tree", "--no-commit-id", "--name-only", "-z", "-r",
+        ...(parents.length > 2 ? ["--cc"] : []), commit,
+      ], { encoding: "utf8" }).split("\0").filter(Boolean);
+      if (paths.some(isProtected) && paths.some((path) => !isProtected(path))) {
+        changed += `${commit}: ${paths.join(", ")}\n`;
+      }
+    }
+  } else {
+    changed = execFileSync("git", ["diff", "--name-only", "--", ...protectedPaths], {
+      encoding: "utf8",
+    }).trim();
+  }
 } catch (error) {
-  console.error("无法检查文档中心保护路径：Git diff 执行失败。");
+  console.error("无法检查文档中心保护路径：Git 提交检查失败。");
   if (error?.stderr) console.error(String(error.stderr));
   process.exit(1);
 }
@@ -42,6 +62,6 @@ if (changed || untracked) {
 
 console.log(
   baseRef
-    ? `ok: no protected docs-center paths changed since ${baseRef}`
+    ? `ok: protected docs-center commits are isolated since ${baseRef}`
     : "ok: no protected docs-center paths changed in the working tree",
 );

@@ -7,13 +7,8 @@ from typing import Any
 
 from app.apps.galgame_workshop.schemas import GalgameVideoExportIssue
 from app.apps.galgame_workshop.story.story_flow import TIMED_ROUTE_BOUNDARY_TYPES
+from app.capabilities.media_rendering.galgame.timing import estimate_block_ms
 
-PRESETS = {
-    "1080p30": (1920, 1080, 30),
-    "720p30": (1280, 720, 30),
-    "1080p60": (1920, 1080, 60),
-    "720p60": (1280, 720, 60),
-}
 CHOICE_DURATION_MS = 2000
 CHOICE_HIGHLIGHT_MS = 500
 MAX_ROUTE_STEPS = 20_000
@@ -143,36 +138,6 @@ def _evaluate_expression(source: str, values: dict[str, Any]) -> bool:
     if cursor != len(tokens):
         raise ValueError("条件表达式存在多余内容")
     return result
-
-
-def _content_text(block: dict[str, Any]) -> str:
-    if isinstance(block.get("text"), str):
-        return block["text"]
-    content = block.get("content")
-    if isinstance(content, str):
-        return content
-    if isinstance(content, dict):
-        return str(content.get("text", ""))
-    return ""
-
-
-def _estimate_block_ms(block: dict[str, Any], asset_duration: dict[str, int]) -> tuple[int, bool]:
-    block_type = block.get("type")
-    if block_type in {"dialogue", "narration", "storyParagraph", "floatingText"}:
-        voice_id = block.get("voiceAssetId")
-        if voice_id and voice_id in asset_duration:
-            return asset_duration[voice_id] + 400, False
-        speed = max(1, int(block.get("textSpeedCps") or 40))
-        return max(400, round(len(_content_text(block)) / speed * 1000) + 400), False
-    if block_type == "wait":
-        if block.get("mode") == "player":
-            return 1200, False
-        return max(0, int(block.get("durationMs", 0))), True
-    if block_type == "systemMessage":
-        return 1200, False
-    if block.get("waitForCompletion") and isinstance(block.get("durationMs"), int):
-        return max(0, block["durationMs"]), True
-    return 0, True
 
 
 def _plan_route(
@@ -344,7 +309,7 @@ def _plan_route(
                 )
             )
             return plan
-        duration, exact = _estimate_block_ms(block, asset_duration)
+        duration, exact = estimate_block_ms(block, asset_duration)
         plan.duration_ms += duration
         plan.exact_duration = plan.exact_duration and exact
         block_index += 1
@@ -412,7 +377,7 @@ def _plan_fragments(
                 "returnToEntry",
             }:
                 continue
-            duration, exact = _estimate_block_ms(block, asset_duration)
+            duration, exact = estimate_block_ms(block, asset_duration)
             plan.duration_ms += duration
             plan.exact_duration = plan.exact_duration and exact
         plan.fragment_durations_ms.append(plan.duration_ms - duration_before)

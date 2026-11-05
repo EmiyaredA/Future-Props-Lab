@@ -364,15 +364,14 @@
   gap: 8px;
   flex-wrap: wrap;
 }
-.creative-import-form select,
-.creative-import-form button {
+.creative-import-form > button {
   border: 1px solid var(--cw-border);
   border-radius: 10px;
   padding: 10px;
   background: var(--surface);
   color: var(--text-strong);
 }
-.creative-import-form button {
+.creative-import-form > button {
   background: var(--cw-accent);
   border-color: var(--cw-accent);
   color: white;
@@ -421,7 +420,6 @@
 }
 .creative-form-panel input,
 .creative-form-panel textarea,
-.creative-form-panel select,
 .creative-install-list input {
   box-sizing: border-box;
   width: 100%;
@@ -768,4 +766,19 @@
   .creative-detail-main section {
     padding: 20px;
   }
+}
+
+.creative-import-form .custom-select,
+.creative-form-panel .custom-select {
+  min-width: 0;
+}
+.creative-import-form .custom-select {
+  flex: 1 1 150px;
+}
+.creative-form-panel .custom-select-trigger {
+  min-height: 44px;
+  border-color: var(--cw-border);
+  background: var(--surface);
+  color: var(--text-strong);
+  font-weight: 400;
 }

@@ -345,16 +345,20 @@ def test_input_snapshot_is_not_interpreted_as_local_media(modules, record, tmp_p
 
 
 def test_single_skill_zip_accepted_by_app_importer(tmp_path):
-    from app.integrations.skills.archive import SkillArchiveStorage
+    from app.integrations.skills.archive import SkillArchiveStager
 
     archive = tmp_path / "skill.zip"
     with zipfile.ZipFile(archive, "w") as file:
         for path in SKILL.rglob("*"):
             if path.is_file() and "__pycache__" not in path.parts:
                 file.write(path, f"{SKILL.name}/{path.relative_to(SKILL)}")
-    storage = object.__new__(SkillArchiveStorage)
-    storage.settings = SimpleNamespace(
-        fpl_skill_max_files=500, fpl_skill_expanded_max_bytes=50 * 1024 * 1024
+    storage = SkillArchiveStager(
+        tmp_path.resolve(),
+        SimpleNamespace(
+            fpl_skill_archive_max_bytes=20 * 1024 * 1024,
+            fpl_skill_max_files=500,
+            fpl_skill_expanded_max_bytes=50 * 1024 * 1024,
+        ),
     )
     staged = storage._extract(archive, tmp_path / "extracted", "test-digest")
     assert staged.name == "visual-character-replacement"

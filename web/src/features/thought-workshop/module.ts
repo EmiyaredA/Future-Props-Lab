@@ -1,19 +1,10 @@
+import { THOUGHT_WORKSHOP_DEFINITION } from "@features/applications";
 import { BookOpen } from "lucide-react";
 import { defineApplicationModule } from "@features/applications";
 import { officialPath } from "./community/legacyReference";
 
 const moduleDefinition = {
-  definition: {
-    id: "thought-workshop",
-    name: "思绪工坊",
-    category: "productivity",
-    description:
-      "记录灵感，整理思绪。支持丰富排版、公式图表；AI 写作经 Agent/SDK 接入。",
-    capabilities: ["笔记", "富文本"],
-    path: "/apps/thought-workshop",
-    icon: BookOpen,
-    brandImage: "/brand/thought-workshop-mark.png",
-  },
+  definition: THOUGHT_WORKSHOP_DEFINITION,
   supportsProjects: true,
   shell: "thought-workshop",
   shellConfig: {
@@ -30,6 +21,19 @@ const moduleDefinition = {
     ],
   },
   matchPath(pathname: string) {
+    const community = pathname.match(
+      /^\/apps\/thought-workshop\/community(?:\/([^/]+)(?:\/documents\/([^/]+))?)?\/?$/,
+    );
+    if (community)
+      return {
+        page: "thought-workshop-community",
+        projectId: community[1] ? decodeURIComponent(community[1]) : undefined,
+        documentId: community[2] ? decodeURIComponent(community[2]) : undefined,
+      };
+    if (/^\/apps\/thought-workshop\/favorites\/?$/.test(pathname))
+      return { page: "thought-workshop-favorites" };
+    if (/^\/apps\/thought-workshop\/published\/?$/.test(pathname))
+      return { page: "thought-workshop-published" };
     const official = pathname.match(
       /^\/apps\/thought-workshop\/official-knowledge-bases\/([^/]+)(?:\/documents\/([^/]+))?\/?$/,
     );
@@ -61,6 +65,12 @@ const moduleDefinition = {
     return undefined;
   },
   pathFor(page: string, projectId?: string, documentId?: string) {
+    if (page === "thought-workshop-community")
+      return `/apps/thought-workshop/community${projectId ? `/${encodeURIComponent(projectId)}${documentId ? `/documents/${encodeURIComponent(documentId)}` : ""}` : ""}`;
+    if (page === "thought-workshop-favorites")
+      return "/apps/thought-workshop/favorites";
+    if (page === "thought-workshop-published")
+      return "/apps/thought-workshop/published";
     if (page === "thought-workshop-official" && projectId)
       return officialPath(projectId, documentId);
     if (page === "thought-workshop-editor" && projectId)

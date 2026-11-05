@@ -404,3 +404,17 @@ async def test_management_key_renew_delete_conflicts_and_isolation() -> None:
         headers={"Authorization": f"Bearer {secret}"},
     ) as keyed:
         assert (await keyed.get("/v1/visual-workshop/projects")).status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_login_keeps_storage_maintenance_visible_until_required_restart(monkeypatch):
+    username, password = await create_test_account()
+    monkeypatch.setattr(app.state, "storage_upgrade_required", True, raising=False)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.post(
+            "/v1/auth/login", json={"username": username, "password": password}
+        )
+    assert response.status_code == 200
+    assert response.json()["storage_upgrade_required"] is True

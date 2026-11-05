@@ -619,7 +619,7 @@ test("manages CG variants and authors explicit show and hide blocks", async () =
     screen.getByRole("button", { name: /第一章 · main · Block 1/ }),
   );
   expect(screen.getByLabelText("显示剧情 CG")).toHaveTextContent("新剧情 CG");
-}, 10_000);
+});
 
 test("uses workshop dropdowns for dialogue properties and switches appearance", async () => {
   const user = userEvent.setup();

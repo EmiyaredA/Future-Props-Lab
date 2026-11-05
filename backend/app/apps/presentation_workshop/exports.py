@@ -14,7 +14,6 @@ from app.apps.presentation_workshop.pptx_export import write_pptx
 from app.apps.presentation_workshop.projects import PresentationError, Presentations
 from app.apps.presentation_workshop.schemas.document import PresentationProjectOut
 from app.apps.presentation_workshop.templates.resolver import resolve_document
-from app.capabilities.asset_store import AssetStorage
 from app.capabilities.asset_store.svg import normalize_svg
 from app.runtime.revisions import RevisionConflictError
 
@@ -33,12 +32,12 @@ class PresentationExport:
 
 
 def build_export(
-    snapshot: PresentationProjectOut, assets: dict[str, Path], media_types=None
+    snapshot: PresentationProjectOut, assets: dict[str, Path], media_types=None, directory=None
 ) -> PresentationExport:
     if not EXPORT_SLOTS.acquire(blocking=False):
         raise PresentationError("导出繁忙，请稍后重试", 429, "export_busy")
     try:
-        root = Path(tempfile.mkdtemp(prefix="fpl-presentation-"))
+        root = Path(tempfile.mkdtemp(prefix="fpl-presentation-", dir=directory))
     except BaseException:
         EXPORT_SLOTS.release()
         raise
@@ -142,28 +141,47 @@ def build_export(
         EXPORT_SLOTS.release()
 
 
-async def export_project(
-    projects: Presentations, storage: AssetStorage, project_id: str, revision: int
-) -> PresentationExport:
+async def snapshot_at(projects, project_id, revision):
     snapshot = await projects.get(project_id)
     if snapshot.revision != revision:
         raise RevisionConflictError(revision, snapshot.revision, snapshot.model_dump(mode="json"))
+    await projects.session.rollback()
+    return snapshot
+
+
+async def render_in_thread(function, *args, cleanup=None):
+    task = asyncio.create_task(asyncio.to_thread(function, *args))
+    try:
+        return await asyncio.shield(task)
+    except asyncio.CancelledError:
+        # The staged inputs belong to this request until the writer has stopped.
+        try:
+            result = await task
+        except Exception:
+            pass
+        else:
+            if cleanup is not None:
+                cleanup(result)
+        raise
+
+
+async def export_project(
+    projects: Presentations, project_id: str, revision: int
+) -> PresentationExport:
+    snapshot = await snapshot_at(projects, project_id, revision)
     rows = await projects.assets(snapshot.document)
     rendered_ids = rendered_asset_ids(snapshot.document)
     rows = [row for row in rows if row.id in rendered_ids]
     if sum(row.byte_size for row in rows) > MAX_EXPORT_BYTES:
         raise PresentationError("导出图片总量不能超过 100 MiB", 413, "export_too_large")
-    paths = {row.id: storage.path_for(row) for row in rows}
-    media_types = {row.id: row.mime_type for row in rows}
-    await projects.session.rollback()
-    work = asyncio.create_task(asyncio.to_thread(build_export, snapshot, paths, media_types))
-    try:
-        return await asyncio.shield(work)
-    except asyncio.CancelledError:
-
-        def cleanup(finished):
-            if not finished.cancelled() and finished.exception() is None:
-                finished.result().cleanup()
-
-        work.add_done_callback(cleanup)
-        raise
+    async with projects.asset_access.export_sources(rows) as sources:
+        paths = {row.id: path for row, path in sources}
+        media_types = {row.id: row.mime_type for row, _ in sources}
+        return await render_in_thread(
+            build_export,
+            snapshot,
+            paths,
+            media_types,
+            projects.asset_access.export_output_root,
+            cleanup=PresentationExport.cleanup,
+        )

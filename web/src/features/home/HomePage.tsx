@@ -24,12 +24,14 @@ export function HomePage({
   onNavigate,
   applications = [],
   canWrite = false,
+  canManageHost = false,
   canReadLogs = true,
   showFiles = false,
 }: {
   onNavigate: (path: string) => void;
   applications?: readonly ApplicationDefinition[];
   canWrite?: boolean;
+  canManageHost?: boolean;
   canReadLogs?: boolean;
   showFiles?: boolean;
 }) {
@@ -154,26 +156,28 @@ export function HomePage({
         onOpen={() => onNavigate("/tools")}
       >
         <div className="home-resource-grid">
-          {TOOLS.filter((tool) => tool.target.kind === "internal").map(
-            (tool) => (
-              <button
-                key={tool.id}
-                className="home-resource-link"
-                onClick={() =>
-                  tool.target.kind === "internal" &&
-                  onNavigate(tool.target.path)
-                }
-              >
-                <span className="home-copper-icon">
-                  <tool.icon aria-hidden />
-                </span>
-                <span>
-                  <strong>{tool.name}</strong>
-                  <small>{tool.description}</small>
-                </span>
-              </button>
-            ),
-          )}
+          {TOOLS.filter(
+            (tool) =>
+              tool.target.kind === "internal" &&
+              (canManageHost ||
+                !["storage-usage", "codex-model-source"].includes(tool.id)),
+          ).map((tool) => (
+            <button
+              key={tool.id}
+              className="home-resource-link"
+              onClick={() =>
+                tool.target.kind === "internal" && onNavigate(tool.target.path)
+              }
+            >
+              <span className="home-copper-icon">
+                <tool.icon aria-hidden />
+              </span>
+              <span>
+                <strong>{tool.name}</strong>
+                <small>{tool.description}</small>
+              </span>
+            </button>
+          ))}
         </div>
       </ResourceSection>
       <ResourceSection

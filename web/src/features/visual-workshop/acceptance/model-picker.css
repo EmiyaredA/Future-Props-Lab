@@ -115,9 +115,7 @@
   flex-basis: 32px;
   border-radius: 7px;
 }
-.acceptance-scheme-select
-  .acceptance-model-icon
-  :is(svg, .acceptance-software-icon) {
+.acceptance-scheme-select .acceptance-model-icon svg {
   width: 20px;
   height: 20px;
   flex-basis: 20px;
@@ -135,22 +133,4 @@
   .acceptance-start-options > .acceptance-model-select {
     flex-basis: 100%;
   }
-}
-
-.acceptance-software-icon {
-  display: inline-block;
-  width: 26px;
-  height: 26px;
-  flex: 0 0 26px;
-  background: var(--text-strong);
-  mask-repeat: no-repeat;
-  mask-position: center;
-  mask-size: contain;
-}
-.acceptance-software-icon.codex {
-  mask-image: url("/providers/codex-logo.svg");
-}
-.acceptance-software-icon.claudecode {
-  mask-image: url("/providers/claudecode-logo.svg");
-  background: #d97757;
 }

@@ -1,4 +1,5 @@
 /** Persisted starter layouts; previews and new pages consume the same objects. */
+import { programAsset } from "@platform/programAsset";
 import { newElement, newSlide } from "../templates";
 import type { Deck, Slide, SlideElement } from "../types";
 import { defaultDefinition, type Definition, type PageType } from "./model";
@@ -9,10 +10,14 @@ import {
   type Scene,
 } from "./nativeScenes";
 export const studioAssets: Record<string, string> = {
-  "studio-background": "/presentation-templates/report-background.png",
-  "studio-structured": "/presentation-templates/structured-template.png",
-  "studio-html": "/presentation-templates/html-template.png",
-  "studio-visual": "/presentation-templates/visual-generation.png",
+  "studio-background": programAsset(
+    "presentation-templates/report-background.png",
+  ),
+  "studio-structured": programAsset(
+    "presentation-templates/structured-template.png",
+  ),
+  "studio-html": programAsset("presentation-templates/html-template.png"),
+  "studio-visual": programAsset("presentation-templates/visual-generation.png"),
 };
 export function text(
   id: string,

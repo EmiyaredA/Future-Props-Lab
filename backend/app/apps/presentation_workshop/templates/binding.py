@@ -156,8 +156,11 @@ async def apply_change(library, project_id, body):
     project, preview = await preview_change(library, project_id, body)
     if preview.preview_token != body.preview_token:
         raise PresentationError("预览已失效，请重新预览模板变更", 409, "template_preview_stale")
-    if body.action != "unbind":
-        # Acquire the same write transaction as the document CAS, pinning the target.
+
+    async def pin_target():
+        if body.action == "unbind":
+            return
+        # This runs after Assets prepare, in the same write transaction as the document CAS.
         result = await library.session.execute(
             update(PresentationTemplate)
             .where(
@@ -169,9 +172,11 @@ async def apply_change(library, project_id, body):
         )
         if result.rowcount != 1:
             raise PresentationError("模板已更新，请重新预览", 409, "template_preview_stale")
+
     return await library.projects.put(
         project_id,
         PresentationProjectPut(
             title=project.title, document=preview.document, expected_revision=project.revision
         ),
+        before_write=pin_target,
     )

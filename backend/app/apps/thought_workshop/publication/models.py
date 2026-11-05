@@ -6,7 +6,7 @@ from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Tex
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.runtime.ids import new_id
-from app.runtime.orm_base import Base
+from app.runtime.orm_base import Base, external_id
 from app.runtime.time import utc_now
 
 
@@ -14,16 +14,18 @@ class Publication(Base):
     __tablename__ = "thought_publications"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     owner_user_id: Mapped[str] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
+        String(36), ForeignKey(external_id("users"), ondelete="CASCADE"), index=True
     )
     knowledge_base_id: Mapped[str] = mapped_column(
-        ForeignKey("thought_knowledge_bases.id", ondelete="CASCADE"), unique=True
+        String(36), ForeignKey("thought_knowledge_bases.id", ondelete="CASCADE"), unique=True
     )
-    publisher_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
+    publisher_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey(external_id("users"), ondelete="RESTRICT")
+    )
     title: Mapped[str] = mapped_column(String(240))
     description: Mapped[str] = mapped_column(Text, default="")
     cover_asset_id: Mapped[str | None] = mapped_column(
-        ForeignKey("visual_assets.id", ondelete="RESTRICT"), nullable=True
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="RESTRICT"), nullable=True
     )
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_official: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -36,10 +38,10 @@ class Publication(Base):
 class PublishedArticle(Base):
     __tablename__ = "thought_published_articles"
     publication_id: Mapped[str] = mapped_column(
-        ForeignKey("thought_publications.id", ondelete="CASCADE"), primary_key=True
+        String(36), ForeignKey("thought_publications.id", ondelete="CASCADE"), primary_key=True
     )
     note_id: Mapped[str] = mapped_column(
-        ForeignKey("thought_notes.id", ondelete="CASCADE"), primary_key=True
+        String(36), ForeignKey("thought_notes.id", ondelete="CASCADE"), primary_key=True
     )
     visibility: Mapped[str] = mapped_column(String(16), default="public")
     active: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -49,13 +51,13 @@ class PublishedArticle(Base):
 class ArticleMember(Base):
     __tablename__ = "thought_article_members"
     publication_id: Mapped[str] = mapped_column(
-        ForeignKey("thought_publications.id", ondelete="CASCADE"), primary_key=True
+        String(36), ForeignKey("thought_publications.id", ondelete="CASCADE"), primary_key=True
     )
     note_id: Mapped[str] = mapped_column(
-        ForeignKey("thought_notes.id", ondelete="CASCADE"), primary_key=True
+        String(36), ForeignKey("thought_notes.id", ondelete="CASCADE"), primary_key=True
     )
     user_id: Mapped[str] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+        String(36), ForeignKey(external_id("users"), ondelete="CASCADE"), primary_key=True
     )
     role: Mapped[str] = mapped_column(String(16))
 
@@ -63,7 +65,7 @@ class ArticleMember(Base):
 class CommunityFavorite(Base):
     __tablename__ = "thought_community_favorites"
     user_id: Mapped[str] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+        String(36), ForeignKey(external_id("users"), ondelete="CASCADE"), primary_key=True
     )
     resource_id: Mapped[str] = mapped_column(String(200), primary_key=True)
 
@@ -71,12 +73,14 @@ class CommunityFavorite(Base):
 class CommunityUpload(Base):
     __tablename__ = "thought_community_uploads"
     note_id: Mapped[str] = mapped_column(
-        ForeignKey("thought_notes.id", ondelete="CASCADE"), primary_key=True
+        String(36), ForeignKey("thought_notes.id", ondelete="CASCADE"), primary_key=True
     )
     asset_id: Mapped[str] = mapped_column(
-        ForeignKey("visual_assets.id", ondelete="CASCADE"), primary_key=True
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="CASCADE"), primary_key=True
     )
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey(external_id("users"), ondelete="CASCADE")
+    )
 
 
 class OfficialSource(Base):
@@ -84,10 +88,10 @@ class OfficialSource(Base):
 
     __tablename__ = "thought_official_sources"
     note_id: Mapped[str] = mapped_column(
-        ForeignKey("thought_notes.id", ondelete="CASCADE"), primary_key=True
+        String(36), ForeignKey("thought_notes.id", ondelete="CASCADE"), primary_key=True
     )
     owner_user_id: Mapped[str] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
+        String(36), ForeignKey(external_id("users"), ondelete="CASCADE"), index=True
     )
     library_key: Mapped[str] = mapped_column(String(80), index=True)
     document_key: Mapped[str] = mapped_column(String(80))
@@ -96,10 +100,10 @@ class OfficialSource(Base):
 class OfficialImportReceipt(Base):
     __tablename__ = "thought_official_import_receipts"
     owner_user_id: Mapped[str] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+        String(36), ForeignKey(external_id("users"), ondelete="CASCADE"), primary_key=True
     )
     user_id: Mapped[str] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+        String(36), ForeignKey(external_id("users"), ondelete="CASCADE"), primary_key=True
     )
     request_id: Mapped[str] = mapped_column(String(36), primary_key=True)
     package_version: Mapped[str] = mapped_column(String(64))

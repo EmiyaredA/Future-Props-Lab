@@ -29,6 +29,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
         type="button"
         className={theme === "light" ? "active" : ""}
         aria-pressed={theme === "light"}
+        aria-label="浅色"
         onClick={() => setTheme("light")}
       >
         <Sun />
@@ -38,6 +39,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
         type="button"
         className={theme === "dark" ? "active" : ""}
         aria-pressed={theme === "dark"}
+        aria-label="深色"
         onClick={() => setTheme("dark")}
       >
         <Moon />

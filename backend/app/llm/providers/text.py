@@ -5,7 +5,6 @@ from typing import Any
 
 import httpx
 
-from app.demo_runtime.runtime import mock_transport
 from app.llm.providers.chat_completions import (
     OPENAI_CHAT_KINDS,
     chat_base_url,
@@ -38,7 +37,6 @@ async def invoke_diagnostic(
     transport: httpx.AsyncBaseTransport | None = None,
 ) -> DiagnosticResult:
     base_url = require_safe_provider_base_url(base_url)
-    transport = mock_transport(base_url, transport)
     timeout = httpx.Timeout(30.0)
     async with httpx.AsyncClient(timeout=timeout, transport=transport) as client:
         if kind in OPENAI_CHAT_KINDS:

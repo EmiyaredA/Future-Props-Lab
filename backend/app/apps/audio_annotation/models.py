@@ -6,7 +6,7 @@ from sqlalchemy import JSON, DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.runtime.ids import new_id
-from app.runtime.orm_base import Base
+from app.runtime.orm_base import Base, external_id
 from app.runtime.time import utc_now
 
 
@@ -25,7 +25,7 @@ class AudioAnnotationProject(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     asset_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="RESTRICT")
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="RESTRICT")
     )
     title: Mapped[str] = mapped_column(String(120))
     duration_ms: Mapped[int] = mapped_column(Integer)

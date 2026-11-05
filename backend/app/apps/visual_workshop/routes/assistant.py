@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
 from app.apps.visual_workshop.assistant import (
@@ -118,12 +118,14 @@ async def delete_conversation(
 
 @router.post("/{conversation_id}/messages/stream")
 async def stream_message(
+    request: Request,
     principal: StudioAuth,
     session: SessionDep,
     project_id: str,
     conversation_id: str,
     body: VisualAssistantSendIn,
 ) -> StreamingResponse:
+    admission = spawned_task_admission(request, principal, "visual")
     try:
         credential = await snapshot_from_principal(session, principal)
         prepared = await VisualAssistantConversations(session).prepare_send(
@@ -144,7 +146,7 @@ async def stream_message(
     ) as exc:
         raise _translate(exc) from None
     return StreamingResponse(
-        assistant_events(prepared, admission=spawned_task_admission(principal, "visual")),
+        assistant_events(prepared, admission=admission),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

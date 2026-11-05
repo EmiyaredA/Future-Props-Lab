@@ -8,16 +8,13 @@ import signal
 import sys
 from pathlib import Path
 
-from app.capabilities.agents.cli.catalog import connection, inspect_connection
+from app.capabilities.agents.cli.catalog import connection
 from app.capabilities.agents.cli.model_connection import connection_overrides, toml_value
-from app.console.governance.code_agents import resolve
-from app.orm import bind_owner
 from app.runtime.config import REPO_ROOT, get_settings
-from app.runtime.db import SessionLocal
 from app.runtime.operation_receipts import OperationError
 
 from .files import exclusive_write, material_path, room_root
-from .schemas import InterviewExecutorOut, PreparationBundle
+from .schemas import PreparationBundle
 
 
 def executable() -> str:
@@ -48,32 +45,17 @@ def cli_environment() -> dict[str, str]:
     return {key: value for key, value in os.environ.items() if key in names}
 
 
-async def executor_status(
-    user_id: str, owner_user_id: str = "", session=None
-) -> InterviewExecutorOut:
-
-    try:
-        if session is None:
-            async with SessionLocal() as owned:
-                if owner_user_id:
-                    bind_owner(owned, owner_user_id)
-                return await executor_status(user_id, owner_user_id, owned)
-        await resolve(
-            session, owner_user_id, user_id, "codex", "interview_preparation", probe=False
-        )
-        status = await inspect_connection(get_settings(), "codex", discover_models=False)
-        return InterviewExecutorOut(
-            available=status["available"],
-            code=status["status"],
-            message=status["message"],
-            version=status["version"],
-        )
-    except OperationError as exc:
-        return InterviewExecutorOut(available=False, code=exc.code, message=str(exc), version="")
-
-
 def task_context(task) -> Path:
     root = room_root(task.owner_user_id, task.room_id) / "attempts" / task.id
+    material = task.snapshot["material"]
+    original = None
+    if material:
+        path = material_path(task.owner_user_id, task.room_id, material["id"], material["filename"])
+        original = path.read_bytes()
+    return frozen_context(root, task.snapshot, original)
+
+
+def frozen_context(root: Path, snapshot: dict, original: bytes | None) -> Path:
     root.mkdir(parents=True, mode=0o700)
     for name in ("input", "work", "delivery"):
         (root / name).mkdir(mode=0o700)
@@ -83,15 +65,17 @@ def task_context(task) -> Path:
         exclusive_write(root / "input" / filename, data)
         files[file_id] = {"name": filename, "sha256": hashlib.sha256(data).hexdigest()}
 
-    snapshot = task.snapshot
     add("jd", "jd.md", snapshot["jd"].encode())
     material = snapshot["material"]
     if material:
-        path = material_path(task.owner_user_id, task.room_id, material["id"], material["filename"])
-        data = path.read_bytes()
-        if hashlib.sha256(data).hexdigest() != material["sha256"]:
+        suffix = Path(material["filename"]).suffix.lower()
+        if (
+            original is None
+            or suffix not in {".txt", ".md", ".pdf", ".docx"}
+            or hashlib.sha256(original).hexdigest() != material["sha256"]
+        ):
             raise OperationError("简历原件与快照不符", "material_changed", 409)
-        add("resume", "resume" + path.suffix, data)
+        add("resume", "resume" + suffix, original)
         if snapshot["resume"]:
             add("supplement", "supplement.md", snapshot["resume"].encode())
     else:

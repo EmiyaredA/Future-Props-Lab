@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import io
 import os
 from hashlib import sha256
 from pathlib import Path
@@ -22,7 +21,7 @@ from app.capabilities.media_rendering.evaluator import (
     timeline_duration_us,
 )
 from app.capabilities.media_rendering.frame_renderer import render_plan_frame
-from app.capabilities.media_rendering.text_layer import TEXT_RENDER_VERSION, render_text_layer
+from app.capabilities.media_rendering.text_layer import TEXT_RENDER_VERSION, text_layer_png
 from app.capabilities.media_rendering.video_sampling import VIDEO_SAMPLING_VERSION
 from app.runtime.config import get_settings
 from app.runtime.revisions import RevisionConflictError
@@ -63,14 +62,11 @@ def _render_frame(
 
 def _text_layer_png(clip: VideoEditorClip, font_path: Path | None) -> bytes:
     try:
-        layer = render_text_layer(clip, font_path)
+        return text_layer_png(clip, font_path)
     except (ValueError, OSError) as exc:
         raise VideoEditorValidationError(
             "文字图层无法渲染，请检查字体与文字长度", code="invalid_text_layer"
         ) from exc
-    output = io.BytesIO()
-    layer.save(output, format="PNG")
-    return output.getvalue()
 
 
 class VideoEditorFrames:

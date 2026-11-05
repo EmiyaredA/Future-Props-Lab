@@ -13,7 +13,7 @@ Agent Note 记录工程决策，不替代产品文档中心。它回答“为什
 - SDK/API 文档生成入口 `scripts/generate_sdk_docs.py` 及其生成的文档中心正文。
 
 这些内容可以作为事实来源被 Note 引用，但 Note 不复制整篇产品说明。保护检查由
-`npm run check-docs-center-protected` 执行。
+`npm run check-docs-center-protected` 执行。没有基准时仍拒绝工作区中的受保护路径改动；CI 指定基准后逐提交核验，受保护产品文档必须独立提交，不能与代码、工程文档或 Agent Note 混入同一提交。合并提交检查其组成提交；压缩合并不能将这两类提交重新合在一起。必要的产品契约参考更新须有当前任务授权，保护检查本身不授予改写正文的权限。
 
 ## 何时写
 

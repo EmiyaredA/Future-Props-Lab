@@ -66,12 +66,14 @@ async def authenticated_business_routes(request: pytest.FixtureRequest, monkeypa
     async def capacity():
         yield
 
-    from app.llm.routes.models import model_test_realtime
+    from dataclasses import replace
 
     async def acquire_capacity(*_args, **_kwargs):
         return None
 
-    monkeypatch.setattr(model_test_realtime, "acquire", acquire_capacity)
+    monkeypatch.setattr(
+        app.state, "model_admission", replace(app.state.model_admission, acquire=acquire_capacity)
+    )
     app.dependency_overrides[model_capacity] = capacity
     app.dependency_overrides[require_studio_auth] = principal
     try:
@@ -83,3 +85,28 @@ async def authenticated_business_routes(request: pytest.FixtureRequest, monkeypa
 
 def pytest_sessionfinish() -> None:
     shutil.rmtree(TEST_RUNTIME_DIR, ignore_errors=True)
+
+
+@pytest.fixture(autouse=True)
+def explicit_thought_identity_adapter():
+    """Direct legacy storage tests opt into the same explicit local Identity port."""
+    if "app.main" not in sys.modules:
+        yield
+        return
+    from app.apps.thought_workshop.legacy_accounts import LegacyAccountDirectory
+    from app.runtime.db import SessionLocal
+
+    previous = dict(SessionLocal.kw.get("info") or {})
+    from app.apps.thought_workshop.legacy_asset_metadata import LegacyAssetMetadata
+
+    SessionLocal.configure(
+        info={
+            **previous,
+            "thought_directory_factory": LegacyAccountDirectory,
+            "thought_asset_metadata_factory": LegacyAssetMetadata,
+        }
+    )
+    try:
+        yield
+    finally:
+        SessionLocal.configure(info=previous)

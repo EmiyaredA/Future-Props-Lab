@@ -5,7 +5,7 @@
 
 ## Agent 工作台
 
-执行切片以已授权项目对象接收账号目录和 TOML 预设。在 SQLite 写事务外完成目录检查，事务内复核归属、项目绑定和轮次状态。执行存储模块统一推进轮次、审批收据与 revision，SSE 取出快照后释放数据库会话再发送。文件工具与命令沙箱共用 `runtime/safe_paths.py` 的安全遍历与路径原语。项目选择器由工作台持有样式和焦点交互。
+执行切片以已授权项目对象接收账号目录和 TOML 预设。在 SQLite 写事务外完成目录检查，事务内复核归属、项目绑定和轮次状态。执行存储模块统一推进轮次、审批收据与 revision，SSE 取出快照后释放数据库会话再发送。文件工具与命令沙箱共用 `runtime/safe_paths.py` 的安全遍历与路径原语。项目选择器由工作台持有样式和焦点交互。 独立 Agents 复用 transcript 读取、恢复和版本查询，目录绑定保存到自身数据库，浏览和注册路由在 Mac 项目执行就绪前返回 503。
 
 `capabilities/agents/cli/dialogue.py` 统一管理 CLI 分派、专用 profile、watchdog 和工具传输。工作台与 Amadeus 提供工具、事件回调及各自的运行上下文。Codex 对话就绪统一校验登录及隔离策略，模型目录的读取状态独立。
 
@@ -33,6 +33,160 @@
 接口、入口清单与验收约定见 [`../reference/loading-and-images.md`](../reference/loading-and-images.md)。
 
 ## 网站运行与自动化
+
+### 独立服务迁移
+
+`backend/fpl_runtime/` 是不导入业务 ORM 的服务运行契约，拥有 23 个发布单元、精确到 HTTP 方法和路径的归属匹配、请求绑定身份断言、独立 SQLite 会话与迁移校验。`backend/fpl_deployment/` 从静态 OpenAPI 和模型源码生成 `deploy/contracts/ownership.json`，新增或重复操作及未归属表必须阻止构建。`npm run services:contracts:generate|check` 管理该清单，并纳入公共契约检查。跨服务 ORM 访问和缺少账号上下文的私人数据操作被存储边界拒绝。
+
+`backend/fpl_gateway/` 拥有独立控制面、通知游标与自有迁移；`changes.py` 在同一事务记录发布方事件回执和账号游标，`notifications.py` 只接受配置的发布方，`routes.py` 通过明确客户端请求资源所属服务。`__main__.py` 在同一发布单元监督 Caddy 与控制面，Caddy 退出会停止控制面，关闭时回收代理子进程。Mac 公网管理桥接仍待接通。
+
+`fpl_runtime/delegation.py` 限定调用方、来源操作、用途和目标地址；`capability_client.py` 使用原请求断言换取目标签名，不传递完整浏览器凭据。Identity 的 `delegation.py` 复核原账号会话并拒绝注销后的委托。`protocol_hash.py` 计算单服务公开操作及可达 schema 的契约哈希；`web.py` 核验程序清单、静态资源与对应服务契约，并阻止本应用旧页面写入。
+
+`backend/fpl_identity/` 装配独立账号 ASGI 应用、账号事件、显式维护入口及自有 `migrations/`；不加载门户、工坊或模型 ORM。`console/governance/account_creation.py` 接受显式事务初始化回调，旧 `provisioning.py` 仅承担单体目录初始化适配；账号与注册路由使用装配时注入的用例。 `credential_migration.py` 拥有历史账号、Studio 会话和 Management API Key 批次，`avatar_migration.py` 与 `avatar_files.py` 校验并恢复原头像文件。
+`fpl_runtime/migration_apps.py` 装配独立回环维护进程，`scripts/website/migration_transfer.py` 负责传输与读回核验。
+
+`backend/fpl_portal/` 装配独立门户与文档 API，仅拥有服务迁移标识，不持有账号或工坊数据，不启动其他 Runner。启动只读取经过分组校验的存储配置和 Identity 公钥；多余配置字段会拒绝，门户没有解密用途，不取得 FPL 加密密钥。开发者文档在构建时按现有允许列表封装，通过原浏览器 Session 与固定 `docs.developer` 权限读取；HTTP 路径、操作 ID、标签和 schema 保持兼容。
+
+`web/src/app/entries/portal.tsx` 复用首页、应用目录和未改写的文档阅读器；`PortalDocuments.tsx` 只是装配入口。`features/applications/definitions.ts` 拥有纯目录元数据，各应用注册和门户共同消费，目录不导入其他应用页面。`programAsset` 定位首页动画与目录图标；原 `/docs/*` 截图地址只允许跳转到当前门户清单内的不可变程序资源。用户新确认的独立管理服务拥有管理页面和运行控制；账号持久数据仍归 Identity，通过接口治理，不能共享旧 SQLite。管理服务任务正在并行实现，接口对齐后纳入同仓库部署。
+
+`backend/fpl_assets/` 拥有正在拆分的文件用例、素材保留集合、幂等回执与持久删除队列。`references.py` 为导入或核验已经提交的源快照提供归属、CAS 和素材校验，并记录不可变回执；正常资源修改使用下述独立准备意图。`files.py` 只访问自有文件、文件夹与项目文件引用位置，通过显式项目归属接口校验源项目；`deletions.py` 在数据库提交后逐文件清理，可在进程中断后恢复，不递归清空目录。`reference_changes.py` 为每次源修改单独记录准备意图及素材 pin；源数据库将修改与回执一起提交后才确认，只有已证实回滚才撤销。确认乱序只更新到较新的源版本，较新准备意图继续保留；未知结果不按时间清除。`0002_prepared_references` 追加独立表和永久删除标记，旧注册迁移不改写。`references.py` 的已提交快照导入不得覆盖正在准备的修改。
+
+`fpl_runtime/retention_authority.py` 定义仅能准备和结算一次素材引用修改的签名授权，绑定调用服务、账号、请求 ID 与完整修改摘要；它不能作为公共 API、素材读取或任意后台任务凭据。Identity 的 `retention.py` / `retention_api.py` 从有效的原始业务写请求签发授权，并在新准备前重新检查账号与 Session/API Key。Assets 的 `retention_api.py` 只接受该授权，同一意图的结果确认可以在浏览器注销后完成；新准备拒绝失效或到期授权。`fpl_runtime/retention_client.py` 不自动改请求 ID、不跟随跳转，超时保留未决意图；源应用仍需将授权、修改与回执按其事务流程持久化。
+
+`fpl_assets/project_links.py` 拥有文件库素材在 Visual 项目内的名称、文件夹位置及 CAS；`VisualProjectFileLink` 与追加迁移 `0003_project_file_links` 只引用 Assets 自有素材和文件夹，源项目 ID 不透明。删除项目素材文件夹在同一数据库级联移除这些位置记录，保留库中原件；删除被引用的原件会拒绝。现有 Visual 素材导入和引用 URL 由 Assets 承接，路径、操作 ID 和响应保持不变。旧单体的 `VisualProjectAssetReference` 仅用于兼容和封存导出。Assets 迁移保留 ID、目录与 revision，Visual 迁移在确认其独立库的兼容表为空后移除该表。内容预览、缩略图、媒体裁剪、取帧和媒体信息路径归 Rendering，本机打开文件夹归 Tools，账号、SDK 白名单与公开路径不变。
+
+`layout.py` 仅整理自有旧格式文件，复制、大小及 SHA256 核验后通过 CAS 更新存储版本；不处理其他服务项目目录，不覆盖异内容目标，不删除源文件。中断可核验已经落盘的相同副本后完成登记。共享上传和 Assets 复制在数据库提交已经开始后遇到故障会保留文件，提交未知时不按回滚删除可能已提交的原件。
+
+`backend/app/apps/visual_workshop/asset_references/models.py` 现在拥有 Visual 项目引用 ORM，外部素材与文件夹 ID 不再声明跨服务外键。原 `asset_store.models` 名称只为旧单体显式导入保留兼容；Assets 通过 `asset_outputs.AssetReferenceView` 消费数据投影，不加载该 ORM。镜像闭包检查与全新进程验证共同阻止回归。
+
+`settings.py` 只接受存储路径与三项文件限制，不加载 `.env` 或加密密钥。项目验证通过绑定原请求的 `assets.visual-project.read` 委托，只能从五个已登记文件操作读取 Visual 项目；不会传递原 Cookie 或完整客户端凭据。`application.py` 装配 21 个既有公开操作和私有引用协议，拥有文件清理生命周期；`__main__.py` 在加载 ORM 前解析最小配置、验证目录、取得独占锁并检查显式迁移。公开协议哈希与聚合契约一致。镜像与独立 `/files` 页面已经接通，完整容器验收和业务引用调用方仍是正式切换门禁。
+
+`backend/fpl_presentation/` 装配独立演示文稿项目 API、迁移和持久引用结果。共享文稿用例在 `app/apps/presentation_workshop/`，兼容装配注入原文件库，独立装配以 `fpl_runtime/presentation_assets.py` 的签名契约向 Assets 读取素材描述和指定版本的 SVG。项目 CAS、编辑回执与素材引用结果在文稿服务的一次事务内提交。
+
+`backend/fpl_motion/` 装配独立特效项目、文稿及编辑批次。业务规则仍在 `app/apps/motion_compositor/`。独立编辑通过 `fpl_runtime/motion_assets.py` 的签名委托读取当前项目文件描述，Assets 单独持有文件。旧站通过显式文件布局端口保持兼容。
+
+`backend/fpl_video/` 装配独立视频剪辑项目和时间轴读取。项目事务复用 `app/apps/video_editor/`，空项目只需要自有项目与时间轴记录，旧站的素材目录由显式兼容适配器维护。独立镜像不加载素材 ORM。
+
+`backend/fpl_rendering/` 当前承接五个兼容媒体接口，不加载素材或工坊 ORM。`inputs.py` 通过受限的 `rendering.source.read` 委托读取同一素材的 HTTP 内容，以账号隔离的暂存目录接收并校验类型、revision、大小；Assets 内容响应显式声明这些描述头。`previews.py` 拥有有界缩略、裁剪、取帧及宫格输出，完成响应前再次验证账号授权；身份服务故障返回 503，撤销返回 401。它只挂载自己的状态目录和最小配置。`motion_jobs.py` 持有特效导出队列、已封存的原件与成片。Motion 持有公开任务、文档 CAS 和投递记录，两侧通过精确请求摘要和独立的控制凭据关联。剪辑交接与历史导出迁移仍属于整站切换门禁。
+
+`backend/fpl_models/` 拥有独立模型服务的 HTTP、任务 Runner、目录初始化和持久化边界；`models.py` 显式列出默认选择和全部 Models 自有 ORM，`ACCOUNT_MODELS` 只标记拥有账号归属的根记录。`0001_account_defaults` 保持原样，追加的 `0002_model_capabilities` 创建目录、日志、模型测试／推理、本地模型与治理记录，不创建账号、素材或工坊表。账号、源素材和外部排队任务 ID 是不透明引用；仅保留自有表外键。旧单体数据库继续由原 SQL 迁移维护，已有外键与级联不因 ORM 的服务边界描述而被改写。`application.py` 与 `__main__.py` 装配自有 HTTP、配额、任务授权、模板同步、确定性演示和实时语音；独立页面与镜像可用于隔离验收。Mac 原生模型通过受认证租约与 worker 显式执行；当前九容器确定性验收通过，真实 Qwen 权重／MLX、其余应用服务和正式数据导入仍受切换门禁约束。
+
+`fpl_host/models_worker.py` 拥有执行回执、串行观测和停止屏障：等待真实动作清理与回执线程退出后才关闭资源、释放主机锁。`receipts.py` 仅为 Models 清除已确认 payload，保留摘要与结果防重复。`fpl_models/native_models.py` 的 `foreground_synthesis` 经 `llm/inference/runner.py` 的显式 `synthesis_scope` 覆盖完整前台提交／复制／finish，退出后后台才可使用原回执恢复，不重新合成。
+
+`fpl_models/native_retention.py` 拥有原生交付副本清理；追加 `0012_native_result_retention` 保存退役和清理时间。持久应用确认后才清理副本；正式删除同事务擦除原生请求文本／签名证明和任务授权，保留原摘要及 worker／lease 校验迟到回执。`native_files.py` 在 `.tmp/native-model-uploads` 暂存，流结束后的短写事务重查持久栅栏才发布；已应用结果只返回原确认，不重建音频。失败留待启动／轮询重试，不按超时猜测未知提交。隔离故障测试与当前重建九容器验收通过，真实权重及正式转移仍未验证。
+
+`fpl_runtime/catalog_events.py` 定义仅含事件 ID、账号 ID、角色、版本和短期当前状态的私有目录初始化协议。`fpl_identity/catalog_events.py` 只允许独立 Models 凭据轮询／确认，拒绝浏览器和其他服务；历史事件与当前角色分开，停用账号保留事件但不投递。`fpl_models/account_events.py` 拥有有界 HTTP 传输与恢复轮询，`provisioning.py` 在独立账号事务中执行显式本地初始化回调并保存摘要回执。新增 `0003_catalog_provisioning` 不改写前两版。回执防止确认丢失后重建目录，不构成后续业务授权；完整 ASGI 装配仍待完成。
+
+`llm/catalog/template_reconciliation.py` 拥有模板预览、保留 ID 的目录合并与默认选择规则；`template_values.py` 拥有输入密钥替换／保留及脱敏视图，不依赖治理存储。`fpl_models/templates.py` 使用追加的 `0004_role_templates` 自有角色策略表提供 CAS 与账号初始化，空策略沿用无密钥内置目录；调用方负责管理员授权和保存／审计事务。`task_usage.py` 只查询 Models 自有任务。恢复网站的旧设置、账号审计与跨工坊占用留在 `console/governance/model_templates.py` 适配器，独立服务不得导入它。
+
+`fpl_models/quotas.py` 使用追加的 `0005_quota_policy` 保存独立 CAS 策略；协议类型归 `llm/schemas/runtime_quotas.py`，旧治理 schema 只作兼容导出。`admission.py` 持有同步调用与三个 Models 任务种类的额度生命周期：全局统计仅返回固定自有表的汇总，恢复任务没有账本也计入占用；任务关联与创建同事务，重放不可改绑。`llm/task_outcomes.py` 共享供应商提交中断结果标记，未知与缺失任务不会因超时被当作已完成。额度不等于执行授权；排队授权、Runner 结算与治理审计仍待完整装配。
+
+`console/schemas/registration.py` 独立拥有注册／邀请码协议，`developer_documents.py` 拥有只读开发文档协议。Identity 和 Portal 直接使用各自协议文件，不能通过旧 `platform_governance.py` 聚合兼容导出间接加载模型模块。
+
+`fpl_models/task_records.py` 明确自有任务种类与不可变输入摘要；`execution_authority.py` 使用追加的 `0006_task_authorizations` 将原始签名请求与任务创建同事务保存。出队前复核原始账号授权，事务内只检查短期决定与当前输入；缺失／失效来源拒绝提交，Identity 暂不可用延后。`request_admission.py` 通过 `llm/admission.py` 的每请求 provider 包装额度关联，不共享请求可变状态。`GenerationTaskStore` 的显式准备回调在写事务外运行，终态结算回调仅在本服务短事务中执行；旧网站未安装这些新适配器，保持恢复契约。
+
+`llm/library_inputs.py` 拥有文件库输入流、精确长度校验和每请求装配；`legacy_library_inputs.py` 仅供恢复网站读取旧素材库。独立 `fpl_models/library_inputs.py` 经 Identity 的来源／目标权限复核读取 `fpl_assets/library_inputs.py` 与私有路由提供的账号文件流，不挂载 Assets 目录或查询其表。版本化私有描述归 `fpl_runtime/model_inputs.py`，不包含路径或存储键；项目、Galgame、剪辑和特效专属素材均不作为文件库输入。推理输入和转录在文件复制后使用自有表提交；转录的暂存与提交归同一流程，提交未决不得删除可能已登记的输入文件。
+
+`llm/library_outputs.py` 定义每请求结果保存端口；恢复网站显式注入 `legacy_library_outputs.py`，独立 Models 注入 `fpl_models/library_outputs.py` 的有界 HTTP 输出。`fpl_runtime/model_outputs.py` 把文件名、MIME、大小和内容 SHA256 绑定到目标路径；Identity 只从同一任务的保存操作签发窄用途委托，Assets 在接收前和流式传输后复核原身份。`fpl_assets/library_outputs.py` 在网络／文件 I/O 完成后以短事务保存自有文件和 `0004_model_output_receipts` 不可变回执，并发或响应丢失重试只返回同一文件；已删除结果不自动复制重建。私有结果接口不进入浏览器路由、公共 OpenAPI 或 SDK。未知提交保留可能已登记的字节，不按超时清除。
+
+生成测试只读取 Models 私有参考与结果；`playground/legacy_generation_references.py` 是恢复网站显式装配的旧素材查询／回填适配。独立服务缺少该适配时拒绝未迁移的历史引用，正式转移前须通过旧站的正式回填 API 完成转换。附件和结果缩略图直接使用 `runtime/raster.py`，不会为纯栅格处理加载 Assets ORM；上传、回填与结果提交在取消或提交回执未知时保全可能已提交的文件。
+
+`capabilities/transcription/catalog_values.py` 定义参数／能力函数所需的模型与供应商值协议，不注册 ORM。`llm/playground/__init__.py` 只声明包，各消费者直接引用具体测试模块；读取转录能力不会隐式加载文字测试、演示服务或旧数据库。文字、输出交付、生成素材和原生模型端口仍须继续隔离。
+
+`llm/catalog/default_storage.py` 定义默认选择的显式存储端口，与目录 CAS 使用同一事务；恢复网站在入口装配点和 `catalog/legacy.py` 兼容用例中提供 `legacy_defaults.py`、`legacy_usage.py`，独立实现不得导入这些兼容适配器。旧 `platform_settings` 的 `account_defaults:` 分区归 Models，正式导入仍须业务接口校验与核验。`llm/models/model_templates.py` 与 `runtime_admission.py` 拥有模板同步和额度记录；旧 Console 模型公开名仅作明确兼容导出，恢复用例继续从模型能力直接导入自有记录。
+
+`llm/catalog/http_bindings.py` 提供不可变的每应用目录装配描述与账号绑定的 HTTP 用例依赖；恢复网站在 `main.py` 安装旧存储／任务占用适配器，目录、供应商和本地模型挂接路由不再直接构造旧适配器。`routes/models/diagnostics.py` 单独拥有模型诊断协议，避免目录只读装配加载供应商执行栈。`llm/http_errors.py` 统一模型操作错误映射，不导入其他路由。独立进程的目录 HTTP 切片验收不等于完整 Models 服务就绪。
+
+`llm/admission.py` 定义不可变的额度申请、释放、任务保留与派生任务接纳绑定；模型 HTTP 与实时语音从自己的 ASGI 应用取得它，恢复网站显式安装原治理实现。`llm/inference/receipts.py` 只依赖 Models 任务记录，负责账号限定的请求回执与摘要冲突校验，避免为重放检查导入素材能力。独立账本、队列和跨服务任务授权仍须单独实现，缺少绑定不允许回退单体数据库。
+
+`backend/fpl_creative/` 拥有 Creative 自有表、安装 outbox、文件和独立应用。公开目录复用旧站 HTTP 契约，账号写入继续由 CAS 和持久回执保护。独立应用按签名请求从 Identity 查询作者显示名，只读取 Creative 自有目录中的封面及 Skill 文件。`source_http.py` 根据网关签发的请求体证据，经 Integrations 的 `creative_sources_http.py` 读取同账号快照并核对 Skill 归档摘要。`preview_http.py` 通过按批次摘要绑定的授权查验目标名称与已安装状态。`stdio_http.py` 按安装记录和配置摘要委托 Integrations，环境值由 Integrations 加密保存。Creative 验签后更新安装投影，原安装回执保持可重放。镜像和浏览器入口可独立构建，`deploy/creative.compose.yaml` 提供隔离验收装配。作品认证与历史迁移仍是上线门禁。
+
+`backend/fpl_integrations/` 拥有独立工具、MCP、Skills、外部连接 HTTP 装配、自有迁移和执行回执。`fpl_runtime/integration_intents.py` / `integration_client.py` 将来源账号请求、资源与输入摘要绑定到 Identity 固定执行意图；Models 自有验证额度和演示安装回执保留跨服务幂等，不读取 Integrations 数据库。飞书同步由私有固定步骤协议执行，未知供应商响应不能自动重放。Skills 文件按本服务已提交记录恢复。`native_mcp.py` / `native_http.py` 对接主动连接的 Mac MCP worker，容器不持有主机命令、个人环境或目录。`deploy/integrations.compose.yaml` 只挂载所属状态、只读配置与用途限定凭据，外联使用单独网络；是否启用由 TOML 中明确选定的镜像决定。完整容器、原生与浏览器验收仍为正式切换前置条件。
+
+`fpl_thought/retention.py` 使用自有 outbox 持久保存素材引用准备、源事务结果与确认状态；`note_retention.py`、`template_retention.py`、`knowledge_retention.py` 将已接入的笔记、模板和知识库创建绑定自身 CAS 与引用回执。知识库创建在提交项目前，分别保护封面和自动首页的初始引用投影；更新知识库时，封面的替换或移除与知识库 CAS 和引用回执一起提交。`fpl_runtime/community_assets.py`、`fpl_identity/community_assets.py`、`fpl_thought/community_evidence.py` 和 `fpl_assets/community_assets.py` 提供单素材社区读取：Identity签发短期用途限定授权，Assets 每次读取都要求 Thought 在独立会话复核当前发布、浏览者权限、正文引用与资源版本，并重新检查浏览者 Session。独立 Thought 的社区文档保存复用发布授权和文档 CAS，通过绑定编辑者、源账号、发布和文档修订的引用授权返回所需文件元数据。事务内重查发布权限并持久记录引用结果。多维表格批处理使用同一引用授权，重新核验嵌入来源、目标发布与逐篇编辑权限，并保留历史表格素材。社区上传的私有暂存按发布文章、编辑者、源账号和文件摘要授权，Assets 封存文件后等待源结果。公开上传在 Thought 同一事务保存文章附件关联和结算结果，后台重放已确定结果。未进入正文的附件仅限该文章的原上传编辑者预览。社区缩略图尺寸包含在签名授权中，Assets 在逐次复核授权后使用同一有界解码和素材版本缓存。独立启动由 `fpl_thought/__main__.py` 装配，显式核验自有迁移、操作 ID 和浏览器契约。新建文档、知识库、笔记批处理、历史恢复、模板创建与应用及多维表批处理、历史恢复和 CSV 导入已接入 retention，其他写操作仍需逐项接通。
+
+`fpl_creative/installation_outbox.py` 和 `installation_coordinator.py` 保存按账号及版本绑定的安装意图。安装前保护根发布及组件，目标结果未知时保留围栏。Creative 与 Integrations 分别保存取消回执及阻止迟到提交的状态，源端只在验证签名回执后释放围栏。`decision_http.py` 与 `creative_authority.py` 通过独立对等凭据绑定原请求、持久批次和发布状态。`fpl_runtime/creative_results.py` 与 `install_target.py` 对目标回执及不存在响应使用独立密钥和逐请求随机数认证。`skill_archive.py` 和 `install_batch.py` 绑定固定格式归档和文件树摘要，保留对历史无树摘要回执的恢复。`install_authorization.py` 在提交和结算时复核原始请求体与当前身份授权。
+
+Creative 的公开作品认证由 `certification_http.py` 转发。Identity 签发绑定账号、项目类型、标识和版本的命令，Visual 与 Galgame 只修改各自项目库。项目更新和待审计回执共用事务，Identity 去重写入并签发审计确认，Creative 验证后返回。两套项目库已登记初始自有 schema。各自的 `projects_http.py` 提供公开项目目录、创建、详情和初始编辑文档读取。新项目与初始 Canvas 或 Story 在同一事务提交，文件目录由素材服务在首次写入时创建。Visual 项目元数据更新使用原有版本契约。认证标记和项目版本从同一条项目记录读回。Visual 的 `outputs/recording.py` 只登记自有输出；独立与兼容站共用 `outputs/queries.py` 读取输出列表和版本，兼容站的素材校验及输出变更仍由 `outputs/history.py` 承担。 `canvas_documents.py` 持有画布事务，`fpl_visual/canvas_writes.py` 用 Assets 的范围校验回执准备素材引用并提交版本。Assets 的 `canvas_retention.py` 核对项目素材、库内放置与前序引用保留。`operation_values.py` 转换操作批次，Visual 保存自身的 `project_operation_receipts` 分区，与画布版本和素材引用回执一起提交。 Galgame 的 `story_writes.py` 以 Story 版本维护素材引用投影，项目创建时准备空投影。故事保存先由 Assets 固定素材归属及元数据，再在 Galgame 库中原子提交正文、素材索引和待确认回执。已保存的 Story 快照也纳入保留范围。对白、舞台表情及批量编辑通过 `story/edit_values.py` 复用兼容站的值校验，并由同一 Story 事务推进版本和回执。操作批次通过 `story/operation_values.py` 转换，已执行批次的请求摘要和原结果保存于 Galgame 自有的 `project_operation_receipts` 分区。`story/snapshots.py` 负责已核验账号的历史列表，快照恢复按当前 Story 版本提交原始文档和引用。
+
+Galgame 广播剧导入由 `fpl_galgame/annotation_runner.py` 执行。Annotation 提供归属已校验的文档版本，Assets 提供绑定 SHA256 的原件和生成片段回执，Identity 在执行时复核原请求权限。裁切与内容相关性校验由 `app/capabilities/media_rendering/voice_clips.py` 维护。Galgame 在自有状态目录的 `.annotation-work/` 暂存文件，在同一事务保存 Story、旧版本快照和任务回执。独立 Galgame 镜像使用 `deploy/images/owned-http/Dockerfile.galgame` 装入固定版本的 FFmpeg。
+
+Galgame 便携 ZIP 的导出与导入归 `fpl_galgame/snapshot_exports.py` 和 `snapshot_imports.py`。两套网站装配共享 `app/apps/galgame_workshop/snapshot_values.py` 的文件元数据与 Story 校验。Assets 的 `fpl_assets/galgame_archives.py` 同事务公开原件与初始 Story 素材引用，Galgame 在收到结算回执后公开项目副本。
+
+Galgame 台词转写任务与转写版本归 `fpl_galgame/asr_jobs.py`、`asr_runner.py`。Assets 核验项目与文件版本后提供原音频。Models 的 `fpl_models/galgame_transcription.py` 执行已冻结的模型调用，并持久记录结果和调用日志。请求中断时，Galgame 用原任务标识读回结果。Models 重启时将未决的供应商请求记录为结果未知。
+
+Galgame 精确帧的业务预检归 `fpl_galgame/exact_frame.py`。Rendering 通过 `fpl_rendering/galgame_frames.py` 校验 Story 摘要和同一账号的 Assets 原件授权。确定性编译、字幕和口型位于 `app/capabilities/media_rendering/galgame/`，供兼容装配和独立 Rendering 共用。
+
+Galgame 成片任务与冻结 Story 由 `fpl_galgame/export_jobs.py`、`export_runner.py` 持有。Rendering 的 `galgame_export_jobs.py` 执行并封存已核验的 MP4。Assets 接收绑定摘要的成片，并负责 `storage.galgame_export_max_bytes`。Galgame 持久记录同一上传回执后开放下载，最后释放 Rendering 的暂存副本。
+
+Galgame 剪辑交接由 `fpl_galgame/handoff_jobs.py`、`handoff_runner.py` 协调。Rendering 的 `galgame_handoff_package.py` 生成包含可编辑时间线的 Video 工程包。Video 通过 `galgame_handoff_http.py` 接收，按源任务绑定归档摘要，在原件完成结算后公开工程副本。Galgame 按同一回执取得目标工程标识。
+
+`fpl_thought/upload_intents.py` 与 `fpl_assets/thought_uploads.py` 提供按账号绑定的私有上传回执，Identity 只为指定来源和目标签发上传委托。`upload_transport.py` 为已暂存上传逐请求换取绑定摘要的 Identity 委托并流式传输，来源服务仅在收到按账号、文件摘要和随机数认证的有效回执后确认并清理暂存；Assets 未配置独立回执密钥时拒绝该私有上传。`upload_recovery.py` 在启动独占锁内仅清理已确认副本和无持久意图的中断暂存；未决意图继续保留。该协议已通过隔离服务测试；独立 Thought 已装配公开上传入口，远端自动重放 worker 尚未接入，恢复网站暂不按重试标识去重。独立 Thought 的部分 HTTP 装配已包括目录移动、文档恢复和知识库回收／恢复，并保留现有版本控制及撤回发布规则；retention worker 已存在，但 `/ready` 始终返回 503，直至素材引用迁移及剩余业务能力完成。
+
+`backend/fpl_thought/` 拥有 Thought 自有表清单、仅保留自有外键的独立迁移与写作 HTTP 适配，通过显式选择的 `deploy/thought.compose.yaml` 提供独立部署入口。`web/src/app/entries/thought.tsx` 提供可独立构建的浏览器入口，与兼容站共用 Thought 模块的知识库、社区和旧链接路由。搜索、引用解析、反向链接、复制预检、检查点、阅读偏好、表格查询、社区收藏、社区管理元数据、官方包预检、同步绑定及任务记录查询共用 HTTP 装配。模型写作通过 `fpl_runtime/writing.py` 绑定笔记、请求摘要和原账号操作，由 `fpl_models/writing.py` 管理模型选择、流式调用、日志及配额。账户备份复用 `backup_manifest.py` 的现有归档格式，`fpl_thought/backup.py` 读取 Thought 一致快照并在结束读事务后按素材版本下载、核对大小及生成归档。素材引用变更通过独立的引用准备与回执提交。共享的 `fpl_runtime/reference_mutations.py` 在来源服务的自有账本中保存准备与结果，重启后补发确认。Thought 保留自己的账本表和正文、历史及表格引用规则。
+
+`fpl_thought/sync_binding.py` 通过按文章、连接和请求摘要绑定的授权查询 Integrations。Thought 保留同步绑定和修订控制，Integrations 持有连接凭据和远程访问。`publication_retention.py` 将公开封面绑定到发布记录，源知识库替换封面时保留已发布素材。发布写入和回执状态共用事务，历史发布在切换前须建立经核验的初始引用。
+
+`fpl_thought/duplicate_retention.py` 为复制的每个文档准备独立投影，保留多维表历史中的素材。复制结果和投影结果共用源事务。`archive_import.py` 拥有备份和官方包共用的清单校验、标识重映射及入库。导入前统一分配知识库、文档与模板标识，并按资源计算正文、表格及历史素材引用。`archive_files.py` 在固定大小和数量上限内校验并解包，使用无 ORM 的 `runtime/zip_members.py` 过滤不安全成员。`fpl_thought/official_projections.py` 为内置官方包创建初始投影，导入回执、来源映射和投影结果一同提交。 独立 Assets 的归档暂存表记录输入摘要、已校验的文件和封存清单。只有确认源提交后才在同一事务发布素材与初始引用；明确中止进入既有文件清理队列。账号归档导入通过原 multipart 入口。Identity 仅允许从该入口向 Assets 委托文件暂存和清单封存，Thought 写入内容时持久化结算结果，后台可在会话过期后提交经对等凭据认证的决议。重传同一归档可恢复未完成批次，显式提供同一 `Idempotency-Key` 可重放已完成结果。仅在对应批次结算确认后清理归档暂存。
+
+`fpl_thought/sync_submit.py` 在排队前固定预览、远端版本和图片摘要，`sync_artifacts.py` 暂存任务私有图片副本。`sync_runner.py` 通过 Identity 的持久任务授权在 Integrations 执行逐步写入，进程退出时把运行中的任务置为待核对。`sync_reconcile.py` 使用只读步骤回执及远端快照核对已确认写入，或显式关闭任务以阻止迟到写入。供应商连接、远端步骤记录和关闭回执留在 Integrations。
+
+`fpl_runtime/routing.py` 分别维护 HTTP 操作与固定 WebSocket 归属。实时语音只接受实际 Upgrade 握手，网关清除外部身份头后标记协议并交 Identity 复核；管理网关不开放该入口。`protocol_hash.py` 只将本服务的 Socket 契约纳入版本，公开 OpenAPI 不伪造普通 GET 操作。
+
+`fpl_runtime/migrations.py` 在只读预检中核验已应用历史的位置、服务、版本和 checksum，使用转义 URI 保留真实路径字符。显式迁移接受有效历史前缀，启动检查要求完整注册表；打开目标连接后先重复校验，再设置 WAL 或创建表。错误归属与漂移库保持原状，不自动修复或接管未登记旧库。
+
+`runtime/image_sizes.py` 和 `runtime/raster.py` 维护无 ORM 的图片尺寸及受限解码；头像通过 Identity 自有适配使用，不为头像导入素材数据库。`media_rendering/preview_metadata.py` 和 `pdf_preview_worker.py` 拥有实际文本、PDF 与媒体预览；旧素材入口只负责账号查询适配。PDF 使用限时子进程，宫格字体按白名单封入 Rendering 镜像。Assets 上传暂存位于自己的状态卷，避免大文件占满容器内存临时盘。`scripts/website/rendering_docker_checks.py` 使用合成媒体验证真实容器链路，`assets_docker_checks.py` 覆盖超过内存临时盘大小的上传与 ZIP 导入。
+
+`capabilities/asset_store/folders.py` 复用同属文件能力的文件夹 CAS、名称和深度规则；`asset_context.py` 允许显式注入项目验证。新 Assets 数据库将外部项目 ID 视为不透明标识，仅保留自有表外键；旧迁移与数据库外键保持原样，迁移期单体继续使用旧适配。`fpl_runtime/asset_references.py` 维护受限消费方、资源种类和版本化引用消息，不接受客户端指定归属。
+
+`backend/fpl_agents/` 装配独立工作台，拥有自有迁移、原生任务、来源订阅、投影回执、协调器与私有协议；复用工作台的阅读、搜索、CAS 和投影用例，不加载账号 ORM 或 Mac 解析器。`fpl_runtime/http_dependencies.py` 只消费签名身份；`change_stream.py` 使用显式实时授权与数据库会话，旧 `events.py` 保留单体身份适配。
+
+`fpl_host/deployment_preflight.py` 在主机启动或 `--check` 时，只读检查本次选中服务各自数据库的服务归属、迁移前缀与 checksum；仅管理端模式不要求未启动的业务服务。未知已配置服务及缺少状态目录时拒绝部署，不创建数据库或应用迁移。启动动作与管理 worker 在所有预检成功后才执行。
+
+`backend/fpl_host/` 是独立 Mac 原生采集 CLI，仅发起受认证回环请求，读取明确来源的原生会话及引用附件。`collector.py` 管理有界任务，`follow.py` 跟随原生日志或事件，`follow_journal.py` 持久化单帧确认状态，`receipts.py` 保存一次性操作意图与结果；不确定动作不重做，跟随仅按原任务、租约和服务端检查点继续。容器镜像不包含此包。
+
+`fpl_gateway/creative_bridge.py` 为 Creative 来源导入与安装提交提供请求体证据。启用隔离验收配置后，Caddy 先向 Identity 授权原始操作，再通过容器内专用 Unix socket 交给中介。中介验证入口凭据与原断言，要求 Identity 为精确原始字节签发短期证据，验签后原样转发。Creative 安装提交通过 `installation_http.py` 复用持久批次、发布围栏和受保护的 Integrations 回执。重复收到同一份已证明的来源导入请求时，Creative 重新使用已落盘的草稿 ID。
+
+Agent Runtime 的 `backend/fpl_agent_runtime/` 拥有编程智能体目录、检测、启用和原生回执队列。
+`backend/fpl_host/agent_connections_worker.py` 通过独立回环入口执行本机 CLI 探测，在写入部署配置前再次核验授权。
+`deploy/agent-runtime.compose.yaml` 只挂载服务自有数据与最小凭据。
+独立页面由 `web/src/app/entries/agent-runtime.tsx` 构建。
+
+Models 的 `backend/fpl_models/catalog_migration.py` 按账号传输历史目录和加密供应商凭据。
+Assets 的 `backend/fpl_assets/migration_application.py` 装配文件夹、素材记录及原件的回环维护入口。`backend/fpl_assets/library_reads.py` 提供账号文件库查询，音频标注通过专用签名协议读取元数据和对应修订的音频，并为项目准备素材引用。`backend/fpl_annotation/` 装配自有项目、文档、波形和回执，兼容应用通过同一业务入口绑定旧站数据端口。
+面试助手的 `backend/fpl_interview/` 独立装配签名接口、场次数据库及私有材料目录。兼容站仍由现有 Codex runner 执行。独立面试助手通过 `backend/fpl_host/interview_worker.py` 领取固定准备任务，并通过 Identity 复核账号权限。
+导演台的 `backend/fpl_director/migration_application.py` 装配回环维护入口，按账号迁移原项目、动作及其文件。
+Remote 的 `backend/fpl_remote/` 拥有桌面偏好、短期连接票据与 WebSocket。
+共享 `app/console/cloud_control/desktop_bridge.py` 负责 Guacamole 协议，旧站与 Remote 分别注入自己的授权和连接端口。历史偏好由 `fpl_remote/preference_migration.py` 在回环维护入口导入，Identity 的 `credential_migration.py` 保留加密 TOTP 登记与归属会话。
+`deploy/remote.compose.yaml` 只装配私网桌面服务，另需显式选择 Guacamole 对端。Identity 提供限定到原请求的会话复核。
+
+Agents 的 `execution_http.py` 读取自有聊天记录并逐次复核 SSE 授权。共享的 `app/apps/agent_workbench/execution/transcripts.py` 管理会话读回及中断状态。待 Mac 执行端口就绪后再开放独立执行写入。
+
+`fpl_deployment/images.py` 构建可审计源码闭包，`gateway.py` 从操作归属生成监听器路由。`deploy/images/` 下 Identity、Agents、Gateway、Portal、Assets、Rendering、Management、Models、Integrations、Thought 和 Creative 各自保存依赖锁和镜像定义。Visual、Galgame、Tools、Director、Agent Runtime 与 Remote 共用 `deploy/images/owned-http/` 的依赖锁和镜像定义，镜像构建各自检查源码闭包。`deploy/compose.yaml` 装配基础服务，`management.compose.yaml` 与显式选择才启用的 `models.compose.yaml`、`integrations.compose.yaml`、`thought.compose.yaml` 提供对应叠加清单。Creative 与项目所有者的隔离认证验收另用 `creative.compose.yaml`、`project-owners.compose.yaml`。Models 只挂自有状态、最小配置和身份连接，使用单独外联网络请求供应商。`scripts/website/service_build.py` 和 `service_docker_smoke.py` 分别提供 CLI 构建与账号容器隔离验收，`agents_docker_smoke.py` 验证真实工作台容器和 Mac 原生采集器；`tests/gateway_assertion_probe.py` 只属于测试传输探针，不是工作台服务。运行及切换状态见[独立服务迁移](../operations/independent-services.md)。 `backend/fpl_tools/` 独立装配账号收藏和最近使用 API，使用自有数据与身份公钥。`deploy/tools.compose.yaml` 提供隔离启动，`web/src/app/entries/tools.tsx` 构建工具目录和两条深链接，`fpl_tools/host.py` 管理本机文件库目录任务与回执。`fpl_host/tools_worker.py` 从专用回环入口领取有效租约，只在配置的 Assets 根目录下解析当前账号的文件库。视频下载依赖探测复用回环 worker，公开入口隐去可执行文件路径。`videos.py` 保存下载任务，`video_files.py` 核对字节摘要并保存交付回执，`video_library.py` 通过限定授权把文件流交给 Assets。Mac 下载中间文件由 `fpl_host/tools_video.py` 管理。 `fpl_runtime/migration_batches.py` 定义迁移运行计划、规范化摘要和账号回执；Tools 的 `navigation_migration.py` 拥有历史导航数据集，`migration_application.py` 装配独立回环维护入口。由 `scripts/website/migrate_tools_navigation.py` 传输并双向核验批次。
+
+Galgame 的历史导出与导入由 `fpl_galgame/migration_application.py` 装配。旧 Story 当前索引与快照引用由源侧核对，Assets 校验已导入的文件回执后建立引用投影。批次编排与读回位于 `scripts/website/migrate_galgame_history.py`。
+
+Visual 的便携 ZIP 导出由 `fpl_visual/snapshot_exports.py` 冻结 Canvas、输出与验收记录。Assets 的 `visual_snapshot_files.py` 核对同账号项目范围、库内引用和原件版本，按已授权的精确文件集合流式提供原件。Models 只返回模型提供方类型与标识。下载前重新核验会话，ZIP 和工作副本在响应结束或进程恢复时清理。 `fpl_visual/snapshot_imports.py` 保存 Visual 的精确导入决议，`snapshot_graph.py` 验证副本的画布、历史输出和验收关联。Assets 的 `visual_archives.py` 原子公开已核验的文件、嵌套目录和两类素材保留集合。Visual 收到回执后才公开同一副本。
+
+Visual 的图片宫格由 `fpl_visual/compositions.py` 保存批次与输入版本，`composition_runner.py` 恢复执行与结果结算。Assets 的 `visual_grid_files.py` 核验同账号工程图片。Rendering 的 `visual_grids.py` 使用精确原件、字幕和现有字体渲染 PNG。Visual 将新输出与 Canvas 回执一起保存，Assets 确认后完成批次。活跃的旧站合成必须在迁移前结算。
+
+Visual 生成模型资格、参数校验和供应商请求组装由 `app/llm/visual_generation_model.py`、`visual_generation_payload.py` 与 `visual_generation_submission.py` 共享。兼容站从同进程传入显式素材读取端口。独立 Models 的 `visual_generation_http.py` 按账号返回资格校验后的模型标识，Assets 的 `visual_generation_files.py` 核验指定工程与任务的精确原件范围、版本与读取权限。Models 的 `visual_generation_intake.py` 保存精确的输入、额度和执行决议，`visual_generation_runner.py` 在激活后复用通用生成状态机，`visual_generation_results.py` 提供受控状态、重试和原件读取。Visual 的 `generation_intake.py` 冻结画布输入，`generation_decisions.py` 在源事务落盘后投递激活。 `generation_runner.py` 投影任务进度、发布同摘要结果并确认清理，`generation_batches.py` 汇总子任务并调度可选合成。
+
+Visual 验收取样由 `fpl_visual/acceptance_samples.py` 核对记录及版本。Rendering 的 `visual_samples.py` 根据已校验的原视频版本和实际解码时间戳提取 PNG。Assets 的 `visual_evidence_upload.py` 校验整组帧的长度与摘要，在验收记录提交后公开原件。逐验收记录的证据保留集合随所属项目删除，兼容站的历史保留集合仍按工程核验。
+
+Visual 的公开验收目录由 `fpl_visual/acceptance_options.py` 装配。固定视觉模型由 Models 核对账号与配置，Mac 上的五种 CLI 由 Agent Runtime 的只读租约探测。Identity 限定授权来源，目录响应只包含可用状态和展示字段。 节点验收资料由 `acceptance/context_values.py` 从所属画布和生成记录计算，并从 Assets 读取精确的工程素材投影。方案绑定在 Visual 中按版本更新，项目汇总复用相同的资料指纹。
+
+Visual 节点验收的 `review_submission.py` 按画布、方案绑定和资料指纹冻结运行计划，在同一源事务记录初始素材引用。`review_runner.py` 复核执行账号，`review_baseline.py` 保存逐来源取样及 Assets 回执，`review_media.py` 负责受控证据流，Rendering 负责规范化 JPEG 编码。Models 的 `visual_review_attempts.py` 保存固定模型运行摘要、调用日志和可重放结果。
+
+Visual 的 Canvas、工程与历史输出由 `fpl_visual/migration_application.py` 导出及导入。 Visual 与 Galgame 复用 `fpl_runtime/edit_receipt_migration.py`，在 Canvas 或 Story 导入后分账号保留历史操作回执和原响应。迁移阻止跨归属、缺少源文档或回执版本超出当前文档的记录。Canvas 文件保留集合包含当前节点及旧输出，Assets 逐文件校验回执后提交。库内放置通过 Assets 维护入口保留原名称、目录、标识和版本。 Visual 的 `migration_generation.py` 逐账号保留历史生成任务和批次，核对画布或输出的任务来源与批次成员归属。 `migration_acceptance.py` 保留验收定义、历史结果、修复草稿和证据关联，Assets 在核对原件与工程范围后重建验收素材保留集合。
+
+Visual 助手的对话、消息和操作记录由 `fpl_visual/conversations.py` 查询。模型选项由 Models 提供账号投影，附件元数据由 Assets 按项目、对话、精确 ID 和保留引用核验。新建及删除对话与素材引用回执共用 Visual 数据事务。 `fpl_visual/migration_assistant.py` 逐条迁移历史对话、消息、附件和操作。Assets 在画布投影与原件摘要通过后恢复同工程的对话素材引用。 Visual 删除项目时由 `fpl_visual/project_deletion.py` 核对项目版本、画布和对话范围，提交删除与恢复回执。Assets 的 `visual_project_removal.py` 在确认回执后清除画布与对话引用、项目放置和私有原件，保留文件库原件。项目文件、放置和分段交接发布在 Assets 写事务中检查删除准备。 Visual 的素材节点与输出上传由 `fpl_visual/uploads.py` 准备画布引用，Assets 的 `visual_upload_stages.py` 流式验证长度与 SHA256，并在画布事务确认后发布原件和引用。GIF 检查版本与 MP4 同批发布；暂存失败和源回滚由 Assets 的日志与清理生命周期处理。
+
+`web/src/app/entries/` 拥有独立应用装配与导航，`agents.tsx` 不加载门户路由，`IndependentShell.tsx` 复用账号、主题和导航组件。`web/service.config.ts` 选择单一入口和所属程序素材，`web/scripts/build-service.mjs` 生成逐文件 SHA256、gzip／Brotli 及单服务契约清单；产物保存在被忽略的 `.local/service-web/`，镜像封装时核验清单。`scripts/website/web_contract.py` 仅读静态契约，不初始化数据库。Models 的 `models.tsx` 只装配模型目录、测试和日志，保留当前账号权限、未保存导航保护及跨应用跳转。程序版本摘要包含所属 HTTP／WebSocket 契约，防止契约变化复用旧缓存；其他服务的契约变化不改变本服务协议摘要。 Visual 的 `visual.tsx` 与 `VisualApplication.tsx` 装配项目、画布、素材和任务入口，复用 Visual 功能页面及权限分支。Visual 镜像在提供程序资源前比对已安装程序的 API 摘要。 Galgame 的 `galgame.tsx` 与 `GalgameApplication.tsx` 独立装配项目列表、总览、编辑及预演，保留账号权限和已保存 Story 的预演回退。
+
+`shared/ui/NavigationProtection.tsx` 在每个独立应用内协调多个未保存保护，协议与 Hook 位于 `navigationGuards.ts` 和 `useUnsavedNavigation.tsx`。确认逐项进行，全部通过才继续；明确同意跨页面离开后不重复触发原生提示。`platform/api/applicationBuild.ts` 携带非鉴权的应用版本标记并广播本应用更新，`platform/programAsset.ts` 定位当前程序资源。共享登录通过显式回调清理应用自有临时状态。
+
+服务化实现及 Compose 切换尚在隔离工作树验证，正式入口仍使用下述网站单体；不得把清单生成视为应用迁移完成。当前网站 `.runtime/` 是唯一迁移真源，桌面原目录仅用于恢复。
 
 共享前端构建的 HTML 与版本信息跟随当前构建。经过清单验证的哈希资源可从最近两版退役构建读取，每版自退役起最多 24 小时。`runtime/website_releases.py` 提供服务器与构建器共用的保留策略，正在传输的资源持有目录共享锁。
 
@@ -145,6 +299,9 @@ Future-Props-Lab/
   `vendor/pi/` 仅保留历史来源快照，不参与 Amadeus 构建。进程监督由桌面独立工具入口提供，
   不复用携带后端凭据的服务进程。
 
+- `llm/credential_snapshot.py` 保存纯调用归因快照，不导入账号 ORM 或数据库。`llm/http_credentials.py` 让模型 HTTP 入口读取与当前 Principal 匹配的已验证 Identity 上下文中的 API Key ID、显示名与前缀，不跨库读取账号或密钥；实时语音仅接受已经认证的浏览器 Principal。恢复网站在装配时显式安装 `llm/call_logs/credentials.py` 中的账号查询，使用当前应用的会话，LLM 模块不直接导入单体全局数据库工厂。归因只用于日志，不能代替授权。
+- `runtime/task_records.py` 拥有内部 Runner 的账号查找与绑定：在无绑定时只读解析本服务任务归属，随后按该账号读取；已有绑定不可覆盖。生成／转录恢复先枚举受影响账号，再分别提交状态与日志，系统读取不授予系统写入。`llm/inference/storage.py` 管理本服务推理输入与输出，启动核对只读取 Models 自有记录与目录，不扫描 Identity 表、不跟随链接、不递归清理或修改其他应用文件。
+- `app/deps.py` 从当前 ASGI 应用取得显式会话工厂，业务身份仅消费已验证签名上下文。`console/governance/database_auth.py` 拥有浏览器 Cookie、CSRF、API Key、Session 用途和原实时语音认证的账号数据校验；Identity 与恢复网站在装配时明确安装该适配器，其他应用不加载账号 ORM 或旧数据库。`capabilities/identity/http_context.py` 提供无存储依赖的协议错误、客户端地址和最近重新认证前置条件。缺少绑定不能触发单体数据库回退。
 - `llm/catalog/` 拥有供应商分组、接入连接与模型目录。`supplier_records.py` 提供账号限定的
   分组读取及安全输出，`suppliers.py` 通过目录统一 CAS 执行分组写入；协议边界位于
   `llm/routes/models/suppliers.py`。供应商不持有密钥或启停状态，连接通过 `supplier_id` 显式归组。
@@ -177,6 +334,7 @@ Future-Props-Lab/
   只依赖统一结果或事件，不根据供应商原始载荷控制运行行为；供应商管理界面展示配置属于例外。
 - `llm/playground/` 拥有模型测试会话、图片上下文、调用快照与单轮流式结算；
   `recovery.py` 在启动时取消遗留的 pending 回复并更新所属会话 revision，避免会话一直占用。
+  模型生成／转录／推理 Runner、恢复、文字流和实时语音结算都显式接收所属应用的会话工厂；HTTP 与 WebSocket 从自己的 ASGI 绑定传入，不能回退到单体全局工厂。结算使用独立短事务并显式绑定账号，不能跨网络请求复用同一个 AsyncSession。
   Web 的文字对话和参数控件归属 `features/models/conversation/`。
 - `llm/providers/realtime/` 只拥有供应商无关实时桥接契约与 SenseAudio 协议适配，
   `llm/realtime/` 负责账号模型解析、短会话日志结算和浏览器 WebSocket 编排；
@@ -227,7 +385,7 @@ Future-Props-Lab/
   只读 Story 快照驱动的视频导出与分层剪辑交接任务，
   `apps/video_editor/` 负责与 Story 解耦的微秒级多轨文档、类型化原子操作、项目素材快照、代理媒体、
   后端精确停帧和剪辑任务；`apps/motion_compositor/` 拥有特效项目、素材、文档 CAS、工程包、导出任务与显式剪辑交接，浏览器界面归 `web/src/features/motion-compositor/`；`capabilities/media_rendering/` 统一拥有 RenderPlan 契约、特效 RGBA 帧求值、文字排版与透明图层、共享 `assets/` 固定中文字体、确定性帧求值、固定帧网格的
-  FFmpeg/Pillow 合成和取消控制。`animated_image.py` 拥有有界、可取消的 GIF 单次动画到无声 MP4 转换；视觉工坊 `outputs/video_uploads.py` 拥有上传适配与临时输入，转换完成后才进入既有素材／输出 CAS 事务。`video_sampling.py` 按源视频 PTS 选择包含当前时刻的画面区间，
+  FFmpeg/Pillow 合成和取消控制。`animated_image.py` 拥有有界、可取消的 GIF 单次动画到无声 MP4 转换；`media_rendering/gif_upload.py` 处理上传动画的临时输入，转换完成后才进入既有素材／输出 CAS 事务。`video_sampling.py` 按源视频 PTS 选择包含当前时刻的画面区间，
   精确停帧与导出共享该采样规则。正式剪辑渲染只依赖不可变时间轴快照和原素材，
   `spin_blur.py` 拥有旋转模糊的角向采样；Web 的 `video-editor/spinBlurCanvas.ts` 使用相同的角度、采样数与覆盖缩放，`VideoEditorEffectImage.tsx` 复用图片和文字图层的已加载素材。
   `directional_transitions.py` 拥有甩镜九点方向采样与漏光滤色配方；Web 的 `video-editor/directionalTransitionCanvas.ts` 对齐像素规则，`VideoEditorLightLeak.tsx` 在节目画布上只叠加一次光带。`video-editor/transitionCatalog.ts` 维护可复用转场的分类、名称与默认时长，面板和检查器共同消费。
@@ -544,6 +702,9 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 `director_desk_user_motions` 只保存动作元数据，模型包放在 `applications/director-desk/library/`。
 迁移 `r0064_director_desk` 建立项目表，`r0065_director_desk_motions` 追加动作表。
 `web/src/features/director-desk/` 拥有项目列表、`.director` 导入导出和三维编辑器，查询键在 `queryKeys.ts`。
+`backend/fpl_director/` 装配独立 ASGI 和显式 schema，持有自有账号目录和中断删除恢复。
+编辑器会话在应用实例内持有，校验项目归属时只访问当前实例的会话工厂。
+`deploy/director.compose.yaml` 装配隔离服务，`web/src/app/entries/director.tsx` 构建项目列表与三维预演深链接。
 编辑器的 `model.ts` 是类型及公共入口，`model-constants.ts`、`model-creation.ts`、`model-validation.ts`
 分别维护常量与复制、对象创建、项目校验；`assets/catalog/shape-types.ts` 保存资产形状契约，
 `cinematography/camera-effects-types.ts` 保存镜头效果类型，`scenes/scene-document-types.ts` 保存戏段快照类型，
@@ -689,3 +850,18 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 ### 角色工坊退役验收
 
 `web/e2e/retired-character-workshops.spec.ts` 覆盖首页内置动画、明暗主题、390/768/1600 宽度、减少动态效果及 Agent 工作台徽章。该首页展示不启动任何独立角色窗口，也不读取私人角色项目。
+
+### Models 拆分准备
+
+`llm/catalog/task_usage.py` 定义目录修改所需的显式任务占用接口。`legacy_usage.py` 仅用于迁移期单体，读取其原有任务表并显式限定账号；目录本体不再查询工坊内部表。独立 Models 必须注入自有执行记录的实现，缺少实现时拒绝相关写操作。提供方先验证归属再检查占用，其他账号 ID 仍返回不存在。
+
+## 独立管理服务
+
+`backend/fpl_management/` 拥有管理装配、公开协议、自有运维任务/状态 ORM、显式迁移和 worker 接收协议；不导入其他服务 ORM。Identity 拥有管理会话及用途迁移；Models 拥有模板、额度与演示治理，浏览器经独立管理网关访问这些接口。`backend/fpl_host/management*.py` 拥有 Mac 限定 Compose 控制、双 SSH 生命周期和持久执行回执。`scripts/management/` 拥有一键启动及独立 LaunchAgent。`web/src/app/entries/management.tsx` 拥有独立入口与认证装配，`features/accounts/management/` 拥有运行与访问页面；公开类型来自单独管理 OpenAPI。`deploy/management.compose.yaml` 是独立管理部署叠加清单，`deploy/images/management/` 保存最小依赖锁和镜像定义。验证入口为 `tests/test_management_service.py`、`tests/test_management_host.py` 与 `web/playwright.management.config.ts`。详见[管理服务参考](../reference/management-service.md)。
+
+
+### 应用服务状态
+
+`fpl_runtime/service_status.py` 定义注册服务 ID、生命周期和只读状态契约。`fpl_host/service_observation.py` 只读取所选 Compose 项目的配置服务清单与进程状态，拒绝把 Docker 故障误报为停止；不读取业务数据库、环境内容或日志。观测嵌入 Management 已有的自有快照，不共享数据库。`fpl_gateway/service_status.py` 从固定服务地址做有界就绪探测，合并新鲜主机证据并按依赖图计算功能受限；错误或过期观测无法确认停止。`deployment.status.read` 只允许原始 Gateway 状态读请求委托到 Management 的状态读接口，不获得运维命令权限。
+
+`features/applications/ApplicationCenterRoute.tsx` 拥有按账号缓存的自动检查；纯页面与 `ApplicationServiceStatus.tsx` 拥有状态和展开说明。`serviceStatus.ts` 使用生成契约，`queryKeys.ts` 唯一维护查询键。静态目录显式绑定 `serviceId`，不能凭页面名称猜测服务。连接失败时只把缓存作为上次结果展示；单体兼容入口明确声明共用进程。

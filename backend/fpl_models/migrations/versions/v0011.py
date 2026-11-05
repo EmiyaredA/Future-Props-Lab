@@ -1,0 +1,20 @@
+"""CAS/audit coordination of fixed Integrations-owned demo-tool installation."""
+
+SQL = (
+    "CREATE TABLE model_demo_installations (\n"
+    "\tid VARCHAR(36) NOT NULL, \n"
+    "\towner_user_id VARCHAR(36) NOT NULL, \n"
+    "\texpected_revision INTEGER NOT NULL, \n"
+    "\tintent_id VARCHAR(36) NOT NULL, \n"
+    "\taudit JSON NOT NULL, \n"
+    "\tstatus VARCHAR(16) NOT NULL, \n"
+    "\tresult JSON NOT NULL, \n"
+    "\terror_code VARCHAR(100) NOT NULL, \n"
+    "\tcreated_at DATETIME NOT NULL, \n"
+    "\tPRIMARY KEY (id), \n"
+    "\tUNIQUE (owner_user_id, expected_revision), \n"
+    "\tUNIQUE (intent_id)\n"
+    ");\n"
+    "CREATE INDEX ix_model_demo_installations_owner_user_id ON model_demo_install"
+    "ations (owner_user_id);\n"
+)

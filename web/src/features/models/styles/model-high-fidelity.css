@@ -435,6 +435,12 @@
   font-size: 10px;
 }
 
+@media (max-width: 1200px) {
+  .playground-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 1050px) {
   .mc-filters {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);

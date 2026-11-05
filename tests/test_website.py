@@ -41,6 +41,15 @@ async def website(tmp_path):
     application = FastAPI()
     application.exception_handlers.update(main_app.exception_handlers)
     application.include_router(api_router)
+    application.state.database = main_app.state.database
+    application.state.studio_http_auth = main_app.state.studio_http_auth
+    application.state.studio_socket_auth = main_app.state.studio_socket_auth
+    application.state.model_catalog_bindings = main_app.state.model_catalog_bindings
+    application.state.model_credential_reader = main_app.state.model_credential_reader
+    application.state.model_admission = main_app.state.model_admission
+    application.state.model_library_inputs = main_app.state.model_library_inputs
+    application.state.account_creator = main_app.state.account_creator
+    application.state.account_storage_check = main_app.state.account_storage_check
     application.state.automation_changes = {}
     public = RemoteWeb(
         origin="https://studio.example.test",
@@ -309,6 +318,8 @@ async def test_hot_frontend_proxy_keeps_session_csrf_and_socket_permissions(webs
     app.exception_handlers.update(main_app.exception_handlers)
     app.include_router(api_router)
     app.state.automation_changes = {}
+    app.state.database = main_app.state.database
+    app.state.studio_http_auth = main_app.state.studio_http_auth
     app.add_middleware(WebsiteTransport, local_port=9001, frontend_origin="http://127.0.0.1:3000")
     # Vite rewrites Host to the API target and preserves the browser's Origin.
     async with httpx.AsyncClient(

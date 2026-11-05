@@ -4,7 +4,8 @@ CLOUD_CONTROL_PERMISSION = "cloud-control.access"
 
 
 def requires_cloud_control(path: str) -> bool:
-    return path == "/v1/agent-workbench" or path.startswith("/v1/agent-workbench/")
+    roots = ("/v1/agent-workbench", "/v1/cloud-control")
+    return path in roots or any(path.startswith(root + "/") for root in roots)
 
 
 READ_PERMISSIONS = frozenset({"content.read", "logs.read", "audit.read", "docs.developer"})

@@ -56,7 +56,7 @@ async def export_acceptance(session, project_id):
     refs.update(
         value
         for item in (standard.draft if standard else {}).get("criteria", [])
-        for value in item["reference_asset_ids"]
+        for value in item.get("reference_asset_ids", [])
     )
     return {
         "format_version": 2,
@@ -93,13 +93,22 @@ async def export_acceptance(session, project_id):
 async def import_acceptance(
     session, value, project_id, owner_user_id, node_ids, output_ids, asset_ids
 ):
+    for phase in acceptance_records(
+        value, project_id, owner_user_id, node_ids, output_ids, asset_ids
+    ):
+        session.add_all(phase)
+        await session.flush()
+
+
+def acceptance_records(value, project_id, owner_user_id, node_ids, output_ids, asset_ids):
     if value is None:
-        return
+        return ()
+    definitions, history, repairs = [], [], []
     try:
         if value.get("format_version", 1) not in {1, 2}:
             raise ValueError("未知验收快照版本")
         seen_nodes = set()
-        from .catalog import SCHEMES
+        from .schemes import SCHEMES
 
         for binding in value.get("bindings", []):
             node_id = node_ids[binding["node_id"]]
@@ -108,7 +117,7 @@ async def import_acceptance(
             ):
                 raise ValueError("节点方案绑定无效")
             seen_nodes.add(node_id)
-            session.add(
+            definitions.append(
                 NodeAcceptanceBinding(
                     id=new_id(),
                     owner_user_id=owner_user_id,
@@ -155,7 +164,7 @@ async def import_acceptance(
             raise ValueError("标准版本无效")
         if value["published_version"] and value["published_version"] not in numbers:
             raise ValueError("生效标准缺失")
-        session.add(
+        definitions.append(
             AcceptanceStandard(
                 project_id=project_id,
                 owner_user_id=owner_user_id,
@@ -164,13 +173,12 @@ async def import_acceptance(
                 published_version=value["published_version"],
             )
         )
-        session.add_all(versions)
-        await session.flush()
+        definitions.extend(versions)
         for version in versions:
             for identity in {
                 ref for item in version.document["criteria"] for ref in item["reference_asset_ids"]
             }:
-                session.add(
+                history.append(
                     AcceptanceAssetReference(
                         owner_id=version.id, project_id=project_id, asset_id=identity
                     )
@@ -248,23 +256,22 @@ async def import_acceptance(
                 status="completed" if item["status"] == "completed" else "failed",
                 decision="historical",
             )
-            session.add(row)
+            history.append(row)
             refs = {entry["asset_id"] for entry in evidence} | {
                 ref for entry in snapshot["criteria"] for ref in entry["reference_asset_ids"]
             }
             if snapshot["output"]["asset_id"]:
                 refs.add(snapshot["output"]["asset_id"])
             for identity in refs:
-                session.add(
+                history.append(
                     AcceptanceAssetReference(
                         owner_id=row.id, project_id=project_id, asset_id=identity
                     )
                 )
-        await session.flush()
         for item in value["repairs"]:
             if not isinstance(item["text"], str) or not 0 < len(item["text"]) <= 6000:
                 raise ValueError("返修草稿无效")
-            session.add(
+            repairs.append(
                 AcceptanceRepairDraft(
                     owner_user_id=owner_user_id,
                     project_id=project_id,
@@ -274,3 +281,4 @@ async def import_acceptance(
             )
     except (ValueError, KeyError, TypeError) as exc:
         raise ProjectSnapshotError("验收快照格式或引用无效") from exc
+    return definitions, history, repairs

@@ -1,3 +1,4 @@
+import { useRuntimeAccess } from "@features/accounts";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { PresentationWorkshopRoute } from "@app/layout/PresentationWorkshopRoute";
 import { CodeAgentsRoute } from "@app/layout/CodeAgentsRoute";
@@ -9,7 +10,6 @@ import { ReadOnlyRoutes } from "./ReadOnlyRoutes";
 import { accountAllows } from "@features/accounts/permissions";
 import { CloudControlAccess } from "@features/cloud-control/CloudControlAccess";
 import { CloudControlPage } from "@features/cloud-control/CloudControlPage";
-import type { ManagementPage } from "@features/accounts/ManagementConsole";
 import {
   lazy,
   Suspense,
@@ -59,8 +59,8 @@ const HomePage = lazy(() =>
   })),
 );
 const ApplicationCenterPage = lazy(() =>
-  import("@features/applications/ApplicationCenterPage").then((module) => ({
-    default: module.ApplicationCenterPage,
+  import("@features/applications/ApplicationCenterRoute").then((module) => ({
+    default: module.ApplicationCenterRoute,
   })),
 );
 const CreativeWorkshopPage = lazy(() =>
@@ -125,16 +125,10 @@ const GalgameFastPreviewPage = lazy(GALGAME_WORKSHOP_MODULE.pages.preview);
 const VideoEditorProjectsPage = lazy(VIDEO_EDITOR_MODULE.pages.projects);
 const VideoEditorPage = lazy(VIDEO_EDITOR_MODULE.pages.editor);
 const VideoEditorTasksPage = lazy(VIDEO_EDITOR_MODULE.pages.tasks);
-const MotionCompositorProjectsPage = lazy(() =>
-  import("@features/motion-compositor/ProjectsPage").then((m) => ({
-    default: m.ProjectsPage,
-  })),
+const MotionCompositorProjectsPage = lazy(
+  MOTION_COMPOSITOR_MODULE.pages.projects,
 );
-const MotionCompositorEditorPage = lazy(() =>
-  import("@features/motion-compositor/EditorPage").then((m) => ({
-    default: m.EditorPage,
-  })),
-);
+const MotionCompositorEditorPage = lazy(MOTION_COMPOSITOR_MODULE.pages.editor);
 
 const KnowledgeCommunityPage = lazy(() =>
   import("@features/thought-workshop/community/KnowledgeCommunityPage").then(
@@ -161,6 +155,7 @@ function PageBoundary({ children }: { children: ReactNode }) {
 export default function App() {
   const session = useStudioSession();
   const { me } = session;
+  const localBrowser = useRuntimeAccess();
   const [route, setRoute] = useState<AppRoute>(parseRoute);
   const [catalogTestModel, setCatalogTestModel] = useState<string | null>(null);
   const [focusModelTab, setFocusModelTab] = useState(false);
@@ -336,18 +331,6 @@ export default function App() {
       );
     };
   });
-
-  if (page.startsWith("management-"))
-    return (
-      <PageBoundary>
-        <ManagementConsole
-          page={page as ManagementPage}
-          session={session}
-          navigate={navigate}
-          onBack={() => navigate("home")}
-        />
-      </PageBoundary>
-    );
 
   const navigateKnowledgeSection = (section: KnowledgeSection) =>
     navigate(
@@ -789,6 +772,7 @@ export default function App() {
             itemId={route.projectId}
             canWrite={accountAllows(me, "content.write")}
             canInstall={accountAllows(me, "configuration.manage")}
+            registerNavigationGuard={registerNavigationGuard}
             navigate={(next, id) => navigate(next, id)}
           />
         ) : page === "apps" ? (
@@ -804,6 +788,7 @@ export default function App() {
           />
         ) : page === "files" ? (
           <FileManagementPage
+            canOpenLocalFolder={localBrowser}
             initialKind={
               new URLSearchParams(route.search).get("kind") ?? undefined
             }
@@ -877,9 +862,3 @@ export default function App() {
     </StudioShell>
   );
 }
-
-const ManagementConsole = lazy(() =>
-  import("@features/accounts/ManagementConsole").then((m) => ({
-    default: m.ManagementConsole,
-  })),
-);

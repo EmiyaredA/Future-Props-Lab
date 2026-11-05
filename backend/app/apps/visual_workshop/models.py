@@ -16,7 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.runtime.ids import new_id
-from app.runtime.orm_base import Base
+from app.runtime.orm_base import Base, external_id
 from app.runtime.time import utc_now
 
 
@@ -75,11 +75,13 @@ class VisualGenerationTask(Base):
     project_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("visual_workshop_projects.id", ondelete="CASCADE")
     )
+    # Legacy SQLite constraints remain in its registered migrations.
+    # The owned schema carries these Models and Assets identifiers across API boundaries.
     provider_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("model_providers.id", ondelete="SET NULL")
+        String(36), ForeignKey(external_id("model_providers"), ondelete="SET NULL")
     )
     model_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("model_entries.id", ondelete="SET NULL")
+        String(36), ForeignKey(external_id("model_entries"), ondelete="SET NULL")
     )
     provider_kind: Mapped[str] = mapped_column(String(24))
     generation_kind: Mapped[str] = mapped_column(String(16))
@@ -95,7 +97,7 @@ class VisualGenerationTask(Base):
     error_message: Mapped[str | None] = mapped_column(Text)
     result_url: Mapped[str | None] = mapped_column(Text)
     result_asset_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="SET NULL")
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="SET NULL")
     )
     revision: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
@@ -125,7 +127,7 @@ class VisualGenerationBatch(Base):
     failed_count: Mapped[int] = mapped_column(Integer, default=0)
     cancelled_count: Mapped[int] = mapped_column(Integer, default=0)
     result_asset_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="SET NULL")
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="SET NULL")
     )
     error_message: Mapped[str | None] = mapped_column(Text)
     generation_node_id: Mapped[str | None] = mapped_column(String(64))
@@ -153,13 +155,13 @@ class VisualAssistantConversation(Base):
     )
     title: Mapped[str] = mapped_column(String(120), default="AI 助手对话")
     model_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("model_entries.id", ondelete="SET NULL"), nullable=True
+        String(36), ForeignKey(external_id("model_entries"), ondelete="SET NULL"), nullable=True
     )
     image_model_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("model_entries.id", ondelete="SET NULL"), nullable=True
+        String(36), ForeignKey(external_id("model_entries"), ondelete="SET NULL"), nullable=True
     )
     video_model_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("model_entries.id", ondelete="SET NULL"), nullable=True
+        String(36), ForeignKey(external_id("model_entries"), ondelete="SET NULL"), nullable=True
     )
     revision: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
@@ -214,7 +216,7 @@ class VisualAssistantMessageAsset(Base):
         String(36), ForeignKey("visual_assistant_messages.id", ondelete="CASCADE")
     )
     asset_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("visual_assets.id", ondelete="RESTRICT")
+        String(36), ForeignKey(external_id("visual_assets"), ondelete="RESTRICT")
     )
     position: Mapped[int] = mapped_column(Integer)
 

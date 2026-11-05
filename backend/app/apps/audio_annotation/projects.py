@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 
 from pydantic import ValidationError
@@ -28,22 +29,17 @@ from app.apps.audio_annotation.schemas.document import (
     AudioAnnotationWaveformOut,
     AudioAnnotationWaveformPutIn,
 )
-from app.capabilities.asset_store.library import AssetError, AssetLibrary
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
-from app.llm.models import (
-    ModelTestTranscriptionTask,
-)
-from app.runtime.config import get_settings
 from app.runtime.ids import new_id
 from app.runtime.operation_receipts import forget
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import iso_utc, utc_now
+from fpl_runtime.annotation_assets import MAX_AUDIO_BYTES
 
-MAX_AUDIO_BYTES = 100 * 1024 * 1024
+from .sources import AnnotationAudio
+from .sources import AudioAnnotationError as AudioAnnotationError
+
 MAX_DURATION_MS = 60 * 60 * 1000
 MIN_SEGMENT_MS = 100
-TRANSCRIPTION_AUDIO_EXTENSIONS = {".mp3", ".wav", ".m4a", ".ogg"}
 TRANSCRIPTION_SPEAKER_COLORS = (
     "#28B8A7",
     "#4C8FE8",
@@ -56,19 +52,11 @@ TRANSCRIPTION_SPEAKER_COLORS = (
 )
 
 
-class AudioAnnotationError(Exception):
-    def __init__(self, message: str, *, code: str = "audio_annotation_error", status: int = 422):
-        super().__init__(message)
-        self.code = code
-        self.status = status
-
-
 class AudioAnnotationProjects:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
-        self.settings = get_settings()
-        self.storage = AssetStorage(self.settings)
-        self.library = AssetLibrary(session, self.settings)
+        self.sources = session.info["annotation_sources"](session)
+        self.references = session.info.get("annotation_references")
 
     async def _project(self, project_id: str) -> AudioAnnotationProject:
         row = await self.session.get(AudioAnnotationProject, project_id)
@@ -76,24 +64,24 @@ class AudioAnnotationProjects:
             raise AudioAnnotationError("标注任务不存在", code="not_found", status=404)
         return row
 
-    async def _asset(self, asset_id: str) -> VisualAsset:
-        row = await self.session.get(VisualAsset, asset_id)
-        if row is None:
+    async def _asset(self, asset_id: str) -> AnnotationAudio:
+        value = await self.sources.describe(asset_id)
+        if value is None:
             raise AudioAnnotationError("音频文件不存在", code="not_found", status=404)
-        if row.project_id is not None or row.galgame_project_id is not None:
-            raise AudioAnnotationError("只能使用账号文件库中的音频", code="scope_mismatch")
-        if row.media_kind != "audio":
+        if value.description.media_kind != "audio":
             raise AudioAnnotationError("标注任务只能使用音频文件", code="invalid_audio")
-        if row.byte_size > MAX_AUDIO_BYTES:
+        if value.byte_size > MAX_AUDIO_BYTES:
             raise AudioAnnotationError("音频不能超过 100 MiB", code="audio_too_large", status=413)
-        return row
+        return value
 
-    def _duration(self, asset: VisualAsset) -> int:
-        path = self.storage.path_for(asset)
-        if not path.is_file():
-            raise AudioAnnotationError("音频文件内容不存在", code="file_missing", status=404)
+    async def _duration(self, asset: AnnotationAudio) -> int:
+        async with self.sources.open(asset) as path:
+            return await self._measure_duration(path)
+
+    @staticmethod
+    async def _measure_duration(path: Path) -> int:
         try:
-            tag = TinyTag.get(path)
+            tag = await asyncio.to_thread(TinyTag.get, path)
             duration_ms = round(float(tag.duration or 0) * 1000)
         except (OSError, ValueError) as exc:
             raise AudioAnnotationError("无法读取音频时长", code="audio_metadata_invalid") from exc
@@ -125,8 +113,9 @@ class AudioAnnotationProjects:
             updated_at=iso_utc(row.updated_at),
         )
 
-    async def _project_out(self, row: AudioAnnotationProject) -> AudioAnnotationProjectOut:
-        asset = await self.session.get(VisualAsset, row.asset_id)
+    async def _project_out(
+        self, row: AudioAnnotationProject, asset: AnnotationAudio | None
+    ) -> AudioAnnotationProjectOut:
         document = await self.session.get(AudioAnnotationDocument, row.id)
         waveform = await self.session.get(AudioAnnotationWaveform, row.id)
         if asset is None or document is None or waveform is None:
@@ -176,14 +165,18 @@ class AudioAnnotationProjects:
         if query:
             statement = statement.where(AudioAnnotationProject.title.ilike(f"%{query}%"))
         rows = (await self.session.execute(statement)).scalars().all()
-        return AudioAnnotationProjectListOut(items=[await self._project_out(row) for row in rows])
+        assets = await self.sources.describe_many({row.asset_id for row in rows})
+        return AudioAnnotationProjectListOut(
+            items=[await self._project_out(row, assets.get(row.asset_id)) for row in rows]
+        )
 
     async def get(self, project_id: str) -> AudioAnnotationProjectOut:
-        return await self._project_out(await self._project(project_id))
+        row = await self._project(project_id)
+        return await self._project_out(row, await self.sources.describe(row.asset_id))
 
     async def create(self, body: AudioAnnotationProjectCreateIn) -> AudioAnnotationProjectOut:
         asset = await self._asset(body.asset_id)
-        duration_ms = self._duration(asset)
+        duration_ms = await self._duration(asset)
         segment = AudioAnnotationSegment(
             id=new_id(), start_ms=0, end_ms=duration_ms, speaker_id=None, text="", status="draft"
         )
@@ -198,7 +191,7 @@ class AudioAnnotationProjects:
 
     async def import_project(self, body: AudioAnnotationImportIn) -> AudioAnnotationProjectOut:
         asset = await self._asset(body.asset_id)
-        duration_ms = self._duration(asset)
+        duration_ms = await self._duration(asset)
         self._validate_document(duration_ms, body)
         return await self._create_project_record(
             title=body.title,
@@ -213,14 +206,19 @@ class AudioAnnotationProjects:
         self,
         *,
         title: str,
-        asset: VisualAsset,
+        asset: AnnotationAudio,
         duration_ms: int,
         speakers: list[AudioAnnotationSpeaker],
         segments: list[AudioAnnotationSegment],
         custom_emotions: list[AudioAnnotationCustomEmotion] | None = None,
-        cleanup_path: Path | None = None,
     ) -> AudioAnnotationProjectOut:
+        project_id = new_id()
+        prepared = None
+        if self.references is not None:
+            await self.session.rollback()
+            prepared = await self.references.prepare(project_id, expected=-1, asset_ids=[asset.id])
         row = AudioAnnotationProject(
+            id=project_id,
             owner_user_id=asset.owner_user_id,
             title=title,
             asset_id=asset.id,
@@ -243,14 +241,17 @@ class AudioAnnotationProjects:
             self.session.add(
                 AudioAnnotationWaveform(project_id=row.id, duration_ms=duration_ms, peaks=[])
             )
-            await self.session.commit()
-        except Exception:
+            await self.session.flush()
+            output = await self._project_out(row, asset)
+            if prepared is not None:
+                await self.references.record(self.session, prepared, resource_revision=0)
+        except BaseException:
             await self.session.rollback()
-            if cleanup_path is not None:
-                cleanup_path.unlink(missing_ok=True)
+            if prepared is not None:
+                await self.references.abort(self.session, prepared)
             raise
-        await self.session.refresh(row)
-        return await self._project_out(row)
+        await self.session.commit()
+        return output
 
     def _transcription_document(
         self,
@@ -355,93 +356,50 @@ class AudioAnnotationProjects:
     async def import_transcription(
         self, body: AudioAnnotationTranscriptionImportIn
     ) -> AudioAnnotationProjectOut:
-        cleanup_path: Path | None = None
         if body.source_kind == "json":
             asset = await self._asset(body.asset_id)
-            title = body.title
-            text = body.text
-            segments = body.segments
-        else:
-            task = await self.session.get(ModelTestTranscriptionTask, body.task_id)
-            if task is None:
-                raise AudioAnnotationError("识别任务不存在", code="not_found", status=404)
-            if task.status != "completed":
-                raise AudioAnnotationError(
-                    "只有已完成的识别任务可以导入标注",
-                    code="transcription_not_completed",
-                    status=409,
-                )
-            filename = task.input_filename
-            mime_type = task.input_mime_type
-            task_owner_user_id = task.owner_user_id
-            text = task.result_text or ""
+            duration_ms = await self._duration(asset)
+            return await self._from_transcription(
+                asset, body.title, body.text, body.segments, duration_ms
+            )
+
+        async with self.sources.transcription(body.task_id) as source:
+            title = (body.title or Path(source.filename).stem.strip() or "录音标注")[:120]
             try:
                 segments = [
                     AudioAnnotationTranscriptionSegmentIn.model_validate(item)
-                    for item in list(task.result_segments or [])
+                    for item in source.segments
                 ]
             except ValidationError as exc:
                 raise AudioAnnotationError(
-                    "识别任务的分段数据格式无效",
-                    code="transcription_segments_invalid",
+                    "识别任务的分段数据格式无效", code="transcription_segments_invalid"
                 ) from exc
-            title = body.title or Path(filename).stem.strip() or "录音标注"
-            title = title[:120]
-            asset = (
-                await self.session.get(VisualAsset, task.source_asset_id)
-                if task.source_asset_id
-                else None
-            )
-            if asset is not None and (
-                asset.project_id is not None
-                or asset.galgame_project_id is not None
-                or asset.media_kind != "audio"
-                or asset.byte_size > MAX_AUDIO_BYTES
-            ):
-                asset = None
-            if asset is None:
-                source_path = (
-                    self.settings.account_model_test_path(task_owner_user_id, "references")
-                    / task.input_storage_key
+            if source.asset is not None:
+                duration_ms = await self._duration(source.asset)
+                return await self._from_transcription(
+                    source.asset, title, source.text, segments, duration_ms
                 )
-                if not source_path.is_file():
-                    raise AudioAnnotationError(
-                        "识别任务的源音频已不存在",
-                        code="source_not_found",
-                        status=404,
-                    )
-                await self.session.rollback()
-                try:
-                    asset, cleanup_path = await self.library.stage_local_copy(
-                        source_path,
-                        owner_user_id=task_owner_user_id,
-                        filename=filename,
-                        content_type=mime_type,
-                        allowed_extensions=TRANSCRIPTION_AUDIO_EXTENSIONS,
-                    )
-                except AssetError as exc:
-                    raise AudioAnnotationError(str(exc), code=exc.code, status=exc.status) from exc
 
-        try:
-            duration_ms = self._duration(asset)
+            duration_ms = await self._measure_duration(source.original)
             speakers, converted = self._transcription_document(
-                text=text,
-                segments=segments,
-                duration_ms=duration_ms,
+                text=source.text, segments=segments, duration_ms=duration_ms
             )
+            asset = await self.sources.publish_original(source)
             return await self._create_project_record(
                 title=title,
                 asset=asset,
                 duration_ms=duration_ms,
                 speakers=speakers,
                 segments=converted,
-                cleanup_path=cleanup_path,
             )
-        except Exception:
-            if cleanup_path is not None:
-                await self.session.rollback()
-                cleanup_path.unlink(missing_ok=True)
-            raise
+
+    async def _from_transcription(self, asset, title, text, segments, duration_ms):
+        speakers, converted = self._transcription_document(
+            text=text, segments=segments, duration_ms=duration_ms
+        )
+        return await self._create_project_record(
+            title=title, asset=asset, duration_ms=duration_ms, speakers=speakers, segments=converted
+        )
 
     async def patch(
         self, project_id: str, body: AudioAnnotationProjectPatchIn
@@ -471,6 +429,31 @@ class AudioAnnotationProjects:
     async def delete(self, project_id: str, expected_revision: int) -> None:
         project = await self._project(project_id)
         owner_user_id = project.owner_user_id
+        if project.revision != expected_revision:
+            current = await self.get(project_id)
+            raise RevisionConflictError(
+                expected_revision, current.revision, current.model_dump(mode="json")
+            )
+        prepared = None
+        if self.references is not None:
+            await self.session.rollback()
+            prepared = await self.references.prepare(
+                project_id, expected=expected_revision, asset_ids=[]
+            )
+        try:
+            await self._delete(project_id, owner_user_id, expected_revision)
+            if prepared is not None:
+                await self.references.record(
+                    self.session, prepared, resource_revision=expected_revision + 1, deleted=True
+                )
+        except BaseException:
+            await self.session.rollback()
+            if prepared is not None:
+                await self.references.abort(self.session, prepared)
+            raise
+        await self.session.commit()
+
+    async def _delete(self, project_id, owner_user_id, expected_revision):
         result = await self.session.execute(
             delete(AudioAnnotationProject).where(
                 AudioAnnotationProject.id == project_id,
@@ -486,7 +469,6 @@ class AudioAnnotationProjects:
         await forget(
             self.session, owner_user_id=owner_user_id, kind="annotation", resource_id=project_id
         )
-        await self.session.commit()
 
     async def get_document(self, project_id: str) -> AudioAnnotationDocumentOut:
         await self._project(project_id)

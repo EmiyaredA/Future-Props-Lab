@@ -1,17 +1,9 @@
+import { AUDIO_ANNOTATION_DEFINITION } from "@features/applications";
 import { Mic2 } from "lucide-react";
 import { defineApplicationModule } from "@features/applications";
 
 const definition = {
-  definition: {
-    id: "audio-annotation",
-    name: "录音标注工坊",
-    category: "productivity",
-    description: "切分录音、配置说话人与情绪，逐段转写并导出字幕与片段。",
-    capabilities: ["音频切分", "说话人", "语音识别", "字幕导出"],
-    path: "/apps/audio-annotation",
-    icon: Mic2,
-    brandImage: "/brand/audio-annotation-mark.png",
-  },
+  definition: AUDIO_ANNOTATION_DEFINITION,
   supportsProjects: true,
   shell: "audio-annotation",
   shellConfig: {

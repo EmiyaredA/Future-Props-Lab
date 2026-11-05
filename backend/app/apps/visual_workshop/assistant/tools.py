@@ -12,8 +12,8 @@ from app.apps.visual_workshop.canvas import VisualCanvasDocuments
 from app.apps.visual_workshop.generation import (
     GenerationError,
     VisualGeneration,
-    generation_task_out,
 )
+from app.apps.visual_workshop.generation_common import generation_task_out
 from app.apps.visual_workshop.models import (
     VisualGenerationTask,
     VisualWorkshopProject,
@@ -35,8 +35,8 @@ from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualProjectAssetReference,
 )
-from app.orm import bind_owner
 from app.runtime.db import SessionLocal
+from app.runtime.ownership import bind_owner
 
 CANVAS_CONTEXT_LIMIT = 32_000
 TEXT_NODE_LIMIT = 4_000

@@ -3,17 +3,18 @@ from typing import Annotated
 
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
-from pydantic import ValidationError
 
-from app.capabilities.asset_store import AssetError
 from app.capabilities.asset_store.schemas.files import VisualAssetOut
-from app.capabilities.transcription import TranscriptionParameterError
-from app.deps import OwnerDep, SessionDep, StudioAuth
-from app.llm.call_logs.credentials import snapshot_from_principal
+from app.deps import OwnerDep, SessionDep
+from app.llm.http_credentials import CallCredentialDep
+from app.llm.http_errors import mapped
 from app.llm.inference.assets import InferenceAssets
 from app.llm.inference.catalog import options
 from app.llm.inference.tasks import InferenceTasks
 from app.llm.inference.text import events, prepare
+from app.llm.library_inputs import library_inputs
+from app.llm.library_outputs import library_outputs
+from app.llm.provider_transports import provider_options
 from app.llm.routes.model_capacity import task_admission
 from app.llm.schemas.model_inference import (
     InferenceAssetImportIn,
@@ -27,22 +28,9 @@ from app.llm.schemas.model_inference import (
     InferenceTextIn,
     InferenceTextOut,
 )
-from app.runtime.operation_receipts import OperationError
+from app.llm.stream_access import stream_access
 
 router = APIRouter(prefix="/model-inference", tags=["model-inference"])
-
-
-async def mapped(operation):
-    try:
-        return await operation
-    except (OperationError, AssetError) as exc:
-        raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
-    except ValidationError as exc:
-        raise HTTPException(
-            422, {"code": "invalid_parameters", "errors": exc.errors(include_context=False)}
-        ) from None
-    except TranscriptionParameterError as exc:
-        raise HTTPException(422, {"code": "unsupported_parameter", "message": str(exc)}) from None
 
 
 @router.get("/options", response_model=InferenceOptionsOut)
@@ -52,14 +40,24 @@ async def model_options(session: SessionDep, owner_user_id: OwnerDep):
 
 @router.post("/text", response_model=InferenceTextOut)
 async def generate_text(
+    request: Request,
     body: InferenceTextIn,
     session: SessionDep,
     owner_user_id: OwnerDep,
-    principal: StudioAuth,
+    credential: CallCredentialDep,
 ):
     args = await mapped(prepare(session, owner_user_id, body))
-    credential = await snapshot_from_principal(session, principal)
-    async with aclosing(events(owner_user_id, body, args, credential=credential)) as stream:
+    async with aclosing(
+        events(
+            owner_user_id,
+            body,
+            args,
+            credential=credential,
+            session_factory=request.app.state.database.sessions,
+            check_access=stream_access(request),
+            **provider_options(request, args["base_url"]),
+        )
+    ) as stream:
         async for event in stream:
             if event.type == "done":
                 return event.result
@@ -86,16 +84,26 @@ async def generate_text(
     },
 )
 async def stream_text(
+    request: Request,
     body: InferenceTextIn,
     session: SessionDep,
     owner_user_id: OwnerDep,
-    principal: StudioAuth,
+    credential: CallCredentialDep,
 ):
     args = await mapped(prepare(session, owner_user_id, body))
-    credential = await snapshot_from_principal(session, principal)
 
     async def stream():
-        async with aclosing(events(owner_user_id, body, args, credential=credential)) as source:
+        async with aclosing(
+            events(
+                owner_user_id,
+                body,
+                args,
+                credential=credential,
+                session_factory=request.app.state.database.sessions,
+                check_access=stream_access(request),
+                **provider_options(request, args["base_url"]),
+            )
+        ) as source:
             async for event in source:
                 yield "data: " + event.model_dump_json(exclude_none=True) + "\n\n"
 
@@ -113,8 +121,13 @@ async def upload_asset(
 
 
 @router.post("/assets/import", response_model=InferenceAssetOut)
-async def import_asset(body: InferenceAssetImportIn, session: SessionDep, owner_user_id: OwnerDep):
-    return await mapped(InferenceAssets(session, owner_user_id).import_library(body.asset_id))
+async def import_asset(
+    request: Request, body: InferenceAssetImportIn, session: SessionDep, owner_user_id: OwnerDep
+):
+    sources = library_inputs(request, session, owner_user_id)
+    return await mapped(
+        InferenceAssets(session, owner_user_id, library=sources).import_library(body.asset_id)
+    )
 
 
 @router.delete("/assets/{asset_id}", status_code=204)
@@ -128,9 +141,8 @@ async def create_task(
     request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
-    principal: StudioAuth,
+    credential: CallCredentialDep,
 ):
-    credential = await snapshot_from_principal(session, principal)
     return await mapped(
         InferenceTasks(session, owner_user_id).create(
             body,
@@ -172,8 +184,11 @@ async def download_result(task_id: str, session: SessionDep, owner_user_id: Owne
 
 
 @router.post("/tasks/{task_id}/save-to-library", response_model=VisualAssetOut)
-async def save_result(task_id: str, session: SessionDep, owner_user_id: OwnerDep):
-    return await mapped(InferenceTasks(session, owner_user_id).save_to_library(task_id))
+async def save_result(task_id: str, request: Request, session: SessionDep, owner_user_id: OwnerDep):
+    outputs = library_outputs(request, session, owner_user_id)
+    return await mapped(
+        InferenceTasks(session, owner_user_id, library_outputs=outputs).save_to_library(task_id)
+    )
 
 
 @router.post("/tasks/{task_id}/retry-materialization", response_model=InferenceTaskOut)
@@ -194,8 +209,15 @@ async def retry_materialization(
 @router.delete("/tasks/{task_id}", status_code=204)
 async def delete_task(
     task_id: str,
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     expected_revision: int = Query(ge=0),
 ):
-    await mapped(InferenceTasks(session, owner_user_id).delete(task_id, expected_revision))
+    await mapped(
+        InferenceTasks(
+            session,
+            owner_user_id,
+            native_retention=getattr(request.app.state, "native_model_retention", None),
+        ).delete(task_id, expected_revision)
+    )

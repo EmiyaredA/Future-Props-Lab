@@ -38,3 +38,4 @@ class ParsedPresentation:
     document: PresentationDocument
     assets: dict[str, ImportedFile] = field(default_factory=dict)
     issues: list[ConversionIssue] = field(default_factory=list)
+    source_sha256: str | None = None

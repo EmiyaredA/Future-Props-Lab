@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import { programAsset } from "@platform/programAsset";
 import { LoadingCharacter } from "./LoadingCharacter";
 import "./loading-scene.css";
 
-const ART = "/brand/loading/";
+const ART = programAsset("/brand/loading/");
 const PROPS = [
   "phonewave",
   "pocket-watch",

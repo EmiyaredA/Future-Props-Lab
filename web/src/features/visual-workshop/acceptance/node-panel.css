@@ -79,8 +79,7 @@
   padding: 10px 12px;
   background: var(--surface-soft);
 }
-.node-fixed-connection > svg,
-.node-fixed-connection > .acceptance-software-icon {
+.node-fixed-connection > svg {
   flex-shrink: 0;
 }
 .node-fixed-connection > span:nth-child(2) {

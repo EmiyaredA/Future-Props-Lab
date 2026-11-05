@@ -1,13 +1,13 @@
 from typing import Literal
 
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi import APIRouter, File, Header, HTTPException, Query, UploadFile
+from fastapi.responses import FileResponse
 from pydantic import ValidationError
 from starlette.background import BackgroundTask
 
-from app.apps.thought_workshop.assistant import models, prepare, writing_events
 from app.apps.thought_workshop.attachments import upload_attachment
 from app.apps.thought_workshop.directory import Directory
+from app.apps.thought_workshop.http_bindings import SessionDep
 from app.apps.thought_workshop.knowledge import KnowledgeBases
 from app.apps.thought_workshop.link_preview import preview_link
 from app.apps.thought_workshop.notes import Notes, ThoughtError, note_out
@@ -26,12 +26,9 @@ from app.apps.thought_workshop.schemas.knowledge import (
 from app.apps.thought_workshop.schemas.link_preview import ThoughtLinkPreview
 from app.apps.thought_workshop.schemas.operations import ThoughtOperationsIn
 from app.apps.thought_workshop.schemas.workshop import (
-    ThoughtAssistantEvent,
-    ThoughtAssistantIn,
     ThoughtAttachmentOut,
     ThoughtImageOut,
     ThoughtImportOut,
-    ThoughtModelOut,
     ThoughtNoteCreate,
     ThoughtNoteList,
     ThoughtNoteOut,
@@ -39,10 +36,10 @@ from app.apps.thought_workshop.schemas.workshop import (
     ThoughtNoteTransitionIn,
     ThoughtRevisionIn,
 )
+from app.apps.thought_workshop.writing_http import router as writing_router
 from app.capabilities.asset_store.library import AssetError, AssetLibrary
 from app.capabilities.asset_store.project_snapshots import ProjectSnapshotError
-from app.deps import OwnerDep, SessionDep, StudioAuth
-from app.llm.call_logs.credentials import snapshot_from_principal
+from app.deps import OwnerDep, StudioAuth
 from app.runtime.config import get_settings
 from app.runtime.operation_receipts import OperationError
 
@@ -186,7 +183,19 @@ async def restore_note(
 
 
 @router.post("/images", response_model=ThoughtImageOut)
-async def upload_image(session: SessionDep, owner_user_id: OwnerDep, upload: UploadFile = File()):
+async def upload_image(
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    upload: UploadFile = File(),
+    _idempotency_key: str | None = Header(
+        default=None,
+        alias="Idempotency-Key",
+        min_length=1,
+        max_length=128,
+        pattern=r"^[A-Za-z0-9_-]+$",
+        description="独立 Thought 服务用于上传重试；恢复网站暂不去重。",
+    ),
+):
     row = await call(
         AssetLibrary(session, get_settings()).store_upload(
             upload,
@@ -195,37 +204,6 @@ async def upload_image(session: SessionDep, owner_user_id: OwnerDep, upload: Upl
         )
     )
     return ThoughtImageOut(asset_id=row.id)
-
-
-@router.get("/models", response_model=list[ThoughtModelOut])
-async def writing_models(session: SessionDep, owner_user_id: OwnerDep):
-    return await models(Notes(session, owner_user_id))
-
-
-@router.post(
-    "/notes/{note_id}/assistant",
-    responses={
-        200: {
-            "content": {"text/event-stream": {"schema": ThoughtAssistantEvent.model_json_schema()}}
-        }
-    },
-)
-async def assistant(
-    note_id: str,
-    body: ThoughtAssistantIn,
-    session: SessionDep,
-    owner_user_id: OwnerDep,
-    principal: StudioAuth,
-):
-    credential = await snapshot_from_principal(session, principal)
-    prepared = await call(
-        prepare(Notes(session, owner_user_id), note_id, body, credential=credential)
-    )
-    return StreamingResponse(
-        writing_events(prepared),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-    )
 
 
 @router.get("/backup", response_class=FileResponse)
@@ -265,7 +243,19 @@ async def imports(
 
 
 @router.post("/attachments", response_model=ThoughtAttachmentOut)
-async def attachments(session: SessionDep, owner_user_id: OwnerDep, upload: UploadFile = File(...)):
+async def attachments(
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    upload: UploadFile = File(...),
+    _idempotency_key: str | None = Header(
+        default=None,
+        alias="Idempotency-Key",
+        min_length=1,
+        max_length=128,
+        pattern=r"^[A-Za-z0-9_-]+$",
+        description="独立 Thought 服务用于上传重试；恢复网站暂不去重。",
+    ),
+):
     return await call(upload_attachment(session, get_settings(), owner_user_id, upload))
 
 
@@ -344,3 +334,5 @@ async def move_entry(
 router.include_router(knowledge_tools_router)
 
 router.include_router(multitable_router)
+
+router.include_router(writing_router)

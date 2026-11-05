@@ -1,19 +1,16 @@
 from __future__ import annotations
 
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.galgame_workshop.assets.asset_analysis import GalgameAssetAnalysisMixin
 from app.apps.galgame_workshop.assets.asset_support import (
-    CATEGORY_DIRECTORIES,
-    _deduplicated_name,
     _default_category,
     _default_virtual_path,
-    _file_metadata,
+    asset_edit_values,
     galgame_asset_out,
-    normalize_import_filename,
 )
 from app.apps.galgame_workshop.errors import GalgameWorkshopProjectNotFoundError
 from app.apps.galgame_workshop.models import (
@@ -23,13 +20,12 @@ from app.apps.galgame_workshop.models import (
 )
 from app.apps.galgame_workshop.schemas import (
     GalgameAssetBatchUploadOut,
-    GalgameAssetImportPreviewItem,
-    GalgameAssetImportPreviewOut,
     GalgameProjectAssetListOut,
     GalgameProjectAssetOut,
     GalgameProjectAssetPatchIn,
 )
 from app.capabilities.asset_store import AssetError, AssetLibrary, IncomingFile
+from app.capabilities.asset_store.media_metadata import inspect_media_file
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import GALGAME_EXTENSIONS
 from app.capabilities.asset_store.storage import AssetStorage
@@ -57,7 +53,7 @@ class GalgameProjectAssets(GalgameAssetAnalysisMixin):
     async def _create_metadata(
         self, row: VisualAsset, *, category: str, virtual_path: str
     ) -> GalgameAssetMetadata:
-        checksum, width, height, duration_ms = _file_metadata(
+        checksum, width, height, duration_ms = inspect_media_file(
             self.storage.path_for(row), row.media_kind
         )
         metadata = GalgameAssetMetadata(
@@ -76,42 +72,30 @@ class GalgameProjectAssets(GalgameAssetAnalysisMixin):
         await self.session.refresh(metadata)
         return metadata
 
-    async def import_preview(
-        self, project_id: str, filenames: list[str], category: str
-    ) -> GalgameAssetImportPreviewOut:
-        await self._project(project_id)
-        directory = CATEGORY_DIRECTORIES[category]
-        existing_paths = list(
-            (
+    async def asset_records(self, project_id, referenced, *, newest_first):
+        query = select(VisualAsset, GalgameAssetMetadata).outerjoin(
+            GalgameAssetMetadata, GalgameAssetMetadata.asset_id == VisualAsset.id
+        )
+        owned = VisualAsset.galgame_project_id == project_id
+        if newest_first:
+            scope = or_(owned, VisualAsset.id.in_(referenced)) if referenced else owned
+            return (
                 await self.session.execute(
-                    select(GalgameAssetMetadata.virtual_path).where(
-                        GalgameAssetMetadata.project_id == project_id
+                    query.where(scope).order_by(
+                        VisualAsset.updated_at.desc(), VisualAsset.created_at.desc()
                     )
                 )
+            ).all()
+        records = (await self.session.execute(query.where(owned))).all()
+        remaining = referenced - {row.id for row, _ in records}
+        if remaining:
+            records.extend(
+                (await self.session.execute(query.where(VisualAsset.id.in_(remaining)))).all()
             )
-            .scalars()
-            .all()
-        )
-        used = {
-            PurePosixPath(path).name.casefold()
-            for path in existing_paths
-            if PurePosixPath(path).parent.as_posix() == directory
-        }
-        items: list[GalgameAssetImportPreviewItem] = []
-        for raw_name in filenames:
-            normalized, reasons = normalize_import_filename(raw_name)
-            final_name, renamed_for_duplicate = _deduplicated_name(normalized, used)
-            if renamed_for_duplicate:
-                reasons.append("同名文件已追加序号")
-            items.append(
-                GalgameAssetImportPreviewItem(
-                    originalName=raw_name,
-                    finalName=final_name,
-                    virtualPath=f"{directory}/{final_name}",
-                    reasons=reasons,
-                )
-            )
-        return GalgameAssetImportPreviewOut(items=items)
+        return records
+
+    def _file_exists(self, row):
+        return self.storage.path_for(row).is_file()
 
     async def list(self, project_id: str, *, query: str = "") -> GalgameProjectAssetListOut:
         await self._project(project_id)
@@ -194,22 +178,7 @@ class GalgameProjectAssets(GalgameAssetAnalysisMixin):
                 category=_default_category(row),
                 virtual_path=_default_virtual_path(row),
             )
-        display_name = (body.display_name or row.display_name).strip()
-        category = body.category or metadata.category
-        if body.virtual_path is not None:
-            virtual_path = body.virtual_path.replace("\\", "/").strip().strip("/")
-        else:
-            suffix = Path(row.original_filename).suffix.lower()
-            filename = f"{display_name}{suffix}"
-            directory = (
-                CATEGORY_DIRECTORIES[category]
-                if body.category is not None
-                else PurePosixPath(metadata.virtual_path).parent.as_posix()
-            )
-            virtual_path = f"{directory}/{filename}"
-        path = PurePosixPath(virtual_path)
-        if path.is_absolute() or ".." in path.parts or len(path.parts) < 2:
-            raise AssetError("虚拟路径必须是安全的项目相对路径", code="invalid_virtual_path")
+        display_name, category, virtual_path = asset_edit_values(row, metadata, body)
         collision = await self.session.scalar(
             select(GalgameAssetMetadata.asset_id)
             .where(
@@ -277,7 +246,7 @@ class GalgameProjectAssets(GalgameAssetAnalysisMixin):
                 )
             path = self.storage.path_for(row)
             if path.is_file():
-                checksum, width, height, duration_ms = _file_metadata(path, row.media_kind)
+                checksum, width, height, duration_ms = inspect_media_file(path, row.media_kind)
                 metadata.checksum_sha256 = checksum
                 metadata.width = width
                 metadata.height = height

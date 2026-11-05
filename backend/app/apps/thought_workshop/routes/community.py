@@ -4,29 +4,21 @@ from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 
 from app.apps.thought_workshop.errors import ThoughtError
-from app.apps.thought_workshop.knowledge_tools.schemas import ResolveReferences
+from app.apps.thought_workshop.http_bindings import CommunitySessionDep as SessionDep
+from app.apps.thought_workshop.publication.assets import LegacyCommunityFiles
+from app.apps.thought_workshop.publication.http import router as metadata_router
 from app.apps.thought_workshop.publication.imports import (
-    LegacyTarget,
     SeedImportInput,
-    SeedPreview,
     import_source,
-    preview,
-    receipt,
-    resolve_legacy,
 )
-from app.apps.thought_workshop.publication.references import CommunityReferenceTarget
-from app.apps.thought_workshop.publication.references import resolve as resolve_references
 from app.apps.thought_workshop.publication.schemas import (
     ArticleConfig,
     CommunityArticle,
     CommunityDirectory,
-    CommunityManagement,
     CommunityNote,
     CommunityNotePut,
     CommunitySnapshot,
-    FavoriteInput,
     FavoritesOut,
-    PermissionInput,
     PublicationConfig,
     PublicationOut,
     PublishInput,
@@ -35,7 +27,7 @@ from app.apps.thought_workshop.publication.use_cases import Community
 from app.apps.thought_workshop.schemas.workshop import ThoughtAttachmentOut, ThoughtImportOut
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.thumbnails import ThumbnailSize
-from app.deps import PublicStudioAuth, SessionDep
+from app.deps import PublicStudioAuth
 
 router = APIRouter(prefix="/community", tags=["knowledge-community"])
 
@@ -106,13 +98,6 @@ async def settings(
     return await call(Community(session, principal).settings(publication_id, note_id))
 
 
-@router.put("/publications/{publication_id}/permissions", response_model=list[ArticleConfig])
-async def permissions(
-    publication_id: str, body: PermissionInput, session: SessionDep, principal: PublicStudioAuth
-):
-    return await call(Community(session, principal).permissions(publication_id, body))
-
-
 @router.get("/publications/{publication_id}/cover")
 async def cover(
     publication_id: str,
@@ -120,7 +105,9 @@ async def cover(
     principal: PublicStudioAuth,
     size: ThumbnailSize | None = None,
 ):
-    mime_type, path = await call(Community(session, principal).cover(publication_id, size))
+    mime_type, path = await call(
+        LegacyCommunityFiles(session, principal).cover(publication_id, size)
+    )
     return FileResponse(path, media_type=mime_type, headers={"Cache-Control": "private, no-store"})
 
 
@@ -134,7 +121,7 @@ async def asset(
     size: ThumbnailSize | None = None,
 ):
     mime_type, path = await call(
-        Community(session, principal).asset(publication_id, asset_id, note_id, size)
+        LegacyCommunityFiles(session, principal).asset(publication_id, asset_id, note_id, size)
     )
     return FileResponse(
         path,
@@ -153,7 +140,9 @@ async def upload(
     principal: PublicStudioAuth,
     upload: UploadFile = File(),
 ):
-    return await call(Community(session, principal).upload(publication_id, note_id, upload))
+    return await call(
+        LegacyCommunityFiles(session, principal).upload(publication_id, note_id, upload)
+    )
 
 
 @router.get("/publications/{publication_id}/export-snapshot", response_model=CommunitySnapshot)
@@ -183,22 +172,6 @@ async def favorites(session: SessionDep, principal: PublicStudioAuth):
     return await call(Community(session, principal).favorites())
 
 
-@router.put("/favorites/{namespace}/{resource_id}", response_model=FavoritesOut)
-async def favorite(
-    namespace: str,
-    resource_id: str,
-    body: FavoriteInput,
-    session: SessionDep,
-    principal: PublicStudioAuth,
-):
-    return await call(Community(session, principal).favorite(namespace + "/" + resource_id, body))
-
-
-@router.get("/publications/{publication_id}/management", response_model=CommunityManagement)
-async def management(publication_id: str, session: SessionDep, principal: PublicStudioAuth):
-    return await call(Community(session, principal).management(publication_id))
-
-
 @router.put("/publications/{publication_id}/management", response_model=PublicationConfig)
 async def manage(
     publication_id: str, body: PublishInput, session: SessionDep, principal: PublicStudioAuth
@@ -206,37 +179,9 @@ async def manage(
     return await call(Community(session, principal).manage(publication_id, body))
 
 
-@router.get("/official-import/preview", response_model=SeedPreview)
-async def import_preview(principal: PublicStudioAuth):
-    try:
-        return preview(principal)
-    except ThoughtError as exc:
-        raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
-
-
 @router.post("/official-import", response_model=ThoughtImportOut)
 async def import_official(body: SeedImportInput, session: SessionDep, principal: PublicStudioAuth):
     return await call(import_source(session, principal, body))
 
 
-@router.get("/official-import/{request_id}", response_model=ThoughtImportOut)
-async def import_receipt(request_id: str, session: SessionDep, principal: PublicStudioAuth):
-    return await call(receipt(session, principal, request_id))
-
-
-@router.get("/official-links/{library_key}", response_model=list[LegacyTarget])
-async def legacy_link(
-    library_key: str, session: SessionDep, principal: PublicStudioAuth, document_key: str = ""
-):
-    return await call(Community(session, principal).run(resolve_legacy, library_key, document_key))
-
-
-@router.post(
-    "/publications/{publication_id}/references", response_model=list[CommunityReferenceTarget]
-)
-async def references(
-    publication_id: str, body: ResolveReferences, session: SessionDep, principal: PublicStudioAuth
-):
-    return await call(
-        Community(session, principal).run(resolve_references, publication_id, body.ids)
-    )
+router.include_router(metadata_router, prefix="")

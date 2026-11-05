@@ -71,7 +71,6 @@ def test_worker_writes_wav_to_extensionless_asset_key(monkeypatch, capsys):
 async def manager(tmp_path, monkeypatch):
     monkeypatch.setattr("app.llm.local_models.management.compatible", lambda: True)
     monkeypatch.setattr("app.llm.local_models.catalog.compatible", lambda: True)
-    monkeypatch.setattr("app.llm.catalog.service.compatible", lambda: True)
     installer = Installer(tmp_path / "local-models")
     runtime = LocalRuntime(installer)
     manager = LocalModels(SessionLocal, installer, runtime)
@@ -361,7 +360,7 @@ async def test_public_api_attach_synthesis_and_uninstall(manager, monkeypatch):
         response = await client.post("/v1/model-inference/tasks", json=body)
         assert response.status_code == 200, response.text
         task = response.json()
-        runner = InferenceRunner(local_runtime=manager.runtime)
+        runner = InferenceRunner(SessionLocal, local_runtime=manager.runtime)
         await runner.process(task["id"])
         result = (await client.get(f"/v1/model-inference/tasks/{task['id']}")).json()
         assert result["status"] == "completed", result

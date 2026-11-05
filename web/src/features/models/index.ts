@@ -16,3 +16,5 @@ export {
   videoChoices,
   videoSelectionError,
 } from "./generation/videoCapabilities";
+
+export { LocalModelsPanel } from "./catalog/LocalModelsPanel";

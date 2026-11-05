@@ -3,9 +3,8 @@ from __future__ import annotations
 from fastapi import APIRouter, File, Form, HTTPException, Query, Request, Response, UploadFile
 from fastapi.responses import FileResponse
 
-from app.capabilities.asset_store.library import AssetError
-from app.capabilities.asset_store.thumbnails import ThumbnailSize
 from app.capabilities.identity.rate_limit import allow_attempt, clear_attempts
+from app.capabilities.identity.session_policy import session_policy
 from app.console.governance.profile import (
     apply_avatar,
     avatar_path,
@@ -63,6 +62,8 @@ from app.deps import (
     SessionDep,
     client_ip,
 )
+from app.runtime.image_sizes import ThumbnailSize
+from app.runtime.raster import RasterPreviewError
 
 router = APIRouter(tags=["accounts"])
 
@@ -81,6 +82,7 @@ async def login(request: Request, response: Response, session: SessionDep, body:
         password=body.password,
         client_ip=ip,
         user_agent=request.headers.get("User-Agent", ""),
+        purpose=session_policy(request).purpose,
     )
     if result is None:
         raise HTTPException(
@@ -89,12 +91,12 @@ async def login(request: Request, response: Response, session: SessionDep, body:
         )
     user, auth_session, token, csrf = result
     clear_attempts(ip_key, user_key)
-    _set_cookies(response, token, csrf)
-    return await _login_out(
-        session,
+    _set_cookies(response, token, csrf, session_policy(request))
+    pending = await request.app.state.account_storage_check(session)
+    return _login_out(
         user,
         auth_session,
-        maintenance=getattr(request.app.state, "storage_upgrade_required", False),
+        maintenance=pending or getattr(request.app.state, "storage_upgrade_required", False),
     )
 
 
@@ -140,7 +142,7 @@ async def change_current_password(
     except (AccountError, ValueError) as exc:
         code = exc.code if isinstance(exc, AccountError) else "password_rejected"
         raise HTTPException(422, detail={"code": code, "message": str(exc)}) from exc
-    _set_cookies(response, token, csrf)
+    _set_cookies(response, token, csrf, session_policy(request))
     response.status_code = 204
     return response
 
@@ -149,7 +151,7 @@ async def change_current_password(
 async def logout(request: Request, response: Response, session: SessionDep):
     principal = await _browser_auth(request, session, forced=True)
     await complete_logout(session, principal, client_ip=client_ip(request))
-    _clear_cookies(response)
+    _clear_cookies(response, session_policy(request))
     response.status_code = 204
     return response
 
@@ -186,8 +188,8 @@ async def get_avatar(request: Request, session: SessionDep, size: ThumbnailSize 
     user, _auth_session = await load_current_auth(session, principal)
     try:
         path = await avatar_preview(user, size) if size is not None else avatar_path(user)
-    except AssetError as exc:
-        raise HTTPException(exc.status, detail={"code": exc.code, "message": str(exc)}) from None
+    except RasterPreviewError as exc:
+        raise HTTPException(422, detail={"code": exc.code, "message": str(exc)}) from None
     if path is None or not path.is_file():
         raise HTTPException(404, detail={"code": "profile_avatar_not_found"})
     return FileResponse(

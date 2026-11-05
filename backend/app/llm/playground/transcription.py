@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import os
 from pathlib import Path
 from uuid import uuid4
@@ -8,10 +7,9 @@ from uuid import uuid4
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.incoming import IncomingFile
-from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import ALLOWED_FILES, looks_like
-from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.transcription import (
     TranscriptionParameterError,
     max_transcription_input_bytes,
@@ -19,7 +17,8 @@ from app.capabilities.transcription import (
     parameter_capabilities,
     resolve_parameters,
 )
-from app.llm.call_logs.credentials import CredentialSnapshot
+from app.llm.credential_snapshot import CredentialSnapshot
+from app.llm.library_inputs import ExactInput
 from app.llm.models import ModelEntry, ModelProvider, ModelTestTranscriptionTask
 from app.llm.providers.senseaudio_asr import MAX_ASR_FILE_BYTES
 from app.llm.schemas.model_test import (
@@ -142,27 +141,19 @@ def _validate_staged_file(path: Path, extension: str, size: int, max_bytes: int)
         )
 
 
-def _copy_limited(source_path: Path, target_path: Path, max_bytes: int) -> int:
-    size = 0
-    with source_path.open("rb") as source, target_path.open("xb") as target:
-        while chunk := source.read(1024 * 1024):
-            size += len(chunk)
-            if size > max_bytes:
-                raise ModelTestTranscriptionError(
-                    _limit_message(max_bytes), code="file_too_large", status=413
-                )
-            target.write(chunk)
-    return size
-
-
 class ModelTestTranscription:
     def __init__(
-        self, session: AsyncSession, owner_user_id: str, settings: Settings | None = None
+        self,
+        session: AsyncSession,
+        owner_user_id: str,
+        settings: Settings | None = None,
+        *,
+        library=None,
     ) -> None:
         self.session = session
         self.owner_user_id = owner_user_id
         self.settings = settings or get_settings()
-        self.asset_storage = AssetStorage(self.settings)
+        self.library = library
 
     async def _model(self, model_id: str) -> tuple[ModelEntry, ModelProvider]:
         model = await self.session.get(ModelEntry, model_id)
@@ -222,13 +213,43 @@ class ModelTestTranscription:
         admission: TaskAdmission | None = None,
         credential: CredentialSnapshot | None = None,
     ) -> ModelTestTranscriptionTaskOut:
+        return await self._create_input(
+            upload,
+            model_id=model_id,
+            parameters=parameters,
+            admission=admission,
+            credential=credential,
+            source_asset_id=None,
+            expected_bytes=None,
+        )
+
+    async def _create_input(
+        self,
+        upload,
+        *,
+        model_id,
+        parameters,
+        admission,
+        credential,
+        source_asset_id,
+        expected_bytes,
+    ):
         try:
+            if self.session.info.get("owner_user_id") != self.owner_user_id:
+                raise ModelTestTranscriptionError(
+                    "模型输入缺少匹配的账号上下文", code="account_context_mismatch", status=403
+                )
             filename = Path(upload.filename or "").name
             extension, mime_type = _validate_file_metadata(
                 filename, upload.content_type or "application/octet-stream"
             )
             model, provider = await self._model(model_id)
             resolved_parameters = resolve_parameters(parameters, model, provider)
+            max_bytes = _max_input_bytes(provider)
+            if expected_bytes is not None and expected_bytes > max_bytes:
+                raise ModelTestTranscriptionError(
+                    _limit_message(max_bytes), code="file_too_large", status=413
+                )
         except TranscriptionParameterError as exc:
             await upload.close()
             raise ModelTestTranscriptionError(
@@ -238,11 +259,11 @@ class ModelTestTranscription:
             await upload.close()
             raise
         snapshots = (model.id, model.slug, provider.id, provider.name, provider.kind)
-        max_bytes = _max_input_bytes(provider)
         await self.session.rollback()
         owner_user_id = self.owner_user_id
         storage_key, temp_path, final_path = self._paths(owner_user_id)
         size = 0
+        committing = False
         try:
             with temp_path.open("xb") as target:
                 while chunk := await upload.read(1024 * 1024):
@@ -254,22 +275,27 @@ class ModelTestTranscription:
                     target.write(chunk)
             _validate_staged_file(temp_path, extension, size, max_bytes)
             os.replace(temp_path, final_path)
-            return await self._create_row(
+            row = await self._prepare_row(
                 snapshots=snapshots,
                 storage_key=storage_key,
                 filename=filename,
                 mime_type=mime_type,
                 byte_size=size,
                 parameters=resolved_parameters,
-                source_kind="upload",
-                source_asset_id=None,
-                final_path=final_path,
+                source_kind="library" if source_asset_id is not None else "upload",
+                source_asset_id=source_asset_id,
                 admission=admission,
                 credential=credential,
             )
-        except Exception:
+            committing = True
+            await self.session.commit()
+            await self.session.refresh(row)
+            return transcription_task_out(row, self.settings)
+        except BaseException:
+            await self.session.rollback()
             temp_path.unlink(missing_ok=True)
-            final_path.unlink(missing_ok=True)
+            if not committing:
+                final_path.unlink(missing_ok=True)
             raise
         finally:
             await upload.close()
@@ -281,61 +307,39 @@ class ModelTestTranscription:
         admission: TaskAdmission | None = None,
         credential: CredentialSnapshot | None = None,
     ) -> ModelTestTranscriptionTaskOut:
-        model, provider = await self._model(body.model_id)
-        try:
-            resolved_parameters = resolve_parameters(body, model, provider)
-        except TranscriptionParameterError as exc:
+        if self.session.info.get("owner_user_id") != self.owner_user_id:
             raise ModelTestTranscriptionError(
-                str(exc), code="invalid_transcription_parameters"
-            ) from exc
-        asset = await self.session.get(VisualAsset, body.source_asset_id)
-        if (
-            asset is None
-            or asset.project_id is not None
-            or asset.galgame_project_id is not None
-            or asset.media_kind != "audio"
-        ):
-            raise ModelTestTranscriptionError(
-                "文件管理中的音频不存在", code="source_not_found", status=404
+                "模型输入缺少匹配的账号上下文", code="account_context_mismatch", status=403
             )
-        extension, mime_type = _validate_file_metadata(asset.original_filename, asset.mime_type)
-        max_bytes = _max_input_bytes(provider)
-        if asset.byte_size > max_bytes:
+        if self.library is None:
             raise ModelTestTranscriptionError(
-                _limit_message(max_bytes), code="file_too_large", status=413
+                "模型素材读取接口未装配", code="model_library_inputs_unavailable", status=503
             )
-        source_path = self.asset_storage.path_for(asset)
-        if not source_path.is_file():
-            raise ModelTestTranscriptionError(
-                "源音频内容不存在", code="source_not_found", status=404
-            )
-        snapshots = (model.id, model.slug, provider.id, provider.name, provider.kind)
-        filename = asset.original_filename
-        source_asset_id = asset.id
-        owner_user_id = asset.owner_user_id
         await self.session.rollback()
-        storage_key, temp_path, final_path = self._paths(owner_user_id)
         try:
-            size = await asyncio.to_thread(_copy_limited, source_path, temp_path, max_bytes)
-            _validate_staged_file(temp_path, extension, size, max_bytes)
-            os.replace(temp_path, final_path)
-            return await self._create_row(
-                snapshots=snapshots,
-                storage_key=storage_key,
-                filename=filename,
-                mime_type=mime_type,
-                byte_size=size,
-                parameters=resolved_parameters,
-                source_kind="library",
-                source_asset_id=source_asset_id,
-                final_path=final_path,
-                admission=admission,
-                credential=credential,
+            async with self.library.open(body.source_asset_id) as source:
+                if source.asset_id != body.source_asset_id or source.media_kind != "audio":
+                    raise ModelTestTranscriptionError(
+                        "文件管理中的音频不存在", code="source_not_found", status=404
+                    )
+                return await self._create_input(
+                    ExactInput(source.incoming, source.byte_size),
+                    model_id=body.model_id,
+                    parameters=body,
+                    admission=admission,
+                    credential=credential,
+                    source_asset_id=source.asset_id,
+                    expected_bytes=source.byte_size,
+                )
+        except AssetError as exc:
+            source_missing = exc.status == 404 or (
+                exc.status == 422 and exc.code == "source_unavailable"
             )
-        except Exception:
-            temp_path.unlink(missing_ok=True)
-            final_path.unlink(missing_ok=True)
-            raise
+            raise ModelTestTranscriptionError(
+                str(exc),
+                code="source_not_found" if source_missing else exc.code,
+                status=404 if source_missing else exc.status,
+            ) from None
 
     def _paths(self, owner_user_id: str) -> tuple[str, Path, Path]:
         root = self.settings.account_model_test_path(owner_user_id, "references")
@@ -344,7 +348,7 @@ class ModelTestTranscription:
         storage_key = uuid4().hex
         return storage_key, temp_root / f"{storage_key}.tmp", root / storage_key
 
-    async def _create_row(
+    async def _prepare_row(
         self,
         *,
         snapshots: tuple[str, str, str, str, str],
@@ -355,10 +359,9 @@ class ModelTestTranscription:
         parameters: ModelTestTranscriptionParametersOut,
         source_kind: str,
         source_asset_id: str | None,
-        final_path: Path,
         admission: TaskAdmission | None = None,
         credential: CredentialSnapshot | None = None,
-    ) -> ModelTestTranscriptionTaskOut:
+    ) -> ModelTestTranscriptionTask:
         model_id, model_slug, provider_id, provider_name, provider_kind = snapshots
         snap = credential or CredentialSnapshot()
         row = ModelTestTranscriptionTask(
@@ -377,18 +380,11 @@ class ModelTestTranscription:
             request_options=parameters.model_dump(mode="json"),
             **snap.as_kwargs(),
         )
-        try:
-            self.session.add(row)
-            await self.session.flush()
-            if admission:
-                await admission([row.id])
-            await self.session.commit()
-            await self.session.refresh(row)
-        except Exception:
-            await self.session.rollback()
-            final_path.unlink(missing_ok=True)
-            raise
-        return transcription_task_out(row, self.settings)
+        self.session.add(row)
+        await self.session.flush()
+        if admission:
+            await admission([row.id])
+        return row
 
     async def list(
         self, *, model_id: str | None, page: int, page_size: int

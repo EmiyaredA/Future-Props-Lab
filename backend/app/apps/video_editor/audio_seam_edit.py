@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from math import floor
+
 from app.apps.video_editor.errors import VideoEditorValidationError
+from app.capabilities.media_rendering.audio_seam_results import REFERENCE_US
 from app.capabilities.media_rendering.audio_transitions import AUDIO_SEAM_KINDS
 
 
@@ -43,6 +46,17 @@ def audio_seam_pair(document: dict, from_id: str, to_id: str) -> tuple[dict, dic
     if track.get("locked"):
         raise VideoEditorValidationError("音频轨已锁定", code="track_locked")
     return track, source, target
+
+
+def seam_window(source, target, duration_us):
+    source_end = source.get("sourceInUs", 0) + floor(
+        source["durationUs"] * (source.get("playbackRate") or 1)
+    )
+    rate = target.get("playbackRate") or 1
+    target_span = floor(target["durationUs"] * rate)
+    if not 0 < source_end <= duration_us or target.get("sourceInUs", 0) + target_span > duration_us:
+        raise VideoEditorValidationError("音频源范围无效", code="invalid_source_range")
+    return source_end, duration_us - target_span + REFERENCE_US, rate
 
 
 def align_audio_seam(document: dict, data: dict) -> None:

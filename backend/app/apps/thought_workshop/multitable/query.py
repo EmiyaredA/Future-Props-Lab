@@ -4,8 +4,8 @@ import json
 
 from sqlalchemy import String, and_, case, cast, exists, func, or_, select
 
+from app.apps.thought_workshop.account_directory import profiles
 from app.apps.thought_workshop.errors import ThoughtError
-from app.console.models import User
 
 from .models import DataRecord
 from .schemas import RecordPage, RecordSpec
@@ -22,13 +22,8 @@ def person_ids(value):
 async def active_members(session, ids):
     if not ids:
         return {}
-    rows = await session.execute(
-        select(User.id, User.display_name, User.username).where(
-            User.status == "active",
-            User.id.in_(ids),
-        )
-    )
-    return {user_id: (name or "").strip() or username for user_id, name, username in rows}
+    rows = await profiles(session, ids=ids)
+    return {row.id: row.display_name.strip() or row.username for row in rows if row.active}
 
 
 def statement(table, query):

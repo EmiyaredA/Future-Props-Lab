@@ -59,8 +59,8 @@ async def test_workshop_keyless_workflow_references_completion_and_recovery(monk
     async def allow(_url):
         pass
 
-    monkeypatch.setattr("app.apps.visual_workshop.generation_runner.upload_reference", upload)
-    monkeypatch.setattr("app.apps.visual_workshop.generation_runner.create_task", submit)
+    monkeypatch.setattr("app.llm.visual_generation_submission.upload_reference", upload)
+    monkeypatch.setattr("app.llm.visual_generation_submission.create_task", submit)
     monkeypatch.setattr("app.apps.visual_workshop.generation_runner.get_task", poll)
     monkeypatch.setattr("app.llm.generation_runtime.media.assert_public_https", allow)
     provider = ModelProvider(

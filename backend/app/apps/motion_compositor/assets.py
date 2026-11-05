@@ -18,8 +18,7 @@ from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.runtime.config import get_settings
-
-MOTION_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".mp4", ".mov", ".webm", ".mkv"}
+from fpl_runtime.motion_assets import MOTION_EXTENSIONS
 
 
 class MotionAssets:

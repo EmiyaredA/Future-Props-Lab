@@ -1,3 +1,4 @@
+import { programAsset } from "@platform/programAsset";
 import { imageVariants } from "./imageVariants";
 
 export type ImageSize = 128 | 320 | 640 | 1280;
@@ -29,16 +30,24 @@ export function imagePreviewSource(
 }
 
 export function publicImageSources(source: string, width = 64) {
-  const variants = imageVariants[source];
-  if (!variants) return { src: source };
+  const base = import.meta.env.BASE_URL;
+  const canonical =
+    base !== "/" && source.startsWith(base)
+      ? "/" + source.slice(base.length)
+      : source;
+  const owned = /^\/(brand|providers|presentation-templates)\//.test(canonical);
+  const resource = (value: string | undefined) =>
+    value && owned ? programAsset(value) : value;
+  const variants = imageVariants[canonical];
+  if (!variants) return { src: owned ? resource(canonical) : source };
   const sizes = Object.keys(variants)
     .map(Number)
     .sort((a, b) => a - b);
   const chosen = sizes.find((size) => size >= width) ?? sizes.at(-1)!;
   return {
-    src: variants[String(chosen)],
+    src: resource(variants[String(chosen)]),
     srcSet: sizes
-      .map((size) => `${variants[String(size)]} ${size}w`)
+      .map((size) => `${resource(variants[String(size)])} ${size}w`)
       .join(", "),
     sizes: `${width}px`,
   };

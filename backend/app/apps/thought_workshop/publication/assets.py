@@ -1,20 +1,22 @@
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.apps.thought_workshop.multitable.storage import asset_ids, snapshot
 from app.apps.thought_workshop.schemas.document import file_ids
 from app.apps.thought_workshop.schemas.workshop import ThoughtAttachmentOut
+from app.capabilities.asset_store.image_thumbnails import ThumbnailSource, asset_thumbnail
 from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
 from app.capabilities.asset_store.storage import AssetStorage
-from app.capabilities.asset_store.thumbnails import ThumbnailSize, ThumbnailSource, asset_thumbnail
 from app.runtime.config import get_settings
+from app.runtime.image_sizes import ThumbnailSize
 
 from .access import article, bind_source, missing, publication
 from .catalog import visible
 from .models import CommunityUpload
 from .mutations import begin_write
+from .sessions import source_sessions
 
 
 async def content(
@@ -97,3 +99,29 @@ async def upload(session, principal, pub_id, note_id, incoming: IncomingFile):
     )
     await session.commit()
     return result
+
+
+class LegacyCommunityFiles:
+    """Materialize community files in the compatibility site's own database."""
+
+    def __init__(self, request_session, principal):
+        self.sessions = source_sessions(request_session)
+        self.principal = principal
+
+    async def asset(self, id, asset, note=None, size=None):
+        async with self.sessions() as session:
+            await session.execute(text("BEGIN"))
+            return await content(session, self.principal, id, asset, note, False, size)
+
+    async def cover(self, id, size=None):
+        async with self.sessions() as session:
+            await session.execute(text("BEGIN"))
+            pub = await publication(session, id)
+            return await content(
+                session, self.principal, id, pub.cover_asset_id, cover=True, size=size
+            )
+
+    async def upload(self, id, note, incoming):
+        async with self.sessions() as session:
+            await session.execute(text("BEGIN"))
+            return await upload(session, self.principal, id, note, incoming)

@@ -215,3 +215,20 @@ export const downloadSkillVersion = (current: Skill, version: string) =>
   fetchApiBlob(
     `/v1/integrations/skills/${encodeURIComponent(current.id)}/versions/${encodeURIComponent(version)}/content`,
   );
+
+export const getValidationAttempts = async (offset = 0) =>
+  unwrap(
+    await api.GET("/v1/integrations/validation-attempts", {
+      params: { query: { offset } },
+    }),
+  );
+
+export const reconcileValidationAttempt = async (id: string) =>
+  unwrap(
+    await api.POST(
+      "/v1/integrations/validation-attempts/{attempt_id}/reconcile",
+      {
+        params: { path: { attempt_id: id } },
+      },
+    ),
+  );

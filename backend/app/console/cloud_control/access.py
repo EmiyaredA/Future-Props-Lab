@@ -13,11 +13,11 @@ from app.console.models.accounts import AuthSession, User
 from app.runtime.config import get_cloud_settings
 from app.runtime.credentials import decrypt_secret, encrypt_secret
 from app.runtime.time import utc_now
+from fpl_runtime.cloud_authority import TICKET_SECONDS as TICKET_SECONDS
 
-from .models import CloudFactor, CloudUnlock, DesktopPreference
+from .models import CloudFactor, CloudUnlock
 
 UNLOCK_SECONDS = 900
-TICKET_SECONDS = 30
 
 
 def allowed(principal, *, local, desktop=False):
@@ -93,9 +93,16 @@ async def require_unlocked(db, principal, *, local, settings=None):
         raise HTTPException(403, "请先验证密码及动态验证码")
 
 
-async def start_enrollment(db, owner):
+async def begin_factor_update(db, principal):
     await db.rollback()
     await db.execute(text("BEGIN IMMEDIATE"))
+    if await db.scalar(session_query(principal)) is None:
+        raise HTTPException(401, "账号会话已失效")
+
+
+async def start_enrollment(db, principal):
+    await begin_factor_update(db, principal)
+    owner = principal.user_id
     row = await db.get(CloudFactor, owner)
     if row is None:
         row = CloudFactor(
@@ -122,8 +129,7 @@ def totp(secret, counter):
 
 async def verify(db, principal, code, *, enroll=False, desktop=False):
     owner = principal.user_id
-    await db.rollback()
-    await db.execute(text("BEGIN IMMEDIATE"))
+    await begin_factor_update(db, principal)
     row = await db.get(CloudFactor, owner)
     now = int(time.time())
     if not row or not (row.pending_secret if enroll else row.secret):
@@ -166,33 +172,6 @@ async def verify(db, principal, code, *, enroll=False, desktop=False):
         unlock.expires_at = now + UNLOCK_SECONDS
     unlock.ticket_hash, unlock.ticket_until = None, 0
     await db.commit()
-
-
-async def desktop_preferences(db, owner):
-    row = await db.get(DesktopPreference, owner)
-    return (row.idle_minutes, row.revision) if row else (30, 0)
-
-
-async def save_desktop_preferences(db, owner, body):
-    await db.rollback()
-    await db.execute(text("BEGIN IMMEDIATE"))
-    current, revision = await desktop_preferences(db, owner)
-    if revision != body.revision:
-        raise HTTPException(
-            409,
-            detail={
-                "code": "revision_conflict",
-                "message": "锁定时限已变更",
-                "current": {"idle_minutes": current, "revision": revision},
-            },
-        )
-    row = await db.get(DesktopPreference, owner)
-    if row is None:
-        row = DesktopPreference(owner_user_id=owner)
-        db.add(row)
-    row.idle_minutes, row.revision = body.idle_minutes, revision + 1
-    await db.commit()
-    return row.idle_minutes, row.revision
 
 
 async def enrolled(db, owner):

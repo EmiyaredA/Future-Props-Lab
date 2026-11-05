@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import re
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from zipfile import ZIP_STORED, ZipFile
@@ -11,17 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apps.video_editor.errors import VideoEditorNotFoundError
 from app.apps.video_editor.segment_exports import VideoEditorSegmentExports
+from app.apps.video_editor.segment_names import segment_filename
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.runtime.config import Settings
-
-
-def segment_filename(name: str) -> str:
-    safe = re.sub(r'[<>:"/\\|?*\x00-\x1f\x7f]', "_", name).strip(" .")
-    # Leave room for the extension and ZIP sequence prefix on UTF-8 filesystems.
-    safe = safe.encode("utf-8")[:200].decode("utf-8", errors="ignore") or "片段"
-    return f"{safe}.mp4"
 
 
 def _archive(entries: list[tuple[Path, str]]) -> Path:

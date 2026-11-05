@@ -515,6 +515,10 @@
     "method": "tool_api",
     "resource": "integrations"
   },
+  "GET /v1/integrations/validation-attempts": {
+    "method": "validation_attempts",
+    "resource": "integrations"
+  },
   "GET /v1/interview-assistant/executor": {
     "method": "get_interview_executor",
     "resource": "interview"
@@ -1541,6 +1545,10 @@
   },
   "POST /v1/integrations/tool-apis/{integration_id}/validate": {
     "method": "validate_tool_api",
+    "resource": "integrations"
+  },
+  "POST /v1/integrations/validation-attempts/{attempt_id}/reconcile": {
+    "method": "reconcile_validation",
     "resource": "integrations"
   },
   "POST /v1/interview-assistant/rooms": {

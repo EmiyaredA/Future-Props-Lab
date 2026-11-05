@@ -3,11 +3,11 @@
 from app.apps.visual_workshop.canvas import VisualCanvasDocuments, VisualCanvasError
 from app.apps.visual_workshop.outputs.history import NodeOutputs, OutputError
 from app.apps.visual_workshop.outputs.schemas import VisualNodeOutputCreateIn
-from app.apps.visual_workshop.outputs.video_uploads import prepare_output_upload
 from app.apps.visual_workshop.schemas.workshop import VisualCanvasDocumentPutIn
 from app.capabilities.asset_store import IncomingFile
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.policy import ALLOWED_FILES
+from app.capabilities.media_rendering.gif_upload import prepare_output_upload
 from app.runtime.config import Settings
 from app.runtime.ids import new_id
 from app.runtime.revisions import RevisionConflictError

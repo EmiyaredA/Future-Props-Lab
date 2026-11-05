@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import asyncio
 import os
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 from uuid import uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import (
@@ -18,21 +20,6 @@ from app.capabilities.asset_store.policy import (
 )
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
 from app.runtime.config import Settings
-
-
-class AssetError(Exception):
-    def __init__(
-        self,
-        message: str,
-        *,
-        code: str = "asset_error",
-        status: int = 422,
-        detail: dict[str, object] | None = None,
-    ) -> None:
-        super().__init__(message)
-        self.code = code
-        self.status = status
-        self.detail = detail or {}
 
 
 class AssetLibrary:
@@ -56,8 +43,11 @@ class AssetLibrary:
         motion_compositor_project_id: str | None = None,
         folder_id: str | None = None,
         allowed_extensions: set[str] | None = None,
+        max_bytes: int | None = None,
         commit: bool = True,
         defer_persistence: bool = False,
+        reserved_storage_key: str | None = None,
+        before_persist: Callable[[], Awaitable[None]] | None = None,
     ) -> VisualAsset:
         """Validate and stage a managed upload.
 
@@ -84,7 +74,7 @@ class AssetLibrary:
         if not resolved_display:
             raise AssetError("显示名称不能为空", code="invalid_display_name")
 
-        storage_key = uuid4().hex
+        storage_key = reserved_storage_key or uuid4().hex
         temp_path, final_path = self.storage.prepare_write(
             storage_key,
             visual_project_id=visual_project_id,
@@ -93,17 +83,17 @@ class AssetLibrary:
             motion_compositor_project_id=motion_compositor_project_id,
             owner_user_id=owner_user_id,
         )
+        maximum = max_bytes if max_bytes is not None else self.settings.fpl_visual_asset_max_bytes
+        if extension == ".svg":
+            maximum = min(maximum, 2 * 1024 * 1024)
         size = 0
         head = bytearray()
+        commit_started = False
         try:
             with temp_path.open("xb") as target:
                 while chunk := await upload.read(1024 * 1024):
                     size += len(chunk)
-                    if size > (
-                        min(self.settings.fpl_visual_asset_max_bytes, 2 * 1024 * 1024)
-                        if extension == ".svg"
-                        else self.settings.fpl_visual_asset_max_bytes
-                    ):
+                    if size > maximum:
                         raise AssetError(
                             "文件超过上传大小限制",
                             code="file_too_large",
@@ -142,8 +132,11 @@ class AssetLibrary:
                 byte_size=size,
             )
             if not defer_persistence:
+                if before_persist is not None:
+                    await before_persist()
                 self.session.add(row)
                 if commit:
+                    commit_started = True
                     await self.session.commit()
                     await self.session.refresh(row)
                 else:
@@ -151,7 +144,10 @@ class AssetLibrary:
             return row
         except BaseException:
             temp_path.unlink(missing_ok=True)
-            final_path.unlink(missing_ok=True)
+            # A failed commit/refresh may have lost its acknowledgement after
+            # SQLite committed. Keep the file until that outcome is known.
+            if not commit_started:
+                final_path.unlink(missing_ok=True)
             raise
         finally:
             await upload.close()

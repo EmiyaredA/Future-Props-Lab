@@ -4,18 +4,17 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.console.models.platform_governance import PlatformSetting
+from app.llm.catalog.default_storage import CatalogDefaults
 from app.llm.catalog.metadata import categories_for_provider
 from app.llm.catalog.supplier_records import get_supplier, list_suppliers
-from app.llm.local_models.catalog import compatible, definition, require_ready
+from app.llm.catalog.task_usage import CatalogTaskUsage
+from app.llm.local_models.catalog import definition, host_compatible, require_ready
 from app.llm.models import (
     ModelCatalogState,
     ModelEntry,
     ModelProvider,
-    ModelTestGenerationTask,
 )
 from app.llm.models.local_models import LocalModelInstallation
-from app.llm.models.model_inference import ModelInferenceTask
 from app.llm.models.model_supplier import ModelSupplier
 from app.llm.schemas.model_service import (
     ModelCatalogOut,
@@ -27,7 +26,6 @@ from app.llm.schemas.model_service import (
     ProviderOut,
 )
 from app.runtime.credentials import encrypt_secret
-from app.runtime.orm_base import Base
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.secret_hints import encrypted_secret_hint
 
@@ -42,9 +40,6 @@ class DuplicateModelError(Exception):
 
 class CatalogResourceBusyError(Exception):
     pass
-
-
-ACTIVE_GENERATION_STATUSES = ("queued", "submitting", "pending", "processing")
 
 
 MODEL_CATEGORIES = (
@@ -105,8 +100,21 @@ def _model_out(row: ModelEntry) -> ModelEntryOut:
 
 
 class ModelCatalogService:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(
+        self,
+        session: AsyncSession,
+        *,
+        task_usage: CatalogTaskUsage | None = None,
+        defaults_store: CatalogDefaults | None = None,
+    ) -> None:
         self.session = session
+        self.task_usage = task_usage
+        self.defaults_store = defaults_store
+
+    def _task_usage(self) -> CatalogTaskUsage:
+        if self.task_usage is None:
+            raise RuntimeError("模型目录修改缺少明确的任务占用检查")
+        return self.task_usage
 
     def categories(self) -> ModelCategoryListOut:
         return ModelCategoryListOut(items=list(MODEL_CATEGORIES))
@@ -119,6 +127,9 @@ class ModelCatalogService:
 
     async def catalog(self) -> ModelCatalogOut:
         owner_user_id = self._owner_user_id()
+        if self.defaults_store is None:
+            raise RuntimeError("模型目录缺少明确的账号默认模型存储")
+        defaults = await self.defaults_store.read(owner_user_id=owner_user_id)
         state = await self.session.get(ModelCatalogState, owner_user_id)
         revision = int(state.revision if state else 0)
         providers = (
@@ -142,6 +153,7 @@ class ModelCatalogService:
         installations = {
             item.id: item for item in await self.session.scalars(select(LocalModelInstallation))
         }
+        platform_compatible = await host_compatible(self.session)
         grouped: dict[str, list[ModelEntry]] = {}
         for entry in entries:
             grouped.setdefault(entry.provider_id, []).append(entry)
@@ -153,7 +165,7 @@ class ModelCatalogService:
                     installation = installations.get(model.slug)
                     model.availability = (
                         "unsupported_platform"
-                        if not compatible()
+                        if not platform_compatible
                         else "not_installed"
                         if not installation or installation.status != "installed"
                         else "stopped"
@@ -162,10 +174,9 @@ class ModelCatalogService:
                     )
             return result
 
-        defaults = await self.session.get(PlatformSetting, f"account_defaults:{owner_user_id}")
         return ModelCatalogOut(
             revision=revision,
-            default_model_ids=dict(defaults.payload) if defaults else {},
+            default_model_ids=defaults,
             suppliers=await list_suppliers(self.session, owner_user_id),
             providers=[provider_out(row) for row in providers],
         )
@@ -193,7 +204,7 @@ class ModelCatalogService:
         current = await self.catalog()
         return RevisionConflictError(expected, current.revision, current.model_dump(mode="json"))
 
-    async def _bump(self, expected: int) -> int:
+    async def advance_revision(self, expected: int) -> int:
         result = await self.session.execute(
             update(ModelCatalogState)
             .where(
@@ -219,7 +230,7 @@ class ModelCatalogService:
         return row
 
     async def create_provider(self, body: ProviderIn) -> tuple[int, ProviderOut]:
-        revision = await self._bump(body.expected_catalog_revision)
+        revision = await self.advance_revision(body.expected_catalog_revision)
         await self._validate_supplier(body.supplier_id)
         count = int((await self.session.execute(select(func.count(ModelProvider.id)))).scalar_one())
         row = ModelProvider(
@@ -239,7 +250,7 @@ class ModelCatalogService:
         return revision, result
 
     async def update_provider(self, provider_id: str, body: ProviderIn) -> tuple[int, ProviderOut]:
-        revision = await self._bump(body.expected_catalog_revision)
+        revision = await self.advance_revision(body.expected_catalog_revision)
         row = await self.get_provider(provider_id)
         if "supplier_id" in body.model_fields_set:
             if row.origin == "role_template" and body.supplier_id != row.supplier_id:
@@ -305,7 +316,7 @@ class ModelCatalogService:
     async def delete_provider(self, provider_id: str, expected: int) -> int:
         if await self._provider_has_active_tasks(provider_id):
             raise CatalogResourceBusyError("供应商仍有进行中的任务")
-        revision = await self._bump(expected)
+        revision = await self.advance_revision(expected)
         row = await self.get_provider(provider_id)
         if row.origin == "role_template":
             raise CatalogResourceBusyError("模板管理项不能在账号删除")
@@ -317,7 +328,7 @@ class ModelCatalogService:
         provider = await self.get_provider(provider_id)
         if provider.origin == "role_template":
             raise CatalogResourceBusyError("请在全局模板添加模型，或创建自建连接")
-        revision = await self._bump(body.expected_catalog_revision)
+        revision = await self.advance_revision(body.expected_catalog_revision)
         count = int(
             (
                 await self.session.execute(
@@ -350,14 +361,11 @@ class ModelCatalogService:
     async def update_model(self, model_id: str, body: ModelEntryIn) -> tuple[int, ModelEntryOut]:
         row = await self.get_model(model_id)
         provider = await self.get_provider(row.provider_id)
-        if not body.enabled and await self.session.scalar(
-            select(func.count(ModelInferenceTask.id)).where(
-                ModelInferenceTask.model_id == model_id,
-                ModelInferenceTask.status.in_((*ACTIVE_GENERATION_STATUSES, "running")),
-            )
+        if not body.enabled and await self._task_usage().model_active(
+            owner_user_id=self._owner_user_id(), model_id=model_id
         ):
-            raise CatalogResourceBusyError("独立模型任务尚未完成，暂不能停用模型")
-        revision = await self._bump(body.expected_catalog_revision)
+            raise CatalogResourceBusyError("模型仍有进行中的任务，暂不能停用模型")
+        revision = await self.advance_revision(body.expected_catalog_revision)
         if row.origin == "role_template" and any(
             [
                 body.slug.strip() != row.slug,
@@ -387,72 +395,26 @@ class ModelCatalogService:
 
     async def delete_model(self, model_id: str, expected: int) -> int:
         await self.get_model(model_id)
-        visual_tasks = Base.metadata.tables["visual_generation_tasks"]
-        active = await self.session.scalar(
-            select(func.count(visual_tasks.c.id)).where(
-                visual_tasks.c.model_id == model_id,
-                visual_tasks.c.status.in_(ACTIVE_GENERATION_STATUSES),
-            )
-        )
-        test_active = await self.session.scalar(
-            select(func.count(ModelTestGenerationTask.id)).where(
-                ModelTestGenerationTask.model_id == model_id,
-                ModelTestGenerationTask.status.in_(ACTIVE_GENERATION_STATUSES),
-            )
-        )
-        asr_tasks = Base.metadata.tables["galgame_asset_transcription_tasks"]
-        asr_active = await self.session.scalar(
-            select(func.count(asr_tasks.c.id)).where(
-                asr_tasks.c.model_id == model_id,
-                asr_tasks.c.status.in_(("queued", "running")),
-            )
-        )
-        inference_active = await self.session.scalar(
-            select(func.count(ModelInferenceTask.id)).where(
-                ModelInferenceTask.model_id == model_id,
-                ModelInferenceTask.status.in_((*ACTIVE_GENERATION_STATUSES, "running")),
-            )
-        )
-        if active or test_active or asr_active or inference_active:
+        if await self._task_usage().model_active(
+            owner_user_id=self._owner_user_id(), model_id=model_id
+        ):
             raise CatalogResourceBusyError("模型仍有进行中的任务")
-        revision = await self._bump(expected)
+        revision = await self.advance_revision(expected)
         await self.session.execute(delete(ModelEntry).where(ModelEntry.id == model_id))
         await self.session.commit()
         return revision
 
     async def _provider_has_active_tasks(self, provider_id: str) -> bool:
-        visual_tasks = Base.metadata.tables["visual_generation_tasks"]
-        count = await self.session.scalar(
-            select(func.count(visual_tasks.c.id)).where(
-                visual_tasks.c.provider_id == provider_id,
-                visual_tasks.c.status.in_(ACTIVE_GENERATION_STATUSES),
-            )
+        # Resolve ownership before probing occupancy; foreign IDs remain absent.
+        await self.get_provider(provider_id)
+        return await self._task_usage().provider_active(
+            owner_user_id=self._owner_user_id(), provider_id=provider_id
         )
-        test_count = await self.session.scalar(
-            select(func.count(ModelTestGenerationTask.id)).where(
-                ModelTestGenerationTask.provider_id == provider_id,
-                ModelTestGenerationTask.status.in_(ACTIVE_GENERATION_STATUSES),
-            )
-        )
-        asr_tasks = Base.metadata.tables["galgame_asset_transcription_tasks"]
-        asr_count = await self.session.scalar(
-            select(func.count(asr_tasks.c.id)).where(
-                asr_tasks.c.provider_id == provider_id,
-                asr_tasks.c.status.in_(("queued", "running")),
-            )
-        )
-        inference_count = await self.session.scalar(
-            select(func.count(ModelInferenceTask.id)).where(
-                ModelInferenceTask.provider_id == provider_id,
-                ModelInferenceTask.status.in_((*ACTIVE_GENERATION_STATUSES, "running")),
-            )
-        )
-        return bool(count or test_count or asr_count or inference_count)
 
     async def attach_local_model(self, body):
         model = definition(body.model_id)
         await require_ready(self.session, body.model_id)
-        await self._bump(body.expected_catalog_revision)
+        await self.advance_revision(body.expected_catalog_revision)
         owner_user_id = self._owner_user_id()
         provider = await self.session.scalar(
             select(ModelProvider)

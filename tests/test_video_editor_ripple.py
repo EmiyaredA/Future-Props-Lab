@@ -243,15 +243,15 @@ async def test_media_duration_is_published_before_preview_encoding(monkeypatch):
     from app.apps.video_editor import runner as runner_module
 
     started, release = threading.Event(), threading.Event()
-    prepare = runner_module._prepare_media
+    prepare = runner_module.prepare_media
 
-    def paused_prepare(source, asset, derived, probe=None):
+    def paused_prepare(source, asset_id, media_kind, derived, probe=None):
         assert probe["durationUs"] == 1_000_000
         started.set()
         assert release.wait(10), "test did not release preview encoding"
-        return prepare(source, asset, derived, probe)
+        return prepare(source, asset_id, media_kind, derived, probe)
 
-    monkeypatch.setattr(runner_module, "_prepare_media", paused_prepare)
+    monkeypatch.setattr(runner_module, "prepare_media", paused_prepare)
     buffer = io.BytesIO()
     with wave.open(buffer, "wb") as output:
         output.setparams((1, 2, 8000, 0, "NONE", "not compressed"))

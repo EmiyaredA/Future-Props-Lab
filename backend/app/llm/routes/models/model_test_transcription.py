@@ -5,8 +5,9 @@ from typing import Annotated
 from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 
-from app.deps import OwnerDep, SessionDep, StudioAuth
-from app.llm.call_logs.credentials import snapshot_from_principal
+from app.deps import OwnerDep, SessionDep
+from app.llm.http_credentials import CallCredentialDep
+from app.llm.library_inputs import library_inputs
 from app.llm.playground.transcription import (
     ModelTestTranscription,
     ModelTestTranscriptionError,
@@ -43,7 +44,7 @@ async def upload_transcription_task(
     request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
-    principal: StudioAuth,
+    credential: CallCredentialDep,
     upload: Annotated[UploadFile, File()],
     model_id: Annotated[str, Form()],
     language: Annotated[str | None, Form()] = None,
@@ -57,7 +58,6 @@ async def upload_transcription_task(
     abbreviations: Annotated[bool | None, Form()] = None,
 ) -> ModelTestTranscriptionTaskOut:
     try:
-        credential = await snapshot_from_principal(session, principal)
         result = await _transcription(session, owner_user_id).create_upload(
             upload,
             model_id=model_id,
@@ -86,11 +86,12 @@ async def create_transcription_task(
     session: SessionDep,
     owner_user_id: OwnerDep,
     body: ModelTestTranscriptionCreateIn,
-    principal: StudioAuth,
+    credential: CallCredentialDep,
 ) -> ModelTestTranscriptionTaskOut:
     try:
-        credential = await snapshot_from_principal(session, principal)
-        result = await _transcription(session, owner_user_id).create_from_library(
+        result = await ModelTestTranscription(
+            session, owner_user_id, library=library_inputs(request, session, owner_user_id)
+        ).create_from_library(
             body,
             admission=task_admission(request, session, "transcription"),
             credential=credential,

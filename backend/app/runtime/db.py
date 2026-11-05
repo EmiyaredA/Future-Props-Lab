@@ -28,3 +28,14 @@ def configure_sqlite_connection(dbapi_connection, _connection_record) -> None:
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     async with SessionLocal() as session:
         yield session
+
+
+async def close_website_database() -> None:
+    """Settle committed WAL frames after background writers and HTTP requests stop."""
+    try:
+        async with engine.connect() as connection:
+            result = (await connection.exec_driver_sql("PRAGMA wal_checkpoint(TRUNCATE)")).one()
+            if result[0] != 0:
+                raise RuntimeError("网站停机时数据库仍被占用，无法结算 WAL")
+    finally:
+        await engine.dispose()

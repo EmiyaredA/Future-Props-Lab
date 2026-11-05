@@ -220,12 +220,24 @@ def test_workspace_models_are_registered_for_tenant_scoping() -> None:
         AccountStorageUpgradeRoot,
     }
     workspace_models = {
-        mapper.class_ for mapper in Base.registry.mappers if hasattr(mapper.class_, "owner_user_id")
+        mapper.class_
+        for mapper in Base.registry.mappers
+        if mapper.class_.__module__.startswith("app.") and hasattr(mapper.class_, "owner_user_id")
     }
     missing = workspace_models - set(TENANT_MODELS) - account_governance_models
     assert not missing, "带 owner_user_id 的业务模型必须注册租户过滤：" + ", ".join(
         sorted(model.__name__ for model in missing)
     )
+
+
+def test_independent_outbox_models_use_their_service_account_scope() -> None:
+    from fpl_creative.installation_records import CreativeInstallOperation
+    from fpl_creative.models import ACCOUNT_MODELS as CREATIVE_ACCOUNT_MODELS
+    from fpl_thought.models import ACCOUNT_MODELS as THOUGHT_ACCOUNT_MODELS
+    from fpl_thought.upload_records import ThoughtUploadIntent
+
+    assert CreativeInstallOperation in CREATIVE_ACCOUNT_MODELS
+    assert ThoughtUploadIntent in THOUGHT_ACCOUNT_MODELS
 
 
 def test_galgame_asset_query_keys_have_one_owner() -> None:
