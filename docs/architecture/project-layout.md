@@ -168,6 +168,8 @@ Visual 的图片宫格由 `fpl_visual/compositions.py` 保存批次与输入版�
 
 Visual 生成模型资格、参数校验和供应商请求组装由 `app/llm/visual_generation_model.py`、`visual_generation_payload.py` 与 `visual_generation_submission.py` 共享。兼容站从同进程传入显式素材读取端口。独立 Models 的 `visual_generation_http.py` 按账号返回资格校验后的模型标识，Assets 的 `visual_generation_files.py` 核验指定工程与任务的精确原件范围、版本与读取权限。Models 的 `visual_generation_intake.py` 保存精确的输入、额度和执行决议，`visual_generation_runner.py` 在激活后复用通用生成状态机，`visual_generation_results.py` 提供受控状态、重试和原件读取。Visual 的 `generation_intake.py` 冻结画布输入，`generation_decisions.py` 在源事务落盘后投递激活。 `generation_runner.py` 投影任务进度、发布同摘要结果并确认清理，`generation_batches.py` 汇总子任务并调度可选合成。
 
+Visual 验收取样由 `fpl_visual/acceptance_samples.py` 核对记录及版本。Rendering 的 `visual_samples.py` 根据已校验的原视频版本和实际解码时间戳提取 PNG。Assets 的 `visual_evidence_upload.py` 校验整组帧的长度与摘要，在验收记录提交后公开原件。逐验收记录的证据保留集合随所属项目删除，兼容站的历史保留集合仍按工程核验。
+
 Visual 的公开验收目录由 `fpl_visual/acceptance_options.py` 装配。固定视觉模型由 Models 核对账号与配置，Mac 上的五种 CLI 由 Agent Runtime 的只读租约探测。Identity 限定授权来源，目录响应只包含可用状态和展示字段。 节点验收资料由 `acceptance/context_values.py` 从所属画布和生成记录计算，并从 Assets 读取精确的工程素材投影。方案绑定在 Visual 中按版本更新，项目汇总复用相同的资料指纹。
 
 Visual 的 Canvas、工程与历史输出由 `fpl_visual/migration_application.py` 导出及导入。 Visual 与 Galgame 复用 `fpl_runtime/edit_receipt_migration.py`，在 Canvas 或 Story 导入后分账号保留历史操作回执和原响应。迁移阻止跨归属、缺少源文档或回执版本超出当前文档的记录。Canvas 文件保留集合包含当前节点及旧输出，Assets 逐文件校验回执后提交。库内放置通过 Assets 维护入口保留原名称、目录、标识和版本。 Visual 的 `migration_generation.py` 逐账号保留历史生成任务和批次，核对画布或输出的任务来源与批次成员归属。 `migration_acceptance.py` 保留验收定义、历史结果、修复草稿和证据关联，Assets 在核对原件与工程范围后重建验收素材保留集合。

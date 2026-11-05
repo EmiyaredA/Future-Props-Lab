@@ -1,4 +1,5 @@
-from app.apps.visual_workshop.acceptance.media import extract_evidence, flush_evidence, positions
+from app.apps.visual_workshop.acceptance.media import extract_evidence, flush_evidence
+from app.apps.visual_workshop.acceptance.sample_values import positions
 from app.apps.visual_workshop.canvas import VisualCanvasDocuments
 from app.runtime.config import get_settings
 

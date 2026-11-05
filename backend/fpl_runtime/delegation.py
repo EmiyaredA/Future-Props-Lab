@@ -42,6 +42,7 @@ from .visual_generation import (
     visual_generation_model_grant,
     visual_generation_plan_grant,
 )
+from .visual_samples import sample_grant
 from .visual_snapshot import archive_grant as visual_archive_grant
 from .visual_snapshot import snapshot_grant as visual_snapshot_grant
 
@@ -236,6 +237,7 @@ def permitted(grant, catalog):
         or acceptance_asset_grant(grant)
         or visual_snapshot_grant(grant)
         or composition_grant(grant)
+        or sample_grant(grant)
         or visual_generation_model_grant(grant)
         or visual_generation_asset_grant(grant)
         or visual_generation_plan_grant(grant)

@@ -3,6 +3,7 @@
 from fastapi import APIRouter, HTTPException, Request
 
 from ..retention_api import checked_intent, private_result
+from ..visual_evidence_upload import EvidenceUploadFiles
 from ..visual_upload_stages import VisualUploadFiles
 
 router = APIRouter(include_in_schema=False)
@@ -23,8 +24,7 @@ class IncomingBody:
         await self.stream.aclose()
 
 
-@router.api_route("/_internal/v1/visual-upload/{intent_id}", methods=["GET", "POST"])
-async def visual_upload(request: Request, intent_id: str):
+async def upload_intent(request, intent_id, *, evidence=False):
     if "origin" in request.headers or "cookie" in request.headers:
         raise HTTPException(403, "visual_upload_grant_required")
     _changes, grant, _arguments = await checked_intent(request, intent_id)
@@ -32,7 +32,9 @@ async def visual_upload(request: Request, intent_id: str):
         raise HTTPException(403, "visual_upload_grant_required")
     state = request.app.state
     async with state.database.sessions(info={"owner_user_id": grant.owner_id}) as session:
-        writer = VisualUploadFiles(session, state.settings, grant.owner_id, intent_id)
+        writer = (EvidenceUploadFiles if evidence else VisualUploadFiles)(
+            session, state.settings, grant.owner_id, intent_id
+        )
         if request.method == "GET":
             return private_result(await writer.receipt())
         if request.headers.get("content-encoding", "identity").lower() != "identity":
@@ -48,8 +50,22 @@ async def visual_upload(request: Request, intent_id: str):
             if result is not True:
                 raise HTTPException(401 if result is False else 503, "visual_upload_access_ended")
 
+        if evidence:
+            return private_result(
+                await writer.receive_frames(request.stream(), length, require_active)
+            )
         incoming = IncomingBody(request)
         try:
             return private_result(await writer.receive(incoming, length, require_active))
         finally:
             await incoming.close()
+
+
+@router.api_route("/_internal/v1/visual-upload/{intent_id}", methods=["GET", "POST"])
+async def visual_upload(request: Request, intent_id: str):
+    return await upload_intent(request, intent_id)
+
+
+@router.api_route("/_internal/v1/visual-evidence-upload/{intent_id}", methods=["GET", "POST"])
+async def visual_evidence_upload(request: Request, intent_id: str):
+    return await upload_intent(request, intent_id, evidence=True)

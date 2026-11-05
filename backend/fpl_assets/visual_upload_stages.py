@@ -41,14 +41,14 @@ async def check_canvas_upload_fence(session, projection_id):
         raise conflict("visual_upload_pending")
 
 
-def reserve(session, intent, project_id, descriptor):
+def reserve(session, intent, project_id, descriptor, *, slots=2):
     session.add(
         VisualUploadStage(
             intent_id=intent.id,
             owner_user_id=intent.owner_user_id,
             project_id=project_id,
             descriptor=descriptor.model_dump(mode="json"),
-            storage_keys=[uuid4().hex, uuid4().hex],
+            storage_keys=[uuid4().hex for _ in range(slots)],
         )
     )
 
@@ -174,7 +174,10 @@ class VisualUploadFiles:
     async def _begin(self, length):
         await self.session.execute(text("BEGIN IMMEDIATE"))
         stage = await self._stage()
-        descriptor = VisualUpload.model_validate(stage.descriptor)
+        try:
+            descriptor = VisualUpload.model_validate(stage.descriptor)
+        except ValueError:
+            raise AssetError("上传准备不存在", code="not_found", status=404) from None
         maximum = self.settings.fpl_visual_asset_max_bytes
         if descriptor.byte_size > maximum:
             raise AssetError("文件超过上传大小限制", code="file_too_large", status=413)
@@ -222,19 +225,7 @@ class VisualUploadFiles:
                         defer_persistence=True,
                         reserved_storage_key=keys[index],
                     )
-                    row.id, row.revision = new_id(), 0
-                    records.append(
-                        {
-                            "id": row.id,
-                            "asset": {name: getattr(row, name) for name in SNAPSHOT_FIELDS},
-                            "result": {
-                                **AssetDescription.model_validate(
-                                    row, from_attributes=True
-                                ).model_dump(),
-                                "display_name": row.display_name,
-                            },
-                        }
-                    )
+                    records.append(staged_record(row))
             await require_active(sealed=True)
             await self.session.execute(text("BEGIN IMMEDIATE"))
             stage = await self._stage()
@@ -248,3 +239,15 @@ class VisualUploadFiles:
             await self.session.rollback()
             await _discard(self.session, storage, self.intent_id)
             raise
+
+
+def staged_record(row):
+    row.id, row.revision = new_id(), 0
+    return {
+        "id": row.id,
+        "asset": {name: getattr(row, name) for name in SNAPSHOT_FIELDS},
+        "result": {
+            **AssetDescription.model_validate(row, from_attributes=True).model_dump(),
+            "display_name": row.display_name,
+        },
+    }

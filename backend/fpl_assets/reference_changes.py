@@ -26,6 +26,7 @@ from .scoped_project_files import (
     files_for_removal,
     remove_files,
 )
+from .visual_snapshot_files import scoped_assets
 
 
 def failure(code, message, status=409):
@@ -97,6 +98,9 @@ class ReferenceChanges:
                     AssetReferenceSet.resource_id == change.resource_id,
                 )
             )
+            evidence = change.visual_evidence
+            if evidence is not None:
+                await check_project_scope(session, "visual", evidence.project_id)
             if change.visual_conversation_project is not None:
                 await check_project_scope(session, "visual", change.visual_conversation_project)
             file_change = change.resource_kind in VIDEO_FILE_CHANGES
@@ -121,6 +125,10 @@ class ReferenceChanges:
                 if row.scope_project_id not in {None, change.visual_conversation_project}:
                     raise failure("project_conversation_scope", "对话不属于当前项目")
                 row.scope_project_id = change.visual_conversation_project
+            if evidence is not None:
+                if row.scope_project_id not in {None, evidence.project_id}:
+                    raise failure("project_evidence_scope", "验收证据不属于当前项目")
+                row.scope_project_id = evidence.project_id
             if change.expected_resource_revision < row.resource_revision:
                 raise failure("resource_revision_conflict", "源资源版本已过期")
             active = await session.scalar(
@@ -217,6 +225,11 @@ class ReferenceChanges:
                         )
                     )
                 )
+            elif requested and evidence is not None:
+                candidates = await scoped_assets(
+                    session, evidence.project_id, requested, include_private=False
+                )
+                present = {asset.id for asset, _ in candidates}
             elif requested and describe_canvas:
                 present, known = await canvas_files(session, row, change)
                 unavailable = requested - present
@@ -273,6 +286,10 @@ class ReferenceChanges:
             await session.flush()
             if change.visual_upload is not None:
                 visual_upload_stages.reserve(session, intent, row.resource_id, change.visual_upload)
+            if evidence is not None:
+                visual_upload_stages.reserve(
+                    session, intent, evidence.project_id, evidence, slots=len(evidence.frames)
+                )
             session.add_all(
                 [
                     PreparedAssetPin(intent_id=identifier, asset_id=asset_id, owner_user_id=owner)
@@ -360,7 +377,7 @@ class ReferenceChanges:
             if row.resource_revision > resource_revision or intent.state == "superseded":
                 state = "superseded"
             else:
-                if service == "visual" and row.resource_kind == "canvas":
+                if service == "visual" and row.resource_kind in {"canvas", "acceptance"}:
                     desired.update(await visual_upload_stages.publish(session, intent))
                 current = set(
                     (
@@ -451,7 +468,7 @@ class ReferenceChanges:
             await session.execute(
                 delete(PreparedAssetPin).where(PreparedAssetPin.intent_id == intent.id)
             )
-            if service == "visual" and row.resource_kind == "canvas":
+            if service == "visual" and row.resource_kind in {"canvas", "acceptance"}:
                 await visual_upload_stages.abort(session, intent)
             if intent.state != "superseded":
                 intent.state = "aborted"

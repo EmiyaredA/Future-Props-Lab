@@ -26,7 +26,13 @@ async def scoped_assets(session, project, identities, *, include_private, includ
             AssetReferenceSet.owner_user_id == owner,
             AssetReferenceSet.service_id == "visual",
             AssetReferenceSet.resource_kind.in_(("canvas", "acceptance")),
-            AssetReferenceSet.resource_id == project,
+            or_(
+                AssetReferenceSet.resource_id == project,
+                and_(
+                    AssetReferenceSet.resource_kind == "acceptance",
+                    AssetReferenceSet.scope_project_id == project,
+                ),
+            ),
             AssetReferenceSet.deleted.is_(False),
         )
     )

@@ -12,6 +12,9 @@ async def pending_outcomes(session, project_id, conversations=()):
         model.change["resource_id"].as_string(),
     )
     scope = (kind == "canvas") & (resource_id == project_id)
+    scope |= (kind == "acceptance") & (
+        model.change["visual_evidence"]["project_id"].as_string() == project_id
+    )
     if conversations:
         scope |= (kind == "conversation") & resource_id.in_(conversations)
     identities = list(

@@ -12,9 +12,9 @@ from app.apps.visual_workshop.acceptance.media import (
     flush_evidence,
     image_input,
     metadata,
-    positions,
 )
 from app.apps.visual_workshop.acceptance.models import AcceptanceRun
+from app.apps.visual_workshop.acceptance.sample_values import positions
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.inspection import inspect_media, verify_video

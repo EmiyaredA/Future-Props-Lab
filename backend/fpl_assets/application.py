@@ -34,6 +34,8 @@ from fpl_runtime.visual_assistant import MAX_QUERY_BYTES as MAX_CONVERSATION_QUE
 from fpl_runtime.visual_composition import ASSETS as VISUAL_GRID_ASSETS
 from fpl_runtime.visual_composition import MAX_PLAN_BYTES as MAX_VISUAL_GRID_BYTES
 from fpl_runtime.visual_generation import ASSETS as VISUAL_GENERATION_ASSETS
+from fpl_runtime.visual_samples import ASSETS as VISUAL_SAMPLE_ASSETS
+from fpl_runtime.visual_samples import MAX_REQUEST_BYTES as MAX_VISUAL_SAMPLE_REQUEST
 from fpl_runtime.visual_snapshot import ASSETS as VISUAL_SNAPSHOT_FILES
 from fpl_runtime.visual_snapshot import MAX_QUERY_BYTES as MAX_VISUAL_SNAPSHOT_QUERY_BYTES
 
@@ -77,6 +79,7 @@ from .routes.visual_archives import router as visual_archives_router
 from .routes.visual_assistant import router as conversation_assets_router
 from .routes.visual_generation import router as visual_generation_router
 from .routes.visual_grids import router as visual_grids_router
+from .routes.visual_sample_assets import router as visual_sample_assets_router
 from .routes.visual_snapshot import router as visual_snapshot_router
 from .routes.visual_upload import router as visual_upload_router
 from .video_segment_bundles import cleanup_bundles
@@ -240,6 +243,8 @@ def create_app(
     app.add_middleware(RequestLimit, prefix=VISUAL_GENERATION_ASSETS, maximum=32 * 1024)
     app.include_router(visual_grids_router)
     app.add_middleware(RequestLimit, prefix=VISUAL_GRID_ASSETS, maximum=MAX_VISUAL_GRID_BYTES)
+    app.include_router(visual_sample_assets_router)
+    app.add_middleware(RequestLimit, prefix=VISUAL_SAMPLE_ASSETS, maximum=MAX_VISUAL_SAMPLE_REQUEST)
     app.include_router(visual_snapshot_router)
     app.add_middleware(
         RequestLimit, prefix=VISUAL_SNAPSHOT_FILES, maximum=MAX_VISUAL_SNAPSHOT_QUERY_BYTES

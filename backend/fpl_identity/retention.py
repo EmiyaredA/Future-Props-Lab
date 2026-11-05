@@ -26,6 +26,7 @@ from fpl_runtime.retention_authority import (
 from fpl_runtime.video_assets import SOURCE as VIDEO
 from fpl_runtime.video_handoff import handoff_target
 from fpl_runtime.visual_assistant import conversation_retention
+from fpl_runtime.visual_samples import evidence_resource, sample_source
 
 from .live import active_actor
 
@@ -287,6 +288,15 @@ class RetentionAuthorization:
             and not conversation_retention(body)
         ):
             raise HTTPException(403, "retention_resource_mismatch")
+        if body.change.visual_evidence is not None:
+            sample = sample_source(body.source_method, body.source_path)
+            if (
+                body.caller != "visual"
+                or not sample
+                or (sample[1], evidence_resource(sample[2]))
+                != (body.change.visual_evidence.project_id, body.change.resource_id)
+            ):
+                raise HTTPException(403, "retention_resource_mismatch")
         if body.caller == "galgame" and not (
             (body.change.resource_kind == "story" and _galgame_story_source(body))
             or _galgame_file_source(body)

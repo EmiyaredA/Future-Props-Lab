@@ -28,6 +28,7 @@ from fpl_runtime.web import attach_web, load_release
 
 from .acceptance_nodes_http import router as acceptance_nodes_router
 from .acceptance_options import router as acceptance_options_router
+from .acceptance_samples_http import router as samples_router
 from .assistant_http import router as assistant_router
 from .catalog_http import acceptance as acceptance_catalog_router
 from .catalog_http import generation as generation_catalog_router
@@ -109,6 +110,7 @@ def create_app(
     app.include_router(acceptance_catalog_router)
     app.include_router(acceptance_options_router)
     app.include_router(acceptance_nodes_router)
+    app.include_router(samples_router)
     app.state.snapshot_authorization = LiveAuthorization(
         service="visual", credential=credential, transport=transport
     )

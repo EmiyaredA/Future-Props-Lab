@@ -26,7 +26,10 @@ def project_children(projection, identities):
             ),
             and_(
                 AssetReferenceSet.resource_kind == "acceptance",
-                AssetReferenceSet.resource_id == projection.resource_id,
+                or_(
+                    AssetReferenceSet.resource_id == projection.resource_id,
+                    AssetReferenceSet.scope_project_id == projection.resource_id,
+                ),
             ),
         ),
         AssetReferenceSet.deleted.is_(False),

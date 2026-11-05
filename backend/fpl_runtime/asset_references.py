@@ -5,6 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from .visual_samples import VisualEvidenceUpload
 from .visual_upload import VisualUpload
 
 PROJECT_FILE_CHANGES = frozenset({"file-name", "file-removal"})
@@ -99,6 +100,7 @@ class PrepareReferenceChange(BaseModel):
     galgame_file_mutation: GalgameFileMutation | None = None
     galgame_project_removal: Literal[True] | None = None
     visual_upload: VisualUpload | None = None
+    visual_evidence: VisualEvidenceUpload | None = None
     visual_project_removal: list[str] | None = Field(default=None, max_length=10000)
     visual_conversation_project: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]{1,128}$")
 
@@ -148,6 +150,13 @@ class PrepareReferenceChange(BaseModel):
             or self.carried_asset_ids != self.asset_ids
         ):
             raise ValueError("Visual 上传范围无效")
+        if self.visual_evidence is not None and (
+            self.resource_kind != "acceptance"
+            or self.visual_evidence.source_asset_id not in self.asset_ids
+            or self.metadata_asset_ids is not None
+            or self.carried_asset_ids is not None
+        ):
+            raise ValueError("Visual 验收证据范围无效")
         if self.visual_conversation_project is not None and self.resource_kind != "conversation":
             raise ValueError("Visual 对话范围无效")
         return self
@@ -172,5 +181,6 @@ class PrepareReferenceChange(BaseModel):
             self.visual_project_removal is not None
             or self.visual_conversation_project is not None
             or self.visual_upload is not None
+            or self.visual_evidence is not None
         ):
             raise ValueError("Visual 变更范围与所属服务不符")
