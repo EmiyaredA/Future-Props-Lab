@@ -25,7 +25,7 @@ from app.llm.providers.senseaudio_image import create_image_task, get_image_task
 from app.llm.providers.senseaudio_video import create_video_task, get_video_task
 from app.llm.providers.temporary_media import TemporaryMediaError, upload_temporary_media
 from app.llm.providers.volcengine_image import generate_image
-from app.runtime.outbound_urls import require_safe_provider_base_url
+from studio.runtime.http.outbound_urls import require_safe_provider_base_url
 
 MAX_PROVIDER_CONTENT_BYTES = 64 * 1024 * 1024
 

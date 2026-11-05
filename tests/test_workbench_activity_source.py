@@ -7,9 +7,9 @@ import pytest
 
 from app.console.cloud_control import access
 from app.main import app
-from app.runtime.config import CloudProject, get_settings
 from studio.apps.agent_workbench.execution import runner
 from studio.apps.agent_workbench.transport.website import execution
+from studio.config.settings import CloudProject, get_settings
 from test_cloud_control import WORKBENCH, admin_client, await_turn, configure, enroll
 
 pytestmark = pytest.mark.real_auth

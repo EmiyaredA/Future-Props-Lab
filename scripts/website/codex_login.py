@@ -16,7 +16,7 @@ from app.capabilities.agents.cli.codex_profile import (  # noqa: E402
     profile_path,
 )
 from app.capabilities.agents.cli.transport import CliError  # noqa: E402
-from app.runtime.config import get_cloud_settings  # noqa: E402
+from studio.config.settings import get_cloud_settings  # noqa: E402
 
 
 def main():

@@ -17,7 +17,7 @@ from app.console.governance.code_agents import resolve
 from app.demo_runtime.runtime import tool_reply
 from app.integrations.mcp.catalog import McpCatalog
 from app.integrations.tool_apis.catalog import ToolApiCatalog
-from app.runtime.operation_receipts import OperationError
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now
 

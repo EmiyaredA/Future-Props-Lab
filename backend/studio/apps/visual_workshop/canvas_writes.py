@@ -5,7 +5,6 @@ from uuid import uuid4
 from pydantic import ValidationError
 from sqlalchemy import select, text
 
-from app.runtime.operation_receipts import record, replay
 from studio.apps.visual_workshop.canvas_asset_values import existing_assets, expected_assets
 from studio.apps.visual_workshop.canvas_documents import CanvasDocuments
 from studio.apps.visual_workshop.canvas_values import canvas_out
@@ -19,6 +18,7 @@ from studio.apps.visual_workshop.schemas.workshop import VisualCanvasDocumentOut
 from studio.apps.visual_workshop.storage.models import VisualGenerationBatch, VisualGenerationTask
 from studio.contracts.asset_library.references import PrepareReferenceChange
 from studio.contracts.visual_workshop.visual_assistant import approval_source
+from studio.runtime.database.operation_receipts import record, replay
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 from studio.runtime.ids import new_id
 from studio.runtime.project_errors import ProjectResourceError

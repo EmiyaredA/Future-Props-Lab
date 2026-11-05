@@ -26,7 +26,7 @@ from app.capabilities.asset_store.schemas.files import (
     LibraryFolderImportSkippedOut,
 )
 from app.capabilities.asset_store.storage import AssetStorage
-from app.runtime.config import Settings
+from studio.config.settings import Settings
 
 STAGING_DIRNAME = "library-folder-archives"
 

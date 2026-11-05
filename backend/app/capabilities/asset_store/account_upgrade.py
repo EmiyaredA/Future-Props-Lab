@@ -13,7 +13,7 @@ from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.asset_store.upgrade_records import AccountStorageUpgradeRoot as Root
-from app.runtime.ownership import bind_owner
+from studio.runtime.database.ownership import bind_owner
 
 _lock = asyncio.Lock()
 

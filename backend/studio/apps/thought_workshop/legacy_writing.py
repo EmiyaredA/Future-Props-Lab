@@ -13,10 +13,10 @@ from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
 from app.llm.providers.chat_completions import TEXT_PROVIDER_KINDS
 from app.llm.providers.streaming import ChatMessageInput, stream_text_completion
 from app.runtime.credentials import decrypt_secret
-from app.runtime.ownership import bind_owner
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.schemas.workshop import ThoughtModelOut
 from studio.apps.thought_workshop.writing import WritingModel
+from studio.runtime.database.ownership import bind_owner
 
 
 async def list_models(session, owner_user_id) -> list[ThoughtModelOut]:

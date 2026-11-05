@@ -68,7 +68,7 @@ def run(options):
     if not options.config.is_file():
         raise ValueError("缺少只读服务配置")
     os.environ["FPL_CONFIG_FILE"] = str(options.config.resolve())
-    from app.runtime.config import get_settings
+    from studio.config.settings import get_settings
 
     settings = get_settings()
     state = options.state_root.resolve()

@@ -35,7 +35,7 @@ from app.llm.playground.generation import ACTIVE_GENERATION_STATUSES
 from app.llm.providers.temporary_media import TemporaryMediaError
 from app.llm.providers.zealman_live import ZealmanLiveMonitor
 from app.llm.providers.zealman_video import create_task, get_task, upload_reference
-from app.runtime.config import Settings, get_settings
+from studio.config.settings import Settings, get_settings
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now
 

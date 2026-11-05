@@ -12,8 +12,8 @@ from anyio.to_thread import run_sync
 
 from app.integrations.skills.archive import SkillArchiveStorage
 from app.integrations.skills.catalog import SkillCatalog
-from app.runtime.operation_receipts import OperationError
 from studio.contracts.amadeus.amadeus_skills import SkillPin
+from studio.runtime.database.operation_receipts import OperationError
 
 
 @dataclass(frozen=True)

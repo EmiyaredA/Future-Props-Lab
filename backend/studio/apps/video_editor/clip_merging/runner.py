@@ -10,9 +10,9 @@ from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.media_rendering.render_engine import RenderCancelled, render_document
 from app.capabilities.media_rendering.timeline_document import parse_timeline_document
 from app.capabilities.media_rendering.video_output import verify_clip_merge_output
-from app.runtime.ownership import bind_owner
 from studio.apps.video_editor.clip_merging.document import render_snapshot
 from studio.apps.video_editor.storage.models import VideoEditorAssetMetadata, VideoEditorTask
+from studio.runtime.database.ownership import bind_owner
 from studio.runtime.ids import new_id
 from studio.runtime.time import utc_now
 

@@ -16,7 +16,6 @@ from app.capabilities.media_rendering.galgame.compiler import (
 )
 from app.capabilities.media_rendering.galgame.lip_sync import prepare_audio_envelopes
 from app.capabilities.media_rendering.render_capacity import galgame_capacity
-from app.runtime.config import Settings, get_settings
 from studio.apps.galgame_workshop.schemas import (
     GalgameVideoExportCreateIn,
     GalgameVideoExportFrameIn,
@@ -35,6 +34,7 @@ from studio.apps.galgame_workshop.story.story import GalgameStoryDocuments
 from studio.apps.galgame_workshop.task_views import export_task_out as _task_out
 from studio.apps.galgame_workshop.video.export_preview import preview_export
 from studio.apps.galgame_workshop.video.video_export_planning import EXPORT_PACKAGING_POLICY
+from studio.config.settings import Settings, get_settings
 from studio.runtime.time import utc_now
 
 __all__ = ["EXPORT_PACKAGING_POLICY", "GalgameVideoExports"]

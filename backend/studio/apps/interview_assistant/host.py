@@ -13,7 +13,6 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 from sqlalchemy import select, text
 
-from app.runtime.operation_receipts import OperationError
 from studio.apps.interview_assistant.files import MAX_FILE_BYTES, material_path
 from studio.apps.interview_assistant.storage.models import InterviewPreparation, InterviewRoom
 from studio.apps.interview_assistant.storage.service_models import InterviewNativeLease
@@ -25,6 +24,7 @@ from studio.contracts.interview_assistant.execution import (
     ExecutionInput,
     ExecutionResult,
 )
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.tasks.native_queue import digest
 from studio.runtime.time import iso_utc, utc_now
 

@@ -10,7 +10,6 @@ from tests.test_community_asset_protocol import CATALOG, scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 from tests.test_integrations_application import Ports
 
-from app.runtime.config import Settings
 from studio.apps.amadeus.storage.migrations.registry import MIGRATIONS as AMADEUS_MIGRATIONS
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.integrations.storage.migrations.registry import (
@@ -18,6 +17,7 @@ from studio.apps.integrations.storage.migrations.registry import (
 )
 from studio.assembly.independent.amadeus.application import create_app as create_amadeus
 from studio.assembly.independent.integrations.application import create_app as create_integrations
+from studio.config.settings import Settings
 from studio.contracts.amadeus.amadeus_skills import PURPOSE, SKILL_SOURCE
 from studio.contracts.identity.delegation import RequestGrant, permitted
 from studio.runtime.database.migrations import apply

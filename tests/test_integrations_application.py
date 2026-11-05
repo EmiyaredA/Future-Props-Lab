@@ -19,10 +19,10 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import select
 
 from app.integrations.mcp.client import DiscoveredTool, DiscoveryResult
-from app.runtime.config import Settings, get_settings
 from studio.apps.integrations.records import ValidationAttempt
 from studio.apps.integrations.storage.migrations.registry import MIGRATIONS
 from studio.assembly.independent.integrations.application import create_app
+from studio.config.settings import Settings, get_settings
 from studio.contracts.gateway.protocol_hash import public_contract
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.claims import Actor, issue_context

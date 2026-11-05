@@ -1,6 +1,6 @@
 """Account-private bounded avatars never import file-library state or media jobs."""
 
-from app.runtime.raster import RasterPreviews
+from studio.runtime.files.raster import RasterPreviews
 
 _previews = RasterPreviews(capacity=1)
 

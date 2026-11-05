@@ -7,12 +7,12 @@ from fastapi.responses import StreamingResponse
 from starlette.background import BackgroundTask
 
 from app.integrations.common import IntegrationNotFoundError
-from app.runtime.operation_receipts import OperationError
 from studio.apps.integrations.amadeus_skill_archive import snapshot
 from studio.contracts.amadeus.amadeus_skills import HEADER as SKILL_HEADER
 from studio.contracts.amadeus.amadeus_skills import SKILL_SOURCE, pin_target
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.permissions import effective_permissions
+from studio.runtime.database.operation_receipts import OperationError
 
 router = APIRouter(include_in_schema=False)
 

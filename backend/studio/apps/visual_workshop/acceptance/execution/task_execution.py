@@ -6,8 +6,8 @@ import sys
 from pathlib import Path
 
 from app.capabilities.agents.cli.process import execute
-from app.runtime.config import REPO_ROOT
 from studio.apps.visual_workshop.acceptance.execution.task_tools import file_digest, safe_file
+from studio.config.settings import REPO_ROOT
 from studio.contracts.visual_workshop.visual_agent_report import validate_report
 
 PROMPT = (

@@ -10,12 +10,12 @@ from app.capabilities.asset_store.layout_migration import reconcile_project_tras
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.main import app
-from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 from studio.apps.galgame_workshop.storage.models import GalgameWorkshopProject
 from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.storage.models import VisualWorkshopProject
+from studio.config.settings import get_settings
 
 
 async def _reset() -> None:

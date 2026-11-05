@@ -17,11 +17,11 @@ from PIL import Image
 from app.console.cloud_control import access, desktop
 from app.console.governance.provisioning import create_account
 from app.main import app
-from app.runtime.config import CloudProject, get_settings
 from app.runtime.db import SessionLocal
 from db.migrations import runner as migration_runner
 from studio.apps.agent_workbench.execution import events, project_files, projects, runner, storage
 from studio.apps.agent_workbench.transport.website import execution
+from studio.config.settings import CloudProject, get_settings
 
 pytestmark = pytest.mark.real_auth
 PASSWORD = "Cloud-Control-Isolated-Test-2026!"
@@ -737,8 +737,8 @@ async def test_desktop_websocket_checks_origin_consumes_ticket_and_closes_on_log
 
 
 async def test_sandboxed_preset_can_read_project_but_cannot_read_private_paths(tmp_path):
-    from app.runtime.config import CloudCommand
     from studio.apps.agent_workbench.execution.commands import available, run_command
+    from studio.config.settings import CloudCommand
 
     if not available():
         pytest.skip("macOS sandbox required")
@@ -804,7 +804,7 @@ async def test_restart_expires_pending_approval_and_preserves_unknown_result():
 async def test_local_setup_is_scoped_and_applies_without_restart(monkeypatch, tmp_path, vnc_only):
     from app.console.cloud_control import setup
     from app.console.governance import code_agent_connections
-    from app.runtime import config
+    from studio.config import settings as config
 
     file = tmp_path / "config.toml"
     file.write_text(

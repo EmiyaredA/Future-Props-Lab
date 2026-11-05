@@ -16,7 +16,6 @@ from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.motion_document import MotionComposition
-from app.runtime.config import get_settings
 from studio.apps.motion_compositor.projects import MotionInvalid, MotionProjects
 from studio.apps.motion_compositor.schemas import OperationBatchIn, ProjectCreateIn, ProjectOut
 from studio.apps.motion_compositor.snapshot_format import (
@@ -25,6 +24,7 @@ from studio.apps.motion_compositor.snapshot_format import (
     archive_asset,
     archive_manifest,
 )
+from studio.config.settings import get_settings
 
 
 class MotionSnapshots:

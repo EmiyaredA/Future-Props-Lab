@@ -5,9 +5,9 @@ from datetime import datetime
 import jwt
 from fastapi import HTTPException
 
-from app.runtime.ownership import bind_owner
 from studio.contracts.identity.claims import Actor, verify_context
 from studio.contracts.identity.principal import StudioPrincipal
+from studio.runtime.database.ownership import bind_owner
 
 
 def socket_authenticator(public_key, identity):

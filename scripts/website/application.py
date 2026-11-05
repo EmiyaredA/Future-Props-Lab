@@ -59,8 +59,8 @@ async def authenticate_browser(scope, receive):
 
 
 def create_app():
-    from app.runtime.config import get_settings
     from db.migrations import check_migrations
+    from studio.config.settings import get_settings
 
     settings = get_settings()
     # Every reload checks before app.main can import the database or run lifespan.
@@ -72,7 +72,7 @@ def create_app():
     from app.capabilities.web_access.runtime import WebAccess
     from app.console.governance.automation_access import automation_allowed
     from app.main import app
-    from app.runtime.website import CurrentWebsite, attach_website
+    from studio.runtime.http.website import CurrentWebsite, attach_website
 
     web_root = Path(settings.fpl_website_web_root).expanduser()
     if not web_root.is_absolute():

@@ -7,7 +7,7 @@ import httpx
 
 from app.llm.providers._senseaudio import ProviderTaskStatus, sanitize_provider_message
 from app.llm.providers.seedance_parameters import normalize_video_parameters
-from app.runtime.outbound_urls import require_safe_provider_base_url
+from studio.runtime.http.outbound_urls import require_safe_provider_base_url
 
 ARK_BASE_URL = "https://ark.cn-beijing.volces.com/api/v3"
 

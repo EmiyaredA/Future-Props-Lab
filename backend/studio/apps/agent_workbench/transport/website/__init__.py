@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
 
 from app.deps import OwnerDep, SessionDep, StudioAuth
-from app.runtime.website import require_local_browser
 from studio.apps.agent_workbench import reading, sources
 from studio.apps.agent_workbench.attachments import attachment_reference
 from studio.apps.agent_workbench.events import stream_events
@@ -21,6 +20,7 @@ from studio.apps.agent_workbench.schemas import (
     WorkbenchSourcePatch,
 )
 from studio.apps.agent_workbench.transport.website.execution import router as execution_router
+from studio.runtime.http.website import require_local_browser
 
 
 async def require_workbench_session(principal: StudioAuth, session: SessionDep):

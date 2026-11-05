@@ -6,8 +6,6 @@ from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
 from app.capabilities.asset_store.storage import AssetStorage
-from app.runtime.config import get_settings
-from app.runtime.image_sizes import ThumbnailSize
 from studio.apps.thought_workshop.multitable.storage import asset_ids, snapshot
 from studio.apps.thought_workshop.publication.access import (
     article,
@@ -21,6 +19,8 @@ from studio.apps.thought_workshop.publication.mutations import begin_write
 from studio.apps.thought_workshop.publication.sessions import source_sessions
 from studio.apps.thought_workshop.schemas.document import file_ids
 from studio.apps.thought_workshop.schemas.workshop import ThoughtAttachmentOut
+from studio.config.settings import get_settings
+from studio.runtime.files.image_sizes import ThumbnailSize
 
 
 async def content(

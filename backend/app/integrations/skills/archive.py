@@ -14,7 +14,7 @@ import yaml
 
 from app.capabilities.asset_store.incoming import IncomingFile
 from app.integrations.common import IntegrationValidationError
-from app.runtime.config import Settings
+from studio.config.settings import Settings
 
 SKILL_MD_MAX_BYTES = 256 * 1024
 SKILL_DESCRIPTION_MAX_LENGTH = 4000

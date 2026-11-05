@@ -14,8 +14,8 @@ from collections.abc import Awaitable, Callable
 from pathlib import Path
 
 from app.console.amadeus.files import read_file_bytes, work_root
-from app.runtime.config import REPO_ROOT
-from app.runtime.operation_receipts import OperationError
+from studio.config.settings import REPO_ROOT
+from studio.runtime.database.operation_receipts import OperationError
 
 SCRIPT_TIMEOUT_SECONDS = 120
 

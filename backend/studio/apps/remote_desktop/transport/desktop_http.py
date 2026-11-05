@@ -12,11 +12,11 @@ from app.console.cloud_control.schemas import (
     DesktopLogin,
     IdlePreference,
 )
-from app.runtime.website import require_local_browser
 from studio.config import ConfigurationError
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.cloud_authority import DESKTOP_COOKIE, DESKTOP_SOCKET, TICKET_SECONDS
 from studio.runtime.http.dependencies import SessionDep, StudioAuth
+from studio.runtime.http.website import require_local_browser
 
 router = APIRouter(prefix="/cloud-control", tags=["cloud-control"])
 

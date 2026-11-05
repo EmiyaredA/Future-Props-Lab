@@ -19,9 +19,7 @@ from app.capabilities.media_rendering.timeline_document import VideoEditorChroma
 from app.capabilities.media_rendering.video_bake_document import bake_video_document
 from app.capabilities.media_rendering.video_derivatives import prepare_media, probe_media
 from app.capabilities.media_rendering.video_output import verify_video_output
-from app.runtime.config import Settings, get_settings
 from app.runtime.db import SessionLocal
-from app.runtime.ownership import bind_owner, require_owner_id
 from studio.apps.video_editor.baking.bake_organization import insert_baked_asset_in_organization
 from studio.apps.video_editor.clip_merging.runner import process_clip_merge
 from studio.apps.video_editor.handoffs.segment_runner import VideoEditorSegmentTaskRunner
@@ -31,6 +29,8 @@ from studio.apps.video_editor.storage.models import (
     VideoEditorProject,
     VideoEditorTask,
 )
+from studio.config.settings import Settings, get_settings
+from studio.runtime.database.ownership import bind_owner, require_owner_id
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now
 

@@ -1,6 +1,6 @@
 """Only browser-authenticated platform administrators manage shared host resources."""
 
-from app.runtime.operation_receipts import OperationError
+from studio.runtime.database.operation_receipts import OperationError
 
 
 def can_manage_local_models(principal):

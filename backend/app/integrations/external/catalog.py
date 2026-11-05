@@ -4,8 +4,8 @@ import httpx
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 
-from app.runtime.config import get_settings
 from app.runtime.credentials import SecretCipher
+from studio.config.settings import get_settings
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import iso_utc, utc_now
 

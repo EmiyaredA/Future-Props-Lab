@@ -14,7 +14,6 @@ from app.console.governance.database_auth import authenticate_database_request
 from app.console.models.accounts import AuthSession, ManagementApiKey, SecurityAuditEvent, User
 from app.console.models.platform_governance import RegistrationInviteCode, RegistrationRedemption
 from app.console.routes import account_management, accounts, cloud_totp, registration
-from app.runtime.config import get_cloud_settings, get_settings
 from studio.apps.identity.account_directory import router as account_directory_router
 from studio.apps.identity.accounts import create_account
 from studio.apps.identity.authorization import router as authorization_router
@@ -45,6 +44,7 @@ from studio.apps.identity.transport.integration_intent_http import (
 )
 from studio.apps.identity.transport.model_audit_http import router as model_audit_router
 from studio.config import ConfigurationError
+from studio.config.settings import get_cloud_settings, get_settings
 from studio.contracts.identity.certification import MAX_BODY as CERTIFICATION_BODY
 from studio.contracts.identity.certification import PREFIX as CERTIFICATION_PREFIX
 from studio.contracts.identity.errors import AccountError

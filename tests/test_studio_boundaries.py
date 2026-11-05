@@ -1,6 +1,8 @@
 """Architecture gates for components already migrated to Studio."""
 
 import ast
+import subprocess
+import sys
 from importlib.util import resolve_name
 from pathlib import Path
 
@@ -168,6 +170,21 @@ def test_identity_image_includes_migrated_configuration():
     from studio.deployment.images import source_closure
 
     assert "studio.config" in source_closure(ROOT, "identity")
+
+
+def test_settings_import_does_not_read_configuration_or_load_database():
+    code = """
+import sys
+import studio.config
+
+def forbidden(*args, **kwargs):
+    raise AssertionError("configuration read during module import")
+
+studio.config.read_config = forbidden
+import studio.config.settings
+assert not any(name == 'sqlalchemy' or name.startswith('app.') for name in sys.modules)
+"""
+    subprocess.run([sys.executable, "-c", code], cwd=ROOT / "backend", check=True)
 
 
 @pytest.mark.parametrize(

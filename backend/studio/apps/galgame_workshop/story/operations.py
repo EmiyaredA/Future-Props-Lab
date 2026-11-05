@@ -1,7 +1,7 @@
-from app.runtime.operation_receipts import record, replay
 from studio.apps.galgame_workshop.schemas import GalgameStoryDocumentOut
 from studio.apps.galgame_workshop.story.operation_values import transform as transform
 from studio.apps.galgame_workshop.story.story import GalgameStoryDocuments
+from studio.runtime.database.operation_receipts import record, replay
 from studio.runtime.revisions import RevisionConflictError
 
 

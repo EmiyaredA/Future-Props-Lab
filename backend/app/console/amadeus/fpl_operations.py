@@ -10,8 +10,8 @@ import httpx
 from fastapi.middleware.asyncexitstack import AsyncExitStackMiddleware
 from starlette.middleware.exceptions import ExceptionMiddleware
 
-from app.runtime.operation_receipts import OperationError
 from studio.contracts.gateway.automation_manifest import automation_manifest
+from studio.runtime.database.operation_receipts import OperationError
 
 PARAMETER = re.compile(r"\{([a-zA-Z_][a-zA-Z0-9_]*)\}")
 RESPONSE_LIMIT = 1024 * 1024

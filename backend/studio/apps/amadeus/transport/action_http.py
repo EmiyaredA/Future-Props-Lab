@@ -8,7 +8,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 
 from app.console.amadeus.schemas import ActionOut
-from app.runtime.operation_receipts import OperationError
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.http.dependencies import StudioAuth
 
 router = APIRouter(prefix="/v1/amadeus", tags=["amadeus"])

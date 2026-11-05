@@ -5,28 +5,45 @@ const PNG = Buffer.from(
   "base64",
 );
 
-test("真实前后端可通过 UI 创建视觉项目并上传项目图片", async ({ page }) => {
+test("真实前后端可通过 UI 创建视觉项目并上传项目图片", async ({
+  page,
+}, info) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/apps/visual-workshop");
-  await page.getByRole("button", { name: "新建项目" }).click();
-  await expect(page).toHaveURL(
-    /\/apps\/visual-workshop\/projects\/[^/]+\/canvas$/,
-  );
-
+  await test.step("创建视觉项目并进入画布", async () => {
+    await page.goto("/apps/visual-workshop");
+    await page.getByRole("button", { name: "新建项目" }).click();
+    await expect(page).toHaveURL(
+      /\/apps\/visual-workshop\/projects\/[^/]+\/canvas$/,
+    );
+  });
   await page.getByRole("button", { name: "素材库" }).click();
   await expect(
     page.getByRole("complementary", { name: "项目素材库" }),
   ).toBeVisible();
 
-  await page.getByLabel("选择要上传的文件").setInputFiles({
-    name: "真实烟测.png",
-    mimeType: "image/png",
-    buffer: PNG,
+  await test.step("上传项目图片", async () => {
+    await page.getByLabel("选择要上传的文件").setInputFiles({
+      name: "真实烟测.png",
+      mimeType: "image/png",
+      buffer: PNG,
+    });
   });
-
   const uploadedAsset = page.getByRole("button", { name: /预览.*真实烟测/ });
   await expect(uploadedAsset).toBeVisible();
   await expect(uploadedAsset).toContainText("真实烟测");
   await expect(uploadedAsset).toContainText(/图片/);
   await expect(page.getByText(/已成功上传|已上传/)).toBeVisible();
+
+  await test.step("刷新画布，确认素材已持久化", async () => {
+    await page.reload();
+    const library = page.getByRole("complementary", { name: "项目素材库" });
+    if (!(await library.isVisible())) {
+      await page.getByRole("button", { name: "素材库" }).click();
+    }
+    await expect(uploadedAsset).toBeVisible();
+    await info.attach("刷新后的项目素材库", {
+      body: await page.screenshot(),
+      contentType: "image/png",
+    });
+  });
 });

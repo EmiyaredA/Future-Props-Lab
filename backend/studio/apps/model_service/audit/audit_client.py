@@ -6,13 +6,13 @@ from uuid import uuid4
 
 import httpx
 
-from app.runtime.operation_receipts import OperationError
 from studio.contracts.model_service.model_audit import (
     AuditSource,
     ModelAuditReceipt,
     ModelAuditRecord,
     PreparedModelAudit,
 )
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.time import utc_now
 
 

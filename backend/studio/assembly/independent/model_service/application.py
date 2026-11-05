@@ -37,7 +37,6 @@ from app.llm.routes.models import (
 )
 from app.llm.routes.models.catalog import router as catalog_router
 from app.llm.stream_access import ModelStreamAccess
-from app.runtime.operation_receipts import OperationError
 from studio.apps.model_service.account_events import CatalogProvisioningRunner
 from studio.apps.model_service.admission.admission import ModelAdmission, settle
 from studio.apps.model_service.admission.execution_authority import ModelTaskAuthority
@@ -106,6 +105,7 @@ from studio.contracts.visual_workshop.visual_snapshot import (
 )
 from studio.contracts.visual_workshop.visual_snapshot import MODELS as VISUAL_SNAPSHOT_MODELS
 from studio.runtime.database.migrations import check
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.database.sessions import Database
 from studio.runtime.http.authentication import SignedIdentity
 from studio.runtime.http.problem_details import (

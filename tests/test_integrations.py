@@ -35,10 +35,10 @@ from app.integrations.skills.catalog import SkillCatalog
 from app.integrations.tool_apis import ToolApiCatalog
 from app.main import app
 from app.orm import bind_owner
-from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
-from app.runtime.outbound_urls import require_safe_integration_http_url
+from studio.config.settings import get_settings
 from studio.contracts.identity.principal import StudioPrincipal
+from studio.runtime.http.outbound_urls import require_safe_integration_http_url
 
 
 async def _clear_integrations() -> None:

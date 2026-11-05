@@ -1,7 +1,7 @@
-from app.runtime.operation_receipts import record, replay
 from studio.apps.visual_workshop.canvas import VisualCanvasDocuments
 from studio.apps.visual_workshop.operation_values import transform as transform
 from studio.apps.visual_workshop.schemas.workshop import VisualCanvasDocumentOut
+from studio.runtime.database.operation_receipts import record, replay
 from studio.runtime.revisions import RevisionConflictError
 
 

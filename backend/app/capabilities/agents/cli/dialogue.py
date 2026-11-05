@@ -6,7 +6,7 @@ from contextlib import ExitStack
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from app.runtime.config import REPO_ROOT
+from studio.config.settings import REPO_ROOT
 
 from .codex_profile import profile_path
 from .conversation import claude, codex

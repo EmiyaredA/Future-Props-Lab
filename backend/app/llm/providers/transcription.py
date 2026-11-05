@@ -6,7 +6,7 @@ from typing import BinaryIO
 import httpx
 
 from app.llm.providers.senseaudio_asr import MAX_ASR_FILE_BYTES, transcribe_audio
-from app.runtime.outbound_urls import require_safe_provider_base_url
+from studio.runtime.http.outbound_urls import require_safe_provider_base_url
 
 SENSEAUDIO_ASR_KINDS = frozenset({"senseaudio_asr", "senseaudio_asr_pro"})
 

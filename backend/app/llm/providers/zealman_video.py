@@ -13,7 +13,7 @@ from app.llm.providers._senseaudio import ProviderTaskStatus, sanitize_provider_
 from app.llm.providers.zealman_live import ZealmanLiveMonitor
 from app.llm.providers.zealman_progress import execution_info, queue_entry
 from app.llm.providers.zealman_workflows import prepare_input_values
-from app.runtime.outbound_urls import require_safe_provider_base_url
+from studio.runtime.http.outbound_urls import require_safe_provider_base_url
 
 
 def root_url(base_url: str) -> str:

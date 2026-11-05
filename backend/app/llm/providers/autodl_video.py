@@ -8,7 +8,7 @@ import httpx
 
 from app.llm.providers._senseaudio import ProviderTaskStatus, sanitize_provider_message
 from app.llm.providers.autodl_workflows import BASE_URL, prepare_payload
-from app.runtime.outbound_urls import require_safe_provider_base_url
+from studio.runtime.http.outbound_urls import require_safe_provider_base_url
 
 
 def root_url(base_url: str) -> str:

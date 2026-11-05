@@ -4,9 +4,9 @@ import asyncio
 
 from sqlalchemy import delete, select
 
-from app.runtime.operation_receipts import OperationError
 from studio.apps.model_service.storage.native_records import NativeModelJob, NativeModelProof
 from studio.apps.model_service.storage.service_models import TaskAuthorization
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.time import utc_now
 
 

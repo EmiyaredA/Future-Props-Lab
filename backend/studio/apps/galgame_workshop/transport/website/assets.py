@@ -6,7 +6,6 @@ from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 
 from app.capabilities.asset_store import AssetError
 from app.deps import OwnerDep, SessionDep
-from app.runtime.config import get_settings
 from studio.apps.galgame_workshop.assets.assets import GalgameProjectAssets
 from studio.apps.galgame_workshop.assets.maintenance import GalgameMaintenance
 from studio.apps.galgame_workshop.errors import (
@@ -32,6 +31,7 @@ from studio.apps.galgame_workshop.transport.website._shared import (
     _invalid_story,
     _not_found,
 )
+from studio.config.settings import get_settings
 
 router = APIRouter()
 

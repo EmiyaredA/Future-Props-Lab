@@ -12,7 +12,6 @@ from app.llm.providers.chat_completions import (
     chat_request_options,
 )
 from app.llm.providers.streaming import ProviderStreamError, _data_lines, _integer
-from app.runtime.outbound_urls import require_safe_provider_base_url
 from studio.contracts.agent_runtime.dialogue import (
     AgentMessage,
     ModelAdapter,
@@ -24,6 +23,7 @@ from studio.contracts.agent_runtime.dialogue import (
     ToolSpec,
     Usage,
 )
+from studio.runtime.http.outbound_urls import require_safe_provider_base_url
 
 __all__ = [
     "AgentMessage",

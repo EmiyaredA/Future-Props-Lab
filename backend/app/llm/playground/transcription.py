@@ -32,9 +32,9 @@ from app.llm.schemas.model_test import (
     ModelTestTranscriptionTaskListOut,
     ModelTestTranscriptionTaskOut,
 )
-from app.runtime.config import Settings, get_settings
-from app.runtime.task_admission import TaskAdmission
+from studio.config.settings import Settings, get_settings
 from studio.runtime.revisions import RevisionConflictError
+from studio.runtime.tasks.task_admission import TaskAdmission
 from studio.runtime.time import iso_utc
 
 TRANSCRIPTION_EXTENSIONS = (".mp3", ".wav", ".m4a", ".ogg")

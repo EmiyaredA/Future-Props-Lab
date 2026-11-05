@@ -18,13 +18,13 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import select
 
 from app.llm.models import LlmCallLog, ModelProvider, RuntimeAdmission
-from app.runtime.config import Settings, get_settings
 from studio.apps.model_service.account_directory import Target, Targets
 from studio.apps.model_service.audit.audit_client import PreparedChange
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
 from studio.apps.model_service.storage.service_models import GovernanceAudit
 from studio.apps.model_service.templates import initialize_account_catalog
 from studio.assembly.independent.model_service.application import create_app
+from studio.config.settings import Settings, get_settings
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.claims import Actor, issue_context
 from studio.contracts.identity.permissions import role_scopes
@@ -462,7 +462,7 @@ async def test_independent_models_contract_matches_page_build_input(case):
 async def test_audit_prepare_failure_does_not_mutate_policy_or_publish_an_outcome(
     case, monkeypatch
 ):
-    from app.runtime.operation_receipts import OperationError
+    from studio.runtime.database.operation_receipts import OperationError
 
     async def unavailable(*_args, **_kwargs):
         raise OperationError("synthetic audit unavailable", "model_audit_unavailable", 503)

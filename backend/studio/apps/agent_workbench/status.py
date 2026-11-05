@@ -5,7 +5,6 @@ from types import SimpleNamespace
 from fastapi import HTTPException
 from sqlalchemy import delete, func, select, text, update
 
-from app.runtime.ownership import bind_owner
 from studio.apps.agent_workbench.storage.models import (
     WorkbenchChange,
     WorkbenchCheckpoint,
@@ -13,6 +12,7 @@ from studio.apps.agent_workbench.storage.models import (
     WorkbenchSource,
 )
 from studio.apps.agent_workbench.storage.service_models import NativeSubscription
+from studio.runtime.database.ownership import bind_owner
 from studio.runtime.time import utc_now
 
 

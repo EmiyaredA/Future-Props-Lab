@@ -15,13 +15,13 @@ from tests.test_community_asset_protocol import (
     scenario,  # noqa: F401
 )
 
-from app.runtime.config import Settings
 from studio.apps.asset_library.clients.retention import RetentionClient
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.integrations.clients.authority import IntegrationIntentClient
 from studio.apps.integrations.storage.migrations.registry import MIGRATIONS
 from studio.assembly.independent.integrations.application import create_app as create_integrations
 from studio.assembly.independent.thought_workshop.application import create_app as create_thought
+from studio.config.settings import Settings
 from studio.contracts.identity.claims import HEADER
 from studio.runtime.database.migrations import apply
 from test_external_article_sync import FakeFeishu

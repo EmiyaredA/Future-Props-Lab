@@ -7,8 +7,8 @@ from app.capabilities.agents.cli.process import probe
 from app.console.governance.code_agents import authorized
 from app.llm.visual_catalog import fixed_acceptance_model as fixed_model
 from app.llm.visual_review import fixed_connection_signature
-from app.runtime.config import get_settings
 from studio.apps.visual_workshop.acceptance.schemes import SCHEMES, catalog_out, scheme_out
+from studio.config.settings import get_settings
 
 
 def cli_configuration(settings, scheme_id):

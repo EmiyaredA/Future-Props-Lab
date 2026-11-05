@@ -21,8 +21,6 @@ from app.llm.models import (
 )
 from app.llm.schemas.local_models import LocalModelOut, LocalModelsOut
 from app.llm.task_outcomes import SUBMISSION_INTERRUPTED_MESSAGE, NativeSubmissionUncertain
-from app.runtime.operation_receipts import OperationError
-from app.runtime.task_records import load_runner_task
 from studio.apps.model_service.local_models.native_retention import NativeResultRetention
 from studio.apps.model_service.storage.native_records import (
     NativeModelJob,
@@ -39,6 +37,8 @@ from studio.contracts.model_service.model_native import (
     ModelsObservation,
     SpeechRequest,
 )
+from studio.runtime.database.operation_receipts import OperationError
+from studio.runtime.database.task_records import load_runner_task
 from studio.runtime.ids import new_id
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.tasks.native_queue import NativeQueue, NativeQueueError, digest

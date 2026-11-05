@@ -6,7 +6,6 @@ from sqlalchemy import Text, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
-from app.runtime.operation_receipts import forget
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.external_sync import ensure_can_purge
 from studio.apps.thought_workshop.history import CONTENT_FIELDS, History
@@ -36,6 +35,7 @@ from studio.apps.thought_workshop.storage.models import (
     ThoughtNoteAsset,
 )
 from studio.apps.thought_workshop.website.asset_metadata import metadata
+from studio.runtime.database.operation_receipts import forget
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now
 

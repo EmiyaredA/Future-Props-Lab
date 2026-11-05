@@ -2,7 +2,6 @@
 
 from sqlalchemy import select
 
-from app.runtime.ownership import bind_owner
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.publication.models import (
     ArticleMember,
@@ -11,6 +10,7 @@ from studio.apps.thought_workshop.publication.models import (
 )
 from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
 from studio.apps.thought_workshop.website.account_directory import directory, profiles
+from studio.runtime.database.ownership import bind_owner
 
 
 def missing():

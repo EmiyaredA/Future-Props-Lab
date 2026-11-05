@@ -143,10 +143,10 @@ async def apply_operations_with_references(
     session, *, owner, author_id, note_id, body, assertion, source_method, source_path, references
 ):
     """Persist the operation receipt and reference decision in the same note transaction."""
-    from app.runtime.operation_receipts import record, replay
     from studio.apps.thought_workshop.notes import note_out
     from studio.apps.thought_workshop.operations import transform
     from studio.apps.thought_workshop.schemas.workshop import ThoughtNoteOut
+    from studio.runtime.database.operation_receipts import record, replay
     from studio.runtime.revisions import RevisionConflictError
 
     if source_method != "POST" or source_path != f"/v1/thought-workshop/notes/{note_id}/operations":

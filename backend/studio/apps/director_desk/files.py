@@ -12,9 +12,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.storage import AssetStorage
-from app.runtime.config import get_settings
 from studio.apps.director_desk.projects import DirectorDeskError, DirectorDeskProjects
 from studio.apps.director_desk.schemas import FILE_KEY, DirectorFileOut
+from studio.config.settings import get_settings
 
 MAX_FILE_BYTES = 512 * 1024 * 1024
 CHUNK = 1024 * 1024

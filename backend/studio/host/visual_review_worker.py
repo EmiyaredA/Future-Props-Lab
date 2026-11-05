@@ -11,9 +11,9 @@ import httpx
 
 from app.capabilities.agents.cli.catalog import connection, execution_signature
 from app.capabilities.agents.cli.process import probe
-from app.runtime.config import get_cloud_settings
 from studio.apps.visual_workshop.acceptance.execution.task_execution import execute_review_task
 from studio.apps.visual_workshop.acceptance.execution.task_tools import file_digest, safe_file
+from studio.config.settings import get_cloud_settings
 from studio.contracts.agent_workbench.native import NativeLease, NativeOutcome
 from studio.contracts.visual_workshop.visual_agent_report import AgentReport
 from studio.contracts.visual_workshop.visual_agent_review import (

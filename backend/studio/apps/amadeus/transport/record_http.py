@@ -29,8 +29,8 @@ from app.console.amadeus.schemas import (
     RunFinishIn,
     RunOut,
 )
-from app.runtime.operation_receipts import OperationError
 from studio.apps.amadeus.storage.action_records import ActionRecords
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.http.dependencies import SessionDep, StudioAuth
 
 router = APIRouter(prefix="/v1/amadeus", tags=["amadeus"])

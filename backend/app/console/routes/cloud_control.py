@@ -16,8 +16,8 @@ from app.deps import (
     require_recent_reauthentication,
     resolve_studio_websocket_principal,
 )
-from app.runtime.config import get_cloud_settings
-from app.runtime.website import require_local_browser
+from studio.config.settings import get_cloud_settings
+from studio.runtime.http.website import require_local_browser
 
 from .cloud_totp import router as totp_router
 

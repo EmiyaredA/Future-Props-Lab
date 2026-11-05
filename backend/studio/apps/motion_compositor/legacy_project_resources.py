@@ -9,8 +9,8 @@ from app.capabilities.asset_store.project_transactions import (
 )
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.motion_document import MotionComposition
-from app.runtime.config import get_settings
 from studio.apps.motion_compositor.projects import MotionInvalid
+from studio.config.settings import get_settings
 
 
 class LegacyProjectResources:

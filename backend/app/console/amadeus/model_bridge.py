@@ -17,8 +17,8 @@ from app.llm.models import LlmCallLog
 from app.llm.providers.agent import HttpAgentAdapter
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal
-from app.runtime.operation_receipts import OperationError
 from studio.contracts.agent_runtime.dialogue import AgentMessage, ImageInput, ToolCall, ToolSpec
+from studio.runtime.database.operation_receipts import OperationError
 
 MAX_IMAGE_BYTES = 350 * 1024
 MAX_TOTAL_IMAGE_BYTES = 700 * 1024

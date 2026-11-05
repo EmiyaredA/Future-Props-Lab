@@ -11,8 +11,8 @@ from app.console.amadeus.files import work_root
 from app.console.amadeus.models import AmadeusAction
 from app.console.amadeus.run_records import RunRecords
 from app.console.amadeus.skill_files import skill_root
-from app.runtime.operation_receipts import OperationError
 from studio.contracts.amadeus.amadeus_native import DialogueScope
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.time import utc_now
 
 from .dialogue_tools import DialogueTools

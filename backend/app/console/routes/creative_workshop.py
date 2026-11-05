@@ -21,8 +21,8 @@ from app.console.creative_workshop.schemas import (
 )
 from app.deps import SessionDep, StudioAuth
 from app.integrations.common import IntegrationValidationError
-from app.runtime.image_sizes import ThumbnailSize
-from app.runtime.raster import RasterPreviewError
+from studio.runtime.files.image_sizes import ThumbnailSize
+from studio.runtime.files.raster import RasterPreviewError
 
 router = APIRouter(prefix="/creative-workshop", tags=["creative-workshop"])
 catalog_router = APIRouter()

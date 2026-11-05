@@ -12,7 +12,6 @@ from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import VIDEO_EDITABLE_EXTENSIONS
 from app.capabilities.asset_store.storage import AssetStorage
-from app.runtime.config import Settings, get_settings
 from studio.apps.video_editor.asset_output import asset_output
 from studio.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from studio.apps.video_editor.projects import VideoEditorProjects
@@ -30,6 +29,7 @@ from studio.apps.video_editor.storage.models import (
     VideoEditorTimeline,
 )
 from studio.apps.video_editor.timeline_file_removal import without_file
+from studio.config.settings import Settings, get_settings
 from studio.runtime.revisions import RevisionConflictError, require_revision_write
 from studio.runtime.time import iso_utc, utc_now
 

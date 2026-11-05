@@ -17,9 +17,9 @@ from app.console.governance.automation_access import automation_allowed
 from app.console.governance.provisioning import create_account
 from app.main import app as main_app
 from app.runtime.db import SessionLocal
-from app.runtime.remote_web import RemoteWeb
-from app.runtime.website import CurrentWebsite, WebsiteTransport, pin_release
-from app.runtime.website_releases import RETIRED_SECONDS
+from studio.runtime.http.remote_web import RemoteWeb
+from studio.runtime.http.website import CurrentWebsite, WebsiteTransport, pin_release
+from studio.runtime.http.website_releases import RETIRED_SECONDS
 
 pytestmark = pytest.mark.real_auth
 
@@ -311,7 +311,7 @@ async def test_api_key_automation_keeps_allowlist_and_reports_account_scoped_cha
 
 
 async def test_hot_frontend_proxy_keeps_session_csrf_and_socket_permissions(website, monkeypatch):
-    from app.runtime.config import get_settings
+    from studio.config.settings import get_settings
 
     monkeypatch.setattr(get_settings(), "cors_origins", "http://127.0.0.1:3000")
     app = FastAPI()

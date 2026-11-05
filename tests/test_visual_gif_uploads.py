@@ -12,7 +12,7 @@ from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering import gif_upload as video_uploads
 from app.capabilities.media_rendering.animated_image import gif_to_mp4
 from app.main import app
-from app.runtime.config import get_settings
+from studio.config.settings import get_settings
 
 
 def animation():

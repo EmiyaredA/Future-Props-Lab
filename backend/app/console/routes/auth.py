@@ -68,7 +68,7 @@ def _key_out(key) -> ApiKeyOut:
 def _set_cookies(
     response: Response, token: str, csrf: str, policy: SessionPolicy = STUDIO_SESSION
 ) -> None:
-    from app.runtime.config import get_settings
+    from studio.config.settings import get_settings
 
     secure = get_settings().auth_cookie_secure
     max_age = int(timedelta(days=SESSION_ABSOLUTE_DAYS).total_seconds())
@@ -93,7 +93,7 @@ def _set_cookies(
 
 
 def _clear_cookies(response: Response, policy: SessionPolicy = STUDIO_SESSION) -> None:
-    from app.runtime.config import get_settings
+    from studio.config.settings import get_settings
 
     secure = get_settings().auth_cookie_secure
     response.delete_cookie(policy.session_cookie, path="/", secure=secure, samesite="lax")

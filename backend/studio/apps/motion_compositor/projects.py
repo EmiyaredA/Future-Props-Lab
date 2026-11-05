@@ -6,11 +6,6 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.media_rendering.motion_document import MotionComposition
-from app.runtime.project_records import (
-    delete_revisioned_project,
-    load_owned_project,
-    patch_revisioned_project,
-)
 from studio.apps.motion_compositor.schemas import (
     DocumentOut,
     OperationBatchIn,
@@ -23,6 +18,11 @@ from studio.apps.motion_compositor.storage.models import (
     MotionDocument,
     MotionOperationBatch,
     MotionProject,
+)
+from studio.runtime.database.project_records import (
+    delete_revisioned_project,
+    load_owned_project,
+    patch_revisioned_project,
 )
 from studio.runtime.ids import new_id
 from studio.runtime.revisions import RevisionConflictError

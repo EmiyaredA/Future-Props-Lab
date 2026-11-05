@@ -12,7 +12,7 @@ from fastapi import UploadFile
 from app.integrations.common import IntegrationValidationError
 from app.integrations.skills.archive import SkillArchiveStorage
 from app.main import app
-from app.runtime.config import Settings, get_settings
+from studio.config.settings import Settings, get_settings
 
 
 def skill_zip(description: str, *, size: int | None = None) -> bytes:

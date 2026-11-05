@@ -7,13 +7,13 @@ from fastapi import HTTPException
 from sqlalchemy import or_, select, text, update
 from sqlalchemy.exc import IntegrityError
 
-from app.runtime.config import get_settings
 from studio.apps.agent_workbench.schemas import WorkbenchSourceOut
 from studio.apps.agent_workbench.storage.models import (
     WorkbenchChange,
     WorkbenchOperation,
     WorkbenchSource,
 )
+from studio.config.settings import get_settings
 
 
 def source_out(row):

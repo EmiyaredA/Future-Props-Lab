@@ -15,8 +15,8 @@ from app.llm.models import ModelProvider
 from app.llm.task_execution import TaskExecutionInfo
 from app.llm.task_outcomes import SUBMISSION_INTERRUPTED_MESSAGE, TaskClaimRejected
 from app.runtime.credentials import decrypt_secret
-from app.runtime.ownership import require_owner_id
-from app.runtime.task_records import load_runner_task, recovery_accounts
+from studio.runtime.database.ownership import require_owner_id
+from studio.runtime.database.task_records import load_runner_task, recovery_accounts
 from studio.runtime.time import utc_now
 
 

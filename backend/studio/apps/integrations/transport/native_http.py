@@ -8,9 +8,9 @@ from pydantic import BaseModel, ConfigDict, Field
 from starlette.datastructures import Headers, MutableHeaders
 from starlette.responses import JSONResponse
 
-from app.runtime.operation_receipts import OperationError
 from studio.contracts.agent_workbench.native import NativeLease, NativeOutcome
 from studio.contracts.integrations.native import McpHostObservation
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.http.request_limit import RequestLimit
 from studio.runtime.tasks.native_queue import NativeQueueError
 

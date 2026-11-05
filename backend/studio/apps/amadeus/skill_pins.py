@@ -14,11 +14,11 @@ import httpx
 from anyio.to_thread import run_sync
 
 from app.console.amadeus.skill_files import skill_path_parts
-from app.runtime.operation_receipts import OperationError
 from studio.contracts.amadeus.amadeus_skills import HEADER as SKILL_HEADER
 from studio.contracts.amadeus.amadeus_skills import PURPOSE, SKILL_SOURCE, VERSION, SkillPin
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.identity.delegation import RequestGrant
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 
 

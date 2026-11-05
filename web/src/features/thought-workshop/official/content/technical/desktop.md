@@ -52,7 +52,7 @@ flowchart LR
 ## 代码入口
 
 1. `scripts/website/serve.py`
-2. `backend/app/runtime/website.py`
+2. `backend/studio/runtime/http/website.py`
 3. `scripts/website/data_transfer.py`
 
 > [!NOTE]

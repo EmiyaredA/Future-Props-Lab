@@ -12,8 +12,8 @@ from app.llm.providers.chat_completions import (
     chat_base_url,
     chat_request_options,
 )
-from app.runtime.outbound_urls import require_safe_provider_base_url
 from studio.contracts.agent_runtime.dialogue import ImageInput
+from studio.runtime.http.outbound_urls import require_safe_provider_base_url
 
 
 @dataclass(frozen=True)

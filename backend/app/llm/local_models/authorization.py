@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from app.runtime.operation_receipts import OperationError
+from studio.runtime.database.operation_receipts import OperationError
 
 
 @dataclass(frozen=True)

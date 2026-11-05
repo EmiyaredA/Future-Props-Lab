@@ -9,11 +9,11 @@ from app.llm.inference.catalog import get_model
 from app.llm.models import LlmCallLog
 from app.llm.providers.streaming import ChatMessageInput, stream_text_completion
 from app.llm.schemas.model_inference import InferenceTextEvent, InferenceTextOut
-from app.runtime.authorized_stream import authorized_stream
 from app.runtime.credentials import decrypt_secret
-from app.runtime.operation_receipts import OperationError
-from app.runtime.ownership import bind_owner
 from studio.contracts.agent_runtime.dialogue import ImageInput
+from studio.runtime.database.operation_receipts import OperationError
+from studio.runtime.database.ownership import bind_owner
+from studio.runtime.messaging.authorized_stream import authorized_stream
 
 
 async def prepare(session, owner_user_id, body):

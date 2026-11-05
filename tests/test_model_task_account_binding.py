@@ -15,11 +15,11 @@ from app.llm.models import (
     ModelTestTranscriptionTask,
 )
 from app.llm.playground.transcription_runner import ModelTestTranscriptionRunner
-from app.runtime.task_records import load_runner_task
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
 from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database, ServiceStorageError
+from studio.runtime.database.task_records import load_runner_task
 
 
 @pytest.fixture

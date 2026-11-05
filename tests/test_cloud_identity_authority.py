@@ -7,8 +7,8 @@ import pytest
 from tests.test_community_asset_protocol import PASSWORD, scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 
-from app.runtime.config import get_settings
 from studio.apps.identity.accounts import create_account
+from studio.config.settings import get_settings
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.claims import HEADER, issue_context, verify_context
 from studio.contracts.identity.cloud_authority import (

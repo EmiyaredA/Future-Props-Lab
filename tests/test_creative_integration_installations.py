@@ -22,7 +22,6 @@ from app.integrations.models import (
     SkillVersion,
     ToolApiIntegration,
 )
-from app.runtime.config import Settings
 from studio.apps.integrations.creative_installations import CreativeInstallations
 from studio.apps.integrations.storage.creative_records import (
     CreativeInstalledPart,
@@ -30,6 +29,7 @@ from studio.apps.integrations.storage.creative_records import (
 )
 from studio.apps.integrations.storage.migrations.registry import MIGRATIONS
 from studio.apps.integrations.storage.service_models import MODELS
+from studio.config.settings import Settings
 from studio.contracts.creative_workshop.creative_integrations import (
     CreativeInstallBatch,
     CreativeInstallPart,

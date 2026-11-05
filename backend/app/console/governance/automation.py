@@ -3,7 +3,7 @@
 from urllib.parse import urlencode
 
 from app.orm import AUTOMATION_ROOTS
-from app.runtime.operation_receipts import OperationError
+from studio.runtime.database.operation_receipts import OperationError
 
 RESOURCE_PATHS = {
     "visual": "/apps/visual-workshop/projects/",

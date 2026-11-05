@@ -10,7 +10,7 @@ from uuid import uuid4
 from PIL import Image, UnidentifiedImageError
 
 from app.capabilities.asset_store.incoming import IncomingFile
-from app.runtime.config import get_settings
+from studio.config.settings import get_settings
 
 MAX_COVER_BYTES = 5 * 1024 * 1024
 PRIVATE_FILE_NAMES = {".env", ".npmrc", "id_rsa", "id_ed25519", "credentials.json", "secrets.json"}

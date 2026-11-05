@@ -9,7 +9,6 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from app.deps import PublicStudioAuth
-from app.runtime.image_sizes import ThumbnailSize
 from studio.apps.thought_workshop.community.community_access import published_asset
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.http_bindings import CommunitySessionDep
@@ -19,6 +18,7 @@ from studio.contracts.thought_workshop.community_assets import (
     CommunityAssetRequest,
     verify_community_asset,
 )
+from studio.runtime.files.image_sizes import ThumbnailSize
 
 router = APIRouter(prefix="/thought-workshop/community", tags=["knowledge-community"])
 

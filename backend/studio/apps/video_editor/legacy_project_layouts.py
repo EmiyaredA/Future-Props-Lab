@@ -10,7 +10,7 @@ from app.capabilities.asset_store.project_transactions import (
     deleting_project_layout,
 )
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
-from app.runtime.config import get_settings
+from studio.config.settings import get_settings
 
 
 class LegacyVideoLayouts:

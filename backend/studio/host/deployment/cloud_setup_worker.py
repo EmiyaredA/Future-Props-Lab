@@ -13,8 +13,8 @@ from fastapi import HTTPException
 from app.console.cloud_control.schemas import CloudSetupUpdate
 from app.console.cloud_control.setup import assert_setup_account, read_snapshot, setup_edit
 from app.console.governance.deployment_config import config_bytes, replace_config
-from app.runtime.config import Settings
 from studio.config import ConfigurationError
+from studio.config.settings import Settings
 from studio.contracts.agent_workbench.native import NativeLease, NativeOutcome
 from studio.contracts.remote_desktop.setup import OPERATIONS, READ, SAVE
 from studio.host.cloud_projection import CloudPublisher

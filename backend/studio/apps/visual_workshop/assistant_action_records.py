@@ -3,10 +3,10 @@ from __future__ import annotations
 from sqlalchemy import func, select, update
 
 from app.capabilities.agents.harness import AgentEvent
-from app.runtime.ownership import bind_owner
 from studio.apps.visual_workshop.assistant_values import action_out as action_out
 from studio.apps.visual_workshop.schemas.workshop import VisualAssistantActionOut
 from studio.apps.visual_workshop.storage.models import VisualAssistantAction
+from studio.runtime.database.ownership import bind_owner
 from studio.runtime.time import utc_now
 
 ACTIVE_ACTION_STATUSES = ("proposed", "waiting_approval", "running")

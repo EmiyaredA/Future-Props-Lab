@@ -15,7 +15,7 @@ from app.capabilities.agents.cli.native import converse
 from app.capabilities.agents.cli.process import execute
 from app.capabilities.agents.cli.transport import CliError
 from app.main import app
-from app.runtime.config import get_settings
+from studio.config.settings import get_settings
 from test_code_agents import wait_run
 from test_workspace_governance import client_account
 

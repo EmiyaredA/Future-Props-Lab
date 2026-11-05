@@ -3,15 +3,15 @@
 import pytest
 from cryptography.fernet import Fernet
 
-from app.runtime.config import Settings
 from studio.config import ConfigurationError, read_config
+from studio.config.settings import Settings
 
 ORIGIN = "https://studio.example.test"
 
 
 @pytest.mark.asyncio
 async def test_websocket_forwarding_and_stream_disconnect_never_retry():
-    from app.runtime.remote_web import RemoteWeb
+    from studio.runtime.http.remote_web import RemoteWeb
 
     calls = []
     messages = []

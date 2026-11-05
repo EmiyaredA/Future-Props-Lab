@@ -5,12 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.project_transactions import deleting_project_layout
 from app.capabilities.asset_store.storage import AssetStorage
-from app.runtime.config import get_settings
-from app.runtime.project_records import (
-    delete_revisioned_project,
-    load_owned_project,
-    patch_revisioned_project,
-)
 from studio.apps.director_desk.schemas import (
     DirectorDocument,
     DirectorProjectCreate,
@@ -20,6 +14,12 @@ from studio.apps.director_desk.schemas import (
     DirectorProjectSummary,
 )
 from studio.apps.director_desk.storage.models import DirectorDeskProject
+from studio.config.settings import get_settings
+from studio.runtime.database.project_records import (
+    delete_revisioned_project,
+    load_owned_project,
+    patch_revisioned_project,
+)
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now
 

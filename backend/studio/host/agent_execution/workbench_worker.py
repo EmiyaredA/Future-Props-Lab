@@ -19,7 +19,6 @@ from app.capabilities.agents.cli.catalog import (
     inspect_connection,
 )
 from app.capabilities.agents.cli.dialogue import run_dialogue
-from app.runtime.config import Settings
 from studio.apps.agent_workbench.execution import project_files, projects
 from studio.apps.agent_workbench.execution.project_paths import validate_project_root
 from studio.apps.agent_workbench.execution.schemas import (
@@ -29,6 +28,7 @@ from studio.apps.agent_workbench.execution.schemas import (
     RecentProject,
 )
 from studio.config import read_config
+from studio.config.settings import Settings
 from studio.contracts.agent_workbench.execution import (
     CATALOG,
     CHECK_PROJECT,

@@ -7,7 +7,10 @@ from pydantic import BaseModel, Field, model_validator
 from app.llm.providers.chat_completions import DEEPSEEK_BASE_URL
 from app.llm.schemas.model_supplier import ModelSupplierOut
 from app.llm.schemas.provider_types import ProviderKind
-from app.runtime.outbound_urls import normalize_provider_base_url, normalize_provider_websocket_url
+from studio.runtime.http.outbound_urls import (
+    normalize_provider_base_url,
+    normalize_provider_websocket_url,
+)
 
 ModelCapability = Literal[
     "speech_synthesis",

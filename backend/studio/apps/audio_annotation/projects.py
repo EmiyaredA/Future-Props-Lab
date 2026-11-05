@@ -8,7 +8,6 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from tinytag import TinyTag
 
-from app.runtime.operation_receipts import forget
 from studio.apps.audio_annotation.models import (
     AudioAnnotationDocument,
     AudioAnnotationProject,
@@ -34,6 +33,7 @@ from studio.apps.audio_annotation.schemas.document import (
 from studio.apps.audio_annotation.sources import AnnotationAudio
 from studio.apps.audio_annotation.sources import AudioAnnotationError as AudioAnnotationError
 from studio.contracts.asset_library.annotation import MAX_AUDIO_BYTES
+from studio.runtime.database.operation_receipts import forget
 from studio.runtime.ids import new_id
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import iso_utc, utc_now

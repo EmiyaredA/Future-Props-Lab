@@ -10,7 +10,6 @@ from app.capabilities.asset_store.media_metadata import inspect_media_file
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import GALGAME_EXTENSIONS
 from app.capabilities.asset_store.storage import AssetStorage
-from app.runtime.config import Settings
 from studio.apps.galgame_workshop.assets.asset_analysis import GalgameAssetAnalysisMixin
 from studio.apps.galgame_workshop.assets.asset_support import (
     _default_category,
@@ -30,6 +29,7 @@ from studio.apps.galgame_workshop.storage.models import (
     GalgameProjectAssetReference,
     GalgameWorkshopProject,
 )
+from studio.config.settings import Settings
 from studio.runtime.revisions import RevisionConflictError
 
 

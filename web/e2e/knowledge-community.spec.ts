@@ -216,7 +216,7 @@ test("全局入口仅在库外显示，三类知识库保留返回入口和独�
 test("精选书架、逐篇发布、跨空间授权编辑、收藏导出和撤回", async ({
   page,
   browser,
-}) => {
+}, info) => {
   test.setTimeout(180000);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -286,10 +286,12 @@ test("精选书架、逐篇发布、跨空间授权编辑、收藏导出和撤�
   await choose(page, "新成员权限", "可管理");
   await publish.getByRole("button", { name: "添加", exact: true }).click();
   await capture(page, "publish-articles");
-  await publish
-    .getByRole("button", { name: "发布选定文章", exact: true })
-    .click();
-  await expect(publish).toBeHidden();
+  await test.step("发布选定文章并等待确认", async () => {
+    await publish
+      .getByRole("button", { name: "发布选定文章", exact: true })
+      .click();
+    await expect(publish).toBeHidden();
+  });
   const config = await (
     await owner.request.get(COMM + `/libraries/${kb.id}/publication`)
   ).json();
@@ -314,6 +316,10 @@ test("精选书架、逐篇发布、跨空间授权编辑、收藏导出和撤�
   ).toHaveCount(0);
   await expect(view.getByText("个人草稿", { exact: true })).toHaveCount(0);
   await capture(view, "article-readonly");
+  await info.attach("访客只读视图", {
+    body: await view.screenshot(),
+    contentType: "image/png",
+  });
   expect(
     (await visitor.request.get(ROOT + `/notes/${notes[1].id}`)).status(),
   ).toBe(404);
@@ -351,19 +357,21 @@ test("精选书架、逐篇发布、跨空间授权编辑、收藏导出和撤�
   await expect(
     view.getByRole("textbox", { name: "笔记正文", exact: true }),
   ).toContainText("灵感清单.txt");
-  await view
-    .getByRole("button", { name: "社区文档更多操作", exact: true })
-    .click();
-  await view.getByRole("menuitem", { name: "保存", exact: true }).click();
-  await expect(
-    view.getByRole("status").filter({ hasText: "已保存" }),
-  ).toBeVisible();
-  await capture(view, "article-editing");
-  const original = await (
-    await owner.request.get(ROOT + `/notes/${notes[1].id}`)
-  ).json();
-  expect(original.title).toBe("灵感采集与整理");
-  expect(JSON.stringify(original.document)).toContain("编辑者补充");
+  await test.step("授权编辑并核对写回原笔记", async () => {
+    await view
+      .getByRole("button", { name: "社区文档更多操作", exact: true })
+      .click();
+    await view.getByRole("menuitem", { name: "保存", exact: true }).click();
+    await expect(
+      view.getByRole("status").filter({ hasText: "已保存" }),
+    ).toBeVisible();
+    await capture(view, "article-editing");
+    const original = await (
+      await owner.request.get(ROOT + `/notes/${notes[1].id}`)
+    ).json();
+    expect(original.title).toBe("灵感采集与整理");
+    expect(JSON.stringify(original.document)).toContain("编辑者补充");
+  });
   await view.getByRole("button", { name: "返回阅读", exact: true }).click();
   await view
     .getByRole("button", { name: "社区文档更多操作", exact: true })
@@ -473,16 +481,18 @@ test("精选书架、逐篇发布、跨空间授权编辑、收藏导出和撤�
     page.getByRole("alertdialog", { name: "发布到知识社区" }),
   ).toBeVisible();
   await capture(page, "withdraw-publication");
-  await page
-    .getByRole("button", { name: "撤回整个知识库", exact: true })
-    .click();
-  await expect(
-    page.getByRole("alertdialog", { name: "发布到知识社区" }),
-  ).toBeHidden();
-  await view.reload();
-  await expect(
-    view.getByRole("alert").filter({ hasText: "不可访问" }),
-  ).toBeVisible();
+  await test.step("撤回发布并验证访客失去访问权限", async () => {
+    await page
+      .getByRole("button", { name: "撤回整个知识库", exact: true })
+      .click();
+    await expect(
+      page.getByRole("alertdialog", { name: "发布到知识社区" }),
+    ).toBeHidden();
+    await view.reload();
+    await expect(
+      view.getByRole("alert").filter({ hasText: "不可访问" }),
+    ).toBeVisible();
+  });
   expect(errors).toEqual([]);
   await visitor.close();
 });

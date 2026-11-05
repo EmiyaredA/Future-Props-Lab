@@ -155,8 +155,8 @@ def revision_id(revision):
 
 
 def create(runtime, config, output, revision):
-    from app.runtime.config import Settings
     from studio.config import read_config
+    from studio.config.settings import Settings
 
     revision_id(revision)
     runtime, config = directory(runtime), private_config(config)

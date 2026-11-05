@@ -9,10 +9,10 @@ from app.llm.task_outcomes import (
     TERMINAL_STATUSES,
     confirmed_terminal,
 )
-from app.runtime.task_records import load_runner_task
 from studio.apps.model_service.admission.quotas import QuotaPolicies
 from studio.apps.model_service.storage.task_records import TASK_MODELS
 from studio.contracts.identity.errors import AccountError
+from studio.runtime.database.task_records import load_runner_task
 from studio.runtime.ids import new_id
 from studio.runtime.time import utc_now
 

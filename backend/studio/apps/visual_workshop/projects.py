@@ -1,14 +1,14 @@
 """Visual's own project and canvas rows, separate from file-library storage."""
 
-from app.runtime.project_records import (
-    list_owned_projects,
-    load_owned_project,
-    patch_revisioned_project,
-)
 from studio.apps.visual_workshop.canvas_values import canvas_out
 from studio.apps.visual_workshop.project_values import project_out
 from studio.apps.visual_workshop.schemas.workshop import VisualWorkshopProjectListOut
 from studio.apps.visual_workshop.storage.models import VisualCanvasDocument, VisualWorkshopProject
+from studio.runtime.database.project_records import (
+    list_owned_projects,
+    load_owned_project,
+    patch_revisioned_project,
+)
 from studio.runtime.project_errors import ProjectResourceError
 from studio.runtime.time import utc_now
 

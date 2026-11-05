@@ -22,8 +22,6 @@ from app.llm.schemas.visual_catalog import GenerationOptionsOut
 from app.llm.visual_catalog import generation_options
 from app.llm.visual_generation_model import VisualGenerationValidationError, select_visual_model
 from app.llm.visual_generation_payload import prepare_visual_payload
-from app.runtime.config import Settings, get_settings
-from app.runtime.task_admission import TaskAdmission
 from studio.apps.visual_workshop.batch_nodes import attach_grid_nodes
 from studio.apps.visual_workshop.generation_common import (
     GenerationError,
@@ -50,6 +48,8 @@ from studio.apps.visual_workshop.storage.models import (
     VisualGenerationTask,
 )
 from studio.apps.visual_workshop.website.composition import create_composition, retry_composition
+from studio.config.settings import Settings, get_settings
+from studio.runtime.tasks.task_admission import TaskAdmission
 from studio.runtime.time import utc_now
 
 REFERENCE_MIME_TYPES = {

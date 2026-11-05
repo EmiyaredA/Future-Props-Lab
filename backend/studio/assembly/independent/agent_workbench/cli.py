@@ -40,8 +40,8 @@ def run(options):
     if not options.config.is_file():
         raise ValueError("缺少只读服务配置")
     os.environ["FPL_CONFIG_FILE"] = str(options.config.resolve())
-    from app.runtime.config import get_settings
     from studio.apps.agent_workbench.storage.migrations.registry import MIGRATIONS
+    from studio.config.settings import get_settings
     from studio.runtime.database.migrations import apply, check
 
     state = options.state_root.resolve()

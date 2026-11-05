@@ -6,7 +6,7 @@ The supplied model and session must belong to the runner's own service.
 
 from sqlalchemy import select
 
-from app.runtime.ownership import bind_owner, require_owner_id
+from studio.runtime.database.ownership import bind_owner, require_owner_id
 
 
 async def load_runner_task(session, task_type, task_id, *, subject):

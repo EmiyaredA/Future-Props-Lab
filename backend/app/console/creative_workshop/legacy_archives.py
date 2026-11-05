@@ -2,7 +2,7 @@
 
 from app.console.creative_workshop.files import resolve_file
 from app.integrations.skills.archive import SkillArchiveStager
-from app.runtime.config import get_settings
+from studio.config.settings import get_settings
 
 
 class LegacyCreativeArchives:

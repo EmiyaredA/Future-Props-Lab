@@ -23,7 +23,7 @@ from app.llm.schemas.local_models import LocalModelActionIn, SpeechSynthesisPara
 from app.llm.schemas.model_service import ProviderIn
 from app.main import app
 from app.runtime.db import SessionLocal
-from app.runtime.operation_receipts import OperationError
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.revisions import RevisionConflictError
 
 MODEL = "qwen3-tts-0.6b-base"

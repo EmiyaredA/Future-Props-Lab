@@ -9,9 +9,9 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.console.amadeus.conversations import Conversations
 from app.console.amadeus.files import work_root
 from app.console.amadeus.schemas import RunEventIn
-from app.runtime.operation_receipts import OperationError
 from studio.contracts.agent_workbench.native import NativeLease, NativeOutcome
 from studio.contracts.amadeus.amadeus_native import AmadeusPoll, DialogueToolInput, FinderScope
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.http.dependencies import SessionDep, StudioAuth
 
 public = APIRouter(prefix="/v1/amadeus", tags=["amadeus"])

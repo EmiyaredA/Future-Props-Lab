@@ -17,7 +17,7 @@ from app.capabilities.media_rendering.image_grid import render_image_grid
 from app.capabilities.media_rendering.media_info import inspect_video_info
 from app.capabilities.media_rendering.preview_metadata import describe_preview, media_thumbnail
 from app.capabilities.media_rendering.video_frames import extract_frame
-from app.runtime.raster import RasterPreviewError, RasterPreviews
+from studio.runtime.files.raster import RasterPreviewError, RasterPreviews
 
 
 class MediaPreviews:

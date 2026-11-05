@@ -15,7 +15,6 @@ from app.integrations.external.feishu_verification import (
     verify_image,
 )
 from app.runtime.db import SessionLocal
-from app.runtime.ownership import bind_owner
 from studio.apps.thought_workshop.content_exports import resolve_assets
 from studio.apps.thought_workshop.external_sync.models import (
     ArticleSyncAsset,
@@ -25,6 +24,7 @@ from studio.apps.thought_workshop.external_sync.models import (
 )
 from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
 from studio.apps.thought_workshop.website.asset_metadata import read_bytes
+from studio.runtime.database.ownership import bind_owner
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now
 

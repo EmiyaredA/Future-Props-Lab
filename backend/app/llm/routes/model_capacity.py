@@ -7,8 +7,8 @@ from app.deps import SessionDep, StudioAuth
 from app.llm.admission import admission_for
 from app.llm.inference.receipts import replay_task
 from app.llm.schemas.model_inference import InferenceTaskIn
-from app.runtime.operation_receipts import OperationError
 from studio.contracts.identity.route_permissions import route_permission
+from studio.runtime.database.operation_receipts import OperationError
 
 
 async def model_capacity(request: Request, principal: StudioAuth, session: SessionDep):

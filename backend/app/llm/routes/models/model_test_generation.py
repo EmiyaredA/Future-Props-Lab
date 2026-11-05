@@ -23,7 +23,7 @@ from app.llm.schemas.model_test import (
     ModelTestGenerationTaskListOut,
     ModelTestGenerationTaskOut,
 )
-from app.runtime.image_sizes import ThumbnailSize
+from studio.runtime.files.image_sizes import ThumbnailSize
 
 router = APIRouter(prefix="/model-test", tags=["model-test"])
 

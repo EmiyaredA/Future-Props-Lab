@@ -5,7 +5,6 @@ from uuid import uuid4
 from pydantic import ValidationError
 from sqlalchemy import select, text
 
-from app.runtime.operation_receipts import record, replay
 from studio.apps.galgame_workshop.errors import GalgameStoryDocumentInvalidError
 from studio.apps.galgame_workshop.schemas import (
     GalgameStoryDialoguePatchOut,
@@ -28,6 +27,7 @@ from studio.apps.galgame_workshop.story.portrait_values import (
 )
 from studio.apps.galgame_workshop.story.reference_index import sync_asset_references
 from studio.contracts.asset_library.references import PrepareReferenceChange
+from studio.runtime.database.operation_receipts import record, replay
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 from studio.runtime.ids import new_id
 from studio.runtime.project_errors import ProjectResourceError

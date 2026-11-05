@@ -9,16 +9,16 @@ from sqlalchemy.dialects.sqlite import insert
 from starlette.datastructures import Headers
 from starlette.responses import JSONResponse
 
-from app.runtime.config import get_settings
-from app.runtime.ownership import bind_owner
 from studio.apps.agent_workbench.storage.models import WorkbenchCheckpoint, WorkbenchSource
 from studio.apps.agent_workbench.storage.service_models import (
     NativeJob,
     NativeSubscription,
     NativeWorkerSeen,
 )
+from studio.config.settings import get_settings
 from studio.contracts.agent_workbench.execution import DISCOVERY_OPERATIONS
 from studio.contracts.identity.permissions import CLOUD_CONTROL_PERMISSION
+from studio.runtime.database.ownership import bind_owner
 
 
 @dataclass(frozen=True)

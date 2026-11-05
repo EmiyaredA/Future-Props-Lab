@@ -19,7 +19,6 @@ from app.capabilities.asset_store import (
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.project_transactions import importing_project_layout
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION
-from app.runtime.config import Settings
 from studio.apps.video_editor.projects import project_out
 from studio.apps.video_editor.schemas import VideoEditorProjectSnapshotImportOut
 from studio.apps.video_editor.snapshot_format import remap_timeline, validated_snapshot
@@ -30,6 +29,7 @@ from studio.apps.video_editor.storage.models import (
     VideoEditorTask,
     VideoEditorTimeline,
 )
+from studio.config.settings import Settings
 from studio.runtime.ids import new_id
 
 

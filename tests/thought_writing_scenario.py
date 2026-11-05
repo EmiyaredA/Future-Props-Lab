@@ -12,7 +12,6 @@ from sqlalchemy import select
 
 from app.llm.models import LlmCallLog, ModelEntry, ModelProvider, RuntimeAdmission
 from app.llm.provider_transports import ProviderTransports
-from app.runtime.ownership import bind_owner
 from studio.apps.identity.accounts import create_account
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.identity.storage.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
@@ -26,6 +25,7 @@ from studio.assembly.independent.identity.application import create_app
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.thought_workshop.writing import WritingInput
 from studio.runtime.database.migrations import apply
+from studio.runtime.database.ownership import bind_owner
 from studio.runtime.database.sessions import Database
 
 root = Path(os.environ["THOUGHT_WRITING_ROOT"]).resolve()

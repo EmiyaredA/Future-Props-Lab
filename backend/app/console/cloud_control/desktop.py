@@ -2,8 +2,8 @@
 
 import asyncio
 
-from app.runtime.config import get_cloud_settings
 from app.runtime.db import SessionLocal
+from studio.config.settings import get_cloud_settings
 from studio.contracts.identity.cloud_authority import DESKTOP_COOKIE as DESKTOP_COOKIE
 from studio.contracts.identity.cloud_authority import DESKTOP_SOCKET as DESKTOP_SOCKET
 

@@ -25,7 +25,7 @@ from app.console.amadeus.schemas import (
     MessageOut,
     QuestionOut,
 )
-from app.runtime.operation_receipts import OperationError
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now
 

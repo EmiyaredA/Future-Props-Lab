@@ -23,7 +23,6 @@ from app.llm.transcription_catalog import (
     resolve_transcription_model_reference,
     transcription_model_reference,
 )
-from app.runtime.config import Settings
 from studio.apps.galgame_workshop.schemas import GalgameProjectSnapshotImportOut
 from studio.apps.galgame_workshop.snapshot_values import (
     snapshot_asset_record,
@@ -39,6 +38,7 @@ from studio.apps.galgame_workshop.storage.models import (
     GalgameWorkshopProject,
 )
 from studio.apps.galgame_workshop.website.projects import project_out
+from studio.config.settings import Settings
 from studio.runtime.ids import new_id
 
 

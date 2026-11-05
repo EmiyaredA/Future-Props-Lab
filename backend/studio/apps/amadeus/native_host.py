@@ -8,7 +8,6 @@ from anyio import CancelScope
 from fastapi import HTTPException
 from sqlalchemy import select, update
 
-from app.runtime.operation_receipts import OperationError
 from studio.apps.amadeus.storage.service_models import AmadeusNativeJob
 from studio.contracts.amadeus.amadeus_native import (
     DIALOGUE,
@@ -20,6 +19,7 @@ from studio.contracts.amadeus.amadeus_native import (
     ScriptResult,
     ScriptScope,
 )
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.tasks.native_queue import NativeQueue, NativeQueueError
 from studio.runtime.time import utc_now
 

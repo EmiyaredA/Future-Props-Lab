@@ -7,9 +7,9 @@ from anyio.to_thread import run_sync
 from fastapi import HTTPException
 
 from app.console.amadeus.files import write_file
-from app.runtime.operation_receipts import OperationError
 from studio.apps.amadeus.storage.action_records import WORK_FILES, ActionRecords
 from studio.contracts.amadeus.amadeus_native import ScriptScope
+from studio.runtime.database.operation_receipts import OperationError
 
 from .operation_calls import call_registered
 from .video_actions import apply_video_batch

@@ -67,6 +67,8 @@ backend/
 
 音频标注编辑数据流为 HTTP 请求 → 账号范围依赖装配 → `EditDocument` → 文档快照与纯规则 → `DocumentEdits.commit` → 同事务 CAS/回执 → 已提交响应。相同请求返回原回执，复用请求 ID 更改输入返回冲突，并发失败复查回执，取消回滚。素材、转录和暂存目录由入口显式注入，不经 Session 信息字典发现业务依赖。
 
+剩余通用机制也已迁出旧 `app/runtime`：账号绑定、项目 CAS、操作回执及任务恢复查询归 `studio.runtime.database`，受限路径、归档成员及栅格处理归 `files`，静态网站和远程入口校验归 `http`，授权订阅归 `messaging`，任务准入原语归 `tasks`。设置类型与显式配置读取归 `studio.config.settings`；导入设置模块不读取 TOML、不加载数据库。旧网站数据库及隐式凭据装配仍需后续消除，不属于通用机制。
+
 旧包映射如下；“已迁移”只表示该包源码与调用方迁移完成，兼容网站残余实现及整个业务的端口化另行验收。
 
 | 旧包 | 当前归属 |
@@ -981,3 +983,5 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 `studio/contracts/gateway/service_status.py` 定义注册服务 ID、生命周期和只读状态契约。`studio/host/service_observation.py` 只读取所选 Compose 项目的配置服务清单与进程状态，拒绝把 Docker 故障误报为停止；不读取业务数据库、环境内容或日志。观测嵌入 Management 已有的自有快照，不共享数据库。`studio/apps/gateway/service_status.py` 从固定服务地址做有界就绪探测，合并新鲜主机证据并按依赖图计算功能受限；错误或过期观测无法确认停止。`deployment.status.read` 只允许原始 Gateway 状态读请求委托到 Management 的状态读接口，不获得运维命令权限。
 
 `features/applications/ApplicationCenterRoute.tsx` 拥有按账号缓存的自动检查；纯页面与 `ApplicationServiceStatus.tsx` 拥有状态和展开说明。`serviceStatus.ts` 使用生成契约，`queryKeys.ts` 唯一维护查询键。静态目录显式绑定 `serviceId`，不能凭页面名称猜测服务。连接失败时只把缓存作为上次结果展示；单体兼容入口明确声明共用进程。
+
+- `scripts/test_with_proof.mjs` 将 `web/e2e/test-with-proof.catalog.yaml` 和专用 Playwright 配置接入功能验收工作台。隔离环境和验收产物位于 `.local/test-with-proof/`。

@@ -7,7 +7,6 @@ import httpx
 from sqlalchemy import select
 
 from app.console.models.accounts import SecurityAuditEvent
-from app.runtime.operation_receipts import OperationError
 from studio.apps.identity.storage.service_models import ModelAuditDelivery, ModelAuditIntent
 from studio.apps.model_service.audit.audit import add_child_event, add_event
 from studio.apps.model_service.audit.audit_client import ModelAuditClient
@@ -21,6 +20,7 @@ from studio.contracts.model_service.model_audit import (
     ModelAuditRecord,
 )
 from studio.runtime.database.migrations import apply
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.database.sessions import Database
 from studio.runtime.time import utc_now
 

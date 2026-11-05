@@ -12,7 +12,6 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.console.amadeus.models import AmadeusAction, AmadeusRun
 from app.console.amadeus.run_records import ACTIVE
 from app.console.amadeus.run_recovery import recover_runs
-from app.runtime.operation_receipts import OperationError
 from studio.apps.amadeus.action_execution import ActionExecution
 from studio.apps.amadeus.dialogue_runs import DialogueRuns
 from studio.apps.amadeus.native_host import AmadeusHost
@@ -33,6 +32,7 @@ from studio.apps.amadeus.transport.skill_http import router as skill_router
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.contracts.gateway.protocol_hash import public_contract
 from studio.runtime.database.migrations import check
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.database.sessions import Database
 from studio.runtime.http.authentication import SignedIdentity
 from studio.runtime.http.capability_client import CapabilityClient

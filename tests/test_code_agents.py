@@ -17,9 +17,9 @@ from app.console.amadeus.models import AmadeusConversation
 from app.console.governance.code_agents import resolve_connection
 from app.main import app
 from app.orm import bind_owner
-from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
-from app.runtime.operation_receipts import OperationError
+from studio.config.settings import get_settings
+from studio.runtime.database.operation_receipts import OperationError
 from test_workspace_governance import client_account
 
 pytestmark = pytest.mark.real_auth

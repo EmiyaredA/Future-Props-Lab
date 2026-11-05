@@ -35,15 +35,21 @@ test("rich notes persist and archives import", async ({ page }, testInfo) => {
     .getByRole("option", { name: /表格/ })
     .click();
   await expect(prose.locator("table")).toBeVisible();
-  await saveNote(page);
-  await expect(page.getByText("已保存", { exact: true })).toBeVisible();
-  await page.reload();
-  await expect(page.getByLabel("笔记标题", { exact: true })).toHaveValue(title);
-  await expect(prose).toContainText("记录今天的灵感");
-  await expect(prose.locator("table")).toBeVisible();
-  await page.screenshot({
-    path: testInfo.outputPath("editor-light.png"),
-    fullPage: true,
+  await test.step("保存并刷新，确认富文本保留", async () => {
+    await saveNote(page);
+    await expect(page.getByText("已保存", { exact: true })).toBeVisible();
+    await page.reload();
+    await expect(page.getByLabel("笔记标题", { exact: true })).toHaveValue(
+      title,
+    );
+    await expect(prose).toContainText("记录今天的灵感");
+    await expect(prose.locator("table")).toBeVisible();
+  });
+  const editorLight = testInfo.outputPath("editor-light.png");
+  await page.screenshot({ path: editorLight, fullPage: true });
+  await testInfo.attach("刷新后保留的富文本", {
+    path: editorLight,
+    contentType: "image/png",
   });
   await page.evaluate(() => {
     document.documentElement.dataset.theme = "dark";
@@ -52,33 +58,37 @@ test("rich notes persist and archives import", async ({ page }, testInfo) => {
     path: testInfo.outputPath("editor-dark.png"),
     fullPage: true,
   });
-  const backupPromise = page.waitForEvent("download");
-  await pickProjectMore(page, "导出知识库");
-  const backup = await backupPromise;
-  const path = await backup.path();
-  expect(path).toBeTruthy();
-  const imported = page.waitForResponse(
-    (response) =>
-      response.url().includes("/thought-workshop/imports") &&
-      response.request().method() === "POST",
-  );
-  await page
-    .locator('input[type="file"][accept=".zip,.md,.markdown"]')
-    .setInputFiles({
-      name: "backup.zip",
-      mimeType: "application/zip",
-      buffer: await fs.readFile(path!),
-    });
-  expect((await imported).ok()).toBe(true);
-  await expect(page.getByText("正在处理…", { exact: true })).not.toBeVisible();
-  await expect(page.getByRole("alert")).toHaveCount(0);
-  await page.getByRole("button", { name: "我的知识库", exact: true }).click();
-  await expect(
-    page
-      .locator(".knowledge-cards .workshop-project-card")
-      .filter({ hasText: "测试知识库" })
-      .count(),
-  ).resolves.toBeGreaterThanOrEqual(2);
+  await test.step("导出并导回知识库备份", async () => {
+    const backupPromise = page.waitForEvent("download");
+    await pickProjectMore(page, "导出知识库");
+    const backup = await backupPromise;
+    const path = await backup.path();
+    expect(path).toBeTruthy();
+    const imported = page.waitForResponse(
+      (response) =>
+        response.url().includes("/thought-workshop/imports") &&
+        response.request().method() === "POST",
+    );
+    await page
+      .locator('input[type="file"][accept=".zip,.md,.markdown"]')
+      .setInputFiles({
+        name: "backup.zip",
+        mimeType: "application/zip",
+        buffer: await fs.readFile(path!),
+      });
+    expect((await imported).ok()).toBe(true);
+    await expect(
+      page.getByText("正在处理…", { exact: true }),
+    ).not.toBeVisible();
+    await expect(page.getByRole("alert")).toHaveCount(0);
+    await page.getByRole("button", { name: "我的知识库", exact: true }).click();
+    await expect(
+      page
+        .locator(".knowledge-cards .workshop-project-card")
+        .filter({ hasText: "测试知识库" })
+        .count(),
+    ).resolves.toBeGreaterThanOrEqual(2);
+  });
   await page.screenshot({
     path: testInfo.outputPath("library-dark.png"),
     fullPage: true,

@@ -25,7 +25,7 @@ from app.llm.models.model_inference import ModelInferenceAsset, ModelInferenceTa
 from app.llm.providers.local_qwen import synthesize
 from app.llm.providers.transcription import transcribe_model_audio
 from app.llm.task_outcomes import NativeSubmissionUncertain
-from app.runtime.config import get_settings
+from studio.config.settings import get_settings
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now
 

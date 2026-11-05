@@ -5,7 +5,7 @@ from sqlalchemy import exists, select, update
 from app.console.amadeus.conversations import Conversations, action_arguments_sha256
 from app.console.amadeus.models import AmadeusAction, AmadeusRun
 from app.console.amadeus.schemas import ActionOut
-from app.runtime.operation_receipts import OperationError
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.time import utc_now
 
 ACTIVE_RUN = ("running", "waiting_approval")

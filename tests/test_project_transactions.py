@@ -10,7 +10,7 @@ from app.capabilities.asset_store.project_transactions import (
     deleting_project_layout,
 )
 from app.capabilities.asset_store.storage import AssetStorage
-from app.runtime.config import Settings
+from studio.config.settings import Settings
 from studio.runtime.revisions import RevisionConflictError, require_revision_write
 
 

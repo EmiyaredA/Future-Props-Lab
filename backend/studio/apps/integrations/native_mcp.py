@@ -10,7 +10,6 @@ from sqlalchemy import select, text, update
 from app.integrations.common import IntegrationNotStarted
 from app.integrations.mcp.client import DiscoveredTool, DiscoveryResult
 from app.integrations.models import McpIntegration
-from app.runtime.operation_receipts import OperationError
 from studio.apps.integrations.clients.authority import IntegrationAuthorizationUnavailable
 from studio.apps.integrations.storage.native_mcp_records import NativeMcpJob, NativeMcpObservation
 from studio.contracts.agent_workbench.native import NativeLease
@@ -21,6 +20,7 @@ from studio.contracts.integrations.native import (
     McpLaunch,
     McpNativePayload,
 )
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.tasks.native_queue import NativeQueue, NativeQueueError
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now

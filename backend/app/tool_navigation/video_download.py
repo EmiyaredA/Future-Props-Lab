@@ -9,7 +9,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from app.capabilities.asset_store.library import AssetError, AssetLibrary
-from app.runtime.config import Settings, get_settings
 from app.runtime.db import SessionLocal
 from app.tool_navigation.video_download_contracts import BinaryStatus as BinaryStatus
 from app.tool_navigation.video_download_contracts import (
@@ -37,6 +36,7 @@ from app.tool_navigation.video_download_execution import (
 )
 from app.tool_navigation.video_download_source import extract_video_url
 from app.tool_navigation.video_download_source import validate_video_url as validate_video_url
+from studio.config.settings import Settings, get_settings
 from studio.runtime.ids import new_id
 from studio.runtime.time import iso_utc, utc_now
 

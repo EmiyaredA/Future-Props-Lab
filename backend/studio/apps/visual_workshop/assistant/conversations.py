@@ -21,7 +21,6 @@ from app.llm.models import (
     ModelProvider,
 )
 from app.llm.providers.streaming import ChatMessageInput
-from app.runtime.config import Settings, get_settings
 from studio.apps.visual_workshop.assistant.actions import action_out
 from studio.apps.visual_workshop.assistant.attachments import VisualAssistantAttachmentMixin
 from studio.apps.visual_workshop.assistant_input_values import canvas_context
@@ -43,6 +42,7 @@ from studio.apps.visual_workshop.storage.models import (
     VisualCanvasDocument,
     VisualWorkshopProject,
 )
+from studio.config.settings import Settings, get_settings
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import iso_utc, utc_now
 

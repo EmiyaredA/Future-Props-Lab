@@ -6,7 +6,7 @@ import secrets
 import stat
 from pathlib import PurePosixPath
 
-from app.runtime.safe_paths import directory_fd, visible
+from studio.runtime.files.safe_paths import directory_fd, visible
 
 MAX_FILE_BYTES = 128 * 1024
 

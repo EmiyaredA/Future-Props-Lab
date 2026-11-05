@@ -7,8 +7,8 @@ import secrets
 from dataclasses import dataclass, field
 from typing import Any
 
-from app.runtime.ownership import bind_owner
 from studio.apps.director_desk.projects import DirectorDeskError, DirectorDeskProjects
+from studio.runtime.database.ownership import bind_owner
 
 WAIT_SECONDS = 30
 READ_TOOLS = frozenset(

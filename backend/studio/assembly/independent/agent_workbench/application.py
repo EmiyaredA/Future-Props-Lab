@@ -10,7 +10,6 @@ from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.runtime.config import get_settings
 from studio.apps.agent_workbench.authorization import NativeTransport
 from studio.apps.agent_workbench.change_stream import stream_events
 from studio.apps.agent_workbench.execution.models import (
@@ -43,6 +42,7 @@ from studio.apps.agent_workbench.transport.execution_http import router as execu
 from studio.apps.agent_workbench.transport.execution_native_http import router as execution_native
 from studio.apps.agent_workbench.transport.native_api import router as native_router
 from studio.apps.agent_workbench.transport.service import router
+from studio.config.settings import get_settings
 from studio.contracts.agent_workbench.native import COLLECTOR_OPERATIONS
 from studio.runtime.database.migrations import check
 from studio.runtime.database.sessions import Database

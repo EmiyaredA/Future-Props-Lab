@@ -10,8 +10,8 @@ from pathlib import Path
 import tomlkit
 from fastapi import HTTPException
 
-from app.runtime.config import Settings
 from studio.config import ConfigurationError, flatten
+from studio.config.settings import Settings
 
 
 def config_bytes(path):

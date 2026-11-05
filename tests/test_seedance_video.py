@@ -24,13 +24,13 @@ from app.llm.schemas.model_inference import InferenceTaskIn
 from app.llm.schemas.model_service import ProviderIn
 from app.llm.schemas.model_test import ModelTestVideoGenerationIn
 from app.orm import bind_owner
-from app.runtime.config import get_settings
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
-from app.runtime.operation_receipts import OperationError
 from studio.apps.visual_workshop.storage.models import VisualWorkshopProject
 from studio.apps.visual_workshop.website.generation import GenerationError, VisualGeneration
+from studio.config.settings import get_settings
 from studio.contracts.model_service.generation_tasks import VideoGenerationTaskCreateIn
+from studio.runtime.database.operation_receipts import OperationError
 
 V20 = "doubao-seedance-2-0-260128"
 V25 = "doubao-seedance-2-5-260628"

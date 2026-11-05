@@ -8,11 +8,11 @@ from tests.test_community_asset_protocol import CATALOG, PASSWORD, scenario  # n
 from tests.test_independent_project_catalog import authorize
 
 from app.console.cloud_control.desktop_bridge import GuacdReader, instruction
-from app.runtime.config import get_settings
 from studio.apps.identity.accounts import create_account
 from studio.apps.remote_desktop.settings import RemoteSettings
 from studio.apps.remote_desktop.storage.migrations.registry import MIGRATIONS
 from studio.assembly.independent.remote_desktop.application import create_app
+from studio.config.settings import get_settings
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.identity.cloud_authority import DESKTOP_COOKIE, DESKTOP_SOCKET
 from studio.runtime.database.migrations import apply

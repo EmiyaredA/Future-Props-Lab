@@ -10,10 +10,10 @@ from pathlib import Path
 
 from app.capabilities.agents.cli.catalog import connection
 from app.capabilities.agents.cli.model_connection import connection_overrides, toml_value
-from app.runtime.config import REPO_ROOT, get_settings
-from app.runtime.operation_receipts import OperationError
 from studio.apps.interview_assistant.files import exclusive_write, material_path, room_root
+from studio.config.settings import REPO_ROOT, get_settings
 from studio.contracts.interview_assistant.documents import PreparationBundle
+from studio.runtime.database.operation_receipts import OperationError
 
 
 def executable() -> str:

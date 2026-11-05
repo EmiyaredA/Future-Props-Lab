@@ -19,7 +19,7 @@ from app.capabilities.asset_store.policy import (
     validate_file_structure,
 )
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
-from app.runtime.config import Settings
+from studio.config.settings import Settings
 
 
 class AssetLibrary:

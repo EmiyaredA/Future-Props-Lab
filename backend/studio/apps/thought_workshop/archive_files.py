@@ -10,10 +10,10 @@ from typing import BinaryIO
 
 from pydantic import ValidationError
 
-from app.runtime.zip_members import safe_zip_member
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.schemas.workshop import ThoughtNoteIn
 from studio.apps.thought_workshop.website.archive_import import validate_payload
+from studio.runtime.files.zip_members import safe_zip_member
 
 
 def extract_archive(

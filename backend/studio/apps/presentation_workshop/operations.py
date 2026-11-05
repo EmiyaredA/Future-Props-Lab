@@ -1,4 +1,3 @@
-from app.runtime.operation_receipts import OperationError, record, replay
 from studio.apps.presentation_workshop.connection_routes import follow_batch
 from studio.apps.presentation_workshop.projects import Presentations
 from studio.apps.presentation_workshop.scene_edits import (
@@ -11,6 +10,7 @@ from studio.apps.presentation_workshop.schemas.document import (
     PresentationProjectOut,
     PresentationProjectPut,
 )
+from studio.runtime.database.operation_receipts import OperationError, record, replay
 from studio.runtime.entity_edits import edit, find
 from studio.runtime.revisions import RevisionConflictError
 

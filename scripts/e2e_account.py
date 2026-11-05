@@ -14,9 +14,9 @@ os.environ["FPL_STUDIO_TOKEN"] = ""
 
 from app.console.governance.provisioning import create_account  # noqa: E402
 from app.console.governance.service import change_password, complete_login  # noqa: E402
-from app.runtime.config import get_settings  # noqa: E402
 from app.runtime.db import SessionLocal  # noqa: E402
 from db.migrations import apply_migrations  # noqa: E402
+from studio.config.settings import get_settings  # noqa: E402
 from studio.contracts.identity.principal import StudioPrincipal  # noqa: E402
 
 

@@ -14,7 +14,6 @@ from app.capabilities.asset_store import (
     open_project_folder,
 )
 from app.deps import OwnerDep, SessionDep, StudioAuth
-from app.runtime.config import get_settings
 from studio.apps.video_editor.audio_alignment.audio_matching import VideoEditorAudioMatching
 from studio.apps.video_editor.baking.asset_bakes import VideoEditorAssetBakes
 from studio.apps.video_editor.clip_merging.tasks import VideoEditorClipMerges
@@ -46,6 +45,7 @@ from studio.apps.video_editor.transport.website.projects import router as projec
 from studio.apps.video_editor.transport.website.render_preflight import router as preflight_router
 from studio.apps.video_editor.transport.website.tasks import router as tasks_router
 from studio.apps.video_editor.transport.website.timeline import router as timeline_router
+from studio.config.settings import get_settings
 from studio.contracts.asset_library.project_snapshots import ProjectFolderOpenOut
 
 router = APIRouter(prefix="/video-editor", tags=["video-editor"])

@@ -1,6 +1,6 @@
 """Serve an allowlisted documentation projection only after principal authorization."""
 
-from app.runtime.config import REPO_ROOT
+from studio.config.settings import REPO_ROOT
 from studio.contracts.identity.errors import AccountError
 
 ROOT = REPO_ROOT

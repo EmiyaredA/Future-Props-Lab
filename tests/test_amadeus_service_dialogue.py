@@ -8,13 +8,13 @@ from tests.test_community_asset_protocol import CATALOG, scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 
 from app.console.amadeus.tool_contracts import SCHEMAS
-from app.runtime.operation_receipts import OperationError
 from studio.apps.amadeus.storage.migrations.registry import MIGRATIONS
 from studio.assembly.independent.amadeus.application import create_app
 from studio.host.agent_execution.amadeus_dialogue import DialogueWorker
 from studio.host.agent_execution.amadeus_worker import AmadeusWorker
 from studio.host.transport import NativeTransport
 from studio.runtime.database.migrations import apply
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.http.native_ingress import NativeWorkerOptions
 
 

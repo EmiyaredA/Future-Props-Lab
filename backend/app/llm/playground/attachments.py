@@ -13,9 +13,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.capabilities.asset_store.incoming import IncomingFile
 from app.llm.models import ModelTestAttachment, ModelTestConversation
 from app.llm.schemas.model_test import ModelTestAttachmentListOut, ModelTestAttachmentOut
-from app.runtime.config import Settings
-from app.runtime.image_sizes import ThumbnailSize
-from app.runtime.raster import RasterPreviewError, derived_thumbnail
+from studio.config.settings import Settings
+from studio.runtime.files.image_sizes import ThumbnailSize
+from studio.runtime.files.raster import RasterPreviewError, derived_thumbnail
 from studio.runtime.time import iso_utc
 
 MAX_ATTACHMENTS_PER_MESSAGE = 5

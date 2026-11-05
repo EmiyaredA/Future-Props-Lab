@@ -249,8 +249,8 @@ async def test_options_and_all_admission_paths_share_the_contract(model_slug):
     from app.capabilities.asset_store.models import VisualAsset
     from app.capabilities.asset_store.storage import AssetStorage
     from app.llm.models import ModelTestGenerationAsset, ModelTestGenerationTask
-    from app.runtime.config import get_settings
     from studio.apps.visual_workshop.storage.models import VisualGenerationTask
+    from studio.config.settings import get_settings
 
     async with SessionLocal() as session:
         bind_owner(session, "test-user")

@@ -28,11 +28,11 @@ from app.console.creative_workshop.schemas import (
 )
 from app.console.creative_workshop.sources import MemoryIncoming, sources
 from app.integrations.schemas import ToolApiCreateIn
-from app.runtime.config import get_settings
-from app.runtime.image_sizes import ThumbnailSize
-from app.runtime.outbound_urls import normalize_integration_http_url
-from app.runtime.raster import derived_thumbnail
+from studio.config.settings import get_settings
 from studio.contracts.identity.principal import StudioPrincipal
+from studio.runtime.files.image_sizes import ThumbnailSize
+from studio.runtime.files.raster import derived_thumbnail
+from studio.runtime.http.outbound_urls import normalize_integration_http_url
 from studio.runtime.ids import new_id
 from studio.runtime.time import iso_utc, utc_now
 

@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.motion_document import MotionComposition
 from app.capabilities.media_rendering.motion_outputs import OUTPUT_NAMES
-from app.runtime.config import get_settings
 from studio.apps.motion_compositor.projects import MotionInvalid, MotionNotFound, MotionProjects
 from studio.apps.motion_compositor.schemas import (
     ExportCreateIn,
@@ -19,6 +18,7 @@ from studio.apps.motion_compositor.schemas import (
 )
 from studio.apps.motion_compositor.storage.models import MotionDocument, MotionTask
 from studio.apps.video_editor.handoffs.motion_handoff import import_motion_export
+from studio.config.settings import get_settings
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now
 

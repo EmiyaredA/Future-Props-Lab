@@ -130,7 +130,7 @@ async def test_server_validates_multi_image_order_count_format_and_submission_sn
         session.add(VisualCanvasDocument(project_id=project_id, nodes=[], edges=[]))
         await session.commit()
         from app.capabilities.asset_store.storage import AssetStorage
-        from app.runtime.config import get_settings
+        from studio.config.settings import get_settings
 
         storage = AssetStorage(get_settings())
         for identity in asset_ids:

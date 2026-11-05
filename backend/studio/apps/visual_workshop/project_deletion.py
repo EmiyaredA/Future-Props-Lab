@@ -4,8 +4,6 @@ from uuid import uuid4
 
 from sqlalchemy import select, text
 
-from app.runtime.operation_receipts import forget
-from app.runtime.project_records import delete_revisioned_project
 from studio.apps.visual_workshop.acceptance.models import AcceptanceRun
 from studio.apps.visual_workshop.acceptance.standards import delete_acceptance
 from studio.apps.visual_workshop.generation_records import ACTIVE_TASK_STATUSES
@@ -20,6 +18,8 @@ from studio.apps.visual_workshop.storage.models import (
     VisualWorkshopProject,
 )
 from studio.contracts.asset_library.references import PrepareReferenceChange
+from studio.runtime.database.operation_receipts import forget
+from studio.runtime.database.project_records import delete_revisioned_project
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 from studio.runtime.project_errors import ProjectResourceError
 

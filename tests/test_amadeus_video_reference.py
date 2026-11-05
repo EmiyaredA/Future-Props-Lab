@@ -5,7 +5,7 @@ import base64
 import pytest
 
 from app.console.amadeus import model_bridge
-from app.runtime.operation_receipts import OperationError
+from studio.runtime.database.operation_receipts import OperationError
 
 
 def test_model_bridge_accepts_bounded_image_inputs_only() -> None:

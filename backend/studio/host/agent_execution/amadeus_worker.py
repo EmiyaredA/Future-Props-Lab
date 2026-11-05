@@ -14,7 +14,6 @@ import httpx
 
 from app.console.amadeus.files import work_root
 from app.console.amadeus.scripts import run_script, sandbox_available
-from app.runtime.operation_receipts import OperationError
 from studio.contracts.agent_workbench.native import NativeLease, NativeOutcome
 from studio.contracts.amadeus.amadeus_native import (
     DIALOGUE,
@@ -26,6 +25,7 @@ from studio.contracts.amadeus.amadeus_native import (
 from studio.host.agent_execution.amadeus_dialogue import AgentConnections, DialogueWorker
 from studio.host.receipts import ReceiptStore
 from studio.host.transport import LeaseEnded, NativeTransport, ProtocolConflict
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.lifecycle.locking import service_lock
 
 logger = logging.getLogger(__name__)

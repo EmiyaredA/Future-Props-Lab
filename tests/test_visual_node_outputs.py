@@ -591,8 +591,8 @@ async def test_atomic_media_upload_and_snapshot_preserve_full_history_and_fixed_
 
 @pytest.mark.asyncio
 async def test_composition_registers_one_version_with_frozen_inputs(monkeypatch):
-    from app.runtime.config import get_settings
     from studio.apps.visual_workshop.website.generation_runner import VisualGenerationRunner
+    from studio.config.settings import get_settings
 
     calls = []
 

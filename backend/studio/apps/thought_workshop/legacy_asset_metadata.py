@@ -7,9 +7,9 @@ from sqlalchemy import select
 
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from app.runtime.config import get_settings
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.website.asset_metadata import LibraryAsset
+from studio.config.settings import get_settings
 
 
 class LegacyAssetMetadata:

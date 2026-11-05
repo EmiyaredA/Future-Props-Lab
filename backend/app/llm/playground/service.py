@@ -30,7 +30,7 @@ from app.llm.schemas.model_test import (
     ModelTestConversationSummaryOut,
     ModelTestMessageOut,
 )
-from app.runtime.config import Settings, get_settings
+from studio.config.settings import Settings, get_settings
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import iso_utc, utc_now
 

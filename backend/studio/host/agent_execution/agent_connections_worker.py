@@ -140,7 +140,7 @@ async def visual_acceptance_status(*, probe):
         execution_signature,
         inspect_executable,
     )
-    from app.runtime.config import get_cloud_settings
+    from studio.config.settings import get_cloud_settings
 
     settings = get_cloud_settings()
 

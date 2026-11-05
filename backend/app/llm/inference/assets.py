@@ -13,7 +13,7 @@ from app.llm.library_inputs import ExactInput
 from app.llm.library_inputs import LocalInput as LocalInput
 from app.llm.models.model_inference import ModelInferenceAsset
 from app.llm.schemas.model_inference import InferenceAssetOut
-from app.runtime.config import get_settings
+from studio.config.settings import get_settings
 
 
 class InferenceAssets:

@@ -16,10 +16,10 @@ from app.capabilities.identity.security import (
 )
 from app.capabilities.identity.session_policy import session_policy
 from app.console.models import AuthSession, ManagementApiKey, User
-from app.runtime.config import get_settings
-from app.runtime.ownership import bind_owner
+from studio.config.settings import get_settings
 from studio.contracts.identity.permissions import role_scopes
 from studio.contracts.identity.principal import StudioPrincipal
+from studio.runtime.database.ownership import bind_owner
 from studio.runtime.time import utc_now
 
 UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}

@@ -4,7 +4,6 @@ from copy import deepcopy
 
 from sqlalchemy import func, select, update
 
-from app.runtime.config import get_settings
 from studio.apps.visual_workshop.acceptance.catalog import (
     connection_signature,
     fixed_model,
@@ -21,6 +20,7 @@ from studio.apps.visual_workshop.acceptance.project_access import AcceptanceErro
 from studio.apps.visual_workshop.acceptance.runs import Runs, run_out
 from studio.apps.visual_workshop.acceptance.schemes import SCHEMES
 from studio.apps.visual_workshop.storage.models import VisualCanvasDocument
+from studio.config.settings import get_settings
 from studio.runtime.ids import new_id
 from studio.runtime.revisions import RevisionConflictError
 

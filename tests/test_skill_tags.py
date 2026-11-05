@@ -10,7 +10,7 @@ import pytest
 from app.deps import SessionDep, require_studio_auth
 from app.main import app
 from app.orm import bind_owner
-from app.runtime.config import get_settings
+from studio.config.settings import get_settings
 from studio.contracts.identity.principal import StudioPrincipal
 
 

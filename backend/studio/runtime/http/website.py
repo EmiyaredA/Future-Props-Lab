@@ -14,7 +14,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import HTMLResponse, PlainTextResponse
 from starlette.staticfiles import StaticFiles
 
-from .website_releases import retired_releases
+from studio.runtime.http.website_releases import retired_releases
 
 HASHED_ASSET = re.compile(r"/assets/(?:[\w.-]+/)*[\w.-]+-[\w-]{8,}\.[\w.-]+", re.ASCII)
 

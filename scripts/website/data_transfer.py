@@ -178,8 +178,8 @@ def transfer(source, project, report_dir):
             config_stage = report_dir / "website-config.toml"
             config_stage.write_text(encode(document))
             config_stage.chmod(0o600)
-            from app.runtime.config import Settings
             from studio.config import read_config
+            from studio.config.settings import Settings
 
             Settings.validate_file_values(read_config(config_stage))
             # The encryption key must remain byte-for-byte identical after re-encoding.

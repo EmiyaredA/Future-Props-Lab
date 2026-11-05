@@ -6,7 +6,6 @@ from fastapi import APIRouter, File, Form, HTTPException, Query, Request, Upload
 from pydantic import ValidationError
 
 from app.capabilities.asset_store.errors import AssetError
-from app.runtime.operation_receipts import OperationError
 from studio.apps.asset_library.clients.project_reveal_http import (
     open_verified_project_folder,
     require_local_project_request,
@@ -45,6 +44,7 @@ from studio.apps.galgame_workshop.story_writes import PREFIX, StoryWrites
 from studio.apps.galgame_workshop.transport.asset_read_routes import read_assets
 from studio.assembly.independent.asset_references import reference_lifespan
 from studio.contracts.asset_library.project_snapshots import ProjectFolderOpenOut
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.http.dependencies import OwnerDep, SessionDep, StudioAuth
 from studio.runtime.project_errors import ProjectResourceError
 

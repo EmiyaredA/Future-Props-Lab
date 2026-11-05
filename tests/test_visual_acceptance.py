@@ -12,12 +12,12 @@ from sqlalchemy import delete
 
 from app.llm.models import ModelEntry, ModelProvider
 from app.main import app
-from app.runtime.config import get_settings
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
 from studio.apps.visual_workshop.acceptance.runner import AcceptanceRunner
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.storage.models import VisualGenerationTask
+from studio.config.settings import get_settings
 
 
 @pytest.fixture

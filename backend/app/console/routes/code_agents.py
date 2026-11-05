@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.capabilities.agents.cli.contracts import CatalogOut
 from app.deps import StudioAuth, require_recent_reauthentication
-from app.runtime.website import require_local_browser
 from studio.contracts.agent_runtime.definitions import AgentId
+from studio.runtime.http.website import require_local_browser
 
 
 def require_browser(principal: StudioAuth):

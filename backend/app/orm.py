@@ -57,7 +57,6 @@ from app.llm.models import (
     ModelTestTranscriptionTask,
 )
 from app.llm.models.model_inference import ModelInferenceAsset, ModelInferenceTask
-from app.runtime.ownership import TenantScopeError, bind_owner, require_owner_id
 from app.tool_navigation.models import (
     ToolNavigationItem,
 )
@@ -170,6 +169,7 @@ from studio.apps.visual_workshop.storage.models import (
     VisualWorkshopProject,
 )
 from studio.runtime.database.orm_base import Base
+from studio.runtime.database.ownership import TenantScopeError, bind_owner, require_owner_id
 from studio.runtime.database.project_operations import ProjectOperationReceipt
 
 # Catalog types for capabilities that must not import app.llm.

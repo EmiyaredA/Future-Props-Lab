@@ -8,7 +8,7 @@ import shutil
 from app.console.amadeus import files
 from app.console.amadeus.skill_files import read_skill_file as read_skill_file
 from app.integrations.skills.catalog import SkillCatalog
-from app.runtime.operation_receipts import OperationError
+from studio.runtime.database.operation_receipts import OperationError
 
 
 async def load_skill(

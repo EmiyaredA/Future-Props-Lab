@@ -10,10 +10,10 @@ from pydantic import BaseModel, ConfigDict, Field
 from starlette.datastructures import Headers, MutableHeaders
 from starlette.responses import JSONResponse
 
-from app.runtime.operation_receipts import OperationError
 from studio.apps.model_service.local_models.native_files import accept_result
 from studio.contracts.agent_workbench.native import NativeLease, NativeOutcome
 from studio.contracts.model_service.model_native import OPERATIONS, ModelsObservation
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.files.signed_payloads import ModelOutputDescription
 from studio.runtime.tasks.native_queue import NativeQueueError, digest
 

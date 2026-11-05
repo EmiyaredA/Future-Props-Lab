@@ -2,11 +2,6 @@
 
 from sqlalchemy import text
 
-from app.runtime.project_records import (
-    list_owned_projects,
-    load_owned_project,
-    patch_revisioned_project,
-)
 from studio.apps.galgame_workshop.errors import (
     GalgameStoryDocumentInvalidError,
     GalgameStoryNotReadyError,
@@ -20,6 +15,11 @@ from studio.apps.galgame_workshop.story.document_values import (
     story_out,
 )
 from studio.apps.galgame_workshop.story.snapshots import list_snapshots
+from studio.runtime.database.project_records import (
+    list_owned_projects,
+    load_owned_project,
+    patch_revisioned_project,
+)
 from studio.runtime.project_errors import ProjectResourceError
 from studio.runtime.time import utc_now
 

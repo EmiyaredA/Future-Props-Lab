@@ -4,7 +4,6 @@ from fastapi import APIRouter, status
 
 from app.capabilities.asset_store import AssetError
 from app.deps import OwnerDep, SessionDep
-from app.runtime.config import get_settings
 from studio.apps.galgame_workshop.assets.annotation_import import GalgameAnnotationImports
 from studio.apps.galgame_workshop.schemas import (
     GalgameAnnotationImportIn,
@@ -12,6 +11,7 @@ from studio.apps.galgame_workshop.schemas import (
     GalgameAnnotationImportTaskOut,
 )
 from studio.apps.galgame_workshop.transport.website._shared import _asset_error
+from studio.config.settings import get_settings
 
 router = APIRouter()
 

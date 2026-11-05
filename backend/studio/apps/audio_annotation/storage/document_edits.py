@@ -1,8 +1,8 @@
 """SQLite adapter for document updates and their same-transaction receipts."""
 
-from app.runtime.operation_receipts import record, replay
 from studio.apps.audio_annotation.projects import AudioAnnotationProjects
 from studio.apps.audio_annotation.schemas.document import AudioAnnotationDocumentOut
+from studio.runtime.database.operation_receipts import record, replay
 from studio.runtime.revisions import RevisionConflictError
 
 

@@ -13,10 +13,10 @@ from app.capabilities.identity.http_context import (
     require_recent_reauthentication as require_recent_reauthentication,
 )
 from app.capabilities.identity.http_context import unauthorized as _unauthorized
-from app.runtime.ownership import bind_owner
 from studio.contracts.identity.claims import Actor
 from studio.contracts.identity.principal import StudioPrincipal
 from studio.contracts.identity.route_permissions import route_permission
+from studio.runtime.database.ownership import bind_owner
 
 
 async def db_session(connection: HTTPConnection):

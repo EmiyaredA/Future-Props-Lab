@@ -14,12 +14,11 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import select
 
-from app.runtime.config import Settings
-from app.runtime.operation_receipts import OperationError
 from studio.apps.integrations.records import ValidationAttempt
 from studio.apps.integrations.storage.migrations.registry import MIGRATIONS
 from studio.apps.integrations.storage.native_mcp_records import NativeMcpJob
 from studio.assembly.independent.integrations.application import create_app
+from studio.config.settings import Settings
 from studio.contracts.agent_workbench.native import NativeLease, NativeOutcome
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.claims import Actor, issue_context
@@ -29,6 +28,7 @@ from studio.host.integrations.mcp_control import McpControl
 from studio.host.integrations.mcp_worker import McpWorker
 from studio.host.transport import NativeTransport
 from studio.runtime.database.migrations import apply
+from studio.runtime.database.operation_receipts import OperationError
 from test_integrations_application import Ports
 
 

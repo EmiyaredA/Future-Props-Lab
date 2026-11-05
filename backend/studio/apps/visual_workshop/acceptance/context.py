@@ -1,7 +1,6 @@
 """Compatibility adapter for acceptance asset metadata in the legacy owner."""
 
 from app.capabilities.asset_store.storage import AssetStorage
-from app.runtime.config import get_settings
 from studio.apps.visual_workshop.acceptance.access import asset
 from studio.apps.visual_workshop.acceptance.context_values import ContextAsset
 from studio.apps.visual_workshop.acceptance.context_values import fingerprint as fingerprint
@@ -9,6 +8,7 @@ from studio.apps.visual_workshop.acceptance.context_values import (
     resolve_context as resolve_with_assets,
 )
 from studio.apps.visual_workshop.acceptance.project_access import AcceptanceError
+from studio.config.settings import get_settings
 
 
 async def resolve_context(session, owner_user_id, project_id, node_id, scheme_id, output_id=None):

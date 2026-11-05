@@ -32,12 +32,12 @@ from app.llm.providers.temporary_media import TemporaryMediaError
 from app.llm.providers.zealman_live import ZealmanLiveMonitor
 from app.llm.providers.zealman_video import get_task
 from app.llm.visual_generation_submission import VisualGenerationInputs, submit_visual_generation
-from app.runtime.config import Settings, get_settings
 from app.runtime.db import SessionLocal
-from app.runtime.ownership import bind_owner
 from studio.apps.visual_workshop.generation_records import ACTIVE_TASK_STATUSES
 from studio.apps.visual_workshop.outputs.history import publish_generated_output
 from studio.apps.visual_workshop.storage.models import VisualGenerationBatch, VisualGenerationTask
+from studio.config.settings import Settings, get_settings
+from studio.runtime.database.ownership import bind_owner
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now
 

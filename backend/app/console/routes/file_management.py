@@ -48,7 +48,7 @@ from app.console.file_library import (
     LibraryFolderArchiveError,
 )
 from app.deps import OwnerDep, SessionDep, StudioAuth, require_recent_reauthentication
-from app.runtime.config import get_settings
+from studio.config.settings import get_settings
 from studio.contracts.asset_library.project_snapshots import ProjectFolderOpenOut
 
 router = APIRouter(tags=["file-management"])

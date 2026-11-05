@@ -6,7 +6,7 @@ import shutil
 from pathlib import Path
 
 from app.llm.local_models.catalog import LANGUAGES, require_ready
-from app.runtime.operation_receipts import OperationError
+from studio.runtime.database.operation_receipts import OperationError
 
 MAX_REFERENCE_BYTES = 20 * 1024**2
 MIN_REFERENCE_SECONDS, MAX_REFERENCE_SECONDS = 3, 30

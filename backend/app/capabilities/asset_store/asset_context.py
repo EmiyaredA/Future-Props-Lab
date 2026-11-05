@@ -7,7 +7,7 @@ from app.capabilities.asset_store.models import (
     VisualAssetFolder,
 )
 from app.capabilities.asset_store.storage import AssetStorage
-from app.runtime.config import Settings
+from studio.config.settings import Settings
 from studio.runtime.database.orm_base import Base
 
 

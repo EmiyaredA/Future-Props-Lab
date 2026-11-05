@@ -16,7 +16,6 @@ from app.llm.models import (
     ModelProvider,
 )
 from app.main import app
-from app.runtime.config import get_settings
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
 from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
@@ -25,6 +24,7 @@ from studio.apps.visual_workshop.storage.models import (
     VisualGenerationTask,
     VisualWorkshopProject,
 )
+from studio.config.settings import get_settings
 
 
 @pytest.mark.asyncio

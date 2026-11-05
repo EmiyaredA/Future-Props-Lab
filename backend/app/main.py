@@ -75,7 +75,6 @@ from app.llm.playground.legacy_generation_references import LegacyGenerationRefe
 from app.llm.playground.recovery import recover_interrupted_model_test_runs
 from app.llm.playground.transcription_runner import ModelTestTranscriptionRunner
 from app.llm.provider_transports import ProviderTransports
-from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal, close_website_database
 from db.migrations import apply_migrations
 from db.migrations.registry import LATEST_MIGRATION_ID
@@ -111,6 +110,7 @@ from studio.apps.visual_workshop.acceptance.runner import AcceptanceRunner
 from studio.apps.visual_workshop.assistant.actions import recover_interrupted_visual_assistant_runs
 from studio.apps.visual_workshop.website.generation_runner import VisualGenerationRunner
 from studio.assembly.annotation import document_editor
+from studio.config.settings import get_settings
 from studio.runtime.http.problem_details import (
     account_exception_handler,
     http_exception_handler,

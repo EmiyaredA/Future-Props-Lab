@@ -3,7 +3,7 @@
 from sqlalchemy import select
 
 from app.llm.models.model_inference import ModelInferenceTask
-from app.runtime.operation_receipts import OperationError, fingerprint
+from studio.runtime.database.operation_receipts import OperationError, fingerprint
 
 
 async def replay_task(session, owner_user_id, body):

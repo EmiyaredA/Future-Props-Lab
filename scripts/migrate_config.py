@@ -9,9 +9,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
-from app.runtime.config import Settings  # noqa: E402
 from studio.config import CONFIG_FILE, ConfigurationError  # noqa: E402
 from studio.config.migration import convert_legacy  # noqa: E402
+from studio.config.settings import Settings  # noqa: E402
 
 
 def main() -> None:

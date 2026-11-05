@@ -5,7 +5,6 @@ from fastapi.responses import Response
 from pydantic import ValidationError
 
 from app.deps import SessionDep, StudioAuth
-from app.runtime.operation_receipts import OperationError
 from studio.apps.audio_annotation.exports import clip, export_document, transcribe_saved
 from studio.apps.audio_annotation.projects import AudioAnnotationError
 from studio.apps.audio_annotation.schemas.document import (
@@ -32,6 +31,7 @@ from studio.apps.audio_annotation.transport.dependencies import (
     StagingDep,
     TranscriberDep,
 )
+from studio.runtime.database.operation_receipts import OperationError
 
 router = APIRouter(prefix="/audio-annotation", tags=["audio-annotation"])
 BINARY = {

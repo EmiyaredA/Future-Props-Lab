@@ -19,9 +19,7 @@ from app.capabilities.media_rendering.galgame.export_output import (
 )
 from app.capabilities.media_rendering.galgame.lip_sync import prepare_audio_envelopes
 from app.capabilities.media_rendering.render_engine import RenderCancelled, render_plan
-from app.runtime.config import Settings, get_settings
 from app.runtime.db import SessionLocal
-from app.runtime.ownership import bind_owner, require_owner_id
 from studio.apps.galgame_workshop.storage.models import (
     GalgameAssetMetadata,
     GalgameProjectAssetReference,
@@ -30,6 +28,8 @@ from studio.apps.galgame_workshop.storage.models import (
     GalgameWorkshopProject,
 )
 from studio.apps.galgame_workshop.video.video_export_planning import EXPORT_PACKAGING_POLICY
+from studio.config.settings import Settings, get_settings
+from studio.runtime.database.ownership import bind_owner, require_owner_id
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now
 

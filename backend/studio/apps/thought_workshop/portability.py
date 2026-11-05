@@ -18,12 +18,12 @@ from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
 from app.capabilities.asset_store.storage import AssetStorage
-from app.runtime.config import Settings
 from studio.apps.thought_workshop.archive_files import extract_archive, stage_archive
 from studio.apps.thought_workshop.backup_manifest import collect_backup
 from studio.apps.thought_workshop.notes import Notes, ThoughtError
 from studio.apps.thought_workshop.schemas.workshop import ThoughtImportOut
 from studio.apps.thought_workshop.website.archive_import import allocate_ids, persist_archive
+from studio.config.settings import Settings
 
 
 async def export_backup(

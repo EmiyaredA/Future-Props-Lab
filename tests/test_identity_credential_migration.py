@@ -31,11 +31,11 @@ from app.console.schemas.registration import (
     RegistrationInviteAction,
     RegistrationInviteIn,
 )
-from app.runtime.config import get_settings
 from db.migrations import apply_migrations
 from studio.apps.identity.avatar_migration import AVATAR_PATH, DIGEST_HEADER
 from studio.apps.identity.storage.migrations.registry import MIGRATIONS
 from studio.assembly.independent.identity.application import create_app
+from studio.config.settings import get_settings
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.permissions import role_scopes
 from studio.contracts.identity.principal import StudioPrincipal

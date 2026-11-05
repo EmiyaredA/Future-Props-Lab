@@ -1,7 +1,7 @@
 """Owned raster previews use an authorized source and a bounded pure image processor."""
 
 from app.capabilities.asset_store.errors import AssetError
-from app.runtime.raster import RasterPreviewError, RasterPreviews
+from studio.runtime.files.raster import RasterPreviewError, RasterPreviews
 
 _previews = RasterPreviews(capacity=2)
 

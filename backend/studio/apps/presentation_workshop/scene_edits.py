@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 
-from app.runtime.operation_receipts import OperationError
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.entity_edits import find
 
 COLLECTIONS = ("elements", "groups", "connections", "infographics")

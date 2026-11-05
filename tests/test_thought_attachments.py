@@ -11,7 +11,7 @@ from tests.test_thought_workshop import note_body
 from tests.thought_helpers import create_note, delete_note
 
 from app.main import app
-from app.runtime.config import get_settings
+from studio.config.settings import get_settings
 
 ROOT = "/v1/thought-workshop"
 

@@ -8,12 +8,12 @@ from uuid import uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.library import AssetLibrary
-from app.runtime.config import get_settings
 from studio.apps.video_editor.motion_operations import motion_operations
 from studio.apps.video_editor.projects import VideoEditorProjects
 from studio.apps.video_editor.schemas import VideoEditorProjectCreateIn, VideoEditorTimelineBatchIn
 from studio.apps.video_editor.storage.models import VideoEditorAssetMetadata, VideoEditorTask
 from studio.apps.video_editor.timeline import VideoEditorTimelines
+from studio.config.settings import get_settings
 
 
 async def import_motion_export(

@@ -16,8 +16,8 @@ from app.console.amadeus.skills import read_skill_file
 from app.console.amadeus.tool_contracts import TOOLS as TOOLS
 from app.console.amadeus.tool_contracts import validate_tool
 from app.console.governance.code_agents import resolve
-from app.runtime.operation_receipts import OperationError
-from app.runtime.ownership import bind_owner
+from studio.runtime.database.operation_receipts import OperationError
+from studio.runtime.database.ownership import bind_owner
 
 
 class ToolBridge:

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Protocol
 from uuid import uuid4
 
-from app.runtime.config import Settings
+from studio.config.settings import Settings
 
 TARGET_STORAGE_VERSION = 2
 

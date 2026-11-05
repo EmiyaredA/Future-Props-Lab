@@ -22,11 +22,11 @@ from app.capabilities.media_rendering.video_segment_encode import (
     encode_segment,
     validate_segment_output,
 )
-from app.runtime.config import Settings
 from studio.apps.video_editor.handoffs.segment_names import segment_filename
 from studio.apps.video_editor.storage.models import VideoEditorAssetMetadata, VideoEditorTask
 from studio.apps.visual_workshop.outputs import register_imported_output
 from studio.apps.visual_workshop.storage.models import VisualCanvasDocument, VisualWorkshopProject
+from studio.config.settings import Settings
 from studio.runtime.time import utc_now
 
 

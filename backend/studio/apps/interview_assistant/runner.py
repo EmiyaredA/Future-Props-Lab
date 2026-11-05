@@ -5,13 +5,13 @@ from sqlalchemy import select, update
 
 from app.console.governance.code_agents import authorized
 from app.runtime.db import SessionLocal
-from app.runtime.operation_receipts import OperationError
-from app.runtime.ownership import bind_owner
 from studio.apps.interview_assistant.bundles import acceptance
 from studio.apps.interview_assistant.codex import CodexExecutor, task_context
 from studio.apps.interview_assistant.executor_status import executor_status
 from studio.apps.interview_assistant.storage.models import InterviewPreparation, InterviewRoom
 from studio.contracts.interview_assistant.documents import PreparationBundle
+from studio.runtime.database.operation_receipts import OperationError
+from studio.runtime.database.ownership import bind_owner
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import iso_utc, utc_now
 

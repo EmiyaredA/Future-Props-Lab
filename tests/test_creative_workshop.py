@@ -495,7 +495,7 @@ async def test_publish_commit_response_loss_preserves_published_archive(monkeypa
 
 @pytest.mark.asyncio
 async def test_import_skill_owns_snapshot_after_source_removed():
-    from app.runtime.config import get_settings
+    from studio.config.settings import get_settings
 
     owner = "creative-skill-source"
     async with SessionLocal() as session:

@@ -21,7 +21,7 @@ BACKEND = str(ROOT / "backend")
 if BACKEND not in sys.path:
     sys.path.insert(0, BACKEND)
 
-from app.runtime.website_releases import retired_releases  # noqa: E402
+from studio.runtime.http.website_releases import retired_releases  # noqa: E402
 
 
 def uses_shared_frontend(root=ROOT):

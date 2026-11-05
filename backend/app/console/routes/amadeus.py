@@ -49,8 +49,8 @@ from app.console.amadeus.scripts import sandbox_available
 from app.console.amadeus.skills import load_skill, read_skill_file
 from app.deps import SessionDep, StudioAuth
 from app.llm.call_logs.credentials import snapshot_from_principal
-from app.runtime.operation_receipts import OperationError
-from app.runtime.website import require_local_browser
+from studio.runtime.database.operation_receipts import OperationError
+from studio.runtime.http.website import require_local_browser
 
 router = APIRouter(prefix="/amadeus", tags=["amadeus"])
 

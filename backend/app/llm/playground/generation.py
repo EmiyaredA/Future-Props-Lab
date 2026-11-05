@@ -31,11 +31,11 @@ from app.llm.schemas.model_test import (
     ModelTestImageGenerationIn,
     ModelTestVideoGenerationIn,
 )
-from app.runtime.config import Settings, get_settings
-from app.runtime.image_sizes import ThumbnailSize
-from app.runtime.raster import RasterPreviewError, derived_thumbnail
-from app.runtime.task_admission import TaskAdmission
+from studio.config.settings import Settings, get_settings
+from studio.runtime.files.image_sizes import ThumbnailSize
+from studio.runtime.files.raster import RasterPreviewError, derived_thumbnail
 from studio.runtime.revisions import RevisionConflictError
+from studio.runtime.tasks.task_admission import TaskAdmission
 from studio.runtime.time import iso_utc, utc_now
 
 ACTIVE_GENERATION_STATUSES = ("queued", "submitting", "pending", "processing")

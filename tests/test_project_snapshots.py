@@ -18,7 +18,6 @@ from app.capabilities.asset_store.storage import AssetStorage
 from app.deps import SessionDep, require_studio_auth
 from app.main import app
 from app.orm import bind_owner
-from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 from studio.apps.galgame_workshop.storage.models import (
     GalgameWorkshopProject,
@@ -29,6 +28,7 @@ from studio.apps.video_editor.storage.models import (
 from studio.apps.visual_workshop.storage.models import (
     VisualWorkshopProject,
 )
+from studio.config.settings import get_settings
 from studio.contracts.identity.principal import StudioPrincipal
 
 

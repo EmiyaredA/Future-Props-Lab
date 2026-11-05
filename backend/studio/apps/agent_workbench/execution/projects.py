@@ -9,8 +9,6 @@ from pathlib import Path
 from fastapi import HTTPException
 from sqlalchemy import select, text
 
-from app.runtime.config import REPO_ROOT, get_cloud_settings
-from app.runtime.safe_paths import directory_fd, directory_identity, visible
 from studio.apps.agent_workbench.execution.models import WorkbenchProject
 from studio.apps.agent_workbench.execution.project_paths import validate_project_root
 from studio.apps.agent_workbench.execution.schemas import (
@@ -19,6 +17,8 @@ from studio.apps.agent_workbench.execution.schemas import (
     ProjectChoice,
     RecentProject,
 )
+from studio.config.settings import REPO_ROOT, get_cloud_settings
+from studio.runtime.files.safe_paths import directory_fd, directory_identity, visible
 from studio.runtime.ids import new_id
 
 RECENT_LIMIT = 20

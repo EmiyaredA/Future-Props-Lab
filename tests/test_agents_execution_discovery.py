@@ -10,11 +10,11 @@ import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import select
 
-from app.runtime.config import get_settings
 from studio.apps.agent_workbench.execution import projects
 from studio.apps.agent_workbench.storage.migrations.registry import MIGRATIONS
 from studio.apps.agent_workbench.storage.service_models import WorkbenchExecutionJob
 from studio.assembly.independent.agent_workbench.application import create_app
+from studio.config.settings import get_settings
 from studio.contracts.agent_workbench.execution import (
     CATALOG_PATH,
     CHATS_PATH,

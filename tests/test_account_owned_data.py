@@ -12,9 +12,9 @@ from app.capabilities.asset_store.storage import AssetStorage
 from app.console.governance.provisioning import create_account
 from app.console.models import User
 from app.main import app
-from app.runtime.config import Settings
 from app.runtime.db import SessionLocal
 from db.migrations.registry import MIGRATIONS
+from studio.config.settings import Settings
 
 pytestmark = pytest.mark.real_auth
 PASSWORD = "Account-Owned-Test-Password-2026!"

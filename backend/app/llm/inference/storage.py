@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from app.runtime.config import get_settings
+from studio.config.settings import get_settings
 
 
 class InferenceStorage:

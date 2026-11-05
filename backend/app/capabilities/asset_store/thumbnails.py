@@ -17,7 +17,7 @@ from app.capabilities.asset_store.image_thumbnails import (
 from app.capabilities.asset_store.image_thumbnails import (
     derived_thumbnail as derived_thumbnail,
 )
-from app.runtime.image_sizes import ThumbnailSize as ThumbnailSize
+from studio.runtime.files.image_sizes import ThumbnailSize as ThumbnailSize
 
 
 async def thumbnail(

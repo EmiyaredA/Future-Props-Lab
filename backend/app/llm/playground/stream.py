@@ -12,9 +12,9 @@ from sqlalchemy import update
 from app.llm.models import LlmCallLog, ModelTestConversation, ModelTestMessage
 from app.llm.playground.service import PreparedGeneration, message_out
 from app.llm.providers.streaming import stream_text_completion
-from app.runtime.authorized_stream import authorized_stream
 from app.runtime.credentials import decrypt_secret
-from app.runtime.ownership import bind_owner
+from studio.runtime.database.ownership import bind_owner
+from studio.runtime.messaging.authorized_stream import authorized_stream
 from studio.runtime.time import utc_now
 
 

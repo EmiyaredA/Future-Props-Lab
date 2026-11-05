@@ -7,7 +7,7 @@ from typing import Any, Literal
 from jsonschema import Draft202012Validator, SchemaError
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from app.runtime.outbound_urls import normalize_integration_http_url
+from studio.runtime.http.outbound_urls import normalize_integration_http_url
 
 IntegrationStatus = Literal["unchecked", "healthy", "failed"]
 IntegrationKind = Literal["tool_api", "mcp"]

@@ -3,7 +3,7 @@
 from sqlalchemy import select, update
 
 from app.llm.models import ModelTestConversation, ModelTestMessage
-from app.runtime.ownership import require_owner_id
+from studio.runtime.database.ownership import require_owner_id
 from studio.runtime.time import utc_now
 
 

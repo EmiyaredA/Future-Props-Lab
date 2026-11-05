@@ -67,7 +67,7 @@ def active_local_roots(root):
 
 def registered_assets(root):
     from app.capabilities.asset_store.storage import AssetStorage
-    from app.runtime.config import Settings
+    from studio.config.settings import Settings
 
     database = root / ".runtime/future-props.db"
     settings = Settings(

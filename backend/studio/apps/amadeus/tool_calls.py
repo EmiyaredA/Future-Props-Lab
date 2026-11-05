@@ -4,7 +4,6 @@ from uuid import UUID
 
 import httpx
 
-from app.runtime.operation_receipts import OperationError
 from studio.apps.integrations.clients.authority import (
     IntegrationAuthorizationUnavailable,
     IntegrationIntentClient,
@@ -16,6 +15,7 @@ from studio.contracts.integrations.integration_intents import (
     IntegrationScope,
     digest,
 )
+from studio.runtime.database.operation_receipts import OperationError
 
 
 class ToolCalls:

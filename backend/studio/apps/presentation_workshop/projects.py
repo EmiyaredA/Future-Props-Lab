@@ -5,12 +5,6 @@ import json
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.runtime.operation_receipts import forget
-from app.runtime.project_records import (
-    delete_revisioned_project,
-    load_owned_project,
-    patch_revisioned_project,
-)
 from studio.apps.presentation_workshop.project_errors import PresentationError as PresentationError
 from studio.apps.presentation_workshop.schemas.document import (
     PresentationDocument,
@@ -23,6 +17,12 @@ from studio.apps.presentation_workshop.schemas.document import (
 from studio.apps.presentation_workshop.storage.models import PresentationProject
 from studio.apps.presentation_workshop.templates.models import PresentationTemplate
 from studio.apps.presentation_workshop.templates.resolver import resolve_document
+from studio.runtime.database.operation_receipts import forget
+from studio.runtime.database.project_records import (
+    delete_revisioned_project,
+    load_owned_project,
+    patch_revisioned_project,
+)
 from studio.runtime.ids import new_id
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now

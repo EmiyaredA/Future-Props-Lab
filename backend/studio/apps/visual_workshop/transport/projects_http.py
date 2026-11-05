@@ -3,7 +3,6 @@
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import ValidationError
 
-from app.runtime.operation_receipts import OperationError
 from studio.apps.asset_library.clients.project_reveal_http import (
     open_verified_project_folder,
     require_local_project_request,
@@ -23,6 +22,7 @@ from studio.apps.visual_workshop.schemas.workshop import (
 )
 from studio.assembly.independent.asset_references import reference_lifespan
 from studio.contracts.asset_library.project_snapshots import ProjectFolderOpenOut
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.http.dependencies import OwnerDep, SessionDep, StudioAuth
 
 router = APIRouter(prefix=PREFIX, tags=["visual-workshop"], lifespan=reference_lifespan)

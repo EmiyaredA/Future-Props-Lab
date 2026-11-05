@@ -9,7 +9,6 @@ from app.capabilities.asset_store import AssetError
 from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from app.runtime.config import Settings, get_settings
 from studio.apps.audio_annotation.models import AudioAnnotationDocument, AudioAnnotationProject
 from studio.apps.audio_annotation.schemas.document import (
     AudioAnnotationSegment,
@@ -28,6 +27,7 @@ from studio.apps.galgame_workshop.storage.models import (
 )
 from studio.apps.galgame_workshop.story.story import GalgameStoryDocuments
 from studio.apps.galgame_workshop.task_views import annotation_task_out as _task_out
+from studio.config.settings import Settings, get_settings
 from studio.contracts.galgame_workshop.galgame_annotation_source import AnnotationSource
 
 

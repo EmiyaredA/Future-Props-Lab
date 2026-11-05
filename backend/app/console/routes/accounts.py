@@ -62,8 +62,8 @@ from app.deps import (
     SessionDep,
     client_ip,
 )
-from app.runtime.image_sizes import ThumbnailSize
-from app.runtime.raster import RasterPreviewError
+from studio.runtime.files.image_sizes import ThumbnailSize
+from studio.runtime.files.raster import RasterPreviewError
 
 router = APIRouter(tags=["accounts"])
 

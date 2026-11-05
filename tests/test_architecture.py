@@ -888,7 +888,7 @@ def test_documented_core_directories_exist() -> None:
         "backend/app/console/models",
         "backend/app/console/routes",
         "backend/app/console/schemas",
-        "backend/app/apps",
+        "backend/studio/apps",
         "backend/studio/apps/presentation_workshop",
         "backend/studio/apps/audio_annotation",
         "backend/studio/apps/thought_workshop",
@@ -962,7 +962,7 @@ def test_galgame_protocol_and_schema_modules_stay_split() -> None:
 
 def test_project_applications_have_modules_routes_and_storage_roots() -> None:
     registry = (WEB_SRC / "app" / "applicationRegistry.ts").read_text(encoding="utf-8")
-    settings = (BACKEND_APP / "runtime" / "config.py").read_text(encoding="utf-8")
+    settings = (REPO_ROOT / "backend/studio/config/settings.py").read_text(encoding="utf-8")
     storage = (BACKEND_APP / "capabilities" / "asset_store" / "storage.py").read_text(
         encoding="utf-8"
     )

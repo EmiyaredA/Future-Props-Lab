@@ -27,8 +27,8 @@ from app.llm.schemas.model_test import (
     ModelTestSendIn,
 )
 from app.llm.stream_access import stream_access
-from app.runtime.config import get_settings
-from app.runtime.image_sizes import ThumbnailSize
+from studio.config.settings import get_settings
+from studio.runtime.files.image_sizes import ThumbnailSize
 
 router = APIRouter(prefix="/model-test/conversations", tags=["model-test"])
 

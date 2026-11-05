@@ -8,8 +8,8 @@ from sqlalchemy import select
 from app.capabilities.agents.cli.catalog import DEFINITIONS, AgentId, connection, inspect_connection
 from app.capabilities.agents.cli.contracts import AgentOut, CatalogOut
 from app.console.models import User
-from app.runtime.config import get_cloud_settings
-from app.runtime.operation_receipts import OperationError
+from studio.config.settings import get_cloud_settings
+from studio.runtime.database.operation_receipts import OperationError
 
 Purpose = Literal["amadeus", "visual_acceptance", "interview_preparation", "agent_workbench"]
 

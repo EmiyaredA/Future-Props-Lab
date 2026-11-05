@@ -17,7 +17,6 @@ from app.llm.models import (
 from app.llm.providers.agent import HttpAgentAdapter
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal
-from app.runtime.ownership import bind_owner
 from studio.apps.visual_workshop.assistant.actions import (
     action_out,
     cancel_active_actions,
@@ -34,6 +33,7 @@ from studio.apps.visual_workshop.storage.models import (
     VisualAssistantConversation,
     VisualAssistantMessage,
 )
+from studio.runtime.database.ownership import bind_owner
 from studio.runtime.time import utc_now
 
 

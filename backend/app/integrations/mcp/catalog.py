@@ -31,9 +31,9 @@ from app.integrations.schemas import (
     McpUpdateIn,
     McpValidationOut,
 )
-from app.runtime.config import get_settings
 from app.runtime.credentials import SecretCipher
-from app.runtime.ownership import require_owner_id
+from studio.config.settings import get_settings
+from studio.runtime.database.ownership import require_owner_id
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import iso_utc, utc_now
 

@@ -1,8 +1,8 @@
 from copy import deepcopy
 
-from app.runtime.operation_receipts import OperationError, record, replay
 from studio.apps.thought_workshop.notes import Notes, note_out
 from studio.apps.thought_workshop.schemas.workshop import ThoughtNoteOut, ThoughtNotePut
+from studio.runtime.database.operation_receipts import OperationError, record, replay
 from studio.runtime.revisions import RevisionConflictError
 
 

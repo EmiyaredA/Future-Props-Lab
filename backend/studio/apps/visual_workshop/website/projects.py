@@ -9,14 +9,6 @@ from app.capabilities.asset_store.project_transactions import (
     deleting_project_layout,
 )
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
-from app.runtime.config import get_settings
-from app.runtime.operation_receipts import forget
-from app.runtime.project_records import (
-    delete_revisioned_project,
-    list_owned_projects,
-    load_owned_project,
-    patch_revisioned_project,
-)
 from studio.apps.visual_workshop.acceptance.standards import delete_acceptance
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.project_values import project_out as project_out
@@ -30,6 +22,14 @@ from studio.apps.visual_workshop.storage.models import (
     VisualAssistantConversation,
     VisualCanvasDocument,
     VisualWorkshopProject,
+)
+from studio.config.settings import get_settings
+from studio.runtime.database.operation_receipts import forget
+from studio.runtime.database.project_records import (
+    delete_revisioned_project,
+    list_owned_projects,
+    load_owned_project,
+    patch_revisioned_project,
 )
 from studio.runtime.time import utc_now
 

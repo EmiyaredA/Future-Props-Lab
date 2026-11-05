@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { strFromU8, unzipSync } from "fflate";
 import { expect, test, type Page } from "@playwright/test";
 import { newDeck } from "../src/features/presentation-workshop/templates";
 
@@ -48,13 +50,30 @@ test("真实 PPTX 下载期间持续显示进度，完成后明确提示下载�
     ).toBeDisabled();
     await page.keyboard.press("Escape");
     await expect(dialog).toBeVisible();
-    await page.screenshot({ path: info.outputPath("export-generating.png") });
+    await info.attach("导出生成进度", {
+      body: await page.screenshot(),
+      contentType: "image/png",
+    });
   } finally {
     release();
   }
   const file = await download;
   expect(file.suggestedFilename()).toBe("导出反馈验收.pptx");
-  await file.saveAs(info.outputPath("导出反馈验收.pptx"));
+  await test.step("打开导出的 PPTX 包并核对封面文字", async () => {
+    const path = info.outputPath("导出反馈验收.pptx");
+    await file.saveAs(path);
+    const archive = unzipSync(await readFile(path));
+    expect(archive["[Content_Types].xml"]).toBeDefined();
+    expect(archive["ppt/presentation.xml"]).toBeDefined();
+    expect(strFromU8(archive["ppt/slides/slide1.xml"])).toContain(
+      "让想法，被看见",
+    );
+    await info.attach("导出文稿", {
+      path,
+      contentType:
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    });
+  });
   await expect(dialog.getByText(/已发起下载/)).toBeVisible();
   await expect(dialog.getByText(/浏览器下载列表/)).toBeVisible();
   await expect(dialog.getByRole("progressbar")).toHaveCount(0);

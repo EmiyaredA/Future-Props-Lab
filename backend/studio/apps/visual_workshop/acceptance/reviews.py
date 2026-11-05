@@ -1,4 +1,3 @@
-from app.runtime.config import get_settings
 from studio.apps.visual_workshop.acceptance.media import extract_evidence, flush_evidence
 from studio.apps.visual_workshop.acceptance.project_access import AcceptanceError
 from studio.apps.visual_workshop.acceptance.record_revisions import cas
@@ -6,6 +5,7 @@ from studio.apps.visual_workshop.acceptance.review_records import ReviewRecords
 from studio.apps.visual_workshop.acceptance.runs import run_out
 from studio.apps.visual_workshop.acceptance.sample_values import positions
 from studio.apps.visual_workshop.canvas import VisualCanvasDocuments
+from studio.config.settings import get_settings
 
 
 class Reviews(ReviewRecords):

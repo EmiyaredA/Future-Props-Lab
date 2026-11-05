@@ -5,7 +5,7 @@ from pydantic import ValidationError
 
 from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.transcription import TranscriptionParameterError
-from app.runtime.operation_receipts import OperationError
+from studio.runtime.database.operation_receipts import OperationError
 
 
 async def mapped(operation):

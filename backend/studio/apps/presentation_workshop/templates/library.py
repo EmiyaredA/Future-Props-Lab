@@ -2,11 +2,6 @@
 
 from sqlalchemy import func, select
 
-from app.runtime.project_records import (
-    delete_revisioned_project,
-    load_owned_project,
-    patch_revisioned_project,
-)
 from studio.apps.presentation_workshop.projects import PresentationError, Presentations
 from studio.apps.presentation_workshop.schemas.document import (
     PresentationDocument,
@@ -25,6 +20,11 @@ from studio.apps.presentation_workshop.templates.models import (
 )
 from studio.apps.presentation_workshop.templates.native_scene import default_page
 from studio.apps.presentation_workshop.templates.schema import TemplateBinding
+from studio.runtime.database.project_records import (
+    delete_revisioned_project,
+    load_owned_project,
+    patch_revisioned_project,
+)
 from studio.runtime.ids import new_id
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now

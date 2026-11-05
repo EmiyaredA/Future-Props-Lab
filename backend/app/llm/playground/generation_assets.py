@@ -21,7 +21,7 @@ from app.llm.schemas.model_test import (
     ModelTestGenerationAssetListOut,
     ModelTestGenerationAssetOut,
 )
-from app.runtime.config import Settings, get_settings
+from studio.config.settings import Settings, get_settings
 from studio.runtime.time import iso_utc, utc_now
 
 MAX_DRAFT_ASSETS = 50

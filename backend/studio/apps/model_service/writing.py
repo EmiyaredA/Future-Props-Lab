@@ -19,7 +19,6 @@ from app.llm.provider_transports import provider_options
 from app.llm.providers.chat_completions import TEXT_PROVIDER_KINDS
 from app.llm.providers.streaming import ChatMessageInput, stream_text_completion
 from app.runtime.credentials import decrypt_secret
-from app.runtime.ownership import bind_owner
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.permissions import effective_permissions
 from studio.contracts.identity.principal import StudioPrincipal
@@ -30,6 +29,7 @@ from studio.contracts.thought_workshop.writing import (
     event,
     writing_target,
 )
+from studio.runtime.database.ownership import bind_owner
 
 router = APIRouter(include_in_schema=False)
 

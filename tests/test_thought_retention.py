@@ -511,11 +511,11 @@ async def test_permanent_note_purge_releases_pins_only_with_committed_deletion(i
 
 
 async def test_note_operations_commit_receipt_and_pins_together_and_replay(instance):
-    from app.runtime.operation_receipts import OperationError
     from studio.apps.thought_workshop.note_retention import apply_operations_with_references
     from studio.apps.thought_workshop.schemas.operations import ThoughtOperationsIn
     from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
     from studio.apps.thought_workshop.website.asset_metadata import LibraryAsset
+    from studio.runtime.database.operation_receipts import OperationError
     from studio.runtime.database.project_operations import ProjectOperationReceipt
 
     db, remote, service = instance

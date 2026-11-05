@@ -4,7 +4,6 @@ from datetime import timedelta
 
 from sqlalchemy import select, text
 
-from app.runtime.ownership import bind_owner
 from studio.apps.agent_workbench.storage.models import (
     WorkbenchChange,
     WorkbenchOperation,
@@ -16,6 +15,7 @@ from studio.apps.agent_workbench.storage.service_models import (
     NativeWorkerSeen,
 )
 from studio.contracts.identity.permissions import CLOUD_CONTROL_PERMISSION
+from studio.runtime.database.ownership import bind_owner
 from studio.runtime.ids import new_id
 from studio.runtime.tasks.native_queue import digest
 from studio.runtime.tasks.polling import PollingTaskRunner

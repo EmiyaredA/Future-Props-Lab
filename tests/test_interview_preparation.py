@@ -9,7 +9,6 @@ from pypdf import PdfWriter
 
 from app.deps import require_studio_auth
 from app.main import app
-from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 from studio.apps.interview_assistant import codex, runner
 from studio.apps.interview_assistant.bundles import acceptance
@@ -18,6 +17,7 @@ from studio.apps.interview_assistant.executor_status import executor_status
 from studio.apps.interview_assistant.storage.models import InterviewPreparation
 from studio.apps.interview_assistant.task_tools import TaskFiles, extract_document
 from studio.apps.interview_assistant.transport import website as routes
+from studio.config.settings import get_settings
 from studio.contracts.interview_assistant.documents import InterviewExecutorOut, PreparationBundle
 
 
@@ -450,7 +450,7 @@ async def test_cancellation_terminates_the_cli_process_group(client, tmp_path, m
     import sys
     import textwrap
 
-    from app.runtime.operation_receipts import OperationError
+    from studio.runtime.database.operation_receipts import OperationError
 
     room, _ = await prepare(client, await create(client))
     async with SessionLocal() as session:

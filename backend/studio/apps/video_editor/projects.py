@@ -3,11 +3,6 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.runtime.project_records import (
-    delete_revisioned_project,
-    load_owned_project,
-    patch_revisioned_project,
-)
 from studio.apps.video_editor.errors import VideoEditorNotFoundError
 from studio.apps.video_editor.schemas import (
     VideoEditorProjectCreateIn,
@@ -16,6 +11,11 @@ from studio.apps.video_editor.schemas import (
     VideoEditorProjectPatchIn,
 )
 from studio.apps.video_editor.storage.models import VideoEditorProject, VideoEditorTimeline
+from studio.runtime.database.project_records import (
+    delete_revisioned_project,
+    load_owned_project,
+    patch_revisioned_project,
+)
 from studio.runtime.ids import new_id
 from studio.runtime.time import iso_utc, utc_now
 

@@ -20,9 +20,9 @@ from app.capabilities.identity.passwords import normalize_username  # noqa: E402
 from app.console.governance.provisioning import create_account  # noqa: E402
 from app.console.governance.service import reset_password  # noqa: E402
 from app.console.models import User  # noqa: E402
-from app.runtime.config import get_settings  # noqa: E402
 from app.runtime.db import SessionLocal  # noqa: E402
 from db.migrations import apply_migrations  # noqa: E402
+from studio.config.settings import get_settings  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:

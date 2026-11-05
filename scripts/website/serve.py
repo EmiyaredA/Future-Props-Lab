@@ -29,7 +29,7 @@ def main():
     if args.reload:
         os.environ["FPL_WEBSITE_PORT"] = "9001"
         os.environ["CORS_ORIGINS"] = "http://127.0.0.1:3000,http://127.0.0.1:9001"
-    from app.runtime.config import get_settings
+    from studio.config.settings import get_settings
 
     settings = get_settings()
     web_root = Path(settings.fpl_website_web_root).expanduser()

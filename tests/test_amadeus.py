@@ -27,7 +27,7 @@ from app.main import app
 from app.orm import bind_owner
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
-from app.runtime.operation_receipts import OperationError
+from studio.runtime.database.operation_receipts import OperationError
 
 
 @pytest.mark.asyncio

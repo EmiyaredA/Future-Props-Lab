@@ -15,7 +15,6 @@ from sqlalchemy import select
 
 from app.console.creative_workshop.models import CreativeItem, CreativeRelease
 from app.console.creative_workshop.schemas import CreativeInstallPreviewIn
-from app.runtime.config import Settings
 from studio.apps.creative_workshop.install_authorization import (
     IdentityInstallAuthorization,
     InstallSource,
@@ -40,6 +39,7 @@ from studio.apps.integrations.storage.migrations.registry import (
 )
 from studio.apps.integrations.storage.service_models import MODELS
 from studio.apps.integrations.transport.creative_http import router as target_router
+from studio.config.settings import Settings
 from studio.contracts.creative_workshop.creative_install_evidence import (
     INSTALL_PATH,
     issue_install_evidence,

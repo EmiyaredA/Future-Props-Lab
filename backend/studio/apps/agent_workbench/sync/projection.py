@@ -2,7 +2,6 @@ from dataclasses import asdict, replace
 
 from sqlalchemy import bindparam, delete, select, text
 
-from app.runtime.ownership import bind_owner
 from studio.apps.agent_workbench.storage.models import (
     WorkbenchChange,
     WorkbenchCheckpoint,
@@ -10,6 +9,7 @@ from studio.apps.agent_workbench.storage.models import (
     WorkbenchSession,
     WorkbenchSource,
 )
+from studio.runtime.database.ownership import bind_owner
 from studio.runtime.time import utc_now
 
 

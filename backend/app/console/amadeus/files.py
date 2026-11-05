@@ -15,8 +15,8 @@ from anyio import AsyncFile
 from anyio.to_thread import run_sync
 
 from app.capabilities.asset_store.incoming import IncomingFile
-from app.runtime.config import get_settings
-from app.runtime.operation_receipts import OperationError
+from studio.config.settings import get_settings
+from studio.runtime.database.operation_receipts import OperationError
 
 KINDS = frozenset({"imports", "scripts", "outputs"})
 MAX_FILE_BYTES = 50 * 1024 * 1024

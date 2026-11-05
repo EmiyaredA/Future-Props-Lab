@@ -18,8 +18,8 @@ from app.llm.catalog.template_reconciliation import reconciliation_preview as re
 from app.llm.catalog.template_values import prepare_template
 from app.llm.catalog.template_values import template_view as template_view
 from app.llm.models import ModelCatalogState
-from app.runtime.ownership import bind_owner
 from studio.contracts.identity.errors import AccountError
+from studio.runtime.database.ownership import bind_owner
 
 
 async def get_template(session, role):

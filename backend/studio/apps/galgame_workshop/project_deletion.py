@@ -5,8 +5,6 @@ from uuid import uuid4
 import httpx
 from sqlalchemy import delete, select, text, union_all
 
-from app.runtime.operation_receipts import forget
-from app.runtime.project_records import delete_revisioned_project
 from studio.apps.galgame_workshop.storage.models import (
     GalgameAnnotationImportTask,
     GalgameAssetTranscriptionTask,
@@ -21,6 +19,8 @@ from studio.apps.galgame_workshop.storage.service_models import (
     GalgameVideoDispatch,
 )
 from studio.contracts.asset_library.references import PrepareReferenceChange
+from studio.runtime.database.operation_receipts import forget
+from studio.runtime.database.project_records import delete_revisioned_project
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 from studio.runtime.project_errors import ProjectResourceError
 from studio.runtime.revisions import RevisionConflictError

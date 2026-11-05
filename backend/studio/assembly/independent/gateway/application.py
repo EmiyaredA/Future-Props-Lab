@@ -10,12 +10,12 @@ from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.runtime.config import get_settings
 from studio.apps.gateway.notifications import router as notification_router
 from studio.apps.gateway.service_status import ServiceMonitor
 from studio.apps.gateway.storage.migrations.registry import MIGRATIONS
 from studio.apps.gateway.storage.service_models import ChangeCursor, ChangeReceipt
 from studio.apps.gateway.transport.service import router
+from studio.config.settings import get_settings
 from studio.runtime.database.migrations import check
 from studio.runtime.database.sessions import Database
 from studio.runtime.http.authentication import SignedIdentity

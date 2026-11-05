@@ -6,8 +6,8 @@ import re
 from pathlib import Path
 
 from app.capabilities.asset_store.incoming import IncomingFile
-from app.runtime.config import get_settings
-from app.runtime.operation_receipts import OperationError
+from studio.config.settings import get_settings
+from studio.runtime.database.operation_receipts import OperationError
 
 MAX_FILE_BYTES = 10 * 1024 * 1024
 IDENTIFIER = re.compile(r"^[A-Za-z0-9_-]{1,100}$")

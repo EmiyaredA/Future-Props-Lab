@@ -14,10 +14,9 @@ import httpx
 from pydantic import ValidationError
 
 from app.capabilities.agents.cli.catalog import inspect_connection
-from app.runtime.config import get_settings
-from app.runtime.operation_receipts import OperationError
 from studio.apps.interview_assistant.bundles import acceptance
 from studio.apps.interview_assistant.codex import CodexExecutor, executable, frozen_context
+from studio.config.settings import get_settings
 from studio.contracts.agent_workbench.native import NativeLease, NativeOutcome
 from studio.contracts.interview_assistant.documents import PreparationBundle
 from studio.contracts.interview_assistant.execution import (
@@ -28,6 +27,7 @@ from studio.contracts.interview_assistant.execution import (
 )
 from studio.host.receipts import ReceiptStore
 from studio.host.transport import LeaseEnded, NativeTransport, ProtocolConflict
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.lifecycle.locking import service_lock
 
 UNAVAILABLE = WorkerStatus(available=False, code="executor_unavailable")

@@ -14,7 +14,7 @@ from app.integrations.models import (
     SkillVersion,
     ToolApiIntegration,
 )
-from app.runtime.config import get_settings
+from studio.config.settings import get_settings
 from studio.contracts.creative_workshop.creative_source_snapshot import CreativeSource
 
 

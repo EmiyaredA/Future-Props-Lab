@@ -9,13 +9,13 @@ from app.capabilities.agents.cli.dialogue import run_dialogue
 from app.capabilities.agents.cli.instructions import LiveInstructions
 from app.capabilities.agents.cli.transport import CliError
 from app.console.governance.code_agents import resolve_connection
-from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
-from app.runtime.operation_receipts import OperationError
 from studio.apps.agent_workbench.execution import storage, turn_activity
 from studio.apps.agent_workbench.execution.project_tools import ProjectTools
+from studio.config.settings import get_settings
 from studio.contracts.identity.permissions import role_scopes
 from studio.contracts.identity.principal import StudioPrincipal
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.ids import new_id
 
 

@@ -6,7 +6,7 @@ from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.media_info import inspect_video_info
-from app.runtime.config import get_settings
+from studio.config.settings import get_settings
 
 
 async def get_video_media_info(session, owner_user_id: str, asset_id: str) -> dict:

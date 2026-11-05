@@ -6,7 +6,7 @@ from app.console.governance.account_creation import (
 )
 from app.console.governance.model_templates import initialize_from_template
 from app.llm.catalog.seed import ensure_account_model_catalog
-from app.runtime.ownership import bind_owner
+from studio.runtime.database.ownership import bind_owner
 
 
 async def create_account(session, **values):

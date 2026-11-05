@@ -78,8 +78,8 @@ async def test_corrupt_and_non_video_media_info_fail_without_mutation():
     from app.capabilities.asset_store.models import VisualAsset
     from app.capabilities.asset_store.storage import AssetStorage
     from app.orm import bind_owner
-    from app.runtime.config import get_settings
     from app.runtime.db import SessionLocal
+    from studio.config.settings import get_settings
 
     async with SessionLocal() as session:
         bind_owner(session, "test-user")

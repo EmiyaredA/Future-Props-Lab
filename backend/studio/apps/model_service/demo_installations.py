@@ -7,7 +7,6 @@ import httpx
 from sqlalchemy import select, text
 
 from app.llm.catalog.service import ModelCatalogService
-from app.runtime.operation_receipts import OperationError
 from studio.apps.model_service.admission.task_usage import OwnedCatalogTaskUsage
 from studio.apps.model_service.audit.audit import add_event
 from studio.apps.model_service.audit.audit_client import PreparedChange
@@ -20,6 +19,7 @@ from studio.contracts.integrations.integration_intents import (
     digest,
 )
 from studio.contracts.model_service.model_audit import PreparedModelAudit
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.tasks.polling import PollingTaskRunner
 
 from .defaults import OwnedCatalogDefaults

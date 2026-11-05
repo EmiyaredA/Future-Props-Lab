@@ -9,7 +9,6 @@ from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from app.runtime.config import get_settings
 from studio.apps.motion_compositor.projects import MotionInvalid, MotionNotFound, MotionProjects
 from studio.apps.motion_compositor.schemas import (
     AssetImportIn,
@@ -18,6 +17,7 @@ from studio.apps.motion_compositor.schemas import (
     ImportSourceListOut,
     ImportSourceOut,
 )
+from studio.config.settings import get_settings
 from studio.contracts.motion_compositor.motion_assets import MOTION_EXTENSIONS
 
 

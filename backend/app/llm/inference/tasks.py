@@ -13,8 +13,8 @@ from app.llm.providers.local_qwen import MAX_REFERENCE_BYTES, inspect_reference
 from app.llm.providers.seedance_references import SeedanceReference, validate_seedance_references
 from app.llm.schemas.model_inference import InferenceTaskOut, InferenceTasksOut
 from app.llm.task_outcomes import confirmed_terminal
-from app.runtime.config import get_settings
-from app.runtime.operation_receipts import OperationError, fingerprint
+from studio.config.settings import get_settings
+from studio.runtime.database.operation_receipts import OperationError, fingerprint
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now
 

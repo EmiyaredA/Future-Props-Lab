@@ -8,7 +8,6 @@ from sqlalchemy import delete, select
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.asset_store.svg import normalize_svg
-from app.runtime.config import get_settings
 from studio.apps.presentation_workshop.asset_references import document_references, validate_assets
 from studio.apps.presentation_workshop.schemas.document import PresentationDocument
 from studio.apps.presentation_workshop.storage.models import PresentationAssetReference
@@ -16,6 +15,7 @@ from studio.apps.presentation_workshop.templates.models import (
     PresentationExampleAsset,
     PresentationTemplateAsset,
 )
+from studio.config.settings import get_settings
 
 
 class LegacyProjectAssets:

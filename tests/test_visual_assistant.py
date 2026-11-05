@@ -16,12 +16,12 @@ from app.capabilities.asset_store.models import VisualAsset
 from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
 from app.llm.providers.agent import ModelTextDelta, ModelTurnEnd, ToolCall, Usage
 from app.main import app
-from app.runtime.config import get_settings
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
 from studio.apps.visual_workshop.assistant import stream as assistant_stream
 from studio.apps.visual_workshop.assistant.conversations import VisualAssistantConversations
 from studio.apps.visual_workshop.schemas.workshop import VisualAssistantSendIn
+from studio.config.settings import get_settings
 
 
 @pytest.mark.asyncio

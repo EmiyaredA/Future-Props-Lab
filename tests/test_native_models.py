@@ -445,7 +445,7 @@ async def test_admin_action_preserves_cas_and_original_request_authority(case):
 
 
 async def test_public_or_wrong_purpose_native_management_is_rejected(case):
-    from app.runtime.operation_receipts import OperationError
+    from studio.runtime.database.operation_receipts import OperationError
 
     path = "/v1/platform/local-models/" + MODEL + "/actions"
     body = LocalModelActionIn(request_id="never-run", expected_revision=1, action="uninstall")
@@ -706,7 +706,7 @@ async def test_repair_preserves_explicitly_disabled_model(case):
 
 async def test_uncertain_native_submission_cannot_delete_original_task_or_input(case):
     from app.llm.inference.tasks import InferenceTasks
-    from app.runtime.operation_receipts import OperationError
+    from studio.runtime.database.operation_receipts import OperationError
 
     task_id = await task(case)
     async with case.database.sessions(info={"owner_user_id": "alpha"}) as session:

@@ -15,9 +15,9 @@ from app.console.amadeus.run_records import RunRecords
 from app.console.amadeus.schemas import ActionIn, QuestionIn
 from app.console.amadeus.skill_files import read_skill_file
 from app.console.amadeus.tool_contracts import validate_tool
-from app.runtime.operation_receipts import OperationError
 from studio.apps.amadeus.transport.operation_http import published_catalog
 from studio.contracts.amadeus.amadeus_native import DialogueToolResult
+from studio.runtime.database.operation_receipts import OperationError
 
 from .operation_calls import call_registered
 

@@ -7,7 +7,6 @@ import shutil
 from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 
-from app.runtime.operation_receipts import OperationError, fingerprint, record, replay
 from studio.apps.interview_assistant.files import (
     exclusive_write,
     material_path,
@@ -26,6 +25,7 @@ from studio.contracts.interview_assistant.documents import (
     InterviewRoomSummary,
     InterviewTaskOut,
 )
+from studio.runtime.database.operation_receipts import OperationError, fingerprint, record, replay
 from studio.runtime.ids import new_id
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now

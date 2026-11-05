@@ -2,7 +2,6 @@
 
 from sqlalchemy import select, text
 
-from app.runtime.project_records import load_owned_project
 from studio.apps.galgame_workshop.schemas import (
     GalgameVideoEditorHandoffTaskListOut,
     GalgameVideoExportTaskListOut,
@@ -18,6 +17,7 @@ from studio.apps.galgame_workshop.task_views import (
     export_task_out,
     handoff_out,
 )
+from studio.runtime.database.project_records import load_owned_project
 from studio.runtime.project_errors import ProjectResourceError
 from studio.runtime.time import utc_now
 

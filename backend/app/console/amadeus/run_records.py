@@ -23,7 +23,7 @@ from app.console.amadeus.schemas import (
     RunEventOut,
     RunOut,
 )
-from app.runtime.operation_receipts import OperationError
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.time import utc_now
 
 ACTIVE = frozenset({"running", "cancelling"})

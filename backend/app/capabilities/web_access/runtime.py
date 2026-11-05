@@ -13,8 +13,8 @@ from starlette.responses import PlainTextResponse
 
 from app.capabilities.web_access.contracts import AccessStatus, EndpointStatus
 from app.capabilities.web_access.profiles import AccessError, ProfileStore
-from app.runtime.remote_web import RemoteWeb
-from app.runtime.website import WebsiteStaticFiles
+from studio.runtime.http.remote_web import RemoteWeb
+from studio.runtime.http.website import WebsiteStaticFiles
 
 
 class BrowserServer(uvicorn.Server):

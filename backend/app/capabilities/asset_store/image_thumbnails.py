@@ -10,7 +10,7 @@ from uuid import uuid4
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 from app.capabilities.asset_store.errors import AssetError
-from app.runtime.image_sizes import ThumbnailSize
+from studio.runtime.files.image_sizes import ThumbnailSize
 
 _capacity = asyncio.Semaphore(2)
 

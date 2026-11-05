@@ -3,9 +3,9 @@ from __future__ import annotations
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.runtime.ownership import require_owner_id
 from app.tool_navigation.models import ToolNavigationItem
 from app.tool_navigation.schemas import ToolNavigationItemOut, ToolNavigationStateOut
+from studio.runtime.database.ownership import require_owner_id
 from studio.runtime.time import iso_utc, utc_now
 
 

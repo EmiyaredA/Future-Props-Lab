@@ -8,9 +8,9 @@ from pathlib import Path
 import pytest
 from cryptography.fernet import Fernet
 
-from app.runtime.config import Settings
 from studio.config import ConfigurationError, read_config
 from studio.config.migration import convert_legacy, encode, publish
+from studio.config.settings import Settings
 
 KEY = Fernet.generate_key().decode()
 

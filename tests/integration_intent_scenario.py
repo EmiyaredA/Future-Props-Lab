@@ -12,7 +12,6 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import select
 
 from app.llm.models import RuntimeAdmission
-from app.runtime.config import Settings
 from external_intent_scenario import exercise_external_intents
 from studio.apps.identity.accounts import create_account
 from studio.apps.identity.storage.migrations.registry import MIGRATIONS
@@ -23,6 +22,7 @@ from studio.apps.model_service.storage.integration_records import IntegrationCap
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS as MODEL_MIGRATIONS
 from studio.assembly.independent.identity.application import create_app
 from studio.assembly.independent.model_service.application import create_app as models_app
+from studio.config.settings import Settings
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.integrations.integration_intents import IntegrationScope

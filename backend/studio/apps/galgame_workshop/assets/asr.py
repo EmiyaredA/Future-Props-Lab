@@ -19,11 +19,8 @@ from app.llm.providers.senseaudio_asr import (
 )
 from app.llm.providers.transcription import transcribe_model_audio
 from app.llm.transcription_catalog import supports_asr, transcription_model_ready
-from app.runtime.config import Settings, get_settings
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal
-from app.runtime.ownership import bind_owner
-from app.runtime.task_admission import TaskAdmission
 from studio.apps.galgame_workshop.assets.asr_records import AsrRecords, transcription_task_out
 from studio.apps.galgame_workshop.assets.transcript_records import write_transcript
 from studio.apps.galgame_workshop.assets.voice_matching import match_dialogue
@@ -41,7 +38,10 @@ from studio.apps.galgame_workshop.storage.models import (
     GalgameAssetTranscriptionTask,
 )
 from studio.apps.galgame_workshop.story.story import GalgameStoryDocuments
+from studio.config.settings import Settings, get_settings
+from studio.runtime.database.ownership import bind_owner
 from studio.runtime.tasks.polling import PollingTaskRunner
+from studio.runtime.tasks.task_admission import TaskAdmission
 from studio.runtime.time import utc_now
 
 

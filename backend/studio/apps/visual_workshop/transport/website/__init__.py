@@ -23,8 +23,6 @@ from app.capabilities.asset_store.schemas.files import (
     VisualAssetReferencePatchIn,
 )
 from app.deps import OwnerDep, SessionDep, StudioAuth
-from app.runtime.config import get_settings
-from app.runtime.operation_receipts import OperationError
 from studio.apps.visual_workshop.canvas import VisualCanvasDocuments, VisualCanvasError
 from studio.apps.visual_workshop.operations import apply_operations as visual_operations
 from studio.apps.visual_workshop.schemas.operations import VisualOperationsIn
@@ -42,7 +40,9 @@ from studio.apps.visual_workshop.website.projects import (
     VisualWorkshopProjects,
 )
 from studio.apps.visual_workshop.website.snapshots import VisualWorkshopProjectSnapshots
+from studio.config.settings import get_settings
 from studio.contracts.asset_library.project_snapshots import ProjectFolderOpenOut
+from studio.runtime.database.operation_receipts import OperationError
 
 router = APIRouter(prefix="/visual-workshop/projects", tags=["visual-workshop"])
 

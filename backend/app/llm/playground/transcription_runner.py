@@ -22,9 +22,9 @@ from app.llm.models import (
 from app.llm.providers.transcription import transcribe_model_audio
 from app.llm.schemas.model_test import ModelTestTranscriptionResultDetailOut
 from app.llm.task_outcomes import TaskClaimRejected
-from app.runtime.config import Settings, get_settings
 from app.runtime.credentials import decrypt_secret
-from app.runtime.task_records import load_runner_task, recovery_accounts
+from studio.config.settings import Settings, get_settings
+from studio.runtime.database.task_records import load_runner_task, recovery_accounts
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now
 

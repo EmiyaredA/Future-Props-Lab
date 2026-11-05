@@ -1,7 +1,7 @@
 """Transform one Galgame Story operation batch without database or transport access."""
 
-from app.runtime.operation_receipts import OperationError
 from studio.apps.galgame_workshop.schemas import GalgameStoryDocumentPutIn
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.entity_edits import edit, find
 
 

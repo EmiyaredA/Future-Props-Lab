@@ -9,7 +9,7 @@ import tempfile
 from contextlib import suppress
 from pathlib import Path
 
-from app.runtime.config import REPO_ROOT
+from studio.config.settings import REPO_ROOT
 
 from .conversation import recorded_result
 

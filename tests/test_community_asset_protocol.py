@@ -81,7 +81,7 @@ async def scenario(tmp_path, monkeypatch):
     apply(roots["identity"] / "service.db", "identity", IDENTITY_MIGRATIONS)
     apply(roots["assets"] / "service.db", "assets", ASSET_MIGRATIONS)
     apply(roots["thought"] / "service.db", "thought", THOUGHT_MIGRATIONS)
-    from app.runtime.config import get_settings
+    from studio.config.settings import get_settings
 
     monkeypatch.setenv("FPL_DATABASE_PATH", str(roots["identity"] / "service.db"))
     get_settings.cache_clear()

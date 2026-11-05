@@ -5,8 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
-from app.runtime.config import Settings
 from studio.apps.thought_workshop.schemas.workshop import ThoughtAttachmentOut
+from studio.config.settings import Settings
 
 
 async def upload_attachment(

@@ -1,13 +1,13 @@
 """Model definitions and explicit deployment readiness; no host probes in containers."""
 
 from app.llm.models.local_models import LocalModelInstallation
-from app.runtime.operation_receipts import OperationError
 from studio.config.local_models import HERE as HERE
 from studio.config.local_models import LANGUAGES as LANGUAGES
 from studio.config.local_models import compatible as compatible
 from studio.config.local_models import definition as definition
 from studio.config.local_models import local_root as local_root
 from studio.config.local_models import manifest as manifest
+from studio.runtime.database.operation_receipts import OperationError
 
 
 async def host_compatible(session):

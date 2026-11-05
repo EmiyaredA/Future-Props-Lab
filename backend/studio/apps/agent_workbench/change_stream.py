@@ -6,9 +6,9 @@ import json
 from fastapi import HTTPException
 from sqlalchemy import select
 
-from app.runtime.ownership import bind_owner
 from studio.apps.agent_workbench.reading import change_cursor, get_conversation
 from studio.apps.agent_workbench.storage.models import WorkbenchChange
+from studio.runtime.database.ownership import bind_owner
 
 
 async def event_page(db, owner, after, session_id=None):

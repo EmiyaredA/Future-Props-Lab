@@ -6,7 +6,6 @@ from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, Response
 
 from app.deps import SessionDep, StudioAuth
-from app.runtime.operation_receipts import OperationError
 from studio.apps.interview_assistant.bundles import markdown
 from studio.apps.interview_assistant.rooms import Rooms
 from studio.contracts.interview_assistant.documents import (
@@ -19,6 +18,7 @@ from studio.contracts.interview_assistant.documents import (
     InterviewTaskProgress,
     PreparationBundle,
 )
+from studio.runtime.database.operation_receipts import OperationError
 
 router = APIRouter(prefix="/interview-assistant", tags=["interview-assistant"])
 

@@ -2,11 +2,11 @@
 
 from app.capabilities.agents.cli.catalog import inspect_connection
 from app.console.governance.code_agents import resolve
-from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
-from app.runtime.operation_receipts import OperationError
-from app.runtime.ownership import bind_owner
+from studio.config.settings import get_settings
 from studio.contracts.interview_assistant.documents import InterviewExecutorOut
+from studio.runtime.database.operation_receipts import OperationError
+from studio.runtime.database.ownership import bind_owner
 
 
 async def executor_status(

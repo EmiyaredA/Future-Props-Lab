@@ -4,8 +4,8 @@ from pydantic import ValidationError
 from app.capabilities.identity.passwords import hash_password, validate_password, verify_password
 from app.capabilities.identity.security import new_management_api_key
 from app.llm.schemas.model_service import ProviderIn
-from app.runtime.config import Settings
-from app.runtime.outbound_urls import (
+from studio.config.settings import Settings
+from studio.runtime.http.outbound_urls import (
     normalize_provider_base_url,
     normalize_provider_websocket_url,
 )

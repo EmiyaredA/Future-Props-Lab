@@ -9,7 +9,7 @@ from sqlalchemy import select
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from app.runtime.config import get_settings
+from studio.config.settings import get_settings
 
 
 async def crop_image(session, owner_user_id, asset_id, body):

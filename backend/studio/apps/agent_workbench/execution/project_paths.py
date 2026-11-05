@@ -4,9 +4,9 @@ from pathlib import Path
 
 from fastapi import HTTPException
 
-from app.runtime.config import REPO_ROOT
-from app.runtime.safe_paths import visible
 from studio.config import CONFIG_FILE
+from studio.config.settings import REPO_ROOT
+from studio.runtime.files.safe_paths import visible
 
 
 def validate_project_root(root, settings):

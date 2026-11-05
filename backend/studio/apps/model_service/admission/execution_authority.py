@@ -6,12 +6,12 @@ import jwt
 from sqlalchemy import select
 
 from app.llm.task_outcomes import TaskClaimRejected
-from app.runtime.task_records import load_runner_task
 from studio.apps.model_service.storage.service_models import TaskAuthorization
 from studio.apps.model_service.storage.task_records import TASK_MODELS, task_fingerprint
 from studio.contracts.identity.claims import Actor, verify_context
 from studio.contracts.identity.permissions import effective_permissions
 from studio.contracts.identity.route_permissions import route_permission
+from studio.runtime.database.task_records import load_runner_task
 
 CREATION_PATHS = {
     "inference": frozenset({"/v1/model-inference/tasks"}),

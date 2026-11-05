@@ -19,11 +19,11 @@ from app.capabilities.media_rendering.evaluator import (
 from app.capabilities.media_rendering.frame_renderer import render_plan_frame
 from app.capabilities.media_rendering.text_layer import TEXT_RENDER_VERSION, text_layer_png
 from app.capabilities.media_rendering.video_sampling import VIDEO_SAMPLING_VERSION
-from app.runtime.config import get_settings
 from studio.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from studio.apps.video_editor.projects import VideoEditorProjects
 from studio.apps.video_editor.schemas import VideoEditorClip, parse_timeline_document
 from studio.apps.video_editor.storage.models import VideoEditorTimeline
+from studio.config.settings import get_settings
 from studio.runtime.revisions import RevisionConflictError
 
 

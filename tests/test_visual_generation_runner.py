@@ -16,7 +16,6 @@ from app.llm.models import (
     ModelProvider,
 )
 from app.llm.providers.temporary_media import TemporaryMediaError
-from app.runtime.config import get_settings
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
@@ -31,6 +30,7 @@ from studio.apps.visual_workshop.website.generation_runner import (
     _generated_type,
     _safe_task_error,
 )
+from studio.config.settings import get_settings
 
 
 def _task(

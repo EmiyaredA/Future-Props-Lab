@@ -15,7 +15,6 @@ from sqlalchemy import select
 from app.console.models.accounts import SecurityAuditEvent
 from app.integrations.models import ToolApiIntegration
 from app.llm.models import RuntimeAdmission
-from app.runtime.config import Settings
 from studio.apps.identity.accounts import create_account
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.identity.storage.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
@@ -33,6 +32,7 @@ from studio.apps.model_service.templates import initialize_account_catalog
 from studio.assembly.independent.identity.application import create_app as identity_app
 from studio.assembly.independent.integrations.application import create_app as integrations_app
 from studio.assembly.independent.model_service.application import create_app as models_app
+from studio.config.settings import Settings
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.claims import HEADER
 from studio.runtime.database.migrations import apply

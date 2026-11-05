@@ -3,7 +3,6 @@ from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.storage import AssetStorage
-from app.runtime.config import Settings
 from studio.apps.galgame_workshop.assets.assets import GalgameProjectAssets
 from studio.apps.galgame_workshop.errors import GalgameStoryDocumentInvalidError
 from studio.apps.galgame_workshop.schemas import GalgameStoryRouteReportOut
@@ -14,6 +13,7 @@ from studio.apps.galgame_workshop.story.readiness_values import (
 )
 from studio.apps.galgame_workshop.story.route_report import build_route_report
 from studio.apps.galgame_workshop.story.story import GalgameStoryDocuments
+from studio.config.settings import Settings
 
 
 class GalgameReadiness:
