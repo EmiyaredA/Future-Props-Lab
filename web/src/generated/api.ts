@@ -672,6 +672,23 @@ export interface paths {
         patch: operations["patch_preferences_v1_agent_workbench_sessions__session_id__preferences_patch"];
         trace?: never;
     };
+    "/v1/agent-workbench/sessions/{session_id}/source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** History File */
+        get: operations["history_file_v1_agent_workbench_sessions__session_id__source_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/agent-workbench/sources": {
         parameters: {
             query?: never;
@@ -25809,6 +25826,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkbenchSessionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    history_file_v1_agent_workbench_sessions__session_id__source_get: {
+        parameters: {
+            query: {
+                path: string;
+                line?: number | null;
+            };
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourcePreview"];
                 };
             };
             /** @description Validation Error */

@@ -10,8 +10,9 @@ import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import select
 
-from studio.apps.agent_workbench.execution import projects
+from studio.apps.agent_workbench.execution import project_files, projects
 from studio.apps.agent_workbench.storage.migrations.registry import MIGRATIONS
+from studio.apps.agent_workbench.storage.models import WorkbenchSession
 from studio.apps.agent_workbench.storage.service_models import WorkbenchExecutionJob
 from studio.assembly.independent.agent_workbench.application import create_app
 from studio.config.settings import get_settings
@@ -22,6 +23,7 @@ from studio.contracts.agent_workbench.execution import (
     PREVIEW_SOURCE,
     PROJECT_PATH,
     decision_path,
+    history_source_path,
     instruction_path,
     queue_remove_path,
     queue_resume_path,
@@ -30,7 +32,7 @@ from studio.contracts.agent_workbench.execution import (
 )
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.claims import HEADER, Actor, issue_context, verify_context
-from studio.contracts.identity.cloud_authority import CloudAuthority
+from studio.contracts.identity.cloud_authority import CloudAuthority, permits_cloud_authority
 from studio.contracts.identity.permissions import role_scopes
 from studio.host.agent_execution.workbench_worker import WorkbenchConfiguration, WorkbenchWorker
 from studio.host.transport import NativeTransport
@@ -48,6 +50,7 @@ class Identity:
         self.unlocked_until = 0
 
     async def cloud_authority(self, *, assertion, method, path):
+        assert permits_cloud_authority("agents", method, path)
         actor = verify_context(
             assertion, service="agents", method=method, path=path, public_key=self.key
         )
@@ -78,10 +81,11 @@ async def test_native_workbench_project_discovery_keeps_roots_local(tmp_path, mo
     for path in (service, work, profiles):
         path.mkdir(parents=True)
     config = tmp_path / "workbench.toml"
-    config.write_text(
+    configured_project = (
         '[cloud_control.projects.fixture]\nlabel = "Public authorized fixture"\n'
         + f"root = {json.dumps(str(work))}\nuser_ids = [{json.dumps(owner)}]\n"
     )
+    config.write_text(configured_project)
     monkeypatch.setenv("FPL_DATABASE_PATH", str(service / "service.db"))
     get_settings.cache_clear()
     monkeypatch.setattr(projects, "anchors", lambda: {work.parent: "Fixture projects"})
@@ -295,12 +299,65 @@ async def test_native_workbench_project_discovery_keeps_roots_local(tmp_path, mo
             "approved fixture" not in file.read_text()
             for file in worker.receipts.root.glob("*.json")
         )
+        historical_id = str(uuid4())
+        async with app.state.database.sessions(info={"owner_user_id": owner}) as session:
+            session.add(
+                WorkbenchSession(
+                    id=historical_id,
+                    owner_user_id=owner,
+                    agent_id="codex",
+                    native_id=historical_id,
+                    cwd=str(work),
+                )
+            )
+            await session.commit()
+        history = history_source_path(historical_id)
+        assert (
+            await call("GET", history, user=other, params={"path": "result.txt"})
+        ).status_code == 404
+        identity.unlocked_until = 0
+        assert (await call("GET", history, params={"path": "result.txt"})).status_code == 403
+        identity.unlocked_until = int(time()) + 60
+        historical = await execute(
+            "GET", history, params={"path": str(work / "result.txt"), "line": 1}
+        )
+        assert historical.status_code == 200, historical.text
+        assert historical.json() == {
+            "path": "result.txt",
+            "text": "approved fixture",
+            "line": 1,
+            "diff": None,
+        }
+        assert historical.headers["cache-control"] == "no-store"
+        assert (
+            await execute("GET", history, local=False, params={"path": "result.txt"})
+        ).status_code == 200
+        config.write_text("")
+        assert (
+            await execute("GET", history, local=False, params={"path": "result.txt"})
+        ).status_code == 403
+        assert (await execute("GET", history, params={"path": "../result.txt"})).status_code == 404
+        config.write_text(configured_project)
+        original_read = project_files.read_file
+
+        def revoke_during_read(*args, **kwargs):
+            text = original_read(*args, **kwargs)
+            identity.revoked = True
+            return text
+
+        with monkeypatch.context() as patch:
+            patch.setattr(project_files, "read_file", revoke_during_read)
+            revoked = await execute("GET", history, params={"path": "result.txt"})
+        identity.revoked = False
+        assert revoked.status_code == 403
+        assert "approved fixture" not in revoked.text
+        assert not app.state.execution_discovery.previews
         async with app.state.database.sessions(info={"owner_user_id": owner}) as session:
             jobs = await session.scalars(select(WorkbenchExecutionJob))
             for job in jobs:
                 assert "assertion" not in job.payload
                 if job.operation == PREVIEW_SOURCE:
-                    assert set(job.result) == {"sha256"}
+                    assert set(job.result) == ({"sha256"} if job.status == "completed" else set())
         entered = asyncio.Event()
         delivered = []
 

@@ -7,6 +7,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
 
+from studio.apps.agent_workbench import reading
 from studio.apps.agent_workbench.execution import transcripts
 from studio.apps.agent_workbench.execution.projects import register_verified, registered_labels
 from studio.apps.agent_workbench.execution.schemas import (
@@ -27,6 +28,7 @@ from studio.apps.agent_workbench.execution.schemas import (
 from studio.apps.agent_workbench.execution.turn_activity import source_reference
 from studio.apps.agent_workbench.execution_discovery import (
     recent_roots,
+    registered_history_root,
     registered_project_root,
     store_verified_chat,
 )
@@ -39,10 +41,13 @@ from studio.contracts.agent_workbench.execution import (
     REGISTER,
     DirectoryQuery,
     Discovery,
+    HistoryFile,
     ProjectCheck,
     ProjectFile,
     ProjectReady,
     RegisterProject,
+    history_source_path,
+    relative_history_path,
     source_path,
 )
 from studio.runtime.http.dependencies import SessionDep, StudioAuth
@@ -259,6 +264,43 @@ async def preview_source(
     ) or (source_reference(latest_turn, call_id) != (path, line, diff)):
         raise HTTPException(409, "工作台项目已变更")
     return SourcePreview(path=path, text=result["text"], line=line, diff=diff)
+
+
+@router.get("/sessions/{session_id}/source", response_model=SourcePreview)
+async def history_file(
+    request: Request,
+    response: Response,
+    session_id: str,
+    db: SessionDep,
+    principal: StudioAuth,
+    path: Annotated[str, Query(min_length=1, max_length=4096)],
+    line: Annotated[int | None, Query(ge=1, le=2147483647)] = None,
+):
+    response.headers["Cache-Control"] = "no-store"
+    owner = principal.user_id
+    conversation = await reading.get_conversation(db, owner, session_id)
+    root = conversation.cwd
+    if not root or len(root) > 4096:
+        raise HTTPException(403, "此会话没有可授权的项目目录")
+    try:
+        path = relative_history_path(root, path)
+    except ValueError:
+        raise HTTPException(404, "文件不在会话项目内") from None
+    local = request.state.service_actor.local
+    registered = await registered_history_root(db, owner, root, local=local)
+    scope = HistoryFile(root=root, path=path, local=local, registered=registered)
+    await db.rollback()
+    host = request.app.state.execution_discovery
+    token, source = request.state.service_assertion, history_source_path(session_id)
+    await host.authority(token, PREVIEW_SOURCE, source)
+    result = await host.execute(owner, token, PREVIEW_SOURCE, scope, source=source)
+    current = await reading.get_conversation(db, owner, session_id)
+    if (
+        current.cwd != root
+        or await registered_history_root(db, owner, root, local=local) != registered
+    ):
+        raise HTTPException(409, "会话项目已变更")
+    return SourcePreview(path=path, text=result["text"], line=line)
 
 
 @router.post("/chats/{chat_id}/turns/{turn_id}/stop", status_code=204)

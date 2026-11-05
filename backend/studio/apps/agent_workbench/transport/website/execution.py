@@ -5,7 +5,13 @@ from fastapi import APIRouter, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
 
 from app.console.governance.code_agents import resolve_connection
-from studio.apps.agent_workbench.execution import events, projects, source_preview, storage
+from studio.apps.agent_workbench.execution import (
+    events,
+    history_source,
+    projects,
+    source_preview,
+    storage,
+)
 from studio.apps.agent_workbench.execution.schemas import (
     ApprovalDecision,
     ChatCreate,
@@ -28,6 +34,20 @@ from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.http.website import require_local_browser
 
 router = APIRouter()
+
+
+@router.get("/sessions/{session_id}/source", response_model=SourcePreview)
+async def history_file(
+    request: Request,
+    response: Response,
+    session_id: str,
+    db: SessionDep,
+    principal: StudioAuth,
+    path: Annotated[str, Query(min_length=1, max_length=4096)],
+    line: Annotated[int | None, Query(ge=1, le=2147483647)] = None,
+):
+    response.headers["Cache-Control"] = "no-store"
+    return await history_source.read(db, principal, session_id, path, line, local=local(request))
 
 
 def local(request):

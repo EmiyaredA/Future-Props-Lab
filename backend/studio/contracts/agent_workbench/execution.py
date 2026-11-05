@@ -1,5 +1,6 @@
 """Versioned inputs for workbench discovery and exact Mac-side project selection."""
 
+from pathlib import PurePosixPath
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
@@ -116,9 +117,26 @@ class ProjectFile(ProjectCheck):
     path: Annotated[str, Field(min_length=1, max_length=500)]
 
 
+class HistoryFile(Input):
+    root: Root
+    path: Root
+    local: bool
+    registered: bool
+
+
 class ProjectFileResult(Input):
-    path: Annotated[str, Field(min_length=1, max_length=500)]
+    path: Root
     text: Annotated[str, Field(max_length=131_072)]
+
+
+def relative_history_path(root, path):
+    if PurePosixPath(path).is_absolute():
+        return str(PurePosixPath(path).relative_to(root))
+    return path
+
+
+def history_source_path(session_id):
+    return f"/v1/agent-workbench/sessions/{session_id}/source"
 
 
 def source_path(chat, turn):

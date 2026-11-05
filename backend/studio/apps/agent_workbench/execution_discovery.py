@@ -37,6 +37,18 @@ async def registered_project_root(db, owner, identity):
     )
 
 
+async def registered_history_root(db, owner, root, *, local):
+    if not local:
+        return False
+    return (
+        await db.scalar(
+            select(WorkbenchProject.id).where(
+                WorkbenchProject.owner_user_id == owner, WorkbenchProject.root == root
+            )
+        )
+    ) is not None
+
+
 async def store_verified_chat(db, owner, project, agent, label, *, local, expected_root):
     await db.rollback()
     await db.execute(text("BEGIN IMMEDIATE"))

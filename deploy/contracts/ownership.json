@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "openapi_sha256": "49c4d42371cafd14b608389fb6c279c4d2db0ea8e9407b1993aa7c8b8a21add2",
+  "openapi_sha256": "ad541271867353d0e44413b5e377609f73c13295d1dc9c75bccdbcde720cc1c2",
   "operations": [
     {
       "service": "identity",
@@ -253,6 +253,12 @@
       "method": "PATCH",
       "path": "/v1/agent-workbench/sessions/{session_id}/preferences",
       "operation_id": "patch_preferences_v1_agent_workbench_sessions__session_id__preferences_patch"
+    },
+    {
+      "service": "agents",
+      "method": "GET",
+      "path": "/v1/agent-workbench/sessions/{session_id}/source",
+      "operation_id": "history_file_v1_agent_workbench_sessions__session_id__source_get"
     },
     {
       "service": "agents",

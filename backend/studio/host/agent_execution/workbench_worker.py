@@ -11,6 +11,7 @@ from pathlib import Path
 import httpx
 from cryptography.fernet import Fernet
 from fastapi import HTTPException
+from pydantic import TypeAdapter
 
 from app.capabilities.agents.cli.catalog import (
     DEFINITIONS,
@@ -37,6 +38,7 @@ from studio.contracts.agent_workbench.execution import (
     REGISTER,
     DirectoryQuery,
     Discovery,
+    HistoryFile,
     ProjectCheck,
     ProjectFile,
     ProjectReady,
@@ -50,6 +52,7 @@ from studio.host.workbench_turn import MacTurn
 from studio.runtime.lifecycle.locking import service_lock
 
 logger = logging.getLogger(__name__)
+PREVIEW_SCOPE = TypeAdapter(ProjectFile | HistoryFile)
 
 
 class WorkbenchConfiguration:
@@ -121,7 +124,7 @@ class WorkbenchWorker:
                     mode="json"
                 )
             elif lease.operation == PREVIEW_SOURCE:
-                scope = ProjectFile.model_validate(lease.payload)
+                scope = PREVIEW_SCOPE.validate_python(lease.payload)
                 result = await self.preview_file(lease.owner_user_id, scope)
             elif lease.operation == DIRECTORIES:
                 body = DirectoryQuery.model_validate(lease.payload)
@@ -167,8 +170,31 @@ class WorkbenchWorker:
             project = projects.configured_binding(scope.project_id, owner, settings)
         return await projects.check_root(project, settings)
 
+    async def bind_history_project(self, owner, scope):
+        settings = await asyncio.to_thread(self.configuration.settings)
+        if scope.local and scope.registered:
+            project = projects.AuthorizedProject(
+                scope.root, scope.root, projects.label_for(scope.root), source="local"
+            )
+            return await projects.check_root(project, settings)
+        for identity, configured in settings.fpl_cloud_control_projects.items():
+            if configured.root == scope.root and owner in configured.user_ids:
+                return await projects.check_root(
+                    projects.configured_binding(identity, owner, settings), settings
+                )
+        raise HTTPException(
+            403,
+            {
+                "code": "workbench_authority_revoked",
+                "message": (
+                    "此会话的项目尚未授权阅读。请在本机新会话中选择此项目，公网需配置项目授权。"
+                ),
+            },
+        )
+
     async def preview_file(self, owner, scope):
-        project = await self.bind_project(owner, scope)
+        bind = self.bind_history_project if isinstance(scope, HistoryFile) else self.bind_project
+        project = await bind(owner, scope)
         try:
             content = await asyncio.to_thread(
                 project_files.read_file,
@@ -182,7 +208,7 @@ class WorkbenchWorker:
             raise HTTPException(
                 404, {"code": "source_not_found", "message": "文件已移除或无法预览"}
             )
-        if await self.bind_project(owner, scope) != project:
+        if await bind(owner, scope) != project:
             raise HTTPException(409, {"code": "project_unavailable", "message": "工作台项目已变更"})
         return {"path": scope.path, "text": content}
 

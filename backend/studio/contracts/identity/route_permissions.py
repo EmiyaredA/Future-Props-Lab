@@ -15,6 +15,7 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("GET", "/v1/agent-workbench/chats/{chat_id}/events"),
         ("POST", "/v1/agent-workbench/chats/{chat_id}/turns"),
         ("GET", "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/source"),
+        ("GET", "/v1/agent-workbench/sessions/{session_id}/source"),
         ("POST", "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/stop"),
         ("DELETE", "/v1/agent-workbench/chats/{chat_id}/queue/{turn_id}"),
         ("POST", "/v1/agent-workbench/chats/{chat_id}/queue/resume"),

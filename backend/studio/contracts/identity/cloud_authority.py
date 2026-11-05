@@ -40,7 +40,9 @@ def permits_cloud_authority(service, method, path):
     }:
         return True
     if method == "GET":
-        return bool(re.fullmatch(r"/v1/agent-workbench/chats/[^/]+/turns/[^/]+/source", path))
+        return bool(
+            re.fullmatch(r"/v1/agent-workbench/(?:chats/[^/]+/turns|sessions)/[^/]+/source", path)
+        )
     if method == "DELETE":
         return bool(re.fullmatch(r"/v1/agent-workbench/chats/[^/]+/queue/[^/]+", path))
     return method == "POST" and bool(
