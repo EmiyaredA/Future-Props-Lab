@@ -50,6 +50,7 @@ from studio.contracts.management.migration_batches import MigrationBatch, Migrat
 from studio.contracts.management.project_history import HistoryRecord, Identifier
 from studio.contracts.thought_workshop.migration import PIN_CURSOR
 from studio.runtime.database.migration_receipts import batch_receipt, has_receipt, record_receipt
+from studio.runtime.database.project_operations import ProjectOperationReceipt
 
 from .migration_multitable import (
     ENTITY,
@@ -70,6 +71,7 @@ from .migration_workspace_records import (
     Checkpoint,
     CommunityFavorite,
     CommunityUpload,
+    NoteOperationReceipt,
     OfficialImportReceipt,
     OfficialSource,
     Publication,
@@ -178,6 +180,29 @@ class Dataset:
         return ":".join(getattr(row, column) for column in self.primary)
 
 
+@dataclass(frozen=True)
+class NoteReceiptDataset(Dataset):
+    @property
+    def cursor_pattern(self):
+        return PIN_CURSOR[:-1] + r":[0-9A-F]{2,512}$"
+
+    @property
+    def key_column(self):
+        return self.orm.resource_id + literal(":") + func.hex(self.orm.request_id)
+
+    def cursor(self, row):
+        return f"{row.resource_id}:{row.request_id.encode().hex().upper()}"
+
+
+NOTE_RECEIPTS = NoteReceiptDataset(
+    "operation-receipts",
+    ProjectOperationReceipt,
+    NoteOperationReceipt,
+    per_page=1,
+    primary=("resource_id", "request_id"),
+)
+
+
 DATASETS = (
     Dataset(ROOTS, ThoughtKnowledgeBase, Knowledge),
     Dataset(NOTES, ThoughtNote, Note),
@@ -226,6 +251,7 @@ DATASETS = (
         OfficialImportReceipt,
         primary=("user_id", "request_id"),
     ),
+    NOTE_RECEIPTS,
 )
 TREE = """
 WITH RECURSIVE ordered(id, knowledge_base_id, depth) AS (
@@ -300,6 +326,8 @@ async def inventory(sessions, plan, dataset):
     query = select(owner, func.count()).select_from(dataset.orm)
     for target, condition in joins:
         query = query.outerjoin(target, condition)
+    if dataset is NOTE_RECEIPTS:
+        query = query.where(ProjectOperationReceipt.resource_kind == "thought")
     query = query.group_by(owner)
     async with sessions(info={"allow_system_reads": True}) as db:
         counts = dict((await db.execute(query)).all())
@@ -318,6 +346,8 @@ async def page(sessions, plan, dataset, owner, after):
             query = select(orm)
             for target, condition in joins:
                 query = query.join(target, condition)
+            if dataset is NOTE_RECEIPTS:
+                query = query.where(ProjectOperationReceipt.resource_kind == "thought")
             column = dataset.key_column
             result = await db.scalars(
                 query.where(
@@ -360,6 +390,10 @@ async def page(sessions, plan, dataset, owner, after):
 
 
 async def validate_workspace_row(db, dataset, record, owner, allowed_owners):
+    if dataset is NOTE_RECEIPTS:
+        note = await db.get(ThoughtNote, record.resource_id)
+        if note is None or note.owner_user_id != owner or record.result["revision"] > note.revision:
+            raise conflict("migration_thought_operation_receipt_source_invalid")
     if dataset.orm is ThoughtCheckpoint:
         note = await db.get(ThoughtNote, record.note_id)
         history = await db.get(ThoughtNoteHistory, record.history_id)

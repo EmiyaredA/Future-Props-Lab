@@ -1,5 +1,6 @@
 """Exercise sealed Thought transfer, private maintenance and the old-site restore."""
 
+import asyncio
 import hashlib
 import io
 import json
@@ -24,9 +25,12 @@ from tests.test_website_legacy_snapshot import configuration, website
 
 from studio.apps.asset_library.migration_blobs import BLOBS
 from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
+from studio.apps.thought_workshop.operations import apply_operations
+from studio.apps.thought_workshop.schemas.operations import ThoughtOperationsIn
 from studio.apps.thought_workshop.storage.migrations.registry import (
     MIGRATIONS as THOUGHT_MIGRATIONS,
 )
+from studio.apps.thought_workshop.storage.service_models import MODELS
 from studio.assembly.independent.asset_library import maintenance as assets
 from studio.assembly.independent.thought_workshop.maintenance import DATASETS
 from studio.assembly.independent.thought_workshop.maintenance import PREFIX as MIGRATION_PREFIX
@@ -36,6 +40,8 @@ from studio.assembly.independent.thought_workshop.maintenance import (
 from studio.contracts.management.migration_batches import MigrationPlan
 from studio.contracts.thought_workshop.migration import PIN_KINDS, ThoughtPinPage, pin_path
 from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
+from studio.runtime.operation_errors import OperationError
 
 PREFIX = "/v1/thought-workshop"
 
@@ -408,6 +414,31 @@ def sealed_thought(tmp_path_factory):
             ).status_code
             == 409
         )
+        operations_path = note_path + "/operations"
+        operation_receipts = []
+        for operation_id, inserted in (("历史:第一次", "迁移回执一"), ("旧操作:二", "迁移回执二")):
+            payload = {
+                "request_id": operation_id,
+                "expected_revision": live["revision"],
+                "operations": [
+                    {
+                        "action": "insert",
+                        "path": [0],
+                        "value": {
+                            "type": "paragraph",
+                            "content": [{"type": "text", "text": inserted}],
+                        },
+                    }
+                ],
+            }
+            live = result(client.post(operations_path, headers=auth, json=payload))
+            operation_receipts.append((payload, live))
+        assert (
+            result(client.post(operations_path, headers=auth, json=operation_receipts[0][0]))
+            == operation_receipts[0][1]
+        )
+        published = result(client.get(publication_path))
+        updated_book = result(client.get(book_path))
         cookies = dict(client.cookies)
     bundle = run / "sealed"
     seal = legacy_snapshot.create(runtime, config, bundle, revision)
@@ -449,6 +480,14 @@ def sealed_thought(tmp_path_factory):
             == hashlib.sha256(content).digest()
         )
         assert result(client.get(package + "/" + request_id)) == official_receipt
+        restored_headers = {
+            "Origin": f"http://127.0.0.1:{restore_port}",
+            "X-CSRF-Token": client.cookies["fpl_csrf"],
+        }
+        payload, response = operation_receipts[0]
+        assert (
+            result(client.post(operations_path, headers=restored_headers, json=payload)) == response
+        )
         client.cookies.clear()
         client.cookies.update(editor_cookies)
         assert result(client.get(community + "/favorites")) == {
@@ -458,6 +497,7 @@ def sealed_thought(tmp_path_factory):
             client.get(community_asset, params={"note_id": note["id"]}).content == community_bytes
         )
     return {
+        "operation_receipts": operation_receipts,
         "community_upload_id": uploaded,
         "community_upload_sha256": hashlib.sha256(community_bytes).hexdigest(),
         "official_receipt_id": request_id,
@@ -644,6 +684,47 @@ def test_document_relay_resume_and_verify(tmp_path, sealed_thought):
                 proof = verify_community_uploads(client, plan, source, asset_target)
                 assert proof["record_count"] == 1
                 assert proof == verify_community_uploads(client, plan, source, asset_target)
+
+            operation_dataset = datasets["thought.operation-receipts"]
+            assert state_reports[operation_dataset.name] == len(fixture["operation_receipts"])
+            imported_operations = [
+                record
+                for page in pages(client, target, headers, plan, owner, operation_dataset)
+                for record in page.batch.records
+            ]
+            assert {r.request_id: r.result for r in imported_operations} == {
+                request["request_id"]: response
+                for request, response in fixture["operation_receipts"]
+            }
+            wrong = next(pages(client, target, headers, plan, owner, operation_dataset)).batch
+            wrong = wrong.model_copy(update={"owner_id": editor, "batch_id": uuid4()})
+            denied = client.post(
+                target + operation_dataset.prefix + "/batches",
+                headers={**headers, "X-Fpl-Migration-SHA256": wrong.digest},
+                json=wrong.model_dump(mode="json"),
+            )
+            assert denied.status_code == 409
+            assert denied.json()["code"] == "migration_thought_operation_receipt_source_invalid"
+
+        with open_target() as target:
+            assert transfer(client, plan, source, target, operation_dataset)["record_count"] == 2
+
+    async def replay_note():
+        database = Database("thought", state, models=MODELS)
+        try:
+            async with database.sessions(info={"owner_user_id": str(owner)}) as db:
+                request, expected = fixture["operation_receipts"][0]
+                body = ThoughtOperationsIn.model_validate(request)
+                recorded = await apply_operations(db, str(owner), fixture["note_id"], body)
+                assert recorded.model_dump(mode="json") == expected
+                changed = body.model_copy(update={"expected_revision": body.expected_revision + 1})
+                with pytest.raises(OperationError) as conflict:
+                    await apply_operations(db, str(owner), fixture["note_id"], changed)
+                assert conflict.value.code == "idempotency_conflict"
+        finally:
+            await database.close()
+
+    asyncio.run(replay_note())
 
 
 async def reference_pages(client, path, owner, model, headers):

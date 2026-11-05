@@ -20,6 +20,7 @@ from studio.apps.presentation_workshop.migration_operations import DATASET as PR
 from studio.apps.presentation_workshop.storage.migration_records import DATASETS as PRESENTATION
 from studio.apps.remote_desktop.preference_migration import DATASET as REMOTE
 from studio.apps.thought_workshop.storage.migration_documents import DATASETS as THOUGHT
+from studio.apps.thought_workshop.storage.migration_documents import NOTE_RECEIPTS
 from studio.apps.tools.navigation_migration import DATASET as TOOLS
 from studio.apps.video_editor.storage.migration_records import DATASETS as VIDEO
 from studio.apps.visual_workshop.storage.migration_records import DATASETS as VISUAL
@@ -47,7 +48,11 @@ TRANSFER = {
         dataset.model.__tablename__: dataset.name
         for dataset in (*MOTION, *VIDEO, *GALGAME, *VISUAL)
     },
-    **{dataset.orm.__tablename__: dataset.name for dataset in THOUGHT},
+    **{
+        dataset.orm.__tablename__: dataset.name
+        for dataset in THOUGHT
+        if dataset is not NOTE_RECEIPTS
+    },
     "cloud_desktop_preferences": REMOTE,
     "tool_navigation_items": TOOLS,
     "visual_project_asset_references": "assets.visual-links",
@@ -111,6 +116,7 @@ OPERATION_DATASETS = {
     "presentation": PRESENTATION_RECEIPTS,
     "galgame": GALGAME_RECEIPTS.name,
     "visual": VISUAL_RECEIPTS.name,
+    "thought": NOTE_RECEIPTS.name,
 }
 
 

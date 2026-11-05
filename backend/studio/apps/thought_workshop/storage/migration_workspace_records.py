@@ -3,9 +3,9 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
-from studio.apps.thought_workshop.schemas.workshop import ThoughtImportOut
+from studio.apps.thought_workshop.schemas.workshop import ThoughtImportOut, ThoughtNoteOut
 from studio.contracts.management.project_history import HistoryRecord, Identifier
 
 
@@ -114,3 +114,19 @@ class OfficialImportReceipt(HistoryRecord):
         ThoughtImportOut.model_validate(result)
         # Preserve the exact persisted receipt, including historical optional keys.
         return result
+
+
+class NoteOperationReceipt(HistoryRecord):
+    cursor: str
+    resource_kind: Literal["thought"]
+    resource_id: Identifier
+    request_id: str = Field(min_length=1, max_length=64)
+    fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
+    result: dict
+    created_at: datetime
+
+    @model_validator(mode="after")
+    def match_result(self):
+        if ThoughtNoteOut.model_validate(self.result).id != self.resource_id:
+            raise ValueError("编辑回执与文档 ID 不一致")
+        return self

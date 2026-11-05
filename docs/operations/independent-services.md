@@ -584,7 +584,7 @@ Galgame 快照 ZIP 导入使用 `deploy/galgame-snapshots.compose.yaml`，与 `d
 
 隔离目标先显式应用 Thought 的 0006 迁移。用同一份账号计划启动 `python -m studio.assembly.independent.thought_workshop.cli migration-export` 和 `migration-import`。导出端只读封存的旧站数据库，导入端只挂目标 Thought 数据目录。执行 `uv run python -m scripts.website.migrate_thought_documents --plan "$plan" --source "$thought_source" --target "$thought_target"`，逐批核对记录数、版本、文档关系和文件链接摘要。目标重启后可用同一命令续跑，已导入批次返回原回执。
 
-Assets 元数据和原件经 SHA256 验收后，执行 `uv run python -m scripts.website.migrate_thought_references --plan "$plan" --source "$thought_source" --target "$assets_target"`，重建知识库、文档、模板和发布封面的保留记录。原件缺失、归属冲突或回执摘要不符会停止转移。文档迁移同时保留社区收藏、编辑者的上传记录、官方来源映射和导入回执。引用迁移额外核对社区上传原件的归属和文件 SHA256，使用 Assets 迁移的原件清单比对结果验收。外部同步与通用业务回执仍须通过来源覆盖检查，切换以整站验收结果为准。
+Assets 元数据和原件经 SHA256 验收后，执行 `uv run python -m scripts.website.migrate_thought_references --plan "$plan" --source "$thought_source" --target "$assets_target"`，重建知识库、文档、模板和发布封面的保留记录。原件缺失、归属冲突或回执摘要不符会停止转移。文档迁移同时保留社区收藏、编辑者的上传记录、官方来源映射、导入回执和 Thought 文档编辑回执。编辑回执保留原请求标识、指纹及返回快照，迁移后重试旧请求可读回原结果。引用迁移额外核对社区上传原件的归属和文件 SHA256，使用 Assets 迁移的原件清单比对结果验收。外部同步仍须通过来源覆盖检查，切换以整站验收结果为准。
 
 
 ### 管理启动器选择完整服务组
