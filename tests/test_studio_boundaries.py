@@ -279,6 +279,8 @@ def test_annotation_image_keeps_entrypoint_and_excludes_legacy_adapters():
     assert "studio.apps.audio_annotation.use_cases.create_project" in closure
     assert "studio.apps.audio_annotation.use_cases.delete_project" in closure
     assert "studio.apps.audio_annotation.use_cases.saved_audio" in closure
+    assert "studio.apps.audio_annotation.use_cases.transcribe_segment" in closure
+    assert "studio.assembly.website.annotation_transcription" not in closure
     assert "studio.apps.audio_annotation.storage.projects" in closure
     assert "studio.apps.audio_annotation.projects" not in closure
     assert "studio.apps.audio_annotation.storage.document_edits" in closure

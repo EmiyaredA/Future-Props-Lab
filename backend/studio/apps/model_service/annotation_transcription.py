@@ -10,7 +10,6 @@ from sqlalchemy import text
 
 from studio.apps.model_service.storage.service_models import AnnotationTranscriptionAttempt
 from studio.apps.model_service.transcription.annotation import (
-    AnnotationTranscription,
     AnnotationTranscriptionError,
 )
 from studio.contracts.identity.claims import HEADER, verify_context
@@ -144,7 +143,7 @@ async def execute(request: Request, project_id: str, segment_id: str, fingerprin
                     row.error = as_error(error)
 
             try:
-                return await AnnotationTranscription(session).transcribe(
+                return await request.app.state.annotation_model_transcription(session).transcribe(
                     project_id,
                     owner_user_id=owner,
                     upload=upload,

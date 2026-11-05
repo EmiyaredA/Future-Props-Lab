@@ -7,7 +7,6 @@ from uuid import uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.runtime.credentials import decrypt_secret
 from studio.apps.model_service.providers.transcription import (
     TranscriptionResult,
     transcribe_model_audio,
@@ -47,8 +46,8 @@ def _translated_text(result: TranscriptionResult) -> str:
 
 
 class AnnotationTranscription:
-    def __init__(self, session: AsyncSession) -> None:
-        self.session = session
+    def __init__(self, session: AsyncSession, *, decrypt) -> None:
+        self.session, self.decrypt = session, decrypt
 
     async def _model(self, model_id: str) -> tuple[ModelEntry, ModelProvider]:
         model = await self.session.get(ModelEntry, model_id)
@@ -208,7 +207,7 @@ class AnnotationTranscription:
             provider_kind = provider.kind
             model_slug = model.slug
             base_url = provider.base_url
-            api_key = decrypt_secret(provider.api_key_ciphertext)
+            api_key = self.decrypt(provider.api_key_ciphertext)
             request_options = parameters.model_dump(mode="json")
             await self.session.rollback()
 

@@ -50,6 +50,7 @@ from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MOD
 from studio.apps.model_service.stream_access import access_check
 from studio.apps.model_service.template_sync import TemplateSynchronization
 from studio.apps.model_service.templates.policy import initialize_account_catalog
+from studio.apps.model_service.transcription.annotation import AnnotationTranscription
 from studio.apps.model_service.transport.assistant_model_http import (
     router as assistant_model_router,
 )
@@ -299,6 +300,10 @@ def create_app(
     app.state.service_id = "models"
     app.state.settings, app.state.database = settings, database
     app.state.model_template_cipher = SecretCipher(settings.fpl_secrets_key)
+    annotation_cipher = SecretCipher(settings.fpl_secrets_key)
+    app.state.annotation_model_transcription = lambda session: AnnotationTranscription(
+        session, decrypt=annotation_cipher.decrypt
+    )
     app.state.identity_public_key, app.state.identity = public_key, identity
     app.state.capabilities = capabilities
     app.state.visual_generation_peer = (

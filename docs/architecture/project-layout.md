@@ -502,7 +502,9 @@ Future-Props-Lab/
   兼容网站素材读取与转录原件导入分别由 `assembly/website/annotation_sources.py`、
   `annotation_imports.py` 显式连接原表；探测与复制不持有写事务，素材记录与标注一起提交。
   取消等待复制退出后清理，提交结果未知时检查持久记录再决定是否删除字节。
-  直接上传识别适配仍在后续解耦范围。
+  `use_cases/transcribe_segment.py` 共用直接上传与保存片段的归属、范围规则；
+  `storage/transcription_scope.py` 返回快照并释放查询事务。独立调用归 `clients/model_service.py`，
+  网站跨表连接归 `assembly/website/annotation_transcription.py`；Models 转录组件接收显式解密器。
 - 应用目录同样由 Web 静态注册表维护， 应用最近访问记录只保存在浏览器本地。视觉创作工坊、
   Galgame 工坊、视频剪辑工坊、演示工坊、思绪工坊与录音标注工坊通过应用模块配置品牌、导航和 active 规则，共用 `app/layout/WorkshopShell`；侧栏展示由 `shared/ui/WorkshopSidebar.tsx` 统一拥有，
   包括品牌、返回卡片、图标导航和主题切换。思绪工坊复用该展示组件，知识库状态与目录仍由功能模块管理；录音标注工坊与演示工坊同样 `supportsProjects: true`，但只引用公共文件库、不拥有独立项目存储根。

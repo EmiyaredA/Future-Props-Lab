@@ -28,15 +28,18 @@ from studio.apps.model_service.storage.models.call_log import LlmCallLog
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.model_service.storage.models.model_test import ModelTestTranscriptionTask
 from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.apps.model_service.transcription.annotation import AnnotationTranscription
 from studio.apps.model_service.transport.website.models.model_test_transcription import (
     router as task_router,
 )
 from studio.assembly.independent.audio_annotation.application import create_app
+from studio.config.settings import get_settings
 from studio.contracts.model_service.annotation import PREFIX
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database
 from studio.runtime.http.authentication import SignedIdentity
 from studio.runtime.http.problem_details import http_exception_handler
+from studio.runtime.secrets import SecretCipher
 
 MODELS_TOKEN = "annotation-models-service-test-" * 2
 
@@ -49,6 +52,10 @@ async def owned_models(case, path):
     case.identity.state.identity_options["service_credentials"]["models"] = MODELS_TOKEN
     app = FastAPI()
     app.add_exception_handler(HTTPException, http_exception_handler)
+    cipher = SecretCipher(get_settings().fpl_secrets_key)
+    app.state.annotation_model_transcription = lambda session: AnnotationTranscription(
+        session, decrypt=cipher.decrypt
+    )
     app.state.database = database
     app.state.identity_public_key = case.key.public_key()
     app.state.identity = live

@@ -543,7 +543,6 @@ def source_closure(root: Path, service):
                 or name.startswith("app.apps.")
                 or name
                 in {
-                    "studio.apps.audio_annotation.transcription",
                     "studio.apps.asset_library.storage.models",
                     "studio.apps.asset_library.storage.file_paths",
                 }

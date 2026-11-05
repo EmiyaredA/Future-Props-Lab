@@ -13,7 +13,6 @@ from studio.apps.amadeus.execution.website_actions import ActionExecution
 from studio.apps.amadeus.execution.website_dialogue import CodeAgentRuns
 from studio.apps.asset_library.storage.layout.account_upgrade import upgrade_pending
 from studio.apps.audio_annotation.storage.projects import ProjectRecords
-from studio.apps.audio_annotation.transcription import legacy_transcribe
 from studio.apps.director_desk.agent_session import DirectorEditorSessions
 from studio.apps.director_desk.storage.file_paths import DirectorStorage
 from studio.apps.gateway.storage.website_resources import WebsiteResources
@@ -41,6 +40,7 @@ from studio.apps.model_service.library.website_outputs import LegacyLibraryOutpu
 from studio.apps.model_service.playground.legacy_generation_references import (
     LegacyGenerationReferences,
 )
+from studio.apps.model_service.transcription.annotation import AnnotationTranscription
 from studio.apps.model_service.transport.provider_bindings import ProviderTransports
 from studio.apps.motion_compositor.legacy_project_resources import LegacyProjectResources
 from studio.apps.portal.storage.documents import InstalledDocuments
@@ -66,10 +66,12 @@ from studio.assembly.annotation import (
     project_creator,
     project_deleter,
     saved_audio,
+    segment_transcriber,
 )
 from studio.assembly.website.account_provisioning import create_account
 from studio.assembly.website.annotation_imports import WebsiteCreationInputs
 from studio.assembly.website.annotation_sources import WebsiteAnnotationSources
+from studio.assembly.website.annotation_transcription import WebsiteTranscription
 from studio.assembly.website.creative import bind_creative
 from studio.assembly.website.desktop import DesktopConnection
 from studio.assembly.website.integrations import integration_bindings
@@ -129,7 +131,11 @@ def bind_components(app, settings, database):
     app.state.annotation_projects = lambda _request, session: ProjectRecords(
         session, sources=WebsiteAnnotationSources(session, settings)
     )
-    app.state.annotation_transcriber = lambda _request, session: partial(legacy_transcribe, session)
+    annotation_cipher = SecretCipher(settings.fpl_secrets_key)
+    app.state.annotation_transcriber = segment_transcriber
+    app.state.annotation_executor = lambda _request, session: WebsiteTranscription(
+        session, AnnotationTranscription(session, decrypt=annotation_cipher.decrypt)
+    )
     app.state.annotation_staging = None
     app.state.director_editor = DirectorEditorSessions(sessions)
     app.state.director_storage = DirectorStorage(settings.runtime_path)

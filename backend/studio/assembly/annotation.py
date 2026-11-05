@@ -2,10 +2,12 @@
 
 from studio.apps.audio_annotation.clients.saved_audio import LocalClips, SegmentRecognition
 from studio.apps.audio_annotation.storage.document_edits import SqlDocumentEdits
+from studio.apps.audio_annotation.storage.transcription_scope import TranscriptionProjects
 from studio.apps.audio_annotation.use_cases.create_project import CreateProject
 from studio.apps.audio_annotation.use_cases.delete_project import DeleteProject
 from studio.apps.audio_annotation.use_cases.edit_document import EditDocument
 from studio.apps.audio_annotation.use_cases.saved_audio import SavedAudio
+from studio.apps.audio_annotation.use_cases.transcribe_segment import TranscribeSegment
 from studio.runtime.ids import new_id
 from studio.runtime.time import utc_now
 
@@ -41,4 +43,10 @@ def saved_audio(request, session):
         ),
         recognition=SegmentRecognition(state.annotation_transcriber(request, session)),
         clock=utc_now,
+    )
+
+
+def segment_transcriber(request, session):
+    return TranscribeSegment(
+        TranscriptionProjects(session), request.app.state.annotation_executor(request, session)
     )

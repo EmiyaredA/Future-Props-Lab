@@ -8,7 +8,6 @@ from pydantic import ValidationError
 
 from studio.apps.audio_annotation.schemas.document import AudioAnnotationSegmentTranscriptionOut
 from studio.apps.audio_annotation.sources import AudioAnnotationError
-from studio.apps.audio_annotation.storage.transcription_scope import transcribe_project
 from studio.contracts.identity.delegation import RequestGrant
 from studio.contracts.model_service.annotation import (
     HEADER,
@@ -26,9 +25,9 @@ class SegmentTranscription:
 
     async def __call__(
         self,
-        session,
         project_id,
         *,
+        owner_user_id,
         upload,
         model_id,
         segment_id,
@@ -39,14 +38,14 @@ class SegmentTranscription:
         principal=None,
     ):
         try:
-            owner = await transcribe_project(session, project_id, start_ms, end_ms)
-            if principal is not None and principal.user_id != owner:
+            if self.connection.state.service_actor.user_id != owner_user_id or (
+                principal is not None and principal.user_id != owner_user_id
+            ):
                 raise AudioAnnotationError("标注任务不存在", code="not_found", status=404)
             if not 1 <= len(model_id) <= 36:
                 raise AudioAnnotationError(
                     "当前语音识别模型不可用", code="model_unavailable", status=409
                 )
-            await session.rollback()
             content_type = (upload.content_type or "application/octet-stream").lower().strip()
             if content_type not in WAV_TYPES:
                 raise AudioAnnotationError("片段音频必须为 WAV", code="invalid_segment_audio")

@@ -2,7 +2,6 @@
 
 import json
 from contextlib import asynccontextmanager
-from functools import partial
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
@@ -25,6 +24,7 @@ from studio.assembly.annotation import (
     project_creator,
     project_deleter,
     saved_audio,
+    segment_transcriber,
 )
 from studio.assembly.http_dependencies import db_session, require_studio_auth
 from studio.assembly.independent.asset_references import (
@@ -104,8 +104,9 @@ def create_app(
         sources=Inputs(connection, session, capabilities, staging),
         references=ProjectReferences(connection, session, app.state.reference_mutations),
     )
-    app.state.annotation_transcriber = lambda connection, session: partial(
-        SegmentTranscription(connection, capabilities), session
+    app.state.annotation_transcriber = segment_transcriber
+    app.state.annotation_executor = lambda connection, _session: SegmentTranscription(
+        connection, capabilities
     )
     app.state.annotation_staging = staging
     app.state.identity, app.state.identity_public_key = identity, public_key

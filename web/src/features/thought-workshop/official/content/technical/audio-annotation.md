@@ -71,5 +71,5 @@ erDiagram
 ## 代码入口
 
 1. `backend/studio/apps/audio_annotation/schemas/document.py`
-2. `backend/studio/apps/audio_annotation/transcription.py`
+2. `backend/studio/apps/audio_annotation/use_cases/transcribe_segment.py`
 3. `backend/studio/apps/audio_annotation/use_cases/saved_audio.py`
