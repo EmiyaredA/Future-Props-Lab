@@ -123,7 +123,10 @@ async function installVisualWorkshopRoutes(
   await page.route("**/v1/files**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
-    if (url.pathname.endsWith("/content")) {
+    if (
+      url.pathname.endsWith("/content") ||
+      url.pathname.endsWith("/thumbnail")
+    ) {
       await route.fulfill({ contentType: "image/png", body: PNG });
       return;
     }

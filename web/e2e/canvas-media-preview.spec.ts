@@ -78,19 +78,26 @@ for (const viewport of [
       visualWorkshop,
     }, testInfo) => {
       await page.setViewportSize({ width: 1440, height: 900 });
-      await page.route("**/v1/files/*/content", async (route) => {
-        const { width, height } = images.find((image) =>
-          route.request().url().includes(`/${image.id}/content`),
-        )!;
-        await route.fulfill({
-          contentType: "image/svg+xml",
-          body: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+      await page.route(
+        (url) =>
+          images.some(({ id }) =>
+            [`/v1/files/${id}/content`, `/v1/files/${id}/thumbnail`].includes(
+              url.pathname,
+            ),
+          ),
+        async (route) => {
+          const id = new URL(route.request().url()).pathname.split("/").at(-2);
+          const { width, height } = images.find((image) => image.id === id)!;
+          await route.fulfill({
+            contentType: "image/svg+xml",
+            body: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
             <rect width="100%" height="100%" fill="#9fbfc5"/>
             <rect x="4" y="4" width="${width - 8}" height="${height - 8}" fill="none" stroke="#25464e" stroke-width="8"/>
             <text x="50%" y="50%" text-anchor="middle" font-size="60">${width} × ${height}</text>
           </svg>`,
-        });
-      });
+          });
+        },
+      );
       await page.route(
         "**/v1/visual-workshop/projects/persona-project/canvas",
         (route) =>
