@@ -172,7 +172,9 @@ test("builds a deterministic image, black-card, and title edit", async ({
   await expect(asset.getByText("图片", { exact: true })).toBeVisible({
     timeout: 15_000,
   });
-  await asset.dblclick();
+  await asset
+    .getByRole("button", { name: "预览素材“pixel”，双击添加到时间轴" })
+    .dblclick();
   await expect(page.locator(".ve-clip.image")).toHaveCount(1);
 
   await page.locator(".ve-ruler").click({ position: { x: 160, y: 10 } });

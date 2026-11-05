@@ -178,16 +178,17 @@ test("连续新增与看板批量上传避让，侧栏与缩放保持正常", as
   await expect
     .poll(async () => (await readCanvas(page, id)).nodes.length)
     .toBe(5);
-  await page
-    .getByRole("complementary", { name: "项目素材" })
-    .locator('input[type="file"]')
-    .setInputFiles(
-      Array.from({ length: 3 }, (_, index) => ({
-        name: `素材-${index}.png`,
-        mimeType: "image/png",
-        buffer: PNG,
-      })),
-    );
+  const materials = page.getByRole("complementary", { name: "项目素材" });
+  await materials
+    .getByRole("button", { name: "上传素材", exact: true })
+    .click();
+  await materials.getByLabel("上传项目素材文件").setInputFiles(
+    Array.from({ length: 3 }, (_, index) => ({
+      name: `素材-${index}.png`,
+      mimeType: "image/png",
+      buffer: PNG,
+    })),
+  );
   await expect
     .poll(async () => (await readCanvas(page, id)).nodes.length)
     .toBe(8);

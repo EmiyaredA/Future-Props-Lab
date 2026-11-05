@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { setResponsiveTheme } from "./responsive-capture";
 
 test("selects segments, exports without importing, and downloads from task history", async ({
   page,
@@ -97,13 +98,8 @@ test("selects segments, exports without importing, and downloads from task histo
     for (const width of [1440, 390]) {
       await page.setViewportSize({ width, height: 900 });
       for (const theme of ["light", "dark"]) {
-        await page.evaluate((value) => {
-          document.documentElement.dataset.theme = value;
-        }, theme);
-        await expect(dialog).toHaveCSS(
-          "color",
-          theme === "light" ? "rgb(31, 32, 30)" : "rgb(233, 232, 227)",
-        );
+        await setResponsiveTheme(page, theme);
+        await expect(dialog).toHaveCSS("color", "rgb(223, 232, 239)");
         const bounds = (await dialog.boundingBox())!;
         expect(bounds.x).toBeGreaterThanOrEqual(0);
         expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);

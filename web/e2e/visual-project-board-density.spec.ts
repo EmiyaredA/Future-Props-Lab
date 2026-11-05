@@ -297,20 +297,25 @@ test("30 个节点下的重要信息首屏可见，菜单、分类与分页历�
   });
   await page.getByRole("button", { name: "状态分组", exact: true }).click();
   await expect(page.locator(".board-task-card")).toHaveCount(30);
-  await expect(page.locator(".board-task-card.is-done img")).toHaveCount(7);
-  await expect
-    .poll(() =>
-      page
-        .locator(".board-task-card.is-done img")
-        .evaluateAll((images) =>
-          images.every(
-            (image) =>
-              (image as HTMLImageElement).complete &&
-              (image as HTMLImageElement).naturalWidth > 0,
-          ),
-        ),
-    )
-    .toBeTruthy();
+  const completedImages = page.locator(
+    '.board-task-card.is-done[data-kind="image"]',
+  );
+  await expect(completedImages).toHaveCount(7);
+  for (const card of await completedImages.all()) {
+    await card.scrollIntoViewIfNeeded();
+    await expect(card.getByRole("img", { name: "输出预览" })).toHaveJSProperty(
+      "complete",
+      true,
+    );
+    await expect
+      .poll(() =>
+        card
+          .getByRole("img", { name: "输出预览" })
+          .evaluate((image: HTMLImageElement) => image.naturalWidth),
+      )
+      .toBeGreaterThan(0);
+  }
+  await completedImages.first().scrollIntoViewIfNeeded();
   await expect
     .poll(() =>
       page

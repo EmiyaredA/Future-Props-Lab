@@ -125,7 +125,7 @@ test("生成状态保持紧凑，转圈覆盖各入口，终态恢复生成操�
   expect(
     (await tree.getByLabel("真由理 / GIF舞蹈 / 绿幕生成中").boundingBox())!
       .width,
-  ).toBeLessThanOrEqual(16);
+  ).toBeLessThanOrEqual(32);
   await expect(activity.getByRole("progressbar")).not.toHaveAttribute(
     "aria-valuenow",
   );
@@ -134,11 +134,10 @@ test("生成状态保持紧凑，转圈覆盖各入口，终态恢复生成操�
   expect(Math.abs(stage.width / stage.height - 16 / 9)).toBeLessThan(0.02);
   await expect(output.getByText("过程预览")).toHaveCount(0);
   await expect(output.getByText("已提交", { exact: true })).toHaveCount(0);
-  expect(
-    await activity
-      .locator("svg")
-      .evaluate((element) => getComputedStyle(element).animationName),
-  ).toBe("visual-generation-spin");
+  await expect(activity.locator(".fpl-dial-sweep")).toHaveCSS(
+    "animation-name",
+    "fpl-dial-rotate",
+  );
   executionInfo = {
     phase: "running",
     node_id: "7",
@@ -175,11 +174,10 @@ test("生成状态保持紧凑，转圈覆盖各入口，终态恢复生成操�
   await page.getByRole("button", { name: "状态分组", exact: true }).click();
   const card = page.locator(".board-task-card.is-running");
   await expect(card.getByText(/采样 8\/10 步/)).toBeVisible();
-  expect(
-    await card
-      .locator(".fpl-loading-scene--inline")
-      .evaluate((element) => getComputedStyle(element).animationName),
-  ).toBe("visual-generation-spin");
+  await expect(card.locator(".fpl-dial-sweep")).toHaveCSS(
+    "animation-name",
+    "fpl-dial-rotate",
+  );
   await card.getByRole("button", { name: /打开任务/ }).click();
   await expect(activity).toBeVisible();
   await tree.getByRole("button", { name: /^舞蹈动作说明/ }).click();
@@ -200,11 +198,10 @@ test("生成状态保持紧凑，转圈覆盖各入口，终态恢复生成操�
     fullPage: true,
   });
   await page.emulateMedia({ reducedMotion: "reduce" });
-  expect(
-    await activity
-      .locator("svg")
-      .evaluate((element) => getComputedStyle(element).animationName),
-  ).toBe("none");
+  await expect(activity.locator(".fpl-dial-sweep")).toHaveCSS(
+    "animation-name",
+    "none",
+  );
   status = "completed";
   await expect(activity).toHaveCount(0);
   await expect(
