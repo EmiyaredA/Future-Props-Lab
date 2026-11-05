@@ -61,7 +61,7 @@ export async function pickNoteMore(page: Page, option: string) {
   await menu.getByRole("menuitem", { name: option, exact: true }).click();
 }
 export async function pickProjectMore(page: Page, option: string) {
-  let more = page.getByRole("button", {
+  const more = page.getByRole("button", {
     name: "知识库更多操作",
     exact: true,
   });
@@ -74,16 +74,11 @@ export async function pickProjectMore(page: Page, option: string) {
           .isVisible()),
     )
     .toBeTruthy();
-  if (!(await more.isVisible().catch(() => false))) {
+  if (!(await more.isVisible())) {
     await page
-      .locator(".knowledge-breadcrumb")
-      .getByRole("button")
-      .first()
+      .getByRole("navigation", { name: "当前知识库视图" })
+      .getByRole("button", { name: "全部文档", exact: true })
       .click();
-    more = page.getByRole("button", {
-      name: "知识库更多操作",
-      exact: true,
-    });
   }
   await expect(more).toBeVisible();
   await more.click();

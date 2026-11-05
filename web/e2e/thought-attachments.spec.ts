@@ -26,7 +26,7 @@ test("visible insert controls, file cards, downloads and portable archives acros
   await prose.pressSequentially("/");
   for (const name of ["表格", "图片", "附件"])
     await expect(
-      page.getByRole("option", { name: new RegExp(name) }),
+      page.getByRole("option", { name: new RegExp(`^${name} `) }),
     ).toBeVisible();
   await page.keyboard.press("Escape");
   await page
@@ -38,7 +38,7 @@ test("visible insert controls, file cards, downloads and portable archives acros
   await prose.press("ControlOrMeta+End");
   await prose.press("Enter");
   await prose.pressSequentially("/");
-  await page.getByRole("option", { name: /表格/ }).click();
+  await page.getByRole("option", { name: /^表格 插入/ }).click();
   await expect(prose.locator("table")).toBeVisible();
   const cells = prose.locator("th p, td p");
   for (const [i, text] of [
@@ -214,11 +214,11 @@ test("visible insert controls, file cards, downloads and portable archives acros
     page.getByRole("button", { name: "下载 项目计划.txt", exact: true }),
   ).toBeVisible();
   const backupDownload = page.waitForEvent("download");
-  await pickProjectMore(page, "导出知识库");
+  await pickProjectMore(page, "备份知识库");
   const backup = await fs.readFile((await (await backupDownload).path())!);
   expect(
     JSON.parse(strFromU8(unzipSync(backup)["manifest.json"])).version,
-  ).toBe(6);
+  ).toBe(9);
   const imported = page.waitForResponse(
     (r) =>
       r.url().includes("/thought-workshop/imports") &&
