@@ -106,6 +106,7 @@ def bind_components(app, settings, database):
         secret_bytes=secrets.token_bytes,
     )
     app.state.model_template_cipher = SecretCipher(settings.fpl_secrets_key)
+    app.state.model_decrypt = app.state.model_template_cipher.decrypt
     app.state.developer_documents = DeveloperDocuments(InstalledDocuments(REPO_ROOT))
     app.state.resource_links = lambda _request, session, _principal: ResourceLinks(
         WebsiteResources(session, AUTOMATION_ROOTS)

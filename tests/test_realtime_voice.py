@@ -466,8 +466,11 @@ def test_realtime_websocket_accepts_authenticated_workspace(
             allows=lambda _permission: True,
         )
 
-    async def run(websocket, *, owner_user_id: str, check_access, credential, session_factory):
+    async def run(
+        websocket, *, owner_user_id: str, check_access, credential, session_factory, decrypt
+    ):
         assert session_factory is SessionLocal
+        assert decrypt is app.state.model_decrypt
         assert credential.auth_kind == "session"
         await check_access()
         await websocket.send_json({"type": "workspace", "id": owner_user_id})

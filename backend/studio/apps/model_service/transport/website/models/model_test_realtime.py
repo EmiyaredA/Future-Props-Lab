@@ -5,14 +5,14 @@ from urllib.parse import urlsplit
 from fastapi import APIRouter, HTTPException, WebSocket
 
 from studio.apps.model_service.admission.bindings import admission_for
-from studio.apps.model_service.realtime import list_realtime_models, run_realtime_model_test
+from studio.apps.model_service.realtime.catalog import list_realtime_models
+from studio.apps.model_service.realtime.session import run_realtime_model_test
 from studio.assembly.http_dependencies import (
     SessionDep,
     StudioAuth,
     resolve_studio_websocket_principal,
 )
 from studio.assembly.model_credentials import socket_credential
-from studio.config.settings import get_settings
 from studio.contracts.identity.errors import AccountError
 from studio.contracts.model_service.schemas.realtime_voice import RealtimeVoiceOptionsOut
 
@@ -28,7 +28,7 @@ def _origin_allowed(websocket: WebSocket) -> bool:
     origin = websocket.headers.get("origin", "").rstrip("/")
     if not origin:
         return False
-    allowed = {value.rstrip("/") for value in get_settings().cors_origin_list}
+    allowed = {value.rstrip("/") for value in websocket.app.state.settings.cors_origin_list}
     if origin in allowed:
         return True
     parsed = urlsplit(origin)
@@ -91,6 +91,7 @@ async def realtime_socket(websocket: WebSocket) -> None:
             owner_user_id=owner_user_id,
             check_access=check_access,
             credential=credential,
+            decrypt=websocket.app.state.model_decrypt,
         )
     finally:
         await admission.release(lease_id)

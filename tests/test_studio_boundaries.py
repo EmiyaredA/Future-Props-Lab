@@ -454,6 +454,9 @@ def test_catalog_and_identity_do_not_load_legacy_credential_helpers():
             "galgame_transcription.py",
             "visual/visual_review_attempts.py",
             "writing.py",
+            "inference/text.py",
+            "playground/stream.py",
+            "realtime/catalog.py",
         )
     ]
     for path in paths:

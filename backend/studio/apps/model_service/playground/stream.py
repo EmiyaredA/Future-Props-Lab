@@ -9,7 +9,6 @@ from uuid import uuid4
 import httpx
 from sqlalchemy import update
 
-from app.runtime.credentials import decrypt_secret
 from studio.apps.model_service.playground.service import PreparedGeneration, message_out
 from studio.apps.model_service.providers.streaming import stream_text_completion
 from studio.apps.model_service.storage.models.call_log import LlmCallLog
@@ -107,7 +106,12 @@ async def _settle(
 
 
 async def generation_events(
-    prepared: PreparedGeneration, *, session_factory, transport_options=None, check_access=None
+    prepared: PreparedGeneration,
+    *,
+    session_factory,
+    decrypt,
+    transport_options=None,
+    check_access=None,
 ) -> AsyncIterator[bytes]:
     sequence = 0
     trace_id = str(uuid4())
@@ -133,7 +137,7 @@ async def generation_events(
     )
     sequence += 1
     try:
-        key = decrypt_secret(prepared.api_key_ciphertext) if prepared.api_key_ciphertext else ""
+        key = decrypt(prepared.api_key_ciphertext) if prepared.api_key_ciphertext else ""
         source = stream_text_completion(
             kind=prepared.provider_kind,
             base_url=prepared.base_url,

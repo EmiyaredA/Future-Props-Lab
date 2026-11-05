@@ -49,6 +49,7 @@ async def test_realtime_downgrade_closes_provider_before_another_call(monkeypatc
             owner_user_id="test-user",
             check_access=check_access,
             session_factory=SessionLocal,
+            decrypt=lambda value: value,
         ),
         timeout=2,
     )

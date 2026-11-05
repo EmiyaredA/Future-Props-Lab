@@ -1084,3 +1084,5 @@ Amadeus 的会话文件路径由装配明确提供给 `storage/files.py` 和 Ski
 ### 写作与模型尝试的装配边界
 
 `studio/assembly/website/thought_writing.py` 拥有兼容网站的思绪写作模型选择、供应商流及调用日志连接，显式接收会话工厂、解密器与传输解析器；思绪业务通过 `WritingModels` 端口使用它。原 `apps/thought_workshop/legacy_writing.py` 已移除。独立 Models 的助手轮次、视觉验收与 Galgame 转录只接收自身会话、配置及解密能力，视觉验收不再接收整个应用状态容器。`apps/model_service/writing.py` 使用模型入口注入的解密器。没有消费者的旧 `clients/text.py` 同进程入口已删除，既有 HTTP 写作和推理协议保持不变。
+
+模型文本推理、模型测试 SSE 和实时语音 WS 由入口传入同一应用实例的解密器。`model_service/realtime/__init__.py` 不加载目录或会话适配；具体消费者直接导入 `catalog.py` 与 `session.py`。语音来源校验读取当前装配的 CORS 配置，避免不同实例受全局配置影响。供应商密钥只在服务端适配边界解密，不进入公开事件或响应。

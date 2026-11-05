@@ -3,7 +3,6 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.runtime.credentials import decrypt_secret
 from studio.apps.model_service.providers.realtime.constants import (
     SENSEAUDIO_DEFAULT_VOICE,
     SENSEAUDIO_VOICE_PRESETS,
@@ -120,7 +119,7 @@ async def list_realtime_models(session: AsyncSession) -> RealtimeVoiceOptionsOut
 
 
 async def resolve_realtime_model(
-    session: AsyncSession, *, owner_user_id: str, model_id: str
+    session: AsyncSession, *, owner_user_id: str, model_id: str, decrypt
 ) -> ResolvedRealtimeModel:
     bind_owner(session, owner_user_id)
     row = (
@@ -141,7 +140,7 @@ async def resolve_realtime_model(
     ):
         raise RealtimeModelUnavailableError("实时语音模型未启用")
     try:
-        api_key = decrypt_secret(provider.api_key_ciphertext) if provider.api_key_ciphertext else ""
+        api_key = decrypt(provider.api_key_ciphertext) if provider.api_key_ciphertext else ""
     except Exception as exc:
         raise RealtimeModelUnavailableError(
             "实时语音供应商密钥无法读取",

@@ -241,6 +241,7 @@ async def run_realtime_model_test(
     *,
     owner_user_id: str,
     session_factory,
+    decrypt,
     check_access=None,
     credential: CredentialSnapshot | None = None,
 ) -> None:
@@ -290,7 +291,7 @@ async def run_realtime_model_test(
         async with session_factory() as session:
             bind_owner(session.sync_session, owner_user_id)
             model = await resolve_realtime_model(
-                session, owner_user_id=owner_user_id, model_id=model_id
+                session, owner_user_id=owner_user_id, model_id=model_id, decrypt=decrypt
             )
         bridge = SenseAudioRealtimeBridge(
             model=model,

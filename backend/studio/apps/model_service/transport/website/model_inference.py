@@ -46,7 +46,9 @@ async def generate_text(
     owner_user_id: OwnerDep,
     credential: CallCredentialDep,
 ):
-    args = await mapped(prepare(session, owner_user_id, body))
+    args = await mapped(
+        prepare(session, owner_user_id, body, decrypt=request.app.state.model_decrypt)
+    )
     async with aclosing(
         events(
             owner_user_id,
@@ -90,7 +92,9 @@ async def stream_text(
     owner_user_id: OwnerDep,
     credential: CallCredentialDep,
 ):
-    args = await mapped(prepare(session, owner_user_id, body))
+    args = await mapped(
+        prepare(session, owner_user_id, body, decrypt=request.app.state.model_decrypt)
+    )
 
     async def stream():
         async with aclosing(
