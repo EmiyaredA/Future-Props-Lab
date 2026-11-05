@@ -34,7 +34,16 @@ from studio.assembly.independent.integrations.maintenance import DATASETS as INT
 from studio.contracts.management.migration_batches import MigrationPlan
 from studio.runtime.database.migration_apps import SourceSnapshot
 
-from .legacy_snapshot import CONFIG, DATABASE, MANIFEST, RUNTIME, digest, directory, private_config
+from .legacy_snapshot import (
+    CONFIG,
+    DATABASE,
+    MANIFEST,
+    RUNTIME,
+    digest,
+    directory,
+    private_config,
+    runtime_inventory,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 TRANSFER = {
@@ -130,6 +139,30 @@ OPERATION_DATASETS = {
     "interview-create": INTERVIEW_CREATES.name,
 }
 
+LAYOUT_JOURNAL = "account_storage_upgrade_roots"
+
+
+def layout_journal(database, owner_ids):
+    rows = database.execute(
+        "SELECT owner_user_id, target_relative_root, status, error "
+        "FROM account_storage_upgrade_roots"
+    )
+    pending = conflicts = 0
+    for owner, target, status, error in rows:
+        pending += status != "completed" or bool(error)
+        parts = target.split("/")
+        conflicts += (
+            owner not in owner_ids
+            or parts[0] not in {"accounts", ".trash"}
+            or parts[1:2] != [owner]
+            or any(part in {"", ".", ".."} for part in parts)
+        )
+    return {
+        "unfinished_records": pending,
+        "owner_or_path_conflicts": conflicts,
+        "retained_in": "sealed_snapshot",
+    }
+
 
 def operation_partitions(database):
     counts = dict(
@@ -140,7 +173,7 @@ def operation_partitions(database):
     return counts, sum(count for kind, count in counts.items() if kind not in OPERATION_DATASETS)
 
 
-def coverage(snapshot, catalog):
+def coverage(snapshot, catalog, owner_ids):
     snapshot.check()
     owners = registered_owners(catalog)
     derived = catalog["derived_tables"]
@@ -164,8 +197,15 @@ def coverage(snapshot, catalog):
             )
             if name == "project_operation_receipts":
                 partition = operation_partitions(database)
+            journal = layout_journal(database, owner_ids) if name == LAYOUT_JOURNAL else None
             if partition is not None and count:
                 status = "transfer_pending" if partition[1] else "dataset_registered"
+            elif journal is not None:
+                status = (
+                    "source_layout_blocked"
+                    if journal["unfinished_records"] or journal["owner_or_path_conflicts"]
+                    else "retained_for_rollback"
+                )
             elif name in TRANSFER:
                 status = "dataset_registered"
             elif name in REBUILDS:
@@ -190,12 +230,15 @@ def coverage(snapshot, catalog):
                 item["partitions"], item["pending_records"] = partition
                 if name == "project_operation_receipts":
                     item["datasets"] = OPERATION_DATASETS
+            if journal is not None:
+                item.update(journal)
             output.append(item)
     snapshot.check()
     pending = [
         row["table"]
         for row in output
-        if row["status"] in {"transfer_pending", "owner_unassigned", "rebuild_pending"}
+        if row["status"]
+        in {"transfer_pending", "owner_unassigned", "rebuild_pending", "source_layout_blocked"}
     ]
     return {"tables": output, "pending_tables": pending}
 
@@ -212,8 +255,11 @@ def inspect_bundle(bundle, *, plan, manifest_sha256, catalog):
         raise ValueError("数据库来源与迁移计划不匹配")
     if digest(private_config(root / CONFIG)) != manifest["config_sha256"]:
         raise ValueError("快照配置摘要不符")
-    source = SourceSnapshot(directory(root / RUNTIME) / DATABASE, plan.source_database_sha256)
-    result = coverage(source, catalog)
+    runtime = directory(root / RUNTIME)
+    if runtime_inventory(runtime) != manifest["files"]:
+        raise ValueError("快照运行文件与封存清单不一致")
+    source = SourceSnapshot(runtime / DATABASE, plan.source_database_sha256)
+    result = coverage(source, catalog, {str(owner) for owner in plan.owner_ids})
     return {
         "source_revision": plan.source_revision,
         "source_database_sha256": plan.source_database_sha256,

@@ -2,11 +2,12 @@
 
 import json
 import os
+import sqlite3
 import subprocess
 import sys
 import time
 import tomllib
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 from io import BytesIO
 from pathlib import Path
 from uuid import UUID, uuid4
@@ -30,6 +31,7 @@ from scripts.website.migration_transfer import pages, transfer
 from tests.presentation_helpers import element, sample_document
 from tests.test_tools_navigation_migration import available_ports, listener
 
+from db.migrations.runner import apply_migrations
 from studio.apps.asset_library.migration_blobs import BLOBS as ASSET_BLOBS
 from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
 from studio.apps.director_desk.migration_files import FILES as DIRECTOR_FILES
@@ -131,12 +133,12 @@ def migrate_rehearsal(snapshot_db, parent, account, manifest_sha256):
     assert indexed["presentation_projects"]["dataset"] == "presentation.projects"
     receipts = indexed["project_operation_receipts"]
     assert receipts["partitions"]["presentation"] == 2
-    assert receipts["pending_records"] == receipts["record_count"] - 2
-    assert receipts["status"] == "transfer_pending"
+    assert receipts["pending_records"] == 0
+    assert receipts["status"] == "dataset_registered"
     assert indexed["presentation_template_assets"]["dataset"] == "presentation.template-references"
     assert indexed["agent_workbench_search"]["status"] == "rebuild_registered"
     assert indexed["model_catalog_state"]["dataset"] == "models.catalog-state"
-    assert "interview_rooms" in report["pending_tables"]
+    assert indexed["interview_rooms"]["dataset"] == "interview.rooms"
     with pytest.raises(ValueError, match="清单摘要"):
         inspect_bundle(snapshot_db.parent.parent, plan=plan, manifest_sha256="0" * 64, catalog={})
     for service, migrations, datasets in (
@@ -400,6 +402,73 @@ def create_presentation_history(client, safe, image):
         final = client.post(url + "/operations", headers=safe, json=edit)
         assert final.status_code == 200, final.text
     return url, final.json(), f"/v1/files/{identity}/content"
+
+
+@pytest.mark.parametrize(
+    ("state", "path_suffix", "unfinished", "conflicts"),
+    [("completed", "", 0, 0), ("failed", "", 1, 0), ("completed", "/../other", 0, 1)],
+)
+def test_sealed_layout_journal_requires_completed_owned_roots(
+    tmp_path, state, path_suffix, unfinished, conflicts
+):
+    runtime = tmp_path / "source/.runtime"
+    runtime.mkdir(parents=True)
+    database = runtime / legacy_snapshot.DATABASE
+    owner = uuid4()
+    apply_migrations(database)
+    # Reproduce the historical layout ledger in this temporary migration fixture.
+    with closing(sqlite3.connect(database)) as connection, connection:
+        connection.execute(
+            "INSERT INTO users(id,username,username_normalized,password_hash) VALUES (?,?,?,?)",
+            (str(owner), "fixture", "fixture", "isolated-unusable"),
+        )
+        connection.execute(
+            "INSERT INTO account_storage_upgrade_roots VALUES (?,?,?,?,?,?)",
+            (
+                "default",
+                str(owner),
+                "workspaces/default",
+                f"accounts/{owner}{path_suffix}",
+                state,
+                "",
+            ),
+        )
+    original = runtime / "workspaces/default/snapshot.txt"
+    original.parent.mkdir(parents=True)
+    original.write_text("retained legacy original")
+    config = configuration(
+        runtime.parent / "backend/config.toml",
+        database=database,
+        key=Fernet.generate_key().decode(),
+        port=3000,
+        web=tmp_path,
+    )
+    snapshot = tmp_path / "snapshot"
+    proof = legacy_snapshot.create(runtime, config, snapshot, REVISION)
+    plan = MigrationPlan(
+        run_id=uuid4(),
+        source_revision=REVISION,
+        source_database_sha256=legacy_snapshot.digest(database),
+        owner_ids=(owner,),
+        token="sealed-rollback-synthetic-transfer-authority",
+    )
+    options = {
+        "plan": plan,
+        "manifest_sha256": proof["manifest_sha256"],
+        "catalog": json.loads((ROOT / "deploy/contracts/ownership.json").read_text()),
+    }
+    report = inspect_bundle(snapshot, **options)
+    table = "account_storage_upgrade_roots"
+    row = next(item for item in report["tables"] if item["table"] == table)
+    assert row["record_count"] == 1
+    assert row["unfinished_records"] == unfinished
+    assert row["owner_or_path_conflicts"] == conflicts
+    assert (table in report["pending_tables"]) is bool(unfinished or conflicts)
+    if not (unfinished or conflicts):
+        assert row["status"] == "retained_for_rollback"
+        (snapshot / ".runtime/workspaces/default/snapshot.txt").write_text("changed original")
+        with pytest.raises(ValueError, match="运行文件与封存清单"):
+            inspect_bundle(snapshot, **options)
 
 
 def test_stopped_site_reopens_from_verified_runtime_and_original_config(tmp_path):
