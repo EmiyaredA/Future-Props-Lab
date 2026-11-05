@@ -150,9 +150,9 @@ test("finds new platform guides and retains the thought writing anchor", async (
   await page.goto("/docs.html?page=thought-workshop#ai-写作");
   await expect(page.locator("#ai-写作")).toBeVisible();
   await page.goto("/docs.html?page=sdk-reference-amadeus#amadeus方法参考");
-  await expect(page.locator("#amadeus-桌面助手方法参考")).toBeVisible();
+  await expect(page.locator("#amadeus-网页助手方法参考")).toBeVisible();
   await page.reload();
-  await expect(page.locator("#amadeus-桌面助手方法参考")).toBeVisible();
+  await expect(page.locator("#amadeus-网页助手方法参考")).toBeVisible();
   await page.goto("/docs.html?page=thought-workshop#ai-写作");
   await page.keyboard.press("/");
   const search = page.getByRole("searchbox", { name: "搜索使用指南" });

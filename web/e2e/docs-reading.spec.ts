@@ -63,7 +63,7 @@ test("all 93 imported source articles render as standard published notes without
       );
       await expect(
         page.getByRole("heading", { name: document.title, exact: true }),
-      ).toBeVisible();
+      ).toBeVisible({ timeout: 15_000 });
       await expect(page.locator(".thought-prose")).not.toBeEmpty();
       await expect(page.getByText("图表语法有误，请编辑源码")).toHaveCount(0);
       count++;

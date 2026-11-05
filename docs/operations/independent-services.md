@@ -2,9 +2,11 @@
 
 本轮正在把网站单体迁为同仓库的独立服务。正式网站仍由网站入口运行；未完成所有服务、数据导入与恢复验收前，不停止正式实例，不连接或迁移正式数据库。
 
+服务集合以 `backend/studio/contracts/gateway/catalog.py` 和生成的 `deploy/contracts/ownership.json` 为准。当前完整 Compose 装配包括 23 个登记服务、Remote 的 Guacamole 伴随容器和 7 个本机 worker。本文保留了各拆分阶段的验证记录，正式切换以同一候选提交的整站门禁为准。
+
 ## 已实现的运行边界
 
-Identity 使用自己的 `service.db`、迁移注册表、配置、启动锁和进程生命周期。账号、Session、API Key、邀请码及安全审计沿用现有领域用例；创建账号在同一事务中记录目录初始化事件，不加载模型 ORM 或写 Models 数据库。事件投递和 Models 消费仍需接通后才能开放完整新服务部署。
+Identity 使用自己的 `service.db`、迁移注册表、配置、启动锁和进程生命周期。账号、Session、API Key、邀请码及安全审计沿用现有领域用例。创建账号在同一事务中记录目录初始化事件，Models 通过授权投递更新自己的目录。
 
 Gateway 从公共操作归属清单生成精确的方法和路径路由；未知 API 与内部接口返回 404。Gateway 按实际的两个监听器标记本机和公网，先移除外部身份头，再向 Identity 请求短期、绑定目标服务与请求路径的签名上下文。业务服务不能依据 Host 或转发头取得主机权限。
 
@@ -22,9 +24,9 @@ npm run services:build:web -- agents
 npm run services:build -- agents --build --web-release .local/service-web/agents/BUILD_ID
 ```
 
-当前独立镜像入口包含 Identity、Gateway、Agents、Portal、Assets、Rendering、Management、Models 与 Integrations；其他服务的独立构建会明确拒绝。Gateway 包含 Caddy 与独立控制面，互相监督并持有自己的数据锁。构建器计算可审计源码闭包并拒绝单体入口、全部 ORM、工坊与模型内部依赖。镜像不复制整个后端，不打包配置、密钥、运行数据或仓库。Identity 自有锁文件固定所需依赖；版本由实际输入内容决定。
+每个登记服务使用各自的独立镜像入口。带网页的服务先构建对应的前端发布目录，再传入 `--web-release` 生成镜像。Gateway 包含 Caddy 与独立控制面，互相监督并持有自己的数据锁。构建器计算可审计的源码与依赖闭包。镜像仅打包所需的代码、依赖、程序资源和契约，版本由实际输入内容决定。
 
-`deploy/compose.yaml` 目前装配 Identity、Agents、Portal、Assets、Rendering 和 Gateway，`deploy/management.compose.yaml` 提供独立管理端叠加清单；Models、Integrations 和 Thought 使用显式选择的 `deploy/models.compose.yaml`、`deploy/integrations.compose.yaml` 和 `deploy/thought.compose.yaml`。启动只使用已构建镜像，不自动构建或迁移。数据库初始化必须通过所属镜像显式执行 `migrate`；已有数据库迁移历史不符时启动失败。`create-admin` 只接受标准输入 JSON，并且仅用于没有账号的新安装；已有正式账号应从受控导入保留。
+`deploy/compose.yaml` 装配 Identity、Agents、Portal、Assets、Rendering 和 Gateway。管理启动器按照部署配置和 `studio.host.deployment.compose_selection` 选择并检查其他服务及所需的叠加清单。启动只使用已构建镜像。数据库初始化通过所属镜像显式执行 `migrate`，已有数据库迁移历史不符时启动失败。`create-admin` 接受标准输入 JSON，仅用于没有账号的新安装。已有正式账号通过受控导入保留。
 
 ## Docker 隔离验收
 
@@ -90,7 +92,7 @@ Assets 已接通独立 HTTP、浏览器、镜像及 Compose，并通过五服务
 
 ## 正式切换门禁
 
-仍需完成其余业务服务、独立前端、原生 Mac worker、跨服务回执、正式导出／导入、浏览器回归、完整质量门禁和资源验收。配置真源继续是项目 `backend/config.toml`；当前隔离测试生成的配置不能替换正式配置。
+固定提交 `68da47b0` 已完成完整 Compose 的隔离 Chromium 联调、双账号中断续跑与重放、旧站恢复及独立服务状态恢复。正式窗口仍需同一个候选提交通过全量前后端回归、仓库质量门禁和性能复采样，并核对当次配置、镜像、维护端点与回滚步骤。配置真源为项目 `backend/config.toml`，隔离测试使用独立配置和数据目录。
 
 当前网站 `.runtime/` 是唯一正式迁移来源。原桌面目录、旧 Guacamole 数据卷、已验证的本地模型环境及停机快照继续保留。全部隔离验证完成后，才执行已批准的维护窗口与正式数据切换。
 

@@ -18,7 +18,7 @@ test("documentation learning paths, SDK tabs and mobile navigation", async ({
   });
   const group = page
     .locator(".docs-nav-group details")
-    .filter({ has: page.locator("summary", { hasText: "工作空间与账号" }) });
+    .filter({ has: page.locator("summary", { hasText: "账号与私人数据" }) });
   await group.locator("summary").focus();
   await page.keyboard.press("Enter");
   await expect(group).toHaveAttribute("open", "");
