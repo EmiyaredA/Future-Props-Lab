@@ -326,7 +326,7 @@ test("block selection, menus, deletion, persistence and mobile fallback", async 
   await prose.pressSequentially("/");
   await page
     .locator(".thought-insert-menu")
-    .getByRole("option", { name: /引用/ })
+    .getByRole("option", { name: "引用 突出一段引用", exact: true })
     .click();
   await expect(prose.locator("blockquote")).toBeVisible();
   await saveNote(page);

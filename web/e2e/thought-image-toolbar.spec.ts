@@ -49,11 +49,19 @@ async function expectOutside(page: Page, image: Locator, toolbar: Locator) {
 }
 
 async function setWidth(page: Page, value: string) {
-  await page.getByRole("button", { name: "图片设置", exact: true }).click();
-  const input = page.getByLabel("图片宽度", { exact: true });
+  const toolbar = page.getByRole("toolbar", { name: "图片操作" });
+  const settingsButton = toolbar.getByRole("button", {
+    name: "图片设置",
+    exact: true,
+  });
+  await settingsButton.click();
+  const settings = page.getByRole("dialog", { name: "图片设置" });
+  const input = settings.getByLabel("图片宽度", { exact: true });
   await input.fill(value);
   await input.press("Enter");
-  await input.press("Escape");
+  await expect(input).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(settingsButton).toBeFocused();
 }
 
 test("image toolbar and settings stay compact across sizes, alignments and themes", async ({
@@ -191,17 +199,22 @@ test("image toolbar follows resizing and scrolling without covering the image", 
   await page.mouse.move(corner.x - 150, corner.y + 6, { steps: 4 });
   await page.mouse.up();
   await expect(image).toHaveCSS("width", "564px");
-  await page.evaluate(() => window.scrollTo(0, 0));
+  const scroller = page.locator(".knowledge-main");
+  await scroller.evaluate((main) => (main.scrollTop = 0));
   await expectOutside(page, image, toolbar);
   // The top leaves the viewport, so the toolbar can flip below the image.
-  await image.evaluate((element) =>
-    window.scrollBy(0, element.getBoundingClientRect().top + 10),
-  );
+  await image.evaluate((element) => {
+    element
+      .closest(".knowledge-main")!
+      .scrollBy(0, element.getBoundingClientRect().top + 10);
+  });
   await expectOutside(page, image, toolbar);
-  await image.evaluate((element) =>
-    window.scrollBy(0, element.getBoundingClientRect().bottom + 12),
-  );
+  await image.evaluate((element) => {
+    element
+      .closest(".knowledge-main")!
+      .scrollBy(0, element.getBoundingClientRect().bottom + 12);
+  });
   await expect(toolbar).toBeHidden();
-  await page.evaluate(() => window.scrollTo(0, 0));
+  await scroller.evaluate((main) => (main.scrollTop = 0));
   await expectOutside(page, image, toolbar);
 });

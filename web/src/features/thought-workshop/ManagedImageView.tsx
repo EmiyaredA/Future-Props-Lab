@@ -58,6 +58,17 @@ export function ManagedImageView({
   getPos,
 }: NodeViewProps) {
   const access = useDocumentAccess();
+  const preferredPreviewSize =
+    (Number(node.attrs.width) || 480) *
+      Math.min(window.devicePixelRatio || 1, 2) >
+    640
+      ? 1280
+      : 640;
+  // Keep the selected image and its controls mounted during width changes.
+  const unselectedPreviewSize = useRef(preferredPreviewSize);
+  useEffect(() => {
+    if (!selected) unselectedPreviewSize.current = preferredPreviewSize;
+  }, [preferredPreviewSize, selected]);
   const {
     ref: previewRef,
     url,
@@ -65,11 +76,7 @@ export function ManagedImageView({
     progress,
   } = useImagePreviewUrl(
     access.assetUrl(String(node.attrs.assetId)),
-    (Number(node.attrs.width) || 480) *
-      Math.min(window.devicePixelRatio || 1, 2) >
-      640
-      ? 1280
-      : 640,
+    selected ? unselectedPreviewSize.current : preferredPreviewSize,
   );
   const [natural, setNatural] = useState({ width: 0, height: 0 });
   const [cropping, setCropping] = useState(false);

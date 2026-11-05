@@ -37,7 +37,6 @@ import {
 type ActiveBlock = { node: ProseMirrorNode; pos: number } | null;
 type OpenMenu = "block" | "insert" | null;
 
-const DRAG_POSITION = { placement: "left-start", strategy: "fixed" } as const;
 const DRAG_NESTED: NestedOptions = {
   defaultRules: false,
   edgeDetection: "left",
@@ -562,7 +561,6 @@ export function BlockEditorChrome({
         editor={editor}
         className="thought-drag-handle"
         nested={DRAG_NESTED}
-        computePositionConfig={DRAG_POSITION}
         onNodeChange={({ node, pos }) => {
           if (!menu) setBlock(node ? { node, pos } : null);
         }}
