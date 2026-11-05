@@ -42,6 +42,7 @@ from .operation_http import router as operation_router
 from .record_http import router
 from .request_limits import AmadeusRequestLimits
 from .skill_http import router as skill_router
+from .tool_calls import ToolCalls
 
 
 async def recover(database):
@@ -76,7 +77,8 @@ def create_app(*, state_root, catalog, public_key, credential, transport=None, n
     identity = LiveAuthorization(service="amadeus", credential=credential, transport=transport)
     host = AmadeusHost(database, identity) if native_options is not None else None
     file_locks = WeakValueDictionary()
-    actions = ActionExecution(database, identity, capabilities, file_locks)
+    tools = ToolCalls(capabilities, credential, transport)
+    actions = ActionExecution(database, identity, capabilities, file_locks, tools, host)
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -89,6 +91,7 @@ def create_app(*, state_root, catalog, public_key, credential, transport=None, n
                 yield
             finally:
                 await actions.close()
+                await tools.close()
                 await identity.close()
                 await capabilities.close()
                 await database.close()
@@ -109,7 +112,15 @@ def create_app(*, state_root, catalog, public_key, credential, transport=None, n
     app.include_router(action_router)
     if host is not None:
         app.include_router(native_router)
-    app.add_middleware(RequestLimit, prefix="/_native/", maximum=64 * 1024)
+    app.add_middleware(
+        RequestLimit, prefix="/_native/v1/receipt", maximum=8 * 1024 * 1024, exact=True
+    )
+    app.add_middleware(
+        RequestLimit,
+        prefix="/_native/",
+        maximum=512 * 1024,
+        streaming_prefix="/_native/v1/receipt",
+    )
     app.add_middleware(NativeIngress, options=native_options, state_key="amadeus_worker")
     app.add_middleware(AmadeusRequestLimits)
     app.add_middleware(SignedIdentity, service="amadeus", public_key=public_key, catalog=catalog)

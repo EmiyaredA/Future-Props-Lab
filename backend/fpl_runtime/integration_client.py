@@ -6,6 +6,7 @@ import httpx
 
 from .external_sync import ExternalIntentGrant
 from .integration_intents import (
+    AmadeusToolGrant,
     DemoInstallGrant,
     IntegrationCapacityGrant,
     IntegrationDecision,
@@ -89,6 +90,12 @@ class IntegrationIntentClient:
 
     async def external_grant(self, body: ExternalIntentGrant):
         value = await self.request("/external-grant", body, IntegrationGrantReceipt)
+        return value.assertion
+
+    async def amadeus_tool_grant(self, intent_id):
+        value = await self.request(
+            "/amadeus-tool-grant", AmadeusToolGrant(intent_id=intent_id), IntegrationGrantReceipt
+        )
         return value.assertion
 
     async def demo_install_grant(self, intent_id, operation):

@@ -133,6 +133,8 @@ class McpCatalog:
             row.environment_ciphertext,
         )
         await self.session.rollback()
+        if self.execution is not None:
+            await self.execution.live()
         bearer = self.cipher.decrypt(bearer_ciphertext) if bearer_ciphertext else ""
         environment = (
             json.loads(self.cipher.decrypt(environment_ciphertext))

@@ -42,7 +42,10 @@ async def principal(request, intent_id, operation):
         decision = await client.check(intent_id)
     except IntegrationAuthorizationUnavailable:
         raise HTTPException(503, "integration_authorization_unavailable") from None
-    if actor != decision.actor or decision.scope.kind not in {"mcp.validate", "tool.validate"}:
+    allowed = {"mcp.validate", "tool.validate"}
+    if operation == "demo":
+        allowed.add("tool.call")
+    if actor != decision.actor or decision.scope.kind not in allowed:
         raise HTTPException(403, "integration_capacity_scope_mismatch")
     if operation in {"acquire", "demo"} and not decision.allowed:
         raise HTTPException(403, "integration_authorization_revoked")
@@ -74,7 +77,7 @@ class DemoToolInput(BaseModel):
 @router.post("/{intent_id}/demo")
 async def demo(request: Request, intent_id: UUID, body: DemoToolInput):
     _actor, scope = await principal(request, intent_id, "demo")
-    if scope.kind != "tool.validate" or scope.input_sha256 != digest(body.input):
+    if scope.kind not in {"tool.validate", "tool.call"} or scope.input_sha256 != digest(body.input):
         raise HTTPException(403, "integration_demo_scope_mismatch")
     try:
         return await request.app.state.demo_runtime.tool_reply(body.tool, body.input)

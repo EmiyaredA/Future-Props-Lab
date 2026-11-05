@@ -36,10 +36,13 @@ from fpl_runtime.creative_stdio import PRIVATE_STDIO
 from fpl_runtime.database import Database
 from fpl_runtime.external_sync import MAX_EXTERNAL_STEP_BYTES
 from fpl_runtime.integration_client import IntegrationAuthorizationUnavailable
+from fpl_runtime.integration_intents import TOOL_CALL_MAX_BYTES, TOOL_CALL_PATH
 from fpl_runtime.migrations import check
 from fpl_runtime.request_limit import RequestLimit
 
 from .amadeus_skill_http import router as amadeus_skill_router
+from .amadeus_tool_calls import recover_tool_calls
+from .amadeus_tool_http import router as amadeus_tool_router
 from .creative_http import CreativeRequestLimit
 from .creative_http import router as creative_router
 from .creative_installations import CreativeInstallations
@@ -135,6 +138,7 @@ def create_app(
             check(database.path, "integrations", MIGRATIONS)
             await reconcile_skill_files(database, settings)
             await external_steps.recover()
+            await recover_tool_calls(database)
             if run_tasks:
                 await supervisor.start()
             yield
@@ -168,6 +172,7 @@ def create_app(
     app.include_router(creative_sources_router)
     app.include_router(creative_stdio_router)
     app.include_router(amadeus_skill_router)
+    app.include_router(amadeus_tool_router)
     app.state.integration_validation_recovery = recovery
     app.state.supervisor = supervisor
 
@@ -247,6 +252,7 @@ def create_app(
     app.add_middleware(
         RequestLimit, prefix="/_internal/v1/external-sync/", maximum=MAX_EXTERNAL_STEP_BYTES
     )
+    app.add_middleware(RequestLimit, prefix=TOOL_CALL_PATH + "/", maximum=TOOL_CALL_MAX_BYTES)
     app.add_middleware(CreativeRequestLimit)
     app.add_middleware(RequestLimit, prefix=PRIVATE_STDIO, maximum=256 * 1024)
     app.add_middleware(RequestLimit, prefix="/_internal/v1/creative-sources/", maximum=40 * 1024)

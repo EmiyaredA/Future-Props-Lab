@@ -4,24 +4,32 @@ import asyncio
 from functools import partial
 
 from anyio.to_thread import run_sync
+from fastapi import HTTPException
 
 from app.console.amadeus.files import write_file
 from app.runtime.operation_receipts import OperationError
+from fpl_runtime.amadeus_native import ScriptScope
 
 from .action_records import WORK_FILES, ActionRecords
 from .operation_calls import call_registered
+from .video_actions import apply_video_batch
 
 UNKNOWN = {"message": "执行中断，结果待核实"}
 
 
 class ActionExecution:
-    def __init__(self, database, identity, capabilities, locks):
+    def __init__(self, database, identity, capabilities, locks, tools, host):
         self.database, self.identity, self.locks = database, identity, locks
-        self.capabilities = capabilities
+        self.capabilities, self.tools, self.host = capabilities, tools, host
         self.tasks = {}
 
     def available(self, name):
-        return name in WORK_FILES or name.startswith("fpl_operation:")
+        return (
+            name in WORK_FILES
+            or name == "video_timeline_batch"
+            or (name == "run_script" and self.host is not None and self.host.sandbox)
+            or name.startswith(("fpl_operation:", "tool_api:", "mcp:"))
+        )
 
     async def require_authority(self, assertion, path):
         live = await self.identity.status(assertion=assertion, method="POST", path=path)
@@ -30,7 +38,7 @@ class ActionExecution:
                 "原操作授权不可用", "action_authorization_ended", 503 if live is None else 403
             )
 
-    async def start(self, principal, conversation, action, *, assertion, path):
+    async def start(self, principal, conversation, action, *, assertion, path, output=None):
         await self.require_authority(assertion, path)
         key = principal.user_id, conversation, action
         lock = self.locks.setdefault(key[:2], asyncio.Lock())
@@ -41,17 +49,29 @@ class ActionExecution:
                 records = ActionRecords(session, principal, conversation)
                 approved = await records.claim(action, self.available)
             task = asyncio.create_task(
-                self.execute(principal, conversation, approved, assertion, path),
+                self.execute(principal, conversation, approved, assertion, path, output),
                 name=f"amadeus-action:{action}",
             )
             self.tasks[key] = task
             task.add_done_callback(lambda _result: self.tasks.pop(key, None))
         return task
 
-    async def execute(self, principal, conversation, approved, assertion, path):
+    async def execute(self, principal, conversation, approved, assertion, path, output):
         try:
             await self.require_authority(assertion, path)
-            if approved.tool_name.startswith("fpl_operation:"):
+            status = "completed"
+            if approved.tool_name.startswith(("tool_api:", "mcp:")):
+                outcome = await self.tools.run(conversation, approved, assertion, path)
+                status, result = outcome.status, outcome.result
+            elif approved.tool_name == "run_script":
+                status, result = await self.run_script(
+                    principal.user_id, conversation, approved, assertion, path, output
+                )
+            elif approved.tool_name == "video_timeline_batch":
+                status, result = await apply_video_batch(
+                    self.capabilities, assertion, path, approved
+                )
+            elif approved.tool_name.startswith("fpl_operation:"):
                 result = await call_registered(
                     self.capabilities,
                     assertion,
@@ -62,7 +82,6 @@ class ActionExecution:
                 )
             else:
                 result = await self.write_file(principal, conversation, approved)
-            status = "completed"
         except asyncio.CancelledError:
             status, result = "unknown", UNKNOWN
         except OperationError as exc:
@@ -74,6 +93,30 @@ class ActionExecution:
             return await ActionRecords(session, principal, conversation).settle(
                 approved.id, status, result
             )
+
+    async def run_script(self, owner, conversation, approved, assertion, path, output):
+        try:
+            scope = ScriptScope.model_validate(
+                {
+                    "conversation_id": conversation,
+                    "action_id": approved.id,
+                    "script": approved.arguments,
+                }
+            )
+        except ValueError as exc:
+            raise OperationError("批准脚本参数无效", "invalid_arguments") from exc
+        try:
+            outcome = await self.host.script(owner, scope, assertion, path, output)
+        except HTTPException as exc:
+            if exc.detail == "amadeus_native_outcome_unconfirmed":
+                return "unknown", UNKNOWN
+            raise OperationError("脚本执行授权不可用", str(exc.detail), exc.status_code) from exc
+        if outcome["status"] == "unknown":
+            return "unknown", UNKNOWN
+        if outcome["status"] == "failed":
+            return "failed", {"code": outcome["error_code"], "message": outcome["message"]}
+        result = outcome["result"]
+        return ("completed" if result["exit_code"] == 0 else "failed"), result
 
     async def write_file(self, principal, conversation, approved):
         args = approved.arguments

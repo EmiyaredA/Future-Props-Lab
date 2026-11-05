@@ -4,7 +4,7 @@ import asyncio
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.console.amadeus.conversations import Conversations
 from app.console.amadeus.files import work_root
@@ -85,3 +85,19 @@ async def receipt(request: Request, body: Receipt):
         request.state.amadeus_worker, body.lease, body.outcome
     )
     return {"acknowledged": True}
+
+
+class ScriptOutput(Leased):
+    text: str = Field(max_length=65_536)
+
+
+@native.post("/heartbeat")
+async def heartbeat(request: Request, body: Leased):
+    await request.app.state.native_host.heartbeat(request.state.amadeus_worker, body.lease)
+    return {"active": True}
+
+
+@native.post("/output")
+async def output(request: Request, body: ScriptOutput):
+    await request.app.state.native_host.output(request.state.amadeus_worker, body.lease, body.text)
+    return {"accepted": True}

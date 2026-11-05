@@ -104,6 +104,7 @@ class IntegrationIntents:
                 "mcp.validate",
                 "tool.validate",
                 "demo.install",
+                "tool.call",
             }:
                 raise HTTPException(403, "integration_scope_forbidden")
             actor = Actor(**{**row.actor, "scopes": tuple(row.actor["scopes"])})
@@ -119,10 +120,16 @@ class IntegrationIntents:
     async def capacity_grant(self, body):
         async with self.database.sessions() as session:
             row = await session.get(IntegrationIntent, str(body.intent_id))
-            if (
-                row is None
-                or row.caller != "integrations"
-                or row.scope["kind"] not in {"tool.validate", "mcp.validate"}
+            if row is None or not (
+                (
+                    row.caller == "integrations"
+                    and row.scope["kind"] in {"tool.validate", "mcp.validate"}
+                )
+                or (
+                    row.caller == "amadeus"
+                    and row.scope["kind"] == "tool.call"
+                    and body.operation == "demo"
+                )
             ):
                 raise HTTPException(404, "integration_intent_not_found")
             actor = Actor(**{**row.actor, "scopes": tuple(row.actor["scopes"])})
@@ -143,6 +150,29 @@ class IntegrationIntents:
         async with self.database.sessions() as session:
             row = await session.get(IntegrationIntent, str(body.intent_id))
             if row is None or row.caller != "thought" or row.scope["kind"] != "external.sync":
+                raise HTTPException(404, "integration_intent_not_found")
+            actor = Actor(**{**row.actor, "scopes": tuple(row.actor["scopes"])})
+            if not await active_actor(session, actor):
+                raise HTTPException(401, "integration_source_revoked")
+            if self.private_key is None:
+                raise HTTPException(503, "integration_grant_unavailable")
+            return issue_context(
+                actor,
+                service="integrations",
+                method="POST",
+                path=body.path,
+                private_key=self.private_key,
+                key_id=self.key_id,
+            )
+
+    async def amadeus_tool_grant(self, body):
+        async with self.database.sessions() as session:
+            row = await session.get(IntegrationIntent, str(body.intent_id))
+            if (
+                row is None
+                or row.caller != "amadeus"
+                or row.scope["kind"] not in {"tool.call", "mcp.call"}
+            ):
                 raise HTTPException(404, "integration_intent_not_found")
             actor = Actor(**{**row.actor, "scopes": tuple(row.actor["scopes"])})
             if not await active_actor(session, actor):

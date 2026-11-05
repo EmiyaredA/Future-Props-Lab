@@ -137,8 +137,15 @@ def open_work_file(
         raise OperationError("文件无法安全读取") from exc
 
 
-def read_file_bytes(owner_user_id: str, conversation_id: str, kind: str, name: str) -> bytes:
-    file, _size = open_work_file(owner_user_id, conversation_id, kind, name)
+def read_file_bytes(
+    owner_user_id: str,
+    conversation_id: str,
+    kind: str,
+    name: str,
+    *,
+    files_root: Path | None = None,
+) -> bytes:
+    file, _size = open_work_file(owner_user_id, conversation_id, kind, name, files_root=files_root)
     with file:
         return file.read(MAX_FILE_BYTES + 1)
 

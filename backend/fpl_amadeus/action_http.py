@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+from io import StringIO
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
@@ -11,6 +12,31 @@ from app.runtime.operation_receipts import OperationError
 from fpl_runtime.http_dependencies import StudioAuth
 
 router = APIRouter(prefix="/v1/amadeus", tags=["amadeus"])
+
+
+class Output:
+    def __init__(self):
+        self.pending = StringIO()
+        self.ready = asyncio.Event()
+        self.remaining = 1024 * 1024
+
+    def append(self, text):
+        if self.remaining:
+            chunk = text[: self.remaining]
+            self.remaining -= len(chunk)
+            self.pending.write(chunk)
+            self.ready.set()
+
+    def drain(self):
+        text = self.pending.getvalue()
+        self.pending.seek(0)
+        self.pending.truncate(0)
+        self.ready.clear()
+        return text
+
+
+def line(event):
+    return json.dumps(event, ensure_ascii=False) + "\n"
 
 
 @router.post(
@@ -37,6 +63,7 @@ async def run_action_stream(
     request: Request, principal: StudioAuth, conversation_id: str, action_id: str
 ) -> StreamingResponse:
     async def events():
+        output = Output()
         try:
             task = await request.app.state.actions.start(
                 principal,
@@ -44,12 +71,23 @@ async def run_action_stream(
                 action_id,
                 assertion=request.state.service_assertion,
                 path=request.url.path,
+                output=output.append,
             )
+            while not task.done():
+                pending = asyncio.create_task(output.ready.wait())
+                try:
+                    await asyncio.wait((task, pending), return_when=asyncio.FIRST_COMPLETED)
+                finally:
+                    pending.cancel()
+                    await asyncio.gather(pending, return_exceptions=True)
+                if text := output.drain():
+                    yield line({"type": "output", "text": text})
+            if text := output.drain():
+                yield line({"type": "output", "text": text})
             result = await asyncio.shield(task)
-            event = {"type": "end", "action": result.model_dump(mode="json")}
+            yield line({"type": "end", "action": result.model_dump(mode="json")})
         except OperationError as exc:
-            event = {"type": "error", "message": str(exc), "code": exc.code}
-        yield json.dumps(event, ensure_ascii=False) + "\n"
+            yield line({"type": "error", "message": str(exc), "code": exc.code})
 
     return StreamingResponse(events(), media_type="application/x-ndjson")
 

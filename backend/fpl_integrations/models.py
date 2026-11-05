@@ -17,9 +17,16 @@ from .creative_records import (
 )
 from .demo_records import DemoToolInstallation
 from .native_mcp_records import NativeMcpJob, NativeMcpObservation
-from .records import ExternalClosure, ExternalExecution, ExternalStepReceipt, ValidationAttempt
+from .records import (
+    AmadeusToolCall,
+    ExternalClosure,
+    ExternalExecution,
+    ExternalStepReceipt,
+    ValidationAttempt,
+)
 
 MODELS = (
+    AmadeusToolCall,
     CreativeInstalledPart,
     CreativeInstallReceipt,
     CreativeInstallCancellation,

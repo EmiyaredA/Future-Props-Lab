@@ -13,9 +13,9 @@ from uuid import UUID
 import httpx
 
 from app.console.amadeus.files import work_root
-from app.console.amadeus.scripts import sandbox_available
+from app.console.amadeus.scripts import run_script, sandbox_available
 from app.runtime.operation_receipts import OperationError
-from fpl_runtime.amadeus_native import FINDER, FinderScope
+from fpl_runtime.amadeus_native import FINDER, SCRIPT, FinderScope, ScriptScope
 from fpl_runtime.locking import service_lock
 from fpl_runtime.native_protocol import NativeLease, NativeOutcome
 
@@ -34,17 +34,20 @@ class AmadeusWorker:
         *,
         launch=subprocess.Popen,
         probe=sandbox_available,
+        script=run_script,
     ):
         if amadeus_root.is_symlink() or not amadeus_root.is_dir():
             raise ValueError("Amadeus worker 需要真实的所属服务状态目录")
         self.transport, self.amadeus_root = transport, amadeus_root.resolve()
         if state_root.resolve().is_relative_to(self.amadeus_root):
             raise ValueError("Amadeus worker 回执应与服务文件隔离")
-        self.launch, self.probe = launch, probe
+        self.launch, self.probe, self.script_executor = launch, probe, script
         self.last_probe, self.sandbox = float("-inf"), False
         self.receipts = ReceiptStore(state_root / "receipts", retain_acknowledged_payload=False)
 
     async def execute(self, lease):
+        if lease.operation == SCRIPT:
+            return await self.script(lease)
         if lease.operation != FINDER:
             raise ProtocolConflict("Amadeus 租约超出原生能力")
         try:
@@ -76,6 +79,59 @@ class AmadeusWorker:
         except OSError:
             return NativeOutcome(status="failed", error_code="folder_open_unavailable")
         return NativeOutcome(status="completed", result={"opened": True})
+
+    async def script(self, lease):
+        if not self.sandbox:
+            return NativeOutcome(status="failed", error_code="sandbox_unavailable")
+        body = {"lease": lease.model_dump(mode="json")}
+        try:
+            scope = ScriptScope.model_validate(lease.payload)
+            owner = str(UUID(lease.owner_user_id))
+            if owner != lease.owner_user_id:
+                raise ValueError("invalid owner")
+            confirmation = await self.transport.post("authorize", body)
+            if confirmation.get("active") is not True:
+                raise LeaseEnded("沙箱脚本授权已失效")
+        except LeaseEnded:
+            return NativeOutcome(status="failed", error_code="authorization_revoked")
+        except ValueError:
+            return NativeOutcome(status="failed", error_code="invalid_script")
+
+        async def stream(text):
+            reply = await self.transport.post("output", {**body, "text": text})
+            if reply.get("accepted") is not True:
+                raise LeaseEnded("脚本输出授权已失效")
+
+        async def watch():
+            while True:
+                await asyncio.sleep(1)
+                pulse = await self.transport.post("heartbeat", body)
+                if pulse.get("active") is not True:
+                    raise LeaseEnded("沙箱脚本授权已失效")
+
+        task = asyncio.create_task(
+            self.script_executor(
+                owner,
+                str(scope.conversation_id),
+                scope.script.model_dump(mode="json"),
+                stream,
+                files_root=self.amadeus_root,
+            )
+        )
+        watcher = asyncio.create_task(watch())
+        try:
+            done, _ = await asyncio.wait({task, watcher}, return_when=asyncio.FIRST_COMPLETED)
+            if watcher in done:
+                await watcher
+            return NativeOutcome(status="completed", result=await task)
+        except OperationError as exc:
+            return NativeOutcome(status="failed", error_code=exc.code, message=str(exc)[:1000])
+        except (OSError, TimeoutError, httpx.HTTPError, LeaseEnded, ProtocolConflict):
+            return NativeOutcome(status="unknown", error_code="script_outcome_unconfirmed")
+        finally:
+            task.cancel()
+            watcher.cancel()
+            await asyncio.gather(task, watcher, return_exceptions=True)
 
     async def deliver(self, lease, outcome):
         response = await self.transport.post(

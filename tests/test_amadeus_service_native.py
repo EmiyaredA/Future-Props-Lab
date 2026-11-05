@@ -1,6 +1,8 @@
 """Check that Amadeus Finder requests retain only scoped Mac action receipts."""
 
 import asyncio
+import hashlib
+import json
 from dataclasses import replace
 
 import httpx
@@ -73,12 +75,22 @@ async def test_finder_live_scope_receipt_replay_and_sandbox_probe(
         transport=MacBridge(app),
     )
     opened = []
+
+    async def script(owner, conversation, arguments, emit, *, files_root):
+        assert owner == case.viewer and files_root == root
+        assert arguments["sha256"] == hashlib.sha256(arguments["command"].encode()).hexdigest()
+        assert conversation == identity
+        await emit("isolated ")
+        await emit("script output")
+        return {"exit_code": 0, "output": "isolated script output", "truncated": False}
+
     worker = AmadeusWorker(
         transport,
         root,
         tmp_path / "mac",
         launch=lambda command, **_: opened.append(command),
         probe=lambda: True,
+        script=script,
     )
     async with (
         app.router.lifespan_context(app),
@@ -130,6 +142,41 @@ async def test_finder_live_scope_receipt_replay_and_sandbox_probe(
             row = await session.scalar(select(AmadeusNativeJob))
             assert row.payload == {"conversation_id": identity}
             assert row.result == {"opened": True} and row.status == "completed"
+
+        command = "printf 'isolated script output'"
+        endpoint = f"{CONVERSATIONS}/{identity}/actions"
+        proposed = await api.post(
+            endpoint,
+            headers=await authorize(case, "amadeus", "POST", endpoint),
+            json={
+                "tool_name": "run_script",
+                "arguments": {
+                    "kind": "shell",
+                    "command": command,
+                    "sha256": hashlib.sha256(command.encode()).hexdigest(),
+                },
+            },
+        )
+        assert proposed.status_code == 200, proposed.text
+        action = endpoint + "/" + proposed.json()["id"]
+        decision = action + "/decision"
+        approved = await api.post(
+            decision,
+            headers=await authorize(case, "amadeus", "POST", decision),
+            json={"arguments_sha256": proposed.json()["arguments_sha256"], "approve": True},
+        )
+        assert approved.status_code == 200, approved.text
+        execute = action + "/execute/stream"
+        executing = asyncio.create_task(
+            api.post(execute, headers=await authorize(case, "amadeus", "POST", execute))
+        )
+        await wait_for_intent(app)
+        await worker.poll_once()
+        response = await executing
+        events = [json.loads(line) for line in response.text.splitlines()]
+        assert "".join(item["text"] for item in events[:-1]) == "isolated script output"
+        assert events[-1]["action"]["result"]["exit_code"] == 0
+        assert events[-1]["action"]["status"] == "completed"
 
         opening = asyncio.create_task(api.post(path, headers=proof))
         await wait_for_intent(app)

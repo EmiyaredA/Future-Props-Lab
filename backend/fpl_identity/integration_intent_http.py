@@ -5,6 +5,7 @@ from starlette.responses import JSONResponse
 
 from fpl_runtime.external_sync import ExternalIntentGrant
 from fpl_runtime.integration_intents import (
+    AmadeusToolGrant,
     DemoInstallGrant,
     IntegrationCapacityGrant,
     IntegrationIntentCheck,
@@ -48,4 +49,11 @@ async def external_grant(request: Request, body: ExternalIntentGrant):
 async def demo_install_grant(request: Request, body: DemoInstallGrant):
     require_client(request, "models")
     assertion = await request.app.state.integration_intents.demo_install_grant(body)
+    return JSONResponse({"assertion": assertion}, headers={"Cache-Control": "no-store"})
+
+
+@router.post("/amadeus-tool-grant")
+async def amadeus_tool_grant(request: Request, body: AmadeusToolGrant):
+    require_client(request, "amadeus")
+    assertion = await request.app.state.integration_intents.amadeus_tool_grant(body)
     return JSONResponse({"assertion": assertion}, headers={"Cache-Control": "no-store"})

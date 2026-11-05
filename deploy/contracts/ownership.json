@@ -4925,6 +4925,12 @@
       "model": "ExternalClosure"
     },
     {
+      "table": "integration_amadeus_tool_calls",
+      "service": "integrations",
+      "module": "fpl_integrations.records",
+      "model": "AmadeusToolCall"
+    },
+    {
       "table": "interview_native_leases",
       "service": "interview",
       "module": "fpl_interview.models",

@@ -184,6 +184,8 @@ class ToolApiCatalog:
         validate(instance=inputs, schema=snapshot.parameters_schema)
         secret = self.cipher.decrypt(row.secret_ciphertext) if row.secret_ciphertext else ""
         await self.session.rollback()
+        if self.execution is not None:
+            await self.execution.live()
         status_code, content_type, preview = await asyncio.wait_for(
             _invoke(
                 snapshot,

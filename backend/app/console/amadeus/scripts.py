@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import inspect
 import os
 import shutil
 import signal
 import subprocess
 import sys
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 
 from app.console.amadeus.files import read_file_bytes, work_root
@@ -55,18 +56,22 @@ async def run_script(
     owner_user_id: str,
     conversation_id: str,
     arguments: dict,
-    on_output: Callable[[str], None] | None = None,
+    on_output: Callable[[str], Awaitable[None] | None] | None = None,
+    *,
+    files_root: Path | None = None,
 ) -> dict:
     sandbox = Path("/usr/bin/sandbox-exec")
     if sys.platform != "darwin" or not sandbox.is_file():
         raise OperationError("此系统不支持脚本沙箱", "sandbox_unavailable", 409)
-    root = work_root(owner_user_id, conversation_id)
+    root = work_root(owner_user_id, conversation_id, files_root=files_root)
     root.mkdir(parents=True, exist_ok=True, mode=0o700)
     (root / "tmp").mkdir(mode=0o700, exist_ok=True)
     kind = arguments.get("kind")
     if kind == "python":
         name = str(arguments.get("name", ""))
-        script = read_file_bytes(owner_user_id, conversation_id, "scripts", name)
+        script = read_file_bytes(
+            owner_user_id, conversation_id, "scripts", name, files_root=files_root
+        )
         expected = str(arguments.get("sha256", ""))
         if hashlib.sha256(script).hexdigest() != expected:
             raise OperationError("脚本已修改，请重新确认", "approval_conflict", 409)
@@ -82,7 +87,8 @@ async def run_script(
             raise OperationError("Shell 命令无效")
         if hashlib.sha256(command_text.encode()).hexdigest() != arguments.get("sha256"):
             raise OperationError("命令已修改，请重新确认", "approval_conflict", 409)
-        command = ["/bin/sh", "-c", command_text]
+        # The macOS /bin/sh shim consults host preferences and then execs a variant.
+        command = ["/bin/bash", "--posix", "-c", command_text]
         additional_read = []
         script_input = None
     else:
@@ -117,6 +123,7 @@ async def run_script(
             + " ".join(f"(subpath {_quote(path)})" for path in read_paths)
             + ")",
             f"(allow file-write* (subpath {_quote(root)}))",
+            f"(deny file-write* (subpath {_quote(root / 'skills')}))",
             "(allow process-exec "
             + " ".join(f"(literal {_quote(path)})" for path in executable_paths)
             + ")",
@@ -141,12 +148,18 @@ async def run_script(
         stderr=asyncio.subprocess.STDOUT,
         start_new_session=True,
     )
-    if script_input is not None and process.stdin is not None:
-        process.stdin.write(script_input)
-        await process.stdin.drain()
-        process.stdin.close()
+
+    async def publish(chunk):
+        if on_output is not None:
+            result = on_output(chunk.decode(errors="replace"))
+            if inspect.isawaitable(result):
+                await result
 
     async def collect() -> tuple[bytes, bool]:
+        if script_input is not None and process.stdin is not None:
+            process.stdin.write(script_input)
+            await process.stdin.drain()
+            process.stdin.close()
         chunks = bytearray()
         overflow = False
         while True:
@@ -156,21 +169,23 @@ async def run_script(
             if len(chunks) + len(chunk) > 1024 * 1024:
                 visible = chunk[: 1024 * 1024 - len(chunks)]
                 chunks.extend(visible)
-                if on_output is not None:
-                    on_output(visible.decode(errors="replace"))
+                await publish(visible)
                 overflow = True
                 os.killpg(process.pid, signal.SIGKILL)
                 break
             chunks.extend(chunk)
-            if on_output is not None:
-                on_output(chunk.decode(errors="replace"))
+            await publish(chunk)
         await process.wait()
         return bytes(chunks), overflow
 
     try:
         output, truncated = await asyncio.wait_for(collect(), timeout=SCRIPT_TIMEOUT_SECONDS)
-    except (TimeoutError, asyncio.CancelledError):
-        os.killpg(process.pid, signal.SIGKILL)
+    except BaseException:
+        if process.returncode is None:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
         await process.wait()
         raise
     if process.returncode == 71 and b"sandbox_apply" in output:

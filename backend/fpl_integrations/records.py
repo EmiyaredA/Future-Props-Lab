@@ -78,3 +78,13 @@ class ExternalClosure(IntegrationsBase):
     owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
     note_id: Mapped[str] = mapped_column(String(100))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
+class AmadeusToolCall(IntegrationsBase):
+    __tablename__ = "integration_amadeus_tool_calls"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
+    status: Mapped[str] = mapped_column(String(24))
+    result: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)

@@ -75,7 +75,7 @@ class IntegrationIntentInput(BaseModel):
             )
         if self.caller == "amadeus" and scope.kind in {"mcp.call", "tool.call"}:
             match = re.fullmatch(
-                r"/v1/amadeus/conversations/([^/]{1,100})/actions/([^/]{1,100})/execute",
+                r"/v1/amadeus/conversations/([^/]{1,100})/actions/([^/]{1,100})/execute(?:/stream)?",
                 self.source_path,
             )
             return bool(
@@ -134,3 +134,22 @@ class DemoInstallGrant(BaseModel):
     @property
     def method(self):
         return "POST" if self.operation == "install" else "GET"
+
+
+TOOL_CALL_PATH = "/_internal/v1/amadeus-tool-calls"
+TOOL_CALL_MAX_BYTES = 8 * 1024 * 1024
+
+
+class AmadeusToolGrant(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    intent_id: UUID
+
+    @property
+    def path(self):
+        return f"{TOOL_CALL_PATH}/{self.intent_id}"
+
+
+class AmadeusToolOutcome(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    status: Literal["completed", "failed", "unknown"]
+    result: dict

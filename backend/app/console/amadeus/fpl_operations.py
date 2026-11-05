@@ -158,6 +158,12 @@ async def call_operation(
     return operation_result(response)
 
 
+class RegisteredRevisionConflict(OperationError):
+    def __init__(self, message, current):
+        super().__init__(message, "revision_conflict", 409)
+        self.current = current
+
+
 def operation_result(response):
     if len(response.content) > RESPONSE_LIMIT:
         raise OperationError("操作结果超过 1 MiB", "result_too_large", 422)
@@ -186,6 +192,12 @@ def operation_result(response):
                     explanation = first.get("msg")
                     if isinstance(explanation, str):
                         message += f"（{field}: {explanation[:300]}）"
+        if (
+            response.status_code == 409
+            and code == "revision_conflict"
+            and isinstance(payload, dict)
+        ):
+            raise RegisteredRevisionConflict(message, payload.get("current"))
         raise OperationError(message, code, response.status_code)
     if not response.headers.get("content-type", "").startswith("application/json"):
         raise OperationError("此操作的二进制响应暂不支持", "unsupported_result", 422)
