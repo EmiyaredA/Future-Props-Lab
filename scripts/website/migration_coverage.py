@@ -5,6 +5,7 @@ import json
 import sqlite3
 from contextlib import closing
 from pathlib import Path
+from uuid import UUID
 
 from studio.apps.agent_workbench.migration_shapes import DATASETS as AGENTS
 from studio.apps.amadeus.storage.migration_history import DATASETS as AMADEUS
@@ -43,6 +44,7 @@ from .legacy_snapshot import (
     digest,
     directory,
     private_config,
+    revision_id,
     runtime_inventory,
 )
 
@@ -302,22 +304,41 @@ def coverage(snapshot, catalog, owner_ids):
     return {"tables": output, "pending_tables": pending}
 
 
-def inspect_bundle(bundle, *, plan, manifest_sha256, catalog):
+def verified_source(bundle, manifest_sha256):
     root = directory(bundle)
     marker = private_config(root / MANIFEST)
     if digest(marker) != manifest_sha256:
         raise ValueError("快照清单摘要不符")
     manifest = json.loads(marker.read_text())
-    if manifest["version"] != 1 or manifest["source_revision"] != plan.source_revision:
-        raise ValueError("快照来源与迁移计划不匹配")
-    if manifest["files"][DATABASE]["sha256"] != plan.source_database_sha256:
-        raise ValueError("数据库来源与迁移计划不匹配")
+    if manifest["version"] != 1:
+        raise ValueError("快照清单版本不受支持")
+    revision_id(manifest["source_revision"])
     if digest(private_config(root / CONFIG)) != manifest["config_sha256"]:
         raise ValueError("快照配置摘要不符")
     runtime = directory(root / RUNTIME)
     if runtime_inventory(runtime) != manifest["files"]:
         raise ValueError("快照运行文件与封存清单不一致")
-    source = SourceSnapshot(runtime / DATABASE, plan.source_database_sha256)
+    return SourceSnapshot(runtime / DATABASE, manifest["files"][DATABASE]["sha256"]), manifest
+
+
+def source_owners(source):
+    source.check()
+    with closing(
+        sqlite3.connect(source.path.as_uri() + "?mode=ro&immutable=1", uri=True)
+    ) as database:
+        owners = tuple(UUID(row[0]) for row in database.execute("SELECT id FROM users ORDER BY id"))
+    source.check()
+    return owners
+
+
+def inspect_bundle(bundle, *, plan, manifest_sha256, catalog):
+    source, manifest = verified_source(bundle, manifest_sha256)
+    if manifest["source_revision"] != plan.source_revision:
+        raise ValueError("快照来源与迁移计划不匹配")
+    if manifest["files"][DATABASE]["sha256"] != plan.source_database_sha256:
+        raise ValueError("数据库来源与迁移计划不匹配")
+    if set(source_owners(source)) != set(plan.owner_ids):
+        raise ValueError("迁移计划的账号范围与封存来源不一致")
     result = coverage(source, catalog, {str(owner) for owner in plan.owner_ids})
     return {
         "source_revision": plan.source_revision,

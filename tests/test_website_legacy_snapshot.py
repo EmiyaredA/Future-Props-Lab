@@ -28,6 +28,7 @@ from scripts.website.migrate_remote_preferences import PREFERENCES
 from scripts.website.migrate_tools_navigation import NAVIGATION
 from scripts.website.migration_coverage import inspect_bundle, platform_partitions
 from scripts.website.migration_transfer import pages, transfer
+from scripts.website.prepare_migration_plan import prepare_plan
 from tests.presentation_helpers import element, sample_document
 from tests.test_tools_navigation_migration import available_ports, listener
 
@@ -102,29 +103,29 @@ def website(config, port):
 
 
 def migrate_rehearsal(snapshot_db, parent, account, manifest_sha256):
-    plan = MigrationPlan(
-        run_id=uuid4(),
-        source_revision=REVISION,
-        source_database_sha256=legacy_snapshot.digest(snapshot_db),
-        owner_ids=(UUID(account),),
-        token="sealed-rollback-synthetic-transfer-authority",
-    )
+    snapshot = snapshot_db.parent.parent
     path = parent / "transfer.json"
-    path.touch(mode=0o600)
-    path.write_text(
-        json.dumps(
-            {
-                **plan.model_dump(mode="json", exclude={"token"}),
-                "token": plan.token.get_secret_value(),
-            }
+    with pytest.raises(ValueError, match="清单摘要"):
+        prepare_plan(snapshot, "0" * 64, path)
+    assert not path.exists()
+    prepared = prepare_plan(snapshot, manifest_sha256, path)
+    plan = MigrationPlan.read(path)
+    assert plan.owner_ids == (UUID(account),)
+    assert plan.source_revision == REVISION
+    assert prepared["run_id"] == str(plan.run_id)
+    assert prepared["owner_count"] == 1 and "token" not in prepared
+    with pytest.raises(ValueError, match="计划已存在"):
+        prepare_plan(snapshot, manifest_sha256, path)
+    assert MigrationPlan.read(path) == plan
+    catalog = json.loads((ROOT / "deploy/contracts/ownership.json").read_text())
+    with pytest.raises(ValueError, match="账号范围"):
+        inspect_bundle(
+            snapshot,
+            plan=plan.model_copy(update={"owner_ids": ()}),
+            manifest_sha256=manifest_sha256,
+            catalog=catalog,
         )
-    )
-    report = inspect_bundle(
-        snapshot_db.parent.parent,
-        plan=plan,
-        manifest_sha256=manifest_sha256,
-        catalog=json.loads((ROOT / "deploy/contracts/ownership.json").read_text()),
-    )
+    report = inspect_bundle(snapshot, plan=plan, manifest_sha256=manifest_sha256, catalog=catalog)
     indexed = {item["table"]: item for item in report["tables"]}
     assert indexed["visual_assets"]["dataset"] == "assets.files"
     assert indexed["visual_asset_folders"]["record_count"] == 2

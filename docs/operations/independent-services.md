@@ -410,6 +410,13 @@ uv run python -m scripts.website.legacy_snapshot restore \
 
 ### 整站维护接口迁移
 
+从已核验的封存目录生成一次迁移计划。账号清单来自封存库的全部账号，计划文件权限为 0600。续跑沿用同一个计划，以保持批次 ID 和已持久化回执一致。
+
+```sh
+uv run python -m scripts.website.prepare_migration_plan \
+  --snapshot "$sealed_snapshot" --manifest-sha256 "$manifest_sha256" --output "$plan"
+```
+
 为同一份计划启动各服务的回环维护入口。每个进程使用独立端口。导出只读取封存快照，导入只挂载对应目标服务的状态目录，普通业务入口保持停写。
 
 维护地址以 JSON 对象保存，键名为各所有者的 `<service>-source` 和 `<service>-target`。需要成对登记的服务为 `identity`、`assets`、`models`、`integrations`、`thought`、`creative`、`director`、`annotation`、`presentation`、`motion`、`video`、`visual`、`galgame`、`interview`、`agents`、`amadeus`、`tools`、`remote`。另登记 `rendering-target`。地址清单权限为 0600，验收目录权限为 0700。
