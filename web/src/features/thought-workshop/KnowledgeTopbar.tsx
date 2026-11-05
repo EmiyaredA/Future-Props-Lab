@@ -314,6 +314,7 @@ export function KnowledgeTopbar({
             <KnowledgeActionMenu
               ariaLabel="新建文档"
               label="新建文档"
+              disabled={!projectTitle}
               groups={[
                 [
                   { value: "blank", label: "空白文档", icon: FileText },

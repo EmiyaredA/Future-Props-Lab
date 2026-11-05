@@ -55,6 +55,52 @@ async function captureField(page: Page, name: string) {
     animations: "disabled",
   });
 }
+test("多维表格创建等待知识库目录加载", async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.goto("/apps/thought-workshop");
+  const kb = await (
+    await write(page.context(), root + "/knowledge-bases", {
+      title: "延迟目录下的表格创建",
+    })
+  ).json();
+  let showDirectory!: () => void;
+  const directoryReady = new Promise<void>((resolve) => {
+    showDirectory = resolve;
+  });
+  const directoryPath = `**${root}/knowledge-bases/${kb.id}/directory`;
+  await page.route(
+    directoryPath,
+    async (route) => {
+      await directoryReady;
+      await route.continue();
+    },
+    { times: 1 },
+  );
+  const create = page
+    .getByRole("button", { name: "新建文档", exact: true })
+    .and(page.locator('[aria-haspopup="menu"]'));
+  try {
+    await page.goto(`/apps/thought-workshop/knowledge-bases/${kb.id}`);
+    await expect(create).toBeVisible({ timeout: 20_000 });
+    await expect(create).toBeDisabled();
+    await expect(page.locator(".knowledge-directory-add")).toBeDisabled();
+  } finally {
+    showDirectory();
+  }
+  await create.click();
+  const created = page.waitForResponse(
+    (response) =>
+      response.url().endsWith(`${root}/knowledge-bases/${kb.id}/documents`) &&
+      response.request().method() === "POST",
+  );
+  await page.getByRole("menuitem", { name: "多维表格", exact: true }).click();
+  const creation = await created;
+  expect(creation.ok()).toBeTruthy();
+  const table = await creation.json();
+  expect(table.kind).toBe("multitable");
+  await expect(page).toHaveURL(new RegExp(`/documents/${table.id}$`));
+});
+
 test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ page }) => {
   test.setTimeout(120000);
   await page.goto("/apps/thought-workshop");
@@ -71,7 +117,7 @@ test("多表、三视图、正文独立保存、CSV 和完整备份", async ({ p
   await page.getByRole("menuitem", { name: "多维表格", exact: true }).click();
   await expect(
     page.getByRole("region", { name: "多维表格", exact: true }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 15_000 });
   const noteId = page.url().split("/").at(-1)!;
   const base = root + `/notes/${noteId}/multitable`;
   await page.getByRole("button", { name: "新增记录", exact: true }).click();

@@ -236,11 +236,13 @@ export function ThoughtWorkshopPage({
   const create = (
     parent: string | null = null,
     kind: "note" | "multitable" = "note",
-  ) =>
-    run(async () => {
-      const n = await createDocument(project!, parent, kind);
+  ) => {
+    if (!project) return;
+    return run(async () => {
+      const n = await createDocument(project, parent, kind);
       open(n.id);
     });
+  };
   const backup = (id?: string) =>
     run(async () => download(await downloadBackup(id), "思绪工坊备份.zip"));
   const metadata = (p: KnowledgeBase, field: "title" | "description") =>
@@ -434,6 +436,7 @@ export function ThoughtWorkshopPage({
             type="button"
             className="knowledge-directory-add"
             aria-label="新建文档"
+            disabled={!project}
             onClick={() => void create()}
           >
             +

@@ -14,11 +14,13 @@ export type TopbarAction = {
 export function KnowledgeActionMenu({
   ariaLabel,
   label,
+  disabled,
   groups,
   onAction,
 }: {
   ariaLabel: string;
   label?: string;
+  disabled?: boolean;
   groups: TopbarAction[][];
   onAction: (value: string) => void;
 }) {
@@ -92,6 +94,7 @@ export function KnowledgeActionMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
+        disabled={disabled}
         onClick={() => (open ? close() : show())}
         onKeyDown={(event) => {
           if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
