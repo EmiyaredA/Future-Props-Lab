@@ -13,15 +13,6 @@ class CloudStatus(BaseModel):
     idle_revision: int
 
 
-class Enrollment(BaseModel):
-    secret: str
-
-
-class VerificationCode(BaseModel):
-    code: str = Field(pattern=r"^[0-9]{6}$")
-    desktop: bool = False
-
-
 class DesktopLogin(BaseModel):
     model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
 

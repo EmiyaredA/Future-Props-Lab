@@ -14,10 +14,12 @@ import httpx
 import pytest
 from PIL import Image
 
-from app.console.cloud_control import access, desktop
+from app.console.cloud_control import desktop
 from db.migrations import runner as migration_runner
 from studio.apps.agent_workbench.execution import events, project_files, projects, runner, storage
 from studio.apps.agent_workbench.transport.website import execution
+from studio.apps.identity.storage import cloud_access as access
+from studio.apps.identity.use_cases.cloud_factors import totp
 from studio.assembly.website.account_provisioning import create_account
 from studio.config.settings import CloudProject, get_settings
 from website_test_support import SessionLocal, app
@@ -63,7 +65,7 @@ async def enroll(client):
     result = await client.post(CLOUD + "/totp/enroll")
     assert result.status_code == 200, result.text
     secret = result.json()["secret"]
-    code = access.totp(secret, int(access.time.time()) // 30)
+    code = totp(secret, int(access.time.time()) // 30)
     result = await client.post(CLOUD + "/totp/confirm", json={"code": code})
     assert result.status_code == 204, result.text
     return code
@@ -648,7 +650,7 @@ async def test_desktop_websocket_checks_origin_consumes_ticket_and_closes_on_log
             key = (await enroll_client.post(CLOUD + "/totp/enroll")).json()["secret"]
             counter = int(access.time.time()) // 30
             confirmed = await enroll_client.post(
-                CLOUD + "/totp/confirm", json={"code": access.totp(key, counter)}
+                CLOUD + "/totp/confirm", json={"code": totp(key, counter)}
             )
             assert confirmed.status_code == 204
             client.cookies = enroll_client.cookies
@@ -684,7 +686,7 @@ async def test_desktop_websocket_checks_origin_consumes_ticket_and_closes_on_log
             status = (await client.get(CLOUD + "/status")).json()
             assert status["desktop_configured"] and not status["desktop_authorized"]
             assert not status["enabled"] and not status["enrolled"]
-            auth = {"code": access.totp(key, counter + 1), "desktop": True}
+            auth = {"code": totp(key, counter + 1), "desktop": True}
             premature = await client.post(CLOUD + "/totp/verify", json=auth)
             assert premature.status_code == 403
             assert premature.json()["code"] == "reauthentication_required"
@@ -912,7 +914,7 @@ async def test_public_desktop_proof_outlives_agent_unlock_until_session_logout(m
     async with aclosing(local), aclosing(remote):
         key = (await local.post(CLOUD + "/totp/enroll")).json()["secret"]
         now = int(access.time.time())
-        code = access.totp(key, now // 30)
+        code = totp(key, now // 30)
         assert (await local.post(CLOUD + "/totp/confirm", json={"code": code})).status_code == 204
         remote.cookies = local.cookies
         remote.headers["X-CSRF-Token"] = remote.cookies["fpl_csrf"]
@@ -924,7 +926,7 @@ async def test_public_desktop_proof_outlives_agent_unlock_until_session_logout(m
         result = await remote.post(
             CLOUD + "/totp/verify",
             json={
-                "code": access.totp(key, now // 30 + 1),
+                "code": totp(key, now // 30 + 1),
                 "desktop": True,
             },
         )

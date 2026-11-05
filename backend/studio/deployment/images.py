@@ -430,7 +430,11 @@ def source_closure(root: Path, service):
                         "studio.apps.identity",
                     )
                 )
-                or name in {"app.console.cloud_control.access", "app.console.cloud_control.desktop"}
+                or name
+                in {
+                    "studio.apps.identity.storage.cloud_access",
+                    "app.console.cloud_control.desktop",
+                }
             ):
                 raise ValueError(f"Remote 镜像包含越界依赖：{name}")
             if service == "motion" and (

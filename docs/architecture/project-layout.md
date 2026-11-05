@@ -468,7 +468,7 @@ Future-Props-Lab/
   `studio/contracts/tools/`。网站临时下载生命周期归 `apps/tools/video_downloads/local_jobs.py`，关闭时等待已接受任务；
   独立服务使用现有持久任务及回执。素材入库由 `assembly/website/video_library.py` 显式连接素材所有者，
   两种下载状态实现尚待后续统一端口，不因目录迁移视为完成。
-- `web/src/features/cloud-control/` 拥有云控两栏／三栏布局、远程画面与验证界面；文件阅读和命令展示仍由 `web/src/features/agent-workbench/` 拥有，通过显式阅读容器接入云控。`backend/app/console/cloud_control/` 拥有按账号的 TOTP、桌面 Session 与空闲锁定、可信本机配置保存和 guacd 隧道。工作台仍可从 `/agents` 阅读已同步的原端会话。
+- `web/src/features/cloud-control/` 拥有云控两栏／三栏布局、远程画面与验证界面；文件阅读和命令展示仍由 `web/src/features/agent-workbench/` 拥有，通过显式阅读容器接入云控。Identity 的 `use_cases/cloud_factors.py` 与 `storage/cloud_factors.py` 共同拥有按账号的 TOTP；`backend/app/console/cloud_control/` 暂时保留桌面 Session 与空闲锁定、可信本机配置保存和 guacd 隧道。工作台仍可从 `/agents` 阅读已同步的原端会话。
   API、SSE 与后台采集同时检查 `cloud-control.access`，身份降级后保留原账号副本和检查点。
   当前网站保留兼容装配，独立服务实现保留在服务化分支并由其统一验收切换。
 `web/src/features/applications/ApplicationCard.tsx` 拥有应用目录的紧凑入口卡片；布局、品牌图、简介和能力标签沿用应用目录样式，入口元数据由各装配入口显式传入。
@@ -1041,3 +1041,9 @@ Amadeus 的会话文件路径由装配明确提供给 `storage/files.py` 和 Ski
 模型调用与日志属于 `apps/model_service/amadeus_turn.py`，显式接收加密器、传输和会话工厂。
 网站与独立装配共用会话、消息、审批、提问、运行记录与恢复实现；网站执行协调和独立租约协调
 仍分别适配当前执行方式，尚需后续统一业务端口，不能仅据此标记整个迁移完成。
+
+### 云控验证器的身份归属
+
+`studio/contracts/identity/cloud_factors.py` 只定义登记与验证 DTO。`studio/apps/identity/use_cases/cloud_factors.py` 定义不可变快照、决策与原子存储端口；`storage/cloud_factors.py` 在独立短事务内复核账号会话、执行规则并提交。无效验证码的尝试次数也必须持久化；轮换同时撤销旧桌面授权，取消和写入失败整体回滚。`transport/website/cloud_totp.py` 由兼容站和独立 Identity 共用，只映射领域错误。装配显式提供加密器、时钟和随机源，未知提交响应不自动重试。
+
+`storage/cloud_access.py` 暂时保留原云控授权查询，其全局配置读取和工作台消费者仍属于后续待迁移部分；该批次不代表桌面、工作台和全部身份用例已解耦。

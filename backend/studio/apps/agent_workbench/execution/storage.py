@@ -7,7 +7,6 @@ from fastapi import HTTPException
 from sqlalchemy import select, text, update
 
 from app.capabilities.agents.cli.catalog import DEFINITIONS, inspect_connection
-from app.console.cloud_control.access import allowed, require_unlocked
 from studio.apps.agent_workbench.execution import projects
 from studio.apps.agent_workbench.execution.models import WorkbenchChat, WorkbenchTurn
 from studio.apps.agent_workbench.execution.schemas import (
@@ -23,6 +22,7 @@ from studio.apps.agent_workbench.execution.schemas import (
 from studio.apps.agent_workbench.execution.transcripts import end_turn
 from studio.apps.agent_workbench.execution.turn_activity import next_activity_sequence
 from studio.apps.agent_workbench.execution.turn_records import store_turn
+from studio.apps.identity.storage.cloud_access import allowed, require_unlocked
 from studio.config.settings import get_cloud_settings
 from studio.runtime.ids import new_id
 

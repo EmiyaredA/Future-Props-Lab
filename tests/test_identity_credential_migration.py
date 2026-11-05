@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import secrets
 import time
 from datetime import timedelta
 from io import BytesIO
@@ -19,14 +20,15 @@ from starlette.datastructures import Headers, UploadFile
 from tests.test_community_asset_protocol import CATALOG, GATEWAY_SECRET, PASSWORD
 from tests.test_tools_navigation_migration import available_ports, listener
 
-from app.console.cloud_control.access import start_enrollment, totp, verify
 from db.migrations import apply_migrations
 from studio.apps.identity.avatar_migration import AVATAR_PATH, DIGEST_HEADER
 from studio.apps.identity.credentials.operations import complete_login, create_api_key
 from studio.apps.identity.profile import apply_avatar, stage_avatar
 from studio.apps.identity.registration.accounts import create_account
 from studio.apps.identity.registration.invitations import change_invite, create_invite, register
+from studio.apps.identity.storage.cloud_factors import FactorRecords
 from studio.apps.identity.storage.migrations.registry import MIGRATIONS
+from studio.apps.identity.use_cases.cloud_factors import CloudFactors, totp
 from studio.assembly.independent.identity.application import create_app
 from studio.config.settings import get_settings
 from studio.contracts.identity.authentication import CSRF_COOKIE, SESSION_COOKIE
@@ -41,6 +43,7 @@ from studio.contracts.identity.registration import (
 from studio.contracts.identity.session_policy import MANAGEMENT_SESSION
 from studio.contracts.management.migration_batches import MigrationPlan
 from studio.runtime.database.migrations import apply
+from studio.runtime.secrets import SecretCipher
 from studio.runtime.time import utc_now
 
 pytestmark = pytest.mark.real_auth
@@ -152,9 +155,15 @@ async def make_legacy(path):
                 expected_revision=owner.revision,
                 client_ip="",
             )
-            secret = await start_enrollment(session, principal)
+            factors = CloudFactors(
+                FactorRecords(sessions, clock=utc_now),
+                cipher=SecretCipher(get_settings().fpl_secrets_key),
+                clock=time.time,
+                secret_bytes=secrets.token_bytes,
+            )
+            secret = await factors.enroll(principal)
             used_code = totp(secret, int(time.time()) // 30)
-            await verify(session, principal, used_code, enroll=True)
+            await factors.verify(principal, used_code, enroll=True)
             return (
                 owner.id,
                 other.id,

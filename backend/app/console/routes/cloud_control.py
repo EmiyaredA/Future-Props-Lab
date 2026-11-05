@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request, Response, WebSocket
 
-from app.console.cloud_control import access, preferences, setup
+from app.console.cloud_control import preferences, setup
 from app.console.cloud_control.desktop import DESKTOP_COOKIE, DESKTOP_SOCKET
 from app.console.cloud_control.schemas import (
     CloudSetup,
@@ -9,6 +9,8 @@ from app.console.cloud_control.schemas import (
     DesktopLogin,
     IdlePreference,
 )
+from studio.apps.identity.storage import cloud_access as access
+from studio.apps.identity.transport.website.cloud_totp import router as totp_router
 from studio.assembly.http_dependencies import (
     SessionDep,
     StudioAuth,
@@ -17,8 +19,6 @@ from studio.assembly.http_dependencies import (
 )
 from studio.config.settings import get_cloud_settings
 from studio.runtime.http.website import require_local_browser
-
-from .cloud_totp import router as totp_router
 
 router = APIRouter(prefix="/cloud-control", tags=["cloud-control"])
 

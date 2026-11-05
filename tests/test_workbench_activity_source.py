@@ -5,9 +5,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.console.cloud_control import access
 from studio.apps.agent_workbench.execution import runner
 from studio.apps.agent_workbench.transport.website import execution
+from studio.apps.identity.storage import cloud_access as access
 from studio.config.settings import CloudProject, get_settings
 from test_cloud_control import WORKBENCH, admin_client, await_turn, configure, enroll
 from website_test_support import SessionLocal, app

@@ -5,7 +5,6 @@ from __future__ import annotations
 from sqlalchemy import event
 from sqlalchemy.orm import Session, with_loader_criteria
 
-from app.console.cloud_control.models import CloudFactor, CloudUnlock
 from app.console.cloud_control.preference_models import DesktopPreference
 from studio.apps.agent_workbench.execution.models import (
     WorkbenchChat,
@@ -53,6 +52,7 @@ from studio.apps.identity.storage.models.accounts import (
     SecurityAuditEvent,
     User,
 )
+from studio.apps.identity.storage.models.cloud import CloudFactor, CloudUnlock
 from studio.apps.identity.storage.models.registration import (
     RegistrationInviteCode,
     RegistrationRedemption,

@@ -150,6 +150,9 @@
 - 原平台设置表的通用记录和 CAS 机制在 `studio/runtime/database/settings_*`；键归属由
   `studio/contracts/management/setting_owners.py` 登记，应用存储适配限定可访问分区。
   原语不自行提交，授权、业务写入和审计仍在调用者完整事务内；模板加密器由两种装配显式传入。
+- 云控验证器由 Identity 的 `use_cases/cloud_factors.py` 唯一裁决，存储端口在短事务内复核
+  活动管理员会话，并原子提交尝试次数、防重放计数、轮换撤销与解锁记录。两种装配注入存储、
+  加密器、时钟和随机源；协议层不持有数据库 Session，未知提交不能自动重试。
 - Web 不保存密码、Session、CSRF 或 Management API Key 明文；Session 只使用 HttpOnly Cookie，
   写请求统一携带可读 CSRF Cookie 对应的请求头。API Key 明文和临时密码只允许展示一次。
 - 修改安装、启动、环境变量、依赖或目录路径时，同步检查根与 Web 的 `package.json`、

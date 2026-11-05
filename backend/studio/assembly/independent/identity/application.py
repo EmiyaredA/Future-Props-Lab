@@ -1,5 +1,7 @@
 """Account-only ASGI application, with its own SQLite and lifecycle."""
 
+import secrets
+import time
 from contextlib import asynccontextmanager
 from functools import partial
 from urllib.parse import urlsplit
@@ -10,8 +12,6 @@ from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.console.cloud_control.models import CloudFactor, CloudUnlock
-from app.console.routes import cloud_totp
 from studio.apps.identity.account_directory import router as account_directory_router
 from studio.apps.identity.accounts import create_account
 from studio.apps.identity.authorization import router as authorization_router
@@ -27,6 +27,7 @@ from studio.apps.identity.model_audit import ModelAuditInbox
 from studio.apps.identity.model_governance import router as model_governance_router
 from studio.apps.identity.project_certification import router as certification_router
 from studio.apps.identity.retention_api import router as retention_router
+from studio.apps.identity.storage.cloud_factors import FactorRecords
 from studio.apps.identity.storage.migrations.registry import MIGRATIONS
 from studio.apps.identity.storage.models.accounts import (
     AuthSession,
@@ -34,6 +35,7 @@ from studio.apps.identity.storage.models.accounts import (
     SecurityAuditEvent,
     User,
 )
+from studio.apps.identity.storage.models.cloud import CloudFactor, CloudUnlock
 from studio.apps.identity.storage.models.registration import (
     RegistrationInviteCode,
     RegistrationRedemption,
@@ -52,7 +54,13 @@ from studio.apps.identity.transport.integration_intent_http import (
     router as integration_intent_router,
 )
 from studio.apps.identity.transport.model_audit_http import router as model_audit_router
-from studio.apps.identity.transport.website import account_management, accounts, registration
+from studio.apps.identity.transport.website import (
+    account_management,
+    accounts,
+    cloud_totp,
+    registration,
+)
+from studio.apps.identity.use_cases.cloud_factors import CloudFactors
 from studio.config import ConfigurationError
 from studio.config.settings import get_cloud_settings, get_settings
 from studio.contracts.identity.certification import MAX_BODY as CERTIFICATION_BODY
@@ -68,6 +76,8 @@ from studio.runtime.http.problem_details import (
 )
 from studio.runtime.http.rate_limit import AttemptLimiter
 from studio.runtime.http.request_limit import RequestLimit
+from studio.runtime.secrets import SecretCipher
+from studio.runtime.time import utc_now
 
 MODELS = (
     CloudFactor,
@@ -127,6 +137,12 @@ def create_app(
     app.state.service_id = "identity"
     app.state.database = database
     app.state.auth_attempts = AttemptLimiter()
+    app.state.cloud_factors = CloudFactors(
+        FactorRecords(database.sessions, clock=utc_now),
+        cipher=SecretCipher(settings.fpl_secrets_key),
+        clock=lambda: time.time(),
+        secret_bytes=secrets.token_bytes,
+    )
     app.state.integration_intents = IntegrationIntents(
         database, private_key.public_key(), catalog, private_key=private_key, key_id=key_id
     )

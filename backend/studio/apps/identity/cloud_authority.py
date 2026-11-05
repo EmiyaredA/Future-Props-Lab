@@ -7,8 +7,8 @@ import jwt
 from fastapi import APIRouter, HTTPException, Request, Response
 from sqlalchemy import select
 
-from app.console.cloud_control import access
-from app.console.cloud_control.models import CloudFactor
+from studio.apps.identity.storage import cloud_access as access
+from studio.apps.identity.storage.models.cloud import CloudFactor
 from studio.contracts.identity.claims import verify_context
 from studio.contracts.identity.cloud_authority import (
     AUTHORITY_PATH,

@@ -4,7 +4,6 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
 
-from app.console.cloud_control.access import require_enabled, require_unlocked
 from app.console.governance.code_agents import resolve_connection
 from studio.apps.agent_workbench.execution import events, projects, source_preview, storage
 from studio.apps.agent_workbench.execution.schemas import (
@@ -22,6 +21,7 @@ from studio.apps.agent_workbench.execution.schemas import (
     TurnCreate,
     TurnOut,
 )
+from studio.apps.identity.storage.cloud_access import require_enabled, require_unlocked
 from studio.assembly.http_dependencies import SessionDep, StudioAuth
 from studio.config.settings import get_cloud_settings
 from studio.runtime.database.operation_receipts import OperationError

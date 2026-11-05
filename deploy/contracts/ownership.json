@@ -3713,18 +3713,6 @@
   ],
   "tables": [
     {
-      "table": "cloud_control_factors",
-      "service": "identity",
-      "module": "app.console.cloud_control.models",
-      "model": "CloudFactor"
-    },
-    {
-      "table": "cloud_control_unlocks",
-      "service": "identity",
-      "module": "app.console.cloud_control.models",
-      "model": "CloudUnlock"
-    },
-    {
       "table": "cloud_desktop_preferences",
       "service": "remote",
       "module": "app.console.cloud_control.preference_models",
@@ -4317,6 +4305,18 @@
       "service": "identity",
       "module": "studio.apps.identity.storage.models.accounts",
       "model": "SecurityAuditEvent"
+    },
+    {
+      "table": "cloud_control_factors",
+      "service": "identity",
+      "module": "studio.apps.identity.storage.models.cloud",
+      "model": "CloudFactor"
+    },
+    {
+      "table": "cloud_control_unlocks",
+      "service": "identity",
+      "module": "studio.apps.identity.storage.models.cloud",
+      "model": "CloudUnlock"
     },
     {
       "table": "registration_invite_codes",

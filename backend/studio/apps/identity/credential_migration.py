@@ -13,13 +13,13 @@ from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import undefer
 
-from app.console.cloud_control.models import CloudFactor, CloudUnlock
 from studio.apps.identity.storage.models.accounts import (
     AuthSession,
     ManagementApiKey,
     SecurityAuditEvent,
     User,
 )
+from studio.apps.identity.storage.models.cloud import CloudFactor, CloudUnlock
 from studio.apps.identity.storage.models.registration import (
     RegistrationInviteCode,
     RegistrationRedemption,

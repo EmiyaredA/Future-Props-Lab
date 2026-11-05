@@ -5,7 +5,7 @@ from urllib.parse import unquote, urlsplit
 
 from fastapi import APIRouter, HTTPException, Request, Response
 
-from app.console.cloud_control.access import desktop_authorized
+from studio.apps.identity.storage.cloud_access import desktop_authorized
 from studio.assembly.http_dependencies import authenticate_studio_request
 from studio.contracts.gateway.automation_policy import automation_allowed
 from studio.contracts.identity.claims import HEADER, Actor, issue_context
