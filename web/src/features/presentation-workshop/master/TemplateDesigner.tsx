@@ -24,6 +24,7 @@ import {
   Cable,
 } from "lucide-react";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import { useNavigationProtection } from "@shared/ui/navigationGuards";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { SlidePreview } from "../SlideSurface";
 import { SlideCanvas } from "../SlideCanvas";
@@ -96,6 +97,7 @@ export function TemplateDesigner({
 }) {
   const { run: runTransfer, progress: activeTransferProgress } =
     useTransferProgress();
+  const navigation = useNavigationProtection();
 
   const [saved, setSaved] = useState(initial),
     [title, setTitle] = useState(initial?.title ?? "技术汇报模板");
@@ -227,14 +229,14 @@ export function TemplateDesigner({
   }, [registerNavigationGuard]);
   useEffect(() => {
     const listener = (e: BeforeUnloadEvent) => {
-      if (dirtyRef.current) {
+      if (dirtyRef.current && !navigation?.allowsUnload()) {
         e.preventDefault();
         e.returnValue = "";
       }
     };
     window.addEventListener("beforeunload", listener);
     return () => window.removeEventListener("beforeunload", listener);
-  }, []);
+  }, [navigation]);
   const save = async () => {
     if (onSaveDefinition) {
       onSaveDefinition(definition);
@@ -392,7 +394,10 @@ export function TemplateDesigner({
         <button
           className="icon-btn"
           aria-label="返回模板库"
-          onClick={() => (dirty ? setLeave(() => onClose) : onClose())}
+          onClick={() => {
+            if (dirty && !registerNavigationGuard) setLeave(() => onClose);
+            else onClose();
+          }}
         >
           <ArrowLeft size={16} />
           <span>{onSaveDefinition ? "返回文稿" : "模板与示例"}</span>
