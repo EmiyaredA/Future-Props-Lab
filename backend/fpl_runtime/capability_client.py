@@ -172,11 +172,14 @@ class CapabilityClient:
     async def authorize_request(self, assertion, grant):
         if grant.caller != self.service or not permitted(grant, self.catalog):
             raise CapabilityDenied(403)
+        payload = asdict(grant)
+        if grant.target_sha256 is None:
+            payload.pop("target_sha256")
         try:
             delegated = await self.client.post(
                 self.identity_url + "/_internal/v1/authorization/delegate",
                 headers={"Authorization": "Bearer " + self.credential},
-                json={**asdict(grant), "assertion": assertion},
+                json={**payload, "assertion": assertion},
             )
             if delegated.status_code in {401, 403}:
                 raise CapabilityDenied(delegated.status_code)
