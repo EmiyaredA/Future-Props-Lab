@@ -1,11 +1,13 @@
 """Authorize and settle the fixed Mac CLI connection operations."""
 
 from datetime import datetime, timedelta
+from time import monotonic
 from uuid import uuid4
 
+from anyio import CancelScope
 from fastapi import HTTPException
 from pydantic import ValidationError
-from sqlalchemy import update
+from sqlalchemy import func, or_, select, update
 
 from app.capabilities.agents.cli.contracts import AgentOut, CatalogOut
 from app.capabilities.agents.cli.definitions import DEFINITIONS
@@ -29,6 +31,8 @@ from fpl_runtime.visual_catalog import AGENT_ACCEPTANCE_TARGET
 from .models import ConnectionJob
 
 WINDOW_SECONDS = 40
+WORKER_WINDOW_SECONDS = 90
+MAX_REQUESTS = 64
 
 
 def route_for(operation, payload):
@@ -73,6 +77,12 @@ class ConnectionHost:
         self.database = database
         self.identity = identity
         self.queue = NativeQueue(database, ConnectionJob, operations=OPERATIONS, clock=utc_now)
+        self.grants = {}
+        self.last_poll = None
+
+    @property
+    def ready(self):
+        return self.last_poll is not None and monotonic() - self.last_poll < WORKER_WINDOW_SECONDS
 
     async def _status(self, assertion, method, path):
         if self.identity is None:
@@ -94,32 +104,72 @@ class ConnectionHost:
             raise unavailable()
         if not status:
             raise HTTPException(403, {"code": "authorization_revoked"})
-        row = await self.queue.enqueue(
-            owner=owner,
-            operation=operation,
-            payload={
-                "input": payload,
-                "assertion": assertion,
-                "deadline": (utc_now() + timedelta(seconds=WINDOW_SECONDS)).isoformat(),
-            },
-            request_id=uuid4().hex,
-        )
+        if len(self.grants) >= MAX_REQUESTS:
+            raise unavailable()
+        request_id = uuid4().hex
+        key = owner, request_id
+        self.grants[key] = assertion
+        terminal = False
         try:
-            return await self.queue.wait(owner=owner, job_id=row["id"], timeout=WINDOW_SECONDS)
+            row = await self.queue.enqueue(
+                owner=owner,
+                operation=operation,
+                payload={
+                    "input": payload,
+                    "deadline": (utc_now() + timedelta(seconds=WINDOW_SECONDS)).isoformat(),
+                },
+                request_id=request_id,
+            )
+            result = await self.queue.wait(owner=owner, job_id=row["id"], timeout=WINDOW_SECONDS)
+            terminal = True
+            return result
         except NativeQueueError as exc:
-            async with self.database.sessions(info={"owner_user_id": owner}) as session:
+            raise unavailable() from exc
+        finally:
+            self.grants.pop(key, None)
+            if not terminal:
+                with CancelScope(shield=True):
+                    await self.retire(owner, request_id=request_id)
+
+    async def retire(self, owner, *, request_id=None):
+        async with self.database.sessions(info={"owner_user_id": owner}) as session:
+            for previous, status in (("queued", "failed"), ("leased", "unknown")):
+                statement = update(ConnectionJob).where(ConnectionJob.status == previous)
+                if request_id is not None:
+                    statement = statement.where(ConnectionJob.request_id == request_id)
                 await session.execute(
-                    update(ConnectionJob)
-                    .where(ConnectionJob.id == row["id"], ConnectionJob.status == "queued")
-                    .values(
-                        status="failed",
-                        error_code="native_worker_unavailable",
+                    statement.values(
+                        status=status,
+                        error_code="agent_connection_request_ended",
                         revision=ConnectionJob.revision + 1,
                         updated_at=utc_now(),
                     )
                 )
+            await session.commit()
+
+    async def recover(self):
+        async with self.database.sessions(info={"allow_system_reads": True}) as session:
+            owners = list(
+                await session.scalars(
+                    select(ConnectionJob.owner_user_id)
+                    .where(
+                        or_(
+                            ConnectionJob.status.in_(("queued", "leased")),
+                            ConnectionJob.payload["assertion"].as_string().is_not(None),
+                        )
+                    )
+                    .distinct()
+                )
+            )
+        for owner in owners:
+            await self.retire(owner)
+            async with self.database.sessions(info={"owner_user_id": owner}) as session:
+                await session.execute(
+                    update(ConnectionJob)
+                    .where(ConnectionJob.payload["assertion"].as_string().is_not(None))
+                    .values(payload=func.json_remove(ConnectionJob.payload, "$.assertion"))
+                )
                 await session.commit()
-            raise unavailable() from exc
 
     async def catalog(self, request, *, can_enable):
         operation = CATALOG if request.method == "GET" else DETECT
@@ -151,6 +201,7 @@ class ConnectionHost:
         raise unavailable()
 
     async def claim(self, worker):
+        self.last_poll = monotonic()
         lease = await self.queue.claim(worker_id=worker, allowed_operations=OPERATIONS)
         if lease is not None:
             lease = lease.model_copy(update={"payload": lease.payload["input"]})
@@ -175,13 +226,21 @@ class ConnectionHost:
                 )
             ):
                 raise HTTPException(410, "agent_connection_lease_ended")
-            return row.payload["assertion"]
+            return row.request_id
 
     async def authorize(self, worker, lease):
-        assertion = await self._leased(worker, lease, admission=True)
+        request_id = await self._leased(worker, lease, admission=True)
+        key = lease.owner_user_id, request_id
+        assertion = self.grants.get(key)
+        if assertion is None:
+            raise HTTPException(410, "agent_connection_lease_ended")
         method, path = route_for(lease.operation, lease.payload)
-        if await self._status(assertion, method, path) is not True:
+        if (
+            await self._status(assertion, method, path) is not True
+            or self.grants.get(key) != assertion
+        ):
             raise HTTPException(403, {"code": "authorization_revoked"})
+        self.last_poll = monotonic()
 
     async def settle(self, worker, lease, outcome):
         await self._leased(worker, lease, admission=False)

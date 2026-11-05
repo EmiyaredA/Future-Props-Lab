@@ -2,6 +2,7 @@
 
 from contextlib import asynccontextmanager
 from datetime import timedelta
+from time import monotonic
 
 import httpx
 from fastapi import HTTPException
@@ -25,6 +26,7 @@ from fpl_runtime.visual_agent_review import (
     frame_target,
 )
 
+from .host import WORKER_WINDOW_SECONDS
 from .models import VisualReviewJob
 from .review_artifacts import RECOVERY_GRACE
 
@@ -39,6 +41,11 @@ class ReviewHost:
     def __init__(self, database, identity, capabilities):
         self.database, self.identity, self.capabilities = database, identity, capabilities
         self.queue = NativeQueue(database, VisualReviewJob, operations=OPERATIONS, clock=utc_now)
+        self.last_poll = None
+
+    @property
+    def ready(self):
+        return self.last_poll is not None and monotonic() - self.last_poll < WORKER_WINDOW_SECONDS
 
     async def submit(self, owner, assertion, plan):
         if self.identity is None:
@@ -70,6 +77,7 @@ class ReviewHost:
         return await self.queue.get(owner=owner, job_id=identity)
 
     async def claim(self, worker):
+        self.last_poll = monotonic()
         lease = await self.queue.claim(worker_id=worker, allowed_operations=OPERATIONS)
         if lease is None:
             return None
@@ -122,6 +130,7 @@ class ReviewHost:
             raise HTTPException(403, "visual_review_authority_ended")
         if not await self.queue.heartbeat(worker_id=worker, lease=lease):
             raise HTTPException(410, "visual_review_lease_ended")
+        self.last_poll = monotonic()
         return assertion, plan
 
     async def active(self, assertion, plan):

@@ -3,6 +3,7 @@
 import asyncio
 from dataclasses import replace
 from pathlib import Path
+from uuid import uuid4
 
 import httpx
 import pytest
@@ -11,12 +12,15 @@ from tests.test_independent_project_catalog import authorize
 
 from app.capabilities.agents.cli.contracts import AgentOut, CatalogOut
 from app.capabilities.agents.cli.definitions import DEFINITIONS
+from app.runtime.time import utc_now
 from fpl_agent_runtime.application import create_app
 from fpl_agent_runtime.migrations.registry import MIGRATIONS
+from fpl_agent_runtime.models import ConnectionJob
+from fpl_agent_runtime.review_http import NATIVE
 from fpl_host.agent_connections_worker import ConnectionWorker
 from fpl_host.transport import NativeTransport
 from fpl_identity.accounts import create_account
-from fpl_runtime.agent_connections import PREFIX, ConnectionOptions
+from fpl_runtime.agent_connections import DETECT, PREFIX, ConnectionOptions
 from fpl_runtime.claims import HEADER, issue_context, verify_context
 from fpl_runtime.migrations import apply
 
@@ -60,6 +64,27 @@ async def test_cli_worker_live_admission_and_lost_receipt(scenario, tmp_path):  
         ),
         schema_path=ROOT / "web/src/generated/openapi.json",
     )
+    prior_owner, legacy_queued, legacy_leased = (str(uuid4()) for _ in range(3))
+    async with app.state.database.sessions(info={"owner_user_id": prior_owner}) as session:
+        session.add_all(
+            [
+                ConnectionJob(
+                    id=identity,
+                    owner_user_id=prior_owner,
+                    operation=DETECT,
+                    request_id=str(uuid4()),
+                    payload_sha256="0" * 64,
+                    payload={
+                        "input": {"show_paths": True},
+                        "deadline": utc_now().isoformat(),
+                        "assertion": "retired-fixture-assertion",
+                    },
+                    status=status,
+                )
+                for identity, status in ((legacy_queued, "queued"), (legacy_leased, "leased"))
+            ]
+        )
+        await session.commit()
     bridge = NativeBridge(app)
     transport = NativeTransport(
         service=SERVICE,
@@ -103,6 +128,19 @@ async def test_cli_worker_live_admission_and_lost_receipt(scenario, tmp_path):  
             headers={"Authorization": f"Bearer {TOKEN}", "Origin": "http://browser"},
         )
         assert denied_worker.status_code == 403
+        async with app.state.database.sessions(info={"owner_user_id": prior_owner}) as session:
+            old_queued = await session.get(ConnectionJob, legacy_queued)
+            old_leased = await session.get(ConnectionJob, legacy_leased)
+            assert (old_queued.status, old_leased.status) == ("failed", "unknown")
+            assert all("assertion" not in row.payload for row in (old_queued, old_leased))
+        assert await transport.post("claim", {"wait_seconds": 0}) == {"lease": None}
+        assert (await api.get("/ready")).status_code == 503
+        assert await transport.post(NATIVE.removeprefix("/_native/v1/") + "/claim", {}) == {
+            "lease": None
+        }
+        assert (await api.get("/ready")).json() == {"status": "ok", "service": SERVICE}
+        app.state.visual_reviews.last_poll -= 91
+        assert (await api.get("/ready")).status_code == 503
         user = await authorize(case, SERVICE, "POST", ENABLE)
         denied = await api.post(ENABLE, headers=user)
         assert denied.status_code == 403

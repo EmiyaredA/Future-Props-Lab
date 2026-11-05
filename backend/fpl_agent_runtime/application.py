@@ -74,11 +74,14 @@ def create_app(
         else None
     )
 
+    reviews = ReviewHost(database, identity, capabilities)
+
     @asynccontextmanager
     async def lifespan(_app):
         with service_lock(database.root):
             try:
                 check(database.path, SERVICE, MIGRATIONS)
+                await host.recover()
                 await sweep.start()
                 yield
             finally:
@@ -98,7 +101,7 @@ def create_app(
     app.state.database = database
     app.state.identity_public_key = public_key
     app.state.connections = host
-    app.state.visual_reviews = ReviewHost(database, identity, capabilities)
+    app.state.visual_reviews = reviews
     app.state.review_artifacts = artifacts
     app.state.code_agent_catalog = host.catalog
     app.state.code_agent_enable = host.enable
@@ -135,6 +138,9 @@ def create_app(
 
     @app.get("/ready")
     async def ready():
-        raise HTTPException(503, "agent_runtime_cutover_incomplete")
+        if options is None or not host.ready or not reviews.ready or not sweep.is_healthy:
+            raise HTTPException(503, "agent_runtime_workers_unavailable")
+        check(database.path, SERVICE, MIGRATIONS)
+        return {"status": "ok", "service": SERVICE}
 
     return app
