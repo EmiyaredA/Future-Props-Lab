@@ -43,7 +43,7 @@ async def test_amadeus_model_bridge_streams_text_and_tool_calls(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from app.console.amadeus import model_bridge
-    from app.demo_runtime import runtime
+    from app.demo_runtime import engine as runtime
 
     async def get_mock_model(*_args: object) -> tuple[SimpleNamespace, SimpleNamespace]:
         return SimpleNamespace(slug="fpl-mock"), SimpleNamespace(
@@ -59,7 +59,7 @@ async def test_amadeus_model_bridge_streams_text_and_tool_calls(
 
     monkeypatch.setattr(model_bridge, "get_model", get_mock_model)
     monkeypatch.setattr(model_bridge, "decrypt_secret", lambda _value: "")
-    monkeypatch.setattr(runtime, "configuration", demo_configuration)
+    demo = runtime.DemoRuntime(demo_configuration)
     request = ModelTurnIn(
         model_id="mock",
         run_id="run-model-log-test",
@@ -77,7 +77,14 @@ async def test_amadeus_model_bridge_streams_text_and_tool_calls(
         ],
     )
     events = [
-        json.loads(item) async for item in stream_model_turn(MockSession(), "test-user", request)
+        json.loads(item)
+        async for item in stream_model_turn(
+            MockSession(),
+            "test-user",
+            request,
+            sessions=SessionLocal,
+            transport_resolver=demo.mock_transport,
+        )
     ]
     assert events[-1]["type"] == "end"
     assert events[-1]["tool_calls"] == [
@@ -102,7 +109,14 @@ async def test_amadeus_model_bridge_streams_text_and_tool_calls(
         ],
     )
     events = [
-        json.loads(item) async for item in stream_model_turn(MockSession(), "test-user", followup)
+        json.loads(item)
+        async for item in stream_model_turn(
+            MockSession(),
+            "test-user",
+            followup,
+            sessions=SessionLocal,
+            transport_resolver=demo.mock_transport,
+        )
     ]
     assert "这是本地测试模型的确定性回复" in "".join(
         item["text"] for item in events if item["type"] == "delta"
@@ -160,7 +174,14 @@ async def test_amadeus_model_bridge_settles_after_request_session_rollback(
     )
     async with SessionLocal() as session:
         events = [
-            json.loads(item) async for item in stream_model_turn(session, "test-user", request)
+            json.loads(item)
+            async for item in stream_model_turn(
+                session,
+                "test-user",
+                request,
+                sessions=SessionLocal,
+                transport_resolver=lambda _url: None,
+            )
         ]
     assert [event["type"] for event in events] == ["delta", "end"]
     assert events[0]["text"] == "probe"

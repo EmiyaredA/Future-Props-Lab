@@ -4,14 +4,11 @@ from app.console.governance.governance_transactions import begin_governance
 from app.console.governance.platform_settings import write_setting
 from app.console.governance.service import add_audit_event
 from app.console.governance.settings_records import read_setting
-from app.demo_runtime.runtime import (
+from app.demo_runtime.engine import (
     DEFAULT_CONFIG,
     MOCK_BASE_URL,
     SERVICE_IDS,
     TOOL_BASE_URL,
-    record,
-    reinitialize,
-    status,
 )
 from app.integrations.models import ToolApiIntegration
 from app.llm.catalog.legacy import legacy_catalog
@@ -20,15 +17,15 @@ from app.runtime.credentials import encrypt_secret
 from studio.contracts.identity.errors import AccountError
 
 
-async def services(session):
+async def services(session, *, runtime):
     result = []
     for service_id in SERVICE_IDS:
         setting = await read_setting(session, f"demo_service:{service_id}", DEFAULT_CONFIG)
-        result.append({**await status(service_id), **setting})
+        result.append({**await runtime.status(service_id), **setting})
     return result
 
 
-async def configure(session, principal, service_id, body, client_ip):
+async def configure(session, principal, service_id, body, client_ip, *, runtime):
     await write_setting(
         session,
         principal,
@@ -37,11 +34,13 @@ async def configure(session, principal, service_id, body, client_ip):
         body.expected_revision,
         client_ip,
     )
-    record(service_id, "配置已更新")
-    return next(item for item in await services(session) if item["id"] == service_id)
+    runtime.record(service_id, "配置已更新")
+    return next(
+        item for item in await services(session, runtime=runtime) if item["id"] == service_id
+    )
 
 
-async def action(session, principal, service_id, body, client_ip):
+async def action(session, principal, service_id, body, client_ip, *, runtime):
     state = await read_setting(session, f"demo_service:{service_id}", DEFAULT_CONFIG)
     if body.expected_revision != state["revision"]:
         raise AccountError("revision_conflict", current=state)
@@ -50,7 +49,7 @@ async def action(session, principal, service_id, body, client_ip):
         session, principal, f"demo_service:{service_id}", value, body.expected_revision, client_ip
     )
     if body.action == "reinitialize":
-        await reinitialize(service_id)
+        await runtime.reinitialize(service_id)
         await write_setting(
             session,
             principal,
@@ -59,13 +58,15 @@ async def action(session, principal, service_id, body, client_ip):
             updated["revision"],
             client_ip,
         )
-    record(
+    runtime.record(
         service_id,
         {"start": "服务已启用", "stop": "服务已停用", "reinitialize": "重新初始化完成"}[
             body.action
         ],
     )
-    return next(item for item in await services(session) if item["id"] == service_id)
+    return next(
+        item for item in await services(session, runtime=runtime) if item["id"] == service_id
+    )
 
 
 async def install(session, principal, service_id, expected_catalog_revision, client_ip):

@@ -8,7 +8,6 @@ from uuid import uuid4
 
 from sqlalchemy import select
 
-from app.demo_runtime.runtime import mock_transport
 from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
 from app.llm.providers.chat_completions import TEXT_PROVIDER_KINDS
 from app.llm.providers.streaming import ChatMessageInput, stream_text_completion
@@ -53,8 +52,9 @@ class ProviderSelection:
 class LegacyWritingModels:
     """Recovery website adapter; only assembly imports this module."""
 
-    def __init__(self, sessions, owner_user_id):
+    def __init__(self, sessions, owner_user_id, *, transport_resolver):
         self.sessions, self.owner = sessions, owner_user_id
+        self.transport_resolver = transport_resolver
 
     async def list(self):
         async with self.sessions() as session:
@@ -94,14 +94,16 @@ class LegacyWritingModels:
             )
 
     def events(self, prepared):
-        return writing_events(prepared, sessions=self.sessions)
+        return writing_events(
+            prepared, sessions=self.sessions, transport_resolver=self.transport_resolver
+        )
 
 
 def event(kind: str, **payload) -> bytes:
     return ("data: " + json.dumps({"type": kind, **payload}, ensure_ascii=False) + "\n\n").encode()
 
 
-async def writing_events(prepared, *, sessions):
+async def writing_events(prepared, *, sessions, transport_resolver):
     selection = prepared.model.handle
     if not isinstance(selection, ProviderSelection):
         raise ValueError("写作模型未绑定恢复网站适配器")
@@ -116,7 +118,7 @@ async def writing_events(prepared, *, sessions):
             base_url=selection.base_url,
             api_key=decrypt_secret(selection.ciphertext) if selection.ciphertext else "",
             model=selection.slug,
-            transport=mock_transport(selection.base_url),
+            transport=transport_resolver(selection.base_url),
             temperature=0.5,
             max_tokens=4096,
             system_prompt=(

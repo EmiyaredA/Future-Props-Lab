@@ -36,6 +36,7 @@ from app.console.governance.database_auth import (
     authenticate_database_request,
     authenticate_database_websocket,
 )
+from app.console.governance.demo_configuration import read_demo_configuration
 from app.console.governance.external_sync_access import external_sync_actor_allowed
 from app.console.governance.generation_queue import (
     admit_generation_tasks,
@@ -50,7 +51,7 @@ from app.console.governance.runtime_quotas import acquire, attach, recover_admis
 from app.console.governance.service import AccountError
 from app.console.governance.visual_acceptance_access import acceptance_actor_allowed
 from app.console.governance.workbench_access import workbench_actor_allowed
-from app.demo_runtime.runtime import mock_transport, tool_reply
+from app.demo_runtime.engine import DemoRuntime
 from app.integrations.external.catalog import ExternalConnections
 from app.integrations.http_bindings import IntegrationBindings
 from app.integrations.mcp import McpCatalog
@@ -213,6 +214,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.state.database = SimpleNamespace(sessions=SessionLocal)
+app.state.demo_runtime = DemoRuntime(partial(read_demo_configuration, sessions=SessionLocal))
 app.state.interview_executor_status = partial(
     executor_status, sessions=SessionLocal, settings=settings
 )
@@ -231,7 +233,7 @@ app.state.studio_http_auth = authenticate_database_request
 app.state.studio_socket_auth = authenticate_database_websocket
 app.state.integration_bindings = IntegrationBindings(
     tool_apis=lambda _request, session, owner: ToolApiCatalog(
-        session, owner, demo_tools=tool_reply
+        session, owner, demo_tools=app.state.demo_runtime.tool_reply
     ),
     mcp=lambda _request, session, owner: McpCatalog(session, owner),
     skills=lambda _request, session, owner: SkillCatalog(session, owner),
@@ -248,7 +250,9 @@ app.state.model_admission = AdmissionBindings(
     attach,
     admit_generation_tasks,
 )
-app.state.model_provider_transports = ProviderTransports(resolve=mock_transport)
+app.state.model_provider_transports = ProviderTransports(
+    resolve=app.state.demo_runtime.mock_transport
+)
 app.state.model_library_outputs = LibraryOutputBindings(
     for_request=lambda _request, session, owner: LegacyLibraryOutputs(session, settings, owner)
 )
@@ -277,7 +281,9 @@ app.state.thought_directory = DirectoryBindings(
     for_request=lambda _request, session, _principal: LegacyAccountDirectory(session)
 )
 app.state.thought_writing = WritingBindings(
-    for_request=lambda _request, owner: LegacyWritingModels(SessionLocal, owner)
+    for_request=lambda _request, owner: LegacyWritingModels(
+        SessionLocal, owner, transport_resolver=app.state.demo_runtime.mock_transport
+    )
 )
 app.state.workbench_native = LocalSourceAccess()
 app.state.workbench_event_stream = partial(stream_events, sessions=SessionLocal)

@@ -990,3 +990,5 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 `features/applications/ApplicationCenterRoute.tsx` 拥有按账号缓存的自动检查；纯页面与 `ApplicationServiceStatus.tsx` 拥有状态和展开说明。`serviceStatus.ts` 使用生成契约，`queryKeys.ts` 唯一维护查询键。静态目录显式绑定 `serviceId`，不能凭页面名称猜测服务。连接失败时只把缓存作为上次结果展示；单体兼容入口明确声明共用进程。
 
 面试执行器状态由两种装配分别注入 HTTP 与后台 Runner，不再通过 Session 元信息查找。远程桌面授权复核显式绑定会话工厂与可热更新的配置读取器。
+
+演示模型与示例工具共用 `app/demo_runtime/engine.py` 的实例化执行组件；兼容网站的已登记设置读取留在治理存储适配中，独立模型服务注入自有设置存储。调用计数、排空和日志均归当前实例，不再存在模块级演示运行单例。

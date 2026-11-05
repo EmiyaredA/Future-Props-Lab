@@ -10,13 +10,11 @@ from time import monotonic
 from uuid import uuid4
 
 from app.console.amadeus.schemas import ModelTurnIn
-from app.demo_runtime.runtime import mock_transport
 from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.inference.catalog import get_model
 from app.llm.models import LlmCallLog
 from app.llm.providers.agent import HttpAgentAdapter
 from app.runtime.credentials import decrypt_secret
-from app.runtime.db import SessionLocal
 from studio.contracts.agent_runtime.dialogue import AgentMessage, ImageInput, ToolCall, ToolSpec
 from studio.runtime.database.operation_receipts import OperationError
 
@@ -82,6 +80,9 @@ async def stream_model_turn(
     owner_user_id: str,
     body: ModelTurnIn,
     credential: CredentialSnapshot | None = None,
+    *,
+    sessions,
+    transport_resolver,
 ) -> AsyncIterator[str]:
     model, provider = await get_model(session, owner_user_id, body.model_id, "text")
     if any(item.get("images") for item in body.messages) and "vision" not in model.capabilities:
@@ -94,7 +95,7 @@ async def stream_model_turn(
         kind=provider_kind,
         base_url=provider.base_url,
         api_key=decrypt_secret(provider.api_key_ciphertext),
-        transport=mock_transport(provider.base_url),
+        transport=transport_resolver(provider.base_url),
     )
     image_groups = _message_images(body.messages)
     messages = [
@@ -178,7 +179,7 @@ async def stream_model_turn(
         snapshot = credential or CredentialSnapshot()
 
         async def settle() -> None:
-            async with SessionLocal() as log_session:
+            async with sessions() as log_session:
                 log_session.add(
                     LlmCallLog(
                         id=log_id,

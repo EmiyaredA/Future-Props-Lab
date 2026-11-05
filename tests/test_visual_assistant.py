@@ -79,7 +79,7 @@ async def test_visual_assistant_project_chat_stream_context_assets_and_cas(
     monkeypatch.setattr(
         assistant_stream,
         "build_model_adapter",
-        lambda _prepared, _api_key: FakeAdapter(),
+        lambda _prepared, _api_key, **_kwargs: FakeAdapter(),
     )
     transport = httpx.ASGITransport(app=app)
     project_ids: list[str] = []
@@ -736,7 +736,7 @@ async def test_visual_agent_approval_updates_canvas_and_persists_steps(
     monkeypatch.setattr(
         assistant_stream,
         "build_model_adapter",
-        lambda _prepared, _api_key: FakeToolAdapter(),
+        lambda _prepared, _api_key, **_kwargs: FakeToolAdapter(),
     )
     monkeypatch.setattr(approval_broker, "wait", auto_approve)
 

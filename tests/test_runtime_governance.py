@@ -166,16 +166,15 @@ async def test_demo_services_disabled_stream_tools_install_and_policy_reading():
 
 
 @pytest.mark.asyncio
-async def test_demo_stop_drains_accepted_call_before_reinitialization(monkeypatch):
-    from app.demo_runtime import runtime
+async def test_demo_stop_drains_accepted_call_before_reinitialization():
+    from app.demo_runtime.engine import DEFAULT_CONFIG, DemoRuntime
 
     enabled = True
 
     async def configuration(_service_id):
-        return {**runtime.DEFAULT_CONFIG, "enabled": enabled}
+        return {**DEFAULT_CONFIG, "enabled": enabled}
 
-    monkeypatch.setattr(runtime, "configuration", configuration)
-    monkeypatch.setattr(runtime, "_condition", asyncio.Condition())
+    runtime = DemoRuntime(configuration)
     entered, finish = asyncio.Event(), asyncio.Event()
 
     async def accepted_call():

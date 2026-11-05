@@ -98,7 +98,12 @@ async def test_assistant_stream_and_logs_use_normalized_events(monkeypatch):
     monkeypatch.setattr("studio.apps.thought_workshop.legacy_writing.stream_text_completion", fake)
     request = prepared()
     result = b"".join(
-        [chunk async for chunk in writing_events(request, sessions=SessionLocal)]
+        [
+            chunk
+            async for chunk in writing_events(
+                request, sessions=SessionLocal, transport_resolver=lambda _url: None
+            )
+        ]
     ).decode()
     assert '"type": "delta"' in result and '"type": "complete"' in result
     async with SessionLocal() as session:
@@ -122,7 +127,12 @@ async def test_assistant_error_is_redacted_and_cancellation_settles(monkeypatch)
         "studio.apps.thought_workshop.legacy_writing.stream_text_completion", broken
     )
     output = b"".join(
-        [chunk async for chunk in writing_events(prepared(), sessions=SessionLocal)]
+        [
+            chunk
+            async for chunk in writing_events(
+                prepared(), sessions=SessionLocal, transport_resolver=lambda _url: None
+            )
+        ]
     ).decode()
     assert '"type": "error"' in output and "secret-provider-token" not in output
     entered = asyncio.Event()
@@ -138,7 +148,12 @@ async def test_assistant_error_is_redacted_and_cancellation_settles(monkeypatch)
     request = prepared()
 
     async def consume():
-        return [chunk async for chunk in writing_events(request, sessions=SessionLocal)]
+        return [
+            chunk
+            async for chunk in writing_events(
+                request, sessions=SessionLocal, transport_resolver=lambda _url: None
+            )
+        ]
 
     task = asyncio.create_task(consume())
     await entered.wait()

@@ -17,7 +17,6 @@ from app.console.amadeus.files import (
     write_file,
 )
 from app.console.amadeus.fpl_operations import call_operation, operation_catalog
-from app.console.amadeus.model_bridge import stream_model_turn
 from app.console.amadeus.questions import Questions
 from app.console.amadeus.runs import Runs
 from app.console.amadeus.schemas import (
@@ -48,7 +47,6 @@ from app.console.amadeus.schemas import (
 from app.console.amadeus.scripts import sandbox_available
 from app.console.amadeus.skills import load_skill, read_skill_file
 from app.deps import SessionDep, StudioAuth
-from app.llm.call_logs.credentials import snapshot_from_principal
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.http.website import require_local_browser
 
@@ -439,55 +437,18 @@ async def read_registered_operation(request: Request, principal: StudioAuth, bod
 
 @router.post("/model-turn", response_model=ModelTurnOut)
 async def model_turn(session: SessionDep, principal: StudioAuth, body: ModelTurnIn) -> ModelTurnOut:
+    # Keep request validation and authentication for the retired endpoint contract.
+    del session, principal, body
     raise HTTPException(410, {"code": "external_agent_required"})
-    if not principal.allows("models.use"):
-        raise HTTPException(403, {"code": "insufficient_permission", "message": "没有模型调用权限"})
-    text_parts: list[str] = []
-    calls: list[dict] = []
-    usage: dict = {}
-    try:
-        await validate_model_turn(session, principal, body)
-        credential = await snapshot_from_principal(session, principal)
-        async for line in stream_model_turn(session, principal.owner_user_id, body, credential):
-            event = json.loads(line)
-            if event["type"] == "delta":
-                text_parts.append(event["text"])
-            else:
-                calls = event["tool_calls"]
-                usage = event["usage"]
-    except OperationError as exc:
-        raise _error(exc) from None
-    return ModelTurnOut(text="".join(text_parts), tool_calls=calls, usage=usage)
 
 
 @router.post("/model-turn/stream", response_class=StreamingResponse)
 async def model_turn_stream(
     session: SessionDep, principal: StudioAuth, body: ModelTurnIn
 ) -> StreamingResponse:
+    # Keep request validation and authentication for the retired endpoint contract.
+    del session, principal, body
     raise HTTPException(410, {"code": "external_agent_required"})
-    if not principal.allows("models.use"):
-        raise HTTPException(403, {"code": "insufficient_permission", "message": "没有模型调用权限"})
-
-    try:
-        await validate_model_turn(session, principal, body)
-        credential = await snapshot_from_principal(session, principal)
-    except OperationError as exc:
-        raise _error(exc) from None
-
-    async def events():
-        try:
-            async for line in stream_model_turn(session, principal.owner_user_id, body, credential):
-                yield line
-        except OperationError as exc:
-            yield json.dumps({"type": "error", "code": exc.code, "message": str(exc)}) + "\n"
-        except Exception:
-            yield json.dumps({"type": "error", "message": "模型连接或调用失败"}) + "\n"
-
-    return StreamingResponse(
-        events(),
-        media_type="application/x-ndjson",
-        headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
-    )
 
 
 @router.get("/conversations/{conversation_id}/files", response_model=FileListOut)

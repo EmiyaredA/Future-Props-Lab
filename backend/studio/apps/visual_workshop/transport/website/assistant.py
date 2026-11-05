@@ -147,7 +147,10 @@ async def stream_message(
         raise _translate(exc) from None
     return StreamingResponse(
         assistant_events(
-            prepared, admission=admission, sessions=request.app.state.database.sessions
+            prepared,
+            admission=admission,
+            sessions=request.app.state.database.sessions,
+            transport_resolver=request.app.state.model_provider_transports.resolve,
         ),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},

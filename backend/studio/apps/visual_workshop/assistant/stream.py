@@ -10,7 +10,6 @@ import httpx
 from sqlalchemy import select, update
 
 from app.capabilities.agents.harness import AgentEvent, AgentHarness, AgentMessage, RunStatus
-from app.demo_runtime.runtime import mock_transport
 from app.llm.models import (
     LlmCallLog,
 )
@@ -36,12 +35,14 @@ from studio.runtime.database.ownership import bind_owner
 from studio.runtime.time import utc_now
 
 
-def build_model_adapter(prepared: PreparedAssistantGeneration, api_key: str) -> HttpAgentAdapter:
+def build_model_adapter(
+    prepared: PreparedAssistantGeneration, api_key: str, *, transport_resolver
+) -> HttpAgentAdapter:
     return HttpAgentAdapter(
         kind=prepared.provider_kind,
         base_url=prepared.base_url,
         api_key=api_key,
-        transport=mock_transport(prepared.base_url),
+        transport=transport_resolver(prepared.base_url),
     )
 
 
@@ -157,6 +158,7 @@ async def assistant_events(
     *,
     sessions,
     admission=None,
+    transport_resolver,
 ) -> AsyncIterator[bytes]:
     sequence = 0
     trace_id = str(uuid4())
@@ -174,7 +176,7 @@ async def assistant_events(
         admission=admission,
         sessions=sessions,
     )
-    adapter = build_model_adapter(prepared, key)
+    adapter = build_model_adapter(prepared, key, transport_resolver=transport_resolver)
     harness = AgentHarness(
         adapter=adapter,
         definition=definition,
