@@ -132,13 +132,13 @@ for (const view of ["board", "canvas"] as const) {
     } else {
       await page.locator('[data-node-id="target"] .canvas-node-media').click();
       await page.getByRole("button", { name: "替换素材" }).click();
-      await page.getByRole("tab", { name: "AI 生成" }).click();
+      await page.getByRole("tab", { name: "生成设置", exact: true }).click();
     }
     const prompt = page.getByRole("textbox", { name: "视频提示词" });
     await prompt.fill("新提示词：保留舞蹈节奏");
     await page.getByRole("button", { name: "生成视频", exact: true }).click();
     await expect(
-      page.getByRole("status").filter({ hasText: "任务已提交" }),
+      page.getByRole("button", { name: "视频生成中", exact: true }),
     ).toBeVisible();
     expect(submissions).toBe(1);
     expect(submittedRevision).toBeGreaterThan(1);

@@ -183,7 +183,7 @@ for (const theme of ["light", "dark"] as const) {
     await expect(
       panel.getByText("检查视频：WebM · VP9 · 含透明通道"),
     ).toBeVisible();
-    await expect(panel.locator("video")).toHaveCSS(
+    await expect(panel.getByLabel("输出视频预览", { exact: true })).toHaveCSS(
       "background-color",
       "rgb(255, 255, 255)",
     );
@@ -194,7 +194,7 @@ for (const theme of ["light", "dark"] as const) {
     await expect(
       panel.getByText("视频格式：MP4 · H264 · 无透明通道"),
     ).toBeVisible();
-    await expect(panel.locator("video")).toHaveCSS(
+    await expect(panel.getByLabel("输出视频预览", { exact: true })).toHaveCSS(
       "background-color",
       "rgb(255, 255, 255)",
     );

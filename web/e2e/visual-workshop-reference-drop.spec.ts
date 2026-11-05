@@ -122,7 +122,7 @@ for (const theme of ["light", "dark"] as const) {
       .locator('[data-node-id="target"]')
       .getByRole("button", { name: "选择视频素材" })
       .click();
-    await page.getByRole("tab", { name: "AI 生成" }).click();
+    await page.getByRole("tab", { name: "生成设置", exact: true }).click();
     const canvasAdd = page
       .getByRole("group", { name: "固定参考素材" })
       .getByRole("button", { name: "上传参考图片" });

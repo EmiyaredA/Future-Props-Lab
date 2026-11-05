@@ -437,7 +437,7 @@ test("drops a video after scrolling and keeps playback alive during resizing", a
       "mp4",
       "pipe:1",
     ]);
-    await page.locator('input[type="file"]').setInputFiles({
+    await page.getByLabel("上传素材（可多选）", { exact: true }).setInputFiles({
       name: "layout-video.mp4",
       mimeType: "video/mp4",
       buffer,
