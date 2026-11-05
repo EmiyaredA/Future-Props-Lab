@@ -5,7 +5,7 @@ from __future__ import annotations
 from sqlalchemy import select, update
 
 from app.console.amadeus.models import AmadeusQuestion, AmadeusRun
-from app.console.amadeus.runs import Runs
+from app.console.amadeus.run_records import RunRecords as Runs
 from app.console.amadeus.schemas import QuestionAnswerIn, QuestionIn, QuestionOut
 from app.runtime.operation_receipts import OperationError
 from app.runtime.time import utc_now

@@ -1,0 +1,39 @@
+# Amadeus owns its state directory and receives only scoped Identity assertions.
+services:
+  amadeus:
+    image: ${FPL_AMADEUS_IMAGE:?Build and select an Amadeus release}
+    user: "${FPL_SERVICE_UID}:${FPL_SERVICE_GID}"
+    init: true
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    stop_grace_period: 45s
+    cpus: 1
+    mem_limit: 512m
+    tmpfs:
+      - /tmp:mode=1777,size=64m
+    volumes:
+      - type: bind
+        source: ${FPL_AMADEUS_STATE:?Select isolated Amadeus state}
+        target: /state
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${FPL_IDENTITY_PUBLIC_KEY:?Select the Identity public key}
+        target: /run/fpl/identity-public.pem
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${FPL_AMADEUS_IDENTITY_TOKEN:?Select the Amadeus Identity credential}
+        target: /run/fpl/identity-token
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+    networks: [private]

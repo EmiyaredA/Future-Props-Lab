@@ -13,7 +13,7 @@ def test_all_selected_service_databases_are_checked_without_writing(monkeypatch,
         "check",
         lambda path, name, registry: seen.append((path, name, registry)),
     )
-    owners = BY_ID.keys() - {"amadeus"}
+    owners = BY_ID.keys()
     environment = {
         f"FPL_{name.upper().replace('-', '_')}_{field}": value
         for name in owners

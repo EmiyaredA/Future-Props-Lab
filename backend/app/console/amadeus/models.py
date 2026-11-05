@@ -18,10 +18,8 @@ class AmadeusConversation(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    owner_user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="CASCADE")
-    )
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(String(36))
+    user_id: Mapped[str] = mapped_column(String(36))
     executor_kind: Mapped[str] = mapped_column(String(24), default="code-agent")
     agent_id: Mapped[str | None] = mapped_column(String(24), nullable=True)
     title: Mapped[str] = mapped_column(String(120), default="新对话")
@@ -41,9 +39,7 @@ class AmadeusMessage(Base):
     conversation_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("amadeus_conversations.id", ondelete="CASCADE")
     )
-    owner_user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="CASCADE")
-    )
+    owner_user_id: Mapped[str] = mapped_column(String(36))
     role: Mapped[str] = mapped_column(String(16))
     content: Mapped[str] = mapped_column(Text)
     references_json: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
@@ -64,10 +60,8 @@ class AmadeusAction(Base):
     conversation_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("amadeus_conversations.id", ondelete="CASCADE")
     )
-    owner_user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="CASCADE")
-    )
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(String(36))
+    user_id: Mapped[str] = mapped_column(String(36))
     tool_name: Mapped[str] = mapped_column(String(120))
     arguments_json: Mapped[dict[str, Any]] = mapped_column(JSON)
     arguments_sha256: Mapped[str] = mapped_column(String(64))
@@ -91,10 +85,8 @@ class AmadeusRun(Base):
     conversation_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("amadeus_conversations.id", ondelete="CASCADE")
     )
-    owner_user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="CASCADE")
-    )
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(String(36))
+    user_id: Mapped[str] = mapped_column(String(36))
     agent_id: Mapped[str | None] = mapped_column(String(24), nullable=True)
     agent_model: Mapped[str] = mapped_column(String(160), default="")
     execution_config: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
@@ -132,10 +124,8 @@ class AmadeusQuestion(Base):
     run_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("amadeus_runs.id", ondelete="CASCADE")
     )
-    owner_user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="CASCADE")
-    )
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"))
+    owner_user_id: Mapped[str] = mapped_column(String(36))
+    user_id: Mapped[str] = mapped_column(String(36))
     tool_call_id: Mapped[str] = mapped_column(String(120))
     prompt: Mapped[str] = mapped_column(Text)
     options_json: Mapped[list[str]] = mapped_column(JSON, default=list)
@@ -158,9 +148,7 @@ class AmadeusRunEvent(Base):
     run_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("amadeus_runs.id", ondelete="CASCADE")
     )
-    owner_user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="CASCADE")
-    )
+    owner_user_id: Mapped[str] = mapped_column(String(36))
     sequence: Mapped[int] = mapped_column(Integer)
     kind: Mapped[str] = mapped_column(String(40))
     payload_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)

@@ -9,6 +9,7 @@ from pathlib import Path
 
 PROJECT_OWNERS = frozenset({"visual", "galgame"})
 OWNED_HTTP_IMAGES = PROJECT_OWNERS | {
+    "amadeus",
     "tools",
     "director",
     "agent-runtime",
@@ -19,6 +20,7 @@ OWNED_HTTP_IMAGES = PROJECT_OWNERS | {
 }
 
 ENTRY_POINTS = {
+    "amadeus": "fpl_amadeus.__main__",
     "annotation": "fpl_annotation.__main__",
     "presentation": "fpl_presentation.__main__",
     "motion": "fpl_motion.__main__",
@@ -44,6 +46,7 @@ ENTRY_POINTS = {
 }
 PROJECT_PACKAGES = (
     "app",
+    "fpl_amadeus",
     "fpl_management",
     "fpl_identity",
     "fpl_agents",
@@ -333,6 +336,12 @@ def source_closure(root: Path, service):
             )
         ):
             raise ValueError(f"Agent Runtime 镜像包含越界依赖：{name}")
+        if service == "amadeus" and (
+            name in {"app.main", "app.api", "app.orm", "app.deps", "app.runtime.db"}
+            or name.startswith(("app.apps.", "app.integrations.", "app.llm."))
+            or name.startswith("app.console.governance.")
+        ):
+            raise ValueError(f"Amadeus 镜像包含越界依赖：{name}")
         if service == "remote" and (
             name in {"app.main", "app.api", "app.orm", "app.runtime.db"}
             or name.startswith(("app.apps.", "app.console.models", "app.llm", "fpl_identity"))
@@ -582,7 +591,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
             payloads["web/build.json"] = (release.root / "build.json").read_bytes()
             for name in release.files:
                 payloads["web/" + name] = (release.root / name).read_bytes()
-    elif service in PROJECT_OWNERS or service == "remote":
+    elif service in OWNED_HTTP_IMAGES:
         payloads["web/.api-only"] = b"No browser program in this API acceptance image.\n"
     hashes = {
         name: hashlib.sha256(content).hexdigest() for name, content in sorted(payloads.items())

@@ -53,8 +53,9 @@ def _message(row: AmadeusMessage) -> MessageOut:
 
 
 class Conversations:
-    def __init__(self, session, principal):
+    def __init__(self, session, principal, *, files_root=None):
         self.session, self.principal = session, principal
+        self.files_root = files_root
 
     async def _get(self, identity: str) -> AmadeusConversation:
         row = await self.session.scalar(
@@ -202,7 +203,12 @@ class Conversations:
         )
         if running is not None:
             raise OperationError("请先停止正在执行的操作", "action_running", 409)
-        folder = get_settings().account_path(self.principal.owner_user_id) / "amadeus" / identity
+        account = (
+            self.files_root / "accounts" / self.principal.owner_user_id
+            if self.files_root is not None
+            else get_settings().account_path(self.principal.owner_user_id)
+        )
+        folder = account / "amadeus" / identity
         if folder.is_symlink():
             raise OperationError("会话目录不安全", "unsafe_path", 409)
         removed = await self.session.execute(

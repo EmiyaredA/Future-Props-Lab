@@ -367,6 +367,10 @@ Mac worker 从 `uv run python -m fpl_host.agent_connections_worker` 启动，显
 
 三容器运行 `fpl-agent-runtime-browser-64ccdf16ce` 验证了 Mac 回环、隔离 TOML 写入和 Chromium 390px 浏览器启用流程。模拟 CLI 返回固定版本与模型，无须真实供应商凭据。定向测试覆盖公网路径遮蔽、写入前撤权及丢失回执后的恢复。
 
+### Amadeus 记录服务
+
+运行 `npm run services:build -- amadeus --build` 并加载 `deploy/amadeus.compose.yaml`，为 Amadeus 提供独立状态目录、Identity 公钥和专属凭据。先显式执行 0001 迁移。三容器隔离运行 `fpl-amadeus-records-df66597c64` 验证网关账号鉴权、会话修订、旧模型协议的 410 响应和重启后的记录读回。当前装配包含 19 项公开记录或兼容操作，工作文件、工具和 Mac CLI 接线仍需通过就绪检查。
+
 ### 旧站快照及恢复目录演练
 
 恢复包包含停机网站的完整 `.runtime/` 运行树、原始 `backend/config.toml` 和逐文件清单。清单覆盖目录及权限、内部相对链接、文件大小和 SHA256、配置摘要与 SQLite 迁移顺序。数据库检查使用只读连接并逐条核对注册表 checksum。运行锁未释放、数据库仍打开、WAL 未结算、外部链接、文件变化或版本不符都会阻止发布恢复包。

@@ -8,6 +8,7 @@ from fpl_runtime.migrations import check
 MIGRATION_MODULES = {
     "agent-runtime": "fpl_agent_runtime.migrations.registry",
     "agents": "fpl_agents.migrations.registry",
+    "amadeus": "fpl_amadeus.migrations.registry",
     "annotation": "fpl_annotation.migrations.registry",
     "assets": "fpl_assets.migrations.registry",
     "creative": "fpl_creative.migrations.registry",
