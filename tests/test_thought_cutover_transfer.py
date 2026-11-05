@@ -15,8 +15,9 @@ import pytest
 from cryptography.fernet import Fernet
 from PIL import Image
 from scripts.website import legacy_snapshot
-from scripts.website.migrate_assets import ASSET_RECORDS
+from scripts.website.migrate_assets import ASSET_RECORDS, transfer_asset_blobs
 from scripts.website.migrate_thought_documents import verify_relationships
+from scripts.website.migrate_thought_references import verify_community_uploads
 from scripts.website.migration_transfer import pages, project_datasets, transfer
 from tests.test_tools_navigation_migration import available_ports, listener
 from tests.test_website_legacy_snapshot import configuration, website
@@ -263,7 +264,7 @@ def sealed_thought(tmp_path_factory):
             )
         )
         table_after = result(client.get(multitable))
-        member = result(
+        created_member = result(
             client.post(
                 "/v1/platform/accounts",
                 headers=auth,
@@ -273,7 +274,8 @@ def sealed_thought(tmp_path_factory):
                 },
             ),
             201,
-        )["account"]
+        )
+        member = created_member["account"]
         publication_path = PREFIX + "/community/libraries/" + book["id"] + "/publication"
         published = result(
             client.put(
@@ -287,12 +289,66 @@ def sealed_thought(tmp_path_factory):
                             "note_id": note["id"],
                             "expected_revision": 0,
                             "visibility": "members",
-                            "members": [{"username": member["username"], "role": "read"}],
+                            "members": [{"username": member["username"], "role": "edit"}],
                         }
                     ],
                 },
             )
         )
+        publication_id = published["publication"]["id"]
+        community = PREFIX + "/community"
+        favorite_path = community + "/favorites/community/" + publication_id
+        upload_path = f"{community}/publications/{publication_id}/notes/{note['id']}/uploads"
+        community_bytes = b"Community editor's pending attachment\n"
+        administrator = dict(client.cookies)
+        client.cookies.clear()
+        temporary = created_member["temporary_password"]
+        result(
+            client.post(
+                "/v1/auth/login", json={"username": member["username"], "password": temporary}
+            )
+        )
+        assert (
+            client.post(
+                "/v1/auth/change-password",
+                headers={"Origin": origin, "X-CSRF-Token": client.cookies["fpl_csrf"]},
+                json={
+                    "current_password": temporary,
+                    "new_password": secrets.token_urlsafe(36) + "-Aa9!",
+                },
+            ).status_code
+            == 204
+        )
+        editor_headers = {"Origin": origin, "X-CSRF-Token": client.cookies["fpl_csrf"]}
+        assert result(
+            client.put(favorite_path, headers=editor_headers, json={"favorite": True})
+        ) == {"resource_ids": ["community/" + publication_id]}
+        uploaded = result(
+            client.post(
+                upload_path,
+                headers=editor_headers,
+                files={"upload": ("community-pending.txt", community_bytes, "text/plain")},
+            )
+        )["asset_id"]
+        community_asset = f"{community}/publications/{publication_id}/assets/{uploaded}/content"
+        assert (
+            client.get(community_asset, params={"note_id": note["id"]}).content == community_bytes
+        )
+        editor_cookies = dict(client.cookies)
+        client.cookies.clear()
+        client.cookies.update(administrator)
+
+        package = community + "/official-import"
+        preview = result(client.get(package + "/preview"))
+        request_id = str(uuid4())
+        official_receipt = result(
+            client.post(
+                package,
+                headers=auth,
+                json={"request_id": request_id, "package_version": preview["package_version"]},
+            )
+        )
+        assert result(client.get(package + "/" + request_id)) == official_receipt
         current_book = result(client.get(book_path))
         updated_book = result(
             client.put(
@@ -392,7 +448,21 @@ def sealed_thought(tmp_path_factory):
             hashlib.sha256(client.get(f"/v1/files/{asset}/content").content).digest()
             == hashlib.sha256(content).digest()
         )
+        assert result(client.get(package + "/" + request_id)) == official_receipt
+        client.cookies.clear()
+        client.cookies.update(editor_cookies)
+        assert result(client.get(community + "/favorites")) == {
+            "resource_ids": ["community/" + publication_id]
+        }
+        assert (
+            client.get(community_asset, params={"note_id": note["id"]}).content == community_bytes
+        )
     return {
+        "community_upload_id": uploaded,
+        "community_upload_sha256": hashlib.sha256(community_bytes).hexdigest(),
+        "official_receipt_id": request_id,
+        "official_receipt": official_receipt,
+        "official_package_version": preview["package_version"],
         "revision": revision,
         "snapshot": str(bundle),
         "manifest_sha256": seal["manifest_sha256"],
@@ -464,10 +534,17 @@ def test_document_relay_resume_and_verify(tmp_path, sealed_thought):
 
         with open_target() as target:
             first = transfer(client, plan, source, target, books)
-            assert first["record_count"] == 1
+            assert first["record_count"] == 1 + len(
+                fixture["official_receipt"]["knowledge_base_ids"]
+            )
         with open_target() as target:
             assert transfer(client, plan, source, target, books) == first
-            assert transfer(client, plan, source, target, notes)["record_count"] == 4
+            expected_notes = (
+                4
+                + len(fixture["official_receipt"]["note_ids"])
+                + len(fixture["official_receipt"]["knowledge_base_ids"])
+            )
+            assert transfer(client, plan, source, target, notes)["record_count"] == expected_notes
             result = transfer(client, plan, source, target, history)
             assert result["record_count"] >= 1
             assert transfer(client, plan, source, target, history) == result
@@ -482,13 +559,91 @@ def test_document_relay_resume_and_verify(tmp_path, sealed_thought):
             assert state_reports["thought.article-members"] == 1
             audit = verify_relationships(client, plan, source, target)
             headers = {"X-Fpl-Migration-Token": token}
-            page = next(pages(client, target, headers, plan, owner, notes))
-            imported = {item.id: item for item in page.batch.records}
+            imported = {
+                item.id: item
+                for page in pages(client, target, headers, plan, owner, notes)
+                for item in page.batch.records
+            }
             assert imported[fixture["trashed_id"]].parent_id == fixture["note_id"]
             assert imported[fixture["trashed_id"]].deleted_at
             assert audit["dataset"] == "thought.document-relationships"
-            assert audit["record_count"] == 2
+            assert audit["record_count"] >= 2
             assert audit["file_links"]["table_assets"]["record_count"] == 1
+            datasets = {entry.name: entry for entry in workspace}
+            editor = UUID(fixture["article_member_id"])
+            assert state_reports["thought.community-favorites"] == 1
+            assert state_reports["thought.community-uploads"] == 1
+            assert state_reports["thought.official-sources"] > 0
+            assert state_reports["thought.official-import-receipts"] == 1
+            favorites = datasets["thought.community-favorites"]
+            assert not next(pages(client, target, headers, plan, owner, favorites)).batch.records
+            (favorite,) = next(
+                pages(client, target, headers, plan, editor, favorites)
+            ).batch.records
+            assert favorite.resource_id == "community/" + fixture["publication_id"]
+
+            uploads = datasets["thought.community-uploads"]
+            uploaded = next(pages(client, target, headers, plan, owner, uploads)).batch
+            (upload,) = uploaded.records
+            assert (upload.note_id, upload.asset_id, upload.user_id) == (
+                fixture["note_id"],
+                fixture["community_upload_id"],
+                str(editor),
+            )
+            wrong_owner = uploaded.model_copy(update={"owner_id": editor, "batch_id": uuid4()})
+            denied = client.post(
+                target + uploads.prefix + "/batches",
+                headers={**headers, "X-Fpl-Migration-SHA256": wrong_owner.digest},
+                json=wrong_owner.model_dump(mode="json"),
+            )
+            assert denied.status_code == 409
+            assert denied.json()["code"] == "migration_thought_publication_note_owner_conflict"
+            assert not next(pages(client, target, headers, plan, editor, uploads)).batch.records
+
+            receipts = datasets["thought.official-import-receipts"]
+            (receipt,) = next(pages(client, target, headers, plan, owner, receipts)).batch.records
+            assert (receipt.request_id, receipt.package_version, receipt.result) == (
+                fixture["official_receipt_id"],
+                fixture["official_package_version"],
+                fixture["official_receipt"],
+            )
+            assert not next(pages(client, target, headers, plan, editor, receipts)).batch.records
+
+            # Real Assets listeners verify that the attachment is still owned by the
+            # publication's account, with a readable and SHA256-matched original.
+            asset_state = tmp_path / "assets"
+            apply(asset_state / "service.db", "assets", ASSET_MIGRATIONS)
+            asset_source_port, asset_target_port = available_ports()
+            with (
+                listener(
+                    client,
+                    asset_source_port,
+                    "migration-export",
+                    plan_file,
+                    "--legacy-db",
+                    database,
+                    module="studio.assembly.independent.asset_library.cli",
+                    prefix=ASSET_RECORDS[0].prefix,
+                ) as asset_source,
+                listener(
+                    client,
+                    asset_target_port,
+                    "migration-import",
+                    plan_file,
+                    "--state-root",
+                    asset_state,
+                    module="studio.assembly.independent.asset_library.cli",
+                    prefix=ASSET_RECORDS[0].prefix,
+                ) as asset_target,
+            ):
+                with pytest.raises(ValueError, match="素材原件缺失或归属不符"):
+                    verify_community_uploads(client, plan, source, asset_target)
+                for dataset in ASSET_RECORDS:
+                    transfer(client, plan, asset_source, asset_target, dataset)
+                transfer_asset_blobs(client, plan, asset_source, asset_target)
+                proof = verify_community_uploads(client, plan, source, asset_target)
+                assert proof["record_count"] == 1
+                assert proof == verify_community_uploads(client, plan, source, asset_target)
 
 
 async def reference_pages(client, path, owner, model, headers):
@@ -598,6 +753,7 @@ async def test_thought_reference_datasets(tmp_path, sealed_thought):
             marker["asset_id"]: marker["asset_sha256"],
             marker["attachment_id"]: marker["attachment_sha256"],
             marker["cover_id"]: marker["cover_sha256"],
+            marker["community_upload_id"]: marker["community_upload_sha256"],
         }
         for asset, digest in checksums.items():
             name = f"{BLOBS}/{owner}/{asset}/{digest}"

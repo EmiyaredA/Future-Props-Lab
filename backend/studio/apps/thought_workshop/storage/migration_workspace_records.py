@@ -3,8 +3,9 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
+from studio.apps.thought_workshop.schemas.workshop import ThoughtImportOut
 from studio.contracts.management.project_history import HistoryRecord, Identifier
 
 
@@ -78,3 +79,38 @@ class ArticleMember(HistoryRecord):
     note_id: Identifier
     user_id: Identifier
     role: Literal["read", "edit", "manage"]
+
+
+class CommunityFavorite(HistoryRecord):
+    cursor: str
+    resource_id: str = Field(pattern=r"^(community|official)/[^/]+$", max_length=200)
+
+
+class CommunityUpload(HistoryRecord):
+    cursor: str
+    note_id: Identifier
+    asset_id: Identifier
+    user_id: Identifier
+
+
+class OfficialSource(HistoryRecord):
+    cursor: str
+    note_id: Identifier
+    library_key: str = Field(min_length=1, max_length=80)
+    document_key: str = Field(max_length=80)
+
+
+class OfficialImportReceipt(HistoryRecord):
+    cursor: str
+    user_id: Identifier
+    request_id: Identifier
+    package_version: str = Field(pattern=r"^[a-f0-9]{64}$")
+    result: dict
+    created_at: datetime
+
+    @field_validator("result")
+    @classmethod
+    def valid_result(cls, result):
+        ThoughtImportOut.model_validate(result)
+        # Preserve the exact persisted receipt, including historical optional keys.
+        return result

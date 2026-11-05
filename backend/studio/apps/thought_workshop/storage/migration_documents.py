@@ -28,6 +28,14 @@ from studio.apps.thought_workshop.multitable.models import (
     DataView,
 )
 from studio.apps.thought_workshop.publication.models import ArticleMember as ArticleMemberRow
+from studio.apps.thought_workshop.publication.models import (
+    CommunityFavorite as CommunityFavoriteRow,
+)
+from studio.apps.thought_workshop.publication.models import CommunityUpload as CommunityUploadRow
+from studio.apps.thought_workshop.publication.models import (
+    OfficialImportReceipt as OfficialReceiptRow,
+)
+from studio.apps.thought_workshop.publication.models import OfficialSource as OfficialSourceRow
 from studio.apps.thought_workshop.publication.models import Publication as PublicationRow
 from studio.apps.thought_workshop.publication.models import PublishedArticle as PublishedArticleRow
 from studio.apps.thought_workshop.schemas.document import file_ids
@@ -60,6 +68,10 @@ from .migration_pins import template_files
 from .migration_workspace_records import (
     ArticleMember,
     Checkpoint,
+    CommunityFavorite,
+    CommunityUpload,
+    OfficialImportReceipt,
+    OfficialSource,
     Publication,
     PublishedArticle,
     ReadingState,
@@ -127,6 +139,7 @@ class Dataset:
     per_page: int = PAGE
     primary: tuple[str, ...] = ("id",)
     primary_pattern: str = PIN_CURSOR[1:-1]
+    owner_key: str = "owner_user_id"
 
     @property
     def name(self):
@@ -134,7 +147,7 @@ class Dataset:
 
     @property
     def key(self):
-        return "cursor" if self.suffix == NOTES or len(self.primary) > 1 else "id"
+        return "cursor" if self.suffix == NOTES or self.primary != ("id",) else "id"
 
     @property
     def page_size(self):
@@ -192,6 +205,27 @@ DATASETS = (
         ArticleMember,
         primary=("publication_id", "note_id", "user_id"),
     ),
+    Dataset(
+        "community-favorites",
+        CommunityFavoriteRow,
+        CommunityFavorite,
+        primary=("resource_id",),
+        primary_pattern=r"(?:community|official)/[^/]{1,191}",
+        owner_key="user_id",
+    ),
+    Dataset(
+        "community-uploads",
+        CommunityUploadRow,
+        CommunityUpload,
+        primary=("note_id", "asset_id"),
+    ),
+    Dataset("official-sources", OfficialSourceRow, OfficialSource, primary=("note_id",)),
+    Dataset(
+        "official-import-receipts",
+        OfficialReceiptRow,
+        OfficialImportReceipt,
+        primary=("user_id", "request_id"),
+    ),
 )
 TREE = """
 WITH RECURSIVE ordered(id, knowledge_base_id, depth) AS (
@@ -248,7 +282,7 @@ async def read_tree(session, owner, after):
 
 
 def ownership(orm):
-    if orm in {ThoughtNoteHistory, ThoughtCheckpoint} | NOTE_CHILDREN:
+    if orm in {ThoughtNoteHistory, ThoughtCheckpoint, CommunityUploadRow} | NOTE_CHILDREN:
         return ThoughtNote, ((ThoughtNote, ThoughtNote.id == orm.note_id),)
     if orm in TABLE_CHILDREN:
         return ThoughtNote, (
@@ -262,7 +296,7 @@ def ownership(orm):
 
 async def inventory(sessions, plan, dataset):
     parent, joins = ownership(dataset.orm)
-    owner = parent.owner_user_id
+    owner = getattr(parent, dataset.owner_key)
     query = select(owner, func.count()).select_from(dataset.orm)
     for target, condition in joins:
         query = query.outerjoin(target, condition)
@@ -286,11 +320,13 @@ async def page(sessions, plan, dataset, owner, after):
                 query = query.join(target, condition)
             column = dataset.key_column
             result = await db.scalars(
-                query.where(parent.owner_user_id == str(owner), column > (after or ""))
+                query.where(
+                    getattr(parent, dataset.owner_key) == str(owner), column > (after or "")
+                )
                 .order_by(column)
                 .limit(dataset.page_size + 1)
             )
-            if len(dataset.primary) > 1:
+            if dataset.key == "cursor":
                 rows = [
                     dataset.shape.model_validate(
                         {
@@ -353,6 +389,15 @@ async def validate_workspace_row(db, dataset, record, owner, allowed_owners):
             article = await db.get(PublishedArticleRow, (publication.id, note.id))
             if article is None or record.user_id not in allowed_owners:
                 raise conflict("migration_thought_article_member_invalid")
+    if dataset.orm in {CommunityUploadRow, OfficialSourceRow}:
+        note = await db.get(ThoughtNote, record.note_id)
+        if note is None or note.owner_user_id != owner:
+            raise conflict("migration_thought_publication_note_owner_conflict")
+    if (
+        dataset.orm in {CommunityUploadRow, OfficialReceiptRow}
+        and record.user_id not in allowed_owners
+    ):
+        raise conflict("migration_thought_actor_unassigned")
     # The account-ownership upgrade retains a former Workspace member's user ID
     # while assigning the Workspace's data to the migrated owner.
     if (
@@ -379,7 +424,7 @@ async def ingest(sessions, dataset, batch, receipt_model, allowed_owners):
                 if note is None or note.owner_user_id != owner or record.revision > note.revision:
                     raise conflict("migration_thought_history_parent_invalid")
             elif not ownership(dataset.orm)[1]:
-                values["owner_user_id"] = owner
+                values[dataset.owner_key] = owner
             if dataset.suffix == NOTES:
                 knowledge = await db.get(ThoughtKnowledgeBase, record.knowledge_base_id)
                 parent = await db.get(ThoughtNote, record.parent_id) if record.parent_id else None
@@ -406,7 +451,11 @@ async def ingest(sessions, dataset, batch, receipt_model, allowed_owners):
                     and parent is not None
                 ):
                     raise conflict("migration_thought_document_tree_invalid")
-            if len(dataset.primary) > 1 and record.cursor != dataset.cursor(record):
+            if (
+                dataset.suffix != NOTES
+                and dataset.key == "cursor"
+                and record.cursor != dataset.cursor(record)
+            ):
                 raise conflict("migration_thought_batch_invalid")
             table_parent = None
             if dataset.orm in NOTE_CHILDREN | TABLE_CHILDREN:
