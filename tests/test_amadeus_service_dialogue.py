@@ -101,7 +101,7 @@ async def test_amadeus_cli_owner_tools_pause_continue_and_stop(
     ):
         assert (await api.get("/ready")).status_code == 503
         await worker.poll_once()
-        assert (await api.get("/ready")).status_code == 200
+        assert (await api.get("/ready")).json() == {"status": "ready", "service": "amadeus"}
 
         async def send(method, path, **kwargs):
             return await api.request(

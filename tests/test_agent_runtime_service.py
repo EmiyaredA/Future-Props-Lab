@@ -138,7 +138,7 @@ async def test_cli_worker_live_admission_and_lost_receipt(scenario, tmp_path):  
         assert await transport.post(NATIVE.removeprefix("/_native/v1/") + "/claim", {}) == {
             "lease": None
         }
-        assert (await api.get("/ready")).json() == {"status": "ok", "service": SERVICE}
+        assert (await api.get("/ready")).json() == {"status": "ready", "service": SERVICE}
         app.state.visual_reviews.last_poll -= 91
         assert (await api.get("/ready")).status_code == 503
         user = await authorize(case, SERVICE, "POST", ENABLE)

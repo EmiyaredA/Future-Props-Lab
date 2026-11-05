@@ -323,7 +323,8 @@ async def test_native_workbench_project_discovery_keeps_roots_local(tmp_path, mo
             async with asyncio.timeout(5):
                 while (await call("GET", detail_path)).json()["steerable_turn_id"] != next_id:
                     await asyncio.sleep(0.05)
-            assert (await api.get("/ready")).status_code == 200
+            ready = (await api.get("/ready")).json()
+            assert (ready["status"], ready["service"]) == ("ready", "agents")
             steer_path = instruction_path(chat_id, next_id)
             steer_body = {"request_id": "steer-one", "text": "keep the original"}
             inserted = await call("POST", steer_path, json=steer_body)

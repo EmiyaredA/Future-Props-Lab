@@ -225,6 +225,10 @@ uv run python scripts/website/service_docker_smoke.py \
 
 Creative 已注册 16 项公开操作。作品认证通过 Identity 的签名命令交给 Visual 或 Galgame 更新自有项目和版本。所属服务将审计待投递状态与项目一同提交，确认丢失后可重放，Identity 按原命令去重并签发审计收据。隔离 HTTP 验证了两种项目、原账号归属、并发版本冲突、撤权及重启恢复。Visual 与 Galgame 的完整公开路由、浏览器程序和生产就绪检查仍是整站联调的前置门禁。
 
+Creative 的 `/ready` 要求持锁启动检查完成，安装及 stdio 路由齐全，浏览器版本与公开契约匹配。Gateway 汇总 Identity、Integrations、Visual 与 Galgame 的状态，任一依赖不可用时将 Creative 标为功能受限。Agent Runtime、Agent 工作台和 Amadeus 在各自工作进程就绪后返回同一探针协议。
+
+单服务隔离 Compose 用 `fpl/creative:d67d6a41f02c394166f6` 显式初始化独立卷，探针和页面返回同一发布版本 `c7961c03ee5fa530b54c`。
+
 
 Visual 与 Galgame 的认证和公开项目目录可用安装后的进程验收。分别构建镜像，并在合成账号和独立卷的环境中加载 `deploy/project-owners.compose.yaml`，与 Creative、Integrations 和基础清单一起启动。
 

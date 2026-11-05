@@ -1,5 +1,7 @@
 """Creative migration is isolated; its public catalogue is not a private account directory."""
 
+import hashlib
+import json
 import os
 import sqlite3
 import subprocess
@@ -8,16 +10,84 @@ from io import BytesIO
 from pathlib import Path
 from zipfile import ZipFile
 
+import httpx
 import pytest
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from PIL import Image
 from sqlalchemy import insert, select, update
 
 from app.console.creative_workshop.models import CreativeInstallation, CreativeItem, CreativeRelease
 from studio.apps.creative_workshop.storage.file_paths import creative_database
+from studio.apps.creative_workshop.storage.migration_catalog import CreativeImportReceipt
 from studio.apps.creative_workshop.storage.migrations.registry import MIGRATIONS
 from studio.apps.creative_workshop.storage.service_models import MODELS
+from studio.assembly.independent.creative_workshop.application import create_app
+from studio.contracts.gateway.protocol_hash import public_contract
+from studio.contracts.gateway.routing import RouteCatalog
 from studio.runtime.database.migrations import apply, check
 from studio.runtime.database.sessions import ServiceStorageError
+
+
+async def test_creative_readiness_requires_started_storage_and_complete_release(tmp_path):
+    repo = Path(__file__).resolve().parents[1]
+    state = tmp_path / "state"
+    apply(state / "service.db", "creative", MIGRATIONS)
+    schema = repo / "web/src/generated/openapi.json"
+    catalog = RouteCatalog.read(repo / "deploy/contracts/ownership.json")
+    build = "b" * 20
+    web = tmp_path / "web"
+    web.mkdir()
+    page = b"<!doctype html><title>Creative release</title>"
+    (web / "creative.html").write_bytes(page)
+    (web / "build.json").write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "service": "creative",
+                "build_id": build,
+                "entry": "creative.html",
+                "api_sha256": public_contract(json.loads(schema.read_text()), "creative", catalog),
+                "files": [
+                    {
+                        "path": "creative.html",
+                        "sha256": hashlib.sha256(page).hexdigest(),
+                        "bytes": len(page),
+                    }
+                ],
+            }
+        )
+    )
+    options = {
+        "state_root": state,
+        "catalog": catalog,
+        "schema_path": schema,
+        "public_key": Ed25519PrivateKey.generate().public_key(),
+        "credential": "a" * 40,
+    }
+    credentials = ("b" * 40, "c" * 40, "d" * 40)
+    api_only = create_app(**options, install_credentials=credentials)
+    async with (
+        api_only.router.lifespan_context(api_only),
+        httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=api_only), base_url="http://creative"
+        ) as client,
+    ):
+        assert (await client.get("/ready")).status_code == 503
+    with pytest.raises(ValueError, match="公开接口"):
+        create_app(**options, web_root=web)
+    app = create_app(**options, install_credentials=credentials, web_root=web)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://creative"
+    ) as client:
+        assert (await client.get("/ready")).status_code == 503
+        async with app.router.lifespan_context(app):
+            assert (await client.get("/ready")).json() == {
+                "status": "ready",
+                "service": "creative",
+                "version": build,
+            }
+            assert (await client.get("/creative-workshop")).content == page
+        assert (await client.get("/ready")).status_code == 503
 
 
 async def test_creative_catalog_uses_owned_cover_and_skill_directories(tmp_path, monkeypatch):
@@ -84,7 +154,9 @@ def test_creative_owned_migration_replays_and_refuses_another_service(tmp_path):
     check(path, "creative", MIGRATIONS)
     with sqlite3.connect(path.as_uri() + "?mode=ro", uri=True) as db:
         tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-        assert tables == {model.__tablename__ for model in MODELS} | {"_fpl_service_schema"}
+        assert tables == {model.__tablename__ for model in (*MODELS, CreativeImportReceipt)} | {
+            "_fpl_service_schema"
+        }
         assert not tables.intersection({"users", "visual_assets", "tool_api_integrations"})
         for table in tables:
             assert all(
@@ -211,7 +283,7 @@ asyncio.run(run())
 for name in ('studio.assembly.website.application',
              'studio.assembly.website.models','studio.runtime.database.website',
              'studio.apps.identity.storage.models.accounts',
-             'app.integrations.models','studio.apps.asset_library.storage.models'):
+             'studio.apps.integrations.storage.models','studio.apps.asset_library.storage.models'):
  assert name not in sys.modules, name
 """,
             str(tmp_path),

@@ -140,6 +140,6 @@ def create_app(
         if options is None or not host.ready or not reviews.ready or not sweep.is_healthy:
             raise HTTPException(503, "agent_runtime_workers_unavailable")
         check(database.path, SERVICE, MIGRATIONS)
-        return {"status": "ok", "service": SERVICE}
+        return {"status": "ready", "service": SERVICE}
 
     return app

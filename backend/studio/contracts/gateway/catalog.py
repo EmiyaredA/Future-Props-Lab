@@ -68,7 +68,12 @@ SERVICES = (
     ),
     Service("director", "导演台", ("/apps/director-desk",), ("assets", "rendering")),
     Service("interview", "面试助手", ("/apps/interview-assistant",), ("assets", "agent-runtime")),
-    Service("creative", "创意工坊", ("/creative-workshop",), ("identity", "integrations")),
+    Service(
+        "creative",
+        "创意工坊",
+        ("/creative-workshop",),
+        ("identity", "integrations", "visual", "galgame"),
+    ),
     Service("assets", "文件与素材", ("/files",)),
     Service(
         "models",

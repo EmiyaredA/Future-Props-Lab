@@ -141,7 +141,7 @@ def create_app(*, state_root, catalog, public_key, credential, transport=None, n
     async def ready():
         if host is None or not host.dialogue_ready:
             raise HTTPException(503, "amadeus_cli_worker_unavailable")
-        return {"status": "ok", "service": "amadeus"}
+        return {"status": "ready", "service": "amadeus"}
 
     schema = app.openapi()
     actual = {

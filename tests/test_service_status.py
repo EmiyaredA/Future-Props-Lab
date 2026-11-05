@@ -133,6 +133,16 @@ async def test_dependency_outage_is_distinct_from_app_process_failure():
         await service.close()
 
 
+async def test_creative_status_includes_project_certification_dependencies():
+    service, _ = monitor(Host(), {"galgame": "not_ready"})
+    try:
+        result = {s.service_id: s for s in (await service.snapshot(assertion="request")).services}
+        assert result["creative"].phase == "degraded"
+        assert [item.service_id for item in result["creative"].dependencies] == ["galgame"]
+    finally:
+        await service.close()
+
+
 async def test_monitor_outage_is_unknown_and_revocation_is_not_swallowed():
     service, _ = monitor(Host(unavailable=True), {"agents": "offline"})
     try:

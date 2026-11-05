@@ -218,7 +218,7 @@ def create_app(
         maintenance = getattr(app.state, "execution_maintenance", None)
         if not discovery.ready or not turns.ready or maintenance is None or maintenance.done():
             raise HTTPException(503, "workbench_execution_unavailable")
-        return {"status": "ok", "service": "agents", "version": version}
+        return {"status": "ready", "service": "agents", "version": version}
 
     expected = {
         (op.method, op.path): op.operation_id for op in catalog.operations if op.service == "agents"

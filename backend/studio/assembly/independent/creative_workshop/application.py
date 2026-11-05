@@ -70,8 +70,10 @@ def create_app(
         with service_lock(database.root):
             try:
                 check(database.path, "creative", MIGRATIONS)
+                _app.state.storage_checked = True
                 yield
             finally:
+                _app.state.storage_checked = False
                 await certifications.close()
                 await identity.close()
                 await capabilities.close()
@@ -86,6 +88,7 @@ def create_app(
         openapi_url=None,
     )
     app.state.service_id, app.state.database = "creative", database
+    app.state.storage_checked = False
     app.state.identity, app.state.identity_public_key = identity, public_key
     app.state.creative_capabilities = capabilities
     app.state.certifications = certifications
@@ -158,10 +161,13 @@ def create_app(
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validate_request)
     app.add_middleware(SignedIdentity, service="creative", public_key=public_key, catalog=catalog)
+    release = None
     if web_root is not None:
         from studio.contracts.gateway.protocol_hash import public_contract
         from studio.runtime.http.web import attach_web, load_release
 
+        if schema_path is None:
+            raise ValueError("Creative 浏览器程序缺少发布契约")
         public = json.loads(schema_path.read_text())
         actual = app.openapi()
         expected_routes = {
@@ -198,9 +204,14 @@ def create_app(
 
     @app.get("/ready")
     async def ready():
+        if release is None or install_credentials is None or not app.state.storage_checked:
+            raise HTTPException(503, "creative_release_or_installation_unavailable")
+        try:
+            check(database.path, "creative", MIGRATIONS)
+        except ValueError:
+            raise HTTPException(503, "creative_schema_unavailable") from None
         async with database.sessions() as session:
             await session.execute(text("SELECT 1"))
-        # The owner applications and historical cutover are still gated.
-        raise HTTPException(503, "creative_assembly_incomplete")
+        return {"status": "ready", "service": "creative", "version": release.build_id}
 
     return app
