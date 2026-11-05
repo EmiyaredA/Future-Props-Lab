@@ -409,15 +409,16 @@ test("official articles retain ordinary community reading position after refresh
   await page.reload();
   await expect(page.locator(".thought-prose")).toBeVisible();
   await expect
-    .poll(async () =>
-      page
+    .poll(async () => {
+      const restored = await page
         .locator(".knowledge-main")
         .evaluate(
           (main) =>
             main.scrollTop / Math.max(1, main.scrollHeight - main.clientHeight),
-        ),
-    )
-    .toBeGreaterThan(before / 2);
+        );
+      return Math.abs(restored - before);
+    })
+    .toBeLessThan(0.08);
 });
 
 test("reference, find replacement, templates, copies and named history connect in the editor", async ({

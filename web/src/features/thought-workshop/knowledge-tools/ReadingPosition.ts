@@ -102,12 +102,18 @@ export function useReadingPosition(
               !location.hash &&
               !new URLSearchParams(location.search).has("find")
             ) {
-              const anchor = paragraphs().find(
-                (node) =>
-                  node.textContent?.slice(0, 240) ===
-                    reading.position?.paragraph &&
-                  !!reading.position?.paragraph,
-              );
+              const position = reading.position;
+              // The ratio preserves the offset inside long blocks on the same revision.
+              const sameRevision =
+                position?.note_revision != null &&
+                position.note_revision === latest.current.revision;
+              const anchor = sameRevision
+                ? undefined
+                : paragraphs().find(
+                    (node) =>
+                      !!position?.paragraph &&
+                      node.textContent?.slice(0, 240) === position.paragraph,
+                  );
               if (anchor)
                 target.scrollTop +=
                   anchor.getBoundingClientRect().top -
@@ -116,7 +122,7 @@ export function useReadingPosition(
                     : target.getBoundingClientRect().top);
               else
                 target.scrollTop =
-                  (reading.position?.ratio ?? 0) *
+                  (position?.ratio ?? 0) *
                   Math.max(0, target.scrollHeight - target.clientHeight);
             }
           })
