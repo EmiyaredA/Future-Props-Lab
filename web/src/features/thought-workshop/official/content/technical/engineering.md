@@ -75,5 +75,5 @@ Agent Note 解释工程决策和验收证据，用户指南解释如何完成任
 ## 代码入口
 
 1. `package.json`
-2. `tests/test_architecture.py`
+2. `tests/architecture/test_repository.py`
 3. `web/e2e/responsive-inventory.ts`

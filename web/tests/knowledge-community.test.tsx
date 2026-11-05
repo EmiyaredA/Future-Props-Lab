@@ -183,7 +183,7 @@ describe("社区发布与恢复边界", () => {
     );
     await user.click(await screen.findByLabelText("官方发布"));
     expect(screen.getByLabelText("只读发布")).toBeChecked();
-    expect(screen.getByLabelText("超级管理员可编辑")).toBeChecked();
+    expect(screen.queryByLabelText("超级管理员可编辑")).not.toBeInTheDocument();
     expect(
       screen.getByLabelText("管理员可编辑", { exact: true }),
     ).toBeChecked();
@@ -196,7 +196,7 @@ describe("社区发布与恢复边界", () => {
         expect.objectContaining({
           is_official: true,
           read_only: true,
-          editable_platform_roles: ["admin", "admin"],
+          editable_platform_roles: ["admin"],
         }),
       ),
     );

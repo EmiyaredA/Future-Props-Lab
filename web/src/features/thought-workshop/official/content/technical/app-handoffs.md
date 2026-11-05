@@ -40,7 +40,7 @@ sequenceDiagram
 | 创建目标项目的素材与片段 | 目标 App 公开交接入口     | 目标归属、素材与 revision 校验通过        |
 | 查看交接后的作品         | 目标 App 自己的读取用例   | 目标拥有独立的保存与恢复生命周期          |
 
-App 默认不相互导入。Web 的交接从目标公共入口导入，`tests/test_architecture.py` 登记允许的依赖；增加新的交接必须同步解释目标所有权与失败恢复，不能把现有例外理解为可任意导入其他应用内部代码。
+App 默认不相互导入。Web 的交接从目标公共入口导入，`tests/architecture/test_repository.py` 登记允许的依赖；增加新的交接必须同步解释目标所有权与失败恢复，不能把现有例外理解为可任意导入其他应用内部代码。
 
 > [!NOTE]
 > 公开交接入口负责创建目标应用的数据。跨应用调用仍需要分别验证账号、目标项目和素材，不能沿用源工程的可写状态。
@@ -64,6 +64,6 @@ App 默认不相互导入。Web 的交接从目标公共入口导入，`tests/te
 
 ## 代码入口
 
-1. `tests/test_architecture.py`
+1. `tests/architecture/test_repository.py`
 2. `backend/studio/apps/media_rendering/local/inputs.py`
 3. `web/src/features/motion-compositor/module.ts`

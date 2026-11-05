@@ -14,7 +14,14 @@ vi.mock("@features/accounts/api", async () => {
   const actual = await vi.importActual<typeof import("@features/accounts/api")>(
     "@features/accounts/api",
   );
-  return { ...actual, ...accountApi };
+  return {
+    ...actual,
+    ...accountApi,
+    requestCurrentSession: async () => ({
+      data: await accountApi.getMe(),
+      response: new Response(),
+    }),
+  };
 });
 
 beforeEach(() => {

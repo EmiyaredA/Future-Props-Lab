@@ -68,5 +68,5 @@ flowchart TD
 ## 代码入口
 
 1. `AGENTS.md`
-2. `tests/test_architecture.py`
+2. `tests/architecture/test_repository.py`
 3. `docs/operations/agent-notes.md`
