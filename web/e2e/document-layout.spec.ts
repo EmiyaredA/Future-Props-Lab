@@ -281,7 +281,7 @@ test("用户编辑官方同款首页、排序保存、发布与权限过滤", as
     .click();
   await page.getByRole("menuitem", { name: "从模板新建", exact: true }).click();
   const template = page.getByRole("alertdialog", {
-    name: "Workspace 文档模板",
+    name: "账号文档模板",
   });
   await template
     .getByRole("combobox", { name: "选择文档模板", exact: true })

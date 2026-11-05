@@ -215,7 +215,7 @@ test("private read-only readers preserve a nested document tree", async ({
   await page.route("**/v1/auth/me", async (route) => {
     const response = await route.fetch();
     const body = await response.json();
-    body.workspace.permission_keys = ["content.read"];
+    body.permission_keys = ["content.read"];
     await route.fulfill({ json: body });
   });
   await page.setViewportSize({ width: 1600, height: 1000 });
