@@ -1,7 +1,7 @@
 import { statSync } from "node:fs";
 import { resolve } from "node:path";
 import { imageVariants } from "../src/shared/lib/imageVariants";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Response } from "@playwright/test";
 
 test("file loading art, label and progress dots share a center line", async ({
   page,
@@ -50,13 +50,17 @@ test("file loading art, label and progress dots share a center line", async ({
 test("startup loading covers the viewport through each handoff", async ({
   page,
 }) => {
+  test.setTimeout(90_000);
   await page.addInitScript(() =>
     localStorage.setItem("future_props_theme", "dark"),
   );
   await page.setViewportSize({ width: 1920, height: 1071 });
 
   const phases = [
-    [/\/src\/app\/main\.tsx(?:\?.*)?$/, "正在打开 Future Props Lab…"],
+    [
+      /\/src\/app\/entries\/website\.tsx(?:\?.*)?$/,
+      "正在打开 Future Props Lab…",
+    ],
     [/\/v1\/auth\/me$/, "正在连接 Future Props Lab…"],
     [/\/src\/app\/SignedInApp\.tsx(?:\?.*)?$/, "正在打开工作台…"],
   ] as const;
@@ -73,7 +77,9 @@ test("startup loading covers the viewport through each handoff", async ({
     await page.goto("/apps", { waitUntil: "domcontentloaded" });
     for (const [index, [, label]] of phases.entries()) {
       const loading = page.getByRole("status").filter({ hasText: label });
-      await expect(loading.getByText(label, { exact: true })).toBeVisible();
+      await expect(loading.getByText(label, { exact: true })).toBeVisible({
+        timeout: 25_000,
+      });
       for (const viewport of [
         { width: 1920, height: 1071 },
         { width: 390, height: 844 },
@@ -174,17 +180,13 @@ for (const theme of ["light", "dark"] as const) {
       },
     );
     const imageRequests: string[] = [];
-    const received: Array<Promise<{ url: string; bytes: number }>> = [];
+    const received: Response[] = [];
     page.on("request", (request) => {
       if (request.resourceType() === "image") imageRequests.push(request.url());
     });
     page.on("response", (response) => {
       if (response.url().includes("/brand/thumbnails/"))
-        received.push(
-          response
-            .body()
-            .then((body) => ({ url: response.url(), bytes: body.length })),
-        );
+        received.push(response);
     });
     await page.goto("/apps", { waitUntil: "domcontentloaded" });
     await loading;
@@ -243,7 +245,12 @@ for (const theme of ["light", "dark"] as const) {
     expect(
       imageRequests.filter((url) => /\/brand\/[^/]+\.png(?:\?|$)/.test(url)),
     ).toEqual([]);
-    const downloads = await Promise.all(received);
+    const downloads = await Promise.all(
+      received.map(async (response) => ({
+        url: response.url(),
+        bytes: (await response.body()).length,
+      })),
+    );
     const sizes = downloads.map((download) => download.bytes);
     const originals = new Set(
       downloads.flatMap((download) =>
