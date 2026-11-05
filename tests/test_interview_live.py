@@ -14,7 +14,6 @@ from app.main import app
 from app.runtime.db import SessionLocal
 from studio.apps.interview_assistant.executor_status import executor_status
 from studio.apps.interview_assistant.runner import InterviewPreparationRunner
-from studio.apps.interview_assistant.transport import website as routes
 from studio.config.settings import get_settings
 
 WORD_NAMESPACE = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
@@ -26,9 +25,8 @@ async def test_fictional_docx_real_codex_research(monkeypatch):
     settings = get_settings()
     monkeypatch.setattr(settings, "fpl_interview_codex_enabled", True)
     monkeypatch.setattr(settings, "fpl_interview_codex_user_id", "test-user")
-    status = await executor_status("test-user")
+    status = await executor_status("test-user", sessions=SessionLocal, settings=settings)
     assert status.available, status.message
-    monkeypatch.setattr(routes, "executor_status", executor_status)
     document = io.BytesIO()
     fictional_notice = "All names and experience in this document are fictional test data."
     with zipfile.ZipFile(document, "w") as archive:
@@ -89,7 +87,9 @@ async def test_fictional_docx_real_codex_research(monkeypatch):
         async def allowed(*_args):
             return True
 
-        await InterviewPreparationRunner(allowed, sessions=SessionLocal).execute(task["id"])
+        await InterviewPreparationRunner(
+            allowed, sessions=SessionLocal, executor_status=app.state.interview_executor_status
+        ).execute(task["id"])
         room = (await client.get(base)).json()
         target = Path(__file__).resolve().parents[1] / ".local/interview-assistant/live-smoke"
         target.mkdir(parents=True, exist_ok=True)

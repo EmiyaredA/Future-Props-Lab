@@ -988,3 +988,5 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 `studio/contracts/gateway/service_status.py` 定义注册服务 ID、生命周期和只读状态契约。`studio/host/service_observation.py` 只读取所选 Compose 项目的配置服务清单与进程状态，拒绝把 Docker 故障误报为停止；不读取业务数据库、环境内容或日志。观测嵌入 Management 已有的自有快照，不共享数据库。`studio/apps/gateway/service_status.py` 从固定服务地址做有界就绪探测，合并新鲜主机证据并按依赖图计算功能受限；错误或过期观测无法确认停止。`deployment.status.read` 只允许原始 Gateway 状态读请求委托到 Management 的状态读接口，不获得运维命令权限。
 
 `features/applications/ApplicationCenterRoute.tsx` 拥有按账号缓存的自动检查；纯页面与 `ApplicationServiceStatus.tsx` 拥有状态和展开说明。`serviceStatus.ts` 使用生成契约，`queryKeys.ts` 唯一维护查询键。静态目录显式绑定 `serviceId`，不能凭页面名称猜测服务。连接失败时只把缓存作为上次结果展示；单体兼容入口明确声明共用进程。
+
+面试执行器状态由两种装配分别注入 HTTP 与后台 Runner，不再通过 Session 元信息查找。远程桌面授权复核显式绑定会话工厂与可热更新的配置读取器。

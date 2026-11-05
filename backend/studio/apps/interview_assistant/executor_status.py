@@ -2,28 +2,28 @@
 
 from app.capabilities.agents.cli.catalog import inspect_connection
 from app.console.governance.code_agents import resolve
-from app.runtime.db import SessionLocal
-from studio.config.settings import get_settings
 from studio.contracts.interview_assistant.documents import InterviewExecutorOut
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.database.ownership import bind_owner
 
 
 async def executor_status(
-    user_id: str, owner_user_id: str = "", session=None
+    user_id: str, owner_user_id: str = "", session=None, *, sessions, settings
 ) -> InterviewExecutorOut:
 
     try:
         if session is None:
-            async with SessionLocal() as owned:
+            async with sessions() as owned:
                 if owner_user_id:
                     bind_owner(owned, owner_user_id)
-                return await executor_status(user_id, owner_user_id, owned)
+                return await executor_status(
+                    user_id, owner_user_id, owned, sessions=sessions, settings=settings
+                )
         await resolve(
             session, owner_user_id, user_id, "codex", "interview_preparation", probe=False
         )
         status = await inspect_connection(
-            get_settings(), "codex", discover_models=False, app_server=False
+            settings, "codex", discover_models=False, app_server=False
         )
         return InterviewExecutorOut(
             available=status["available"],

@@ -6,7 +6,6 @@ from sqlalchemy import select, update
 from app.console.governance.code_agents import authorized
 from studio.apps.interview_assistant.bundles import acceptance
 from studio.apps.interview_assistant.codex import CodexExecutor, task_context
-from studio.apps.interview_assistant.executor_status import executor_status
 from studio.apps.interview_assistant.storage.models import InterviewPreparation, InterviewRoom
 from studio.contracts.interview_assistant.documents import PreparationBundle
 from studio.runtime.database.operation_receipts import OperationError
@@ -19,11 +18,12 @@ class InterviewPreparationRunner(PollingTaskRunner):
     runner_name = "interview-preparation"
     poll_interval_seconds = 1.0
 
-    def __init__(self, actor_allowed, executor=None, *, sessions):
+    def __init__(self, actor_allowed, executor=None, *, sessions, executor_status):
         super().__init__()
         self.actor_allowed = actor_allowed
         self.executor = executor or CodexExecutor()
         self.sessions = sessions
+        self.executor_status = executor_status
 
     async def recover(self):
         async with self.sessions() as session:
@@ -185,7 +185,7 @@ class InterviewPreparationRunner(PollingTaskRunner):
         try:
             if not await self.active(identifier):
                 raise OperationError("执行者权限或本机授权已变化", "executor_access", 403)
-            status = await executor_status(task.user_id, task.owner_user_id)
+            status = await self.executor_status(task.user_id, task.owner_user_id)
             if not status.available:
                 raise OperationError(status.message, status.code, 409)
             root = task_context(task)

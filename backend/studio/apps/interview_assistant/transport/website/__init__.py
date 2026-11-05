@@ -2,7 +2,7 @@
 
 from contextlib import contextmanager
 
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, Response
 
 from app.deps import SessionDep, StudioAuth
@@ -31,13 +31,11 @@ def errors():
         raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
 
 
-async def executor_status(user_id, owner_user_id, session):
-    return await session.info["interview_executor_status"](user_id, owner_user_id, session)
-
-
 @router.get("/executor", response_model=InterviewExecutorOut)
-async def get_interview_executor(principal: StudioAuth, session: SessionDep):
-    return await executor_status(principal.user_id, principal.owner_user_id, session)
+async def get_interview_executor(request: Request, principal: StudioAuth, session: SessionDep):
+    return await request.app.state.interview_executor_status(
+        principal.user_id, principal.owner_user_id, session
+    )
 
 
 @router.get("/rooms", response_model=InterviewRoomList)
@@ -102,10 +100,16 @@ async def download_interview_material(
 
 @router.post("/rooms/{room_id}/preparations", response_model=InterviewRoomOut, status_code=202)
 async def prepare_interview(
-    room_id: str, body: InterviewPrepareIn, session: SessionDep, principal: StudioAuth
+    room_id: str,
+    body: InterviewPrepareIn,
+    request: Request,
+    session: SessionDep,
+    principal: StudioAuth,
 ):
     with errors():
-        status = await executor_status(principal.user_id, principal.owner_user_id, session)
+        status = await request.app.state.interview_executor_status(
+            principal.user_id, principal.owner_user_id, session
+        )
         if not status.available:
             raise OperationError(status.message, status.code, 409)
         return await Rooms(session, principal).prepare(room_id, body)

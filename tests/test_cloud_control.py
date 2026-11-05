@@ -472,12 +472,13 @@ async def test_execution_stream_releases_session_before_sending(monkeypatch):
     async def version(*_args):
         return ("turn", 1)
 
-    monkeypatch.setattr(events, "SessionLocal", session)
     monkeypatch.setattr(events, "valid_auth", authorized)
     monkeypatch.setattr(events, "get_chat", authorized)
     monkeypatch.setattr(events, "latest_turn_version", version)
     request = SimpleNamespace(is_disconnected=lambda: asyncio.sleep(0, result=False))
-    async with aclosing(events.stream(request, SimpleNamespace(user_id="owner"), "chat")) as stream:
+    async with aclosing(
+        events.stream(request, SimpleNamespace(user_id="owner"), "chat", sessions=session)
+    ) as stream:
         assert (await anext(stream)).startswith("event: change")
         assert open_sessions == 0
         assert (await anext(stream)).startswith(": heartbeat")
@@ -1005,7 +1006,9 @@ async def test_idle_watcher_rechecks_active_connection_when_preference_changes(m
     inputs = desktop.DesktopInput(lambda: clock)
     changed = asyncio.Event()
     task = asyncio.create_task(
-        desktop.watch_access(SimpleNamespace(user_id="fixture"), True, inputs, changed)
+        desktop.watch_access(
+            SimpleNamespace(user_id="fixture"), True, inputs, changed, sessions=SessionLocal
+        )
     )
     try:
         await asyncio.wait_for(polled.wait(), 1)

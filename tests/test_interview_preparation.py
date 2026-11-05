@@ -16,7 +16,6 @@ from studio.apps.interview_assistant.codex import task_context
 from studio.apps.interview_assistant.executor_status import executor_status
 from studio.apps.interview_assistant.storage.models import InterviewPreparation
 from studio.apps.interview_assistant.task_tools import TaskFiles, extract_document
-from studio.apps.interview_assistant.transport import website as routes
 from studio.config.settings import get_settings
 from studio.contracts.interview_assistant.documents import InterviewExecutorOut, PreparationBundle
 
@@ -105,8 +104,7 @@ def configured(monkeypatch):
     async def available(_user, *_args):
         return InterviewExecutorOut(available=True, code="ready", message="test", version="0.163.0")
 
-    monkeypatch.setattr(routes, "executor_status", available)
-    monkeypatch.setattr(runner, "executor_status", available)
+    monkeypatch.setattr(app.state, "interview_executor_status", available)
 
 
 @pytest.fixture
@@ -177,9 +175,12 @@ async def test_real_flow_snapshot_receipt_bundle_and_export(client):
     assert (
         await client.post(f"/v1/interview-assistant/rooms/{room['id']}/preparations", json=body)
     ).status_code == 409
-    await runner.InterviewPreparationRunner(allowed, FakeExecutor(), sessions=SessionLocal).execute(
-        task["id"]
-    )
+    await runner.InterviewPreparationRunner(
+        allowed,
+        FakeExecutor(),
+        sessions=SessionLocal,
+        executor_status=app.state.interview_executor_status,
+    ).execute(task["id"])
     result = (await client.get(f"/v1/interview-assistant/rooms/{room['id']}")).json()
     assert result["active_bundle_id"] == task["id"]
     assert result["tasks"][0]["snapshot"]["jd"] == "Python"
@@ -214,18 +215,24 @@ async def test_cancel_retry_late_completion_and_empty_material(client):
         assert response.status_code == 200
 
     await runner.InterviewPreparationRunner(
-        allowed, FakeExecutor(cancel_during_completion), sessions=SessionLocal
+        allowed,
+        FakeExecutor(cancel_during_completion),
+        sessions=SessionLocal,
+        executor_status=app.state.interview_executor_status,
     ).execute(old["id"])
     room = (await client.get(f"/v1/interview-assistant/rooms/{room['id']}")).json()
     assert room["tasks"][0]["status"] == "cancelled"
     assert room["active_bundle_id"] is None
     queued, _ = await prepare(client, room)
-    await runner.InterviewPreparationRunner(allowed, FakeExecutor(), sessions=SessionLocal).execute(
-        queued["tasks"][0]["id"]
-    )
-    await runner.InterviewPreparationRunner(allowed, sessions=SessionLocal).finish(
-        old["id"], "succeeded", "late", {}
-    )
+    await runner.InterviewPreparationRunner(
+        allowed,
+        FakeExecutor(),
+        sessions=SessionLocal,
+        executor_status=app.state.interview_executor_status,
+    ).execute(queued["tasks"][0]["id"])
+    await runner.InterviewPreparationRunner(
+        allowed, sessions=SessionLocal, executor_status=app.state.interview_executor_status
+    ).finish(old["id"], "succeeded", "late", {})
     room = (await client.get(f"/v1/interview-assistant/rooms/{room['id']}")).json()
     assert room["active_bundle_id"] == queued["tasks"][0]["id"]
 
@@ -233,7 +240,12 @@ async def test_cancel_retry_late_completion_and_empty_material(client):
 @pytest.mark.asyncio
 async def test_bad_reference_needs_input_preserves_previous_version_and_restart(client):
     room, _ = await prepare(client, await create(client))
-    worker = runner.InterviewPreparationRunner(allowed, FakeExecutor(), sessions=SessionLocal)
+    worker = runner.InterviewPreparationRunner(
+        allowed,
+        FakeExecutor(),
+        sessions=SessionLocal,
+        executor_status=app.state.interview_executor_status,
+    )
     await worker.execute(room["tasks"][0]["id"])
     room = (await client.get(f"/v1/interview-assistant/rooms/{room['id']}")).json()
     accepted = room["active_bundle_id"]
@@ -243,7 +255,10 @@ async def test_bad_reference_needs_input_preserves_previous_version_and_restart(
         bundle["questions"][0]["source_ids"] = ["does-not-exist"]
 
     await runner.InterviewPreparationRunner(
-        allowed, FakeExecutor(bad), sessions=SessionLocal
+        allowed,
+        FakeExecutor(bad),
+        sessions=SessionLocal,
+        executor_status=app.state.interview_executor_status,
     ).execute(queued["tasks"][0]["id"])
     room = (await client.get(f"/v1/interview-assistant/rooms/{room['id']}")).json()
     assert room["active_bundle_id"] == accepted
@@ -497,6 +512,8 @@ def test_executor_binding_is_checked_before_cli_discovery(configured, monkeypatc
     monkeypatch.setattr(
         codex, "executable", lambda: pytest.fail("unbound users must not probe the CLI")
     )
-    status = asyncio.run(executor_status("another-account"))
+    status = asyncio.run(
+        executor_status("another-account", sessions=SessionLocal, settings=get_settings())
+    )
     assert not status.available
     assert status.code == "agent_not_authorized"

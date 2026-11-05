@@ -111,7 +111,7 @@ from studio.apps.visual_workshop.acceptance.runner import AcceptanceRunner
 from studio.apps.visual_workshop.assistant.actions import recover_interrupted_visual_assistant_runs
 from studio.apps.visual_workshop.website.generation_runner import VisualGenerationRunner
 from studio.assembly.annotation import document_editor
-from studio.config.settings import get_settings
+from studio.config.settings import get_cloud_settings, get_settings
 from studio.runtime.http.problem_details import (
     account_exception_handler,
     http_exception_handler,
@@ -161,7 +161,11 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
             WorkbenchSyncRunner(
                 actor_allowed=workbench_actor_allowed, sessions=SessionLocal, settings=settings
             ),
-            InterviewPreparationRunner(interview_actor_allowed, sessions=SessionLocal),
+            InterviewPreparationRunner(
+                interview_actor_allowed,
+                sessions=SessionLocal,
+                executor_status=lifespan_app.state.interview_executor_status,
+            ),
             ArticleSyncRunner(external_sync_actor_allowed, sessions=SessionLocal),
             ModelTemplateSyncRunner(sessions=SessionLocal),
             VisualGenerationRunner(
@@ -209,6 +213,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.state.database = SimpleNamespace(sessions=SessionLocal)
+app.state.interview_executor_status = partial(
+    executor_status, sessions=SessionLocal, settings=settings
+)
 app.state.annotation_document_editor = document_editor
 app.state.annotation_projects = lambda _request, session: AudioAnnotationProjects(
     session, sources=LegacyAnnotationSources(session, settings)
@@ -254,7 +261,6 @@ SessionLocal.configure(
     info={
         **SessionLocal.kw.get("info", {}),
         "thought_asset_metadata_factory": LegacyAssetMetadata,
-        "interview_executor_status": executor_status,
         "presentation_project_assets": LegacyProjectAssets,
         "motion_project_resources": LegacyProjectResources,
         "video_project_layouts": LegacyVideoLayouts,
@@ -278,7 +284,9 @@ app.state.workbench_event_stream = partial(stream_events, sessions=SessionLocal)
 app.state.account_creator = create_account
 app.state.account_storage_check = upgrade_pending
 app.state.code_agent_runs = CodeAgentRuns(sessions=SessionLocal, settings=settings)
-app.state.cloud_desktop = DesktopConnection()
+app.state.cloud_desktop = DesktopConnection(
+    sessions=SessionLocal, settings_reader=get_cloud_settings
+)
 app.state.workbench_runs = WorkbenchRuns(sessions=SessionLocal, settings=settings)
 app.add_middleware(
     CORSMiddleware,
