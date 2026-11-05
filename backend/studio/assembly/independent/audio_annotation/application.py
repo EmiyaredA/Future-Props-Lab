@@ -6,6 +6,7 @@ from functools import partial
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
+from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -128,6 +129,7 @@ def create_app(
         expected = public_contract(json.loads(schema_path.read_text()), SERVICE, catalog)
         if public_contract(app.openapi(), SERVICE, catalog) != expected:
             raise ValueError("音频标注 API 与发布契约不匹配")
+    release = None
     if web_root is not None:
         release = load_release(web_root, SERVICE)
         if schema_path is None or release.api_sha256 != expected:
@@ -140,6 +142,10 @@ def create_app(
 
     @app.get("/ready")
     async def ready():
-        raise HTTPException(503, "annotation_cutover_incomplete")
+        if release is None or not app.state.reference_delivery.is_healthy:
+            raise HTTPException(503, "annotation_release_or_reference_worker_unavailable")
+        async with database.sessions() as session:
+            await session.execute(text("SELECT 1"))
+        return {"status": "ready", "service": SERVICE, "version": release.build_id}
 
     return app

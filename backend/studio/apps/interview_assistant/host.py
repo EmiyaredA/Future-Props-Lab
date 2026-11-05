@@ -66,15 +66,19 @@ class InterviewHost:
         grant = await self.identity.owner_permission(owner=owner, permission=PERMISSION)
         return grant["allowed"] if grant["available"] else None
 
-    async def status(self, user_id, owner, _session):
-        ready = next(
+    def ready_worker(self):
+        now = time.monotonic()
+        return next(
             (
                 info
                 for seen, info in self.workers.values()
-                if info.available and time.monotonic() - seen < WORKER_TIMEOUT
+                if info.available and now - seen < WORKER_TIMEOUT
             ),
             None,
         )
+
+    async def status(self, user_id, owner, _session):
+        ready = self.ready_worker()
         if ready is not None and user_id == owner and await self._allowed(owner):
             return InterviewExecutorOut(
                 available=True, code="ready", message="本机 Codex 已就绪", version=ready.version

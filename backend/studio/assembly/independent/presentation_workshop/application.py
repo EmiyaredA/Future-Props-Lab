@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
+from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import HTTPConnection
@@ -200,6 +201,7 @@ def create_app(
         if public_contract(schema, SERVICE, catalog) != expected:
             raise ValueError("演示文稿项目 API 与发布契约不匹配")
 
+    release = None
     if web_root is not None:
         release = load_release(web_root, SERVICE)
         if schema_path is None or release.api_sha256 != expected:
@@ -212,6 +214,15 @@ def create_app(
 
     @app.get("/ready")
     async def ready():
-        raise HTTPException(503, "presentation_cutover_incomplete")
+        if (
+            release is None
+            or imports is None
+            or not imports.is_healthy
+            or not app.state.reference_delivery.is_healthy
+        ):
+            raise HTTPException(503, "presentation_release_or_delivery_workers_unavailable")
+        async with database.sessions() as session:
+            await session.execute(text("SELECT 1"))
+        return {"status": "ready", "service": SERVICE, "version": release.build_id}
 
     return app

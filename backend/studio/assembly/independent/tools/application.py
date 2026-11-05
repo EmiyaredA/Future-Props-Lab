@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
+from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -74,8 +75,10 @@ def create_app(
         with service_lock(database.root):
             try:
                 check(database.path, "tools", MIGRATIONS)
+                _app.state.storage_checked = True
                 yield
             finally:
+                _app.state.storage_checked = False
                 if identity is not None:
                     await identity.close()
                 if capabilities is not None:
@@ -86,6 +89,7 @@ def create_app(
         title="FPL Tools", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan
     )
     app.state.database = database
+    app.state.storage_checked = False
     app.state.identity_public_key = public_key
     app.state.tools_host = ToolsHost(database, identity)
     app.state.tools_videos = Videos(app.state.tools_host, VideoLibrary(capabilities))
@@ -99,6 +103,7 @@ def create_app(
     app.include_router(router, prefix="/v1", dependencies=[Depends(require_studio_auth)])
     app.include_router(public)
     app.include_router(native)
+    release = None
     if web_root is not None:
         if schema_path is None:
             raise ValueError("Tools 浏览器程序缺少发布契约")
@@ -118,6 +123,15 @@ def create_app(
 
     @app.get("/ready")
     async def ready():
-        raise HTTPException(503, "tools_cutover_incomplete")
+        if (
+            release is None
+            or native_options is None
+            or not app.state.storage_checked
+            or not app.state.tools_host.ready
+        ):
+            raise HTTPException(503, "tools_release_or_worker_unavailable")
+        async with database.sessions() as session:
+            await session.execute(text("SELECT 1"))
+        return {"status": "ready", "service": "tools", "version": release.build_id}
 
     return app

@@ -1,6 +1,7 @@
 """Account- and session-bound queue for the single local library reveal operation."""
 
 from datetime import datetime, timedelta
+from time import monotonic
 from uuid import uuid4
 
 from fastapi import HTTPException
@@ -24,6 +25,7 @@ from studio.runtime.time import utc_now
 
 WINDOW_SECONDS = 8
 DEPENDENCIES_WINDOW_SECONDS = 20
+WORKER_TIMEOUT = 45
 
 
 def missing_dependencies():
@@ -40,6 +42,17 @@ class ToolsHost:
         self.database, self.identity = database, identity
         self.queue = NativeQueue(
             database, ToolsNativeJob, operations=HOST_OPERATIONS, clock=utc_now
+        )
+        self.last_worker_contact = None
+
+    def worker_contact(self):
+        self.last_worker_contact = monotonic()
+
+    @property
+    def ready(self):
+        return (
+            self.last_worker_contact is not None
+            and monotonic() - self.last_worker_contact < WORKER_TIMEOUT
         )
 
     async def _live(self, assertion, operation, scope=None):
@@ -164,6 +177,7 @@ class ToolsHost:
 
     async def claim(self, worker):
         lease = await self.queue.claim(worker_id=worker, allowed_operations=HOST_OPERATIONS)
+        self.worker_contact()
         if lease is None:
             return None
         sanitized = lease.model_copy(

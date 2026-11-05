@@ -227,6 +227,7 @@ async def heartbeat(request: Request, body: Lease):
     await host.authorize(worker, body.lease)
     if not await host.queue.heartbeat(worker_id=worker, lease=body.lease):
         raise HTTPException(410, "tools_lease_ended")
+    host.worker_contact()
     return {"active": True}
 
 

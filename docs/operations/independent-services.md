@@ -462,6 +462,8 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 
 音频标注使用 `deploy/annotation.compose.yaml`，指定独立状态卷、Identity 公钥和用途限定服务凭据。运行 `npm run services:build:web -- annotation`，把同版本浏览器产物通过 `--web-release` 交给镜像构建。显式运行 `annotation migrate` 后启动。
 
+录音标注的 `/ready` 依赖匹配的浏览器发布、数据库可读和素材引用恢复执行器。演示工坊还要求归档对等凭据及导入恢复执行器。面试助手与工具服务要求有效的原生桥接配置和近期通过认证的 worker 联系。工具服务在成功领取请求或任务心跳后更新时间，超过 45 秒未联系即转为未就绪。站点历史迁移与全链路验收由整站切换门禁跟踪。
+
 四容器验收 `fpl-annotation-browser-82e8e87543` 通过 Gateway 上传 WAV、创建和裁切项目，经 Chromium 打开 390px 列表和 390/768/1440px 编辑器。它验证了旧浏览器版本写入拒绝、回环公网入口和重启后读回。镜像为 `fpl/annotation:9632cf95d6c15b1d1403`，浏览器版本为 `c525658288fdb4b436d3`。
 
 上传片段和已保存片段均由 Models 使用自己的模型目录、供应商凭据和调用日志执行。Annotation 校验项目和时间范围，Identity 签名绑定输入元数据及 WAV 摘要，Models 复核授权后才提交供应商。相同尝试返回原回执，未确认的旧尝试不会再次发起。定向联调使用确定性供应商夹具验证两条入口和回执，真实供应商验收仍由正式门禁跟踪。

@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager, suppress
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
-from sqlalchemy import select, update
+from sqlalchemy import select, text, update
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -114,6 +114,7 @@ def create_app(
                 check(database.path, "interview", MIGRATIONS)
                 await recover(database.sessions)
                 expiry = asyncio.create_task(expire_leases(host))
+                _app.state.lease_expiry = expiry
                 try:
                     yield
                 finally:
@@ -129,6 +130,7 @@ def create_app(
         title="FPL Interview", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan
     )
     app.state.database = database
+    app.state.lease_expiry = None
     app.state.interview_host = host
     app.state.interview_executor_status = host.status
     app.add_middleware(RequestLimit, prefix="/_native/", maximum=3 * 1024 * 1024)
@@ -144,6 +146,7 @@ def create_app(
         expected = public_contract(json.loads(schema_path.read_text()), "interview", catalog)
         if public_contract(app.openapi(), "interview", catalog) != expected:
             raise ValueError("面试助手公开接口与发布契约不匹配")
+    release = None
     if web_root is not None:
         release = load_release(web_root, "interview")
         if schema_path is None or release.api_sha256 != expected:
@@ -156,6 +159,17 @@ def create_app(
 
     @app.get("/ready")
     async def ready():
-        raise HTTPException(503, "interview_cutover_incomplete")
+        expiry = app.state.lease_expiry
+        if (
+            release is None
+            or options is None
+            or expiry is None
+            or expiry.done()
+            or host.ready_worker() is None
+        ):
+            raise HTTPException(503, "interview_release_or_executor_unavailable")
+        async with database.sessions() as session:
+            await session.execute(text("SELECT 1"))
+        return {"status": "ready", "service": "interview", "version": release.build_id}
 
     return app
