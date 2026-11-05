@@ -2,6 +2,7 @@
 
 import json
 import os
+import signal
 import sqlite3
 import subprocess
 import sys
@@ -55,6 +56,8 @@ REVISION = "3" * 40
 AVATAR = "/v1/account/profile/avatar"
 TOOLS = "/v1/tool-navigation/state"
 PRESENTATION = "/v1/presentation-workshop"
+WEBSITE_STARTUP_TIMEOUT = 90
+WEBSITE_SHUTDOWN_TIMEOUT = 60
 
 
 def configuration(path, *, database, key, port, web):
@@ -76,6 +79,8 @@ def configuration(path, *, database, key, port, web):
 @contextmanager
 def website(config, port):
     origin = f"http://127.0.0.1:{port}"
+    started_at = time.monotonic()
+    completed = False
     with (
         subprocess.Popen(
             [sys.executable, "scripts/website/serve.py", "--config", str(config)],
@@ -85,21 +90,48 @@ def website(config, port):
         httpx.Client(base_url=origin, trust_env=False, timeout=30) as client,
     ):
         try:
-            deadline = time.monotonic() + 20
+            deadline = started_at + WEBSITE_STARTUP_TIMEOUT
+            observation = "no readiness response"
             while time.monotonic() < deadline and proc.poll() is None:
                 try:
-                    if client.get("/ready", timeout=2).status_code == 200:
+                    response = client.get("/ready", timeout=2)
+                    if response.status_code == 200:
                         break
-                except httpx.TransportError:
-                    pass
-                time.sleep(0.05)
+                    observation = f"HTTP {response.status_code}"
+                except httpx.TransportError as exc:
+                    observation = type(exc).__name__
+                time.sleep(0.1)
             else:
-                pytest.fail("Isolated compatibility website failed to start")
+                elapsed = time.monotonic() - started_at
+                pytest.fail(
+                    f"Isolated compatibility website did not become ready in {elapsed:.2f}s "
+                    f"(last probe: {observation}, exit code: {proc.poll()})"
+                )
+            print(f"Isolated compatibility website ready in {time.monotonic() - started_at:.2f}s")
             yield client, origin
+            completed = True
         finally:
             if proc.poll() is None:
+                stopping_at = time.monotonic()
                 proc.terminate()
-                proc.wait(timeout=15)
+                try:
+                    proc.wait(timeout=WEBSITE_SHUTDOWN_TIMEOUT)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+                    proc.wait()
+                    if completed:
+                        pytest.fail("Isolated compatibility website required forced shutdown")
+                else:
+                    if completed and proc.returncode not in (0, -signal.SIGTERM):
+                        pytest.fail(
+                            f"Isolated compatibility website shutdown failed ({proc.returncode})"
+                        )
+                    print(
+                        "Isolated compatibility website stopped in "
+                        f"{time.monotonic() - stopping_at:.2f}s"
+                    )
+            elif completed:
+                pytest.fail(f"Isolated compatibility website exited early ({proc.returncode})")
 
 
 def migrate_rehearsal(snapshot_db, parent, account, manifest_sha256):
