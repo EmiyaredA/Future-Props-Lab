@@ -62,6 +62,7 @@ from fpl_runtime.visual_agent_review import (
     status_target as review_status_target,
 )
 from fpl_runtime.visual_assistant import attachment_target
+from fpl_runtime.visual_assistant import model_target as assistant_model_target
 from fpl_runtime.visual_catalog import AGENT_ACCEPTANCE_TARGET
 from fpl_runtime.visual_catalog import catalog_target as visual_catalog_target
 from fpl_runtime.visual_composition import grid_asset_target, grid_render_target
@@ -227,6 +228,7 @@ async def live(request: Request, body: LiveRequest):
         or (body.service == "assets" and review_asset_target(body.method, body.path))
         or (body.service == "visual" and review_status_target(body.method, body.path))
         or private_models
+        or (body.service == "models" and assistant_model_target(body.method, body.path))
         or private_external
         or private_thought_upload
         or private_render

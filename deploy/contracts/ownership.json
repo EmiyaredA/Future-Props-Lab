@@ -4913,6 +4913,12 @@
       "model": "HostSnapshot"
     },
     {
+      "table": "visual_assistant_model_runs",
+      "service": "models",
+      "module": "fpl_models.assistant_model_records",
+      "model": "VisualAssistantModelRun"
+    },
+    {
       "table": "models_import_receipts",
       "service": "models",
       "module": "fpl_models.catalog_migration",

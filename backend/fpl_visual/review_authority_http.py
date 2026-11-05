@@ -3,12 +3,11 @@
 import jwt
 from fastapi import APIRouter, HTTPException, Request
 
-from app.apps.visual_workshop.acceptance.models import AcceptanceRun
 from app.capabilities.identity.permissions import effective_permissions
 from fpl_runtime.claims import HEADER, verify_context
-from fpl_runtime.visual_agent_review import STATUS, AgentReviewPlan, status_target
+from fpl_runtime.visual_agent_review import STATUS, status_target
 
-from .review_dispatch_records import VisualReviewDispatch
+from .review_agent import active_review
 
 router = APIRouter(include_in_schema=False)
 
@@ -31,16 +30,6 @@ async def review_status(request: Request, project_id: str, run_id: str, digest: 
     permissions = effective_permissions(actor.platform_role, frozenset(actor.scopes))
     if actor.purpose != "studio" or not {"content.write", "models.use"} <= permissions:
         raise HTTPException(403, "visual_review_status_forbidden")
-    async with state.database.sessions(info={"owner_user_id": actor.user_id}) as db:
-        run = await db.get(AcceptanceRun, run_id)
-        dispatch = await db.get(VisualReviewDispatch, run_id)
-        plan = dispatch.executor.get("agent_plan") if dispatch is not None else None
-        return {
-            "active": bool(
-                run is not None
-                and run.project_id == project_id
-                and run.status == "processing"
-                and plan is not None
-                and AgentReviewPlan.model_validate(plan).digest == digest
-            )
-        }
+    return {
+        "active": await active_review(state.database, actor.user_id, project_id, run_id, digest)
+    }

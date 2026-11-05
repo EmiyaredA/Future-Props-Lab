@@ -28,6 +28,7 @@ from app.llm.models import (
 from app.runtime.ids import new_id
 from app.runtime.time import utc_now
 
+from .assistant_model_records import VisualAssistantModelRun
 from .demo_install_records import DemoInstallation
 from .integration_records import IntegrationCapacity
 from .native_records import NATIVE_MODELS
@@ -141,6 +142,7 @@ class GalgameTranscriptionAttempt(ModelsBase):
 
 MODELS = (
     VisualReviewAttempt,
+    VisualAssistantModelRun,
     VisualProviderBatch,
     VisualProviderTask,
     AnnotationTranscriptionAttempt,

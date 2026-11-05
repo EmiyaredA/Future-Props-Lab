@@ -537,6 +537,8 @@ Visual 生成任务与批次需要 `deploy/visual-generation.compose.yaml`。将
 
 节点固定模型验收另需 Visual 的 0009 迁移。Visual 冻结画布和方案版本后登记原件，逐来源结算 Assets 证据回执，随后经 Identity 复核执行账号并调用固定模型。Visual 重启后从已有证据和模型回执续跑。隔离七容器运行 `fpl-visual-node-native-283354a174` 验证真实 FFmpeg 取样、封闭 SSE 夹具、Chromium 页面和重启后的证据摘要。Mac CLI 验收需要 `deploy/agent-runtime.compose.yaml`、Agent Runtime 的 0002 迁移及已登记的 Mac worker。以 `fpl_host.agent_connections_worker` 启动同一版本 worker，使用独占的 TOML 与原生凭据，固定连接由可信本机设置启用。Agent Runtime 只为仍有效的租约提供同项目保留素材。追加帧以 SHA256 核验，发布后由 Assets 持有。Agent Runtime 的暂存保留至执行截止后一小时供回执恢复。隔离七容器运行 `fpl-visual-native-agent-531ece22b9` 经回环原生网关启动真实受限 CLI 子进程，核验 MCP 媒体操作、追加帧摘要、容器重启和 Chromium 入口。
 
+Visual 助手的私网模型轮次需要 Models 的 0019 迁移。Models 绑定账号、项目、对话和运行，持有固定模型签名、额度和唯一调用日志。已完成轮次可按相同摘要重放，提交中断的轮次保持结果未知。公开流式消息与审批仍由整站切换门禁核验。
+
 ### Galgame 工坊的浏览器版本与故事验收
 
 运行 `npm run services:build:web -- galgame`，将清单目录传给 `npm run services:build -- galgame --build --web-release`。在 `deploy/project-owners.compose.yaml` 中使用 Galgame 专属状态目录和 Identity 凭据。项目列表、总览、编辑和已保存 Story 预演由 Galgame 镜像提供，旧版本写请求返回 409。

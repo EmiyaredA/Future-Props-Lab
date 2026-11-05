@@ -36,6 +36,7 @@ from .video_snapshot import snapshot_grant as video_snapshot_grant
 from .visual_acceptance_assets import acceptance_asset_grant
 from .visual_agent_review import agent_review_grant
 from .visual_assistant import assistant_grant
+from .visual_assistant import model_grant as assistant_model_grant
 from .visual_catalog import acceptance_agent_grant, visual_catalog_grant
 from .visual_composition import composition_grant
 from .visual_generation import (
@@ -248,6 +249,7 @@ def permitted(grant, catalog):
         or visual_generation_asset_grant(grant)
         or visual_generation_plan_grant(grant)
         or assistant_grant(grant)
+        or assistant_model_grant(grant)
         or asr_model_grant(grant)
         or asr_job_grant(grant)
         or directory_grant(grant, catalog)

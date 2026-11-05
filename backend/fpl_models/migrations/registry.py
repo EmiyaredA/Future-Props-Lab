@@ -18,6 +18,7 @@ from .versions.v0015 import SQL as SQL_0015
 from .versions.v0016 import SQL as SQL_0016
 from .versions.v0017 import SQL as SQL_0017
 from .versions.v0018 import SQL as SQL_0018
+from .versions.v0019 import SQL as VISUAL_ASSISTANT_RUNS
 
 MIGRATIONS = (
     Migration("0001_account_defaults", SQL_0001),
@@ -38,4 +39,5 @@ MIGRATIONS = (
     Migration("0016_galgame_transcription_receipts", SQL_0016),
     Migration("0017_visual_provider_dispatch", SQL_0017),
     Migration("0018_visual_model_reviews", SQL_0018),
+    Migration("0019_visual_assistant_model_runs", VISUAL_ASSISTANT_RUNS),
 )

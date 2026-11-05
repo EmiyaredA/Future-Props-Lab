@@ -35,6 +35,7 @@ from fpl_runtime.video_snapshot import snapshot_grant as video_snapshot_grant
 from fpl_runtime.visual_acceptance_assets import acceptance_asset_grant
 from fpl_runtime.visual_agent_review import agent_review_grant
 from fpl_runtime.visual_assistant import assistant_grant
+from fpl_runtime.visual_assistant import model_grant as assistant_model_grant
 from fpl_runtime.visual_catalog import acceptance_agent_grant, visual_catalog_grant
 from fpl_runtime.visual_composition import composition_grant, model_grid_grant
 from fpl_runtime.visual_generation import (
@@ -167,6 +168,7 @@ async def authorize_delegation(app, body, credential):
                     or visual_generation_plan_grant(grant)
                     or model_grid_grant(grant)
                     or review_model_grant(grant)
+                    or assistant_model_grant(grant)
                     or review
                     or baseline_grant(grant)
                 )

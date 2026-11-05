@@ -53,6 +53,8 @@ from fpl_runtime.database import Database
 from fpl_runtime.migrations import check
 from fpl_runtime.request_limit import RequestLimit
 from fpl_runtime.timed_peer import TimedPeer
+from fpl_runtime.visual_assistant import MODEL_RUNS as ASSISTANT_MODEL_RUNS
+from fpl_runtime.visual_assistant_model import MAX_ROUND_BYTES
 from fpl_runtime.visual_generation import MAX_PLAN_BYTES, PEER_DOMAIN, PLANS
 from fpl_runtime.visual_generation import MODEL as VISUAL_GENERATION_MODEL
 from fpl_runtime.visual_review import MAX_MODEL_REQUEST, MODEL_RUN
@@ -63,6 +65,8 @@ from fpl_runtime.visual_snapshot import MODELS as VISUAL_SNAPSHOT_MODELS
 from .account_events import CatalogProvisioningRunner
 from .admission import ModelAdmission, settle
 from .annotation_transcription import router as annotation_transcription_router
+from .assistant_model_http import router as assistant_model_router
+from .assistant_model_runs import AssistantModelExpiry, AssistantModelRuns
 from .audit_delivery import ModelAuditDelivery
 from .defaults import OwnedCatalogDefaults
 from .demo import DemoConfiguration, DemoServices
@@ -168,6 +172,7 @@ def create_app(
     if settings.database_path != database.path:
         raise ValueError("Models 配置必须指向自己的数据目录")
     ledger = ModelAdmission(database.sessions)
+    assistant_runs = AssistantModelRuns(database.sessions)
     authority = ModelTaskAuthority(
         database.sessions, public_key=public_key, catalog=catalog, identity=identity
     )
@@ -208,7 +213,8 @@ def create_app(
         raise ValueError("演示安装协调缺少Identity固定意图端口")
     broker.connect_inference(inference)
     supervisor = RunnerSupervisor(
-        (
+        (AssistantModelExpiry(assistant_runs),)
+        + (
             provisioning_runner,
             synchronization,
             generation,
@@ -230,6 +236,7 @@ def create_app(
             await require_private_references(database.sessions)
             await ledger.recover()
             await app.state.visual_review_attempts.recover()
+            await assistant_runs.recover()
             await recover_interrupted_model_test_runs(database.sessions)
             await recover_transcription_attempts(database.sessions)
             if galgame_asr_staging.is_symlink() or not galgame_asr_staging.resolve().is_relative_to(
@@ -278,6 +285,7 @@ def create_app(
     app.state.visual_generation_runner = VisualGenerationRunner(app.state)
     app.state.visual_generation_results = VisualGenerationResults(app.state)
     app.state.visual_review_attempts = VisualReviewAttempts(app.state)
+    app.state.assistant_model_runs = assistant_runs
     if visual_generation_key is not None:
         supervisor = RunnerSupervisor((*supervisor.runners, app.state.visual_generation_runner))
 
@@ -343,6 +351,8 @@ def create_app(
     app.include_router(visual_catalog_router)
     app.include_router(visual_generation_router)
     app.include_router(visual_review_router)
+    app.include_router(assistant_model_router)
+    app.add_middleware(RequestLimit, prefix=ASSISTANT_MODEL_RUNS, maximum=MAX_ROUND_BYTES)
     app.add_middleware(RequestLimit, prefix=MODEL_RUN, maximum=MAX_MODEL_REQUEST)
     app.add_middleware(RequestLimit, prefix=VISUAL_GENERATION_MODEL, maximum=16 * 1024)
     app.add_middleware(RequestLimit, prefix=PLANS, maximum=MAX_PLAN_BYTES)

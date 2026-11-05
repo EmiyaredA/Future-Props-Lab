@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 import httpx
 from pydantic import TypeAdapter
 
+from app.apps.visual_workshop.acceptance.models import AcceptanceRun
 from app.apps.visual_workshop.acceptance.project_access import AcceptanceError
 from fpl_runtime.capability_client import CapabilityDenied
 from fpl_runtime.claims import HEADER
@@ -132,3 +133,17 @@ class ReviewAgent:
                 await result.aread()
                 check(result)
             yield result
+
+
+async def active_review(database, owner, project_id, run_id, digest):
+    async with database.sessions(info={"owner_user_id": owner}) as db:
+        run = await db.get(AcceptanceRun, run_id)
+        dispatch = await db.get(VisualReviewDispatch, run_id)
+        plan = dispatch.executor.get("agent_plan") if dispatch is not None else None
+        return bool(
+            run is not None
+            and run.project_id == project_id
+            and run.status == "processing"
+            and plan is not None
+            and AgentReviewPlan.model_validate(plan).digest == digest
+        )

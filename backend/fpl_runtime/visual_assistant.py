@@ -5,12 +5,15 @@ import re
 from pydantic import BaseModel, ConfigDict
 
 from .library_assets import ID, LibraryAssetQuery
+from .motion_preview import DIGEST
 
 MAX_QUERY_BYTES = 2 * 1024 * 1024
 
 SOURCE = "/v1/visual-workshop/projects"
 MODEL_TARGET = "/_internal/v1/visual-catalog/assistant"
 ASSET_PREFIX = "/_internal/v1/visual-conversation-assets"
+MODEL_RUNS = "/_internal/v1/visual-assistant/model-runs"
+MODEL_RUN_PURPOSE = "visual.assistant-model.execute"
 MODEL_PURPOSE = "visual.assistant-models.read"
 ASSET_PURPOSE = "visual.assistant-attachments.read"
 
@@ -77,3 +80,27 @@ class AttachmentMetadata(BaseModel):
     display_name: str
     mime_type: str
     byte_size: int
+
+
+def message_source(method, path):
+    return method == "POST" and re.fullmatch(
+        rf"{SOURCE}/({ID})/conversations/({ID})/messages/stream", path
+    )
+
+
+def model_target(method, path):
+    return method == "POST" and re.fullmatch(
+        rf"{MODEL_RUNS}/({ID})/({ID})/({ID})/(begin|round/[0-5]|settle)/({DIGEST})", path
+    )
+
+
+def model_grant(grant):
+    if (grant.caller, grant.purpose, grant.target_service) != (
+        "visual",
+        MODEL_RUN_PURPOSE,
+        "models",
+    ):
+        return False
+    source = message_source(grant.source_method, grant.source_path)
+    target = model_target(grant.target_method, grant.target_path)
+    return bool(source and target and source.groups() == target.groups()[:2])
