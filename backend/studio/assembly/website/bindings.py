@@ -29,6 +29,8 @@ from studio.apps.audio_annotation.legacy_sources import LegacyAnnotationSources
 from studio.apps.audio_annotation.projects import AudioAnnotationProjects
 from studio.apps.audio_annotation.transcription import legacy_transcribe
 from studio.apps.director_desk.agent_session import DirectorEditorSessions
+from studio.apps.gateway.storage.website_resources import WebsiteResources
+from studio.apps.gateway.use_cases.resource_links import ResourceLinks
 from studio.apps.identity.transport.database_auth import (
     authenticate_database_request,
     authenticate_database_websocket,
@@ -52,6 +54,8 @@ from studio.apps.model_service.playground.legacy_generation_references import (
 )
 from studio.apps.model_service.transport.provider_bindings import ProviderTransports
 from studio.apps.motion_compositor.legacy_project_resources import LegacyProjectResources
+from studio.apps.portal.storage.documents import InstalledDocuments
+from studio.apps.portal.use_cases.documents import DeveloperDocuments
 from studio.apps.presentation_workshop.exchange.legacy_import import import_legacy_presentation
 from studio.apps.presentation_workshop.legacy_project_assets import LegacyProjectAssets
 from studio.apps.thought_workshop.legacy_accounts import LegacyAccountDirectory
@@ -64,12 +68,19 @@ from studio.apps.video_editor.legacy_project_layouts import LegacyVideoLayouts
 from studio.apps.video_editor.legacy_timeline_assets import LegacyTimelineAssets
 from studio.assembly.annotation import document_editor
 from studio.assembly.website.account_provisioning import create_account
+from studio.assembly.website.models import AUTOMATION_ROOTS, CERTIFIABLE_PROJECT_ROOTS
+from studio.config import REPO_ROOT
 from studio.config.settings import get_cloud_settings
 from studio.runtime.http.rate_limit import AttemptLimiter
 
 
 def bind_components(app, settings, database):
     app.state.auth_attempts = AttemptLimiter()
+    app.state.developer_documents = DeveloperDocuments(InstalledDocuments(REPO_ROOT))
+    app.state.resource_links = lambda _request, session, _principal: ResourceLinks(
+        WebsiteResources(session, AUTOMATION_ROOTS)
+    )
+    app.state.certifiable_projects = CERTIFIABLE_PROJECT_ROOTS
     sessions = database.sessions
     app.state.video_downloads = VideoDownloads(
         root=settings.runtime_path / "tool-navigation" / "video-download",

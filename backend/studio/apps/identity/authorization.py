@@ -6,8 +6,8 @@ from urllib.parse import unquote, urlsplit
 from fastapi import APIRouter, HTTPException, Request, Response
 
 from app.console.cloud_control.access import desktop_authorized
-from app.console.governance.automation_access import automation_allowed
 from studio.assembly.http_dependencies import authenticate_studio_request
+from studio.contracts.gateway.automation_policy import automation_allowed
 from studio.contracts.identity.claims import HEADER, Actor, issue_context
 from studio.contracts.identity.cloud_authority import (
     DESKTOP_COOKIE,

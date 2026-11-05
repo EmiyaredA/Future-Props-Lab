@@ -2,17 +2,23 @@ from typing import Literal
 
 from studio.apps.identity.credentials.operations import add_audit_event
 from studio.apps.identity.storage.governance import begin_governance, cas
-from studio.assembly.website.models import CERTIFIABLE_PROJECT_ROOTS
 from studio.contracts.identity.errors import AccountError
 
 
 async def certify_project(
-    session, principal, kind: Literal["visual", "galgame"], project_id, body, client_ip
+    session,
+    principal,
+    kind: Literal["visual", "galgame"],
+    project_id,
+    body,
+    client_ip,
+    *,
+    project_models,
 ):
     principal = await begin_governance(session, principal)
     if not principal.allows("projects.certify") or not principal.allows("content.write"):
         raise AccountError("project_certification_required")
-    model = CERTIFIABLE_PROJECT_ROOTS[kind]
+    model = project_models[kind]
     row = await session.get(model, project_id)
     if row is None or row.owner_user_id != principal.owner_user_id:
         raise AccountError("project_not_found")

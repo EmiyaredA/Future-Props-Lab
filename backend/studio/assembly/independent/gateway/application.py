@@ -10,11 +10,13 @@ from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from studio.apps.gateway.clients.resource_reader import ServiceResources
 from studio.apps.gateway.notifications import router as notification_router
 from studio.apps.gateway.service_status import ServiceMonitor
 from studio.apps.gateway.storage.migrations.registry import MIGRATIONS
 from studio.apps.gateway.storage.service_models import ChangeCursor, ChangeReceipt
 from studio.apps.gateway.transport.service import router
+from studio.apps.gateway.use_cases.resource_links import ResourceLinks
 from studio.config.settings import get_settings
 from studio.runtime.database.migrations import check
 from studio.runtime.database.sessions import Database
@@ -74,6 +76,9 @@ def create_app(
         docs_url=None,
         redoc_url=None,
         openapi_url=None,
+    )
+    app.state.resource_links = lambda request, _session, principal: ResourceLinks(
+        ServiceResources(app.state.capabilities, request.state.service_assertion, principal.user_id)
     )
     app.state.service_id = "gateway"
     app.state.database = database

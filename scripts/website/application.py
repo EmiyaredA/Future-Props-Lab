@@ -70,8 +70,8 @@ def create_app():
 
     from app.capabilities.web_access.profiles import AccessError
     from app.capabilities.web_access.runtime import WebAccess
-    from app.console.governance.automation_access import automation_allowed
     from studio.assembly.website.application import create_app as create_backend_app
+    from studio.contracts.gateway.automation_policy import automation_allowed
 
     app = create_backend_app(settings)
     from studio.runtime.http.website import CurrentWebsite, attach_website

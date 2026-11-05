@@ -29,7 +29,9 @@ state = Path(os.environ["GATEWAY_TEST_ROOT"])
 key = Ed25519PrivateKey.generate()
 catalog = RouteCatalog.read(Path("deploy/contracts/ownership.json"))
 schema = json.loads(Path("web/src/generated/openapi.json").read_text())
-manifest = json.loads(Path("backend/app/console/governance/automation_operations.json").read_text())
+manifest = json.loads(
+    Path("backend/studio/contracts/gateway/automation_operations.json").read_text()
+)
 
 
 class Capabilities:

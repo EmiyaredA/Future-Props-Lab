@@ -32,7 +32,7 @@ def test_portal_isolated_business_contract(tmp_path):
 def test_portal_source_closure_does_not_package_account_or_workshop_implementations():
     closure = source_closure(ROOT, "portal")
     assert "studio.assembly.independent.portal.application" in closure
-    assert "app.console.governance.developer_docs" in closure
+    assert "studio.apps.portal.storage.documents" in closure
     assert not any(
         name.startswith(
             (

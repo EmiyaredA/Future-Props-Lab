@@ -172,9 +172,12 @@ def test_identity_owns_account_routes_and_contracts() -> None:
         assert not (BACKEND_APP / "console/routes" / (name + ".py")).exists()
     for name in ("accounts", "registration", "project_markers"):
         assert (CONTRACTS / "identity" / (name + ".py")).is_file()
-    for name in ("platform_governance.py", "automation.py", "file_management.py"):
+    for name in ("file_management.py",):
         assert (BACKEND_APP / "console/routes" / name).is_file()
-    assert (BACKEND_APP / "console/schemas/automation.py").is_file()
+    assert (CONTRACTS / "gateway/automation.py").is_file()
+    assert (STUDIO_APPS / "gateway/transport/website/automation.py").is_file()
+    assert (STUDIO_APPS / "portal/transport/website.py").is_file()
+    assert (STUDIO_APPS / "model_service/transport/website/quotas.py").is_file()
     assert not (BACKEND_APP / "console/schemas/platform_governance.py").exists()
 
 

@@ -14,6 +14,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import HTMLResponse, PlainTextResponse
 from starlette.staticfiles import StaticFiles
 
+from studio.runtime.http.path_patterns import path_pattern
 from studio.runtime.http.website_releases import retired_releases
 
 HASHED_ASSET = re.compile(r"/assets/(?:[\w.-]+/)*[\w.-]+-[\w-]{8,}\.[\w.-]+", re.ASCII)
@@ -39,10 +40,6 @@ def listed_asset(release, asset):
         )
     except (OSError, ValueError, TypeError, KeyError):
         return False
-
-
-def path_pattern(path):
-    return re.compile("^" + re.sub(r"\\\{[^}]+\\\}", "[^/]+", re.escape(path)) + "$")
 
 
 class WebsiteStaticFiles(StaticFiles):

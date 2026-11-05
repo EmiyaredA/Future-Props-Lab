@@ -2,13 +2,13 @@
 
 from fastapi import APIRouter, HTTPException, Request
 
-from app.console.schemas.automation import (
+from studio.apps.gateway.changes import revision
+from studio.apps.gateway.use_cases.resource_links import ResourceLinkError
+from studio.contracts.gateway.automation import (
     AutomationCapabilities,
     AutomationOpenIn,
     AutomationOpenOut,
 )
-from studio.apps.gateway.changes import revision
-from studio.contracts.gateway.resource_routes import RESOURCE_ROUTES, page_link
 from studio.contracts.gateway.service_status import ServicesStatusOut
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 from studio.runtime.http.dependencies import StudioAuth
@@ -64,26 +64,17 @@ async def changes(request: Request, principal: StudioAuth) -> dict[str, int]:
 
 @router.post("/open", response_model=AutomationOpenOut)
 async def open_resource(request: Request, body: AutomationOpenIn, principal: StudioAuth):
-    if body.view in {"upload", "tags", "edit", "validate"} and not principal.allows(
-        "configuration.manage"
-    ):
-        raise HTTPException(403, {"code": "insufficient_permission"})
-    route = RESOURCE_ROUTES[body.kind]
-    if body.resource_id:
-        try:
-            exists = await request.app.state.capabilities.resource_exists(
-                assertion=request.state.service_assertion,
-                target_service=route.service,
-                target_path=route.api.format(id=body.resource_id),
-            )
-        except CapabilityDenied as exc:
-            raise HTTPException(exc.status, {"code": "resource_authorization_denied"}) from exc
-        except CapabilityUnavailable as exc:
-            raise HTTPException(
-                503, {"code": "owning_service_unavailable", "message": str(exc)}
-            ) from exc
-        if not exists:
-            raise HTTPException(404, {"code": "resource_not_found"})
-    return AutomationOpenOut(
-        **body.model_dump(), path=page_link(body.kind, body.resource_id, body.view)
-    )
+    try:
+        path = await request.app.state.resource_links(request, None, principal).open(
+            principal, body
+        )
+    except ResourceLinkError as exc:
+        status = 404 if exc.code == "resource_not_found" else 403
+        raise HTTPException(status, {"code": exc.code}) from exc
+    except CapabilityDenied as exc:
+        raise HTTPException(exc.status, {"code": "resource_authorization_denied"}) from exc
+    except CapabilityUnavailable as exc:
+        raise HTTPException(
+            503, {"code": "owning_service_unavailable", "message": str(exc)}
+        ) from exc
+    return AutomationOpenOut(**body.model_dump(), path=path)

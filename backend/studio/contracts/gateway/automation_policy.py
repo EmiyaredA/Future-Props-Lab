@@ -1,7 +1,7 @@
 """Enforce the same explicit business allowlist at both website ingresses."""
 
 from studio.contracts.gateway.automation_manifest import automation_manifest
-from studio.runtime.http.website import path_pattern
+from studio.runtime.http.path_patterns import path_pattern
 
 MANIFEST = automation_manifest()
 

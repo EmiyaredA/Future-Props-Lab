@@ -12,7 +12,7 @@ from fastapi import HTTPException
 
 from app.console.cloud_control.schemas import CloudSetupUpdate
 from app.console.cloud_control.setup import assert_setup_account, read_snapshot, setup_edit
-from app.console.governance.deployment_config import config_bytes, replace_config
+from studio.apps.management.config_updates import config_bytes, replace_config
 from studio.config import ConfigurationError
 from studio.config.settings import Settings
 from studio.contracts.agent_workbench.native import NativeLease, NativeOutcome

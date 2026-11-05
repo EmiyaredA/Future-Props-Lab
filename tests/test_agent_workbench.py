@@ -873,7 +873,7 @@ def test_workbench_does_not_expand_agent_or_sdk_operation_surface():
     root = Path(__file__).resolve().parents[1]
     mapping = json.loads((root / "sdk/python/operations.json").read_text())
     operations = json.loads(
-        (root / "backend/app/console/governance/automation_operations.json").read_text()
+        (root / "backend/studio/contracts/gateway/automation_operations.json").read_text()
     )["operations"]
     assert not any("/agent-workbench/" in key for key in mapping)
     assert not any("/agent-workbench/" in key for key in operations)

@@ -107,4 +107,4 @@ def create_diagram_note(client: Client, knowledge_base_id: str):
 
 1. `sdk/python/src/future_props_lab/canvas_example.py`
 2. `sdk/python/src/future_props_lab/generated/resources/thought.py`
-3. `backend/app/console/governance/automation_operations.json`
+3. `backend/studio/contracts/gateway/automation_operations.json`

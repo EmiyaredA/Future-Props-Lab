@@ -1,9 +1,8 @@
 """Developer documents preserve browser-only authorization and the public operation ID."""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
-from app.console.governance.developer_docs import developer_documents
-from app.console.schemas.developer_documents import DeveloperDocumentsOut
+from studio.contracts.portal.documents import DeveloperDocumentsOut
 from studio.runtime.http.dependencies import StudioAuth
 
 router = APIRouter(tags=["platform-governance"])
@@ -14,7 +13,7 @@ router = APIRouter(tags=["platform-governance"])
     response_model=DeveloperDocumentsOut,
     operation_id="developer_docs_v1_account_developer_documents_get",
 )
-async def developer_docs(principal: StudioAuth):
+async def developer_docs(request: Request, principal: StudioAuth):
     if principal.auth_kind != "session":
         raise HTTPException(403, {"code": "browser_session_required"})
-    return developer_documents(principal)
+    return request.app.state.developer_documents.read(principal)

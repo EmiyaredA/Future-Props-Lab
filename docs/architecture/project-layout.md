@@ -315,7 +315,7 @@ Visual 助手的对话、消息和操作记录由 `studio/apps/visual_workshop/c
 
 `scripts/website/serve.py` 在导入数据库前检查配置和迁移、持有目标与原桌面数据锁；`application.py` 在每个重载 worker 导入数据库前复查迁移，并装配网站与公网生命周期；`service.py` 管理同一个用户级 LaunchAgent，`development.py` 持有单例启动锁、沿用现有 TOML 和数据、按后端就绪顺序启动构建监听并统一清理进程，`frontend.py` 校验并原子切换本机与公网共用的构建，`Caddyfile.shared` 定义公网转发网关，`install_client.py` 核验原客户端授权并安装用户级 fpl 命令，`configure.py` 在停机快照约束下发布网站配置，`data_transfer.py` 拥有停机快照、SHA256、只读 SQLite 核验和文件发布回滚，`cleanup.py` 只清理受控缓存与有正式关联副本的临时媒体。相邻独立工具入口供 Amadeus／面试准备子进程调用，不启动主应用。
 
-`console/governance/automation.py` 校验资源归属并返回网站路径；`automation_operations.json` 维护 SDK／MCP 白名单，`automation_access.py` 将其编译为本机／公网共用的入口策略；`console/routes/automation.py` 负责发现和本机管理员访问控制。`sdk/python/src/future_props_lab/website.py` 保存受保护客户端连接，`cli.py` 提供 fpl。
+`studio/apps/gateway/storage/website_resources.py` 校验资源归属并返回网站路径；`automation_operations.json` 维护 SDK／MCP 白名单，`automation_access.py` 将其编译为本机／公网共用的入口策略；`studio/apps/gateway/transport/website/automation.py` 负责发现和本机管理员访问控制。`sdk/python/src/future_props_lab/website.py` 保存受保护客户端连接，`cli.py` 提供 fpl。
 
 `features/amadeus/PageProvider.tsx` 持有当前账号的页面侧栏，`PageContext.tsx` 和 `pageBridge.ts` 明确传递页面、选中引用和审批后变更；`platform/assistant.ts` 仅提供无状态的打开请求。`features/accounts/WebsiteAccessDialog.tsx` 只在后端确认的本机入口向管理员展示。`web/scripts/prepare-studio-release.mjs` 生成构建清单及预压缩资源；云端发布工具归 remote-control。
 
@@ -459,7 +459,7 @@ Future-Props-Lab/
 - 工具目录由 Web 静态注册表维护；后端 `tool_navigation/` 持久化稳定工具 ID 对应的收藏与
   最近使用状态，不复制工具名称、分类或外部网址。空间占用与 Codex 模型源页面和主机操作 API 已移除。
   视频下载用例调用本机 `yt-dlp`/`ffmpeg`，仅允许抖音与哔哩哔哩链接，任务与临时文件保存在运行时目录，可选写入文件库。
-- `web/src/features/cloud-control/` 拥有云控双栏、远程画面与验证界面。`backend/app/console/cloud_control/` 拥有按账号的 TOTP、桌面 Session 与空闲锁定、可信本机配置保存和 guacd 隧道。工作台仍可从 `/agents` 阅读已同步的原端会话。
+- `web/src/features/cloud-control/` 拥有云控两栏／三栏布局、远程画面与验证界面；文件阅读和命令展示仍由 `web/src/features/agent-workbench/` 拥有，通过显式阅读容器接入云控。`backend/app/console/cloud_control/` 拥有按账号的 TOTP、桌面 Session 与空闲锁定、可信本机配置保存和 guacd 隧道。工作台仍可从 `/agents` 阅读已同步的原端会话。
   API、SSE 与后台采集同时检查 `cloud-control.access`，身份降级后保留原账号副本和检查点。
   当前网站保留兼容装配，独立服务实现保留在服务化分支并由其统一验收切换。
 `web/src/features/applications/ApplicationCard.tsx` 拥有应用目录的紧凑入口卡片；布局、品牌图、简介和能力标签沿用应用目录样式，入口元数据由各装配入口显式传入。
@@ -624,7 +624,7 @@ Skill 的可编辑标签保存在 `integration_skills.tags`，与目录配置共
 不属于内容版本；文件存储显式使用已鉴权账号。
 集成中心前端的 `features/integrations/queryKeys.ts` 统一管理目录、详情、版本与工具列表缓存；
 `IntegrationInteractions.tsx` 和 `interaction.ts` 拥有草稿保护、外部更新与页面定位回执。
-自动化操作登记表逐项开放现有集成 API；目标校验归属 `console/governance/automation.py`，不开放任意 URL
+自动化操作登记表逐项开放现有集成 API；目标校验归属 `studio/apps/gateway/storage/website_resources.py`，不开放任意 URL
 或系统命令。工具 API、MCP 和校验记录用例显式接收已鉴权账号。
 
 Skill 不可变版本保存在 `accounts/<user-id>/integrations/skills/<skill-id>/<version>/`。
@@ -1014,3 +1014,11 @@ OpenAPI 导出只构造 HTTP 协议层。测试通过 `tests/website_test_suppor
 `assembly/website/account_provisioning.py` 注入兼容站模型目录初始化回调，仍与账号创建共用原事务；独立 Identity 使用持久目录事件。原 Console 模型聚合转发和平台协议聚合转发已移除。`platform_settings` 保持原表及已登记键分区，不归入账号私有状态。
 
 登录、注册与远程桌面的短期尝试窗口由每个应用显式构造 `runtime/http/rate_limit.AttemptLimiter`。同实例的协议适配与桌面连接共用该实例；桌面认证成功清除当前实例对应键，不影响其他应用。Cookie 安全属性和允许的请求来源在装配中绑定。窗口只限流，不代替数据库中的账号、Session 和 TOTP 授权事实。
+
+## 自动化发现与开发者文档
+
+Gateway 的公开输入类型、白名单及路由规则在 `studio/contracts/gateway/`；`automation_operations.json` 是 SDK 和服务镜像共用的白名单真源。`gateway/use_cases/resource_links.py` 在查询前校验操作权限，查询不到、其他账号和已删除资源均返回不存在。网站通过 `storage/website_resources.py` 读取显式装配的模型注册表，独立服务通过 `clients/resource_reader.py` 向资源所有者发送当前签名身份。两种装配调用同一个用例，不各自裁决链接规则。
+
+Portal 的 `use_cases/documents.py` 先验证开发文档权限，随后读取注入的 `DocumentSource`。`storage/documents.py` 仅访问安装程序的工程文档白名单；网站与独立服务均从装配入口绑定根目录。它不迁移或改写受保护产品文档。协议位于 `contracts/portal/documents.py`。
+
+原平台路由按业务拆为 Model Service 的 `transport/website/quotas.py`、Portal 的 `transport/website.py` 与 Identity 的 `transport/website/project_markers.py`。兼容站认证标记操作显式接收项目注册表，保持原账号校验、CAS 和审计事务。部署 TOML 的锁、校验与原子发布由 `management/config_updates.py` 拥有，配置键与落盘格式不变。

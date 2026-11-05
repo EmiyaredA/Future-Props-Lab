@@ -8,8 +8,11 @@ from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from studio.apps.portal.storage.documents import InstalledDocuments
 from studio.apps.portal.storage.migrations.registry import MIGRATIONS
 from studio.apps.portal.transport.service import router
+from studio.apps.portal.use_cases.documents import DeveloperDocuments
+from studio.config import REPO_ROOT
 from studio.contracts.identity.errors import AccountError
 from studio.runtime.database.migrations import check
 from studio.runtime.database.sessions import Database
@@ -22,7 +25,15 @@ from studio.runtime.http.problem_details import (
 )
 
 
-def create_app(*, state_root, catalog, public_key, web_root=None, version="development"):
+def create_app(
+    *,
+    state_root,
+    catalog,
+    public_key,
+    web_root=None,
+    version="development",
+    documents_root=REPO_ROOT,
+):
     database = Database("portal", state_root, models=())
 
     @asynccontextmanager
@@ -43,6 +54,7 @@ def create_app(*, state_root, catalog, public_key, web_root=None, version="devel
     )
     app.state.service_id = "portal"
     app.state.database = database
+    app.state.developer_documents = DeveloperDocuments(InstalledDocuments(documents_root))
     app.include_router(router, prefix="/v1")
     app.add_exception_handler(AccountError, account_exception_handler)
     app.add_exception_handler(HTTPException, http_exception_handler)

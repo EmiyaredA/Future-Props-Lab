@@ -5,7 +5,7 @@ import asyncio
 from fastapi import HTTPException
 
 from app.capabilities.agents.cli.catalog import connection, inspect_connection, settings_prefix
-from app.console.governance.deployment_config import config_bytes, replace_config, revision
+from studio.apps.management.config_updates import config_bytes, replace_config, revision
 from studio.config import CONFIG_FILE
 from studio.config.settings import get_cloud_settings
 

@@ -7,16 +7,15 @@ from pydantic import BaseModel
 
 from app.capabilities.web_access.contracts import AccessStatus
 from app.capabilities.web_access.profiles import AccessError
-from app.console.governance.automation import resource_link
-from app.console.governance.automation_access import MANIFEST
-from app.console.schemas.automation import (
+from studio.apps.gateway.use_cases.resource_links import ResourceLinkError
+from studio.assembly.http_dependencies import SessionDep, StudioAuth
+from studio.contracts.gateway.automation import (
     AutomationCapabilities,
     AutomationOpenIn,
     AutomationOpenOut,
 )
-from studio.assembly.http_dependencies import SessionDep, StudioAuth
+from studio.contracts.gateway.automation_policy import MANIFEST
 from studio.contracts.gateway.service_status import ServicesStatusOut, monolith_status, status_time
-from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.http.website import require_local_browser
 
 router = APIRouter(prefix="/automation", tags=["automation"])
@@ -65,13 +64,19 @@ async def changes(request: Request, principal: StudioAuth) -> dict[str, int]:
 
 
 @router.post("/open", response_model=AutomationOpenOut)
-async def open_resource(body: AutomationOpenIn, session: SessionDep, principal: StudioAuth):
+async def open_resource(
+    request: Request, body: AutomationOpenIn, session: SessionDep, principal: StudioAuth
+):
     try:
         return AutomationOpenOut(
-            **body.model_dump(), path=await resource_link(session, principal, body)
+            **body.model_dump(),
+            path=await request.app.state.resource_links(request, session, principal).open(
+                principal, body
+            ),
         )
-    except OperationError as exc:
-        raise HTTPException(exc.status, detail={"code": exc.code, "message": str(exc)}) from exc
+    except ResourceLinkError as exc:
+        status = 404 if exc.code == "resource_not_found" else 403
+        raise HTTPException(status, detail={"code": exc.code, "message": str(exc)}) from exc
 
 
 def local_access(request, principal):

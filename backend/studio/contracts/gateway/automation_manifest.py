@@ -7,7 +7,5 @@ from pathlib import Path
 
 @lru_cache(maxsize=1)
 def automation_manifest():
-    path = Path(__file__).resolve().parents[3] / (
-        "app/console/governance/automation_operations.json"
-    )
+    path = Path(__file__).with_name("automation_operations.json")
     return json.loads(path.read_text())

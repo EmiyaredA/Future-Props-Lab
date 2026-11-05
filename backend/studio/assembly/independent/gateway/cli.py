@@ -68,7 +68,7 @@ def run(options):
             public_key=public,
             schema=json.loads(options.schema.read_text()),
             manifest=json.loads(
-                Path("/app/backend/app/console/governance/automation_operations.json").read_text()
+                Path("/app/backend/studio/contracts/gateway/automation_operations.json").read_text()
             ),
             capabilities=CapabilityClient(
                 service="gateway",

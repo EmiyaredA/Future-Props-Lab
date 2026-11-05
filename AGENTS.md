@@ -85,7 +85,7 @@
 - 本机前端 3000、API 9001 与公网回环 28081 共用一个 ASGI 应用和 Runner 生命周期。`scripts/website/development.py` 是命令行和后台服务共用的单例启动器，先等待后端就绪，再启动前端构建监听；任一子进程退出时清理整套服务，不自动换端口。重载父进程持续持有数据锁，每个 worker 导入数据库前检查迁移。公网不暴露 Vite，由网关经隧道转发并读取与本机相同的静态构建。`capabilities/web_access/` 拥有公网监听器与专用 SSH 生命周期；附加 lifespan 关闭。本机管理权限依据实际 socket，不信任客户端 hostname 或转发头。公网管理员也不得管理主机目录、Codex、磁盘或访问配置；相关菜单只在本机入口显示。
 - 网站静态资源通过 `build:studio` 构建清单、哈希与压缩文件；云端仅托管程序。`/v1`、私人素材、SSE 不进入共享缓存，HTML 回退不覆盖未知 API 和缺失资源。公网启动要求构建匹配。
 - Amadeus 新对话由已登记的 Codex、Claude Code、OpenCode、DeepSeek Harness 或 Pi CLI 执行；FPL 后端持有运行、事件、审批和恢复，CLI 仅获得任务工具授权，不继承个人工具或通用 Shell。连接部署配置归 TOML，由可信本机管理员启用；有效账号可在有权访问的功能中使用已启用的连接。固定业务任务共用连接注册表并保留自有任务边界，云控仍仅管理员可访问。外部 CLI 的模型和认证配置按白名单读取，执行配置、插件和工具目录不直接继承。
-- CLI/SDK/MCP 使用网站地址和 Management API Key。`console/governance/automation_operations.json` 维护业务白名单，`/v1/automation` 提供能力发现与有归属校验的资源链接；不控制浏览器标签页，不开放账号治理、密钥管理或任意系统命令。客户端凭据目录 0700、文件 0600，不通过参数或日志传递密钥。
+- CLI/SDK/MCP 使用网站地址和 Management API Key。`studio/contracts/gateway/automation_operations.json` 维护业务白名单，`/v1/automation` 提供能力发现与有归属校验的资源链接；不控制浏览器标签页，不开放账号治理、密钥管理或任意系统命令。客户端凭据目录 0700、文件 0600，不通过参数或日志传递密钥。
 - Amadeus 使用当前页面侧栏和显式账号上下文接口，不依赖原生窗口或 IPC。下载与演示窗口使用浏览器能力，并保留弹窗阻止反馈和未保存保护。
 - Web 保持 `app/ + features/ + shared/ + platform/ + generated/`：`app/` 负责入口、壳与路由，
   `features/` 拥有业务页面和用例，`shared/` 放无业务归属的复用 UI，`platform/` 放 API 与认证

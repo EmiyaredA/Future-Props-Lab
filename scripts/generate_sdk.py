@@ -301,7 +301,7 @@ def main():
     existing = json.loads(MAPPING.read_text()) if MAPPING.exists() else {}
     mapping = inventory(schema, existing)
     agent = json.loads(
-        (ROOT / "backend/app/console/governance/automation_operations.json").read_text()
+        (ROOT / "backend/studio/contracts/gateway/automation_operations.json").read_text()
     )
     for key, operation in agent["operations"].items():
         if mapping.get(key) != operation:

@@ -6,7 +6,7 @@ import os
 import tomlkit
 from fastapi import HTTPException
 
-from app.console.governance.deployment_config import config_bytes, replace_config, revision
+from studio.apps.management.config_updates import config_bytes, replace_config, revision
 from studio.config import CONFIG_FILE
 from studio.config.settings import get_cloud_settings
 

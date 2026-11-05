@@ -693,7 +693,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
             f"from {ENTRY_POINTS[service]} import main\n\nmain()\n"
         ).encode()
     if service in {"identity", "gateway", "amadeus"}:
-        manifest = "backend/app/console/governance/automation_operations.json"
+        manifest = "backend/studio/contracts/gateway/automation_operations.json"
         payloads[manifest] = (root / manifest).read_bytes()
     if service in {
         "creative",

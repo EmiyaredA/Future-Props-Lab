@@ -87,6 +87,7 @@ def _backend_route_files() -> list[Path]:
         *(REPO_ROOT / "backend/studio/apps").glob("*/transport/website"),
     ]
     files = [path for root in roots if root.is_dir() for path in _python_files(root)]
+    files.extend((REPO_ROOT / "backend/studio/apps").glob("*/transport/website.py"))
     for package in ("integrations", "tool_navigation", "demo_runtime"):
         candidate = BACKEND_APP / package / "routes.py"
         if candidate.is_file():
