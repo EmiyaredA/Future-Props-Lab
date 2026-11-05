@@ -29,6 +29,7 @@ from fpl_runtime.migrations import check
 from .file_http import router as file_router
 from .migrations.registry import MIGRATIONS
 from .models import MODELS
+from .operation_http import router as operation_router
 from .record_http import router
 from .request_limits import AmadeusRequestLimits
 
@@ -72,6 +73,7 @@ def create_app(*, state_root, catalog, public_key, credential, transport=None):
     app.state.file_locks = WeakValueDictionary()
     app.include_router(router)
     app.include_router(file_router)
+    app.include_router(operation_router)
     app.add_middleware(AmadeusRequestLimits)
     app.add_middleware(SignedIdentity, service="amadeus", public_key=public_key, catalog=catalog)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)

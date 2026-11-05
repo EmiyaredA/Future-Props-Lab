@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from .annotation_assets import audio_asset_grant
 from .annotation_task_sources import task_read_grant, task_upload_grant
 from .annotation_transcription import segment_grant
+from .automation_manifest import automation_manifest
 from .galgame_annotation_source import source_grant as galgame_annotation_grant
 from .galgame_asr import asr_model_grant
 from .galgame_asr_execution import asr_job_grant
@@ -284,6 +285,14 @@ def permitted(grant, catalog):
         return False
     if _automation_lookup(grant):
         return True
+    if grant.purpose == "amadeus.operation.read":
+        return (
+            grant.caller == "amadeus"
+            and grant.source_method == "POST"
+            and grant.source_path == "/v1/amadeus/operations/read"
+            and grant.target_method == "GET"
+            and "GET " + destination.path in automation_manifest()["operations"]
+        )
     if grant.purpose == "deployment.status.read":
         return (
             grant.caller == "gateway"

@@ -10,8 +10,8 @@ import httpx
 from fastapi.middleware.asyncexitstack import AsyncExitStackMiddleware
 from starlette.middleware.exceptions import ExceptionMiddleware
 
-from app.console.governance.automation_access import MANIFEST
 from app.runtime.operation_receipts import OperationError
+from fpl_runtime.automation_manifest import automation_manifest
 
 PARAMETER = re.compile(r"\{([a-zA-Z_][a-zA-Z0-9_]*)\}")
 RESPONSE_LIMIT = 1024 * 1024
@@ -44,16 +44,19 @@ def _resolve_schema(
 
 
 def _registered(identity: str) -> tuple[str, str]:
-    for key, value in MANIFEST["operations"].items():
+    for key, value in automation_manifest()["operations"].items():
         if f"{value['resource']}.{value['method']}" == identity:
             return key.split(" ", 1)
     raise OperationError("业务操作未登记", "unsupported_tool", 422)
 
 
 def operation_catalog(app: Any, resource: str = "") -> list[dict[str, Any]]:
-    schema = app.openapi()
+    return catalog_from_schema(app.openapi(), resource)
+
+
+def catalog_from_schema(schema, resource):
     result = []
-    for key, value in MANIFEST["operations"].items():
+    for key, value in automation_manifest()["operations"].items():
         if resource and value["resource"] != resource:
             continue
         method, path = key.split(" ", 1)
@@ -85,14 +88,12 @@ def operation_catalog(app: Any, resource: str = "") -> list[dict[str, Any]]:
     return result
 
 
-async def call_operation(
-    app: Any,
-    request_headers: Any,
+def operation_request(
     identity: str,
     arguments: dict[str, Any],
     *,
     allow_write: bool,
-) -> dict[str, Any]:
+):
     method, template = _registered(identity)
     if method != "GET" and not allow_write:
         raise OperationError("读取接口不能执行修改操作", "unsupported_tool", 422)
@@ -120,6 +121,18 @@ async def call_operation(
     body = arguments.get("body")
     if method == "GET" and body is not None:
         raise OperationError("读取操作不能带请求正文", "invalid_arguments", 422)
+    return method, template, path, query, body
+
+
+async def call_operation(
+    app: Any,
+    request_headers: Any,
+    identity: str,
+    arguments: dict[str, Any],
+    *,
+    allow_write: bool,
+) -> dict[str, Any]:
+    method, _, path, query, body = operation_request(identity, arguments, allow_write=allow_write)
     headers = {"accept": "application/json", "origin": "http://fpl-internal"}
     for header in ("cookie", "x-csrf-token"):
         if request_headers.get(header):
@@ -142,6 +155,10 @@ async def call_operation(
         timeout=120.0,
     ) as client:
         response = await client.request(method, path, params=query, json=body, headers=headers)
+    return operation_result(response)
+
+
+def operation_result(response):
     if len(response.content) > RESPONSE_LIMIT:
         raise OperationError("操作结果超过 1 MiB", "result_too_large", 422)
     if response.status_code >= 400:

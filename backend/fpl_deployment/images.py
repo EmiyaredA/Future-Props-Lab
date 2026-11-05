@@ -516,7 +516,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
         payloads["service-entry.py"] = (
             f"from {ENTRY_POINTS[service]} import main\n\nmain()\n"
         ).encode()
-    if service in {"identity", "gateway"}:
+    if service in {"identity", "gateway", "amadeus"}:
         manifest = "backend/app/console/governance/automation_operations.json"
         payloads[manifest] = (root / manifest).read_bytes()
     if service in {
@@ -534,6 +534,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
         "galgame",
         "agent-runtime",
         "remote",
+        "amadeus",
     }:
         payloads["deploy/contracts/openapi.json"] = (
             root / "web/src/generated/openapi.json"

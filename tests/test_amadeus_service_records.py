@@ -209,3 +209,71 @@ async def test_amadeus_import_stream_and_file_cas(
         assert over.status_code == 413
         assert (await send("GET", root + "/files/imports/oversize.bin")).status_code == 404
         assert not list((tmp_path / "accounts").rglob(".amadeus-*.tmp"))
+
+
+async def test_amadeus_delegates_only_registered_reads_to_live_owned_routes(
+    scenario,  # noqa: F811
+    tmp_path,
+):
+    from fpl_runtime.delegation import RequestGrant, permitted
+
+    case = scenario
+    state = tmp_path / "amadeus"
+    state.mkdir()
+    apply(state / "service.db", "amadeus", MIGRATIONS)
+    credential = "isolated-amadeus-service-credential-" * 2
+    case.identity.state.identity_options["service_credentials"]["amadeus"] = credential
+    app = create_app(
+        state_root=state,
+        catalog=CATALOG,
+        public_key=case.key.public_key(),
+        credential=credential,
+        transport=case.mesh,
+    )
+    catalog_path = "/v1/amadeus/operations"
+    source = catalog_path + "/read"
+    grant = RequestGrant(
+        "amadeus", "amadeus.operation.read", "POST", source, "assets", "GET", "/v1/files"
+    )
+    assert permitted(grant, CATALOG)
+    for change in (
+        {"target_method": "POST"},
+        {"target_path": "/v1/amadeus/conversations", "target_service": "amadeus"},
+        {"source_path": "/v1/amadeus/model-turn"},
+    ):
+        assert not permitted(replace(grant, **change), CATALOG)
+
+    async with (
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://amadeus") as api,
+    ):
+        catalog = await api.get(
+            catalog_path,
+            params={"resource": "files"},
+            headers=await authorize(case, "amadeus", "GET", catalog_path),
+        )
+        assert catalog.status_code == 200, catalog.text
+        operations = {entry["id"]: entry for entry in catalog.json()["items"]}
+        assert operations["files.list_files"]["path"] == "/v1/files"
+        assert all(entry["resource"] == "files" for entry in operations.values())
+        write = next(entry["id"] for entry in operations.values() if entry["method"] == "POST")
+        proof = await authorize(case, "amadeus", "POST", source)
+
+        async def read(operation, arguments=None):
+            return await api.post(
+                source, headers=proof, json={"operation": operation, "arguments": arguments or {}}
+            )
+
+        assert (await read(write)).status_code == 422
+        assert (await read("https://other-host.invalid/path")).status_code == 422
+        assert (await read("files.list_files", {"body": {}})).status_code == 422
+        valid = await read("files.list_files")
+        assert valid.status_code == 200, valid.text
+        assert case.asset not in valid.text
+
+        logout = await case.browser.post(
+            "/v1/auth/logout",
+            headers={"X-CSRF-Token": case.csrf, "Origin": "http://127.0.0.1:19000"},
+        )
+        assert logout.status_code == 204
+        assert (await read("files.list_files")).status_code == 401
