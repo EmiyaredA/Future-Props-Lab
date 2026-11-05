@@ -6,8 +6,8 @@ import httpx
 import pytest
 from tests.account_fixtures import account_record
 
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.identity.storage.models.accounts import User
 from studio.apps.video_editor.storage.models import (
     VideoEditorAssetMetadata,

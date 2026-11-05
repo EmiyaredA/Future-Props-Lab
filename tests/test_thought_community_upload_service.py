@@ -10,7 +10,7 @@ from tests.test_community_asset_protocol import (
 from tests.test_thought_archive_import_service import thought_app
 from tests.test_thought_community_write_service import authorize, change_role, prepare_case
 
-from app.capabilities.asset_store.models import VisualAsset
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.thought_workshop.publication.models import CommunityUpload
 from studio.contracts.thought_workshop.community_uploads import PREFIX, public_path

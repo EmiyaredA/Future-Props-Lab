@@ -6,9 +6,8 @@ from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store import AssetStorage
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION
+from studio.apps.asset_library.storage.file_paths import TARGET_STORAGE_VERSION, AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.galgame_workshop.schemas import GalgameProjectSnapshotImportOut
 from studio.apps.galgame_workshop.snapshot_values import (
     snapshot_asset_record,

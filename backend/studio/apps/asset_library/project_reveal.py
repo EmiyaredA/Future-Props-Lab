@@ -2,7 +2,7 @@
 
 from sqlalchemy import text
 
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.reveal import APPLICATION_SERVICES
 

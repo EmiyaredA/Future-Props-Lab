@@ -18,7 +18,7 @@ from tests.test_community_asset_protocol import (  # noqa: F401
 )
 from tests.test_independent_project_catalog import authorize
 
-from app.capabilities.asset_store.library import AssetLibrary
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.media_rendering.settings import RenderingSettings
 from studio.apps.media_rendering.storage.migrations.registry import (

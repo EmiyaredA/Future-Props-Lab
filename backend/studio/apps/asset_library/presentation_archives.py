@@ -2,7 +2,7 @@
 
 from sqlalchemy import select, text
 
-from app.capabilities.asset_store.models import VisualAsset
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.asset_library.storage.service_models import (
     AssetReferencePin,
     AssetReferenceSet,

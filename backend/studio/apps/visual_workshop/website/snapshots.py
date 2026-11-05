@@ -7,15 +7,11 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store import AssetStorage
-from app.capabilities.asset_store.models import (
-    VisualAsset,
-    VisualAssetFolder,
-    VisualProjectAssetReference,
-)
-from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION
+from studio.apps.asset_library.storage.file_paths import TARGET_STORAGE_VERSION, AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset, VisualAssetFolder
 from studio.apps.model_service.catalog.visual import resolve_snapshot_models, snapshot_model_labels
 from studio.apps.visual_workshop.acceptance.snapshots import export_acceptance, import_acceptance
+from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference
 from studio.apps.visual_workshop.outputs.snapshots import export_outputs, import_outputs
 from studio.apps.visual_workshop.schemas.workshop import (
     VisualCanvasDocumentPutIn,

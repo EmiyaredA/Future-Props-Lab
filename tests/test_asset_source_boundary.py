@@ -23,7 +23,7 @@ from studio.apps.asset_library.storage.service_models import MODELS
 assert not any(name.startswith("app.apps.") for name in sys.modules)
 assert "studio.assembly.website.models" not in sys.modules
 assert "studio.apps.identity.storage.models.accounts" not in sys.modules
-from app.capabilities.asset_store.models import VisualProjectAssetReference
+from studio.apps.asset_library.storage.models import VisualProjectAssetReference
 from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference as owned
 assert VisualProjectAssetReference is owned
 assert owned not in MODELS
@@ -43,7 +43,7 @@ def test_asset_production_entry_source_closure_excludes_other_owners():
     assert "studio.apps.asset_library.files" in closure
     assert "studio.assembly.independent.asset_library.cli" in closure
     assert "studio.assembly.independent.asset_library.application" in closure
-    assert "app.capabilities.asset_store.asset_outputs" in closure
+    assert "studio.apps.asset_library.transport.projections" in closure
     assert not any(
         name.startswith(
             ("app.apps.", "studio.apps.model_service.", "app.console.models", "studio.host")

@@ -245,7 +245,7 @@ import studio.assembly.independent.model_service.application
 for name in sys.modules:
     assert name not in {
         'studio.runtime.database.website','studio.assembly.website.models',
-        'app.capabilities.asset_store.models','app.capabilities.asset_store.storage',
+        'studio.apps.asset_library.storage.models','studio.apps.asset_library.storage.file_paths',
     }
     assert not name.startswith(('app.console.models', 'app.console.governance', 'app.apps.'))
 """

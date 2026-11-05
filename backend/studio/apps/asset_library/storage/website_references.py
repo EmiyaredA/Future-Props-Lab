@@ -3,7 +3,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.library import AssetError
+from studio.contracts.asset_library.errors import AssetError
 from studio.runtime.database.orm_base import Base
 
 

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.config.settings import Settings
 from studio.runtime.database.project_files import creating_project_layout, deleting_project_layout
 from studio.runtime.revisions import RevisionConflictError, require_revision_write

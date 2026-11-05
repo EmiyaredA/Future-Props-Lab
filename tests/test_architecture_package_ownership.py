@@ -172,8 +172,7 @@ def test_identity_owns_account_routes_and_contracts() -> None:
         assert not (BACKEND_APP / "console/routes" / (name + ".py")).exists()
     for name in ("accounts", "registration", "project_markers"):
         assert (CONTRACTS / "identity" / (name + ".py")).is_file()
-    for name in ("file_management.py",):
-        assert (BACKEND_APP / "console/routes" / name).is_file()
+    assert (STUDIO_APPS / "asset_library/transport/website/files.py").is_file()
     assert (CONTRACTS / "gateway/automation.py").is_file()
     assert (STUDIO_APPS / "gateway/transport/website/automation.py").is_file()
     assert (STUDIO_APPS / "portal/transport/website.py").is_file()
@@ -205,8 +204,9 @@ def test_identity_and_models_own_their_records() -> None:
     assert not (BACKEND_APP / "schemas").exists()
 
 
-def test_asset_store_owns_files_models_and_schemas() -> None:
-    assert (BACKEND_APP / "capabilities" / "asset_store" / "models.py").is_file()
+def test_asset_library_owns_files_models_and_schemas() -> None:
+    assert (STUDIO_APPS / "asset_library/storage/models.py").is_file()
+    assert not list((BACKEND_APP / "capabilities/asset_store").rglob("*.py"))
     assert (CONTRACTS / "asset_library/files.py").is_file()
     assert not (BACKEND_APP / "capabilities/asset_store/schemas/files.py").exists()
     assert (REPO_ROOT / "backend/studio/contracts/asset_library/project_snapshots.py").is_file()

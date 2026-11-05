@@ -18,12 +18,12 @@ from tests.test_creative_project_certification import CREDENTIALS, PROJECTS
 from tests.test_independent_project_catalog import authorize
 
 from app.capabilities.agents.harness import ToolExecutionContext
-from app.capabilities.asset_store.library import AssetLibrary
 from studio.apps.agent_runtime.storage.migrations.registry import (
     MIGRATIONS as AGENT_RUNTIME_MIGRATIONS,
 )
 from studio.apps.asset_library.references.references import AssetReferences
 from studio.apps.asset_library.storage.service_models import AssetReferencePin, AssetReferenceSet
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.media_rendering.settings import RenderingSettings
 from studio.apps.media_rendering.storage.migrations.registry import (

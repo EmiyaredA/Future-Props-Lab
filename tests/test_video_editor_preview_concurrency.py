@@ -7,11 +7,11 @@ from concurrent.futures import ThreadPoolExecutor
 import httpx
 import pytest
 
-from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.contracts import RenderPlan
 from app.capabilities.media_rendering.evaluator import FRAME_COMPOSITOR_VERSION
 from app.capabilities.media_rendering.text_layer import TEXT_RENDER_VERSION
 from app.capabilities.media_rendering.video_sampling import VIDEO_SAMPLING_VERSION
+from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.video_editor import frames
 from studio.apps.video_editor.schemas import VideoEditorTimelineDocument
 from studio.config.settings import get_settings

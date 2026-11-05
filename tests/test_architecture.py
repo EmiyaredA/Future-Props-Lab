@@ -83,7 +83,6 @@ def _backend_route_files() -> list[Path]:
         REPO_ROOT / "backend/studio/apps/audio_annotation/transport",
         BACKEND_APP / "console" / "routes",
         REPO_ROOT / "backend/studio/apps/model_service/transport/website",
-        BACKEND_APP / "capabilities" / "asset_store" / "routes",
         *(REPO_ROOT / "backend/studio/apps").glob("*/transport/website"),
     ]
     files = [path for root in roots if root.is_dir() for path in _python_files(root)]
@@ -208,7 +207,7 @@ def _resolve_web_module(source: Path, specifier: str) -> Path | None:
 
 
 def test_workspace_models_are_registered_for_tenant_scoping() -> None:
-    from app.capabilities.asset_store.upgrade_records import AccountStorageUpgradeRoot
+    from studio.apps.asset_library.storage.layout.upgrade_records import AccountStorageUpgradeRoot
     from studio.apps.identity.storage.models.accounts import ManagementApiKey, SecurityAuditEvent
     from studio.apps.model_service.storage.models.model_templates import ModelTemplateSyncItem
     from studio.apps.model_service.storage.models.runtime_admission import RuntimeAdmission
@@ -345,7 +344,6 @@ def test_business_modules_do_not_depend_on_fastapi_upload_file() -> None:
     route_roots = [
         BACKEND_APP / "console" / "routes",
         REPO_ROOT / "backend/studio/apps/model_service/transport/website",
-        BACKEND_APP / "capabilities" / "asset_store" / "routes",
         *(REPO_ROOT / "backend/studio/apps").glob("*/transport/website"),
     ]
     for path in _python_files(BACKEND_APP):
@@ -452,7 +450,7 @@ def test_orm_models_only_depend_on_allowed_runtime_primitives() -> None:
     }
     roots = [
         REPO_ROOT / "backend/studio/runtime/database/project_operations.py",
-        BACKEND_APP / "capabilities" / "asset_store" / "models.py",
+        REPO_ROOT / "backend/studio/apps/asset_library/storage/models.py",
         BACKEND_APP / "integrations" / "models.py",
         BACKEND_APP / "tool_navigation" / "models.py",
         *(BACKEND_APP / "apps").glob("*/models.py"),
@@ -586,8 +584,8 @@ def test_account_service_does_not_own_catalog_provisioning() -> None:
 
 def test_public_files_have_independent_ownership() -> None:
     required = (
-        BACKEND_APP / "capabilities" / "asset_store" / "assets.py",
-        BACKEND_APP / "capabilities" / "asset_store" / "models.py",
+        REPO_ROOT / "backend/studio/apps/asset_library/storage/website_files.py",
+        REPO_ROOT / "backend/studio/apps/asset_library/storage/models.py",
         REPO_ROOT / "backend/studio/contracts/asset_library/files.py",
     )
     assert all(path.is_file() for path in required), (
@@ -652,9 +650,9 @@ def test_runtime_assembly_entrypoints_exist() -> None:
     assert (REPO_ROOT / "backend/studio/assembly/website/models.py").is_file()
     assert (REPO_ROOT / "backend/studio/assembly/website/routes.py").is_file()
     assert (REPO_ROOT / "backend/studio/contracts/identity/principal.py").is_file()
-    assert (BACKEND_APP / "capabilities" / "asset_store" / "storage.py").is_file()
+    assert (REPO_ROOT / "backend/studio/apps/asset_library/storage/file_paths.py").is_file()
     assert (REPO_ROOT / "backend/studio/assembly/website/account_provisioning.py").is_file()
-    assert (BACKEND_APP / "console" / "file_library" / "library_folder_archive.py").is_file()
+    assert (REPO_ROOT / "backend/studio/apps/asset_library/archives/folder_archive.py").is_file()
 
 
 def test_visual_assistant_has_no_function_local_app_imports() -> None:
@@ -719,8 +717,8 @@ def test_backend_business_packages_have_no_function_local_app_imports() -> None:
 def test_legacy_asset_root_is_only_resolved_by_storage_boundary() -> None:
     allowed = {
         BACKEND_APP / "runtime" / "config.py",
-        BACKEND_APP / "capabilities" / "asset_store" / "storage.py",
-        BACKEND_APP / "capabilities" / "asset_store" / "layout_migration.py",
+        REPO_ROOT / "backend/studio/apps/asset_library/storage/file_paths.py",
+        REPO_ROOT / "backend/studio/apps/asset_library/storage/layout/website_upgrade.py",
     }
     violations = [
         _relative(path)
@@ -878,12 +876,12 @@ def test_documented_core_directories_exist() -> None:
         "backend/app/runtime",
         "backend/app/capabilities",
         "backend/app/capabilities/agents",
-        "backend/app/capabilities/asset_store",
+        "backend/studio/apps/asset_library",
         "backend/studio/apps/identity/credentials",
         "backend/app/capabilities/media_rendering",
         "backend/studio/apps/model_service/transcription",
         "backend/app/console",
-        "backend/app/console/file_library",
+        "backend/studio/apps/asset_library/archives",
         "backend/app/console/governance",
         "backend/app/console/models",
         "backend/app/console/routes",
@@ -963,7 +961,7 @@ def test_galgame_protocol_and_schema_modules_stay_split() -> None:
 def test_project_applications_have_modules_routes_and_storage_roots() -> None:
     registry = (WEB_SRC / "app" / "applicationRegistry.ts").read_text(encoding="utf-8")
     settings = (REPO_ROOT / "backend/studio/config/settings.py").read_text(encoding="utf-8")
-    storage = (BACKEND_APP / "capabilities" / "asset_store" / "storage.py").read_text(
+    storage = (REPO_ROOT / "backend/studio/apps/asset_library/storage/file_paths.py").read_text(
         encoding="utf-8"
     )
     for application in ("visual-workshop", "galgame-workshop", "video-editor"):

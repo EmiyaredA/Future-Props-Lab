@@ -9,9 +9,11 @@ from uuid import uuid4
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
-from app.capabilities.asset_store.upgrade_records import AccountStorageUpgradeRoot as Root
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.layout.upgrade_records import (
+    AccountStorageUpgradeRoot as Root,
+)
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.runtime.database.ownership import bind_owner
 from studio.runtime.files.digests import sha256_file
 

@@ -7,7 +7,7 @@ import httpx
 import pytest
 from sqlalchemy import delete
 
-from app.capabilities.asset_store.models import VisualAsset
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.model_service.generation.media import generated_type
 from studio.apps.model_service.providers.senseaudio_audio import (
     create_music_task,

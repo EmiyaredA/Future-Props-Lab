@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from app.capabilities.asset_store.library import AssetError
-from app.capabilities.asset_store.models import VisualAsset
+from studio.apps.asset_library.storage.models import VisualAsset
+from studio.contracts.asset_library.errors import AssetError
 
 
 def ensure_library_managed(row: VisualAsset) -> None:

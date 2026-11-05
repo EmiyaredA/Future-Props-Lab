@@ -13,7 +13,7 @@ from tests.test_community_asset_protocol import (
 )
 from tests.test_thought_community_write_service import authorize
 
-from app.capabilities.asset_store.models import VisualAsset
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.identity.delegation import RequestGrant

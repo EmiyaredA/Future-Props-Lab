@@ -14,9 +14,9 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select, text
 
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.asset_library.storage.migration_records import ASSET_CURSOR
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.contracts.management.migration_batches import BatchReceipt
 from studio.runtime.files.migration_files import import_blob, inspect_blob, inventory_directory
 from studio.runtime.http.migration_admission import MigrationAdmission

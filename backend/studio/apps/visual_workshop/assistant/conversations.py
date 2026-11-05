@@ -6,9 +6,9 @@ from uuid import uuid4
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.assistant_media import read_pdf
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.previews.assistant_attachments import read_pdf
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.model_service.catalog.assistant import (
     catalog_rows,
     chat_order,

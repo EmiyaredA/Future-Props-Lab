@@ -8,9 +8,9 @@ from zipfile import ZIP_STORED, ZipFile
 
 from sqlalchemy import select
 
-from app.capabilities.asset_store.asset_scope import is_library_asset
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
+from studio.apps.asset_library.storage.scope import is_library_asset
 from studio.apps.asset_library.storage.service_models import VideoFileWriteReceipt
 from studio.apps.asset_library.video.video_segment_handoffs import SegmentHandoffFiles
 from studio.contracts.asset_library.errors import AssetError

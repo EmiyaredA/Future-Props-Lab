@@ -5,8 +5,8 @@ import asyncio
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.audio_annotation.models import AudioAnnotationDocument, AudioAnnotationProject
 from studio.apps.audio_annotation.schemas.document import (
     AudioAnnotationSegment,

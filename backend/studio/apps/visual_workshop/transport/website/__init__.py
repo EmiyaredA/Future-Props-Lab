@@ -7,12 +7,8 @@ from fastapi.responses import FileResponse
 from pydantic import ValidationError
 from starlette.background import BackgroundTask
 
-from app.capabilities.asset_store import (
-    AssetStorage,
-    ProjectFolderError,
-    VisualAssets,
-    open_project_folder,
-)
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.website_files import VisualAssets
 from studio.apps.visual_workshop.canvas import VisualCanvasDocuments, VisualCanvasError
 from studio.apps.visual_workshop.operations import apply_operations as visual_operations
 from studio.apps.visual_workshop.schemas.operations import VisualOperationsIn
@@ -41,6 +37,7 @@ from studio.contracts.asset_library.files import (
     VisualAssetReferencePatchIn,
 )
 from studio.contracts.asset_library.project_snapshots import ProjectFolderOpenOut
+from studio.host.project_files.folders import ProjectFolderError, open_project_folder
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.files.project_archives import ProjectSnapshotError
 

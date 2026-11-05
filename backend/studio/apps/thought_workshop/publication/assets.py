@@ -1,9 +1,9 @@
 from sqlalchemy import select, text
 
-from app.capabilities.asset_store.image_thumbnails import ThumbnailSource, asset_thumbnail
-from app.capabilities.asset_store.library import AssetLibrary
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.previews.thumbnails import ThumbnailSource, asset_thumbnail
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.thought_workshop.multitable.storage import asset_ids, snapshot
 from studio.apps.thought_workshop.publication.access import (
     article,

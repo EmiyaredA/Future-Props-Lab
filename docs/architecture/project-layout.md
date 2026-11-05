@@ -136,7 +136,7 @@ backend/
 
 `shared/ui/LoadingScene` 拥有整页、区域与行内的同源琥珀仪表视觉；`LoadingCharacter` 拥有人物播放、暂停、静态回退及动态效果偏好，二者不持有业务状态。`web/public/brand/loading/` 保存仪表 SVG、八张道具 WebP、红莉栖小跑透明视频与首帧；二进制资产由 Git LFS 和生产资源 SHA-256 检查维护。`app/bootLoading.ts` 在 React 挂载前控制同源 HTML 加载场景并在成功或失败时清理。
 
-`capabilities/asset_store/image_thumbnails.py` 与 `runtime/files/raster.py` 拥有受限解码、方向校正、透明 WebP 与原子落盘；身份、社区和创作用例先授权后调用。文件库 HTTP 统一通过 Rendering 用例，旧预览及缩略图转发模块已删除。
+`studio/apps/asset_library/previews/thumbnails.py` 与 `runtime/files/raster.py` 拥有受限解码、方向校正、透明 WebP 与原子落盘；身份、社区和创作用例先授权后调用。文件库 HTTP 统一通过 Rendering 用例，旧预览及缩略图转发模块已删除。
 `scripts/generate_image_variants.py` 生成 `web/public/brand/thumbnails/` 下的摘要命名静态派生图和清单，构建执行过期检查。
 接口、入口清单与验收约定见 [`../reference/loading-and-images.md`](../reference/loading-and-images.md)。
 
@@ -159,13 +159,15 @@ backend/
 
 `backend/studio/apps/asset_library/` 拥有正在拆分的文件用例、素材保留集合、幂等回执与持久删除队列。`references.py` 为导入或核验已经提交的源快照提供归属、CAS 和素材校验，并记录不可变回执；正常资源修改使用下述独立准备意图。`files.py` 只访问自有文件、文件夹与项目文件引用位置，通过显式项目归属接口校验源项目；`deletions.py` 在数据库提交后逐文件清理，可在进程中断后恢复，不递归清空目录。`reference_changes.py` 为每次源修改单独记录准备意图及素材 pin；源数据库将修改与回执一起提交后才确认，只有已证实回滚才撤销。确认乱序只更新到较新的源版本，较新准备意图继续保留；未知结果不按时间清除。`0002_prepared_references` 追加独立表和永久删除标记，旧注册迁移不改写。`references.py` 的已提交快照导入不得覆盖正在准备的修改。
 
+原 `backend/app/capabilities/asset_store/` 和 `app/console/file_library/` 已移除。素材 ORM、上传落盘、文件夹与路径归 `asset_library/storage/`；账号布局升级归 `storage/layout/`；文件夹 ZIP 导入导出归 `archives/`；网站协议归 `transport/website/`，描述转换归 `transport/projections.py`。助手附件投影和社区缩略图适配归 `previews/`。本机文件夹打开仅由 `studio/host/project_files/folders.py` 执行，接收调用方已授权的布局接口，不导入素材 ORM。旧网站联表引用校验尚需逐项替换为消费方端口，不能把本批目录归并视为完整解耦。
+
 `studio/contracts/asset_library/retention_authority.py` 定义仅能准备和结算一次素材引用修改的签名授权，绑定调用服务、账号、请求 ID 与完整修改摘要；它不能作为公共 API、素材读取或任意后台任务凭据。Identity 的 `retention.py` / `retention_api.py` 从有效的原始业务写请求签发授权，并在新准备前重新检查账号与 Session/API Key。Assets 的 `retention_api.py` 只接受该授权，同一意图的结果确认可以在浏览器注销后完成；新准备拒绝失效或到期授权。`studio/apps/asset_library/clients/retention.py` 不自动改请求 ID、不跟随跳转，超时保留未决意图；源应用仍需将授权、修改与回执按其事务流程持久化。
 
 `studio/apps/asset_library/project_links.py` 拥有文件库素材在 Visual 项目内的名称、文件夹位置及 CAS；`VisualProjectFileLink` 与追加迁移 `0003_project_file_links` 只引用 Assets 自有素材和文件夹，源项目 ID 不透明。删除项目素材文件夹在同一数据库级联移除这些位置记录，保留库中原件；删除被引用的原件会拒绝。现有 Visual 素材导入和引用 URL 由 Assets 承接，路径、操作 ID 和响应保持不变。旧单体的 `VisualProjectAssetReference` 仅用于兼容和封存导出。Assets 迁移保留 ID、目录与 revision，Visual 迁移在确认其独立库的兼容表为空后移除该表。内容预览、缩略图、媒体裁剪、取帧和媒体信息路径归 Rendering，本机打开文件夹归 Tools，账号、SDK 白名单与公开路径不变。
 
 `layout.py` 仅整理自有旧格式文件，复制、大小及 SHA256 核验后通过 CAS 更新存储版本；不处理其他服务项目目录，不覆盖异内容目标，不删除源文件。中断可核验已经落盘的相同副本后完成登记。共享上传和 Assets 复制在数据库提交已经开始后遇到故障会保留文件，提交未知时不按回滚删除可能已提交的原件。
 
-`backend/studio/apps/visual_workshop/asset_references/models.py` 现在拥有 Visual 项目引用 ORM，外部素材与文件夹 ID 不再声明跨服务外键。原 `asset_store.models` 名称只为旧单体显式导入保留兼容；Assets 通过 `asset_outputs.AssetReferenceView` 消费数据投影，不加载该 ORM。镜像闭包检查与全新进程验证共同阻止回归。
+`backend/studio/apps/visual_workshop/asset_references/models.py` 现在拥有 Visual 项目引用 ORM，外部素材与文件夹 ID 不再声明跨服务外键。原 `asset_store.models` 转发已删除；Assets 的独立服务通过 `transport/projections.AssetReferenceView` 消费数据投影，不加载 Visual ORM。兼容网站的引用联表适配仍位于 `storage/website_files.py`，后续按显式端口替换。镜像闭包检查与全新进程验证共同阻止回归。
 
 `settings.py` 只接受存储路径与三项文件限制，不加载 `.env` 或加密密钥。项目验证通过绑定原请求的 `assets.visual-project.read` 委托，只能从五个已登记文件操作读取 Visual 项目；不会传递原 Cookie 或完整客户端凭据。`application.py` 装配 21 个既有公开操作和私有引用协议，拥有文件清理生命周期；`__main__.py` 在加载 ORM 前解析最小配置、验证目录、取得独占锁并检查显式迁移。公开协议哈希与聚合契约一致。镜像与独立 `/files` 页面已经接通，完整容器验收和业务引用调用方仍是正式切换门禁。
 
@@ -248,7 +250,7 @@ Galgame 剪辑交接由 `studio/apps/galgame_workshop/handoff_jobs.py`、`handof
 
 `runtime/image_sizes.py` 和 `runtime/raster.py` 维护无 ORM 的图片尺寸及受限解码；头像通过 Identity 自有适配使用，不为头像导入素材数据库。`media_rendering/preview_metadata.py` 和 `pdf_preview_worker.py` 拥有实际文本、PDF 与媒体预览；旧素材入口只负责账号查询适配。PDF 使用限时子进程，宫格字体按白名单封入 Rendering 镜像。Assets 上传暂存位于自己的状态卷，避免大文件占满容器内存临时盘。`scripts/website/rendering_docker_checks.py` 使用合成媒体验证真实容器链路，`assets_docker_checks.py` 覆盖超过内存临时盘大小的上传与 ZIP 导入。
 
-`capabilities/asset_store/folders.py` 复用同属文件能力的文件夹 CAS、名称和深度规则；`asset_context.py` 允许显式注入项目验证。新 Assets 数据库将外部项目 ID 视为不透明标识，仅保留自有表外键；旧迁移与数据库外键保持原样，迁移期单体继续使用旧适配。`studio/contracts/asset_library/references.py` 维护受限消费方、资源种类和版本化引用消息，不接受客户端指定归属。
+`studio/apps/asset_library/storage/folders.py` 复用同属文件能力的文件夹 CAS、名称和深度规则；`storage/context.py` 允许显式注入项目验证。新 Assets 数据库将外部项目 ID 视为不透明标识，仅保留自有表外键；旧迁移与数据库外键保持原样，迁移期单体继续使用旧适配。`studio/contracts/asset_library/references.py` 维护受限消费方、资源种类和版本化引用消息，不接受客户端指定归属。
 
 `backend/studio/apps/agent_workbench/` 装配独立工作台，拥有自有迁移、原生任务、来源订阅、投影回执、协调器与私有协议；复用工作台的阅读、搜索、CAS 和投影用例，不加载账号 ORM 或 Mac 解析器。`studio/runtime/http/dependencies.py` 只消费签名身份；`change_stream.py` 使用显式实时授权与数据库会话，旧 `events.py` 保留单体身份适配。
 
@@ -297,7 +299,7 @@ Visual 的 `review_agent.py` 冻结已保留的 Mac 任务媒体和固定连接�
 
 Models 的 `assistant_model_runs.py` 负责 Visual 助手的提供方执行租约、标准化模型轮次流、用量和调用日志；`studio/contracts/visual_workshop/visual_assistant_model.py` 拥有跨服务轮次契约。Visual 持有对话和工具执行权限。
 
-Assets 的 `conversation_files.py` 按对话保留集投影助手附件内容。共享 `app/capabilities/asset_store/assistant_media.py` 负责文本、PDF 和 AVIF 的原件读取与兼容限制。Visual 的源回执确定新引用，历史附件仍保留原归属。
+Assets 的 `conversation_files.py` 按对话保留集投影助手附件内容。共享 `studio/apps/asset_library/previews/assistant_attachments.py` 负责文本、PDF 和 AVIF 的原件读取与兼容限制。Visual 的源回执确定新引用，历史附件仍保留原归属。
 
 Visual 的 `assistant_submission.py` 冻结对话和画布版本，准备附件与模型额度后提交消息与源回执。`assistant_dispatches.py` 在 Visual 持有消息结算，使用短时服务签名向 Models 补交原调用的日志结果。源运行只保存归属、范围和结算数据。
 
@@ -355,8 +357,8 @@ Future-Props-Lab/
 ├── backend/app/
 │   ├── problem_details.py # 统一协议错误映射
 │   ├── runtime/       # 尚未迁出的凭据适配
-│   ├── capabilities/  # 有契约的共享能力：asset_store（VisualAsset ORM + files/媒体 schemas/routes）、agents、media_rendering
-│   ├── console/       # Studio 治理、库级文件用例；自有 models/routes/schemas
+│   ├── capabilities/  # 有契约的共享能力：agents、media_rendering
+│   ├── console/       # 尚未迁出的治理、助手和创作用例
 │   │   ├── amadeus/   # 助手会话、引用快照、审批执行、沙箱脚本与模型桥接
 │   │   └── creative_workshop/ # 跨账号公开创作版本、草稿、安装事务与文件校验
 │   ├── tool_navigation/ # 工具目录状态与抖音/B站视频下载；自有 models/schemas/routes
@@ -492,7 +494,7 @@ Future-Props-Lab/
   包括品牌、返回卡片、图标导航和主题切换。思绪工坊复用该展示组件，知识库状态与目录仍由功能模块管理；录音标注工坊与演示工坊同样 `supportsProjects: true`，但只引用公共文件库、不拥有独立项目存储根。
   `web/src/features/interview-assistant/` 拥有面试助手，入口为 `/apps/interview-assistant`，复用应用壳。`api.ts` 与 `queryKeys.ts` 消费生成契约并按账号／账号区分缓存；`usePreparation.ts` 管理场次恢复、原件提交和真实进度；`PreparationPanel.tsx` 与 `BundleView.tsx` 展示资料版本、来源和问题依据。`Practice.tsx`、`session.ts`、`useInterviewSession.ts` 管理仅本页内存中的文字练习与规则复盘，固定使用已验收资料的首轮问题；不采集音视频。`assets/` 中的候选人为生成的虚构示意图，使用 Git LFS。
   `backend/studio/apps/interview_assistant/` 拥有私有场次、材料、输入快照、Codex 准备任务和交付契约；`routes/` 只适配 HTTP，`rooms.py` 执行权限、回执和 CAS，`runner.py` 通过现有 Runner 生命周期串行执行准备、处理中断并拒绝过期结果。`codex.py` 白名单读取模型连接、冻结上下文并消费 JSONL；`task_tools.py` 是不依赖运行时配置、ORM 或 HTTP 的文档／草稿 MCP，`process_watchdog.py` 负责父进程退出和超时终止。二者经 `scripts/website/interview_tools.py` 独立打包为 `fpl-interview-tools`，不复用服务进程凭据。`studio/apps/identity/website_access/interview.py` 提供后台账号／成员权限重验，在主入口注入执行器。
-  后端 `capabilities/asset_store/` 负责公共文件元数据、文件夹、存储校验、项目引用，以及三个工坊创建/删除时数据库与
+  后端 `studio/apps/asset_library/` 负责公共文件元数据、文件夹、存储校验、项目引用，以及三个工坊创建/删除时数据库与
   文件目录的一致性补偿，
   `apps/visual_workshop/` 负责真实项目、revisioned 节点画布、项目对话与图片/视频异步生成任务，
   `apps/galgame_workshop/` 负责 Galgame 工程元数据、Story 1.4 故事文档 CAS、账号级旧 Story
@@ -510,7 +512,7 @@ Future-Props-Lab/
   与最终封装由 FFmpeg 统一处理。
   均不预置项目或素材。Studio 一级
   “文件管理”和项目素材浏览器复用同一文件 API；Galgame 上传图片、音视频与字体也复用公共存储、内容签名和媒体元数据校验，
-  但只能通过 Galgame 工程素材 API 修改或删除。`capabilities/asset_store/document_references.py` 统一检查文档与知识库封面的公共文件删除保护。公共文件被视觉或 Galgame 工程引用期间禁止删除，
+  但只能通过 Galgame 工程素材 API 修改或删除。`studio/apps/asset_library/storage/website_references.py` 统一检查文档与知识库封面的公共文件删除保护。公共文件被视觉或 Galgame 工程引用期间禁止删除，
   对话消息引用的项目素材也必须先解除引用才能删除。
 
 视频剪辑的节目监视器由 `VideoEditorPreview.tsx` 装配；`VideoEditorMediaLayer.tsx` 拥有媒体图层与图片显示，
@@ -551,7 +553,7 @@ Future-Props-Lab/
 - 视觉助手对话生命周期与发送事务保留在 `visual_workshop/assistant/conversations.py`，附件权限、
   内容投影、图片编码和文档提取集中在同目录 `attachments.py`，避免会话持久化依赖具体媒体解析。
 - 版本化项目快照的 ZIP64 流式校验、临时文件清理和跨平台目录打开命令由
-  `capabilities/asset_store/project_snapshots.py` 与 `capabilities/asset_store/project_folders.py` 拥有；画布、Story 和时间线的
+  `studio/runtime/files/project_archives.py` 与 `studio/host/project_files/folders.py` 拥有；画布、Story 和时间线的
   类型化投影、ID 重映射与模型语义匹配仍位于三个所属工坊。
 - `runtime/project_records.py` 只提供显式账号谓词下的项目加载、revision CAS 更新和删除
   原语，不自动提交事务也不承载默认文档、就绪状态、快照投影或领域错误规则；三套工坊继续拥有各自
@@ -619,7 +621,7 @@ Future-Props-Lab/
 文件统一保存在 `accounts/<user-id>/`，头像位于 `profiles/<user-id>/`；账号目录下包含 `applications/`、
 `library/assets/`、`model-test/`、`model-inference/`、`integrations/` 等对应业务路径。
 `db/migrations/versions/account_ownership/` 保存 `0116_account_ownership` 的静态分组 SQL；
-`capabilities/asset_store/upgrade_records.py` 保存升级清单，`account_upgrade.py` 执行可恢复文件复制与校验。
+`studio/apps/asset_library/storage/layout/upgrade_records.py` 保存升级清单，`account_upgrade.py` 执行可恢复文件复制与校验。
 迁移未完成时后台执行器暂停，管理员通过正式布局 API 完成核验并重启。旧根目录只作恢复副本，正常路径无回退。
 `studio/runtime/database/ownership.py` 拥有显式账号 ID 校验与 Session 绑定原语，`studio/assembly/website/models.py` 负责网站会话的行级过滤和写入归属校验。
 Skill 的可编辑标签保存在 `integration_skills.tags`，与目录配置共用 revision/CAS，
@@ -880,7 +882,7 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 - `.agents/skills/watch/`：仓库级第三方视频分析 Agent Skill，包含中文通用指南、基于固定上游的通用脚本、许可证与固定提交来源记录；仅供 Codex 在本仓库发现，不参与 Future Props Lab 产品构建。应用内 Skills 通过正式 ZIP 导入 API 单独管理。
 - `skills/future-props-lab-automation/skills/thought-workshop/research-to-document/`：产品使用与技术／论文调研 Skill；普通父笔记直接承载报告，子文档用已有多维表格组织资料、比较与验证，正文引用精简嵌入视图。`references/` 拥有记录与存档契约，`assets/` 提供两类成文模板、恢复快照与原生 TableSpec，`scripts/check_project.py` 只读校验引用与状态。正式存档复用思绪工坊 CLI/SDK，不增加专用调研页面、应用内 AI 写作入口或后台调研服务；原型、截图与打包验收产物位于 `.local/research-workbench-preview/`。
 - `skills/future-props-lab-automation/skills/visual-workshop/visual-character-replacement/`：人物与可选场景替换制作流程；`references/` 拥有镜头规划、review、记录与 App 适配说明，`assets/templates/` 拥有同源的 JSON、六类文本监督模板和 HTML 对照页，`scripts/` 拥有标准库本地记录校验、版本绑定、反馈合并及渲染。工具不调用 App 或模型，正式同步仍经授权 API；ZIP、演示媒体与验收产物只在 `.local/` 下生成。
-- `backend/app/capabilities/asset_store/image_crop.py` 与 `capabilities/asset_store/schemas/image_crop.py`：公共文件的像素裁剪、边界与透明度规则，返回 PNG 后由调用者显式转存；HTTP 适配在 `capabilities/asset_store/routes/image_crop.py`。
+- `backend/studio/apps/media_rendering/use_cases/read_media.py` 与 `studio/contracts/media_rendering/image_crop.py`：公共文件的像素裁剪、边界与透明度规则，返回 PNG 后由调用者显式转存；HTTP 适配在 `studio/apps/media_rendering/transport/website/image_crop.py`。
 
 ### 内置角色展示
 

@@ -5,10 +5,10 @@ from collections.abc import Awaitable, Callable
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 
-from app.capabilities.asset_store.asset_context import VisualAssetContext
-from app.capabilities.asset_store.asset_outputs import folder_out
-from app.capabilities.asset_store.library import AssetError
-from app.capabilities.asset_store.models import VisualAssetFolder
+from studio.apps.asset_library.storage.context import VisualAssetContext
+from studio.apps.asset_library.storage.models import VisualAssetFolder
+from studio.apps.asset_library.transport.projections import folder_out
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.files import (
     VisualAssetFolderCreateIn,
     VisualAssetFolderListOut,

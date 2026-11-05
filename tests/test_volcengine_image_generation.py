@@ -6,8 +6,8 @@ import httpx
 import pytest
 from tests.test_generation_task_driver import FakeStore, _driver, _task
 
-from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.credentials import encrypt_secret
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.model_service.generation.driver import ImmediateGenerationResult
 from studio.apps.model_service.providers.volcengine_image import SEEDREAM_MODEL, generate_image
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
@@ -129,7 +129,7 @@ async def test_server_validates_multi_image_order_count_format_and_submission_sn
             )
         session.add(VisualCanvasDocument(project_id=project_id, nodes=[], edges=[]))
         await session.commit()
-        from app.capabilities.asset_store.storage import AssetStorage
+        from studio.apps.asset_library.storage.file_paths import AssetStorage
         from studio.config.settings import get_settings
 
         storage = AssetStorage(get_settings())

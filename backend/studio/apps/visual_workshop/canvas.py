@@ -3,7 +3,8 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.models import VisualAsset, VisualProjectAssetReference
+from studio.apps.asset_library.storage.models import VisualAsset
+from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference
 from studio.apps.visual_workshop.canvas_asset_values import existing_assets, expected_assets
 from studio.apps.visual_workshop.canvas_documents import CanvasDocuments
 from studio.apps.visual_workshop.canvas_documents import VisualCanvasError as VisualCanvasError

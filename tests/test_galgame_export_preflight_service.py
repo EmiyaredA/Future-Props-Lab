@@ -16,8 +16,8 @@ from tests.test_creative_project_certification import CREDENTIALS
 from tests.test_galgame_uploads_service import DropAcknowledgement
 from tests.test_independent_project_catalog import ORIGIN, authorize
 
-from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.media_rendering.render_capacity import RenderCapacity
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.galgame_workshop.storage.migrations.registry import (
     MIGRATIONS as GALGAME_MIGRATIONS,
 )

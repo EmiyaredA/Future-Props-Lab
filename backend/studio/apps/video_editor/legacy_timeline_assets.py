@@ -2,7 +2,7 @@
 
 from sqlalchemy import select
 
-from app.capabilities.asset_store.models import VisualAsset
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.video_editor.storage.models import VideoEditorAssetMetadata
 from studio.apps.video_editor.timeline_assets import TimelineAsset
 

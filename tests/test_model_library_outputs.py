@@ -16,11 +16,11 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import func, select
 
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.asset_library.library_outputs import LibraryOutputFiles
 from studio.apps.asset_library.settings import StorageSettings
+from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.asset_library.storage.service_models import ModelLibraryOutputReceipt
 from studio.apps.model_service.library.outputs import library_outputs
 from studio.apps.model_service.library_outputs import HttpLibraryOutputs
@@ -364,7 +364,7 @@ from studio.apps.model_service.transport.website.model_inference import router
 from studio.apps.model_service.transport.website.models.model_test_generation import router
 for module in ('studio.runtime.database.website',
     'studio.assembly.website.models',
-    'app.capabilities.asset_store.models',
+    'studio.apps.asset_library.storage.models',
     'studio.apps.identity.storage.models.accounts', 'studio.apps.visual_workshop.storage.models'):
     assert module not in sys.modules, module
 """

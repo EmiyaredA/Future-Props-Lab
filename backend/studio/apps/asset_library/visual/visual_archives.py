@@ -1,7 +1,7 @@
 """Publish Visual archive files, folders and project-scoped pins atomically."""
 
-from app.capabilities.asset_store.models import VisualAssetFolder
 from studio.apps.asset_library.motion.motion_archives import PortableProjectArchives
+from studio.apps.asset_library.storage.models import VisualAssetFolder
 from studio.apps.asset_library.storage.service_models import (
     AssetReferencePin,
     AssetReferenceSet,

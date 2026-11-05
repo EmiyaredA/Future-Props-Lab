@@ -6,17 +6,17 @@ import pytest
 from PIL import Image
 from sqlalchemy import select
 
-from app.capabilities.asset_store.library import AssetError
-from app.capabilities.asset_store.models import VisualAsset, VisualAssetFolder
 from studio.apps.asset_library.deletions import FileCleanup
 from studio.apps.asset_library.files import Files
 from studio.apps.asset_library.references.references import AssetReferences
 from studio.apps.asset_library.settings import StorageSettings
 from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS
+from studio.apps.asset_library.storage.models import VisualAsset, VisualAssetFolder
 from studio.apps.asset_library.storage.service_models import (
     MODELS,
     AssetDeletion,
 )
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.files import VisualAssetFolderCreateIn, VisualAssetPatchIn
 from studio.contracts.asset_library.references import ReferenceUpdate
 from studio.runtime.database.migrations import apply
@@ -243,7 +243,7 @@ async def test_cleanup_refuses_symlinks_and_preserves_external_original(owned, t
 
 
 async def test_folder_archive_uses_only_owned_storage_and_preserves_account_boundaries(owned):
-    from app.console.file_library import LibraryFolderArchive
+    from studio.apps.asset_library.archives.folder_archive import LibraryFolderArchive
 
     database, settings, cases, _calls = owned
     async with database.sessions() as session:

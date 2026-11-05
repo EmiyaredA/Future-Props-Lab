@@ -4,16 +4,13 @@ import httpx
 import pytest
 from sqlalchemy import delete
 
-import app.capabilities.asset_store.assets as asset_module
-from app.capabilities.asset_store.models import (
-    VisualAsset,
-    VisualAssetFolder,
-    VisualProjectAssetReference,
-)
-from app.capabilities.asset_store.storage import AssetStorage
+import studio.apps.asset_library.storage.website_files as asset_module
 from app.runtime.credentials import encrypt_secret
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset, VisualAssetFolder
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
+from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.storage.models import (
     VisualGenerationTask,

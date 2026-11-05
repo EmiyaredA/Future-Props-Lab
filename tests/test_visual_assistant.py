@@ -12,8 +12,8 @@ from sqlalchemy import delete, select
 
 from app.capabilities.agents.harness import approval_broker
 from app.capabilities.agents.harness.approval import ApprovalResolution
-from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.credentials import encrypt_secret
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.model_service.providers.agent import ModelTextDelta, ModelTurnEnd, ToolCall, Usage
 from studio.apps.model_service.storage.models.call_log import LlmCallLog
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
@@ -588,14 +588,15 @@ async def test_visual_assistant_builds_safe_context_for_documents_and_media(
         pages = [FakePage()] * 51
 
     monkeypatch.setattr(
-        "app.capabilities.asset_store.assistant_media.PdfReader", lambda _path: FakeReader()
+        "studio.apps.asset_library.previews.assistant_attachments.PdfReader",
+        lambda _path: FakeReader(),
     )
     pdf_text, warning = VisualAssistantConversations._read_pdf(tmp_path / "sample.pdf")
     assert pdf_text.startswith("PDF 正文")
     assert warning == "PDF 仅读取前 50 页"
 
     monkeypatch.setattr(
-        "app.capabilities.asset_store.assistant_media.PdfReader",
+        "studio.apps.asset_library.previews.assistant_attachments.PdfReader",
         lambda _path: (_ for _ in ()).throw(ValueError("broken")),
     )
     pdf_text, warning = VisualAssistantConversations._read_pdf(tmp_path / "broken.pdf")

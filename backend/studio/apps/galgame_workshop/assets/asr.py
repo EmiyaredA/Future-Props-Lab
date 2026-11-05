@@ -6,9 +6,9 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
 from app.runtime.credentials import decrypt_secret
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.galgame_workshop.assets.asr_records import AsrRecords, transcription_task_out
 from studio.apps.galgame_workshop.assets.transcript_records import write_transcript
 from studio.apps.galgame_workshop.assets.voice_matching import match_dialogue

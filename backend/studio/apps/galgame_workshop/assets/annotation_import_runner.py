@@ -8,10 +8,10 @@ from tempfile import TemporaryDirectory
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.capabilities.asset_store.library import AssetLibrary
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.voice_clips import cut_verified_voice_clip
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.audio_annotation.models import AudioAnnotationDocument, AudioAnnotationProject
 from studio.apps.audio_annotation.schemas.document import AudioAnnotationSegment
 from studio.apps.galgame_workshop.assets.annotation_import import GalgameAnnotationImports

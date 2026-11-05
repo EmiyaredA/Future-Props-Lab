@@ -43,7 +43,7 @@ def test_container_uses_ebml_doctype_instead_of_incidental_strings():
 
 @pytest.mark.asyncio
 async def test_media_info_missing_or_cross_workspace_asset_is_not_found(monkeypatch):
-    from app.capabilities.asset_store.models import VisualAsset
+    from studio.apps.asset_library.storage.models import VisualAsset
     from studio.apps.media_rendering import previews as media_info
     from studio.assembly.website.models import bind_owner
     from website_test_support import SessionLocal
@@ -75,8 +75,8 @@ async def test_media_info_missing_or_cross_workspace_asset_is_not_found(monkeypa
 
 @pytest.mark.asyncio
 async def test_corrupt_and_non_video_media_info_fail_without_mutation():
-    from app.capabilities.asset_store.models import VisualAsset
-    from app.capabilities.asset_store.storage import AssetStorage
+    from studio.apps.asset_library.storage.file_paths import AssetStorage
+    from studio.apps.asset_library.storage.models import VisualAsset
     from studio.assembly.website.models import bind_owner
     from studio.config.settings import get_settings
     from website_test_support import SessionLocal

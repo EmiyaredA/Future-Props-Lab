@@ -14,7 +14,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from app.capabilities.asset_store.models import VisualAsset, VisualAssetFolder
+from studio.apps.asset_library.storage.models import VisualAsset, VisualAssetFolder
 from studio.runtime.ids import new_id
 from studio.runtime.time import utc_now
 

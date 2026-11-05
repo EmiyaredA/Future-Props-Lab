@@ -11,10 +11,10 @@ from starlette.datastructures import Headers, UploadFile
 from tests.test_community_asset_protocol import ASSETS_SECRET, scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 
-from app.capabilities.asset_store.library import AssetLibrary
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.asset_library.scoped_project_files import check_writable
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.video_editor.storage.migrations.registry import MIGRATIONS
 from studio.apps.video_editor.storage.models import VideoEditorAssetMetadata, VideoEditorTask
@@ -34,7 +34,7 @@ def test_video_image_excludes_compatibility_layout_and_foreign_orm():
     assert "studio.assembly.independent.video_editor.application" in closure
     assert "studio.apps.video_editor.timeline_read" in closure
     assert "studio.apps.video_editor.legacy_project_layouts" not in closure
-    assert "app.capabilities.asset_store.models" not in closure
+    assert "studio.apps.asset_library.storage.models" not in closure
     assert "studio.runtime.database.website" not in closure
 
 

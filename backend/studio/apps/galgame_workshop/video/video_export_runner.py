@@ -8,9 +8,6 @@ from tempfile import TemporaryDirectory
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.capabilities.asset_store.library import AssetLibrary
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.galgame.compiler import compile_galgame_render_plan
 from app.capabilities.media_rendering.galgame.export_output import (
     safe_filename,
@@ -18,6 +15,9 @@ from app.capabilities.media_rendering.galgame.export_output import (
 )
 from app.capabilities.media_rendering.galgame.lip_sync import prepare_audio_envelopes
 from app.capabilities.media_rendering.render_engine import RenderCancelled, render_plan
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.galgame_workshop.storage.models import (
     GalgameAssetMetadata,
     GalgameProjectAssetReference,

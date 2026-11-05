@@ -3,7 +3,6 @@
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 
-from app.capabilities.asset_store.library import AssetError
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.http_bindings import CommunitySessionDep as SessionDep
 from studio.apps.thought_workshop.publication.assets import LegacyCommunityFiles
@@ -24,6 +23,7 @@ from studio.apps.thought_workshop.publication.schemas import (
 from studio.apps.thought_workshop.publication.use_cases import Community
 from studio.apps.thought_workshop.schemas.workshop import ThoughtAttachmentOut, ThoughtImportOut
 from studio.assembly.http_dependencies import PublicStudioAuth
+from studio.contracts.asset_library.errors import AssetError
 from studio.runtime.files.image_sizes import ThumbnailSize
 
 router = APIRouter(prefix="/community", tags=["knowledge-community"])

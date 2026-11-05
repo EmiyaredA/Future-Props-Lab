@@ -66,7 +66,8 @@ assert len(MODELS) == 33
 for name in ('studio.assembly.website.models',
     'studio.runtime.database.website',
     'studio.apps.identity.storage.models.accounts',
-             'studio.apps.model_service.storage.models', 'app.capabilities.asset_store.models'):
+    'studio.apps.model_service.storage.models',
+    'studio.apps.asset_library.storage.models'):
     assert name not in sys.modules, name
 """,
         ],
@@ -163,7 +164,7 @@ async def run():
         "studio.assembly.website.models",
         "studio.apps.identity.storage.models.accounts",
         "studio.apps.model_service.storage.models",
-                 "app.capabilities.asset_store.models"):
+                 "studio.apps.asset_library.storage.models"):
         assert name not in sys.modules, name
 asyncio.run(run())
 """
@@ -231,7 +232,7 @@ async def run():
         "studio.assembly.website.models",
         "studio.apps.identity.storage.models.accounts",
         "studio.apps.model_service.storage.models",
-                 "app.capabilities.asset_store.models"):
+                 "studio.apps.asset_library.storage.models"):
         assert name not in sys.modules, name
 asyncio.run(run())
 """

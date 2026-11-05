@@ -10,9 +10,9 @@ import httpx
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
 from app.capabilities.media_rendering.image_grid import render_image_grid
+from studio.apps.asset_library.storage.file_paths import TARGET_STORAGE_VERSION, AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.model_service.generation.driver import (
     ClaimAdmission,
     GenerationTaskContext,

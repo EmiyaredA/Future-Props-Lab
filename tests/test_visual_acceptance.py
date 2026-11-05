@@ -579,8 +579,8 @@ async def test_concurrent_retry_freezes_one_run_and_unreadable_references_are_ac
     assert saved.status_code == 200, saved.text
     value = await context(client, base)
     assert not value["result_is_current"]
-    from app.capabilities.asset_store.models import VisualAsset
-    from app.capabilities.asset_store.storage import AssetStorage
+    from studio.apps.asset_library.storage.file_paths import AssetStorage
+    from studio.apps.asset_library.storage.models import VisualAsset
 
     async with SessionLocal() as session:
         source = await session.get(VisualAsset, value["inputs"][0]["asset_id"])

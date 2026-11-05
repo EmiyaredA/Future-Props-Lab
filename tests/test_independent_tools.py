@@ -349,8 +349,8 @@ async def test_tools_native_video_replays_delivery_and_serves_owned_bytes(
 ):
     from sqlalchemy import select
 
-    from app.capabilities.asset_store.models import VisualAsset
     from app.tool_navigation.video_download_contracts import BinaryStatus, VideoDownloadDepsOut
+    from studio.apps.asset_library.storage.models import VisualAsset
     from studio.apps.identity.clients.authorization import LiveAuthorization
     from studio.contracts.tools.tools_native import ToolsNativeOptions
     from studio.contracts.tools.tools_video import VIDEO_JOB_PATH

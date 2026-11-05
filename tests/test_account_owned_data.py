@@ -7,9 +7,9 @@ from uuid import uuid4
 import httpx
 import pytest
 
-from app.capabilities.asset_store.account_upgrade import _copy_root
-from app.capabilities.asset_store.storage import AssetStorage
 from db.migrations.registry import MIGRATIONS
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.layout.account_upgrade import _copy_root
 from studio.apps.identity.storage.models.accounts import User
 from studio.assembly.website.account_provisioning import create_account
 from studio.config.settings import Settings
@@ -332,10 +332,10 @@ def test_unclaimed_legacy_content_is_never_silently_discarded():
 async def test_storage_journal_verifies_other_accounts_assets_and_resumes(tmp_path):
     from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
-    from app.capabilities.asset_store.account_upgrade import migrate_accounts
-    from app.capabilities.asset_store.models import VisualAsset
-    from app.capabilities.asset_store.upgrade_records import AccountStorageUpgradeRoot
     from db.migrations import apply_migrations
+    from studio.apps.asset_library.storage.layout.account_upgrade import migrate_accounts
+    from studio.apps.asset_library.storage.layout.upgrade_records import AccountStorageUpgradeRoot
+    from studio.apps.asset_library.storage.models import VisualAsset
     from studio.assembly.website.models import bind_owner
 
     path = tmp_path / "storage-upgrade.db"

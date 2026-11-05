@@ -4,7 +4,7 @@ from contextlib import ExitStack, asynccontextmanager
 
 from sqlalchemy import select
 
-from app.capabilities.asset_store.models import VisualAsset
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.media_content import MediaDescription
 from studio.runtime.files.borrowed_media import FileMediaContent

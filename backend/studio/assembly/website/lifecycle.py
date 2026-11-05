@@ -5,19 +5,19 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.capabilities.asset_store.account_upgrade import upgrade_pending
-from app.capabilities.asset_store.layout_migration import (
-    reconcile_project_trash,
-    reconcile_snapshot_imports,
-)
-from app.capabilities.asset_store.storage import AssetStorage
 from app.console.amadeus.execution import CodeAgentRuns
 from app.console.amadeus.runs import recover_interrupted_amadeus_runs
-from app.console.file_library.library_folder_archive import cleanup_library_folder_archive_staging
 from db.migrations import apply_migrations
 from studio.apps.agent_workbench.execution.runner import WorkbenchRuns
 from studio.apps.agent_workbench.execution.storage import interrupt_all as interrupt_workbench_runs
 from studio.apps.agent_workbench.sync.runner import WorkbenchSyncRunner
+from studio.apps.asset_library.archives.folder_archive import cleanup_library_folder_archive_staging
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.layout.account_upgrade import upgrade_pending
+from studio.apps.asset_library.storage.layout.website_upgrade import (
+    reconcile_project_trash,
+    reconcile_snapshot_imports,
+)
 from studio.apps.galgame_workshop.assets.annotation_import_runner import (
     GalgameAnnotationImportRunner,
 )

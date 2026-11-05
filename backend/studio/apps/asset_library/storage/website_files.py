@@ -8,21 +8,18 @@ from uuid import uuid4
 from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 
-from app.capabilities.asset_store.asset_outputs import asset_out, folder_out
-from app.capabilities.asset_store.asset_scope import (
+from studio.apps.asset_library.storage.file_paths import TARGET_STORAGE_VERSION
+from studio.apps.asset_library.storage.folders import AssetFolders
+from studio.apps.asset_library.storage.models import VisualAsset, VisualAssetFolder
+from studio.apps.asset_library.storage.scope import (
     ensure_library_managed,
     is_library_asset,
     is_visual_project_asset,
 )
-from app.capabilities.asset_store.document_references import protect_document_references
-from app.capabilities.asset_store.folders import AssetFolders
-from app.capabilities.asset_store.library import AssetError
-from app.capabilities.asset_store.models import (
-    VisualAsset,
-    VisualAssetFolder,
-    VisualProjectAssetReference,
-)
-from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION
+from studio.apps.asset_library.storage.website_references import protect_document_references
+from studio.apps.asset_library.transport.projections import asset_out, folder_out
+from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.files import (
     LibraryAssetImportIn,
     VisualAssetImportIn,

@@ -9,9 +9,9 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from starlette.datastructures import UploadFile
 
-from app.capabilities.asset_store.library import AssetLibrary
 from studio.apps.asset_library.settings import StorageSettings
 from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.thought_workshop.asset_metadata import HttpAssetMetadata
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.website.asset_metadata import LibraryAsset, metadata

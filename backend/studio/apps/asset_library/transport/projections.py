@@ -1,10 +1,7 @@
 from datetime import datetime
 from typing import Protocol
 
-from app.capabilities.asset_store.models import (
-    VisualAsset,
-    VisualAssetFolder,
-)
+from studio.apps.asset_library.storage.models import VisualAsset, VisualAssetFolder
 from studio.contracts.asset_library.files import VisualAssetFolderOut, VisualAssetOut
 from studio.runtime.files.names import display_name_without_original_extension
 from studio.runtime.time import iso_utc

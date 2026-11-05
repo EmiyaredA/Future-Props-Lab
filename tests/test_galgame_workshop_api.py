@@ -4,7 +4,7 @@ import httpx
 import pytest
 from sqlalchemy import delete, update
 
-from app.capabilities.asset_store.models import VisualAsset
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.galgame_workshop.storage.models import (
     GalgameProjectAssetReference,
     GalgameStoryDocument,

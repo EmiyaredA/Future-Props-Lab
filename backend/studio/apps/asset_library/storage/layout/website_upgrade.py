@@ -9,8 +9,8 @@ from pathlib import Path
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
+from studio.apps.asset_library.storage.file_paths import TARGET_STORAGE_VERSION, AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.assembly.website.models import LAYOUT_PROJECT_MODELS
 from studio.config.settings import Settings
 from studio.contracts.asset_library.files import (

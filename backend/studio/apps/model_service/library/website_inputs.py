@@ -4,8 +4,8 @@ from contextlib import asynccontextmanager
 
 from sqlalchemy import select
 
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.model_service.library.inputs import LibraryInput, LocalInput
 from studio.contracts.asset_library.errors import AssetError
 

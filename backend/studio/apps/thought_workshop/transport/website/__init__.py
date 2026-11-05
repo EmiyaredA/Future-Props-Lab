@@ -5,7 +5,7 @@ from fastapi.responses import FileResponse
 from pydantic import ValidationError
 from starlette.background import BackgroundTask
 
-from app.capabilities.asset_store.library import AssetError, AssetLibrary
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.thought_workshop.attachments import upload_attachment
 from studio.apps.thought_workshop.directory import Directory
 from studio.apps.thought_workshop.http_bindings import SessionDep
@@ -43,6 +43,7 @@ from studio.apps.thought_workshop.transport.website.multitable import router as 
 from studio.apps.thought_workshop.writing_http import router as writing_router
 from studio.assembly.http_dependencies import OwnerDep, StudioAuth
 from studio.config.settings import get_settings
+from studio.contracts.asset_library.errors import AssetError
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.files.project_archives import ProjectSnapshotError
 

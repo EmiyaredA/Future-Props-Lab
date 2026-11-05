@@ -266,7 +266,7 @@ async def test_package_cross_workspace_remaps_background_assets():
 
 @pytest.mark.asyncio
 async def test_import_transaction_failure_removes_prepared_files(monkeypatch):
-    from app.capabilities.asset_store.library import AssetLibrary
+    from studio.apps.asset_library.storage.uploads import AssetLibrary
     from studio.apps.presentation_workshop.projects import PresentationError, Presentations
 
     async with httpx.AsyncClient(

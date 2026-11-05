@@ -7,14 +7,14 @@ from uuid import uuid4
 
 from sqlalchemy import delete, select, text, update
 
-from app.capabilities.asset_store.asset_outputs import asset_out, folder_out
-from app.capabilities.asset_store.asset_scope import ensure_library_managed, is_visual_project_asset
-from app.capabilities.asset_store.folders import AssetFolders
-from app.capabilities.asset_store.library import AssetError
-from app.capabilities.asset_store.models import VisualAsset, VisualAssetFolder
-from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION
 from studio.apps.asset_library.references.references import protect_references
+from studio.apps.asset_library.storage.file_paths import TARGET_STORAGE_VERSION
+from studio.apps.asset_library.storage.folders import AssetFolders
+from studio.apps.asset_library.storage.models import VisualAsset, VisualAssetFolder
+from studio.apps.asset_library.storage.scope import ensure_library_managed, is_visual_project_asset
 from studio.apps.asset_library.storage.service_models import VisualProjectFileLink
+from studio.apps.asset_library.transport.projections import asset_out, folder_out
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.files import (
     LibraryAssetImportIn,
     VisualAssetListOut,

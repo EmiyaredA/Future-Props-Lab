@@ -247,8 +247,8 @@ def test_canvas_long_prompt_versions_roundtrip_and_existing_draft_limits():
 async def test_options_and_all_admission_paths_share_the_contract(model_slug):
     from sqlalchemy import delete
 
-    from app.capabilities.asset_store.models import VisualAsset
-    from app.capabilities.asset_store.storage import AssetStorage
+    from studio.apps.asset_library.storage.file_paths import AssetStorage
+    from studio.apps.asset_library.storage.models import VisualAsset
     from studio.apps.model_service.storage.models.model_test import (
         ModelTestGenerationAsset,
         ModelTestGenerationTask,

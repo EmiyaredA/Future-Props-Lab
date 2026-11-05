@@ -4,10 +4,10 @@ from contextlib import asynccontextmanager
 
 from sqlalchemy import select
 
-from app.capabilities.asset_store.asset_scope import is_library_asset
-from app.capabilities.asset_store.library import AssetError, AssetLibrary
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
+from studio.apps.asset_library.storage.scope import is_library_asset
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.audio_annotation.sources import (
     AnnotationAudio,
     AudioAnnotationError,
@@ -16,6 +16,7 @@ from studio.apps.audio_annotation.sources import (
 from studio.apps.model_service.storage.models.model_test import ModelTestTranscriptionTask
 from studio.contracts.asset_library.annotation import MAX_AUDIO_BYTES
 from studio.contracts.asset_library.descriptions import LibraryAssetDescription
+from studio.contracts.asset_library.errors import AssetError
 
 TRANSCRIPTION_EXTENSIONS = {".mp3", ".wav", ".m4a", ".ogg"}
 

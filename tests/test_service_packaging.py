@@ -18,7 +18,7 @@ def test_identity_source_closure_does_not_package_unrelated_business():
         if public_client_module(name):
             continue
         assert not name.startswith(
-            ("studio.apps.model_service", "app.apps", "app.capabilities.asset_store")
+            ("studio.apps.model_service", "app.apps", "studio.apps.asset_library")
         )
         assert name not in {
             "studio.assembly.website.models",
@@ -139,7 +139,7 @@ def test_renderer_packages_only_owned_media_processing_and_no_foreign_storage():
                 "app.apps.",
                 "studio.apps.model_service.",
                 "app.console.models",
-                "app.capabilities.asset_store.models",
+                "studio.apps.asset_library.storage.models",
                 "studio.apps.asset_library",
             )
         )
@@ -153,7 +153,7 @@ def test_renderer_packages_only_owned_media_processing_and_no_foreign_storage():
     [
         "studio.runtime.database.website",
         "studio.apps.identity.storage.models.accounts",
-        "app.capabilities.asset_store.storage",
+        "studio.apps.asset_library.storage.file_paths",
         "studio.apps.thought_workshop.storage.models",
     ],
 )
@@ -299,7 +299,7 @@ def test_thought_packages_own_release_and_only_purpose_scoped_asset_credentials(
     } <= closure.keys()
     assert "studio.apps.thought_workshop.publication.official_source" in closure
     assert "studio.apps.thought_workshop.publication.assets" not in closure
-    assert "app.capabilities.asset_store.models" not in closure
+    assert "studio.apps.asset_library.storage.models" not in closure
     assert "studio.runtime.database.website" not in closure
 
     services = yaml.safe_load((ROOT / "deploy/thought.compose.yaml").read_text())["services"]
@@ -326,7 +326,7 @@ def test_project_owner_images_and_compose_mounts_are_isolated(service, other):
     forbidden = (
         f"studio.apps.{other}_workshop",
         f"studio.apps.{other}_workshop",
-        "app.capabilities.asset_store.models",
+        "studio.apps.asset_library.storage.models",
         "studio.runtime.database.website",
         "studio.apps.model_service.storage.models",
         "studio.apps.model_service.providers",

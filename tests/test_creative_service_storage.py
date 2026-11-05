@@ -211,7 +211,7 @@ asyncio.run(run())
 for name in ('studio.assembly.website.application',
              'studio.assembly.website.models','studio.runtime.database.website',
              'studio.apps.identity.storage.models.accounts',
-             'app.integrations.models','app.capabilities.asset_store.models'):
+             'app.integrations.models','studio.apps.asset_library.storage.models'):
  assert name not in sys.modules, name
 """,
             str(tmp_path),

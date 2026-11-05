@@ -3,9 +3,10 @@ from __future__ import annotations
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.models import VisualAsset, VisualProjectAssetReference
-from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
+from studio.apps.asset_library.storage.file_paths import TARGET_STORAGE_VERSION, AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.visual_workshop.acceptance.standards import delete_acceptance
+from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.project_values import project_out as project_out
 from studio.apps.visual_workshop.schemas.workshop import (

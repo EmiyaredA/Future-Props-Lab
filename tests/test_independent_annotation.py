@@ -15,7 +15,7 @@ from tests.test_community_asset_protocol import (  # noqa: F401
 )
 from tests.test_independent_project_catalog import authorize
 
-from app.capabilities.asset_store.library import AssetLibrary
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.audio_annotation.storage.migrations.registry import MIGRATIONS
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.assembly.independent.audio_annotation.application import create_app

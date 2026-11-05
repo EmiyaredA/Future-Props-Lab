@@ -4,7 +4,6 @@ import asyncio
 from functools import partial
 
 from app.capabilities.agents.sessions.access import LocalSourceAccess
-from app.capabilities.asset_store.account_upgrade import upgrade_pending
 from app.console.amadeus.actions import ActionExecution
 from app.console.amadeus.execution import CodeAgentRuns
 from app.console.cloud_control.desktop import DesktopConnection
@@ -25,6 +24,7 @@ from app.tool_navigation.video_download_execution import _run_yt_dlp
 from app.tool_navigation.video_download_library import ingest_library
 from studio.apps.agent_workbench.events import stream_events
 from studio.apps.agent_workbench.execution.runner import WorkbenchRuns
+from studio.apps.asset_library.storage.layout.account_upgrade import upgrade_pending
 from studio.apps.audio_annotation.legacy_sources import LegacyAnnotationSources
 from studio.apps.audio_annotation.projects import AudioAnnotationProjects
 from studio.apps.audio_annotation.transcription import legacy_transcribe

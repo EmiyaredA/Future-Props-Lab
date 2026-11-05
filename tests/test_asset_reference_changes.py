@@ -7,7 +7,6 @@ from sqlalchemy import select
 from tests.test_asset_reference_retention import assets as assets
 from tests.test_asset_reference_retention import update
 
-from app.capabilities.asset_store.library import AssetError
 from studio.apps.asset_library.references.reference_changes import ReferenceChanges
 from studio.apps.asset_library.references.references import protect_references
 from studio.apps.asset_library.storage.service_models import (
@@ -16,6 +15,7 @@ from studio.apps.asset_library.storage.service_models import (
     PreparedAssetPin,
     ReferenceIntent,
 )
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.references import PrepareReferenceChange
 from studio.runtime.database.sessions import Database
 
@@ -191,7 +191,7 @@ async def test_pending_intents_cannot_be_bypassed_by_direct_asset_deletion(asset
     from sqlalchemy import delete
     from sqlalchemy.exc import IntegrityError
 
-    from app.capabilities.asset_store.models import VisualAsset
+    from studio.apps.asset_library.storage.models import VisualAsset
 
     database, references = assets
     await references.replace(owner="alpha", service="thought", update=update())

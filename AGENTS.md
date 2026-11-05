@@ -82,7 +82,7 @@
   事务规则。它们只校验请求、调用功能模块并把领域结果或错误映射为协议响应；`apps/*/routes/`、
   `studio/apps/model_service/transport/website/`、`console/routes/`、`capabilities/*/routes/` 与各业务包 `routes.py` 遵守同一边界。
 - 不新增 `services/`、`domain/`、`platform/`、`product/` 等通用后端抽象层目录。需要拆分时，
-  在所属能力内按具体职责命名文件或子包，例如 `studio/apps/model_service/catalog/`、`capabilities/asset_store/`。
+  在所属能力内按具体职责命名文件或子包，例如 `studio/apps/model_service/catalog/`、`studio/apps/asset_library/storage/`。
 - 业务 API 统一注册在 `/v1`；只有 `/health` 与 `/ready` 作为根级探针。
 - 浏览器是唯一客户端。`runtime/website.py` 拥有可信监听入口和静态页面，`scripts/website/serve.py` 在数据库导入前加载 TOML、核验迁移并持有正式数据锁；存在待处理迁移时拒绝启动，不在重启时执行未核准迁移。原桌面代码仅保留于归档分支。
 - 正式网站数据保存在项目 `.runtime/`，本地模型位于 `.runtime/local-models/`，配置仅在 `backend/config.toml`。从桌面迁入时唯一源为当时正在使用的 Application Support/Future Props Lab；完整停机、备份、核验后迁入，不与项目旧开发库合并，不更换加密密钥。原目录和恢复快照在验收前保留。
@@ -210,6 +210,6 @@
 
 - `0116_account_ownership` 是逻辑空间移除的唯一 schema 迁移，旧空间按唯一活动 Owner 归属；没有唯一 Owner 时拒绝迁移。
   历史迁移不改写，旧 Session 与 Management API Key 全部撤销。角色 `super_admin/admin` 合并为 `admin`，`member` 变为 `user`。
-- 文件归属清单由 `capabilities/asset_store/account_upgrade.py` 和正式布局 API 执行，路径为 `accounts/<user-id>/`。
+- 文件归属清单由 `studio/apps/asset_library/storage/layout/account_upgrade.py` 和正式布局 API 执行，路径为 `accounts/<user-id>/`。
   迁移期间仅允许身份与管理员布局升级接口，后台任务不启动；逐文件校验后落盘，拒绝链接和异内容覆盖，保留原文件作恢复副本。
   完成后必须重启应用；开发测试只使用隔离数据库，禁止自动升级或重启未核准的正式实例。

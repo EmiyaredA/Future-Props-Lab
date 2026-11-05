@@ -5,7 +5,7 @@ import tempfile
 from pathlib import Path
 from uuid import uuid4
 
-from app.capabilities.asset_store.library import AssetLibrary
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.presentation_workshop.exchange.archives import MAX_BYTES
 from studio.apps.presentation_workshop.exchange.transfers import remap_document
 from studio.apps.presentation_workshop.schemas.document import PresentationProjectIn

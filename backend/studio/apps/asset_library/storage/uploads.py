@@ -8,8 +8,8 @@ from uuid import uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
+from studio.apps.asset_library.storage.file_paths import TARGET_STORAGE_VERSION, AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.config.settings import Settings
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.file_types import ALLOWED_FILES

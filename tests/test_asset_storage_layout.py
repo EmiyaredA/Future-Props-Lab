@@ -5,9 +5,9 @@ from sqlalchemy import select
 from tests.test_asset_owned_files import Upload
 from tests.test_asset_owned_files import owned as owned
 
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.asset_library.layout import StorageLayouts
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 
 
 async def legacy_file(owned):
@@ -71,7 +71,7 @@ async def test_layout_missing_original_and_symlink_targets_are_preserved(owned, 
 
 
 async def test_layout_concurrent_command_is_rejected(owned):
-    from app.capabilities.asset_store.library import AssetError
+    from studio.contracts.asset_library.errors import AssetError
 
     database, settings, _cases, _calls = owned
     layouts = StorageLayouts(database, settings)

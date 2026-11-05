@@ -2,8 +2,8 @@
 
 from sqlalchemy import func, select, text
 
-from app.capabilities.asset_store.library import AssetLibrary
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.contracts.asset_library.errors import AssetError
 from studio.runtime.ids import new_id
 

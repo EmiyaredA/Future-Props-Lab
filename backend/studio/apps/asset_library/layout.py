@@ -7,9 +7,9 @@ import shutil
 
 from sqlalchemy import func, select, update
 
-from app.capabilities.asset_store.library import AssetError
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
+from studio.apps.asset_library.storage.file_paths import TARGET_STORAGE_VERSION, AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.files import StorageLayoutMigrationOut, StorageLayoutStatusOut
 from studio.runtime.files.digests import sha256_file
 

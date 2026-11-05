@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy import column, func, or_, select, table, text
 from sqlalchemy.exc import IntegrityError
 
-from app.capabilities.asset_store.models import VisualAsset
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.asset_library.storage.service_models import AssetReferenceSet
 from studio.contracts.asset_library.descriptions import ID
 from studio.contracts.management.migration_batches import MAX_RECORDS, MigrationBatch, MigrationPage

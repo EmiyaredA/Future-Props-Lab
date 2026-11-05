@@ -129,6 +129,8 @@ def test_migrated_packages_have_one_source_owner():
         ROOT / "backend/app/llm",
         ROOT / "backend/app/demo_runtime",
         ROOT / "backend/app/capabilities/identity",
+        ROOT / "backend/app/capabilities/asset_store",
+        ROOT / "backend/app/console/file_library",
     ):
         assert not list(directory.rglob("*.py")), f"stale implementation in {directory}"
 
@@ -224,7 +226,7 @@ def test_director_files_are_owned_without_asset_library_or_global_configuration(
     from studio.deployment.images import source_closure
 
     assert not any(
-        name.startswith(("app.capabilities.asset_store", "studio.apps.asset_library"))
+        name.startswith(("studio.apps.asset_library", "studio.apps.asset_library"))
         for name in source_closure(ROOT, "director")
     )
     for name in ("files.py", "motions.py", "projects.py", "storage/file_paths.py"):

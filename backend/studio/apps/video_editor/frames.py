@@ -9,8 +9,6 @@ from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.contracts import RenderCaptureFrame, RenderPlan
 from app.capabilities.media_rendering.evaluator import (
     FRAME_COMPOSITOR_VERSION,
@@ -19,6 +17,8 @@ from app.capabilities.media_rendering.evaluator import (
 from app.capabilities.media_rendering.frame_renderer import render_plan_frame
 from app.capabilities.media_rendering.text_layer import TEXT_RENDER_VERSION, text_layer_png
 from app.capabilities.media_rendering.video_sampling import VIDEO_SAMPLING_VERSION
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from studio.apps.video_editor.projects import VideoEditorProjects
 from studio.apps.video_editor.schemas import VideoEditorClip, parse_timeline_document

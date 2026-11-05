@@ -8,13 +8,13 @@ from zipfile import ZIP_STORED, ZipFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.library import AssetError
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.video_editor.errors import VideoEditorNotFoundError
 from studio.apps.video_editor.handoffs.segment_exports import VideoEditorSegmentExports
 from studio.apps.video_editor.handoffs.segment_names import segment_filename
 from studio.config.settings import Settings
+from studio.contracts.asset_library.errors import AssetError
 
 
 def _archive(entries: list[tuple[Path, str]]) -> Path:

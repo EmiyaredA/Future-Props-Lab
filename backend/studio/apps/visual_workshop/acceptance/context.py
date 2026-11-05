@@ -1,6 +1,6 @@
 """Compatibility adapter for acceptance asset metadata in the legacy owner."""
 
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.visual_workshop.acceptance.access import asset
 from studio.apps.visual_workshop.acceptance.context_values import ContextAsset
 from studio.apps.visual_workshop.acceptance.context_values import fingerprint as fingerprint

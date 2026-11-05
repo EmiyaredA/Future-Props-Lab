@@ -2,8 +2,8 @@
 
 from sqlalchemy import and_, delete, or_, select
 
-from app.capabilities.asset_store.models import VisualAsset, VisualAssetFolder
 from studio.apps.asset_library.scoped_project_files import remove_files
+from studio.apps.asset_library.storage.models import VisualAsset, VisualAssetFolder
 from studio.apps.asset_library.storage.service_models import (
     AssetReferencePin,
     AssetReferenceSet,

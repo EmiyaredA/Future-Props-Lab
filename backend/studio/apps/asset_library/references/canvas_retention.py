@@ -2,8 +2,8 @@
 
 from sqlalchemy import select
 
-from app.capabilities.asset_store.asset_scope import is_library_asset, is_visual_project_asset
-from app.capabilities.asset_store.models import VisualAsset
+from studio.apps.asset_library.storage.models import VisualAsset
+from studio.apps.asset_library.storage.scope import is_library_asset, is_visual_project_asset
 from studio.apps.asset_library.storage.service_models import (
     AssetReferencePin,
     PreparedAssetPin,

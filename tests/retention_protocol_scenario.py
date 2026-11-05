@@ -11,17 +11,17 @@ from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from starlette.responses import JSONResponse
 
-from app.capabilities.asset_store.library import AssetError
-from app.capabilities.asset_store.models import VisualAsset
 from studio.apps.asset_library.clients.retention import RetentionClient
 from studio.apps.asset_library.references.reference_changes import ReferenceChanges
 from studio.apps.asset_library.references.retention_api import router
 from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.asset_library.storage.service_models import MODELS
 from studio.apps.identity.accounts import create_account
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.identity.storage.migrations.registry import MIGRATIONS
 from studio.assembly.independent.identity.application import create_app
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.references import PrepareReferenceChange
 from studio.contracts.asset_library.retention_authority import verify_retention
 from studio.contracts.gateway.routing import RouteCatalog

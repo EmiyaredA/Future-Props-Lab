@@ -2,7 +2,7 @@
 
 from fastapi import HTTPException
 
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.asset_library.storage.media_sources import StoredMediaSources
 from studio.apps.media_rendering.previews import MediaPreviews
 from studio.apps.media_rendering.processing import LocalMediaProcessor

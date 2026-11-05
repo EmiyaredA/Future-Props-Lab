@@ -9,20 +9,18 @@ from threading import Event
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.capabilities.asset_store.library import AssetLibrary
-from app.capabilities.asset_store.models import (
-    VisualAsset,
-    VisualProjectAssetReference,
-)
-from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.render_engine import RenderCancelled
 from app.capabilities.media_rendering.video_derivatives import probe_media
 from app.capabilities.media_rendering.video_segment_encode import (
     encode_segment,
     validate_segment_output,
 )
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.video_editor.handoffs.segment_names import segment_filename
 from studio.apps.video_editor.storage.models import VideoEditorAssetMetadata, VideoEditorTask
+from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference
 from studio.apps.visual_workshop.outputs import register_imported_output
 from studio.apps.visual_workshop.storage.models import VisualCanvasDocument, VisualWorkshopProject
 from studio.config.settings import Settings

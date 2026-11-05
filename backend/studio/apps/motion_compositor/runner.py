@@ -5,8 +5,8 @@ import shutil
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.motion_outputs import render_outputs
+from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.motion_compositor.assets import MotionAssets
 from studio.apps.motion_compositor.storage.models import MotionTask
 from studio.config.settings import Settings

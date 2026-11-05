@@ -5,8 +5,7 @@ import json
 
 from sqlalchemy import delete, func, select, text
 
-from app.capabilities.asset_store.library import AssetError
-from app.capabilities.asset_store.models import VisualAsset
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.asset_library.storage.service_models import (
     AssetReferencePin,
     AssetReferenceReceipt,
@@ -15,6 +14,7 @@ from studio.apps.asset_library.storage.service_models import (
     ReferenceIntent,
     VisualProjectFileLink,
 )
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.references import VIDEO_FILE_CHANGES, ReferenceUpdate
 from studio.runtime.ids import new_id
 

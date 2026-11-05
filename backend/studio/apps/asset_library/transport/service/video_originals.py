@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
 
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.asset_library.video.video_files import original_record
 from studio.contracts.video_editor.video_processing import ORIGINALS, MediaOriginal, valid_id
 

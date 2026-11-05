@@ -8,8 +8,8 @@ import pytest
 from PIL import Image
 from tests.test_generation_task_driver import FakeStore, _driver, _task
 
-from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.credentials import encrypt_secret
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.model_service.inference.catalog import normalize_parameters
 from studio.apps.model_service.playground.generation import ModelTestGeneration
 from studio.apps.model_service.providers.seedance_parameters import (

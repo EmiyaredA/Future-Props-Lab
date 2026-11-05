@@ -5,7 +5,7 @@ import base64
 from anyio.to_thread import run_sync
 from sqlalchemy import or_, select
 
-from app.capabilities.asset_store.assistant_media import (
+from studio.apps.asset_library.previews.assistant_attachments import (
     ALLOWED_IMAGE_TYPES,
     ALLOWED_MEDIA_KINDS,
     MAX_IMAGE_BYTES,
@@ -13,8 +13,8 @@ from app.capabilities.asset_store.assistant_media import (
     read_document,
     read_image,
 )
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.asset_library.storage.service_models import (
     AssetReferencePin,
     AssetReferenceSet,

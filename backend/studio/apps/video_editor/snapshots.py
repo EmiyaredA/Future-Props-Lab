@@ -6,9 +6,8 @@ from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store import AssetStorage
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION
+from studio.apps.asset_library.storage.file_paths import TARGET_STORAGE_VERSION, AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.video_editor.projects import project_out
 from studio.apps.video_editor.schemas import VideoEditorProjectSnapshotImportOut
 from studio.apps.video_editor.snapshot_format import remap_timeline, validated_snapshot

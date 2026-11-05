@@ -2,8 +2,8 @@
 
 from sqlalchemy import select
 
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.model_service.playground.generation_assets import (
     ROLE_FIELDS,
     LegacyAssetSource,

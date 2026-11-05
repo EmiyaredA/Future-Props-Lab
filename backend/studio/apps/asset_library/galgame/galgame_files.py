@@ -3,11 +3,10 @@
 from anyio import to_thread
 from sqlalchemy import or_, select
 
-from app.capabilities.asset_store.asset_scope import is_library_asset
-from app.capabilities.asset_store.media_metadata import inspect_media_file
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.asset_library.scoped_project_files import check_project_scope
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
+from studio.apps.asset_library.storage.scope import is_library_asset
 from studio.apps.asset_library.storage.service_models import (
     AssetReferencePin,
     AssetReferenceSet,
@@ -18,6 +17,7 @@ from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.galgame_workshop.galgame_asr_execution import MAX_BYTES
 from studio.contracts.galgame_workshop.galgame_assets import GalgameAssetFile, MediaInspection
 from studio.runtime.files.digests import sha256_file
+from studio.runtime.files.media_metadata import inspect_media_file
 from studio.runtime.files.signed_payloads import ModelOutputDescription
 
 

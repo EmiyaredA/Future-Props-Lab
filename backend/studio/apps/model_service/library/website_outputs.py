@@ -1,6 +1,6 @@
 """Explicit recovery-site output adapter; independent Models never imports it."""
 
-from app.capabilities.asset_store.assets import VisualAssets
+from studio.apps.asset_library.storage.website_files import VisualAssets
 from studio.apps.model_service.library.inputs import LocalInput
 
 

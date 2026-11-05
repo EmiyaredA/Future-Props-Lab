@@ -10,8 +10,8 @@ from starlette.datastructures import Headers, UploadFile
 from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 
-from app.capabilities.asset_store.library import AssetLibrary
 from studio.apps.asset_library.clients.retention import RetentionClient
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.contracts.asset_library.annotation import (
     PURPOSE,

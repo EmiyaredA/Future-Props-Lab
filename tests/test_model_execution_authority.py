@@ -350,7 +350,7 @@ import studio.apps.model_service.admission.request_admission
 assert 'studio.runtime.database.website' not in sys.modules
 assert 'studio.assembly.website.models' not in sys.modules
 assert not any(n.startswith(('app.console.models', 'app.apps.',
-    'app.capabilities.asset_store.models')) for n in sys.modules)
+    'studio.apps.asset_library.storage.models')) for n in sys.modules)
 """,
         ],
         cwd=root,

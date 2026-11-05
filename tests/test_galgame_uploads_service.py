@@ -11,11 +11,11 @@ from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario
 from tests.test_creative_project_certification import CREDENTIALS
 from tests.test_independent_project_catalog import authorize
 
-from app.capabilities.asset_store.library import AssetLibrary
-from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.asset_library.galgame.galgame_upload_recovery import recover_uploads
 from studio.apps.asset_library.references.references import AssetReferences
+from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.asset_library.storage.service_models import GalgameUploadStage
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.galgame_workshop.storage.migrations.registry import MIGRATIONS
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.assembly.independent.galgame_workshop.application import create_app

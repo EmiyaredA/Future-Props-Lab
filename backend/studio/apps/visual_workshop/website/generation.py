@@ -5,11 +5,8 @@ from uuid import uuid4
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.models import (
-    VisualAsset,
-    VisualProjectAssetReference,
-)
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.model_service.catalog.visual import generation_options
 from studio.apps.model_service.catalog.visual_generation import (
     VisualGenerationValidationError,
@@ -23,6 +20,7 @@ from studio.apps.model_service.providers.seedance_references import (
 from studio.apps.model_service.providers.senseaudio_image import IMAGE_MODEL_SIZES
 from studio.apps.model_service.providers.volcengine_image import SEEDREAM_SIZES
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
+from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference
 from studio.apps.visual_workshop.batch_nodes import attach_grid_nodes
 from studio.apps.visual_workshop.generation_common import (
     GenerationError,

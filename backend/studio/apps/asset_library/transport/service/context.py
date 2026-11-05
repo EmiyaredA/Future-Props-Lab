@@ -2,7 +2,7 @@
 
 from fastapi import HTTPException
 
-from app.console.file_library import LibraryFolderArchive
+from studio.apps.asset_library.archives.folder_archive import LibraryFolderArchive
 from studio.apps.asset_library.files import Files
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 

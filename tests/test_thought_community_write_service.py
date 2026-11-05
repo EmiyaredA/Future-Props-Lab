@@ -11,7 +11,7 @@ from tests.test_community_asset_protocol import (
 )
 from tests.test_thought_archive_import_service import ORIGIN, thought_app
 
-from app.capabilities.asset_store.models import VisualAsset
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.asset_library.storage.service_models import AssetReferencePin, ReferenceIntent
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.thought_workshop.multitable.storage import initialize, snapshot

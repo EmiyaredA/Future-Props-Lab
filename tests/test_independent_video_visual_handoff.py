@@ -10,7 +10,7 @@ from sqlalchemy import select
 from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 
-from app.capabilities.asset_store.models import VisualAsset
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.video_editor.storage.migrations.registry import MIGRATIONS as VIDEO_MIGRATIONS
 from studio.apps.video_editor.storage.models import VideoEditorAssetMetadata

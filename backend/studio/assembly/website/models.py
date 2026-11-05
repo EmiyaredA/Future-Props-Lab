@@ -5,12 +5,6 @@ from __future__ import annotations
 from sqlalchemy import event
 from sqlalchemy.orm import Session, with_loader_criteria
 
-from app.capabilities.asset_store.models import (
-    VisualAsset,
-    VisualAssetFolder,
-    VisualProjectAssetReference,
-)
-from app.capabilities.asset_store.upgrade_records import AccountStorageUpgradeRoot
 from app.console.amadeus.models import (
     AmadeusAction,
     AmadeusConversation,
@@ -48,6 +42,8 @@ from studio.apps.agent_workbench.storage.models import (
     WorkbenchSession,
     WorkbenchSource,
 )
+from studio.apps.asset_library.storage.layout.upgrade_records import AccountStorageUpgradeRoot
+from studio.apps.asset_library.storage.models import VisualAsset, VisualAssetFolder
 from studio.apps.audio_annotation.models import (
     AudioAnnotationDocument,
     AudioAnnotationProject,
@@ -166,6 +162,7 @@ from studio.apps.visual_workshop.acceptance.models import (
     AcceptanceTemplate,
     NodeAcceptanceBinding,
 )
+from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.storage.models import (
     VisualAssistantAction,

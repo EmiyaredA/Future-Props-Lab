@@ -14,10 +14,8 @@ from app.capabilities.agents.harness import (
     ToolBinding,
     ToolExecutionContext,
 )
-from app.capabilities.asset_store.models import (
-    VisualAsset,
-    VisualProjectAssetReference,
-)
+from studio.apps.asset_library.storage.models import VisualAsset
+from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference
 from studio.apps.visual_workshop.assistant_tool_values import apply_operations as _apply_operations
 from studio.apps.visual_workshop.assistant_tool_values import (
     build_visual_agent_definition as build_definition,

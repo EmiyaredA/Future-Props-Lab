@@ -3,8 +3,8 @@ from copy import deepcopy
 import httpx
 import pytest
 
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.galgame_workshop.schemas import GalgameStoryProject
 from studio.apps.galgame_workshop.storage.models import (
     GalgameAssetMetadata,

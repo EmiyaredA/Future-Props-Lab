@@ -4,8 +4,22 @@ import asyncio
 import platform
 import subprocess
 from pathlib import Path
+from typing import Protocol
 
-from app.capabilities.asset_store.storage import AssetStorage
+
+class FolderLocations(Protocol):
+    """The caller has authorized the account and supplies its owned layout adapter."""
+
+    def project_root(self, application_id: str, project_id: str, *, owner_user_id: str) -> Path: ...
+
+    def target_root(
+        self,
+        *,
+        visual_project_id: str | None,
+        galgame_project_id: str | None,
+        video_editor_project_id: str | None = None,
+        owner_user_id: str,
+    ) -> Path: ...
 
 
 class ProjectFolderError(Exception):
@@ -46,7 +60,7 @@ def _open_folder(path: Path) -> None:
 
 
 async def open_project_folder(
-    storage: AssetStorage,
+    storage: FolderLocations,
     application_id: str,
     project_id: str,
     *,
@@ -62,7 +76,7 @@ async def open_project_folder(
     await asyncio.to_thread(_open_folder, path)
 
 
-async def open_library_folder(storage: AssetStorage, *, owner_user_id: str) -> None:
+async def open_library_folder(storage: FolderLocations, *, owner_user_id: str) -> None:
     path = storage.target_root(
         visual_project_id=None,
         galgame_project_id=None,

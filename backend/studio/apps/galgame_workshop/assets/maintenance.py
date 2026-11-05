@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.models import VisualAsset
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.galgame_workshop.schemas import (
     GalgameMissingAssetRepairIn,
     GalgameStoryDocumentOut,

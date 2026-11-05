@@ -2,14 +2,14 @@
 
 from sqlalchemy import select, text
 
-from app.capabilities.asset_store.library import AssetLibrary
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.asset_library.motion.motion_files import file_record
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.asset_library.storage.service_models import (
     MotionFileWriteReceipt,
     VideoFileWriteReceipt,
 )
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.asset_library.video.video_files import record as video_file_record
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.file_types import VIDEO_EDITABLE_EXTENSIONS

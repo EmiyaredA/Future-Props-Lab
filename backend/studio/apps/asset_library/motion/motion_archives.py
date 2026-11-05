@@ -5,9 +5,9 @@ from uuid import UUID
 from anyio.to_thread import run_sync
 from sqlalchemy import select, text
 
-from app.capabilities.asset_store.models import VisualAsset
 from studio.apps.asset_library.archive_staging import ArchiveFileStaging, conflict
 from studio.apps.asset_library.deletions import schedule
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.asset_library.storage.service_models import (
     AssetReferenceSet,
     MotionArchiveBatch,

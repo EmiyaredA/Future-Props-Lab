@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.models import VisualAsset
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from studio.apps.video_editor.handoffs.segment_selection import segment_selection
 from studio.apps.video_editor.projects import VideoEditorProjects

@@ -13,8 +13,8 @@ from starlette.datastructures import UploadFile
 from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario  # noqa: F401
 from tests.test_creative_project_certification import CREDENTIALS, ORIGIN, PROJECTS
 
-from app.capabilities.asset_store.library import AssetLibrary
 from studio.apps.asset_library.storage.service_models import AssetReferencePin, AssetReferenceSet
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.galgame_workshop.storage.models import (
     GalgameAssetMetadata,
     GalgameProjectAssetReference,

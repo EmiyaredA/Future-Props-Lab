@@ -4,8 +4,8 @@ from contextlib import asynccontextmanager
 
 from sqlalchemy import select
 
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
+from studio.apps.asset_library.storage.file_paths import TARGET_STORAGE_VERSION, AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.config.settings import get_settings
 from studio.runtime.database.project_files import creating_project_layout, deleting_project_layout
 

@@ -7,16 +7,16 @@ from pydantic import ValidationError
 from sqlalchemy import delete, select, text
 from sqlalchemy.exc import IntegrityError
 
-from app.capabilities.asset_store.library import AssetError
-from app.capabilities.asset_store.models import VisualAsset
 from studio.apps.asset_library.migration_models import MIGRATION_MODELS
 from studio.apps.asset_library.references.references import AssetReferences, protect_references
 from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.asset_library.storage.service_models import (
     MODELS,
     AssetReferencePin,
     AssetReferenceReceipt,
 )
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.references import ReferenceUpdate
 from studio.runtime.database.migrations import apply, check
 from studio.runtime.database.sessions import Database

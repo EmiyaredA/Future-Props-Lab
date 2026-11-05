@@ -5,8 +5,8 @@ from sqlalchemy import select
 from tests.test_asset_owned_files import Upload
 from tests.test_asset_owned_files import owned as owned
 
-from app.capabilities.asset_store.library import AssetError
-from app.capabilities.asset_store.models import VisualAsset
+from studio.apps.asset_library.storage.models import VisualAsset
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.files import LibraryAssetImportIn
 
 

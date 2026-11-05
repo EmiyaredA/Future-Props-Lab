@@ -7,25 +7,21 @@ from fastapi import APIRouter, File, Form, HTTPException, Query, Request, Upload
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
-from app.capabilities.asset_store import (
-    AssetStorage,
-    ProjectFolderError,
-    VisualAssets,
-    open_library_folder,
+from studio.apps.asset_library.archives.folder_archive import (
+    LibraryFolderArchive,
+    LibraryFolderArchiveError,
 )
-from app.capabilities.asset_store.account_upgrade import (
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.layout.account_upgrade import (
     AccountUpgradeBusyError,
     migrate_accounts,
     upgrade_status,
 )
-from app.capabilities.asset_store.layout_migration import (
+from studio.apps.asset_library.storage.layout.website_upgrade import (
     LayoutMigrationBusyError,
     StorageLayoutMigration,
 )
-from app.console.file_library import (
-    LibraryFolderArchive,
-    LibraryFolderArchiveError,
-)
+from studio.apps.asset_library.storage.website_files import VisualAssets
 from studio.assembly.http_dependencies import (
     OwnerDep,
     SessionDep,
@@ -51,6 +47,7 @@ from studio.contracts.asset_library.files import (
     VisualAssetPatchIn,
 )
 from studio.contracts.asset_library.project_snapshots import ProjectFolderOpenOut
+from studio.host.project_files.folders import ProjectFolderError, open_library_folder
 from studio.runtime.files.names import download_filename
 
 router = APIRouter(tags=["file-management"])

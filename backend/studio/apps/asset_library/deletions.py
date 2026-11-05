@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from sqlalchemy import select
 
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.asset_library.storage.service_models import AssetDeletion
 
 

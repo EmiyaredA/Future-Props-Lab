@@ -4,10 +4,10 @@ from time import monotonic
 
 from sqlalchemy import select, update
 
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.inspection import inspect_media, verify_video
 from app.runtime.credentials import decrypt_secret
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.model_service.catalog.visual import review_models
 from studio.apps.model_service.providers.visual_review import evaluate_review
 from studio.apps.model_service.storage.models.call_log import LlmCallLog

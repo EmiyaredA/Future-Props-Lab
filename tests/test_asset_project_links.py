@@ -7,9 +7,9 @@ from sqlalchemy import select
 from tests.test_asset_owned_files import Upload
 from tests.test_asset_owned_files import owned as owned
 
-from app.capabilities.asset_store.library import AssetError
 from studio.apps.asset_library.project_links import ProjectFileLinks
 from studio.apps.asset_library.storage.service_models import VisualProjectFileLink
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.files import (
     VisualAssetFolderCreateIn,
     VisualAssetReferenceCreateIn,

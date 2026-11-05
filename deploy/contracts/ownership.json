@@ -3713,24 +3713,6 @@
   ],
   "tables": [
     {
-      "table": "visual_asset_folders",
-      "service": "assets",
-      "module": "app.capabilities.asset_store.models",
-      "model": "VisualAssetFolder"
-    },
-    {
-      "table": "visual_assets",
-      "service": "assets",
-      "module": "app.capabilities.asset_store.models",
-      "model": "VisualAsset"
-    },
-    {
-      "table": "account_storage_upgrade_roots",
-      "service": "assets",
-      "module": "app.capabilities.asset_store.upgrade_records",
-      "model": "AccountStorageUpgradeRoot"
-    },
-    {
       "table": "amadeus_conversations",
       "service": "amadeus",
       "module": "app.console.amadeus.models",
@@ -3981,6 +3963,24 @@
       "service": "assets",
       "module": "studio.apps.asset_library.migration_models",
       "model": "AssetVideoOutputHistory"
+    },
+    {
+      "table": "account_storage_upgrade_roots",
+      "service": "assets",
+      "module": "studio.apps.asset_library.storage.layout.upgrade_records",
+      "model": "AccountStorageUpgradeRoot"
+    },
+    {
+      "table": "visual_asset_folders",
+      "service": "assets",
+      "module": "studio.apps.asset_library.storage.models",
+      "model": "VisualAssetFolder"
+    },
+    {
+      "table": "visual_assets",
+      "service": "assets",
+      "module": "studio.apps.asset_library.storage.models",
+      "model": "VisualAsset"
     },
     {
       "table": "asset_reference_sets",

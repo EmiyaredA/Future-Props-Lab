@@ -5,8 +5,8 @@ from types import SimpleNamespace
 
 from sqlalchemy import delete, select
 
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.presentation_workshop.asset_references import document_references, validate_assets
 from studio.apps.presentation_workshop.schemas.document import PresentationDocument
 from studio.apps.presentation_workshop.storage.models import PresentationAssetReference

@@ -2,9 +2,9 @@
 
 from sqlalchemy import and_, or_, select, text
 
-from app.capabilities.asset_store.models import VisualAsset, VisualAssetFolder
-from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.asset_library.scoped_project_files import check_project_scope
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset, VisualAssetFolder
 from studio.apps.asset_library.storage.service_models import (
     AssetReferencePin,
     AssetReferenceSet,

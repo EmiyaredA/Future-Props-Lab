@@ -2,11 +2,11 @@
 
 from sqlalchemy import delete, select, update
 
-from app.capabilities.asset_store.asset_outputs import asset_out
-from app.capabilities.asset_store.asset_scope import is_library_asset, is_visual_project_asset
-from app.capabilities.asset_store.library import AssetError
-from app.capabilities.asset_store.models import VisualAsset
+from studio.apps.asset_library.storage.models import VisualAsset
+from studio.apps.asset_library.storage.scope import is_library_asset, is_visual_project_asset
 from studio.apps.asset_library.storage.service_models import VisualProjectFileLink
+from studio.apps.asset_library.transport.projections import asset_out
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.files import VisualAssetListOut
 from studio.runtime.files.names import display_name_without_original_extension
 from studio.runtime.revisions import RevisionConflictError

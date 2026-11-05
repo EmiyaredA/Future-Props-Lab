@@ -69,14 +69,3 @@ class VisualAsset(Base):
     revision: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
-
-
-# Legacy imports keep their public name without loading a Visual model in Assets.
-def __getattr__(name):
-    if name != "VisualProjectAssetReference":
-        raise AttributeError(name)
-    from importlib import import_module
-
-    return import_module(
-        "studio.apps.visual_workshop.asset_references.models"
-    ).VisualProjectAssetReference

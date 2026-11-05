@@ -10,10 +10,10 @@ import pytest
 from PIL import Image
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.capabilities.asset_store.models import VisualAsset, VisualAssetFolder
-from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.asset_library.settings import StorageSettings
+from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.asset_library.storage.media_sources import StoredMediaSources
+from studio.apps.asset_library.storage.models import VisualAsset, VisualAssetFolder
 from studio.apps.media_rendering.clients.media_sources import RemoteMediaSources
 from studio.apps.media_rendering.previews import MediaPreviews
 from studio.apps.media_rendering.processing import LocalMediaProcessor

@@ -2,12 +2,12 @@
 
 from sqlalchemy import select, text
 
-from app.capabilities.asset_store.asset_outputs import asset_out
-from app.capabilities.asset_store.library import AssetLibrary
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.asset_library.library_outputs import VerifiedOutput
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.asset_library.storage.service_models import ThoughtUploadReceipt
+from studio.apps.asset_library.storage.uploads import AssetLibrary
+from studio.apps.asset_library.transport.projections import asset_out
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.file_types import ATTACHMENT_EXTENSIONS
 from studio.contracts.asset_library.files import VisualAssetOut

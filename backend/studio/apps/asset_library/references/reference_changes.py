@@ -8,8 +8,6 @@ import time
 
 from sqlalchemy import delete, func, select, text
 
-from app.capabilities.asset_store.library import AssetError
-from app.capabilities.asset_store.models import VisualAsset
 from studio.apps.asset_library.conversation_files import validate_retained_attachments
 from studio.apps.asset_library.galgame import galgame_file_changes
 from studio.apps.asset_library.galgame.galgame_project_removal import prepare_project_removal
@@ -23,6 +21,7 @@ from studio.apps.asset_library.scoped_project_files import (
     files_for_removal,
     remove_files,
 )
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.asset_library.storage.service_models import (
     AssetReferencePin,
     AssetReferenceSet,
@@ -33,6 +32,7 @@ from studio.apps.asset_library.video import video_file_changes
 from studio.apps.asset_library.visual import visual_project_removal, visual_upload_stages
 from studio.apps.asset_library.visual.visual_snapshot_files import scoped_assets
 from studio.contracts.asset_library.annotation import MAX_AUDIO_BYTES
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.references import VIDEO_FILE_CHANGES, PrepareReferenceChange
 from studio.contracts.asset_library.retention_authority import (
     canvas_metadata,

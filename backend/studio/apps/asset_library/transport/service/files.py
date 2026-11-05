@@ -7,10 +7,10 @@ from fastapi import APIRouter, File, Form, HTTPException, Query, Request, Upload
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
-from app.capabilities.asset_store.library import AssetError
-from app.console.file_library import LibraryFolderArchiveError
+from studio.apps.asset_library.archives.folder_archive import LibraryFolderArchiveError
 from studio.apps.asset_library.transport.service.context import archive as archive_cases
 from studio.apps.asset_library.transport.service.context import cases
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.files import (
     FILE_CONTENT_HEADERS,
     LibraryAssetImportIn,

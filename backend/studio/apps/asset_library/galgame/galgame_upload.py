@@ -5,7 +5,6 @@ from uuid import uuid4
 from anyio.to_thread import run_sync
 from sqlalchemy import text
 
-from app.capabilities.asset_store.media_metadata import inspect_media_file
 from studio.apps.asset_library.galgame.galgame_upload_recovery import settle_stage
 from studio.apps.asset_library.library_outputs import VerifiedOutput
 from studio.apps.asset_library.scoped_project_files import check_project_scope
@@ -17,6 +16,7 @@ from studio.apps.asset_library.storage.service_models import (
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.file_types import GALGAME_EXTENSIONS
 from studio.contracts.galgame_workshop.galgame_assets import GalgameAssetFile, MediaInspection
+from studio.runtime.files.media_metadata import inspect_media_file
 from studio.runtime.http.capability_client import CapabilityUnavailable
 
 

@@ -6,7 +6,7 @@ from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
-from app.capabilities.asset_store import AssetStorage, ProjectFolderError, open_project_folder
+from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.galgame_workshop.errors import (
     GalgameStoryNotReadyError,
     GalgameWorkshopProjectNotFoundError,
@@ -24,6 +24,7 @@ from studio.apps.galgame_workshop.website.snapshots import GalgameProjectSnapsho
 from studio.assembly.http_dependencies import OwnerDep, SessionDep, StudioAuth
 from studio.config.settings import get_settings
 from studio.contracts.asset_library.project_snapshots import ProjectFolderOpenOut
+from studio.host.project_files.folders import ProjectFolderError, open_project_folder
 from studio.runtime.files.project_archives import ProjectSnapshotError
 
 router = APIRouter()

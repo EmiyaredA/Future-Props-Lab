@@ -13,8 +13,8 @@ from tests.test_community_asset_protocol import (  # noqa: F401
 )
 from tests.test_independent_project_catalog import authorize
 
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.video_editor.storage.migrations.registry import MIGRATIONS
 from studio.assembly.independent.video_editor.application import PROJECTS, create_app

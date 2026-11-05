@@ -89,7 +89,7 @@ async def test_patch_keeps_scenes_and_rejects_embedded_files():
 
 @pytest.mark.asyncio
 async def test_project_files_roundtrip_and_delete_removes_directory():
-    from app.capabilities.asset_store.storage import AssetStorage
+    from studio.apps.asset_library.storage.file_paths import AssetStorage
     from studio.config.settings import get_settings
 
     async with httpx.AsyncClient(

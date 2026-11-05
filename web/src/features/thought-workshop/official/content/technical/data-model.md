@@ -69,4 +69,4 @@ erDiagram
 
 1. `backend/studio/apps/thought_workshop/storage/models.py`
 2. `backend/studio/apps/thought_workshop/notes.py`
-3. `backend/app/capabilities/asset_store/models.py`
+3. `backend/studio/apps/asset_library/storage/models.py`

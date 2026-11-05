@@ -8,7 +8,7 @@ import httpx
 import pytest
 from sqlalchemy import delete
 
-from app.capabilities.asset_store.models import VisualAsset
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.model_service.playground.generation_assets import (
     GenerationAssetError,
     ModelTestGenerationAssets,

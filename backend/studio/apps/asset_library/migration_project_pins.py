@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from sqlalchemy import func, or_, select, text
 from sqlalchemy.exc import IntegrityError
 
-from app.capabilities.asset_store.models import VisualAsset
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.asset_library.storage.service_models import AssetReferencePin, AssetReferenceSet
 from studio.contracts.asset_library.annotation import MAX_AUDIO_BYTES
 from studio.contracts.audio_annotation.migration import (

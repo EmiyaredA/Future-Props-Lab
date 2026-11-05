@@ -2,13 +2,13 @@
 
 from sqlalchemy import delete, select
 
-from app.capabilities.asset_store.models import VisualAsset
 from studio.apps.asset_library.deletions import schedule
 from studio.apps.asset_library.references.references import (
     protect_pending_removals,
     protect_references,
 )
 from studio.apps.asset_library.scoped_project_files import check_project_scope
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.asset_library.storage.service_models import PreparedAssetPin, ReferenceIntent
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.references import GalgameFileMutation

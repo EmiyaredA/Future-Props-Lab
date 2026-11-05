@@ -333,7 +333,7 @@ import studio.apps.model_service.library_inputs
 assert 'studio.runtime.database.website' not in sys.modules
 assert 'studio.assembly.website.models' not in sys.modules
 assert not any(name.startswith(('app.console.models', 'app.apps.',
-    'app.capabilities.asset_store.models')) for name in sys.modules)
+    'studio.apps.asset_library.storage.models')) for name in sys.modules)
 """,
         ],
         cwd=root,

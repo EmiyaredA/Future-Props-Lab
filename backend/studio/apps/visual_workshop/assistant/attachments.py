@@ -5,20 +5,18 @@ import base64
 
 from sqlalchemy import select
 
-from app.capabilities.asset_store.assistant_media import (
+from studio.apps.asset_library.previews.assistant_attachments import (
     ALLOWED_IMAGE_TYPES,
     ALLOWED_MEDIA_KINDS,
     MAX_IMAGE_BYTES,
     read_document,
     read_image,
 )
-from app.capabilities.asset_store.assistant_media import (
+from studio.apps.asset_library.previews.assistant_attachments import (
     AssistantAssetError as AssistantAssetError,
 )
-from app.capabilities.asset_store.models import (
-    VisualAsset,
-    VisualProjectAssetReference,
-)
+from studio.apps.asset_library.storage.models import VisualAsset
+from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference
 from studio.apps.visual_workshop.assistant_input_values import (
     attachment_metadata,
     content_projection,

@@ -7,15 +7,15 @@ from pathlib import Path
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.capabilities.asset_store.library import AssetLibrary
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.galgame.compiler import (
     COMPILER_VERSION,
     compile_galgame_render_plan,
     remap_render_plan_assets,
 )
 from app.capabilities.media_rendering.galgame.lip_sync import prepare_audio_envelopes
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.galgame_workshop.storage.models import (
     GalgameAssetMetadata,
     GalgameStorySnapshot,

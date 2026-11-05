@@ -15,8 +15,8 @@ from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario
 from tests.test_independent_annotation import PROJECTS, ROOT
 from tests.test_independent_project_catalog import authorize
 
-from app.capabilities.asset_store.library import AssetLibrary
 from app.runtime.credentials import encrypt_secret
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.audio_annotation.storage.migrations.registry import (
     MIGRATIONS as ANNOTATION_MIGRATIONS,
 )

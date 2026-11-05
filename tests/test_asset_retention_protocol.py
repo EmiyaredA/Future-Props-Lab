@@ -161,9 +161,9 @@ async def test_expired_preparation_cannot_create_an_intent_even_if_admission_was
     import pytest
     from sqlalchemy import select
 
-    from app.capabilities.asset_store.library import AssetError
     from studio.apps.asset_library.references.reference_changes import ReferenceChanges
     from studio.apps.asset_library.storage.service_models import ReferenceIntent
+    from studio.contracts.asset_library.errors import AssetError
     from studio.contracts.asset_library.references import PrepareReferenceChange
 
     database, _references = assets

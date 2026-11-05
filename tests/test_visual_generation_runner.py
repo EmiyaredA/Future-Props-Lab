@@ -9,9 +9,9 @@ import httpx
 import pytest
 from sqlalchemy import delete
 
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
 from app.runtime.credentials import encrypt_secret
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.model_service.providers.temporary_media import TemporaryMediaError
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput

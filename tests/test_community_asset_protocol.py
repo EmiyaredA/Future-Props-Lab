@@ -11,11 +11,11 @@ from fastapi import FastAPI
 from sqlalchemy import delete, select, update
 from starlette.datastructures import UploadFile
 
-from app.capabilities.asset_store.library import AssetLibrary
-from app.capabilities.asset_store.models import VisualAsset
 from studio.apps.asset_library.community_assets import CommunityAssetChecks
 from studio.apps.asset_library.settings import StorageSettings
 from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
+from studio.apps.asset_library.storage.models import VisualAsset
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.identity.accounts import create_account
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.identity.storage.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS

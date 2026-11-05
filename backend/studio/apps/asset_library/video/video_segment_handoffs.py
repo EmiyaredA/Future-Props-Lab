@@ -2,12 +2,12 @@
 
 from sqlalchemy import select, text
 
-from app.capabilities.asset_store.models import VisualAsset
 from studio.apps.asset_library.archive_staging import ArchiveFileStaging, conflict
 from studio.apps.asset_library.deletions import schedule
 from studio.apps.asset_library.library_outputs import VerifiedOutput
 from studio.apps.asset_library.references.references import check_removal_fence
 from studio.apps.asset_library.scoped_project_files import check_writable
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.asset_library.storage.service_models import (
     AssetReferencePin,
     AssetReferenceSet,

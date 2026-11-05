@@ -13,9 +13,9 @@ from uuid import uuid4
 from pydantic import ValidationError
 from sqlalchemy import select
 
-from app.capabilities.asset_store.library import AssetLibrary
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.thought_workshop.archive_files import extract_archive, stage_archive
 from studio.apps.thought_workshop.backup_manifest import collect_backup
 from studio.apps.thought_workshop.notes import Notes, ThoughtError

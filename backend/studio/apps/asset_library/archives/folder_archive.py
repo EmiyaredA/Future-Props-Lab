@@ -13,14 +13,12 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.folders import MAX_FOLDER_DEPTH
-from app.capabilities.asset_store.library import AssetError, AssetLibrary
-from app.capabilities.asset_store.models import (
-    VisualAsset,
-    VisualAssetFolder,
-)
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.folders import MAX_FOLDER_DEPTH
+from studio.apps.asset_library.storage.models import VisualAsset, VisualAssetFolder
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.config.settings import Settings
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.file_types import ALLOWED_FILES
 from studio.contracts.asset_library.files import (
     LibraryFolderImportOut,

@@ -10,8 +10,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from sqlalchemy import JSON, column, func, or_, select, table, text
 from sqlalchemy.exc import IntegrityError
 
-from app.capabilities.asset_store.asset_scope import is_library_asset
-from app.capabilities.asset_store.models import VisualAsset
+from studio.apps.asset_library.storage.models import VisualAsset
+from studio.apps.asset_library.storage.scope import is_library_asset
 from studio.apps.asset_library.storage.service_models import VideoFileWriteReceipt
 from studio.apps.asset_library.video.video_files import record as file_record
 from studio.contracts.management.migration_batches import MigrationBatch, MigrationPage

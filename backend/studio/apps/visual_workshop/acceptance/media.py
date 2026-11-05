@@ -1,12 +1,12 @@
 import asyncio
 from uuid import uuid4
 
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
 from app.capabilities.media_rendering.inspection import inspect_media
 from app.capabilities.media_rendering.review_images import review_jpeg
 from app.capabilities.media_rendering.video_frames import extract_frame
 from app.capabilities.media_rendering.video_sampling import source_frame_time
+from studio.apps.asset_library.storage.file_paths import TARGET_STORAGE_VERSION, AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.visual_workshop.acceptance.access import asset
 from studio.apps.visual_workshop.acceptance.models import AcceptanceAssetReference
 from studio.contracts.agent_runtime.dialogue import ImageInput

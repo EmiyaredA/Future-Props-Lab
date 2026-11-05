@@ -6,8 +6,8 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.asset_library.settings import StorageSettings
+from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.director_desk.storage.file_paths import DirectorStorage
 from studio.runtime.database.project_files import deleting_project_layout
 

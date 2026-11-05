@@ -3,7 +3,8 @@ from copy import deepcopy
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.models import VisualAsset, VisualProjectAssetReference
+from studio.apps.asset_library.storage.models import VisualAsset
+from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference
 from studio.apps.visual_workshop.node_placement import automatic_node_position
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.outputs.mutations import OutputMutations

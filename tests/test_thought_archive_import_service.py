@@ -15,8 +15,8 @@ from tests.test_community_asset_protocol import (
     scenario,  # noqa: F401
 )
 
-from app.capabilities.asset_store.models import VisualAsset
 from studio.apps.asset_library.clients.retention import RetentionClient
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.asset_library.storage.service_models import AssetReferencePin
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.thought_workshop.schemas.document import empty_document

@@ -12,7 +12,6 @@ from sqlalchemy.exc import OperationalError
 from starlette.datastructures import MutableHeaders
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.capabilities.asset_store.library import AssetError
 from studio.apps.asset_library.deletions import FileCleanup
 from studio.apps.asset_library.galgame.galgame_upload_recovery import recover_uploads
 from studio.apps.asset_library.layout import StorageLayouts
@@ -120,6 +119,7 @@ from studio.apps.asset_library.transport.service.visual_upload import router as 
 from studio.apps.asset_library.video.video_segment_bundles import cleanup_bundles
 from studio.apps.asset_library.video.video_segment_handoffs import SegmentHandoffFiles
 from studio.apps.asset_library.visual.visual_upload_stages import recover as recover_visual_uploads
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.galgame_workshop.galgame_assets import (
     MAX_QUERY_BYTES as MAX_GALGAME_QUERY_BYTES,
 )

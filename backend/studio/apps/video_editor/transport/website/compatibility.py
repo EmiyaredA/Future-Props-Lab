@@ -6,7 +6,7 @@ from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, Response
 from starlette.background import BackgroundTask
 
-from app.capabilities.asset_store import AssetStorage, ProjectFolderError, open_project_folder
+from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.video_editor.audio_alignment.audio_matching import VideoEditorAudioMatching
 from studio.apps.video_editor.baking.asset_bakes import VideoEditorAssetBakes
 from studio.apps.video_editor.clip_merging.tasks import VideoEditorClipMerges
@@ -42,6 +42,7 @@ from studio.assembly.http_dependencies import OwnerDep, SessionDep, StudioAuth
 from studio.config.settings import get_settings
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.project_snapshots import ProjectFolderOpenOut
+from studio.host.project_files.folders import ProjectFolderError, open_project_folder
 from studio.runtime.files.project_archives import ProjectSnapshotError
 
 router = APIRouter(prefix="/video-editor", tags=["video-editor"])

@@ -7,10 +7,7 @@ import httpx
 import pytest
 from sqlalchemy import delete
 
-from app.capabilities.asset_store.models import (
-    VisualAsset,
-    VisualAssetFolder,
-)
+from studio.apps.asset_library.storage.models import VisualAsset, VisualAssetFolder
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from website_test_support import SessionLocal, app
 

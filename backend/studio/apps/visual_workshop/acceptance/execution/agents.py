@@ -5,9 +5,9 @@ import shutil
 from copy import deepcopy
 
 from app.capabilities.agents.cli.process import execute, probe
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
 from app.console.governance.code_agents import authorized
+from studio.apps.asset_library.storage.file_paths import TARGET_STORAGE_VERSION, AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.visual_workshop.acceptance.access import AcceptanceError, asset
 from studio.apps.visual_workshop.acceptance.catalog import cli_configuration, connection_signature
 from studio.apps.visual_workshop.acceptance.execution.task_execution import execute_review_task

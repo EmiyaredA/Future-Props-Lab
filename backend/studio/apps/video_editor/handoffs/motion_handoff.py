@@ -7,7 +7,7 @@ from uuid import uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.library import AssetLibrary
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.video_editor.motion_operations import motion_operations
 from studio.apps.video_editor.projects import VideoEditorProjects
 from studio.apps.video_editor.schemas import VideoEditorProjectCreateIn, VideoEditorTimelineBatchIn

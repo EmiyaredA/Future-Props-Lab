@@ -2,9 +2,9 @@
 
 from sqlalchemy import text
 
-from app.capabilities.asset_store.library import AssetLibrary
-from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.asset_library.library_outputs import VerifiedOutput
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.asset_library.visual.visual_upload_stages import (
     VisualUploadFiles,
     _discard,

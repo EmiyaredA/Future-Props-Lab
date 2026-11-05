@@ -7,9 +7,9 @@ from uuid import uuid4
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.library import AssetLibrary
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
+from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.video_editor.asset_output import asset_output
 from studio.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from studio.apps.video_editor.projects import VideoEditorProjects

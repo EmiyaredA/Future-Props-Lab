@@ -10,9 +10,9 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_valida
 from sqlalchemy import column, func, or_, select, table, text
 from sqlalchemy.exc import IntegrityError
 
-from app.capabilities.asset_store.asset_scope import is_library_asset
-from app.capabilities.asset_store.models import VisualAsset, VisualAssetFolder
 from studio.apps.asset_library.migration_models import AssetImportReceipt
+from studio.apps.asset_library.storage.models import VisualAsset, VisualAssetFolder
+from studio.apps.asset_library.storage.scope import is_library_asset
 from studio.apps.asset_library.storage.service_models import VisualProjectFileLink
 from studio.contracts.management.migration_batches import (
     MAX_RECORDS,

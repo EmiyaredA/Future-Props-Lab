@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from sqlalchemy import delete, select
 
-from app.capabilities.asset_store.library import AssetError
 from app.capabilities.media_rendering.presets import RENDER_PRESETS
 from studio.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from studio.apps.video_editor.media import VideoEditorMedia
@@ -16,6 +15,7 @@ from studio.apps.video_editor.schemas import (
 )
 from studio.apps.video_editor.storage.models import VideoEditorTask
 from studio.apps.video_editor.task_reads import task_out
+from studio.contracts.asset_library.errors import AssetError
 from studio.runtime.revisions import require_revision_write
 from studio.runtime.time import utc_now
 

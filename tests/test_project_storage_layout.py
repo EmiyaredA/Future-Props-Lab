@@ -6,9 +6,9 @@ import httpx
 import pytest
 from sqlalchemy import delete, select
 
-from app.capabilities.asset_store.layout_migration import reconcile_project_trash
-from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.storage import AssetStorage
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.layout.website_upgrade import reconcile_project_trash
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.galgame_workshop.storage.models import GalgameWorkshopProject
 from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput

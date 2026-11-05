@@ -111,7 +111,7 @@ FORBIDDEN_IDENTITY = (
     "studio.assembly.website.models",
     "app.apps",
     "studio.apps.model_service",
-    "app.capabilities.asset_store",
+    "studio.apps.asset_library",
     "app.capabilities.agents",
     "studio.assembly.website.account_provisioning",
 )
@@ -210,9 +210,9 @@ def source_closure(root: Path, service):
                         "app.console.models",
                         "studio.apps.identity",
                         "studio.host",
-                        "app.capabilities.asset_store.assets",
-                        "app.capabilities.asset_store.account_upgrade",
-                        "app.capabilities.asset_store.layout_migration",
+                        "studio.apps.asset_library.storage.website_files",
+                        "studio.apps.asset_library.storage.layout.account_upgrade",
+                        "studio.apps.asset_library.storage.layout.website_upgrade",
                         "app.capabilities.media_rendering",
                     )
                 )
@@ -228,9 +228,9 @@ def source_closure(root: Path, service):
                     "app.apps",
                     "studio.apps.model_service",
                     "app.console.models",
-                    "app.capabilities.asset_store.models",
-                    "app.capabilities.asset_store.assets",
-                    "app.capabilities.asset_store.library",
+                    "studio.apps.asset_library.storage.models",
+                    "studio.apps.asset_library.storage.website_files",
+                    "studio.apps.asset_library.storage.uploads",
                     "studio.apps.asset_library",
                     "studio.apps.identity",
                     "studio.host",
@@ -247,7 +247,7 @@ def source_closure(root: Path, service):
                     "app.apps",
                     "studio.apps.model_service",
                     "app.console.models",
-                    "app.capabilities.asset_store",
+                    "studio.apps.asset_library",
                     "studio.host",
                 )
             ):
@@ -280,10 +280,10 @@ def source_closure(root: Path, service):
                     "studio.apps.model_service",
                     "app.console",
                     "studio.apps.model_service.demonstration.website_storage",
-                    "app.capabilities.asset_store.models",
-                    "app.capabilities.asset_store.assets",
-                    "app.capabilities.asset_store.storage",
-                    "app.capabilities.asset_store.library",
+                    "studio.apps.asset_library.storage.models",
+                    "studio.apps.asset_library.storage.website_files",
+                    "studio.apps.asset_library.storage.file_paths",
+                    "studio.apps.asset_library.storage.uploads",
                     "studio.apps.model_service",
                     "studio.apps.asset_library",
                     "studio.apps.identity",
@@ -318,9 +318,9 @@ def source_closure(root: Path, service):
                     "studio.assembly.website.models",
                     "studio.runtime.database.website",
                     "app.console.models",
-                    "app.capabilities.asset_store.models",
-                    "app.capabilities.asset_store.library",
-                    "app.capabilities.asset_store.storage",
+                    "studio.apps.asset_library.storage.models",
+                    "studio.apps.asset_library.storage.uploads",
+                    "studio.apps.asset_library.storage.file_paths",
                     "studio.apps.thought_workshop.portability",
                     "studio.apps.thought_workshop.publication.assets",
                     "studio.apps.asset_library",
@@ -342,9 +342,9 @@ def source_closure(root: Path, service):
                     "app.console.governance",
                     "app.console.models",
                     "studio.apps.model_service.demonstration.website_storage",
-                    "app.capabilities.asset_store.models",
-                    "app.capabilities.asset_store.assets",
-                    "app.capabilities.asset_store.storage",
+                    "studio.apps.asset_library.storage.models",
+                    "studio.apps.asset_library.storage.website_files",
+                    "studio.apps.asset_library.storage.file_paths",
                     "studio.apps.asset_library",
                     "studio.apps.identity",
                     "studio.host",
@@ -361,8 +361,8 @@ def source_closure(root: Path, service):
                     "app.apps",
                     "studio.apps.model_service",
                     "app.console",
-                    "app.capabilities.asset_store.models",
-                    "app.capabilities.asset_store.storage",
+                    "studio.apps.asset_library.storage.models",
+                    "studio.apps.asset_library.storage.file_paths",
                     "studio.apps.asset_library",
                     "studio.apps.identity",
                     "studio.host",
@@ -446,8 +446,8 @@ def source_closure(root: Path, service):
                 or name
                 in {
                     "studio.apps.motion_compositor.legacy_project_resources",
-                    "app.capabilities.asset_store.models",
-                    "app.capabilities.asset_store.storage",
+                    "studio.apps.asset_library.storage.models",
+                    "studio.apps.asset_library.storage.file_paths",
                 }
             ):
                 raise ValueError(f"Motion 镜像包含越界依赖：{name}")
@@ -474,8 +474,8 @@ def source_closure(root: Path, service):
                 or name
                 in {
                     "studio.apps.video_editor.legacy_project_layouts",
-                    "app.capabilities.asset_store.models",
-                    "app.capabilities.asset_store.storage",
+                    "studio.apps.asset_library.storage.models",
+                    "studio.apps.asset_library.storage.file_paths",
                 }
             ):
                 raise ValueError(f"Video Editor 镜像包含越界依赖：{name}")
@@ -503,8 +503,8 @@ def source_closure(root: Path, service):
                 or name
                 in {
                     "studio.apps.presentation_workshop.legacy_project_assets",
-                    "app.capabilities.asset_store.models",
-                    "app.capabilities.asset_store.storage",
+                    "studio.apps.asset_library.storage.models",
+                    "studio.apps.asset_library.storage.file_paths",
                 }
             ):
                 raise ValueError(f"Presentation 镜像包含越界依赖：{name}")
@@ -530,8 +530,8 @@ def source_closure(root: Path, service):
                 in {
                     "studio.apps.audio_annotation.legacy_sources",
                     "studio.apps.audio_annotation.transcription",
-                    "app.capabilities.asset_store.models",
-                    "app.capabilities.asset_store.storage",
+                    "studio.apps.asset_library.storage.models",
+                    "studio.apps.asset_library.storage.file_paths",
                 }
             ):
                 raise ValueError(f"Annotation 镜像包含越界依赖：{name}")
@@ -594,8 +594,8 @@ def source_closure(root: Path, service):
                     "studio.assembly.website.models",
                     "studio.runtime.database.website",
                     f"app.apps.{other}_workshop",
-                    "app.capabilities.asset_store.models",
-                    "app.capabilities.asset_store.storage",
+                    "studio.apps.asset_library.storage.models",
+                    "studio.apps.asset_library.storage.file_paths",
                     "app.console",
                     "studio.apps.asset_library",
                     "studio.apps.creative_workshop",

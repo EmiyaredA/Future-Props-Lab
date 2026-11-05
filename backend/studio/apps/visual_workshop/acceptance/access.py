@@ -1,7 +1,8 @@
 from sqlalchemy import select
 
-from app.capabilities.asset_store.models import VisualAsset, VisualProjectAssetReference
+from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.visual_workshop.acceptance.project_access import AcceptanceError
+from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference
 
 
 async def asset(session, owner_user_id, project_id, asset_id):
