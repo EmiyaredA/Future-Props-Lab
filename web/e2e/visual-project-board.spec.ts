@@ -125,7 +125,7 @@ test("看板与画布共用节点，历史预览、最终版本、文本和固�
     name: "项目素材",
     exact: true,
   });
-  await tree.getByRole("button", { name: /小夏 · 人设图/ }).click();
+  await tree.getByRole("button", { name: /^小夏 · 人设图/ }).click();
   await expect(page.getByLabel("当前预览 v3 · 最终输出 v3")).toBeVisible();
   await page.screenshot({
     animations: "disabled",
@@ -149,13 +149,13 @@ test("看板与画布共用节点，历史预览、最终版本、文本和固�
     (await (await page.request.get(base + "/canvas")).json()).nodes[0]
       .final_version,
   ).toBe(3);
-  await tree.getByRole("button", { name: /清晨 · 文本脚本/ }).click();
+  await tree.getByRole("button", { name: /^清晨 · 文本脚本/ }).click();
   await page
     .getByRole("textbox", { name: "文本内容" })
     .fill("小夏推开窗户，听见清晨的鸟鸣。");
   await page.getByRole("button", { name: "保存文本版本" }).click();
   await expect(page.getByLabel("当前预览 v1 · 最终输出 v1")).toBeVisible();
-  await tree.getByRole("button", { name: /镜头 01 · 视频/ }).click();
+  await tree.getByRole("button", { name: /^镜头 01 · 视频/ }).click();
   await page.getByRole("button", { name: "引用任务输出" }).click();
   await page.getByRole("combobox", { name: "选择上游任务" }).click();
   await expect(
@@ -182,7 +182,11 @@ test("看板与画布共用节点，历史预览、最终版本、文本和固�
   await expect(
     page.getByRole("button", { name: "创作工作台", exact: true }),
   ).toBeVisible();
-  await tree.getByRole("button", { name: /镜头 01 · 视频/ }).click();
+  await tree.getByRole("button", { name: /^镜头 01 · 视频/ }).click();
+  await page
+    .getByRole("region", { name: "输入引用" })
+    .getByRole("button", { name: "输入素材 1", exact: true })
+    .click();
   await expect(page.getByText("固定版本 · v2")).toBeVisible();
   await page.getByRole("button", { name: "状态分组", exact: true }).click();
   for (const status of ["待准备", "可生成", "生成中", "已完成"])
@@ -216,7 +220,7 @@ test("看板与画布共用节点，历史预览、最终版本、文本和固�
   await page.getByRole("button", { name: "画布", exact: true }).click();
   await expect(page.locator(`[data-node-id='${imageId}']`)).toBeVisible();
   await page.getByRole("button", { name: "看板", exact: true }).click();
-  await tree.getByRole("button", { name: /清晨 · 文本脚本/ }).click();
+  await tree.getByRole("button", { name: /^清晨 · 文本脚本/ }).click();
   await expect(page.getByRole("textbox", { name: "文本内容" })).toHaveValue(
     "小夏推开窗户，听见清晨的鸟鸣。",
   );
@@ -388,7 +392,9 @@ test("音视频版本可预览，重新生成展示最终输出与真实状态�
   );
   const card = page.locator(".board-task-card").filter({ hasText: "小夏" });
   await expect(card).toContainText("最终 v1");
-  await expect(card.locator("img")).toBeVisible();
+  await expect(
+    card.locator('.board-card-preview img[src^="blob:"]'),
+  ).toBeVisible();
   await page.screenshot({
     animations: "disabled",
     path: resolve(screenshots, "status-running-failed.png"),

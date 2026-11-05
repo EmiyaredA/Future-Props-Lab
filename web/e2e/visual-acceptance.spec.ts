@@ -30,7 +30,19 @@ test("固定只读模板、节点验收、人工确认和汇总跳转", async ({
   await page.goto(`/apps/visual-workshop/projects/${project.id}/canvas`);
   await page.getByRole("button", { name: "项目验收", exact: true }).click();
   await expect(page.getByText("只读", { exact: true })).toBeVisible();
-  await expect(page.locator(".acceptance-fixed-scheme")).toHaveCount(3);
+  const schemes = page.locator(".acceptance-fixed-scheme");
+  await expect(schemes).toHaveCount(6);
+  for (const title of [
+    "模型 API",
+    "Codex",
+    "Claude Code",
+    "OpenCode",
+    "DeepSeek Harness",
+    "Pi",
+  ])
+    await expect(
+      schemes.getByRole("heading", { name: new RegExp(`^${title} 方案`) }),
+    ).toBeVisible();
   await expect(
     page.getByRole("button", {
       name: /使用模板并配置|从空白开始|新增模板|更换连接/,

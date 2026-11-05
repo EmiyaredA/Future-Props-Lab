@@ -27,6 +27,7 @@ test("固定方案以图标、名称、调用标识和状态展示，支持键�
   await expect(
     page.getByRole("option", { name: /模型 API 方案/ }).locator("svg"),
   ).toBeVisible();
+  await page.keyboard.press("Home");
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Enter");
   await expect(picker).toContainText("模型 API 方案");
