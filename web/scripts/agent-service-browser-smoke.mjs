@@ -85,7 +85,10 @@ try {
     "source management, themes and mobile/tablet/desktop layouts render independently",
   );
   await page.getByLabel("来源名称", { exact: true }).fill("unsaved fixture");
-  await page.getByRole("link", { name: "Agents", exact: true }).click();
+  const sessionsTab = page
+    .getByRole("navigation", { name: "工作台导航" })
+    .getByRole("button", { name: "会话", exact: true });
+  await sessionsTab.click();
   await expect(
     page.getByRole("alertdialog", { name: "离开来源设置？" }),
   ).toBeVisible();
@@ -93,7 +96,7 @@ try {
   await expect(page.getByLabel("来源名称", { exact: true })).toHaveValue(
     "unsaved fixture",
   );
-  await page.getByRole("link", { name: "Agents", exact: true }).click();
+  await sessionsTab.click();
   await page
     .getByRole("button", { name: "放弃填写并继续", exact: true })
     .click();
