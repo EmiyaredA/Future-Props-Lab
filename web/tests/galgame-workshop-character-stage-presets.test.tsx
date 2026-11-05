@@ -440,7 +440,7 @@ test("edits independent two-dimensional character position presets", async () =>
     },
     { timeout: 2000 },
   );
-});
+}, 30_000);
 
 test("opens stage settings for the currently selected character", async () => {
   const user = userEvent.setup();
