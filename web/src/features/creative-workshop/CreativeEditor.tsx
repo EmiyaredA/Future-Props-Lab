@@ -19,6 +19,19 @@ import {
 import { errorText, labels, presets, type Nav } from "./shared";
 import { Cover } from "./Cover";
 
+function editableDraft(item: CreativeItem): CreativeDraft {
+  return {
+    kind: item.kind,
+    title: item.title,
+    summary: item.summary,
+    description: item.description,
+    tags: item.tags,
+    cover_preset: item.cover_preset,
+    manifest: item.manifest,
+    components: item.components,
+  };
+}
+
 export function Editor({
   itemId,
   canWrite,
@@ -44,22 +57,12 @@ export function Editor({
   const [selected, setSelected] = useState<CreativeRelease[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const savedDraft = item && {
-    kind: item.kind,
-    title: item.title,
-    summary: item.summary,
-    description: item.description,
-    tags: item.tags,
-    cover_preset: item.cover_preset,
-    manifest: item.manifest,
-    components: item.components,
-  };
+  const savedDraft = item && editableDraft(item);
+  const dirty = Boolean(
+    draft && savedDraft && JSON.stringify(draft) !== JSON.stringify(savedDraft),
+  );
   const unsaved = useUnsavedNavigation({
-    dirty: Boolean(
-      draft &&
-      savedDraft &&
-      JSON.stringify(draft) !== JSON.stringify(savedDraft),
-    ),
+    dirty,
     busy,
     title: "草稿尚未保存",
     description: "离开后未保存的修改将丢失。",
@@ -72,16 +75,7 @@ export function Editor({
       .then((value) => {
         if (active) {
           setItem(value);
-          setDraft({
-            kind: value.kind,
-            title: value.title,
-            summary: value.summary,
-            description: value.description,
-            tags: value.tags,
-            cover_preset: value.cover_preset,
-            manifest: value.manifest,
-            components: value.components,
-          });
+          setDraft(editableDraft(value));
         }
       })
       .catch((cause) => active && setError(errorText(cause)));
@@ -123,10 +117,16 @@ export function Editor({
     setDraft((old) => (old ? { ...old, ...patch } : old));
   const manifest = (patch: Record<string, unknown>) =>
     change({ manifest: { ...draft?.manifest, ...patch } });
+  const acceptSavedDraft = (value: CreativeItem, submitted: CreativeDraft) => {
+    setItem(value);
+    setDraft((current) =>
+      current === submitted ? editableDraft(value) : current,
+    );
+  };
   const save = async () => {
     if (!item || !draft) throw new Error("草稿尚未加载");
     const saved = await updateCreative(item.id, draft, item.revision);
-    setItem(saved);
+    acceptSavedDraft(saved, draft);
     return saved;
   };
   const run = async (operation: () => Promise<void>) => {
@@ -646,7 +646,7 @@ export function Editor({
                 保存草稿
               </button>
               <button
-                disabled={busy}
+                disabled={busy || dirty}
                 className="creative-primary"
                 onClick={() =>
                   void run(async () => {
@@ -654,7 +654,7 @@ export function Editor({
                       item.id,
                       item.revision,
                     );
-                    setItem(published);
+                    acceptSavedDraft(published, draft);
                     setView("success");
                   })
                 }

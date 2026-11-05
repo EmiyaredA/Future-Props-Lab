@@ -110,13 +110,15 @@ test("public square searches and opens a published item", async () => {
 test("editor saves a draft before preview and publishes the next version", async () => {
   const navigate = vi.fn();
   render(
-    <CreativeWorkshopPage
-      mode="creative-workshop-editor"
-      itemId="weather"
-      canWrite
-      canInstall
-      navigate={navigate}
-    />,
+    <NavigationProtection>
+      <CreativeWorkshopPage
+        mode="creative-workshop-editor"
+        itemId="weather"
+        canWrite
+        canInstall
+        navigate={(...args) => guardedNavigation(() => navigate(...args))}
+      />
+    </NavigationProtection>,
   );
   expect(await screen.findByDisplayValue("天气接口")).toBeInTheDocument();
   fireEvent.change(screen.getByDisplayValue("天气接口"), {
@@ -132,6 +134,34 @@ test("editor saves a draft before preview and publishes the next version", async
   fireEvent.click(screen.getByRole("button", { name: "确认公开发布" }));
   expect(await screen.findByText("发布成功")).toBeInTheDocument();
   expect(mocks.publishCreative).toHaveBeenCalledWith("weather", 3);
+  fireEvent.click(screen.getByRole("button", { name: "查看作品" }));
+  expect(navigate).toHaveBeenCalledWith("creative-workshop-detail", "weather");
+  expect(screen.queryByRole("alertdialog")).toBeNull();
+});
+
+test("saving a draft preserves edits entered before the response arrives", async () => {
+  let completeSave!: (value: CreativeItem) => void;
+  mocks.updateCreative.mockImplementationOnce(
+    () => new Promise<CreativeItem>((resolve) => (completeSave = resolve)),
+  );
+  render(
+    <CreativeWorkshopPage
+      mode="creative-workshop-editor"
+      itemId="weather"
+      canWrite
+      canInstall
+      navigate={vi.fn()}
+    />,
+  );
+  const title = await screen.findByDisplayValue("天气接口");
+  fireEvent.change(title, { target: { value: "即将保存" } });
+  fireEvent.click(screen.getByRole("button", { name: "保存草稿" }));
+  fireEvent.change(title, { target: { value: "保存期间继续输入" } });
+  await act(async () =>
+    completeSave({ ...item, title: "即将保存", revision: 3 }),
+  );
+  expect(title).toHaveValue("保存期间继续输入");
+  expect(screen.getByRole("button", { name: "保存草稿" })).toBeEnabled();
 });
 
 test("Creative editor uses keyboard accessible choices and protects unsaved changes", async () => {
