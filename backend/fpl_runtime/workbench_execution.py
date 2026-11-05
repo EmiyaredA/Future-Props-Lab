@@ -11,7 +11,8 @@ DIRECTORIES = "workbench.execution.directories"
 REGISTER = "workbench.execution.register"
 RUN_TURN = "workbench.execution.run-turn"
 CHECK_PROJECT = "workbench.execution.check-project"
-DISCOVERY_OPERATIONS = frozenset({CATALOG, DIRECTORIES, REGISTER, CHECK_PROJECT})
+PREVIEW_SOURCE = "workbench.execution.preview-source"
+DISCOVERY_OPERATIONS = frozenset({CATALOG, DIRECTORIES, REGISTER, CHECK_PROJECT, PREVIEW_SOURCE})
 CATALOG_PATH = "/v1/agent-workbench/execution/catalog"
 DIRECTORY_PATH = "/v1/agent-workbench/execution/directories"
 PROJECT_PATH = "/v1/agent-workbench/execution/projects"
@@ -109,3 +110,34 @@ class TurnProposal(TurnApproval):
 
 class TurnApprovalReceipt(TurnApproval):
     status: Literal["completed", "failed", "unknown"]
+
+
+class ProjectFile(ProjectCheck):
+    path: Annotated[str, Field(min_length=1, max_length=500)]
+
+
+class ProjectFileResult(Input):
+    path: Annotated[str, Field(min_length=1, max_length=500)]
+    text: Annotated[str, Field(max_length=131_072)]
+
+
+def source_path(chat, turn):
+    return f"{turn_path(chat)}/{turn}/source"
+
+
+def queue_resume_path(chat):
+    return f"{CHATS_PATH}/{chat}/queue/resume"
+
+
+def queue_remove_path(chat, turn):
+    return f"{CHATS_PATH}/{chat}/queue/{turn}"
+
+
+def instruction_path(chat, turn):
+    return f"{turn_path(chat)}/{turn}/instructions"
+
+
+class InstructionReceipt(Leased):
+    request_id: Identity
+    text_sha256: Sha256
+    status: Literal["accepted", "rejected", "unknown"]

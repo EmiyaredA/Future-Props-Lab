@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from fpl_runtime.native_protocol import NativeOutcome
 from fpl_runtime.workbench_execution import (
+    InstructionReceipt,
     Leased,
     TurnActivity,
     TurnAnswer,
@@ -116,5 +117,21 @@ async def receipt_turn_approval(request: Request, body: TurnApprovalReceipt):
 async def turn_receipt(request: Request, body: Receipt):
     await request.app.state.execution_turns.settle(
         request.state.native_worker.id, body.lease, body.outcome
+    )
+    return {"acknowledged": True}
+
+
+@router.post("/turns/instructions/claim")
+async def claim_instruction(request: Request, body: Leased):
+    instruction = await request.app.state.execution_turns.instructions.claim(
+        request.state.native_worker.id, body.lease
+    )
+    return {"instruction": instruction}
+
+
+@router.post("/turns/instructions/receipt")
+async def receipt_instruction(request: Request, body: InstructionReceipt):
+    await request.app.state.execution_turns.instructions.settle(
+        request.state.native_worker.id, body
     )
     return {"acknowledged": True}

@@ -106,6 +106,7 @@ def create_app(
         if collect and get_settings().fpl_agent_workbench_enabled:
             await supervisor.start()
         maintenance = asyncio.create_task(turns.maintain())
+        _app.state.execution_maintenance = maintenance
         try:
             yield
         finally:
@@ -211,7 +212,10 @@ def create_app(
         check(database.path, "agents", MIGRATIONS)
         async with database.sessions(info={"allow_system_reads": True}) as session:
             await session.execute(text("SELECT 1"))
-        raise HTTPException(503, "workbench_execution_unavailable")
+        maintenance = getattr(app.state, "execution_maintenance", None)
+        if not discovery.ready or not turns.ready or maintenance is None or maintenance.done():
+            raise HTTPException(503, "workbench_execution_unavailable")
+        return {"status": "ok", "service": "agents", "version": version}
 
     expected = {
         (op.method, op.path): op.operation_id for op in catalog.operations if op.service == "agents"

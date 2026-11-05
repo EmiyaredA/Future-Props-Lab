@@ -1,7 +1,7 @@
 """Own turn submission, Mac leases and browser decisions without storing credentials."""
 
 import asyncio
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import timedelta
 from time import monotonic, time
 
@@ -13,6 +13,8 @@ from fpl_runtime.native_queue import NativeQueue, digest
 from fpl_runtime.workbench_execution import RUN_TURN, TurnScope, decision_path, turn_path
 
 from .execution_discovery import registered_project_root
+from .execution_instructions import ExecutionInstructions
+from .execution_queue import ExecutionQueue
 from .models import WorkbenchExecutionJob
 
 OPERATIONS = frozenset({RUN_TURN})
@@ -22,6 +24,8 @@ MAX_TURN_SECONDS = 900
 @dataclass(frozen=True)
 class TurnGrant:
     assertion: str = field(repr=False)
+    path: str
+    session_id: str
     local: bool
     factor_epoch: str | None
     expires: float
@@ -35,6 +39,8 @@ class ExecutionTurns:
         )
         self.grants = {}
         self.last_poll = None
+        self.pending = ExecutionQueue(self)
+        self.instructions = ExecutionInstructions(self)
 
     @property
     def ready(self):
@@ -43,50 +49,69 @@ class ExecutionTurns:
     def session(self, owner):
         return self.database.sessions(info={"owner_user_id": owner})
 
-    async def authority(self, assertion, path):
-        value = await self.identity.cloud_authority(assertion=assertion, method="POST", path=path)
+    async def authority(self, assertion, path, *, method="POST"):
+        value = await self.identity.cloud_authority(assertion=assertion, method=method, path=path)
         if value is None:
             raise HTTPException(503, "workbench_authority_unavailable")
         if not value.active or not value.enabled or value.unlocked_until <= time():
             raise HTTPException(403, "请先验证密码及动态验证码")
         return value
 
-    async def submit(self, db, owner, chat, body, assertion, *, local):
+    async def issue_grant(self, assertion, path, local, session_id):
+        proof = await self.authority(assertion, path)
+        return TurnGrant(
+            assertion, path, session_id, local, proof.factor_epoch, monotonic() + MAX_TURN_SECONDS
+        )
+
+    async def verify_grant(self, grant):
+        if grant.expires <= monotonic():
+            raise HTTPException(410, "workbench_execution_lease_ended")
+        proof = await self.authority(grant.assertion, grant.path)
+        if proof.factor_epoch != grant.factor_epoch:
+            raise HTTPException(403, "workbench_authority_revoked")
+
+    def stage_job(self, db, turn, chat, root, grant):
+        payload = TurnScope(
+            project_id=chat.project_id,
+            agent=chat.agent_id,
+            local=grant.local,
+            registered_root=root,
+            chat_id=chat.id,
+            turn_id=turn.id,
+        ).model_dump(mode="json")
+        db.add(
+            WorkbenchExecutionJob(
+                id=turn.id,
+                owner_user_id=turn.owner_user_id,
+                request_id=turn.id,
+                operation=RUN_TURN,
+                payload=payload,
+                payload_sha256=digest({"operation": RUN_TURN, "payload": payload}),
+            )
+        )
+        self.grants[turn.owner_user_id, turn.id] = replace(
+            grant, expires=monotonic() + MAX_TURN_SECONDS
+        )
+
+    async def submit(self, db, owner, chat, body, assertion, *, local, session_id):
         await transcripts.get_chat(db, owner, chat)
         await db.rollback()
-        if body.mode == "queue":
-            raise HTTPException(503, "workbench_execution_queue_unavailable")
-        proof = await self.authority(assertion, turn_path(chat))
+        grant = await self.issue_grant(assertion, turn_path(chat), local, session_id)
         await turn_records.begin(db)
         current = await transcripts.get_chat(db, owner, chat)
         root = await registered_project_root(db, owner, current.project_id) if local else None
 
         def stage(turn):
-            if not self.ready or len(self.grants) >= 32:
-                raise HTTPException(503, "workbench_execution_worker_unavailable")
-            payload = TurnScope(
-                project_id=current.project_id,
-                agent=current.agent_id,
-                local=local,
-                registered_root=root,
-                chat_id=chat,
-                turn_id=turn.id,
-            ).model_dump(mode="json")
-            db.add(
-                WorkbenchExecutionJob(
-                    id=turn.id,
-                    owner_user_id=owner,
-                    request_id=turn.id,
-                    operation=RUN_TURN,
-                    payload=payload,
-                    payload_sha256=digest({"operation": RUN_TURN, "payload": payload}),
-                )
-            )
-            self.grants[owner, turn.id] = TurnGrant(
-                assertion, local, proof.factor_epoch, monotonic() + MAX_TURN_SECONDS
-            )
+            if turn.status == "queued":
+                self.pending.register(owner, chat, turn.id, grant)
+            else:
+                if not self.ready or len(self.grants) >= 32:
+                    raise HTTPException(503, "workbench_execution_worker_unavailable")
+                self.stage_job(db, turn, current, root, grant)
 
-        result, _created = await turn_records.store_turn(db, owner, chat, body, stage=stage)
+        result, _created = await turn_records.store_turn(
+            db, owner, chat, body, local=local, session_id=session_id, stage=stage
+        )
         return result
 
     async def claim(self, worker):
@@ -101,10 +126,10 @@ class ExecutionTurns:
         owner = lease.owner_user_id
         key = owner, scope.turn_id
         grant = self.grants.get(key)
-        if grant is None or grant.expires <= monotonic():
+        if grant is None:
             raise HTTPException(410, "workbench_execution_lease_ended")
-        proof = await self.authority(grant.assertion, turn_path(scope.chat_id))
-        if proof.factor_epoch != grant.factor_epoch or self.grants.get(key) != grant:
+        await self.verify_grant(grant)
+        if self.grants.get(key) != grant:
             raise HTTPException(403, "workbench_authority_revoked")
         return scope
 
@@ -258,6 +283,7 @@ class ExecutionTurns:
         row = await transcripts.get_turn(db, owner, chat, turn)
         if row.status not in transcripts.ACTIVE:
             return
+        (await transcripts.get_chat(db, owner, chat)).queue_paused = True
         job = await db.get(WorkbenchExecutionJob, turn)
         if job is None or job.status == "queued":
             if job is not None:
@@ -294,8 +320,11 @@ class ExecutionTurns:
                 if row.status == "cancelling":
                     status, error = "cancelled", None
                 transcripts.end_turn(row, status, error)
+                if status != "completed":
+                    (await transcripts.get_chat(db, owner, scope.chat_id)).queue_paused = True
             await db.commit()
         self.grants.pop((owner, scope.turn_id), None)
+        self.instructions.close_turn(owner, scope.turn_id)
 
     async def sweep(self):
         for (owner, identity), grant in tuple(self.grants.items()):
@@ -305,6 +334,7 @@ class ExecutionTurns:
                 if job is None or job.status not in {"queued", "leased"}:
                     if job is not None or grant.expires <= monotonic():
                         self.grants.pop((owner, identity), None)
+                        self.instructions.close_turn(owner, identity)
                     continue
                 expired = grant.expires <= monotonic() or (
                     job.lease_expires_at is not None and job.lease_expires_at <= utc_now()
@@ -318,13 +348,16 @@ class ExecutionTurns:
                     if row.status in transcripts.ACTIVE:
                         status = "cancelled" if row.status == "cancelling" else "interrupted"
                         transcripts.end_turn(row, status, "运行已中断，请核对操作结果")
+                        (await transcripts.get_chat(db, owner, scope.chat_id)).queue_paused = True
                     job.status = "unknown" if job.status == "leased" else "failed"
                     job.error_code = "workbench_execution_lease_ended"
                     job.revision += 1
                     await db.commit()
                     self.grants.pop((owner, identity), None)
+                    self.instructions.close_turn(owner, identity)
 
     async def maintain(self):
         while True:
-            await asyncio.sleep(3)
+            await asyncio.sleep(1)
             await self.sweep()
+            await self.pending.advance_ready()

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "openapi_sha256": "9ece4b13a21f4bd401194cec4446d4c48b93b7bd0e85299bcd9a21854b7e98c3",
+  "openapi_sha256": "49c4d42371cafd14b608389fb6c279c4d2db0ea8e9407b1993aa7c8b8a21add2",
   "operations": [
     {
       "service": "identity",
@@ -143,6 +143,18 @@
     {
       "service": "agents",
       "method": "POST",
+      "path": "/v1/agent-workbench/chats/{chat_id}/queue/resume",
+      "operation_id": "resume_queue_v1_agent_workbench_chats__chat_id__queue_resume_post"
+    },
+    {
+      "service": "agents",
+      "method": "DELETE",
+      "path": "/v1/agent-workbench/chats/{chat_id}/queue/{turn_id}",
+      "operation_id": "remove_queued_v1_agent_workbench_chats__chat_id__queue__turn_id__delete"
+    },
+    {
+      "service": "agents",
+      "method": "POST",
       "path": "/v1/agent-workbench/chats/{chat_id}/turns",
       "operation_id": "send_turn_v1_agent_workbench_chats__chat_id__turns_post"
     },
@@ -151,6 +163,18 @@
       "method": "POST",
       "path": "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/approvals/{approval_id}",
       "operation_id": "decide_v1_agent_workbench_chats__chat_id__turns__turn_id__approvals__approval_id__post"
+    },
+    {
+      "service": "agents",
+      "method": "POST",
+      "path": "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/instructions",
+      "operation_id": "insert_instruction_v1_agent_workbench_chats__chat_id__turns__turn_id__instructions_post"
+    },
+    {
+      "service": "agents",
+      "method": "GET",
+      "path": "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/source",
+      "operation_id": "preview_source_v1_agent_workbench_chats__chat_id__turns__turn_id__source_get"
     },
     {
       "service": "agents",

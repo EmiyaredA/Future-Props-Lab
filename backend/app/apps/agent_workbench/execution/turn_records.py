@@ -9,7 +9,7 @@ from app.runtime.ids import new_id
 
 from .models import WorkbenchTurn
 from .schemas import TurnOut
-from .transcripts import ACTIVE, end_turn, get_turn
+from .transcripts import ACTIVE, MAX_QUEUE, end_turn, get_chat, get_turn, queued_turns
 
 
 async def begin(db):
@@ -17,7 +17,7 @@ async def begin(db):
     await db.execute(text("BEGIN IMMEDIATE"))
 
 
-async def store_turn(db, owner, chat_id, body, *, stage=None):
+async def store_turn(db, owner, chat_id, body, *, local=False, session_id=None, stage=None):
     existing = await db.scalar(
         select(WorkbenchTurn).where(
             WorkbenchTurn.owner_user_id == owner,
@@ -38,8 +38,13 @@ async def store_turn(db, owner, chat_id, body, *, stage=None):
             WorkbenchTurn.status.in_(ACTIVE),
         )
     )
-    if active:
-        raise HTTPException(409, "请等待当前消息完成")
+    queued = (await db.scalars(queued_turns(owner, chat_id))).all()
+    if body.mode == "immediate" and (active or queued):
+        raise HTTPException(409, "当前会话有正在运行或等待的消息")
+    if len(queued) >= MAX_QUEUE:
+        raise HTTPException(409, "待执行队列已满")
+    if not queued:
+        (await get_chat(db, owner, chat_id)).queue_paused = False
     position = await db.scalar(
         select(func.max(WorkbenchTurn.position)).where(
             WorkbenchTurn.chat_id == chat_id,
@@ -54,8 +59,10 @@ async def store_turn(db, owner, chat_id, body, *, stage=None):
         position=(position or 0) + 1,
         prompt=body.text,
         answer="",
-        status="running",
-        started_at=int(time()),
+        status="queued" if body.mode == "queue" else "running",
+        started_at=int(time()) if body.mode == "immediate" else None,
+        queued_session_id=session_id if body.mode == "queue" else None,
+        queued_local=local,
         approvals=[],
         revision=1,
     )

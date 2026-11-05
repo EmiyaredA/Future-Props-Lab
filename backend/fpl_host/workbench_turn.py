@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from app.apps.agent_workbench.execution.project_tools import ProjectTools
 from app.capabilities.agents.activity import fields
+from app.capabilities.agents.cli.instructions import LiveInstructions
 from fpl_runtime.native_protocol import NativeOutcome
 from fpl_runtime.native_queue import digest
 from fpl_runtime.workbench_execution import TurnScope
@@ -24,6 +25,7 @@ class MacTurn:
         self.last_flush = 0
         self.output_lock = asyncio.Lock()
         self.tools = ProjectTools(self.authorize, self.approve, worker.file_writes)
+        self.instructions = LiveInstructions()
 
     async def send(self, suffix, **payload):
         return await self.worker.transport.post(
@@ -44,6 +46,25 @@ class MacTurn:
         while True:
             await asyncio.sleep(2)
             await self.authorize()
+
+    async def steer(self):
+        while True:
+            if self.instructions.ready:
+                async with self.output_lock:
+                    await self.flush()
+                    instruction = (await self.send("instructions/claim")).get("instruction")
+                if instruction is not None:
+                    request_id = instruction["request_id"]
+                    status = await self.instructions.submit(
+                        "steer:" + request_id, instruction["text"]
+                    )
+                    await self.send(
+                        "instructions/receipt",
+                        request_id=request_id,
+                        text_sha256=instruction["text_sha256"],
+                        status=status,
+                    )
+            await asyncio.sleep(0.4)
 
     async def flush(self):
         if self.sent != self.answer:
@@ -149,23 +170,28 @@ class MacTurn:
                     self.emit,
                     runtime_path=runtime,
                     tool_timeout=900,
+                    instructions=self.instructions,
                 )
             )
             watch = asyncio.create_task(self.watch())
+            steer = asyncio.create_task(self.steer())
             try:
                 async with asyncio.timeout(900):
                     done, _ = await asyncio.wait(
-                        {dialogue, watch}, return_when=asyncio.FIRST_COMPLETED
+                        {dialogue, watch, steer}, return_when=asyncio.FIRST_COMPLETED
                     )
                     if watch in done:
                         await watch
+                    if steer in done:
+                        await steer
                     await dialogue
                     await self.flush()
             finally:
-                for task in (watch, dialogue):
+                self.instructions.close()
+                for task in (watch, steer, dialogue):
                     if not task.done():
                         task.cancel()
-                await asyncio.gather(watch, dialogue, return_exceptions=True)
+                await asyncio.gather(watch, steer, dialogue, return_exceptions=True)
             return NativeOutcome(status="completed")
         except LeaseEnded:
             return NativeOutcome(status="failed", error_code="workbench_authority_revoked")

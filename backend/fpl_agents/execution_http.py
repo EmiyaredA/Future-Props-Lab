@@ -4,7 +4,7 @@ import asyncio
 import json
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
 
 from app.apps.agent_workbench.execution import transcripts
@@ -16,22 +16,29 @@ from app.apps.agent_workbench.execution.schemas import (
     ChatOut,
     DirectoryListing,
     ExecutionCatalog,
+    InstructionCreate,
+    InstructionOut,
     ProjectChoice,
     ProjectDirectory,
+    SourcePreview,
     TurnCreate,
     TurnOut,
 )
+from app.apps.agent_workbench.execution.turn_activity import source_reference
 from fpl_runtime.http_dependencies import SessionDep, StudioAuth
 from fpl_runtime.workbench_execution import (
     CATALOG,
     CHECK_PROJECT,
     DIRECTORIES,
+    PREVIEW_SOURCE,
     REGISTER,
     DirectoryQuery,
     Discovery,
     ProjectCheck,
+    ProjectFile,
     ProjectReady,
     RegisterProject,
+    source_path,
 )
 
 from .execution_discovery import recent_roots, registered_project_root, store_verified_chat
@@ -137,8 +144,14 @@ async def create_chat(request: Request, body: ChatCreate, db: SessionDep, princi
 
 
 @router.get("/chats/{chat_id}", response_model=ChatDetail)
-async def detail(chat_id: str, db: SessionDep, principal: StudioAuth):
-    return await transcripts.detail(db, principal.user_id, chat_id, load_labels=registered_labels)
+async def detail(request: Request, chat_id: str, db: SessionDep, principal: StudioAuth):
+    return await transcripts.detail(
+        db,
+        principal.user_id,
+        chat_id,
+        load_labels=registered_labels,
+        ready=request.app.state.execution_turns.instructions.steerable,
+    )
 
 
 @router.post("/chats/{chat_id}/turns", response_model=TurnOut, status_code=202)
@@ -152,7 +165,97 @@ async def send_turn(
         body,
         request.state.service_assertion,
         local=request.state.service_actor.local,
+        session_id=principal.session_id,
     )
+
+
+@router.delete("/chats/{chat_id}/queue/{turn_id}", status_code=204)
+async def remove_queued(
+    request: Request, chat_id: str, turn_id: str, db: SessionDep, principal: StudioAuth
+):
+    await request.app.state.execution_turns.pending.change(
+        db,
+        principal.user_id,
+        chat_id,
+        request.state.service_assertion,
+        local=request.state.service_actor.local,
+        session_id=principal.session_id,
+        remove=turn_id,
+    )
+
+
+@router.post("/chats/{chat_id}/queue/resume", status_code=204)
+async def resume_queue(request: Request, chat_id: str, db: SessionDep, principal: StudioAuth):
+    await request.app.state.execution_turns.pending.change(
+        db,
+        principal.user_id,
+        chat_id,
+        request.state.service_assertion,
+        local=request.state.service_actor.local,
+        session_id=principal.session_id,
+    )
+
+
+@router.post("/chats/{chat_id}/turns/{turn_id}/instructions", response_model=InstructionOut)
+async def insert_instruction(
+    request: Request,
+    chat_id: str,
+    turn_id: str,
+    body: InstructionCreate,
+    db: SessionDep,
+    principal: StudioAuth,
+):
+    return await request.app.state.execution_turns.instructions.submit(
+        db,
+        principal.user_id,
+        chat_id,
+        turn_id,
+        body,
+        request.state.service_assertion,
+        local=request.state.service_actor.local,
+        session_id=principal.session_id,
+    )
+
+
+@router.get("/chats/{chat_id}/turns/{turn_id}/source", response_model=SourcePreview)
+async def preview_source(
+    request: Request,
+    response: Response,
+    chat_id: str,
+    turn_id: str,
+    call_id: Annotated[str, Query(min_length=1, max_length=255)],
+    db: SessionDep,
+    principal: StudioAuth,
+):
+    response.headers["Cache-Control"] = "no-store"
+    owner = principal.user_id
+    turn = await transcripts.get_turn(db, owner, chat_id, turn_id)
+    path, line, diff = source_reference(turn, call_id)
+    chat = await transcripts.get_chat(db, owner, chat_id)
+    local = request.state.service_actor.local
+    root = await registered_project_root(db, owner, chat.project_id) if local else None
+    scope = ProjectFile(
+        project_id=chat.project_id,
+        agent=chat.agent_id,
+        local=local,
+        registered_root=root,
+        path=path,
+    )
+    await db.rollback()
+    host = request.app.state.execution_discovery
+    token, source = request.state.service_assertion, source_path(chat_id, turn_id)
+    await host.authority(token, PREVIEW_SOURCE, source)
+    result = await host.execute(owner, token, PREVIEW_SOURCE, scope, source=source)
+    current = await transcripts.get_chat(db, owner, chat_id)
+    latest_root = await registered_project_root(db, owner, current.project_id) if local else None
+    latest_turn = await transcripts.get_turn(db, owner, chat_id, turn_id)
+    if (current.project_id, current.agent_id, latest_root) != (
+        scope.project_id,
+        scope.agent,
+        root,
+    ) or (source_reference(latest_turn, call_id) != (path, line, diff)):
+        raise HTTPException(409, "工作台项目已变更")
+    return SourcePreview(path=path, text=result["text"], line=line, diff=diff)
 
 
 @router.post("/chats/{chat_id}/turns/{turn_id}/stop", status_code=204)
@@ -191,6 +294,8 @@ async def updates(request, owner, chat_id):
             break
         async with request.app.state.database.sessions(info={"owner_user_id": owner}) as db:
             version = await transcripts.latest_turn_version(db, owner, chat_id)
+        instructions = request.app.state.execution_turns.instructions
+        version = (version, any(instructions.steerable(turn_id) for turn_id, _ in version[1]))
         if version != previous:
             previous = version
             yield f"event: change\ndata: {json.dumps(version)}\n\n"

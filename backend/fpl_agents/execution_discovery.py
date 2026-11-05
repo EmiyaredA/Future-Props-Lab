@@ -12,13 +12,15 @@ from app.apps.agent_workbench.execution.models import WorkbenchProject
 from app.apps.agent_workbench.execution.projects import RECENT_LIMIT
 from app.apps.agent_workbench.execution.schemas import DirectoryListing, ExecutionCatalog
 from app.runtime.time import utc_now
-from fpl_runtime.native_queue import NativeQueue, NativeQueueError
+from fpl_runtime.native_queue import NativeQueue, NativeQueueError, digest
 from fpl_runtime.workbench_execution import (
     CATALOG,
     CHECK_PROJECT,
     DIRECTORIES,
     DISCOVERY_OPERATIONS,
+    PREVIEW_SOURCE,
     ROUTES,
+    ProjectFileResult,
     ProjectReady,
     RecentRoot,
 )
@@ -62,29 +64,33 @@ class ExecutionDiscovery:
             database, WorkbenchExecutionJob, operations=DISCOVERY_OPERATIONS, clock=utc_now
         )
         self.requests = {}
+        self.previews = {}
         self.last_poll = None
 
     @property
     def ready(self):
         return self.configured and self.last_poll is not None and monotonic() - self.last_poll <= 15
 
-    async def authority(self, assertion, operation):
-        method, path = ROUTES[operation]
+    async def authority(self, assertion, operation, source=None):
+        method, path = ("GET", source) if operation == PREVIEW_SOURCE else ROUTES[operation]
         value = await self.identity.cloud_authority(assertion=assertion, method=method, path=path)
         if value is None:
             raise HTTPException(503, "workbench_authority_unavailable")
         if not value.active:
             raise HTTPException(403, "workbench_authority_revoked")
-        if operation == CHECK_PROJECT and (not value.enabled or value.unlocked_until <= time()):
+        if operation in {CHECK_PROJECT, PREVIEW_SOURCE} and (
+            not value.enabled or value.unlocked_until <= time()
+        ):
             raise HTTPException(403, "请先验证密码及动态验证码")
         return value
 
-    async def execute(self, owner, assertion, operation, scope):
+    async def execute(self, owner, assertion, operation, scope, *, source=None):
         if not self.ready or len(self.requests) >= 32:
             raise HTTPException(503, "workbench_execution_worker_unavailable")
         identity = uuid4().hex
-        self.requests[owner, identity] = assertion
-        job = result = None
+        key = owner, identity
+        self.requests[key] = (assertion, source)
+        job = result = preview = None
         try:
             job = await self.queue.enqueue(
                 owner=owner,
@@ -96,20 +102,26 @@ class ExecutionDiscovery:
         except NativeQueueError:
             raise HTTPException(503, "workbench_discovery_unconfirmed") from None
         finally:
-            self.requests.pop((owner, identity), None)
+            self.requests.pop(key, None)
+            preview = self.previews.pop(key, None)
             if job is not None and result is None:
                 with CancelScope(shield=True):
                     await self.discard(owner, job["id"])
-        current = await self.authority(assertion, operation)
+        current = await self.authority(assertion, operation, source)
         if not current.enabled:
             raise HTTPException(403, "workbench_execution_disabled")
         if result["status"] == "completed":
+            if operation == PREVIEW_SOURCE:
+                if preview is None:
+                    raise HTTPException(503, "workbench_preview_unconfirmed")
+                return preview
             return result["result"]
         code = result["error_code"]
         statuses = {
             "project_unavailable": 409,
             "agent_unavailable": 409,
             "project_not_found": 404,
+            "source_not_found": 404,
             "workbench_authority_revoked": 403,
         }
         raise HTTPException(statuses.get(code, 503), {"code": code, "message": result["message"]})
@@ -159,15 +171,16 @@ class ExecutionDiscovery:
     async def authorize(self, worker, lease):
         request_id = await self.lease(worker, lease, active=True)
         key = lease.owner_user_id, request_id
-        assertion = self.requests.get(key)
-        if assertion is None:
+        request = self.requests.get(key)
+        if request is None:
             raise HTTPException(410, "workbench_execution_lease_ended")
-        current = await self.authority(assertion, lease.operation)
-        if not current.enabled or self.requests.get(key) != assertion:
+        assertion, source = request
+        current = await self.authority(assertion, lease.operation, source)
+        if not current.enabled or self.requests.get(key) != request:
             raise HTTPException(403, "workbench_authority_revoked")
 
     async def settle(self, worker, lease, outcome):
-        await self.lease(worker, lease, active=False)
+        request_id = await self.lease(worker, lease, active=False)
         if outcome.status == "completed":
             try:
                 if lease.operation == CATALOG:
@@ -184,6 +197,17 @@ class ExecutionDiscovery:
                     project = ProjectReady.model_validate(outcome.result)
                     if project.project_id != lease.payload["project_id"]:
                         raise ValueError("project receipt identity differs")
+                elif lease.operation == PREVIEW_SOURCE:
+                    result = ProjectFileResult.model_validate(outcome.result)
+                    if result.path != lease.payload["path"] or len(result.text.encode()) > 131_072:
+                        raise ValueError("preview does not match its bound file")
+                    key = lease.owner_user_id, request_id
+                    if key not in self.requests:
+                        raise HTTPException(410, "workbench_execution_lease_ended")
+                    value = result.model_dump(mode="json")
+                    if self.previews.setdefault(key, value) != value:
+                        raise HTTPException(409, "workbench_preview_receipt_conflict")
+                    outcome = outcome.model_copy(update={"result": {"sha256": digest(value)}})
                 elif outcome.result != {"root": lease.payload["root"]}:
                     raise ValueError("project result differs from request")
             except ValueError:

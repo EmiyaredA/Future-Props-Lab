@@ -12,7 +12,7 @@ import httpx
 from cryptography.fernet import Fernet
 from fastapi import HTTPException
 
-from app.apps.agent_workbench.execution import projects
+from app.apps.agent_workbench.execution import project_files, projects
 from app.apps.agent_workbench.execution.project_paths import validate_project_root
 from app.apps.agent_workbench.execution.schemas import (
     AgentChoice,
@@ -36,10 +36,12 @@ from fpl_runtime.workbench_execution import (
     CATALOG,
     CHECK_PROJECT,
     DIRECTORIES,
+    PREVIEW_SOURCE,
     REGISTER,
     DirectoryQuery,
     Discovery,
     ProjectCheck,
+    ProjectFile,
     ProjectReady,
     RegisterProject,
 )
@@ -119,6 +121,9 @@ class WorkbenchWorker:
                 result = (await self.check_project(lease.owner_user_id, scope)).model_dump(
                     mode="json"
                 )
+            elif lease.operation == PREVIEW_SOURCE:
+                scope = ProjectFile.model_validate(lease.payload)
+                result = await self.preview_file(lease.owner_user_id, scope)
             elif lease.operation == DIRECTORIES:
                 body = DirectoryQuery.model_validate(lease.payload)
                 settings = await asyncio.to_thread(self.configuration.settings)
@@ -148,7 +153,7 @@ class WorkbenchWorker:
     async def check_project(self, owner, scope):
         return (await self.resolve_project(owner, scope))[-1]
 
-    async def resolve_project(self, owner, scope, *, probe=True):
+    async def bind_project(self, owner, scope):
         settings = await asyncio.to_thread(self.configuration.settings)
         if scope.registered_root is not None:
             if not scope.local:
@@ -161,7 +166,29 @@ class WorkbenchWorker:
             )
         else:
             project = projects.configured_binding(scope.project_id, owner, settings)
-        project = await projects.check_root(project, settings)
+        return await projects.check_root(project, settings)
+
+    async def preview_file(self, owner, scope):
+        project = await self.bind_project(owner, scope)
+        try:
+            content = await asyncio.to_thread(
+                project_files.read_file,
+                project.root,
+                scope.path,
+                expected_root=project.directory_key,
+            )
+        except (OSError, ValueError):
+            content = None
+        if content is None:
+            raise HTTPException(
+                404, {"code": "source_not_found", "message": "文件已移除或无法预览"}
+            )
+        if await self.bind_project(owner, scope) != project:
+            raise HTTPException(409, {"code": "project_unavailable", "message": "工作台项目已变更"})
+        return {"path": scope.path, "text": content}
+
+    async def resolve_project(self, owner, scope, *, probe=True):
+        project = await self.bind_project(owner, scope)
         runtime = await asyncio.to_thread(self.configuration.settings, for_agents=True)
         if probe:
             agent = await self.inspect(runtime, scope.agent, discover_models=False)
@@ -229,7 +256,8 @@ class WorkbenchWorker:
         )
         if result.get("acknowledged") is not True:
             raise ProtocolConflict("工作台执行回执未确认")
-        await asyncio.to_thread(self.receipts.acknowledge, lease)
+        if lease.operation != PREVIEW_SOURCE:
+            await asyncio.to_thread(self.receipts.acknowledge, lease)
 
     async def poll_once(self):
         for lease, stored in self.receipts.pending():
@@ -242,7 +270,12 @@ class WorkbenchWorker:
         reply = await self.transport.post("execution/claim", {"wait_seconds": 1})
         if reply.get("lease") is not None:
             lease = NativeLease.model_validate(reply["lease"])
-            await self.deliver(lease, await self.receipts.execute_async(lease, self.execute))
+            outcome = (
+                await self.execute(lease)
+                if lease.operation == PREVIEW_SOURCE
+                else await self.receipts.execute_async(lease, self.execute)
+            )
+            await self.deliver(lease, outcome)
 
     async def execute_turn(self, lease):
         return await MacTurn(self, lease).run()

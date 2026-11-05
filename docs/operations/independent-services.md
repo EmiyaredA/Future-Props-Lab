@@ -574,4 +574,4 @@ Galgame 快照 ZIP 导入使用 `deploy/galgame-snapshots.compose.yaml`，与 `d
 
 ### Agent 工作台的项目发现
 
-启动前应用 Agents 的 0004 迁移，并叠加 `deploy/agents-execution.compose.yaml`。将 `FPL_AGENTS_EXECUTION_WORKERS` 指向独立执行凭据文件。Mac 的 `fpl_host.workbench_worker` 通过同版本回环网关领取任务，使用可信本机 TOML 核对允许的目录、项目和 CLI。公网仅能看到当前账号授权的预设项目，创建对话需有效的云控解锁。登记目录仅允许可信本机入口。此配置覆盖项目发现及对话创建，完整执行仍由就绪门禁跟踪。
+启动前应用 Agents 的 0004 迁移，并叠加 `deploy/agents-execution.compose.yaml`。将 `FPL_AGENTS_EXECUTION_WORKERS` 指向独立执行凭据文件。Mac 的 `fpl_host.workbench_worker` 通过同版本回环网关领取任务，使用可信本机 TOML 核对允许的目录、项目和 CLI。公网仅能看到当前账号授权的预设项目，创建对话需有效的云控解锁。登记目录仅允许可信本机入口。另需应用 Agents 的 0005 迁移。执行 worker 同时轮询目录和轮次通道。运行撤权、失败或服务重启时队列暂停，用户重新解锁后可恢复。源码预览只为持有相应活动的账号从受管项目读取。

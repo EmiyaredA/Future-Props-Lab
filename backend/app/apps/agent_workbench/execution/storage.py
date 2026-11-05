@@ -4,7 +4,7 @@ import asyncio
 import time
 
 from fastapi import HTTPException
-from sqlalchemy import func, select, text, update
+from sqlalchemy import select, text, update
 
 from app.capabilities.agents.cli.catalog import DEFINITIONS, inspect_connection
 from app.console.cloud_control.access import allowed, require_unlocked
@@ -25,6 +25,7 @@ from .schemas import (
 )
 from .transcripts import end_turn
 from .turn_activity import next_activity_sequence
+from .turn_records import store_turn
 
 ACTIVE = ("running", "waiting_approval", "cancelling")
 MAX_QUEUE = 20
@@ -219,58 +220,7 @@ async def create_turn(db, principal, chat_id, body, *, local):
     owner = principal.user_id
     project, _ = await checked_project(db, principal, chat_id=chat_id, local=local)
     await check_binding(db, principal, project, local=local, chat_id=chat_id, write=True)
-    existing = await db.scalar(
-        select(WorkbenchTurn).where(
-            WorkbenchTurn.owner_user_id == owner,
-            WorkbenchTurn.chat_id == chat_id,
-            WorkbenchTurn.client_id == body.request_id,
-        )
-    )
-    if existing:
-        if existing.prompt != body.text:
-            raise HTTPException(409, "请求标识已用于其他消息")
-        result = TurnOut.model_validate(existing)
-        await db.rollback()
-        return result, False
-    active = await db.scalar(
-        select(WorkbenchTurn.id).where(
-            WorkbenchTurn.owner_user_id == owner,
-            WorkbenchTurn.chat_id == chat_id,
-            WorkbenchTurn.status.in_(ACTIVE),
-        )
-    )
-    queued = (await db.scalars(queued_turns(owner, chat_id))).all()
-    if body.mode == "immediate" and (active or queued):
-        raise HTTPException(409, "当前会话有正在运行或等待的消息")
-    if len(queued) >= MAX_QUEUE:
-        raise HTTPException(409, "待执行队列已满")
-    chat = await get_chat(db, owner, chat_id)
-    if not queued:
-        chat.queue_paused = False
-    position = await db.scalar(
-        select(func.max(WorkbenchTurn.position)).where(
-            WorkbenchTurn.chat_id == chat_id,
-            WorkbenchTurn.owner_user_id == owner,
-        )
-    )
-    turn = WorkbenchTurn(
-        id=new_id(),
-        owner_user_id=owner,
-        chat_id=chat_id,
-        client_id=body.request_id,
-        position=(position or 0) + 1,
-        prompt=body.text,
-        answer="",
-        status="queued" if body.mode == "queue" else "running",
-        started_at=int(time.time()) if body.mode == "immediate" else None,
-        queued_session_id=principal.session_id if body.mode == "queue" else None,
-        queued_local=local,
-        approvals=[],
-        revision=1,
-    )
-    db.add(turn)
-    await db.commit()
-    return TurnOut.model_validate(turn), True
+    return await store_turn(db, owner, chat_id, body, local=local, session_id=principal.session_id)
 
 
 async def change_queue(db, principal, chat_id, *, local, remove_id=None):

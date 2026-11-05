@@ -2,6 +2,8 @@
 
 import time
 
+from fastapi import HTTPException
+
 from app.capabilities.agents.activity import positive_int, tool_details
 
 from . import project_files
@@ -92,3 +94,27 @@ def apply_activity(row, kind, payload):
     row.activity = activities
     row.revision += 1
     return True
+
+
+def source_reference(turn, call_id):
+    activity = next((entry for entry in turn.activity if entry["call_id"] == call_id), {})
+    name = activity.get("name")
+    if (
+        name not in {"read_file", "write_file"}
+        or activity.get("status") != "completed"
+        or activity.get("source_available") is not True
+    ):
+        raise HTTPException(404, "此操作没有可预览的源码")
+    target = (activity.get("details") or {}).get("file") or {}
+    path = target.get("path")
+    if not isinstance(path, str):
+        raise HTTPException(404, "此操作没有可预览的源码")
+    diffs = [
+        approval["preview"]
+        for approval in turn.approvals
+        if name == "write_file"
+        and approval["kind"] == "write"
+        and approval["title"] == path
+        and approval["status"] == "completed"
+    ]
+    return path, target.get("line"), diffs[0] or None if len(diffs) == 1 else None

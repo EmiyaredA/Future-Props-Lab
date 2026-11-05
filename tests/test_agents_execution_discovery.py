@@ -26,8 +26,13 @@ from fpl_runtime.workbench_execution import (
     CATALOG_PATH,
     CHATS_PATH,
     DIRECTORY_PATH,
+    PREVIEW_SOURCE,
     PROJECT_PATH,
     decision_path,
+    instruction_path,
+    queue_remove_path,
+    queue_resume_path,
+    source_path,
     turn_path,
 )
 
@@ -274,21 +279,71 @@ async def test_native_workbench_project_discovery_keeps_roots_local(tmp_path, mo
         assert current["approvals"][0]["status"] == "completed"
         assert current["activity"][0]["source_available"] is True
         assert (work / "result.txt").read_text() == "approved fixture"
+        preview_path = source_path(chat_id, turn_id)
+        assert (
+            await call("GET", preview_path, user=other, params={"call_id": "write-one"})
+        ).status_code == 404
+        assert (await call("GET", preview_path, params={"call_id": "unknown"})).status_code == 404
+        preview = await execute("GET", preview_path, params={"call_id": "write-one"})
+        assert preview.status_code == 200, preview.text
+        assert preview.headers["cache-control"] == "no-store"
+        assert (
+            preview.json()["path"] == "result.txt" and preview.json()["text"] == "approved fixture"
+        )
+        assert not app.state.execution_discovery.previews
+        assert all(
+            "approved fixture" not in file.read_text()
+            for file in worker.receipts.root.glob("*.json")
+        )
         async with app.state.database.sessions(info={"owner_user_id": owner}) as session:
             jobs = await session.scalars(select(WorkbenchExecutionJob))
-            assert all("assertion" not in item.payload for item in jobs)
+            for job in jobs:
+                assert "assertion" not in job.payload
+                if job.operation == PREVIEW_SOURCE:
+                    assert set(job.result) == {"sha256"}
         entered = asyncio.Event()
+        delivered = []
 
-        async def waiting(*_args, **_kwargs):
+        async def waiting(*_args, instructions, **_kwargs):
+            async def ack(identity, text):
+                delivered.append((identity, text))
+                instructions.acknowledge(identity, "accepted")
+
+            instructions.send = ack
             entered.set()
             await asyncio.Future()
 
         worker.dialogue = waiting
         next_turn = await call("POST", target, json={**message, "request_id": "turn-revoke"})
         assert next_turn.status_code == 202, next_turn.text
+        next_id = next_turn.json()["id"]
         task = asyncio.create_task(worker.poll_turn())
         try:
             await asyncio.wait_for(entered.wait(), timeout=5)
+            async with asyncio.timeout(5):
+                while (await call("GET", detail_path)).json()["steerable_turn_id"] != next_id:
+                    await asyncio.sleep(0.05)
+            assert (await api.get("/ready")).status_code == 200
+            steer_path = instruction_path(chat_id, next_id)
+            steer_body = {"request_id": "steer-one", "text": "keep the original"}
+            inserted = await call("POST", steer_path, json=steer_body)
+            assert inserted.status_code == 200 and inserted.json()["status"] == "accepted", (
+                inserted.text
+            )
+            assert (await call("POST", steer_path, json=steer_body)).json() == inserted.json()
+            assert delivered == [("steer:steer-one", "keep the original")]
+            assert (await call("POST", steer_path, user=other, json=steer_body)).status_code == 404
+
+            queue_body = {"mode": "queue", "text": "queued follow-up"}
+            first = await call("POST", target, json={**queue_body, "request_id": "queued-one"})
+            second = await call("POST", target, json={**queue_body, "request_id": "queued-two"})
+            assert [first.status_code, second.status_code] == [202, 202], (first.text, second.text)
+            first_id, second_id = first.json()["id"], second.json()["id"]
+            read = (await call("GET", detail_path)).json()
+            assert [item["id"] for item in read["queue"]] == [first_id, second_id]
+            delete_path = queue_remove_path(chat_id, first_id)
+            assert (await call("DELETE", delete_path, user=other)).status_code == 404
+            assert (await call("DELETE", delete_path)).status_code == 204
             identity.revoked = True
             await asyncio.wait_for(task, timeout=5)
         finally:
@@ -296,8 +351,24 @@ async def test_native_workbench_project_discovery_keeps_roots_local(tmp_path, mo
                 task.cancel()
             await asyncio.gather(task, return_exceptions=True)
         identity.revoked = False
-        last = (await call("GET", detail_path)).json()["turns"][-1]
-        assert last["id"] == next_turn.json()["id"] and last["status"] == "failed"
+        read = (await call("GET", detail_path)).json()
+        last = read["turns"][-1]
+        assert last["id"] == next_id and last["status"] == "failed"
+        assert read["queue_paused"] is True and [item["id"] for item in read["queue"]] == [
+            second_id
+        ]
+
+        async def finish_followup(*_args, **_kwargs):
+            return None
+
+        worker.dialogue = finish_followup
+        assert (await call("POST", queue_resume_path(chat_id))).status_code == 204
+        async with asyncio.timeout(5):
+            while (await call("GET", detail_path)).json()["queue"]:
+                await worker.poll_turn()
+        await worker.poll_turn()
+        read = (await call("GET", detail_path)).json()
+        assert read["turns"][-1]["id"] == second_id and read["turns"][-1]["status"] == "completed"
         identity.revoked = True
         assert (await call("GET", CATALOG_PATH)).status_code == 403
     await transport.close()
