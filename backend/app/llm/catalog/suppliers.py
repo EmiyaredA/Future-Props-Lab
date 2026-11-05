@@ -8,7 +8,7 @@ from app.llm.catalog.service import (
 from app.llm.catalog.supplier_records import get_supplier, supplier_out
 from app.llm.models import ModelProvider
 from app.llm.models.model_supplier import ModelSupplier
-from app.llm.schemas.model_supplier import ModelSupplierIn, ModelSupplierOut
+from studio.contracts.model_service.schemas.model_supplier import ModelSupplierIn, ModelSupplierOut
 
 
 class ManagedSupplierError(Exception):

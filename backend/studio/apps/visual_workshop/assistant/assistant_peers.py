@@ -3,11 +3,14 @@
 import httpx
 from pydantic import TypeAdapter
 
-from app.llm.schemas.visual_catalog import AssistantCatalog, GenerationOptionsOut
 from studio.apps.visual_workshop.transport.catalog_http import lookup
 from studio.contracts.asset_library.references import PrepareReferenceChange
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.identity.delegation import RequestGrant
+from studio.contracts.model_service.schemas.visual_catalog import (
+    AssistantCatalog,
+    GenerationOptionsOut,
+)
 from studio.contracts.visual_workshop.visual_assistant import (
     ASSET_PURPOSE,
     INPUT_PURPOSE,

@@ -9,8 +9,11 @@ from types import SimpleNamespace
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from app.llm.credential_snapshot import snapshot_from_actor, snapshot_from_row
+from app.llm.call_logs.record_attribution import snapshot_from_row
 from studio.contracts.identity.claims import Actor, issue_context, verify_context
+from studio.contracts.model_service.credential_snapshot import (
+    snapshot_from_actor,
+)
 
 
 def test_snapshot_and_log_query_imports_do_not_initialize_identity_or_monolith_storage():
@@ -19,7 +22,9 @@ def test_snapshot_and_log_query_imports_do_not_initialize_identity_or_monolith_s
             sys.executable,
             "-c",
             (
-                "import sys; from app.llm.credential_snapshot import CredentialSnapshot; "
+                "import sys; "
+                "from studio.contracts.model_service.credential_snapshot "
+                "import CredentialSnapshot; "
                 "import app.llm.call_logs.query; "
                 "import app.llm.catalog.service; import app.llm.catalog.defaults; "
                 "assert 'app.console.models.accounts' not in sys.modules; "
@@ -63,8 +68,7 @@ def test_verified_api_key_metadata_is_an_immutable_historical_snapshot():
     )
     snap = snapshot_from_actor(verified)
     assert snap.api_key_name == "模型脚本" and snap.api_key_prefix == "fpm_public"
-    row = SimpleNamespace()
-    snap.apply(row)
+    row = SimpleNamespace(**snap.as_kwargs())
     assert snapshot_from_row(row) == snap
     with pytest.raises(FrozenInstanceError):
         snap.api_key_name = "renamed later"

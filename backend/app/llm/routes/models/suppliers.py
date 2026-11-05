@@ -3,8 +3,11 @@ from fastapi import APIRouter, HTTPException, Query
 from app.llm.catalog.http_bindings import SupplierDep
 from app.llm.catalog.service import CatalogResourceBusyError, ResourceNotFoundError
 from app.llm.catalog.suppliers import ManagedSupplierError
-from app.llm.schemas.model_service import DeleteMutationOut
-from app.llm.schemas.model_supplier import ModelSupplierIn, ModelSupplierMutationOut
+from studio.contracts.model_service.schemas.model_service import DeleteMutationOut
+from studio.contracts.model_service.schemas.model_supplier import (
+    ModelSupplierIn,
+    ModelSupplierMutationOut,
+)
 
 router = APIRouter(tags=["models"])
 

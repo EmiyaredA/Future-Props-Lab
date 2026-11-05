@@ -20,7 +20,8 @@ from app.llm.providers.realtime.constants import (
     VOICE_VAD_PRE_SPEECH_PAD_MS,
 )
 from app.llm.providers.realtime.contracts import ResolvedRealtimeModel
-from app.llm.schemas.realtime_voice import (
+from app.runtime.credentials import decrypt_secret
+from studio.contracts.model_service.schemas.realtime_voice import (
     RealtimeNumberParameterOut,
     RealtimeVoiceMicrophoneOut,
     RealtimeVoiceModelOut,
@@ -29,7 +30,6 @@ from app.llm.schemas.realtime_voice import (
     RealtimeVoicePlaybackOut,
     RealtimeVoiceVadOut,
 )
-from app.runtime.credentials import decrypt_secret
 from studio.runtime.database.ownership import bind_owner
 
 

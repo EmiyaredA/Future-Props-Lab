@@ -13,7 +13,6 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy import select
 
 from app.llm.admission import admission_for
-from app.llm.credential_snapshot import snapshot_from_actor
 from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
 from app.llm.provider_transports import provider_options
 from app.llm.providers.chat_completions import TEXT_PROVIDER_KINDS
@@ -22,6 +21,7 @@ from app.runtime.credentials import decrypt_secret
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.permissions import effective_permissions
 from studio.contracts.identity.principal import StudioPrincipal
+from studio.contracts.model_service.credential_snapshot import snapshot_from_actor
 from studio.contracts.thought_workshop.writing import (
     ACTIONS,
     WRITING_MODELS_PATH,

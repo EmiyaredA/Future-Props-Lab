@@ -12,8 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.incoming import IncomingFile
 from app.llm.models import ModelTestAttachment, ModelTestConversation
-from app.llm.schemas.model_test import ModelTestAttachmentListOut, ModelTestAttachmentOut
 from studio.config.settings import Settings
+from studio.contracts.model_service.schemas.model_test import (
+    ModelTestAttachmentListOut,
+    ModelTestAttachmentOut,
+)
 from studio.runtime.files.image_sizes import ThumbnailSize
 from studio.runtime.files.raster import RasterPreviewError, derived_thumbnail
 from studio.runtime.time import iso_utc

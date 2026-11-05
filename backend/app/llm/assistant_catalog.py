@@ -4,7 +4,10 @@ from sqlalchemy import select
 
 from app.llm.models import ModelEntry, ModelProvider
 from app.llm.providers.chat_completions import TEXT_PROVIDER_KINDS
-from app.llm.schemas.visual_catalog import AssistantCatalog, VisualAssistantModelOptionOut
+from studio.contracts.model_service.schemas.visual_catalog import (
+    AssistantCatalog,
+    VisualAssistantModelOptionOut,
+)
 
 
 def chat_ready(model, provider, *, require_vision=False):

@@ -18,7 +18,6 @@ from app.llm.models import (
 from app.llm.providers.seedance_references import SeedanceReference, validate_seedance_references
 from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
 from app.llm.providers.volcengine_image import SEEDREAM_SIZES
-from app.llm.schemas.visual_catalog import GenerationOptionsOut
 from app.llm.visual_catalog import generation_options
 from app.llm.visual_generation_model import VisualGenerationValidationError, select_visual_model
 from app.llm.visual_generation_payload import prepare_visual_payload
@@ -49,6 +48,7 @@ from studio.apps.visual_workshop.storage.models import (
 )
 from studio.apps.visual_workshop.website.composition import create_composition, retry_composition
 from studio.config.settings import Settings, get_settings
+from studio.contracts.model_service.schemas.visual_catalog import GenerationOptionsOut
 from studio.runtime.tasks.task_admission import TaskAdmission
 from studio.runtime.time import utc_now
 

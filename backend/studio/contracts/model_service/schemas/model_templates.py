@@ -3,8 +3,12 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-from app.llm.schemas.model_service import ModelCapability, ModelCategory, ProviderIn
-from app.llm.schemas.provider_types import ProviderKind
+from studio.contracts.model_service.schemas.model_service import (
+    ModelCapability,
+    ModelCategory,
+    ProviderIn,
+)
+from studio.contracts.model_service.schemas.provider_types import ProviderKind
 
 PlatformRole = Literal["admin", "user"]
 

@@ -5,7 +5,6 @@ from app.capabilities.transcription import (
     parameter_capabilities,
     resolve_parameters,
 )
-from app.capabilities.transcription.schemas import ModelTestTranscriptionParametersIn
 from app.llm.local_models.catalog import credential_ready, require_ready
 from app.llm.models import ModelEntry, ModelProvider
 from app.llm.providers import autodl_workflows
@@ -14,14 +13,19 @@ from app.llm.providers.local_qwen import speech_parameters
 from app.llm.providers.seedance_parameters import normalize_video_parameters, video_capabilities
 from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
 from app.llm.providers.volcengine_image import SEEDREAM_MODEL, SEEDREAM_SIZES
-from app.llm.schemas.local_models import SpeechSynthesisParameters
-from app.llm.schemas.model_inference import InferenceModelOut, InferenceOptionsOut, InferenceTextIn
 from studio.config.settings import get_settings
 from studio.contracts.model_service.generation_tasks import (
     AudioGenerationTaskCreateIn,
     ImageGenerationTaskCreateIn,
     VideoGenerationTaskCreateIn,
 )
+from studio.contracts.model_service.schemas.local_models import SpeechSynthesisParameters
+from studio.contracts.model_service.schemas.model_inference import (
+    InferenceModelOut,
+    InferenceOptionsOut,
+    InferenceTextIn,
+)
+from studio.contracts.model_service.transcription import ModelTestTranscriptionParametersIn
 from studio.runtime.database.operation_receipts import OperationError
 
 GENERATION_KINDS = {

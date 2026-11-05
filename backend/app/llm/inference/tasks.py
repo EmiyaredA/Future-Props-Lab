@@ -4,16 +4,19 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 
 from app.capabilities.transcription import max_transcription_input_bytes
-from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.inference.assets import InferenceAssets, root
 from app.llm.inference.catalog import get_model, normalize_parameters
 from app.llm.inference.receipts import replay_task
 from app.llm.models.model_inference import ModelInferenceAsset, ModelInferenceTask
 from app.llm.providers.local_qwen import MAX_REFERENCE_BYTES, inspect_reference
 from app.llm.providers.seedance_references import SeedanceReference, validate_seedance_references
-from app.llm.schemas.model_inference import InferenceTaskOut, InferenceTasksOut
 from app.llm.task_outcomes import confirmed_terminal
 from studio.config.settings import get_settings
+from studio.contracts.model_service.credential_snapshot import CredentialSnapshot
+from studio.contracts.model_service.schemas.model_inference import (
+    InferenceTaskOut,
+    InferenceTasksOut,
+)
 from studio.runtime.database.operation_receipts import OperationError, fingerprint
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now

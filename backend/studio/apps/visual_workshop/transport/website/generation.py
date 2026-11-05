@@ -3,7 +3,6 @@ from __future__ import annotations
 from fastapi import APIRouter, Request
 
 from app.llm.routes.model_capacity import task_admission
-from app.llm.schemas.visual_catalog import GenerationOptionsOut
 from studio.apps.visual_workshop.generation_common import GenerationError
 from studio.apps.visual_workshop.generation_routes import generation_error
 from studio.apps.visual_workshop.schemas.generation import (
@@ -14,6 +13,7 @@ from studio.apps.visual_workshop.schemas.generation import (
 from studio.apps.visual_workshop.schemas.workshop import GenerationTaskCreateIn, GenerationTaskOut
 from studio.apps.visual_workshop.website.generation import VisualGeneration
 from studio.assembly.http_dependencies import SessionDep
+from studio.contracts.model_service.schemas.visual_catalog import GenerationOptionsOut
 
 router = APIRouter(prefix="/visual-workshop", tags=["visual-generation"])
 

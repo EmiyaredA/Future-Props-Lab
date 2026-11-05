@@ -5,14 +5,14 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query, Response
 
 from app.llm.call_logs import CallLogService, ReproductionUnavailableError
-from app.llm.schemas.call_log import (
+from studio.assembly.http_dependencies import OwnerDep, SessionDep, StudioAuth
+from studio.contracts.model_service.schemas.call_log import (
     BatchDeleteIn,
     CallLogListOut,
     CallLogOut,
     CallLogQuery,
     CallLogStatsOut,
 )
-from studio.assembly.http_dependencies import OwnerDep, SessionDep, StudioAuth
 
 router = APIRouter(prefix="/llm-call-logs", tags=["model-logs"])
 

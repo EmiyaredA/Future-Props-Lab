@@ -5,9 +5,9 @@ from pydantic import ValidationError
 
 from app.llm.admission import admission_for
 from app.llm.inference.receipts import replay_task
-from app.llm.schemas.model_inference import InferenceTaskIn
 from studio.assembly.http_dependencies import SessionDep, StudioAuth
 from studio.contracts.identity.route_permissions import route_permission
+from studio.contracts.model_service.schemas.model_inference import InferenceTaskIn
 from studio.runtime.database.operation_receipts import OperationError
 
 

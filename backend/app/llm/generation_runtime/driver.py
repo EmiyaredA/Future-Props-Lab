@@ -12,9 +12,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.llm.generation_state import POLL_RETRY_PREFIX, cancel_queued, is_transient_poll_error
 from app.llm.local_models.catalog import credential_ready
 from app.llm.models import ModelProvider
-from app.llm.task_execution import TaskExecutionInfo
 from app.llm.task_outcomes import SUBMISSION_INTERRUPTED_MESSAGE, TaskClaimRejected
 from app.runtime.credentials import decrypt_secret
+from studio.contracts.model_service.task_execution import TaskExecutionInfo
 from studio.runtime.database.ownership import require_owner_id
 from studio.runtime.database.task_records import load_runner_task, recovery_accounts
 from studio.runtime.time import utc_now

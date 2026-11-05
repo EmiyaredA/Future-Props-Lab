@@ -6,13 +6,13 @@ from cryptography.fernet import InvalidToken
 from sqlalchemy import select, text, update
 
 from app.capabilities.transcription import max_transcription_input_bytes, safe_transcription_error
-from app.llm.credential_snapshot import snapshot_from_actor
 from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
 from app.llm.providers.transcription import transcribe_model_audio
 from app.llm.transcription_catalog import supports_asr
 from app.runtime.credentials import decrypt_secret
 from studio.apps.model_service.storage.service_models import GalgameTranscriptionAttempt
 from studio.contracts.galgame_workshop.galgame_asr_execution import AsrOutcome, TranscriptSegment
+from studio.contracts.model_service.credential_snapshot import snapshot_from_actor
 from studio.runtime.ids import new_id
 from studio.runtime.project_errors import ProjectResourceError
 

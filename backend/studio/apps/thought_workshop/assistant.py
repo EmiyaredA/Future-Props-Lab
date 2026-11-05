@@ -5,10 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from app.llm.credential_snapshot import CredentialSnapshot
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.schemas.workshop import ThoughtAssistantIn, ThoughtModelOut
 from studio.apps.thought_workshop.writing import WritingModel, WritingModels
+from studio.contracts.model_service.credential_snapshot import CredentialSnapshot
 from studio.contracts.thought_workshop.writing import ACTIONS
 
 if TYPE_CHECKING:

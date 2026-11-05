@@ -6,7 +6,7 @@ from typing import Any
 
 import httpx
 
-from app.llm.task_execution import TaskExecutionInfo
+from studio.contracts.model_service.task_execution import TaskExecutionInfo
 
 _BEARER = re.compile(r"(?i)(bearer\s+)[^\s,;]+")
 _DATA_URI = re.compile(r"(?i)(data:[^;,\s]+;base64,)[A-Za-z0-9+/=]+")

@@ -3,7 +3,7 @@
 import math
 from typing import Any
 
-from app.llm.task_execution import TaskExecutionInfo
+from studio.contracts.model_service.task_execution import TaskExecutionInfo
 from studio.runtime.time import utc_now
 
 

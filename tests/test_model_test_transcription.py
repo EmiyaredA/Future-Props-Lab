@@ -25,8 +25,8 @@ from app.llm.providers.transcription import (
     TranscriptSegment,
     TranscriptWord,
 )
-from app.llm.schemas.model_test import ModelTestTranscriptionParametersIn
 from studio.assembly.website.models import bind_owner
+from studio.contracts.model_service.schemas.model_test import ModelTestTranscriptionParametersIn
 from website_test_support import SessionLocal, app
 
 

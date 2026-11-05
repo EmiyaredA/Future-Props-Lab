@@ -6,7 +6,7 @@ import secrets
 from dataclasses import dataclass
 from typing import Any
 
-from app.llm.schemas.video_capabilities import VideoCapabilitiesOut
+from studio.contracts.model_service.schemas.video_capabilities import VideoCapabilitiesOut
 
 BASE_URL = "https://www.autodl.art"
 PREFIX = "minimax_h3_"

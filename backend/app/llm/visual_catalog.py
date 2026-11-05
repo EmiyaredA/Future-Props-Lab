@@ -10,7 +10,7 @@ from app.llm.providers.seedance_parameters import video_capabilities
 from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
 from app.llm.providers.volcengine_image import SEEDREAM_SIZES
 from app.llm.providers.zealman_workflows import WORKFLOWS, parameter_options
-from app.llm.schemas.visual_catalog import (
+from studio.contracts.model_service.schemas.visual_catalog import (
     AcceptanceModelListOut,
     AcceptanceModelOut,
     GenerationModelOptionOut,

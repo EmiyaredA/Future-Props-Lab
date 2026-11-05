@@ -19,3 +19,5 @@ ProviderKind = Literal[
     "senseaudio_music",
     "senseaudio_sfx",
 ]
+
+DEEPSEEK_BASE_URL = "https://api.deepseek.com"

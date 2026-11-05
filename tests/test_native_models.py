@@ -26,7 +26,6 @@ from app.llm.models import (
     ModelInferenceTask,
     ModelProvider,
 )
-from app.llm.schemas.local_models import LocalModelActionIn
 from app.llm.task_outcomes import SUBMISSION_INTERRUPTED_MESSAGE
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
 from studio.apps.model_service.storage.native_models import NativeModelBroker
@@ -41,6 +40,7 @@ from studio.apps.model_service.transport.native_api import attach_native
 from studio.contracts.agent_workbench.native import NativeLease
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.claims import Actor, issue_context
+from studio.contracts.model_service.schemas.local_models import LocalModelActionIn
 from studio.host.local_models.models_control import ModelsControl
 from studio.host.local_models.models_transport import ModelsTransport
 from studio.host.local_models.models_worker import ModelsWorker

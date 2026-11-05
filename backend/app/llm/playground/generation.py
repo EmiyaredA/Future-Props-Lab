@@ -5,7 +5,6 @@ from pathlib import Path
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.models import (
     ModelEntry,
     ModelProvider,
@@ -22,7 +21,9 @@ from app.llm.providers.seedance_references import SeedanceReference, validate_se
 from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
 from app.llm.providers.volcengine_image import SEEDREAM_MODEL, SEEDREAM_SIZES
 from app.llm.providers.zealman_workflows import WORKFLOWS, normalize_request, parameter_options
-from app.llm.schemas.model_test import (
+from studio.config.settings import Settings, get_settings
+from studio.contracts.model_service.credential_snapshot import CredentialSnapshot
+from studio.contracts.model_service.schemas.model_test import (
     ModelTestGenerationCreateIn,
     ModelTestGenerationOptionListOut,
     ModelTestGenerationOptionOut,
@@ -31,7 +32,6 @@ from app.llm.schemas.model_test import (
     ModelTestImageGenerationIn,
     ModelTestVideoGenerationIn,
 )
-from studio.config.settings import Settings, get_settings
 from studio.runtime.files.image_sizes import ThumbnailSize
 from studio.runtime.files.raster import RasterPreviewError, derived_thumbnail
 from studio.runtime.revisions import RevisionConflictError

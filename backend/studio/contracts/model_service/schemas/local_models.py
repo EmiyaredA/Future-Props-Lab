@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.llm.local_models.catalog import LANGUAGES
+from studio.config.local_models import LANGUAGES
 
 
 class LocalModelActionIn(BaseModel):

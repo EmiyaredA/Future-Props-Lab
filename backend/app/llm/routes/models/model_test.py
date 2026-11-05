@@ -6,7 +6,6 @@ from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 
 from app.llm.catalog.service import ResourceNotFoundError
-from app.llm.http_credentials import CallCredentialDep
 from app.llm.playground.attachments import AttachmentError, ModelTestAttachments
 from app.llm.playground.service import (
     ConversationBusyError,
@@ -16,7 +15,11 @@ from app.llm.playground.service import (
 )
 from app.llm.playground.stream import generation_events
 from app.llm.provider_transports import provider_options
-from app.llm.schemas.model_test import (
+from app.llm.stream_access import stream_access
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
+from studio.assembly.model_credentials import CallCredentialDep
+from studio.config.settings import get_settings
+from studio.contracts.model_service.schemas.model_test import (
     ModelTestAttachmentListOut,
     ModelTestConversationCreateIn,
     ModelTestConversationListOut,
@@ -25,9 +28,6 @@ from app.llm.schemas.model_test import (
     ModelTestRegenerateIn,
     ModelTestSendIn,
 )
-from app.llm.stream_access import stream_access
-from studio.assembly.http_dependencies import OwnerDep, SessionDep
-from studio.config.settings import get_settings
 from studio.runtime.files.image_sizes import ThumbnailSize
 
 router = APIRouter(prefix="/model-test/conversations", tags=["model-test"])

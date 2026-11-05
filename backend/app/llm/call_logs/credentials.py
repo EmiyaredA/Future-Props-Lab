@@ -7,18 +7,11 @@ from typing import Protocol
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.console.models.accounts import ManagementApiKey
-from app.llm.credential_snapshot import (
-    MANAGEMENT_API_KEY_AUTH,
-    SESSION_AUTH,
-)
-from app.llm.credential_snapshot import (
-    SESSION_FILTER as SESSION_FILTER,
-)
-from app.llm.credential_snapshot import (
+from app.llm.call_logs.record_attribution import snapshot_from_row as snapshot_from_row
+from studio.contracts.model_service.credential_snapshot import MANAGEMENT_API_KEY_AUTH, SESSION_AUTH
+from studio.contracts.model_service.credential_snapshot import SESSION_FILTER as SESSION_FILTER
+from studio.contracts.model_service.credential_snapshot import (
     CredentialSnapshot as CredentialSnapshot,
-)
-from app.llm.credential_snapshot import (
-    snapshot_from_row as snapshot_from_row,
 )
 
 

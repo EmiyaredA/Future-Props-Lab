@@ -12,7 +12,7 @@ from app.llm.call_logs.reproduction import (
     reproduction_support,
 )
 from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
-from app.llm.schemas.call_log import (
+from studio.contracts.model_service.schemas.call_log import (
     CallLogListItem,
     CallLogListOut,
     CallLogOut,

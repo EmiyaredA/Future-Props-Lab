@@ -8,11 +8,11 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.llm.catalog.service import ModelCatalogService, ResourceNotFoundError
-from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.models import LlmCallLog, ModelProvider
 from app.llm.providers.text import invoke_diagnostic
-from app.llm.schemas.model_service import TestModelOut
 from app.runtime.credentials import decrypt_secret
+from studio.contracts.model_service.credential_snapshot import CredentialSnapshot
+from studio.contracts.model_service.schemas.model_service import TestModelOut
 
 
 class DiagnosticCallError(Exception):

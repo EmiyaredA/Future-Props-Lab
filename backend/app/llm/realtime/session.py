@@ -9,7 +9,6 @@ from typing import Any
 
 from fastapi import WebSocket, WebSocketDisconnect
 
-from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.models import LlmCallLog
 from app.llm.providers.realtime.constants import (
     SENSEAUDIO_DEFAULT_VOICE,
@@ -29,6 +28,7 @@ from app.llm.providers.realtime.constants import (
 from app.llm.providers.realtime.contracts import RealtimeProviderUnavailableError
 from app.llm.providers.realtime.senseaudio import SenseAudioRealtimeBridge
 from app.llm.realtime.catalog import RealtimeModelUnavailableError, resolve_realtime_model
+from studio.contracts.model_service.credential_snapshot import CredentialSnapshot
 from studio.runtime.database.ownership import bind_owner
 from studio.runtime.ids import new_id
 

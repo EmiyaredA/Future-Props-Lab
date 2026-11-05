@@ -7,11 +7,11 @@ from pathlib import Path
 import pytest
 from sqlalchemy import select
 
-from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.inference.text import events
 from app.llm.models import LlmCallLog
 from app.llm.providers.streaming import TextDelta
-from app.llm.schemas.model_inference import InferenceTextIn
+from studio.contracts.model_service.credential_snapshot import CredentialSnapshot
+from studio.contracts.model_service.schemas.model_inference import InferenceTextIn
 from studio.runtime.database.orm_base import Base
 from studio.runtime.database.sessions import Database
 

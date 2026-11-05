@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.llm.models.model_supplier import ModelSupplier
-from app.llm.schemas.model_supplier import ModelSupplierOut
+from studio.contracts.model_service.schemas.model_supplier import ModelSupplierOut
 
 
 def supplier_out(row: ModelSupplier) -> ModelSupplierOut:

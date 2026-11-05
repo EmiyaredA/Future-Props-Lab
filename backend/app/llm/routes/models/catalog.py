@@ -7,7 +7,8 @@ from app.llm.catalog.service import (
     DuplicateModelError,
     ResourceNotFoundError,
 )
-from app.llm.schemas.model_service import (
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
+from studio.contracts.model_service.schemas.model_service import (
     DeleteMutationOut,
     ModelCatalogOut,
     ModelCategoryListOut,
@@ -18,7 +19,6 @@ from app.llm.schemas.model_service import (
     ProviderIn,
     ProviderMutationOut,
 )
-from studio.assembly.http_dependencies import OwnerDep, SessionDep
 
 router = APIRouter(tags=["models"])
 

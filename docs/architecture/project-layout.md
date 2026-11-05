@@ -998,3 +998,5 @@ Amadeus 动作句柄与下载任务分别由装配创建的 `ActionExecution`、
 `studio/runtime/database/website.py` 提供显式 SQLite 引擎和会话工厂，不读取配置或在导入时建立引擎。原 `app/main.py`、`api.py`、`orm.py`、`deps.py` 和 `runtime/db.py` 已移除。共享网站鉴权依赖在 `studio/assembly/http_dependencies.py`，独立服务的纯签名身份依赖仍在 `studio/runtime/http/dependencies.py`。
 
 OpenAPI 导出只构造 HTTP 协议层。测试通过 `tests/website_test_support.py` 持有显式隔离配置和数据库的实例；离线账号与 E2E 账号入口自行构造并关闭数据库。Playwright 使用后端工厂启动，正式网站仍由 `scripts/website/application.py` 核验迁移并装配静态与公网入口。
+
+模型目录、供应商配置、调用日志、推理、测试台及执行遥测的公开类型归 `studio/contracts/model_service/schemas/` 与同级契约模块。转录输入协议为 `transcription.py`，不可变调用归因为 `credential_snapshot.py`；HTTP 归因绑定在 `studio/assembly/model_credentials.py`，持久记录映射由模型调用日志适配拥有。

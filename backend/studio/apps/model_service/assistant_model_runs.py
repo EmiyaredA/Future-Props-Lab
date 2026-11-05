@@ -6,7 +6,6 @@ from datetime import timedelta
 from sqlalchemy import select, text
 
 from app.llm.assistant_catalog import chat_ready
-from app.llm.credential_snapshot import snapshot_from_actor
 from app.llm.models import LlmCallLog, ModelEntry, ModelProvider, RuntimeAdmission
 from app.llm.providers.agent import HttpAgentAdapter
 from app.llm.visual_review import fixed_connection_signature
@@ -14,6 +13,7 @@ from app.runtime.credentials import decrypt_secret
 from studio.apps.model_service.admission.admission import check_capacity
 from studio.apps.model_service.storage.assistant_model_records import VisualAssistantModelRun
 from studio.contracts.agent_runtime.dialogue import Usage
+from studio.contracts.model_service.credential_snapshot import snapshot_from_actor
 from studio.contracts.visual_workshop.visual_assistant_model import (
     AssistantModelPlan,
     ErrorEvent,

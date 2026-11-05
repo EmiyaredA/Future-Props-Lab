@@ -12,7 +12,7 @@ from urllib.parse import urlencode, urlsplit, urlunsplit
 
 from websockets.asyncio.client import connect
 
-from app.llm.task_execution import TaskExecutionInfo
+from studio.contracts.model_service.task_execution import TaskExecutionInfo
 from studio.runtime.http.outbound_urls import require_safe_provider_websocket_url
 from studio.runtime.time import utc_now
 

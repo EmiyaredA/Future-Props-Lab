@@ -3,8 +3,8 @@ from pydantic import ValidationError
 
 from app.capabilities.identity.passwords import hash_password, validate_password, verify_password
 from app.capabilities.identity.security import new_management_api_key
-from app.llm.schemas.model_service import ProviderIn
 from studio.config.settings import Settings
+from studio.contracts.model_service.schemas.model_service import ProviderIn
 from studio.runtime.http.outbound_urls import (
     normalize_provider_base_url,
     normalize_provider_websocket_url,

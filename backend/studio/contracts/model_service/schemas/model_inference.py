@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.llm.task_execution import TaskExecutionInfo
+from studio.contracts.model_service.task_execution import TaskExecutionInfo
 
 
 class InferenceMessage(BaseModel):

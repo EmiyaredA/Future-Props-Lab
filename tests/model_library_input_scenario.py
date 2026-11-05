@@ -20,7 +20,6 @@ from app.llm.http_errors import mapped
 from app.llm.inference.assets import InferenceAssets
 from app.llm.library_inputs import LibraryInputBindings, library_inputs
 from app.llm.models import ModelInferenceAsset
-from app.llm.schemas.model_inference import InferenceAssetImportIn, InferenceAssetOut
 from studio.apps.asset_library.references.references import AssetReferences
 from studio.apps.asset_library.settings import StorageSettings
 from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
@@ -37,6 +36,10 @@ from studio.contracts.asset_library.references import ReferenceUpdate
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.claims import Actor, issue_context
 from studio.contracts.identity.delegation import RequestGrant
+from studio.contracts.model_service.schemas.model_inference import (
+    InferenceAssetImportIn,
+    InferenceAssetOut,
+)
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database
 from studio.runtime.http.authentication import SignedIdentity

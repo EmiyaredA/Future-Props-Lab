@@ -5,7 +5,6 @@ from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 
 from app.capabilities.asset_store.schemas.files import VisualAssetOut
-from app.llm.http_credentials import CallCredentialDep
 from app.llm.http_errors import mapped
 from app.llm.inference.assets import InferenceAssets
 from app.llm.inference.catalog import options
@@ -15,7 +14,10 @@ from app.llm.library_inputs import library_inputs
 from app.llm.library_outputs import library_outputs
 from app.llm.provider_transports import provider_options
 from app.llm.routes.model_capacity import task_admission
-from app.llm.schemas.model_inference import (
+from app.llm.stream_access import stream_access
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
+from studio.assembly.model_credentials import CallCredentialDep
+from studio.contracts.model_service.schemas.model_inference import (
     InferenceAssetImportIn,
     InferenceAssetOut,
     InferenceOptionsOut,
@@ -27,8 +29,6 @@ from app.llm.schemas.model_inference import (
     InferenceTextIn,
     InferenceTextOut,
 )
-from app.llm.stream_access import stream_access
-from studio.assembly.http_dependencies import OwnerDep, SessionDep
 
 router = APIRouter(prefix="/model-inference", tags=["model-inference"])
 

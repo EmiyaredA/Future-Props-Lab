@@ -16,10 +16,6 @@ from app.capabilities.asset_store.schemas.files import (
     VisualAssetReferenceCreateIn,
     VisualAssetReferencePatchIn,
 )
-from app.llm.schemas.visual_catalog import (
-    VisualAssistantModelOptionOut as VisualAssistantModelOptionOut,
-)
-from app.llm.task_execution import TaskExecutionInfo
 from studio.apps.visual_workshop.schemas.prompts import VisualPromptDraft, VisualVideoPromptVersion
 from studio.contracts.asset_library.project_snapshots import ProjectSnapshotImportWarning
 from studio.contracts.model_service.generation_tasks import (
@@ -28,6 +24,10 @@ from studio.contracts.model_service.generation_tasks import (
     ImageGenerationTaskCreateIn,
     VideoGenerationTaskCreateIn,
 )
+from studio.contracts.model_service.schemas.visual_catalog import (
+    VisualAssistantModelOptionOut as VisualAssistantModelOptionOut,
+)
+from studio.contracts.model_service.task_execution import TaskExecutionInfo
 from studio.contracts.model_service.workflow_video import WorkflowVideoParameters
 
 GenerationTaskStatus = Literal[

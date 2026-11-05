@@ -14,14 +14,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.incoming import IncomingFile
 from app.llm.models import ModelTestGenerationAsset, ModelTestGenerationTask
-from app.llm.schemas.model_test import (
+from studio.config.settings import Settings, get_settings
+from studio.contracts.model_service.schemas.model_test import (
     ModelTestGenerationAssetBackfillOut,
     ModelTestGenerationAssetBackfillStatusOut,
     ModelTestGenerationAssetCleanupOut,
     ModelTestGenerationAssetListOut,
     ModelTestGenerationAssetOut,
 )
-from studio.config.settings import Settings, get_settings
 from studio.runtime.time import iso_utc, utc_now
 
 MAX_DRAFT_ASSETS = 50

@@ -16,7 +16,9 @@ from app.llm.models import (
 )
 from app.llm.models.local_models import LocalModelInstallation
 from app.llm.models.model_supplier import ModelSupplier
-from app.llm.schemas.model_service import (
+from app.runtime.credentials import encrypt_secret
+from app.runtime.secret_hints import encrypted_secret_hint
+from studio.contracts.model_service.schemas.model_service import (
     ModelCatalogOut,
     ModelCategoryListOut,
     ModelCategoryOut,
@@ -25,8 +27,6 @@ from app.llm.schemas.model_service import (
     ProviderIn,
     ProviderOut,
 )
-from app.runtime.credentials import encrypt_secret
-from app.runtime.secret_hints import encrypted_secret_hint
 from studio.runtime.revisions import RevisionConflictError
 
 

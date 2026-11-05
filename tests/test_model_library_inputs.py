@@ -25,12 +25,12 @@ from app.llm.models import (
     ModelTestTranscriptionTask,
 )
 from app.llm.playground.transcription import ModelTestTranscription
-from app.llm.schemas.model_test import ModelTestTranscriptionCreateIn
 from studio.apps.model_service.library_inputs import HttpLibraryInputs
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
 from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.delegation import RequestGrant, permitted, target_permission_path
+from studio.contracts.model_service.schemas.model_test import ModelTestTranscriptionCreateIn
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database
 

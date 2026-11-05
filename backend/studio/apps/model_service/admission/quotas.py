@@ -3,9 +3,9 @@
 from sqlalchemy import select, update
 from sqlalchemy.dialects.sqlite import insert
 
-from app.llm.schemas.runtime_quotas import RuntimeQuotas
 from studio.apps.model_service.storage.service_models import QuotaPolicy
 from studio.contracts.identity.errors import AccountError
+from studio.contracts.model_service.schemas.runtime_quotas import RuntimeQuotas
 from studio.runtime.time import utc_now
 
 

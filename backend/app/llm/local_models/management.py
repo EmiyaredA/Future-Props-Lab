@@ -9,7 +9,7 @@ from sqlalchemy import select, update
 
 from app.llm.local_models.catalog import compatible, definition, manifest
 from app.llm.models.local_models import LocalModelInstallation, LocalModelOperation
-from app.llm.schemas.local_models import LocalModelOut, LocalModelsOut
+from studio.contracts.model_service.schemas.local_models import LocalModelOut, LocalModelsOut
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now

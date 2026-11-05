@@ -4,9 +4,9 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-from app.llm.providers.chat_completions import DEEPSEEK_BASE_URL
-from app.llm.schemas.model_supplier import ModelSupplierOut
-from app.llm.schemas.provider_types import ProviderKind
+from studio.contracts.model_service.schemas.model_supplier import ModelSupplierOut
+from studio.contracts.model_service.schemas.provider_types import DEEPSEEK_BASE_URL, ProviderKind
+from studio.contracts.model_service.schemas.provider_urls import zealman_root_url
 from studio.runtime.http.outbound_urls import (
     normalize_provider_base_url,
     normalize_provider_websocket_url,
@@ -85,9 +85,7 @@ class ProviderIn(BaseModel):
             else normalize_provider_base_url(self.base_url)
         )
         if self.kind == "zealman_video":
-            from app.llm.providers.zealman_video import root_url
-
-            self.base_url = root_url(self.base_url)
+            self.base_url = zealman_root_url(self.base_url)
         return self
 
 

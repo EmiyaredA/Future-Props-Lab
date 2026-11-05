@@ -7,11 +7,11 @@ from dataclasses import dataclass
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.inference.catalog import get_model
 from app.llm.models import LlmCallLog
 from app.llm.providers.streaming import ChatMessageInput, TextDelta, stream_text_completion
 from app.runtime.credentials import decrypt_secret
+from studio.contracts.model_service.credential_snapshot import CredentialSnapshot
 
 
 @dataclass(frozen=True)

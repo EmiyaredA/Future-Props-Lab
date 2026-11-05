@@ -5,7 +5,6 @@ import asyncio
 import httpx
 from fastapi import APIRouter, HTTPException, Request
 
-from app.llm.schemas.visual_catalog import FixedAcceptanceModelOut
 from studio.apps.visual_workshop.acceptance.node_schemas import NodeAcceptanceCatalogOut
 from studio.apps.visual_workshop.acceptance.schemes import SCHEMES, catalog_out, scheme_out
 from studio.apps.visual_workshop.transport.catalog_http import lookup
@@ -14,6 +13,7 @@ from studio.contracts.agent_runtime.connections import AcceptanceAgentCatalog
 from studio.contracts.agent_runtime.definitions import DEFINITIONS
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.identity.delegation import RequestGrant
+from studio.contracts.model_service.schemas.visual_catalog import FixedAcceptanceModelOut
 from studio.contracts.visual_workshop.visual_catalog import (
     AGENT_ACCEPTANCE_PURPOSE,
     AGENT_ACCEPTANCE_TARGET,

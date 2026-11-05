@@ -20,15 +20,15 @@ from app.llm.playground.generation import ModelTestGeneration
 from app.llm.providers.seedance_parameters import normalize_video_parameters, video_capabilities
 from app.llm.providers.seedance_references import SeedanceReference, validate_seedance_references
 from app.llm.providers.volcengine_video import create_task, get_task
-from app.llm.schemas.model_inference import InferenceTaskIn
-from app.llm.schemas.model_service import ProviderIn
-from app.llm.schemas.model_test import ModelTestVideoGenerationIn
 from app.runtime.credentials import encrypt_secret
 from studio.apps.visual_workshop.storage.models import VisualWorkshopProject
 from studio.apps.visual_workshop.website.generation import GenerationError, VisualGeneration
 from studio.assembly.website.models import bind_owner
 from studio.config.settings import get_settings
 from studio.contracts.model_service.generation_tasks import VideoGenerationTaskCreateIn
+from studio.contracts.model_service.schemas.model_inference import InferenceTaskIn
+from studio.contracts.model_service.schemas.model_service import ProviderIn
+from studio.contracts.model_service.schemas.model_test import ModelTestVideoGenerationIn
 from studio.runtime.database.operation_receipts import OperationError
 from website_test_support import SessionLocal
 

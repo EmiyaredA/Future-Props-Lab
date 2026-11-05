@@ -2,9 +2,10 @@
 
 from typing import Any
 
+from studio.contracts.model_service.schemas.provider_types import DEEPSEEK_BASE_URL
+
 OPENAI_CHAT_KINDS = frozenset({"openai", "deepseek"})
 TEXT_PROVIDER_KINDS = OPENAI_CHAT_KINDS | {"anthropic"}
-DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 
 
 def chat_base_url(kind: str, base_url: str) -> str:

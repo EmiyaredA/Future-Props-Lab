@@ -2,7 +2,7 @@
 
 from app.llm.providers.autodl_workflows import capabilities as autodl_capabilities
 from app.llm.providers.autodl_workflows import normalize_request as normalize_autodl_request
-from app.llm.schemas.video_capabilities import VideoCapabilitiesOut
+from studio.contracts.model_service.schemas.video_capabilities import VideoCapabilitiesOut
 
 SEEDANCE_MODELS = {
     "doubao-seedance-2-0-260128": "Seedance 2.0",

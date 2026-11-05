@@ -1,16 +1,10 @@
-from app.llm.schemas.runtime_quotas import (
+from studio.contracts.model_service.schemas.runtime_quotas import (
     GenerationQueueLimits as GenerationQueueLimits,
 )
-from app.llm.schemas.runtime_quotas import (
-    QuotaLimit as QuotaLimit,
-)
-from app.llm.schemas.runtime_quotas import (
-    RuntimeQuotas as RuntimeQuotas,
-)
-from app.llm.schemas.runtime_quotas import (
-    RuntimeQuotasIn as RuntimeQuotasIn,
-)
-from app.llm.schemas.runtime_quotas import (
+from studio.contracts.model_service.schemas.runtime_quotas import QuotaLimit as QuotaLimit
+from studio.contracts.model_service.schemas.runtime_quotas import RuntimeQuotas as RuntimeQuotas
+from studio.contracts.model_service.schemas.runtime_quotas import RuntimeQuotasIn as RuntimeQuotasIn
+from studio.contracts.model_service.schemas.runtime_quotas import (
     RuntimeQuotasOut as RuntimeQuotasOut,
 )
 

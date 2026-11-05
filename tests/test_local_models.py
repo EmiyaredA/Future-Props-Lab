@@ -19,8 +19,11 @@ from app.llm.local_models.installer import Installer
 from app.llm.local_models.management import LocalModels
 from app.llm.local_models.runtime import LocalRuntime
 from app.llm.models.local_models import LocalModelInstallation, LocalModelOperation
-from app.llm.schemas.local_models import LocalModelActionIn, SpeechSynthesisParameters
-from app.llm.schemas.model_service import ProviderIn
+from studio.contracts.model_service.schemas.local_models import (
+    LocalModelActionIn,
+    SpeechSynthesisParameters,
+)
+from studio.contracts.model_service.schemas.model_service import ProviderIn
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.revisions import RevisionConflictError
 from website_test_support import SessionLocal, app

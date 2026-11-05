@@ -10,7 +10,7 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.llm.credential_snapshot import snapshot_from_row
+from app.llm.call_logs.record_attribution import snapshot_from_row
 from app.llm.generation_runtime import (
     GenerationMaterializationError,
     GenerationTaskContext,

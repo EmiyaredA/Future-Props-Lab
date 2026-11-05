@@ -4,10 +4,14 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request, WebSocket
 
-from app.llm.credential_snapshot import SESSION_AUTH, CredentialSnapshot, snapshot_from_actor
 from studio.assembly.http_dependencies import SessionDep, StudioAuth
 from studio.contracts.identity.claims import Actor
 from studio.contracts.identity.principal import StudioPrincipal
+from studio.contracts.model_service.credential_snapshot import (
+    SESSION_AUTH,
+    CredentialSnapshot,
+    snapshot_from_actor,
+)
 
 
 async def caller_credential(request: Request, session: SessionDep, principal: StudioAuth):

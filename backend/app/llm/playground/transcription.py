@@ -17,11 +17,12 @@ from app.capabilities.transcription import (
     parameter_capabilities,
     resolve_parameters,
 )
-from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.library_inputs import ExactInput
 from app.llm.models import ModelEntry, ModelProvider, ModelTestTranscriptionTask
 from app.llm.providers.senseaudio_asr import MAX_ASR_FILE_BYTES
-from app.llm.schemas.model_test import (
+from studio.config.settings import Settings, get_settings
+from studio.contracts.model_service.credential_snapshot import CredentialSnapshot
+from studio.contracts.model_service.schemas.model_test import (
     ModelTestTranscriptionCreateIn,
     ModelTestTranscriptionOptionListOut,
     ModelTestTranscriptionOptionOut,
@@ -32,7 +33,6 @@ from app.llm.schemas.model_test import (
     ModelTestTranscriptionTaskListOut,
     ModelTestTranscriptionTaskOut,
 )
-from studio.config.settings import Settings, get_settings
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.tasks.task_admission import TaskAdmission
 from studio.runtime.time import iso_utc

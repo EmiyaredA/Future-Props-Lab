@@ -6,7 +6,6 @@ from time import monotonic
 
 from sqlalchemy import select, text, update
 
-from app.llm.credential_snapshot import snapshot_from_actor
 from app.llm.models import LlmCallLog, RuntimeAdmission
 from app.llm.visual_catalog import fixed_acceptance_model
 from app.llm.visual_review import evaluate_review, fixed_connection_signature
@@ -14,6 +13,7 @@ from app.runtime.credentials import decrypt_secret
 from studio.apps.model_service.admission.admission import check_capacity
 from studio.apps.model_service.storage.visual_review_records import VisualReviewAttempt
 from studio.contracts.agent_runtime.dialogue import ImageInput
+from studio.contracts.model_service.credential_snapshot import snapshot_from_actor
 from studio.contracts.visual_workshop.visual_review import ReviewModelPlan
 from studio.runtime.ids import new_id
 from studio.runtime.project_errors import ProjectResourceError

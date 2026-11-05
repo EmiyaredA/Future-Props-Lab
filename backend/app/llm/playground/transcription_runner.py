@@ -12,7 +12,7 @@ from app.capabilities.transcription import (
     model_supports_transcription,
     safe_transcription_error,
 )
-from app.llm.credential_snapshot import snapshot_from_row
+from app.llm.call_logs.record_attribution import snapshot_from_row
 from app.llm.models import (
     LlmCallLog,
     ModelEntry,
@@ -20,10 +20,10 @@ from app.llm.models import (
     ModelTestTranscriptionTask,
 )
 from app.llm.providers.transcription import transcribe_model_audio
-from app.llm.schemas.model_test import ModelTestTranscriptionResultDetailOut
 from app.llm.task_outcomes import TaskClaimRejected
 from app.runtime.credentials import decrypt_secret
 from studio.config.settings import Settings, get_settings
+from studio.contracts.model_service.schemas.model_test import ModelTestTranscriptionResultDetailOut
 from studio.runtime.database.task_records import load_runner_task, recovery_accounts
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now

@@ -2,7 +2,11 @@
 
 from fastapi import APIRouter, Request
 
-from app.llm.schemas.model_templates import (
+from studio.apps.model_service.admission.quotas import QuotaPolicies
+from studio.apps.model_service.audit.audit import request_audits
+from studio.apps.model_service.transport.http_auth import browser
+from studio.assembly.http_dependencies import SessionDep
+from studio.contracts.model_service.schemas.model_templates import (
     PlatformRole,
     RoleModelTemplateIn,
     RoleModelTemplateOut,
@@ -10,11 +14,7 @@ from app.llm.schemas.model_templates import (
     TemplateSyncIn,
     TemplateSyncJobOut,
 )
-from app.llm.schemas.runtime_quotas import RuntimeQuotasIn, RuntimeQuotasOut
-from studio.apps.model_service.admission.quotas import QuotaPolicies
-from studio.apps.model_service.audit.audit import request_audits
-from studio.apps.model_service.transport.http_auth import browser
-from studio.assembly.http_dependencies import SessionDep
+from studio.contracts.model_service.schemas.runtime_quotas import RuntimeQuotasIn, RuntimeQuotasOut
 
 from .policy_changes import save_quotas, save_template
 from .template_sync import job_view

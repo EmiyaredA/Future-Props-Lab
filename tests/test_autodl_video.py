@@ -24,9 +24,6 @@ from app.llm.providers.autodl_workflows import (
     prepare_payload,
     validate_references,
 )
-from app.llm.schemas.model_inference import InferenceTaskIn
-from app.llm.schemas.model_service import ProviderIn
-from app.llm.schemas.model_test import ModelTestVideoGenerationIn
 from app.runtime.credentials import encrypt_secret
 from studio.apps.visual_workshop.schemas.workshop import VisualCanvasVideoGenerationDraft
 from studio.apps.visual_workshop.storage.models import VisualWorkshopProject
@@ -34,6 +31,9 @@ from studio.apps.visual_workshop.website.generation import VisualGeneration
 from studio.assembly.website.models import bind_owner
 from studio.config.settings import get_settings
 from studio.contracts.model_service.generation_tasks import VideoGenerationTaskCreateIn
+from studio.contracts.model_service.schemas.model_inference import InferenceTaskIn
+from studio.contracts.model_service.schemas.model_service import ProviderIn
+from studio.contracts.model_service.schemas.model_test import ModelTestVideoGenerationIn
 from website_test_support import SessionLocal
 
 

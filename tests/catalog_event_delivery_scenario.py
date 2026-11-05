@@ -22,7 +22,6 @@ assert not any(name.startswith(("app.llm", "app.apps")) for name in sys.modules)
 assert "studio.runtime.database.website" not in sys.modules
 
 from app.llm.models import ModelProvider  # noqa: E402
-from app.llm.schemas.model_templates import RoleModelTemplateIn  # noqa: E402
 from studio.apps.model_service.account_events import (  # noqa: E402
     CatalogEventClient,
     CatalogEventTransportError,
@@ -41,6 +40,7 @@ from studio.apps.model_service.templates import (  # noqa: E402
     RoleTemplates,
     initialize_account_catalog,
 )
+from studio.contracts.model_service.schemas.model_templates import RoleModelTemplateIn  # noqa: E402
 from studio.runtime.database.sessions import Database  # noqa: E402
 
 root = Path(os.environ["CATALOG_DELIVERY_TEST_ROOT"]).resolve()

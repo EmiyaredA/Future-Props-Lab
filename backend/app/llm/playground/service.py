@@ -22,7 +22,8 @@ from app.llm.playground.attachments import (
 )
 from app.llm.providers.chat_completions import TEXT_PROVIDER_KINDS
 from app.llm.providers.streaming import ChatMessageInput, ImageInput
-from app.llm.schemas.model_test import (
+from studio.config.settings import Settings, get_settings
+from studio.contracts.model_service.schemas.model_test import (
     ModelTestConversationCreateIn,
     ModelTestConversationListOut,
     ModelTestConversationOut,
@@ -30,7 +31,6 @@ from app.llm.schemas.model_test import (
     ModelTestConversationSummaryOut,
     ModelTestMessageOut,
 )
-from studio.config.settings import Settings, get_settings
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import iso_utc, utc_now
 

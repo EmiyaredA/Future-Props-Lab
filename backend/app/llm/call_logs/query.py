@@ -4,9 +4,9 @@ from datetime import UTC, datetime
 
 from sqlalchemy import case, func, or_, select
 
-from app.llm.credential_snapshot import SESSION_AUTH, SESSION_FILTER
 from app.llm.models import LlmCallLog
-from app.llm.schemas.call_log import CallLogStatsOut
+from studio.contracts.model_service.credential_snapshot import SESSION_AUTH, SESSION_FILTER
+from studio.contracts.model_service.schemas.call_log import CallLogStatsOut
 
 
 def log_conditions(

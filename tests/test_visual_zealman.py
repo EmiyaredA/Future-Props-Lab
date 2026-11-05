@@ -10,10 +10,10 @@ from app.llm.models import ModelEntry, ModelProvider
 from app.llm.providers._senseaudio import ProviderTaskStatus
 from app.llm.providers.zealman_video import create_task
 from app.llm.providers.zealman_workflows import U06, U17
-from app.llm.task_execution import TaskExecutionInfo
 from studio.apps.visual_workshop.storage.models import VisualGenerationTask
 from studio.apps.visual_workshop.website.generation_runner import VisualGenerationRunner
 from studio.config.settings import get_settings
+from studio.contracts.model_service.task_execution import TaskExecutionInfo
 from studio.contracts.model_service.workflow_video import WorkflowVideoParameters
 from studio.runtime.time import utc_now
 from website_test_support import SessionLocal, app

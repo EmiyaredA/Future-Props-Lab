@@ -13,13 +13,13 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi import FastAPI, HTTPException, WebSocket
 
-from app.llm.credential_snapshot import CredentialSnapshot
-from app.llm.http_credentials import CallCredentialDep, socket_credential
 from studio.assembly.http_dependencies import require_studio_auth
+from studio.assembly.model_credentials import CallCredentialDep, socket_credential
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.claims import Actor, issue_context
 from studio.contracts.identity.permissions import role_scopes
 from studio.contracts.identity.principal import StudioPrincipal
+from studio.contracts.model_service.credential_snapshot import CredentialSnapshot
 from studio.runtime.http.authentication import SignedIdentity
 
 
@@ -29,7 +29,7 @@ def test_attribution_import_does_not_initialize_accounts_or_the_legacy_database(
         [
             sys.executable,
             "-c",
-            "import sys; import app.llm.http_credentials; "
+            "import sys; import studio.assembly.model_credentials; "
             "assert 'studio.runtime.database.website' not in sys.modules; "
             "assert not any(n.startswith('app.console.models') for n in sys.modules); "
             "assert not any(n.startswith('app.llm.models') for n in sys.modules)",

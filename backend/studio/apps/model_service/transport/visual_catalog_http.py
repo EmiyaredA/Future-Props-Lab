@@ -3,12 +3,6 @@
 from fastapi import APIRouter, HTTPException, Request
 
 from app.llm.assistant_catalog import assistant_models
-from app.llm.schemas.visual_catalog import (
-    AcceptanceModelListOut,
-    AssistantCatalog,
-    FixedAcceptanceModelOut,
-    GenerationOptionsOut,
-)
 from app.llm.visual_catalog import (
     acceptance_model_out,
     acceptance_models,
@@ -18,6 +12,12 @@ from app.llm.visual_catalog import (
     snapshot_model_labels,
 )
 from studio.apps.model_service.catalog_reads import owned_catalog
+from studio.contracts.model_service.schemas.visual_catalog import (
+    AcceptanceModelListOut,
+    AssistantCatalog,
+    FixedAcceptanceModelOut,
+    GenerationOptionsOut,
+)
 from studio.contracts.visual_workshop.visual_assistant import MODEL_TARGET
 from studio.contracts.visual_workshop.visual_catalog import (
     ACCEPTANCE_TARGET,

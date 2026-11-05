@@ -602,9 +602,9 @@ def source_closure(root: Path, service):
                     forbidden += ("studio.assembly.http_dependencies",)
                 llm_contract = name in {
                     "app.llm",
-                    "app.llm.schemas",
-                    "app.llm.task_execution",
-                } or name.startswith("app.llm.schemas.")
+                    "studio.contracts.model_service.schemas",
+                    "studio.contracts.model_service.task_execution",
+                } or name.startswith("studio.contracts.model_service.schemas.")
                 llm_contract |= service == "visual" and name == "app.llm.generation_state"
                 if (
                     name.startswith("app.llm.")

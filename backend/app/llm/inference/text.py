@@ -3,14 +3,17 @@ import base64
 from time import monotonic
 from uuid import uuid4
 
-from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.inference.assets import InferenceAssets, root
 from app.llm.inference.catalog import get_model
 from app.llm.models import LlmCallLog
 from app.llm.providers.streaming import ChatMessageInput, stream_text_completion
-from app.llm.schemas.model_inference import InferenceTextEvent, InferenceTextOut
 from app.runtime.credentials import decrypt_secret
 from studio.contracts.agent_runtime.dialogue import ImageInput
+from studio.contracts.model_service.credential_snapshot import CredentialSnapshot
+from studio.contracts.model_service.schemas.model_inference import (
+    InferenceTextEvent,
+    InferenceTextOut,
+)
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.database.ownership import bind_owner
 from studio.runtime.messaging.authorized_stream import authorized_stream

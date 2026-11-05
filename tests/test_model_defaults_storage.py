@@ -12,10 +12,10 @@ from app.llm.models import (
     ModelProvider,
     ModelSupplier,
 )
-from app.llm.schemas.model_service import ModelDefaultsIn
 from studio.apps.model_service.defaults import OwnedCatalogDefaults
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
 from studio.apps.model_service.storage.service_models import AccountDefaults
+from studio.contracts.model_service.schemas.model_service import ModelDefaultsIn
 from studio.runtime.database.migrations import apply, check
 from studio.runtime.database.orm_base import Base
 from studio.runtime.database.sessions import Database

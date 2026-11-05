@@ -7,14 +7,14 @@ from app.llm.local_models.authorization import (
     can_manage_local_models,
     manage_local_model,
 )
-from app.llm.schemas.local_models import (
+from studio.assembly.http_dependencies import StudioAuth
+from studio.contracts.model_service.schemas.local_models import (
     LocalModelActionIn,
     LocalModelAttachIn,
     LocalModelOut,
     LocalModelsOut,
 )
-from app.llm.schemas.model_service import ModelCatalogOut
-from studio.assembly.http_dependencies import StudioAuth
+from studio.contracts.model_service.schemas.model_service import ModelCatalogOut
 
 router = APIRouter(tags=["local-models"])
 

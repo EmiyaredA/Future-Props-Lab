@@ -16,12 +16,12 @@ from app.capabilities.transcription import (
     resolve_transcription_target_language,
     safe_transcription_error,
 )
-from app.capabilities.transcription.schemas import ModelTestTranscriptionParametersIn
-from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
 from app.llm.providers.transcription import TranscriptionResult, transcribe_model_audio
 from app.runtime.credentials import decrypt_secret
 from studio.contracts.model_service.annotation import WAV_TYPES, SegmentResult
+from studio.contracts.model_service.credential_snapshot import CredentialSnapshot
+from studio.contracts.model_service.transcription import ModelTestTranscriptionParametersIn
 
 
 class AnnotationTranscriptionError(Exception):

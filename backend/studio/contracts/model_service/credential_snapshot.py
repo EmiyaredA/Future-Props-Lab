@@ -17,19 +17,6 @@ class CredentialSnapshot:
     def as_kwargs(self) -> dict[str, str | None]:
         return asdict(self)
 
-    def apply(self, row) -> None:
-        for key, value in self.as_kwargs().items():
-            setattr(row, key, value)
-
-
-def snapshot_from_row(row) -> CredentialSnapshot:
-    return CredentialSnapshot(
-        auth_kind=getattr(row, "auth_kind", None),
-        api_key_id=getattr(row, "api_key_id", None),
-        api_key_name=getattr(row, "api_key_name", None),
-        api_key_prefix=getattr(row, "api_key_prefix", None),
-    )
-
 
 def snapshot_from_actor(actor) -> CredentialSnapshot:
     """Read only an already verified Identity actor, never caller request fields."""

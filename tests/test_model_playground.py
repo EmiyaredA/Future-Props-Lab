@@ -21,8 +21,8 @@ from app.llm.models import (
 from app.llm.playground.service import ModelTestService
 from app.llm.playground.stream import generation_events
 from app.llm.providers.streaming import TextDelta
-from app.llm.schemas.model_test import ModelTestConversationCreateIn
 from app.runtime.credentials import encrypt_secret
+from studio.contracts.model_service.schemas.model_test import ModelTestConversationCreateIn
 from website_test_support import SessionLocal, app
 
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.capabilities.transcription.catalog_values import TranscriptionModel, TranscriptionProvider
-from app.capabilities.transcription.schemas import (
+from studio.contracts.model_service.transcription import (
     ModelTestTranscriptionLanguageOptionOut,
     ModelTestTranscriptionParameterCapabilitiesOut,
     ModelTestTranscriptionParametersIn,

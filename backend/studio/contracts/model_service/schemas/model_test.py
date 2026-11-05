@@ -4,16 +4,16 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-from app.capabilities.transcription.schemas import (
+from studio.contracts.model_service.schemas.video_capabilities import VideoCapabilitiesOut
+from studio.contracts.model_service.task_execution import TaskExecutionInfo
+from studio.contracts.model_service.transcription import (
     ModelTestTranscriptionLanguageOptionOut as ModelTestTranscriptionLanguageOptionOut,
 )
-from app.capabilities.transcription.schemas import (
+from studio.contracts.model_service.transcription import (
     ModelTestTranscriptionParameterCapabilitiesOut,
     ModelTestTranscriptionParametersIn,
     ModelTestTranscriptionParametersOut,
 )
-from app.llm.schemas.video_capabilities import VideoCapabilitiesOut
-from app.llm.task_execution import TaskExecutionInfo
 from studio.contracts.model_service.workflow_video import (
     WorkflowVideoCapabilitiesOut,
     WorkflowVideoParameters,

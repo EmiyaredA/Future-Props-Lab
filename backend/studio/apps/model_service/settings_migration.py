@@ -14,9 +14,6 @@ from sqlalchemy.exc import IntegrityError
 from app.demo_runtime.engine import SERVICE_IDS
 from app.demo_runtime.schemas import DemoConfig
 from app.llm.models import ModelEntry
-from app.llm.schemas.model_service import ModelDefaultsIn
-from app.llm.schemas.model_templates import RoleModelTemplate
-from app.llm.schemas.runtime_quotas import RuntimeQuotas
 from studio.apps.model_service.storage.service_models import (
     AccountDefaults,
     DemoSetting,
@@ -28,6 +25,9 @@ from studio.contracts.management.migration_batches import (
     MigrationBatch,
     MigrationPage,
 )
+from studio.contracts.model_service.schemas.model_service import ModelDefaultsIn
+from studio.contracts.model_service.schemas.model_templates import RoleModelTemplate
+from studio.contracts.model_service.schemas.runtime_quotas import RuntimeQuotas
 
 from .catalog_migration import ModelsImportReceipt, conflict
 

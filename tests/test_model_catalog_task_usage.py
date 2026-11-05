@@ -124,7 +124,7 @@ async def test_catalog_reads_only_explicit_account_defaults_and_preserves_cas_sn
 
 async def test_default_update_rejects_foreign_owner_before_mutation(catalog):
     from app.llm.catalog.defaults import update_defaults
-    from app.llm.schemas.model_service import ModelDefaultsIn
+    from studio.contracts.model_service.schemas.model_service import ModelDefaultsIn
 
     async with catalog.sessions() as session:
         session.info["owner_user_id"] = "alpha"
