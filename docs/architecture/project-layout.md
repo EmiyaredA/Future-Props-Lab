@@ -146,7 +146,7 @@ backend/
 
 ### 独立服务迁移
 
-`backend/fpl_runtime/` 是不导入业务 ORM 的服务运行契约，拥有 23 个发布单元、精确到 HTTP 方法和路径的归属匹配、请求绑定身份断言、独立 SQLite 会话与迁移校验。`backend/studio/deployment/` 从静态 OpenAPI 和模型源码生成 `deploy/contracts/ownership.json`，新增或重复操作及未归属表必须阻止构建。`npm run services:contracts:generate|check` 管理该清单，并纳入公共契约检查。跨服务 ORM 访问和缺少账号上下文的私人数据操作被存储边界拒绝。
+`backend/studio/contracts/` 定义独立服务的协议，包括精确到 HTTP 方法和路径的归属匹配与请求绑定身份断言。`backend/studio/runtime/` 提供独立 SQLite 会话与迁移校验。`backend/studio/deployment/` 登记 23 个发布单元，从静态 OpenAPI 和模型源码生成 `deploy/contracts/ownership.json`，并在存在新增未归属或重复操作、未归属表时阻止构建。`npm run services:contracts:generate|check` 管理该清单，并纳入公共契约检查。跨服务 ORM 访问和缺少账号上下文的私人数据操作被存储边界拒绝。
 
 `backend/studio/apps/gateway/` 拥有独立控制面、通知游标与自有迁移；`changes.py` 在同一事务记录发布方事件回执和账号游标，`notifications.py` 只接受配置的发布方，`routes.py` 通过明确客户端请求资源所属服务。`__main__.py` 在同一发布单元监督 Caddy 与控制面，Caddy 退出会停止控制面，关闭时回收代理子进程。Mac 公网管理桥接仍待接通。
 
