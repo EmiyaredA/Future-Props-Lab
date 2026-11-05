@@ -20,8 +20,9 @@ from studio.runtime.ids import new_id
 class WorkbenchRuns:
     """Own live turns and their database factory for one application lifecycle."""
 
-    def __init__(self, sessions, settings):
+    def __init__(self, sessions, settings, *, load_settings):
         self.sessions, self.settings = sessions, settings
+        self.load_settings = load_settings
         self.tasks = {}
         self.active_turns = {}
         self.followups = set()
@@ -30,7 +31,14 @@ class WorkbenchRuns:
 
     def start(self, principal, local, chat_id, turn_id):
         turn = Turn(
-            principal, local, chat_id, turn_id, self.file_writes, self.sessions, self.settings
+            principal,
+            local,
+            chat_id,
+            turn_id,
+            self.file_writes,
+            self.sessions,
+            self.settings,
+            load_settings=self.load_settings,
         )
         self.active_turns[turn_id] = turn
         task = asyncio.create_task(self.run(turn))
@@ -78,7 +86,14 @@ class WorkbenchRuns:
                     agent_id = (await transcripts.get_chat(db, owner, chat_id)).agent_id
                     await db.rollback()
                     await resolve_connection(agent_id, probe=False)
-                    if await storage.claim_queue(db, principal, chat_id, turn_id, local=local):
+                    if await storage.claim_queue(
+                        db,
+                        principal,
+                        chat_id,
+                        turn_id,
+                        local=local,
+                        load_settings=self.load_settings,
+                    ):
                         self.start(principal, local, chat_id, turn_id)
                         return
                 except (HTTPException, OperationError):
@@ -94,7 +109,13 @@ class WorkbenchRuns:
             async with turn.transcript_lock:
                 await turn.flush()
         item, created = await storage.reserve_instruction(
-            db, principal, key, body, local=local, ready=lambda: self.steerable(turn_id)
+            db,
+            principal,
+            key,
+            body,
+            local=local,
+            ready=lambda: self.steerable(turn_id),
+            load_settings=self.load_settings,
         )
         if not created:
             return item
@@ -144,8 +165,11 @@ class WorkbenchRuns:
 
 
 class Turn:
-    def __init__(self, principal, local, chat_id, turn_id, file_writes, sessions, settings):
+    def __init__(
+        self, principal, local, chat_id, turn_id, file_writes, sessions, settings, *, load_settings
+    ):
         self.sessions, self.settings = sessions, settings
+        self.load_settings = load_settings
         self.principal, self.local = principal, local
         self.owner, self.chat_id, self.turn_id = principal.user_id, chat_id, turn_id
         self.key = (self.owner, chat_id, turn_id)
@@ -157,10 +181,19 @@ class Turn:
 
     async def authority(self, db, *, probe=False):
         project, agent_id = await storage.checked_project(
-            db, self.principal, local=self.local, chat_id=self.chat_id
+            db,
+            self.principal,
+            local=self.local,
+            chat_id=self.chat_id,
+            load_settings=self.load_settings,
         )
         await storage.check_binding(
-            db, self.principal, project, local=self.local, chat_id=self.chat_id
+            db,
+            self.principal,
+            project,
+            local=self.local,
+            chat_id=self.chat_id,
+            load_settings=self.load_settings,
         )
         await db.rollback()
         executable = await resolve_connection(agent_id, probe=probe)
@@ -204,7 +237,13 @@ class Turn:
         async with self.sessions() as db:
             _, project, _ = await self.authority(db)
             approved = await storage.consume_approval(
-                db, self.key, identity, self.principal, project, local=self.local
+                db,
+                self.key,
+                identity,
+                self.principal,
+                project,
+                local=self.local,
+                load_settings=self.load_settings,
             )
         if not approved:
             return {"status": "rejected"}

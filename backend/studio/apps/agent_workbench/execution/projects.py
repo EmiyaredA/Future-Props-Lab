@@ -17,7 +17,7 @@ from studio.apps.agent_workbench.execution.schemas import (
     ProjectChoice,
     RecentProject,
 )
-from studio.config.settings import REPO_ROOT, get_cloud_settings
+from studio.config.settings import REPO_ROOT
 from studio.runtime.files.safe_paths import directory_fd, directory_identity, visible
 from studio.runtime.ids import new_id
 
@@ -140,8 +140,7 @@ async def recent(db, owner, settings):
     )
 
 
-async def register(db, owner, root):
-    settings = get_cloud_settings()
+async def register(db, owner, root, *, settings):
     root = str(await asyncio.to_thread(validate_project_root, root, settings))
     return await register_verified(db, owner, root)
 
@@ -177,9 +176,8 @@ async def touch(db, owner, identity):
         row.last_used_at = time.time_ns()
 
 
-async def binding(db, identity, owner, *, local, settings=None):
+async def binding(db, identity, owner, *, local, settings):
     """Resolve authorization and immutable configuration without filesystem access."""
-    settings = settings or get_cloud_settings()
     if local:
         row = await db.scalar(
             select(WorkbenchProject).where(
@@ -210,10 +208,8 @@ def configured_binding(identity, owner, settings):
     return AuthorizedProject(identity, project.root, project.label, presets)
 
 
-async def check_root(project, settings=None):
-    return await asyncio.to_thread(
-        check_project_directory, project, settings or get_cloud_settings()
-    )
+async def check_root(project, settings):
+    return await asyncio.to_thread(check_project_directory, project, settings)
 
 
 def check_project_directory(project, settings):
@@ -234,9 +230,9 @@ async def registered_labels(db, owner, identities):
     return {identity: label_for(root) for identity, root in rows}
 
 
-async def labels(db, owner, identities):
+async def labels(db, owner, identities, *, settings):
     result = await registered_labels(db, owner, identities)
-    legacy = get_cloud_settings().fpl_cloud_control_projects
+    legacy = settings.fpl_cloud_control_projects
     for identity in identities - result.keys():
         project = legacy.get(identity)
         if project is not None and owner in project.user_ids:

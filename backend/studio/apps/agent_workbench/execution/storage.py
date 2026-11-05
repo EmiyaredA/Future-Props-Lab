@@ -17,14 +17,13 @@ from studio.apps.agent_workbench.execution.schemas import (
 )
 from studio.apps.agent_workbench.execution.turn_activity import next_activity_sequence
 from studio.apps.identity.storage.cloud_access import allowed, require_unlocked
-from studio.config.settings import get_cloud_settings
 from studio.runtime.ids import new_id
 
 
-async def catalog(db, principal, local):
-    if not allowed(principal, local=local):
+async def catalog(db, principal, local, *, load_settings):
+    settings = await asyncio.to_thread(load_settings)
+    if not allowed(principal, local=local, settings=settings):
         return ExecutionCatalog(enabled=False, projects=[], agents=[])
-    settings = await asyncio.to_thread(get_cloud_settings)
     legacy_projects = []
     for identity, project in settings.fpl_cloud_control_projects.items():
         if principal.user_id not in project.user_ids:
@@ -63,10 +62,10 @@ async def catalog(db, principal, local):
     )
 
 
-async def checked_project(db, principal, *, local, project_id=None, chat_id=None):
+async def checked_project(db, principal, *, load_settings, local, project_id=None, chat_id=None):
     """Snapshot the authorized binding, then release SQLite before touching disk."""
     await db.rollback()
-    settings = await asyncio.to_thread(get_cloud_settings)
+    settings = await asyncio.to_thread(load_settings)
     await require_unlocked(db, principal, local=local, settings=settings)
     owner = principal.user_id
     if chat_id is not None:
@@ -79,10 +78,10 @@ async def checked_project(db, principal, *, local, project_id=None, chat_id=None
     return await projects.check_root(project, settings), agent_id
 
 
-async def check_binding(db, principal, project, *, local, chat_id=None, write=False):
+async def check_binding(db, principal, project, *, load_settings, local, chat_id=None, write=False):
     # Refresh deployment settings before acquiring the write lock. The database
     # session and project binding are then verified in the same transaction.
-    settings = await asyncio.to_thread(get_cloud_settings)
+    settings = await asyncio.to_thread(load_settings)
     if write:
         await turn_records.begin(db)
     await require_unlocked(db, principal, local=local, settings=settings)
@@ -96,10 +95,14 @@ async def check_binding(db, principal, project, *, local, chat_id=None, write=Fa
         raise HTTPException(409, "项目已变更，请重试")
 
 
-async def create_chat(db, principal, body, *, local):
+async def create_chat(db, principal, body, *, load_settings, local):
     owner = principal.user_id
-    project, _ = await checked_project(db, principal, project_id=body.project_id, local=local)
-    await check_binding(db, principal, project, local=local, write=True)
+    project, _ = await checked_project(
+        db, principal, project_id=body.project_id, local=local, load_settings=load_settings
+    )
+    await check_binding(
+        db, principal, project, local=local, write=True, load_settings=load_settings
+    )
     if local:
         await projects.touch(db, owner, body.project_id)
     chat = WorkbenchChat(
@@ -114,19 +117,39 @@ async def create_chat(db, principal, body, *, local):
     return ChatOut.model_validate(chat).model_copy(update={"project_label": project.label})
 
 
-async def create_turn(db, principal, chat_id, body, *, local):
+async def create_turn(db, principal, chat_id, body, *, load_settings, local):
     owner = principal.user_id
-    project, _ = await checked_project(db, principal, chat_id=chat_id, local=local)
-    await check_binding(db, principal, project, local=local, chat_id=chat_id, write=True)
+    project, _ = await checked_project(
+        db, principal, chat_id=chat_id, local=local, load_settings=load_settings
+    )
+    await check_binding(
+        db,
+        principal,
+        project,
+        local=local,
+        chat_id=chat_id,
+        write=True,
+        load_settings=load_settings,
+    )
     return await turn_records.store_turn(
         db, owner, chat_id, body, local=local, session_id=principal.session_id
     )
 
 
-async def change_queue(db, principal, chat_id, *, local, remove_id=None):
+async def change_queue(db, principal, chat_id, *, load_settings, local, remove_id=None):
     owner = principal.user_id
-    project, _ = await checked_project(db, principal, chat_id=chat_id, local=local)
-    await check_binding(db, principal, project, local=local, chat_id=chat_id, write=True)
+    project, _ = await checked_project(
+        db, principal, chat_id=chat_id, local=local, load_settings=load_settings
+    )
+    await check_binding(
+        db,
+        principal,
+        project,
+        local=local,
+        chat_id=chat_id,
+        write=True,
+        load_settings=load_settings,
+    )
     chat = await transcripts.get_chat(db, owner, chat_id)
     if remove_id:
         row = await transcripts.get_turn(db, owner, chat_id, remove_id)
@@ -153,10 +176,20 @@ async def change_queue(db, principal, chat_id, *, local, remove_id=None):
     await db.commit()
 
 
-async def claim_queue(db, principal, chat_id, turn_id, *, local):
+async def claim_queue(db, principal, chat_id, turn_id, *, load_settings, local):
     owner = principal.user_id
-    project, _ = await checked_project(db, principal, chat_id=chat_id, local=local)
-    await check_binding(db, principal, project, local=local, chat_id=chat_id, write=True)
+    project, _ = await checked_project(
+        db, principal, chat_id=chat_id, local=local, load_settings=load_settings
+    )
+    await check_binding(
+        db,
+        principal,
+        project,
+        local=local,
+        chat_id=chat_id,
+        write=True,
+        load_settings=load_settings,
+    )
     chat = await transcripts.get_chat(db, owner, chat_id)
     head = await db.scalar(transcripts.queued_turns(owner, chat_id).limit(1))
     active = await db.scalar(
@@ -196,21 +229,37 @@ async def pause_queue(db, owner, chat_id, *, head_id, session_id, local):
     return False
 
 
-async def decide(db, principal, chat_id, turn_id, approval_id, approved, *, local):
+async def decide(db, principal, chat_id, turn_id, approval_id, approved, *, load_settings, local):
     owner = principal.user_id
-    project, _ = await checked_project(db, principal, chat_id=chat_id, local=local)
-    await check_binding(db, principal, project, local=local, chat_id=chat_id, write=True)
+    project, _ = await checked_project(
+        db, principal, chat_id=chat_id, local=local, load_settings=load_settings
+    )
+    await check_binding(
+        db,
+        principal,
+        project,
+        local=local,
+        chat_id=chat_id,
+        write=True,
+        load_settings=load_settings,
+    )
     await turn_records.record_decision(db, owner, chat_id, turn_id, approval_id, approved)
 
 
-async def consume_approval(db, key, identity, principal, project, *, local):
-    await check_binding(db, principal, project, local=local, chat_id=key[1], write=True)
+async def consume_approval(db, key, identity, principal, project, *, load_settings, local):
+    await check_binding(
+        db, principal, project, local=local, chat_id=key[1], write=True, load_settings=load_settings
+    )
     return await turn_records.reserve_approval(db, key, identity)
 
 
-async def reserve_instruction(db, principal, key, body, *, local, ready):
-    project, _ = await checked_project(db, principal, chat_id=key[1], local=local)
-    await check_binding(db, principal, project, local=local, chat_id=key[1], write=True)
+async def reserve_instruction(db, principal, key, body, *, load_settings, local, ready):
+    project, _ = await checked_project(
+        db, principal, chat_id=key[1], local=local, load_settings=load_settings
+    )
+    await check_binding(
+        db, principal, project, local=local, chat_id=key[1], write=True, load_settings=load_settings
+    )
     row = await transcripts.get_turn(db, *key)
     for item in row.instructions:
         if item["request_id"] == body.request_id:

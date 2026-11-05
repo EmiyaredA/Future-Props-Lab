@@ -1,4 +1,5 @@
 import asyncio
+from functools import partial
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
@@ -29,7 +30,6 @@ from studio.apps.agent_workbench.execution.schemas import (
 )
 from studio.apps.identity.storage.cloud_access import require_enabled, require_unlocked
 from studio.assembly.http_dependencies import SessionDep, StudioAuth
-from studio.config.settings import get_cloud_settings
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.http.website import require_local_browser
 
@@ -47,7 +47,15 @@ async def history_file(
     line: Annotated[int | None, Query(ge=1, le=2147483647)] = None,
 ):
     response.headers["Cache-Control"] = "no-store"
-    return await history_source.read(db, principal, session_id, path, line, local=local(request))
+    return await history_source.read(
+        db,
+        principal,
+        session_id,
+        path,
+        line,
+        local=local(request),
+        load_settings=request.app.state.workbench_settings,
+    )
 
 
 def local(request):
@@ -64,7 +72,9 @@ async def require_agent(agent_id):
 @router.get("/execution/catalog", response_model=ExecutionCatalog)
 async def catalog(request: Request, response: Response, db: SessionDep, principal: StudioAuth):
     response.headers["Cache-Control"] = "no-store"
-    return await storage.catalog(db, principal, local(request))
+    return await storage.catalog(
+        db, principal, local(request), load_settings=request.app.state.workbench_settings
+    )
 
 
 @router.get("/execution/directories", response_model=DirectoryListing)
@@ -75,9 +85,15 @@ async def directories(
     parent: Annotated[str | None, Query(max_length=4096)] = None,
 ):
     require_local_browser(request, principal)
-    require_enabled(principal, local=True)
+    require_enabled(
+        principal,
+        local=True,
+        settings=await asyncio.to_thread(request.app.state.workbench_settings),
+    )
     response.headers["Cache-Control"] = "no-store"
-    return await asyncio.to_thread(projects.browse, parent, get_cloud_settings())
+    return await asyncio.to_thread(
+        projects.browse, parent, await asyncio.to_thread(request.app.state.workbench_settings)
+    )
 
 
 @router.post("/execution/projects", response_model=ProjectChoice)
@@ -85,20 +101,46 @@ async def register_project(
     request: Request, body: ProjectDirectory, db: SessionDep, principal: StudioAuth
 ):
     require_local_browser(request, principal)
-    require_enabled(principal, local=True)
-    return await projects.register(db, principal.user_id, body.root)
+    require_enabled(
+        principal,
+        local=True,
+        settings=await asyncio.to_thread(request.app.state.workbench_settings),
+    )
+    return await projects.register(
+        db,
+        principal.user_id,
+        body.root,
+        settings=await asyncio.to_thread(request.app.state.workbench_settings),
+    )
 
 
 @router.get("/chats", response_model=list[ChatOut])
-async def list_chats(db: SessionDep, principal: StudioAuth):
-    return await transcripts.list_chats(db, principal.user_id, load_labels=projects.labels)
+async def list_chats(request: Request, db: SessionDep, principal: StudioAuth):
+    return await transcripts.list_chats(
+        db,
+        principal.user_id,
+        load_labels=partial(
+            projects.labels, settings=await asyncio.to_thread(request.app.state.workbench_settings)
+        ),
+    )
 
 
 @router.post("/chats", response_model=ChatOut, status_code=201)
 async def create_chat(request: Request, body: ChatCreate, db: SessionDep, principal: StudioAuth):
-    await require_unlocked(db, principal, local=local(request))
+    await require_unlocked(
+        db,
+        principal,
+        local=local(request),
+        settings=await asyncio.to_thread(request.app.state.workbench_settings),
+    )
     await require_agent(body.agent_id)
-    return await storage.create_chat(db, principal, body, local=local(request))
+    return await storage.create_chat(
+        db,
+        principal,
+        body,
+        local=local(request),
+        load_settings=request.app.state.workbench_settings,
+    )
 
 
 @router.get("/chats/{chat_id}", response_model=ChatDetail)
@@ -108,7 +150,9 @@ async def detail(request: Request, chat_id: str, db: SessionDep, principal: Stud
         principal.user_id,
         chat_id,
         ready=request.app.state.workbench_runs.steerable,
-        load_labels=projects.labels,
+        load_labels=partial(
+            projects.labels, settings=await asyncio.to_thread(request.app.state.workbench_settings)
+        ),
     )
 
 
@@ -120,11 +164,23 @@ async def send_turn(
     db: SessionDep,
     principal: StudioAuth,
 ):
-    await require_unlocked(db, principal, local=local(request))
+    await require_unlocked(
+        db,
+        principal,
+        local=local(request),
+        settings=await asyncio.to_thread(request.app.state.workbench_settings),
+    )
     chat = await transcripts.get_chat(db, principal.user_id, chat_id)
     if body.mode == "immediate":
         await require_agent(chat.agent_id)
-    turn, created = await storage.create_turn(db, principal, chat_id, body, local=local(request))
+    turn, created = await storage.create_turn(
+        db,
+        principal,
+        chat_id,
+        body,
+        local=local(request),
+        load_settings=request.app.state.workbench_settings,
+    )
     runs = request.app.state.workbench_runs
     if turn.status == "queued":
         await runs.advance(principal.user_id, chat_id)
@@ -137,13 +193,26 @@ async def send_turn(
 async def remove_queued(
     request: Request, chat_id: str, turn_id: str, db: SessionDep, principal: StudioAuth
 ):
-    await storage.change_queue(db, principal, chat_id, local=local(request), remove_id=turn_id)
+    await storage.change_queue(
+        db,
+        principal,
+        chat_id,
+        local=local(request),
+        remove_id=turn_id,
+        load_settings=request.app.state.workbench_settings,
+    )
     await request.app.state.workbench_runs.advance(principal.user_id, chat_id)
 
 
 @router.post("/chats/{chat_id}/queue/resume", status_code=204)
 async def resume_queue(request: Request, chat_id: str, db: SessionDep, principal: StudioAuth):
-    await storage.change_queue(db, principal, chat_id, local=local(request))
+    await storage.change_queue(
+        db,
+        principal,
+        chat_id,
+        local=local(request),
+        load_settings=request.app.state.workbench_settings,
+    )
     await request.app.state.workbench_runs.advance(principal.user_id, chat_id)
 
 
@@ -172,7 +241,15 @@ async def preview_source(
     principal: StudioAuth,
 ):
     response.headers["Cache-Control"] = "no-store"
-    return await source_preview.read(db, principal, chat_id, turn_id, call_id, local=local(request))
+    return await source_preview.read(
+        db,
+        principal,
+        chat_id,
+        turn_id,
+        call_id,
+        local=local(request),
+        load_settings=request.app.state.workbench_settings,
+    )
 
 
 @router.post("/chats/{chat_id}/turns/{turn_id}/stop", status_code=204)
@@ -190,9 +267,21 @@ async def decide(
     db: SessionDep,
     principal: StudioAuth,
 ):
-    await require_unlocked(db, principal, local=local(request))
+    await require_unlocked(
+        db,
+        principal,
+        local=local(request),
+        settings=await asyncio.to_thread(request.app.state.workbench_settings),
+    )
     await storage.decide(
-        db, principal, chat_id, turn_id, approval_id, body.approved, local=local(request)
+        db,
+        principal,
+        chat_id,
+        turn_id,
+        approval_id,
+        body.approved,
+        local=local(request),
+        load_settings=request.app.state.workbench_settings,
     )
 
 

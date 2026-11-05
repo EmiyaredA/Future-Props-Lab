@@ -223,7 +223,10 @@ def bind_components(app, settings, database):
         attempts=app.state.auth_attempts,
         preferences=app.state.desktop_preferences,
     )
-    app.state.workbench_runs = WorkbenchRuns(sessions=sessions, settings=settings)
+    app.state.workbench_settings = get_cloud_settings
+    app.state.workbench_runs = WorkbenchRuns(
+        sessions=sessions, settings=settings, load_settings=app.state.workbench_settings
+    )
     app.state.workbench_turn_stream = partial(
         stream_turns,
         versions=SqlTurnVersions(

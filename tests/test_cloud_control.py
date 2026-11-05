@@ -1086,7 +1086,9 @@ async def test_workbench_queue_is_fifo_idempotent_and_pauses_on_stop_or_restart(
     monkeypatch.setattr(
         app.state,
         "workbench_runs",
-        runner.WorkbenchRuns(sessions=SessionLocal, settings=get_settings()),
+        runner.WorkbenchRuns(
+            sessions=SessionLocal, settings=get_settings(), load_settings=get_settings
+        ),
     )
     async with aclosing(client), aclosing(other):
         await enroll(client)

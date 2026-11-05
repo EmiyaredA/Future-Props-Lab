@@ -423,3 +423,18 @@ def test_workbench_website_does_not_duplicate_shared_turn_records():
     assert not definitions & shared
     lifecycle = (STUDIO / "assembly/website/lifecycle.py").read_text()
     assert "await recover_owned_turns(sessions)" in lifecycle
+
+
+def test_workbench_never_discovers_process_global_configuration():
+    violations = []
+    for path in (STUDIO / "apps/agent_workbench").rglob("*.py"):
+        for node in ast.walk(ast.parse(path.read_text())):
+            if isinstance(node, ast.ImportFrom) and node.module == "studio.config.settings":
+                if any(
+                    alias.name in {"get_settings", "get_cloud_settings"} for alias in node.names
+                ):
+                    violations.append(str(path.relative_to(STUDIO)))
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+                if node.func.attr in {"get_settings", "get_cloud_settings"}:
+                    violations.append(str(path.relative_to(STUDIO)))
+    assert not violations

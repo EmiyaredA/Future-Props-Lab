@@ -13,8 +13,13 @@ from studio.contracts.identity.cloud_authority import TICKET_SECONDS as TICKET_S
 from studio.runtime.time import utc_now
 
 
-def allowed(principal, *, local, desktop=False):
-    return _allowed(get_cloud_settings(), principal, local=local, desktop=desktop)
+def allowed(principal, *, local, desktop=False, settings=None):
+    return _allowed(
+        settings if settings is not None else get_cloud_settings(),
+        principal,
+        local=local,
+        desktop=desktop,
+    )
 
 
 def _allowed(settings, principal, *, local, desktop):
@@ -33,8 +38,8 @@ def _allowed(settings, principal, *, local, desktop):
     )
 
 
-def require_enabled(principal, *, local, desktop=False):
-    if not allowed(principal, local=local, desktop=desktop):
+def require_enabled(principal, *, local, desktop=False, settings=None):
+    if not allowed(principal, local=local, desktop=desktop, settings=settings):
         raise HTTPException(403, "该账号或入口未启用云控操作")
 
 

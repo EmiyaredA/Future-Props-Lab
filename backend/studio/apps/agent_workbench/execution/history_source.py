@@ -9,11 +9,10 @@ from studio.apps.agent_workbench import reading
 from studio.apps.agent_workbench.execution import project_files, storage
 from studio.apps.agent_workbench.execution.models import WorkbenchProject
 from studio.apps.agent_workbench.execution.schemas import SourcePreview
-from studio.config.settings import get_cloud_settings
 from studio.contracts.agent_workbench.execution import relative_history_path
 
 
-async def project_for_history(db, owner, cwd, *, local):
+async def project_for_history(db, owner, cwd, *, load_settings, local):
     if local:
         identity = await db.scalar(
             select(WorkbenchProject.id).where(
@@ -22,7 +21,7 @@ async def project_for_history(db, owner, cwd, *, local):
         )
         if identity:
             return identity
-    settings = get_cloud_settings()
+    settings = await asyncio.to_thread(load_settings)
     for identity, project in settings.fpl_cloud_control_projects.items():
         if project.root == cwd and owner in project.user_ids:
             return identity
@@ -44,12 +43,16 @@ def relative_path(cwd, path):
     return path
 
 
-async def read(db, principal, session_id, path, line, *, local):
+async def read(db, principal, session_id, path, line, *, load_settings, local):
     conversation = await reading.get_conversation(db, principal.user_id, session_id)
     cwd = conversation.cwd
     path = relative_path(cwd, path)
-    identity = await project_for_history(db, principal.user_id, cwd, local=local)
-    project, _ = await storage.checked_project(db, principal, project_id=identity, local=local)
+    identity = await project_for_history(
+        db, principal.user_id, cwd, local=local, load_settings=load_settings
+    )
+    project, _ = await storage.checked_project(
+        db, principal, project_id=identity, local=local, load_settings=load_settings
+    )
     if project.root != cwd:
         raise HTTPException(409, "项目绑定已变更，请重新打开文件")
     await db.rollback()
@@ -61,7 +64,7 @@ async def read(db, principal, session_id, path, line, *, local):
         content = None
     if content is None:
         raise HTTPException(404, "文件已移除、超过 128 KiB 或不是可阅读的 UTF-8 文本")
-    await storage.check_binding(db, principal, project, local=local)
+    await storage.check_binding(db, principal, project, local=local, load_settings=load_settings)
     current = await reading.get_conversation(db, principal.user_id, session_id)
     if current.cwd != cwd:
         raise HTTPException(409, "会话项目已变更，请重新打开文件")
