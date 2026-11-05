@@ -721,6 +721,8 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 
 `thought_note_assets` 保护正文图片和附件，知识库封面通过外键与文件库用例保护，包括回收站。迁移 `0046_thought_knowledge_bases` 将每个有旧数据的账号转为「我的知识库」，旧笔记本成为顶层文件夹，移除旧表与字段，保留文档 ID 和所有内容。空空间不创建默认项目。迁移无运行时 app 依赖，并已在隔离数据库验证后登记。
 
+`studio/apps/thought_workshop/storage/migration_documents.py` 按账号导出并原样恢复知识库、文档及历史、个人状态、表格及日志、发布配置与逐篇授权。维护入口由 `studio/assembly/independent/thought_workshop/maintenance.py` 装配。`migration_relationships.py` 核对文档树、表格历史、重建索引和素材链接摘要。`studio/contracts/thought_workshop/migration.py` 定义独立 Assets 维护入口接收的四类素材投影。
+
 ## 前端屏幕适配
 
 `shared/ui/ResponsiveSidebar.tsx` 拥有主控制台与普通工坊的单实例抽屉外壳；品牌、业务导航和账号入口仍通过原组件提供。`ViewportBounds.tsx` 同步可见视口高度和偏移，供软键盘出现时的面板与菜单约束使用。`useDrawerFocus.ts` 统一抽屉/弹窗的键盘范围与焦点恢复；`CompactPanelTabs` 仅提供面板切换展示，不拥有编辑器实例、文档或播放状态。`QueryFeedback` 展示加载失败及重试。

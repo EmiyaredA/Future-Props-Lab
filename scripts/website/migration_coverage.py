@@ -18,6 +18,7 @@ from studio.apps.motion_compositor.storage.migration_records import DATASETS as 
 from studio.apps.presentation_workshop.migration_operations import DATASET as PRESENTATION_RECEIPTS
 from studio.apps.presentation_workshop.storage.migration_records import DATASETS as PRESENTATION
 from studio.apps.remote_desktop.preference_migration import DATASET as REMOTE
+from studio.apps.thought_workshop.storage.migration_documents import DATASETS as THOUGHT
 from studio.apps.tools.navigation_migration import DATASET as TOOLS
 from studio.apps.video_editor.storage.migration_records import DATASETS as VIDEO
 from studio.apps.visual_workshop.storage.migration_records import DATASETS as VISUAL
@@ -37,12 +38,22 @@ TRANSFER = {
         dataset.model.__tablename__: dataset.name
         for dataset in (*MOTION, *VIDEO, *GALGAME, *VISUAL)
     },
+    **{dataset.orm.__tablename__: dataset.name for dataset in THOUGHT},
     "cloud_desktop_preferences": REMOTE,
     "tool_navigation_items": TOOLS,
     "visual_project_asset_references": "assets.visual-links",
     "presentation_asset_references": "presentation.project-references",
     "presentation_template_assets": "presentation.template-references",
     "presentation_example_assets": "presentation.example-references",
+}
+
+
+REBUILDS = {
+    "agent_workbench_search": "agents.search",
+    "thought_document_references": "thought.document-relationships",
+    "thought_note_assets": "thought.document-relationships",
+    "thought_history_assets": "thought.document-relationships",
+    "thought_template_assets": "thought.document-relationships",
 }
 
 
@@ -131,7 +142,7 @@ def coverage(snapshot, catalog):
                 status = "transfer_pending" if partition[1] else "dataset_registered"
             elif name in TRANSFER:
                 status = "dataset_registered"
-            elif name == "agent_workbench_search":
+            elif name in REBUILDS:
                 status = "rebuild_registered"
             elif name in derived:
                 status = "rebuild_pending"
@@ -147,6 +158,8 @@ def coverage(snapshot, catalog):
             }
             if name in TRANSFER:
                 item["dataset"] = TRANSFER[name]
+            if name in REBUILDS:
+                item["dataset"] = REBUILDS[name]
             if partition is not None:
                 item["partitions"], item["pending_records"] = partition
                 if name == "project_operation_receipts":

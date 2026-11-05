@@ -5039,6 +5039,12 @@
       "model": "ThoughtCommunityUpload"
     },
     {
+      "table": "thought_import_receipts",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.storage.migration_receipts",
+      "model": "ThoughtImportReceipt"
+    },
+    {
       "table": "thought_knowledge_bases",
       "service": "thought",
       "module": "studio.apps.thought_workshop.storage.models",

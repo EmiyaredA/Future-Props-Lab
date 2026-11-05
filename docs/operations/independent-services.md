@@ -579,3 +579,9 @@ Galgame 快照 ZIP 导入使用 `deploy/galgame-snapshots.compose.yaml`，与 `d
 ### Agent 工作台历史维护
 
 应用 Agents 的 0006 迁移后，使用同一迁移计划分别启动 `python -m studio.assembly.independent.agent_workbench.cli migration-export` 与 `python -m studio.assembly.independent.agent_workbench.cli migration-import` 的独立回环端口。导出端只接受已封存的兼容数据库，目标端只挂载 Agents 状态目录。执行 `uv run python -m scripts.website.migrate_agents_history` 并传入计划和两端地址。重复执行复用同批回执。核对账号归属、历史记录和重建索引摘要后，才启动普通业务入口。旧待执行队列需重新授权后恢复。
+
+### Thought 文档、表格与素材引用迁移
+
+隔离目标先显式应用 Thought 的 0006 迁移。用同一份账号计划启动 `python -m studio.assembly.independent.thought_workshop.cli migration-export` 和 `migration-import`。导出端只读封存的旧站数据库，导入端只挂目标 Thought 数据目录。执行 `uv run python -m scripts.website.migrate_thought_documents --plan "$plan" --source "$thought_source" --target "$thought_target"`，逐批核对记录数、版本、文档关系和文件链接摘要。目标重启后可用同一命令续跑，已导入批次返回原回执。
+
+Assets 元数据和原件经 SHA256 验收后，执行 `uv run python -m scripts.website.migrate_thought_references --plan "$plan" --source "$thought_source" --target "$assets_target"`，重建知识库、文档、模板和发布封面的保留记录。原件缺失、归属冲突或回执摘要不符会停止转移。外部同步、社区收藏和上传、官方导入来源及通用业务回执仍须通过来源覆盖检查，切换以整站验收结果为准。

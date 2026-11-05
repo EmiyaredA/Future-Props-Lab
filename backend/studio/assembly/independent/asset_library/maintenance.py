@@ -8,6 +8,7 @@ from studio.apps.asset_library.migration_models import MIGRATION_MODELS
 from studio.apps.asset_library.migration_project_pins import (
     mount_galgame_references,
     mount_presentation_references,
+    mount_thought_references,
     mount_visual_acceptance_pins,
     mount_visual_canvas_pins,
     mount_visual_conversation_pins,
@@ -67,6 +68,7 @@ def create_import_app(*, plan, state_root):
     app, database = import_app(plan, state_root, "assets", models, MIGRATIONS, **TRANSPORT)
     mount_blobs(app, plan, database.sessions, root=database.root)
     mount_presentation_references(app, plan, database.sessions)
+    mount_thought_references(app, plan, database.sessions)
     mount_galgame_references(app, plan, database.sessions)
     mount_visual_canvas_pins(app, plan, database.sessions)
     mount_visual_conversation_pins(app, plan, database.sessions)

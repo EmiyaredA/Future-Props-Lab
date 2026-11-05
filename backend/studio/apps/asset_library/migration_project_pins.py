@@ -23,6 +23,14 @@ from studio.contracts.presentation_workshop.presentation_migration import (
     ProjectionBatch,
     ProjectionPage,
 )
+from studio.contracts.thought_workshop.migration import (
+    PIN_CURSOR,
+    PIN_KINDS,
+    ThoughtPinBatch,
+    ThoughtPinPage,
+    ThoughtPins,
+    pin_path,
+)
 from studio.contracts.visual_workshop.visual_migration import (
     ACCEPTANCE_PINS_DATASET,
     ACCEPTANCE_PINS_PATH,
@@ -146,6 +154,12 @@ async def ingest(sessions, dataset, service, kind, batch):
             if kind == "conversation":
                 project_id = record.project_id
                 media = (*media, "document")
+            if service == "thought":
+                media = (
+                    ("image",)
+                    if kind in {"knowledge-base", "publication"}
+                    else (*media, "document")
+                )
             if kind in {"conversation", "acceptance"}:
                 parent = await db.scalar(
                     select(AssetReferenceSet.id).where(
@@ -318,3 +332,20 @@ def mount_visual_acceptance_pins(app, plan, sessions):
         batch_type=AcceptancePinBatch,
         page_type=AcceptancePinPage,
     )
+
+
+def mount_thought_references(app, plan, sessions):
+    for dataset, kind in PIN_KINDS.items():
+        mount_project_pins(
+            app,
+            plan,
+            sessions,
+            prefix=pin_path(dataset),
+            dataset=dataset,
+            service="thought",
+            kind=kind,
+            cursor=PIN_CURSOR,
+            record_type=ThoughtPins,
+            batch_type=ThoughtPinBatch,
+            page_type=ThoughtPinPage,
+        )

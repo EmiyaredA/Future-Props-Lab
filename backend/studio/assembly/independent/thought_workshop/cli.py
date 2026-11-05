@@ -8,6 +8,10 @@ from pathlib import Path
 
 from studio.config import read_config
 from studio.runtime.database.migrations import apply, check
+from studio.runtime.database.project_history_migration import (
+    add_maintenance_options,
+    handle_maintenance,
+)
 from studio.runtime.lifecycle.locking import service_lock
 
 LIMIT_DEFAULTS = {
@@ -19,7 +23,10 @@ LIMIT_DEFAULTS = {
 
 def parser():
     result = argparse.ArgumentParser(description="FPL Thought")
-    result.add_argument("command", choices=("serve", "migrate"))
+    result.add_argument(
+        "command", choices=("serve", "migrate", "migration-export", "migration-import")
+    )
+    add_maintenance_options(result)
     result.add_argument("--config", type=Path, default=Path("/run/fpl/config.toml"))
     result.add_argument("--state-root", type=Path, default=Path("/state"))
     result.add_argument("--public-key", type=Path, default=Path("/run/fpl/identity-public.pem"))
@@ -117,7 +124,16 @@ def run(options):
 
 if __name__ == "__main__":
     try:
-        run(parser().parse_args())
+        arguments = parser()
+        options = arguments.parse_args()
+        if options.command.startswith("migration-"):
+            from .maintenance import create_export_app, create_import_app
+
+            handle_maintenance(arguments, options, create_export_app, create_import_app)
+        elif options.migration_plan is not None or options.legacy_db is not None:
+            arguments.error("迁移计划与源快照仅用于维护入口")
+        else:
+            run(options)
     except (ValueError, RuntimeError, OSError) as exc:
         print(str(exc), file=sys.stderr)
         raise SystemExit(1) from None
