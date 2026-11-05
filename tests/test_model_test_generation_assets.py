@@ -73,14 +73,14 @@ async def test_private_asset_upload_is_atomic_and_claimed_assets_are_immutable()
             session.add_all((first, second))
             await session.flush()
             first_id, second_id = first.id, second.id
-            await ModelTestGenerationAssets(session, "test-user").claim_for_task(
-                first.id, (([asset_id], "reference_video", "video"),)
-            )
+            await ModelTestGenerationAssets(
+                session, "test-user", settings=get_settings()
+            ).claim_for_task(first.id, (([asset_id], "reference_video", "video"),))
             await session.commit()
             with pytest.raises(GenerationAssetError, match="已被其他任务使用"):
-                await ModelTestGenerationAssets(session, "test-user").claim_for_task(
-                    second.id, (([asset_id], "reference_video", "video"),)
-                )
+                await ModelTestGenerationAssets(
+                    session, "test-user", settings=get_settings()
+                ).claim_for_task(second.id, (([asset_id], "reference_video", "video"),))
             await session.rollback()
 
         claimed_delete = await client.delete(f"/v1/model-test/generation-assets/{asset_id}")

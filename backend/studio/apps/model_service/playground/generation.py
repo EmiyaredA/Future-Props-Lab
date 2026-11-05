@@ -30,7 +30,7 @@ from studio.apps.model_service.storage.models.model_test import (
     ModelTestGenerationAsset,
     ModelTestGenerationTask,
 )
-from studio.config.settings import Settings, get_settings
+from studio.config.settings import Settings
 from studio.contracts.model_service.credential_snapshot import CredentialSnapshot
 from studio.contracts.model_service.schemas.model_test import (
     ModelTestGenerationCreateIn,
@@ -85,12 +85,10 @@ def generation_task_out(row: ModelTestGenerationTask) -> ModelTestGenerationTask
 
 
 class ModelTestGeneration:
-    def __init__(
-        self, session: AsyncSession, owner_user_id: str, settings: Settings | None = None
-    ) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str, settings: Settings) -> None:
         self.session = session
         self.owner_user_id = owner_user_id
-        self.settings = settings or get_settings()
+        self.settings = settings
 
     async def _model(self, model_id: str, kind: str) -> tuple[ModelEntry, ModelProvider]:
         model = await self.session.get(ModelEntry, model_id)

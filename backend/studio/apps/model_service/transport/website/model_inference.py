@@ -34,8 +34,12 @@ router = APIRouter(prefix="/model-inference", tags=["model-inference"])
 
 
 @router.get("/options", response_model=InferenceOptionsOut)
-async def model_options(session: SessionDep, owner_user_id: OwnerDep):
-    return await options(session, owner_user_id)
+async def model_options(request: Request, session: SessionDep, owner_user_id: OwnerDep):
+    return await options(
+        session,
+        owner_user_id,
+        upload_configured=bool(request.app.state.settings.fpl_temp_media_upload_url),
+    )
 
 
 @router.post("/text", response_model=InferenceTextOut)
@@ -47,7 +51,13 @@ async def generate_text(
     credential: CallCredentialDep,
 ):
     args = await mapped(
-        prepare(session, owner_user_id, body, decrypt=request.app.state.model_decrypt)
+        prepare(
+            session,
+            owner_user_id,
+            body,
+            decrypt=request.app.state.model_decrypt,
+            settings=request.app.state.settings,
+        )
     )
     async with aclosing(
         events(
@@ -93,7 +103,13 @@ async def stream_text(
     credential: CallCredentialDep,
 ):
     args = await mapped(
-        prepare(session, owner_user_id, body, decrypt=request.app.state.model_decrypt)
+        prepare(
+            session,
+            owner_user_id,
+            body,
+            decrypt=request.app.state.model_decrypt,
+            settings=request.app.state.settings,
+        )
     )
 
     async def stream():
@@ -116,10 +132,17 @@ async def stream_text(
 
 @router.post("/assets", response_model=InferenceAssetOut)
 async def upload_asset(
-    session: SessionDep, owner_user_id: OwnerDep, upload: Annotated[UploadFile, File()]
+    request: Request,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    upload: Annotated[UploadFile, File()],
 ):
     try:
-        return await mapped(InferenceAssets(session, owner_user_id).upload(upload))
+        return await mapped(
+            InferenceAssets(session, owner_user_id, settings=request.app.state.settings).upload(
+                upload
+            )
+        )
     finally:
         await upload.close()
 
@@ -130,13 +153,21 @@ async def import_asset(
 ):
     sources = library_inputs(request, session, owner_user_id)
     return await mapped(
-        InferenceAssets(session, owner_user_id, library=sources).import_library(body.asset_id)
+        InferenceAssets(
+            session, owner_user_id, settings=request.app.state.settings, library=sources
+        ).import_library(body.asset_id)
     )
 
 
 @router.delete("/assets/{asset_id}", status_code=204)
-async def delete_asset(asset_id: str, session: SessionDep, owner_user_id: OwnerDep):
-    await mapped(InferenceAssets(session, owner_user_id).delete(asset_id))
+async def delete_asset(
+    request: Request, asset_id: str, session: SessionDep, owner_user_id: OwnerDep
+):
+    await mapped(
+        InferenceAssets(session, owner_user_id, settings=request.app.state.settings).delete(
+            asset_id
+        )
+    )
 
 
 @router.post("/tasks", response_model=InferenceTaskOut)
@@ -148,7 +179,7 @@ async def create_task(
     credential: CallCredentialDep,
 ):
     return await mapped(
-        InferenceTasks(session, owner_user_id).create(
+        InferenceTasks(session, owner_user_id, settings=request.app.state.settings).create(
             body,
             task_admission(request, session, "inference"),
             credential=credential,
@@ -158,17 +189,22 @@ async def create_task(
 
 @router.get("/tasks", response_model=InferenceTasksOut)
 async def list_tasks(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     offset: int = Query(0, ge=0),
     limit: int = Query(30, ge=1, le=100),
 ):
-    return await InferenceTasks(session, owner_user_id).list(offset, limit)
+    return await InferenceTasks(session, owner_user_id, settings=request.app.state.settings).list(
+        offset, limit
+    )
 
 
 @router.get("/tasks/{task_id}", response_model=InferenceTaskOut)
-async def get_task(task_id: str, session: SessionDep, owner_user_id: OwnerDep):
-    return await mapped(InferenceTasks(session, owner_user_id).get(task_id))
+async def get_task(request: Request, task_id: str, session: SessionDep, owner_user_id: OwnerDep):
+    return await mapped(
+        InferenceTasks(session, owner_user_id, settings=request.app.state.settings).get(task_id)
+    )
 
 
 @router.get(
@@ -182,8 +218,12 @@ async def get_task(task_id: str, session: SessionDep, owner_user_id: OwnerDep):
         }
     },
 )
-async def download_result(task_id: str, session: SessionDep, owner_user_id: OwnerDep):
-    path, filename, mime = await mapped(InferenceTasks(session, owner_user_id).content(task_id))
+async def download_result(
+    request: Request, task_id: str, session: SessionDep, owner_user_id: OwnerDep
+):
+    path, filename, mime = await mapped(
+        InferenceTasks(session, owner_user_id, settings=request.app.state.settings).content(task_id)
+    )
     return FileResponse(path, filename=filename, media_type=mime)
 
 
@@ -191,7 +231,9 @@ async def download_result(task_id: str, session: SessionDep, owner_user_id: Owne
 async def save_result(task_id: str, request: Request, session: SessionDep, owner_user_id: OwnerDep):
     outputs = library_outputs(request, session, owner_user_id)
     return await mapped(
-        InferenceTasks(session, owner_user_id, library_outputs=outputs).save_to_library(task_id)
+        InferenceTasks(
+            session, owner_user_id, settings=request.app.state.settings, library_outputs=outputs
+        ).save_to_library(task_id)
     )
 
 
@@ -204,7 +246,9 @@ async def retry_materialization(
     owner_user_id: OwnerDep,
 ):
     return await mapped(
-        InferenceTasks(session, owner_user_id).retry_materialization(
+        InferenceTasks(
+            session, owner_user_id, settings=request.app.state.settings
+        ).retry_materialization(
             task_id, body.expected_revision, task_admission(request, session, "inference")
         )
     )
@@ -222,6 +266,7 @@ async def delete_task(
         InferenceTasks(
             session,
             owner_user_id,
+            settings=request.app.state.settings,
             native_retention=getattr(request.app.state, "native_model_retention", None),
         ).delete(task_id, expected_revision)
     )

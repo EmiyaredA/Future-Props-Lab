@@ -161,6 +161,43 @@ async def test_http_incoming_file_supports_zero_and_full_reads_with_checked_leng
         assert await source.incoming.read() == b""
 
 
+async def test_inference_inputs_use_the_selected_application_root_and_upload_limit(case):
+    """The same account ID in two deployments must not share file policy or storage."""
+    from studio.config.settings import Settings
+
+    class Recording:
+        filename, content_type = "recording.wav", "audio/wav"
+
+        def __init__(self):
+            self.buffer = io.BytesIO(audio())
+
+        async def read(self, size=-1):
+            return self.buffer.read(size)
+
+        async def close(self):
+            self.buffer.close()
+
+    first = Settings(
+        fpl_database_path=str(case.root / "first" / "service.db"),
+        fpl_visual_asset_max_bytes=32,
+    )
+    second = Settings(
+        fpl_database_path=str(case.root / "second" / "service.db"),
+        fpl_visual_asset_max_bytes=1024 * 1024,
+    )
+    async with case.database.sessions(info={"owner_user_id": "alpha"}) as session:
+        with pytest.raises(AssetError) as error:
+            await InferenceAssets(session, "alpha", settings=first).upload(Recording())
+        assert error.value.status == 413
+        assert not list(await session.scalars(select(ModelInferenceAsset)))
+        result = await InferenceAssets(session, "alpha", settings=second).upload(Recording())
+        row = await session.get(ModelInferenceAsset, result.id)
+        stored = second.account_path("alpha") / "model-inference/inputs" / row.storage_key
+        assert stored.read_bytes() == audio()
+        assert not list(first.runtime_path.rglob(row.storage_key))
+        assert not list((case.root / "accounts").rglob(row.storage_key))
+
+
 @pytest.mark.parametrize("declared_size", [1, 9000])
 async def test_truncated_or_longer_stream_never_commits_an_input(case, declared_size):
     server = LibraryServer(case.database, declared_size=declared_size)

@@ -5,11 +5,9 @@ from uuid import uuid4
 from sqlalchemy import delete, select
 
 from studio.apps.model_service.inference.storage import InferenceStorage
-from studio.apps.model_service.inference.storage import root as root
 from studio.apps.model_service.library.inputs import ExactInput
 from studio.apps.model_service.library.inputs import LocalInput as LocalInput
 from studio.apps.model_service.storage.models.model_inference import ModelInferenceAsset
-from studio.config.settings import get_settings
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.file_types import ALLOWED_FILES
 from studio.contracts.asset_library.incoming import IncomingFile
@@ -19,9 +17,9 @@ from studio.runtime.files.inspection import validate_file_structure
 
 
 class InferenceAssets:
-    def __init__(self, session, owner_user_id, *, settings=None, library=None):
+    def __init__(self, session, owner_user_id, *, settings, library=None):
         self.session, self.owner_user_id = session, owner_user_id
-        self.settings = settings or get_settings()
+        self.settings = settings
         self.storage = InferenceStorage(self.settings)
         self.library = library
 

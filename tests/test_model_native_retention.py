@@ -72,7 +72,7 @@ async def test_applied_result_removes_hidden_copy_and_late_upload_cannot_recreat
 
 
 async def test_upload_started_before_delete_cannot_republish_or_restore_sensitive_text(
-    completed, monkeypatch
+    completed,
 ):
     case, task_id, lease, outcome, description, output = completed
     artifact = case.broker.artifact(str(lease.job_id), description.content_sha256)
@@ -92,14 +92,11 @@ async def test_upload_started_before_delete_cannot_republish_or_restore_sensitiv
     )
     try:
         await asyncio.wait_for(streaming.wait(), 3)
-        monkeypatch.setattr(
-            "studio.apps.model_service.inference.tasks.root", case.broker.storage.root
-        )
         async with case.database.sessions(info={"owner_user_id": "alpha"}) as session:
             row = await session.get(ModelInferenceTask, task_id)
-            await InferenceTasks(session, "alpha", native_retention=case.broker.retention).delete(
-                task_id, row.revision
-            )
+            await InferenceTasks(
+                session, "alpha", settings=case.settings, native_retention=case.broker.retention
+            ).delete(task_id, row.revision)
         assert not output.exists()
         release.set()
         assert await asyncio.wait_for(uploading, 3) == {"stored": True}
@@ -182,7 +179,6 @@ async def test_delete_commit_unknown_recovers_only_confirmed_retirement(
     artifact = case.broker.artifact(str(lease.job_id), description.content_sha256)
     original = AsyncSession.commit
     injected, deleting_session = False, None
-    monkeypatch.setattr("studio.apps.model_service.inference.tasks.root", case.broker.storage.root)
 
     async def uncertain(session):
         nonlocal injected
@@ -198,9 +194,9 @@ async def test_delete_commit_unknown_recovers_only_confirmed_retirement(
         deleting_session = session
         row = await session.get(ModelInferenceTask, task_id)
         with pytest.raises(OSError):
-            await InferenceTasks(session, "alpha", native_retention=case.broker.retention).delete(
-                task_id, row.revision
-            )
+            await InferenceTasks(
+                session, "alpha", settings=case.settings, native_retention=case.broker.retention
+            ).delete(task_id, row.revision)
     assert artifact.exists() and output.exists()
     await case.broker.recover()
     async with case.database.sessions(info={"owner_user_id": "alpha"}) as session:

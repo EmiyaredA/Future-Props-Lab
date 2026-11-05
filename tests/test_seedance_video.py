@@ -355,7 +355,7 @@ async def test_workshop_and_model_test_options_and_admission_use_version_capabil
         generation = VisualGeneration(session)
         options = await generation.options()
         assert next(m for m in options.models if m.id == mid).video_capabilities.duration_max == 30
-        test = ModelTestGeneration(session, "test-user")
+        test = ModelTestGeneration(session, "test-user", settings=get_settings())
         assert next(
             m for m in (await test.options()).items if m.id == mid
         ).video_capabilities.audio_only

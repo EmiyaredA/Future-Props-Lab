@@ -3,7 +3,7 @@ import base64
 from time import monotonic
 from uuid import uuid4
 
-from studio.apps.model_service.inference.assets import InferenceAssets, root
+from studio.apps.model_service.inference.assets import InferenceAssets
 from studio.apps.model_service.inference.catalog import get_model
 from studio.apps.model_service.providers.streaming import ChatMessageInput, stream_text_completion
 from studio.apps.model_service.storage.models.call_log import LlmCallLog
@@ -18,7 +18,7 @@ from studio.runtime.database.ownership import bind_owner
 from studio.runtime.messaging.authorized_stream import authorized_stream
 
 
-async def prepare(session, owner_user_id, body, *, decrypt):
+async def prepare(session, owner_user_id, body, *, decrypt, settings):
     model, provider = await get_model(session, owner_user_id, body.model_id, "text")
     args = dict(
         kind=provider.kind,
@@ -29,18 +29,19 @@ async def prepare(session, owner_user_id, body, *, decrypt):
         temperature=body.temperature,
         max_tokens=body.max_tokens,
     )
+    assets = InferenceAssets(session, owner_user_id, settings=settings)
     messages = []
     for message in body.messages:
         images = []
         for identity in message.asset_ids:
-            asset = await InferenceAssets(session, owner_user_id).get(identity)
+            asset = await assets.get(identity)
             if (
                 asset.media_kind != "image"
                 or asset.byte_size > 8 * 1024 * 1024
                 or "vision" not in model.capabilities
             ):
                 raise OperationError("模型不支持视觉输入，或图片超过 8 MiB")
-            path = root(owner_user_id) / "inputs" / asset.storage_key
+            path = assets.storage.root(owner_user_id) / "inputs" / asset.storage_key
             images.append(
                 ImageInput(
                     mime_type=asset.mime_type,

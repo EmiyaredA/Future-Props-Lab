@@ -16,7 +16,6 @@ from studio.apps.model_service.transcription.parameters import (
     resolve_parameters,
 )
 from studio.apps.model_service.transcription.support import model_supports_transcription
-from studio.config.settings import get_settings
 from studio.contracts.model_service.generation_tasks import (
     AudioGenerationTaskCreateIn,
     ImageGenerationTaskCreateIn,
@@ -86,7 +85,7 @@ async def get_model(session, owner_user_id, model_id, kind):
     return model, provider
 
 
-async def options(session, owner_user_id):
+async def options(session, owner_user_id, *, upload_configured: bool):
     rows = (
         await session.execute(
             select(ModelEntry, ModelProvider)
@@ -120,7 +119,7 @@ async def options(session, owner_user_id):
                 caps = video_capabilities(
                     provider.kind,
                     model.slug,
-                    upload_configured=bool(get_settings().fpl_temp_media_upload_url),
+                    upload_configured=upload_configured,
                 )
             except ValueError:
                 continue

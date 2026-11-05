@@ -18,7 +18,6 @@ from studio.apps.model_service.transport.provider_bindings import provider_optio
 from studio.apps.model_service.transport.stream_access import stream_access
 from studio.assembly.http_dependencies import OwnerDep, SessionDep
 from studio.assembly.model_credentials import CallCredentialDep
-from studio.config.settings import get_settings
 from studio.contracts.model_service.schemas.model_test import (
     ModelTestAttachmentListOut,
     ModelTestConversationCreateIn,
@@ -33,12 +32,12 @@ from studio.runtime.files.image_sizes import ThumbnailSize
 router = APIRouter(prefix="/model-test/conversations", tags=["model-test"])
 
 
-def _service(session: SessionDep, owner_user_id: str) -> ModelTestService:
-    return ModelTestService(session, owner_user_id)
+def _service(session: SessionDep, owner_user_id: str, request: Request) -> ModelTestService:
+    return ModelTestService(session, owner_user_id, request.app.state.settings)
 
 
-def _attachments(session: SessionDep, owner_user_id: str) -> ModelTestAttachments:
-    return ModelTestAttachments(session, get_settings(), owner_user_id)
+def _attachments(session: SessionDep, owner_user_id: str, request: Request) -> ModelTestAttachments:
+    return ModelTestAttachments(session, request.app.state.settings, owner_user_id)
 
 
 def _translate(exc: Exception) -> HTTPException:
@@ -55,55 +54,58 @@ def _translate(exc: Exception) -> HTTPException:
 
 @router.get("", response_model=ModelTestConversationListOut)
 async def list_conversations(
-    session: SessionDep, owner_user_id: OwnerDep
+    request: Request, session: SessionDep, owner_user_id: OwnerDep
 ) -> ModelTestConversationListOut:
-    return await _service(session, owner_user_id).list()
+    return await _service(session, owner_user_id, request).list()
 
 
 @router.post("", response_model=ModelTestConversationOut)
 async def create_conversation(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     body: ModelTestConversationCreateIn,
 ) -> ModelTestConversationOut:
     try:
-        return await _service(session, owner_user_id).create(body)
+        return await _service(session, owner_user_id, request).create(body)
     except ModelUnavailableError as exc:
         raise _translate(exc) from None
 
 
 @router.get("/{conversation_id}", response_model=ModelTestConversationOut)
 async def get_conversation(
-    session: SessionDep, owner_user_id: OwnerDep, conversation_id: str
+    request: Request, session: SessionDep, owner_user_id: OwnerDep, conversation_id: str
 ) -> ModelTestConversationOut:
     try:
-        return await _service(session, owner_user_id).get(conversation_id)
+        return await _service(session, owner_user_id, request).get(conversation_id)
     except ResourceNotFoundError as exc:
         raise _translate(exc) from None
 
 
 @router.patch("/{conversation_id}", response_model=ModelTestConversationOut)
 async def patch_conversation(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     conversation_id: str,
     body: ModelTestConversationPatchIn,
 ) -> ModelTestConversationOut:
     try:
-        return await _service(session, owner_user_id).patch(conversation_id, body)
+        return await _service(session, owner_user_id, request).patch(conversation_id, body)
     except (ResourceNotFoundError, ModelUnavailableError, ConversationBusyError) as exc:
         raise _translate(exc) from None
 
 
 @router.delete("/{conversation_id}")
 async def delete_conversation(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     conversation_id: str,
     expected_revision: int = Query(ge=0),
 ) -> dict[str, bool]:
     try:
-        await _service(session, owner_user_id).delete(conversation_id, expected_revision)
+        await _service(session, owner_user_id, request).delete(conversation_id, expected_revision)
     except (ResourceNotFoundError, ConversationBusyError) as exc:
         raise _translate(exc) from None
     return {"deleted": True}
@@ -111,26 +113,30 @@ async def delete_conversation(
 
 @router.post("/{conversation_id}/attachments", response_model=ModelTestAttachmentListOut)
 async def upload_attachments(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     conversation_id: str,
     files: Annotated[list[UploadFile], File()],
 ) -> ModelTestAttachmentListOut:
     try:
-        return await _attachments(session, owner_user_id).upload(conversation_id, files)
+        return await _attachments(session, owner_user_id, request).upload(conversation_id, files)
     except AttachmentError as exc:
         raise _translate(exc) from None
 
 
 @router.delete("/{conversation_id}/attachments/{attachment_id}")
 async def delete_attachment(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     conversation_id: str,
     attachment_id: str,
 ) -> dict[str, bool]:
     try:
-        await _attachments(session, owner_user_id).delete_draft(conversation_id, attachment_id)
+        await _attachments(session, owner_user_id, request).delete_draft(
+            conversation_id, attachment_id
+        )
     except AttachmentError as exc:
         raise _translate(exc) from None
     return {"deleted": True}
@@ -146,7 +152,7 @@ async def attachment_content(
     size: ThumbnailSize | None = None,
 ) -> FileResponse:
     try:
-        row, path = await _attachments(session, owner_user_id).content(
+        row, path = await _attachments(session, owner_user_id, request).content(
             conversation_id, attachment_id, size, previews=request.app.state.raster_previews
         )
     except AttachmentError as exc:
@@ -170,7 +176,7 @@ async def stream_message(
     credential: CallCredentialDep,
 ) -> StreamingResponse:
     try:
-        prepared = await _service(session, owner_user_id).prepare_send(
+        prepared = await _service(session, owner_user_id, request).prepare_send(
             conversation_id,
             body.expected_revision,
             body.content,
@@ -207,7 +213,7 @@ async def regenerate_message(
     credential: CallCredentialDep,
 ) -> StreamingResponse:
     try:
-        prepared = await _service(session, owner_user_id).prepare_regenerate(
+        prepared = await _service(session, owner_user_id, request).prepare_regenerate(
             conversation_id, body.expected_revision, credential=credential
         )
     except (

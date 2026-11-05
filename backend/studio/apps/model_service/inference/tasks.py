@@ -4,9 +4,10 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 
 from studio.apps.model_service.generation.outcomes import confirmed_terminal
-from studio.apps.model_service.inference.assets import InferenceAssets, root
+from studio.apps.model_service.inference.assets import InferenceAssets
 from studio.apps.model_service.inference.catalog import get_model, normalize_parameters
 from studio.apps.model_service.inference.receipts import replay_task
+from studio.apps.model_service.inference.storage import InferenceStorage
 from studio.apps.model_service.providers.local_qwen import MAX_REFERENCE_BYTES, inspect_reference
 from studio.apps.model_service.providers.seedance_references import (
     SeedanceReference,
@@ -17,7 +18,6 @@ from studio.apps.model_service.storage.models.model_inference import (
     ModelInferenceTask,
 )
 from studio.apps.model_service.transcription.support import max_transcription_input_bytes
-from studio.config.settings import get_settings
 from studio.contracts.model_service.credential_snapshot import CredentialSnapshot
 from studio.contracts.model_service.schemas.model_inference import (
     InferenceTaskOut,
@@ -43,8 +43,12 @@ def task_out(row):
 
 
 class InferenceTasks:
-    def __init__(self, session, owner_user_id, *, library_outputs=None, native_retention=None):
+    def __init__(
+        self, session, owner_user_id, *, settings, library_outputs=None, native_retention=None
+    ):
         self.session, self.owner_user_id = session, owner_user_id
+        self.settings = settings
+        self.storage = InferenceStorage(settings)
         self.library_outputs = library_outputs
         self.native_retention = native_retention
 
@@ -90,7 +94,9 @@ class InferenceTasks:
             self.session, self.owner_user_id, body.model_id, body.kind
         )
         assets = [
-            await InferenceAssets(self.session, self.owner_user_id).get(identity)
+            await InferenceAssets(self.session, self.owner_user_id, settings=self.settings).get(
+                identity
+            )
             for identity in body.asset_ids
         ]
         if len(set(body.asset_ids)) != len(body.asset_ids) or any(
@@ -114,11 +120,11 @@ class InferenceTasks:
                         SeedanceReference(
                             a.media_kind,
                             a.mime_type,
-                            root(self.owner_user_id) / "inputs" / a.storage_key,
+                            self.storage.root(self.owner_user_id) / "inputs" / a.storage_key,
                         )
                         for a in assets
                     ],
-                    get_settings().fpl_temp_media_upload_url,
+                    self.settings.fpl_temp_media_upload_url,
                 )
             except ValueError as exc:
                 raise OperationError(str(exc)) from None
@@ -128,7 +134,9 @@ class InferenceTasks:
                 reference.filename
             ).suffix.lower() not in {".wav", ".mp3", ".m4a", ".ogg"}:
                 raise OperationError("参考录音仅支持 20MB 以内的 WAV、MP3、M4A、OGG")
-            await inspect_reference(root(self.owner_user_id) / "inputs" / reference.storage_key)
+            await inspect_reference(
+                self.storage.root(self.owner_user_id) / "inputs" / reference.storage_key
+            )
         payload["asset_ids"] = body.asset_ids
         snap = credential or CredentialSnapshot()
         row = ModelInferenceTask(
@@ -175,7 +183,7 @@ class InferenceTasks:
 
     async def content(self, task_id):
         row = await self.row(task_id)
-        path = root(self.owner_user_id) / "outputs" / row.result_storage_key
+        path = self.storage.root(self.owner_user_id) / "outputs" / row.result_storage_key
         if not row.result_storage_key or not path.is_file():
             raise OperationError("调用结果尚不可用", "result_unavailable", 409)
         return path, row.result_filename, row.result_mime_type
@@ -215,14 +223,16 @@ class InferenceTasks:
         if self.session.info.get("service_id") == "models" and self.native_retention is None:
             raise OperationError("原生结果清理接口未装配", "native_retention_unavailable", 503)
         paths = (
-            [root(self.owner_user_id) / "outputs" / row.result_storage_key]
+            [self.storage.root(self.owner_user_id) / "outputs" / row.result_storage_key]
             if row.result_storage_key
             else []
         )
         assets = await self.session.scalars(
             select(ModelInferenceAsset).where(ModelInferenceAsset.task_id == task_id)
         )
-        paths += [root(self.owner_user_id) / "inputs" / asset.storage_key for asset in assets]
+        paths += [
+            self.storage.root(self.owner_user_id) / "inputs" / asset.storage_key for asset in assets
+        ]
         result = await self.session.execute(
             delete(ModelInferenceTask).where(
                 ModelInferenceTask.id == task_id,

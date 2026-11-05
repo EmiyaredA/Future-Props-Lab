@@ -20,7 +20,7 @@ from studio.apps.model_service.transcription.support import (
     max_transcription_input_bytes,
     model_supports_transcription,
 )
-from studio.config.settings import Settings, get_settings
+from studio.config.settings import Settings
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.file_types import ALLOWED_FILES
 from studio.contracts.asset_library.incoming import IncomingFile
@@ -150,13 +150,13 @@ class ModelTestTranscription:
         self,
         session: AsyncSession,
         owner_user_id: str,
-        settings: Settings | None = None,
+        settings: Settings,
         *,
         library=None,
     ) -> None:
         self.session = session
         self.owner_user_id = owner_user_id
-        self.settings = settings or get_settings()
+        self.settings = settings
         self.library = library
 
     async def _model(self, model_id: str) -> tuple[ModelEntry, ModelProvider]:

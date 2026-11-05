@@ -16,7 +16,7 @@ from studio.apps.model_service.storage.models.model_test import (
     ModelTestGenerationAsset,
     ModelTestGenerationTask,
 )
-from studio.config.settings import Settings, get_settings
+from studio.config.settings import Settings
 from studio.contracts.asset_library.incoming import IncomingFile
 from studio.contracts.model_service.schemas.model_test import (
     ModelTestGenerationAssetBackfillOut,
@@ -121,13 +121,13 @@ class ModelTestGenerationAssets:
         self,
         session: AsyncSession,
         owner_user_id: str,
-        settings: Settings | None = None,
+        settings: Settings,
         *,
         legacy_references=None,
     ) -> None:
         self.session = session
         self.owner_user_id = owner_user_id
-        self.settings = settings or get_settings()
+        self.settings = settings
         self.legacy_references = legacy_references
 
     def _root(self, owner_user_id: str | None = None) -> Path:

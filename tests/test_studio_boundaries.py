@@ -12,6 +12,17 @@ ROOT = Path(__file__).resolve().parents[1]
 STUDIO = ROOT / "backend/studio"
 
 
+def test_models_never_select_process_global_configuration():
+    violations = []
+    for path in (STUDIO / "apps/model_service").rglob("*.py"):
+        for node in ast.walk(ast.parse(path.read_text())):
+            if isinstance(node, ast.Name) and node.id == "get_settings":
+                violations.append(str(path.relative_to(ROOT)))
+            if isinstance(node, ast.Attribute) and node.attr == "get_settings":
+                violations.append(str(path.relative_to(ROOT)))
+    assert not violations, violations
+
+
 def imports(path, *, include_types=True):
     module = ".".join(path.relative_to(ROOT / "backend").with_suffix("").parts)
     package = (

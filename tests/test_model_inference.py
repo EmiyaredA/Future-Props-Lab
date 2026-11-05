@@ -380,8 +380,9 @@ async def test_input_commit_interruption_preserves_owned_file_and_recovery_clean
     from sqlalchemy.ext.asyncio import AsyncSession
     from tests.test_audio_annotation import wav_bytes
 
-    from studio.apps.model_service.inference.assets import root
+    from studio.apps.model_service.inference.storage import InferenceStorage
     from studio.apps.model_service.storage.models.model_inference import ModelInferenceAsset
+    from studio.config.settings import get_settings
 
     original_commit = AsyncSession.commit
 
@@ -407,7 +408,7 @@ async def test_input_commit_interruption_preserves_owned_file_and_recovery_clean
                 )
             )
             assert asset is not None
-            path = root("test-user") / "inputs" / asset.storage_key
+            path = InferenceStorage(get_settings()).root("test-user") / "inputs" / asset.storage_key
             asset_id = asset.id
         assert path.is_file()
         orphan = path.parent / "uncommitted-test-file"

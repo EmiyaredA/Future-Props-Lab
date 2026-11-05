@@ -2,8 +2,6 @@
 
 from pathlib import Path
 
-from studio.config.settings import get_settings
-
 
 class InferenceStorage:
     def __init__(self, settings):
@@ -54,7 +52,3 @@ class InferenceStorage:
                         and (owner, path.name) not in references
                     ):
                         path.unlink(missing_ok=True)
-
-
-def root(owner_user_id):
-    return InferenceStorage(get_settings()).root(owner_user_id)

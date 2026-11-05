@@ -761,7 +761,9 @@ async def test_uncertain_native_submission_cannot_delete_original_task_or_input(
         row.status, row.error_message = "failed", SUBMISSION_INTERRUPTED_MESSAGE
         await session.commit()
         with pytest.raises(OperationError) as unresolved:
-            await InferenceTasks(session, "alpha").delete(task_id, row.revision)
+            await InferenceTasks(session, "alpha", settings=case.settings).delete(
+                task_id, row.revision
+            )
         assert unresolved.value.status == 409
         assert await session.get(ModelInferenceTask, task_id) is not None
         asset = await session.scalar(

@@ -363,7 +363,7 @@ async def test_options_and_all_admission_paths_share_the_contract(model_slug):
                 )
         await session.commit()
         visual = VisualGeneration(session)
-        test = ModelTestGeneration(session, "test-user")
+        test = ModelTestGeneration(session, "test-user", settings=get_settings())
         for option in ((await visual.options()).models, (await test.options()).items):
             selected = next(item for item in option if item.id == model.id)
             assert selected.video_capabilities.duration_min == 1

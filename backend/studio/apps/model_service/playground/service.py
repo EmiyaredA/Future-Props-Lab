@@ -21,7 +21,7 @@ from studio.apps.model_service.storage.models.model_test import (
     ModelTestConversation,
     ModelTestMessage,
 )
-from studio.config.settings import Settings, get_settings
+from studio.config.settings import Settings
 from studio.contracts.model_service.schemas.model_test import (
     ModelTestConversationCreateIn,
     ModelTestConversationListOut,
@@ -87,12 +87,10 @@ def message_out(
 
 
 class ModelTestService:
-    def __init__(
-        self, session: AsyncSession, owner_user_id: str, settings: Settings | None = None
-    ) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str, settings: Settings) -> None:
         self.session = session
         self.owner_user_id = owner_user_id
-        self.settings = settings or get_settings()
+        self.settings = settings
         self.attachments = ModelTestAttachments(session, self.settings, owner_user_id)
 
     async def _model_slug(self, model_id: str | None) -> str:

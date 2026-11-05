@@ -21,6 +21,7 @@ from studio.apps.model_service.storage.models.model_test import (
     ModelTestConversation,
     ModelTestMessage,
 )
+from studio.config.settings import get_settings
 from studio.contracts.model_service.schemas.model_test import ModelTestConversationCreateIn
 from website_test_support import SessionLocal, app
 
@@ -289,12 +290,12 @@ async def test_cancelled_generation_keeps_partial_reply_and_log(
             )
         )
         await session.commit()
-        conversation = await ModelTestService(session, "test-user").create(
+        conversation = await ModelTestService(session, "test-user", settings=get_settings()).create(
             ModelTestConversationCreateIn(model_id=model_id)
         )
-        prepared = await ModelTestService(session, "test-user").prepare_send(
-            conversation.id, conversation.revision, "cancel me"
-        )
+        prepared = await ModelTestService(
+            session, "test-user", settings=get_settings()
+        ).prepare_send(conversation.id, conversation.revision, "cancel me")
 
     async def consume() -> None:
         async for _event in generation_events(
@@ -530,9 +531,9 @@ async def test_playground_image_attachments_persist_and_reach_multiturn_context(
             row = await session.get(ModelTestAttachment, attachment["id"])
             assert row is not None
             attachment_path = (
-                ModelTestService(session, "test-user").settings.account_model_test_path(
-                    "test-user", "attachments"
-                )
+                ModelTestService(
+                    session, "test-user", settings=get_settings()
+                ).settings.account_model_test_path("test-user", "attachments")
                 / row.storage_key
             )
             assert attachment_path.is_file()

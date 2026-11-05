@@ -24,8 +24,10 @@ from studio.contracts.model_service.schemas.model_test import (
 router = APIRouter(prefix="/model-test", tags=["model-test"])
 
 
-def _transcription(session: SessionDep, owner_user_id: str) -> ModelTestTranscription:
-    return ModelTestTranscription(session, owner_user_id)
+def _transcription(
+    session: SessionDep, owner_user_id: str, request: Request
+) -> ModelTestTranscription:
+    return ModelTestTranscription(session, owner_user_id, request.app.state.settings)
 
 
 def _translate(exc: ModelTestTranscriptionError) -> HTTPException:
@@ -34,9 +36,9 @@ def _translate(exc: ModelTestTranscriptionError) -> HTTPException:
 
 @router.get("/transcription-options", response_model=ModelTestTranscriptionOptionListOut)
 async def transcription_options(
-    session: SessionDep, owner_user_id: OwnerDep
+    request: Request, session: SessionDep, owner_user_id: OwnerDep
 ) -> ModelTestTranscriptionOptionListOut:
-    return await _transcription(session, owner_user_id).options()
+    return await _transcription(session, owner_user_id, request).options()
 
 
 @router.post("/transcription-tasks/upload", response_model=ModelTestTranscriptionTaskOut)
@@ -58,7 +60,7 @@ async def upload_transcription_task(
     abbreviations: Annotated[bool | None, Form()] = None,
 ) -> ModelTestTranscriptionTaskOut:
     try:
-        result = await _transcription(session, owner_user_id).create_upload(
+        result = await _transcription(session, owner_user_id, request).create_upload(
             upload,
             model_id=model_id,
             admission=task_admission(request, session, "transcription"),
@@ -90,7 +92,10 @@ async def create_transcription_task(
 ) -> ModelTestTranscriptionTaskOut:
     try:
         result = await ModelTestTranscription(
-            session, owner_user_id, library=library_inputs(request, session, owner_user_id)
+            session,
+            owner_user_id,
+            settings=request.app.state.settings,
+            library=library_inputs(request, session, owner_user_id),
         ).create_from_library(
             body,
             admission=task_admission(request, session, "transcription"),
@@ -103,33 +108,34 @@ async def create_transcription_task(
 
 @router.get("/transcription-tasks", response_model=ModelTestTranscriptionTaskListOut)
 async def list_transcription_tasks(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     model_id: str | None = None,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=100),
 ) -> ModelTestTranscriptionTaskListOut:
-    return await _transcription(session, owner_user_id).list(
+    return await _transcription(session, owner_user_id, request).list(
         model_id=model_id, page=page, page_size=page_size
     )
 
 
 @router.get("/transcription-tasks/{task_id}", response_model=ModelTestTranscriptionTaskOut)
 async def get_transcription_task(
-    session: SessionDep, owner_user_id: OwnerDep, task_id: str
+    request: Request, session: SessionDep, owner_user_id: OwnerDep, task_id: str
 ) -> ModelTestTranscriptionTaskOut:
     try:
-        return await _transcription(session, owner_user_id).get(task_id)
+        return await _transcription(session, owner_user_id, request).get(task_id)
     except ModelTestTranscriptionError as exc:
         raise _translate(exc) from None
 
 
 @router.get("/transcription-tasks/{task_id}/input-content")
 async def transcription_input_content(
-    session: SessionDep, owner_user_id: OwnerDep, task_id: str
+    request: Request, session: SessionDep, owner_user_id: OwnerDep, task_id: str
 ) -> FileResponse:
     try:
-        row, path = await _transcription(session, owner_user_id).content(task_id)
+        row, path = await _transcription(session, owner_user_id, request).content(task_id)
     except ModelTestTranscriptionError as exc:
         raise _translate(exc) from None
     return FileResponse(
@@ -143,13 +149,14 @@ async def transcription_input_content(
 
 @router.delete("/transcription-tasks/{task_id}")
 async def delete_transcription_task(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     task_id: str,
     expected_revision: int = Query(ge=0),
 ) -> dict[str, bool]:
     try:
-        await _transcription(session, owner_user_id).delete(task_id, expected_revision)
+        await _transcription(session, owner_user_id, request).delete(task_id, expected_revision)
     except ModelTestTranscriptionError as exc:
         raise _translate(exc) from None
     return {"deleted": True}
