@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends
 
 from app.console.routes.code_agents import router as code_agents_router
-from studio.apps.agent_workbench.transport.website import router as agent_workbench_router
+from studio.apps.agent_workbench.transport.service import create_router as workbench_router
+from studio.apps.agent_workbench.transport.website.execution import router as agent_execution_router
 from studio.apps.amadeus.transport.website import require_amadeus_session
 from studio.apps.amadeus.transport.website import router as amadeus_router
 from studio.apps.asset_library.transport.website.files import router as file_management_router
@@ -78,12 +79,21 @@ from studio.apps.visual_workshop.transport.website.generation import (
     router as visual_generation_router,
 )
 from studio.apps.visual_workshop.transport.website.outputs import router as visual_outputs_router
-from studio.assembly.http_dependencies import require_studio_auth
+from studio.assembly.http_dependencies import OwnerDep, SessionDep, StudioAuth, require_studio_auth
 from studio.assembly.website.cloud_control import router as cloud_control_router
 
 api_router = APIRouter(prefix="/v1")
 api_router.include_router(cloud_control_router)
+agent_workbench_router = workbench_router(
+    SessionDep=SessionDep, StudioAuth=StudioAuth, OwnerDep=OwnerDep
+)
 api_router.include_router(agent_workbench_router, dependencies=[Depends(require_studio_auth)])
+api_router.include_router(
+    agent_execution_router,
+    prefix="/agent-workbench",
+    tags=["agent-workbench"],
+    dependencies=[Depends(require_studio_auth), *agent_workbench_router.dependencies],
+)
 api_router.include_router(local_models_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(interview_assistant_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(external_connections_router, dependencies=[Depends(require_studio_auth)])

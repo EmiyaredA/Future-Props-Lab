@@ -17,10 +17,16 @@ from studio.apps.agent_workbench.change_stream import event_page
 from studio.apps.agent_workbench.storage.models import WorkbenchCheckpoint, WorkbenchSession
 from studio.apps.agent_workbench.sync.projection import apply_batch
 from studio.apps.agent_workbench.sync.runner import WorkbenchSyncRunner
-from studio.apps.agent_workbench.transport.website import router
+from studio.apps.agent_workbench.transport.service import create_router
 from studio.apps.identity.storage.models.accounts import User
 from studio.apps.identity.website_access.workbench import workbench_actor_allowed
-from studio.assembly.http_dependencies import SessionDep, db_session, require_studio_auth
+from studio.assembly.http_dependencies import (
+    OwnerDep,
+    SessionDep,
+    StudioAuth,
+    db_session,
+    require_studio_auth,
+)
 from studio.assembly.website.models import bind_owner
 from studio.config.settings import get_settings
 from studio.contracts.identity.principal import StudioPrincipal
@@ -123,8 +129,11 @@ async def store(tmp_path):
             )
         await db.commit()
     application = FastAPI()
+    application.state.workbench_enabled = lambda: get_settings().fpl_agent_workbench_enabled
     application.state.workbench_native = LocalSourceAccess()
-    application.include_router(router, prefix="/v1")
+    application.include_router(
+        create_router(SessionDep=SessionDep, StudioAuth=StudioAuth, OwnerDep=OwnerDep), prefix="/v1"
+    )
 
     async def session_dependency():
         async with sessions() as db:
@@ -164,6 +173,20 @@ async def bind(client, root, agent="codex", **extra):
     )
     assert result.status_code == 201, result.text
     return result.json()
+
+
+async def test_shared_source_route_uses_assembled_deployment_policy(store, tmp_path, monkeypatch):
+    _, client = store
+    root = tmp_path / "disabled-source"
+    root.mkdir()
+    monkeypatch.setattr(get_settings(), "fpl_agent_workbench_enabled", False)
+    response = await client.post(
+        "/v1/agent-workbench/sources",
+        headers={"x-private": "yes"},
+        json={"agent_id": "codex", "label": "disabled", "root": str(root)},
+    )
+    assert response.status_code == 403
+    assert (await client.get("/v1/agent-workbench/sources")).json() == []
 
 
 async def scan(runner):

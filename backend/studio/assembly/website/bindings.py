@@ -202,6 +202,7 @@ def bind_components(app, settings, database):
             sessions, owner, transport_resolver=app.state.demo_runtime.mock_transport
         )
     )
+    app.state.workbench_enabled = lambda: settings.fpl_agent_workbench_enabled
     app.state.workbench_native = LocalSourceAccess()
     workbench_authorizer = WorkbenchStreamAuthorization(sessions, clock=utc_now).check
     app.state.workbench_event_stream = partial(

@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from fastapi import APIRouter, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
 
 from studio.apps.agent_workbench import reading
@@ -30,7 +30,6 @@ from studio.apps.agent_workbench.execution_discovery import (
     registered_project_root,
     store_verified_chat,
 )
-from studio.apps.agent_workbench.transport.service import require_workbench_session
 from studio.contracts.agent_workbench.execution import (
     CATALOG,
     CHECK_PROJECT,
@@ -53,7 +52,6 @@ from studio.runtime.http.dependencies import SessionDep, StudioAuth
 router = APIRouter(
     prefix="/agent-workbench",
     tags=["agent-workbench"],
-    dependencies=[Depends(require_workbench_session)],
 )
 
 

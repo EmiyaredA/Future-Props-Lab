@@ -45,14 +45,14 @@ from studio.apps.agent_workbench.supervisor import CollectionSupervisor
 from studio.apps.agent_workbench.transport.execution_http import router as execution_router
 from studio.apps.agent_workbench.transport.execution_native_http import router as execution_native
 from studio.apps.agent_workbench.transport.native_api import router as native_router
-from studio.apps.agent_workbench.transport.service import router
+from studio.apps.agent_workbench.transport.service import create_router
 from studio.apps.agent_workbench.transport.turn_events import stream_turns
 from studio.config.settings import get_settings
 from studio.contracts.agent_workbench.native import COLLECTOR_OPERATIONS
 from studio.runtime.database.migrations import check
 from studio.runtime.database.sessions import Database
 from studio.runtime.http.authentication import SignedIdentity
-from studio.runtime.http.dependencies import db_session
+from studio.runtime.http.dependencies import OwnerDep, SessionDep, StudioAuth, db_session
 from studio.runtime.http.problem_details import (
     http_exception_handler,
     storage_operational_error_handler,
@@ -93,13 +93,14 @@ def create_app(
     web_root=None,
     execution_workers=None,
 ):
+    settings = get_settings()
     database = Database(
         "agents",
         state_root,
         models=MODELS,
         account_models=tuple(model for model in MODELS if model is not NativeWorkerSeen),
     )
-    if get_settings().database_path != database.path:
+    if settings.database_path != database.path:
         raise ValueError("工作台配置必须指向自己的数据目录")
     supervisor = CollectionSupervisor(database, identity)
     discovery = ExecutionDiscovery(database, identity, configured=bool(execution_workers))
@@ -111,7 +112,7 @@ def create_app(
         check(database.path, "agents", MIGRATIONS)
         await recover_owned_turns(database.sessions)
         await discovery.recover()
-        if collect and get_settings().fpl_agent_workbench_enabled:
+        if collect and settings.fpl_agent_workbench_enabled:
             await supervisor.start()
         maintenance = asyncio.create_task(turns.maintain())
         _app.state.execution_maintenance = maintenance
@@ -143,6 +144,7 @@ def create_app(
     )
     app.state.workbench_native = NativeSourceAccess(app.state.native_queue)
     app.state.execution_discovery = discovery
+    app.state.workbench_enabled = lambda: settings.fpl_agent_workbench_enabled
     app.state.execution_turns = turns
 
     async def reauthorize(request):
@@ -183,8 +185,9 @@ def create_app(
             yield session
 
     app.dependency_overrides[db_session] = sessions
-    app.include_router(router, prefix="/v1")
-    app.include_router(execution_router, prefix="/v1")
+    reading_router = create_router(SessionDep=SessionDep, StudioAuth=StudioAuth, OwnerDep=OwnerDep)
+    app.include_router(reading_router, prefix="/v1")
+    app.include_router(execution_router, prefix="/v1", dependencies=reading_router.dependencies)
     app.include_router(native_router)
     if execution_workers:
         app.include_router(execution_native)
@@ -226,7 +229,7 @@ def create_app(
 
     @app.get("/ready")
     async def ready():
-        if collect and get_settings().fpl_agent_workbench_enabled and not supervisor.is_healthy:
+        if collect and settings.fpl_agent_workbench_enabled and not supervisor.is_healthy:
             raise HTTPException(503, "采集任务协调器不可用")
         check(database.path, "agents", MIGRATIONS)
         async with database.sessions(info={"allow_system_reads": True}) as session:

@@ -15,7 +15,6 @@ from studio.apps.agent_workbench.storage.service_models import (
     NativeSubscription,
     NativeWorkerSeen,
 )
-from studio.config.settings import get_settings
 from studio.contracts.agent_workbench.execution import DISCOVERY_OPERATIONS
 from studio.contracts.identity.permissions import CLOUD_CONTROL_PERMISSION
 from studio.runtime.database.ownership import bind_owner
@@ -82,8 +81,8 @@ async def see_worker(database, worker, now):
         await session.commit()
 
 
-async def verify_follow(database, identity, worker, lease):
-    if not get_settings().fpl_agent_workbench_enabled:
+async def verify_follow(database, identity, worker, lease, *, enabled):
+    if not enabled:
         raise HTTPException(410, "native_collection_disabled")
     if lease.operation != "agent_sources.follow" or lease.operation not in worker.operations:
         raise HTTPException(403, "native_operation_forbidden")

@@ -13,7 +13,6 @@ from studio.apps.agent_workbench.storage.models import (
     WorkbenchOperation,
     WorkbenchSource,
 )
-from studio.config.settings import get_settings
 
 
 def source_out(row):
@@ -48,8 +47,8 @@ async def list_sources(session, owner):
     return [source_out(row) for row in rows]
 
 
-async def create_source(session, owner, body, *, location):
-    if not get_settings().fpl_agent_workbench_enabled:
+async def create_source(session, owner, body, *, location, enabled):
+    if not enabled:
         raise HTTPException(403, "部署未启用 Agent 工作台")
     root, endpoint = location
     # Serialize overlapping allocations. The core-table query is an allocation

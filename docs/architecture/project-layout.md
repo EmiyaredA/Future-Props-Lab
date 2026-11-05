@@ -263,6 +263,9 @@ Galgame 剪辑交接由 `studio/apps/galgame_workshop/handoff_jobs.py`、`handof
 `use_cases/observe_turns.py` 共用网站与独立服务的轮次版本订阅规则，`storage/turn_versions.py`
 在会话关闭后返回持久版本及执行器的临时就绪提示，`transport/turn_events.py` 保持既有 SSE 编码。
 每轮先复核授权，重连读取最新快照；订阅仅通知变化，不裁决轮次、审批或执行结果。
+两种网站共用 `transport/service.py` 的来源、会话、搜索、历史、附件和事件协议；
+`transport/website/` 只保留网站特有执行协议。来源分配与原生跟随验证接收显式启用策略，
+共同的路由工厂接收两种入口各自的请求依赖，保持会话缓存及账号绑定，保留浏览器 Session 和云控权限限制。
 
 Agents 的 `execution_discovery.py` 拥有账号项目发现、登记和创建对话的 Mac 任务边界，`execution_native_http.py` 装配专用回环凭据与租约。`studio/contracts/agent_workbench/execution.py` 保存范围与结果契约。`studio/host/workbench_worker.py` 在受信 Mac 核对项目根与 CLI 签名。工作台的 `execution/turn_records.py` 保存兼容站和独立服务共用的轮次事务原语。 `execution/project_tools.py` 持有项目文件与命令工具，运行端提供实时授权和审批回调。
 

@@ -95,7 +95,9 @@ async def receipt(request: Request, body: Receipt):
 async def snapshot(request: Request, body: LeaseRequest):
     actor = worker(request)
     app = request.app.state
-    context = await verify_follow(app.database, app.identity, actor, body.lease)
+    context = await verify_follow(
+        app.database, app.identity, actor, body.lease, enabled=app.workbench_enabled()
+    )
     return await checkpoint_snapshot(app.database, context)
 
 
@@ -105,7 +107,9 @@ async def heartbeat(request: Request, body: LeaseRequest):
     app = request.app.state
     await see_worker(app.database, actor, utc_now())
     if body.lease.operation == "agent_sources.follow":
-        await verify_follow(app.database, app.identity, actor, body.lease)
+        await verify_follow(
+            app.database, app.identity, actor, body.lease, enabled=app.workbench_enabled()
+        )
     active = await app.native_queue.heartbeat(worker_id=actor.id, lease=body.lease)
     return {"active": active}
 
@@ -114,7 +118,9 @@ async def heartbeat(request: Request, body: LeaseRequest):
 async def projection(request: Request, body: Projection):
     actor = worker(request)
     app = request.app.state
-    context = await verify_follow(app.database, app.identity, actor, body.lease)
+    context = await verify_follow(
+        app.database, app.identity, actor, body.lease, enabled=app.workbench_enabled()
+    )
     applied = await project_frame(
         app.database,
         context,
@@ -131,7 +137,9 @@ async def projection(request: Request, body: Projection):
 async def cycle(request: Request, body: Cycle):
     actor = worker(request)
     app = request.app.state
-    context = await verify_follow(app.database, app.identity, actor, body.lease)
+    context = await verify_follow(
+        app.database, app.identity, actor, body.lease, enabled=app.workbench_enabled()
+    )
     await report_cycle(
         app.database,
         context,
