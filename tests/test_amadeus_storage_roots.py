@@ -51,7 +51,6 @@ async def test_website_skill_load_uses_its_injected_catalog(tmp_path, monkeypatc
     import httpx
     from tests.test_amadeus import _test_user
 
-
     source = tmp_path / "skill-source"
     source.mkdir()
     (source / "SKILL.md").write_text("# Controlled fixture")
