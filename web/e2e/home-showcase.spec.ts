@@ -169,16 +169,21 @@ test.describe("touch folder selection", () => {
   }) => {
     await page.goto("/home");
     await expect(page.getByRole("heading", { name: "AI 应用" })).toBeVisible();
-    for (const name of [
-      "视觉与叙事，3 个应用",
-      "知识与表达，2 个应用",
-      "影像与声音，3 个应用",
-      "开发与协作，2 个应用",
-    ]) {
-      const trigger = page.getByRole("button", { name, exact: true });
+    for (const [name, count] of [
+      ["视觉与叙事", 3],
+      ["知识与表达", 2],
+      ["影像与声音", 3],
+      ["开发与协作", 1],
+    ] as const) {
+      const trigger = page.getByRole("button", {
+        name: `${name}，${count} 个应用`,
+        exact: true,
+      });
       await trigger.click();
       const folder = page.locator('.home-folder[data-open="true"]');
-      for (const paper of await folder.locator(".home-folder-paper").all()) {
+      const papers = folder.locator(".home-folder-paper");
+      await expect(papers).toHaveCount(count);
+      for (const paper of await papers.all()) {
         const box = await paper.boundingBox();
         expect(box!.width).toBeGreaterThanOrEqual(44);
         expect(box!.height).toBeGreaterThanOrEqual(44);
