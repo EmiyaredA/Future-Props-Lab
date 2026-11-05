@@ -13,12 +13,14 @@ from studio.apps.model_service.catalog_migration import (
     inventory,
 )
 from studio.apps.model_service.storage.migration_history import DATASETS as HISTORY
+from studio.apps.model_service.storage.migration_history import maintenance_datasets
 from studio.apps.model_service.storage.migration_originals import (
     ATTACHMENTS,
     INFERENCE,
     PLAYGROUND_TASKS,
 )
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.models.model_templates import ModelTemplateSyncItem
 from studio.apps.model_service.transport.migration_originals_http import (
     mount_originals,
     mount_relationships,
@@ -67,8 +69,9 @@ def mount_catalog(app, plan, sessions, *, source=None, cipher=None):
     return app
 
 
-def mount_history(app, plan, sessions, *, root, source=None):
-    mount_project_history(app, plan, sessions, PREFIX, HISTORY, ModelsImportReceipt, source=source)
+def mount_history(app, plan, sessions, *, root, source=None, cipher=None):
+    datasets = maintenance_datasets(plan, legacy=source is not None, cipher=cipher)
+    mount_project_history(app, plan, sessions, PREFIX, datasets, ModelsImportReceipt, source=source)
     mount_relationships(app, sessions, source=source)
     for scope in (INFERENCE, ATTACHMENTS, PLAYGROUND_TASKS):
         mount_originals(app, plan, sessions, scope, root=root, source=source)
@@ -87,6 +90,9 @@ def create_import_app(*, plan, state_root, secret_key):
         *settings.MODELS,
         ModelsImportReceipt,
     )
-    app, database = import_app(plan, state_root, "models", models, MIGRATIONS, **TRANSPORT)
-    mount_history(app, plan, database.sessions, root=database.root)
+    account_models = tuple(model for model in models if model is not ModelTemplateSyncItem)
+    app, database = import_app(
+        plan, state_root, "models", models, MIGRATIONS, account_models=account_models, **TRANSPORT
+    )
+    mount_history(app, plan, database.sessions, root=database.root, cipher=cipher)
     return mount_catalog(app, plan, database.sessions, cipher=cipher)

@@ -187,21 +187,28 @@ async def account_defaults(db, owner, item):
     return AccountDefaults(owner_user_id=owner, model_ids=item.payload)
 
 
+def verify_role_template(cipher, payload):
+    RoleModelTemplate.model_validate(payload)
+    for provider in payload.get("providers", []):
+        if provider.get("api_key") or provider.get("clear_api_key"):
+            raise conflict("migration_model_policy_invalid")
+        ciphertext = provider.get("api_key_ciphertext", "")
+        if ciphertext:
+            if not isinstance(ciphertext, str):
+                raise conflict("migration_model_credential_unreadable")
+            if cipher is not None:
+                cipher.decrypt(ciphertext)
+
+
 def platform_policy(cipher, item):
     definition = POLICIES.get(item.key)
     if definition is None:
         raise conflict("migration_model_policy_unassigned")
     model, key_column, identifier, schema = definition
-    schema.model_validate(item.payload)
     if model is RoleTemplate:
-        for provider in item.payload.get("providers", []):
-            if provider.get("api_key") or provider.get("clear_api_key"):
-                raise conflict("migration_model_policy_invalid")
-            ciphertext = provider.get("api_key_ciphertext", "")
-            if ciphertext:
-                if not isinstance(ciphertext, str):
-                    raise conflict("migration_model_credential_unreadable")
-                cipher.decrypt(ciphertext)
+        verify_role_template(cipher, item.payload)
+    else:
+        schema.model_validate(item.payload)
     return model(**{key_column: identifier}, payload=item.payload)
 
 

@@ -5,6 +5,8 @@ from typing import Literal
 
 from pydantic import Field, JsonValue
 
+from studio.apps.model_service.storage.migration_governance import DATASETS as GOVERNANCE
+from studio.apps.model_service.storage.migration_governance import bind_governance
 from studio.apps.model_service.storage.migration_inference import DATASETS as INFERENCE
 from studio.apps.model_service.storage.migration_playground import DATASETS as PLAYGROUND
 from studio.apps.model_service.storage.migration_playground_tasks import DATASETS as TEST_TASKS
@@ -39,9 +41,14 @@ class Calls(MigrationBatch[Call]):
     dataset: Literal["models.call-logs"]
 
 
-DATASETS = (
+OWNED_HISTORY = (
     ProjectDataset("models.call-logs", LlmCallLog, Call, Calls, MigrationPage[Calls]),
     *INFERENCE,
     *PLAYGROUND,
     *TEST_TASKS,
 )
+DATASETS = (*OWNED_HISTORY, *GOVERNANCE)
+
+
+def maintenance_datasets(plan, *, legacy, cipher):
+    return (*OWNED_HISTORY, *bind_governance(plan, legacy=legacy, cipher=cipher))

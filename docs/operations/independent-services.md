@@ -336,6 +336,8 @@ uv run python -m scripts.website.migrate_model_catalog --plan "$plan" \
 
 旧站的生成测试可能引用 Assets 内的文件。制作迁移来源前，在隔离旧站副本中用原账号调用 `GET /v1/model-test/generation-assets/backfill-status`，通过 `POST /v1/model-test/generation-assets/backfill` 把旧引用转为 Models 私有素材。复查待回填、缺失文件和活动任务计数。停掉隔离副本后重新封存并据此生成迁移计划，另保留未经转换的原始回滚快照。存在未解决引用时，Models 的源和目标关系验收返回冲突。
 
+同一命令还导入模板同步历史和额度记录。同步批次以原发起人分组，目标账号保持原值。目标用原配置密钥验证快照中的供应商凭据。缺少新版签名授权的旧同步任务由正常执行器跳过待处理项，保留已完成结果。额度记录校验账号和任务归属。仍占用额度的旧 Visual、视觉验收和 Galgame 转录任务必须在封存前结清，已结清记录随历史导入。Models 启动时释放旧实例的同步请求额度并继续核对自有任务。
+
 ### 封存来源覆盖检查
 
 用 `uv run python -m scripts.website.migration_coverage --snapshot "$sealed_snapshot" --manifest-sha256 "$manifest_sha256" --plan "$plan"` 核对来源实际表和已登记的数据集。报告只列表、归属、分区和记录数。有记录的未迁移表、未归属表和待重建索引会以退出码 2 阻止通过。来源覆盖仍需和目标导入回执、文件摘要及旧站恢复结果一起验收。
