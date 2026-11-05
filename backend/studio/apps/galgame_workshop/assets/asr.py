@@ -9,16 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.capabilities.asset_store import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from app.llm.models import (
-    ModelEntry,
-    ModelProvider,
-)
-from app.llm.providers._senseaudio import SenseAudioProviderError
-from app.llm.providers.senseaudio_asr import (
-    SenseAudioAsrFileTooLarge,
-)
-from app.llm.providers.transcription import transcribe_model_audio
-from app.llm.transcription_catalog import supports_asr, transcription_model_ready
 from app.runtime.credentials import decrypt_secret
 from studio.apps.galgame_workshop.assets.asr_records import AsrRecords, transcription_task_out
 from studio.apps.galgame_workshop.assets.transcript_records import write_transcript
@@ -37,6 +27,11 @@ from studio.apps.galgame_workshop.storage.models import (
     GalgameAssetTranscriptionTask,
 )
 from studio.apps.galgame_workshop.story.story import GalgameStoryDocuments
+from studio.apps.model_service.catalog.transcription import supports_asr, transcription_model_ready
+from studio.apps.model_service.providers._senseaudio import SenseAudioProviderError
+from studio.apps.model_service.providers.senseaudio_asr import SenseAudioAsrFileTooLarge
+from studio.apps.model_service.providers.transcription import transcribe_model_audio
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.config.settings import Settings
 from studio.runtime.database.ownership import bind_owner
 from studio.runtime.tasks.polling import PollingTaskRunner

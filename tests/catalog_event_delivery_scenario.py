@@ -18,10 +18,9 @@ from studio.assembly.independent.identity.application import create_app
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.runtime.database.migrations import apply
 
-assert not any(name.startswith(("app.llm", "app.apps")) for name in sys.modules)
+assert not any(name.startswith(("studio.apps.model_service", "app.apps")) for name in sys.modules)
 assert "studio.runtime.database.website" not in sys.modules
 
-from app.llm.models import ModelProvider  # noqa: E402
 from studio.apps.model_service.account_events import (  # noqa: E402
     CatalogEventClient,
     CatalogEventTransportError,
@@ -31,12 +30,13 @@ from studio.apps.model_service.provisioning import CatalogProvisioning  # noqa: 
 from studio.apps.model_service.storage.migrations.registry import (  # noqa: E402
     MIGRATIONS as MODELS_MIGRATIONS,  # noqa: E402
 )
+from studio.apps.model_service.storage.models.model_service import ModelProvider  # noqa: E402
 from studio.apps.model_service.storage.service_models import (  # noqa: E402
     ACCOUNT_MODELS,
     MODELS,
     CatalogProvisioningReceipt,
 )
-from studio.apps.model_service.templates import (  # noqa: E402
+from studio.apps.model_service.templates.policy import (  # noqa: E402
     RoleTemplates,
     initialize_account_catalog,
 )

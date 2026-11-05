@@ -3,15 +3,18 @@
 from sqlalchemy import select, update
 from sqlalchemy.dialects.sqlite import insert
 
-from app.demo_runtime.engine import DEFAULT_CONFIG, MOCK_BASE_URL, SERVICE_IDS
-from app.demo_runtime.schemas import DemoConfig, DemoConfigIn
-from app.llm.catalog.service import ModelCatalogService
-from app.llm.models import ModelEntry, ModelProvider
 from app.runtime.credentials import encrypt_secret
 from studio.apps.model_service.admission.task_usage import OwnedCatalogTaskUsage
 from studio.apps.model_service.audit.audit import add_event
+from studio.apps.model_service.catalog.service import ModelCatalogService
+from studio.apps.model_service.demonstration.execution import (
+    DEFAULT_CONFIG,
+    SERVICE_IDS,
+)
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.model_service.storage.service_models import DemoSetting
 from studio.contracts.identity.errors import AccountError
+from studio.contracts.model_service.demo import MOCK_BASE_URL, DemoConfig, DemoConfigIn
 from studio.runtime.time import utc_now
 
 from .defaults import OwnedCatalogDefaults

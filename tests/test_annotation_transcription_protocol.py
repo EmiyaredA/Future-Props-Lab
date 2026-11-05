@@ -16,17 +16,21 @@ from tests.test_independent_annotation import PROJECTS, ROOT
 from tests.test_independent_project_catalog import authorize
 
 from app.capabilities.asset_store.library import AssetLibrary
-from app.llm.models import LlmCallLog, ModelEntry, ModelProvider, ModelTestTranscriptionTask
-from app.llm.providers.transcription import TranscriptionResult
-from app.llm.routes.models.model_test_transcription import router as task_router
 from app.runtime.credentials import encrypt_secret
 from studio.apps.audio_annotation.storage.migrations.registry import (
     MIGRATIONS as ANNOTATION_MIGRATIONS,
 )
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.model_service.annotation_transcription import router
+from studio.apps.model_service.providers.transcription import TranscriptionResult
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
+from studio.apps.model_service.storage.models.model_test import ModelTestTranscriptionTask
 from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.apps.model_service.transport.website.models.model_test_transcription import (
+    router as task_router,
+)
 from studio.assembly.independent.audio_annotation.application import create_app
 from studio.contracts.model_service.annotation import PREFIX
 from studio.runtime.database.migrations import apply
@@ -102,7 +106,9 @@ async def test_models_verify_exact_wav_and_replay_a_finished_attempt(
         received.append(kwargs["byte_size"])
         return TranscriptionResult(text="retained provider result")
 
-    monkeypatch.setattr("app.llm.annotation_transcription.transcribe_model_audio", provider)
+    monkeypatch.setattr(
+        "studio.apps.model_service.transcription.annotation.transcribe_model_audio", provider
+    )
     payload = audio()
     async with case.assets.state.database.sessions(info={"owner_user_id": case.viewer}) as session:
         asset = await AssetLibrary(session, case.assets.state.settings).store_upload(
@@ -192,7 +198,7 @@ async def test_completed_task_original_import_replays_assets_receipt(
     source = inputs / "model-task.wav"
     source.write_bytes(data)
     monkeypatch.setattr(
-        "app.llm.playground.transcription.get_settings",
+        "studio.apps.model_service.playground.transcription.get_settings",
         lambda: SimpleNamespace(account_model_test_path=lambda *_parts: inputs),
     )
     case.identity.state.identity_options["service_credentials"]["annotation"] = TOKEN

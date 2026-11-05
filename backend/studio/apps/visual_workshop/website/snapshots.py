@@ -24,7 +24,7 @@ from app.capabilities.asset_store.models import (
 )
 from app.capabilities.asset_store.project_transactions import importing_project_layout
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION
-from app.llm.visual_catalog import resolve_snapshot_models, snapshot_model_labels
+from studio.apps.model_service.catalog.visual import resolve_snapshot_models, snapshot_model_labels
 from studio.apps.visual_workshop.acceptance.snapshots import export_acceptance, import_acceptance
 from studio.apps.visual_workshop.outputs.snapshots import export_outputs, import_outputs
 from studio.apps.visual_workshop.schemas.workshop import (

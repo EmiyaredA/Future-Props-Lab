@@ -12,15 +12,26 @@ from app.console.routes.creative_workshop import router as creative_workshop_rou
 from app.console.routes.file_management import router as file_management_router
 from app.console.routes.platform_governance import router as platform_governance_router
 from app.console.routes.registration import router as registration_router
-from app.demo_runtime.routes import call_router as demo_call_router
-from app.demo_runtime.routes import router as demo_runtime_router
 from app.integrations.external.routes import router as external_connections_router
 from app.integrations.routes import router as integrations_router
-from app.llm.routes.local_models import router as local_models_router
-from app.llm.routes.model_capacity import ModelCapacity
-from app.llm.routes.model_inference import router as model_inference_router
-from app.llm.routes.model_templates import router as model_templates_router
-from app.llm.routes.models import (
+from app.tool_navigation.routes import router as tool_navigation_router
+from app.tool_navigation.video_download_routes import router as video_download_router
+from studio.apps.agent_workbench.transport.website import router as agent_workbench_router
+from studio.apps.audio_annotation.routes import router as audio_annotation_router
+from studio.apps.director_desk.transport.website import router as director_desk_router
+from studio.apps.galgame_workshop.transport.website import router as galgame_workshop_router
+from studio.apps.interview_assistant.transport.website import router as interview_assistant_router
+from studio.apps.model_service.transport.website.demo import call_router as demo_call_router
+from studio.apps.model_service.transport.website.demo import router as demo_runtime_router
+from studio.apps.model_service.transport.website.local_models import router as local_models_router
+from studio.apps.model_service.transport.website.model_capacity import ModelCapacity
+from studio.apps.model_service.transport.website.model_inference import (
+    router as model_inference_router,
+)
+from studio.apps.model_service.transport.website.model_templates import (
+    router as model_templates_router,
+)
+from studio.apps.model_service.transport.website.models import (
     call_logs,
     catalog,
     diagnostics,
@@ -30,13 +41,6 @@ from app.llm.routes.models import (
     model_test_transcription,
     suppliers,
 )
-from app.tool_navigation.routes import router as tool_navigation_router
-from app.tool_navigation.video_download_routes import router as video_download_router
-from studio.apps.agent_workbench.transport.website import router as agent_workbench_router
-from studio.apps.audio_annotation.routes import router as audio_annotation_router
-from studio.apps.director_desk.transport.website import router as director_desk_router
-from studio.apps.galgame_workshop.transport.website import router as galgame_workshop_router
-from studio.apps.interview_assistant.transport.website import router as interview_assistant_router
 from studio.apps.motion_compositor.transport.website.compatibility import (
     router as motion_compositor_router,
 )

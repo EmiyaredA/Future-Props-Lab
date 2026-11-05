@@ -387,7 +387,7 @@ async def test_storage_journal_verifies_other_accounts_assets_and_resumes(tmp_pa
 
 
 async def test_shared_template_can_target_one_account_without_disclosing_private_catalog():
-    from app.console.governance.model_template_sync import ModelTemplateSyncRunner
+    from studio.apps.model_service.templates.website_sync import ModelTemplateSyncRunner
 
     admin, _ = await account_client(admin=True)
     owner, owner_id = await account_client()

@@ -6,10 +6,10 @@ from uuid import NAMESPACE_URL, uuid5
 import httpx
 from sqlalchemy import select, text
 
-from app.llm.catalog.service import ModelCatalogService
 from studio.apps.model_service.admission.task_usage import OwnedCatalogTaskUsage
 from studio.apps.model_service.audit.audit import add_event
 from studio.apps.model_service.audit.audit_client import PreparedChange
+from studio.apps.model_service.catalog.service import ModelCatalogService
 from studio.apps.model_service.storage.demo_install_records import DemoInstallation
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.identity.errors import AccountError

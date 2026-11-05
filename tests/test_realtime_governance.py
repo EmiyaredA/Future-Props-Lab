@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from starlette.websockets import WebSocketDisconnect
 
-from app.llm.realtime import session as realtime
+from studio.apps.model_service.realtime import session as realtime
 from website_test_support import SessionLocal
 
 

@@ -5,30 +5,38 @@ from datetime import datetime
 from sqlalchemy import JSON, CheckConstraint, DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.llm.models import (
-    LlmCallLog,
+from studio.apps.model_service.orm import ModelsBase
+from studio.apps.model_service.storage.assistant_model_records import VisualAssistantModelRun
+from studio.apps.model_service.storage.demo_install_records import DemoInstallation
+from studio.apps.model_service.storage.integration_records import IntegrationCapacity
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
+from studio.apps.model_service.storage.models.local_models import (
     LocalModelInstallation,
     LocalModelOperation,
-    ModelCatalogState,
-    ModelEntry,
+)
+from studio.apps.model_service.storage.models.model_inference import (
     ModelInferenceAsset,
     ModelInferenceTask,
+)
+from studio.apps.model_service.storage.models.model_service import (
+    ModelCatalogState,
+    ModelEntry,
     ModelProvider,
-    ModelSupplier,
+)
+from studio.apps.model_service.storage.models.model_supplier import ModelSupplier
+from studio.apps.model_service.storage.models.model_templates import (
     ModelTemplateSyncItem,
     ModelTemplateSyncJob,
+)
+from studio.apps.model_service.storage.models.model_test import (
     ModelTestAttachment,
     ModelTestConversation,
     ModelTestGenerationAsset,
     ModelTestGenerationTask,
     ModelTestMessage,
     ModelTestTranscriptionTask,
-    RuntimeAdmission,
 )
-from studio.apps.model_service.orm import ModelsBase
-from studio.apps.model_service.storage.assistant_model_records import VisualAssistantModelRun
-from studio.apps.model_service.storage.demo_install_records import DemoInstallation
-from studio.apps.model_service.storage.integration_records import IntegrationCapacity
+from studio.apps.model_service.storage.models.runtime_admission import RuntimeAdmission
 from studio.apps.model_service.storage.native_records import NATIVE_MODELS
 from studio.apps.model_service.storage.visual_generation_records import (
     VisualProviderBatch,

@@ -6,7 +6,7 @@ import httpx
 import pytest
 from sqlalchemy import delete
 
-from app.llm.models import LlmCallLog
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
 from website_test_support import SessionLocal, app
 
 

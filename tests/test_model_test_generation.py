@@ -5,8 +5,8 @@ from uuid import uuid4
 import httpx
 import pytest
 
-from app.llm.playground.generation_runner import ModelTestGenerationRunner
-from app.llm.providers._senseaudio import ProviderTaskStatus
+from studio.apps.model_service.playground.generation_runner import ModelTestGenerationRunner
+from studio.apps.model_service.providers._senseaudio import ProviderTaskStatus
 from website_test_support import SessionLocal, app
 
 
@@ -20,8 +20,12 @@ async def test_image_generation_test_is_created_and_managed_through_v1_api(
     async def fake_status(**_kwargs) -> ProviderTaskStatus:
         return ProviderTaskStatus(status="failed", error_message="测试上游失败")
 
-    monkeypatch.setattr("app.llm.playground.generation_runner.submit_generation_task", fake_create)
-    monkeypatch.setattr("app.llm.playground.generation_runner.poll_generation_task", fake_status)
+    monkeypatch.setattr(
+        "studio.apps.model_service.playground.generation_runner.submit_generation_task", fake_create
+    )
+    monkeypatch.setattr(
+        "studio.apps.model_service.playground.generation_runner.poll_generation_task", fake_status
+    )
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         catalog = (await client.get("/v1/model-providers")).json()
@@ -121,10 +125,15 @@ async def test_video_generation_accepts_uploaded_reference_audio_and_video(
         suffix = "audio.mp3" if mime_type.startswith("audio/") else "video.mp4"
         return f"https://temp.sh/{suffix}"
 
-    monkeypatch.setattr("app.llm.playground.generation_runner.submit_generation_task", fake_create)
-    monkeypatch.setattr("app.llm.playground.generation_runner.poll_generation_task", fake_status)
     monkeypatch.setattr(
-        "app.llm.playground.generation_runner.upload_temporary_reference", fake_upload
+        "studio.apps.model_service.playground.generation_runner.submit_generation_task", fake_create
+    )
+    monkeypatch.setattr(
+        "studio.apps.model_service.playground.generation_runner.poll_generation_task", fake_status
+    )
+    monkeypatch.setattr(
+        "studio.apps.model_service.playground.generation_runner.upload_temporary_reference",
+        fake_upload,
     )
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:

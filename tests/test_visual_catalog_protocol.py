@@ -19,9 +19,6 @@ from tests.test_independent_project_catalog import authorize
 
 from app.capabilities.agents.harness import ToolExecutionContext
 from app.capabilities.asset_store.library import AssetLibrary
-from app.llm.generation_runtime import ImmediateGenerationResult
-from app.llm.models import ModelEntry, ModelProvider
-from app.llm.task_outcomes import SUBMISSION_INTERRUPTED_MESSAGE
 from studio.apps.agent_runtime.storage.migrations.registry import (
     MIGRATIONS as AGENT_RUNTIME_MIGRATIONS,
 )
@@ -32,7 +29,10 @@ from studio.apps.media_rendering.settings import RenderingSettings
 from studio.apps.media_rendering.storage.migrations.registry import (
     MIGRATIONS as RENDERING_MIGRATIONS,
 )
+from studio.apps.model_service.generation.driver import ImmediateGenerationResult
+from studio.apps.model_service.generation.outcomes import SUBMISSION_INTERRUPTED_MESSAGE
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
 from studio.apps.model_service.storage.visual_generation_records import VisualProviderTask
 from studio.apps.model_service.transport.visual_catalog_http import router
@@ -410,7 +410,7 @@ async def verify_provider_result(case, http, models, body, task_id, monkeypatch)
         return len(original), "image", "image/png", ".png"
 
     monkeypatch.setattr(
-        "app.llm.generation_runtime.driver.decrypt_secret", lambda _value: "fixture"
+        "studio.apps.model_service.generation.driver.decrypt_secret", lambda _value: "fixture"
     )
     monkeypatch.setattr(
         "studio.apps.model_service.visual.visual_generation_runner.submit_visual_generation", submit

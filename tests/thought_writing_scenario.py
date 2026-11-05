@@ -10,14 +10,16 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi import FastAPI
 from sqlalchemy import select
 
-from app.llm.models import LlmCallLog, ModelEntry, ModelProvider, RuntimeAdmission
-from app.llm.provider_transports import ProviderTransports
 from studio.apps.identity.accounts import create_account
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.identity.storage.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
 from studio.apps.model_service.admission.admission import ModelAdmission
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS as MODEL_MIGRATIONS
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
+from studio.apps.model_service.storage.models.runtime_admission import RuntimeAdmission
 from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.apps.model_service.transport.provider_bindings import ProviderTransports
 from studio.apps.model_service.writing import router
 from studio.apps.thought_workshop.assistant import PreparedWriting
 from studio.apps.thought_workshop.writing_models import HttpWritingModels

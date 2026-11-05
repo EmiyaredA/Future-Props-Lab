@@ -16,17 +16,14 @@ import pytest
 from sqlalchemy import select, text
 
 from app.capabilities.asset_store.errors import AssetError
-from app.llm.inference.assets import InferenceAssets
-from app.llm.library_inputs import library_inputs
-from app.llm.models import (
-    ModelEntry,
-    ModelInferenceAsset,
-    ModelProvider,
-    ModelTestTranscriptionTask,
-)
-from app.llm.playground.transcription import ModelTestTranscription
+from studio.apps.model_service.inference.assets import InferenceAssets
+from studio.apps.model_service.library.inputs import library_inputs
 from studio.apps.model_service.library_inputs import HttpLibraryInputs
+from studio.apps.model_service.playground.transcription import ModelTestTranscription
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.models.model_inference import ModelInferenceAsset
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
+from studio.apps.model_service.storage.models.model_test import ModelTestTranscriptionTask
 from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.delegation import RequestGrant, permitted, target_permission_path
@@ -330,8 +327,8 @@ def test_fresh_input_consumers_do_not_load_foreign_orm_or_global_database():
             "-c",
             """
 import sys
-import app.llm.inference.assets
-import app.llm.playground.transcription
+import studio.apps.model_service.inference.assets
+import studio.apps.model_service.playground.transcription
 import studio.apps.model_service.library_inputs
 assert 'studio.runtime.database.website' not in sys.modules
 assert 'studio.assembly.website.models' not in sys.modules

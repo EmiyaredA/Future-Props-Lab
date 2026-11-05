@@ -9,18 +9,23 @@ from PIL import Image
 from tests.test_generation_task_driver import FakeStore, _driver, _task
 
 from app.capabilities.asset_store.models import VisualAsset
-from app.llm.inference.catalog import normalize_parameters
-from app.llm.models import (
-    ModelEntry,
-    ModelProvider,
+from app.runtime.credentials import encrypt_secret
+from studio.apps.model_service.inference.catalog import normalize_parameters
+from studio.apps.model_service.playground.generation import ModelTestGeneration
+from studio.apps.model_service.providers.seedance_parameters import (
+    normalize_video_parameters,
+    video_capabilities,
+)
+from studio.apps.model_service.providers.seedance_references import (
+    SeedanceReference,
+    validate_seedance_references,
+)
+from studio.apps.model_service.providers.volcengine_video import create_task, get_task
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
+from studio.apps.model_service.storage.models.model_test import (
     ModelTestGenerationAsset,
     ModelTestGenerationTask,
 )
-from app.llm.playground.generation import ModelTestGeneration
-from app.llm.providers.seedance_parameters import normalize_video_parameters, video_capabilities
-from app.llm.providers.seedance_references import SeedanceReference, validate_seedance_references
-from app.llm.providers.volcengine_video import create_task, get_task
-from app.runtime.credentials import encrypt_secret
 from studio.apps.visual_workshop.storage.models import VisualWorkshopProject
 from studio.apps.visual_workshop.website.generation import GenerationError, VisualGeneration
 from studio.assembly.website.models import bind_owner
@@ -198,9 +203,9 @@ def test_independent_inference_uses_identical_video_version_rules():
 async def test_all_video_entry_points_inline_ark_audio_and_preserve_provider_neutral_content(
     monkeypatch,
 ):
-    from app.llm import visual_generation_submission as visual_submission
-    from app.llm.inference import runner as inference_runner
-    from app.llm.playground import generation_runner as test_runner
+    from studio.apps.model_service.generation import visual_submission as visual_submission
+    from studio.apps.model_service.inference import runner as inference_runner
+    from studio.apps.model_service.playground import generation_runner as test_runner
     from studio.apps.visual_workshop.website import generation_runner as visual_runner
 
     captured = []
@@ -285,7 +290,7 @@ async def test_ark_driver_recovers_without_resubmitting_and_retries_materializat
         raise AssertionError("must not resubmit")
 
     async def poll(task):
-        from app.llm.providers._senseaudio import ProviderTaskStatus
+        from studio.apps.model_service.providers._senseaudio import ProviderTaskStatus
 
         polls.append(task)
         return ProviderTaskStatus(status="completed", result_url="https://cdn.example/out.mp4")

@@ -10,12 +10,12 @@ import pytest
 from pydantic import ValidationError
 from tests.test_generation_task_driver import FakeStore, _driver, _task
 
-from app.llm.inference.catalog import normalize_parameters
-from app.llm.models import ModelEntry, ModelProvider
-from app.llm.playground.generation import ModelTestGeneration
-from app.llm.providers._senseaudio import ProviderTaskStatus
-from app.llm.providers.autodl_video import create_task, get_task
-from app.llm.providers.autodl_workflows import (
+from app.runtime.credentials import encrypt_secret
+from studio.apps.model_service.inference.catalog import normalize_parameters
+from studio.apps.model_service.playground.generation import ModelTestGeneration
+from studio.apps.model_service.providers._senseaudio import ProviderTaskStatus
+from studio.apps.model_service.providers.autodl_video import create_task, get_task
+from studio.apps.model_service.providers.autodl_workflows import (
     MOTION,
     PREFIX,
     WORKFLOWS,
@@ -24,7 +24,7 @@ from app.llm.providers.autodl_workflows import (
     prepare_payload,
     validate_references,
 )
-from app.runtime.credentials import encrypt_secret
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.visual_workshop.schemas.workshop import VisualCanvasVideoGenerationDraft
 from studio.apps.visual_workshop.storage.models import VisualWorkshopProject
 from studio.apps.visual_workshop.website.generation import VisualGeneration
@@ -249,7 +249,10 @@ async def test_options_and_all_admission_paths_share_the_contract(model_slug):
 
     from app.capabilities.asset_store.models import VisualAsset
     from app.capabilities.asset_store.storage import AssetStorage
-    from app.llm.models import ModelTestGenerationAsset, ModelTestGenerationTask
+    from studio.apps.model_service.storage.models.model_test import (
+        ModelTestGenerationAsset,
+        ModelTestGenerationTask,
+    )
     from studio.apps.visual_workshop.storage.models import VisualGenerationTask
     from studio.config.settings import get_settings
 
@@ -404,9 +407,9 @@ async def test_options_and_all_admission_paths_share_the_contract(model_slug):
 
 @pytest.mark.asyncio
 async def test_every_runner_inlines_motion_video_and_audio_without_temporary_upload(monkeypatch):
-    from app.llm import visual_generation_submission as visual_submission
-    from app.llm.inference import runner as inference_module
-    from app.llm.playground import generation_runner as test_module
+    from studio.apps.model_service.generation import visual_submission as visual_submission
+    from studio.apps.model_service.inference import runner as inference_module
+    from studio.apps.model_service.playground import generation_runner as test_module
     from studio.apps.visual_workshop.website import generation_runner as visual_module
 
     captured = []

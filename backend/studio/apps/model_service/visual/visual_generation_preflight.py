@@ -5,9 +5,15 @@ import shutil
 import httpx
 
 from app.capabilities.asset_store.policy import REFERENCE_IMAGE_MIME_TYPES
-from app.llm.providers.seedance_references import SeedanceReference, validate_seedance_references
-from app.llm.visual_generation_model import VisualGenerationValidationError, select_visual_model
-from app.llm.visual_generation_payload import prepare_visual_payload
+from studio.apps.model_service.catalog.visual_generation import (
+    VisualGenerationValidationError,
+    select_visual_model,
+)
+from studio.apps.model_service.generation.visual_payload import prepare_visual_payload
+from studio.apps.model_service.providers.seedance_references import (
+    SeedanceReference,
+    validate_seedance_references,
+)
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.visual_workshop.visual_generation import VisualModelChoice
 from studio.runtime.http.capability_client import CapabilityUnavailable

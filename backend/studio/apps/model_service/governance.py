@@ -18,7 +18,7 @@ from studio.contracts.model_service.schemas.runtime_quotas import RuntimeQuotasI
 
 from .policy_changes import save_quotas, save_template
 from .template_sync import job_view
-from .templates import RoleTemplates
+from .templates.policy import RoleTemplates
 
 router = APIRouter()
 

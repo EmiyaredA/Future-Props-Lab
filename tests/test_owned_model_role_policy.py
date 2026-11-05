@@ -11,20 +11,25 @@ from pathlib import Path
 import pytest
 from sqlalchemy import select
 
-from app.llm.catalog.template_reconciliation import apply_template
-from app.llm.models import ModelCatalogState, ModelEntry, ModelInferenceTask, ModelProvider
 from app.runtime.credentials import decrypt_secret
 from studio.apps.model_service.admission.task_usage import OwnedCatalogTaskUsage
+from studio.apps.model_service.catalog.template_reconciliation import apply_template
 from studio.apps.model_service.defaults import OwnedCatalogDefaults
 from studio.apps.model_service.provisioning import CatalogProvisioning
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.models.model_inference import ModelInferenceTask
+from studio.apps.model_service.storage.models.model_service import (
+    ModelCatalogState,
+    ModelEntry,
+    ModelProvider,
+)
 from studio.apps.model_service.storage.service_models import (
     ACCOUNT_MODELS,
     MODELS,
     AccountDefaults,
     RoleTemplate,
 )
-from studio.apps.model_service.templates import RoleTemplates, initialize_account_catalog
+from studio.apps.model_service.templates.policy import RoleTemplates, initialize_account_catalog
 from studio.contracts.identity.errors import AccountError
 from studio.contracts.model_service.catalog_events import CatalogDelivery
 from studio.contracts.model_service.schemas.model_templates import RoleModelTemplateIn
@@ -328,7 +333,7 @@ def test_owned_role_policy_imports_no_recovery_database_or_foreign_orm(tmp_path)
         [
             sys.executable,
             "-c",
-            "import sys; import studio.apps.model_service.templates; "
+            "import sys; import studio.apps.model_service.templates.policy; "
             "assert 'studio.runtime.database.website' not in sys.modules; "
             "assert not any(n.startswith(('app.console.models', 'app.apps.')) "
             "for n in sys.modules)",

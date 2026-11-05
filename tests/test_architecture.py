@@ -62,7 +62,9 @@ REMOVED_BACKEND_IMPORT_PREFIXES = (
     "app.core",
     "app.files",
     "app.media_rendering",
-    "app.llm.transcription",
+    "app.llm",
+    "app.demo_runtime",
+    "app.capabilities.transcription",
 )
 BUSINESS_BACKEND_PACKAGES = (
     "demo_runtime",
@@ -80,7 +82,7 @@ def _backend_route_files() -> list[Path]:
         REPO_ROOT / "backend/studio/apps/audio_annotation/routes",
         REPO_ROOT / "backend/studio/apps/audio_annotation/transport",
         BACKEND_APP / "console" / "routes",
-        BACKEND_APP / "llm" / "routes",
+        REPO_ROOT / "backend/studio/apps/model_service/transport/website",
         BACKEND_APP / "capabilities" / "asset_store" / "routes",
         *(REPO_ROOT / "backend/studio/apps").glob("*/transport/website"),
     ]
@@ -344,7 +346,7 @@ def test_business_modules_do_not_depend_on_fastapi_upload_file() -> None:
     violations: list[str] = []
     route_roots = [
         BACKEND_APP / "console" / "routes",
-        BACKEND_APP / "llm" / "routes",
+        REPO_ROOT / "backend/studio/apps/model_service/transport/website",
         BACKEND_APP / "capabilities" / "asset_store" / "routes",
         *(REPO_ROOT / "backend/studio/apps").glob("*/transport/website"),
     ]
@@ -401,7 +403,7 @@ def test_background_runner_lifecycle_is_not_owned_by_llm() -> None:
 
 def test_generation_features_use_the_shared_task_driver() -> None:
     runners = (
-        BACKEND_APP / "llm" / "playground" / "generation_runner.py",
+        REPO_ROOT / "backend/studio/apps/model_service/playground/generation_runner.py",
         REPO_ROOT / "backend/studio/apps/visual_workshop/website/generation_runner.py",
     )
     violations = [
@@ -423,7 +425,7 @@ def test_secret_hints_and_provider_categories_have_one_owner() -> None:
     ]
     category_violations = [
         _relative(path)
-        for path in _python_files(BACKEND_APP / "llm" / "catalog")
+        for path in _python_files(REPO_ROOT / "backend/studio/apps/model_service/catalog")
         if path.name != "metadata.py"
         and "def _categories_for_provider" in path.read_text(encoding="utf-8")
     ]
@@ -462,8 +464,8 @@ def test_orm_models_only_depend_on_allowed_runtime_primitives() -> None:
             else []
         ),
         *(
-            (BACKEND_APP / "llm" / "models").rglob("*.py")
-            if (BACKEND_APP / "llm" / "models").is_dir()
+            (REPO_ROOT / "backend/studio/apps/model_service/storage/models").rglob("*.py")
+            if (REPO_ROOT / "backend/studio/apps/model_service/storage/models").is_dir()
             else []
         ),
     ]
@@ -559,7 +561,7 @@ def test_agent_harness_is_provider_independent() -> None:
         f"{_relative(path)} imports {module}"
         for path in _python_files(BACKEND_APP / "capabilities" / "agents" / "harness")
         for module in _python_imports(path)
-        if _matches_module(module, "app.llm.providers")
+        if _matches_module(module, "studio.apps.model_service.providers")
     ]
     assert not violations, "Agent Harness 不得依赖具体供应商：\n" + "\n".join(violations)
 
@@ -573,14 +575,14 @@ def test_transcription_consumers_do_not_depend_on_playground() -> None:
         )
         for path in _python_files(root)
         for module in _python_imports(path)
-        if _matches_module(module, "app.llm.playground")
+        if _matches_module(module, "studio.apps.model_service.playground")
     ]
     assert not violations, "语音能力消费者不得依赖模型测试实现：\n" + "\n".join(violations)
 
 
 def test_account_service_does_not_own_catalog_provisioning() -> None:
     imports = _python_imports(BACKEND_APP / "console" / "governance" / "service.py")
-    assert not any(_matches_module(module, "app.llm") for module in imports)
+    assert not any(_matches_module(module, "studio.apps.model_service") for module in imports)
     assert (BACKEND_APP / "console" / "governance" / "provisioning.py").is_file()
 
 
@@ -881,7 +883,7 @@ def test_documented_core_directories_exist() -> None:
         "backend/app/capabilities/asset_store",
         "backend/app/capabilities/identity",
         "backend/app/capabilities/media_rendering",
-        "backend/app/capabilities/transcription",
+        "backend/studio/apps/model_service/transcription",
         "backend/app/console",
         "backend/app/console/file_library",
         "backend/app/console/governance",
@@ -896,9 +898,9 @@ def test_documented_core_directories_exist() -> None:
         "backend/studio/apps/visual_workshop",
         "backend/studio/apps/galgame_workshop",
         "backend/studio/apps/director_desk",
-        "backend/app/llm",
+        "backend/studio/apps/model_service",
         "backend/app/integrations",
-        "backend/app/demo_runtime",
+        "backend/studio/apps/model_service/demonstration",
         "backend/app/tool_navigation",
         "db/migrations/versions",
         "docs/architecture",

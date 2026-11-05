@@ -2,7 +2,6 @@
 
 from sqlalchemy import text
 
-from app.llm.generation_state import can_recover_generation_result
 from studio.apps.visual_workshop.generation_common import GenerationError, generation_task_out
 from studio.apps.visual_workshop.generation_records import (
     GenerationRecords,
@@ -13,6 +12,7 @@ from studio.apps.visual_workshop.storage.generation_dispatch_records import (
     VisualGenerationDispatch,
 )
 from studio.apps.visual_workshop.storage.models import VisualGenerationTask
+from studio.contracts.model_service.generation_recovery import can_recover_generation_result
 from studio.runtime.http.capability_client import CapabilityUnavailable
 from studio.runtime.time import utc_now
 

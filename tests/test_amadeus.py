@@ -22,8 +22,9 @@ from app.console.amadeus.runs import recover_interrupted_amadeus_runs
 from app.console.amadeus.schemas import ModelTurnIn
 from app.console.amadeus.scripts import run_script
 from app.console.models.accounts import User
-from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
 from app.runtime.credentials import encrypt_secret
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.assembly.website.models import bind_owner
 from studio.runtime.database.operation_receipts import OperationError
 from website_test_support import SessionLocal, app
@@ -42,7 +43,7 @@ async def test_amadeus_model_bridge_streams_text_and_tool_calls(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from app.console.amadeus import model_bridge
-    from app.demo_runtime import engine as runtime
+    from studio.apps.model_service.demonstration import execution as runtime
 
     async def get_mock_model(*_args: object) -> tuple[SimpleNamespace, SimpleNamespace]:
         return SimpleNamespace(slug="fpl-mock"), SimpleNamespace(
@@ -130,7 +131,7 @@ async def test_amadeus_model_bridge_settles_after_request_session_rollback(
     """Regression: rollback expires ORM rows; settle must not touch them again."""
     from sqlalchemy import delete
 
-    from app.llm.providers import agent as agent_mod
+    from studio.apps.model_service.providers import agent as agent_mod
     from studio.contracts.agent_runtime.dialogue import ModelTextDelta, ModelTurnEnd, Usage
 
     async with SessionLocal() as session:

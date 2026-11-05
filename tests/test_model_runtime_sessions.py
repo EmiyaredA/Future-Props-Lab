@@ -7,9 +7,9 @@ from pathlib import Path
 import pytest
 from sqlalchemy import select
 
-from app.llm.inference.text import events
-from app.llm.models import LlmCallLog
-from app.llm.providers.streaming import TextDelta
+from studio.apps.model_service.inference.text import events
+from studio.apps.model_service.providers.streaming import TextDelta
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
 from studio.contracts.model_service.credential_snapshot import CredentialSnapshot
 from studio.contracts.model_service.schemas.model_inference import InferenceTextIn
 from studio.runtime.database.orm_base import Base
@@ -17,7 +17,7 @@ from studio.runtime.database.sessions import Database
 
 
 def test_model_execution_modules_do_not_import_the_monolith_session_factory():
-    root = Path(__file__).resolve().parents[1] / "backend/app/llm"
+    root = Path(__file__).resolve().parents[1] / "backend/studio/apps/model_service"
     for path in root.rglob("*.py"):
         for node in ast.walk(ast.parse(path.read_text())):
             imports = (
@@ -62,7 +62,7 @@ async def test_parallel_streams_write_to_separate_factories_with_explicit_accoun
     async def provider(**_kwargs):
         yield TextDelta(text="owned result", total_tokens=3, finish_reason="stop")
 
-    monkeypatch.setattr("app.llm.inference.text.stream_text_completion", provider)
+    monkeypatch.setattr("studio.apps.model_service.inference.text.stream_text_completion", provider)
 
     async def consume(owner, database):
         return [

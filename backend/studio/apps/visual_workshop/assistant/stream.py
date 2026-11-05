@@ -10,11 +10,9 @@ import httpx
 from sqlalchemy import select, update
 
 from app.capabilities.agents.harness import AgentEvent, AgentHarness, AgentMessage, RunStatus
-from app.llm.models import (
-    LlmCallLog,
-)
-from app.llm.providers.agent import HttpAgentAdapter
 from app.runtime.credentials import decrypt_secret
+from studio.apps.model_service.providers.agent import HttpAgentAdapter
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
 from studio.apps.visual_workshop.assistant.conversations import (
     PreparedAssistantGeneration,
     message_out,

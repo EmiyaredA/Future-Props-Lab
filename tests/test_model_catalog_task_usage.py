@@ -3,18 +3,18 @@
 import pytest
 from sqlalchemy import select
 
-from app.llm.catalog.service import (
+from studio.apps.model_service.catalog.service import (
     CatalogResourceBusyError,
     ModelCatalogService,
     ResourceNotFoundError,
 )
-from app.llm.models import (
-    LocalModelInstallation,
+from studio.apps.model_service.storage.models.local_models import LocalModelInstallation
+from studio.apps.model_service.storage.models.model_service import (
     ModelCatalogState,
     ModelEntry,
     ModelProvider,
-    ModelSupplier,
 )
+from studio.apps.model_service.storage.models.model_supplier import ModelSupplier
 from studio.runtime.database.orm_base import Base
 from studio.runtime.database.sessions import Database
 from studio.runtime.revisions import RevisionConflictError
@@ -123,7 +123,7 @@ async def test_catalog_reads_only_explicit_account_defaults_and_preserves_cas_sn
 
 
 async def test_default_update_rejects_foreign_owner_before_mutation(catalog):
-    from app.llm.catalog.defaults import update_defaults
+    from studio.apps.model_service.catalog.defaults import update_defaults
     from studio.contracts.model_service.schemas.model_service import ModelDefaultsIn
 
     async with catalog.sessions() as session:

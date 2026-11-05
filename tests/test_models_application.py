@@ -17,12 +17,14 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import select
 
-from app.llm.models import LlmCallLog, ModelProvider, RuntimeAdmission
 from studio.apps.model_service.account_directory import Target, Targets
 from studio.apps.model_service.audit.audit_client import PreparedChange
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
+from studio.apps.model_service.storage.models.model_service import ModelProvider
+from studio.apps.model_service.storage.models.runtime_admission import RuntimeAdmission
 from studio.apps.model_service.storage.service_models import GovernanceAudit
-from studio.apps.model_service.templates import initialize_account_catalog
+from studio.apps.model_service.templates.policy import initialize_account_catalog
 from studio.assembly.independent.model_service.application import create_app
 from studio.config.settings import Settings, get_settings
 from studio.contracts.gateway.routing import RouteCatalog
@@ -331,7 +333,8 @@ async def test_wired_runners_revoke_queued_submission_and_settle_same_owned_leas
             if r.runner_name == "model-test-transcription-runner"
         )
         monkeypatch.setattr(
-            "app.llm.playground.transcription_runner.transcribe_model_audio", forbidden_call
+            "studio.apps.model_service.playground.transcription_runner.transcribe_model_audio",
+            forbidden_call,
         )
         method = runner._process_task
         endpoint = "/v1/model-test/transcription-tasks/"
@@ -355,7 +358,9 @@ async def test_wired_runners_revoke_queued_submission_and_settle_same_owned_leas
                 for r in case.app.state.runner_supervisor.runners
                 if r.runner_name == "model-inference"
             )
-            monkeypatch.setattr("app.llm.inference.runner.submit_generation_task", forbidden_call)
+            monkeypatch.setattr(
+                "studio.apps.model_service.inference.runner.submit_generation_task", forbidden_call
+            )
             method = runner.process
             endpoint = "/v1/model-inference/tasks/"
         else:
@@ -375,7 +380,8 @@ async def test_wired_runners_revoke_queued_submission_and_settle_same_owned_leas
                 if r.runner_name == "model-test-generation-runner"
             )
             monkeypatch.setattr(
-                "app.llm.playground.generation_runner.submit_generation_task", forbidden_call
+                "studio.apps.model_service.playground.generation_runner.submit_generation_task",
+                forbidden_call,
             )
             method = runner._process_task
             endpoint = "/v1/model-test/generation-tasks/"
@@ -397,7 +403,7 @@ async def test_wired_runners_revoke_queued_submission_and_settle_same_owned_leas
 async def test_silent_model_stream_stops_on_revocation_and_settles_owned_state(
     case, monkeypatch, playground
 ):
-    from app.llm.providers.streaming import TextDelta
+    from studio.apps.model_service.providers.streaming import TextDelta
 
     model = await install_mock(case)
     entered = asyncio.Event()
@@ -412,13 +418,17 @@ async def test_silent_model_stream_stops_on_revocation_and_settles_owned_state(
             closed.set()
 
     if playground:
-        monkeypatch.setattr("app.llm.playground.stream.stream_text_completion", silent)
+        monkeypatch.setattr(
+            "studio.apps.model_service.playground.stream.stream_text_completion", silent
+        )
         created = await case.call("POST", "/v1/model-test/conversations", json={"model_id": model})
         assert created.status_code == 200, created.text
         path = "/v1/model-test/conversations/" + created.json()["id"] + "/messages/stream"
         body = {"expected_revision": created.json()["revision"], "content": "fixture"}
     else:
-        monkeypatch.setattr("app.llm.inference.text.stream_text_completion", silent)
+        monkeypatch.setattr(
+            "studio.apps.model_service.inference.text.stream_text_completion", silent
+        )
         path = "/v1/model-inference/text/stream"
         body = {"model_id": model, "messages": [{"role": "user", "text": "fixture"}]}
     pending = asyncio.create_task(case.call("POST", path, json=body))

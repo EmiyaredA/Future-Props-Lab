@@ -19,10 +19,6 @@ from app.capabilities.asset_store import (
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.project_transactions import importing_project_layout
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION
-from app.llm.transcription_catalog import (
-    resolve_transcription_model_reference,
-    transcription_model_reference,
-)
 from studio.apps.galgame_workshop.schemas import GalgameProjectSnapshotImportOut
 from studio.apps.galgame_workshop.snapshot_values import (
     snapshot_asset_record,
@@ -38,6 +34,10 @@ from studio.apps.galgame_workshop.storage.models import (
     GalgameWorkshopProject,
 )
 from studio.apps.galgame_workshop.website.projects import project_out
+from studio.apps.model_service.catalog.transcription import (
+    resolve_transcription_model_reference,
+    transcription_model_reference,
+)
 from studio.config.settings import Settings
 from studio.runtime.ids import new_id
 

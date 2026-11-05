@@ -4,8 +4,8 @@ from app.console.governance.account_creation import create_account as create_ide
 from app.console.governance.account_creation import (
     create_managed_account as create_identity_managed_account,
 )
-from app.console.governance.model_templates import initialize_from_template
-from app.llm.catalog.seed import ensure_account_model_catalog
+from studio.apps.model_service.catalog.seed import ensure_account_model_catalog
+from studio.apps.model_service.templates.website import initialize_from_template
 from studio.runtime.database.ownership import bind_owner
 
 

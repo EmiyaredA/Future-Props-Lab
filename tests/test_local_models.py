@@ -5,25 +5,29 @@ import hashlib
 import io
 import json
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 
 import httpx
 import pytest
 from sqlalchemy import delete
 
-from app.console.governance.local_models import can_manage_local_models
-from app.llm.local_models import worker
-from app.llm.local_models.catalog import credential_ready, definition, manifest
-from app.llm.local_models.downloads import fetch_file
-from app.llm.local_models.installer import Installer
-from app.llm.local_models.management import LocalModels
-from app.llm.local_models.runtime import LocalRuntime
-from app.llm.models.local_models import LocalModelInstallation, LocalModelOperation
+from studio.apps.model_service.local_models.catalog import credential_ready, definition, manifest
+from studio.apps.model_service.local_models.management import LocalModels
+from studio.apps.model_service.local_models.website_authorization import can_manage_local_models
+from studio.apps.model_service.storage.models.local_models import (
+    LocalModelInstallation,
+    LocalModelOperation,
+)
 from studio.contracts.model_service.schemas.local_models import (
     LocalModelActionIn,
     SpeechSynthesisParameters,
 )
 from studio.contracts.model_service.schemas.model_service import ProviderIn
+from studio.host.local_models import worker
+from studio.host.local_models.downloads import fetch_file
+from studio.host.local_models.installer import Installer
+from studio.host.local_models.runtime import LocalRuntime
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.revisions import RevisionConflictError
 from website_test_support import SessionLocal, app
@@ -71,8 +75,10 @@ def test_worker_writes_wav_to_extensionless_asset_key(monkeypatch, capsys):
 
 @pytest.fixture
 async def manager(tmp_path, monkeypatch):
-    monkeypatch.setattr("app.llm.local_models.management.compatible", lambda: True)
-    monkeypatch.setattr("app.llm.local_models.catalog.compatible", lambda: True)
+    monkeypatch.setattr(
+        "studio.apps.model_service.local_models.management.compatible", lambda: True
+    )
+    monkeypatch.setattr("studio.apps.model_service.local_models.catalog.compatible", lambda: True)
     installer = Installer(tmp_path / "local-models")
     runtime = LocalRuntime(installer)
     manager = LocalModels(SessionLocal, installer, runtime)
@@ -202,7 +208,7 @@ async def test_uninstall_cleanup_failure_replays_failure(manager, monkeypatch):
         attempts.append(path)
         raise PermissionError("fixture")
 
-    monkeypatch.setattr("app.llm.local_models.management.shutil.rmtree", deny)
+    monkeypatch.setattr("studio.apps.model_service.local_models.management.shutil.rmtree", deny)
     for _ in range(2):
         with pytest.raises(OperationError, match="清理模型文件失败") as caught:
             await manager.action(MODEL, action("uninstall"))
@@ -221,7 +227,7 @@ async def test_environment_retry_discards_partial_environment_only(manager, monk
     cached.parent.mkdir(parents=True)
     cached.write_bytes(b"keep resumable downloads")
     monkeypatch.setattr(
-        "app.llm.local_models.installer.shutil.disk_usage",
+        "studio.host.local_models.installer.shutil.disk_usage",
         lambda _path: SimpleNamespace(free=100 * 1024**3),
     )
 
@@ -230,7 +236,7 @@ async def test_environment_retry_discards_partial_environment_only(manager, monk
         assert cached.read_bytes() == b"keep resumable downloads"
         raise ValueError("fixture download failure")
 
-    monkeypatch.setattr("app.llm.local_models.installer.downloads.fetch_file", fetch)
+    monkeypatch.setattr("studio.host.local_models.installer.downloads.fetch_file", fetch)
     with pytest.raises(ValueError, match="fixture download failure"):
         await manager.installer.install(definition(MODEL), None)
 
@@ -293,7 +299,7 @@ async def test_public_api_attach_synthesis_and_uninstall(manager, monkeypatch):
     import shutil
     import wave
 
-    from app.llm.inference.runner import InferenceRunner
+    from studio.apps.model_service.inference.runner import InferenceRunner
 
     monkeypatch.setattr(app.state, "local_models", manager, raising=False)
 
@@ -387,12 +393,14 @@ async def test_public_api_attach_synthesis_and_uninstall(manager, monkeypatch):
 
 
 async def test_unsupported_and_insufficient_space_do_not_download(manager, monkeypatch):
-    monkeypatch.setattr("app.llm.local_models.management.compatible", lambda: False)
+    monkeypatch.setattr(
+        "studio.apps.model_service.local_models.management.compatible", lambda: False
+    )
     with pytest.raises(OperationError, match="Apple Silicon"):
         await manager.action(MODEL, action("install"))
     assert not manager.installer.root.exists()
     monkeypatch.setattr(
-        "app.llm.local_models.installer.shutil.disk_usage", lambda _: SimpleNamespace(free=0)
+        "studio.host.local_models.installer.shutil.disk_usage", lambda _: SimpleNamespace(free=0)
     )
 
     async def report(_progress):
@@ -443,15 +451,18 @@ async def test_worker_switch_idle_and_inference_serialization(manager, monkeypat
         async def wait(self):
             return self.returncode
 
-    async def spawn(*_args, **_kwargs):
-        worker = Process()
-        workers.append(worker)
-        return worker
+    async def spawn(*args, **_kwargs):
+        # A relocated adapter must launch its shipped worker, not a config-directory path.
+        assert Path(args[1]).resolve() == Path(worker.__file__).resolve()
+        assert Path(args[1]).is_file()
+        process = Process()
+        workers.append(process)
+        return process
 
     async def validate():
         return
 
-    monkeypatch.setattr("app.llm.local_models.runtime.asyncio.create_subprocess_exec", spawn)
+    monkeypatch.setattr("studio.host.local_models.runtime.asyncio.create_subprocess_exec", spawn)
     runtime = manager.runtime
     runtime.idle_seconds = 0.05
     await asyncio.gather(
@@ -507,7 +518,7 @@ async def test_repair_keeps_weights_and_disabled_state_and_blocks_concurrent_inf
 async def test_environment_repair_failure_restores_previous_environment(tmp_path, monkeypatch):
     from contextlib import asynccontextmanager
 
-    from app.llm.local_models import installer as module
+    from studio.host.local_models import installer as module
 
     installer = Installer(tmp_path)
     environment = tmp_path / "environments/v1"

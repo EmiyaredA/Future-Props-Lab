@@ -7,10 +7,16 @@ from types import SimpleNamespace
 import pytest
 from sqlalchemy import select
 
-from app.llm.models import ModelTestGenerationAsset, ModelTestGenerationTask
-from app.llm.playground.generation_assets import GenerationAssetError, ModelTestGenerationAssets
-from app.llm.playground.generation_runner import ModelTestGenerationRunner
+from studio.apps.model_service.playground.generation_assets import (
+    GenerationAssetError,
+    ModelTestGenerationAssets,
+)
+from studio.apps.model_service.playground.generation_runner import ModelTestGenerationRunner
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.models.model_test import (
+    ModelTestGenerationAsset,
+    ModelTestGenerationTask,
+)
 from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database
@@ -155,8 +161,11 @@ async def test_backfill_cancellation_waits_for_copy_before_cleaning_staged_file(
 ):
     import threading
 
-    from app.llm.playground import generation_assets
-    from app.llm.playground.generation_assets import ROLE_FIELDS, LegacyAssetSource
+    from studio.apps.model_service.playground import generation_assets
+    from studio.apps.model_service.playground.generation_assets import (
+        ROLE_FIELDS,
+        LegacyAssetSource,
+    )
 
     database, settings = instance
     source = settings.runtime_path / "original-reference.mp4"

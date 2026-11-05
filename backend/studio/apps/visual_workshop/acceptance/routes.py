@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.llm.visual_catalog import acceptance_models
+from studio.apps.model_service.catalog.visual import acceptance_models
 from studio.apps.visual_workshop.acceptance.http_errors import errors
 from studio.apps.visual_workshop.acceptance.node_routes import router as node_router
 from studio.apps.visual_workshop.acceptance.reviews import Reviews

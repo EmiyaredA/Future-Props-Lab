@@ -8,15 +8,15 @@ import pytest
 from pydantic import ValidationError
 from sqlalchemy import select
 
-from app.llm.catalog.seed import ensure_account_model_catalog
-from app.llm.models import ModelCatalogState, ModelProvider
 from studio.apps.model_service.account_events import CatalogEventClient, CatalogEventTransportError
+from studio.apps.model_service.catalog.seed import ensure_account_model_catalog
 from studio.apps.model_service.provisioning import (
     CatalogProvisioning,
     CatalogProvisioningConflict,
     CatalogProvisioningExpired,
 )
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.models.model_service import ModelCatalogState, ModelProvider
 from studio.apps.model_service.storage.service_models import (
     ACCOUNT_MODELS,
     MODELS,

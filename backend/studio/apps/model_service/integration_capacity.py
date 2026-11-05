@@ -9,7 +9,7 @@ from studio.runtime.time import utc_now
 
 
 async def acquire_capacity(sessions, intent_id, actor, scope):
-    from app.llm.models.runtime_admission import RuntimeAdmission
+    from studio.apps.model_service.storage.models.runtime_admission import RuntimeAdmission
     from studio.contracts.integrations.integration_intents import digest
     from studio.runtime.ids import new_id
 
@@ -48,7 +48,7 @@ async def acquire_capacity(sessions, intent_id, actor, scope):
 
 
 async def release_capacity(sessions, intent_id, actor, _scope, outcome):
-    from app.llm.models.runtime_admission import RuntimeAdmission
+    from studio.apps.model_service.storage.models.runtime_admission import RuntimeAdmission
 
     async with sessions(info={"owner_user_id": actor.user_id}) as session:
         await session.execute(text("BEGIN IMMEDIATE"))

@@ -8,8 +8,8 @@ from sqlalchemy import select
 from tests.test_community_asset_protocol import scenario  # noqa: F401
 from tests.test_visual_node_review_service import review_mesh
 
-from app.llm.models import LlmCallLog
 from studio.apps.model_service.assistant_model_runs import AssistantModelRuns
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
 from studio.apps.model_service.transport.assistant_model_http import router
 from studio.apps.visual_workshop.assistant.assistant_stream import AssistantStream
 from studio.apps.visual_workshop.storage.assistant_dispatch_records import VisualAssistantDispatch

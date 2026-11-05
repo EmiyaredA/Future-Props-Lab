@@ -15,14 +15,14 @@ from tests.test_visual_acceptance import submission
 from tests.test_visual_catalog_protocol import seed_catalog
 from tests.test_visual_compositions_service import Faults, png
 
-from app.llm.models import ModelEntry
-from app.llm.visual_review import Suggestions
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.media_rendering.settings import RenderingSettings
 from studio.apps.media_rendering.storage.migrations.registry import (
     MIGRATIONS as RENDERING_MIGRATIONS,
 )
+from studio.apps.model_service.providers.visual_review import Suggestions
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
+from studio.apps.model_service.storage.models.model_service import ModelEntry
 from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
 from studio.apps.model_service.transport.visual_catalog_http import router as models_catalog
 from studio.apps.model_service.transport.visual_review_http import router as model_reviews

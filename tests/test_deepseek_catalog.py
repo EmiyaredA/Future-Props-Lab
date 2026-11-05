@@ -7,9 +7,9 @@ from uuid import uuid4
 import httpx
 import pytest
 
-from app.llm.providers.agent import HttpAgentAdapter
-from app.llm.providers.streaming import stream_text_completion
-from app.llm.providers.text import invoke_diagnostic
+from studio.apps.model_service.providers.agent import HttpAgentAdapter
+from studio.apps.model_service.providers.streaming import stream_text_completion
+from studio.apps.model_service.providers.text import invoke_diagnostic
 from test_workspace_governance import client_account
 
 pytestmark = [pytest.mark.asyncio, pytest.mark.real_auth]
@@ -184,9 +184,11 @@ async def test_diagnostic_playground_inference_and_retired_amadeus_bridge(monkey
     def init(self, **kwargs):
         original_init(self, **kwargs, transport=transport)
 
-    monkeypatch.setattr("app.llm.diagnostics.invoke_diagnostic", diagnostic)
-    monkeypatch.setattr("app.llm.playground.stream.stream_text_completion", stream)
-    monkeypatch.setattr("app.llm.inference.text.stream_text_completion", stream)
+    monkeypatch.setattr("studio.apps.model_service.diagnostics.invoke_diagnostic", diagnostic)
+    monkeypatch.setattr(
+        "studio.apps.model_service.playground.stream.stream_text_completion", stream
+    )
+    monkeypatch.setattr("studio.apps.model_service.inference.text.stream_text_completion", stream)
     monkeypatch.setattr(HttpAgentAdapter, "__init__", init)
     from website_test_support import app
 

@@ -238,7 +238,7 @@ def test_integrations_source_does_not_load_foreign_state():
     source = """import sys
 from studio.assembly.independent.integrations.application import create_app
 for forbidden in (
-    'studio.runtime.database.website','studio.assembly.website.models','app.console','app.llm.models',
+    'studio.runtime.database.website','studio.assembly.website.models','app.console','studio.apps.model_service.storage.models',
     'app.capabilities.asset_store.models','app.apps',
 ):
     loaded=any(name==forbidden or name.startswith(forbidden+'.') for name in sys.modules)

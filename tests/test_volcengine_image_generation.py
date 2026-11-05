@@ -7,10 +7,10 @@ import pytest
 from tests.test_generation_task_driver import FakeStore, _driver, _task
 
 from app.capabilities.asset_store.models import VisualAsset
-from app.llm.generation_runtime import ImmediateGenerationResult
-from app.llm.models import ModelEntry, ModelProvider
-from app.llm.providers.volcengine_image import SEEDREAM_MODEL, generate_image
 from app.runtime.credentials import encrypt_secret
+from studio.apps.model_service.generation.driver import ImmediateGenerationResult
+from studio.apps.model_service.providers.volcengine_image import SEEDREAM_MODEL, generate_image
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.visual_workshop.storage.models import VisualCanvasDocument, VisualWorkshopProject
 from studio.apps.visual_workshop.website.generation import GenerationError, VisualGeneration
 from studio.assembly.website.models import bind_owner

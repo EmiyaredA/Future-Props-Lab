@@ -19,11 +19,11 @@ from sqlalchemy import func, select
 from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from app.llm.library_outputs import library_outputs
 from studio.apps.asset_library.library_outputs import LibraryOutputFiles
 from studio.apps.asset_library.settings import StorageSettings
 from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS
 from studio.apps.asset_library.storage.service_models import ModelLibraryOutputReceipt
+from studio.apps.model_service.library.outputs import library_outputs
 from studio.apps.model_service.library_outputs import HttpLibraryOutputs
 from studio.assembly.independent.asset_library.application import create_app
 from studio.contracts.gateway.routing import RouteCatalog
@@ -356,12 +356,12 @@ async def test_capability_client_authorizes_before_sending_and_refuses_redirects
 def test_generation_and_output_consumers_import_without_foreign_orm_or_database(tmp_path):
     code = """
 import sys
-from app.llm.inference.tasks import InferenceTasks
-from app.llm.playground.generation_assets import ModelTestGenerationAssets
-from app.llm.playground.generation_runner import ModelTestGenerationRunner
-from app.llm.playground.attachments import ModelTestAttachments
-from app.llm.routes.model_inference import router
-from app.llm.routes.models.model_test_generation import router
+from studio.apps.model_service.inference.tasks import InferenceTasks
+from studio.apps.model_service.playground.generation_assets import ModelTestGenerationAssets
+from studio.apps.model_service.playground.generation_runner import ModelTestGenerationRunner
+from studio.apps.model_service.playground.attachments import ModelTestAttachments
+from studio.apps.model_service.transport.website.model_inference import router
+from studio.apps.model_service.transport.website.models.model_test_generation import router
 for module in ('studio.runtime.database.website',
     'studio.assembly.website.models',
     'app.capabilities.asset_store.models',

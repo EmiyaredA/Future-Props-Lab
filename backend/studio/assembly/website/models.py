@@ -45,18 +45,6 @@ from app.integrations.models import (
     SkillVersion,
     ToolApiIntegration,
 )
-from app.llm.models import (
-    LlmCallLog,
-    ModelCatalogState,
-    ModelEntry,
-    ModelProvider,
-    ModelSupplier,
-    ModelTestConversation,
-    ModelTestGenerationAsset,
-    ModelTestGenerationTask,
-    ModelTestTranscriptionTask,
-)
-from app.llm.models.model_inference import ModelInferenceAsset, ModelInferenceTask
 from app.tool_navigation.models import (
     ToolNavigationItem,
 )
@@ -90,6 +78,23 @@ from studio.apps.galgame_workshop.storage.models import (
     GalgameWorkshopProject,
 )
 from studio.apps.interview_assistant.storage.models import InterviewPreparation, InterviewRoom
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
+from studio.apps.model_service.storage.models.model_inference import (
+    ModelInferenceAsset,
+    ModelInferenceTask,
+)
+from studio.apps.model_service.storage.models.model_service import (
+    ModelCatalogState,
+    ModelEntry,
+    ModelProvider,
+)
+from studio.apps.model_service.storage.models.model_supplier import ModelSupplier
+from studio.apps.model_service.storage.models.model_test import (
+    ModelTestConversation,
+    ModelTestGenerationAsset,
+    ModelTestGenerationTask,
+    ModelTestTranscriptionTask,
+)
 from studio.apps.motion_compositor.storage.models import (
     MotionDocument,
     MotionOperationBatch,
@@ -172,7 +177,7 @@ from studio.runtime.database.orm_base import Base
 from studio.runtime.database.ownership import TenantScopeError, bind_owner, require_owner_id
 from studio.runtime.database.project_operations import ProjectOperationReceipt
 
-# Catalog types for capabilities that must not import app.llm.
+# Catalog types for capabilities that must not import studio.apps.model_service.
 CATALOG_MODELS: dict[str, type] = {
     "entry": ModelEntry,
     "provider": ModelProvider,

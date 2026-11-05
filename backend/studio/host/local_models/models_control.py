@@ -4,9 +4,6 @@ import asyncio
 import shutil
 from uuid import UUID
 
-from app.llm.local_models.files import owned_path
-from app.llm.local_models.installer import Installer
-from app.llm.local_models.runtime import LocalRuntime
 from studio.config.local_models import compatible, definition, manifest
 from studio.contracts.model_service.model_native import (
     ActionRequest,
@@ -14,6 +11,9 @@ from studio.contracts.model_service.model_native import (
     ModelsObservation,
     SpeechRequest,
 )
+from studio.host.local_models.files import owned_path
+from studio.host.local_models.installer import Installer
+from studio.host.local_models.runtime import LocalRuntime
 from studio.runtime.files.signed_payloads import ModelOutputDescription
 
 

@@ -8,14 +8,15 @@ import httpx
 import pytest
 from tests.account_fixtures import account_record
 
-from app.capabilities.transcription.support import (
+from app.console.models import User
+from studio.apps.audio_annotation.projects import AudioAnnotationError, AudioAnnotationProjects
+from studio.apps.model_service.providers.transcription import TranscriptionResult, TranscriptSegment
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
+from studio.apps.model_service.storage.models.model_test import ModelTestTranscriptionTask
+from studio.apps.model_service.transcription.support import (
     resolve_transcription_language,
     resolve_transcription_target_language,
 )
-from app.console.models import User
-from app.llm.models import ModelEntry, ModelProvider, ModelTestTranscriptionTask
-from app.llm.providers.transcription import TranscriptionResult, TranscriptSegment
-from studio.apps.audio_annotation.projects import AudioAnnotationError, AudioAnnotationProjects
 from studio.assembly.website.models import bind_owner
 from studio.config.settings import get_settings
 from website_test_support import SessionLocal, app
@@ -471,7 +472,7 @@ async def test_audio_annotation_transcribes_selected_range_to_target_language_an
         return TranscriptionResult(text="  日本語の書き起こし。  ")
 
     monkeypatch.setattr(
-        "app.llm.annotation_transcription.transcribe_model_audio",
+        "studio.apps.model_service.transcription.annotation.transcribe_model_audio",
         fake_transcribe,
     )
     transport = httpx.ASGITransport(app=app)
@@ -577,7 +578,7 @@ async def test_audio_annotation_transcribes_selected_range_to_target_language_an
             )
 
         monkeypatch.setattr(
-            "app.llm.annotation_transcription.transcribe_model_audio",
+            "studio.apps.model_service.transcription.annotation.transcribe_model_audio",
             incomplete_translation,
         )
         untranslated = await client.post(
@@ -599,7 +600,7 @@ async def test_audio_annotation_transcribes_selected_range_to_target_language_an
             raise httpx.ReadTimeout("timed out")
 
         monkeypatch.setattr(
-            "app.llm.annotation_transcription.transcribe_model_audio",
+            "studio.apps.model_service.transcription.annotation.transcribe_model_audio",
             failing_transcribe,
         )
         failed = await client.post(
@@ -625,7 +626,7 @@ async def test_audio_annotation_transcribes_selected_range_to_target_language_an
             return TranscriptionResult(text="   ")
 
         monkeypatch.setattr(
-            "app.llm.annotation_transcription.transcribe_model_audio",
+            "studio.apps.model_service.transcription.annotation.transcribe_model_audio",
             empty_transcribe,
         )
         empty = await client.post(

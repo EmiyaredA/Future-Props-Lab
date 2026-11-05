@@ -4,8 +4,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.llm.inference.runner import InferenceRunner
-from app.llm.task_outcomes import NativeSubmissionUncertain
+from studio.apps.model_service.generation.outcomes import NativeSubmissionUncertain
+from studio.apps.model_service.inference.runner import InferenceRunner
 
 
 @pytest.mark.parametrize("outcome", ["unknown_native", "lost_finish_reply", "confirmed_failure"])
@@ -51,7 +51,7 @@ async def test_native_synthesis_consumer_distinguishes_unknown_and_confirmed_out
         state.status = "completed"
         raise RuntimeError("synthetic committed response lost")
 
-    monkeypatch.setattr("app.llm.inference.runner.synthesize", synthesize)
+    monkeypatch.setattr("studio.apps.model_service.inference.runner.synthesize", synthesize)
     runner.finish = finish
     await runner.synthesize("accepted-task")
     if outcome == "unknown_native":

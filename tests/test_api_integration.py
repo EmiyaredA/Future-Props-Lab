@@ -9,9 +9,10 @@ import httpx
 import pytest
 from sqlalchemy import delete, select
 
-from app.llm.models import LlmCallLog, ModelProvider
-from app.llm.providers.text import DiagnosticResult
 from db.migrations.registry import LATEST_MIGRATION_ID
+from studio.apps.model_service.providers.text import DiagnosticResult
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
+from studio.apps.model_service.storage.models.model_service import ModelProvider
 from website_test_support import SessionLocal, app
 
 
@@ -49,7 +50,7 @@ async def test_model_catalog_diagnostic_and_logs(monkeypatch: pytest.MonkeyPatch
             total_tokens=6,
         )
 
-    monkeypatch.setattr("app.llm.diagnostics.invoke_diagnostic", fake_diagnostic)
+    monkeypatch.setattr("studio.apps.model_service.diagnostics.invoke_diagnostic", fake_diagnostic)
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         assert (await client.get("/health")).status_code == 200
@@ -185,7 +186,7 @@ async def test_failed_diagnostic_is_logged(monkeypatch: pytest.MonkeyPatch) -> N
     async def timeout(**_kwargs):
         raise httpx.ReadTimeout("upstream timeout")
 
-    monkeypatch.setattr("app.llm.diagnostics.invoke_diagnostic", timeout)
+    monkeypatch.setattr("studio.apps.model_service.diagnostics.invoke_diagnostic", timeout)
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         catalog = (await client.get("/v1/model-providers")).json()

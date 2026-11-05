@@ -10,8 +10,8 @@ import pytest
 from PIL import Image
 from sqlalchemy import delete
 
-from app.llm.models import ModelEntry, ModelProvider
 from app.runtime.credentials import encrypt_secret
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.visual_workshop.acceptance.runner import AcceptanceRunner
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.storage.models import VisualGenerationTask

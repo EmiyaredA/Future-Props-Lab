@@ -12,7 +12,6 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.demo_runtime.engine import TOOL_BASE_URL
 from app.integrations.checks import list_recent_checks, record_check
 from app.integrations.common import (
     DuplicateIntegrationError,
@@ -31,6 +30,7 @@ from app.integrations.schemas import (
 from app.runtime.credentials import SecretCipher
 from app.runtime.secret_hints import encrypted_secret_hint
 from studio.config.settings import get_settings
+from studio.contracts.model_service.demo import TOOL_BASE_URL
 from studio.runtime.database.ownership import require_owner_id
 from studio.runtime.http.outbound_urls import require_safe_integration_http_url
 from studio.runtime.revisions import RevisionConflictError

@@ -190,7 +190,7 @@ async def test_template_supplier_name_and_deletion_are_locked_in_workspace():
 
 
 async def test_template_sync_preserves_supplier_connection_model_ids_and_custom_configuration():
-    from app.console.governance.model_template_sync import ModelTemplateSyncRunner
+    from studio.apps.model_service.templates.website_sync import ModelTemplateSyncRunner
     from test_workspace_governance import client_account
 
     admin, _, _, _ = await client_account(admin=True)

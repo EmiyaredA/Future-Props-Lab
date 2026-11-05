@@ -16,24 +16,10 @@ from app.console.amadeus.execution import CodeAgentRuns
 from app.console.amadeus.runs import recover_interrupted_amadeus_runs
 from app.console.file_library.library_folder_archive import cleanup_library_folder_archive_staging
 from app.console.governance.external_sync_access import external_sync_actor_allowed
-from app.console.governance.generation_queue import (
-    claim_visual_capacity,
-    visual_queue_candidates,
-)
 from app.console.governance.interview_executor_access import interview_actor_allowed
-from app.console.governance.model_template_sync import ModelTemplateSyncRunner
 from app.console.governance.profile import reconcile_profile_avatars
-from app.console.governance.runtime_quotas import recover_admissions
 from app.console.governance.visual_acceptance_access import acceptance_actor_allowed
 from app.console.governance.workbench_access import workbench_actor_allowed
-from app.llm.inference.runner import InferenceRunner
-from app.llm.local_models.catalog import local_root
-from app.llm.local_models.installer import Installer
-from app.llm.local_models.management import LocalModels
-from app.llm.local_models.runtime import LocalRuntime
-from app.llm.playground.generation_runner import ModelTestGenerationRunner
-from app.llm.playground.recovery import recover_interrupted_model_test_runs
-from app.llm.playground.transcription_runner import ModelTestTranscriptionRunner
 from db.migrations import apply_migrations
 from studio.apps.agent_workbench.execution.runner import WorkbenchRuns
 from studio.apps.agent_workbench.execution.storage import interrupt_all as interrupt_workbench_runs
@@ -45,12 +31,26 @@ from studio.apps.galgame_workshop.assets.asr import GalgameAsrRunner
 from studio.apps.galgame_workshop.video.video_export_runner import GalgameVideoExportRunner
 from studio.apps.galgame_workshop.video.video_handoff_runner import GalgameVideoEditorHandoffRunner
 from studio.apps.interview_assistant.runner import InterviewPreparationRunner
+from studio.apps.model_service.admission.website_queue import (
+    claim_visual_capacity,
+    visual_queue_candidates,
+)
+from studio.apps.model_service.admission.website_quotas import recover_admissions
+from studio.apps.model_service.inference.runner import InferenceRunner
+from studio.apps.model_service.local_models.catalog import local_root
+from studio.apps.model_service.local_models.management import LocalModels
+from studio.apps.model_service.playground.generation_runner import ModelTestGenerationRunner
+from studio.apps.model_service.playground.recovery import recover_interrupted_model_test_runs
+from studio.apps.model_service.playground.transcription_runner import ModelTestTranscriptionRunner
+from studio.apps.model_service.templates.website_sync import ModelTemplateSyncRunner
 from studio.apps.motion_compositor.runner import MotionExportRunner
 from studio.apps.thought_workshop.external_sync.runner import ArticleSyncRunner
 from studio.apps.video_editor.runner import VideoEditorRunner
 from studio.apps.visual_workshop.acceptance.runner import AcceptanceRunner
 from studio.apps.visual_workshop.assistant.actions import recover_interrupted_visual_assistant_runs
 from studio.apps.visual_workshop.website.generation_runner import VisualGenerationRunner
+from studio.host.local_models.installer import Installer
+from studio.host.local_models.runtime import LocalRuntime
 from studio.runtime.tasks.polling import RunnerSupervisor
 
 

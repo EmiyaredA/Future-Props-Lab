@@ -8,10 +8,11 @@ from uuid import uuid4
 
 from sqlalchemy import select
 
-from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
-from app.llm.providers.chat_completions import TEXT_PROVIDER_KINDS
-from app.llm.providers.streaming import ChatMessageInput, stream_text_completion
 from app.runtime.credentials import decrypt_secret
+from studio.apps.model_service.providers.chat_completions import TEXT_PROVIDER_KINDS
+from studio.apps.model_service.providers.streaming import ChatMessageInput, stream_text_completion
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.schemas.workshop import ThoughtModelOut
 from studio.apps.thought_workshop.writing import WritingModel

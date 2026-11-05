@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request
 
-from app.llm.routes.model_capacity import task_admission
+from studio.apps.model_service.transport.website.model_capacity import task_admission
 from studio.apps.visual_workshop.acceptance.catalog import catalog
 from studio.apps.visual_workshop.acceptance.http_errors import errors
 from studio.apps.visual_workshop.acceptance.node_schemas import (

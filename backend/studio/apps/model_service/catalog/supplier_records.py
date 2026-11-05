@@ -1,0 +1,34 @@
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from studio.apps.model_service.storage.models.model_supplier import ModelSupplier
+from studio.contracts.model_service.schemas.model_supplier import ModelSupplierOut
+
+
+def supplier_out(row: ModelSupplier) -> ModelSupplierOut:
+    return ModelSupplierOut(
+        id=row.id,
+        name=row.name,
+        origin=row.origin,
+        template_key=row.template_key,
+        managed_fields=["name"] if row.origin == "role_template" else [],
+    )
+
+
+async def get_supplier(
+    session: AsyncSession, owner_user_id: str, supplier_id: str
+) -> ModelSupplier | None:
+    return await session.scalar(
+        select(ModelSupplier).where(
+            ModelSupplier.id == supplier_id, ModelSupplier.owner_user_id == owner_user_id
+        )
+    )
+
+
+async def list_suppliers(session: AsyncSession, owner_user_id: str) -> list[ModelSupplierOut]:
+    rows = await session.scalars(
+        select(ModelSupplier)
+        .where(ModelSupplier.owner_user_id == owner_user_id)
+        .order_by(ModelSupplier.sort_order, ModelSupplier.name, ModelSupplier.id)
+    )
+    return [supplier_out(row) for row in rows]

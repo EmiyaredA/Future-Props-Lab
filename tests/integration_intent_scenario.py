@@ -11,7 +11,6 @@ import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import select
 
-from app.llm.models import RuntimeAdmission
 from external_intent_scenario import exercise_external_intents
 from studio.apps.identity.accounts import create_account
 from studio.apps.identity.storage.migrations.registry import MIGRATIONS
@@ -20,6 +19,7 @@ from studio.apps.integrations.clients.authority import IntegrationIntentClient
 from studio.apps.model_service.admission.admission import ModelAdmission
 from studio.apps.model_service.storage.integration_records import IntegrationCapacity
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS as MODEL_MIGRATIONS
+from studio.apps.model_service.storage.models.runtime_admission import RuntimeAdmission
 from studio.assembly.independent.identity.application import create_app
 from studio.assembly.independent.model_service.application import create_app as models_app
 from studio.config.settings import Settings

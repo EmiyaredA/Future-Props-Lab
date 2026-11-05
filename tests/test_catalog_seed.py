@@ -6,9 +6,13 @@ import pytest
 from sqlalchemy import event, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.llm.catalog.seed import seed_sayflow_text_catalog
-from app.llm.models import ModelCatalogState, ModelEntry, ModelProvider
 from db.migrations import apply_migrations
+from studio.apps.model_service.catalog.seed import seed_sayflow_text_catalog
+from studio.apps.model_service.storage.models.model_service import (
+    ModelCatalogState,
+    ModelEntry,
+    ModelProvider,
+)
 
 EXPECTED_OPENAI_MODELS = (
     ("senseaudio-s2", ["chat", "tools"], "百万上下文旗舰文本生成与工具调用模型"),

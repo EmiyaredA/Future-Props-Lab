@@ -29,8 +29,8 @@ async def authenticated_business_routes(request: pytest.FixtureRequest, monkeypa
         yield
         return
     from app.console.models import User
-    from app.llm.models import ModelCatalogState
-    from app.llm.routes.model_capacity import model_capacity
+    from studio.apps.model_service.storage.models.model_service import ModelCatalogState
+    from studio.apps.model_service.transport.website.model_capacity import model_capacity
     from studio.assembly.http_dependencies import SessionDep, require_studio_auth
     from studio.assembly.website.models import bind_owner
     from studio.contracts.identity.principal import StudioPrincipal

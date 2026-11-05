@@ -8,8 +8,8 @@ from app.capabilities.agents.harness.approval import (
     ApprovalNotFoundError,
     approval_broker,
 )
-from app.llm.call_logs.credentials import snapshot_from_principal
-from app.llm.routes.model_capacity import spawned_task_admission
+from studio.apps.model_service.call_logs.credentials import snapshot_from_principal
+from studio.apps.model_service.transport.website.model_capacity import spawned_task_admission
 from studio.apps.visual_workshop.assistant.attachments import AssistantAssetError
 from studio.apps.visual_workshop.assistant.conversations import (
     AssistantBusyError,

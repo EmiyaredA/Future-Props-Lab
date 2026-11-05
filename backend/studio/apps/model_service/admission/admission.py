@@ -2,14 +2,14 @@
 
 from sqlalchemy import case, exists, func, or_, select, text
 
-from app.llm.admission import AdmissionBindings
-from app.llm.models.runtime_admission import RuntimeAdmission as Admission
-from app.llm.task_outcomes import (
+from studio.apps.model_service.admission.bindings import AdmissionBindings
+from studio.apps.model_service.admission.quotas import QuotaPolicies
+from studio.apps.model_service.generation.outcomes import (
     SUBMISSION_INTERRUPTED_MESSAGE,
     TERMINAL_STATUSES,
     confirmed_terminal,
 )
-from studio.apps.model_service.admission.quotas import QuotaPolicies
+from studio.apps.model_service.storage.models.runtime_admission import RuntimeAdmission as Admission
 from studio.apps.model_service.storage.task_records import TASK_MODELS
 from studio.contracts.identity.errors import AccountError
 from studio.runtime.database.task_records import load_runner_task

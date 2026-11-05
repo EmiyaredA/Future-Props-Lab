@@ -6,8 +6,8 @@ from tempfile import mkdtemp
 
 from sqlalchemy import select, text
 
-from app.llm.visual_generation_model import VisualGenerationValidationError
 from studio.apps.model_service.admission.admission import settle
+from studio.apps.model_service.catalog.visual_generation import VisualGenerationValidationError
 from studio.apps.model_service.storage.visual_generation_records import (
     VisualProviderBatch,
     VisualProviderTask,

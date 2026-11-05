@@ -11,31 +11,6 @@ from starlette.datastructures import MutableHeaders
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.capabilities.asset_store.errors import AssetError
-from app.demo_runtime.engine import DemoRuntime
-from app.llm.catalog.http_bindings import CatalogBindings
-from app.llm.inference.runner import InferenceRunner
-from app.llm.library_inputs import LibraryInputBindings
-from app.llm.library_outputs import LibraryOutputBindings
-from app.llm.models import ModelTestGenerationAsset, ModelTestGenerationTask
-from app.llm.playground.generation_assets import ROLE_FIELDS
-from app.llm.playground.generation_runner import ModelTestGenerationRunner
-from app.llm.playground.recovery import recover_interrupted_model_test_runs
-from app.llm.playground.transcription_runner import ModelTestTranscriptionRunner
-from app.llm.provider_transports import ProviderTransports
-from app.llm.routes.local_models import router as local_router
-from app.llm.routes.model_capacity import ModelCapacity
-from app.llm.routes.model_inference import router as inference_router
-from app.llm.routes.models import (
-    call_logs,
-    diagnostics,
-    model_test,
-    model_test_generation,
-    model_test_realtime,
-    model_test_transcription,
-    suppliers,
-)
-from app.llm.routes.models.catalog import router as catalog_router
-from app.llm.stream_access import ModelStreamAccess
 from studio.apps.model_service.account_events import CatalogProvisioningRunner
 from studio.apps.model_service.admission.admission import ModelAdmission, settle
 from studio.apps.model_service.admission.execution_authority import ModelTaskAuthority
@@ -46,23 +21,36 @@ from studio.apps.model_service.annotation_transcription import (
 )
 from studio.apps.model_service.assistant_model_runs import AssistantModelExpiry, AssistantModelRuns
 from studio.apps.model_service.audit.audit_delivery import ModelAuditDelivery
+from studio.apps.model_service.catalog.http_bindings import CatalogBindings
 from studio.apps.model_service.defaults import OwnedCatalogDefaults
 from studio.apps.model_service.demo import DemoConfiguration, DemoServices
 from studio.apps.model_service.demo_installations import DemoInstallations
+from studio.apps.model_service.demonstration.execution import DemoRuntime
 from studio.apps.model_service.galgame_transcription import (
     GalgameTranscription,
     recover_transcription_attempts,
 )
 from studio.apps.model_service.governance import router as governance_router
+from studio.apps.model_service.inference.runner import InferenceRunner
+from studio.apps.model_service.library.inputs import LibraryInputBindings
+from studio.apps.model_service.library.outputs import LibraryOutputBindings
 from studio.apps.model_service.library_inputs import HttpLibraryInputs
 from studio.apps.model_service.library_outputs import HttpLibraryOutputs
+from studio.apps.model_service.playground.generation_assets import ROLE_FIELDS
+from studio.apps.model_service.playground.generation_runner import ModelTestGenerationRunner
+from studio.apps.model_service.playground.recovery import recover_interrupted_model_test_runs
+from studio.apps.model_service.playground.transcription_runner import ModelTestTranscriptionRunner
 from studio.apps.model_service.provisioning import CatalogProvisioning
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.models.model_test import (
+    ModelTestGenerationAsset,
+    ModelTestGenerationTask,
+)
 from studio.apps.model_service.storage.native_models import NativeModelBroker
 from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
 from studio.apps.model_service.stream_access import access_check
 from studio.apps.model_service.template_sync import TemplateSynchronization
-from studio.apps.model_service.templates import initialize_account_catalog
+from studio.apps.model_service.templates.policy import initialize_account_catalog
 from studio.apps.model_service.transport.assistant_model_http import (
     router as assistant_model_router,
 )
@@ -76,12 +64,27 @@ from studio.apps.model_service.transport.integration_capacity_http import (
     router as integration_capacity_router,
 )
 from studio.apps.model_service.transport.native_api import attach_native
+from studio.apps.model_service.transport.provider_bindings import ProviderTransports
 from studio.apps.model_service.transport.socket_auth import socket_authenticator
+from studio.apps.model_service.transport.stream_access import ModelStreamAccess
 from studio.apps.model_service.transport.visual_catalog_http import router as visual_catalog_router
 from studio.apps.model_service.transport.visual_generation_http import (
     router as visual_generation_router,
 )
 from studio.apps.model_service.transport.visual_review_http import router as visual_review_router
+from studio.apps.model_service.transport.website.local_models import router as local_router
+from studio.apps.model_service.transport.website.model_capacity import ModelCapacity
+from studio.apps.model_service.transport.website.model_inference import router as inference_router
+from studio.apps.model_service.transport.website.models import (
+    call_logs,
+    diagnostics,
+    model_test,
+    model_test_generation,
+    model_test_realtime,
+    model_test_transcription,
+    suppliers,
+)
+from studio.apps.model_service.transport.website.models.catalog import router as catalog_router
 from studio.apps.model_service.visual.visual_generation_intake import VisualGenerationIntake
 from studio.apps.model_service.visual.visual_generation_results import VisualGenerationResults
 from studio.apps.model_service.visual.visual_generation_runner import VisualGenerationRunner

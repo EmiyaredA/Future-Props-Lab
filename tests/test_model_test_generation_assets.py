@@ -9,8 +9,14 @@ import pytest
 from sqlalchemy import delete
 
 from app.capabilities.asset_store.models import VisualAsset
-from app.llm.models import ModelTestGenerationAsset, ModelTestGenerationTask
-from app.llm.playground.generation_assets import GenerationAssetError, ModelTestGenerationAssets
+from studio.apps.model_service.playground.generation_assets import (
+    GenerationAssetError,
+    ModelTestGenerationAssets,
+)
+from studio.apps.model_service.storage.models.model_test import (
+    ModelTestGenerationAsset,
+    ModelTestGenerationTask,
+)
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.config.settings import get_settings
 from studio.runtime.time import utc_now

@@ -4,10 +4,10 @@ import json
 import httpx
 import pytest
 
-from app.llm.providers import zealman_live
-from app.llm.providers.zealman_live import ZealmanLiveMonitor, apply_event
-from app.llm.providers.zealman_progress import execution_info
-from app.llm.providers.zealman_video import get_task
+from studio.apps.model_service.providers import zealman_live
+from studio.apps.model_service.providers.zealman_live import ZealmanLiveMonitor, apply_event
+from studio.apps.model_service.providers.zealman_progress import execution_info
+from studio.apps.model_service.providers.zealman_video import get_task
 from studio.contracts.model_service.task_execution import TaskExecutionInfo
 from studio.runtime.time import utc_now
 

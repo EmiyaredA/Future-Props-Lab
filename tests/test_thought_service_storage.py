@@ -10,7 +10,7 @@ from types import SimpleNamespace
 import pytest
 from sqlalchemy import select
 
-from app.llm.models import ModelEntry
+from studio.apps.model_service.storage.models.model_service import ModelEntry
 from studio.apps.thought_workshop.publication.models import Publication
 from studio.apps.thought_workshop.publication.use_cases import Community
 from studio.apps.thought_workshop.storage.migrations.registry import MIGRATIONS
@@ -66,7 +66,7 @@ assert len(MODELS) == 33
 for name in ('studio.assembly.website.models',
     'studio.runtime.database.website',
     'app.console.models.accounts',
-             'app.llm.models', 'app.capabilities.asset_store.models'):
+             'studio.apps.model_service.storage.models', 'app.capabilities.asset_store.models'):
     assert name not in sys.modules, name
 """,
         ],
@@ -162,7 +162,7 @@ async def run():
     for name in ("studio.runtime.database.website",
         "studio.assembly.website.models",
         "app.console.models.accounts",
-        "app.llm.models",
+        "studio.apps.model_service.storage.models",
                  "app.capabilities.asset_store.models"):
         assert name not in sys.modules, name
 asyncio.run(run())
@@ -230,7 +230,7 @@ async def run():
     for name in ("studio.runtime.database.website",
         "studio.assembly.website.models",
         "app.console.models.accounts",
-        "app.llm.models",
+        "studio.apps.model_service.storage.models",
                  "app.capabilities.asset_store.models"):
         assert name not in sys.modules, name
 asyncio.run(run())

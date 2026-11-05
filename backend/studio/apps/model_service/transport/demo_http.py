@@ -2,8 +2,13 @@
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 
-from app.demo_runtime.engine import completion_sse
-from app.demo_runtime.schemas import (
+from studio.apps.model_service.audit.audit import request_audits
+from studio.apps.model_service.demonstration.execution import completion_sse
+from studio.apps.model_service.transport.errors import mapped
+from studio.apps.model_service.transport.http_auth import browser
+from studio.apps.model_service.transport.website.model_capacity import ModelCapacity
+from studio.assembly.http_dependencies import SessionDep, StudioAuth
+from studio.contracts.model_service.demo import (
     DemoActionIn,
     DemoConfigIn,
     DemoInstallIn,
@@ -12,11 +17,6 @@ from app.demo_runtime.schemas import (
     MockCompletionIn,
     ServiceId,
 )
-from app.llm.http_errors import mapped
-from app.llm.routes.model_capacity import ModelCapacity
-from studio.apps.model_service.audit.audit import request_audits
-from studio.apps.model_service.transport.http_auth import browser
-from studio.assembly.http_dependencies import SessionDep, StudioAuth
 
 router = APIRouter(tags=["demo-services"])
 call_router = APIRouter(prefix="/demo-services", tags=["demo-calls"], dependencies=[ModelCapacity])

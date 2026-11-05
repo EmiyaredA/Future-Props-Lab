@@ -11,16 +11,19 @@ from app.capabilities.asset_store.models import (
 )
 from app.capabilities.asset_store.policy import REFERENCE_IMAGE_MIME_TYPES
 from app.capabilities.asset_store.storage import AssetStorage
-from app.llm.models import (
-    ModelEntry,
-    ModelProvider,
+from studio.apps.model_service.catalog.visual import generation_options
+from studio.apps.model_service.catalog.visual_generation import (
+    VisualGenerationValidationError,
+    select_visual_model,
 )
-from app.llm.providers.seedance_references import SeedanceReference, validate_seedance_references
-from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
-from app.llm.providers.volcengine_image import SEEDREAM_SIZES
-from app.llm.visual_catalog import generation_options
-from app.llm.visual_generation_model import VisualGenerationValidationError, select_visual_model
-from app.llm.visual_generation_payload import prepare_visual_payload
+from studio.apps.model_service.generation.visual_payload import prepare_visual_payload
+from studio.apps.model_service.providers.seedance_references import (
+    SeedanceReference,
+    validate_seedance_references,
+)
+from studio.apps.model_service.providers.senseaudio_image import IMAGE_MODEL_SIZES
+from studio.apps.model_service.providers.volcengine_image import SEEDREAM_SIZES
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.visual_workshop.batch_nodes import attach_grid_nodes
 from studio.apps.visual_workshop.generation_common import (
     GenerationError,

@@ -2,7 +2,7 @@
 
 from dataclasses import replace
 
-from app.llm.admission import AdmissionProvider
+from studio.apps.model_service.admission.bindings import AdmissionProvider
 
 
 def request_admission(ledger, authority, *, admit_tasks):

@@ -96,9 +96,9 @@ sequenceDiagram
 
 ## 代码入口
 
-1. `backend/app/llm/providers/streaming.py`
-2. `backend/app/llm/providers`
-3. `backend/app/llm/inference`
+1. `backend/studio/apps/model_service/providers/streaming.py`
+2. `backend/studio/apps/model_service/providers`
+3. `backend/studio/apps/model_service/inference`
 
 ## 按需安装本地语音模型
 

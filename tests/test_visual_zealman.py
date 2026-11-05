@@ -6,10 +6,10 @@ import httpx
 import pytest
 from sqlalchemy import delete
 
-from app.llm.models import ModelEntry, ModelProvider
-from app.llm.providers._senseaudio import ProviderTaskStatus
-from app.llm.providers.zealman_video import create_task
-from app.llm.providers.zealman_workflows import U06, U17
+from studio.apps.model_service.providers._senseaudio import ProviderTaskStatus
+from studio.apps.model_service.providers.zealman_video import create_task
+from studio.apps.model_service.providers.zealman_workflows import U06, U17
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.visual_workshop.storage.models import VisualGenerationTask
 from studio.apps.visual_workshop.website.generation_runner import VisualGenerationRunner
 from studio.config.settings import get_settings
@@ -59,10 +59,14 @@ async def test_workshop_keyless_workflow_references_completion_and_recovery(monk
     async def allow(_url):
         pass
 
-    monkeypatch.setattr("app.llm.visual_generation_submission.upload_reference", upload)
-    monkeypatch.setattr("app.llm.visual_generation_submission.create_task", submit)
+    monkeypatch.setattr(
+        "studio.apps.model_service.generation.visual_submission.upload_reference", upload
+    )
+    monkeypatch.setattr(
+        "studio.apps.model_service.generation.visual_submission.create_task", submit
+    )
     monkeypatch.setattr("studio.apps.visual_workshop.website.generation_runner.get_task", poll)
-    monkeypatch.setattr("app.llm.generation_runtime.media.assert_public_https", allow)
+    monkeypatch.setattr("studio.apps.model_service.generation.media.assert_public_https", allow)
     provider = ModelProvider(
         owner_user_id="test-user",
         id=str(uuid4()),

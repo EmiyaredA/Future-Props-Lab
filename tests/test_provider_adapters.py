@@ -3,16 +3,20 @@ from io import BytesIO
 import httpx
 import pytest
 
-from app.llm.providers._senseaudio import SenseAudioProviderError
-from app.llm.providers.senseaudio_asr import (
+from studio.apps.model_service.providers._senseaudio import SenseAudioProviderError
+from studio.apps.model_service.providers.senseaudio_asr import (
     SenseAudioAsrFileTooLarge,
     transcribe_audio,
 )
-from app.llm.providers.senseaudio_image import create_image_task, get_image_task
-from app.llm.providers.senseaudio_video import create_video_task, get_video_task
-from app.llm.providers.streaming import ChatMessageInput, ImageInput, stream_text_completion
-from app.llm.providers.text import invoke_diagnostic
-from app.llm.providers.transcription import transcribe_model_audio
+from studio.apps.model_service.providers.senseaudio_image import create_image_task, get_image_task
+from studio.apps.model_service.providers.senseaudio_video import create_video_task, get_video_task
+from studio.apps.model_service.providers.streaming import (
+    ChatMessageInput,
+    ImageInput,
+    stream_text_completion,
+)
+from studio.apps.model_service.providers.text import invoke_diagnostic
+from studio.apps.model_service.providers.transcription import transcribe_model_audio
 
 
 @pytest.mark.asyncio

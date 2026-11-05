@@ -32,7 +32,8 @@ def test_attribution_import_does_not_initialize_accounts_or_the_legacy_database(
             "import sys; import studio.assembly.model_credentials; "
             "assert 'studio.runtime.database.website' not in sys.modules; "
             "assert not any(n.startswith('app.console.models') for n in sys.modules); "
-            "assert not any(n.startswith('app.llm.models') for n in sys.modules)",
+            "assert not any(n.startswith('studio.apps.model_service.storage.models') "
+            "for n in sys.modules)",
         ],
         cwd=root,
         env={

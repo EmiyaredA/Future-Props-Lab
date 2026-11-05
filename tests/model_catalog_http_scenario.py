@@ -12,18 +12,18 @@ import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi import FastAPI, HTTPException
 
-from app.llm.catalog.http_bindings import CatalogBindings
-from app.llm.models import (
-    LocalModelInstallation,
+from studio.apps.model_service.catalog.http_bindings import CatalogBindings
+from studio.apps.model_service.defaults import OwnedCatalogDefaults
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.models.local_models import LocalModelInstallation
+from studio.apps.model_service.storage.models.model_service import (
     ModelCatalogState,
     ModelEntry,
     ModelProvider,
-    ModelSupplier,
 )
-from app.llm.routes.models import catalog, suppliers
-from studio.apps.model_service.defaults import OwnedCatalogDefaults
-from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.models.model_supplier import ModelSupplier
 from studio.apps.model_service.storage.service_models import AccountDefaults
+from studio.apps.model_service.transport.website.models import catalog, suppliers
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.claims import Actor, issue_context
 from studio.contracts.identity.permissions import role_scopes

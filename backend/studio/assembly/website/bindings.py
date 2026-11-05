@@ -18,29 +18,12 @@ from app.console.governance.database_auth import (
     authenticate_database_request,
     authenticate_database_websocket,
 )
-from app.console.governance.demo_configuration import read_demo_configuration
-from app.console.governance.generation_queue import (
-    admit_generation_tasks,
-)
 from app.console.governance.provisioning import create_account
-from app.console.governance.runtime_quotas import acquire, attach, release
-from app.demo_runtime.engine import DemoRuntime
 from app.integrations.external.catalog import ExternalConnections
 from app.integrations.http_bindings import IntegrationBindings
 from app.integrations.mcp import McpCatalog
 from app.integrations.skills.catalog import SkillCatalog
 from app.integrations.tool_apis import ToolApiCatalog
-from app.llm.admission import AdmissionBindings
-from app.llm.call_logs.credentials import snapshot_from_principal
-from app.llm.catalog.http_bindings import CatalogBindings
-from app.llm.catalog.legacy_defaults import LegacyCatalogDefaults
-from app.llm.catalog.legacy_usage import LegacyCatalogTaskUsage
-from app.llm.legacy_library_inputs import LegacyLibraryInputs
-from app.llm.legacy_library_outputs import LegacyLibraryOutputs
-from app.llm.library_inputs import LibraryInputBindings
-from app.llm.library_outputs import LibraryOutputBindings
-from app.llm.playground.legacy_generation_references import LegacyGenerationReferences
-from app.llm.provider_transports import ProviderTransports
 from app.tool_navigation.video_download import VideoDownloads
 from app.tool_navigation.video_download_dependencies import probe_deps
 from app.tool_navigation.video_download_execution import _run_yt_dlp
@@ -52,6 +35,23 @@ from studio.apps.audio_annotation.projects import AudioAnnotationProjects
 from studio.apps.audio_annotation.transcription import legacy_transcribe
 from studio.apps.director_desk.agent_session import DirectorEditorSessions
 from studio.apps.interview_assistant.executor_status import executor_status
+from studio.apps.model_service.admission.bindings import AdmissionBindings
+from studio.apps.model_service.admission.website_queue import admit_generation_tasks
+from studio.apps.model_service.admission.website_quotas import acquire, attach, release
+from studio.apps.model_service.call_logs.credentials import snapshot_from_principal
+from studio.apps.model_service.catalog.http_bindings import CatalogBindings
+from studio.apps.model_service.catalog.legacy_defaults import LegacyCatalogDefaults
+from studio.apps.model_service.catalog.legacy_usage import LegacyCatalogTaskUsage
+from studio.apps.model_service.demonstration.execution import DemoRuntime
+from studio.apps.model_service.demonstration.website_storage import read_demo_configuration
+from studio.apps.model_service.library.inputs import LibraryInputBindings
+from studio.apps.model_service.library.outputs import LibraryOutputBindings
+from studio.apps.model_service.library.website_inputs import LegacyLibraryInputs
+from studio.apps.model_service.library.website_outputs import LegacyLibraryOutputs
+from studio.apps.model_service.playground.legacy_generation_references import (
+    LegacyGenerationReferences,
+)
+from studio.apps.model_service.transport.provider_bindings import ProviderTransports
 from studio.apps.motion_compositor.legacy_project_resources import LegacyProjectResources
 from studio.apps.presentation_workshop.exchange.legacy_import import import_legacy_presentation
 from studio.apps.presentation_workshop.legacy_project_assets import LegacyProjectAssets

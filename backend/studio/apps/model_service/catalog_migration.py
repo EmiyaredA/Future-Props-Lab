@@ -12,7 +12,12 @@ from sqlalchemy import JSON, String, func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.llm.models import ModelCatalogState, ModelEntry, ModelProvider, ModelSupplier
+from studio.apps.model_service.storage.models.model_service import (
+    ModelCatalogState,
+    ModelEntry,
+    ModelProvider,
+)
+from studio.apps.model_service.storage.models.model_supplier import ModelSupplier
 from studio.contracts.management.migration_batches import (
     MAX_RECORDS,
     BatchReceipt,

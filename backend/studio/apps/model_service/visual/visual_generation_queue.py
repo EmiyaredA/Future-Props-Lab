@@ -2,9 +2,10 @@
 
 from sqlalchemy import and_, or_, select
 
-from app.llm.models import ModelEntry, RuntimeAdmission
 from studio.apps.model_service.admission.admission import check_capacity, settle
 from studio.apps.model_service.admission.quotas import QuotaPolicies
+from studio.apps.model_service.storage.models.model_service import ModelEntry
+from studio.apps.model_service.storage.models.runtime_admission import RuntimeAdmission
 from studio.contracts.identity.errors import AccountError
 from studio.runtime.time import utc_now
 

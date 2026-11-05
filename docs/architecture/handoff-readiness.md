@@ -239,7 +239,7 @@ npm run test:e2e
 | ------------------ | ------------------------------------------------------------ | --------------------------------------------------------------- |
 | HTTP 与租户        | `routes/` + `WorkspaceDep`                                   | 客户端不提交 Workspace；跨空间 ID 按不存在处理                  |
 | 文件输入与落盘     | `files.IncomingFile` + `AssetStorage`                        | 业务不依赖 FastAPI；写路径必须显式 Workspace                    |
-| 图片/视频后台任务  | `llm/generation_runtime/GenerationTaskDriver`                | 短事务状态转换；网络在事务外；提交中断不重提                    |
+| 图片/视频后台任务  | `studio/apps/model_service/generation/driver/GenerationTaskDriver`                | 短事务状态转换；网络在事务外；提交中断不重提                    |
 | 确定性媒体渲染     | `media_rendering/`                                           | Galgame 直接导出与视频剪辑共用契约；业务包不反向拥有渲染实现    |
 | Workspace 项目原语 | `concurrency/project_records.py`                             | 显式租户谓词和 revision CAS；不提交事务、不承载领域默认值       |
 | Story 1.4 校验     | `schemas/galgame_workshop/story_validation.py`               | 角色、素材、国际化、时间轴、流程、表现层纯函数分层              |

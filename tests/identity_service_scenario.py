@@ -35,7 +35,10 @@ assert "studio.assembly.website.application" not in sys.modules
 assert "studio.assembly.website.routes" not in sys.modules
 assert "studio.assembly.website.models" not in sys.modules
 assert "studio.runtime.database.website" not in sys.modules
-assert not any(name.startswith("app.llm") or name.startswith("app.apps") for name in sys.modules)
+assert not any(
+    name.startswith("studio.apps.model_service") or name.startswith("app.apps")
+    for name in sys.modules
+)
 
 private = Ed25519PrivateKey.generate()
 catalog = RouteCatalog.read(Path("deploy/contracts/ownership.json"))
@@ -768,7 +771,8 @@ async def scenario():
         and "studio.assembly.website.models" not in sys.modules
     )
     assert not any(
-        name.startswith("app.llm") or name.startswith("app.apps") for name in sys.modules
+        name.startswith("studio.apps.model_service") or name.startswith("app.apps")
+        for name in sys.modules
     )
 
 

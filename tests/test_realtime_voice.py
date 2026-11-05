@@ -13,15 +13,19 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from starlette.websockets import WebSocketDisconnect
 
-from app.llm.models import LlmCallLog
-from app.llm.providers.realtime.constants import (
+from studio.apps.model_service.providers.realtime.constants import (
     SENSEAUDIO_DEFAULT_VOICE,
     SENSEAUDIO_PCM_FRAME_BYTES,
     SENSEAUDIO_PCM_FRAME_SECONDS,
 )
-from app.llm.providers.realtime.contracts import ResolvedRealtimeModel
-from app.llm.providers.realtime.senseaudio import SenseAudioRealtimeBridge
-from app.llm.realtime.session import TurnMetrics, _client_configuration, _write_log
+from studio.apps.model_service.providers.realtime.contracts import ResolvedRealtimeModel
+from studio.apps.model_service.providers.realtime.senseaudio import SenseAudioRealtimeBridge
+from studio.apps.model_service.realtime.session import (
+    TurnMetrics,
+    _client_configuration,
+    _write_log,
+)
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
 from website_test_support import SessionLocal, app
 
 
@@ -429,7 +433,7 @@ def test_realtime_client_parameters_are_validated_and_normalized() -> None:
 
 
 def test_realtime_websocket_rejects_origin_and_auth(monkeypatch: pytest.MonkeyPatch) -> None:
-    import app.llm.routes.models.model_test_realtime as route
+    import studio.apps.model_service.transport.website.models.model_test_realtime as route
 
     async def unauthorized(*_args):
         raise HTTPException(401)
@@ -451,7 +455,7 @@ def test_realtime_websocket_rejects_origin_and_auth(monkeypatch: pytest.MonkeyPa
 def test_realtime_websocket_accepts_authenticated_workspace(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import app.llm.routes.models.model_test_realtime as route
+    import studio.apps.model_service.transport.website.models.model_test_realtime as route
 
     async def authenticated(*_args):
         return SimpleNamespace(

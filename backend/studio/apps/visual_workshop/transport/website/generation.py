@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Request
 
-from app.llm.routes.model_capacity import task_admission
+from studio.apps.model_service.transport.website.model_capacity import task_admission
 from studio.apps.visual_workshop.generation_common import GenerationError
 from studio.apps.visual_workshop.generation_routes import generation_error
 from studio.apps.visual_workshop.schemas.generation import (

@@ -5,7 +5,7 @@ import time
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
-from app.llm.models import ModelCatalogState
+from studio.apps.model_service.storage.models.model_service import ModelCatalogState
 from studio.apps.model_service.storage.service_models import (
     AccountDefaults,
     CatalogProvisioningReceipt,

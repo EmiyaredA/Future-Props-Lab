@@ -3887,114 +3887,6 @@
       "model": "IntegrationCheck"
     },
     {
-      "table": "llm_call_logs",
-      "service": "models",
-      "module": "app.llm.models.call_log",
-      "model": "LlmCallLog"
-    },
-    {
-      "table": "local_model_installations",
-      "service": "models",
-      "module": "app.llm.models.local_models",
-      "model": "LocalModelInstallation"
-    },
-    {
-      "table": "local_model_operations",
-      "service": "models",
-      "module": "app.llm.models.local_models",
-      "model": "LocalModelOperation"
-    },
-    {
-      "table": "model_inference_tasks",
-      "service": "models",
-      "module": "app.llm.models.model_inference",
-      "model": "ModelInferenceTask"
-    },
-    {
-      "table": "model_inference_assets",
-      "service": "models",
-      "module": "app.llm.models.model_inference",
-      "model": "ModelInferenceAsset"
-    },
-    {
-      "table": "model_providers",
-      "service": "models",
-      "module": "app.llm.models.model_service",
-      "model": "ModelProvider"
-    },
-    {
-      "table": "model_entries",
-      "service": "models",
-      "module": "app.llm.models.model_service",
-      "model": "ModelEntry"
-    },
-    {
-      "table": "model_catalog_state",
-      "service": "models",
-      "module": "app.llm.models.model_service",
-      "model": "ModelCatalogState"
-    },
-    {
-      "table": "model_suppliers",
-      "service": "models",
-      "module": "app.llm.models.model_supplier",
-      "model": "ModelSupplier"
-    },
-    {
-      "table": "model_template_sync_jobs",
-      "service": "models",
-      "module": "app.llm.models.model_templates",
-      "model": "ModelTemplateSyncJob"
-    },
-    {
-      "table": "model_template_sync_items",
-      "service": "models",
-      "module": "app.llm.models.model_templates",
-      "model": "ModelTemplateSyncItem"
-    },
-    {
-      "table": "model_test_conversations",
-      "service": "models",
-      "module": "app.llm.models.model_test",
-      "model": "ModelTestConversation"
-    },
-    {
-      "table": "model_test_messages",
-      "service": "models",
-      "module": "app.llm.models.model_test",
-      "model": "ModelTestMessage"
-    },
-    {
-      "table": "model_test_attachments",
-      "service": "models",
-      "module": "app.llm.models.model_test",
-      "model": "ModelTestAttachment"
-    },
-    {
-      "table": "model_test_generation_tasks",
-      "service": "models",
-      "module": "app.llm.models.model_test",
-      "model": "ModelTestGenerationTask"
-    },
-    {
-      "table": "model_test_generation_assets",
-      "service": "models",
-      "module": "app.llm.models.model_test",
-      "model": "ModelTestGenerationAsset"
-    },
-    {
-      "table": "model_test_transcription_tasks",
-      "service": "models",
-      "module": "app.llm.models.model_test",
-      "model": "ModelTestTranscriptionTask"
-    },
-    {
-      "table": "runtime_admissions",
-      "service": "models",
-      "module": "app.llm.models.runtime_admission",
-      "model": "RuntimeAdmission"
-    },
-    {
       "table": "tool_navigation_items",
       "service": "tools",
       "module": "app.tool_navigation.models",
@@ -4695,6 +4587,114 @@
       "service": "models",
       "module": "studio.apps.model_service.storage.integration_records",
       "model": "IntegrationCapacity"
+    },
+    {
+      "table": "llm_call_logs",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.models.call_log",
+      "model": "LlmCallLog"
+    },
+    {
+      "table": "local_model_installations",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.models.local_models",
+      "model": "LocalModelInstallation"
+    },
+    {
+      "table": "local_model_operations",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.models.local_models",
+      "model": "LocalModelOperation"
+    },
+    {
+      "table": "model_inference_tasks",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.models.model_inference",
+      "model": "ModelInferenceTask"
+    },
+    {
+      "table": "model_inference_assets",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.models.model_inference",
+      "model": "ModelInferenceAsset"
+    },
+    {
+      "table": "model_providers",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.models.model_service",
+      "model": "ModelProvider"
+    },
+    {
+      "table": "model_entries",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.models.model_service",
+      "model": "ModelEntry"
+    },
+    {
+      "table": "model_catalog_state",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.models.model_service",
+      "model": "ModelCatalogState"
+    },
+    {
+      "table": "model_suppliers",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.models.model_supplier",
+      "model": "ModelSupplier"
+    },
+    {
+      "table": "model_template_sync_jobs",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.models.model_templates",
+      "model": "ModelTemplateSyncJob"
+    },
+    {
+      "table": "model_template_sync_items",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.models.model_templates",
+      "model": "ModelTemplateSyncItem"
+    },
+    {
+      "table": "model_test_conversations",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.models.model_test",
+      "model": "ModelTestConversation"
+    },
+    {
+      "table": "model_test_messages",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.models.model_test",
+      "model": "ModelTestMessage"
+    },
+    {
+      "table": "model_test_attachments",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.models.model_test",
+      "model": "ModelTestAttachment"
+    },
+    {
+      "table": "model_test_generation_tasks",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.models.model_test",
+      "model": "ModelTestGenerationTask"
+    },
+    {
+      "table": "model_test_generation_assets",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.models.model_test",
+      "model": "ModelTestGenerationAsset"
+    },
+    {
+      "table": "model_test_transcription_tasks",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.models.model_test",
+      "model": "ModelTestTranscriptionTask"
+    },
+    {
+      "table": "runtime_admissions",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.models.runtime_admission",
+      "model": "RuntimeAdmission"
     },
     {
       "table": "model_native_jobs",

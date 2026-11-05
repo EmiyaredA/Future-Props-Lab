@@ -9,8 +9,8 @@ from sqlalchemy import select
 from tests.test_account_system import create_test_account, login_and_change_password, unsafe_headers
 from tests.thought_helpers import delete_note
 
-from app.llm.models import LlmCallLog
-from app.llm.providers.streaming import TextDelta
+from studio.apps.model_service.providers.streaming import TextDelta
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
 from studio.apps.thought_workshop.assistant import PreparedWriting
 from studio.apps.thought_workshop.legacy_writing import ProviderSelection, writing_events
 from studio.apps.thought_workshop.writing import WritingModel

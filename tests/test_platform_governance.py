@@ -5,9 +5,9 @@ import httpx
 import pytest
 from sqlalchemy import select
 
-from app.console.governance.model_template_sync import ModelTemplateSyncRunner
 from app.console.models import User
-from app.llm.models import ModelProvider
+from studio.apps.model_service.storage.models.model_service import ModelProvider
+from studio.apps.model_service.templates.website_sync import ModelTemplateSyncRunner
 from test_workspace_governance import client_account
 from website_test_support import SessionLocal, app
 

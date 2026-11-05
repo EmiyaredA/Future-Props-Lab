@@ -13,7 +13,7 @@ from types import SimpleNamespace
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "backend"))
 
-from app.llm.local_models.files import owned_path  # noqa: E402
+from studio.host.local_models.files import owned_path  # noqa: E402
 from studio.host.local_models.models_control import ModelsControl  # noqa: E402
 from studio.host.local_models.models_transport import ModelsTransport  # noqa: E402
 from studio.host.local_models.models_worker import ModelsWorker  # noqa: E402

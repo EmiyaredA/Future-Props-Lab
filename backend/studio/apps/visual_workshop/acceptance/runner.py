@@ -7,10 +7,10 @@ from sqlalchemy import select, update
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.inspection import inspect_media, verify_video
-from app.llm.models import LlmCallLog
-from app.llm.visual_catalog import review_models
-from app.llm.visual_review import evaluate_review
 from app.runtime.credentials import decrypt_secret
+from studio.apps.model_service.catalog.visual import review_models
+from studio.apps.model_service.providers.visual_review import evaluate_review
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
 from studio.apps.visual_workshop.acceptance.catalog import connection_signature, fixed_model
 from studio.apps.visual_workshop.acceptance.execution.agents import evaluate_agent
 from studio.apps.visual_workshop.acceptance.media import (

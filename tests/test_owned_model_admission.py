@@ -10,12 +10,12 @@ from pathlib import Path
 import pytest
 from sqlalchemy import select
 
-from app.llm.models import ModelInferenceTask
-from app.llm.models.runtime_admission import RuntimeAdmission as Admission
-from app.llm.task_outcomes import SUBMISSION_INTERRUPTED_MESSAGE
 from studio.apps.model_service.admission.admission import ModelAdmission, settle, usage
 from studio.apps.model_service.admission.quotas import QuotaPolicies
+from studio.apps.model_service.generation.outcomes import SUBMISSION_INTERRUPTED_MESSAGE
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.models.model_inference import ModelInferenceTask
+from studio.apps.model_service.storage.models.runtime_admission import RuntimeAdmission as Admission
 from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
 from studio.contracts.identity.errors import AccountError
 from studio.contracts.identity.principal import StudioPrincipal

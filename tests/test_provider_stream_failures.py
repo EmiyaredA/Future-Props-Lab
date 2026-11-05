@@ -3,7 +3,7 @@ import json
 import httpx
 import pytest
 
-from app.llm.providers.streaming import (
+from studio.apps.model_service.providers.streaming import (
     ChatMessageInput,
     ProviderStreamError,
     stream_text_completion,

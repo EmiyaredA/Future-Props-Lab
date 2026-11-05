@@ -10,13 +10,13 @@ from tests.test_creative_project_certification import CREDENTIALS
 from tests.test_galgame_annotation_import import _audio_bytes
 from tests.test_independent_project_catalog import authorize
 
-from app.llm.providers.transcription import TranscriptionResult, TranscriptSegment
 from studio.apps.galgame_workshop.storage.migrations.registry import MIGRATIONS
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.model_service.galgame_transcription import (
     GalgameTranscription,
     recover_transcription_attempts,
 )
+from studio.apps.model_service.providers.transcription import TranscriptionResult, TranscriptSegment
 from studio.apps.model_service.transport.galgame_asr_http import router as catalog_router
 from studio.apps.model_service.transport.galgame_transcription_http import router as attempts_router
 from studio.assembly.independent.galgame_workshop.application import create_app

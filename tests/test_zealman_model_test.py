@@ -6,10 +6,10 @@ from uuid import uuid4
 import httpx
 import pytest
 
-from app.llm.models import ModelTestGenerationTask
-from app.llm.playground.generation_runner import ModelTestGenerationRunner
-from app.llm.providers._senseaudio import ProviderTaskStatus
-from app.llm.providers.zealman_workflows import U06, U17
+from studio.apps.model_service.playground.generation_runner import ModelTestGenerationRunner
+from studio.apps.model_service.providers._senseaudio import ProviderTaskStatus
+from studio.apps.model_service.providers.zealman_workflows import U06, U17
+from studio.apps.model_service.storage.models.model_test import ModelTestGenerationTask
 from studio.runtime.time import utc_now
 from website_test_support import SessionLocal, app
 
@@ -28,9 +28,11 @@ async def test_keyless_workflow_api_completion_materialization_logs_and_catalog_
     async def poll(**_kwargs):
         return ProviderTaskStatus("completed", 100, "https://example.test/video.mp4")
 
-    monkeypatch.setattr("app.llm.playground.generation_runner.create_task", submit)
-    monkeypatch.setattr("app.llm.playground.generation_runner.get_task", poll)
-    monkeypatch.setattr("app.llm.generation_runtime.media.assert_public_https", _allow)
+    monkeypatch.setattr(
+        "studio.apps.model_service.playground.generation_runner.create_task", submit
+    )
+    monkeypatch.setattr("studio.apps.model_service.playground.generation_runner.get_task", poll)
+    monkeypatch.setattr("studio.apps.model_service.generation.media.assert_public_https", _allow)
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
@@ -160,7 +162,7 @@ async def test_expired_workflow_task_fails_before_polling(monkeypatch):
     async def poll(**_kwargs):
         pytest.fail("expired tasks must not poll")
 
-    monkeypatch.setattr("app.llm.playground.generation_runner.get_task", poll)
+    monkeypatch.setattr("studio.apps.model_service.playground.generation_runner.get_task", poll)
     # Directly exercise the owner hook with a restored context; no upstream resubmission.
     runner = ModelTestGenerationRunner(SessionLocal)
     async with SessionLocal() as session:

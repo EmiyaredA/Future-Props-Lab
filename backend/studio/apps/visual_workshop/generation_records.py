@@ -1,7 +1,6 @@
 from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.llm.generation_state import can_recover_generation_result, cancel_queued
 from studio.apps.visual_workshop.batch_retry import reopen_batch_after_retry
 from studio.apps.visual_workshop.generation_common import (
     GenerationError,
@@ -19,6 +18,8 @@ from studio.apps.visual_workshop.storage.models import (
     VisualGenerationTask,
     VisualWorkshopProject,
 )
+from studio.contracts.model_service.generation_recovery import can_recover_generation_result
+from studio.runtime.database.task_records import transition_task
 from studio.runtime.time import utc_now
 
 ACTIVE_TASK_STATUSES = ("queued", "submitting", "pending", "processing")
@@ -56,7 +57,16 @@ class GenerationRecords:
         row = await self.session.get(VisualGenerationTask, task_id)
         if row is None:
             raise GenerationError("生成任务不存在", code="not_found", status=404)
-        if not await cancel_queued(self.session, row, expected_revision):
+        now = utc_now()
+        if not await transition_task(
+            self.session,
+            VisualGenerationTask,
+            row.id,
+            expected_revision,
+            expected={"status": "queued", "provider_task_id": None},
+            choices={"generation_kind": ("image", "video")},
+            changes={"status": "cancelled", "updated_at": now, "completed_at": now},
+        ):
             await self.session.refresh(row)
             current = generation_task_out(row).model_dump(mode="json")
             raise GenerationError(

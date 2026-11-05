@@ -5,10 +5,12 @@ import sqlite3
 import pytest
 from sqlalchemy import select
 
-from app.llm.models import ModelInferenceTask, ModelTestTranscriptionTask, RuntimeAdmission
 from db.migrations import apply_migrations
 from studio.apps.model_service.catalog_migration import ModelsImportReceipt
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.models.model_inference import ModelInferenceTask
+from studio.apps.model_service.storage.models.model_test import ModelTestTranscriptionTask
+from studio.apps.model_service.storage.models.runtime_admission import RuntimeAdmission
 from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
 from studio.runtime.database.migrations import apply, check
 from studio.runtime.database.sessions import Database

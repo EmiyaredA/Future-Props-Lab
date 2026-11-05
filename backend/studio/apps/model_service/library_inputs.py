@@ -3,7 +3,7 @@
 from contextlib import asynccontextmanager
 
 from app.capabilities.asset_store.errors import AssetError
-from app.llm.library_inputs import LibraryInput
+from studio.apps.model_service.library.inputs import LibraryInput
 from studio.runtime.files.incoming import ModelInputDescription
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 

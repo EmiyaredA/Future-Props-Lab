@@ -4,23 +4,23 @@ import time
 
 from sqlalchemy import select, text, update
 
-from app.llm.catalog.template_reconciliation import (
+from studio.apps.model_service.admission.task_usage import OwnedCatalogTaskUsage
+from studio.apps.model_service.audit.audit import add_child_event, add_event
+from studio.apps.model_service.catalog.template_reconciliation import (
     apply_template,
     catalog_rows,
     reconciliation_preview,
 )
-from app.llm.models import ModelSupplier
-from app.llm.models import ModelTemplateSyncItem as Item
-from app.llm.models import ModelTemplateSyncJob as Job
-from studio.apps.model_service.admission.task_usage import OwnedCatalogTaskUsage
-from studio.apps.model_service.audit.audit import add_child_event, add_event
+from studio.apps.model_service.storage.models.model_supplier import ModelSupplier
+from studio.apps.model_service.storage.models.model_templates import ModelTemplateSyncItem as Item
+from studio.apps.model_service.storage.models.model_templates import ModelTemplateSyncJob as Job
 from studio.apps.model_service.storage.service_models import TemplateSyncAuthority
 from studio.contracts.identity.errors import AccountError
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now
 
 from .defaults import OwnedCatalogDefaults
-from .templates import RoleTemplates
+from .templates.policy import RoleTemplates
 
 
 async def job_view(session, job_id):

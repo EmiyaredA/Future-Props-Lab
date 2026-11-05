@@ -38,7 +38,7 @@ def test_portal_source_closure_does_not_package_account_or_workshop_implementati
             (
                 "app.apps.",
                 "app.console.models",
-                "app.llm.",
+                "studio.apps.model_service.",
                 "studio.apps.identity",
                 "studio.apps.agent_workbench",
                 "studio.host",

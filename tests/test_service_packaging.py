@@ -17,7 +17,9 @@ def test_identity_source_closure_does_not_package_unrelated_business():
     for name in closure:
         if public_client_module(name):
             continue
-        assert not name.startswith(("app.llm", "app.apps", "app.capabilities.asset_store"))
+        assert not name.startswith(
+            ("studio.apps.model_service", "app.apps", "app.capabilities.asset_store")
+        )
         assert name not in {
             "studio.assembly.website.models",
             "studio.assembly.website.application",
@@ -71,7 +73,12 @@ def test_agents_image_contains_no_identity_orm_or_native_readers():
         if public_client_module(name):
             continue
         assert not name.startswith(
-            ("studio.apps.identity", "studio.host", "app.console.models", "app.llm")
+            (
+                "studio.apps.identity",
+                "studio.host",
+                "app.console.models",
+                "studio.apps.model_service",
+            )
         )
         assert name not in {
             "studio.assembly.website.application",
@@ -103,7 +110,13 @@ def test_gateway_image_contains_no_business_or_identity_database():
     assert "studio.runtime.http.capability_client" in closure
     assert not any(
         name.startswith(
-            ("app.apps", "app.llm", "app.console.models", "studio.apps.identity", "studio.host")
+            (
+                "app.apps",
+                "studio.apps.model_service",
+                "app.console.models",
+                "studio.apps.identity",
+                "studio.host",
+            )
         )
         for name in closure
         if not public_client_module(name)
@@ -124,7 +137,7 @@ def test_renderer_packages_only_owned_media_processing_and_no_foreign_storage():
         name.startswith(
             (
                 "app.apps.",
-                "app.llm.",
+                "studio.apps.model_service.",
                 "app.console.models",
                 "app.capabilities.asset_store.models",
                 "studio.apps.asset_library",
@@ -180,7 +193,7 @@ def test_models_overlay_owns_state_and_has_provider_egress_without_host_mounts()
     [
         "studio.runtime.database.website",
         "app.console.models.accounts",
-        "app.llm.models",
+        "studio.apps.model_service.storage.models",
         "studio.host.session_collection.collector",
     ],
 )
@@ -202,7 +215,13 @@ def test_integrations_image_packages_owned_http_and_only_file_value_contracts():
     assert "app.capabilities.asset_store.incoming" in closure
     assert not any(
         name.startswith(
-            ("app.llm", "app.console", "app.apps", "studio.host", "studio.apps.asset_library")
+            (
+                "studio.apps.model_service",
+                "app.console",
+                "app.apps",
+                "studio.host",
+                "studio.apps.asset_library",
+            )
         )
         for name in closure
         if not public_client_module(name)
@@ -309,9 +328,9 @@ def test_project_owner_images_and_compose_mounts_are_isolated(service, other):
         f"studio.apps.{other}_workshop",
         "app.capabilities.asset_store.models",
         "studio.runtime.database.website",
-        "app.llm.models",
-        "app.llm.providers",
-        "app.llm.generation_runtime",
+        "studio.apps.model_service.storage.models",
+        "studio.apps.model_service.providers",
+        "studio.apps.model_service.generation",
         "studio.assembly.website.application",
         "studio.apps.creative_workshop",
         "studio.apps.identity",

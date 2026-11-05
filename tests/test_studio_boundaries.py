@@ -206,3 +206,12 @@ def test_service_closure_rejects_foreign_studio_storage(tmp_path, module):
     foreign.write_text('"""Foreign storage."""\n')
     with pytest.raises(ValueError, match="越界依赖"):
         source_closure(tmp_path, "identity")
+
+
+def test_module_files_do_not_shadow_packages():
+    collisions = [
+        str(path.relative_to(ROOT))
+        for path in STUDIO.rglob("*.py")
+        if path.with_suffix("").is_dir()
+    ]
+    assert not collisions, "Module/package name collisions: " + ", ".join(collisions)

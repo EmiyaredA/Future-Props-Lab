@@ -1,10 +1,13 @@
 """Compatibility execution binds the owned project to the shared Models use case."""
 
-from app.llm.annotation_transcription import AnnotationTranscription, AnnotationTranscriptionError
-from app.llm.call_logs.credentials import snapshot_from_principal
 from studio.apps.audio_annotation.schemas.document import AudioAnnotationSegmentTranscriptionOut
 from studio.apps.audio_annotation.sources import AudioAnnotationError
 from studio.apps.audio_annotation.storage.transcription_scope import transcribe_project
+from studio.apps.model_service.call_logs.credentials import snapshot_from_principal
+from studio.apps.model_service.transcription.annotation import (
+    AnnotationTranscription,
+    AnnotationTranscriptionError,
+)
 
 
 async def legacy_transcribe(session, project_id, *, principal=None, upload, **kwargs):

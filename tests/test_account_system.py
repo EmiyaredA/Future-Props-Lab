@@ -14,9 +14,7 @@ from app.console.models import (
     SecurityAuditEvent,
     User,
 )
-from app.llm.models import (
-    ModelProvider,
-)
+from studio.apps.model_service.storage.models.model_service import ModelProvider
 from studio.runtime.time import utc_now
 from website_test_support import SessionLocal, app
 

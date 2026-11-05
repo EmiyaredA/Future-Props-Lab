@@ -5,7 +5,7 @@ from time import monotonic
 import jwt
 from sqlalchemy import select
 
-from app.llm.task_outcomes import TaskClaimRejected
+from studio.apps.model_service.generation.outcomes import TaskClaimRejected
 from studio.apps.model_service.storage.service_models import TaskAuthorization
 from studio.apps.model_service.storage.task_records import TASK_MODELS, task_fingerprint
 from studio.contracts.identity.claims import Actor, verify_context

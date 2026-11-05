@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from app.llm.call_logs.record_attribution import snapshot_from_row
+from studio.apps.model_service.call_logs.record_attribution import snapshot_from_row
 from studio.contracts.identity.claims import Actor, issue_context, verify_context
 from studio.contracts.model_service.credential_snapshot import (
     snapshot_from_actor,
@@ -25,8 +25,9 @@ def test_snapshot_and_log_query_imports_do_not_initialize_identity_or_monolith_s
                 "import sys; "
                 "from studio.contracts.model_service.credential_snapshot "
                 "import CredentialSnapshot; "
-                "import app.llm.call_logs.query; "
-                "import app.llm.catalog.service; import app.llm.catalog.defaults; "
+                "import studio.apps.model_service.call_logs.query; "
+                "import studio.apps.model_service.catalog.service; "
+                "import studio.apps.model_service.catalog.defaults; "
                 "assert 'app.console.models.accounts' not in sys.modules; "
                 "assert 'studio.runtime.database.website' not in sys.modules; "
                 "assert 'studio.assembly.http_dependencies' not in sys.modules"

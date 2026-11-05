@@ -11,11 +11,8 @@ from app.capabilities.asset_store.models import (
     VisualProjectAssetReference,
 )
 from app.capabilities.asset_store.storage import AssetStorage
-from app.llm.models import (
-    ModelEntry,
-    ModelProvider,
-)
 from app.runtime.credentials import encrypt_secret
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.storage.models import (

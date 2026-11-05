@@ -10,10 +10,10 @@ from time import monotonic
 from uuid import uuid4
 
 from app.console.amadeus.schemas import ModelTurnIn
-from app.llm.inference.catalog import get_model
-from app.llm.models import LlmCallLog
-from app.llm.providers.agent import HttpAgentAdapter
 from app.runtime.credentials import decrypt_secret
+from studio.apps.model_service.inference.catalog import get_model
+from studio.apps.model_service.providers.agent import HttpAgentAdapter
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
 from studio.contracts.agent_runtime.dialogue import AgentMessage, ImageInput, ToolCall, ToolSpec
 from studio.contracts.model_service.credential_snapshot import CredentialSnapshot
 from studio.runtime.database.operation_receipts import OperationError

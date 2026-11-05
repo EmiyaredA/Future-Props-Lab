@@ -2,7 +2,7 @@
 
 ## Studio 组件归属迁移
 
-所有原 `backend/fpl_*` 包已迁出，源码统一进入 `backend/studio/`。原 `backend/app/apps/` 的十个业务切片也已归并到对应应用。`backend/app/` 暂时保留模型/素材等尚未归并的实现；这部分和逐用例解耦仍属于后续迁移，不能把命名空间迁移视为整个方案验收完成。
+所有原 `backend/fpl_*` 包已迁出，源码统一进入 `backend/studio/`。原 `backend/app/apps/` 的十个业务切片也已归并到对应应用。`backend/app/` 暂时保留素材、账号治理、Agent 等尚未归并的实现；这部分和逐用例解耦仍属于后续迁移，不能把命名空间迁移视为整个方案验收完成。
 
 已落地的目录骨架如下（以仓库根目录下为第一级，展开至第四级）：
 
@@ -177,33 +177,33 @@ backend/
 
 `backend/studio/apps/model_service/` 拥有独立模型服务的 HTTP、任务 Runner、目录初始化和持久化边界；`models.py` 显式列出默认选择和全部 Models 自有 ORM，`ACCOUNT_MODELS` 只标记拥有账号归属的根记录。`0001_account_defaults` 保持原样，追加的 `0002_model_capabilities` 创建目录、日志、模型测试／推理、本地模型与治理记录，不创建账号、素材或工坊表。账号、源素材和外部排队任务 ID 是不透明引用；仅保留自有表外键。旧单体数据库继续由原 SQL 迁移维护，已有外键与级联不因 ORM 的服务边界描述而被改写。`application.py` 与 `__main__.py` 装配自有 HTTP、配额、任务授权、模板同步、确定性演示和实时语音；独立页面与镜像可用于隔离验收。Mac 原生模型通过受认证租约与 worker 显式执行；当前九容器确定性验收通过，真实 Qwen 权重／MLX、其余应用服务和正式数据导入仍受切换门禁约束。
 
-`studio/host/models_worker.py` 拥有执行回执、串行观测和停止屏障：等待真实动作清理与回执线程退出后才关闭资源、释放主机锁。`receipts.py` 仅为 Models 清除已确认 payload，保留摘要与结果防重复。`studio/apps/model_service/native_models.py` 的 `foreground_synthesis` 经 `llm/inference/runner.py` 的显式 `synthesis_scope` 覆盖完整前台提交／复制／finish，退出后后台才可使用原回执恢复，不重新合成。
+`studio/host/models_worker.py` 拥有执行回执、串行观测和停止屏障：等待真实动作清理与回执线程退出后才关闭资源、释放主机锁。`receipts.py` 仅为 Models 清除已确认 payload，保留摘要与结果防重复。`studio/apps/model_service/native_models.py` 的 `foreground_synthesis` 经 `studio/apps/model_service/inference/runner.py` 的显式 `synthesis_scope` 覆盖完整前台提交／复制／finish，退出后后台才可使用原回执恢复，不重新合成。
 
 `studio/apps/model_service/native_retention.py` 拥有原生交付副本清理；追加 `0012_native_result_retention` 保存退役和清理时间。持久应用确认后才清理副本；正式删除同事务擦除原生请求文本／签名证明和任务授权，保留原摘要及 worker／lease 校验迟到回执。`native_files.py` 在 `.tmp/native-model-uploads` 暂存，流结束后的短写事务重查持久栅栏才发布；已应用结果只返回原确认，不重建音频。失败留待启动／轮询重试，不按超时猜测未知提交。隔离故障测试与当前重建九容器验收通过，真实权重及正式转移仍未验证。
 
 `studio/contracts/model_service/catalog_events.py` 定义仅含事件 ID、账号 ID、角色、版本和短期当前状态的私有目录初始化协议。`studio/apps/identity/catalog_events.py` 只允许独立 Models 凭据轮询／确认，拒绝浏览器和其他服务；历史事件与当前角色分开，停用账号保留事件但不投递。`studio/apps/model_service/account_events.py` 拥有有界 HTTP 传输与恢复轮询，`provisioning.py` 在独立账号事务中执行显式本地初始化回调并保存摘要回执。新增 `0003_catalog_provisioning` 不改写前两版。回执防止确认丢失后重建目录，不构成后续业务授权；完整 ASGI 装配仍待完成。
 
-`llm/catalog/template_reconciliation.py` 拥有模板预览、保留 ID 的目录合并与默认选择规则；`template_values.py` 拥有输入密钥替换／保留及脱敏视图，不依赖治理存储。`studio/apps/model_service/templates.py` 使用追加的 `0004_role_templates` 自有角色策略表提供 CAS 与账号初始化，空策略沿用无密钥内置目录；调用方负责管理员授权和保存／审计事务。`task_usage.py` 只查询 Models 自有任务。恢复网站的旧设置、账号审计与跨工坊占用留在 `console/governance/model_templates.py` 适配器，独立服务不得导入它。
+`studio/apps/model_service/catalog/template_reconciliation.py` 拥有模板预览、保留 ID 的目录合并与默认选择规则；`template_values.py` 拥有输入密钥替换／保留及脱敏视图，不依赖治理存储。`studio/apps/model_service/templates/policy.py` 使用追加的 `0004_role_templates` 自有角色策略表提供 CAS 与账号初始化，空策略沿用无密钥内置目录；调用方负责管理员授权和保存／审计事务。`task_usage.py` 只查询 Models 自有任务。恢复网站的旧设置、账号审计与跨工坊占用留在 `studio/apps/model_service/templates/website.py` 适配器，独立服务不得导入它。
 
-`studio/apps/model_service/quotas.py` 使用追加的 `0005_quota_policy` 保存独立 CAS 策略；协议类型归 `llm/schemas/runtime_quotas.py`，旧治理 schema 只作兼容导出。`admission.py` 持有同步调用与三个 Models 任务种类的额度生命周期：全局统计仅返回固定自有表的汇总，恢复任务没有账本也计入占用；任务关联与创建同事务，重放不可改绑。`llm/task_outcomes.py` 共享供应商提交中断结果标记，未知与缺失任务不会因超时被当作已完成。额度不等于执行授权；排队授权、Runner 结算与治理审计仍待完整装配。
+`studio/apps/model_service/quotas.py` 使用追加的 `0005_quota_policy` 保存独立 CAS 策略；协议类型归 `studio/apps/model_service/schemas/runtime_quotas.py`，旧治理 schema 只作兼容导出。`admission.py` 持有同步调用与三个 Models 任务种类的额度生命周期：全局统计仅返回固定自有表的汇总，恢复任务没有账本也计入占用；任务关联与创建同事务，重放不可改绑。`studio/apps/model_service/generation/outcomes.py` 共享供应商提交中断结果标记，未知与缺失任务不会因超时被当作已完成。额度不等于执行授权；排队授权、Runner 结算与治理审计仍待完整装配。
 
 `console/schemas/registration.py` 独立拥有注册／邀请码协议，`developer_documents.py` 拥有只读开发文档协议。Identity 和 Portal 直接使用各自协议文件，不能通过旧 `platform_governance.py` 聚合兼容导出间接加载模型模块。
 
-`studio/apps/model_service/task_records.py` 明确自有任务种类与不可变输入摘要；`execution_authority.py` 使用追加的 `0006_task_authorizations` 将原始签名请求与任务创建同事务保存。出队前复核原始账号授权，事务内只检查短期决定与当前输入；缺失／失效来源拒绝提交，Identity 暂不可用延后。`request_admission.py` 通过 `llm/admission.py` 的每请求 provider 包装额度关联，不共享请求可变状态。`GenerationTaskStore` 的显式准备回调在写事务外运行，终态结算回调仅在本服务短事务中执行；旧网站未安装这些新适配器，保持恢复契约。
+`studio/apps/model_service/task_records.py` 明确自有任务种类与不可变输入摘要；`execution_authority.py` 使用追加的 `0006_task_authorizations` 将原始签名请求与任务创建同事务保存。出队前复核原始账号授权，事务内只检查短期决定与当前输入；缺失／失效来源拒绝提交，Identity 暂不可用延后。`request_admission.py` 通过 `studio/apps/model_service/admission/bindings.py` 的每请求 provider 包装额度关联，不共享请求可变状态。`GenerationTaskStore` 的显式准备回调在写事务外运行，终态结算回调仅在本服务短事务中执行；旧网站未安装这些新适配器，保持恢复契约。
 
-`llm/library_inputs.py` 拥有文件库输入流、精确长度校验和每请求装配；`legacy_library_inputs.py` 仅供恢复网站读取旧素材库。独立 `studio/apps/model_service/library_inputs.py` 经 Identity 的来源／目标权限复核读取 `studio/apps/asset_library/library_inputs.py` 与私有路由提供的账号文件流，不挂载 Assets 目录或查询其表。版本化私有描述归 `studio/runtime/files/incoming.py`，不包含路径或存储键；项目、Galgame、剪辑和特效专属素材均不作为文件库输入。推理输入和转录在文件复制后使用自有表提交；转录的暂存与提交归同一流程，提交未决不得删除可能已登记的输入文件。
+`studio/apps/model_service/library/inputs.py` 拥有文件库输入流、精确长度校验和每请求装配；`legacy_library_inputs.py` 仅供恢复网站读取旧素材库。独立 `studio/apps/model_service/library_inputs.py` 经 Identity 的来源／目标权限复核读取 `studio/apps/asset_library/library_inputs.py` 与私有路由提供的账号文件流，不挂载 Assets 目录或查询其表。版本化私有描述归 `studio/runtime/files/incoming.py`，不包含路径或存储键；项目、Galgame、剪辑和特效专属素材均不作为文件库输入。推理输入和转录在文件复制后使用自有表提交；转录的暂存与提交归同一流程，提交未决不得删除可能已登记的输入文件。
 
-`llm/library_outputs.py` 定义每请求结果保存端口；恢复网站显式注入 `legacy_library_outputs.py`，独立 Models 注入 `studio/apps/model_service/library_outputs.py` 的有界 HTTP 输出。`studio/runtime/files/signed_payloads.py` 把文件名、MIME、大小和内容 SHA256 绑定到目标路径；Identity 只从同一任务的保存操作签发窄用途委托，Assets 在接收前和流式传输后复核原身份。`studio/apps/asset_library/library_outputs.py` 在网络／文件 I/O 完成后以短事务保存自有文件和 `0004_model_output_receipts` 不可变回执，并发或响应丢失重试只返回同一文件；已删除结果不自动复制重建。私有结果接口不进入浏览器路由、公共 OpenAPI 或 SDK。未知提交保留可能已登记的字节，不按超时清除。
+`studio/apps/model_service/library/outputs.py` 定义每请求结果保存端口；恢复网站显式注入 `legacy_library_outputs.py`，独立 Models 注入 `studio/apps/model_service/library_outputs.py` 的有界 HTTP 输出。`studio/runtime/files/signed_payloads.py` 把文件名、MIME、大小和内容 SHA256 绑定到目标路径；Identity 只从同一任务的保存操作签发窄用途委托，Assets 在接收前和流式传输后复核原身份。`studio/apps/asset_library/library_outputs.py` 在网络／文件 I/O 完成后以短事务保存自有文件和 `0004_model_output_receipts` 不可变回执，并发或响应丢失重试只返回同一文件；已删除结果不自动复制重建。私有结果接口不进入浏览器路由、公共 OpenAPI 或 SDK。未知提交保留可能已登记的字节，不按超时清除。
 
 生成测试只读取 Models 私有参考与结果；`playground/legacy_generation_references.py` 是恢复网站显式装配的旧素材查询／回填适配。独立服务缺少该适配时拒绝未迁移的历史引用，正式转移前须通过旧站的正式回填 API 完成转换。附件和结果缩略图直接使用 `runtime/raster.py`，不会为纯栅格处理加载 Assets ORM；上传、回填与结果提交在取消或提交回执未知时保全可能已提交的文件。
 
-`capabilities/transcription/catalog_values.py` 定义参数／能力函数所需的模型与供应商值协议，不注册 ORM。`llm/playground/__init__.py` 只声明包，各消费者直接引用具体测试模块；读取转录能力不会隐式加载文字测试、演示服务或旧数据库。文字、输出交付、生成素材和原生模型端口仍须继续隔离。
+`studio/apps/model_service/transcription/catalog_values.py` 定义参数／能力函数所需的模型与供应商值协议，不注册 ORM。`studio/apps/model_service/playground/__init__.py` 只声明包，各消费者直接引用具体测试模块；读取转录能力不会隐式加载文字测试、演示服务或旧数据库。文字、输出交付、生成素材和原生模型端口仍须继续隔离。
 
-`llm/catalog/default_storage.py` 定义默认选择的显式存储端口，与目录 CAS 使用同一事务；恢复网站在入口装配点和 `catalog/legacy.py` 兼容用例中提供 `legacy_defaults.py`、`legacy_usage.py`，独立实现不得导入这些兼容适配器。旧 `platform_settings` 的 `account_defaults:` 分区归 Models，正式导入仍须业务接口校验与核验。`llm/models/model_templates.py` 与 `runtime_admission.py` 拥有模板同步和额度记录；旧 Console 模型公开名仅作明确兼容导出，恢复用例继续从模型能力直接导入自有记录。
+`studio/apps/model_service/catalog/default_storage.py` 定义默认选择的显式存储端口，与目录 CAS 使用同一事务；恢复网站在入口装配点和 `catalog/legacy.py` 兼容用例中提供 `legacy_defaults.py`、`legacy_usage.py`，独立实现不得导入这些兼容适配器。旧 `platform_settings` 的 `account_defaults:` 分区归 Models，正式导入仍须业务接口校验与核验。`studio/apps/model_service/storage/models/model_templates.py` 与 `runtime_admission.py` 拥有模板同步和额度记录；旧 Console 模型公开名仅作明确兼容导出，恢复用例继续从模型能力直接导入自有记录。
 
-`llm/catalog/http_bindings.py` 提供不可变的每应用目录装配描述与账号绑定的 HTTP 用例依赖；恢复网站在 `assembly/website/bindings.py` 安装旧存储／任务占用适配器，目录、供应商和本地模型挂接路由不再直接构造旧适配器。`routes/models/diagnostics.py` 单独拥有模型诊断协议，避免目录只读装配加载供应商执行栈。`llm/http_errors.py` 统一模型操作错误映射，不导入其他路由。独立进程的目录 HTTP 切片验收不等于完整 Models 服务就绪。
+`studio/apps/model_service/catalog/http_bindings.py` 提供不可变的每应用目录装配描述与账号绑定的 HTTP 用例依赖；恢复网站在 `assembly/website/bindings.py` 安装旧存储／任务占用适配器，目录、供应商和本地模型挂接路由不再直接构造旧适配器。`routes/models/diagnostics.py` 单独拥有模型诊断协议，避免目录只读装配加载供应商执行栈。`studio/apps/model_service/transport/errors.py` 统一模型操作错误映射，不导入其他路由。独立进程的目录 HTTP 切片验收不等于完整 Models 服务就绪。
 
-`llm/admission.py` 定义不可变的额度申请、释放、任务保留与派生任务接纳绑定；模型 HTTP 与实时语音从自己的 ASGI 应用取得它，恢复网站显式安装原治理实现。`llm/inference/receipts.py` 只依赖 Models 任务记录，负责账号限定的请求回执与摘要冲突校验，避免为重放检查导入素材能力。独立账本、队列和跨服务任务授权仍须单独实现，缺少绑定不允许回退单体数据库。
+`studio/apps/model_service/admission/bindings.py` 定义不可变的额度申请、释放、任务保留与派生任务接纳绑定；模型 HTTP 与实时语音从自己的 ASGI 应用取得它，恢复网站显式安装原治理实现。`studio/apps/model_service/inference/receipts.py` 只依赖 Models 任务记录，负责账号限定的请求回执与摘要冲突校验，避免为重放检查导入素材能力。独立账本、队列和跨服务任务授权仍须单独实现，缺少绑定不允许回退单体数据库。
 
 `backend/studio/apps/creative_workshop/` 拥有 Creative 自有表、安装 outbox、文件和独立应用。公开目录复用旧站 HTTP 契约，账号写入继续由 CAS 和持久回执保护。独立应用按签名请求从 Identity 查询作者显示名，只读取 Creative 自有目录中的封面及 Skill 文件。`source_http.py` 根据网关签发的请求体证据，经 Integrations 的 `creative_sources_http.py` 读取同账号快照并核对 Skill 归档摘要。`preview_http.py` 通过按批次摘要绑定的授权查验目标名称与已安装状态。`stdio_http.py` 按安装记录和配置摘要委托 Integrations，环境值由 Integrations 加密保存。Creative 验签后更新安装投影，原安装回执保持可重放。镜像和浏览器入口可独立构建，`deploy/creative.compose.yaml` 提供隔离验收装配。作品认证与历史迁移仍是上线门禁。
 
@@ -283,7 +283,7 @@ Visual 的便携 ZIP 导出由 `studio/apps/visual_workshop/snapshot_exports.py`
 
 Visual 的图片宫格由 `studio/apps/visual_workshop/compositions.py` 保存批次与输入版本，`composition_runner.py` 恢复执行与结果结算。Assets 的 `visual_grid_files.py` 核验同账号工程图片。Rendering 的 `visual_grids.py` 使用精确原件、字幕和现有字体渲染 PNG。Visual 将新输出与 Canvas 回执一起保存，Assets 确认后完成批次。活跃的旧站合成必须在迁移前结算。
 
-Visual 生成模型资格、参数校验和供应商请求组装由 `app/llm/visual_generation_model.py`、`visual_generation_payload.py` 与 `visual_generation_submission.py` 共享。兼容站从同进程传入显式素材读取端口。独立 Models 的 `visual_generation_http.py` 按账号返回资格校验后的模型标识，Assets 的 `visual_generation_files.py` 核验指定工程与任务的精确原件范围、版本与读取权限。Models 的 `visual_generation_intake.py` 保存精确的输入、额度和执行决议，`visual_generation_runner.py` 在激活后复用通用生成状态机，`visual_generation_results.py` 提供受控状态、重试和原件读取。Visual 的 `generation_intake.py` 冻结画布输入，`generation_decisions.py` 在源事务落盘后投递激活。 `generation_runner.py` 投影任务进度、发布同摘要结果并确认清理，`generation_batches.py` 汇总子任务并调度可选合成。
+Visual 生成模型资格、参数校验和供应商请求组装由 `studio/apps/model_service/catalog/visual_generation.py`、`visual_generation_payload.py` 与 `visual_generation_submission.py` 共享。兼容站从同进程传入显式素材读取端口。独立 Models 的 `visual_generation_http.py` 按账号返回资格校验后的模型标识，Assets 的 `visual_generation_files.py` 核验指定工程与任务的精确原件范围、版本与读取权限。Models 的 `visual_generation_intake.py` 保存精确的输入、额度和执行决议，`visual_generation_runner.py` 在激活后复用通用生成状态机，`visual_generation_results.py` 提供受控状态、重试和原件读取。Visual 的 `generation_intake.py` 冻结画布输入，`generation_decisions.py` 在源事务落盘后投递激活。 `generation_runner.py` 投影任务进度、发布同摘要结果并确认清理，`generation_batches.py` 汇总子任务并调度可选合成。
 
 Visual 验收取样由 `studio/apps/visual_workshop/acceptance_samples.py` 核对记录及版本。Rendering 的 `visual_samples.py` 根据已校验的原视频版本和实际解码时间戳提取 PNG。Assets 的 `visual_evidence_upload.py` 校验整组帧的长度与摘要，在验收记录提交后公开原件。逐验收记录的证据保留集合随所属项目删除，兼容站的历史保留集合仍按工程核验。
 
@@ -353,14 +353,12 @@ Future-Props-Lab/
 ├── backend/app/
 │   ├── problem_details.py # 统一协议错误映射
 │   ├── runtime/       # 尚未迁出的凭据适配
-│   ├── capabilities/  # 有契约的共享能力：identity、asset_store（VisualAsset ORM + files/媒体 schemas/routes）、agents、media_rendering、transcription
+│   ├── capabilities/  # 有契约的共享能力：identity、asset_store（VisualAsset ORM + files/媒体 schemas/routes）、agents、media_rendering
 │   ├── console/       # Studio 治理、库级文件用例；自有 models/routes/schemas
 │   │   ├── amadeus/   # 助手会话、引用快照、审批执行、沙箱脚本与模型桥接
 │   │   └── creative_workshop/ # 跨账号公开创作版本、草稿、安装事务与文件校验
-│   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台、调用日志及自有 models/schemas/routes
 │   ├── tool_navigation/ # 工具目录状态与抖音/B站视频下载；自有 models/schemas/routes
-│   ├── integrations/ # 账号工具 API、MCP、Skill、外部连接；自有 models/schemas/routes
-│   └── demo_runtime/  # 固定演示 Mock 运行时；自有 schemas/routes
+│   └── integrations/ # 账号工具 API、MCP、Skill、外部连接；自有 models/schemas/routes
 ├── db/migrations/
 │   ├── versions/      # 只追加、不可改写的 SQLite migration
 │   ├── registry.py    # 有序 migration 注册表与最新版本
@@ -415,12 +413,12 @@ Future-Props-Lab/
   `vendor/pi/` 仅保留历史来源快照，不参与 Amadeus 构建。进程监督由桌面独立工具入口提供，
   不复用携带后端凭据的服务进程。
 
-- `llm/credential_snapshot.py` 保存纯调用归因快照，不导入账号 ORM 或数据库。`llm/http_credentials.py` 让模型 HTTP 入口读取与当前 Principal 匹配的已验证 Identity 上下文中的 API Key ID、显示名与前缀，不跨库读取账号或密钥；实时语音仅接受已经认证的浏览器 Principal。恢复网站在装配时显式安装 `llm/call_logs/credentials.py` 中的账号查询，使用当前应用的会话，LLM 模块不直接导入单体全局数据库工厂。归因只用于日志，不能代替授权。
-- `runtime/task_records.py` 拥有内部 Runner 的账号查找与绑定：在无绑定时只读解析本服务任务归属，随后按该账号读取；已有绑定不可覆盖。生成／转录恢复先枚举受影响账号，再分别提交状态与日志，系统读取不授予系统写入。`llm/inference/storage.py` 管理本服务推理输入与输出，启动核对只读取 Models 自有记录与目录，不扫描 Identity 表、不跟随链接、不递归清理或修改其他应用文件。
+- `studio/apps/model_service/credential_snapshot.py` 保存纯调用归因快照，不导入账号 ORM 或数据库。`studio/apps/model_service/http_credentials.py` 让模型 HTTP 入口读取与当前 Principal 匹配的已验证 Identity 上下文中的 API Key ID、显示名与前缀，不跨库读取账号或密钥；实时语音仅接受已经认证的浏览器 Principal。恢复网站在装配时显式安装 `studio/apps/model_service/call_logs/credentials.py` 中的账号查询，使用当前应用的会话，LLM 模块不直接导入单体全局数据库工厂。归因只用于日志，不能代替授权。
+- `runtime/task_records.py` 拥有内部 Runner 的账号查找与绑定：在无绑定时只读解析本服务任务归属，随后按该账号读取；已有绑定不可覆盖。生成／转录恢复先枚举受影响账号，再分别提交状态与日志，系统读取不授予系统写入。`studio/apps/model_service/inference/storage.py` 管理本服务推理输入与输出，启动核对只读取 Models 自有记录与目录，不扫描 Identity 表、不跟随链接、不递归清理或修改其他应用文件。
 - `studio/runtime/http/dependencies.py` 从当前 ASGI 应用取得显式会话工厂，业务身份仅消费已验证签名上下文。`console/governance/database_auth.py` 拥有浏览器 Cookie、CSRF、API Key、Session 用途和原实时语音认证的账号数据校验；Identity 与恢复网站在装配时明确安装该适配器，其他应用不加载账号 ORM 或旧数据库。`capabilities/identity/http_context.py` 提供无存储依赖的协议错误、客户端地址和最近重新认证前置条件。缺少绑定不能触发单体数据库回退。
-- `llm/catalog/` 拥有供应商分组、接入连接与模型目录。`supplier_records.py` 提供账号限定的
+- `studio/apps/model_service/catalog/` 拥有供应商分组、接入连接与模型目录。`supplier_records.py` 提供账号限定的
   分组读取及安全输出，`suppliers.py` 通过目录统一 CAS 执行分组写入；协议边界位于
-  `llm/routes/models/suppliers.py`。供应商不持有密钥或启停状态，连接通过 `supplier_id` 显式归组。
+  `studio/apps/model_service/transport/website/models/suppliers.py`。供应商不持有密钥或启停状态，连接通过 `supplier_id` 显式归组。
 - `web/src/features/models/catalog/` 拥有受控 `ModelCatalogEditor`、目录分类、供应商树和三层表单；
   `ModelServicePage` 适配账号 API、缓存和冲突恢复，`AccountDefaults` 负责默认用途选择与保存。
   模型服务页面通过可选内容插槽提供「本地模型」标签；`LocalModelsPanel` 与 `LocalModelDetails`
@@ -432,7 +430,7 @@ Future-Props-Lab/
   `catalog-dialogs.css` 维护。只读模型服务复用同一目录，隐藏写操作。
 - 后端采用功能模块优先结构。`studio/assembly/website/` 负责装配；各包 `routes/` 只负责认证、请求校验、调用功能
   边界和响应映射，不直接导入 SQLAlchemy、ORM 模型或 migration。查询、写入和事务由
-  `llm/catalog/`、`llm/playground/`、`llm/call_logs/` 等所属能力负责。
+  `studio/apps/model_service/catalog/`、`studio/apps/model_service/playground/`、`studio/apps/model_service/call_logs/` 等所属能力负责。
 - `console/governance/provisioning.py` 是 HTTP 管理接口和离线账号命令共用的账号开通用例；账号、审计事件与账号模型目录在同一事务内提交或回滚。`console/governance/service.py`
   不依赖模型目录实现。
 - `capabilities/identity/permissions.py` 拥有固定角色与密钥范围交集，`capabilities/identity/route_permissions.py` 显式登记业务操作。
@@ -444,16 +442,16 @@ Future-Props-Lab/
 - `capabilities/agents/harness/` 提供业务无关的 Agent Definition、消息/工具调用/Usage/适配器契约、上下文预算、
   Reactive 工具循环、Policy、Verifier、事件订阅、取消和内存审批；`phases.py` 原子化上下文编译、
   模型回合、工具提案、执行与审批阶段并保持事件顺序；不拥有项目数据，也不提供通用
-  `/v1/agents` 管理接口。`llm/providers/chat_completions.py` 拥有 OpenAI 兼容文本协议的供应商集合、默认地址与 DeepSeek 非思考请求选项；诊断、流式对话、Agent 与日志复现复用该契约。
-  `llm/providers/` 是供应商协议差异的唯一实现边界，并反向实现 Harness
+  `/v1/agents` 管理接口。`studio/apps/model_service/providers/chat_completions.py` 拥有 OpenAI 兼容文本协议的供应商集合、默认地址与 DeepSeek 非思考请求选项；诊断、流式对话、Agent 与日志复现复用该契约。
+  `studio/apps/model_service/providers/` 是供应商协议差异的唯一实现边界，并反向实现 Harness
   定义的适配器契约。模型测试、诊断、REST/SSE 与 Web 消费端
   只依赖统一结果或事件，不根据供应商原始载荷控制运行行为；供应商管理界面展示配置属于例外。
-- `llm/playground/` 拥有模型测试会话、图片上下文、调用快照与单轮流式结算；
+- `studio/apps/model_service/playground/` 拥有模型测试会话、图片上下文、调用快照与单轮流式结算；
   `recovery.py` 在启动时取消遗留的 pending 回复并更新所属会话 revision，避免会话一直占用。
   模型生成／转录／推理 Runner、恢复、文字流和实时语音结算都显式接收所属应用的会话工厂；HTTP 与 WebSocket 从自己的 ASGI 绑定传入，不能回退到单体全局工厂。结算使用独立短事务并显式绑定账号，不能跨网络请求复用同一个 AsyncSession。
   Web 的文字对话和参数控件归属 `features/models/conversation/`。
-- `llm/providers/realtime/` 只拥有供应商无关实时桥接契约与 SenseAudio 协议适配，
-  `llm/realtime/` 负责账号模型解析、短会话日志结算和浏览器 WebSocket 编排；
+- `studio/apps/model_service/providers/realtime/` 只拥有供应商无关实时桥接契约与 SenseAudio 协议适配，
+  `studio/apps/model_service/realtime/` 负责账号模型解析、短会话日志结算和浏览器 WebSocket 编排；
   `web/src/platform/voice/` 负责 16 kHz 采集、Silero VAD、回声参考打断和 24 kHz 缓冲播放。
   这些模块不拥有 Bot、工具调用、知识库、电话或持久化实时会话。
 - 后端不增加通用 `services/`、`domain/`、`platform/` 或 `product/` 分层。需要拆分大型模块
@@ -485,7 +483,7 @@ Future-Props-Lab/
 - `studio/apps/audio_annotation/` 管理账号级录音标注任务，根项目直接保存 `owner_user_id` 并引用
   公共文件库中的音频；说话人/片段文档与最多双声道的预计算波形分别使用独立 revision CAS，
   选中片段可通过统一语音识别适配器执行一次性转写。识别参数、语言能力、文件上限和安全错误
-  映射归属 `capabilities/transcription/`，录音标注、模型测试和 Galgame 只依赖该能力边界。
+  映射归属 `studio/apps/model_service/transcription/`，录音标注、模型测试和 Galgame 只依赖该能力边界。
   删除任务不会删除原音频，被任务引用的音频不能从文件库删除。
 - 应用目录同样由 Web 静态注册表维护， 应用最近访问记录只保存在浏览器本地。视觉创作工坊、
   Galgame 工坊、视频剪辑工坊、演示工坊、思绪工坊与录音标注工坊通过应用模块配置品牌、导航和 active 规则，共用 `app/layout/WorkshopShell`；侧栏展示由 `shared/ui/WorkshopSidebar.tsx` 统一拥有，
@@ -653,10 +651,10 @@ schema migration 不执行文件 I/O。
 schema migration 或直接数据库修改替代运行期迁移。工具单项状态通过幂等更新和原子 upsert 写入。图片/视频/音频生成任务持久化
 供应商/模型快照和规范化参数，FastAPI 生命周期中的单机执行器负责恢复、轮询与安全下载；视觉工坊
 和模型测试复用 `runtime/polling_runner.py` 的生命周期与并发控制，并由
-`llm/generation_runtime/GenerationTaskDriver` 统一编排 queued、submitting、pending、processing
+`studio/apps/model_service/generation/driver/GenerationTaskDriver` 统一编排 queued、submitting、pending、processing
 与终态转换、重启恢复及安全失败；两者分别提供任务存取、调用日志、素材组装和结果落盘钩子。
-`llm/task_execution.py` 定义供应商无关的可选执行信息，由驱动器短事务持久保存；
-`llm/providers/zealman_progress.py` 与 `zealman_live.py` 归一化队列、账本和任务身份匹配的实时事件。
+`studio/apps/model_service/task_execution.py` 定义供应商无关的可选执行信息，由驱动器短事务持久保存；
+`studio/apps/model_service/providers/zealman_progress.py` 与 `zealman_live.py` 归一化队列、账本和任务身份匹配的实时事件。
 实时连接由具体执行器拥有，断线回退 HTTP，不参与终态结算；前端共用
 `shared/ui/taskExecutionPresentation.ts` 区分节点采样进度与上游报告值。
 `submitting` 中断不会自动重提，以避免重复计费。`AsyncSession` 只能由单个异步任务
@@ -670,7 +668,7 @@ Agent 是通用 Harness 的首个消费者：读取画布、素材和生成任�
 模型测试对话、图片附件及生成结果是独立的账号调试数据，不进入视觉
 工坊文件管理，也不参与 Bot 或业务编排。启动恢复会把遗留的 pending 模型回复标记为 cancelled。
 `0119_retire_model_test_tools` 删除已下线的 Mock 工具定义、会话绑定和专用调用记录三张表，
-保留对话、消息与已有模型调用日志。`llm/call_logs/` 根据日志中已有的脱敏请求快照
+保留对话、消息与已有模型调用日志。`studio/apps/model_service/call_logs/` 根据日志中已有的脱敏请求快照
 按需生成不含凭证的临时复现 ZIP，不新增持久化副本；只有具备完整纯文本输入的供应商协议可导出。
 实时语音通话不建立持久化会话，转写和音频只在浏览器与连接内存中存在，调用日志
 仅保存时长、字符数、延迟、usage 与状态。当前工程包含单机账号和逻辑多账号，但仍刻意不包含
@@ -739,11 +737,11 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 ## 平台治理补充职责
 
 - `console/governance/settings_records.py` 读取持久设置，`platform_settings.py` 拥有配置 CAS，`registration.py` 拥有邀请码名额和注册事务。
-- `model_templates.py`、`model_template_sync.py` 拥有角色模板、预览和逐账号持久同步；保留自建资源，管理员预览不暴露私人目录名称。
+- `studio/apps/model_service/templates/website.py`、`website_sync.py` 拥有角色模板、预览和逐账号持久同步；保留自建资源，管理员预览不暴露私人目录名称。
 - `code_agents.py` 按账号、Agent 与用途维护授权，连接定义和认证白名单属于部署 TOML。
-- `runtime_quotas.py` 拥有账号与实例额度，`generation_queue.py` 维护图片／视频等待容量及任务调度；等待不占并发，额度领取与提交状态在同一短事务更新。
+- `studio/apps/model_service/admission/website_quotas.py` 拥有账号与实例额度，`studio/apps/model_service/admission/website_queue.py` 维护图片／视频等待容量及任务调度；等待不占并发，额度领取与提交状态在同一短事务更新。
 - `developer_docs.py`、`project_certification.py` 拥有开发者文档与官方标记；私人数据没有管理员跨账号读取入口。
-- `demo_services.py` 维护固定演示服务，`demo_runtime/` 只实现进程内 Mock；`llm/catalog/defaults.py` 保存账号默认模型，并与目录共用 CAS。
+- `studio/apps/model_service/demonstration/website_management.py` 维护网站演示配置，`execution.py` 执行进程内 Mock；`studio/apps/model_service/catalog/defaults.py` 保存账号默认模型，并与目录共用 CAS。
 - `web/src/features/accounts/` 拥有账号设置、中台六个页面、注册邀请码、模型模板、Agent 分配与运行额度。
   调用日志的工具栏、筛选、列表与缓存由 `features/models/logs/` 拥有，只查询当前账号。
 - 旧空间治理、成员授权、公开展台、跨空间日志及动态权限策略模块已删除。迁移 SQL 仅保留历史兼容名称。
@@ -864,9 +862,9 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 - `sdk/python/operations.json`：受版本控制的 HTTP 操作到稳定 Python 方法名映射；`coverage.json` 记录契约与文档证据，不能替代业务闭环验收。
 - `scripts/test_with_proof.mjs` 将 `web/e2e/test-with-proof.catalog.yaml` 和专用 Playwright 配置接入功能验收工作台。隔离环境和验收产物位于 `.local/test-with-proof/`。
 - `scripts/generate_sdk.py`、`scripts/generate_sdk_docs.py`：从 OpenAPI 与方法映射生成 SDK 和公开模块参考；纳入 `contracts:generate` 与 `contracts:check`。仅浏览器 Session 的知识社区操作不加入 SDK 方法映射，相关 HTTP 数据类型仍由 OpenAPI 生成。
-- `backend/app/llm/inference/`：独立模型能力查询、输入素材、文本调用、任务与结果管理；`llm/routes/model_inference.py` 只处理协议。
+- `backend/studio/apps/model_service/inference/`：独立模型能力查询、输入素材、文本调用、任务与结果管理；`studio/apps/model_service/transport/website/model_inference.py` 只处理协议。
 - 工坊各自的 `operations.py` 拥有细粒度编辑校验与一次事务；`runtime/operation_receipts.py` 仅提供持久化回执原语，`entity_edits.py` 仅提供纯列表编辑。
-- `backend/app/llm/models/model_inference.py` 与 `models/project_operations.py` 对应追加迁移 `0059_project_operations`、`0060_model_inference`。
+- `backend/studio/apps/model_service/storage/models/model_inference.py` 与 `models/project_operations.py` 对应追加迁移 `0059_project_operations`、`0060_model_inference`。
 - `web/src/features/models/inference/`：调用日志页中的独立任务查询、下载、转存与结果落盘重试入口；缓存键归属 models/queryKeys.ts。
 - `web/src/docs/articles/sdk/`：公开 SDK 教程及生成方法参考；开发文档仍经已授权接口加载。
 - `backend/studio/apps/thought_workshop/markdown_conversion.py` 与 `content_exports.py`：受控 Markdown 转换、静态 HTML 和含素材导出；`schemas/conversion.py` 描述正式契约。
@@ -897,15 +895,15 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 
 视觉画布 `canvasPlacement.ts` 拥有卡片与节点组的有界避让，`canvasLayout.ts` 拥有稳定的流程与网格布局，`canvasVisibleArea.ts` 计算排除固定控件后的可见区域；`useCanvasSpatialActions.ts` 将纯位置结果接入视口、整体保存与单次撤销。各新增入口共用该能力，临时编辑面板不影响持久布局。后端 `visual_workshop/node_placement.py` 只处理后台自动节点，显式 API 坐标沿用原契约；`tests/fixtures/visual_node_placement.json` 同时约束前后端尺寸与默认避让结果。
 
-`backend/app/llm/providers/volcengine_image.py` 拥有方舟 Seedream 4.5 原生图片数组协议。共享 `generation_runtime/driver.py` 接收同步图片结果并持久化下载地址，提交中断禁止重提。迁移 `r0086_visual_node_outputs` 回填明确关联的历史，`r0087_volcengine_images` 扩展供应商枚举，保留旧模型凭证与任务数据。
+`backend/studio/apps/model_service/providers/volcengine_image.py` 拥有方舟 Seedream 4.5 原生图片数组协议。共享 `generation_runtime/driver.py` 接收同步图片结果并持久化下载地址，提交中断禁止重提。迁移 `r0086_visual_node_outputs` 回填明确关联的历史，`r0087_volcengine_images` 扩展供应商枚举，保留旧模型凭证与任务数据。
 
 ## ZEALMAN 视频模型测试与工坊生成
 
-`llm/providers/zealman_workflows.py` 保存 U17、U06 的固定 `input_values` 键契约、参考数量和参数范围；
+`studio/apps/model_service/providers/zealman_workflows.py` 保存 U17、U06 的固定 `input_values` 键契约、参考数量和参数范围；
 图片、视频与音频按各自输入顺序映射到从零开始的 `ref_image_n`、`ref_video_n`、`ref_audio_n`，
 提示词使用 `prompt`。不提交节点数字键或整张工作流，避免 API 模式将已上传但未显式传参的参考替换为空白占位。
 `zealman_video.py` 拥有同源素材上传、提交、结果轮询及任务账本恢复。测试台通过能力元数据展示
-参数，不读取原始 ComfyUI 事件。`llm/schemas/workflow_video.py` 拥有共用工作流参数与能力契约。
+参数，不读取原始 ComfyUI 事件。`studio/apps/model_service/schemas/workflow_video.py` 拥有共用工作流参数与能力契约。
 视觉创作工坊通过自己的模型选项、项目素材校验和 runner 接入两个工作流；沿用画布 CAS 与输出归档，
 模型菜单共用 CustomSelect 的顶层 popover。独立推理目录维持原支持范围。
 迁移 `0091_zealman_video` 扩展连接和模型测试任务的协议约束，保留已有数据和外键。
@@ -915,7 +913,7 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 
 ## AutoDL zealman 工作流
 
-`backend/app/llm/providers/autodl_workflows.py` 固定登记 AutoDL 页面署名 zealman 的 12 个工作流，
+`backend/studio/apps/model_service/providers/autodl_workflows.py` 固定登记 AutoDL 页面署名 zealman 的 12 个工作流，
 拥有模式、提示词、素材格式及数量、时长语义、输出尺寸组合、种子范围和请求字段映射。
 `autodl_video.py` 拥有原始 Authorization Token、提交与结果轮询协议。三个入口共用
 `VideoCapabilitiesOut` 与准入归一化，并复用 GenerationTaskDriver；图片、音频与动作视频直接编码
@@ -929,7 +927,7 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 
 ## Seedance 官方视频接入
 
-`llm/providers/volcengine_video.py` 拥有方舟视频创建／查询协议及状态归一化；
+`studio/apps/model_service/providers/volcengine_video.py` 拥有方舟视频创建／查询协议及状态归一化；
 `seedance_parameters.py` 按版本提供公共视频能力与参数校验，`seedance_references.py`
 在任务 admission 前校验本地参考文件。模型测试、视觉工坊与独立推理只持有各自的素材和任务，
 复用 `GenerationTaskDriver`，不互相导入实现。公共 `VideoCapabilitiesOut` 同步前端参数选择、
@@ -937,10 +935,10 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 
 ## 可选本地语音模型
 
-`llm/local_models/` 拥有固定下载清单、独立 Python 环境安装、恢复与 MLX 子进程生命周期；
+`studio/host/local_models/` 拥有固定下载清单、独立 Python 环境安装、恢复与 MLX 子进程生命周期；
 导入和应用启动均不访问下载源。`worker.py` 是仅依赖独立环境的管道程序，不导入应用或数据库。
-`llm/providers/local_qwen.py` 归一化参考录音校验和合成参数；`llm/inference/` 复用任务、素材和日志。
-`console/governance/local_models.py` 校验平台管理员浏览器身份，`llm/routes/local_models.py` 仅适配 HTTP。
+`studio/apps/model_service/providers/local_qwen.py` 归一化参考录音校验和合成参数；`studio/apps/model_service/inference/` 复用任务、素材和日志。
+`studio/apps/model_service/local_models/website_authorization.py` 校验平台管理员浏览器身份，`studio/apps/model_service/transport/website/local_models.py` 仅适配 HTTP。
 `web/src/features/models/` 拥有安装管理与语音测试页面，调用共用推理 API。
 `generation/SpeechSynthesisTestPanel.tsx` 装配配音表单和按模型筛选的生成记录，
 `useSpeechDraft.ts` 拥有参考录音替换、输入校验、单次提交与身份切换后的异步结果隔离；
@@ -972,7 +970,7 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 
 ### Models 拆分准备
 
-`llm/catalog/task_usage.py` 定义目录修改所需的显式任务占用接口。`legacy_usage.py` 仅用于迁移期单体，读取其原有任务表并显式限定账号；目录本体不再查询工坊内部表。独立 Models 必须注入自有执行记录的实现，缺少实现时拒绝相关写操作。提供方先验证归属再检查占用，其他账号 ID 仍返回不存在。
+`studio/apps/model_service/catalog/task_usage.py` 定义目录修改所需的显式任务占用接口。`legacy_usage.py` 仅用于迁移期单体，读取其原有任务表并显式限定账号；目录本体不再查询工坊内部表。独立 Models 必须注入自有执行记录的实现，缺少实现时拒绝相关写操作。提供方先验证归属再检查占用，其他账号 ID 仍返回不存在。
 
 ## 独立管理服务
 
@@ -987,7 +985,7 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 
 面试执行器状态由两种装配分别注入 HTTP 与后台 Runner，不再通过 Session 元信息查找。远程桌面授权复核显式绑定会话工厂与可热更新的配置读取器。
 
-演示模型与示例工具共用 `app/demo_runtime/engine.py` 的实例化执行组件；兼容网站的已登记设置读取留在治理存储适配中，独立模型服务注入自有设置存储。调用计数、排空和日志均归当前实例，不再存在模块级演示运行单例。
+演示模型与示例工具共用 `studio/apps/model_service/demonstration/execution.py` 的实例化执行组件；兼容网站的已登记设置读取留在治理存储适配中，独立模型服务注入自有设置存储。调用计数、排空和日志均归当前实例，不再存在模块级演示运行单例。
 
 Amadeus 动作句柄与下载任务分别由装配创建的 `ActionExecution`、`VideoDownloads` 实例持有。视频时间线和素材入库适配显式接收会话工厂；关闭数据库前先完成动作结算及已接受下载。
 
@@ -1000,3 +998,11 @@ Amadeus 动作句柄与下载任务分别由装配创建的 `ActionExecution`、
 OpenAPI 导出只构造 HTTP 协议层。测试通过 `tests/website_test_support.py` 持有显式隔离配置和数据库的实例；离线账号与 E2E 账号入口自行构造并关闭数据库。Playwright 使用后端工厂启动，正式网站仍由 `scripts/website/application.py` 核验迁移并装配静态与公网入口。
 
 模型目录、供应商配置、调用日志、推理、测试台及执行遥测的公开类型归 `studio/contracts/model_service/schemas/` 与同级契约模块。转录输入协议为 `transcription.py`，不可变调用归因为 `credential_snapshot.py`；HTTP 归因绑定在 `studio/assembly/model_credentials.py`，持久记录映射由模型调用日志适配拥有。
+
+## 模型业务归并
+
+`studio/apps/model_service/` 同时拥有兼容网站和独立服务的模型目录、供应商、调用日志、推理、测试台、转录、模板、额度与演示能力。`transport/website/` 保留原网站协议；`catalog/`、`generation/`、`inference/`、`playground/`、`transcription/` 按业务职责组织。自有 ORM 位于 `storage/models/`，纯数据契约位于 `studio/contracts/model_service/`。`templates/policy.py` 为独立角色策略，`templates/website.py` 与 `website_sync.py` 适配兼容网站已有表，未移动持久数据。
+
+`studio/host/local_models/` 拥有下载、独立环境安装、受控 MLX worker 和进程生命周期，worker 脚本与依赖锁从本适配目录定位。模型目录与管理用例留在 Model Service。独立镜像不携带 Mac 执行代码，通过既有租约协议联系主机 worker。
+
+取消规则由所属业务决定；`runtime/database/task_records.transition_task` 只执行带 ID、revision 和调用方谓词的原子更新，不提交事务。模型和视觉任务分别提供自身状态条件。可恢复结果判断是纯数据契约，不使视觉服务加载模型 ORM 或供应商适配器。目录归并尚不代表全部用例已完成 Session 与全局配置解耦。

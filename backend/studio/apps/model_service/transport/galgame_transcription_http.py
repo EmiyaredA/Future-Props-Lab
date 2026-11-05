@@ -7,7 +7,7 @@ import jwt
 from anyio.to_thread import run_sync
 from fastapi import APIRouter, HTTPException, Request
 
-from app.llm.provider_transports import provider_options
+from studio.apps.model_service.transport.provider_bindings import provider_options
 from studio.contracts.galgame_workshop.galgame_asr_execution import (
     DESCRIPTION_HEADER,
     EXECUTION,

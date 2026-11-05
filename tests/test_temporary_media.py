@@ -5,7 +5,10 @@ from pathlib import Path
 import httpx
 import pytest
 
-from app.llm.providers.temporary_media import TemporaryMediaError, upload_temporary_media
+from studio.apps.model_service.providers.temporary_media import (
+    TemporaryMediaError,
+    upload_temporary_media,
+)
 
 
 @pytest.mark.asyncio

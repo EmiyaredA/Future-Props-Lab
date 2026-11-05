@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, HTTPException, Request
 
-from app.llm.transcription_catalog import (
+from studio.apps.model_service.catalog.transcription import (
     resolve_transcription_model_reference,
     transcription_model_ready,
     transcription_model_reference,

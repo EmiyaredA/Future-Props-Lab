@@ -2,10 +2,10 @@
 
 from sqlalchemy import text
 
-from app.llm.generation_state import can_recover_generation_result
-from app.llm.visual_generation_model import VisualGenerationValidationError
 from studio.apps.model_service.admission.admission import settle
+from studio.apps.model_service.catalog.visual_generation import VisualGenerationValidationError
 from studio.apps.model_service.storage.visual_generation_records import VisualProviderTask
+from studio.contracts.model_service.generation_recovery import can_recover_generation_result
 from studio.runtime.time import utc_now
 
 

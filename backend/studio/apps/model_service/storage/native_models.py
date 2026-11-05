@@ -12,15 +12,20 @@ from pathlib import Path
 import jwt
 from sqlalchemy import func, select, text
 
-from app.llm.inference.storage import InferenceStorage
-from app.llm.models import (
+from studio.apps.model_service.generation.outcomes import (
+    SUBMISSION_INTERRUPTED_MESSAGE,
+    NativeSubmissionUncertain,
+)
+from studio.apps.model_service.inference.storage import InferenceStorage
+from studio.apps.model_service.local_models.native_retention import NativeResultRetention
+from studio.apps.model_service.storage.models.local_models import (
     LocalModelInstallation,
     LocalModelOperation,
+)
+from studio.apps.model_service.storage.models.model_inference import (
     ModelInferenceAsset,
     ModelInferenceTask,
 )
-from app.llm.task_outcomes import SUBMISSION_INTERRUPTED_MESSAGE, NativeSubmissionUncertain
-from studio.apps.model_service.local_models.native_retention import NativeResultRetention
 from studio.apps.model_service.storage.native_records import (
     NativeModelJob,
     NativeModelObservation,

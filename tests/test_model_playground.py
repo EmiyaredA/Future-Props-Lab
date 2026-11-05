@@ -10,18 +10,17 @@ import pytest
 from PIL import Image
 from sqlalchemy import delete, func, select
 
-from app.llm.models import (
-    LlmCallLog,
-    ModelEntry,
-    ModelProvider,
+from app.runtime.credentials import encrypt_secret
+from studio.apps.model_service.playground.service import ModelTestService
+from studio.apps.model_service.playground.stream import generation_events
+from studio.apps.model_service.providers.streaming import TextDelta
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
+from studio.apps.model_service.storage.models.model_test import (
     ModelTestAttachment,
     ModelTestConversation,
     ModelTestMessage,
 )
-from app.llm.playground.service import ModelTestService
-from app.llm.playground.stream import generation_events
-from app.llm.providers.streaming import TextDelta
-from app.runtime.credentials import encrypt_secret
 from studio.contracts.model_service.schemas.model_test import ModelTestConversationCreateIn
 from website_test_support import SessionLocal, app
 
@@ -55,7 +54,9 @@ async def test_persistent_playground_stream_cas_and_model_snapshot(
             finish_reason="stop",
         )
 
-    monkeypatch.setattr("app.llm.playground.stream.stream_text_completion", fake_stream)
+    monkeypatch.setattr(
+        "studio.apps.model_service.playground.stream.stream_text_completion", fake_stream
+    )
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         catalog = (await client.get("/v1/model-providers")).json()
@@ -187,7 +188,9 @@ async def test_playground_error_is_persisted_and_logged(
         yield TextDelta(text="partial")
         raise httpx.ReadTimeout("slow upstream")
 
-    monkeypatch.setattr("app.llm.playground.stream.stream_text_completion", failed_stream)
+    monkeypatch.setattr(
+        "studio.apps.model_service.playground.stream.stream_text_completion", failed_stream
+    )
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         catalog = (await client.get("/v1/model-providers")).json()
@@ -258,7 +261,9 @@ async def test_cancelled_generation_keeps_partial_reply_and_log(
         entered_wait.set()
         await never_finish.wait()
 
-    monkeypatch.setattr("app.llm.playground.stream.stream_text_completion", blocked_stream)
+    monkeypatch.setattr(
+        "studio.apps.model_service.playground.stream.stream_text_completion", blocked_stream
+    )
     provider_id = str(uuid4())
     model_id = str(uuid4())
     async with SessionLocal() as session:
@@ -338,7 +343,9 @@ async def test_playground_image_attachments_persist_and_reach_multiturn_context(
         captured_messages.append(kwargs["messages"])
         yield TextDelta(text="看到了")
 
-    monkeypatch.setattr("app.llm.playground.stream.stream_text_completion", fake_stream)
+    monkeypatch.setattr(
+        "studio.apps.model_service.playground.stream.stream_text_completion", fake_stream
+    )
     png = _png_bytes()
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:

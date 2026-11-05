@@ -12,8 +12,9 @@ from tests.test_visual_assistant_submission import SECRET
 from tests.test_visual_node_review_service import review_mesh
 
 from app.capabilities.agents.harness import ModelTextDelta, ModelTurnEnd, ToolCall, Usage
-from app.llm.models import LlmCallLog, ModelEntry
 from studio.apps.model_service.assistant_model_runs import AssistantModelRuns
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
+from studio.apps.model_service.storage.models.model_service import ModelEntry
 from studio.apps.model_service.transport.assistant_model_http import router
 from studio.apps.visual_workshop.storage.models import VisualAssistantAction
 from studio.contracts.identity.claims import HEADER

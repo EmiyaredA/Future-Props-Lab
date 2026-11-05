@@ -2,7 +2,11 @@
 
 from sqlalchemy import select
 
-from app.llm.models import ModelInferenceTask, ModelTestGenerationTask, ModelTestTranscriptionTask
+from studio.apps.model_service.storage.models.model_inference import ModelInferenceTask
+from studio.apps.model_service.storage.models.model_test import (
+    ModelTestGenerationTask,
+    ModelTestTranscriptionTask,
+)
 from studio.apps.model_service.storage.visual_generation_records import VisualProviderTask
 
 TASKS = (

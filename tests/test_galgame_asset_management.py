@@ -9,10 +9,6 @@ import pytest
 from PIL import Image
 from sqlalchemy import delete
 
-from app.llm.models import (
-    ModelEntry,
-    ModelProvider,
-)
 from app.runtime.credentials import encrypt_secret
 from studio.apps.galgame_workshop.assets import asset_analysis as asset_analysis_module
 from studio.apps.galgame_workshop.assets.asr import GalgameAsrRunner
@@ -23,6 +19,7 @@ from studio.apps.galgame_workshop.storage.models import (
     GalgameAssetSettings,
     GalgameAssetTranscriptionTask,
 )
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.config.settings import get_settings
 from website_test_support import SessionLocal, app
 

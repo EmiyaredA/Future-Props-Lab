@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, HTTPException, Request
 
-from app.llm.visual_catalog import fixed_acceptance_model
+from studio.apps.model_service.catalog.visual import fixed_acceptance_model
 from studio.apps.model_service.catalog_reads import owned_catalog
 from studio.apps.model_service.visual.visual_review_attempts import plan_for
 from studio.contracts.identity.permissions import effective_permissions

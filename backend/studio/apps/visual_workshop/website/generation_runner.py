@@ -13,25 +13,32 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
 from app.capabilities.media_rendering.image_grid import render_image_grid
-from app.llm.generation_runtime import (
+from studio.apps.model_service.generation.driver import (
     ClaimAdmission,
-    GenerationMaterializationError,
     GenerationTaskContext,
     GenerationTaskDriver,
     GenerationTaskStore,
     ImmediateGenerationResult,
+)
+from studio.apps.model_service.generation.media import (
+    GenerationMaterializationError,
     assert_public_https,
     download_generated_media,
     generated_type,
-    poll_generation_task,
     read_data_uri,
+)
+from studio.apps.model_service.generation.provider_tasks import (
+    poll_generation_task,
     safe_generation_error,
     upload_temporary_reference,
 )
-from app.llm.providers.temporary_media import TemporaryMediaError
-from app.llm.providers.zealman_live import ZealmanLiveMonitor
-from app.llm.providers.zealman_video import get_task
-from app.llm.visual_generation_submission import VisualGenerationInputs, submit_visual_generation
+from studio.apps.model_service.generation.visual_submission import (
+    VisualGenerationInputs,
+    submit_visual_generation,
+)
+from studio.apps.model_service.providers.temporary_media import TemporaryMediaError
+from studio.apps.model_service.providers.zealman_live import ZealmanLiveMonitor
+from studio.apps.model_service.providers.zealman_video import get_task
 from studio.apps.visual_workshop.generation_records import ACTIVE_TASK_STATUSES
 from studio.apps.visual_workshop.outputs.history import publish_generated_output
 from studio.apps.visual_workshop.storage.models import VisualGenerationBatch, VisualGenerationTask

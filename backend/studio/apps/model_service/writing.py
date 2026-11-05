@@ -12,12 +12,13 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy import select
 
-from app.llm.admission import admission_for
-from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
-from app.llm.provider_transports import provider_options
-from app.llm.providers.chat_completions import TEXT_PROVIDER_KINDS
-from app.llm.providers.streaming import ChatMessageInput, stream_text_completion
 from app.runtime.credentials import decrypt_secret
+from studio.apps.model_service.admission.bindings import admission_for
+from studio.apps.model_service.providers.chat_completions import TEXT_PROVIDER_KINDS
+from studio.apps.model_service.providers.streaming import ChatMessageInput, stream_text_completion
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
+from studio.apps.model_service.transport.provider_bindings import provider_options
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.permissions import effective_permissions
 from studio.contracts.identity.principal import StudioPrincipal

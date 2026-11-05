@@ -12,8 +12,9 @@ from tests.test_community_asset_protocol import scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 from tests.test_visual_node_review_service import review_mesh
 
-from app.llm.models import LlmCallLog, ModelEntry
 from studio.apps.model_service.assistant_model_runs import AssistantModelRuns
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
+from studio.apps.model_service.storage.models.model_service import ModelEntry
 from studio.apps.model_service.transport.assistant_model_http import router
 from studio.apps.visual_workshop.assistant.assistant_model_client import AssistantModelClient
 from studio.contracts.agent_runtime.dialogue import ModelTextDelta, ModelTurnEnd, Usage

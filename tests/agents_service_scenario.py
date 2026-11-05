@@ -27,7 +27,11 @@ assert "app.console.models.accounts" not in sys.modules
 assert "studio.runtime.database.website" not in sys.modules
 assert not any(
     name.startswith(
-        ("app.llm", "app.capabilities.agents.sessions.parsers", "studio.apps.visual_workshop")
+        (
+            "studio.apps.model_service",
+            "app.capabilities.agents.sessions.parsers",
+            "studio.apps.visual_workshop",
+        )
     )
     for name in sys.modules
 )

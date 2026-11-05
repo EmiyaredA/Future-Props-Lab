@@ -31,7 +31,10 @@ assert (
     "studio.assembly.website.application" not in sys.modules
     and "studio.assembly.website.models" not in sys.modules
 )
-assert not any(name.startswith("app.apps.") or name.startswith("app.llm.") for name in sys.modules)
+assert not any(
+    name.startswith("app.apps.") or name.startswith("studio.apps.model_service.")
+    for name in sys.modules
+)
 apply(identity_root / "service.db", "identity", IDENTITY_MIGRATIONS)
 apply(management_root / "service.db", "management", MIGRATIONS)
 key = Ed25519PrivateKey.generate()

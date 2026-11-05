@@ -4,8 +4,8 @@ from dataclasses import replace
 
 import pytest
 
-from app.llm.generation_runtime import GenerationTaskContext, GenerationTaskDriver
-from app.llm.providers._senseaudio import ProviderTaskStatus
+from studio.apps.model_service.generation.driver import GenerationTaskContext, GenerationTaskDriver
+from studio.apps.model_service.providers._senseaudio import ProviderTaskStatus
 
 
 def _task(status: str, **changes) -> GenerationTaskContext:
@@ -201,7 +201,7 @@ async def test_poll_transport_failure_backs_off_and_never_resubmits(monkeypatch)
     import httpx
 
     clock = [0.0]
-    monkeypatch.setattr("app.llm.generation_runtime.driver.monotonic", lambda: clock[0])
+    monkeypatch.setattr("studio.apps.model_service.generation.driver.monotonic", lambda: clock[0])
     store = FakeStore(_task("pending"))
     polls = 0
     saved = []

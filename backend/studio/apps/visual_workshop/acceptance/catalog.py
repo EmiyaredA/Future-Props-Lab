@@ -5,8 +5,8 @@ import os
 from app.capabilities.agents.cli.catalog import DEFINITIONS, connection, execution_signature
 from app.capabilities.agents.cli.process import probe
 from app.console.governance.code_agents import authorized
-from app.llm.visual_catalog import fixed_acceptance_model as fixed_model
-from app.llm.visual_review import fixed_connection_signature
+from studio.apps.model_service.catalog.visual import fixed_acceptance_model as fixed_model
+from studio.apps.model_service.providers.visual_review import fixed_connection_signature
 from studio.apps.visual_workshop.acceptance.schemes import SCHEMES, catalog_out, scheme_out
 from studio.config.settings import get_settings
 

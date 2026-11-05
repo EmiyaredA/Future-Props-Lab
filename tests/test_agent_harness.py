@@ -17,7 +17,7 @@ from app.capabilities.agents.harness import (
     RunStatus,
     ToolBinding,
 )
-from app.llm.providers.agent import (
+from studio.apps.model_service.providers.agent import (
     AgentMessage,
     ModelEvent,
     ModelTextDelta,

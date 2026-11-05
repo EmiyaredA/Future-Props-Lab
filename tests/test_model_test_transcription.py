@@ -8,22 +8,22 @@ import pytest
 from sqlalchemy import select
 from tests.account_fixtures import account_record
 
-from app.capabilities.transcription.parameters import (
-    TranscriptionParameterError,
-    parameter_capabilities,
-    resolve_parameters,
-)
 from app.console.models import User
-from app.llm.models import ModelTestTranscriptionTask
-from app.llm.playground.transcription import (
+from studio.apps.model_service.playground.transcription import (
     ModelTestTranscription,
     ModelTestTranscriptionError,
 )
-from app.llm.playground.transcription_runner import ModelTestTranscriptionRunner
-from app.llm.providers.transcription import (
+from studio.apps.model_service.playground.transcription_runner import ModelTestTranscriptionRunner
+from studio.apps.model_service.providers.transcription import (
     TranscriptionResult,
     TranscriptSegment,
     TranscriptWord,
+)
+from studio.apps.model_service.storage.models.model_test import ModelTestTranscriptionTask
+from studio.apps.model_service.transcription.parameters import (
+    TranscriptionParameterError,
+    parameter_capabilities,
+    resolve_parameters,
 )
 from studio.assembly.website.models import bind_owner
 from studio.contracts.model_service.schemas.model_test import ModelTestTranscriptionParametersIn
@@ -228,7 +228,7 @@ async def test_transcription_upload_formats_runner_segments_logs_and_cas_cleanup
         )
 
     monkeypatch.setattr(
-        "app.llm.playground.transcription_runner.transcribe_model_audio",
+        "studio.apps.model_service.playground.transcription_runner.transcribe_model_audio",
         fake_transcribe,
     )
     samples = [
@@ -369,7 +369,7 @@ async def test_pro_asr_accepts_100_mb_model_limit(monkeypatch: pytest.MonkeyPatc
         return TranscriptionResult(text="专业语音识别完成")
 
     monkeypatch.setattr(
-        "app.llm.playground.transcription_runner.transcribe_model_audio",
+        "studio.apps.model_service.playground.transcription_runner.transcribe_model_audio",
         fake_transcribe,
     )
     transport = httpx.ASGITransport(app=app)
@@ -456,7 +456,7 @@ async def test_transcription_library_source_is_private_and_survives_source_delet
         return TranscriptionResult(text="来自文件管理的转写")
 
     monkeypatch.setattr(
-        "app.llm.playground.transcription_runner.transcribe_model_audio",
+        "studio.apps.model_service.playground.transcription_runner.transcribe_model_audio",
         fake_transcribe,
     )
     transport = httpx.ASGITransport(app=app)

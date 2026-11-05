@@ -6,8 +6,13 @@ from pathlib import Path
 import httpx
 import pytest
 
-from app.llm.providers.zealman_video import create_task, get_task, root_url, upload_reference
-from app.llm.providers.zealman_workflows import (
+from studio.apps.model_service.providers.zealman_video import (
+    create_task,
+    get_task,
+    root_url,
+    upload_reference,
+)
+from studio.apps.model_service.providers.zealman_workflows import (
     U06,
     U17,
     WORKFLOWS,

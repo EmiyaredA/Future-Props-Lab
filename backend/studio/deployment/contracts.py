@@ -153,7 +153,7 @@ def table_owner(module, table):
         return APP_OWNERS[parts[2]]
     if module.startswith("app.capabilities.asset_store"):
         return "assets"
-    if module.startswith("app.llm."):
+    if module.startswith("studio.apps.model_service."):
         return "models"
     if module.startswith("app.integrations."):
         return "integrations"

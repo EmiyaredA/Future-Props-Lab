@@ -16,19 +16,19 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi import FastAPI, Request
 from sqlalchemy import select
 
-from app.llm.http_errors import mapped
-from app.llm.inference.assets import InferenceAssets
-from app.llm.library_inputs import LibraryInputBindings, library_inputs
-from app.llm.models import ModelInferenceAsset
 from studio.apps.asset_library.references.references import AssetReferences
 from studio.apps.asset_library.settings import StorageSettings
 from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
 from studio.apps.identity.accounts import create_account
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.identity.storage.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
+from studio.apps.model_service.inference.assets import InferenceAssets
+from studio.apps.model_service.library.inputs import LibraryInputBindings, library_inputs
 from studio.apps.model_service.library_inputs import HttpLibraryInputs
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
+from studio.apps.model_service.storage.models.model_inference import ModelInferenceAsset
 from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.apps.model_service.transport.errors import mapped
 from studio.assembly.http_dependencies import OwnerDep, SessionDep
 from studio.assembly.independent.asset_library.application import create_app as create_assets
 from studio.assembly.independent.identity.application import create_app as create_identity

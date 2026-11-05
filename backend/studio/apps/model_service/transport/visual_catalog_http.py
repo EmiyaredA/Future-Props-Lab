@@ -2,8 +2,8 @@
 
 from fastapi import APIRouter, HTTPException, Request
 
-from app.llm.assistant_catalog import assistant_models
-from app.llm.visual_catalog import (
+from studio.apps.model_service.catalog.assistant import assistant_models
+from studio.apps.model_service.catalog.visual import (
     acceptance_model_out,
     acceptance_models,
     fixed_acceptance_model,

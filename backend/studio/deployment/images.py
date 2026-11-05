@@ -110,7 +110,7 @@ FORBIDDEN_IDENTITY = (
     "studio.assembly.website.routes",
     "studio.assembly.website.models",
     "app.apps",
-    "app.llm",
+    "studio.apps.model_service",
     "app.capabilities.asset_store",
     "app.capabilities.agents",
     "app.console.governance.provisioning",
@@ -120,7 +120,7 @@ FORBIDDEN_AGENTS = (
     "studio.assembly.website.application",
     "studio.assembly.website.routes",
     "studio.assembly.website.models",
-    "app.llm",
+    "studio.apps.model_service",
     "app.console.models",
     "studio.assembly.http_dependencies",
     "studio.host",
@@ -175,7 +175,7 @@ def source_closure(root: Path, service):
                     "studio.assembly.website.models",
                     "studio.assembly.http_dependencies",
                     "app.apps",
-                    "app.llm",
+                    "studio.apps.model_service",
                     "app.console.models",
                     "studio.apps.identity",
                     "studio.host",
@@ -206,7 +206,7 @@ def source_closure(root: Path, service):
                         "studio.assembly.website.models",
                         "studio.assembly.http_dependencies",
                         "app.apps",
-                        "app.llm",
+                        "studio.apps.model_service",
                         "app.console.models",
                         "studio.apps.identity",
                         "studio.host",
@@ -226,7 +226,7 @@ def source_closure(root: Path, service):
                     "studio.assembly.website.models",
                     "studio.assembly.http_dependencies",
                     "app.apps",
-                    "app.llm",
+                    "studio.apps.model_service",
                     "app.console.models",
                     "app.capabilities.asset_store.models",
                     "app.capabilities.asset_store.assets",
@@ -245,7 +245,7 @@ def source_closure(root: Path, service):
                     "studio.assembly.website.models",
                     "studio.assembly.http_dependencies",
                     "app.apps",
-                    "app.llm",
+                    "studio.apps.model_service",
                     "app.console.models",
                     "app.capabilities.asset_store",
                     "studio.host",
@@ -260,7 +260,7 @@ def source_closure(root: Path, service):
                     "studio.assembly.website.routes",
                     "studio.assembly.http_dependencies",
                     "app.apps",
-                    "app.llm",
+                    "studio.apps.model_service",
                     "app.console.models",
                     "studio.apps.identity",
                     "studio.apps.agent_workbench",
@@ -277,9 +277,9 @@ def source_closure(root: Path, service):
                     "studio.assembly.website.models",
                     "studio.runtime.database.website",
                     "app.apps",
-                    "app.llm",
+                    "studio.apps.model_service",
                     "app.console",
-                    "app.console.governance.demo_configuration",
+                    "studio.apps.model_service.demonstration.website_storage",
                     "app.capabilities.asset_store.models",
                     "app.capabilities.asset_store.assets",
                     "app.capabilities.asset_store.storage",
@@ -299,7 +299,7 @@ def source_closure(root: Path, service):
                     "studio.assembly.website.models",
                     "studio.runtime.database.website",
                     "app.apps",
-                    "app.llm",
+                    "studio.apps.model_service",
                     "app.console.models",
                     "app.integrations.models",
                     "studio.apps.identity",
@@ -341,7 +341,7 @@ def source_closure(root: Path, service):
                     "app.apps",
                     "app.console.governance",
                     "app.console.models",
-                    "app.console.governance.demo_configuration",
+                    "studio.apps.model_service.demonstration.website_storage",
                     "app.capabilities.asset_store.models",
                     "app.capabilities.asset_store.assets",
                     "app.capabilities.asset_store.storage",
@@ -359,7 +359,7 @@ def source_closure(root: Path, service):
                     "studio.assembly.website.models",
                     "studio.runtime.database.website",
                     "app.apps",
-                    "app.llm",
+                    "studio.apps.model_service",
                     "app.console",
                     "app.capabilities.asset_store.models",
                     "app.capabilities.asset_store.storage",
@@ -380,7 +380,7 @@ def source_closure(root: Path, service):
                 or name.startswith(
                     (
                         "app.apps.",
-                        "app.llm",
+                        "studio.apps.model_service",
                         "app.console.governance",
                         "app.console.models",
                         "app.capabilities.agents.cli.catalog",
@@ -399,7 +399,7 @@ def source_closure(root: Path, service):
                     "studio.assembly.http_dependencies",
                     "studio.runtime.database.website",
                 }
-                or name.startswith(("app.apps.", "app.integrations.", "app.llm."))
+                or name.startswith(("app.apps.", "app.integrations.", "studio.apps.model_service."))
                 or name.startswith("app.console.governance.")
             ):
                 raise ValueError(f"Amadeus 镜像包含越界依赖：{name}")
@@ -412,7 +412,12 @@ def source_closure(root: Path, service):
                     "studio.runtime.database.website",
                 }
                 or name.startswith(
-                    ("app.apps.", "app.console.models", "app.llm", "studio.apps.identity")
+                    (
+                        "app.apps.",
+                        "app.console.models",
+                        "studio.apps.model_service",
+                        "studio.apps.identity",
+                    )
                 )
                 or name in {"app.console.cloud_control.access", "app.console.cloud_control.desktop"}
             ):
@@ -428,7 +433,7 @@ def source_closure(root: Path, service):
                 or name.startswith(
                     (
                         "app.console",
-                        "app.llm",
+                        "studio.apps.model_service",
                         "studio.apps.asset_library",
                         "studio.apps.identity",
                         "studio.host",
@@ -457,7 +462,7 @@ def source_closure(root: Path, service):
                 or name.startswith(
                     (
                         "app.console",
-                        "app.llm",
+                        "studio.apps.model_service",
                         "studio.apps.asset_library",
                         "studio.apps.identity",
                         "studio.host",
@@ -485,7 +490,7 @@ def source_closure(root: Path, service):
                 or name.startswith(
                     (
                         "app.console",
-                        "app.llm",
+                        "studio.apps.model_service",
                         "studio.apps.asset_library",
                         "studio.apps.identity",
                         "studio.host",
@@ -514,7 +519,7 @@ def source_closure(root: Path, service):
                 or name.startswith(
                     (
                         "app.console",
-                        "app.llm",
+                        "studio.apps.model_service",
                         "studio.apps.asset_library",
                         "studio.apps.identity",
                         "studio.host",
@@ -541,7 +546,7 @@ def source_closure(root: Path, service):
                 or name.startswith(
                     (
                         "app.console",
-                        "app.llm",
+                        "studio.apps.model_service",
                         "studio.apps.asset_library",
                         "studio.apps.identity",
                         "studio.host",
@@ -569,7 +574,7 @@ def source_closure(root: Path, service):
                 or name.startswith(
                     (
                         "app.console",
-                        "app.llm",
+                        "studio.apps.model_service",
                         "studio.apps.asset_library",
                         "studio.apps.identity",
                         "studio.host",
@@ -601,13 +606,16 @@ def source_closure(root: Path, service):
                 if service != "visual":
                     forbidden += ("studio.assembly.http_dependencies",)
                 llm_contract = name in {
-                    "app.llm",
+                    "studio.apps.model_service",
                     "studio.contracts.model_service.schemas",
                     "studio.contracts.model_service.task_execution",
                 } or name.startswith("studio.contracts.model_service.schemas.")
-                llm_contract |= service == "visual" and name == "app.llm.generation_state"
+                llm_contract |= (
+                    service == "visual"
+                    and name == "studio.apps.model_service.providers.poll_errors"
+                )
                 if (
-                    name.startswith("app.llm.")
+                    name.startswith("studio.apps.model_service.")
                     and not llm_contract
                     or any(name == prefix or name.startswith(prefix + ".") for prefix in forbidden)
                 ):

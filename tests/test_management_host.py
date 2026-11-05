@@ -118,7 +118,13 @@ def test_management_image_excludes_business_and_host_implementations():
     assert "studio.assembly.independent.management.application" in closure
     assert not any(
         name.startswith(
-            ("studio.apps.identity", "studio.host", "app.console.models", "app.apps", "app.llm")
+            (
+                "studio.apps.identity",
+                "studio.host",
+                "app.console.models",
+                "app.apps",
+                "studio.apps.model_service",
+            )
         )
         for name in closure
         if not public_client_module(name)

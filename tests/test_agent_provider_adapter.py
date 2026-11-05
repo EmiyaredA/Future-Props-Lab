@@ -5,7 +5,7 @@ import json
 import httpx
 import pytest
 
-from app.llm.providers.agent import (
+from studio.apps.model_service.providers.agent import (
     AgentMessage,
     HttpAgentAdapter,
     ModelTextDelta,
@@ -13,7 +13,7 @@ from app.llm.providers.agent import (
     ToolCall,
     ToolSpec,
 )
-from app.llm.providers.streaming import ImageInput
+from studio.apps.model_service.providers.streaming import ImageInput
 
 
 @pytest.mark.asyncio

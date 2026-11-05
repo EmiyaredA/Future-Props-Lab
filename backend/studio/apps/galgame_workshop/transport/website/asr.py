@@ -3,7 +3,6 @@ from __future__ import annotations
 from fastapi import APIRouter, Request
 
 from app.capabilities.asset_store import AssetError
-from app.llm.routes.model_capacity import task_admission
 from studio.apps.galgame_workshop.assets.asr import GalgameAsrService
 from studio.apps.galgame_workshop.schemas import (
     GalgameAsrSettingsOut,
@@ -15,6 +14,7 @@ from studio.apps.galgame_workshop.schemas import (
     GalgameVoiceMatchOut,
 )
 from studio.apps.galgame_workshop.transport.website._shared import _asset_error
+from studio.apps.model_service.transport.website.model_capacity import task_admission
 from studio.assembly.http_dependencies import SessionDep
 
 router = APIRouter()

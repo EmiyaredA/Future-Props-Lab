@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from app.llm.call_logs.reproduction import build_reproduction_bundle
-from app.llm.models import LlmCallLog
+from studio.apps.model_service.call_logs.reproduction import build_reproduction_bundle
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
 
 
 def _log(**overrides: object) -> LlmCallLog:

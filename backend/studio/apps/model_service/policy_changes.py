@@ -3,7 +3,7 @@
 from studio.apps.model_service.admission.quotas import QuotaPolicies
 from studio.apps.model_service.audit.audit import add_event
 
-from .templates import RoleTemplates
+from .templates.policy import RoleTemplates
 
 
 async def save_quotas(session, principal, body, audits):

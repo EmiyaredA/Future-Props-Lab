@@ -6,7 +6,10 @@ import jwt
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
 
-from app.llm.visual_generation_model import VisualGenerationValidationError, select_visual_model
+from studio.apps.model_service.catalog.visual_generation import (
+    VisualGenerationValidationError,
+    select_visual_model,
+)
 from studio.apps.model_service.catalog_reads import owned_catalog
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.visual_workshop.visual_generation import (

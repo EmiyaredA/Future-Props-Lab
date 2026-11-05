@@ -10,20 +10,21 @@ from anyio.to_thread import run_sync
 from sqlalchemy import text
 
 from app.capabilities.asset_store.digests import sha256_file
-from app.llm.generation_runtime import (
-    GenerationTaskDriver,
-    GenerationTaskStore,
-    download_generated_media,
+from studio.apps.model_service.admission.admission import settle
+from studio.apps.model_service.generation.driver import GenerationTaskDriver, GenerationTaskStore
+from studio.apps.model_service.generation.media import download_generated_media, read_data_uri
+from studio.apps.model_service.generation.outcomes import TaskClaimRejected
+from studio.apps.model_service.generation.provider_tasks import (
     poll_generation_task,
-    read_data_uri,
     safe_generation_error,
     upload_temporary_reference,
 )
-from app.llm.providers.zealman_live import ZealmanLiveMonitor
-from app.llm.providers.zealman_video import get_task
-from app.llm.task_outcomes import TaskClaimRejected
-from app.llm.visual_generation_submission import VisualGenerationInputs, submit_visual_generation
-from studio.apps.model_service.admission.admission import settle
+from studio.apps.model_service.generation.visual_submission import (
+    VisualGenerationInputs,
+    submit_visual_generation,
+)
+from studio.apps.model_service.providers.zealman_live import ZealmanLiveMonitor
+from studio.apps.model_service.providers.zealman_video import get_task
 from studio.apps.model_service.storage.visual_generation_records import (
     VisualProviderBatch,
     VisualProviderTask,

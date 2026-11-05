@@ -3,12 +3,12 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from app.llm.generation_runtime.provider_tasks import (
+from studio.apps.model_service.generation.provider_tasks import (
     safe_generation_error,
     submit_generation_task,
     validate_provider_content,
 )
-from app.llm.providers.temporary_media import TemporaryMediaError
+from studio.apps.model_service.providers.temporary_media import TemporaryMediaError
 
 
 def test_shared_generation_error_conversion_hides_temporary_urls() -> None:
@@ -21,7 +21,9 @@ def test_shared_generation_error_conversion_hides_temporary_urls() -> None:
 
 
 def test_shared_provider_content_limit_is_enforced(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("app.llm.generation_runtime.provider_tasks.MAX_PROVIDER_CONTENT_BYTES", 32)
+    monkeypatch.setattr(
+        "studio.apps.model_service.generation.provider_tasks.MAX_PROVIDER_CONTENT_BYTES", 32
+    )
     with pytest.raises(ValueError, match="64 MB"):
         validate_provider_content([{"type": "text", "text": "x" * 40}])
 
@@ -36,7 +38,9 @@ async def test_shared_image_submission_normalizes_payload(
         submitted.update(kwargs)
         return "task-1"
 
-    monkeypatch.setattr("app.llm.generation_runtime.provider_tasks.create_image_task", fake_create)
+    monkeypatch.setattr(
+        "studio.apps.model_service.generation.provider_tasks.create_image_task", fake_create
+    )
     task_id = await submit_generation_task(
         provider_kind="senseaudio_image",
         base_url="https://provider.example/v1",

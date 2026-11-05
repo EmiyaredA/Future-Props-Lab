@@ -5,8 +5,8 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import delete, select, update
 
-from app.llm.call_logs.service import CallLogService
-from app.llm.models import LlmCallLog
+from studio.apps.model_service.call_logs.service import CallLogService
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
 from studio.assembly.website.models import TenantScopeError, bind_owner, require_owner_id
 from website_test_support import SessionLocal
 

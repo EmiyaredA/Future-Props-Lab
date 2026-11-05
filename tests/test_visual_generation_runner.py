@@ -11,12 +11,9 @@ from sqlalchemy import delete
 
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from app.llm.models import (
-    ModelEntry,
-    ModelProvider,
-)
-from app.llm.providers.temporary_media import TemporaryMediaError
 from app.runtime.credentials import encrypt_secret
+from studio.apps.model_service.providers.temporary_media import TemporaryMediaError
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.storage.models import (
     VisualGenerationTask,
@@ -161,7 +158,9 @@ async def test_video_submit_materializes_asset_ids_and_keeps_legacy_urls(
         return f"https://temp.sh/{kind}-{asset_id}"
 
     runner = VisualGenerationRunner(session_factory=SessionLocal, settings=get_settings())
-    monkeypatch.setattr("app.llm.visual_generation_submission.submit_generation_task", fake_create)
+    monkeypatch.setattr(
+        "studio.apps.model_service.generation.visual_submission.submit_generation_task", fake_create
+    )
     monkeypatch.setattr(runner, "_asset_data_uri", fake_image)
     monkeypatch.setattr(runner, "_temporary_asset_url", fake_temporary)
 
@@ -229,7 +228,9 @@ async def test_temporary_upload_failure_happens_before_provider_submission(
         raise TemporaryMediaError("private upstream response")
 
     runner = VisualGenerationRunner(session_factory=SessionLocal, settings=get_settings())
-    monkeypatch.setattr("app.llm.visual_generation_submission.submit_generation_task", fake_create)
+    monkeypatch.setattr(
+        "studio.apps.model_service.generation.visual_submission.submit_generation_task", fake_create
+    )
     monkeypatch.setattr(runner, "_temporary_asset_url", failed_upload)
 
     with pytest.raises(TemporaryMediaError):
@@ -382,7 +383,8 @@ async def test_concurrent_claim_submits_a_queued_task_only_once(
             return "provider-task-once"
 
         monkeypatch.setattr(
-            "app.llm.visual_generation_submission.submit_generation_task", fake_submit
+            "studio.apps.model_service.generation.visual_submission.submit_generation_task",
+            fake_submit,
         )
         runner = VisualGenerationRunner(session_factory=SessionLocal, settings=get_settings())
         await asyncio.gather(runner._process_task(task.id), runner._process_task(task.id))

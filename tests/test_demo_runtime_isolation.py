@@ -4,7 +4,7 @@ import asyncio
 
 import pytest
 
-from app.demo_runtime.engine import DEFAULT_CONFIG, DemoRuntime
+from studio.apps.model_service.demonstration.execution import DEFAULT_CONFIG, DemoRuntime
 
 
 async def test_demo_instances_do_not_share_calls_logs_or_draining():

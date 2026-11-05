@@ -13,8 +13,8 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi import FastAPI, HTTPException
 
-from app.llm.admission import AdmissionBindings
-from app.llm.routes.model_capacity import (
+from studio.apps.model_service.admission.bindings import AdmissionBindings
+from studio.apps.model_service.transport.website.model_capacity import (
     ModelCapacity,
     model_capacity,
     spawned_task_admission,
@@ -33,8 +33,8 @@ def test_capacity_protocol_import_has_no_legacy_database_or_foreign_orm(tmp_path
         [
             sys.executable,
             "-c",
-            "import sys; import app.llm.routes.model_capacity; "
-            "import app.llm.routes.models.model_test_realtime; "
+            "import sys; import studio.apps.model_service.transport.website.model_capacity; "
+            "import studio.apps.model_service.transport.website.models.model_test_realtime; "
             "assert 'studio.runtime.database.website' not in sys.modules; "
             "assert not any(n.startswith(('app.console.models', 'app.apps.', "
             "'app.capabilities.asset_store.models')) for n in sys.modules)",
@@ -222,7 +222,7 @@ async def test_signed_http_requires_explicit_binding_but_read_only_routes_need_n
 async def test_realtime_admission_is_explicit_and_releases_after_handshake_failure(
     monkeypatch, mode
 ):
-    from app.llm.routes.models import model_test_realtime as realtime
+    from studio.apps.model_service.transport.website.models import model_test_realtime as realtime
 
     request, session, principal, events = fixture()
     socket = SimpleNamespace(app=request.app)

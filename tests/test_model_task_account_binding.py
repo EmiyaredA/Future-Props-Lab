@@ -6,16 +6,16 @@ from types import SimpleNamespace
 import pytest
 from sqlalchemy import select
 
-from app.llm.generation_runtime import GenerationTaskDriver, GenerationTaskStore
-from app.llm.models import (
-    LlmCallLog,
+from studio.apps.model_service.generation.driver import GenerationTaskDriver, GenerationTaskStore
+from studio.apps.model_service.playground.transcription_runner import ModelTestTranscriptionRunner
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
+from studio.apps.model_service.storage.models.model_inference import (
     ModelInferenceAsset,
     ModelInferenceTask,
-    ModelProvider,
-    ModelTestTranscriptionTask,
 )
-from app.llm.playground.transcription_runner import ModelTestTranscriptionRunner
-from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.models.model_service import ModelProvider
+from studio.apps.model_service.storage.models.model_test import ModelTestTranscriptionTask
 from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database, ServiceStorageError
@@ -214,7 +214,7 @@ async def test_transcription_recovery_uses_scoped_writes_and_never_resubmits(dat
 
 
 async def test_inference_recovery_and_settlement_need_no_identity_database(database, tmp_path):
-    from app.llm.inference.runner import InferenceRunner
+    from studio.apps.model_service.inference.runner import InferenceRunner
 
     runner = InferenceRunner(database.sessions, settings=SimpleNamespace(runtime_path=tmp_path))
     for owner in ("alpha", "beta"):
@@ -270,7 +270,7 @@ async def test_inference_recovery_and_settlement_need_no_identity_database(datab
 
 
 def test_inference_file_recovery_does_not_follow_links_or_remove_other_kinds(tmp_path):
-    from app.llm.inference.storage import InferenceStorage
+    from studio.apps.model_service.inference.storage import InferenceStorage
 
     storage = InferenceStorage(SimpleNamespace(runtime_path=tmp_path / "models"))
     external = tmp_path / "other-service"

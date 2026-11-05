@@ -45,6 +45,8 @@ def test_asset_production_entry_source_closure_excludes_other_owners():
     assert "studio.assembly.independent.asset_library.application" in closure
     assert "app.capabilities.asset_store.asset_outputs" in closure
     assert not any(
-        name.startswith(("app.apps.", "app.llm.", "app.console.models", "studio.host"))
+        name.startswith(
+            ("app.apps.", "studio.apps.model_service.", "app.console.models", "studio.host")
+        )
         for name in closure
     )

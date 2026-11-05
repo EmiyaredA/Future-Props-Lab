@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from app.llm.generation_state import can_recover_generation_result
 from studio.apps.visual_workshop.schemas.generation import GenerationBatchOut
 from studio.apps.visual_workshop.schemas.workshop import GenerationTaskOut
 from studio.apps.visual_workshop.storage.models import VisualGenerationBatch, VisualGenerationTask
+from studio.contracts.model_service.generation_recovery import can_recover_generation_result
 from studio.runtime.time import iso_utc
 
 

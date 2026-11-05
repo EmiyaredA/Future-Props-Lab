@@ -15,21 +15,26 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi import FastAPI, Request
 from sqlalchemy import select, text
 
-from app.llm.generation_runtime.driver import GenerationTaskStore
-from app.llm.models import ModelInferenceTask, ModelProvider, RuntimeAdmission
-from app.llm.routes.model_capacity import ModelCapacity, task_admission
-from app.llm.task_outcomes import SUBMISSION_INTERRUPTED_MESSAGE, TaskClaimRejected
 from app.runtime.credentials import encrypt_secret
 from studio.apps.model_service.admission import execution_authority as authority_module
 from studio.apps.model_service.admission.admission import ModelAdmission, settle
 from studio.apps.model_service.admission.execution_authority import ModelTaskAuthority
 from studio.apps.model_service.admission.request_admission import request_admission
+from studio.apps.model_service.generation.driver import GenerationTaskStore
+from studio.apps.model_service.generation.outcomes import (
+    SUBMISSION_INTERRUPTED_MESSAGE,
+    TaskClaimRejected,
+)
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.models.model_inference import ModelInferenceTask
+from studio.apps.model_service.storage.models.model_service import ModelProvider
+from studio.apps.model_service.storage.models.runtime_admission import RuntimeAdmission
 from studio.apps.model_service.storage.service_models import (
     ACCOUNT_MODELS,
     MODELS,
     TaskAuthorization,
 )
+from studio.apps.model_service.transport.website.model_capacity import ModelCapacity, task_admission
 from studio.assembly.http_dependencies import OwnerDep, SessionDep
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.claims import Actor, issue_context

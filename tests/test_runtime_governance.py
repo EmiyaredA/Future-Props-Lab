@@ -5,9 +5,14 @@ from uuid import uuid4
 import httpx
 import pytest
 
-from app.console.governance.runtime_quotas import acquire, attach, recover_admissions, release
-from app.llm.models import ModelTestGenerationTask
-from app.llm.models.runtime_admission import RuntimeAdmission
+from studio.apps.model_service.admission.website_quotas import (
+    acquire,
+    attach,
+    recover_admissions,
+    release,
+)
+from studio.apps.model_service.storage.models.model_test import ModelTestGenerationTask
+from studio.apps.model_service.storage.models.runtime_admission import RuntimeAdmission
 from studio.contracts.identity.errors import AccountError
 from studio.contracts.identity.principal import StudioPrincipal
 from test_workspace_governance import client_account
@@ -166,7 +171,7 @@ async def test_demo_services_disabled_stream_tools_install_and_policy_reading():
 
 @pytest.mark.asyncio
 async def test_demo_stop_drains_accepted_call_before_reinitialization():
-    from app.demo_runtime.engine import DEFAULT_CONFIG, DemoRuntime
+    from studio.apps.model_service.demonstration.execution import DEFAULT_CONFIG, DemoRuntime
 
     enabled = True
 

@@ -11,12 +11,15 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import delete, select
 
-from app.console.governance.generation_queue import claim_visual_capacity, visual_queue_candidates
-from app.console.governance.runtime_quotas import recover_admissions
 from app.console.models import User
-from app.llm.models import ModelEntry, ModelProvider
-from app.llm.models.runtime_admission import RuntimeAdmission
 from app.runtime.credentials import encrypt_secret
+from studio.apps.model_service.admission.website_queue import (
+    claim_visual_capacity,
+    visual_queue_candidates,
+)
+from studio.apps.model_service.admission.website_quotas import recover_admissions
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
+from studio.apps.model_service.storage.models.runtime_admission import RuntimeAdmission
 from studio.apps.visual_workshop.storage.models import (
     VisualCanvasDocument,
     VisualGenerationTask,
@@ -158,7 +161,9 @@ async def test_capacity_overflow_cancel_conflicts_and_workspace_isolation():
 @pytest.mark.asyncio
 async def test_dispatch_fifo_concurrent_claim_restart_and_cancel_race(monkeypatch):
     submit = AsyncMock(return_value="provider-task")
-    monkeypatch.setattr("app.llm.visual_generation_submission.submit_generation_task", submit)
+    monkeypatch.setattr(
+        "studio.apps.model_service.generation.visual_submission.submit_generation_task", submit
+    )
     monkeypatch.setattr(
         "studio.apps.visual_workshop.website.generation_runner.poll_generation_task",
         AsyncMock(return_value=SimpleNamespace(status="pending", progress=0, execution_info=None)),
@@ -266,7 +271,9 @@ async def test_zero_and_lowered_queue_limit_preserve_accepted_tasks():
 @pytest.mark.parametrize("invalid", ["account", "model"])
 async def test_waiting_task_rechecks_execution_authorization(invalid, monkeypatch):
     submit = AsyncMock(return_value="should-not-submit")
-    monkeypatch.setattr("app.llm.visual_generation_submission.submit_generation_task", submit)
+    monkeypatch.setattr(
+        "studio.apps.model_service.generation.visual_submission.submit_generation_task", submit
+    )
     monkeypatch.setattr(
         "studio.apps.visual_workshop.website.generation_runner.poll_generation_task",
         AsyncMock(return_value=SimpleNamespace(status="pending", progress=0, execution_info=None)),
@@ -301,7 +308,7 @@ async def test_competing_creates_cannot_exceed_running_or_waiting_capacity():
 @pytest.mark.asyncio
 async def test_long_blocked_queue_does_not_starve_other_owners_or_polling(monkeypatch):
     monkeypatch.setattr(
-        "app.llm.visual_generation_submission.submit_generation_task",
+        "studio.apps.model_service.generation.visual_submission.submit_generation_task",
         AsyncMock(return_value="provider-task"),
     )
     monkeypatch.setattr(

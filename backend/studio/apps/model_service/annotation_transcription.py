@@ -8,8 +8,11 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import ValidationError
 from sqlalchemy import text
 
-from app.llm.annotation_transcription import AnnotationTranscription, AnnotationTranscriptionError
 from studio.apps.model_service.storage.service_models import AnnotationTranscriptionAttempt
+from studio.apps.model_service.transcription.annotation import (
+    AnnotationTranscription,
+    AnnotationTranscriptionError,
+)
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.permissions import effective_permissions
 from studio.contracts.model_service.annotation import HEADER as INPUT_HEADER

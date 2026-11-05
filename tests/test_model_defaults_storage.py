@@ -4,16 +4,16 @@ import sqlite3
 
 import pytest
 
-from app.llm.catalog.defaults import update_defaults
-from app.llm.models import (
-    LocalModelInstallation,
+from studio.apps.model_service.catalog.defaults import update_defaults
+from studio.apps.model_service.defaults import OwnedCatalogDefaults
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.models.local_models import LocalModelInstallation
+from studio.apps.model_service.storage.models.model_service import (
     ModelCatalogState,
     ModelEntry,
     ModelProvider,
-    ModelSupplier,
 )
-from studio.apps.model_service.defaults import OwnedCatalogDefaults
-from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.models.model_supplier import ModelSupplier
 from studio.apps.model_service.storage.service_models import AccountDefaults
 from studio.contracts.model_service.schemas.model_service import ModelDefaultsIn
 from studio.runtime.database.migrations import apply, check

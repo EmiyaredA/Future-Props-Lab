@@ -8,8 +8,8 @@ from app.capabilities.asset_store.models import (
     VisualAsset,
 )
 from app.capabilities.asset_store.storage import AssetStorage
-from app.llm.models import ModelEntry, ModelProvider
 from app.runtime.credentials import encrypt_secret
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.storage.models import VisualGenerationTask, VisualWorkshopProject
 from studio.config.settings import get_settings

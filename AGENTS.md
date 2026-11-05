@@ -71,14 +71,14 @@
   CAS 与回执；并发失败复查原请求回执，取消回滚。HTTP 层只映射领域错误。
 - `backend/studio/` 全树纳入文件和目录行数预算；迁移路径同时更新入口、镜像闭包、打包、
   契约归属和测试。不得用空目录、软链接或永久转发表示迁移完成。
-- `backend/app/` 暂时保留 `llm/`、`capabilities/`、`console/`、`integrations/`、
-  `tool_navigation/` 与 `demo_runtime/` 的未归并实现。新业务进入 `studio`；后续迁移须按真实
+- `backend/app/` 暂时保留 `capabilities/`、`console/`、`integrations/`、
+  `tool_navigation/` 的未归并实现。新业务进入 `studio`；后续迁移须按真实
   所有者分配这些实现，不能把它们整体搬入一个通用兼容包。`app/apps/` 已无业务源码。
 - 路由模块不得直接导入 SQLAlchemy、ORM 模型或 `db.migrations`，不得自行持有查询、写入和
   事务规则。它们只校验请求、调用功能模块并把领域结果或错误映射为协议响应；`apps/*/routes/`、
-  `llm/routes/`、`console/routes/`、`capabilities/*/routes/` 与各业务包 `routes.py` 遵守同一边界。
+  `studio/apps/model_service/transport/website/`、`console/routes/`、`capabilities/*/routes/` 与各业务包 `routes.py` 遵守同一边界。
 - 不新增 `services/`、`domain/`、`platform/`、`product/` 等通用后端抽象层目录。需要拆分时，
-  在所属能力内按具体职责命名文件或子包，例如 `llm/catalog/`、`capabilities/asset_store/`。
+  在所属能力内按具体职责命名文件或子包，例如 `studio/apps/model_service/catalog/`、`capabilities/asset_store/`。
 - 业务 API 统一注册在 `/v1`；只有 `/health` 与 `/ready` 作为根级探针。
 - 浏览器是唯一客户端。`runtime/website.py` 拥有可信监听入口和静态页面，`scripts/website/serve.py` 在数据库导入前加载 TOML、核验迁移并持有正式数据锁；存在待处理迁移时拒绝启动，不在重启时执行未核准迁移。原桌面代码仅保留于归档分支。
 - 正式网站数据保存在项目 `.runtime/`，本地模型位于 `.runtime/local-models/`，配置仅在 `backend/config.toml`。从桌面迁入时唯一源为当时正在使用的 Application Support/Future Props Lab；完整停机、备份、核验后迁入，不与项目旧开发库合并，不更换加密密钥。原目录和恢复快照在验收前保留。
@@ -100,10 +100,10 @@
   日期选择等必须使用项目自绘组件并适配明暗主题；原生 `select`、`input[type="color"]`、
   `input[type="date"]` 仅可作为完全隐藏的底层能力，不能作为最终可见 UI。新增或修改页面时应
   同步检查键盘操作、焦点状态与无障碍标签，避免因浏览器或操作系统不同出现不一致样式。
-- 模型与供应商差异在 `backend/app/llm/providers/` 的适配边界内归一化。公共 REST/SSE、模型
+- 模型与供应商差异在 `backend/studio/apps/model_service/providers/` 的适配边界内归一化。公共 REST/SSE、模型
   测试和调用日志契约保持供应商无关；供应商管理页面可以展示配置，但前端运行流程不得依赖
   供应商原始事件。
-- 图片/视频后台任务的状态转换由 `llm/generation_runtime.GenerationTaskDriver` 唯一编排；各功能
+- 图片/视频后台任务的状态转换由 `studio/apps/model_service/generation/driver.GenerationTaskDriver` 唯一编排；各功能
   只提供任务存取、素材组装/落盘和调用日志钩子。`submitting` 中断必须安全失败，禁止自动重提。
 - 确定性时间线画面与视频渲染由 `backend/app/capabilities/media_rendering/` 统一拥有；Galgame 直接导出不得
   依赖 `video_editor/` 实现，只有显式的视频编辑器交接用例可以跨功能调用。
@@ -124,8 +124,8 @@
 - 固定账号权限由 `studio/contracts/identity/permissions.py` 维护，业务 HTTP/SSE 操作必须登记在
   `studio/contracts/identity/route_permissions.py`；架构测试禁止未登记路由。Web 统一消费 Principal 的有效权限，
   只读浏览页面由各功能模块拥有，账号查询键由 `features/accounts/queryKeys.ts` 唯一维护。
-- 平台模板同步项与运行额度记录属于 `console/governance/`，平台资源分配由治理用例显式校验；固定演示运行时
-  `demo_runtime/` 不得依赖账号治理或模型目录，治理入口仍在 `console/governance/`。
+- 模型模板同步、运行额度和演示配置属于 `studio/apps/model_service/`；兼容网站按已登记设置键
+  读写原表，不转移存储归属。演示执行组件不依赖账号治理或模型目录，由装配注入配置读取。
 - Web 不保存密码、Session、CSRF 或 Management API Key 明文；Session 只使用 HttpOnly Cookie，
   写请求统一携带可读 CSRF Cookie 对应的请求头。API Key 明文和临时密码只允许展示一次。
 - 修改安装、启动、环境变量、依赖或目录路径时，同步检查根与 Web 的 `package.json`、
@@ -139,7 +139,7 @@
 
 - Python SDK 位于 `sdk/python/`，不依赖后端运行时。`generated/` 由 OpenAPI 和 `operations.json` 生成，不手工编辑。
 - 修改公共接口后运行 `npm run contracts:generate`，同时更新 SDK 与文档参考；`npm run sdk:check` 检查生成物。具名方法覆盖不等于业务闭环测试。
-- 独立模型任务归属 `llm/inference/`；备份账号时一并保留 `model-inference/inputs/`、`model-inference/outputs/`。提交中断禁止重新提交供应商。
+- 独立模型任务归属 `studio/apps/model_service/inference/`；备份账号时一并保留 `model-inference/inputs/`、`model-inference/outputs/`。提交中断禁止重新提交供应商。
 
 ## SQLite、迁移与并发
 

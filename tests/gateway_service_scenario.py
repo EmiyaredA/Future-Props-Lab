@@ -23,7 +23,7 @@ assert (
     and "studio.assembly.website.models" not in sys.modules
 )
 assert "app.console.models.accounts" not in sys.modules
-assert not any(name.startswith(("app.apps.", "app.llm.")) for name in sys.modules)
+assert not any(name.startswith(("app.apps.", "studio.apps.model_service.")) for name in sys.modules)
 
 state = Path(os.environ["GATEWAY_TEST_ROOT"])
 key = Ed25519PrivateKey.generate()

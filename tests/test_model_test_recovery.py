@@ -6,9 +6,12 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.llm.models import ModelTestConversation, ModelTestMessage
-from app.llm.playground import recovery
 from db.migrations import apply_migrations
+from studio.apps.model_service.playground import recovery
+from studio.apps.model_service.storage.models.model_test import (
+    ModelTestConversation,
+    ModelTestMessage,
+)
 
 
 @pytest.mark.asyncio
@@ -60,7 +63,8 @@ async def test_restart_recovery_preserves_replies_and_unblocks_each_conversation
 
 
 async def test_recovery_uses_scoped_writes_in_an_independent_models_database(tmp_path):
-    from app.llm.models import ModelEntry, ModelProvider, ModelSupplier
+    from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
+    from studio.apps.model_service.storage.models.model_supplier import ModelSupplier
     from studio.runtime.database.orm_base import Base
     from studio.runtime.database.sessions import Database
 

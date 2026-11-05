@@ -4,7 +4,7 @@ These helpers do not authorize browser requests or cross-service task submission
 The supplied model and session must belong to the runner's own service.
 """
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from studio.runtime.database.ownership import bind_owner, require_owner_id
 
@@ -42,3 +42,18 @@ async def recovery_accounts(session_factory, task_type, *, statuses):
             )
         )
     return [require_owner_id(owner, subject="interrupted background task") for owner in owners]
+
+
+async def transition_task(session, model, identifier, revision, *, expected, choices, changes):
+    """Apply one owner's transition atomically without committing its transaction.
+
+    The owner supplies all state predicates and values. The primitive only fences
+    revision and ID; account filtering is enforced by the owning session adapter.
+    """
+    predicates = [model.id == identifier, model.revision == revision]
+    predicates.extend(getattr(model, key) == value for key, value in expected.items())
+    predicates.extend(getattr(model, key).in_(values) for key, values in choices.items())
+    result = await session.execute(
+        update(model).where(*predicates).values(**changes, revision=revision + 1)
+    )
+    return result.rowcount == 1

@@ -8,8 +8,8 @@ import pytest
 from sqlalchemy import delete
 
 from app.capabilities.asset_store.models import VisualAsset
-from app.llm.generation_runtime.media import generated_type
-from app.llm.providers.senseaudio_audio import (
+from studio.apps.model_service.generation.media import generated_type
+from studio.apps.model_service.providers.senseaudio_audio import (
     create_music_task,
     create_sound_effect,
     get_music_task,

@@ -9,18 +9,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.capabilities.asset_store.assistant_media import read_pdf
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from app.llm.assistant_catalog import (
+from studio.apps.model_service.catalog.assistant import (
     catalog_rows,
     chat_order,
     chat_ready,
     generation_ready,
     model_option,
 )
-from app.llm.models import (
-    ModelEntry,
-    ModelProvider,
-)
-from app.llm.providers.streaming import ChatMessageInput
+from studio.apps.model_service.providers.streaming import ChatMessageInput
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.visual_workshop.assistant.attachments import VisualAssistantAttachmentMixin
 from studio.apps.visual_workshop.assistant_input_values import canvas_context
 from studio.apps.visual_workshop.assistant_values import action_out

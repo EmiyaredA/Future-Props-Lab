@@ -6,8 +6,8 @@ from uuid import uuid4
 import httpx
 import pytest
 
-from app.llm.inference.runner import InferenceRunner
-from app.llm.providers._senseaudio import ProviderTaskStatus
+from studio.apps.model_service.inference.runner import InferenceRunner
+from studio.apps.model_service.providers._senseaudio import ProviderTaskStatus
 from website_test_support import SessionLocal, app
 
 CREATED_PROVIDERS = []
@@ -86,9 +86,11 @@ async def test_task_idempotency_results_and_materialization_retry(monkeypatch):
         target.write_bytes(b"deterministic media")
         return 19, "image", "image/png", ".png"
 
-    monkeypatch.setattr("app.llm.inference.runner.submit_generation_task", submit)
-    monkeypatch.setattr("app.llm.inference.runner.poll_generation_task", poll)
-    monkeypatch.setattr("app.llm.inference.runner.download_generated_media", download)
+    monkeypatch.setattr("studio.apps.model_service.inference.runner.submit_generation_task", submit)
+    monkeypatch.setattr("studio.apps.model_service.inference.runner.poll_generation_task", poll)
+    monkeypatch.setattr(
+        "studio.apps.model_service.inference.runner.download_generated_media", download
+    )
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
@@ -109,7 +111,7 @@ async def test_task_idempotency_results_and_materialization_retry(monkeypatch):
         from dataclasses import replace
         from types import SimpleNamespace
 
-        from app.llm.routes.model_capacity import model_capacity
+        from studio.apps.model_service.transport.website.model_capacity import model_capacity
         from studio.assembly.website.models import bind_owner
 
         async def no_capacity(*_args, **_kwargs):
@@ -181,7 +183,7 @@ async def test_interrupted_submission_is_not_replayed(monkeypatch):
         calls.append(1)
         raise asyncio.CancelledError()
 
-    monkeypatch.setattr("app.llm.inference.runner.submit_generation_task", submit)
+    monkeypatch.setattr("studio.apps.model_service.inference.runner.submit_generation_task", submit)
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
@@ -210,7 +212,7 @@ async def test_interrupted_submission_is_not_replayed(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_text_json_and_sse_have_durable_logs(monkeypatch):
-    from app.llm.providers.streaming import TextDelta
+    from studio.apps.model_service.providers.streaming import TextDelta
 
     async def stream(**_kwargs):
         yield TextDelta(text="Hello ")
@@ -218,7 +220,7 @@ async def test_text_json_and_sse_have_durable_logs(monkeypatch):
             text="SDK", finish_reason="stop", prompt_tokens=3, completion_tokens=2, total_tokens=5
         )
 
-    monkeypatch.setattr("app.llm.inference.text.stream_text_completion", stream)
+    monkeypatch.setattr("studio.apps.model_service.inference.text.stream_text_completion", stream)
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
@@ -265,9 +267,11 @@ async def test_supported_modalities_use_shared_driver(
             ".mp4" if media == "video" else ".mp3",
         )
 
-    monkeypatch.setattr("app.llm.inference.runner.submit_generation_task", submit)
-    monkeypatch.setattr("app.llm.inference.runner.poll_generation_task", poll)
-    monkeypatch.setattr("app.llm.inference.runner.download_generated_media", download)
+    monkeypatch.setattr("studio.apps.model_service.inference.runner.submit_generation_task", submit)
+    monkeypatch.setattr("studio.apps.model_service.inference.runner.poll_generation_task", poll)
+    monkeypatch.setattr(
+        "studio.apps.model_service.inference.runner.download_generated_media", download
+    )
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
@@ -295,7 +299,10 @@ async def test_supported_modalities_use_shared_driver(
 async def test_transcription_private_input_claim_download_and_cleanup(monkeypatch):
     from tests.test_audio_annotation import wav_bytes
 
-    from app.llm.providers.transcription import TranscriptionResult, TranscriptSegment
+    from studio.apps.model_service.providers.transcription import (
+        TranscriptionResult,
+        TranscriptSegment,
+    )
 
     calls = []
 
@@ -306,7 +313,9 @@ async def test_transcription_private_input_claim_download_and_cleanup(monkeypatc
             segments=(TranscriptSegment(speaker="Speaker", start_ms=0, end_ms=500, text="Hello"),),
         )
 
-    monkeypatch.setattr("app.llm.inference.runner.transcribe_model_audio", transcribe)
+    monkeypatch.setattr(
+        "studio.apps.model_service.inference.runner.transcribe_model_audio", transcribe
+    )
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
@@ -353,8 +362,8 @@ async def test_input_commit_interruption_preserves_owned_file_and_recovery_clean
     from sqlalchemy.ext.asyncio import AsyncSession
     from tests.test_audio_annotation import wav_bytes
 
-    from app.llm.inference.assets import root
-    from app.llm.models.model_inference import ModelInferenceAsset
+    from studio.apps.model_service.inference.assets import root
+    from studio.apps.model_service.storage.models.model_inference import ModelInferenceAsset
 
     original_commit = AsyncSession.commit
 
@@ -396,7 +405,7 @@ async def test_input_commit_interruption_preserves_owned_file_and_recovery_clean
 async def test_text_stream_provider_error_retains_partial_and_records_failure(monkeypatch, kind):
     import json
 
-    from app.llm.providers.streaming import stream_text_completion
+    from studio.apps.model_service.providers.streaming import stream_text_completion
 
     delta = (
         {"choices": [{"delta": {"content": "partial"}}]}
@@ -412,7 +421,7 @@ async def test_text_stream_provider_error_retains_partial_and_records_failure(mo
             **kwargs, transport=httpx.MockTransport(lambda _: httpx.Response(200, text=data))
         )
 
-    monkeypatch.setattr("app.llm.inference.text.stream_text_completion", stream)
+    monkeypatch.setattr("studio.apps.model_service.inference.text.stream_text_completion", stream)
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:

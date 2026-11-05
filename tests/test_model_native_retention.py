@@ -10,9 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from tests import test_native_models
 from tests.test_native_models import recording, stop, task
 
-from app.llm.inference.tasks import InferenceTasks
-from app.llm.models import ModelInferenceTask
+from studio.apps.model_service.inference.tasks import InferenceTasks
 from studio.apps.model_service.local_models.native_files import accept_result
+from studio.apps.model_service.storage.models.model_inference import ModelInferenceTask
 from studio.apps.model_service.storage.native_records import NativeModelJob, NativeModelProof
 from studio.apps.model_service.storage.service_models import TaskAuthorization
 from studio.contracts.agent_workbench.native import NativeLease, NativeOutcome
@@ -92,7 +92,9 @@ async def test_upload_started_before_delete_cannot_republish_or_restore_sensitiv
     )
     try:
         await asyncio.wait_for(streaming.wait(), 3)
-        monkeypatch.setattr("app.llm.inference.tasks.root", case.broker.storage.root)
+        monkeypatch.setattr(
+            "studio.apps.model_service.inference.tasks.root", case.broker.storage.root
+        )
         async with case.database.sessions(info={"owner_user_id": "alpha"}) as session:
             row = await session.get(ModelInferenceTask, task_id)
             await InferenceTasks(session, "alpha", native_retention=case.broker.retention).delete(
@@ -180,7 +182,7 @@ async def test_delete_commit_unknown_recovers_only_confirmed_retirement(
     artifact = case.broker.artifact(str(lease.job_id), description.content_sha256)
     original = AsyncSession.commit
     injected, deleting_session = False, None
-    monkeypatch.setattr("app.llm.inference.tasks.root", case.broker.storage.root)
+    monkeypatch.setattr("studio.apps.model_service.inference.tasks.root", case.broker.storage.root)
 
     async def uncertain(session):
         nonlocal injected

@@ -17,17 +17,16 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi import FastAPI
 from sqlalchemy import select
 
-from app.llm.inference.runner import InferenceRunner
-from app.llm.local_models.authorization import LocalModelActionAuthorization
-from app.llm.models import (
-    LocalModelInstallation,
-    ModelEntry,
+from studio.apps.model_service.generation.outcomes import SUBMISSION_INTERRUPTED_MESSAGE
+from studio.apps.model_service.inference.runner import InferenceRunner
+from studio.apps.model_service.local_models.authorization import LocalModelActionAuthorization
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.models.local_models import LocalModelInstallation
+from studio.apps.model_service.storage.models.model_inference import (
     ModelInferenceAsset,
     ModelInferenceTask,
-    ModelProvider,
 )
-from app.llm.task_outcomes import SUBMISSION_INTERRUPTED_MESSAGE
-from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.model_service.storage.native_models import NativeModelBroker
 from studio.apps.model_service.storage.native_records import NativeModelJob
 from studio.apps.model_service.storage.service_models import (
@@ -468,7 +467,7 @@ def test_native_mac_modules_do_not_import_service_orm_or_database(tmp_path):
 import sys
 import studio.host.local_models.models_worker
 for name in ('studio.runtime.database.website',
-    'app.llm.models',
+    'studio.apps.model_service.storage.models',
     'studio.apps.model_service.storage.service_models',
     'app.console.models.accounts'):
     assert name not in sys.modules, name
@@ -536,7 +535,7 @@ async def test_cleanup_refuses_linked_jobs_parent_and_keeps_external_files(case)
 
 
 def test_installer_readiness_requires_every_pinned_file_and_completed_environment(tmp_path):
-    from app.llm.local_models.installer import Installer as RealInstaller
+    from studio.host.local_models.installer import Installer as RealInstaller
 
     installer = RealInstaller(tmp_path)
     model = {
@@ -707,7 +706,7 @@ async def test_repair_preserves_explicitly_disabled_model(case):
 
 
 async def test_uncertain_native_submission_cannot_delete_original_task_or_input(case):
-    from app.llm.inference.tasks import InferenceTasks
+    from studio.apps.model_service.inference.tasks import InferenceTasks
     from studio.runtime.database.operation_receipts import OperationError
 
     task_id = await task(case)
@@ -952,7 +951,7 @@ async def test_cancel_before_dispatch_waits_for_durable_unknown_intent(tmp_path,
 async def test_foreground_finish_failure_releases_same_receipt_for_background_settlement(
     case, fault
 ):
-    from app.llm.models import LlmCallLog
+    from studio.apps.model_service.storage.models.call_log import LlmCallLog
 
     task_id = await task(case)
     original_finish = case.inference.finish

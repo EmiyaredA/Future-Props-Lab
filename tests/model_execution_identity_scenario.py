@@ -19,15 +19,18 @@ from studio.contracts.identity.claims import verify_context
 from studio.runtime.database.migrations import apply
 
 assert "studio.runtime.database.website" not in sys.modules
-assert not any(name.startswith(("app.llm", "app.apps")) for name in sys.modules)
+assert not any(name.startswith(("studio.apps.model_service", "app.apps")) for name in sys.modules)
 
-from app.llm.generation_runtime.driver import GenerationTaskStore  # noqa: E402
-from app.llm.models import ModelInferenceTask, ModelProvider  # noqa: E402
 from app.runtime.credentials import encrypt_secret  # noqa: E402
 from studio.apps.model_service.admission.execution_authority import ModelTaskAuthority  # noqa: E402
+from studio.apps.model_service.generation.driver import GenerationTaskStore  # noqa: E402
 from studio.apps.model_service.storage.migrations.registry import (  # noqa: E402
     MIGRATIONS as MODELS_MIGRATIONS,  # noqa: E402
 )
+from studio.apps.model_service.storage.models.model_inference import (  # noqa: E402
+    ModelInferenceTask,  # noqa: E402
+)
+from studio.apps.model_service.storage.models.model_service import ModelProvider  # noqa: E402
 from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS  # noqa: E402
 from studio.runtime.database.sessions import Database  # noqa: E402
 

@@ -69,6 +69,6 @@ stateDiagram-v2
 
 ## 代码入口
 
-1. `backend/app/llm/generation_runtime/driver.py`
-2. `backend/app/llm/generation_runtime/media.py`
+1. `backend/studio/apps/model_service/generation/driver.py`
+2. `backend/studio/apps/model_service/generation/media.py`
 3. `backend/studio/apps/visual_workshop/website/generation_runner.py`

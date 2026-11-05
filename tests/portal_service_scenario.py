@@ -21,7 +21,8 @@ assert (
     and "studio.assembly.website.application" not in sys.modules
 )
 assert not any(
-    name.startswith(("app.apps.", "app.console.models", "app.llm.")) for name in sys.modules
+    name.startswith(("app.apps.", "app.console.models", "studio.apps.model_service."))
+    for name in sys.modules
 )
 state = Path(os.environ["PORTAL_TEST_ROOT"])
 key = Ed25519PrivateKey.generate()

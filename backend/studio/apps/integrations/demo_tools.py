@@ -2,11 +2,11 @@
 
 from sqlalchemy import select, text
 
-from app.demo_runtime.engine import TOOL_BASE_URL
 from app.integrations.models import ToolApiIntegration
 from studio.apps.integrations.storage.demo_records import DemoToolInstallation
 from studio.contracts.identity.errors import AccountError
 from studio.contracts.integrations.integration_intents import digest
+from studio.contracts.model_service.demo import TOOL_BASE_URL
 
 
 class DemoToolInstallations:

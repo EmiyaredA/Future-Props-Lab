@@ -13,9 +13,10 @@ from sqlalchemy import delete, select
 from app.capabilities.agents.harness import approval_broker
 from app.capabilities.agents.harness.approval import ApprovalResolution
 from app.capabilities.asset_store.models import VisualAsset
-from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
-from app.llm.providers.agent import ModelTextDelta, ModelTurnEnd, ToolCall, Usage
 from app.runtime.credentials import encrypt_secret
+from studio.apps.model_service.providers.agent import ModelTextDelta, ModelTurnEnd, ToolCall, Usage
+from studio.apps.model_service.storage.models.call_log import LlmCallLog
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.visual_workshop.assistant import stream as assistant_stream
 from studio.apps.visual_workshop.assistant.conversations import VisualAssistantConversations
 from studio.apps.visual_workshop.schemas.workshop import VisualAssistantSendIn

@@ -6,10 +6,10 @@ from tests.test_community_asset_protocol import CATALOG, scenario  # noqa: F401
 from tests.test_creative_project_certification import CREDENTIALS, PROJECTS
 from tests.test_independent_project_catalog import authorize
 
-from app.llm.models import ModelEntry, ModelProvider
 from studio.apps.galgame_workshop.storage.models import GalgameAssetTranscriptionTask
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
+from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
 from studio.apps.model_service.transport.galgame_asr_http import router
 from studio.contracts.galgame_workshop.galgame_snapshot import (

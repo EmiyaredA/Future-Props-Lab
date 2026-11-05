@@ -11,9 +11,8 @@ from pydantic import BaseModel, ConfigDict, Field, JsonValue, ValidationError
 from sqlalchemy import JSON, Column, DateTime, Integer, MetaData, String, Table, select, text
 from sqlalchemy.exc import IntegrityError
 
-from app.demo_runtime.engine import SERVICE_IDS
-from app.demo_runtime.schemas import DemoConfig
-from app.llm.models import ModelEntry
+from studio.apps.model_service.demonstration.execution import SERVICE_IDS
+from studio.apps.model_service.storage.models.model_service import ModelEntry
 from studio.apps.model_service.storage.service_models import (
     AccountDefaults,
     DemoSetting,
@@ -25,6 +24,7 @@ from studio.contracts.management.migration_batches import (
     MigrationBatch,
     MigrationPage,
 )
+from studio.contracts.model_service.demo import DemoConfig
 from studio.contracts.model_service.schemas.model_service import ModelDefaultsIn
 from studio.contracts.model_service.schemas.model_templates import RoleModelTemplate
 from studio.contracts.model_service.schemas.runtime_quotas import RuntimeQuotas

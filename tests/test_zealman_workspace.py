@@ -2,7 +2,7 @@ from contextlib import aclosing
 
 import pytest
 
-from app.llm.providers.zealman_workflows import U06
+from studio.apps.model_service.providers.zealman_workflows import U06
 from test_workspace_governance import client_account
 
 pytestmark = pytest.mark.real_auth

@@ -8,12 +8,12 @@ from app.capabilities.asset_store.asset_scope import is_library_asset
 from app.capabilities.asset_store.library import AssetError, AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from app.llm.models import ModelTestTranscriptionTask
 from studio.apps.audio_annotation.sources import (
     AnnotationAudio,
     AudioAnnotationError,
     TranscriptionSource,
 )
+from studio.apps.model_service.storage.models.model_test import ModelTestTranscriptionTask
 from studio.contracts.asset_library.annotation import MAX_AUDIO_BYTES
 from studio.contracts.asset_library.descriptions import LibraryAssetDescription
 
