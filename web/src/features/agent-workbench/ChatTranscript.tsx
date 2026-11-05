@@ -1,5 +1,12 @@
 import { Fragment, useEffect, useRef } from "react";
-import { WorkbenchMessage } from "./ConversationView";
+import {
+  TranscriptActivity,
+  TranscriptDisclosure,
+  TranscriptMessage,
+  TranscriptText,
+} from "./TranscriptMessage";
+import { ActivityRow } from "./ActivityRow";
+import type { SourceTarget } from "./WorkbenchSourcePane";
 import type { ChatDetail } from "./executionApi";
 
 const statusLabels: Record<string, string> = {
@@ -20,17 +27,189 @@ const approvalLabels: Record<string, string> = {
   expired: "已失效",
   unknown: "结果未知",
 };
+const instructionLabels = {
+  sending: "正在插入",
+  accepted: "Agent 已接收指令",
+  rejected: "插入被拒绝",
+  unknown: "插入结果未知",
+};
+type Turn = ChatDetail["turns"][number];
+
+function ApprovalBlock({
+  approval,
+  turnId,
+  busy,
+  unlocked,
+  decide,
+}: {
+  approval: Turn["approvals"][number];
+  turnId: string;
+  busy: boolean;
+  unlocked: boolean;
+  decide: (turn: string, approval: string, approved: boolean) => void;
+}) {
+  const pending = approval.status === "pending";
+  const title = `${approval.kind === "write" ? "写入文件" : "运行命令"} · ${approval.title}`;
+  return pending ? (
+    <div className="cloud-approval" key={approval.id}>
+      <span className="aw-badge">{approvalLabels[approval.status]}</span>
+      <strong>{title}</strong>
+      <pre>{approval.preview || "内容无差异"}</pre>
+      {unlocked && (
+        <div className="cloud-pane-actions">
+          <button
+            className="btn"
+            disabled={busy}
+            onClick={() => decide(turnId, approval.id, false)}
+          >
+            拒绝
+          </button>
+          <button
+            className="btn"
+            disabled={busy}
+            onClick={() => decide(turnId, approval.id, true)}
+          >
+            批准本次
+          </button>
+        </div>
+      )}
+    </div>
+  ) : (
+    <TranscriptDisclosure
+      key={approval.id}
+      title={`${title} · ${approvalLabels[approval.status] ?? approval.status}`}
+    >
+      <TranscriptText text={approval.preview || "内容无差异"} raw />
+    </TranscriptDisclosure>
+  );
+}
+
+function ReplyBody({
+  turn,
+  busy,
+  unlocked,
+  decide,
+  openSource,
+}: {
+  turn: Turn;
+  busy: boolean;
+  unlocked: boolean;
+  decide: (turn: string, approval: string, approved: boolean) => void;
+  openSource: (target: SourceTarget) => void;
+}) {
+  // The persisted offsets count Unicode code points, including emoji.
+  const answer = Array.from(turn.answer);
+  const events = [
+    ...(turn.activity ?? []).map((activity) => ({
+      kind: "activity" as const,
+      ...activity,
+    })),
+    ...(turn.instructions ?? []).map((instruction) => ({
+      kind: "instruction" as const,
+      ...instruction,
+    })),
+    ...turn.approvals.map((approval) => ({
+      kind: "approval" as const,
+      approval,
+      offset: approval.offset ?? answer.length,
+      sequence: approval.sequence,
+    })),
+  ].sort(
+    (a, b) => a.offset - b.offset || (a.sequence ?? -1) - (b.sequence ?? -1),
+  );
+  const sections = [];
+  let offset = 0;
+  for (let index = 0; index < events.length;) {
+    const event = events[index];
+    if (event.offset > offset) {
+      sections.push(
+        <TranscriptText
+          key={`text:${offset}`}
+          text={answer.slice(offset, event.offset).join("")}
+        />,
+      );
+      offset = event.offset;
+    }
+    if (event.kind === "approval") {
+      sections.push(
+        <ApprovalBlock
+          key={`approval:${event.approval.id}`}
+          approval={event.approval}
+          turnId={turn.id}
+          busy={busy}
+          unlocked={unlocked}
+          decide={decide}
+        />,
+      );
+      index++;
+      continue;
+    }
+    if (event.kind === "instruction") {
+      sections.push(
+        <div className="aw-instruction" key={`instruction:${event.request_id}`}>
+          <strong>{instructionLabels[event.status]}</strong>
+          <span>{event.text}</span>
+        </div>,
+      );
+      index++;
+      continue;
+    }
+    const activities = [event];
+    index++;
+    for (
+      let next = events[index];
+      next?.kind === "activity" && next.offset === offset;
+      next = events[++index]
+    )
+      activities.push(next);
+    const failed = activities.filter(
+      (activity) => activity.status === "failed",
+    ).length;
+    sections.push(
+      <TranscriptActivity
+        key={`activity:${event.call_id}`}
+        names={activities.map((activity) => activity.name)}
+        failed={failed}
+      >
+        {activities.map((activity) => (
+          <ActivityRow
+            key={activity.call_id}
+            name={activity.name}
+            status={activity.status}
+            details={activity.details}
+            onOpenFile={
+              activity.source_available && unlocked
+                ? () =>
+                    openSource({ turnId: turn.id, callId: activity.call_id })
+                : undefined
+            }
+          />
+        ))}
+      </TranscriptActivity>,
+    );
+  }
+  if (offset < answer.length)
+    sections.push(
+      <TranscriptText
+        key={`text:${offset}`}
+        text={answer.slice(offset).join("")}
+      />,
+    );
+  return sections;
+}
 
 export function ChatTranscript({
   chat,
   busy,
   unlocked,
   decide,
+  openSource,
 }: {
   chat?: ChatDetail;
   busy: boolean;
   unlocked: boolean;
   decide: (turn: string, approval: string, approved: boolean) => void;
+  openSource: (target: SourceTarget) => void;
 }) {
   const list = useRef<HTMLDivElement>(null);
   const follow = useRef(true);
@@ -55,59 +234,30 @@ export function ChatTranscript({
       )}
       {chat?.turns.map((turn) => (
         <Fragment key={turn.id}>
-          <WorkbenchMessage
+          <TranscriptMessage agent={chat.agent_id} role="user">
+            <TranscriptText text={turn.prompt} />
+          </TranscriptMessage>
+          <TranscriptMessage
             agent={chat.agent_id}
-            entry={{
-              text: turn.prompt,
-              role: "user",
-              kind: "message",
-              attachments: [],
-            }}
-          />
-          {turn.answer && (
-            <WorkbenchMessage
-              agent={chat.agent_id}
-              entry={{
-                text: turn.answer,
-                role: "assistant",
-                kind: "message",
-                attachments: [],
-              }}
+            timestamp={
+              turn.started_at
+                ? new Date(turn.started_at * 1000).toISOString()
+                : undefined
+            }
+          >
+            <ReplyBody
+              turn={turn}
+              busy={busy}
+              unlocked={unlocked}
+              decide={decide}
+              openSource={openSource}
             />
-          )}
-          {turn.approvals.map((approval) => (
-            <div className="cloud-approval" key={approval.id}>
-              <strong>
-                {approval.kind === "write" ? "写入文件" : "运行命令"} ·{" "}
-                {approval.title}
-              </strong>
-              <pre>{approval.preview || "内容无差异"}</pre>
-              <span>{approvalLabels[approval.status] ?? approval.status}</span>
-              {approval.status === "pending" && unlocked && (
-                <div className="cloud-pane-actions">
-                  <button
-                    className="btn"
-                    disabled={busy}
-                    onClick={() => decide(turn.id, approval.id, false)}
-                  >
-                    拒绝
-                  </button>
-                  <button
-                    className="btn"
-                    disabled={busy}
-                    onClick={() => decide(turn.id, approval.id, true)}
-                  >
-                    批准本次
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-          {statusLabels[turn.status] && (
-            <p className="aw-subtle" role="status">
-              {turn.error ?? statusLabels[turn.status]}
-            </p>
-          )}
+            {statusLabels[turn.status] && (
+              <p className="aw-turn-status aw-subtle" role="status">
+                {turn.error ?? statusLabels[turn.status]}
+              </p>
+            )}
+          </TranscriptMessage>
         </Fragment>
       ))}
     </div>

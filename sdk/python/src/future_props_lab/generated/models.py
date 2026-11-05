@@ -298,6 +298,18 @@ class ActionOut(WireModel):
     tool_name: str = Field(default=..., alias='tool_name')
     updated_at: datetime = Field(default=..., alias='updated_at')
 
+class ActivityDetails(WireModel):
+    answers: list[str] | None = Field(default=None, alias='answers')
+    duration_ms: int | None = Field(default=None, alias='duration_ms')
+    file: ActivityFile | None = Field(default=None, alias='file')
+    kind: Literal['file', 'search', 'web', 'question', 'command', 'duration'] = Field(default=..., alias='kind')
+    label: str | None = Field(default=None, alias='label')
+    questions: list[str] | None = Field(default=None, alias='questions')
+
+class ActivityFile(WireModel):
+    line: int | None = Field(default=None, alias='line')
+    path: str = Field(default=..., alias='path')
+
 class AddClipOperation(WireModel):
     clip: VideoEditorClip = Field(default=..., alias='clip')
     type: Literal['addClip'] = Field(default=..., alias='type')
@@ -389,7 +401,9 @@ class ApprovalDecision(WireModel):
 class ApprovalOut(WireModel):
     id: str = Field(default=..., alias='id')
     kind: Literal['write', 'command'] = Field(default=..., alias='kind')
+    offset: int | None = Field(default=None, alias='offset')
     preview: str = Field(default=..., alias='preview')
+    sequence: int | None = Field(default=None, alias='sequence')
     status: str = Field(default=..., alias='status')
     title: str = Field(default=..., alias='title')
 
@@ -907,6 +921,9 @@ class ChatDetail(WireModel):
     id: str = Field(default=..., alias='id')
     project_id: str = Field(default=..., alias='project_id')
     project_label: str | None = Field(default=None, alias='project_label')
+    queue: list[QueuedTurn] | None = Field(default=None, alias='queue')
+    queue_paused: bool = Field(default=False, alias='queue_paused')
+    steerable_turn_id: str | None = Field(default=None, alias='steerable_turn_id')
     turns: list[TurnOut] = Field(default=..., alias='turns')
 
 class ChatOut(WireModel):
@@ -2902,6 +2919,22 @@ class HandoffOut(WireModel):
     asset_id: str = Field(default=..., alias='assetId')
     project_id: str = Field(default=..., alias='projectId')
 
+class HistoryBlock(WireModel):
+    call_id: str | None = Field(default=None, alias='call_id')
+    details: ActivityDetails | None = Field(default=None, alias='details')
+    kind: str = Field(default=..., alias='kind')
+    status: str | None = Field(default=None, alias='status')
+    text: str = Field(default=..., alias='text')
+    tool_name: str = Field(default='', alias='tool_name')
+
+class HistoryPresentation(WireModel):
+    blocks: list[HistoryBlock] | None = Field(default=None, alias='blocks')
+    call_id: str | None = Field(default=None, alias='call_id')
+    details: ActivityDetails | None = Field(default=None, alias='details')
+    message_id: str | None = Field(default=None, alias='message_id')
+    status: str | None = Field(default=None, alias='status')
+    turn_id: str | None = Field(default=None, alias='turn_id')
+
 class IdlePreference(WireModel):
     idle_minutes: int = Field(default=..., alias='idle_minutes', ge=5.0, le=120.0)
     revision: int = Field(default=..., alias='revision', ge=0.0)
@@ -3040,6 +3073,17 @@ class InputReference(WireModel):
     excerpt: str = Field(default=..., alias='excerpt')
     file_id: str = Field(default=..., alias='file_id')
     location: str = Field(default=..., alias='location')
+
+class InstructionCreate(WireModel):
+    request_id: str = Field(default=..., alias='request_id', min_length=1, max_length=80)
+    text: str = Field(default=..., alias='text', min_length=1, max_length=16000)
+
+class InstructionOut(WireModel):
+    offset: int = Field(default=..., alias='offset')
+    request_id: str = Field(default=..., alias='request_id')
+    sequence: int | None = Field(default=None, alias='sequence')
+    status: Literal['sending', 'accepted', 'rejected', 'unknown'] = Field(default=..., alias='status')
+    text: str = Field(default=..., alias='text')
 
 class IntegrationCheckOut(WireModel):
     created_at: str = Field(default=..., alias='created_at')
@@ -4431,6 +4475,10 @@ class QuestionOut(WireModel):
     tool_call_id: str = Field(default=..., alias='tool_call_id')
     updated_at: datetime = Field(default=..., alias='updated_at')
 
+class QueuedTurn(WireModel):
+    id: str = Field(default=..., alias='id')
+    prompt: str = Field(default=..., alias='prompt')
+
 class QuotaLimit(WireModel):
     realtime_voice: int = Field(default=..., alias='realtime_voice', ge=0.0, le=1024.0)
     total: int = Field(default=..., alias='total', ge=0.0, le=1024.0)
@@ -4964,6 +5012,12 @@ class SnapshotRun(WireModel):
 class Sort(WireModel):
     direction: Literal['asc', 'desc'] = Field(default='asc', alias='direction')
     field_id: str = Field(default=..., alias='field_id')
+
+class SourcePreview(WireModel):
+    diff: str | None = Field(default=None, alias='diff')
+    line: int | None = Field(default=None, alias='line')
+    path: str = Field(default=..., alias='path')
+    text: str = Field(default=..., alias='text')
 
 class Specification(WireModel):
     max_duration: float | None = Field(default=None, alias='max_duration')
@@ -5560,18 +5614,31 @@ class TrimClipOperation(WireModel):
     timeline_start_us: int = Field(default=..., alias='timelineStartUs', ge=0.0)
     type: Literal['trimClip'] = Field(default=..., alias='type')
 
+class TurnActivity(WireModel):
+    call_id: str = Field(default=..., alias='call_id')
+    details: ActivityDetails | None = Field(default=None, alias='details')
+    name: str = Field(default=..., alias='name')
+    offset: int = Field(default=..., alias='offset')
+    sequence: int | None = Field(default=None, alias='sequence')
+    source_available: bool = Field(default=False, alias='source_available')
+    status: Literal['running', 'completed', 'failed', 'unknown'] = Field(default=..., alias='status')
+
 class TurnCreate(WireModel):
+    mode: Literal['immediate', 'queue'] = Field(default='immediate', alias='mode')
     request_id: str = Field(default=..., alias='request_id', min_length=1, max_length=80)
     text: str = Field(default=..., alias='text', min_length=1, max_length=16000)
 
 class TurnOut(WireModel):
+    activity: list[TurnActivity] | None = Field(default=None, alias='activity')
     answer: str = Field(default=..., alias='answer')
     approvals: list[ApprovalOut] = Field(default=..., alias='approvals')
     error: str | None = Field(default=..., alias='error')
     id: str = Field(default=..., alias='id')
+    instructions: list[InstructionOut] | None = Field(default=None, alias='instructions')
     position: int = Field(default=..., alias='position')
     prompt: str = Field(default=..., alias='prompt')
     revision: int = Field(default=..., alias='revision')
+    started_at: int | None = Field(default=None, alias='started_at')
     status: str = Field(default=..., alias='status')
 
 class UpdateClipOperation(WireModel):
@@ -6418,6 +6485,7 @@ class WorkbenchEntryOut(WireModel):
     native_id: str = Field(default=..., alias='native_id')
     ordinal: int = Field(default=..., alias='ordinal')
     parent_id: str | None = Field(default=..., alias='parent_id')
+    presentation: HistoryPresentation | None = Field(default=None, alias='presentation')
     role: str = Field(default=..., alias='role')
     text: str = Field(default=..., alias='text')
     timestamp: str = Field(default=..., alias='timestamp')
@@ -6428,6 +6496,7 @@ class WorkbenchHistory(WireModel):
     change_cursor: int = Field(default=..., alias='change_cursor')
     items: list[WorkbenchEntryOut] = Field(default=..., alias='items')
     next_cursor: int | None = Field(default=..., alias='next_cursor')
+    next_cursor_native_id: str | None = Field(default=None, alias='next_cursor_native_id')
     selected_branch: str | None = Field(default=None, alias='selected_branch')
 
 class WorkbenchOperationOut(WireModel):
@@ -6553,6 +6622,8 @@ AccountSessionOut.model_rebuild()
 ActionDecisionIn.model_rebuild()
 ActionIn.model_rebuild()
 ActionOut.model_rebuild()
+ActivityDetails.model_rebuild()
+ActivityFile.model_rebuild()
 AddClipOperation.model_rebuild()
 AddTrackOperation.model_rebuild()
 AddTransitionOperation.model_rebuild()
@@ -6945,6 +7016,8 @@ GenerationTaskOut.model_rebuild()
 HTTPValidationError.model_rebuild()
 HandoffIn.model_rebuild()
 HandoffOut.model_rebuild()
+HistoryBlock.model_rebuild()
+HistoryPresentation.model_rebuild()
 IdlePreference.model_rebuild()
 ImageCompositionCreateIn.model_rebuild()
 ImageCompositionItemIn.model_rebuild()
@@ -6966,6 +7039,8 @@ InferenceTasksOut.model_rebuild()
 InferenceTextIn.model_rebuild()
 InferenceTextOut.model_rebuild()
 InputReference.model_rebuild()
+InstructionCreate.model_rebuild()
+InstructionOut.model_rebuild()
 IntegrationCheckOut.model_rebuild()
 IntegrationOverviewOut.model_rebuild()
 InterviewCreateIn.model_rebuild()
@@ -7149,6 +7224,7 @@ QueryIn.model_rebuild()
 QuestionAnswerIn.model_rebuild()
 QuestionIn.model_rebuild()
 QuestionOut.model_rebuild()
+QueuedTurn.model_rebuild()
 QuotaLimit.model_rebuild()
 ReadingIn.model_rebuild()
 ReadingOut.model_rebuild()
@@ -7238,6 +7314,7 @@ Snapshot.model_rebuild()
 SnapshotBlock.model_rebuild()
 SnapshotRun.model_rebuild()
 Sort.model_rebuild()
+SourcePreview.model_rebuild()
 Specification.model_rebuild()
 SplitClipOperation.model_rebuild()
 StorageLayoutIssueOut.model_rebuild()
@@ -7313,6 +7390,7 @@ ToolFavoriteIn.model_rebuild()
 ToolNavigationItemOut.model_rebuild()
 ToolNavigationStateOut.model_rebuild()
 TrimClipOperation.model_rebuild()
+TurnActivity.model_rebuild()
 TurnCreate.model_rebuild()
 TurnOut.model_rebuild()
 UpdateClipOperation.model_rebuild()

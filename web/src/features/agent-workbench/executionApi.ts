@@ -66,3 +66,50 @@ export const decideApproval = async (
       },
     ),
   );
+
+export const removeQueuedTurn = async (chat_id: string, turn_id: string) =>
+  unwrap(
+    await api.DELETE("/v1/agent-workbench/chats/{chat_id}/queue/{turn_id}", {
+      params: { path: { chat_id, turn_id } },
+    }),
+  );
+
+export const resumeQueue = async (chat_id: string) =>
+  unwrap(
+    await api.POST("/v1/agent-workbench/chats/{chat_id}/queue/resume", {
+      params: { path: { chat_id } },
+    }),
+  );
+
+export const insertInstruction = async (
+  chat_id: string,
+  turn_id: string,
+  body: Schema["InstructionCreate"],
+) =>
+  unwrap(
+    await api.POST(
+      "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/instructions",
+      {
+        params: { path: { chat_id, turn_id } },
+        body,
+      },
+    ),
+  );
+
+export type SourcePreview = Schema["SourcePreview"];
+
+export const getTurnSource = async (
+  chat_id: string,
+  turn_id: string,
+  call_id: string,
+  signal?: AbortSignal,
+) =>
+  unwrap(
+    await api.GET(
+      "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/source",
+      {
+        params: { path: { chat_id, turn_id }, query: { call_id } },
+        signal,
+      },
+    ),
+  );

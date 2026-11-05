@@ -35,6 +35,7 @@ async def run_dialogue(
     runtime_path,
     root=None,
     tool_timeout=120,
+    instructions=None,
 ):
     supervisor = watchdog()
     if agent == "codex":
@@ -47,6 +48,7 @@ async def run_dialogue(
             call,
             emit,
             watchdog=supervisor,
+            instructions=instructions,
         )
     with ExitStack() as cleanup:
         if root is None:
@@ -59,7 +61,15 @@ async def run_dialogue(
                     executable, root, model, prompt, config, emit, watchdog=supervisor
                 )
             return await converse(
-                agent, executable, root, model, prompt, config, emit, watchdog=supervisor
+                agent,
+                executable,
+                root,
+                model,
+                prompt,
+                config,
+                emit,
+                watchdog=supervisor,
+                instructions=instructions,
             )
         finally:
             await relay.close()

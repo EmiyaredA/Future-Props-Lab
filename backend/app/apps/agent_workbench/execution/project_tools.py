@@ -32,11 +32,19 @@ class ProjectTools:
 
     @staticmethod
     def definitions(project):
+        read = _tool(
+            "read_file", "Read a UTF-8 file. An optional line anchors the source preview.", path=500
+        )
+        read["inputSchema"]["properties"]["line"] = {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100_000,
+        }
         options = [
             _tool(
                 "list_files", "List a directory relative to this project; use . for root", path=500
             ),
-            _tool("read_file", "Read a UTF-8 file relative to this project", path=500),
+            read,
             _tool(
                 "write_file", "Propose a UTF-8 file write for approval", path=500, content=131072
             ),

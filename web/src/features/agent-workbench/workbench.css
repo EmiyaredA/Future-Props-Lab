@@ -469,62 +469,6 @@
   color: var(--bg);
   font-weight: 600;
 }
-.aw-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 0;
-  padding: 5px 0;
-  background: transparent;
-  color: var(--accent-text);
-  font: inherit;
-  font-size: 11px;
-}
-.aw-badge {
-  display: inline-block;
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  color: var(--muted);
-  padding: 1px 5px;
-  font-size: 10px;
-  font-weight: 400;
-}
-.aw-subtle {
-  color: var(--muted);
-}
-.aw-load {
-  display: block;
-  margin: 8px auto 16px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--surface-raised);
-  color: var(--muted);
-  padding: 7px 13px;
-  font-size: 11px;
-}
-.aw-empty {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  min-height: 180px;
-  padding: 30px;
-  color: var(--muted);
-  text-align: center;
-}
-.aw-empty h2 {
-  color: var(--text-strong);
-  font-size: 19px;
-  margin: 0;
-}
-.aw-empty p {
-  max-width: 380px;
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.9;
-}
 .aw-list-empty {
   display: flex;
   flex-direction: column;
@@ -538,21 +482,6 @@
   margin: 0;
   font-size: 11px;
   line-height: 1.9;
-}
-.aw-error {
-  background: var(--danger-soft);
-  color: color-mix(in srgb, var(--danger) 85%, var(--text));
-  border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
-  border-radius: 7px;
-  padding: 10px 12px;
-  margin: 8px 12px;
-  font-size: 12px;
-  line-height: 1.7;
-  flex: none;
-  overflow-wrap: anywhere;
-}
-.aw-error button {
-  display: block;
 }
 .aw-note {
   color: var(--muted);
@@ -669,10 +598,6 @@
   }
   .aw-message {
     gap: 8px;
-  }
-  .aw-message-avatar {
-    width: 28px;
-    height: 28px;
   }
   .aw-prose {
     font-size: 12px;

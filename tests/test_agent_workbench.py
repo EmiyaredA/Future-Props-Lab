@@ -864,3 +864,182 @@ async def test_ten_thousand_metadata_records_paginate_before_history_index(store
     assert (await client.get("/v1/agent-workbench/sessions?q=Volume%20session%209999")).json()[
         "items"
     ][0]["id"] == "volume-09999"
+
+
+async def test_history_pagination_keeps_entries_with_the_same_native_ordinal(store, tmp_path):
+    from app.capabilities.agents.sessions.contracts import Entry, ReadBatch, SessionInfo
+
+    sessions, client = store
+    source = await bind(client, tmp_path)
+    from app.apps.agent_workbench.sync.projection import apply_batch
+
+    assert await apply_batch(
+        sessions,
+        source["id"],
+        "alpha",
+        source["revision"],
+        "sample.jsonl",
+        {},
+        ReadBatch(
+            SessionInfo(native_id="same-order"),
+            [Entry(key, 10, "assistant", "message", key) for key in ("a", "b", "c")],
+            {},
+        ),
+    )
+    conversation = (await client.get("/v1/agent-workbench/sessions")).json()["items"][0]
+    path = f"/v1/agent-workbench/sessions/{conversation['id']}/history"
+    page = (await client.get(path, params={"limit": 1})).json()
+    assert [item["native_id"] for item in page["items"]] == ["c"]
+    following = (
+        await client.get(
+            path,
+            params={
+                "limit": 2,
+                "before": page["next_cursor"],
+                "before_native_id": page["next_cursor_native_id"],
+            },
+        )
+    ).json()
+    assert [item["native_id"] for item in following["items"]] == ["a", "b"]
+    assert following["next_cursor"] is None
+
+
+def test_native_tool_metadata_keeps_association_without_inventing_missing_results():
+    from app.capabilities.agents.sessions import opencode, parsers
+    from app.capabilities.agents.sessions.contracts import SessionInfo
+
+    info = SessionInfo()
+    parsers.codex({"type": "turn_context", "payload": {"turn_id": "turn-1"}}, 1, info, "")
+    call = parsers.codex(
+        {
+            "type": "response_item",
+            "payload": {
+                "id": "output-item",
+                "type": "function_call",
+                "call_id": "same",
+                "name": "exec",
+            },
+        },
+        2,
+        info,
+        "",
+    )[0]
+    result = parsers.codex(
+        {
+            "type": "response_item",
+            "payload": {
+                "type": "function_call_output",
+                "call_id": "same",
+                "output": "native output",
+            },
+        },
+        3,
+        info,
+        "",
+    )[0]
+    assert call.native_id != result.native_id
+    assert {k: call.presentation[k] for k in ("turn_id", "call_id")} == result.presentation
+    assert call.presentation["details"]["kind"] == "command"
+    [search] = parsers.codex(
+        {
+            "type": "response_item",
+            "payload": {
+                "type": "web_search_call",
+                "id": "web",
+                "status": "completed",
+                "action": {"type": "search", "query": "Codex turn steer"},
+            },
+        },
+        4,
+        info,
+        "",
+    )
+    assert search.presentation["details"]["label"] == "Codex turn steer"
+    [duration] = parsers.codex(
+        {"type": "event_msg", "payload": {"type": "task_complete", "duration_ms": 2200}},
+        5,
+        info,
+        "",
+    )
+    assert duration.kind == "duration" and duration.presentation["details"]["duration_ms"] == 2200
+
+    call, result = [
+        parsers.claude(
+            {
+                "type": role,
+                "uuid": key,
+                "message": {"content": [part]},
+            },
+            index,
+            SessionInfo(),
+            "",
+        )[0]
+        for index, (role, key, part) in enumerate(
+            [
+                ("assistant", "a", {"type": "tool_use", "id": "tool-a", "name": "Bash"}),
+                ("user", "b", {"type": "tool_result", "tool_use_id": "tool-a", "is_error": True}),
+            ]
+        )
+    ]
+    assert call.presentation["call_id"] == result.presentation["call_id"] == "tool-a"
+    assert result.role == "tool" and result.presentation["status"] == "failed"
+
+    [tool] = opencode.entries(
+        [
+            {
+                "info": {"id": "assistant", "parentID": "user", "time": {"created": 1000}},
+                "parts": [
+                    {
+                        "id": "part",
+                        "type": "tool",
+                        "tool": "read",
+                        "state": {"status": "completed", "input": {"path": "a"}, "output": "ok"},
+                    }
+                ],
+            }
+        ]
+    )
+    assert tool.presentation["turn_id"] == "user"
+    assert [x["kind"] for x in tool.presentation["blocks"]] == ["tool_call", "tool_result"]
+
+    dsh_call = parsers.dsh(
+        {"type": "tool/call", "data": {"callId": "tool-b", "name": "read"}},
+        1,
+        SessionInfo(),
+        "",
+    )[0]
+    dsh_result = parsers.dsh(
+        {"type": "tool/result", "data": {"content": "missing native link"}},
+        2,
+        SessionInfo(),
+        "",
+    )[0]
+    assert dsh_call.presentation["call_id"] == "tool-b"
+    assert dsh_result.presentation["call_id"] is None
+
+    [node] = parsers.pi(
+        {
+            "type": "message",
+            "id": "node",
+            "parentId": "root",
+            "message": {
+                "role": "assistant",
+                "content": [
+                    {"type": "text", "text": "explanation"},
+                    {
+                        "type": "toolCall",
+                        "name": "read",
+                        "id": "pi-call",
+                        "arguments": {"path": "src/pi.ts", "offset": 9},
+                    },
+                ],
+            },
+        },
+        1,
+        SessionInfo(),
+        "",
+    )
+    assert node.native_id == "node" and node.parent_id == "root"
+    assert [x["kind"] for x in node.presentation["blocks"]] == ["message", "tool_call"]
+    assert node.presentation["blocks"][1]["call_id"] == "pi-call"
+    assert node.presentation["blocks"][1]["details"]["file"] == {"path": "src/pi.ts", "line": 9}

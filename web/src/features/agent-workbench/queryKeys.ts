@@ -7,6 +7,8 @@ export const workbenchKeys = {
   chats: (owner: string) => [...workbenchKeys.root(owner), "chats"] as const,
   chat: (owner: string, id: string) =>
     [...workbenchKeys.chats(owner), id] as const,
+  source: (owner: string, chat: string, turn: string, call: string) =>
+    [...workbenchKeys.chat(owner, chat), "source", turn, call] as const,
   sources: (owner: string) =>
     [...workbenchKeys.root(owner), "sources"] as const,
   candidates: (owner: string) =>

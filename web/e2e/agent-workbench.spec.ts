@@ -135,6 +135,7 @@ test("Agent workbench APP/CLI reading, filters, source consent and responsive th
       return route.fulfill({ status: 201, json: source });
     }
     if (path === "/sources") return route.fulfill({ json: [source] });
+    if (path === "/chats") return route.fulfill({ json: [] });
     if (path === "/candidates")
       return route.fulfill({
         json: [
@@ -196,9 +197,8 @@ test("Agent workbench APP/CLI reading, filters, source consent and responsive th
     localStorage.setItem("future_props_theme", "light"),
   );
   await page.goto("/cloud-control");
-  await page
-    .getByRole("button", { name: "打开Agent 工作台", exact: true })
-    .click();
+  await page.getByRole("button", { name: "会话历史", exact: true }).click();
+  await page.getByRole("button", { name: "查看完整工作台" }).click();
   await expect(page).toHaveURL(/\/agents$/);
   await page.goto("/agents/sessions/fixture-0");
   await page.getByRole("button", { name: "深色", exact: true }).click();
@@ -210,9 +210,7 @@ test("Agent workbench APP/CLI reading, filters, source consent and responsive th
   await expect(
     page.getByText(/建议在上传成功后立即创建预览 URL/),
   ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "发送（待接入）" }),
-  ).toBeDisabled();
+  await expect(page.getByText(/只读 · 自动同步/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "会话信息" })).toBeVisible();
   await page.locator(".aw-messages").evaluate((node) => {
     node.scrollTop = 0;
@@ -229,6 +227,7 @@ test("Agent workbench APP/CLI reading, filters, source consent and responsive th
     node.scrollTop = node.scrollHeight;
     node.dispatchEvent(new Event("scroll"));
   });
+  await page.getByText("已读取文件", { exact: true }).click();
   await page.getByText("Read · src/Preview.tsx", { exact: true }).click();
   await expect(page.locator(".aw-tool pre")).toBeVisible();
   await page.getByRole("button", { name: "Claude", exact: true }).click();

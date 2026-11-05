@@ -2,6 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.capabilities.agents.activity import ActivityDetails
 from app.capabilities.agents.cli.definitions import AgentId
 
 
@@ -15,8 +16,39 @@ class ChatCreate(Input):
 
 
 class TurnCreate(Input):
+    mode: Literal["immediate", "queue"] = "immediate"
     request_id: str = Field(min_length=1, max_length=80)
     text: str = Field(min_length=1, max_length=16000, pattern=r"\S")
+
+
+class InstructionCreate(Input):
+    request_id: str = Field(min_length=1, max_length=80)
+    text: str = Field(min_length=1, max_length=16000, pattern=r"\S")
+
+
+class InstructionOut(BaseModel):
+    request_id: str
+    text: str
+    status: Literal["sending", "accepted", "rejected", "unknown"]
+    offset: int
+    sequence: int | None = None
+
+
+class TurnActivity(BaseModel):
+    call_id: str
+    name: str
+    offset: int
+    status: Literal["running", "completed", "failed", "unknown"]
+    details: ActivityDetails | None = None
+    source_available: bool = False
+    sequence: int | None = None
+
+
+class SourcePreview(BaseModel):
+    path: str
+    text: str
+    line: int | None = None
+    diff: str | None = None
 
 
 class ApprovalDecision(Input):
@@ -78,6 +110,8 @@ class ApprovalOut(BaseModel):
     title: str
     preview: str
     status: str
+    offset: int | None = None
+    sequence: int | None = None
 
 
 class TurnOut(BaseModel):
@@ -91,7 +125,19 @@ class TurnOut(BaseModel):
     error: str | None
     approvals: list[ApprovalOut]
     revision: int
+    started_at: int | None = None
+    activity: list[TurnActivity] = Field(default_factory=list)
+    instructions: list[InstructionOut] = Field(default_factory=list)
+
+
+class QueuedTurn(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    prompt: str
 
 
 class ChatDetail(ChatOut):
     turns: list[TurnOut]
+    queue: list[QueuedTurn] = Field(default_factory=list)
+    queue_paused: bool = False
+    steerable_turn_id: str | None = None

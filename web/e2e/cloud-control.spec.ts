@@ -538,7 +538,7 @@ test("cloud settings only configure desktop connection on wide and narrow screen
 
 test("cloud workbench starts chats from recommended, browsed and pasted directories", async ({
   page,
-}) => {
+}, info) => {
   const base = "/Users/demo/Projects";
   const recommended = `${base}/recommended`;
   const browsed = `${base}/browsed`;
@@ -554,6 +554,20 @@ test("cloud workbench starts chats from recommended, browsed and pasted director
       created_at: number;
     }
   >();
+  const turns = new Map<
+    string,
+    {
+      id: string;
+      prompt: string;
+      answer: string;
+      status: string;
+      approvals: [];
+      revision: number;
+      instructions?: object[];
+      activity?: object[];
+    }
+  >();
+  const pendingQueue: { id: string; prompt: string }[] = [];
   const deadline = Math.floor(Date.now() / 1000) + 600;
   await page.route("**/v1/cloud-control/status", (route) =>
     route.fulfill({
@@ -625,10 +639,81 @@ test("cloud workbench starts chats from recommended, browsed and pasted director
   });
   await page.route("**/v1/agent-workbench/chats/*", (route) => {
     const id = new URL(route.request().url()).pathname.split("/").at(-1)!;
-    return route.fulfill({ json: { ...chats.get(id), turns: [] } });
+    const turn = turns.get(id);
+    return route.fulfill({
+      json: {
+        ...chats.get(id),
+        turns: turn ? [turn] : [],
+        queue: id === "chat-local-recommended" ? pendingQueue : [],
+        steerable_turn_id: turn?.id ?? null,
+      },
+    });
   });
-  await page.route("**/v1/agent-workbench/chats/*/turns", (route) =>
-    route.fulfill({ status: 202, json: {} }),
+  await page.route("**/v1/agent-workbench/chats/*/turns", (route) => {
+    const id = new URL(route.request().url()).pathname.split("/").at(-2)!;
+    const { text, mode } = route.request().postDataJSON();
+    if (id === "chat-local-recommended") {
+      if (mode === "queue") pendingQueue.push({ id: "queued", prompt: text });
+      else
+        turns.set(id, {
+          id: "active",
+          prompt: text,
+          answer: "正在核对项目。",
+          status: "running",
+          approvals: [],
+          revision: 1,
+          activity: [
+            {
+              call_id: "read",
+              name: "read_file",
+              offset: 7,
+              status: "completed",
+              source_available: true,
+              details: {
+                kind: "file",
+                file: { path: "src/preview.py", line: 2 },
+              },
+            },
+          ],
+        });
+    }
+    return route.fulfill({ status: 202, json: {} });
+  });
+  await page.route(
+    "**/v1/agent-workbench/chats/chat-local-recommended/turns/active/instructions",
+    (route) => {
+      const item = {
+        ...route.request().postDataJSON(),
+        status: "accepted",
+        offset: 7,
+      };
+      turns.get("chat-local-recommended")!.instructions = [item];
+      return route.fulfill({ json: item });
+    },
+  );
+  await page.route(
+    "**/v1/agent-workbench/chats/chat-local-recommended/queue/queued",
+    (route) => {
+      expect(route.request().method()).toBe("DELETE");
+      pendingQueue.pop();
+      return route.fulfill({ status: 204 });
+    },
+  );
+  await page.route(
+    "**/v1/agent-workbench/chats/chat-local-recommended/turns/active/source?*",
+    (route) => {
+      expect(new URL(route.request().url()).searchParams.get("call_id")).toBe(
+        "read",
+      );
+      return route.fulfill({
+        json: {
+          path: "src/preview.py",
+          line: 2,
+          text: "def preview():\n    return 'ok'",
+          diff: "+    return 'ok'",
+        },
+      });
+    },
   );
   await page.route("**/v1/agent-workbench/chats/*/events", (route) =>
     route.fulfill({
@@ -675,6 +760,53 @@ test("cloud workbench starts chats from recommended, browsed and pasted director
     .getByRole("button", { name: /recommended/ })
     .click();
   await send("recommended");
+  const composer = workbench.getByRole("textbox", { name: "给 Agent 发消息" });
+  await expect(workbench.getByText("正在核对项目。")).toBeVisible();
+  await workbench.getByText("已读取文件", { exact: true }).click();
+  await workbench.getByRole("button", { name: "src/preview.py" }).click();
+  const source = workbench.getByRole("complementary", { name: "源码预览" });
+  await expect(source.locator(".is-target")).toContainText("return 'ok'");
+  await source.getByRole("button", { name: "显示更改" }).click();
+  await expect(source.getByLabel("审批差异")).toContainText("return 'ok'");
+  await source.getByRole("button", { name: "关闭源码" }).click();
+
+  await composer.fill("检查历史分页");
+  await composer.dispatchEvent("keydown", {
+    key: "Enter",
+    ctrlKey: true,
+    isComposing: true,
+  });
+  await expect(composer).toHaveValue("检查历史分页");
+  await workbench.getByRole("button", { name: "加入队列" }).click();
+  await expect(
+    workbench
+      .getByRole("region", { name: "待执行队列" })
+      .getByText("检查历史分页"),
+  ).toBeVisible();
+  await composer.fill("同时检查分支");
+  await workbench.getByRole("button", { name: "插入本轮" }).click();
+  await expect(workbench.getByText("Agent 已接收指令")).toBeVisible();
+  await composer.fill("检查兼容性");
+  await workbench.screenshot({ path: info.outputPath("workbench-queue.png") });
+  const chatTab = page
+    .getByRole("group", { name: "云控面板" })
+    .getByRole("button", { name: "Agent 工作台" });
+  await page.setViewportSize({ width: 390, height: 680 });
+  await chatTab.click();
+  await expect(
+    workbench.getByRole("button", { name: "加入队列" }),
+  ).toBeVisible();
+  await expect(
+    workbench.getByRole("button", { name: "插入本轮" }),
+  ).toBeVisible();
+
+  await workbench
+    .getByRole("button", { name: "移除第 1 条待执行消息" })
+    .click();
+  await expect(
+    workbench.getByRole("region", { name: "待执行队列" }),
+  ).toHaveCount(0);
+  await page.setViewportSize({ width: 1440, height: 900 });
   await newChat.click();
   await workbench
     .getByRole("button", { name: "recommended", exact: true })
@@ -690,9 +822,6 @@ test("cloud workbench starts chats from recommended, browsed and pasted director
 
   await newChat.click();
   await page.setViewportSize({ width: 390, height: 680 });
-  const chatTab = page
-    .getByRole("group", { name: "云控面板" })
-    .getByRole("button", { name: "Agent 工作台" });
   await chatTab.click();
   await workbench.getByRole("button", { name: "browsed", exact: true }).click();
   await picker.getByRole("button", { name: "选择其他目录" }).click();

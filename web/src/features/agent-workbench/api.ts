@@ -57,9 +57,15 @@ export const getSession = async (id: string, signal?: AbortSignal) =>
       signal,
     }),
   );
+export type HistoryCursor = {
+  ordinal: number;
+  nativeId?: string;
+  branch?: string;
+};
+
 export const getHistory = async (
   id: string,
-  before?: number,
+  before?: HistoryCursor,
   branch?: string,
   signal?: AbortSignal,
 ) =>
@@ -67,7 +73,12 @@ export const getHistory = async (
     await api.GET("/v1/agent-workbench/sessions/{session_id}/history", {
       params: {
         path: { session_id: id },
-        query: { before, branch, limit: 50 },
+        query: {
+          before: before?.ordinal,
+          before_native_id: before?.nativeId,
+          branch: before?.branch ?? branch,
+          limit: 50,
+        },
       },
       signal,
     }),

@@ -149,9 +149,8 @@ describe("Agent 工作台", () => {
     expect(
       screen.getByText("MISSING_CREDENTIAL: credential unavailable"),
     ).toBeVisible();
-    expect(
-      screen.getByRole("button", { name: "发送（待接入）" }),
-    ).toBeDisabled();
+    expect(screen.getByText(/只读 · 自动同步/)).toBeVisible();
+    expect(screen.queryByRole("textbox", { name: /继续对话/ })).toBeNull();
     unmount();
   });
 
@@ -163,9 +162,8 @@ describe("Agent 工作台", () => {
     expect(
       await screen.findByText(/建议在上传成功后立即创建预览 URL/),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "发送（待接入）" }),
-    ).toBeDisabled();
+    expect(screen.getByText(/只读 · 自动同步/)).toBeVisible();
+    expect(screen.queryByRole("textbox", { name: /继续对话/ })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Claude" }));
     await waitFor(() =>
       expect(api.getSessions).toHaveBeenLastCalledWith(
@@ -180,6 +178,126 @@ describe("Agent 工作台", () => {
     expect(open).toHaveBeenCalledWith("fixture-3");
     unmount();
     expect(FakeEventSource.current.closed).toBe(true);
+  });
+
+  it("keeps Codex calls and their outputs inside one compact reply", async () => {
+    const entries = workbenchEntries();
+    const call = {
+      ...entries[2],
+      id: "call",
+      native_id: "call:one",
+      kind: "tool_call",
+      role: "assistant",
+      tool_name: "exec",
+      text: "rg -n preview",
+    };
+    const result = {
+      ...entries[2],
+      id: "result",
+      native_id: "result:one",
+      text: "matched preview",
+      ordinal: 3,
+      tool_name: "",
+    };
+    vi.mocked(api.getSession).mockResolvedValue({
+      ...workbenchSessions[0],
+      agent_id: "codex",
+    });
+    vi.mocked(api.getHistory).mockResolvedValue({
+      items: [
+        entries[0],
+        entries[1],
+        call,
+        result,
+        { ...entries[3], ordinal: 4 },
+      ],
+      next_cursor: null,
+      change_cursor: 1,
+      branches: [],
+      selected_branch: null,
+    });
+    const { unmount } = mount();
+    const transcript = await screen.findByLabelText("会话记录");
+    const summary = await within(transcript).findByText("运行了命令");
+    expect(
+      transcript.querySelectorAll(".aw-message.is-assistant"),
+    ).toHaveLength(1);
+    expect(within(transcript).getByText("matched preview")).not.toBeVisible();
+    fireEvent.click(summary.closest("summary")!);
+    const command = within(transcript).getByText("exec");
+    fireEvent.click(command.closest("summary")!);
+    expect(within(transcript).getByText("调用参数")).toBeVisible();
+    expect(within(transcript).getByText("matched preview")).toBeVisible();
+    expect(within(transcript).getByText(/已经定位到问题/)).toBeVisible();
+    unmount();
+  });
+
+  it("shows structured question receipts inside the reply and keeps historical paths read-only", async () => {
+    const entries = workbenchEntries();
+    vi.mocked(api.getHistory).mockResolvedValue({
+      items: [
+        entries[0],
+        entries[1],
+        {
+          ...entries[2],
+          id: "question",
+          native_id: "question",
+          kind: "tool_call",
+          role: "assistant",
+          text: "",
+          tool_name: "request_user_input",
+          presentation: {
+            call_id: "ask",
+            details: { kind: "question", questions: ["失败后怎么处理？"] },
+          },
+        },
+        {
+          ...entries[2],
+          id: "answer",
+          native_id: "answer",
+          ordinal: 3,
+          text: "",
+          presentation: {
+            call_id: "ask",
+            details: { kind: "question", answers: ["保留并暂停"] },
+          },
+        },
+        {
+          ...entries[2],
+          id: "read",
+          native_id: "read",
+          ordinal: 4,
+          text: "",
+          tool_name: "read_file",
+          presentation: {
+            details: {
+              kind: "file",
+              file: { path: "src/preview.py", line: 7 },
+            },
+          },
+        },
+      ],
+      next_cursor: null,
+      change_cursor: 1,
+      branches: [],
+      selected_branch: null,
+    });
+    const { unmount } = mount();
+    const transcript = await screen.findByLabelText("会话记录");
+    const activity = await within(transcript).findByText(/2 项操作/);
+    fireEvent.click(activity.closest("summary")!);
+    fireEvent.click(
+      within(transcript)
+        .getByText("询问用户", { exact: true })
+        .closest("summary")!,
+    );
+    expect(within(transcript).getByText("失败后怎么处理？")).toBeVisible();
+    expect(within(transcript).getByText("保留并暂停")).toBeVisible();
+    expect(within(transcript).getByText(/src\/preview.py/)).toBeVisible();
+    expect(
+      within(transcript).queryByRole("button", { name: "src/preview.py" }),
+    ).toBeNull();
+    unmount();
   });
 
   it("updates after SSE, and pause only stops the selected history refresh", async () => {

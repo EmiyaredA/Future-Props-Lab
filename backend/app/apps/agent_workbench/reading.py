@@ -170,7 +170,9 @@ async def list_conversations(
     )
 
 
-async def history(session, owner, session_id, *, before=None, limit=50, branch=None):
+async def history(
+    session, owner, session_id, *, before=None, limit=50, branch=None, before_native_id=None
+):
     conversation = await get_conversation(session, owner, session_id)
     query = select(WorkbenchEntry).where(WorkbenchEntry.session_id == session_id)
     branches = []
@@ -195,7 +197,16 @@ async def history(session, owner, session_id, *, before=None, limit=50, branch=N
             current = parents.get(current)
         query = query.where(WorkbenchEntry.native_id.in_(chain))
     query = query.where(WorkbenchEntry.kind != "branch_metadata")
-    if before is not None:
+    if before_native_id is not None:
+        if before is None:
+            raise HTTPException(422, "分页游标缺少序号")
+        query = query.where(
+            or_(
+                WorkbenchEntry.ordinal < before,
+                and_(WorkbenchEntry.ordinal == before, WorkbenchEntry.native_id < before_native_id),
+            )
+        )
+    elif before is not None:
         query = query.where(WorkbenchEntry.ordinal < before)
     rows = list(
         (
@@ -214,6 +225,7 @@ async def history(session, owner, session_id, *, before=None, limit=50, branch=N
     return WorkbenchHistory(
         items=items,
         next_cursor=rows[-1].ordinal if more else None,
+        next_cursor_native_id=rows[-1].native_id if more else None,
         change_cursor=await change_cursor(session, owner),
         branches=branches,
         selected_branch=branch,

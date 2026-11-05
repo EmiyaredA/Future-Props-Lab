@@ -130,30 +130,51 @@ async def acp(protocol, root, model, prompt, config, emit, allowed):
     return "".join(parts)
 
 
-async def pi(protocol, prompt, emit):
+async def pi(protocol, prompt, emit, instructions=None):
     await protocol.send({"id": "fpl-prompt", "type": "prompt", "message": prompt})
     parts = []
-    while value := await protocol.read():
-        kind = value.get("type")
-        if kind == "response" and (
-            value.get("success") is False or value.get("data", {}).get("disposition") == "handled"
-        ):
-            raise CliError("Pi 未启动任务，请检查登录和模型连接")
-        if kind == "message_update":
-            delta = value.get("assistantMessageEvent") or {}
-            if delta.get("type") == "text_delta" and isinstance(delta.get("delta"), str):
-                parts.append(delta["delta"])
-                await emit("assistant_delta", {"text": delta["delta"]})
-        if kind == "message_end" and value.get("message", {}).get("stopReason") in {
-            "error",
-            "aborted",
-        }:
-            raise CliError("Pi 任务失败，请检查登录和模型连接")
-        if kind == "agent_settled":
-            if value.get("aborted"):
-                raise CliError("Pi 任务已中断")
-            return "".join(parts)
-    raise CliError("Pi 连接提前结束")
+
+    async def steer(identity, message):
+        await protocol.send({"id": identity, "type": "steer", "message": message})
+
+    try:
+        while value := await protocol.read():
+            kind = value.get("type")
+            if kind == "response":
+                identity = value.get("id")
+                disposition = value.get("data", {}).get("disposition")
+                if identity == "fpl-prompt" or value.get("command") == "prompt":
+                    if value.get("success") is False or disposition == "handled":
+                        raise CliError("Pi 未启动任务，请检查登录和模型连接")
+                    if instructions and value.get("success") and disposition == "started":
+                        instructions.send = steer
+                elif instructions and identity:
+                    instructions.acknowledge(
+                        identity,
+                        "accepted"
+                        if value.get("success") and disposition == "queued"
+                        else "rejected",
+                    )
+            if kind == "message_update":
+                delta = value.get("assistantMessageEvent") or {}
+                if delta.get("type") == "text_delta" and isinstance(delta.get("delta"), str):
+                    parts.append(delta["delta"])
+                    await emit("assistant_delta", {"text": delta["delta"]})
+            if kind == "message_end" and value.get("message", {}).get("stopReason") in {
+                "error",
+                "aborted",
+            }:
+                raise CliError("Pi 任务失败，请检查登录和模型连接")
+            if kind == "agent_end" and instructions:
+                instructions.close()
+            if kind == "agent_settled":
+                if value.get("aborted"):
+                    raise CliError("Pi 任务已中断")
+                return "".join(parts)
+        raise CliError("Pi 连接提前结束")
+    finally:
+        if instructions:
+            instructions.close()
 
 
 async def opencode(protocol, prompt, emit):
@@ -178,7 +199,9 @@ async def opencode(protocol, prompt, emit):
     return "".join(parts)
 
 
-async def converse(kind, executable, root, model, prompt, tool_config, emit, *, watchdog=()):
+async def converse(
+    kind, executable, root, model, prompt, tool_config, emit, *, watchdog=(), instructions=None
+):
     async with launch(kind, executable, root, tool_config) as (args, env):
         if model and kind != "dsh":
             args += ["--model", model]
@@ -206,7 +229,7 @@ async def converse(kind, executable, root, model, prompt, tool_config, emit, *, 
                     set(json.loads(env["FPL_CLI_ALLOWED_TOOLS"])),
                 )
             if kind == "pi":
-                return await pi(protocol, prompt, emit)
+                return await pi(protocol, prompt, emit, instructions)
             return await opencode(protocol, prompt, emit)
         finally:
             await close_transport(process)

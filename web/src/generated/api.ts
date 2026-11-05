@@ -349,6 +349,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/agent-workbench/chats/{chat_id}/queue/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resume Queue */
+        post: operations["resume_queue_v1_agent_workbench_chats__chat_id__queue_resume_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agent-workbench/chats/{chat_id}/queue/{turn_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Queued */
+        delete: operations["remove_queued_v1_agent_workbench_chats__chat_id__queue__turn_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/agent-workbench/chats/{chat_id}/turns": {
         parameters: {
             query?: never;
@@ -377,6 +411,40 @@ export interface paths {
         put?: never;
         /** Decide */
         post: operations["decide_v1_agent_workbench_chats__chat_id__turns__turn_id__approvals__approval_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/instructions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Insert Instruction */
+        post: operations["insert_instruction_v1_agent_workbench_chats__chat_id__turns__turn_id__instructions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Preview Source */
+        get: operations["preview_source_v1_agent_workbench_chats__chat_id__turns__turn_id__source_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -9084,6 +9152,30 @@ export interface components {
              */
             updated_at: string;
         };
+        /** ActivityDetails */
+        ActivityDetails: {
+            /** Answers */
+            answers?: string[];
+            /** Duration Ms */
+            duration_ms?: number | null;
+            file?: components["schemas"]["ActivityFile"] | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "file" | "search" | "web" | "question" | "command" | "duration";
+            /** Label */
+            label?: string | null;
+            /** Questions */
+            questions?: string[];
+        };
+        /** ActivityFile */
+        ActivityFile: {
+            /** Line */
+            line?: number | null;
+            /** Path */
+            path: string;
+        };
         /** AddClipOperation */
         AddClipOperation: {
             clip: components["schemas"]["VideoEditorClip"];
@@ -9301,8 +9393,12 @@ export interface components {
              * @enum {string}
              */
             kind: "write" | "command";
+            /** Offset */
+            offset?: number | null;
             /** Preview */
             preview: string;
+            /** Sequence */
+            sequence?: number | null;
             /** Status */
             status: string;
             /** Title */
@@ -10372,6 +10468,15 @@ export interface components {
             project_id: string;
             /** Project Label */
             project_label?: string | null;
+            /** Queue */
+            queue?: components["schemas"]["QueuedTurn"][];
+            /**
+             * Queue Paused
+             * @default false
+             */
+            queue_paused: boolean;
+            /** Steerable Turn Id */
+            steerable_turn_id?: string | null;
             /** Turns */
             turns: components["schemas"]["TurnOut"][];
         };
@@ -15382,6 +15487,37 @@ export interface components {
             /** Projectid */
             projectId: string;
         };
+        /** HistoryBlock */
+        HistoryBlock: {
+            /** Call Id */
+            call_id?: string | null;
+            details?: components["schemas"]["ActivityDetails"] | null;
+            /** Kind */
+            kind: string;
+            /** Status */
+            status?: string | null;
+            /** Text */
+            text: string;
+            /**
+             * Tool Name
+             * @default
+             */
+            tool_name: string;
+        };
+        /** HistoryPresentation */
+        HistoryPresentation: {
+            /** Blocks */
+            blocks?: components["schemas"]["HistoryBlock"][];
+            /** Call Id */
+            call_id?: string | null;
+            details?: components["schemas"]["ActivityDetails"] | null;
+            /** Message Id */
+            message_id?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Turn Id */
+            turn_id?: string | null;
+        };
         /** IdlePreference */
         IdlePreference: {
             /** Idle Minutes */
@@ -15697,6 +15833,29 @@ export interface components {
             file_id: string;
             /** Location */
             location: string;
+        };
+        /** InstructionCreate */
+        InstructionCreate: {
+            /** Request Id */
+            request_id: string;
+            /** Text */
+            text: string;
+        };
+        /** InstructionOut */
+        InstructionOut: {
+            /** Offset */
+            offset: number;
+            /** Request Id */
+            request_id: string;
+            /** Sequence */
+            sequence?: number | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "sending" | "accepted" | "rejected" | "unknown";
+            /** Text */
+            text: string;
         };
         /** IntegrationCheckOut */
         IntegrationCheckOut: {
@@ -19176,6 +19335,13 @@ export interface components {
              */
             updated_at: string;
         };
+        /** QueuedTurn */
+        QueuedTurn: {
+            /** Id */
+            id: string;
+            /** Prompt */
+            prompt: string;
+        };
         /** QuotaLimit */
         QuotaLimit: {
             /** Realtime Voice */
@@ -20367,6 +20533,17 @@ export interface components {
             direction: "asc" | "desc";
             /** Field Id */
             field_id: string;
+        };
+        /** SourcePreview */
+        SourcePreview: {
+            /** Diff */
+            diff?: string | null;
+            /** Line */
+            line?: number | null;
+            /** Path */
+            path: string;
+            /** Text */
+            text: string;
         };
         /** Specification */
         Specification: {
@@ -21916,8 +22093,36 @@ export interface components {
              */
             type: "trimClip";
         };
+        /** TurnActivity */
+        TurnActivity: {
+            /** Call Id */
+            call_id: string;
+            details?: components["schemas"]["ActivityDetails"] | null;
+            /** Name */
+            name: string;
+            /** Offset */
+            offset: number;
+            /** Sequence */
+            sequence?: number | null;
+            /**
+             * Source Available
+             * @default false
+             */
+            source_available: boolean;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "running" | "completed" | "failed" | "unknown";
+        };
         /** TurnCreate */
         TurnCreate: {
+            /**
+             * Mode
+             * @default immediate
+             * @enum {string}
+             */
+            mode: "immediate" | "queue";
             /** Request Id */
             request_id: string;
             /** Text */
@@ -21925,6 +22130,8 @@ export interface components {
         };
         /** TurnOut */
         TurnOut: {
+            /** Activity */
+            activity?: components["schemas"]["TurnActivity"][];
             /** Answer */
             answer: string;
             /** Approvals */
@@ -21933,12 +22140,16 @@ export interface components {
             error: string | null;
             /** Id */
             id: string;
+            /** Instructions */
+            instructions?: components["schemas"]["InstructionOut"][];
             /** Position */
             position: number;
             /** Prompt */
             prompt: string;
             /** Revision */
             revision: number;
+            /** Started At */
+            started_at?: number | null;
             /** Status */
             status: string;
         };
@@ -24050,6 +24261,7 @@ export interface components {
             ordinal: number;
             /** Parent Id */
             parent_id: string | null;
+            presentation?: components["schemas"]["HistoryPresentation"];
             /** Role */
             role: string;
             /** Text */
@@ -24069,6 +24281,8 @@ export interface components {
             items: components["schemas"]["WorkbenchEntryOut"][];
             /** Next Cursor */
             next_cursor: number | null;
+            /** Next Cursor Native Id */
+            next_cursor_native_id?: string | null;
             /** Selected Branch */
             selected_branch?: string | null;
         };
@@ -24977,6 +25191,65 @@ export interface operations {
             };
         };
     };
+    resume_queue_v1_agent_workbench_chats__chat_id__queue_resume_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_queued_v1_agent_workbench_chats__chat_id__queue__turn_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+                turn_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     send_turn_v1_agent_workbench_chats__chat_id__turns_post: {
         parameters: {
             query?: never;
@@ -25035,6 +25308,76 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    insert_instruction_v1_agent_workbench_chats__chat_id__turns__turn_id__instructions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+                turn_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InstructionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstructionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_source_v1_agent_workbench_chats__chat_id__turns__turn_id__source_get: {
+        parameters: {
+            query: {
+                call_id: string;
+            };
+            header?: never;
+            path: {
+                chat_id: string;
+                turn_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourcePreview"];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -25414,6 +25757,7 @@ export interface operations {
                 before?: number | null;
                 limit?: number;
                 branch?: string | null;
+                before_native_id?: string | null;
             };
             header?: never;
             path: {

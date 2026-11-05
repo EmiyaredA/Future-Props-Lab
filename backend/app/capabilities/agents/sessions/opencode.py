@@ -10,22 +10,36 @@ from pathlib import Path
 
 import httpx
 
+from app.capabilities.agents.activity import tool_details
+
 from .attachments import reference
 from .contracts import Entry, ReadBatch, SessionInfo
 from .files import discover_files, safe_path
-from .parsers import text, timestamp
+from .parsers import native_id, text, timestamp
 
 
 def entries(messages):
     result = []
-    for message_index, message in enumerate(messages):
+    ordered = sorted(
+        messages,
+        key=lambda message: (
+            timestamp(message.get("info", {}).get("time", {}).get("created")),
+            message.get("info", {}).get("id") or "",
+        ),
+    )
+    for message_index, message in enumerate(ordered):
         info = message.get("info", {})
         role = info.get("role", "assistant")
+        presentation = {
+            "message_id": native_id(info.get("id")),
+            "turn_id": native_id(info.get("id") if role == "user" else info.get("parentID")),
+        }
+        start = len(result)
         at = timestamp(info.get("time", {}).get("created"))
         for index, part in enumerate(message.get("parts", [])):
             kind = part.get("type", "")
             key = str(part.get("id") or f"{info.get('id', message_index)}:{index}")
-            order = int(info.get("time", {}).get("created", message_index)) * 1000 + index
+            order = len(result)
             if kind in {"text", "reasoning"}:
                 result.append(
                     Entry(
@@ -39,19 +53,55 @@ def entries(messages):
                 )
             elif kind == "tool":
                 state = part.get("state", {})
+                status = {
+                    "error": "failed",
+                    "completed": "completed",
+                    "running": "running",
+                    "pending": "pending",
+                }.get(state.get("status"))
+                name = part.get("tool") or ""
+                timing = state.get("time") or {}
+                start_time, end_time = timing.get("start"), timing.get("end")
+                elapsed = (
+                    end_time - start_time
+                    if type(start_time) is int and type(end_time) is int
+                    else None
+                )
+                details = tool_details(
+                    name, state.get("input"), result=state.get("output"), duration=elapsed
+                )
+                arguments = json.dumps(state.get("input", {}), ensure_ascii=False)
+                output = text(state.get("output", state.get("error", "")))
+                blocks = [
+                    {
+                        "kind": "tool_call",
+                        "text": arguments,
+                        "tool_name": name,
+                        "call_id": key,
+                        "status": status,
+                        "details": details,
+                    }
+                ]
+                if status in {"completed", "failed"}:
+                    blocks.append(
+                        {
+                            "kind": "tool_result",
+                            "text": output,
+                            "tool_name": name,
+                            "call_id": key,
+                            "status": status,
+                        }
+                    )
                 result.append(
                     Entry(
                         key,
                         order,
                         "tool",
-                        "tool_result"
-                        if state.get("status") in {"completed", "error"}
-                        else "tool_call",
-                        json.dumps(state.get("input", {}), ensure_ascii=False)
-                        + "\n"
-                        + text(state.get("output", state.get("error", ""))),
+                        "tool_result" if len(blocks) == 2 else "tool_call",
+                        "\n".join(filter(None, (arguments, output))),
                         at,
-                        tool_name=part.get("tool", ""),
+                        tool_name=name,
+                        presentation={"status": status, "blocks": blocks},
                     )
                 )
             elif kind == "file":
@@ -66,6 +116,8 @@ def entries(messages):
                         attachments=reference(part.get("url", "")),
                     )
                 )
+        for entry in result[start:]:
+            entry.presentation.update(presentation)
     return result
 
 
@@ -109,7 +161,7 @@ class OpenCodeAdapter:
         fingerprint = ":".join(
             str(p.stat().st_mtime_ns) for p in (path, Path(str(path) + "-wal")) if p.exists()
         )
-        if checkpoint.get("fingerprint") == fingerprint:
+        if checkpoint.get("fingerprint") == fingerprint and checkpoint.get("presentation") == 2:
             return ReadBatch(SessionInfo(**checkpoint["info"]), [], checkpoint)
         with sqlite3.connect(path.as_uri() + "?mode=ro", uri=True, timeout=1) as conn:
             conn.row_factory = sqlite3.Row
@@ -142,7 +194,7 @@ class OpenCodeAdapter:
         return ReadBatch(
             info,
             entries(messages),
-            {"fingerprint": fingerprint, "info": asdict(info)},
+            {"fingerprint": fingerprint, "info": asdict(info), "presentation": 2},
             reset=bool(checkpoint),
         )
 

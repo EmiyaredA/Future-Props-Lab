@@ -16,6 +16,7 @@ import { agentName, getSessions } from "./api";
 import { ChatTranscript } from "./ChatTranscript";
 import { ConversationView } from "./ConversationView";
 import { ProjectPicker } from "./ProjectPicker";
+import { WorkbenchSourcePane, type SourceTarget } from "./WorkbenchSourcePane";
 import { useWorkbench } from "./useWorkbench";
 import {
   createChat,
@@ -23,6 +24,9 @@ import {
   getChat,
   getChats,
   getExecutionCatalog,
+  insertInstruction,
+  removeQueuedTurn,
+  resumeQueue,
   sendTurn,
   stopTurn,
   type ChatCreate,
@@ -82,13 +86,28 @@ export function WorkbenchChatPanel({
     }
   });
   const [history, setHistory] = useState(false);
+  const [sourceTarget, setSourceTarget] = useState<SourceTarget>();
+  const sourceTrigger = useRef<HTMLElement | null>(null);
+  const visibleSource = enabled && unlocked ? sourceTarget : undefined;
+  function closeSource() {
+    setSourceTarget(undefined);
+    requestAnimationFrame(() =>
+      sourceTrigger.current?.focus({ preventScroll: true }),
+    );
+  }
   const [nativeId, setNativeId] = useState<string>();
   const [project, setProject] = useState<ProjectChoice>();
   const [agent, setAgent] = useState<ChatCreate["agent_id"]>();
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  const receipt = useRef<TurnCreate | undefined>(undefined);
+  const actionPending = useRef(false);
+  const receipt = useRef<Pick<TurnCreate, "request_id" | "text"> | undefined>(
+    undefined,
+  );
+  const steerReceipt = useRef<
+    { request_id: string; text: string; turnId: string } | undefined
+  >(undefined);
   const catalog = useQuery({
     queryKey: keys.executionCatalog(owner),
     queryFn: ({ signal }) => getExecutionCatalog(signal),
@@ -141,6 +160,8 @@ export function WorkbenchChatPanel({
   }, [cache, id, owner]);
 
   async function action(work: () => Promise<void>) {
+    if (actionPending.current) return;
+    actionPending.current = true;
     setPending(true);
     setError("");
     try {
@@ -150,6 +171,7 @@ export function WorkbenchChatPanel({
         failure instanceof Error ? failure.message : "操作失败，请刷新后重试",
       );
     } finally {
+      actionPending.current = false;
       setPending(false);
     }
   }
@@ -158,8 +180,10 @@ export function WorkbenchChatPanel({
     setId(chatId);
     setNativeId(undefined);
     setHistory(false);
+    setSourceTarget(undefined);
     setDraft("");
     receipt.current = undefined;
+    steerReceipt.current = undefined;
     setError("");
   }
 
@@ -177,12 +201,55 @@ export function WorkbenchChatPanel({
         void cache.invalidateQueries({ queryKey: keys.chats(owner) });
       }
       const text = draft.trim();
-      if (receipt.current?.text !== text)
-        receipt.current = { request_id: crypto.randomUUID(), text };
-      await sendTurn(target, receipt.current);
+      const submission =
+        receipt.current?.text === text
+          ? receipt.current
+          : { request_id: crypto.randomUUID(), text };
+      receipt.current = submission;
+      await sendTurn(target, {
+        ...submission,
+        mode: queueMode ? "queue" : "immediate",
+      });
       setDraft("");
       receipt.current = undefined;
       await cache.invalidateQueries({ queryKey: keys.chat(owner, target) });
+    });
+  }
+
+  function steer() {
+    if (!id || !active || !canSteer || !draft.trim()) return;
+    if (!unlocked) return onUnlock();
+    const text = draft.trim();
+    const previous = steerReceipt.current;
+    const requestId =
+      previous?.text === text && previous.turnId === active.id
+        ? previous.request_id
+        : crypto.randomUUID();
+    steerReceipt.current = { request_id: requestId, text, turnId: active.id };
+    void action(async () => {
+      const reply = await insertInstruction(id, active.id, {
+        request_id: requestId,
+        text,
+      });
+      await cache.invalidateQueries({ queryKey: keys.chat(owner, id) });
+      if (reply.status === "accepted") {
+        setDraft("");
+        steerReceipt.current = undefined;
+      } else if (reply.status === "rejected") {
+        steerReceipt.current = undefined;
+        throw new Error("当前轮未接收这条指令，可以加入队列。");
+      } else if (reply.status === "unknown") {
+        throw new Error("插入结果未知，草稿已保留。");
+      }
+    });
+  }
+
+  function updateQueue(change: (chatId: string) => Promise<unknown>) {
+    if (!id) return;
+    if (!unlocked) return onUnlock();
+    void action(async () => {
+      await change(id);
+      await cache.invalidateQueries({ queryKey: keys.chat(owner, id) });
     });
   }
 
@@ -203,8 +270,14 @@ export function WorkbenchChatPanel({
   const canSend =
     enabled &&
     (id ? !!chat : ready && !!projectChoice && !!agentChoice) &&
-    !active &&
     !pending;
+  const queue = chat?.queue ?? [];
+  const queueMode = !!active || queue.length > 0;
+  const canSteer =
+    enabled &&
+    !pending &&
+    active?.status === "running" &&
+    chat?.steerable_turn_id === active.id;
 
   return (
     <section className="cloud-pane cloud-chat" aria-label="Agent 工作台">
@@ -358,20 +431,40 @@ export function WorkbenchChatPanel({
             </div>
           ) : null}
           {id ? (
-            <ChatTranscript
-              key={id}
-              chat={chat}
-              busy={pending}
-              unlocked={unlocked}
-              decide={(turn, approval, approved) => {
-                void action(async () => {
-                  await decideApproval(id, turn, approval, approved);
-                  await cache.invalidateQueries({
-                    queryKey: keys.chat(owner, id),
+            <div
+              className={`aw-execution-content${visibleSource ? " has-source" : ""}`}
+            >
+              <ChatTranscript
+                key={id}
+                chat={chat}
+                busy={pending}
+                unlocked={unlocked}
+                openSource={(target) => {
+                  sourceTrigger.current =
+                    document.activeElement instanceof HTMLElement
+                      ? document.activeElement
+                      : null;
+                  setSourceTarget(target);
+                }}
+                decide={(turn, approval, approved) => {
+                  void action(async () => {
+                    await decideApproval(id, turn, approval, approved);
+                    await cache.invalidateQueries({
+                      queryKey: keys.chat(owner, id),
+                    });
                   });
-                });
-              }}
-            />
+                }}
+              />
+              {visibleSource && (
+                <WorkbenchSourcePane
+                  key={`${id}:${visibleSource.turnId}:${visibleSource.callId}`}
+                  owner={owner}
+                  chatId={id}
+                  target={visibleSource}
+                  close={closeSource}
+                />
+              )}
+            </div>
           ) : (
             <div className="cloud-chat-empty cloud-chat-start">
               <div className="cloud-chat-start-card">
@@ -444,6 +537,46 @@ export function WorkbenchChatPanel({
               {error || detail.error?.message}
             </p>
           )}
+          {queue.length > 0 && (
+            <section className="aw-queue" aria-label="待执行队列">
+              <div className="aw-queue-heading">
+                <strong>待执行 {queue.length}</strong>
+                {chat?.queue_paused && (
+                  <button
+                    className="btn"
+                    type="button"
+                    disabled={pending || !enabled || !!active}
+                    onClick={() => updateQueue(resumeQueue)}
+                  >
+                    继续队列
+                  </button>
+                )}
+              </div>
+              {chat?.queue_paused && (
+                <p role="status">队列已暂停，待执行消息已保留。</p>
+              )}
+              <ol>
+                {queue.map((item, index) => (
+                  <li key={item.id}>
+                    <span title={item.prompt}>{item.prompt}</span>
+                    <button
+                      type="button"
+                      className="aw-link"
+                      disabled={pending || !enabled}
+                      aria-label={`移除第 ${index + 1} 条待执行消息`}
+                      onClick={() =>
+                        updateQueue((chatId) =>
+                          removeQueuedTurn(chatId, item.id),
+                        )
+                      }
+                    >
+                      移除
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
           {(id || ready) && (
             <form className="aw-composer cloud-composer" onSubmit={submit}>
               <textarea
@@ -458,6 +591,17 @@ export function WorkbenchChatPanel({
                 value={draft}
                 disabled={!enabled || pending}
                 onChange={(event) => setDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (
+                    event.key === "Enter" &&
+                    (event.metaKey || event.ctrlKey) &&
+                    !event.nativeEvent.isComposing &&
+                    event.keyCode !== 229
+                  ) {
+                    event.preventDefault();
+                    event.currentTarget.form?.requestSubmit();
+                  }
+                }}
               />
               <div>
                 {canSend && !unlocked && (
@@ -465,7 +609,24 @@ export function WorkbenchChatPanel({
                     验证并解锁
                   </button>
                 )}
+                {queueMode && unlocked && (
+                  <span className="aw-subtle">
+                    {chat?.queue_paused
+                      ? "继续队列后执行"
+                      : "当前轮正常完成后执行"}
+                  </span>
+                )}
                 <div className="cloud-pane-actions">
+                  {canSteer && unlocked && (
+                    <button
+                      className="btn"
+                      type="button"
+                      disabled={!draft.trim()}
+                      onClick={steer}
+                    >
+                      插入本轮
+                    </button>
+                  )}
                   {id && active && (
                     <button
                       type="button"
@@ -486,11 +647,11 @@ export function WorkbenchChatPanel({
                   )}
                   <button
                     type="submit"
-                    className="aw-send"
-                    aria-label="发送"
+                    className={queueMode ? "btn aw-queue-submit" : "aw-send"}
+                    aria-label={queueMode ? "加入队列" : "发送"}
                     disabled={!canSend || !draft.trim()}
                   >
-                    <Send size={17} />
+                    {queueMode ? "加入队列" : <Send size={17} />}
                   </button>
                 </div>
               </div>
