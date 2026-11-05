@@ -13,9 +13,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from studio.apps.identity.credentials.operations import AccountError, add_audit_event
-from studio.apps.identity.profile_images import avatar_thumbnail
 from studio.apps.identity.storage.models.accounts import User
-from studio.config.settings import get_settings
 from studio.runtime.files.image_sizes import ThumbnailSize
 from studio.runtime.time import utc_now
 
@@ -36,10 +34,10 @@ def avatar_url(user: User) -> str | None:
     return "/v1/account/profile/avatar" if user.avatar_relative_path else None
 
 
-def avatar_path(user: User) -> Path | None:
+def avatar_path(user: User, *, settings) -> Path | None:
     if not user.avatar_relative_path:
         return None
-    root = get_settings().profiles_path
+    root = settings.profiles_path
     path = (root / user.avatar_relative_path).resolve()
     if root not in path.parents:
         return None
@@ -97,17 +95,17 @@ async def update_profile(
     return await session.get(User, user_id)
 
 
-async def avatar_preview(user: User, size: ThumbnailSize) -> Path | None:
-    source = avatar_path(user)
+async def avatar_preview(user: User, size: ThumbnailSize, *, settings, previews) -> Path | None:
+    source = avatar_path(user, settings=settings)
     if source is None or not source.is_file():
         return None
     target = (
-        get_settings().account_path(user.id)
+        settings.account_path(user.id)
         / "previews"
         / "avatar"
         / f"{user.avatar_content_sha256}-{size}.webp"
     )
-    return await avatar_thumbnail(source, target, size)
+    return await previews.render(source, target, size)
 
 
 def _verify_image(path: Path, content_type: str) -> None:
@@ -122,12 +120,12 @@ def _verify_image(path: Path, content_type: str) -> None:
         raise AccountError("invalid_avatar")
 
 
-async def stage_avatar(upload) -> StagedAvatar:
+async def stage_avatar(upload, *, settings) -> StagedAvatar:
     content_type = (upload.content_type or "").lower()
     suffix = CONTENT_TYPES.get(content_type)
     if suffix is None:
         raise AccountError("invalid_avatar")
-    root = get_settings().profiles_path
+    root = settings.profiles_path
     staging = root / ".staging"
     staging.mkdir(parents=True, exist_ok=True)
     path = staging / f"{uuid4().hex}{suffix}"
@@ -155,6 +153,7 @@ async def apply_avatar(
     *,
     user_id: str,
     staged: StagedAvatar,
+    settings,
     expected_revision: int,
     client_ip: str,
 ) -> User:
@@ -163,12 +162,12 @@ async def apply_avatar(
         raise AccountError("studio_auth_required")
     if user.revision != expected_revision:
         raise AccountError("revision_conflict", current=user)
-    root = get_settings().profiles_path
+    root = settings.profiles_path
     suffix = CONTENT_TYPES[staged.content_type]
     relative = Path(user_id) / f"{staged.sha256}{suffix}"
     final = root / relative
     final.parent.mkdir(parents=True, exist_ok=True)
-    old = avatar_path(user)
+    old = avatar_path(user, settings=settings)
     created_final = not final.exists()
     if created_final:
         os.replace(staged.path, final)
@@ -209,6 +208,7 @@ async def apply_avatar(
 async def delete_avatar(
     session: AsyncSession,
     *,
+    settings,
     user_id: str,
     expected_revision: int,
     client_ip: str,
@@ -218,7 +218,7 @@ async def delete_avatar(
         raise AccountError("studio_auth_required")
     if user.revision != expected_revision:
         raise AccountError("revision_conflict", current=user)
-    old = avatar_path(user)
+    old = avatar_path(user, settings=settings)
     result = await session.execute(
         update(User)
         .where(User.id == user_id, User.revision == expected_revision)
@@ -246,8 +246,8 @@ async def delete_avatar(
     return await session.get(User, user_id)
 
 
-async def reconcile_profile_avatars() -> None:
-    root = get_settings().profiles_path
+async def reconcile_profile_avatars(settings) -> None:
+    root = settings.profiles_path
     staging = root / ".staging"
     if staging.is_dir():
         for path in staging.iterdir():

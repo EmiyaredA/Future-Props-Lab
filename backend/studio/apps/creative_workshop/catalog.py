@@ -32,7 +32,6 @@ from studio.contracts.creative_workshop.catalog import (
 from studio.contracts.creative_workshop.errors import CreativeError
 from studio.contracts.identity.principal import StudioPrincipal
 from studio.runtime.files.image_sizes import ThumbnailSize
-from studio.runtime.files.raster import derived_thumbnail
 from studio.runtime.ids import new_id
 from studio.runtime.time import iso_utc, utc_now
 
@@ -219,7 +218,7 @@ class CreativeCatalog:
         )
 
     async def cover_file(
-        self, item_id: str, *, draft: bool = False, size: ThumbnailSize | None = None
+        self, item_id: str, *, previews, draft: bool = False, size: ThumbnailSize | None = None
     ) -> Path:
         item = (
             await self._owned(item_id) if draft else await self.session.get(CreativeItem, item_id)
@@ -237,10 +236,12 @@ class CreativeCatalog:
             raise CreativeError("封面文件不可用", 404, "not_found")
         if size is not None:
             await self.session.rollback()
-            return await derived_thumbnail(path, path.with_name(f"{path.stem}-{size}.webp"), size)
+            return await previews.render(path, path.with_name(f"{path.stem}-{size}.webp"), size)
         return path
 
-    async def release_cover_file(self, release_id: str, size: ThumbnailSize | None = None) -> Path:
+    async def release_cover_file(
+        self, release_id: str, size: ThumbnailSize | None = None, *, previews
+    ) -> Path:
         item, release = await self._viewable_release(release_id)
         if not release.cover_path:
             raise CreativeError("封面不存在", 404, "not_found")
@@ -251,7 +252,7 @@ class CreativeCatalog:
             raise CreativeError("封面文件不可用", 404, "not_found")
         if size is not None:
             await self.session.rollback()
-            return await derived_thumbnail(path, path.with_name(f"{path.stem}-{size}.webp"), size)
+            return await previews.render(path, path.with_name(f"{path.stem}-{size}.webp"), size)
         return path
 
     async def upload_cover(

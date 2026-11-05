@@ -164,6 +164,9 @@
 - Models 的视觉生成提交、执行、结果读取与清理各自接收会话、文件、授权及传输依赖，
   不持有应用状态容器或借用另一组件的生命周期。文件布局归 `storage/visual_generation_files.py`，
   批次身份和摘要读取归 `storage/visual_generation_batches.py`；结果读取不依赖 Runner 实例。
+- 栅格缩略图只使用 `runtime/files/raster.py` 的有界解码器；实例与并发额度由应用装配持有，
+  不在模块导入时创建全局实例或信号量。素材缓存路径与协议错误归所属应用；重复取消必须等待
+  解码线程结束再释放额度。头像读写与启动清理显式接收配置，不读取全局设置。
 - 媒体本地适配通过 `studio/deployment/media_modules.py` 逐模块登记可打包范围，不开放媒体存储或用例；
   预览并发由装配实例持有，禁止模块全局信号量。
 - 确定性时间线画面与视频渲染由 `backend/studio/apps/media_rendering/local/` 统一拥有；Galgame 直接导出不得

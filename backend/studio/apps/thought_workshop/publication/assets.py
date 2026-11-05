@@ -32,6 +32,7 @@ async def content(
     size: ThumbnailSize | None = None,
     *,
     settings,
+    previews,
 ):
     pub = await publication(session, pub_id)
     if note_id:
@@ -73,7 +74,7 @@ async def content(
             row.id, row.revision, row.owner_user_id, row.media_kind, row.mime_type
         )
         await session.rollback()
-        path = await asset_thumbnail(settings, info, path, size)
+        path = await asset_thumbnail(settings, info, path, size, previews=previews)
         return "image/webp", path
     return row.mime_type, path
 
@@ -109,16 +110,24 @@ async def upload(session, principal, pub_id, note_id, incoming: IncomingFile, *,
 class LegacyCommunityFiles:
     """Materialize community files in the compatibility site's own database."""
 
-    def __init__(self, request_session, principal, *, settings):
+    def __init__(self, request_session, principal, *, settings, previews):
         self.sessions = source_sessions(request_session)
         self.principal = principal
-        self.settings = settings
+        self.settings, self.previews = settings, previews
 
     async def asset(self, id, asset, note=None, size=None):
         async with self.sessions() as session:
             await session.execute(text("BEGIN"))
             return await content(
-                session, self.principal, id, asset, note, False, size, settings=self.settings
+                session,
+                self.principal,
+                id,
+                asset,
+                note,
+                False,
+                size,
+                settings=self.settings,
+                previews=self.previews,
             )
 
     async def cover(self, id, size=None):
@@ -133,6 +142,7 @@ class LegacyCommunityFiles:
                 cover=True,
                 size=size,
                 settings=self.settings,
+                previews=self.previews,
             )
 
     async def upload(self, id, note, incoming):

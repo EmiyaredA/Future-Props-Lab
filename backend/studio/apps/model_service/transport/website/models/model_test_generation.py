@@ -189,10 +189,16 @@ async def retry_materialization(
 
 @router.get("/generation-tasks/{task_id}/content")
 async def generation_content(
-    session: SessionDep, owner_user_id: OwnerDep, task_id: str, size: ThumbnailSize | None = None
+    request: Request,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    task_id: str,
+    size: ThumbnailSize | None = None,
 ) -> FileResponse:
     try:
-        row, path = await _generation(session, owner_user_id).content(task_id, size)
+        row, path = await _generation(session, owner_user_id).content(
+            task_id, size, previews=request.app.state.raster_previews
+        )
     except ModelTestGenerationError as exc:
         raise _translate(exc) from None
     return FileResponse(

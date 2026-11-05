@@ -42,7 +42,7 @@ from studio.contracts.model_service.schemas.model_test import (
     ModelTestVideoGenerationIn,
 )
 from studio.runtime.files.image_sizes import ThumbnailSize
-from studio.runtime.files.raster import RasterPreviewError, derived_thumbnail
+from studio.runtime.files.raster import RasterPreviewError
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.tasks.task_admission import TaskAdmission
 from studio.runtime.time import iso_utc, utc_now
@@ -473,7 +473,7 @@ class ModelTestGeneration:
         return await self.get(task_id)
 
     async def content(
-        self, task_id: str, size: ThumbnailSize | None = None
+        self, task_id: str, size: ThumbnailSize | None = None, *, previews
     ) -> tuple[ModelTestGenerationTask, Path]:
         row = await self._row(task_id)
         path = self._result_path(row)
@@ -490,7 +490,7 @@ class ModelTestGeneration:
                 / f"{path.stat().st_mtime_ns}-{size}.webp"
             )
             try:
-                path = await derived_thumbnail(path, target, size)
+                path = await previews.render(path, target, size)
             except RasterPreviewError as exc:
                 raise ModelTestGenerationError(str(exc), code=exc.code, status=422) from exc
         return row, path

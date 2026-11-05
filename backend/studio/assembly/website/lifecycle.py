@@ -71,7 +71,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
         return
     cleanup_snapshot_staging(settings)
     cleanup_library_folder_archive_staging(settings)
-    await reconcile_profile_avatars()
+    await reconcile_profile_avatars(settings)
     async with sessions() as session:
         await reconcile_project_trash(session, AssetStorage(settings))
         await reconcile_snapshot_imports(session, AssetStorage(settings))

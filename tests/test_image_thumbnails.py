@@ -9,7 +9,7 @@ from tests.test_knowledge_community import COMM, ROOT
 from tests.test_knowledge_community import community as community
 from tests.test_thought_knowledge_tools import doc
 
-from studio.apps.asset_library.previews.thumbnails import _render, derived_thumbnail
+from studio.runtime.files.raster import RasterPreviews
 
 pytestmark = [pytest.mark.asyncio, pytest.mark.real_auth]
 
@@ -24,7 +24,8 @@ async def test_orientation_transparency_and_concurrent_atomic_generation(tmp_pat
     source = tmp_path / "source.png"
     source.write_bytes(png())
     target = tmp_path / "previews" / "128.webp"
-    await asyncio.gather(*(derived_thumbnail(source, target, 128) for _ in range(4)))
+    previews = RasterPreviews()
+    await asyncio.gather(*(previews.render(source, target, 128) for _ in range(4)))
     with Image.open(target) as image:
         assert image.size == (128, 64)
         assert image.getpixel((20, 20))[3] == 110
@@ -33,7 +34,7 @@ async def test_orientation_transparency_and_concurrent_atomic_generation(tmp_pat
     exif = Image.Exif()
     exif[274] = 6
     Image.new("RGB", (800, 400), "red").save(rotated, exif=exif)
-    _render(rotated, target.parent / "rotated.webp", 320)
+    await previews.render(rotated, target.parent / "rotated.webp", 320)
     with Image.open(target.parent / "rotated.webp") as image:
         assert image.size == (160, 320)
 
@@ -115,14 +116,17 @@ async def test_source_versions_use_distinct_cache_paths_and_unsupported_inputs_f
     source.write_bytes(png())
     settings = SimpleNamespace(account_path=lambda owner: tmp_path / owner)
     info = ThumbnailSource("asset", 1, "owner", "image", "image/png")
-    first = await asset_thumbnail(settings, info, source, 128)
-    second = await asset_thumbnail(settings, replace(info, revision=2), source, 128)
+    previews = RasterPreviews()
+    first = await asset_thumbnail(settings, info, source, 128, previews=previews)
+    second = await asset_thumbnail(
+        settings, replace(info, revision=2), source, 128, previews=previews
+    )
     assert first != second
     assert first.is_file() and second.is_file()
     source.write_bytes(b"not an image")
     with pytest.raises(AssetError):
-        await derived_thumbnail(source, tmp_path / "broken.webp", 128)
-    assert not (tmp_path / "broken.webp").exists()
+        await asset_thumbnail(settings, replace(info, revision=3), source, 128, previews=previews)
+    assert not (settings.account_path("owner") / "previews/asset/3-128.webp").exists()
 
 
 async def test_svg_remains_a_safe_vector_preview(community):

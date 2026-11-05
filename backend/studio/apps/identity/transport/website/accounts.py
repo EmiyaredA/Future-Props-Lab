@@ -199,7 +199,16 @@ async def get_avatar(request: Request, session: SessionDep, size: ThumbnailSize 
     principal = await _browser_auth(request, session)
     user, _auth_session = await load_current_auth(session, principal)
     try:
-        path = await avatar_preview(user, size) if size is not None else avatar_path(user)
+        path = (
+            await avatar_preview(
+                user,
+                size,
+                settings=request.app.state.settings,
+                previews=request.app.state.avatar_previews,
+            )
+            if size is not None
+            else avatar_path(user, settings=request.app.state.settings)
+        )
     except RasterPreviewError as exc:
         raise HTTPException(422, detail={"code": exc.code, "message": str(exc)}) from None
     if path is None or not path.is_file():
@@ -224,9 +233,10 @@ async def put_avatar(
     principal = await _browser_auth(request, session)
     staged = None
     try:
-        staged = await stage_avatar(file)
+        staged = await stage_avatar(file, settings=request.app.state.settings)
         user = await apply_avatar(
             session,
+            settings=request.app.state.settings,
             user_id=principal.user_id,
             staged=staged,
             expected_revision=expected_revision,
@@ -250,6 +260,7 @@ async def remove_avatar(request: Request, session: SessionDep, body: AccountAvat
     try:
         user = await delete_avatar(
             session,
+            settings=request.app.state.settings,
             user_id=principal.user_id,
             expected_revision=body.expected_revision,
             client_ip=client_ip(request),

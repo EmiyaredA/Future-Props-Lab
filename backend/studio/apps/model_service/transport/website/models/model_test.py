@@ -138,6 +138,7 @@ async def delete_attachment(
 
 @router.get("/{conversation_id}/attachments/{attachment_id}/content")
 async def attachment_content(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     conversation_id: str,
@@ -146,7 +147,7 @@ async def attachment_content(
 ) -> FileResponse:
     try:
         row, path = await _attachments(session, owner_user_id).content(
-            conversation_id, attachment_id, size
+            conversation_id, attachment_id, size, previews=request.app.state.raster_previews
         )
     except AttachmentError as exc:
         raise _translate(exc) from None

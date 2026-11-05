@@ -40,6 +40,7 @@ from studio.contracts.creative_workshop.creative_install_evidence import INSTALL
 from studio.contracts.creative_workshop.creative_source_evidence import SOURCE_PATH
 from studio.contracts.creative_workshop.creative_stdio import PUBLIC_STDIO
 from studio.runtime.database.migrations import check
+from studio.runtime.files.raster import RasterPreviews
 from studio.runtime.http.authentication import SignedIdentity
 from studio.runtime.http.capability_client import CapabilityClient
 from studio.runtime.http.problem_details import http_exception_handler, validation_exception_handler
@@ -94,6 +95,7 @@ def create_app(
         openapi_url=None,
     )
     app.state.service_id, app.state.database = "creative", database
+    app.state.raster_previews = RasterPreviews(capacity=2)
     app.state.storage_checked = False
     app.state.identity, app.state.identity_public_key = identity, public_key
     app.state.creative_capabilities = capabilities

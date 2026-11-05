@@ -89,6 +89,7 @@ from studio.config.settings import get_cloud_settings
 from studio.host.project_files.video_dependencies import probe_deps
 from studio.host.project_files.video_execution import _run_yt_dlp
 from studio.host.session_collection.access import LocalSourceAccess
+from studio.runtime.files.raster import RasterPreviews
 from studio.runtime.http.rate_limit import AttemptLimiter
 from studio.runtime.secrets import SecretCipher
 from studio.runtime.tasks.reactive_tools.approval import ApprovalBroker
@@ -96,6 +97,8 @@ from studio.runtime.time import utc_now
 
 
 def bind_components(app, settings, database):
+    app.state.raster_previews = RasterPreviews(capacity=2)
+    app.state.avatar_previews = RasterPreviews(capacity=1)
     bind_creative(app, settings)
     app.state.auth_attempts = AttemptLimiter()
     app.state.invitation_cipher = SecretCipher(settings.fpl_secrets_key)

@@ -112,6 +112,7 @@ from studio.contracts.visual_workshop.visual_snapshot import MODELS as VISUAL_SN
 from studio.runtime.database.migrations import check
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.database.sessions import Database
+from studio.runtime.files.raster import RasterPreviews
 from studio.runtime.http.authentication import SignedIdentity
 from studio.runtime.http.problem_details import (
     account_exception_handler,
@@ -312,6 +313,7 @@ def create_app(
     app.state.integration_intents = integration_intents
     app.state.service_id = "models"
     app.state.settings, app.state.database = settings, database
+    app.state.raster_previews = RasterPreviews(capacity=2)
     app.state.model_template_cipher = SecretCipher(settings.fpl_secrets_key)
     app.state.model_decrypt = app.state.model_template_cipher.decrypt
     annotation_cipher = SecretCipher(settings.fpl_secrets_key)

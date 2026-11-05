@@ -150,6 +150,7 @@ from studio.contracts.visual_workshop.visual_snapshot import (
 )
 from studio.runtime.database.migrations import check
 from studio.runtime.database.sessions import Database
+from studio.runtime.files.raster import RasterPreviews
 from studio.runtime.http.authentication import SignedIdentity
 from studio.runtime.http.problem_details import (
     http_exception_handler,
@@ -244,6 +245,7 @@ def create_app(
     )
     app.state.service_id = "assets"
     app.state.database, app.state.settings = database, settings
+    app.state.raster_previews = RasterPreviews(capacity=2)
     app.state.identity, app.state.capabilities = identity, capabilities
     app.state.identity_public_key = public_key
     from studio.contracts.video_editor.video_exports import output_peer

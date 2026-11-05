@@ -1,12 +1,13 @@
 """Bounded raster resizing from explicitly authorized paths; no ORM or service lifecycle."""
 
 import asyncio
-import contextlib
 import os
 from pathlib import Path
 from uuid import uuid4
 
 from PIL import Image, ImageOps, UnidentifiedImageError
+
+from studio.runtime.tasks.blocking_io import run_blocking_io
 
 
 class RasterPreviewError(ValueError):
@@ -41,19 +42,5 @@ class RasterPreviews:
 
     async def render(self, source: Path, target: Path, size: int) -> Path:
         async with self.capacity:
-            task = asyncio.create_task(asyncio.to_thread(_render, source, target, size))
-            try:
-                await asyncio.shield(task)
-            except asyncio.CancelledError:
-                with contextlib.suppress(Exception):
-                    await task
-                raise
+            await run_blocking_io(_render, source, target, size)
         return target
-
-
-_previews = RasterPreviews()
-
-
-async def derived_thumbnail(source: Path, target: Path, size: int) -> Path:
-    """Resize an already authorized file using this process's bounded decoder."""
-    return await _previews.render(source, target, size)

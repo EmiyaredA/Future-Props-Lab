@@ -104,9 +104,12 @@ async def cover(
     size: ThumbnailSize | None = None,
 ):
     mime_type, path = await call(
-        LegacyCommunityFiles(session, principal, settings=request.app.state.settings).cover(
-            publication_id, size
-        )
+        LegacyCommunityFiles(
+            session,
+            principal,
+            settings=request.app.state.settings,
+            previews=request.app.state.raster_previews,
+        ).cover(publication_id, size)
     )
     return FileResponse(path, media_type=mime_type, headers={"Cache-Control": "private, no-store"})
 
@@ -122,9 +125,12 @@ async def asset(
     size: ThumbnailSize | None = None,
 ):
     mime_type, path = await call(
-        LegacyCommunityFiles(session, principal, settings=request.app.state.settings).asset(
-            publication_id, asset_id, note_id, size
-        )
+        LegacyCommunityFiles(
+            session,
+            principal,
+            settings=request.app.state.settings,
+            previews=request.app.state.raster_previews,
+        ).asset(publication_id, asset_id, note_id, size)
     )
     return FileResponse(
         path,
@@ -145,9 +151,12 @@ async def upload(
     upload: UploadFile = File(),
 ):
     return await call(
-        LegacyCommunityFiles(session, principal, settings=request.app.state.settings).upload(
-            publication_id, note_id, upload
-        )
+        LegacyCommunityFiles(
+            session,
+            principal,
+            settings=request.app.state.settings,
+            previews=request.app.state.raster_previews,
+        ).upload(publication_id, note_id, upload)
     )
 
 

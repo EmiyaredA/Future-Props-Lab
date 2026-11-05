@@ -21,7 +21,7 @@ from studio.contracts.model_service.schemas.model_test import (
     ModelTestAttachmentOut,
 )
 from studio.runtime.files.image_sizes import ThumbnailSize
-from studio.runtime.files.raster import RasterPreviewError, derived_thumbnail
+from studio.runtime.files.raster import RasterPreviewError
 from studio.runtime.time import iso_utc
 
 MAX_ATTACHMENTS_PER_MESSAGE = 5
@@ -249,7 +249,12 @@ class ModelTestAttachments:
         path.unlink(missing_ok=True)
 
     async def content(
-        self, conversation_id: str, attachment_id: str, size: ThumbnailSize | None = None
+        self,
+        conversation_id: str,
+        attachment_id: str,
+        size: ThumbnailSize | None = None,
+        *,
+        previews,
     ) -> tuple[ModelTestAttachment, Path]:
         row = await self._attachment(conversation_id, attachment_id)
         path = self._root() / row.storage_key
@@ -264,7 +269,7 @@ class ModelTestAttachments:
                 / f"{path.stat().st_mtime_ns}-{size}.webp"
             )
             try:
-                path = await derived_thumbnail(path, target, size)
+                path = await previews.render(path, target, size)
             except RasterPreviewError as exc:
                 raise AttachmentError(str(exc), code=exc.code, status=422) from exc
         return row, path

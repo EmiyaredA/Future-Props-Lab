@@ -38,6 +38,7 @@ from studio.config.settings import get_settings as isolated_settings
 from studio.contracts.management.migration_batches import MigrationPlan
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database
+from studio.runtime.files.raster import RasterPreviews
 from studio.runtime.secrets import SecretCipher
 
 
@@ -167,13 +168,20 @@ async def verify_playground(target, owner, other, conversation, attachments):
             assert restored.draft_attachments[0].id == attachments[1][0]
             reader = ModelTestAttachments(session, settings, str(owner))
             for identifier, original in attachments:
-                _row, restored_path = await reader.content(conversation, identifier)
+                _row, restored_path = await reader.content(
+                    conversation, identifier, previews=RasterPreviews()
+                )
                 assert digest(restored_path) == digest(original)
                 assert not (restored_path.parent / ".tmp").exists()
         async with database.sessions(info={"owner_user_id": str(other)}) as session:
             reader = ModelTestAttachments(session, settings, str(other))
             draft = attachments[1][0]
-            for operation in (reader.content, reader.delete_draft):
+            from functools import partial
+
+            for operation in (
+                partial(reader.content, previews=RasterPreviews()),
+                reader.delete_draft,
+            ):
                 with pytest.raises(AttachmentError) as error:
                     await operation(conversation, draft)
                 assert error.value.status == 404

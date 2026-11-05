@@ -103,7 +103,7 @@ async def release_cover(
         return FileResponse(
             await request.app.state.creative_catalog(
                 request, session, principal
-            ).release_cover_file(release_id, size),
+            ).release_cover_file(release_id, size, previews=request.app.state.raster_previews),
             media_type="image/webp",
             headers={"Cache-Control": "private, no-store"},
         )
@@ -183,7 +183,7 @@ async def item_cover(
     try:
         return FileResponse(
             await request.app.state.creative_catalog(request, session, principal).cover_file(
-                item_id, draft=draft, size=size
+                item_id, draft=draft, size=size, previews=request.app.state.raster_previews
             ),
             media_type="image/webp",
             headers={"Cache-Control": "private, no-store"},

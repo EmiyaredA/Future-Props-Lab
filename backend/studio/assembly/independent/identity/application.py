@@ -68,6 +68,7 @@ from studio.contracts.identity.certification import PREFIX as CERTIFICATION_PREF
 from studio.contracts.identity.errors import AccountError
 from studio.runtime.database.migrations import check
 from studio.runtime.database.sessions import Database
+from studio.runtime.files.raster import RasterPreviews
 from studio.runtime.http.problem_details import (
     account_exception_handler,
     http_exception_handler,
@@ -134,6 +135,7 @@ def create_app(
         openapi_url=None,
     )
     app.state.settings = settings
+    app.state.avatar_previews = RasterPreviews(capacity=1)
     app.state.service_id = "identity"
     app.state.database = database
     app.state.auth_attempts = AttemptLimiter()

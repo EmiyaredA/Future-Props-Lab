@@ -154,12 +154,14 @@ async def make_legacy(path):
             staged = await stage_avatar(
                 UploadFile(
                     avatar, filename="avatar.png", headers=Headers({"Content-Type": "image/png"})
-                )
+                ),
+                settings=get_settings(),
             )
             owner = await apply_avatar(
                 session,
                 user_id=owner.id,
                 staged=staged,
+                settings=get_settings(),
                 expected_revision=owner.revision,
                 client_ip="",
             )

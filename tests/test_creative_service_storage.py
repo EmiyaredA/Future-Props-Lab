@@ -31,6 +31,7 @@ from studio.contracts.gateway.protocol_hash import public_contract
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.runtime.database.migrations import apply, check
 from studio.runtime.database.sessions import ServiceStorageError
+from studio.runtime.files.raster import RasterPreviews
 
 
 async def test_creative_readiness_requires_started_storage_and_complete_release(tmp_path):
@@ -136,7 +137,7 @@ async def test_creative_catalog_uses_owned_cover_and_skill_directories(tmp_path,
             updated = await catalog.upload_cover(
                 draft.id, draft.revision, MemoryIncoming(image.getvalue())
             )
-            cover = await catalog.cover_file(updated.id, draft=True)
+            cover = await catalog.cover_file(updated.id, draft=True, previews=RasterPreviews())
             file_root = tmp_path / "accounts" / "alice" / "creative-workshop"
             assert cover.is_relative_to(file_root)
             assert cover.is_file()

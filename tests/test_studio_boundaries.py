@@ -539,3 +539,19 @@ def test_visual_provider_components_do_not_discover_peers_from_application_state
                     assert node.attr not in {"state", "intake"}, filename
     storage = STUDIO / "apps/model_service/storage/visual_generation_files.py"
     assert not any(name.startswith("studio.apps.model_service.visual") for name in imports(storage))
+
+
+def test_thumbnail_decoding_has_no_global_capacity_or_duplicated_implementation():
+    raster = STUDIO / "runtime/files/raster.py"
+    tree = ast.parse(raster.read_text())
+    for statement in tree.body:
+        if isinstance(statement, (ast.Assign, ast.AnnAssign)):
+            for node in ast.walk(statement):
+                if isinstance(node, ast.Call):
+                    assert getattr(node.func, "id", None) != "RasterPreviews"
+                    assert getattr(node.func, "attr", None) != "Semaphore"
+    assets = (STUDIO / "apps/asset_library/previews/thumbnails.py").read_text()
+    assert "def _render" not in assets
+    assert "Semaphore" not in assets
+    assert not (STUDIO / "apps/identity/profile_images.py").exists()
+    assert "get_settings" not in (STUDIO / "apps/identity/profile.py").read_text()

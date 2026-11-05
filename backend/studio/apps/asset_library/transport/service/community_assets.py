@@ -64,6 +64,7 @@ async def content_for_community(request: Request):
             ),
             path,
             source.size,
+            previews=request.app.state.raster_previews,
         )
         mime = "image/webp"
     return FileResponse(
