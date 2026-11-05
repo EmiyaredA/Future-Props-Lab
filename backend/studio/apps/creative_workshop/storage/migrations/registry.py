@@ -4,6 +4,7 @@ from studio.apps.creative_workshop.storage.migrations.versions.v0001 import SQL
 from studio.apps.creative_workshop.storage.migrations.versions.v0002 import SQL as INSTALL_SQL
 from studio.apps.creative_workshop.storage.migrations.versions.v0003 import SQL as FENCE_SQL
 from studio.apps.creative_workshop.storage.migrations.versions.v0004 import SQL as CANCEL_SQL
+from studio.apps.creative_workshop.storage.migrations.versions.v0005 import SQL as RECEIPTS
 from studio.runtime.database.migrations import Migration
 
 MIGRATIONS = (
@@ -11,4 +12,5 @@ MIGRATIONS = (
     Migration("0002_creative_install_operations", INSTALL_SQL),
     Migration("0003_install_fences", FENCE_SQL),
     Migration("0004_install_cancellations", CANCEL_SQL),
+    Migration("0005_import_receipts", RECEIPTS),
 )

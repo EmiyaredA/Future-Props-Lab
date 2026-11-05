@@ -97,17 +97,24 @@ def pages(client, address, headers, plan, owner, dataset):
             return
 
 
-def transfer(client, plan, source, target, dataset):
+def transfer(client, plan, source, target, dataset, *, source_pages=None):
     source, target = loopback(source), loopback(target)
     if source == target:
         raise ValueError("源和目标维护地址必须不同")
     headers = {"X-Fpl-Migration-Token": plan.token.get_secret_value()}
+
+    def read_source(owner):
+        pages_from_source = pages(client, source, headers, plan, owner, dataset)
+        if source_pages is not None:
+            return source_pages(owner, pages_from_source)
+        return pages_from_source
+
     before = inventory(client, source, headers, dataset)
     if inventory(client, target, headers, dataset) > before:
         raise ValueError("迁移目标记录数超过源快照")
     owners = (plan.run_id,) if dataset.platform else sorted(plan.owner_ids)
     for owner in owners:
-        for page in pages(client, source, headers, plan, owner, dataset):
+        for page in read_source(owner):
             batch = page.batch
             response = client.post(
                 f"{target}{dataset.prefix}/batches",
@@ -130,7 +137,7 @@ def transfer(client, plan, source, target, dataset):
     count = 0
     for owner in owners:
         for original, imported in zip(
-            pages(client, source, headers, plan, owner, dataset),
+            read_source(owner),
             pages(client, target, headers, plan, owner, dataset),
             strict=True,
         ):

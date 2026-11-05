@@ -30,9 +30,11 @@ from studio.apps.integrations.storage.creative_records import (
 )
 from studio.contracts.creative_workshop.creative_integrations import (
     CreativeInstallBatch,
-    CreativeInstallPart,
     CreativeOperationGrant,
     CreativeStdioConfiguration,
+)
+from studio.contracts.creative_workshop.creative_integrations import (
+    part_fingerprint as fingerprint,
 )
 from studio.contracts.integrations.integration_intents import digest
 from studio.runtime.files.skill_tree import skill_tree_sha256
@@ -59,12 +61,6 @@ class CountingInput:
 
 def conflict(code):
     return HTTPException(409, {"code": code, "message": "安装请求与已有记录冲突"})
-
-
-def fingerprint(part: CreativeInstallPart):
-    value = part.model_dump(mode="json")
-    value.pop("target_name")
-    return digest(value)
 
 
 def validate_grant(grant, *, purpose, operation, fingerprint_value, owner=None):

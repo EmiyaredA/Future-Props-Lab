@@ -150,6 +150,11 @@ def protect_public_roots(session, _context, _instances):
             raise ServiceStorageError("不能修改其他账号的公开版本")
 
 
+SKILL_ARCHIVE_MAX_BYTES = 20 * 1024 * 1024
+SKILL_EXPANDED_MAX_BYTES = 50 * 1024 * 1024
+SKILL_MAX_FILES = 500
+
+
 @dataclass(frozen=True)
 class CreativeStorageSettings:
     runtime_path: Path
@@ -170,9 +175,9 @@ class CreativeArchiveStaging:
 def creative_database(
     state_root,
     *,
-    skill_archive_max_bytes=20 * 1024 * 1024,
-    skill_expanded_max_bytes=50 * 1024 * 1024,
-    skill_max_files=500,
+    skill_archive_max_bytes=SKILL_ARCHIVE_MAX_BYTES,
+    skill_expanded_max_bytes=SKILL_EXPANDED_MAX_BYTES,
+    skill_max_files=SKILL_MAX_FILES,
 ):
     limits = (skill_archive_max_bytes, skill_expanded_max_bytes, skill_max_files)
     if any(type(limit) is not int or limit < 1 for limit in limits):

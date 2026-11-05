@@ -4331,6 +4331,12 @@
       "model": "CreativeInstallOperation"
     },
     {
+      "table": "creative_import_receipts",
+      "service": "creative",
+      "module": "studio.apps.creative_workshop.storage.migration_catalog",
+      "model": "CreativeImportReceipt"
+    },
+    {
       "table": "director_import_receipts",
       "service": "director",
       "module": "studio.apps.director_desk.migration_receipts",

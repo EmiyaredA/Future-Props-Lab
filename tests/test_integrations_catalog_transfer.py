@@ -1,11 +1,17 @@
 """Exercise ciphertext transfer against the isolated legacy schema and live CLI."""
 
+import asyncio
+import hashlib
 import json
+from io import BytesIO
+from types import SimpleNamespace
 from uuid import uuid4
+from zipfile import ZipFile
 
 import httpx
 from cryptography.fernet import Fernet
 from scripts.website.legacy_snapshot import digest
+from scripts.website.migrate_integrations_catalog import transfer_skill_originals
 from scripts.website.migration_transfer import pages, project_datasets, transfer
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -17,14 +23,21 @@ from app.integrations.models import (
     IntegrationCheck,
     McpDiscoveredTool,
     McpIntegration,
+    SkillIntegration,
+    SkillVersion,
     ToolApiIntegration,
 )
+from app.integrations.skills.archive import SkillArchiveStorage
+from app.integrations.skills.catalog import SkillCatalog
 from app.runtime.credentials import SecretCipher
 from db.migrations import apply_migrations
 from studio.apps.integrations.storage.migrations.registry import MIGRATIONS
+from studio.apps.integrations.storage.service_models import MODELS
 from studio.assembly.independent.integrations.maintenance import DATASETS, PREFIX
+from studio.contracts.integrations.skill_migration import PREFIX as ORIGINALS
 from studio.contracts.management.migration_batches import MigrationPlan
 from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
 
 
 def create_legacy_catalog(path, owner, cipher):
@@ -69,7 +82,17 @@ def create_legacy_catalog(path, owner, cipher):
                 secret_ciphertext=cipher.encrypt("fixture-external"),
                 revision=3,
             )
-            session.add_all((tool, mcp, external))
+            skill = SkillIntegration(
+                owner_user_id=account,
+                name="fixture-skill",
+                description="Fixture",
+                tags=["test"],
+                default_version="v1",
+                latest_version="v2",
+                enabled=True,
+                revision=5,
+            )
+            session.add_all((tool, mcp, external, skill))
             session.flush()
             session.add_all(
                 (
@@ -85,7 +108,38 @@ def create_legacy_catalog(path, owner, cipher):
                     ),
                 )
             )
-            ids = tool.id, mcp.id, external.id
+            archive = {
+                "SKILL.md": b"---\nname: fixture-skill\ndescription: Fixture\n---\n",
+                "assets/empty.txt": b"",
+                "notes/笔记.txt": b"owned document",
+            }
+            for version in ("v1", "v2"):
+                root = (
+                    path.parent
+                    / "accounts"
+                    / account
+                    / "integrations"
+                    / "skills"
+                    / skill.id
+                    / version
+                )
+                for member, content in archive.items():
+                    target = root / member
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes(content)
+                session.add(
+                    SkillVersion(
+                        skill_id=skill.id,
+                        version=version,
+                        name="fixture-skill",
+                        description="Fixture",
+                        storage_path="/retired/site/path",
+                        content_sha256="1" * 64,
+                        file_count=len(archive),
+                        expanded_bytes=sum(map(len, archive.values())),
+                    )
+                )
+            ids = tool.id, mcp.id, external.id, skill.id, archive
             session.commit()
         return ids
     finally:
@@ -97,7 +151,9 @@ def test_integrations_catalog_uses_original_key_and_replays_receipts(tmp_path):
     cipher = SecretCipher(key)
     owner, other = uuid4(), uuid4()
     source_db = tmp_path / "legacy.sqlite"
-    tool_id, mcp_id, external_id = create_legacy_catalog(source_db, owner, cipher)
+    tool_id, mcp_id, external_id, skill_id, archive = create_legacy_catalog(
+        source_db, owner, cipher
+    )
     target_dir = tmp_path / "integrations"
     apply(target_dir / "service.db", "integrations", MIGRATIONS)
     token = "integrations-isolated-migration-fixture-authority"
@@ -124,7 +180,7 @@ def test_integrations_catalog_uses_original_key_and_replays_receipts(tmp_path):
         )
 
     datasets = project_datasets(PREFIX, DATASETS)
-    tools, servers, mcp_tools, external, _checks = datasets
+    tools, servers, mcp_tools, external, _checks, skills, versions = datasets
     source_port, target_port = available_ports()
     headers = {"X-Fpl-Migration-Token": token}
     module = "studio.assembly.independent.integrations.cli"
@@ -177,10 +233,103 @@ def test_integrations_catalog_uses_original_key_and_replays_receipts(tmp_path):
         configure(key)
         with open_target(client) as target:
             assert transfer(client, plan, source, target, tools)["record_count"] == 1
+            for dataset in (skills, versions):
+                transfer(client, plan, source, target, dataset)
+            route = f"{ORIGINALS}/{owner}/{skill_id}/v1"
+            file = {
+                "path": "assets/empty.txt",
+                "size": 0,
+                "sha256": hashlib.sha256(b"").hexdigest(),
+            }
+            rejected = client.put(
+                target + route + "/file", headers=headers, params=file, content=b"x"
+            )
+            assert rejected.status_code == 409
+            named = "notes/笔记.txt"
+            intended = archive[named]
+            wrong = client.put(
+                target + route + "/file",
+                headers=headers,
+                params={
+                    "path": named,
+                    "size": len(intended),
+                    "sha256": hashlib.sha256(intended).hexdigest(),
+                },
+                content=b"!" * len(intended),
+            )
+            assert wrong.status_code == 409
+            assert wrong.json()["code"] == "migration_skill_file_bytes_changed"
+            accepted = client.put(
+                target + route + "/file", headers=headers, params=file, content=b""
+            )
+            accepted.raise_for_status()
+            empty_receipt = accepted.json()
+            escape = client.put(
+                target + route + "/file",
+                headers=headers,
+                params={**file, "path": "../escaped.txt"},
+                content=b"",
+            )
+            assert escape.status_code == 409
+            assert not (
+                target_dir
+                / "accounts"
+                / str(owner)
+                / "integrations"
+                / "skills"
+                / skill_id
+                / "escaped.txt"
+            ).exists()
+            incomplete = client.get(
+                target + route + "/inventory", headers=headers, params={"complete": True}
+            )
+            assert incomplete.status_code == 409
+            denied = client.put(
+                target + f"{ORIGINALS}/{other}/{skill_id}/v1/file",
+                headers=headers,
+                params=file,
+                content=b"",
+            )
+            assert denied.status_code == 409
+            assert denied.json()["code"] == "migration_skill_version_unavailable"
         with open_target(client) as target:
             reports = [transfer(client, plan, source, target, dataset) for dataset in datasets]
-            assert [report["record_count"] for report in reports] == [1, 1, 1, 1, 1]
+            assert [report["record_count"] for report in reports] == [1, 1, 1, 1, 1, 1, 2]
             assert [transfer(client, plan, source, target, ds) for ds in datasets] == reports
+            migrated = transfer_skill_originals(client, plan, source, target)
+            assert migrated["record_count"] == 6
+            assert migrated["byte_count"] == 2 * sum(map(len, archive.values()))
+            assert transfer_skill_originals(client, plan, source, target) == migrated
+            replayed = client.put(
+                target + route + "/file", headers=headers, params=file, content=b""
+            )
+            assert replayed.json() == empty_receipt
+            for version in ("v1", "v2"):
+                restored = (
+                    target_dir
+                    / "accounts"
+                    / str(owner)
+                    / "integrations"
+                    / "skills"
+                    / skill_id
+                    / version
+                )
+                assert {
+                    p.relative_to(restored).as_posix(): p.read_bytes()
+                    for p in restored.rglob("*")
+                    if p.is_file()
+                } == archive
+            assert all(row.content_sha256 == "1" * 64 for row in rows(client, target, versions))
+            extra = restored / "unexpected.txt"
+            extra.write_bytes(b"not in the source")
+            conflicted = client.get(
+                target + f"{ORIGINALS}/{owner}/{skill_id}/v2/inventory",
+                headers=headers,
+                params={"complete": True},
+            )
+            assert conflicted.status_code == 409
+            assert conflicted.json()["code"] == "migration_skill_file_inventory_conflict"
+            extra.unlink()
             (tool,) = rows(client, target, tools)
             (server,) = rows(client, target, servers)
             (connection,) = rows(client, target, external)
@@ -203,3 +352,20 @@ def test_integrations_catalog_uses_original_key_and_replays_receipts(tmp_path):
             assert denied.status_code == 409
             assert denied.json()["code"] == "migration_project_owner_conflict"
             assert not next(pages(client, target, headers, plan, other, mcp_tools)).batch.records
+
+    async def check_business_download():
+        database = Database("integrations", target_dir, models=MODELS)
+        try:
+            async with database.sessions(info={"owner_user_id": str(owner)}) as session:
+                storage = SkillArchiveStorage(SimpleNamespace(runtime_path=target_dir), str(owner))
+                catalog = SkillCatalog(session, str(owner), storage=storage)
+                item = await catalog.get(skill_id)
+                assert (item.default_version, item.latest_version, item.revision) == ("v1", "v2", 5)
+                for version in ("v1", "v2"):
+                    _filename, body = await catalog.version_zip(skill_id, version)
+                    with ZipFile(BytesIO(body)) as package:
+                        assert {name: package.read(name) for name in package.namelist()} == archive
+        finally:
+            await database.close()
+
+    asyncio.run(check_business_download())

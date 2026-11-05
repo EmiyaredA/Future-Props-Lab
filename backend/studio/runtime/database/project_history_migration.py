@@ -32,6 +32,8 @@ class ProjectDataset:
     projection: Callable | None = None
     validate: Callable | None = None
     parent_key: str = "project_id"
+    materialize: Callable | None = None
+    owner_key: str = "owner_user_id"
 
     @property
     def suffix(self):
@@ -40,7 +42,7 @@ class ProjectDataset:
     @property
     def owner_column(self):
         model = self.project if self.project is not None else self.model
-        return model.owner_user_id
+        return getattr(model, self.owner_key)
 
     def select(self, *columns):
         query = select(*columns).select_from(self.model)
@@ -130,13 +132,17 @@ async def ingest(sessions, dataset, receipt_model, batch):
         for record in batch.records:
             if dataset.project is not None:
                 project = await session.get(dataset.project, getattr(record, dataset.parent_key))
-                if project is None or project.owner_user_id != owner:
+                if project is None or getattr(project, dataset.owner_key) != owner:
                     raise blocked("migration_project_owner_conflict")
             if dataset.validate is not None:
                 await dataset.validate(session, record)
-            values = record.model_dump()
+            values = (
+                dataset.materialize(owner, record)
+                if dataset.materialize is not None
+                else record.model_dump()
+            )
             if dataset.owns_record:
-                values["owner_user_id"] = owner
+                values[dataset.owner_key] = owner
             session.add(dataset.model(**values))
             if dataset.projection is not None:
                 linked = dataset.projection(owner, record)

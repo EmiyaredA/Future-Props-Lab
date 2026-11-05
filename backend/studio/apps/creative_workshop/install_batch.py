@@ -60,30 +60,36 @@ async def published_parts(database, root_release_id):
         return result
 
 
+async def install_part(packer, release, target_name):
+    description = None
+    if release.kind == "skill":
+        async with packer.open_release(release.owner, release.release_id, release.skill_path) as (
+            _,
+            description,
+        ):
+            if description.file_count != release.manifest.get(
+                "file_count"
+            ) or description.expanded_bytes != release.manifest.get("expanded_bytes"):
+                raise InstallIntentConflict("Skill 发布文件与版本描述不匹配")
+    return CreativeInstallPart(
+        release_id=release.release_id,
+        kind=release.kind,
+        title=release.title,
+        target_name=target_name,
+        summary=release.summary,
+        tags=release.tags,
+        manifest=release.manifest,
+        skill=description,
+    )
+
+
 async def build_install_batch(database, packer, request: CreativeInstallPreviewIn):
-    parts = []
-    for release in await published_parts(database, request.release_id):
-        description = None
-        if release.kind == "skill":
-            async with packer.open_release(
-                release.owner, release.release_id, release.skill_path
-            ) as (_, description):
-                if description.file_count != release.manifest.get(
-                    "file_count"
-                ) or description.expanded_bytes != release.manifest.get("expanded_bytes"):
-                    raise InstallIntentConflict("Skill 发布文件与版本描述不匹配")
-        parts.append(
-            CreativeInstallPart(
-                release_id=release.release_id,
-                kind=release.kind,
-                title=release.title,
-                target_name=request.names.get(release.release_id, release.title).strip(),
-                summary=release.summary,
-                tags=release.tags,
-                manifest=release.manifest,
-                skill=description,
-            )
+    parts = [
+        await install_part(
+            packer, release, request.names.get(release.release_id, release.title).strip()
         )
+        for release in await published_parts(database, request.release_id)
+    ]
     return CreativeInstallBatch(
         operation_id=str(uuid4()), root_release_id=request.release_id, parts=parts
     )

@@ -30,13 +30,13 @@ def inventory_directory(path):
     return path.iterdir() if path.exists() else iter(())
 
 
-def inspect_blob(path, *, exact_size=None, maximum=None):
+def inspect_blob(path, *, exact_size=None, maximum=None, allow_empty=False):
     with os.fdopen(os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK), "rb") as stream:
         before = os.fstat(stream.fileno())
         size = before.st_size
         if (
             not stat.S_ISREG(before.st_mode)
-            or size <= 0
+            or (size == 0 and not allow_empty)
             or (exact_size is not None and size != exact_size)
             or (maximum is not None and size > maximum)
         ):
@@ -55,7 +55,7 @@ def publish_blob(root, target, staged, size, digest):
     try:
         os.link(staged, target, follow_symlinks=False)
     except FileExistsError:
-        if inspect_blob(target, exact_size=size)[1] != digest:
+        if inspect_blob(target, exact_size=size, allow_empty=size == 0)[1] != digest:
             raise ValueError("迁移目标文件内容冲突") from None
     for parent in target.parents:
         descriptor = os.open(parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)

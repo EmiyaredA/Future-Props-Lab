@@ -6,6 +6,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from studio.contracts.integrations.integration_intents import digest
+
 PREFIX = "/_internal/v1/creative-integrations"
 CreativeSourceKind = Literal["tool_api", "mcp", "skill"]
 
@@ -90,6 +92,10 @@ class CreativeInstallPart(BaseModel):
         if (self.kind == "skill") != (self.skill is not None):
             raise ValueError("Skill 批次必须包含准确的归档描述")
         return self
+
+
+def part_fingerprint(part: CreativeInstallPart):
+    return digest(part.model_dump(mode="json", exclude={"target_name"}))
 
 
 class CreativeInstallBatch(BaseModel):
