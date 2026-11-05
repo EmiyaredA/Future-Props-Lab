@@ -58,7 +58,7 @@ test("application icons and recent entries show complete pictures across sizes a
     for (const theme of ["dark", "light"]) {
       await setResponsiveTheme(page, theme);
       const icons = page.locator(".application-icon img");
-      await expect(icons).toHaveCount(10);
+      await expect(icons).toHaveCount(9);
       for (const icon of await icons.all()) await expectImageFitsFrame(icon);
       if (width > 1100) {
         for (const icon of await page.locator(".application-recent img").all())

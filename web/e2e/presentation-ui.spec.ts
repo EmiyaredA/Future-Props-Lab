@@ -174,11 +174,10 @@ test("首页空状态、搜索无结果和加载失败分别呈现", async ({ pa
 });
 
 test("只读首页隐藏新建与操作菜单，仍可打开文稿", async ({ page }) => {
-  await page.goto("/apps/presentation-workshop");
   await page.route("**/v1/auth/me", async (route) => {
     const response = await route.fetch(),
       principal = await response.json();
-    principal.workspace.permission_keys = ["content.read", "files.read"];
+    principal.permission_keys = ["content.read", "files.read"];
     await route.fulfill({ response, json: principal });
   });
   await page.route("**/v1/presentation-workshop/projects?*", (route) =>
@@ -200,9 +199,9 @@ test("只读首页隐藏新建与操作菜单，仍可打开文稿", async ({ pa
       },
     }),
   );
-  await page.reload();
+  await page.goto("/apps/presentation-workshop");
   await expect(
-    page.getByRole("button", { name: "打开 只读文稿" }),
+    page.getByRole("button", { name: "打开 只读文稿", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "新建演示文稿", exact: true }),

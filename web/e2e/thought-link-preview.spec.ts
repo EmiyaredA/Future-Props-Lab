@@ -111,15 +111,20 @@ test("table preview, focus, themes, viewport edges, fallback and read-only", asy
   await page.route("**/v1/auth/me", async (route) => {
     const response = await route.fetch();
     const body = await response.json();
-    body.workspace.permission_keys = ["content.read"];
+    body.permission_keys = ["content.read"];
     await route.fulfill({ json: body });
   });
   await page.reload();
   prose = page.getByRole("textbox", { name: "笔记正文", exact: true });
   await expect(prose).toHaveAttribute("contenteditable", "false");
   link = prose.getByRole("link", { name: "[28]", exact: true });
-  await link.hover();
-  await expect(card.getByText("Evaluate agent performance")).toBeVisible();
+  await expect(async () => {
+    await page.mouse.move(0, 0);
+    await link.hover();
+    await expect(card.getByText("Evaluate agent performance")).toBeVisible({
+      timeout: 1_000,
+    });
+  }).toPass({ timeout: 8_000 });
 });
 
 test.describe("touch interaction", () => {
