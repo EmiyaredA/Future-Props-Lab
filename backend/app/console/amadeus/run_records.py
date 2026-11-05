@@ -70,9 +70,10 @@ def _run(row: AmadeusRun) -> RunOut:
 
 
 class RunRecords:
-    def __init__(self, session, principal, *, resolve_agent=None):
+    def __init__(self, session, principal, *, resolve_agent=None, connection_field="executable"):
         self.session, self.principal = session, principal
         self.resolve_agent = resolve_agent
+        self.connection_field = connection_field
 
     async def _conversation(self, identity: str) -> AmadeusConversation:
         row = await self.session.scalar(
@@ -130,7 +131,7 @@ class RunRecords:
 
         if self.resolve_agent is None:
             raise OperationError("Agent 连接尚未就绪", "agent_unavailable", 503)
-        path = await self.resolve_agent(body.agent_id)
+        connection = await self.resolve_agent(body.agent_id)
         detail_snapshot = await Conversations(self.session, self.principal).detail(conversation_id)
         conversation.agent_id = body.agent_id
         unresolved_question = await self.session.scalar(
@@ -186,7 +187,7 @@ class RunRecords:
             agent_id=body.agent_id,
             agent_model=body.agent_model,
             execution_config={
-                "executable": path,
+                self.connection_field: connection,
                 "agent_id": body.agent_id,
                 "messages": [m.model_dump(mode="json") for m in detail_snapshot.messages[-60:]],
                 "actions": [a.model_dump(mode="json") for a in detail_snapshot.actions],
@@ -290,6 +291,13 @@ class RunRecords:
                 return _event(existing)
             raise OperationError("运行事件发生并发冲突", "event_conflict", 409) from None
         return _event(event)
+
+    async def store_skill_snapshots(self, conversation_id, run_id, skills):
+        row = await self.get(conversation_id, run_id)
+        if row.status != "running":
+            raise OperationError("运行已经结束", "run_not_active", 409)
+        row.execution_config = {**row.execution_config, "skills": skills}
+        await self.session.commit()
 
     async def heartbeat(self, conversation_id: str, run_id: str) -> RunOut:
         row = await self.get(conversation_id, run_id)

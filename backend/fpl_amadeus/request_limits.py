@@ -35,3 +35,21 @@ class AmadeusRequestLimits:
             return message
 
         await self.app(scope, bounded_receive, send)
+
+
+class AmadeusNativeRequestLimits:
+    def __init__(self, app):
+        self.normal = RequestLimit(app, prefix="/_native/", maximum=512 * 1024)
+        self.dialogue = RequestLimit(app, prefix="/_native/v1/dialogue/", maximum=2 * 1024 * 1024)
+        self.receipt = RequestLimit(
+            app, prefix="/_native/v1/receipt", maximum=8 * 1024 * 1024, exact=True
+        )
+
+    async def __call__(self, scope, receive, send):
+        path = scope.get("path", "")
+        if path.startswith("/_native/v1/dialogue/"):
+            await self.dialogue(scope, receive, send)
+        elif path == "/_native/v1/receipt":
+            await self.receipt(scope, receive, send)
+        else:
+            await self.normal(scope, receive, send)

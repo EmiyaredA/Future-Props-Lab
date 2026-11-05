@@ -514,19 +514,19 @@
   display: none;
 }
 
-@media (max-width: 1119px) {
+@container amadeus-window (width < 1120px) {
   .amadeus-execution-inspector {
     position: absolute;
     z-index: 12;
     top: 0;
     right: 0;
     bottom: 0;
-    width: min(360px, calc(100vw - 32px));
+    width: min(360px, calc(100cqw - 32px));
     box-shadow: -15px 0 35px rgb(25 20 17 / 18%);
   }
 }
 
-@media (max-width: 700px) {
+@container amadeus-window (width < 700px) {
   .amadeus-side-rail {
     display: none;
   }
@@ -537,7 +537,7 @@
     bottom: 0;
     left: 0;
     display: flex;
-    width: min(300px, calc(100vw - 60px));
+    width: min(300px, calc(100cqw - 60px));
     box-shadow: 15px 0 35px rgb(25 20 17 / 18%);
   }
   .amadeus-rail-close {

@@ -248,7 +248,7 @@ class Conversations:
         await self.session.commit()
         return await self.detail(identity)
 
-    async def propose(self, identity: str, body: ActionIn) -> ActionOut:
+    async def propose(self, identity: str, body: ActionIn, *, commit=True) -> ActionOut:
         await self._get(identity)
         if body.run_id:
             run = await self.session.scalar(
@@ -274,7 +274,10 @@ class Conversations:
             run_id=body.run_id,
         )
         self.session.add(row)
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
+        else:
+            await self.session.flush()
         return ActionOut(
             id=row.id,
             tool_name=row.tool_name,

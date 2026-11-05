@@ -6,6 +6,8 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from .amadeus_native import RUN_SOURCE
+
 ID = r"[A-Za-z0-9_-]{1,128}"
 VERSION = r"v[1-9][0-9]{0,22}"
 SKILL_SOURCE = "/_internal/v1/amadeus-skill-pins"
@@ -32,7 +34,13 @@ def skill_pin_grant(grant):
         return False
     source = SOURCE.fullmatch(grant.source_path)
     target = pin_target(grant.target_method, grant.target_path)
-    return bool(source and target and source["skill"] == target["skill"])
+    return bool(
+        target
+        and (
+            (source and source["skill"] == target["skill"])
+            or RUN_SOURCE.fullmatch(grant.source_path)
+        )
+    )
 
 
 class SkillPin(BaseModel):

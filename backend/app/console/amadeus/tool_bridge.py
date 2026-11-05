@@ -5,7 +5,6 @@ import secrets
 from pathlib import Path
 
 import httpx
-from jsonschema import ValidationError, validate
 
 from app.console.amadeus.conversations import Conversations
 from app.console.amadeus.files import list_files, read_file_bytes
@@ -14,103 +13,11 @@ from app.console.amadeus.questions import Questions
 from app.console.amadeus.runs import Runs
 from app.console.amadeus.schemas import ActionIn, QuestionIn
 from app.console.amadeus.skills import read_skill_file
+from app.console.amadeus.tool_contracts import TOOLS as TOOLS
+from app.console.amadeus.tool_contracts import validate_tool
 from app.console.governance.code_agents import resolve
 from app.runtime.operation_receipts import OperationError
 from app.runtime.ownership import bind_owner
-
-
-def definition(name, description, properties=None, required=()):
-    return {
-        "name": name,
-        "description": description,
-        "inputSchema": {
-            "type": "object",
-            "properties": properties or {},
-            "required": list(required),
-            "additionalProperties": False,
-        },
-    }
-
-
-TOOLS = [
-    definition(
-        "operations",
-        "Discover registered operations; filter resource to get full request schemas",
-        {"resource": {"type": "string"}},
-    ),
-    definition(
-        "present_artifact",
-        "Present a plan or draft as an editable review card; this does not execute it",
-        {
-            "kind": {"type": "string", "enum": ["plan", "draft"]},
-            "title": {"type": "string", "minLength": 1, "maxLength": 200},
-            "body": {"type": "string", "minLength": 1, "maxLength": 100000},
-            "steps": {
-                "type": "array",
-                "maxItems": 30,
-                "items": {
-                    "type": "object",
-                    "properties": {"title": {"type": "string"}, "detail": {"type": "string"}},
-                    "required": ["title", "detail"],
-                    "additionalProperties": False,
-                },
-            },
-        },
-        ("kind", "title", "body", "steps"),
-    ),
-    definition(
-        "call",
-        "Read or propose a registered project operation. "
-        "Writes require owner approval; stop after a proposal.",
-        {"operation": {"type": "string"}, "arguments": {"type": "object"}},
-        ("operation", "arguments"),
-    ),
-    definition("files", "List this conversation's files and hashes"),
-    definition(
-        "read_file",
-        "Read a conversation UTF-8 file or view an image",
-        {"kind": {"type": "string"}, "name": {"type": "string"}},
-        ("kind", "name"),
-    ),
-    definition(
-        "write_file",
-        "Propose writing an output file. Requires approval and the existing SHA256 on replacement.",
-        {
-            "name": {"type": "string"},
-            "content": {"type": "string"},
-            "expected_sha256": {"type": "string"},
-        },
-        ("name", "content"),
-    ),
-    definition(
-        "ask_user",
-        "Ask the owner a question, then stop this turn",
-        {
-            "prompt": {"type": "string"},
-            "options": {"type": "array", "items": {"type": "string"}},
-            "allow_text": {"type": "boolean"},
-        },
-        ("prompt",),
-    ),
-    definition(
-        "skill",
-        "Load an explicitly selected Skill or read one of its UTF-8 files",
-        {"id": {"type": "string"}, "version": {"type": "string"}, "path": {"type": "string"}},
-        ("id",),
-    ),
-    definition("integrations", "List explicitly selected Tool API and MCP capabilities"),
-    definition(
-        "integration",
-        "Propose invoking a selected integration. Requires revision and owner approval.",
-        {
-            "id": {"type": "string"},
-            "tool": {"type": "string"},
-            "revision": {"type": "integer"},
-            "input": {"type": "object"},
-        },
-        ("id", "revision", "input"),
-    ),
-]
 
 
 class ToolBridge:
@@ -137,12 +44,7 @@ class ToolBridge:
     async def call(self, name, args):
         if self.closed:
             raise OperationError("任务工具授权已失效", "run_not_active", 409)
-        if name not in {t["name"] for t in TOOLS} or not isinstance(args, dict):
-            raise OperationError("工具参数无效")
-        try:
-            validate(args, next(t["inputSchema"] for t in TOOLS if t["name"] == name))
-        except ValidationError:
-            raise OperationError("工具参数与契约不匹配", "invalid_arguments", 422) from None
+        validate_tool(name, args)
         # All reads also reauthenticate through the official session boundary.
         await self.api(f"/v1/amadeus/conversations/{self.run.conversation_id}")
         async with self.sessions() as session:
@@ -270,6 +172,7 @@ class ToolBridge:
             action = await Conversations(session, self.principal).propose(
                 row.conversation_id,
                 ActionIn(tool_name=action_name, arguments=arguments, run_id=row.id),
+                commit=False,
             )
             await Runs(session, self.principal).pause_for_approval(row.conversation_id, row.id)
             self.paused.set()

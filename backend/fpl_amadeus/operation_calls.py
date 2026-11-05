@@ -6,6 +6,7 @@ import httpx
 
 from app.console.amadeus.fpl_operations import RESPONSE_LIMIT, operation_request, operation_result
 from app.runtime.operation_receipts import OperationError
+from fpl_runtime.amadeus_native import RUN_SOURCE
 from fpl_runtime.approved_operations import MAX_BODY, PURPOSE, request_digest
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
 from fpl_runtime.claims import HEADER
@@ -33,9 +34,12 @@ async def call_registered(capabilities, assertion, source_path, operation, argum
         raise OperationError("操作参数无效", "invalid_arguments", 422) from exc
     if len(content) > MAX_BODY:
         raise OperationError("操作正文过大", "request_too_large", 413)
+    read_purpose = (
+        "amadeus.dialogue.read" if RUN_SOURCE.fullmatch(source_path) else "amadeus.operation.read"
+    )
     grant = RequestGrant(
         "amadeus",
-        PURPOSE if approved else "amadeus.operation.read",
+        PURPOSE if approved else read_purpose,
         "POST",
         source_path,
         owner.service,

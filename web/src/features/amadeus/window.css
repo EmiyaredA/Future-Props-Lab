@@ -1,4 +1,5 @@
 .amadeus-window {
+  container: amadeus-window / inline-size;
   height: 100%;
   display: flex;
   flex-direction: column;

@@ -483,7 +483,11 @@ def prepare_image(root: Path, service: str, *, web_release=None):
     definition = (
         root
         / "deploy/images"
-        / ("owned-http" if service in OWNED_HTTP_IMAGES and service != "remote" else service)
+        / (
+            "owned-http"
+            if service in OWNED_HTTP_IMAGES and service not in {"remote", "amadeus"}
+            else service
+        )
     )
     generated = subprocess.run(
         [
@@ -502,6 +506,8 @@ def prepare_image(root: Path, service: str, *, web_release=None):
         capture_output=True,
     ).stdout
     dockerfile = definition / ("Dockerfile.galgame" if service == "galgame" else "Dockerfile")
+    if service == "amadeus":
+        dockerfile = root / "deploy/images/owned-http/Dockerfile"
     payloads = {str(path.relative_to(root)): path.read_bytes() for path in sources.values()}
     payloads.update(
         {

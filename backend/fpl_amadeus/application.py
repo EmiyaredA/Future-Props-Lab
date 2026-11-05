@@ -27,20 +27,23 @@ from fpl_runtime.identity_client import LiveAuthorization
 from fpl_runtime.locking import service_lock
 from fpl_runtime.migrations import check
 from fpl_runtime.native_ingress import NativeIngress
-from fpl_runtime.request_limit import RequestLimit
+from fpl_runtime.protocol_hash import public_contract
 
 from .action_execution import ActionExecution
 from .action_http import router as action_router
 from .action_records import recover_actions
+from .dialogue_http import router as dialogue_router
+from .dialogue_runs import DialogueRuns
 from .file_http import router as file_router
 from .migrations.registry import MIGRATIONS
 from .models import MODELS
 from .native_host import AmadeusHost
 from .native_http import native as native_router
 from .native_http import public as host_router
+from .operation_http import published_catalog
 from .operation_http import router as operation_router
 from .record_http import router
-from .request_limits import AmadeusRequestLimits
+from .request_limits import AmadeusNativeRequestLimits, AmadeusRequestLimits
 from .skill_http import router as skill_router
 from .tool_calls import ToolCalls
 
@@ -79,6 +82,7 @@ def create_app(*, state_root, catalog, public_key, credential, transport=None, n
     file_locks = WeakValueDictionary()
     tools = ToolCalls(capabilities, credential, transport)
     actions = ActionExecution(database, identity, capabilities, file_locks, tools, host)
+    runs = DialogueRuns(database, identity, capabilities, host, actions, file_locks)
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -90,6 +94,7 @@ def create_app(*, state_root, catalog, public_key, credential, transport=None, n
                     await host.recover()
                 yield
             finally:
+                await runs.close()
                 await actions.close()
                 await tools.close()
                 await identity.close()
@@ -103,6 +108,7 @@ def create_app(*, state_root, catalog, public_key, credential, transport=None, n
     app.state.capabilities = capabilities
     app.state.file_locks = file_locks
     app.state.actions = actions
+    app.state.runs = runs
     app.state.native_host = host
     app.include_router(router)
     app.include_router(file_router)
@@ -110,17 +116,10 @@ def create_app(*, state_root, catalog, public_key, credential, transport=None, n
     app.include_router(skill_router)
     app.include_router(host_router)
     app.include_router(action_router)
+    app.include_router(dialogue_router)
     if host is not None:
         app.include_router(native_router)
-    app.add_middleware(
-        RequestLimit, prefix="/_native/v1/receipt", maximum=8 * 1024 * 1024, exact=True
-    )
-    app.add_middleware(
-        RequestLimit,
-        prefix="/_native/",
-        maximum=512 * 1024,
-        streaming_prefix="/_native/v1/receipt",
-    )
+    app.add_middleware(AmadeusNativeRequestLimits)
     app.add_middleware(NativeIngress, options=native_options, state_key="amadeus_worker")
     app.add_middleware(AmadeusRequestLimits)
     app.add_middleware(SignedIdentity, service="amadeus", public_key=public_key, catalog=catalog)
@@ -141,6 +140,22 @@ def create_app(*, state_root, catalog, public_key, credential, transport=None, n
 
     @app.get("/ready")
     async def ready():
-        raise HTTPException(503, "amadeus_execution_assembly_incomplete")
+        if host is None or not host.dialogue_ready:
+            raise HTTPException(503, "amadeus_cli_worker_unavailable")
+        return {"status": "ok", "service": "amadeus"}
 
+    schema = app.openapi()
+    actual = {
+        (method.upper(), path)
+        for path, ops in schema["paths"].items()
+        if path.startswith("/v1/")
+        for method in ops
+    }
+    expected = {
+        (item.method, item.path) for item in catalog.operations if item.service == "amadeus"
+    }
+    if actual != expected or public_contract(schema, "amadeus", catalog) != public_contract(
+        published_catalog(), "amadeus", catalog
+    ):
+        raise ValueError("Amadeus 公开接口与安装契约不匹配")
     return app

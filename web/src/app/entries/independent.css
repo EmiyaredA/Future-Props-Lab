@@ -77,6 +77,13 @@
   .independent-account {
     gap: 8px;
   }
+  .independent-assistant {
+    min-width: 32px;
+    padding-inline: 6px;
+  }
+  .independent-assistant span {
+    display: none;
+  }
   .independent-account .theme-toggle span {
     display: none;
   }

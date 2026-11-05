@@ -4,6 +4,8 @@ import { AccountMenu } from "@features/accounts/AccountMenu";
 import { AccountPanel } from "@features/accounts/AccountPanel";
 import { useStudioSession } from "@app/StudioSession";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
+import { Button } from "@shared/ui/button";
+import { Sparkles } from "lucide-react";
 import { ApplicationUpdate } from "./ApplicationUpdate";
 import { BrandMark } from "@shared/ui/BrandMark";
 
@@ -13,9 +15,11 @@ import { guardedNavigation } from "./navigation";
 export function IndependentShell({
   title,
   children,
+  openAssistant,
 }: {
   title: string;
   children: ReactNode;
+  openAssistant?: () => void;
 }) {
   const session = useStudioSession();
   const canUseCloudControl = useAccountPermission("cloud-control.access");
@@ -59,6 +63,18 @@ export function IndependentShell({
             </a>
           </nav>
           <div className="independent-account">
+            {openAssistant && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="independent-assistant"
+                aria-label="打开 Amadeus"
+                onClick={openAssistant}
+              >
+                <Sparkles size={16} aria-hidden />
+                <span>Amadeus</span>
+              </Button>
+            )}
             <ThemeToggle compact />
             <AccountMenu session={session} />
           </div>

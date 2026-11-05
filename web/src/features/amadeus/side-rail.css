@@ -230,14 +230,14 @@
   font-size: 15px;
 }
 
-@media (max-width: 720px) {
+@container amadeus-window (max-width: 720px) {
   .amadeus-stage {
     position: absolute;
     z-index: 10;
     top: 0;
     right: 0;
     bottom: 0;
-    width: min(260px, 65vw);
+    width: min(260px, 65cqw);
     box-shadow: -18px 0 36px rgb(0 0 0 / 22%);
   }
 }

@@ -7,6 +7,8 @@ import { ApplicationCenterRoute } from "@features/applications/ApplicationCenter
 import { APPLICATION_DEFINITIONS } from "@features/applications/definitions";
 import { AGENT_WORKBENCH_MODULE as workbench } from "@features/agent-workbench/module";
 import { CloudControlPage } from "@features/cloud-control/CloudControlPage";
+import { AmadeusPageProvider } from "@features/amadeus/PageProvider";
+import { openAmadeus } from "@platform/assistant";
 import { IndependentShell } from "./IndependentShell";
 import { guardedNavigation } from "./navigation";
 import "./portal.css";
@@ -22,7 +24,10 @@ function PortalContents() {
   const open = (path: string) =>
     guardedNavigation(() => window.location.assign(path), true);
   return (
-    <IndependentShell title="Future Props Lab">
+    <IndependentShell
+      title="Future Props Lab"
+      openAssistant={canRead ? openAmadeus : undefined}
+    >
       <div className="portal-scroll">
         {/^\/cloud-control\/?$/.test(location.pathname) ? (
           <CloudControlPage
@@ -54,9 +59,12 @@ function PortalContents() {
 }
 
 export default function PortalApplication() {
+  const session = useStudioSession();
   return (
     <RuntimeAccessProvider>
-      <PortalContents />
+      <AmadeusPageProvider key={session.me.user.id} session={session}>
+        <PortalContents />
+      </AmadeusPageProvider>
     </RuntimeAccessProvider>
   );
 }

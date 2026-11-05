@@ -54,18 +54,33 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
   const [renaming, setRenaming] = useState(false);
   const renameInputRef = useRef<HTMLInputElement>(null);
   const historyListRef = useRef<HTMLDivElement>(null);
-  const wasWide = useRef(window.innerWidth >= 700);
+  const frame = useRef<HTMLDivElement>(null);
+  const railFits = useRef(window.innerWidth >= 700);
+  const inspectorFits = useRef(window.innerWidth >= 1120);
   useEffect(() => {
+    const element = frame.current;
+    if (!element) return;
     const onResize = () => {
-      const wide = window.innerWidth >= 700;
-      if (wide !== wasWide.current) {
-        wasWide.current = wide;
-        setRailOpen(wide);
+      const width = element.clientWidth || window.innerWidth;
+      const nextRail = width >= 700;
+      const nextInspector = width >= 1120;
+      if (railFits.current !== nextRail) {
+        railFits.current = nextRail;
+        setRailOpen(nextRail);
       }
-      if (window.innerWidth < 1120) setInspectorOpen(false);
+      if (inspectorFits.current !== nextInspector) {
+        inspectorFits.current = nextInspector;
+        if (!nextInspector) setInspectorOpen(false);
+      }
     };
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    onResize();
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", onResize);
+      return () => window.removeEventListener("resize", onResize);
+    }
+    const observer = new ResizeObserver(onResize);
+    observer.observe(element);
+    return () => observer.disconnect();
   }, []);
   const historyRegionId = useId();
   const appearance = useAppearance(session);
@@ -185,7 +200,7 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     }
   };
   return (
-    <div className="amadeus-window">
+    <div ref={frame} className="amadeus-window">
       <header className="amadeus-header">
         <div className="amadeus-brand">
           <AmadeusAvatar

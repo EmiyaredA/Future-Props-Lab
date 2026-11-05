@@ -3,6 +3,7 @@
 import re
 from dataclasses import dataclass
 
+from .amadeus_native import RUN_SOURCE
 from .amadeus_skills import skill_pin_grant
 from .annotation_assets import audio_asset_grant
 from .annotation_task_sources import task_read_grant, task_upload_grant
@@ -303,11 +304,20 @@ def permitted(grant, catalog):
         return False
     if _automation_lookup(grant):
         return True
-    if grant.purpose == "amadeus.operation.read":
+    if grant.purpose in {"amadeus.operation.read", "amadeus.dialogue.read"}:
         return (
             grant.caller == "amadeus"
             and grant.source_method == "POST"
-            and grant.source_path == "/v1/amadeus/operations/read"
+            and (
+                (
+                    grant.purpose == "amadeus.operation.read"
+                    and grant.source_path == "/v1/amadeus/operations/read"
+                )
+                or (
+                    grant.purpose == "amadeus.dialogue.read"
+                    and RUN_SOURCE.fullmatch(grant.source_path)
+                )
+            )
             and grant.target_method == "GET"
             and "GET " + destination.path in automation_manifest()["operations"]
         )

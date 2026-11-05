@@ -8,7 +8,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.console.amadeus.conversations import Conversations
 from app.console.amadeus.files import work_root
-from fpl_runtime.amadeus_native import AmadeusPoll, FinderScope
+from app.console.amadeus.schemas import RunEventIn
+from app.runtime.operation_receipts import OperationError
+from fpl_runtime.amadeus_native import AmadeusPoll, DialogueToolInput, FinderScope
 from fpl_runtime.http_dependencies import SessionDep, StudioAuth
 from fpl_runtime.native_protocol import NativeLease, NativeOutcome
 
@@ -66,10 +68,10 @@ async def files_open_folder(
 @native.post("/claim")
 async def claim(request: Request, body: AmadeusPoll):
     host, worker = request.app.state.native_host, request.state.amadeus_worker
-    lease = await host.claim(worker, body.sandbox_available)
+    lease = await host.claim(worker, body)
     if lease is None and body.wait_seconds:
         await asyncio.sleep(body.wait_seconds)
-        lease = await host.claim(worker, body.sandbox_available)
+        lease = await host.claim(worker, body)
     return {"lease": lease}
 
 
@@ -101,3 +103,40 @@ async def heartbeat(request: Request, body: Leased):
 async def output(request: Request, body: ScriptOutput):
     await request.app.state.native_host.output(request.state.amadeus_worker, body.lease, body.text)
     return {"accepted": True}
+
+
+class DialogueEvent(Leased):
+    event: RunEventIn
+
+
+class DialogueTool(Leased):
+    tool: DialogueToolInput
+
+
+@native.post("/dialogue/plan")
+async def dialogue_plan(request: Request, body: Leased):
+    turn = await request.app.state.native_host.dialogue_turn(
+        request.state.amadeus_worker, body.lease
+    )
+    return {"prompt": turn.prompt}
+
+
+@native.post("/dialogue/event")
+async def dialogue_event(request: Request, body: DialogueEvent):
+    turn = await request.app.state.native_host.dialogue_turn(
+        request.state.amadeus_worker, body.lease
+    )
+    await turn.append(body.event)
+    return {"accepted": True}
+
+
+@native.post("/dialogue/tool")
+async def dialogue_tool(request: Request, body: DialogueTool):
+    turn = await request.app.state.native_host.dialogue_turn(
+        request.state.amadeus_worker, body.lease
+    )
+    try:
+        value = await turn.call(body.tool.name, body.tool.arguments)
+    except OperationError as exc:
+        return {"ok": False, "code": exc.code, "message": str(exc)}
+    return {"ok": True, **value.model_dump(mode="json")}

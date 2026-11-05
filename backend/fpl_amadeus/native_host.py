@@ -8,15 +8,26 @@ from anyio import CancelScope
 from fastapi import HTTPException
 from sqlalchemy import select, update
 
+from app.runtime.operation_receipts import OperationError
 from app.runtime.time import utc_now
-from fpl_runtime.amadeus_native import FINDER, SCRIPT, FinderScope, ScriptResult, ScriptScope
+from fpl_runtime.amadeus_native import (
+    DIALOGUE,
+    FINDER,
+    SCRIPT,
+    AmadeusPoll,
+    DialogueScope,
+    FinderScope,
+    ScriptResult,
+    ScriptScope,
+)
 from fpl_runtime.native_queue import NativeQueue, NativeQueueError
 
 from .models import AmadeusNativeJob
 
 WINDOW = 8
 SCRIPT_WINDOW = 135
-OPERATIONS = frozenset({FINDER, SCRIPT})
+DIALOGUE_WINDOW = 920
+OPERATIONS = frozenset({FINDER, SCRIPT, DIALOGUE})
 ERRORS = {"authorization_revoked": 403, "folder_missing": 409, "folder_open_unavailable": 503}
 
 
@@ -25,6 +36,7 @@ class Authority:
     assertion: str
     path: str
     output: object = None
+    dialogue: object = None
 
 
 class AmadeusHost:
@@ -35,7 +47,7 @@ class AmadeusHost:
         self.workers = {}
 
     def current_worker(self, worker):
-        return monotonic() - self.workers.get(worker, (float("-inf"), False))[0] < 12
+        return monotonic() - self.workers.get(worker, (float("-inf"), None))[0] < 12
 
     @property
     def ready(self):
@@ -44,8 +56,32 @@ class AmadeusHost:
     @property
     def sandbox(self):
         return any(
-            enabled and self.current_worker(worker) for worker, (_, enabled) in self.workers.items()
+            report.sandbox_available and self.current_worker(worker)
+            for worker, (_, report) in self.workers.items()
         )
+
+    @property
+    def dialogue_ready(self):
+        return any(
+            report.dialogue and self.current_worker(worker)
+            for worker, (_, report) in self.workers.items()
+        )
+
+    async def connection(self, agent):
+        signatures = {
+            report.agents[agent]
+            for worker, (_, report) in self.workers.items()
+            if report.dialogue and self.current_worker(worker) and agent in report.agents
+        }
+        if len(signatures) != 1:
+            raise OperationError("Agent 尚未配置或不可用", "agent_unavailable", 409)
+        return signatures.pop()
+
+    async def dialogue(self, owner, scope: DialogueScope, assertion, path, run):
+        if path != scope.path:
+            raise HTTPException(403, "dialogue_authorization_required")
+        authority = Authority(assertion, path, dialogue=run)
+        return await self.run(owner, DIALOGUE, scope, authority, DIALOGUE_WINDOW)
 
     async def open(self, owner, scope: FinderScope, assertion):
         outcome = await self.run(owner, FINDER, scope, Authority(assertion, scope.path), WINDOW)
@@ -66,7 +102,11 @@ class AmadeusHost:
         return result
 
     async def run(self, owner, operation, scope, authority, timeout):
-        if not self.ready or (operation == SCRIPT and not self.sandbox):
+        if (
+            not self.ready
+            or (operation == SCRIPT and not self.sandbox)
+            or (operation == DIALOGUE and not self.dialogue_ready)
+        ):
             raise HTTPException(503, "amadeus_mac_worker_unavailable")
         status = await self.identity.status(
             assertion=authority.assertion, method="POST", path=authority.path
@@ -119,11 +159,14 @@ class AmadeusHost:
                 )
             await session.commit()
 
-    async def claim(self, worker, sandbox):
-        self.workers[worker] = (monotonic(), sandbox)
-        return await self.queue.claim(
-            worker_id=worker, allowed_operations=OPERATIONS if sandbox else {FINDER}
-        )
+    async def claim(self, worker, report: AmadeusPoll):
+        self.workers[worker] = (monotonic(), report)
+        operations = {FINDER}
+        if report.sandbox_available:
+            operations.add(SCRIPT)
+        if report.dialogue:
+            operations.add(DIALOGUE)
+        return await self.queue.claim(worker_id=worker, allowed_operations=operations)
 
     async def match(self, worker, lease, *, active):
         async with self.database.sessions(info={"owner_user_id": lease.owner_user_id}) as session:
@@ -149,7 +192,10 @@ class AmadeusHost:
             raise HTTPException(403, "native_authorization_ended")
         if self.requests.get(key) is not authority:
             raise HTTPException(403, "native_authorization_ended")
-        self.workers[worker] = (monotonic(), self.workers.get(worker, (0, False))[1])
+        if authority.dialogue is not None:
+            await authority.dialogue.require_running()
+        if worker in self.workers:
+            self.workers[worker] = (monotonic(), self.workers[worker][1])
         return authority
 
     async def heartbeat(self, worker, lease):
@@ -164,6 +210,14 @@ class AmadeusHost:
         if authority.output is not None:
             authority.output(text)
 
+    async def dialogue_turn(self, worker, lease):
+        if lease.operation != DIALOGUE:
+            raise HTTPException(403, "dialogue_lease_required")
+        authority = await self.authorize(worker, lease)
+        if authority.dialogue is None:
+            raise HTTPException(403, "dialogue_authorization_required")
+        return authority.dialogue
+
     async def settle(self, worker, lease, outcome):
         await self.match(worker, lease, active=False)
         if outcome.status == "completed":
@@ -171,6 +225,8 @@ class AmadeusHost:
                 set(outcome.result) != {"opened"} or outcome.result["opened"] is not True
             ):
                 raise HTTPException(422, "folder_open_receipt_invalid")
+            if lease.operation == DIALOGUE and outcome.result:
+                raise HTTPException(422, "dialogue_receipt_invalid")
             if lease.operation == SCRIPT:
                 try:
                     ScriptResult.model_validate(outcome.result)
