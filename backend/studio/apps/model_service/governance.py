@@ -46,7 +46,7 @@ async def patch_quotas(request: Request, session: SessionDep, body: RuntimeQuota
 )
 async def template(role: PlatformRole, request: Request, session: SessionDep):
     await browser(request, session, admin=True)
-    return await RoleTemplates(session).view(role)
+    return await RoleTemplates(session).view(role, cipher=request.app.state.model_template_cipher)
 
 
 @router.put(
@@ -58,7 +58,14 @@ async def put_template(
     role: PlatformRole, request: Request, session: SessionDep, body: RoleModelTemplateIn
 ):
     principal = await browser(request, session, admin=True)
-    return await save_template(session, principal, role, body, request_audits(request))
+    return await save_template(
+        session,
+        principal,
+        role,
+        body,
+        request_audits(request),
+        cipher=request.app.state.model_template_cipher,
+    )
 
 
 @router.post(

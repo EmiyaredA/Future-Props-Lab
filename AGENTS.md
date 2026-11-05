@@ -145,6 +145,9 @@
   只读浏览页面由各功能模块拥有，账号查询键由 `features/accounts/queryKeys.ts` 唯一维护。
 - 模型模板同步、运行额度和演示配置属于 `studio/apps/model_service/`；兼容网站按已登记设置键
   读写原表，不转移存储归属。演示执行组件不依赖账号治理或模型目录，由装配注入配置读取。
+- 原平台设置表的通用记录和 CAS 机制在 `studio/runtime/database/settings_*`；键归属由
+  `studio/contracts/management/setting_owners.py` 登记，应用存储适配限定可访问分区。
+  原语不自行提交，授权、业务写入和审计仍在调用者完整事务内；模板加密器由两种装配显式传入。
 - Web 不保存密码、Session、CSRF 或 Management API Key 明文；Session 只使用 HttpOnly Cookie，
   写请求统一携带可读 CSRF Cookie 对应的请求头。API Key 明文和临时密码只允许展示一次。
 - 修改安装、启动、环境变量、依赖或目录路径时，同步检查根与 Web 的 `package.json`、

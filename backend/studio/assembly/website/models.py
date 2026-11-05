@@ -15,7 +15,6 @@ from app.console.amadeus.models import (
 )
 from app.console.cloud_control.models import CloudFactor, CloudUnlock
 from app.console.cloud_control.preference_models import DesktopPreference
-from app.console.models.platform_governance import PlatformSetting
 from studio.apps.agent_workbench.execution.models import (
     WorkbenchChat,
     WorkbenchProject,
@@ -173,6 +172,7 @@ from studio.apps.visual_workshop.storage.models import (
 from studio.runtime.database.orm_base import Base
 from studio.runtime.database.ownership import TenantScopeError, bind_owner, require_owner_id
 from studio.runtime.database.project_operations import ProjectOperationReceipt
+from studio.runtime.database.settings_models import PlatformSetting
 
 # Catalog types for capabilities that must not import studio.apps.model_service.
 CATALOG_MODELS: dict[str, type] = {

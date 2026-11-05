@@ -9,6 +9,7 @@ from pathlib import Path
 from studio.config import FIELDS
 from studio.contracts.gateway.catalog import SERVICES, service_by_id
 from studio.contracts.gateway.routing import SOCKET_OPERATIONS, Operation, RouteCatalog
+from studio.contracts.management.setting_owners import KEY_OWNERS, PREFIX_OWNERS
 
 APP_OWNERS = {
     "agent_workbench": "agents",
@@ -167,7 +168,7 @@ def table_owner(module, table):
         return "creative"
     if module in {
         "studio.apps.identity.storage.models.accounts",
-        "app.console.models.platform_governance",
+        "studio.runtime.database.settings_models",
     }:
         # Platform settings are explicitly partitioned by key during transfer.
         return "identity"
@@ -312,12 +313,8 @@ def document(root):
         "configuration": configuration_owners(),
         "partitions": {
             "platform_settings": {
-                "keys": {"runtime_quotas": "models", "code_agents": "agent-runtime"},
-                "prefixes": {
-                    "role_template:": "models",
-                    "demo_service:": "models",
-                    "account_defaults:": "models",
-                },
+                "keys": dict(KEY_OWNERS),
+                "prefixes": dict(PREFIX_OWNERS),
                 "unassigned": "reject",
             },
             "project_operation_receipts": "resource_kind",

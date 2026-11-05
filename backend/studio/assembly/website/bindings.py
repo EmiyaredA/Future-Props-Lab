@@ -52,9 +52,9 @@ from studio.apps.thought_workshop.legacy_asset_metadata import LegacyAssetMetada
 from studio.apps.thought_workshop.legacy_writing import LegacyWritingModels
 from studio.apps.thought_workshop.website.account_directory import DirectoryBindings
 from studio.apps.thought_workshop.writing import WritingBindings
-from studio.apps.tools.video_downloads.local_jobs import VideoDownloads
 from studio.apps.tools.storage.navigation import NavigationRecords
 from studio.apps.tools.use_cases.navigation import ToolNavigation
+from studio.apps.tools.video_downloads.local_jobs import VideoDownloads
 from studio.apps.video_editor.assistant_operations import apply_assistant_timeline_batch
 from studio.apps.video_editor.legacy_project_layouts import LegacyVideoLayouts
 from studio.apps.video_editor.legacy_timeline_assets import LegacyTimelineAssets
@@ -70,12 +70,14 @@ from studio.config.settings import get_cloud_settings
 from studio.host.project_files.video_dependencies import probe_deps
 from studio.host.project_files.video_execution import _run_yt_dlp
 from studio.runtime.http.rate_limit import AttemptLimiter
+from studio.runtime.secrets import SecretCipher
 from studio.runtime.time import utc_now
 
 
 def bind_components(app, settings, database):
     bind_creative(app, settings)
     app.state.auth_attempts = AttemptLimiter()
+    app.state.model_template_cipher = SecretCipher(settings.fpl_secrets_key)
     app.state.developer_documents = DeveloperDocuments(InstalledDocuments(REPO_ROOT))
     app.state.resource_links = lambda _request, session, _principal: ResourceLinks(
         WebsiteResources(session, AUTOMATION_ROOTS)

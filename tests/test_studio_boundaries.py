@@ -317,3 +317,20 @@ for name in sys.modules:
         'studio.host.', 'sqlalchemy', 'fastapi', 'PIL', 'httpx')), name
 """
     subprocess.run([sys.executable, "-c", code], cwd=ROOT / "backend", check=True)
+
+
+def test_compatibility_settings_are_not_application_internal_models():
+    assert not (ROOT / "backend/app/console/models/platform_governance.py").exists()
+    assert not (ROOT / "backend/app/console/governance/settings_records.py").exists()
+    assert not (ROOT / "backend/app/console/governance/platform_settings.py").exists()
+    assert (STUDIO / "runtime/database/settings_models.py").is_file()
+    consumers = [
+        p
+        for p in STUDIO.rglob("*.py")
+        if "studio.runtime.database.settings_models" in p.read_text()
+    ]
+    assert {p.relative_to(STUDIO).as_posix() for p in consumers} == {
+        "runtime/database/settings_records.py",
+        "assembly/website/models.py",
+        "deployment/contracts.py",
+    }

@@ -2,7 +2,6 @@
 
 from sqlalchemy import and_, func, or_, select, text
 
-from app.console.governance.settings_records import read_setting
 from studio.apps.identity.storage.models.accounts import User
 from studio.apps.model_service.admission.website_quotas import (
     TASK_MODELS,
@@ -13,6 +12,7 @@ from studio.apps.model_service.admission.website_quotas import (
 )
 from studio.apps.model_service.storage.models.model_service import ModelEntry
 from studio.apps.model_service.storage.models.runtime_admission import RuntimeAdmission as Admission
+from studio.apps.model_service.storage.website_settings import read_setting
 from studio.contracts.identity.errors import AccountError
 from studio.contracts.model_service.schemas.runtime_quotas import RuntimeQuotas
 from studio.runtime.time import utc_now

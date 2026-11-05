@@ -121,6 +121,7 @@ from studio.runtime.http.problem_details import (
 from studio.runtime.http.request_limit import RequestLimit
 from studio.runtime.messaging.timed_peer import TimedPeer
 from studio.runtime.revisions import RevisionConflictError
+from studio.runtime.secrets import SecretCipher
 from studio.runtime.tasks.polling import RunnerSupervisor
 
 
@@ -297,6 +298,7 @@ def create_app(
     app.state.integration_intents = integration_intents
     app.state.service_id = "models"
     app.state.settings, app.state.database = settings, database
+    app.state.model_template_cipher = SecretCipher(settings.fpl_secrets_key)
     app.state.identity_public_key, app.state.identity = public_key, identity
     app.state.capabilities = capabilities
     app.state.visual_generation_peer = (

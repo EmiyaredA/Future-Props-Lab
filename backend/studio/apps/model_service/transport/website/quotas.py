@@ -2,9 +2,9 @@
 
 from fastapi import APIRouter, Request
 
-from app.console.governance.platform_settings import write_setting
-from app.console.governance.settings_records import read_setting
 from studio.apps.identity.transport.website.auth import _platform_auth
+from studio.apps.model_service.storage.website_policy import write_setting
+from studio.apps.model_service.storage.website_settings import read_setting
 from studio.assembly.http_dependencies import SessionDep, client_ip
 from studio.contracts.model_service.schemas.runtime_quotas import (
     RuntimeQuotas,

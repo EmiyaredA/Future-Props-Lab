@@ -1,7 +1,5 @@
 from sqlalchemy import select
 
-from app.console.governance.platform_settings import write_setting
-from app.console.governance.settings_records import read_setting
 from app.runtime.credentials import encrypt_secret
 from studio.apps.identity.credentials.operations import add_audit_event
 from studio.apps.identity.storage.governance import begin_governance
@@ -12,6 +10,8 @@ from studio.apps.model_service.demonstration.execution import (
     SERVICE_IDS,
 )
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
+from studio.apps.model_service.storage.website_policy import write_setting
+from studio.apps.model_service.storage.website_settings import read_setting
 from studio.contracts.identity.errors import AccountError
 from studio.contracts.model_service.demo import MOCK_BASE_URL, TOOL_BASE_URL
 

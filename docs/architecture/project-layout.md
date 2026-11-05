@@ -746,7 +746,10 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 
 ## 平台治理补充职责
 
-- `console/governance/settings_records.py` 读取持久设置，`platform_settings.py` 拥有配置 CAS，`registration.py` 拥有邀请码名额和注册事务。
+- `studio/runtime/database/settings_models.py` 保留原平台设置表结构，`settings_records.py` 提供键分区、脱离 ORM 的快照与不自行提交的 CAS 原语。
+  键归属真源为 `studio/contracts/management/setting_owners.py`，部署清单消费同一注册表；
+  `apps/model_service/storage/website_settings.py` 限制模型分区，`website_policy.py` 保持授权、设置写入和审计的同一事务。
+  模板输入加密与输出掩码只使用装配提供的 `TemplateCipher`；邀请码名额和注册事务仍归 Identity。
 - `studio/apps/model_service/templates/website.py`、`website_sync.py` 拥有角色模板、预览和逐账号持久同步；保留自建资源，管理员预览不暴露私人目录名称。
 - `code_agents.py` 按账号、Agent 与用途维护授权，连接定义和认证白名单属于部署 TOML。
 - `studio/apps/model_service/admission/website_quotas.py` 拥有账号与实例额度，`studio/apps/model_service/admission/website_queue.py` 维护图片／视频等待容量及任务调度；等待不占并发，额度领取与提交状态在同一短事务更新。

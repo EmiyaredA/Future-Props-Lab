@@ -8,6 +8,7 @@ import tempfile
 from pathlib import Path
 
 import httpx
+from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import select, text
 
@@ -17,9 +18,12 @@ from studio.apps.identity.storage.service_models import AccountEvent
 from studio.assembly.independent.identity.application import create_app
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
+from studio.runtime.secrets import SecretCipher
 
 assert not any(name.startswith(("studio.apps.model_service", "app.apps")) for name in sys.modules)
 assert "studio.runtime.database.website" not in sys.modules
+
 
 from studio.apps.model_service.account_events import (  # noqa: E402
     CatalogEventClient,
@@ -41,7 +45,8 @@ from studio.apps.model_service.templates.policy import (  # noqa: E402
     initialize_account_catalog,
 )
 from studio.contracts.model_service.schemas.model_templates import RoleModelTemplateIn  # noqa: E402
-from studio.runtime.database.sessions import Database  # noqa: E402
+
+cipher = SecretCipher(Fernet.generate_key().decode())
 
 root = Path(os.environ["CATALOG_DELIVERY_TEST_ROOT"]).resolve()
 assert root.is_relative_to(Path(tempfile.gettempdir()).resolve())
@@ -93,6 +98,7 @@ async def scenario():
                             "defaults": {"chat": "model"},
                         },
                     ),
+                    cipher=cipher,
                 )
             await session.commit()
         async with identity.router.lifespan_context(identity):

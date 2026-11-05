@@ -3767,12 +3767,6 @@
       "model": "DesktopPreference"
     },
     {
-      "table": "platform_settings",
-      "service": "identity",
-      "module": "app.console.models.platform_governance",
-      "model": "PlatformSetting"
-    },
-    {
       "table": "agent_runtime_connection_jobs",
       "service": "agent-runtime",
       "module": "studio.apps.agent_runtime.storage.service_models",
@@ -5379,6 +5373,12 @@
       "service": "local-receipts",
       "module": "studio.runtime.database.project_operations",
       "model": "ProjectOperationReceipt"
+    },
+    {
+      "table": "platform_settings",
+      "service": "identity",
+      "module": "studio.runtime.database.settings_models",
+      "model": "PlatformSetting"
     }
   ],
   "pages": [

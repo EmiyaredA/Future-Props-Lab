@@ -34,18 +34,21 @@ class RoleTemplates:
             "value": deepcopy(row.payload) if row else {"providers": [], "defaults": {}},
         }
 
-    async def view(self, role):
+    async def view(self, role, *, cipher):
         state = await self.snapshot(role)
-        return {**state, "value": template_view(state["value"])}
+        return {**state, "value": template_view(state["value"], cipher=cipher)}
 
-    async def save(self, role, body):
+    async def save(self, role, body, *, cipher):
         current = await self.snapshot(role)
         if current["revision"] != body.expected_revision:
             raise AccountError(
                 "revision_conflict",
-                current={"revision": current["revision"], "value": template_view(current["value"])},
+                current={
+                    "revision": current["revision"],
+                    "value": template_view(current["value"], cipher=cipher),
+                },
             )
-        payload = prepare_template(body.value, current["value"])
+        payload = prepare_template(body.value, current["value"], cipher=cipher)
         now = utc_now()
         if body.expected_revision == 0:
             statement = (
@@ -60,12 +63,12 @@ class RoleTemplates:
                 .values(payload=payload, revision=body.expected_revision + 1, updated_at=now)
             )
         if (await self.session.execute(statement)).rowcount != 1:
-            latest = await self.view(role)
+            latest = await self.view(role, cipher=cipher)
             raise AccountError(
                 "revision_conflict",
                 current={"revision": latest["revision"], "value": latest["value"]},
             )
-        return await self.view(role)
+        return await self.view(role, cipher=cipher)
 
 
 async def initialize_account_catalog(session, owner_user_id, role):

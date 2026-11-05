@@ -2,13 +2,13 @@
 
 from sqlalchemy import select, text
 
-from app.console.governance.settings_records import read_setting
 from studio.apps.identity.credentials.operations import add_audit_event
 from studio.apps.identity.storage.governance import begin_governance, cas, require_platform_admin
 from studio.apps.identity.storage.models.accounts import User
 from studio.apps.model_service.storage.models.model_supplier import ModelSupplier
 from studio.apps.model_service.storage.models.model_templates import ModelTemplateSyncItem as Item
 from studio.apps.model_service.storage.models.model_templates import ModelTemplateSyncJob as Job
+from studio.apps.model_service.storage.website_settings import read_setting
 from studio.apps.model_service.templates.website import (
     apply_template,
     catalog_rows,

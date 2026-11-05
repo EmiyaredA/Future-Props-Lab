@@ -196,7 +196,7 @@ def test_identity_and_models_own_their_records() -> None:
         assert (STUDIO_APPS / "identity/storage/models" / name).is_file()
     assert not (BACKEND_APP / "console/models/accounts.py").exists()
     # The compatibility website retains one partitioned settings table.
-    assert (BACKEND_APP / "console/models/platform_governance.py").is_file()
+    assert (STUDIO_APPS.parent / "runtime/database/settings_models.py").is_file()
     for name in ("model_templates.py", "runtime_admission.py"):
         assert (STUDIO_APPS / "model_service/storage/models" / name).is_file()
         assert not (BACKEND_APP / "console/models" / name).exists()

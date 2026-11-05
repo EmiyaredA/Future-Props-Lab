@@ -17,12 +17,12 @@ async def save_quotas(session, principal, body, audits):
     return result
 
 
-async def save_template(session, principal, role, body, audits):
+async def save_template(session, principal, role, body, audits, *, cipher):
     await session.rollback()
     prepared = await audits(
         "platform.model_template.updated", {"role_to": role, "revision": body.expected_revision + 1}
     )
-    result = await RoleTemplates(session).save(role, body)
+    result = await RoleTemplates(session).save(role, body, cipher=cipher)
     add_event(session, principal.user_id, prepared)
     await session.commit()
     return result

@@ -2,10 +2,8 @@
 
 from sqlalchemy import select
 
-from app.console.governance.settings_records import read_setting
-from app.console.models.platform_governance import PlatformSetting
 from studio.apps.identity.credentials.operations import add_audit_event
-from studio.apps.identity.storage.governance import begin_governance, cas, require_platform_admin
+from studio.apps.identity.storage.governance import begin_governance, require_platform_admin
 from studio.apps.model_service.admission.website_quotas import ACTIVE, TASK_MODELS
 from studio.apps.model_service.catalog.legacy_defaults import LegacyCatalogDefaults
 from studio.apps.model_service.catalog.template_reconciliation import (
@@ -18,16 +16,22 @@ from studio.apps.model_service.catalog.template_reconciliation import (
 from studio.apps.model_service.catalog.template_values import prepare_template
 from studio.apps.model_service.catalog.template_values import template_view as template_view
 from studio.apps.model_service.storage.models.model_service import ModelCatalogState
+from studio.apps.model_service.storage.website_settings import model_settings, read_setting
 from studio.contracts.identity.errors import AccountError
 from studio.runtime.database.ownership import bind_owner
+from studio.runtime.database.settings_records import SettingConflict
 
 
-async def get_template(session, role):
+async def get_template(session, role, *, cipher):
     state = await read_setting(session, f"role_template:{role}", {"providers": [], "defaults": {}})
-    return {"role": role, "revision": state["revision"], "value": template_view(state["value"])}
+    return {
+        "role": role,
+        "revision": state["revision"],
+        "value": template_view(state["value"], cipher=cipher),
+    }
 
 
-async def save_template(session, principal, role, body, client_ip):
+async def save_template(session, principal, role, body, client_ip, *, cipher):
     # Input carries only replacement secrets. Output never returns ciphertext or plaintext.
 
     principal = await begin_governance(session, principal)
@@ -38,16 +42,26 @@ async def save_template(session, principal, role, body, client_ip):
     if current["revision"] != body.expected_revision:
         raise AccountError(
             "revision_conflict",
-            current={"revision": current["revision"], "value": template_view(current["value"])},
+            current={
+                "revision": current["revision"],
+                "value": template_view(current["value"], cipher=cipher),
+            },
         )
-    value = prepare_template(body.value, current["value"])
+    value = prepare_template(body.value, current["value"], cipher=cipher)
     # Keep authorization and CAS under the same writer transaction.
 
-    row = await session.get(PlatformSetting, f"role_template:{role}")
-    if row:
-        await cas(session, PlatformSetting, row.id, body.expected_revision, payload=value)
-    else:
-        session.add(PlatformSetting(id=f"role_template:{role}", payload=value, revision=1))
+    try:
+        await model_settings(session).replace(
+            f"role_template:{role}", value, expected_revision=body.expected_revision
+        )
+    except SettingConflict as exc:
+        raise AccountError(
+            "revision_conflict",
+            current={
+                "revision": exc.current["revision"],
+                "value": template_view(exc.current["value"], cipher=cipher),
+            },
+        ) from exc
     add_audit_event(
         session,
         "platform.model_template.updated",
@@ -56,7 +70,7 @@ async def save_template(session, principal, role, body, client_ip):
         metadata={"role_to": role, "revision": body.expected_revision + 1},
     )
     await session.commit()
-    return await get_template(session, role)
+    return await get_template(session, role, cipher=cipher)
 
 
 class LegacyTemplateTaskUsage:

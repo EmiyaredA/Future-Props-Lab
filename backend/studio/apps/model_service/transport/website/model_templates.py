@@ -24,7 +24,7 @@ router = APIRouter(prefix="/platform/model-service-templates", tags=["model-serv
 @router.get("/{role}", response_model=RoleModelTemplateOut)
 async def template(role: PlatformRole, request: Request, session: SessionDep):
     await _platform_auth(request, session)
-    return await get_template(session, role)
+    return await get_template(session, role, cipher=request.app.state.model_template_cipher)
 
 
 @router.put("/{role}", response_model=RoleModelTemplateOut)
@@ -32,7 +32,14 @@ async def put_template(
     role: PlatformRole, request: Request, session: SessionDep, body: RoleModelTemplateIn
 ):
     principal = await _platform_auth(request, session)
-    return await save_template(session, principal, role, body, client_ip(request))
+    return await save_template(
+        session,
+        principal,
+        role,
+        body,
+        client_ip(request),
+        cipher=request.app.state.model_template_cipher,
+    )
 
 
 @router.post("/{role}/preview", response_model=TemplateSyncJobOut, status_code=201)

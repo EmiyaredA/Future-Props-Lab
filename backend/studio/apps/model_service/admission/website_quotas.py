@@ -2,9 +2,9 @@
 
 from sqlalchemy import select, text, update
 
-from app.console.governance.settings_records import read_setting
 from studio.apps.identity.storage.models.accounts import AuthSession, ManagementApiKey, User
 from studio.apps.model_service.storage.models.runtime_admission import RuntimeAdmission as Admission
+from studio.apps.model_service.storage.website_settings import read_setting
 from studio.assembly.website.models import RUNTIME_QUOTA_TASK_MODELS
 from studio.contracts.identity.errors import AccountError
 from studio.contracts.model_service.schemas.runtime_quotas import RuntimeQuotas

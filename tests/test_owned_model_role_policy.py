@@ -9,9 +9,9 @@ import time
 from pathlib import Path
 
 import pytest
+from cryptography.fernet import Fernet
 from sqlalchemy import select
 
-from app.runtime.credentials import decrypt_secret
 from studio.apps.model_service.admission.task_usage import OwnedCatalogTaskUsage
 from studio.apps.model_service.catalog.template_reconciliation import apply_template
 from studio.apps.model_service.defaults import OwnedCatalogDefaults
@@ -35,6 +35,9 @@ from studio.contracts.model_service.catalog_events import CatalogDelivery
 from studio.contracts.model_service.schemas.model_templates import RoleModelTemplateIn
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database
+from studio.runtime.secrets import SecretCipher
+
+cipher = SecretCipher(Fernet.generate_key().decode())
 
 
 def policy(revision=0, *, name="User policy", key="synthetic-role-secret", clear=False):
@@ -91,7 +94,9 @@ async def test_owned_policy_cas_secret_replacement_preservation_and_clear(databa
         (3, "", True),
     ):
         async with database.sessions() as session:
-            view = await RoleTemplates(session).save("user", policy(revision, key=key, clear=clear))
+            view = await RoleTemplates(session).save(
+                "user", policy(revision, key=key, clear=clear), cipher=cipher
+            )
             assert view["revision"] == revision + 1
             serialized = json.dumps(view)
             assert "ciphertext" not in serialized and "synthetic-role-secret" not in serialized
@@ -107,13 +112,13 @@ async def test_owned_policy_cas_secret_replacement_preservation_and_clear(databa
             if revision == 1:
                 assert value["api_key_ciphertext"] == ciphertext
             elif key:
-                assert decrypt_secret(value["api_key_ciphertext"]) == key
+                assert cipher.decrypt(value["api_key_ciphertext"]) == key
             else:
                 assert value["api_key_ciphertext"] == ""
             ciphertext = value["api_key_ciphertext"]
     async with database.sessions() as session:
         with pytest.raises(AccountError) as conflict:
-            await RoleTemplates(session).save("user", policy(1))
+            await RoleTemplates(session).save("user", policy(1), cipher=cipher)
         assert conflict.value.code == "revision_conflict"
         assert conflict.value.current["revision"] == 4
         assert "ciphertext" not in json.dumps(conflict.value.current)
@@ -134,7 +139,7 @@ async def test_concurrent_policy_creation_has_one_cas_winner(database, monkeypat
     async def save(name):
         async with database.sessions() as session:
             try:
-                await RoleTemplates(session).save("user", policy(name=name))
+                await RoleTemplates(session).save("user", policy(name=name), cipher=cipher)
                 await session.commit()
                 return "saved"
             except AccountError as exc:
@@ -148,8 +153,10 @@ async def test_concurrent_policy_creation_has_one_cas_winner(database, monkeypat
 
 async def seed_role_accounts(database):
     async with database.sessions() as session:
-        await RoleTemplates(session).save("user", policy())
-        await RoleTemplates(session).save("admin", policy(name="Admin policy", key="admin-secret"))
+        await RoleTemplates(session).save("user", policy(), cipher=cipher)
+        await RoleTemplates(session).save(
+            "admin", policy(name="Admin policy", key="admin-secret"), cipher=cipher
+        )
         await session.commit()
     consumer = CatalogProvisioning(database.sessions, initializer=initialize_account_catalog)
     for owner in ("alpha", "beta"):
@@ -176,13 +183,15 @@ async def test_event_initializer_applies_current_owned_policy_and_replay_keeps_i
             models = list(await session.scalars(select(ModelEntry)))
             assert len(providers) == len(models) == 1
             assert providers[0].name == "User policy" and providers[0].origin == "role_template"
-            assert decrypt_secret(providers[0].api_key_ciphertext) == "synthetic-role-secret"
+            assert cipher.decrypt(providers[0].api_key_ciphertext) == "synthetic-role-secret"
             assert (await session.get(AccountDefaults, owner)).model_ids == {"chat": models[0].id}
             assert (await session.get(ModelCatalogState, owner)).revision == 1
             ids.append(models[0].id)
     assert ids[0] != ids[1]
     async with database.sessions() as session:
-        await RoleTemplates(session).save("user", policy(1, name="Updated policy", key=""))
+        await RoleTemplates(session).save(
+            "user", policy(1, name="Updated policy", key=""), cipher=cipher
+        )
         await session.commit()
     await consumer.apply(delivery("alpha"))
     async with database.sessions(info={"owner_user_id": "alpha"}) as session:
