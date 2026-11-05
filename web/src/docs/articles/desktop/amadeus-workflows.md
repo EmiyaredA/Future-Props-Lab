@@ -1,4 +1,4 @@
-<!-- docs: {"group":"desktop","order":3,"title":"Agent、Plan 与审批恢复","lead":"先规划或直接协作，逐项检查写入并恢复待处理操作。","evidence":["web/src/features/amadeus/ActivityFeed.tsx","web/src/features/amadeus/RevisionCards.tsx","backend/app/console/amadeus/runs.py","tests/test_amadeus.py"]} -->
+<!-- docs: {"group":"desktop","order":3,"title":"Agent、Plan 与审批恢复","lead":"先规划或直接协作，逐项检查写入并恢复待处理操作。","evidence":["web/src/features/amadeus/ActivityFeed.tsx","web/src/features/amadeus/RevisionCards.tsx","backend/studio/apps/amadeus/storage/runs.py","tests/test_amadeus.py"]} -->
 
 # Agent、Plan 与审批恢复
 

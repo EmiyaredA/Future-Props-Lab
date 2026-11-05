@@ -1,4 +1,4 @@
-<!-- docs: {"group":"desktop","order":2,"title":"Amadeus：上下文与能力选择","lead":"在桌面助手中选择模型、核对当前窗口并限定可用能力。","evidence":["web/src/features/amadeus/Window.tsx","web/src/features/amadeus/ContextPanel.tsx","web/src/features/amadeus/CapabilityDialog.tsx","backend/app/console/amadeus"]} -->
+<!-- docs: {"group":"desktop","order":2,"title":"Amadeus：上下文与能力选择","lead":"在桌面助手中选择模型、核对当前窗口并限定可用能力。","evidence":["web/src/features/amadeus/Window.tsx","web/src/features/amadeus/ContextPanel.tsx","web/src/features/amadeus/CapabilityDialog.tsx","backend/studio/apps/amadeus"]} -->
 
 # Amadeus：上下文与能力选择
 
