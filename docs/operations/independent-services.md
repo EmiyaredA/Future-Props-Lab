@@ -227,6 +227,11 @@ Creative 已注册 16 项公开操作。作品认证通过 Identity 的签名命
 
 Creative 的 `/ready` 要求持锁启动检查完成，安装及 stdio 路由齐全，浏览器版本与公开契约匹配。Gateway 汇总 Identity、Integrations、Visual 与 Galgame 的状态，任一依赖不可用时将 Creative 标为功能受限。Agent Runtime、Agent 工作台和 Amadeus 在各自工作进程就绪后返回同一探针协议。
 
+启用 Creative 时，`FPL_GATEWAY_IDENTITY_TOKEN` 文件的内容须与
+`FPL_IDENTITY_SERVICE_CREDENTIALS` 中的 `gateway` 条目一致。为 `FPL_GATEWAY_TOKEN`、
+`FPL_MANAGEMENT_GATEWAY_TOKEN` 和每个其他服务分别生成凭据。管理启动器在接触 Compose
+前核对这些文件。原始安装和来源导入的签名请求只接受 Gateway 服务凭据。
+
 单服务隔离 Compose 用 `fpl/creative:d67d6a41f02c394166f6` 显式初始化独立卷，探针和页面返回同一发布版本 `c7961c03ee5fa530b54c`。
 
 

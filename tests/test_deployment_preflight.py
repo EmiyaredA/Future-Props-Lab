@@ -1,4 +1,6 @@
-"""The host checks selected service schemas before any deployment action."""
+"""The host checks selected service schemas and Creative credentials before deployment."""
+
+import json
 
 import pytest
 
@@ -6,7 +8,27 @@ from studio.contracts.gateway.catalog import BY_ID
 from studio.host.deployment import deployment_preflight
 
 
-def test_all_selected_service_databases_are_checked_without_writing(monkeypatch, tmp_path):
+@pytest.fixture
+def creative_credentials(tmp_path):
+    data = {
+        "FPL_IDENTITY_SERVICE_CREDENTIALS": json.dumps(
+            {"gateway": "gateway-service-fixture-" * 3, "creative": "creative-service-fixture-" * 3}
+        ),
+        "FPL_GATEWAY_IDENTITY_TOKEN": "gateway-service-fixture-" * 3,
+        "FPL_GATEWAY_TOKEN": "website-ingress-fixture-" * 3,
+        "FPL_MANAGEMENT_GATEWAY_TOKEN": "management-ingress-fixture-" * 3,
+    }
+    environment = {}
+    for name, body in data.items():
+        path = tmp_path / name
+        path.write_text(body + "\n")
+        environment[name] = str(path)
+    return environment
+
+
+def test_all_selected_service_databases_are_checked_without_writing(
+    monkeypatch, tmp_path, creative_credentials
+):
     seen = []
     monkeypatch.setattr(
         deployment_preflight,
@@ -19,10 +41,41 @@ def test_all_selected_service_databases_are_checked_without_writing(monkeypatch,
         for name in owners
         for field, value in (("IMAGE", "test-image"), ("STATE", name))
     }
+    environment.update(creative_credentials)
+    before = {path.name: path.read_bytes() for path in tmp_path.iterdir()}
     deployment_preflight.check_selected_databases(environment, owners, tmp_path)
     assert {name for _, name, _ in seen} == owners
     assert all(path == tmp_path / name / "service.db" and registry for path, name, registry in seen)
-    assert not list(tmp_path.iterdir())
+    assert {path.name: path.read_bytes() for path in tmp_path.iterdir()} == before
+
+
+@pytest.mark.parametrize(
+    ("name", "message"),
+    [
+        ("FPL_GATEWAY_TOKEN", "独立于入口凭据"),
+        ("FPL_MANAGEMENT_GATEWAY_TOKEN", "独立于入口凭据"),
+        ("FPL_IDENTITY_SERVICE_CREDENTIALS", "独立于入口凭据"),
+        ("FPL_GATEWAY_IDENTITY_TOKEN", "与 Identity 登记一致"),
+    ],
+)
+def test_invalid_creative_gateway_credentials_block_preflight(
+    monkeypatch, tmp_path, creative_credentials, name, message
+):
+    environment = {**creative_credentials, "FPL_CREATIVE_IMAGE": "test-image"}
+    credential = (tmp_path / "FPL_GATEWAY_IDENTITY_TOKEN").read_text().strip()
+    invalid = credential
+    if name == "FPL_IDENTITY_SERVICE_CREDENTIALS":
+        invalid = json.dumps({"gateway": credential, "creative": credential})
+    if name == "FPL_GATEWAY_IDENTITY_TOKEN":
+        invalid = "different-gateway-fixture-" * 3
+    (tmp_path / name).write_text(invalid)
+    monkeypatch.setattr(
+        deployment_preflight,
+        "check",
+        lambda *_args: pytest.fail("must fail before reading schemas"),
+    )
+    with pytest.raises(ValueError, match=message):
+        deployment_preflight.check_selected_databases(environment, ["creative"], tmp_path)
 
 
 def test_management_only_does_not_require_stopped_business_databases(monkeypatch, tmp_path):

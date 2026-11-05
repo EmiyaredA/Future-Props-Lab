@@ -1,5 +1,6 @@
-"""Check every selected service database before the host changes container state."""
+"""Check selected service schemas and required credentials before changing container state."""
 
+import json
 from importlib import import_module
 from pathlib import Path
 
@@ -37,6 +38,37 @@ def service_env(service, field):
     return f"FPL_{name}_{field}"
 
 
+def check_creative_gateway_credentials(environment, root):
+    def read(name):
+        value = environment.get(name)
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"Creative 部署缺少凭据文件 {name}")
+        try:
+            return (root / value).read_text().strip()
+        except (OSError, UnicodeError):
+            raise ValueError(f"Creative 部署无法读取凭据文件 {name}") from None
+
+    registry = read("FPL_IDENTITY_SERVICE_CREDENTIALS")
+    try:
+        registered = json.loads(registry)
+    except ValueError:
+        raise ValueError("Creative 部署的 Identity 服务凭据清单无效") from None
+    credential = read("FPL_GATEWAY_IDENTITY_TOKEN")
+    if (
+        not isinstance(registered, dict)
+        or len(credential) < 32
+        or not credential.isascii()
+        or registered.get("gateway") != credential
+    ):
+        raise ValueError("Gateway 服务凭据必须与 Identity 登记一致")
+    other_credentials = [value for name, value in registered.items() if name != "gateway"]
+    other_credentials.append(read("FPL_GATEWAY_TOKEN"))
+    if environment.get("FPL_MANAGEMENT_GATEWAY_TOKEN"):
+        other_credentials.append(read("FPL_MANAGEMENT_GATEWAY_TOKEN"))
+    if credential in other_credentials:
+        raise ValueError("Creative 要求 Gateway 服务凭据独立于入口凭据和其他服务凭据")
+
+
 def check_selected_databases(environment, business_services, root, *, only_management=False):
     """Read only configured service databases; never initialize or migrate them."""
     selected = {"identity", "management"}
@@ -49,6 +81,8 @@ def check_selected_databases(environment, business_services, root, *, only_manag
             if not environment.get(service_env(service, "IMAGE")):
                 raise ValueError(f"所选服务缺少发布镜像：{service}")
             selected.add(service)
+    if "creative" in selected:
+        check_creative_gateway_credentials(environment, root)
     for service in sorted(selected):
         module = MIGRATION_MODULES.get(service)
         if module is None:
