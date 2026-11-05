@@ -1,4 +1,4 @@
-<!-- docs: {"group":"tools","order":2,"title":"已移除的主机工具","lead":"空间占用与 Codex 模型源已移除，旧链接不再提供主机操作。","evidence":["web/src/features/tools/catalog.ts","backend/app/api.py","tests/test_tool_navigation.py","web/tests/cloud-control.test.tsx"]} -->
+<!-- docs: {"group":"tools","order":2,"title":"已移除的主机工具","lead":"空间占用与 Codex 模型源已移除，旧链接不再提供主机操作。","evidence":["web/src/features/tools/catalog.ts","backend/studio/assembly/website/routes.py","tests/test_tool_navigation.py","web/tests/cloud-control.test.tsx"]} -->
 
 # 已移除的主机工具
 

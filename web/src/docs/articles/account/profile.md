@@ -1,4 +1,4 @@
-<!-- docs: {"group":"account","order":5,"title":"个人资料","lead":"更新显示名称、邮箱和头像。","evidence":["web/src/features/accounts/AccountPanel.tsx","backend/app/capabilities/identity/principal.py"]} -->
+<!-- docs: {"group":"account","order":5,"title":"个人资料","lead":"更新显示名称、邮箱和头像。","evidence":["web/src/features/accounts/AccountPanel.tsx","backend/studio/contracts/identity/principal.py"]} -->
 
 # 个人资料
 

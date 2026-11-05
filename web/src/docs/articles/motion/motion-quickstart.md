@@ -1,4 +1,4 @@
-<!-- docs: {"group":"motion","order":0,"title":"特效制作工坊快速开始","lead":"制作独立二维镜头，再把完成的媒体交给剪辑。","evidence":["web/src/features/motion-compositor","backend/app/apps/motion_compositor","web/e2e/motion-compositor.spec.ts"]} -->
+<!-- docs: {"group":"motion","order":0,"title":"特效制作工坊快速开始","lead":"制作独立二维镜头，再把完成的媒体交给剪辑。","evidence":["web/src/features/motion-compositor","backend/studio/apps/motion_compositor","web/e2e/motion-compositor.spec.ts"]} -->
 
 # 特效制作工坊快速开始
 

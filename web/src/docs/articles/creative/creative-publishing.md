@@ -1,4 +1,4 @@
-<!-- docs: {"group":"creative","order":1,"title":"草稿、发布版本与撤回","lead":"编辑可复用能力，预览后发布不可变版本。","evidence":["web/src/features/creative-workshop/CreativeEditor.tsx","backend/app/console/creative_workshop","tests/test_creative_workshop.py"]} -->
+<!-- docs: {"group":"creative","order":1,"title":"草稿、发布版本与撤回","lead":"编辑可复用能力，预览后发布不可变版本。","evidence":["web/src/features/creative-workshop/CreativeEditor.tsx","backend/studio/apps/creative_workshop","tests/test_creative_workshop.py"]} -->
 
 # 草稿、发布版本与撤回
 

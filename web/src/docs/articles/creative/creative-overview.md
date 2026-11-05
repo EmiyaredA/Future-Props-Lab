@@ -1,4 +1,4 @@
-<!-- docs: {"group":"creative","order":0,"title":"发现与安装公开能力","lead":"把同一部署内公开的工具 API、MCP、Skill 或方案复制到当前空间。","evidence":["web/src/features/creative-workshop/CreativeWorkshopPage.tsx","web/src/features/creative-workshop/CreativeDetail.tsx","backend/app/console/creative_workshop","web/e2e/creative-workshop.spec.ts"]} -->
+<!-- docs: {"group":"creative","order":0,"title":"发现与安装公开能力","lead":"把同一部署内公开的工具 API、MCP、Skill 或方案复制到当前空间。","evidence":["web/src/features/creative-workshop/CreativeWorkshopPage.tsx","web/src/features/creative-workshop/CreativeDetail.tsx","backend/studio/apps/creative_workshop","web/e2e/creative-workshop.spec.ts"]} -->
 
 # 发现与安装公开能力
 

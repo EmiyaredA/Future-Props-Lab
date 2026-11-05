@@ -1,4 +1,4 @@
-<!-- docs: {"group":"director","order":1,"title":"场景、演员走位与运镜","lead":"按时间组织对象动作，核对空间、遮挡与摄影机画面。","evidence":["web/src/features/director-desk/editor","backend/app/apps/director_desk"]} -->
+<!-- docs: {"group":"director","order":1,"title":"场景、演员走位与运镜","lead":"按时间组织对象动作，核对空间、遮挡与摄影机画面。","evidence":["web/src/features/director-desk/editor","backend/studio/apps/director_desk"]} -->
 
 # 场景、演员走位与运镜
 

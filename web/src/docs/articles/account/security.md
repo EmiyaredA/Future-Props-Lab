@@ -1,4 +1,4 @@
-<!-- docs: {"group":"account","order":6,"title":"密码与会话管理","lead":"修改密码，撤销其他设备，并检查本人安全事件。","evidence":["web/src/features/accounts/AccountPanel.tsx","backend/app/capabilities/identity/principal.py"]} -->
+<!-- docs: {"group":"account","order":6,"title":"密码与会话管理","lead":"修改密码，撤销其他设备，并检查本人安全事件。","evidence":["web/src/features/accounts/AccountPanel.tsx","backend/studio/contracts/identity/principal.py"]} -->
 
 # 密码与会话管理
 

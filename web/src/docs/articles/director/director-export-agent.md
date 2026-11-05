@@ -1,4 +1,4 @@
-<!-- docs: {"group":"director","order":2,"title":"预演交付与外部 Agent 操作","lead":"保留可编辑工程，并在已打开的场景中使用正式自动化工具。","evidence":["web/src/features/director-desk/editor","backend/app/apps/director_desk","docs/operations/desktop-agent.md","tests/test_director_desk_agent.py"]} -->
+<!-- docs: {"group":"director","order":2,"title":"预演交付与外部 Agent 操作","lead":"保留可编辑工程，并在已打开的场景中使用正式自动化工具。","evidence":["web/src/features/director-desk/editor","backend/studio/apps/director_desk","docs/operations/desktop-agent.md","tests/test_director_desk_agent.py"]} -->
 
 # 预演交付与外部 Agent 操作
 

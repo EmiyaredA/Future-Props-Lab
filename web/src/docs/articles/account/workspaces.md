@@ -1,4 +1,4 @@
-<!-- docs: {"group": "account", "order": 1, "title": "账号与私人数据", "lead": "账号与私人数据的当前操作与授权边界。", "evidence": ["web/src/features/accounts/AccountPanel.tsx", "backend/app/capabilities/identity/principal.py", "tests/test_account_owned_data.py"]} -->
+<!-- docs: {"group": "account", "order": 1, "title": "账号与私人数据", "lead": "账号与私人数据的当前操作与授权边界。", "evidence": ["web/src/features/accounts/AccountPanel.tsx", "backend/studio/contracts/identity/principal.py", "tests/test_account_owned_data.py"]} -->
 
 # 账号与私人数据
 

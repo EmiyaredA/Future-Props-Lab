@@ -1,4 +1,4 @@
-<!-- docs: {"group":"account","order":7,"title":"管理 API Key","lead":"为自动化访问创建绑定当前账号的密钥。","evidence":["web/src/features/accounts/AccountPanel.tsx","backend/app/capabilities/identity/principal.py"]} -->
+<!-- docs: {"group":"account","order":7,"title":"管理 API Key","lead":"为自动化访问创建绑定当前账号的密钥。","evidence":["web/src/features/accounts/AccountPanel.tsx","backend/studio/contracts/identity/principal.py"]} -->
 
 # 管理 API Key
 

@@ -1,4 +1,4 @@
-<!-- docs: {"group":"director","order":0,"title":"导演台快速开始","lead":"搭建三维场景，安排走位与镜头，输出预演参考。","evidence":["web/src/features/director-desk","backend/app/apps/director_desk","tests/test_director_desk_projects.py"]} -->
+<!-- docs: {"group":"director","order":0,"title":"导演台快速开始","lead":"搭建三维场景，安排走位与镜头，输出预演参考。","evidence":["web/src/features/director-desk","backend/studio/apps/director_desk","tests/test_director_desk_projects.py"]} -->
 
 # 导演台快速开始
 

@@ -1,4 +1,4 @@
-<!-- docs: {"group":"presentation","order":1,"title":"演示工坊：编辑与放映","lead":"创建幻灯片，排版文字、图片和图形，导出可继续编辑的 PPTX。","evidence":["web/src/features/presentation-workshop","backend/app/apps/presentation_workshop"]} -->
+<!-- docs: {"group":"presentation","order":1,"title":"演示工坊：编辑与放映","lead":"创建幻灯片，排版文字、图片和图形，导出可继续编辑的 PPTX。","evidence":["web/src/features/presentation-workshop","backend/studio/apps/presentation_workshop"]} -->
 
 # 演示工坊：编辑与放映
 

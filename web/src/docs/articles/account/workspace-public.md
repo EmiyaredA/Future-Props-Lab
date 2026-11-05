@@ -1,4 +1,4 @@
-<!-- docs: {"group": "account", "order": 2, "title": "私人资源与知识社区", "lead": "私人资源与知识社区的当前操作与授权边界。", "evidence": ["web/src/features/accounts/AccountPanel.tsx", "backend/app/capabilities/identity/principal.py", "tests/test_account_owned_data.py"]} -->
+<!-- docs: {"group": "account", "order": 2, "title": "私人资源与知识社区", "lead": "私人资源与知识社区的当前操作与授权边界。", "evidence": ["web/src/features/accounts/AccountPanel.tsx", "backend/studio/contracts/identity/principal.py", "tests/test_account_owned_data.py"]} -->
 
 # 私人资源与知识社区
 

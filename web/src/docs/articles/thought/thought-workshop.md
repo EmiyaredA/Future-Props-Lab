@@ -1,4 +1,4 @@
-<!-- docs: {"group":"thought","order":1,"title":"思绪工坊：记录与写作","lead":"组织知识库与富文本文档，保留历史并导入导出；自动化写作通过 Agent/SDK 接入。","evidence":["web/src/features/thought-workshop","backend/app/apps/thought_workshop"]} -->
+<!-- docs: {"group":"thought","order":1,"title":"思绪工坊：记录与写作","lead":"组织知识库与富文本文档，保留历史并导入导出；自动化写作通过 Agent/SDK 接入。","evidence":["web/src/features/thought-workshop","backend/studio/apps/thought_workshop"]} -->
 
 # 思绪工坊：记录与写作
 

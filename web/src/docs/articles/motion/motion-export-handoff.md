@@ -1,4 +1,4 @@
-<!-- docs: {"group":"motion","order":2,"title":"透明导出与剪辑交接","lead":"选择 MP4、透明 MOV 或 PNG 序列，并交接完成镜头。","evidence":["web/src/features/motion-compositor","backend/app/apps/motion_compositor","backend/app/apps/video_editor/motion_handoff.py","web/e2e/motion-compositor.spec.ts"]} -->
+<!-- docs: {"group":"motion","order":2,"title":"透明导出与剪辑交接","lead":"选择 MP4、透明 MOV 或 PNG 序列，并交接完成镜头。","evidence":["web/src/features/motion-compositor","backend/studio/apps/motion_compositor","backend/studio/apps/video_editor/handoffs/motion_handoff.py","web/e2e/motion-compositor.spec.ts"]} -->
 
 # 透明导出与剪辑交接
 

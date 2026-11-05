@@ -1,4 +1,4 @@
-<!-- docs: {"group": "account", "order": 3, "title": "账号创建与注册邀请", "lead": "账号创建与注册邀请的当前操作与授权边界。", "evidence": ["web/src/features/accounts/AccountPanel.tsx", "backend/app/capabilities/identity/principal.py", "tests/test_account_owned_data.py"]} -->
+<!-- docs: {"group": "account", "order": 3, "title": "账号创建与注册邀请", "lead": "账号创建与注册邀请的当前操作与授权边界。", "evidence": ["web/src/features/accounts/AccountPanel.tsx", "backend/studio/contracts/identity/principal.py", "tests/test_account_owned_data.py"]} -->
 
 # 账号创建与注册邀请
 

@@ -1,4 +1,4 @@
-<!-- docs: {"group": "account", "order": 8, "title": "平台管理员账号治理", "lead": "平台管理员账号治理的当前操作与授权边界。", "evidence": ["web/src/features/accounts/AccountPanel.tsx", "backend/app/capabilities/identity/principal.py", "tests/test_account_owned_data.py"]} -->
+<!-- docs: {"group": "account", "order": 8, "title": "平台管理员账号治理", "lead": "平台管理员账号治理的当前操作与授权边界。", "evidence": ["web/src/features/accounts/AccountPanel.tsx", "backend/studio/contracts/identity/principal.py", "tests/test_account_owned_data.py"]} -->
 
 # 平台管理员账号治理
 

@@ -1,4 +1,4 @@
-<!-- docs: {"group": "account", "order": 4, "title": "角色与操作权限", "lead": "角色与操作权限的当前操作与授权边界。", "evidence": ["web/src/features/accounts/AccountPanel.tsx", "backend/app/capabilities/identity/principal.py", "tests/test_account_owned_data.py"]} -->
+<!-- docs: {"group": "account", "order": 4, "title": "角色与操作权限", "lead": "角色与操作权限的当前操作与授权边界。", "evidence": ["web/src/features/accounts/AccountPanel.tsx", "backend/studio/contracts/identity/principal.py", "tests/test_account_owned_data.py"]} -->
 
 # 角色与操作权限
 
