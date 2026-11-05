@@ -404,6 +404,7 @@ async def test_options_and_all_admission_paths_share_the_contract(model_slug):
 @pytest.mark.asyncio
 async def test_every_runner_inlines_motion_video_and_audio_without_temporary_upload(monkeypatch):
     from app.apps.visual_workshop import generation_runner as visual_module
+    from app.llm import visual_generation_submission as visual_submission
     from app.llm.inference import runner as inference_module
     from app.llm.playground import generation_runner as test_module
 
@@ -419,7 +420,7 @@ async def test_every_runner_inlines_motion_video_and_audio_without_temporary_upl
     async def forbidden(*_args, **_kwargs):
         raise AssertionError("AutoDL must not upload to temporary hosting")
 
-    for module in (visual_module, inference_module, test_module):
+    for module in (visual_submission, inference_module, test_module):
         monkeypatch.setattr(module, "submit_generation_task", submit)
     visual, test, inference = (
         visual_module.VisualGenerationRunner(),
