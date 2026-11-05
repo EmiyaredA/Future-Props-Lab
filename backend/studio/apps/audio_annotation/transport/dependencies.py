@@ -8,6 +8,7 @@ from fastapi import Depends, Request
 
 from studio.apps.audio_annotation.ports import ProjectOperations
 from studio.apps.audio_annotation.schemas.document import AudioAnnotationSegmentTranscriptionOut
+from studio.apps.audio_annotation.use_cases.create_project import CreateProject
 from studio.apps.audio_annotation.use_cases.edit_document import EditDocument
 from studio.assembly.http_dependencies import OwnerDep, SessionDep
 
@@ -24,6 +25,13 @@ def project_operations(request: Request, session: SessionDep) -> ProjectOperatio
 
 
 ProjectsDep = Annotated[ProjectOperations, Depends(project_operations)]
+
+
+def project_creator(request: Request, session: SessionDep, owner: OwnerDep) -> CreateProject:
+    return request.app.state.annotation_project_creator(request, session, owner)
+
+
+CreatorDep = Annotated[CreateProject, Depends(project_creator)]
 
 
 def segment_transcriber(request: Request, session: SessionDep):

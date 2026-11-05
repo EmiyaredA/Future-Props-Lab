@@ -1,7 +1,7 @@
 """Validate the owned project range before the transcription adapter performs I/O."""
 
 from studio.apps.audio_annotation.models import AudioAnnotationProject
-from studio.apps.audio_annotation.projects import MIN_SEGMENT_MS
+from studio.apps.audio_annotation.rules.documents import MIN_SEGMENT_MS
 from studio.apps.audio_annotation.sources import AudioAnnotationError
 
 

@@ -12,14 +12,14 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from studio.apps.audio_annotation.clients.asset_library import Inputs, ProjectReferences
 from studio.apps.audio_annotation.clients.model_service import SegmentTranscription
-from studio.apps.audio_annotation.projects import AudioAnnotationProjects
 from studio.apps.audio_annotation.routes import router
 from studio.apps.audio_annotation.sources import AudioAnnotationError
 from studio.apps.audio_annotation.storage.migrations.registry import MIGRATIONS
+from studio.apps.audio_annotation.storage.projects import ProjectRecords
 from studio.apps.audio_annotation.storage.service_models import MODELS, AnnotationReferenceMutation
 from studio.apps.audio_annotation.transport.galgame_source import router as galgame_source_router
 from studio.apps.identity.clients.authorization import LiveAuthorization
-from studio.assembly.annotation import document_editor
+from studio.assembly.annotation import document_editor, project_creator
 from studio.assembly.http_dependencies import db_session, require_studio_auth
 from studio.assembly.independent.asset_references import (
     install_reference_runtime,
@@ -87,7 +87,8 @@ def create_app(
     )
     app.state.database = database
     app.state.annotation_document_editor = document_editor
-    app.state.annotation_projects = lambda connection, session: AudioAnnotationProjects(
+    app.state.annotation_project_creator = project_creator
+    app.state.annotation_projects = lambda connection, session: ProjectRecords(
         session,
         sources=Inputs(connection, session, capabilities, staging),
         references=ProjectReferences(connection, session, app.state.reference_mutations),

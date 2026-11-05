@@ -8,7 +8,8 @@ import httpx
 import pytest
 from tests.account_fixtures import account_record
 
-from studio.apps.audio_annotation.projects import AudioAnnotationError, AudioAnnotationProjects
+from studio.apps.audio_annotation.clients.creation_inputs import AudioCreationInputs
+from studio.apps.audio_annotation.sources import AudioAnnotationError
 from studio.apps.identity.storage.models.accounts import User
 from studio.apps.model_service.providers.transcription import TranscriptionResult, TranscriptSegment
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
@@ -1098,14 +1099,14 @@ async def test_transcription_import_reports_missing_source_and_cleans_failed_cop
 
         library_root = get_settings().account_path("test-user") / "library/assets"
         files_before = set(library_root.iterdir()) if library_root.exists() else set()
-        original_duration = AudioAnnotationProjects._duration
+        original_duration = AudioCreationInputs.duration
 
-        async def fail_after_copy(self: AudioAnnotationProjects, asset) -> int:
+        async def fail_after_copy(self: AudioCreationInputs, asset) -> int:
             if asset.original_filename == "cleanup-copy.wav":
                 raise AudioAnnotationError("模拟项目创建失败", code="simulated_failure")
             return await original_duration(self, asset)
 
-        monkeypatch.setattr(AudioAnnotationProjects, "_duration", fail_after_copy)
+        monkeypatch.setattr(AudioCreationInputs, "duration", fail_after_copy)
         failed = await client.post(
             "/v1/audio-annotation/transcription-imports",
             json={"source_kind": "task", "task_id": cleanup_task_id},

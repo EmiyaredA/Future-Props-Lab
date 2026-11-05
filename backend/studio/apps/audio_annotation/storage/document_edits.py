@@ -1,13 +1,13 @@
 """SQLite adapter for document updates and their same-transaction receipts."""
 
-from studio.apps.audio_annotation.projects import AudioAnnotationProjects
 from studio.apps.audio_annotation.schemas.document import AudioAnnotationDocumentOut
+from studio.apps.audio_annotation.storage.projects import ProjectRecords
 from studio.runtime.database.operation_receipts import record, replay
 from studio.runtime.revisions import RevisionConflictError
 
 
 class SqlDocumentEdits:
-    def __init__(self, session, owner_user_id, projects: AudioAnnotationProjects):
+    def __init__(self, session, owner_user_id, projects: ProjectRecords):
         self.session = session
         self.owner_user_id = owner_user_id
         self.projects = projects

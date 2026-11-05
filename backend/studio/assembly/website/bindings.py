@@ -13,7 +13,7 @@ from studio.apps.amadeus.execution.website_actions import ActionExecution
 from studio.apps.amadeus.execution.website_dialogue import CodeAgentRuns
 from studio.apps.asset_library.storage.layout.account_upgrade import upgrade_pending
 from studio.apps.audio_annotation.legacy_sources import LegacyAnnotationSources
-from studio.apps.audio_annotation.projects import AudioAnnotationProjects
+from studio.apps.audio_annotation.storage.projects import ProjectRecords
 from studio.apps.audio_annotation.transcription import legacy_transcribe
 from studio.apps.director_desk.agent_session import DirectorEditorSessions
 from studio.apps.director_desk.storage.file_paths import DirectorStorage
@@ -62,7 +62,7 @@ from studio.apps.tools.video_downloads.local_jobs import VideoDownloads
 from studio.apps.video_editor.assistant_operations import apply_assistant_timeline_batch
 from studio.apps.video_editor.legacy_project_layouts import LegacyVideoLayouts
 from studio.apps.video_editor.legacy_timeline_assets import LegacyTimelineAssets
-from studio.assembly.annotation import document_editor
+from studio.assembly.annotation import document_editor, project_creator
 from studio.assembly.website.account_provisioning import create_account
 from studio.assembly.website.creative import bind_creative
 from studio.assembly.website.desktop import DesktopConnection
@@ -114,7 +114,8 @@ def bind_components(app, settings, database):
         executor_status, sessions=sessions, settings=settings
     )
     app.state.annotation_document_editor = document_editor
-    app.state.annotation_projects = lambda _request, session: AudioAnnotationProjects(
+    app.state.annotation_project_creator = project_creator
+    app.state.annotation_projects = lambda _request, session: ProjectRecords(
         session, sources=LegacyAnnotationSources(session, settings)
     )
     app.state.annotation_transcriber = lambda _request, session: partial(legacy_transcribe, session)

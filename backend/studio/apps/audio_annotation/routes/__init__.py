@@ -5,7 +5,6 @@ from fastapi.responses import Response
 from pydantic import ValidationError
 
 from studio.apps.audio_annotation.exports import clip, export_document, transcribe_saved
-from studio.apps.audio_annotation.projects import AudioAnnotationError
 from studio.apps.audio_annotation.schemas.document import (
     STABLE_ID_PATTERN,
     AudioAnnotationDocumentOut,
@@ -24,7 +23,9 @@ from studio.apps.audio_annotation.schemas.operations import (
     AnnotationOperationsIn,
     SavedSegmentTranscriptionIn,
 )
+from studio.apps.audio_annotation.sources import AudioAnnotationError
 from studio.apps.audio_annotation.transport.dependencies import (
+    CreatorDep,
     DocumentEditorDep,
     ProjectsDep,
     StagingDep,
@@ -72,7 +73,7 @@ async def list_projects(
 
 @router.post("/projects", response_model=AudioAnnotationProjectOut)
 async def create_project(
-    projects: ProjectsDep, body: AudioAnnotationProjectCreateIn
+    projects: CreatorDep, body: AudioAnnotationProjectCreateIn
 ) -> AudioAnnotationProjectOut:
     try:
         return await projects.create(body)
@@ -82,7 +83,7 @@ async def create_project(
 
 @router.post("/imports", response_model=AudioAnnotationProjectOut)
 async def import_project(
-    projects: ProjectsDep, body: AudioAnnotationImportIn
+    projects: CreatorDep, body: AudioAnnotationImportIn
 ) -> AudioAnnotationProjectOut:
     try:
         return await projects.import_project(body)
@@ -92,7 +93,7 @@ async def import_project(
 
 @router.post("/transcription-imports", response_model=AudioAnnotationProjectOut)
 async def import_transcription(
-    projects: ProjectsDep, body: AudioAnnotationTranscriptionImportIn
+    projects: CreatorDep, body: AudioAnnotationTranscriptionImportIn
 ) -> AudioAnnotationProjectOut:
     try:
         return await projects.import_transcription(body)

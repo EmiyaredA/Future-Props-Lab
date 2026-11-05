@@ -276,6 +276,9 @@ def test_annotation_image_keeps_entrypoint_and_excludes_legacy_adapters():
     closure = source_closure(ROOT, "annotation")
     assert "studio.assembly.independent.audio_annotation.cli" in closure
     assert "studio.apps.audio_annotation.use_cases.edit_document" in closure
+    assert "studio.apps.audio_annotation.use_cases.create_project" in closure
+    assert "studio.apps.audio_annotation.storage.projects" in closure
+    assert "studio.apps.audio_annotation.projects" not in closure
     assert "studio.apps.audio_annotation.storage.document_edits" in closure
     assert "studio" in closure
     assert "studio.assembly.website.application" not in closure

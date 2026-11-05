@@ -24,10 +24,10 @@ from tests.test_website_legacy_snapshot import configuration, website
 
 from studio.apps.asset_library.migration_blobs import BLOBS
 from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
-from studio.apps.audio_annotation.projects import AudioAnnotationProjects
 from studio.apps.audio_annotation.schemas.operations import AnnotationOperationsIn
 from studio.apps.audio_annotation.storage.document_edits import SqlDocumentEdits
 from studio.apps.audio_annotation.storage.migrations.registry import MIGRATIONS
+from studio.apps.audio_annotation.storage.projects import ProjectRecords
 from studio.apps.audio_annotation.storage.service_models import MODELS
 from studio.apps.audio_annotation.use_cases.edit_document import EditDocument
 from studio.assembly.independent.audio_annotation.maintenance import COVERAGE, DATASETS
@@ -298,9 +298,7 @@ def test_annotation_transfer_restarts_and_rebuilds_owned_audio_reference(tmp_pat
         try:
             async with database.sessions(info={"owner_user_id": str(owner)}) as session:
                 editor = EditDocument(
-                    SqlDocumentEdits(
-                        session, str(owner), AudioAnnotationProjects(session, sources=None)
-                    )
+                    SqlDocumentEdits(session, str(owner), ProjectRecords(session, sources=None))
                 )
                 body = AnnotationOperationsIn.model_validate(request)
                 result = await editor.execute(project["id"], body)

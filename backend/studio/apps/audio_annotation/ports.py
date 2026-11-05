@@ -11,12 +11,9 @@ from typing import Protocol
 from studio.apps.audio_annotation.schemas.document import (
     AudioAnnotationDocumentOut,
     AudioAnnotationDocumentPutIn,
-    AudioAnnotationImportIn,
-    AudioAnnotationProjectCreateIn,
     AudioAnnotationProjectListOut,
     AudioAnnotationProjectOut,
     AudioAnnotationProjectPatchIn,
-    AudioAnnotationTranscriptionImportIn,
     AudioAnnotationWaveformOut,
     AudioAnnotationWaveformPutIn,
 )
@@ -45,14 +42,6 @@ class ProjectOperations(Protocol):
     async def list(self, query: str = "") -> AudioAnnotationProjectListOut: ...
 
     async def get(self, project_id: str) -> AudioAnnotationProjectOut: ...
-
-    async def create(self, body: AudioAnnotationProjectCreateIn) -> AudioAnnotationProjectOut: ...
-
-    async def import_project(self, body: AudioAnnotationImportIn) -> AudioAnnotationProjectOut: ...
-
-    async def import_transcription(
-        self, body: AudioAnnotationTranscriptionImportIn
-    ) -> AudioAnnotationProjectOut: ...
 
     async def patch(
         self, project_id: str, body: AudioAnnotationProjectPatchIn

@@ -494,6 +494,10 @@ Future-Props-Lab/
   选中片段可通过统一语音识别适配器执行一次性转写。识别参数、语言能力、文件上限和安全错误
   映射归属 `studio/apps/model_service/transcription/`，录音标注、模型测试和 Galgame 只依赖该能力边界。
   删除任务不会删除原音频，被任务引用的音频不能从文件库删除。
+  `use_cases/create_project.py` 共用创建、JSON 导入和任务转录导入；`rules/audio.py` 与
+  `rules/documents.py` 拥有音频限制、文档校验和转录转换。`clients/creation_inputs.py` 管理
+  媒体探测与转录借用，业务端口不暴露路径。`storage/projects.py` 原子提交项目、文档、波形
+  和素材引用投递；查询、删除与旧导出适配仍在后续解耦范围，不能视作整项迁移完成。
 - 应用目录同样由 Web 静态注册表维护， 应用最近访问记录只保存在浏览器本地。视觉创作工坊、
   Galgame 工坊、视频剪辑工坊、演示工坊、思绪工坊与录音标注工坊通过应用模块配置品牌、导航和 active 规则，共用 `app/layout/WorkshopShell`；侧栏展示由 `shared/ui/WorkshopSidebar.tsx` 统一拥有，
   包括品牌、返回卡片、图标导航和主题切换。思绪工坊复用该展示组件，知识库状态与目录仍由功能模块管理；录音标注工坊与演示工坊同样 `supportsProjects: true`，但只引用公共文件库、不拥有独立项目存储根。

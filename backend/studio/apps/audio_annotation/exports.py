@@ -3,7 +3,7 @@ import json
 import tempfile
 from pathlib import Path
 
-from studio.apps.audio_annotation.projects import AudioAnnotationError
+from studio.apps.audio_annotation.sources import AudioAnnotationError
 from studio.apps.media_rendering.local.audio_clip import extract_wav
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import iso_utc, utc_now
