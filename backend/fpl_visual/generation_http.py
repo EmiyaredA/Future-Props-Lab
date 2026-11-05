@@ -27,7 +27,9 @@ async def create_generation_task(
     body: GenerationTaskCreateIn,
 ):
     try:
-        return await GenerationIntake(request, session, owner).create_task(project_id, body)
+        return await GenerationIntake.from_request(request, session, owner).create_task(
+            project_id, body
+        )
     except GenerationError as exc:
         raise generation_error(exc) from None
 
@@ -41,7 +43,9 @@ async def create_generation_batch(
     body: ImageGenerationBatchCreateIn,
 ):
     try:
-        return await GenerationIntake(request, session, owner).create_batch(project_id, body)
+        return await GenerationIntake.from_request(request, session, owner).create_batch(
+            project_id, body
+        )
     except GenerationError as exc:
         raise generation_error(exc) from None
 

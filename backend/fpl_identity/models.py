@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, Integer, String, UniqueConstraint
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from app.runtime.ids import new_id
@@ -77,3 +77,14 @@ class IdentityImportReceipt(IdentityMaintenanceBase):
     batch_id: Mapped[str] = mapped_column(String(36), primary_key=True)
     receipt: Mapped[dict] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
+class VisualGenerationApproval(Base):
+    __tablename__ = "identity_visual_generation_approvals"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    owner_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    admission: Mapped[dict] = mapped_column(JSON)
+    actor: Mapped[dict] = mapped_column(JSON)
+    content_sha256: Mapped[str | None] = mapped_column(String(64))
+    byte_size: Mapped[int | None] = mapped_column(Integer)

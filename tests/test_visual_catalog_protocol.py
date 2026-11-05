@@ -22,6 +22,7 @@ from app.apps.visual_workshop.models import (
     VisualAssistantMessage,
     VisualAssistantMessageAsset,
 )
+from app.capabilities.agents.harness import ToolExecutionContext
 from app.capabilities.asset_store.library import AssetLibrary
 from app.llm.generation_runtime import ImmediateGenerationResult
 from app.llm.models import ModelEntry, ModelProvider
@@ -48,7 +49,7 @@ from fpl_runtime.agent_connections import (
     AcceptanceAgentStatus,
     ConnectionOptions,
 )
-from fpl_runtime.asset_references import ReferenceUpdate
+from fpl_runtime.asset_references import PrepareReferenceChange, ReferenceUpdate
 from fpl_runtime.capability_client import CapabilityClient, CapabilityDenied
 from fpl_runtime.claims import HEADER
 from fpl_runtime.database import Database
@@ -60,7 +61,7 @@ from fpl_runtime.thought_archives import ArchiveAuthenticator
 from fpl_runtime.timed_peer import TimedPeer
 from fpl_runtime.visual_acceptance_assets import PURPOSE as ACCEPTANCE_ASSETS_PURPOSE
 from fpl_runtime.visual_acceptance_assets import AcceptanceAssetQuery
-from fpl_runtime.visual_assistant import ASSET_PURPOSE, AttachmentQuery
+from fpl_runtime.visual_assistant import ASSET_PURPOSE, AttachmentQuery, approval_path
 from fpl_runtime.visual_catalog import (
     ACCEPTANCE_TARGET,
     AGENT_ACCEPTANCE_PURPOSE,
@@ -485,6 +486,88 @@ async def verify_native_generation(case, visual, http, models, choice, monkeypat
     await models.visual_generation_runner.process_once()
     assert calls == [body["prompt"]]
     await verify_native_batch(case, visual, models, send, root, choice, calls)
+    await verify_approved_generation(case, visual, models, send, root, choice, original, calls)
+
+
+async def verify_approved_generation(case, visual, models, send, root, choice, original, calls):
+    from fpl_runtime.visual_upload import VisualUpload
+    from fpl_visual.assistant_generation_action import AssistantGenerationAction
+    from fpl_visual.generation_dispatch_records import (
+        VisualGenerationDecision,
+        VisualGenerationDispatch,
+    )
+
+    conversation = await send("POST", root + "/conversations")
+    assert conversation.status_code == 200, conversation.text
+    canvas = await send("GET", root + "/canvas")
+    assert canvas.status_code == 200, canvas.text
+    project_id = root.rsplit("/", 1)[1]
+    conversation_id = conversation.json()["id"]
+    run_id, approval_id = uuid4().hex, uuid4().hex
+    source = approval_path(project_id, conversation_id, run_id, approval_id)
+    context = ToolExecutionContext(
+        run_id,
+        "generate",
+        {},
+        approved_canvas_revision=canvas.json()["revision"],
+        approval_id=approval_id,
+        approval_authorization=(await authorize(case, "visual", "POST", source))[HEADER],
+    )
+    turn = SimpleNamespace(
+        owner=case.viewer,
+        image_model_id=choice.model_id,
+        video_model_id=None,
+        scope=SimpleNamespace(
+            project_id=project_id, conversation_id=conversation_id, run_id=run_id
+        ),
+    )
+    tool = AssistantGenerationAction(visual.state, turn)
+    prompt = "Generate after explicit approval"
+    arguments = {"task": {"kind": "image", "prompt": prompt}, "node": {"id": "approved-image"}}
+    saved = await tool.start_generation_on_canvas(arguments, context)
+    assert saved.success, saved.model_text
+    task_id = saved.data["task"]["id"]
+    assert saved.data["node"]["generation_task_id"] == task_id
+    async with visual.state.database.sessions(info={"owner_user_id": case.viewer}) as session:
+        dispatch = await session.get(VisualGenerationDispatch, task_id)
+        decision = await session.get(VisualGenerationDecision, dispatch.plan_id)
+        assert decision.source_path == source and decision.source_assertion == ""
+        plan_sha256 = decision.plan_sha256
+    stale = await tool.start_generation_on_canvas(arguments, context)
+    assert stale.error_code == "canvas_conflict"
+    runner = visual.state.generation_runner
+    await runner.recover()
+    await runner.process_once()
+    await models.visual_generation_runner.process_once()
+    await runner.process_once()
+    reply = await send("GET", "/v1/visual-workshop/generation-tasks/" + task_id)
+    assert reply.json()["status"] == "completed", reply.text
+    file_id = reply.json()["result_asset_id"]
+    downloaded = await send("GET", f"/v1/files/{file_id}/content", service="assets")
+    assert downloaded.status_code == 200 and downloaded.content == original
+    assert calls.count(prompt) == 1
+
+    # Even the Visual peer cannot reuse an approval to change the sealed bytes.
+    change = PrepareReferenceChange(
+        request_id=uuid4().hex,
+        resource_kind="canvas",
+        resource_id=project_id,
+        expected_resource_revision=canvas.json()["revision"] + 2,
+        asset_ids=[],
+        metadata_asset_ids=[],
+        carried_asset_ids=[],
+        visual_upload=VisualUpload(
+            kind="image",
+            filename="changed.png",
+            mime_type="image/png",
+            byte_size=len(original),
+            content_sha256="0" * 64,
+            generation_task_id=task_id,
+        ),
+    )
+    with pytest.raises(CapabilityDenied) as altered:
+        await visual.state.reference_mutations.client.authorize_generation(plan_sha256, change)
+    assert altered.value.status == 409
 
 
 async def verify_native_batch(case, visual, models, send, root, choice, calls):

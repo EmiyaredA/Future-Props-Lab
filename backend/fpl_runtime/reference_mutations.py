@@ -43,18 +43,22 @@ class ReferenceMutations:
         source_path,
         change: PrepareReferenceChange,
         community=None,
+        generation_plan_sha256=None,
     ):
         change.validate_service(self.service)
         fingerprint = change_digest(change, community)
         # The narrow retention token grants only this exact change. It is persisted
         # before any prepare is sent, and cannot execute or read another resource.
-        authority = await self.client.authorize(
-            assertion=assertion,
-            source_method=source_method,
-            source_path=source_path,
-            change=change,
-            **({"community": community} if community is not None else {}),
-        )
+        if generation_plan_sha256 is not None:
+            authority = await self.client.authorize_generation(generation_plan_sha256, change)
+        else:
+            authority = await self.client.authorize(
+                assertion=assertion,
+                source_method=source_method,
+                source_path=source_path,
+                change=change,
+                **({"community": community} if community is not None else {}),
+            )
         grant = verify_retention(authority, public_key=self.public_key)
         if (
             grant.owner_id != owner

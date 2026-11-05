@@ -101,12 +101,15 @@ def media_receipt(reply, kind):
 
 
 class Uploads:
-    def __init__(self, state, session, owner, assertion, source_path):
+    def __init__(
+        self, state, session, owner, assertion, source_path, *, generation_plan_sha256=None
+    ):
         self.session, self.owner = session, owner
         self.projects = Projects(session, owner)
         self.references = state.reference_mutations
         self.delivery = state.reference_delivery
         self.assertion, self.source_path = assertion, source_path
+        self.generation_plan_sha256 = generation_plan_sha256
 
     @classmethod
     def from_request(cls, request, session, owner):
@@ -122,6 +125,7 @@ class Uploads:
                 source_method="POST",
                 source_path=self.source_path,
                 change=change,
+                generation_plan_sha256=self.generation_plan_sha256,
             )
         except (CapabilityDenied, CapabilityUnavailable) as exc:
             await self.references.abandon_preparation(self.session, self.owner, change)

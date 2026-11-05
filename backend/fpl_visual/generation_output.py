@@ -17,6 +17,7 @@ from app.apps.visual_workshop.outputs.recording import register_output
 from app.runtime.ids import new_id
 from app.runtime.time import utc_now
 from fpl_runtime.capability_client import CapabilityUnavailable
+from fpl_runtime.visual_assistant import approval_source
 
 from .canvas_writes import conflict
 from .generation_dispatch_records import VisualGenerationDispatch
@@ -97,9 +98,12 @@ class GenerationOutput:
         )
         projects = Projects(db, owner)
         current = canvas_out(await projects.canvas_row(project))
+        approved_plan = decision.plan_sha256 if approval_source("POST", source) else None
         await db.rollback()
         receipt = None
-        uploads = Uploads(self.state, db, owner, assertion, source)
+        uploads = Uploads(
+            self.state, db, owner, assertion, source, generation_plan_sha256=approved_plan
+        )
 
         async def apply(assets, request_id):
             nonlocal receipt

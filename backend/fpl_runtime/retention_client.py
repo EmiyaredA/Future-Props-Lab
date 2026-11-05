@@ -8,6 +8,7 @@ import httpx
 
 from .capability_client import CapabilityDenied, CapabilityUnavailable
 from .retention_authority import RetentionRequest
+from .visual_generation_approval import PUBLISH, ApprovedGenerationPublication
 
 
 class RetentionClient:
@@ -70,6 +71,20 @@ class RetentionClient:
             token=self.credential,
             body=body.model_dump(mode="json", exclude_none=True),
         )
+        return self._authority(result)
+
+    async def authorize_generation(self, plan_sha256, change):
+        body = ApprovedGenerationPublication(plan_sha256=plan_sha256, change=change)
+        result = await self._request(
+            "POST",
+            self.identity_url + PUBLISH,
+            token=self.credential,
+            body=body.model_dump(mode="json", exclude_none=True),
+        )
+        return self._authority(result)
+
+    @staticmethod
+    def _authority(result):
         token = result.get("authority")
         if not isinstance(token, str) or not 1 <= len(token) <= 16384:
             raise CapabilityUnavailable("素材引用授权响应无效")

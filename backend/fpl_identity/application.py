@@ -50,6 +50,7 @@ from .models import (
     IntegrationIntent,
     ModelAuditDelivery,
     ModelAuditIntent,
+    VisualGenerationApproval,
 )
 from .project_certification import router as certification_router
 from .retention_api import router as retention_router
@@ -69,6 +70,7 @@ MODELS = (
     ModelAuditIntent,
     IntegrationIntent,
     CertificationAuditDelivery,
+    VisualGenerationApproval,
 )
 
 

@@ -4835,6 +4835,12 @@
       "model": "IdentityImportReceipt"
     },
     {
+      "table": "identity_visual_generation_approvals",
+      "service": "identity",
+      "module": "fpl_identity.models",
+      "model": "VisualGenerationApproval"
+    },
+    {
       "table": "integration_creative_install_receipts",
       "service": "integrations",
       "module": "fpl_integrations.creative_records",
