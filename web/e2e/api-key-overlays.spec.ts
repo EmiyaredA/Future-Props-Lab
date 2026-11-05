@@ -43,7 +43,7 @@ for (const theme of ["light", "dark"] as const) {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/home");
     // Loading the catalog after the account component reproduces the CSS cascade bug.
-    await page.getByRole("button", { name: "模型服务", exact: true }).click();
+    await page.getByRole("button", { name: "管理模型", exact: true }).click();
     await expect(page).toHaveURL(/model-service/);
     await page.getByRole("button", { name: "账号菜单" }).click();
     await page.getByRole("menuitem", { name: "账号设置" }).click();

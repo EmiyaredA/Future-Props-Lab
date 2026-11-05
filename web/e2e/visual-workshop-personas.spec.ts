@@ -118,7 +118,7 @@ test("素材管理员上传后，生成面板立即看到项目素材且不污�
     .toBeGreaterThan(0);
 
   await page.goto("/files");
-  await expect(page.getByRole("heading", { name: "文件管理" })).toBeVisible();
+  await expect(page.locator(".file-management-page")).toBeVisible();
   await expect(page.getByText("公共素材", { exact: true })).toBeVisible();
   await expect(page.getByText("Persona 新素材", { exact: true })).toHaveCount(
     0,
@@ -155,7 +155,7 @@ test("创作者从其他项目复制参考图后可直接提交生成任务", as
     .poll(() => visualWorkshop.generationRequests.at(-1))
     .toMatchObject({
       kind: "image",
-      reference_asset_id: "persona-cross-imported",
+      reference_asset_ids: ["persona-cross-imported"],
     });
 });
 
@@ -168,7 +168,7 @@ test("故障恢复值班员只重试一次，并在列表重读后看到完成�
   await expect(page.getByText("生成已完成，但保存素材失败")).toBeVisible();
   await expect(taskCard.getByText("失败", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "重试保存" }).click();
+  await page.getByRole("button", { name: "恢复结果" }).click();
 
   await expect(taskCard.getByText("已完成", { exact: true })).toBeVisible();
   await expect(page.getByText("生成已完成，但保存素材失败")).toHaveCount(0);

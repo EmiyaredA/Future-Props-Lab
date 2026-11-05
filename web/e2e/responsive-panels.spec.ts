@@ -16,7 +16,9 @@ test("icon rail keeps base-model flyout reachable on narrow screens", async ({
   const menu = page.getByRole("menu", { name: "AI 能力", exact: true });
   await expect(menu).toBeVisible();
   await capture(page, info, "base-model-flyout");
-  await menu.getByRole("menuitem", { name: "模型服务" }).click();
+  await menu
+    .getByRole("menuitem", { name: "模型与智能体", exact: true })
+    .click();
   await expect(page).toHaveURL(/\/model-service$/);
   await expect(menu).toBeHidden();
   await page.getByRole("button", { name: "账号菜单", exact: true }).click();
@@ -91,7 +93,7 @@ test("model capabilities keep controls reachable at compact sizes", async ({
     "语音识别",
     "实时语音",
   ]) {
-    const tab = page.getByRole("button", { name: label, exact: true });
+    const tab = page.getByRole("tab", { name: label, exact: true });
     await expect(tab).toBeEnabled();
     await tab.click();
     await capture(page, info, `model-${label}`);
