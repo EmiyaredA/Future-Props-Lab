@@ -433,7 +433,7 @@ def source_closure(root: Path, service):
                 or name
                 in {
                     "studio.apps.identity.storage.cloud_access",
-                    "app.console.cloud_control.desktop",
+                    "studio.assembly.website.desktop",
                 }
             ):
                 raise ValueError(f"Remote 镜像包含越界依赖：{name}")

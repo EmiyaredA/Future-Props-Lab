@@ -2,13 +2,7 @@
 
 from pathlib import Path
 
-from app.capabilities.web_access.contracts import GatewayProfile
-
-
-class AccessError(Exception):
-    def __init__(self, message: str, status=409):
-        super().__init__(message)
-        self.status = status
+from studio.contracts.gateway.web_access import AccessError, GatewayProfile
 
 
 class ProfileStore:

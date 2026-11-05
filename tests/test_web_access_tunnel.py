@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.capabilities.web_access import runtime
+from studio.assembly.website import public_access as runtime
 
 
 @pytest.mark.asyncio

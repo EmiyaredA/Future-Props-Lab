@@ -52,3 +52,9 @@ class AccessStatus(BaseModel):
     bytes_received: int = 0
     bytes_sent: int = 0
     requests: int = 0
+
+
+class AccessError(Exception):
+    def __init__(self, message: str, status=409):
+        super().__init__(message)
+        self.status = status

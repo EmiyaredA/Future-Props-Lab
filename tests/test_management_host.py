@@ -196,7 +196,7 @@ async def test_stop_timeout_requires_a_separate_force_command(tmp_path):
 async def test_two_tunnels_can_stop_independently(tmp_path):
     import asyncio
 
-    from app.capabilities.web_access.contracts import GatewayProfile
+    from studio.contracts.gateway.web_access import GatewayProfile
     from studio.host.deployment.management_tunnels import GatewayTunnel
 
     class SimulatedTunnel(GatewayTunnel):
@@ -221,7 +221,7 @@ async def test_two_tunnels_can_stop_independently(tmp_path):
 async def test_tunnel_rejects_mismatched_gateway_builds(tmp_path, monkeypatch):
     import httpx
 
-    from app.capabilities.web_access.contracts import GatewayProfile
+    from studio.contracts.gateway.web_access import GatewayProfile
     from studio.host.deployment.management_tunnels import GatewayTunnel
 
     token = "a" * 32

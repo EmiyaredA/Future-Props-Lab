@@ -11,13 +11,12 @@ from dataclasses import dataclass
 from PIL import Image, ImageFilter
 from starlette.websockets import WebSocketDisconnect
 
+from studio.apps.remote_desktop.clients.vnc_probe import password_rejected
 from studio.contracts.identity.cloud_authority import (
     DESKTOP_COOKIE,
     TICKET_SECONDS,
     desktop_ticket_digest,
 )
-
-from .vnc_check import password_rejected
 
 MAX_INSTRUCTION = 16 * 1024 * 1024
 MAX_DESKTOP_FRAME = 24 * 1024 * 1024

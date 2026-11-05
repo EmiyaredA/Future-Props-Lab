@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends
 
-from app.console.routes.cloud_control import router as cloud_control_router
 from app.console.routes.code_agents import router as code_agents_router
 from studio.apps.agent_workbench.transport.website import router as agent_workbench_router
 from studio.apps.amadeus.transport.website import require_amadeus_session
@@ -80,6 +79,7 @@ from studio.apps.visual_workshop.transport.website.generation import (
 )
 from studio.apps.visual_workshop.transport.website.outputs import router as visual_outputs_router
 from studio.assembly.http_dependencies import require_studio_auth
+from studio.assembly.website.cloud_control import router as cloud_control_router
 
 api_router = APIRouter(prefix="/v1")
 api_router.include_router(cloud_control_router)

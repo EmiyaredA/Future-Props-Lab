@@ -11,8 +11,8 @@ import httpx
 import uvicorn
 from starlette.responses import PlainTextResponse
 
-from app.capabilities.web_access.contracts import AccessStatus, EndpointStatus
-from app.capabilities.web_access.profiles import AccessError, ProfileStore
+from studio.contracts.gateway.web_access import AccessError, AccessStatus, EndpointStatus
+from studio.host.deployment.web_profiles import ProfileStore
 from studio.runtime.http.remote_web import RemoteWeb
 from studio.runtime.http.website import WebsiteStaticFiles
 

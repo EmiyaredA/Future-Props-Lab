@@ -3713,12 +3713,6 @@
   ],
   "tables": [
     {
-      "table": "cloud_desktop_preferences",
-      "service": "remote",
-      "module": "app.console.cloud_control.preference_models",
-      "model": "DesktopPreference"
-    },
-    {
       "table": "agent_runtime_connection_jobs",
       "service": "agent-runtime",
       "module": "studio.apps.agent_runtime.storage.service_models",
@@ -4893,6 +4887,12 @@
       "service": "presentation",
       "module": "studio.apps.presentation_workshop.templates.models",
       "model": "PresentationExampleAsset"
+    },
+    {
+      "table": "cloud_desktop_preferences",
+      "service": "remote",
+      "module": "studio.apps.remote_desktop.storage.preference_models",
+      "model": "DesktopPreference"
     },
     {
       "table": "remote_setup_jobs",

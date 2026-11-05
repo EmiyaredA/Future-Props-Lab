@@ -10,7 +10,7 @@ from urllib.parse import urlsplit
 
 import httpx
 
-from app.capabilities.web_access.contracts import GatewayProfile
+from studio.contracts.gateway.web_access import GatewayProfile
 
 
 class GatewayTunnel:

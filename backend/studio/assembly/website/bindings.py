@@ -6,7 +6,6 @@ import time
 from functools import partial
 
 from app.capabilities.agents.sessions.access import LocalSourceAccess
-from app.console.cloud_control.desktop import DesktopConnection
 from app.console.governance.code_agent_connections import enable_connection
 from app.console.governance.code_agents import catalog as code_agent_catalog
 from studio.apps.agent_workbench.events import stream_events
@@ -50,6 +49,8 @@ from studio.apps.portal.storage.documents import InstalledDocuments
 from studio.apps.portal.use_cases.documents import DeveloperDocuments
 from studio.apps.presentation_workshop.exchange.legacy_import import import_legacy_presentation
 from studio.apps.presentation_workshop.legacy_project_assets import LegacyProjectAssets
+from studio.apps.remote_desktop.storage.preferences import PreferenceRecords
+from studio.apps.remote_desktop.use_cases.preferences import DesktopPreferences
 from studio.apps.thought_workshop.external_sync.use_cases import ArticleSync
 from studio.apps.thought_workshop.legacy_accounts import LegacyAccountDirectory
 from studio.apps.thought_workshop.legacy_asset_metadata import LegacyAssetMetadata
@@ -65,6 +66,7 @@ from studio.apps.video_editor.legacy_timeline_assets import LegacyTimelineAssets
 from studio.assembly.annotation import document_editor
 from studio.assembly.website.account_provisioning import create_account
 from studio.assembly.website.creative import bind_creative
+from studio.assembly.website.desktop import DesktopConnection
 from studio.assembly.website.integrations import integration_bindings
 from studio.assembly.website.media import bind_media
 from studio.assembly.website.models import AUTOMATION_ROOTS, CERTIFIABLE_PROJECT_ROOTS
@@ -185,7 +187,11 @@ def bind_components(app, settings, database):
         settings=settings,
         skills=lambda session, owner: app.state.integration_bindings.skills(None, session, owner),
     )
+    app.state.desktop_preferences = DesktopPreferences(PreferenceRecords(sessions))
     app.state.cloud_desktop = DesktopConnection(
-        sessions=sessions, settings_reader=get_cloud_settings, attempts=app.state.auth_attempts
+        sessions=sessions,
+        settings_reader=get_cloud_settings,
+        attempts=app.state.auth_attempts,
+        preferences=app.state.desktop_preferences,
     )
     app.state.workbench_runs = WorkbenchRuns(sessions=sessions, settings=settings)

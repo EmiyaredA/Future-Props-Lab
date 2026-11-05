@@ -14,14 +14,16 @@ import httpx
 import pytest
 from PIL import Image
 
-from app.console.cloud_control import desktop
 from db.migrations import runner as migration_runner
 from studio.apps.agent_workbench.execution import events, project_files, projects, runner, storage
 from studio.apps.agent_workbench.transport.website import execution
 from studio.apps.identity.storage import cloud_access as access
 from studio.apps.identity.use_cases.cloud_factors import totp
+from studio.apps.remote_desktop.transport import guacamole as desktop
+from studio.assembly.website import desktop as desktop_binding
 from studio.assembly.website.account_provisioning import create_account
 from studio.config.settings import CloudProject, get_settings
+from studio.contracts.identity.cloud_authority import DESKTOP_COOKIE, DESKTOP_SOCKET
 from website_test_support import SessionLocal, app
 
 pytestmark = pytest.mark.real_auth
@@ -89,7 +91,7 @@ async def test_totp_unlock_requires_csrf_rejects_replay_and_logout_revokes(monke
         ticket = await client.post(CLOUD + "/desktop/connect", json={"password": "fixture"})
         assert ticket.status_code == 204
         assert "HttpOnly" in ticket.headers["set-cookie"]
-        assert desktop.DESKTOP_SOCKET in ticket.headers["set-cookie"]
+        assert DESKTOP_SOCKET in ticket.headers["set-cookie"]
         assert (await client.post("/v1/auth/logout")).status_code == 204
         assert (
             await client.post(CLOUD + "/desktop/connect", json={"password": "fixture"})
@@ -613,15 +615,13 @@ async def test_managed_chat_keeps_context_and_executes_approved_file_once(
 async def desktop_asgi(client, origin, *, local=True):
     incoming, outgoing = asyncio.Queue(), asyncio.Queue()
     incoming.put_nowait({"type": "websocket.connect"})
-    cookie = "; ".join(
-        f"{name}={client.cookies[name]}" for name in ("fpl_session", desktop.DESKTOP_COOKIE)
-    )
+    cookie = "; ".join(f"{name}={client.cookies[name]}" for name in ("fpl_session", DESKTOP_COOKIE))
     task = asyncio.create_task(
         app(
             {
                 "type": "websocket",
                 "scheme": "ws" if local else "wss",
-                "path": desktop.DESKTOP_SOCKET,
+                "path": DESKTOP_SOCKET,
                 "query_string": b"",
                 "root_path": "",
                 "subprotocols": ["guacamole"],
@@ -804,9 +804,10 @@ async def test_restart_expires_pending_approval_and_preserves_unknown_result():
 
 @pytest.mark.parametrize("vnc_only", [False, True])
 async def test_local_setup_is_scoped_and_applies_without_restart(monkeypatch, tmp_path, vnc_only):
-    from app.console.cloud_control import setup
     from app.console.governance import code_agent_connections
+    from studio.assembly.website import cloud_setup as setup
     from studio.config import settings as config
+    from studio.host.deployment import cloud_setup as host_setup
 
     file = tmp_path / "config.toml"
     file.write_text(
@@ -824,7 +825,7 @@ async def test_local_setup_is_scoped_and_applies_without_restart(monkeypatch, tm
     async def probe(_port, **_kwargs):
         return True
 
-    monkeypatch.setattr(setup, "probe_port", probe)
+    monkeypatch.setattr(host_setup, "probe_port", probe)
     client, owner = await admin_client()
     other, _ = await admin_client(local=False)
     async with aclosing(client), aclosing(other):
@@ -941,7 +942,7 @@ async def test_public_desktop_proof_outlives_agent_unlock_until_session_logout(m
 
 
 async def test_vnc_auth_rejection_is_distinct_from_no_service():
-    from app.console.cloud_control.vnc_check import password_rejected
+    from studio.apps.remote_desktop.clients.vnc_probe import password_rejected
 
     async def reject(reader, writer):
         try:
@@ -998,17 +999,22 @@ async def test_idle_watcher_rechecks_active_connection_when_preference_changes(m
     async def authorized(_db, _principal, **_kwargs):
         return True
 
-    async def preferences(_db, _owner):
+    async def preferences(*, owner):
+        assert owner == "fixture"
         polled.set()
-        return minutes, 1
+        return SimpleNamespace(idle_minutes=minutes)
 
-    monkeypatch.setattr(desktop, "desktop_authorized", authorized)
-    monkeypatch.setattr(desktop, "desktop_preferences", preferences)
+    monkeypatch.setattr(desktop_binding, "desktop_authorized", authorized)
     inputs = desktop.DesktopInput(lambda: clock)
     changed = asyncio.Event()
     task = asyncio.create_task(
-        desktop.watch_access(
-            SimpleNamespace(user_id="fixture"), True, inputs, changed, sessions=SessionLocal
+        desktop_binding.watch_access(
+            SimpleNamespace(user_id="fixture"),
+            True,
+            inputs,
+            changed,
+            sessions=SessionLocal,
+            preferences=SimpleNamespace(read=preferences),
         )
     )
     try:

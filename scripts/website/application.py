@@ -17,7 +17,7 @@ async def local_frontend(app, enabled):
         return
     import uvicorn
 
-    from app.capabilities.web_access.runtime import BrowserServer
+    from studio.assembly.website.public_access import BrowserServer
 
     with socket.socket() as listener:
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -68,10 +68,10 @@ def create_app():
     check_migrations(settings.database_path)
     from scripts.website.frontend import CURRENT
 
-    from app.capabilities.web_access.profiles import AccessError
-    from app.capabilities.web_access.runtime import WebAccess
     from studio.assembly.website.application import create_app as create_backend_app
+    from studio.assembly.website.public_access import WebAccess
     from studio.contracts.gateway.automation_policy import automation_allowed
+    from studio.contracts.gateway.web_access import AccessError
 
     app = create_backend_app(settings)
     from studio.runtime.http.website import CurrentWebsite, attach_website

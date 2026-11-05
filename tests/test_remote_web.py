@@ -102,7 +102,7 @@ async def test_public_listener_restarts_after_a_real_http_connection(tmp_path):
     import httpx
     from fastapi import FastAPI
 
-    from app.capabilities.web_access.runtime import WebAccess
+    from studio.assembly.website.public_access import WebAccess
 
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))

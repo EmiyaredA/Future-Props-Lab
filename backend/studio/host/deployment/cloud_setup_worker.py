@@ -10,14 +10,14 @@ from pathlib import Path
 import httpx
 from fastapi import HTTPException
 
-from app.console.cloud_control.schemas import CloudSetupUpdate
-from app.console.cloud_control.setup import assert_setup_account, read_snapshot, setup_edit
 from studio.apps.management.config_updates import config_bytes, replace_config
 from studio.config import ConfigurationError
 from studio.config.settings import Settings
 from studio.contracts.agent_workbench.native import NativeLease, NativeOutcome
+from studio.contracts.remote_desktop.desktop import CloudSetupUpdate
 from studio.contracts.remote_desktop.setup import OPERATIONS, READ, SAVE
 from studio.host.cloud_projection import CloudPublisher
+from studio.host.deployment.cloud_setup import assert_setup_account, read_snapshot, setup_edit
 from studio.host.receipts import ReceiptStore
 from studio.host.transport import LeaseEnded, NativeTransport, ProtocolConflict
 from studio.runtime.lifecycle.locking import service_lock

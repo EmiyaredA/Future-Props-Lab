@@ -8,8 +8,8 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 from sqlalchemy import update
 
-from app.console.cloud_control.schemas import CloudSetup
 from studio.apps.remote_desktop.storage.service_models import RemoteSetupJob
+from studio.contracts.remote_desktop.desktop import CloudSetup
 from studio.contracts.remote_desktop.setup import OPERATIONS, READ, SAVE, SETTINGS_PATH
 from studio.runtime.tasks.native_queue import NativeQueue, NativeQueueError
 from studio.runtime.time import utc_now

@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select, text
 
-from app.console.cloud_control.preference_models import DesktopPreference
+from studio.apps.remote_desktop.storage.preference_models import DesktopPreference
 from studio.apps.remote_desktop.storage.service_models import DesktopPreferenceImportReceipt
 from studio.contracts.management.migration_batches import (
     BatchReceipt,

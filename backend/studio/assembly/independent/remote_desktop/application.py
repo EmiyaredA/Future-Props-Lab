@@ -10,15 +10,16 @@ from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.console.cloud_control import preferences
-from app.console.cloud_control.desktop_bridge import DesktopConnection
-from app.console.cloud_control.preference_models import DesktopPreference
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.remote_desktop.setup_host import SetupHost
 from studio.apps.remote_desktop.storage.migrations.registry import MIGRATIONS
+from studio.apps.remote_desktop.storage.preference_models import DesktopPreference
+from studio.apps.remote_desktop.storage.preferences import PreferenceRecords
 from studio.apps.remote_desktop.storage.service_models import RemoteSetupJob
 from studio.apps.remote_desktop.transport.desktop_http import router
+from studio.apps.remote_desktop.transport.guacamole import DesktopConnection
 from studio.apps.remote_desktop.transport.setup_native_http import router as setup_native_router
+from studio.apps.remote_desktop.use_cases.preferences import DesktopPreferences
 from studio.config import ConfigurationError
 from studio.contracts.gateway.protocol_hash import public_contract
 from studio.contracts.identity.cloud_authority import DESKTOP_SOCKET
@@ -55,6 +56,7 @@ def create_app(
     ):
         raise ValueError("Remote 设置通道与归属配置未匹配")
     database = Database("remote", state_root, models=(DesktopPreference, RemoteSetupJob))
+    preferences = DesktopPreferences(PreferenceRecords(database.sessions))
     identity = LiveAuthorization(service="remote", credential=credential, transport=transport)
 
     async def current_access(principal, _local, assertion, epoch):
@@ -63,9 +65,7 @@ def create_app(
         )
         if current is None or not current.desktop_authorized or current.factor_epoch != epoch:
             return None
-        async with database.sessions(info={"owner_user_id": principal.user_id}) as db:
-            minutes, _revision = await preferences.desktop_preferences(db, principal.user_id)
-            return minutes
+        return (await preferences.read(owner=principal.user_id)).idle_minutes
 
     async def dial(options):
         return await asyncio.open_connection(
@@ -107,6 +107,7 @@ def create_app(
         title="FPL Remote", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan
     )
     app.state.database = database
+    app.state.desktop_preferences = preferences
     app.state.auth_attempts = attempts
     app.state.cloud_desktop = desktop
     app.state.remote_settings = settings

@@ -1,23 +1,24 @@
 from fastapi import APIRouter, HTTPException, Request, Response, WebSocket
 
-from app.console.cloud_control import preferences, setup
-from app.console.cloud_control.desktop import DESKTOP_COOKIE, DESKTOP_SOCKET
-from app.console.cloud_control.schemas import (
-    CloudSetup,
-    CloudSetupUpdate,
-    CloudStatus,
-    DesktopLogin,
-    IdlePreference,
-)
 from studio.apps.identity.storage import cloud_access as access
 from studio.apps.identity.transport.website.cloud_totp import router as totp_router
+from studio.apps.remote_desktop.use_cases.preferences import PreferenceConflict
 from studio.assembly.http_dependencies import (
     SessionDep,
     StudioAuth,
     require_recent_reauthentication,
     resolve_studio_websocket_principal,
 )
+from studio.assembly.website import cloud_setup as setup
 from studio.config.settings import get_cloud_settings
+from studio.contracts.identity.cloud_authority import DESKTOP_COOKIE, DESKTOP_SOCKET
+from studio.contracts.remote_desktop.desktop import (
+    CloudSetup,
+    CloudSetupUpdate,
+    CloudStatus,
+    DesktopLogin,
+    IdlePreference,
+)
 from studio.runtime.http.website import require_local_browser
 
 router = APIRouter(prefix="/cloud-control", tags=["cloud-control"])
@@ -34,14 +35,14 @@ async def status(request: Request, response: Response, db: SessionDep, principal
     local = local_request(request)
     enabled = access.allowed(principal, local=local)
     enrolled = await access.enrolled(db, principal.user_id) if enabled else False
-    minutes, revision = await preferences.desktop_preferences(db, principal.user_id)
+    preference = await request.app.state.desktop_preferences.read(owner=principal.user_id)
     return CloudStatus(
         enabled=enabled,
         host_label=settings.fpl_cloud_control_host_label,
         desktop_configured=access.allowed(principal, local=local, desktop=True),
         desktop_authorized=await access.desktop_authorized(db, principal, local=local),
-        idle_minutes=minutes,
-        idle_revision=revision,
+        idle_minutes=preference.idle_minutes,
+        idle_revision=preference.revision,
         local=local,
         enrolled=enrolled,
         unlocked_until=await access.unlock_expiry(db, principal, local=local),
@@ -49,11 +50,26 @@ async def status(request: Request, response: Response, db: SessionDep, principal
 
 
 @router.put("/desktop/idle", response_model=IdlePreference)
-async def save_idle(request: Request, body: IdlePreference, db: SessionDep, principal: StudioAuth):
+async def save_idle(request: Request, body: IdlePreference, principal: StudioAuth):
     access.require_enabled(principal, local=local_request(request), desktop=True)
-    minutes, revision = await preferences.save_desktop_preferences(db, principal.user_id, body)
+    try:
+        preference = await request.app.state.desktop_preferences.save(
+            owner=principal.user_id, minutes=body.idle_minutes, revision=body.revision
+        )
+    except PreferenceConflict as error:
+        raise HTTPException(
+            409,
+            {
+                "code": "revision_conflict",
+                "message": str(error),
+                "current": {
+                    "idle_minutes": error.current.idle_minutes,
+                    "revision": error.current.revision,
+                },
+            },
+        ) from None
     request.app.state.cloud_desktop.update_idle(principal.user_id)
-    return IdlePreference(idle_minutes=minutes, revision=revision)
+    return IdlePreference(idle_minutes=preference.idle_minutes, revision=preference.revision)
 
 
 @router.post("/desktop/connect", status_code=204)

@@ -5,8 +5,6 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
-from app.capabilities.web_access.contracts import AccessStatus
-from app.capabilities.web_access.profiles import AccessError
 from studio.apps.gateway.use_cases.resource_links import ResourceLinkError
 from studio.assembly.http_dependencies import SessionDep, StudioAuth
 from studio.contracts.gateway.automation import (
@@ -16,6 +14,7 @@ from studio.contracts.gateway.automation import (
 )
 from studio.contracts.gateway.automation_policy import MANIFEST
 from studio.contracts.gateway.service_status import ServicesStatusOut, monolith_status, status_time
+from studio.contracts.gateway.web_access import AccessError, AccessStatus
 from studio.runtime.http.website import require_local_browser
 
 router = APIRouter(prefix="/automation", tags=["automation"])

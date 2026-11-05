@@ -136,6 +136,8 @@ def test_migrated_packages_have_one_source_owner():
         ROOT / "backend/app/console/amadeus",
         ROOT / "backend/app/tool_navigation",
         ROOT / "backend/app/console/file_library",
+        ROOT / "backend/app/console/cloud_control",
+        ROOT / "backend/app/capabilities/web_access",
     ):
         assert not list(directory.rglob("*.py")), f"stale implementation in {directory}"
 
@@ -163,6 +165,16 @@ def test_cloud_factors_have_one_owner_and_explicit_dependencies():
     assert not any(
         isinstance(node, ast.Name) and node.id == "SessionDep" for node in ast.walk(tree)
     )
+
+
+def test_remote_preference_transport_has_no_database_dependency():
+    route = STUDIO / "apps/remote_desktop/transport/desktop_http.py"
+    tree = ast.parse(route.read_text())
+    assert not any(
+        isinstance(node, ast.Name) and node.id == "SessionDep" for node in ast.walk(tree)
+    )
+    for dependency in imports(route):
+        assert ".storage" not in dependency and not dependency.startswith("sqlalchemy")
 
 
 def test_runtime_mechanisms_do_not_import_application_implementations():

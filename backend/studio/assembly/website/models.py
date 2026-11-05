@@ -5,7 +5,6 @@ from __future__ import annotations
 from sqlalchemy import event
 from sqlalchemy.orm import Session, with_loader_criteria
 
-from app.console.cloud_control.preference_models import DesktopPreference
 from studio.apps.agent_workbench.execution.models import (
     WorkbenchChat,
     WorkbenchProject,
@@ -105,6 +104,7 @@ from studio.apps.presentation_workshop.templates.models import (
     PresentationTemplate,
     PresentationTemplateAsset,
 )
+from studio.apps.remote_desktop.storage.preference_models import DesktopPreference
 from studio.apps.thought_workshop.external_sync.models import ArticleSyncAsset as ArticleSyncAsset
 from studio.apps.thought_workshop.external_sync.models import ArticleSyncBinding, ArticleSyncTask
 from studio.apps.thought_workshop.external_sync.models import ArticleSyncStep as ArticleSyncStep

@@ -3,18 +3,18 @@
 import jwt
 from fastapi import APIRouter, HTTPException, Request, Response, WebSocket
 
-from app.console.cloud_control import preferences
-from app.console.cloud_control.schemas import (
+from studio.apps.remote_desktop.use_cases.preferences import PreferenceConflict
+from studio.config import ConfigurationError
+from studio.contracts.identity.claims import HEADER, verify_context
+from studio.contracts.identity.cloud_authority import DESKTOP_COOKIE, DESKTOP_SOCKET, TICKET_SECONDS
+from studio.contracts.remote_desktop.desktop import (
     CloudSetup,
     CloudSetupUpdate,
     CloudStatus,
     DesktopLogin,
     IdlePreference,
 )
-from studio.config import ConfigurationError
-from studio.contracts.identity.claims import HEADER, verify_context
-from studio.contracts.identity.cloud_authority import DESKTOP_COOKIE, DESKTOP_SOCKET, TICKET_SECONDS
-from studio.runtime.http.dependencies import SessionDep, StudioAuth
+from studio.runtime.http.dependencies import StudioAuth
 from studio.runtime.http.website import require_local_browser
 
 router = APIRouter(prefix="/cloud-control", tags=["cloud-control"])
@@ -34,9 +34,9 @@ async def authority(request):
 
 
 @router.get("/status", response_model=CloudStatus)
-async def status(request: Request, db: SessionDep, principal: StudioAuth):
+async def status(request: Request, principal: StudioAuth):
     current = await authority(request)
-    minutes, revision = await preferences.desktop_preferences(db, principal.user_id)
+    preference = await request.app.state.desktop_preferences.read(owner=principal.user_id)
     state = request.app.state
     label = state.remote_settings.host_label
     if state.cloud_projection is not None:
@@ -49,8 +49,8 @@ async def status(request: Request, db: SessionDep, principal: StudioAuth):
         host_label=label,
         desktop_configured=current.desktop_configured,
         desktop_authorized=current.desktop_authorized,
-        idle_minutes=minutes,
-        idle_revision=revision,
+        idle_minutes=preference.idle_minutes,
+        idle_revision=preference.revision,
         local=request.state.service_actor.local,
         enrolled=current.enrolled,
         unlocked_until=current.unlocked_until,
@@ -58,13 +58,28 @@ async def status(request: Request, db: SessionDep, principal: StudioAuth):
 
 
 @router.put("/desktop/idle", response_model=IdlePreference)
-async def save_idle(request: Request, body: IdlePreference, db: SessionDep, principal: StudioAuth):
+async def save_idle(request: Request, body: IdlePreference, principal: StudioAuth):
     current = await authority(request)
     if not current.desktop_configured:
         raise HTTPException(403, "该账号或入口未启用云控操作")
-    minutes, revision = await preferences.save_desktop_preferences(db, principal.user_id, body)
+    try:
+        preference = await request.app.state.desktop_preferences.save(
+            owner=principal.user_id, minutes=body.idle_minutes, revision=body.revision
+        )
+    except PreferenceConflict as error:
+        raise HTTPException(
+            409,
+            {
+                "code": "revision_conflict",
+                "message": str(error),
+                "current": {
+                    "idle_minutes": error.current.idle_minutes,
+                    "revision": error.current.revision,
+                },
+            },
+        ) from None
     request.app.state.cloud_desktop.update_idle(principal.user_id)
-    return IdlePreference(idle_minutes=minutes, revision=revision)
+    return IdlePreference(idle_minutes=preference.idle_minutes, revision=preference.revision)
 
 
 @router.post("/desktop/connect", status_code=204)

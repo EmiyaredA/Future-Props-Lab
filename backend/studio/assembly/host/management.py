@@ -8,8 +8,8 @@ from pathlib import Path
 
 import httpx
 
-from app.capabilities.web_access.contracts import GatewayProfile
 from studio.config import read_config
+from studio.contracts.gateway.web_access import GatewayProfile
 from studio.host.deployment.management_control import DeploymentControl
 from studio.host.deployment.management_tunnels import GatewayTunnel
 from studio.host.deployment.management_worker import ManagementWorker

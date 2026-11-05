@@ -2,7 +2,6 @@
 
 from functools import partial
 
-from app.console.cloud_control.preference_models import DesktopPreference
 from studio.apps.remote_desktop.preference_migration import (
     OWNER_ID,
     PreferenceBatch,
@@ -12,6 +11,7 @@ from studio.apps.remote_desktop.preference_migration import (
     inventory,
 )
 from studio.apps.remote_desktop.storage.migrations.registry import MIGRATIONS
+from studio.apps.remote_desktop.storage.preference_models import DesktopPreference
 from studio.apps.remote_desktop.storage.service_models import DesktopPreferenceImportReceipt
 from studio.runtime.database.migration_apps import export_app, import_app, mount_dataset
 
