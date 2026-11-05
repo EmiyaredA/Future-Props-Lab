@@ -89,7 +89,9 @@ async def review_mesh(case, tmp_path):
     models.state.settings = SimpleNamespace(
         fpl_acceptance_model_owner_user_id=case.viewer, fpl_acceptance_model_id=model_id
     )
-    models.state.visual_review_attempts = VisualReviewAttempts(models.state)
+    models.state.visual_review_attempts = VisualReviewAttempts(
+        database.sessions, models.state.settings, decrypt=lambda _: "test-key"
+    )
     models.include_router(models_catalog)
     models.include_router(model_reviews)
     rendering = create_rendering(
@@ -266,10 +268,6 @@ async def test_node_review_restarts_after_lost_evidence_and_model_receipts(
             }
         )
 
-    monkeypatch.setattr(
-        "studio.apps.model_service.visual.visual_review_attempts.decrypt_secret",
-        lambda _: "test-key",
-    )
     monkeypatch.setattr(
         "studio.apps.model_service.visual.visual_review_attempts.evaluate_review", evaluate
     )

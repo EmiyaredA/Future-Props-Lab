@@ -1080,3 +1080,7 @@ Amadeus 的会话文件路径由装配明确提供给 `storage/files.py` 和 Ski
 ### 工具循环与审批等待生命周期
 
 `studio/runtime/tasks/reactive_tools/` 保存原 Harness 的通用循环、上下文预算、工具阶段和进程内审批协调机制。模型消息协议继续由 `studio/contracts/agent_runtime/dialogue.py` 提供；业务审批持久化和任务结算仍属于业务应用或 Agent Runtime 服务。`ReactiveToolLoop` 必须接收 `ApprovalPort`，不创建默认审批单例；网站和独立视觉服务分别装配审批对象，关闭时取消全部等待句柄，重启后不得从内存恢复为批准。移除原父包集中重导出和无行为的 Harness 子类，调用方明确导入所需模块。
+
+### 写作与模型尝试的装配边界
+
+`studio/assembly/website/thought_writing.py` 拥有兼容网站的思绪写作模型选择、供应商流及调用日志连接，显式接收会话工厂、解密器与传输解析器；思绪业务通过 `WritingModels` 端口使用它。原 `apps/thought_workshop/legacy_writing.py` 已移除。独立 Models 的助手轮次、视觉验收与 Galgame 转录只接收自身会话、配置及解密能力，视觉验收不再接收整个应用状态容器。`apps/model_service/writing.py` 使用模型入口注入的解密器。没有消费者的旧 `clients/text.py` 同进程入口已删除，既有 HTTP 写作和推理协议保持不变。

@@ -50,14 +50,11 @@ async def test_visual_assistant_model_round_receipts_are_owned_and_replay_exactl
             yield ModelTextDelta(" shot")
             yield ModelTurnEnd(usage=Usage(prompt_tokens=5, completion_tokens=8, total_tokens=13))
 
-    monkeypatch.setattr(
-        "studio.apps.model_service.assistant_model_runs.decrypt_secret", lambda _: "isolated-key"
-    )
     monkeypatch.setattr("studio.apps.model_service.assistant_model_runs.HttpAgentAdapter", Adapter)
     async with review_mesh(case, tmp_path) as (visual, _send, _faults), visual() as app:
         models = case.mesh.apps["models"]
         database = models.state.database
-        attempts = AssistantModelRuns(database.sessions)
+        attempts = AssistantModelRuns(database.sessions, decrypt=lambda _: "isolated-key")
         models.state.assistant_model_runs = attempts
         models.include_router(router)
 

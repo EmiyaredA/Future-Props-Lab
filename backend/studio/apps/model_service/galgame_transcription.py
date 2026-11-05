@@ -5,7 +5,6 @@ import time
 from cryptography.fernet import InvalidToken
 from sqlalchemy import select, text, update
 
-from app.runtime.credentials import decrypt_secret
 from studio.apps.model_service.catalog.transcription import supports_asr
 from studio.apps.model_service.providers.transcription import transcribe_model_audio
 from studio.apps.model_service.storage.models.call_log import LlmCallLog
@@ -57,8 +56,9 @@ async def recover_transcription_attempts(sessions):
 
 
 class GalgameTranscription:
-    def __init__(self, sessions):
+    def __init__(self, sessions, *, decrypt):
         self.sessions = sessions
+        self.decrypt = decrypt
 
     async def read(self, owner, identity, fingerprint):
         async with self.sessions(info={"owner_user_id": owner}) as db:
@@ -93,7 +93,7 @@ class GalgameTranscription:
                     "语音识别原件超过模型大小限制", "asr_input_too_large", 413
                 )
             try:
-                api_key = decrypt_secret(provider.api_key_ciphertext)
+                api_key = self.decrypt(provider.api_key_ciphertext)
             except (InvalidToken, ValueError) as exc:
                 raise ProjectResourceError(
                     "供应商 API Key 不可用", "asr_model_credentials_invalid", 409

@@ -6,7 +6,6 @@ from time import monotonic
 
 from sqlalchemy import select, text, update
 
-from app.runtime.credentials import decrypt_secret
 from studio.apps.model_service.admission.admission import check_capacity
 from studio.apps.model_service.catalog.visual import fixed_acceptance_model
 from studio.apps.model_service.providers.visual_review import (
@@ -60,8 +59,8 @@ def decode_images(evidence):
 
 
 class VisualReviewAttempts:
-    def __init__(self, state):
-        self.sessions, self.settings = state.database.sessions, state.settings
+    def __init__(self, sessions, settings, *, decrypt):
+        self.sessions, self.settings, self.decrypt = sessions, settings, decrypt
 
     async def recover(self):
         async with self.sessions(info={"allow_system_reads": True}) as session:
@@ -97,7 +96,7 @@ class VisualReviewAttempts:
             args = {
                 "kind": provider.kind,
                 "base_url": provider.base_url,
-                "api_key": decrypt_secret(provider.api_key_ciphertext)
+                "api_key": self.decrypt(provider.api_key_ciphertext)
                 if provider.api_key_ciphertext
                 else "",
                 "model": model.slug,

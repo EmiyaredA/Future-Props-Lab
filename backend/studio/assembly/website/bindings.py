@@ -57,7 +57,6 @@ from studio.apps.remote_desktop.use_cases.preferences import DesktopPreferences
 from studio.apps.thought_workshop.external_sync.use_cases import ArticleSync
 from studio.apps.thought_workshop.legacy_accounts import LegacyAccountDirectory
 from studio.apps.thought_workshop.legacy_asset_metadata import LegacyAssetMetadata
-from studio.apps.thought_workshop.legacy_writing import LegacyWritingModels
 from studio.apps.thought_workshop.website.account_directory import DirectoryBindings
 from studio.apps.thought_workshop.writing import WritingBindings
 from studio.apps.tools.storage.navigation import NavigationRecords
@@ -82,6 +81,7 @@ from studio.assembly.website.desktop import DesktopConnection
 from studio.assembly.website.integrations import integration_bindings
 from studio.assembly.website.media import bind_media
 from studio.assembly.website.models import AUTOMATION_ROOTS, CERTIFIABLE_PROJECT_ROOTS
+from studio.assembly.website.thought_writing import WebsiteWritingModels
 from studio.assembly.website.video_library import ingest_library
 from studio.config import REPO_ROOT
 from studio.config.settings import get_cloud_settings
@@ -201,8 +201,11 @@ def bind_components(app, settings, database):
         for_request=lambda _request, session, _principal: LegacyAccountDirectory(session)
     )
     app.state.thought_writing = WritingBindings(
-        for_request=lambda _request, owner: LegacyWritingModels(
-            sessions, owner, transport_resolver=app.state.demo_runtime.mock_transport
+        for_request=lambda _request, owner: WebsiteWritingModels(
+            sessions,
+            owner,
+            transport_resolver=app.state.demo_runtime.mock_transport,
+            decrypt=app.state.model_template_cipher.decrypt,
         )
     )
     app.state.workbench_enabled = lambda: settings.fpl_agent_workbench_enabled

@@ -5,7 +5,6 @@ from datetime import timedelta
 
 from sqlalchemy import select, text
 
-from app.runtime.credentials import decrypt_secret
 from studio.apps.model_service.admission.admission import check_capacity
 from studio.apps.model_service.catalog.assistant import chat_ready
 from studio.apps.model_service.providers.agent import HttpAgentAdapter
@@ -66,8 +65,9 @@ async def release(session, lease_id):
 
 
 class AssistantModelRuns:
-    def __init__(self, sessions):
+    def __init__(self, sessions, *, decrypt):
         self.sessions = sessions
+        self.decrypt = decrypt
 
     async def recover(self):
         await self.interrupt_before(utc_now())
@@ -178,7 +178,7 @@ class AssistantModelRuns:
             args = {
                 "kind": provider.kind,
                 "base_url": provider.base_url,
-                "api_key": decrypt_secret(provider.api_key_ciphertext)
+                "api_key": self.decrypt(provider.api_key_ciphertext)
                 if provider.api_key_ciphertext
                 else "",
             }

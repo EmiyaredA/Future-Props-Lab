@@ -33,7 +33,9 @@ async def test_assistant_source_and_model_settlement_recover_without_persisting_
     peer = TimedPeer(SECRET, domain=SETTLEMENT_DOMAIN)
     async with review_mesh(case, tmp_path) as (visual, send, _faults):
         models = case.mesh.apps["models"]
-        models.state.assistant_model_runs = AssistantModelRuns(models.state.database.sessions)
+        models.state.assistant_model_runs = AssistantModelRuns(
+            models.state.database.sessions, decrypt=lambda _: "fixture"
+        )
         models.state.assistant_settlement_peer = peer
         models.include_router(router)
 

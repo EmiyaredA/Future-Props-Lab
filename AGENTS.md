@@ -147,6 +147,8 @@
 - 模型目录的凭据读写、诊断、默认项冲突快照及演示安装使用装配提供的 `CatalogCipher`；
   邀请码创建与查看显式接收 Identity 装配的加密／解密能力。禁止回退到旧全局凭据帮助函数，
   密钥提示由 `studio/runtime/secrets.py` 的实例统一生成，不在业务内复制解密和脱敏规则。
+- 独立模型助手轮次、视觉验收、Galgame 转录与思绪写作显式注入解密能力；构造器不接收整个
+  应用状态容器。网站思绪写作的跨库连接归 `assembly/website/thought_writing.py`，业务只消费写作端口。
 - 模型与供应商差异在 `backend/studio/apps/model_service/providers/` 的适配边界内归一化。公共 REST/SSE、模型
   测试和调用日志契约保持供应商无关；供应商管理页面可以展示配置，但前端运行流程不得依赖
   供应商原始事件。

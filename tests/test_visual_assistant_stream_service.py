@@ -114,16 +114,15 @@ async def test_native_visual_stream_approval_and_canvas_cas(
                 yield ModelTextDelta("模型答复")
                 yield ModelTurnEnd(usage=Usage(5, 8, 13))
 
-    monkeypatch.setattr(
-        "studio.apps.model_service.assistant_model_runs.decrypt_secret", lambda _: "fixture"
-    )
     monkeypatch.setattr("studio.apps.model_service.assistant_model_runs.HttpAgentAdapter", Adapter)
     peer = TimedPeer(SECRET, domain=SETTLEMENT_DOMAIN)
     async with review_mesh(case, tmp_path) as (visual, send, _faults), visual() as app:
         assert app.state.public_routes_complete
         app.state.assistant_dispatches.peer = peer
         models = case.mesh.apps["models"]
-        models.state.assistant_model_runs = AssistantModelRuns(models.state.database.sessions)
+        models.state.assistant_model_runs = AssistantModelRuns(
+            models.state.database.sessions, decrypt=lambda _: "fixture"
+        )
         models.state.assistant_settlement_peer = peer
         models.include_router(router)
 

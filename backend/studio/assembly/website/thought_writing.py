@@ -8,7 +8,6 @@ from uuid import uuid4
 
 from sqlalchemy import select
 
-from app.runtime.credentials import decrypt_secret
 from studio.apps.model_service.providers.chat_completions import TEXT_PROVIDER_KINDS
 from studio.apps.model_service.providers.streaming import ChatMessageInput, stream_text_completion
 from studio.apps.model_service.storage.models.call_log import LlmCallLog
@@ -50,12 +49,13 @@ class ProviderSelection:
     slug: str
 
 
-class LegacyWritingModels:
+class WebsiteWritingModels:
     """Recovery website adapter; only assembly imports this module."""
 
-    def __init__(self, sessions, owner_user_id, *, transport_resolver):
+    def __init__(self, sessions, owner_user_id, *, transport_resolver, decrypt):
         self.sessions, self.owner = sessions, owner_user_id
         self.transport_resolver = transport_resolver
+        self.decrypt = decrypt
 
     async def list(self):
         async with self.sessions() as session:
@@ -96,7 +96,10 @@ class LegacyWritingModels:
 
     def events(self, prepared):
         return writing_events(
-            prepared, sessions=self.sessions, transport_resolver=self.transport_resolver
+            prepared,
+            sessions=self.sessions,
+            transport_resolver=self.transport_resolver,
+            decrypt=self.decrypt,
         )
 
 
@@ -104,7 +107,7 @@ def event(kind: str, **payload) -> bytes:
     return ("data: " + json.dumps({"type": kind, **payload}, ensure_ascii=False) + "\n\n").encode()
 
 
-async def writing_events(prepared, *, sessions, transport_resolver):
+async def writing_events(prepared, *, sessions, transport_resolver, decrypt):
     selection = prepared.model.handle
     if not isinstance(selection, ProviderSelection):
         raise ValueError("写作模型未绑定恢复网站适配器")
@@ -117,7 +120,7 @@ async def writing_events(prepared, *, sessions, transport_resolver):
         async for chunk in stream_text_completion(
             kind=selection.kind,
             base_url=selection.base_url,
-            api_key=decrypt_secret(selection.ciphertext) if selection.ciphertext else "",
+            api_key=decrypt(selection.ciphertext) if selection.ciphertext else "",
             model=selection.slug,
             transport=transport_resolver(selection.base_url),
             temperature=0.5,

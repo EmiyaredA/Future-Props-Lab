@@ -20,8 +20,10 @@ from studio.apps.model_service.providers.transcription import TranscriptionResul
 from studio.apps.model_service.transport.galgame_asr_http import router as catalog_router
 from studio.apps.model_service.transport.galgame_transcription_http import router as attempts_router
 from studio.assembly.independent.galgame_workshop.application import create_app
+from studio.config.settings import get_settings
 from studio.contracts.galgame_workshop.galgame_asr_execution import EXECUTION
 from studio.runtime.database.migrations import apply
+from studio.runtime.secrets import SecretCipher
 
 PROJECTS = "/v1/galgame-workshop/projects"
 
@@ -87,7 +89,9 @@ async def test_voice_jobs_resume_receipts_and_keep_newer_manual_edits(
         httpx.AsyncClient(transport=case.mesh, base_url="http://galgame") as client,
     ):
         models.state.galgame_asr_staging = tmp_path
-        models.state.galgame_transcription = GalgameTranscription(database.sessions)
+        models.state.galgame_transcription = GalgameTranscription(
+            database.sessions, decrypt=SecretCipher(get_settings().fpl_secrets_key).decrypt
+        )
         models.include_router(catalog_router)
         models.include_router(attempts_router)
 

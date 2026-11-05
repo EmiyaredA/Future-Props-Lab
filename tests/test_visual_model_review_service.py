@@ -72,7 +72,9 @@ async def test_visual_model_reviews_replay_exact_result_and_never_resubmit_unkno
     models.state.settings = SimpleNamespace(
         fpl_acceptance_model_owner_user_id=case.viewer, fpl_acceptance_model_id=model_id
     )
-    attempts = VisualReviewAttempts(models.state)
+    attempts = VisualReviewAttempts(
+        database.sessions, models.state.settings, decrypt=lambda _: "fixture-key"
+    )
     models.state.visual_review_attempts = attempts
     models.include_router(router)
     case.mesh.apps["models"] = models
@@ -133,10 +135,6 @@ async def test_visual_model_reviews_replay_exact_result_and_never_resubmit_unkno
                 }
             )
 
-        monkeypatch.setattr(
-            "studio.apps.model_service.visual.visual_review_attempts.decrypt_secret",
-            lambda _: "fixture-key",
-        )
         monkeypatch.setattr(
             "studio.apps.model_service.visual.visual_review_attempts.evaluate_review", evaluate
         )

@@ -197,7 +197,9 @@ def create_app(
     if settings.database_path != database.path:
         raise ValueError("Models 配置必须指向自己的数据目录")
     ledger = ModelAdmission(database.sessions)
-    assistant_runs = AssistantModelRuns(database.sessions)
+    assistant_runs = AssistantModelRuns(
+        database.sessions, decrypt=SecretCipher(settings.fpl_secrets_key).decrypt
+    )
     authority = ModelTaskAuthority(
         database.sessions, public_key=public_key, catalog=catalog, identity=identity
     )
@@ -299,12 +301,15 @@ def create_app(
         openapi_url=None,
     )
     app.state.demo_installations = demo_installations
-    app.state.galgame_transcription = GalgameTranscription(database.sessions)
+    app.state.galgame_transcription = GalgameTranscription(
+        database.sessions, decrypt=SecretCipher(settings.fpl_secrets_key).decrypt
+    )
     app.state.galgame_asr_staging = galgame_asr_staging
     app.state.integration_intents = integration_intents
     app.state.service_id = "models"
     app.state.settings, app.state.database = settings, database
     app.state.model_template_cipher = SecretCipher(settings.fpl_secrets_key)
+    app.state.model_decrypt = app.state.model_template_cipher.decrypt
     annotation_cipher = SecretCipher(settings.fpl_secrets_key)
     app.state.annotation_model_transcription = lambda session: AnnotationTranscription(
         session, decrypt=annotation_cipher.decrypt
@@ -319,7 +324,9 @@ def create_app(
     app.state.visual_generation_intake = VisualGenerationIntake(app.state)
     app.state.visual_generation_runner = VisualGenerationRunner(app.state)
     app.state.visual_generation_results = VisualGenerationResults(app.state)
-    app.state.visual_review_attempts = VisualReviewAttempts(app.state)
+    app.state.visual_review_attempts = VisualReviewAttempts(
+        database.sessions, settings, decrypt=SecretCipher(settings.fpl_secrets_key).decrypt
+    )
     if (
         visual_assistant_settlement_key is not None
         and visual_assistant_settlement_key == visual_generation_key

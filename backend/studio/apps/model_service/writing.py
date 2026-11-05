@@ -12,7 +12,6 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy import select
 
-from app.runtime.credentials import decrypt_secret
 from studio.apps.model_service.admission.bindings import admission_for
 from studio.apps.model_service.providers.chat_completions import TEXT_PROVIDER_KINDS
 from studio.apps.model_service.providers.streaming import ChatMessageInput, stream_text_completion
@@ -147,7 +146,9 @@ async def completion_events(request, verified, body, selection):
         source = stream_text_completion(
             kind=selection.kind,
             base_url=selection.base_url,
-            api_key=decrypt_secret(selection.ciphertext) if selection.ciphertext else "",
+            api_key=request.app.state.model_decrypt(selection.ciphertext)
+            if selection.ciphertext
+            else "",
             model=selection.slug,
             temperature=0.5,
             max_tokens=4096,

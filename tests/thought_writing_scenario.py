@@ -24,11 +24,13 @@ from studio.apps.model_service.writing import router
 from studio.apps.thought_workshop.assistant import PreparedWriting
 from studio.apps.thought_workshop.writing_models import HttpWritingModels
 from studio.assembly.independent.identity.application import create_app
+from studio.config.settings import get_settings
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.thought_workshop.writing import WritingInput
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.ownership import bind_owner
 from studio.runtime.database.sessions import Database
+from studio.runtime.secrets import SecretCipher
 
 root = Path(os.environ["THOUGHT_WRITING_ROOT"]).resolve()
 assert root.is_relative_to(Path(tempfile.gettempdir()).resolve())
@@ -63,6 +65,7 @@ routes.targets["identity"] = httpx.ASGITransport(app=identity)
 database = Database("models", root / "models", models=MODELS, account_models=ACCOUNT_MODELS)
 models = FastAPI()
 models.state.database = database
+models.state.model_decrypt = SecretCipher(get_settings().fpl_secrets_key).decrypt
 models.state.identity_public_key = key.public_key()
 models.state.identity = LiveAuthorization(
     service="models",

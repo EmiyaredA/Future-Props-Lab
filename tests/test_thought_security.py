@@ -12,8 +12,8 @@ from tests.thought_helpers import delete_note
 from studio.apps.model_service.providers.streaming import TextDelta
 from studio.apps.model_service.storage.models.call_log import LlmCallLog
 from studio.apps.thought_workshop.assistant import PreparedWriting
-from studio.apps.thought_workshop.legacy_writing import ProviderSelection, writing_events
 from studio.apps.thought_workshop.writing import WritingModel
+from studio.assembly.website.thought_writing import ProviderSelection, writing_events
 from website_test_support import SessionLocal, app
 
 ROOT = "/v1/thought-workshop"
@@ -94,13 +94,16 @@ async def test_assistant_stream_and_logs_use_normalized_events(monkeypatch):
         yield TextDelta(text="摘要")
         yield TextDelta(text="内容", prompt_tokens=8, completion_tokens=2, total_tokens=10)
 
-    monkeypatch.setattr("studio.apps.thought_workshop.legacy_writing.stream_text_completion", fake)
+    monkeypatch.setattr("studio.assembly.website.thought_writing.stream_text_completion", fake)
     request = prepared()
     result = b"".join(
         [
             chunk
             async for chunk in writing_events(
-                request, sessions=SessionLocal, transport_resolver=lambda _url: None
+                request,
+                sessions=SessionLocal,
+                transport_resolver=lambda _url: None,
+                decrypt=app.state.model_template_cipher.decrypt,
             )
         ]
     ).decode()
@@ -122,14 +125,15 @@ async def test_assistant_error_is_redacted_and_cancellation_settles(monkeypatch)
         raise RuntimeError("secret-provider-token")
         yield TextDelta()
 
-    monkeypatch.setattr(
-        "studio.apps.thought_workshop.legacy_writing.stream_text_completion", broken
-    )
+    monkeypatch.setattr("studio.assembly.website.thought_writing.stream_text_completion", broken)
     output = b"".join(
         [
             chunk
             async for chunk in writing_events(
-                prepared(), sessions=SessionLocal, transport_resolver=lambda _url: None
+                prepared(),
+                sessions=SessionLocal,
+                transport_resolver=lambda _url: None,
+                decrypt=app.state.model_template_cipher.decrypt,
             )
         ]
     ).decode()
@@ -141,16 +145,17 @@ async def test_assistant_error_is_redacted_and_cancellation_settles(monkeypatch)
         await asyncio.Event().wait()
         yield TextDelta()
 
-    monkeypatch.setattr(
-        "studio.apps.thought_workshop.legacy_writing.stream_text_completion", pending
-    )
+    monkeypatch.setattr("studio.assembly.website.thought_writing.stream_text_completion", pending)
     request = prepared()
 
     async def consume():
         return [
             chunk
             async for chunk in writing_events(
-                request, sessions=SessionLocal, transport_resolver=lambda _url: None
+                request,
+                sessions=SessionLocal,
+                transport_resolver=lambda _url: None,
+                decrypt=app.state.model_template_cipher.decrypt,
             )
         ]
 

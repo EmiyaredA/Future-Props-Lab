@@ -450,9 +450,19 @@ def test_catalog_and_identity_do_not_load_legacy_credential_helpers():
             "demo_installations.py",
             "diagnostics.py",
             "demonstration/website_management.py",
+            "assistant_model_runs.py",
+            "galgame_transcription.py",
+            "visual/visual_review_attempts.py",
+            "writing.py",
         )
     ]
     for path in paths:
         assert "app.runtime.credentials" not in set(imports(path)), path
         assert "app.runtime.secret_hints" not in set(imports(path)), path
     assert not (ROOT / "backend/app/runtime/secret_hints.py").exists()
+
+
+def test_website_thought_writing_adapter_lives_in_assembly():
+    assert not (STUDIO / "apps/thought_workshop/legacy_writing.py").exists()
+    assert not (STUDIO / "apps/model_service/clients/text.py").exists()
+    assert (STUDIO / "assembly/website/thought_writing.py").is_file()
