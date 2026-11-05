@@ -17,7 +17,6 @@ from studio.apps.thought_workshop.publication.mutations import begin_write
 from studio.apps.thought_workshop.publication.sessions import source_sessions
 from studio.apps.thought_workshop.schemas.document import file_ids
 from studio.apps.thought_workshop.schemas.workshop import ThoughtAttachmentOut
-from studio.config.settings import get_settings
 from studio.contracts.asset_library.file_types import ATTACHMENT_EXTENSIONS
 from studio.contracts.asset_library.incoming import IncomingFile
 from studio.runtime.files.image_sizes import ThumbnailSize
@@ -31,6 +30,8 @@ async def content(
     note_id=None,
     cover=False,
     size: ThumbnailSize | None = None,
+    *,
+    settings,
 ):
     pub = await publication(session, pub_id)
     if note_id:
@@ -64,7 +65,7 @@ async def content(
     )
     if row is None:
         raise missing()
-    path = AssetStorage(get_settings()).path_for(row)
+    path = AssetStorage(settings).path_for(row)
     if not path.is_file():
         raise missing()
     if size is not None and row.mime_type != "image/svg+xml":
@@ -72,19 +73,19 @@ async def content(
             row.id, row.revision, row.owner_user_id, row.media_kind, row.mime_type
         )
         await session.rollback()
-        path = await asset_thumbnail(get_settings(), info, path, size)
+        path = await asset_thumbnail(settings, info, path, size)
         return "image/webp", path
     return row.mime_type, path
 
 
-async def upload(session, principal, pub_id, note_id, incoming: IncomingFile):
+async def upload(session, principal, pub_id, note_id, incoming: IncomingFile, *, settings):
     pub = await publication(session, pub_id)
     await article(session, principal, pub, note_id, level="edit")
     bind_source(session, pub)
     owner_user_id = pub.owner_user_id
     # No write transaction is held during file validation and storage.
     await session.rollback()
-    row = await AssetLibrary(session, get_settings()).store_upload(
+    row = await AssetLibrary(session, settings).store_upload(
         incoming,
         owner_user_id=owner_user_id,
         allowed_extensions=ATTACHMENT_EXTENSIONS | {".png", ".jpg", ".jpeg", ".webp", ".gif"},
@@ -108,24 +109,33 @@ async def upload(session, principal, pub_id, note_id, incoming: IncomingFile):
 class LegacyCommunityFiles:
     """Materialize community files in the compatibility site's own database."""
 
-    def __init__(self, request_session, principal):
+    def __init__(self, request_session, principal, *, settings):
         self.sessions = source_sessions(request_session)
         self.principal = principal
+        self.settings = settings
 
     async def asset(self, id, asset, note=None, size=None):
         async with self.sessions() as session:
             await session.execute(text("BEGIN"))
-            return await content(session, self.principal, id, asset, note, False, size)
+            return await content(
+                session, self.principal, id, asset, note, False, size, settings=self.settings
+            )
 
     async def cover(self, id, size=None):
         async with self.sessions() as session:
             await session.execute(text("BEGIN"))
             pub = await publication(session, id)
             return await content(
-                session, self.principal, id, pub.cover_asset_id, cover=True, size=size
+                session,
+                self.principal,
+                id,
+                pub.cover_asset_id,
+                cover=True,
+                size=size,
+                settings=self.settings,
             )
 
     async def upload(self, id, note, incoming):
         async with self.sessions() as session:
             await session.execute(text("BEGIN"))
-            return await upload(session, self.principal, id, note, incoming)
+            return await upload(session, self.principal, id, note, incoming, settings=self.settings)

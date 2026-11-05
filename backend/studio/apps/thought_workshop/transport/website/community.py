@@ -1,6 +1,6 @@
 """Browser-only protocol adapters. Publication use cases own all authorization."""
 
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 
 from studio.apps.thought_workshop.errors import ThoughtError
@@ -97,19 +97,23 @@ async def settings(
 
 @router.get("/publications/{publication_id}/cover")
 async def cover(
+    request: Request,
     publication_id: str,
     session: SessionDep,
     principal: PublicStudioAuth,
     size: ThumbnailSize | None = None,
 ):
     mime_type, path = await call(
-        LegacyCommunityFiles(session, principal).cover(publication_id, size)
+        LegacyCommunityFiles(session, principal, settings=request.app.state.settings).cover(
+            publication_id, size
+        )
     )
     return FileResponse(path, media_type=mime_type, headers={"Cache-Control": "private, no-store"})
 
 
 @router.get("/publications/{publication_id}/assets/{asset_id}/content")
 async def asset(
+    request: Request,
     publication_id: str,
     asset_id: str,
     session: SessionDep,
@@ -118,7 +122,9 @@ async def asset(
     size: ThumbnailSize | None = None,
 ):
     mime_type, path = await call(
-        LegacyCommunityFiles(session, principal).asset(publication_id, asset_id, note_id, size)
+        LegacyCommunityFiles(session, principal, settings=request.app.state.settings).asset(
+            publication_id, asset_id, note_id, size
+        )
     )
     return FileResponse(
         path,
@@ -131,6 +137,7 @@ async def asset(
     "/publications/{publication_id}/notes/{note_id}/uploads", response_model=ThoughtAttachmentOut
 )
 async def upload(
+    request: Request,
     publication_id: str,
     note_id: str,
     session: SessionDep,
@@ -138,7 +145,9 @@ async def upload(
     upload: UploadFile = File(),
 ):
     return await call(
-        LegacyCommunityFiles(session, principal).upload(publication_id, note_id, upload)
+        LegacyCommunityFiles(session, principal, settings=request.app.state.settings).upload(
+            publication_id, note_id, upload
+        )
     )
 
 

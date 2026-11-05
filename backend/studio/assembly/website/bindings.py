@@ -15,6 +15,7 @@ from studio.apps.agent_workbench.transport.change_events import stream_events
 from studio.apps.agent_workbench.transport.turn_events import stream_turns
 from studio.apps.amadeus.execution.website_actions import ActionExecution
 from studio.apps.amadeus.execution.website_dialogue import CodeAgentRuns
+from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.asset_library.storage.layout.account_upgrade import upgrade_pending
 from studio.apps.audio_annotation.storage.projects import ProjectRecords
 from studio.apps.director_desk.agent_session import DirectorEditorSessions
@@ -189,7 +190,9 @@ def bind_components(app, settings, database):
     sessions.configure(
         info={
             **sessions.kw.get("info", {}),
-            "thought_asset_metadata_factory": LegacyAssetMetadata,
+            "thought_asset_metadata_factory": lambda session, owner: LegacyAssetMetadata(
+                session, owner, storage=AssetStorage(settings)
+            ),
             "presentation_project_assets": LegacyProjectAssets,
             "motion_project_resources": LegacyProjectResources,
             "video_project_layouts": LegacyVideoLayouts,

@@ -373,3 +373,28 @@ async def test_expired_preflight_snapshot_never_refreshes_during_mutation():
     with pytest.raises(ThoughtError, match="已过期"):
         await port.describe({"a"})
     assert calls == 0
+
+
+async def test_website_metadata_uses_injected_storage_and_rechecks_owner(instance, tmp_path):
+    from dataclasses import replace
+
+    from studio.apps.asset_library.storage.file_paths import AssetStorage
+    from studio.apps.thought_workshop.legacy_asset_metadata import LegacyAssetMetadata
+
+    app, _, _, identity = instance
+    async with app.state.database.sessions(info={"owner_user_id": "alpha"}) as session:
+        port = LegacyAssetMetadata(session, "alpha", storage=AssetStorage(app.state.settings))
+        asset = (await port.describe({identity}))[identity]
+        target = tmp_path / "download.txt"
+        await port.download(asset, target)
+        assert target.read_bytes() == b"private note attachment"
+        with pytest.raises(ThoughtError, match="版本已变化"):
+            await port.download(replace(asset, revision=asset.revision + 1), tmp_path / "stale")
+    async with app.state.database.sessions(info={"owner_user_id": "beta"}) as session:
+        foreign = LegacyAssetMetadata(session, "beta", storage=AssetStorage(app.state.settings))
+        with pytest.raises(ThoughtError):
+            await foreign.describe({identity})
+        with pytest.raises(ThoughtError):
+            await foreign.download(asset, tmp_path / "foreign")
+    assert not (tmp_path / "stale").exists()
+    assert not (tmp_path / "foreign").exists()

@@ -5,16 +5,15 @@ import shutil
 
 from sqlalchemy import select
 
-from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.website.asset_metadata import LibraryAsset
-from studio.config.settings import get_settings
 
 
 class LegacyAssetMetadata:
-    def __init__(self, session, owner_user_id):
+    def __init__(self, session, owner_user_id, *, storage):
         self.session, self.owner = session, owner_user_id
+        self.storage = storage
 
     async def describe(self, asset_ids):
         if not asset_ids:
@@ -54,7 +53,7 @@ class LegacyAssetMetadata:
         )
         if row is None or row.revision != asset.revision:
             raise ThoughtError("素材版本已变化，请重新导出", 409, "asset_version_changed")
-        source = AssetStorage(get_settings()).path_for(row)
+        source = self.storage.path_for(row)
         if source.is_symlink() or not source.is_file() or source.stat().st_size != asset.byte_size:
             raise ThoughtError("素材不存在或内容已变化", 404, "not_found")
 

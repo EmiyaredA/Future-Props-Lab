@@ -468,3 +468,15 @@ def test_website_thought_writing_adapter_lives_in_assembly():
     assert not (STUDIO / "apps/thought_workshop/legacy_writing.py").exists()
     assert not (STUDIO / "apps/model_service/clients/text.py").exists()
     assert (STUDIO / "assembly/website/thought_writing.py").is_file()
+
+
+def test_thought_workshop_does_not_read_global_settings():
+    for path in (STUDIO / "apps/thought_workshop").rglob("*.py"):
+        for node in ast.walk(ast.parse(path.read_text())):
+            if isinstance(node, ast.ImportFrom) and node.module == "studio.config.settings":
+                assert all(
+                    alias.name not in {"get_settings", "get_cloud_settings"} for alias in node.names
+                ), path
+            if isinstance(node, ast.Call):
+                name = getattr(node.func, "id", getattr(node.func, "attr", None))
+                assert name not in {"get_settings", "get_cloud_settings"}, path

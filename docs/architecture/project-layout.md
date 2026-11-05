@@ -1088,3 +1088,5 @@ Amadeus 的会话文件路径由装配明确提供给 `storage/files.py` 和 Ski
 模型文本推理、模型测试 SSE 和实时语音 WS 由入口传入同一应用实例的解密器。`model_service/realtime/__init__.py` 不加载目录或会话适配；具体消费者直接导入 `catalog.py` 与 `session.py`。语音来源校验读取当前装配的 CORS 配置，避免不同实例受全局配置影响。供应商密钥只在服务端适配边界解密，不进入公开事件或响应。
 
 生成 Driver、模型推理／测试／转录 Runner、Galgame ASR 与视觉验收／助手均显式接收解密器。Models Runner 还必须接收配置，禁止默认全局回退。`runtime/secrets.py` 只提供实例加密机制，不选择密钥；账号复核、准备、执行和结算仍归业务所有者。测试密文帮助函数限定在 `tests/credential_test_support.py`，生产包不提供旧运行时兼容转发。
+
+思绪工坊的文件与社区兼容适配显式接收当前网站配置，`legacy_asset_metadata.py` 接收装配的文件存储；业务包不读取进程全局设置。账号与版本复核仍在读取入口执行。现有 Session 中的素材／账号服务定位仍待后续移除，本批仅消除配置与文件根目录的隐式选择。

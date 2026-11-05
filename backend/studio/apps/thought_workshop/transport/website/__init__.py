@@ -1,6 +1,6 @@
 from typing import Literal
 
-from fastapi import APIRouter, File, Header, HTTPException, Query, UploadFile
+from fastapi import APIRouter, File, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import ValidationError
 from starlette.background import BackgroundTask
@@ -42,7 +42,6 @@ from studio.apps.thought_workshop.transport.website.knowledge_tools import (
 from studio.apps.thought_workshop.transport.website.multitable import router as multitable_router
 from studio.apps.thought_workshop.writing_http import router as writing_router
 from studio.assembly.http_dependencies import OwnerDep, StudioAuth
-from studio.config.settings import get_settings
 from studio.contracts.asset_library.errors import AssetError
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.files.project_archives import ProjectSnapshotError
@@ -186,6 +185,7 @@ async def restore_note(
 
 @router.post("/images", response_model=ThoughtImageOut)
 async def upload_image(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     upload: UploadFile = File(),
@@ -199,7 +199,7 @@ async def upload_image(
     ),
 ):
     row = await call(
-        AssetLibrary(session, get_settings()).store_upload(
+        AssetLibrary(session, request.app.state.settings).store_upload(
             upload,
             owner_user_id=owner_user_id,
             allowed_extensions={".png", ".jpg", ".jpeg", ".gif", ".webp"},
@@ -210,12 +210,15 @@ async def upload_image(
 
 @router.get("/backup", response_class=FileResponse)
 async def backup(
-    session: SessionDep, owner_user_id: OwnerDep, knowledge_base_id: str | None = None
+    request: Request,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    knowledge_base_id: str | None = None,
 ):
     import shutil
 
     path = await call(
-        export_backup(Notes(session, owner_user_id), get_settings(), knowledge_base_id)
+        export_backup(Notes(session, owner_user_id), request.app.state.settings, knowledge_base_id)
     )
     return FileResponse(
         path,
@@ -227,6 +230,7 @@ async def backup(
 
 @router.post("/imports", response_model=ThoughtImportOut)
 async def imports(
+    request: Request,
     session: SessionDep,
     principal: StudioAuth,
     upload: UploadFile = File(),
@@ -236,7 +240,7 @@ async def imports(
     return await call(
         import_backup(
             Notes(session, principal.owner_user_id, principal.user_id),
-            get_settings(),
+            request.app.state.settings,
             upload,
             knowledge_base_id,
             expected_revision,
@@ -246,6 +250,7 @@ async def imports(
 
 @router.post("/attachments", response_model=ThoughtAttachmentOut)
 async def attachments(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     upload: UploadFile = File(...),
@@ -258,7 +263,7 @@ async def attachments(
         description="独立 Thought 服务用于上传重试；恢复网站暂不去重。",
     ),
 ):
-    return await call(upload_attachment(session, get_settings(), owner_user_id, upload))
+    return await call(upload_attachment(session, request.app.state.settings, owner_user_id, upload))
 
 
 @router.get("/knowledge-bases", response_model=list[KnowledgeBaseOut])
