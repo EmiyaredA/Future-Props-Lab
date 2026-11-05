@@ -8,10 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.motion_document import MotionComposition
 from app.capabilities.media_rendering.motion_outputs import render_outputs
-from app.runtime.db import SessionLocal
 from studio.apps.motion_compositor.assets import MotionAssets
 from studio.apps.motion_compositor.storage.models import MotionTask
-from studio.config.settings import Settings, get_settings
+from studio.config.settings import Settings
 from studio.runtime.database.ownership import bind_owner, require_owner_id
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now
@@ -23,12 +22,12 @@ class MotionExportRunner(PollingTaskRunner):
 
     def __init__(
         self,
-        session_factory: async_sessionmaker[AsyncSession] = SessionLocal,
-        settings: Settings | None = None,
+        session_factory: async_sessionmaker[AsyncSession],
+        settings: Settings,
     ) -> None:
         super().__init__()
         self.session_factory = session_factory
-        self.settings = settings or get_settings()
+        self.settings = settings
         self.storage = AssetStorage(self.settings)
 
     async def recover(self) -> None:

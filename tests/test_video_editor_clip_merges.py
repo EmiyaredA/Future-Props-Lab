@@ -19,6 +19,7 @@ from studio.apps.video_editor.clip_merging.document import (
 from studio.apps.video_editor.errors import VideoEditorValidationError
 from studio.apps.video_editor.runner import VideoEditorRunner
 from studio.apps.video_editor.storage.models import VideoEditorTask
+from studio.config.settings import get_settings
 
 
 def document() -> dict:
@@ -203,7 +204,7 @@ async def test_merge_api_real_render_apply_undo_redo_and_conflicts(
                         )
                     )
                 )
-            runner = VideoEditorRunner()
+            runner = VideoEditorRunner(session_factory=SessionLocal, settings=get_settings())
             for task_id in tasks:
                 await runner._process(task_id)
             clips = [

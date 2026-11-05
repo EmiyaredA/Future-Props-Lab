@@ -11,7 +11,6 @@ from app.llm.models import LlmCallLog
 from app.llm.visual_catalog import review_models
 from app.llm.visual_review import evaluate_review
 from app.runtime.credentials import decrypt_secret
-from app.runtime.db import SessionLocal
 from studio.apps.visual_workshop.acceptance.catalog import connection_signature, fixed_model
 from studio.apps.visual_workshop.acceptance.execution.agents import evaluate_agent
 from studio.apps.visual_workshop.acceptance.media import (
@@ -23,7 +22,6 @@ from studio.apps.visual_workshop.acceptance.media import (
 from studio.apps.visual_workshop.acceptance.models import AcceptanceRun
 from studio.apps.visual_workshop.acceptance.project_access import AcceptanceError
 from studio.apps.visual_workshop.acceptance.sample_values import check_specifications, positions
-from studio.config.settings import get_settings
 from studio.runtime.database.ownership import bind_owner
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now
@@ -98,8 +96,8 @@ class AcceptanceRunner(PollingTaskRunner):
 
     def __init__(
         self,
-        session_factory=SessionLocal,
-        settings=None,
+        session_factory,
+        settings,
         transport=None,
         actor_allowed=None,
         agent_executor=None,
@@ -109,7 +107,7 @@ class AcceptanceRunner(PollingTaskRunner):
         self.agent_executor = agent_executor
         self.session_factory, self.settings, self.transport = (
             session_factory,
-            settings or get_settings(),
+            settings,
             transport,
         )
 

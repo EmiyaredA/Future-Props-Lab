@@ -10,7 +10,9 @@ import pytest
 from PIL import Image
 
 from app.main import app
+from app.runtime.db import SessionLocal
 from studio.apps.video_editor.runner import VideoEditorRunner
+from studio.config.settings import get_settings
 
 
 def picture(clip_id, start, duration=100_003):
@@ -125,7 +127,9 @@ async def test_exact_gap_batch_cas_restore_and_short_output(fps, mode, tmp_path)
         )
         assert created.status_code == 200, created.text
         task = created.json()
-        await VideoEditorRunner()._process(task["id"])
+        await VideoEditorRunner(session_factory=SessionLocal, settings=get_settings())._process(
+            task["id"]
+        )
         finished = (await client.get(f"{root}/renders/{task['id']}")).json()
         assert finished["status"] == "completed", finished.get("error")
         output = await client.get(f"/v1/files/{finished['outputAssetId']}/download")

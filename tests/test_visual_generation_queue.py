@@ -24,6 +24,7 @@ from studio.apps.visual_workshop.storage.models import (
     VisualWorkshopProject,
 )
 from studio.apps.visual_workshop.website.generation_runner import VisualGenerationRunner
+from studio.config.settings import get_settings
 from test_workspace_governance import client_account
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "sdk/python/src"))
@@ -117,7 +118,10 @@ async def leases(user_id):
 
 def runner():
     return VisualGenerationRunner(
-        claim_admission=claim_visual_capacity, queue_candidates=visual_queue_candidates
+        claim_admission=claim_visual_capacity,
+        queue_candidates=visual_queue_candidates,
+        session_factory=SessionLocal,
+        settings=get_settings(),
     )
 
 

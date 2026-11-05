@@ -218,7 +218,9 @@ async def test_all_video_entry_points_inline_ark_audio_and_preserve_provider_neu
     monkeypatch.setattr(visual_submission, "submit_generation_task", submit)
     monkeypatch.setattr(test_runner, "submit_generation_task", submit)
     monkeypatch.setattr(inference_runner, "submit_generation_task", submit)
-    visual = visual_runner.VisualGenerationRunner()
+    visual = visual_runner.VisualGenerationRunner(
+        session_factory=SessionLocal, settings=get_settings()
+    )
     playground = test_runner.ModelTestGenerationRunner(SessionLocal)
     inference = inference_runner.InferenceRunner(SessionLocal)
     monkeypatch.setattr(visual, "_asset_data_uri", data_uri)

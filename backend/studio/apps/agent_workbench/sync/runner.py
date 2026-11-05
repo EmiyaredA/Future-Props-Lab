@@ -9,7 +9,6 @@ from sqlalchemy import delete, func, select, update
 from watchfiles import awatch
 
 from app.capabilities.agents.sessions import get_adapter
-from app.runtime.db import SessionLocal
 from studio.apps.agent_workbench.storage.models import (
     WorkbenchChange,
     WorkbenchCheckpoint,
@@ -17,7 +16,6 @@ from studio.apps.agent_workbench.storage.models import (
     WorkbenchSource,
 )
 from studio.apps.agent_workbench.sync.projection import apply_batch
-from studio.config.settings import get_settings
 from studio.runtime.database.ownership import bind_owner
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now
@@ -29,9 +27,10 @@ class WorkbenchSyncRunner(PollingTaskRunner):
     runner_name = "agent-workbench-sync"
     poll_interval_seconds = 1
 
-    def __init__(self, sessions=SessionLocal, *, actor_allowed):
+    def __init__(self, sessions, *, actor_allowed, settings):
         super().__init__()
         self.sessions = sessions
+        self.settings = settings
         self.actor_allowed = actor_allowed
         self.positions: dict[str, int] = {}
         self.endpoint_tasks: dict[str, asyncio.Task] = {}
@@ -87,7 +86,7 @@ class WorkbenchSyncRunner(PollingTaskRunner):
             self.endpoint_ready[source_id].set()
 
     async def process_once(self):
-        settings = get_settings()
+        settings = self.settings
         if not settings.fpl_agent_workbench_enabled:
             return
         async with self.sessions() as db:
@@ -232,7 +231,7 @@ class WorkbenchSyncRunner(PollingTaskRunner):
                         )
                     )
             await db.commit()
-        budget = get_settings().fpl_agent_workbench_files_per_pass
+        budget = self.settings.fpl_agent_workbench_files_per_pass
         position = self.positions.get(source.id, 0)
         # Follow recent activity every pass while advancing through cold histories.
         hot = min(20, budget // 2)

@@ -21,6 +21,7 @@ from studio.apps.motion_compositor.runner import MotionExportRunner
 from studio.apps.motion_compositor.storage.models import MotionTask
 from studio.apps.video_editor.runner import VideoEditorRunner
 from studio.apps.video_editor.storage.models import VideoEditorTask
+from studio.config.settings import get_settings
 
 
 @pytest.mark.asyncio
@@ -117,7 +118,9 @@ async def test_motion_project_cas_isolation_and_multiformat_export() -> None:
         )
         assert export.status_code == 200, export.text
         task_id = export.json()["id"]
-        await MotionExportRunner().process_once()
+        await MotionExportRunner(
+            session_factory=SessionLocal, settings=get_settings()
+        ).process_once()
         task = (await client.get(f"{base}/exports/{task_id}")).json()
         assert task["status"] == "completed", task
         assert set(task["outputs"]) == {"mp4", "mov4444", "png-sequence"}
@@ -177,7 +180,9 @@ async def test_motion_project_cas_isolation_and_multiformat_export() -> None:
                 )
             )
         assert media_task_id
-        await VideoEditorRunner(lane="media")._process(media_task_id)
+        await VideoEditorRunner(
+            lane="media", session_factory=SessionLocal, settings=get_settings()
+        )._process(media_task_id)
         editor_assets = await client.get(f"/v1/video-editor/projects/{editor_id}/assets")
         assert editor_assets.status_code == 200, editor_assets.text
         imported = next(
@@ -333,7 +338,7 @@ async def test_motion_export_recovers_interrupted_task() -> None:
             task.status = "running"
             task.progress = 75
             await session.commit()
-        await MotionExportRunner().recover()
+        await MotionExportRunner(session_factory=SessionLocal, settings=get_settings()).recover()
         recovered = (await client.get(f"{base}/exports/{task_id}")).json()
         assert recovered["status"] == "queued"
         assert recovered["progress"] == 0

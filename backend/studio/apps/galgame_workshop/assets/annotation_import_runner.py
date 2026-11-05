@@ -12,7 +12,6 @@ from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.voice_clips import cut_verified_voice_clip
-from app.runtime.db import SessionLocal
 from studio.apps.audio_annotation.models import AudioAnnotationDocument, AudioAnnotationProject
 from studio.apps.audio_annotation.schemas.document import AudioAnnotationSegment
 from studio.apps.galgame_workshop.assets.annotation_import import GalgameAnnotationImports
@@ -30,7 +29,7 @@ from studio.apps.galgame_workshop.storage.models import (
     GalgameWorkshopProject,
 )
 from studio.apps.galgame_workshop.story.story import GalgameStoryDocuments
-from studio.config.settings import Settings, get_settings
+from studio.config.settings import Settings
 from studio.runtime.database.ownership import bind_owner, require_owner_id
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.tasks.polling import PollingTaskRunner
@@ -59,12 +58,12 @@ class GalgameAnnotationImportRunner(PollingTaskRunner):
 
     def __init__(
         self,
-        session_factory: async_sessionmaker[AsyncSession] = SessionLocal,
-        settings: Settings | None = None,
+        session_factory: async_sessionmaker[AsyncSession],
+        settings: Settings,
     ) -> None:
         super().__init__()
         self.session_factory = session_factory
-        self.settings = settings or get_settings()
+        self.settings = settings
         self.storage = AssetStorage(self.settings)
 
     async def _load(

@@ -15,6 +15,7 @@ from app.main import app
 from app.runtime.db import SessionLocal
 from studio.apps.visual_workshop.storage.models import VisualGenerationTask
 from studio.apps.visual_workshop.website.generation_runner import VisualGenerationRunner
+from studio.config.settings import get_settings
 from studio.contracts.model_service.workflow_video import WorkflowVideoParameters
 from studio.runtime.time import utc_now
 
@@ -200,7 +201,9 @@ async def test_workshop_keyless_workflow_references_completion_and_recovery(monk
                         content=b"\x00\x00\x00\x18ftypisomtest",
                         headers={"content-type": "video/mp4"},
                     )
-                )
+                ),
+                session_factory=SessionLocal,
+                settings=get_settings(),
             )
             await runner._process_task(task["id"])
             await runner._process_task(task["id"])

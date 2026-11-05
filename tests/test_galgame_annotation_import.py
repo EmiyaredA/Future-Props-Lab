@@ -22,6 +22,7 @@ from studio.apps.galgame_workshop.storage.models import (
     GalgameAssetMetadata,
     GalgameWorkshopProject,
 )
+from studio.config.settings import get_settings
 
 
 def _audio_bytes(seconds: float = 1.0) -> bytes:
@@ -261,7 +262,9 @@ async def test_annotation_import_preview_task_idempotency_and_runner() -> None:
         assert repeated.status_code == 202
         assert repeated.json()["id"] == task["id"]
 
-        await GalgameAnnotationImportRunner().process_once()
+        await GalgameAnnotationImportRunner(
+            session_factory=SessionLocal, settings=get_settings()
+        ).process_once()
         result = await client.get(
             f"/v1/galgame-workshop/projects/{target_id}/annotation-imports/{task['id']}"
         )
@@ -318,7 +321,9 @@ async def test_annotation_import_runner_quarantines_account_mismatch() -> None:
             self.committed = True
 
     session = Session()
-    loaded = await GalgameAnnotationImportRunner()._load(session, "task")
+    loaded = await GalgameAnnotationImportRunner(
+        session_factory=SessionLocal, settings=get_settings()
+    )._load(session, "task")
 
     assert loaded is None
     assert session.committed is True
@@ -347,7 +352,9 @@ async def test_annotation_import_runner_restores_non_default_workspace() -> None
             return None
 
     session = Session()
-    loaded = await GalgameAnnotationImportRunner()._load(session, "task")
+    loaded = await GalgameAnnotationImportRunner(
+        session_factory=SessionLocal, settings=get_settings()
+    )._load(session, "task")
 
     assert loaded is task
     assert session.info["owner_user_id"] == "other-workspace"
@@ -385,7 +392,9 @@ async def test_annotation_import_rolls_back_when_post_save_acceptance_fails(
         assert created.status_code == 202, created.text
         monkeypatch.setattr(GalgameReadiness, "report", rejected_report)
 
-        await GalgameAnnotationImportRunner().process_once()
+        await GalgameAnnotationImportRunner(
+            session_factory=SessionLocal, settings=get_settings()
+        ).process_once()
 
         task = (
             await client.get(

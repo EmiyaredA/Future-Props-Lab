@@ -10,7 +10,9 @@ from fastapi import Request
 from app.deps import SessionDep, require_studio_auth
 from app.main import app
 from app.orm import bind_owner
+from app.runtime.db import SessionLocal
 from studio.apps.video_editor.runner import VideoEditorRunner
+from studio.config.settings import get_settings
 
 
 @pytest.fixture(scope="module")
@@ -60,7 +62,9 @@ async def test_video_rename_persists_preserves_effects_media_and_timeline(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
         base, asset = await upload_video(client, video_bytes)
-        await VideoEditorRunner(lane="media").process_once()
+        await VideoEditorRunner(
+            lane="media", session_factory=SessionLocal, settings=get_settings()
+        ).process_once()
         asset = next(
             item
             for item in (await client.get(f"{base}/assets")).json()["items"]

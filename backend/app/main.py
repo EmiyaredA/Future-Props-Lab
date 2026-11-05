@@ -144,12 +144,12 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
         await reconcile_snapshot_imports(session, AssetStorage(settings))
     async with SessionLocal() as session:
         await interrupt_workbench_runs(session)
-    lifespan_app.state.workbench_runs = WorkbenchRuns()
+    lifespan_app.state.workbench_runs = WorkbenchRuns(sessions=SessionLocal, settings=settings)
     await recover_admissions()
     await recover_interrupted_visual_assistant_runs()
     await recover_interrupted_model_test_runs(SessionLocal)
     await recover_interrupted_amadeus_runs()
-    lifespan_app.state.code_agent_runs = CodeAgentRuns()
+    lifespan_app.state.code_agent_runs = CodeAgentRuns(sessions=SessionLocal, settings=settings)
     installer = Installer(local_root(settings))
     local_runtime = LocalRuntime(installer)
     local_models = LocalModels(SessionLocal, installer, local_runtime)
@@ -157,26 +157,35 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
     await local_models.recover()
     supervisor = RunnerSupervisor(
         (
-            WorkbenchSyncRunner(actor_allowed=workbench_actor_allowed),
-            InterviewPreparationRunner(interview_actor_allowed),
-            ArticleSyncRunner(external_sync_actor_allowed),
+            WorkbenchSyncRunner(
+                actor_allowed=workbench_actor_allowed, sessions=SessionLocal, settings=settings
+            ),
+            InterviewPreparationRunner(interview_actor_allowed, sessions=SessionLocal),
+            ArticleSyncRunner(external_sync_actor_allowed, sessions=SessionLocal),
             ModelTemplateSyncRunner(),
             VisualGenerationRunner(
-                claim_admission=claim_visual_capacity, queue_candidates=visual_queue_candidates
+                claim_admission=claim_visual_capacity,
+                queue_candidates=visual_queue_candidates,
+                session_factory=SessionLocal,
+                settings=settings,
             ),
-            AcceptanceRunner(actor_allowed=acceptance_actor_allowed),
+            AcceptanceRunner(
+                actor_allowed=acceptance_actor_allowed,
+                session_factory=SessionLocal,
+                settings=settings,
+            ),
             ModelTestGenerationRunner(
                 SessionLocal, legacy_references=app.state.model_generation_legacy_references
             ),
             InferenceRunner(SessionLocal, local_runtime=local_runtime),
             ModelTestTranscriptionRunner(SessionLocal),
-            GalgameAsrRunner(),
-            GalgameAnnotationImportRunner(),
-            GalgameVideoExportRunner(),
-            GalgameVideoEditorHandoffRunner(),
-            VideoEditorRunner(),
-            VideoEditorRunner(lane="media"),
-            MotionExportRunner(),
+            GalgameAsrRunner(session_factory=SessionLocal, settings=settings),
+            GalgameAnnotationImportRunner(session_factory=SessionLocal, settings=settings),
+            GalgameVideoExportRunner(session_factory=SessionLocal, settings=settings),
+            GalgameVideoEditorHandoffRunner(session_factory=SessionLocal, settings=settings),
+            VideoEditorRunner(session_factory=SessionLocal, settings=settings),
+            VideoEditorRunner(lane="media", session_factory=SessionLocal, settings=settings),
+            MotionExportRunner(session_factory=SessionLocal, settings=settings),
         )
     )
     lifespan_app.state.runner_supervisor = supervisor
@@ -261,9 +270,9 @@ app.state.thought_writing = WritingBindings(
 app.state.workbench_native = LocalSourceAccess()
 app.state.account_creator = create_account
 app.state.account_storage_check = upgrade_pending
-app.state.code_agent_runs = CodeAgentRuns()
+app.state.code_agent_runs = CodeAgentRuns(sessions=SessionLocal, settings=settings)
 app.state.cloud_desktop = DesktopConnection()
-app.state.workbench_runs = WorkbenchRuns()
+app.state.workbench_runs = WorkbenchRuns(sessions=SessionLocal, settings=settings)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,

@@ -14,7 +14,6 @@ from app.integrations.external.feishu_verification import (
     verify_delete,
     verify_image,
 )
-from app.runtime.db import SessionLocal
 from studio.apps.thought_workshop.content_exports import resolve_assets
 from studio.apps.thought_workshop.external_sync.models import (
     ArticleSyncAsset,
@@ -32,7 +31,7 @@ from studio.runtime.time import utc_now
 class ArticleSyncRunner(PollingTaskRunner):
     runner_name = "article-external-sync"
 
-    def __init__(self, actor_allowed, transport=None, sessions=SessionLocal):
+    def __init__(self, actor_allowed, transport=None, *, sessions):
         super().__init__()
         self.actor_allowed, self.transport, self.sessions = actor_allowed, transport, sessions
 

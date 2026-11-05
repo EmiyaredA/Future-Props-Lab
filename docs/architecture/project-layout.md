@@ -69,6 +69,8 @@ backend/
 
 剩余通用机制也已迁出旧 `app/runtime`：账号绑定、项目 CAS、操作回执及任务恢复查询归 `studio.runtime.database`，受限路径、归档成员及栅格处理归 `files`，静态网站和远程入口校验归 `http`，授权订阅归 `messaging`，任务准入原语归 `tasks`。设置类型与显式配置读取归 `studio.config.settings`；导入设置模块不读取 TOML、不加载数据库。旧网站数据库及隐式凭据装配仍需后续消除，不属于通用机制。
 
+兼容网站的工作台采集与执行、Amadeus CLI 执行、面试准备、文章同步、视觉生成与验收、Galgame 媒体任务、视频剪辑及特效 Runner 显式接收会话工厂；需要配置的 Runner 同时接收配置值。工作台轮次继承所属 Runner 的工厂，不通过全局数据库寻找连接。HTTP 用例和剩余助手工具的逐项端口化仍在后续批次进行。
+
 旧包映射如下；“已迁移”只表示该包源码与调用方迁移完成，兼容网站残余实现及整个业务的端口化另行验收。
 
 | 旧包 | 当前归属 |
@@ -862,6 +864,7 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 
 - `sdk/python/`：可独立构建安装的 `future-props-lab-sdk`；`src/future_props_lab/generated/` 只保存生成模型和具名资源方法，其他模块拥有 HTTPX 通信、流、鉴权、实时语音和本地文档构建器。
 - `sdk/python/operations.json`：受版本控制的 HTTP 操作到稳定 Python 方法名映射；`coverage.json` 记录契约与文档证据，不能替代业务闭环验收。
+- `scripts/test_with_proof.mjs` 将 `web/e2e/test-with-proof.catalog.yaml` 和专用 Playwright 配置接入功能验收工作台。隔离环境和验收产物位于 `.local/test-with-proof/`。
 - `scripts/generate_sdk.py`、`scripts/generate_sdk_docs.py`：从 OpenAPI 与方法映射生成 SDK 和公开模块参考；纳入 `contracts:generate` 与 `contracts:check`。仅浏览器 Session 的知识社区操作不加入 SDK 方法映射，相关 HTTP 数据类型仍由 OpenAPI 生成。
 - `backend/app/llm/inference/`：独立模型能力查询、输入素材、文本调用、任务与结果管理；`llm/routes/model_inference.py` 只处理协议。
 - 工坊各自的 `operations.py` 拥有细粒度编辑校验与一次事务；`runtime/operation_receipts.py` 仅提供持久化回执原语，`entity_edits.py` 仅提供纯列表编辑。
@@ -983,5 +986,3 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 `studio/contracts/gateway/service_status.py` 定义注册服务 ID、生命周期和只读状态契约。`studio/host/service_observation.py` 只读取所选 Compose 项目的配置服务清单与进程状态，拒绝把 Docker 故障误报为停止；不读取业务数据库、环境内容或日志。观测嵌入 Management 已有的自有快照，不共享数据库。`studio/apps/gateway/service_status.py` 从固定服务地址做有界就绪探测，合并新鲜主机证据并按依赖图计算功能受限；错误或过期观测无法确认停止。`deployment.status.read` 只允许原始 Gateway 状态读请求委托到 Management 的状态读接口，不获得运维命令权限。
 
 `features/applications/ApplicationCenterRoute.tsx` 拥有按账号缓存的自动检查；纯页面与 `ApplicationServiceStatus.tsx` 拥有状态和展开说明。`serviceStatus.ts` 使用生成契约，`queryKeys.ts` 唯一维护查询键。静态目录显式绑定 `serviceId`，不能凭页面名称猜测服务。连接失败时只把缓存作为上次结果展示；单体兼容入口明确声明共用进程。
-
-- `scripts/test_with_proof.mjs` 将 `web/e2e/test-with-proof.catalog.yaml` 和专用 Playwright 配置接入功能验收工作台。隔离环境和验收产物位于 `.local/test-with-proof/`。

@@ -11,6 +11,7 @@ import httpx
 import pytest
 
 from app.main import app
+from app.runtime.db import SessionLocal
 from studio.apps.interview_assistant.executor_status import executor_status
 from studio.apps.interview_assistant.runner import InterviewPreparationRunner
 from studio.apps.interview_assistant.transport import website as routes
@@ -88,7 +89,7 @@ async def test_fictional_docx_real_codex_research(monkeypatch):
         async def allowed(*_args):
             return True
 
-        await InterviewPreparationRunner(allowed).execute(task["id"])
+        await InterviewPreparationRunner(allowed, sessions=SessionLocal).execute(task["id"])
         room = (await client.get(base)).json()
         target = Path(__file__).resolve().parents[1] / ".local/interview-assistant/live-smoke"
         target.mkdir(parents=True, exist_ok=True)

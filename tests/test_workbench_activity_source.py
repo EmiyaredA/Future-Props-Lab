@@ -7,6 +7,7 @@ import pytest
 
 from app.console.cloud_control import access
 from app.main import app
+from app.runtime.db import SessionLocal
 from studio.apps.agent_workbench.execution import runner
 from studio.apps.agent_workbench.transport.website import execution
 from studio.config.settings import CloudProject, get_settings
@@ -56,7 +57,11 @@ async def test_managed_source_preview_rechecks_scope_and_filesystem(monkeypatch,
     monkeypatch.setattr(execution, "resolve_connection", resolve)
     monkeypatch.setattr(runner, "resolve_connection", resolve)
     monkeypatch.setattr(runner, "run_dialogue", dialogue)
-    monkeypatch.setattr(app.state, "workbench_runs", runner.WorkbenchRuns())
+    monkeypatch.setattr(
+        app.state,
+        "workbench_runs",
+        runner.WorkbenchRuns(sessions=SessionLocal, settings=get_settings()),
+    )
     async with aclosing(client), aclosing(other):
         await enroll(client)
         await enroll(other)

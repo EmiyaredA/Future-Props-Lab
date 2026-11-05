@@ -32,11 +32,10 @@ from app.llm.providers.temporary_media import TemporaryMediaError
 from app.llm.providers.zealman_live import ZealmanLiveMonitor
 from app.llm.providers.zealman_video import get_task
 from app.llm.visual_generation_submission import VisualGenerationInputs, submit_visual_generation
-from app.runtime.db import SessionLocal
 from studio.apps.visual_workshop.generation_records import ACTIVE_TASK_STATUSES
 from studio.apps.visual_workshop.outputs.history import publish_generated_output
 from studio.apps.visual_workshop.storage.models import VisualGenerationBatch, VisualGenerationTask
-from studio.config.settings import Settings, get_settings
+from studio.config.settings import Settings
 from studio.runtime.database.ownership import bind_owner
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now
@@ -55,8 +54,8 @@ class VisualGenerationRunner(PollingTaskRunner):
 
     def __init__(
         self,
-        session_factory: async_sessionmaker[AsyncSession] = SessionLocal,
-        settings: Settings | None = None,
+        session_factory: async_sessionmaker[AsyncSession],
+        settings: Settings,
         download_transport: httpx.AsyncBaseTransport | None = None,
         temporary_media_transport: httpx.AsyncBaseTransport | None = None,
         claim_admission: ClaimAdmission | None = None,
@@ -66,7 +65,7 @@ class VisualGenerationRunner(PollingTaskRunner):
         self.queue_candidates = queue_candidates
         self.zealman_monitor = ZealmanLiveMonitor()
         self.session_factory = session_factory
-        self.settings = settings or get_settings()
+        self.settings = settings
         self.storage = AssetStorage(self.settings)
         self.download_transport = download_transport
         self.temporary_media_transport = temporary_media_transport

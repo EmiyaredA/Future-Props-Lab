@@ -9,10 +9,8 @@ from app.capabilities.agents.cli.dialogue import run_dialogue
 from app.capabilities.agents.cli.instructions import LiveInstructions
 from app.capabilities.agents.cli.transport import CliError
 from app.console.governance.code_agents import resolve_connection
-from app.runtime.db import SessionLocal
 from studio.apps.agent_workbench.execution import storage, turn_activity
 from studio.apps.agent_workbench.execution.project_tools import ProjectTools
-from studio.config.settings import get_settings
 from studio.contracts.identity.permissions import role_scopes
 from studio.contracts.identity.principal import StudioPrincipal
 from studio.runtime.database.operation_receipts import OperationError
@@ -20,7 +18,10 @@ from studio.runtime.ids import new_id
 
 
 class WorkbenchRuns:
-    def __init__(self):
+    """Own live turns and their database factory for one application lifecycle."""
+
+    def __init__(self, sessions, settings):
+        self.sessions, self.settings = sessions, settings
         self.tasks = {}
         self.active_turns = {}
         self.followups = set()
@@ -28,7 +29,9 @@ class WorkbenchRuns:
         self.closed = False
 
     def start(self, principal, local, chat_id, turn_id):
-        turn = Turn(principal, local, chat_id, turn_id, self.file_writes)
+        turn = Turn(
+            principal, local, chat_id, turn_id, self.file_writes, self.sessions, self.settings
+        )
         self.active_turns[turn_id] = turn
         task = asyncio.create_task(self.run(turn))
         self.tasks[turn_id] = task
@@ -58,7 +61,7 @@ class WorkbenchRuns:
 
     async def advance(self, owner, chat_id):
         while not self.closed:
-            async with SessionLocal() as db:
+            async with self.sessions() as db:
                 head = await storage.next_queued(db, owner, chat_id)
                 if not head:
                     return
@@ -101,7 +104,7 @@ class WorkbenchRuns:
             status = "rejected"
             if turn:
                 try:
-                    async with SessionLocal() as session:
+                    async with self.sessions() as session:
                         await turn.authority(session)
                         row = await storage.get_turn(session, *key)
                         eligible = row.status == "running"
@@ -111,7 +114,7 @@ class WorkbenchRuns:
                         )
                 except (HTTPException, OperationError):
                     pass
-            async with SessionLocal() as session:
+            async with self.sessions() as session:
                 return await storage.settle_instruction(session, key, item.request_id, status)
 
         task = asyncio.create_task(deliver())
@@ -128,7 +131,7 @@ class WorkbenchRuns:
             if not task.cancelling():
                 task.cancel()
             await asyncio.gather(task, return_exceptions=True)
-        async with SessionLocal() as session:
+        async with self.sessions() as session:
             await storage.finish_turn(session, key, "cancelled", only_cancelling=True)
 
     async def close(self):
@@ -141,7 +144,8 @@ class WorkbenchRuns:
 
 
 class Turn:
-    def __init__(self, principal, local, chat_id, turn_id, file_writes):
+    def __init__(self, principal, local, chat_id, turn_id, file_writes, sessions, settings):
+        self.sessions, self.settings = sessions, settings
         self.principal, self.local = principal, local
         self.owner, self.chat_id, self.turn_id = principal.user_id, chat_id, turn_id
         self.key = (self.owner, chat_id, turn_id)
@@ -165,7 +169,7 @@ class Turn:
     async def flush(self):
         if not self.pending_text:
             return
-        async with SessionLocal() as db:
+        async with self.sessions() as db:
             await storage.append_answer(db, self.key, self.pending_text)
         self.pending_text = ""
         self.last_flush = asyncio.get_running_loop().time()
@@ -178,26 +182,26 @@ class Turn:
                     await self.flush()
             elif kind in ("tool_call", "tool_result"):
                 await self.flush()
-                async with SessionLocal() as db:
+                async with self.sessions() as db:
                     await turn_activity.record_activity(db, self.key, kind, payload)
 
     async def approve(self, kind, title, preview, _effect, operation):
         identity = new_id()
         async with self.transcript_lock:
             await self.flush()
-        async with SessionLocal() as db:
+        async with self.sessions() as db:
             await storage.propose_approval(
                 db, self.key, dict(id=identity, kind=kind, title=title, preview=preview)
             )
 
         while True:
-            async with SessionLocal() as db:
+            async with self.sessions() as db:
                 decision = await storage.read_approval_status(db, self.key, identity)
             if decision != "pending":
                 break
             await asyncio.sleep(0.3)
 
-        async with SessionLocal() as db:
+        async with self.sessions() as db:
             _, project, _ = await self.authority(db)
             approved = await storage.consume_approval(
                 db, self.key, identity, self.principal, project, local=self.local
@@ -207,7 +211,7 @@ class Turn:
 
         status = "unknown"
         try:
-            async with SessionLocal() as db:
+            async with self.sessions() as db:
                 _, latest, _ = await self.authority(db)
             if latest != project:
                 raise ValueError("项目已变更")
@@ -222,24 +226,24 @@ class Turn:
         finally:
             # The side effect and receipt cannot commit together; cancellation leaves it unknown.
             if not asyncio.current_task().cancelling():
-                async with SessionLocal() as db:
+                async with self.sessions() as db:
                     await storage.settle_approval(db, self.key, identity, status)
 
     async def tool_project(self):
-        async with SessionLocal() as db:
+        async with self.sessions() as db:
             _, project, _ = await self.authority(db)
             return project
 
     async def watch(self):
         while True:
-            async with SessionLocal() as db:
+            async with self.sessions() as db:
                 await self.authority(db)
             await asyncio.sleep(2)
 
     async def run(self):
         status, error = "completed", None
         try:
-            async with SessionLocal() as db:
+            async with self.sessions() as db:
                 agent, project, executable = await self.authority(db, probe=True)
                 turns = await storage.recent_turns(db, self.owner, self.chat_id, 12)
                 current = next(row for row in turns if row.id == self.turn_id)
@@ -273,7 +277,7 @@ class Turn:
                     tools,
                     self.tools.call,
                     self.emit,
-                    runtime_path=get_settings().runtime_path,
+                    runtime_path=self.settings.runtime_path,
                     tool_timeout=900,
                     instructions=self.instructions,
                 )
@@ -303,6 +307,6 @@ class Turn:
         finally:
             self.instructions.close()
             await self.flush()
-            async with SessionLocal() as db:
+            async with self.sessions() as db:
                 outcome = await storage.finish_turn(db, self.key, status, error)
         return outcome

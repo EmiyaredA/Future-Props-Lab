@@ -6,9 +6,11 @@ import httpx
 import pytest
 
 from app.main import app
+from app.runtime.db import SessionLocal
 from studio.apps.galgame_workshop.video.video_export import EXPORT_PACKAGING_POLICY
 from studio.apps.galgame_workshop.video.video_export_runner import _recover_interrupted_task
 from studio.apps.galgame_workshop.video.video_handoff_runner import GalgameVideoEditorHandoffRunner
+from studio.config.settings import get_settings
 from test_galgame_workshop import playable_story
 
 
@@ -438,7 +440,9 @@ async def test_video_editor_handoff_is_idempotent_and_cancellable() -> None:
             json=materialize_request,
         )
         assert materialize.status_code == 202, materialize.text
-        await GalgameVideoEditorHandoffRunner()._process(materialize.json()["id"])
+        await GalgameVideoEditorHandoffRunner(
+            session_factory=SessionLocal, settings=get_settings()
+        )._process(materialize.json()["id"])
         completed = await client.get(
             f"/v1/galgame-workshop/projects/{project['id']}/video-editor-handoffs/"
             f"{materialize.json()['id']}"

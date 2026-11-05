@@ -26,6 +26,7 @@ from studio.apps.video_editor.render_engine import render_document
 from studio.apps.video_editor.runner import VideoEditorRunner
 from studio.apps.video_editor.schemas import VideoEditorTimelineDocument
 from studio.apps.video_editor.storage.models import VideoEditorProject
+from studio.config.settings import get_settings
 
 
 async def _reset() -> None:
@@ -293,7 +294,9 @@ async def test_video_editor_media_is_copied_and_proxy_metadata_is_retryable() ->
         assert upload.status_code == 200
         asset_id = upload.json()["id"]
         assert upload.json()["processingStatus"] == "queued"
-        await VideoEditorRunner(lane="media").process_once()
+        await VideoEditorRunner(
+            lane="media", session_factory=SessionLocal, settings=get_settings()
+        ).process_once()
         listed = (await client.get(f"/v1/video-editor/projects/{project['id']}/assets")).json()
         asset = next(item for item in listed["items"] if item["id"] == asset_id)
         assert asset["processingStatus"] == "ready"

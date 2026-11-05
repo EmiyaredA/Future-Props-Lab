@@ -160,7 +160,7 @@ async def test_video_submit_materializes_asset_ids_and_keeps_legacy_urls(
         temporary_calls.append((asset_id, kind, filename))
         return f"https://temp.sh/{kind}-{asset_id}"
 
-    runner = VisualGenerationRunner()
+    runner = VisualGenerationRunner(session_factory=SessionLocal, settings=get_settings())
     monkeypatch.setattr("app.llm.visual_generation_submission.submit_generation_task", fake_create)
     monkeypatch.setattr(runner, "_asset_data_uri", fake_image)
     monkeypatch.setattr(runner, "_temporary_asset_url", fake_temporary)
@@ -228,7 +228,7 @@ async def test_temporary_upload_failure_happens_before_provider_submission(
     ) -> str:
         raise TemporaryMediaError("private upstream response")
 
-    runner = VisualGenerationRunner()
+    runner = VisualGenerationRunner(session_factory=SessionLocal, settings=get_settings())
     monkeypatch.setattr("app.llm.visual_generation_submission.submit_generation_task", fake_create)
     monkeypatch.setattr(runner, "_temporary_asset_url", failed_upload)
 
@@ -295,6 +295,7 @@ async def test_download_rejects_declared_size_and_mime(
     runner = VisualGenerationRunner(
         settings=small_settings,
         download_transport=httpx.MockTransport(too_large),
+        session_factory=SessionLocal,
     )
     with pytest.raises(MaterializationError, match="文件大小"):
         await runner._download("https://cdn.example/result.png", tmp_path / "large")
@@ -306,7 +307,11 @@ async def test_download_rejects_declared_size_and_mime(
             headers={"content-type": "text/plain"},
         )
 
-    runner = VisualGenerationRunner(download_transport=httpx.MockTransport(wrong_mime))
+    runner = VisualGenerationRunner(
+        download_transport=httpx.MockTransport(wrong_mime),
+        session_factory=SessionLocal,
+        settings=get_settings(),
+    )
     with pytest.raises(MaterializationError, match="受支持"):
         await runner._download("https://cdn.example/result.png", tmp_path / "mime")
 
@@ -328,7 +333,7 @@ async def test_runner_recovery_and_concurrency_limit() -> None:
             session.add_all(rows)
             await session.commit()
 
-        runner = VisualGenerationRunner()
+        runner = VisualGenerationRunner(session_factory=SessionLocal, settings=get_settings())
         await runner.recover()
         async with SessionLocal() as session:
             interrupted = await session.get(VisualGenerationTask, rows[0].id)
@@ -379,7 +384,7 @@ async def test_concurrent_claim_submits_a_queued_task_only_once(
         monkeypatch.setattr(
             "app.llm.visual_generation_submission.submit_generation_task", fake_submit
         )
-        runner = VisualGenerationRunner()
+        runner = VisualGenerationRunner(session_factory=SessionLocal, settings=get_settings())
         await asyncio.gather(runner._process_task(task.id), runner._process_task(task.id))
 
         async with SessionLocal() as session:
@@ -414,7 +419,7 @@ async def test_processing_result_completes_only_after_asset_is_saved(
             target.write_bytes(payload)
             return len(payload), "image", "image/png", ".png"
 
-        runner = VisualGenerationRunner()
+        runner = VisualGenerationRunner(session_factory=SessionLocal, settings=get_settings())
         monkeypatch.setattr(runner, "_download", fake_download)
         await runner.process_once()
 

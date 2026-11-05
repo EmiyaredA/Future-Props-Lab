@@ -11,6 +11,7 @@ from app.main import app
 from app.runtime.db import SessionLocal
 from studio.apps.video_editor.runner import VideoEditorRunner
 from studio.apps.video_editor.storage.models import VideoEditorProject
+from studio.config.settings import get_settings
 
 
 async def _reset() -> None:
@@ -42,7 +43,9 @@ async def test_video_editor_asset_default_effects_cas_and_bake_image() -> None:
         assert asset["revision"] == 0
         assert asset["defaultEffects"] == {"chromaKey": None}
 
-        await VideoEditorRunner(lane="media").process_once()
+        await VideoEditorRunner(
+            lane="media", session_factory=SessionLocal, settings=get_settings()
+        ).process_once()
         listed = (await client.get(f"/v1/video-editor/projects/{project['id']}/assets")).json()
         asset = next(item for item in listed["items"] if item["id"] == asset["id"])
         assert asset["processingStatus"] == "ready"
@@ -78,7 +81,9 @@ async def test_video_editor_asset_default_effects_cas_and_bake_image() -> None:
         assert bake.status_code == 200
         assert bake.json()["kind"] == "asset_bake"
         task_id = bake.json()["id"]
-        await VideoEditorRunner().process_once()
+        await VideoEditorRunner(
+            session_factory=SessionLocal, settings=get_settings()
+        ).process_once()
         task = (
             await client.get(f"/v1/video-editor/projects/{project['id']}/asset-bakes/{task_id}")
         ).json()

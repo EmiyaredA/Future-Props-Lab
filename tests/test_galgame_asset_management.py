@@ -25,6 +25,7 @@ from studio.apps.galgame_workshop.storage.models import (
     GalgameAssetSettings,
     GalgameAssetTranscriptionTask,
 )
+from studio.config.settings import get_settings
 
 
 def image_bytes(width: int = 16, height: int = 32) -> bytes:
@@ -522,7 +523,11 @@ async def test_asr_runner_manual_override_force_and_dialogue_match() -> None:
         assert request.headers["authorization"] == "Bearer test-asr-key"
         return httpx.Response(200, json={"text": response_text})
 
-    runner = GalgameAsrRunner(transport=httpx.MockTransport(fake_asr))
+    runner = GalgameAsrRunner(
+        transport=httpx.MockTransport(fake_asr),
+        session_factory=SessionLocal,
+        settings=get_settings(),
+    )
     await runner.process_once()
 
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
@@ -644,7 +649,11 @@ async def test_senseaudio_asr_runner_persists_segments_and_manual_edit_clears_th
             },
         )
 
-    await GalgameAsrRunner(transport=httpx.MockTransport(fake_asr)).process_once()
+    await GalgameAsrRunner(
+        transport=httpx.MockTransport(fake_asr),
+        session_factory=SessionLocal,
+        settings=get_settings(),
+    ).process_once()
 
     expected_segments = [
         {"speaker": "speaker_0", "startMs": 0, "endMs": 1250, "text": "你好。"},

@@ -16,6 +16,7 @@ from studio.apps.video_editor.runner import VideoEditorRunner
 from studio.apps.video_editor.schemas import VideoEditorClip, VideoEditorTimelineBatchIn
 from studio.apps.video_editor.storage.models import VideoEditorTask
 from studio.apps.video_editor.timeline import apply_operations
+from studio.config.settings import get_settings
 
 
 def clip(clip_id, track="v", start=0, duration=4_000_003, group=None):
@@ -274,7 +275,11 @@ async def test_media_duration_is_published_before_preview_encoding(monkeypatch):
             task_id = await session.scalar(
                 select(VideoEditorTask.id).where(VideoEditorTask.project_id == project["id"])
             )
-        running = asyncio.create_task(VideoEditorRunner()._process(task_id))
+        running = asyncio.create_task(
+            VideoEditorRunner(session_factory=SessionLocal, settings=get_settings())._process(
+                task_id
+            )
+        )
         try:
             assert await asyncio.to_thread(started.wait, 5)
             current = (await client.get(f"{base}/assets")).json()["items"][0]

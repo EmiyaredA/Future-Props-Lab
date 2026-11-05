@@ -220,7 +220,9 @@ def api_transport(*, invalid=False):
 
 
 async def process(client, base, run, **kwargs):
-    await AcceptanceRunner(**kwargs).process(run["id"])
+    await AcceptanceRunner(**kwargs, session_factory=SessionLocal, settings=get_settings()).process(
+        run["id"]
+    )
     return (await client.get(f"{base}/acceptance/runs/{run['id']}")).json()
 
 
@@ -473,12 +475,14 @@ async def test_invalid_result_cancel_recovery_and_workspace_isolation(client, vi
         json={},
     )
     assert cancelled.status_code == 200, cancelled.text
-    await AcceptanceRunner(transport=api_transport()).process(queued["id"])
+    await AcceptanceRunner(
+        transport=api_transport(), session_factory=SessionLocal, settings=get_settings()
+    ).process(queued["id"])
     assert (await client.get(f"{base}/acceptance/runs/{queued['id']}")).json()[
         "status"
     ] == "cancelled"
     interrupted = await start(client, base, "interrupted")
-    await AcceptanceRunner().recover()
+    await AcceptanceRunner(session_factory=SessionLocal, settings=get_settings()).recover()
     assert (await client.get(f"{base}/acceptance/runs/{interrupted['id']}")).json()[
         "status"
     ] == "failed"

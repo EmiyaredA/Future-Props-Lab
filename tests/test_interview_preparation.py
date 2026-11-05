@@ -177,7 +177,9 @@ async def test_real_flow_snapshot_receipt_bundle_and_export(client):
     assert (
         await client.post(f"/v1/interview-assistant/rooms/{room['id']}/preparations", json=body)
     ).status_code == 409
-    await runner.InterviewPreparationRunner(allowed, FakeExecutor()).execute(task["id"])
+    await runner.InterviewPreparationRunner(allowed, FakeExecutor(), sessions=SessionLocal).execute(
+        task["id"]
+    )
     result = (await client.get(f"/v1/interview-assistant/rooms/{room['id']}")).json()
     assert result["active_bundle_id"] == task["id"]
     assert result["tasks"][0]["snapshot"]["jd"] == "Python"
@@ -212,16 +214,18 @@ async def test_cancel_retry_late_completion_and_empty_material(client):
         assert response.status_code == 200
 
     await runner.InterviewPreparationRunner(
-        allowed, FakeExecutor(cancel_during_completion)
+        allowed, FakeExecutor(cancel_during_completion), sessions=SessionLocal
     ).execute(old["id"])
     room = (await client.get(f"/v1/interview-assistant/rooms/{room['id']}")).json()
     assert room["tasks"][0]["status"] == "cancelled"
     assert room["active_bundle_id"] is None
     queued, _ = await prepare(client, room)
-    await runner.InterviewPreparationRunner(allowed, FakeExecutor()).execute(
+    await runner.InterviewPreparationRunner(allowed, FakeExecutor(), sessions=SessionLocal).execute(
         queued["tasks"][0]["id"]
     )
-    await runner.InterviewPreparationRunner(allowed).finish(old["id"], "succeeded", "late", {})
+    await runner.InterviewPreparationRunner(allowed, sessions=SessionLocal).finish(
+        old["id"], "succeeded", "late", {}
+    )
     room = (await client.get(f"/v1/interview-assistant/rooms/{room['id']}")).json()
     assert room["active_bundle_id"] == queued["tasks"][0]["id"]
 
@@ -229,7 +233,7 @@ async def test_cancel_retry_late_completion_and_empty_material(client):
 @pytest.mark.asyncio
 async def test_bad_reference_needs_input_preserves_previous_version_and_restart(client):
     room, _ = await prepare(client, await create(client))
-    worker = runner.InterviewPreparationRunner(allowed, FakeExecutor())
+    worker = runner.InterviewPreparationRunner(allowed, FakeExecutor(), sessions=SessionLocal)
     await worker.execute(room["tasks"][0]["id"])
     room = (await client.get(f"/v1/interview-assistant/rooms/{room['id']}")).json()
     accepted = room["active_bundle_id"]
@@ -238,9 +242,9 @@ async def test_bad_reference_needs_input_preserves_previous_version_and_restart(
     async def bad(_task, bundle):
         bundle["questions"][0]["source_ids"] = ["does-not-exist"]
 
-    await runner.InterviewPreparationRunner(allowed, FakeExecutor(bad)).execute(
-        queued["tasks"][0]["id"]
-    )
+    await runner.InterviewPreparationRunner(
+        allowed, FakeExecutor(bad), sessions=SessionLocal
+    ).execute(queued["tasks"][0]["id"])
     room = (await client.get(f"/v1/interview-assistant/rooms/{room['id']}")).json()
     assert room["active_bundle_id"] == accepted
     assert room["tasks"][0]["status"] == "needs_input"

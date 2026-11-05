@@ -17,7 +17,6 @@ from app.capabilities.media_rendering.galgame.compiler import (
     remap_render_plan_assets,
 )
 from app.capabilities.media_rendering.galgame.lip_sync import prepare_audio_envelopes
-from app.runtime.db import SessionLocal
 from studio.apps.galgame_workshop.storage.models import (
     GalgameAssetMetadata,
     GalgameStorySnapshot,
@@ -30,7 +29,7 @@ from studio.apps.video_editor.storage.models import (
     VideoEditorTask,
     VideoEditorTimeline,
 )
-from studio.config.settings import Settings, get_settings
+from studio.config.settings import Settings
 from studio.runtime.database.ownership import bind_owner, require_owner_id
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now
@@ -42,12 +41,12 @@ class GalgameVideoEditorHandoffRunner(PollingTaskRunner):
 
     def __init__(
         self,
-        session_factory: async_sessionmaker[AsyncSession] = SessionLocal,
-        settings: Settings | None = None,
+        session_factory: async_sessionmaker[AsyncSession],
+        settings: Settings,
     ) -> None:
         super().__init__()
         self.session_factory = session_factory
-        self.settings = settings or get_settings()
+        self.settings = settings
         self.storage = AssetStorage(self.settings)
 
     async def recover(self) -> None:

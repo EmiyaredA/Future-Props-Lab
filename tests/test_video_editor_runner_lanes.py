@@ -9,6 +9,7 @@ from sqlalchemy import delete
 from app.runtime.db import SessionLocal
 from studio.apps.video_editor.runner import VideoEditorRunner
 from studio.apps.video_editor.storage.models import VideoEditorProject, VideoEditorTask
+from studio.config.settings import get_settings
 
 
 @pytest_asyncio.fixture(autouse=True)
@@ -52,8 +53,10 @@ async def test_media_completes_while_export_is_still_running(monkeypatch) -> Non
     render_id, media_id = await _tasks()
     exporting = asyncio.Event()
     finish_export = asyncio.Event()
-    export_runner = VideoEditorRunner()
-    media_runner = VideoEditorRunner(lane="media")
+    export_runner = VideoEditorRunner(session_factory=SessionLocal, settings=get_settings())
+    media_runner = VideoEditorRunner(
+        lane="media", session_factory=SessionLocal, settings=get_settings()
+    )
 
     async def slow_export(task_id: str) -> None:
         assert task_id == render_id
@@ -85,7 +88,9 @@ async def test_media_completes_while_export_is_still_running(monkeypatch) -> Non
 @pytest.mark.parametrize("lane", ["media", "export"])
 async def test_lane_recovery_does_not_requeue_the_other_running_lane(lane: str) -> None:
     render_id, media_id = await _tasks("running")
-    await VideoEditorRunner(lane=lane).recover()
+    await VideoEditorRunner(
+        lane=lane, session_factory=SessionLocal, settings=get_settings()
+    ).recover()
     async with SessionLocal() as session:
         render = await session.get(VideoEditorTask, render_id)
         media = await session.get(VideoEditorTask, media_id)
@@ -100,7 +105,7 @@ async def test_export_poll_leaves_a_media_only_queue_untouched() -> None:
         media = await session.get(VideoEditorTask, media_id)
         media.status = "queued"
         await session.commit()
-    await VideoEditorRunner().process_once()
+    await VideoEditorRunner(session_factory=SessionLocal, settings=get_settings()).process_once()
     async with SessionLocal() as session:
         assert (await session.get(VideoEditorTask, media_id)).status == "queued"
         assert (await session.get(VideoEditorTask, render_id)).status == "running"
@@ -119,7 +124,9 @@ async def test_clip_merge_recovery_preserves_snapshot_and_cancellation(
         task.snapshot_document = {"tracks": [], "frozen": True}
         task.request_payload = {"clipIds": ["a", "b"]}
         await session.commit()
-    await VideoEditorRunner(lane="export").recover()
+    await VideoEditorRunner(
+        lane="export", session_factory=SessionLocal, settings=get_settings()
+    ).recover()
     async with SessionLocal() as session:
         task = await session.get(VideoEditorTask, render_id)
         assert task.status == ("cancelled" if cancel_requested else "queued")

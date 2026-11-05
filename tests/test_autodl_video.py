@@ -33,6 +33,7 @@ from app.runtime.db import SessionLocal
 from studio.apps.visual_workshop.schemas.workshop import VisualCanvasVideoGenerationDraft
 from studio.apps.visual_workshop.storage.models import VisualWorkshopProject
 from studio.apps.visual_workshop.website.generation import VisualGeneration
+from studio.config.settings import get_settings
 from studio.contracts.model_service.generation_tasks import VideoGenerationTaskCreateIn
 
 
@@ -423,7 +424,7 @@ async def test_every_runner_inlines_motion_video_and_audio_without_temporary_upl
     for module in (visual_submission, inference_module, test_module):
         monkeypatch.setattr(module, "submit_generation_task", submit)
     visual, test, inference = (
-        visual_module.VisualGenerationRunner(),
+        visual_module.VisualGenerationRunner(session_factory=SessionLocal, settings=get_settings()),
         test_module.ModelTestGenerationRunner(SessionLocal),
         inference_module.InferenceRunner(SessionLocal),
     )

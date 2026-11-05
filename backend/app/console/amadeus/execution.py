@@ -11,8 +11,6 @@ from app.console.amadeus.schemas import RunEventIn, RunOut
 from app.console.amadeus.skills import load_skill
 from app.console.amadeus.tool_bridge import TOOLS, ToolBridge
 from app.console.governance.code_agents import resolve
-from app.runtime.db import SessionLocal
-from studio.config.settings import get_settings
 from studio.runtime.database.ownership import bind_owner
 from studio.runtime.ids import new_id
 
@@ -23,7 +21,8 @@ class OwnedRun(RunOut):
 
 
 class CodeAgentRuns:
-    def __init__(self, sessions=SessionLocal):
+    def __init__(self, sessions, settings):
+        self.settings = settings
         self.sessions, self.tasks = sessions, {}
 
     def start(self, app, headers, principal, run):
@@ -140,7 +139,7 @@ class CodeAgentRuns:
                     bridge.call,
                     emit,
                     root=root,
-                    runtime_path=get_settings().runtime_path,
+                    runtime_path=self.settings.runtime_path,
                 )
             )
             paused = asyncio.create_task(bridge.paused.wait())

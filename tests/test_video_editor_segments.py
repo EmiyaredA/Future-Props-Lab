@@ -61,7 +61,7 @@ async def prepare(client: httpx.AsyncClient, video: bytes) -> tuple[str, dict]:
         f"{root}/assets", files={"upload": ("source.mp4", video, "video/mp4")}
     )
     assert uploaded.status_code == 200, uploaded.text
-    runner = VideoEditorRunner()
+    runner = VideoEditorRunner(session_factory=SessionLocal, settings=get_settings())
     async with SessionLocal() as session:
         task_id = await session.scalar(
             select(VideoEditorTask.id).where(
@@ -154,7 +154,9 @@ async def test_segment_export_roundtrip(
                 f"{root}/segment-exports", json={**body, "target": {"newProjectTitle": "不同目标"}}
             )
         ).status_code == 422
-        await VideoEditorRunner()._process(task["id"])
+        await VideoEditorRunner(session_factory=SessionLocal, settings=get_settings())._process(
+            task["id"]
+        )
         completed = (await client.get(task_url)).json()
         assert completed["status"] == "completed", completed.get("error")
         detail = completed["resultDetail"]
@@ -195,7 +197,9 @@ async def test_segment_export_roundtrip(
                 assert output["asset_id"] == segment["assetId"]
             # Reprocessing a completed task and resubmitting its request cannot
             # create extra nodes, versions or advance the canvas revision.
-            await VideoEditorRunner()._process(task["id"])
+            await VideoEditorRunner(session_factory=SessionLocal, settings=get_settings())._process(
+                task["id"]
+            )
             assert (await client.post(f"{root}/segment-exports", json=body)).json() == completed
             assert (
                 await client.get(f"/v1/visual-workshop/projects/{detail['targetProjectId']}/canvas")
@@ -344,7 +348,9 @@ async def test_segment_validation_cancel_and_canvas_conflict(video: bytes) -> No
             json={"expected_revision": 0, "nodes": [], "edges": []},
         )
         assert edited.status_code == 200, edited.text
-        await VideoEditorRunner()._process(created.json()["id"])
+        await VideoEditorRunner(session_factory=SessionLocal, settings=get_settings())._process(
+            created.json()["id"]
+        )
         failed = (await client.get(f"{root}/segment-exports/{created.json()['id']}")).json()
         assert failed["status"] == "failed", failed
         assert "画布已变化" in failed["error"]
@@ -408,7 +414,9 @@ async def test_staged_files_are_cleaned_without_partial_outputs(
 
         if failure == "register":
             monkeypatch.setattr(segment_runner, "register_imported_output", register)
-        await VideoEditorRunner()._process(created["id"])
+        await VideoEditorRunner(session_factory=SessionLocal, settings=get_settings())._process(
+            created["id"]
+        )
         task = (await client.get(f"{root}/segment-exports/{created['id']}")).json()
         assert task["status"] == ("cancelled" if failure == "cancel" else "failed"), task
         assert staged_paths and all(not path.exists() for path in staged_paths)
@@ -446,7 +454,9 @@ async def test_legacy_segment_outputs_can_be_backfilled_through_api(video: bytes
         root, body = await prepare(client, video)
         body["target"] = {"newProjectTitle": "旧分段画布"}
         created = (await client.post(f"{root}/segment-exports", json=body)).json()
-        await VideoEditorRunner()._process(created["id"])
+        await VideoEditorRunner(session_factory=SessionLocal, settings=get_settings())._process(
+            created["id"]
+        )
         completed = (await client.get(f"{root}/segment-exports/{created['id']}")).json()
         project_id = completed["resultDetail"]["targetProjectId"]
         canvas_url = f"/v1/visual-workshop/projects/{project_id}/canvas"

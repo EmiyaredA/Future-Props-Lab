@@ -4,7 +4,6 @@ from pydantic import ValidationError
 from sqlalchemy import select, update
 
 from app.console.governance.code_agents import authorized
-from app.runtime.db import SessionLocal
 from studio.apps.interview_assistant.bundles import acceptance
 from studio.apps.interview_assistant.codex import CodexExecutor, task_context
 from studio.apps.interview_assistant.executor_status import executor_status
@@ -20,7 +19,7 @@ class InterviewPreparationRunner(PollingTaskRunner):
     runner_name = "interview-preparation"
     poll_interval_seconds = 1.0
 
-    def __init__(self, actor_allowed, executor=None, sessions=SessionLocal):
+    def __init__(self, actor_allowed, executor=None, *, sessions):
         super().__init__()
         self.actor_allowed = actor_allowed
         self.executor = executor or CodexExecutor()
